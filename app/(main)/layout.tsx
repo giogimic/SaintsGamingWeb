@@ -25,12 +25,12 @@ export default async function MainLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "v1.1.0-4";
+  let siteVersion = "v1.1.0-5";
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = setting?.value || "v1.1.0-4";
+    siteVersion = setting?.value || "v1.1.0-5";
   } catch {
-    siteVersion = "v1.1.0-4";
+    siteVersion = "v1.1.0-5";
   }
 
   return (

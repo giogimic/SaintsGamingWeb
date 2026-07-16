@@ -320,7 +320,7 @@ export function Footer({ className, discordLink, siteVersion }: { className?: st
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "1.1.0-4"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "1.1.0-5"}</span>
           </div>
         </div>
       </div>
