@@ -8,6 +8,18 @@ import { PERMISSION_LEVELS } from "@/lib/permissions";
 export const metadata = {
   title: "Forums | Saints Gaming",
   description: "Join the discussion, read the rules, and connect with the community.",
+  openGraph: {
+    title: "Forums | Saints Gaming",
+    description: "Join the discussion, read the rules, and connect with the community.",
+    type: "website",
+    url: "https://saintsgaming.net/forum",
+    siteName: "Saints Gaming",
+  },
+  twitter: {
+    card: "summary",
+    title: "Forums | Saints Gaming",
+    description: "Join the discussion, read the rules, and connect with the community.",
+  },
 };
 
 export default async function ForumIndexPage() {

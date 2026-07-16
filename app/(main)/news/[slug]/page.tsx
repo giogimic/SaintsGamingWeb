@@ -19,9 +19,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!article) return { title: "Article Not Found" };
 
+  const description = article.excerpt || article.body.substring(0, 150) + "...";
+  
   return {
-    title: article.title,
-    description: article.excerpt || article.title,
+    title: `${article.title} | Saints Gaming`,
+    description,
+    openGraph: {
+      title: article.title,
+      description,
+      type: "article",
+      url: `https://saintsgaming.net/news/${article.slug}`,
+      siteName: "Saints Gaming",
+      images: article.coverImage ? [
+        {
+          url: article.coverImage.startsWith("/") 
+            ? `https://saintsgaming.net${article.coverImage}` 
+            : article.coverImage,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        }
+      ] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description,
+      images: article.coverImage ? [
+        article.coverImage.startsWith("/") 
+          ? `https://saintsgaming.net${article.coverImage}` 
+          : article.coverImage
+      ] : [],
+    },
   };
 }
 

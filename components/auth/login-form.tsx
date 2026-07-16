@@ -13,7 +13,7 @@ import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export function LoginForm() {
-  const router = useRouter();
+  const _router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get("error");
 
