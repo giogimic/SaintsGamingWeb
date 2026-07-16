@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-sony" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#003087" />
+      <stop offset="100%" stop-color="#0070d1" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-sony)" rx="16" />
+  <g transform="translate(400, 200)" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-60,-100 Q-80,0 -60,100 L-40,100 Q-60,0 -40,-100 Z" />
+    <path d="M40,-100 Q60,0 40,100 L60,100 Q80,0 60,-100 Z" />
+    <rect x="-30" y="-80" width="60" height="160" rx="4" fill="rgba(255,255,255,0.2)" stroke="none" />
+    <path d="M-20,-60 L20,-60 M-20,0 L20,0 M-20,60 L20,60" stroke-width="4" opacity="0.5" />
+  </g>
+  <text x="400" y="340" fill="white" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" letter-spacing="2">PLAYSTATION 5 PRO</text>
+</svg>

@@ -1,0 +1,547 @@
+// Saints Gaming — Prisma Schema
+// Database: SQLite (initial) → MariaDB (when traffic justifies)
+// To switch: change provider to "mysql" and update DATABASE_URL in .env
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth.js Models ─────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+// ─── Roles & Permissions ──────────────────────────────────────────
+
+model Role {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  level     Int      @unique
+  color     String   @default("text-zinc-500")
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── User ───────────────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  emailVerified       DateTime?
+  username            String    @unique
+  displayName         String?
+  passwordHash        String?
+  image               String? // avatar URL or path
+  bio                 String?
+  permissionLevel     Int       @default(20)
+  roleId              String?
+  role                Role?     @relation(fields: [roleId], references: [id])
+  isBanned            Boolean   @default(false)
+  banReason           String?
+  forumPin            String? // User's custom PIN to prevent spam
+  canPostToForum      Boolean   @default(true) // Revocable for moderation
+  forcePasswordChange Boolean   @default(false)
+  devConsoleEnabled   Boolean   @default(false)
+  isWriter            Boolean   @default(false)
+  isVIP               Boolean   @default(false)
+  isFounder           Boolean   @default(false)
+  isTrusted           Boolean   @default(false)
+  xp                  Int       @default(0)
+  level               Int       @default(1)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  accounts       Account[]
+  sessions       Session[]
+  threads        Thread[]
+  replies        Reply[]
+  reactions      Reaction[]
+  newsArticles   NewsArticle[]
+  streamProfiles StreamProfile[]
+  notifications  Notification[]
+  supportTickets SupportTicket[]
+  ticketMessages TicketMessage[]
+
+  // FiveM
+  fivemLicense String?     @unique
+  discordId    String?     @unique
+  characters   Character[]
+
+  @@index([createdAt])
+}
+
+// ─── Forum ──────────────────────────────────────────────────────
+
+model ForumCategory {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  description   String?
+  icon          String? // SVG icon name or emoji
+  order         Int           @default(0)
+  isLocked      Boolean       @default(false)
+  reqWriter     Boolean       @default(false)
+  reqVIP        Boolean       @default(false)
+  reqFounder    Boolean       @default(false)
+  reqTrusted    Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  subcategories SubCategory[]
+}
+
+model SubCategory {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  order       Int           @default(0)
+  isLocked    Boolean       @default(false)
+  reqWriter   Boolean       @default(false)
+  reqVIP      Boolean       @default(false)
+  reqFounder  Boolean       @default(false)
+  reqTrusted  Boolean       @default(false)
+  categoryId  String
+  category    ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  threads     Thread[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Thread {
+  id            String          @id @default(cuid())
+  title         String
+  slug          String          @unique
+  body          String // markdown content
+  iconImage     String? // optional thread icon/image
+  isPinned      Boolean         @default(false)
+  isLocked      Boolean         @default(false)
+  viewCount     Int             @default(0)
+  authorId      String
+  author        User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subcategoryId String
+  subcategory   SubCategory     @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  replies       Reply[]
+  reactions     Reaction[]
+  images        Image[]
+  hashtags      ThreadHashtag[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([authorId])
+  @@index([subcategoryId])
+  @@index([subcategoryId, createdAt])
+}
+
+model Reply {
+  id        String     @id @default(cuid())
+  body      String // markdown content
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  threadId  String
+  thread    Thread     @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  quotedId  String? // ID of the reply being quoted
+  reactions Reaction[]
+  images    Image[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([authorId])
+  @@index([threadId])
+}
+
+model Reaction {
+  id       String  @id @default(cuid())
+  emoji    String // "👍", "🔥", "😂", "❤️", "💀", "🎮"
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId String?
+  thread   Thread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  replyId  String?
+  reply    Reply?  @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, emoji, threadId])
+  @@unique([userId, emoji, replyId])
+  @@index([userId])
+  @@index([threadId])
+  @@index([replyId])
+}
+
+// ─── Hashtags (join tables for SQLite compatibility) ────────────
+
+model Hashtag {
+  id      String          @id @default(cuid())
+  name    String          @unique // stored lowercase, without #
+  threads ThreadHashtag[]
+  news    NewsHashtag[]
+}
+
+model ThreadHashtag {
+  threadId  String
+  hashtagId String
+  thread    Thread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, hashtagId])
+}
+
+model NewsHashtag {
+  articleId String
+  hashtagId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag     @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, hashtagId])
+}
+
+// ─── News ───────────────────────────────────────────────────────
+
+model NewsArticle {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  excerpt     String?
+  body        String // markdown content
+  coverImage  String? // optional cover image path or raw SVG
+  icon        String? // raw SVG markup for icons
+  isPublished Boolean       @default(false)
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  hashtags    NewsHashtag[]
+  promoLinks  PromoLink[]
+  mediaAssets MediaAsset[]
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PromoLink {
+  id        String      @id @default(cuid())
+  title     String // e.g. "Pre-order on Steam"
+  url       String
+  type      String // "store", "website", "social", "download"
+  articleId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model MediaAsset {
+  id        String      @id @default(cuid())
+  title     String // e.g. "Official 4K Wallpaper"
+  url       String
+  type      String // "image", "video", "youtube", "archive"
+  articleId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+// ─── Modpacks ───────────────────────────────────────────────────
+
+model Modpack {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  game         String   @default("Minecraft")
+  description  String?
+  version      String?
+  status       String   @default("Active") // Active, Inactive, Archived
+  logoImage    String? // optional logo
+  downloadUrl  String?
+  installNotes String? // markdown installation instructions
+  changelog    String? // markdown changelog
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Game Servers ─────────────────────────────────────────────────
+
+model GameServer {
+  id        String   @id @default(cuid())
+  name      String // e.g., "Saints Gaming - Palworld #1"
+  game      String // e.g., "Palworld"
+  ip        String // e.g., "192.168.1.100" or domain
+  port      Int // e.g., 8211, 8214, 8215
+  queryPort Int? // Palworld uses a specific port for RCON/Query
+  isActive  Boolean  @default(true)
+  trackerId String? // Optional: ID for Battlemetrics or similar API
+  order     Int      @default(0) // For sorting on the UI
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Streams ────────────────────────────────────────────────────
+
+model StreamProfile {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String // "twitch", "youtube", "kick"
+  channelUrl  String
+  channelId   String? // platform-specific channel ID for API lookups
+  priority    Int       @default(0)
+  isApproved  Boolean   @default(false)
+  isLive      Boolean   @default(false)
+  streamTitle String?
+  lastChecked DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Support Tickets ──────────────────────────────────────────────
+
+model SupportTicket {
+  id        String          @id @default(cuid())
+  title     String
+  status    String          @default("OPEN") // OPEN, IN_PROGRESS, CLOSED
+  category  String          @default("GENERAL") // GENERAL, BAN_APPEAL, BUG_REPORT, STORE
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  messages  TicketMessage[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model TicketMessage {
+  id        String        @id @default(cuid())
+  body      String // Markdown
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+// ─── Images (uploads) ───────────────────────────────────────────
+
+model Image {
+  id        String   @id @default(cuid())
+  url       String // relative path to uploaded file
+  filename  String // original filename (sanitized)
+  mimeType  String
+  sizeBytes Int
+  alt       String?
+  threadId  String?
+  thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  replyId   String?
+  reply     Reply?   @relation(fields: [replyId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+// ─── Site Settings ──────────────────────────────────────────────
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model LevelTier {
+  id         String   @id @default(cuid())
+  level      Int      @unique
+  name       String // e.g., "Newbie", "Veteran", "Saint"
+  xpRequired Int
+  icon       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── Notifications ──────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // e.g. "REPLY", "MENTION", "SYSTEM"
+  message   String
+  link      String? // optional URL to redirect to when clicked
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ─── FiveM Roleplay Server Models ───────────────────────────────
+
+model Character {
+  id             String  @id @default(cuid())
+  userId         String
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  phoneNumber    String? @unique
+  appearanceData String? // JSON string
+  lastCoords     String? // JSON string: {x, y, z, heading}
+  cash           Int     @default(0)
+  bank           Int     @default(0)
+  health         Int     @default(200)
+  armor          Int     @default(0)
+  isDead         Boolean @default(false)
+  drugStats      String? // JSON string: {addictions: {}, activeEffects: {}}
+
+  // Faction / Gang
+  factionId   String?
+  factionRank Int?
+  faction     Faction? @relation(fields: [factionId], references: [id], onDelete: SetNull)
+  gangId      String?
+  gangRank    Int?
+  gang        Gang?    @relation(fields: [gangId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties   Property[]
+  vehicles     Vehicle[]
+  businesses   BusinessEmployee[]
+  inventory    InventoryItem[]
+  transactions BankTransaction[]
+}
+
+model BankTransaction {
+  id          String    @id @default(cuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  type        String // "DEPOSIT", "WITHDRAWAL", "WIRE_TRANSFER", "SALARY"
+  amount      Int
+  description String?
+  createdAt   DateTime  @default(now())
+}
+
+model Property {
+  id        String    @id @default(cuid())
+  type      String // "HOUSE", "APARTMENT"
+  name      String
+  coords    String? // JSON string
+  ownerId   String
+  owner     Character @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Vehicle {
+  id           String    @id @default(cuid())
+  plate        String    @unique
+  modelName    String
+  activeCoords String? // JSON string
+  garageId     String?
+  ownerId      String
+  owner        Character @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Faction {
+  id         String      @id @default(cuid())
+  name       String
+  type       String // "LEO", "EMS", etc.
+  characters Character[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Gang {
+  id         String      @id @default(cuid())
+  name       String
+  characters Character[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Business {
+  id        String             @id @default(cuid())
+  name      String
+  bank      Int                @default(0)
+  employees BusinessEmployee[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model BusinessEmployee {
+  id            String @id @default(cuid())
+  characterId   String
+  businessId    String
+  role          String // e.g. "Owner", "Manager", "Employee"
+  hierarchyRank Int    @default(0)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([characterId, businessId])
+}
+
+model InventoryItem {
+  id          String  @id @default(cuid())
+  characterId String
+  itemKey     String // e.g. "marijuana", "water", "pistol"
+  quantity    Int     @default(1)
+  metadata    String? // JSON string for extra data like durability, weapon ammo
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([characterId, itemKey]) // Assuming items stack. If they don't, remove this unique constraint.
+}
+
+// ─── RSS Feeds ──────────────────────────────────────────────────
+
+model RssFeed {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  category  String // e.g. "Gaming", "PC", "Xbox"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

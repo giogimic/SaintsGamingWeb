@@ -1,0 +1,17 @@
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.next
+.git
+.env*.local
+scratch
+dev.db
+dev.db-journal
+test-*.js
+update-*.js
+seed-*.js
+release-*
+*.zip
+*.tar.gz

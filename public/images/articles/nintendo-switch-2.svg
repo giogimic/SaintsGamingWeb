@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-nintendo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e60012" />
+      <stop offset="100%" stop-color="#a6000c" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-nintendo)" rx="16" />
+  <g transform="translate(400, 180)" fill="none" stroke="white" stroke-width="8" stroke-linejoin="round">
+    <rect x="-120" y="-70" width="240" height="140" rx="8" />
+    <path d="M-120,-50 L-160,-50 A20,20 0 0,0 -180,-30 L-180,30 A20,20 0 0,0 -160,50 L-120,50" />
+    <path d="M120,-50 L160,-50 A20,20 0 0,1 180,-30 L180,30 A20,20 0 0,1 160,50 L120,50" />
+    <circle cx="-150" cy="-20" r="12" fill="white" stroke="none" />
+    <circle cx="150" cy="20" r="12" fill="white" stroke="none" />
+    <rect x="-100" y="-55" width="200" height="110" rx="4" fill="rgba(255,255,255,0.1)" stroke="none" />
+  </g>
+  <text x="400" y="340" fill="white" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" letter-spacing="2">NINTENDO SWITCH 2</text>
+</svg>
