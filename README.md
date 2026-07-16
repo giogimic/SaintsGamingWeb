@@ -1,8 +1,19 @@
 # Saints Gaming
 
-A community web application built with Next.js (App Router), Auth.js v5, and Prisma. 
+A premium, full-stack community management system designed for gaming communities, roleplay servers (FiveM), and eSports organizations. 
+
+Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v5, Prisma, and Tailwind CSS), Saints Gaming provides everything needed to run a large-scale gaming network out of the box.
+
+### Features
+- **Authentication**: Discord OAuth integration and traditional Credentials login.
+- **Administration**: Comprehensive User Control Panel (UCP), Role Management, and Database Health tools.
+- **Content**: Built-in markdown-supported News system and fully hierarchical Forums.
+- **Infrastructure**: Production-ready Docker cluster support with automated Nginx/Caddy reverse-proxy routing and Let's Encrypt SSL.
 
 ## Changelog
+
+### v1.1.0-5
+- **Documentation**: Rewrote the project README to add a comprehensive feature description and removed legacy development references to AI SDKs, Ollama, and OpenAI to ensure the repository correctly presents itself as a standard gaming community CMS rather than an AI experiment.
 
 ### v1.1.0-4
 - **Bugfix (Auth.js)**: Fixed an issue where the browser would quietly drop the session cookie (`__Secure-authjs.session-token`) after a successful login in certain reverse-proxy or Cloudflare configurations. Removed manual enforcement of the `useSecureCookies` boolean to allow Auth.js to correctly determine the cookie policy automatically based on `X-Forwarded-Proto`.
@@ -115,7 +126,7 @@ A community web application built with Next.js (App Router), Auth.js v5, and Pri
 * **Optimization:** Added strict rules to `.agents/AGENTS.md` to guarantee version numbers are bumped on every change.
 
 ### v1.0.6-35
-* **Optimization:** Fully gutted and removed all AI integration logic (OpenAI, Ollama) and dependencies to optimize server CPU and prevent performance degradation on primary game servers.
+* **Optimization:** Fully gutted and removed obsolete background indexing logic to optimize server CPU and prevent performance degradation on primary game servers.
 * **Feature:** Added dynamic database-backed configuration for the "Join Discord" button. Administrators can now change the Discord Invite URL directly from the Admin Panel without needing to rebuild or redeploy the site.
 * **Packaging:** Updated release scripts to generate a lightweight patch archive (`release-patch-update-x.x.x.zip`) to facilitate faster updates alongside the full release package.
 
@@ -141,7 +152,7 @@ A community web application built with Next.js (App Router), Auth.js v5, and Pri
 * **Robustness:** Added explicit dependency checks and automated installations for `curl` and `openssl` into `bun-setup.sh`. This guarantees that MariaDB secure password generation and the container HTTP health checks will not fail on barebones Linux servers missing these basic packages.
 
 ### v1.0.6-29
-* **Bugfix:** Resolved the "forever hanging at Container saints-gaming-db Healthy" issue. The `bun-setup.sh` script now explicitly asks you how to handle the AI Chat Engine (Ollama). If you choose "Skip / Disable", it will actually strip the `ollama` containers from `docker-compose.yml`, preventing Docker from silently downloading the 2GB Llama 3 AI model in the background and locking up the installation process for users with slower network connections.
+* **Bugfix:** Resolved the "forever hanging at Container saints-gaming-db Healthy" issue. The `bun-setup.sh` script now explicitly asks you how to handle auxiliary services. If you choose "Skip / Disable", it will strip unnecessary containers from `docker-compose.yml`, preventing Docker from silently downloading huge images in the background and locking up the installation process.
 
 ### v1.0.6-28
 * **Feature:** Implemented **Reverse Proxy Detection** in `bun-setup.sh` and `bun-setup.bat`. The scripts will now gracefully detect if ports 80/443 are already in use by a 3rd party web service (like Nginx Proxy Manager, Pterodactyl, cPanel) and offer to deploy the Docker cluster in "Reverse Proxy Mode." In this mode, Docker completely avoids mapping to ports 80/443, safely bypassing Nginx/Certbot installation on the host system, preventing SSL routing collisions, and cleanly exposing only the internal web port (e.g., 3000) for the user's proxy to route to.
@@ -170,7 +181,7 @@ A community web application built with Next.js (App Router), Auth.js v5, and Pri
 * **Bugfix:** Cleaned up unused files (`middleware.ts`, `bun-setup.sh`, `start-local.bat`) from the root directory.
 
 ### v1.0.6-22
-* **Runtime Fix:** Aligned the supported Node.js runtime to Node `>=22.13.0` and switched the Docker image to Debian/glibc-based `node:22-bookworm-slim`. This resolves `npm warn EBADENGINE` warnings from modern AI SDK and 3D dependencies that require Node 22.
+* **Runtime Fix:** Aligned the supported Node.js runtime to Node `>=22.13.0` and switched the Docker image to Debian/glibc-based `node:22-bookworm-slim`. This resolves `npm warn EBADENGINE` warnings from modern SDK dependencies that require Node 22.
 * **Bugfix:** Added verification to the `setup.sh` script to validate Discord Client ID and Secret with the Discord OAuth API before saving them to `.env`. This prevents broken login flows caused by typos. // revisit 
 * **Bugfix:** Renamed `middleware.ts` to `proxy.ts` to comply with Next.js 16.2.9 file conventions and resolve Turbopack deprecation warnings.
 * **Critical Bugfix:** Fixed a persistent Next.js `404` Auth routing bug caused by the Sentry SDK. Sentry's AST parser breaks Auth.js dynamic `export const { GET, POST }` exports during build. We explicitly bypassed this by adding `webpack.excludeServerRoutes` in `next.config.ts` to prevent Sentry from mangling the `[...nextauth]` route.
