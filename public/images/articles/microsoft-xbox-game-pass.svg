@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-xbox" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#107C10" />
+      <stop offset="100%" stop-color="#0a4d0a" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-xbox)" rx="16" />
+  <g transform="translate(400, 180)" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-100,-40 C-150,-40 -160,20 -120,60 C-80,40 -40,30 0,30 C40,30 80,40 120,60 C160,20 150,-40 100,-40 C70,-40 30,-20 0,-20 C-30,-20 -70,-40 -100,-40 Z" />
+    <circle cx="-60" cy="0" r="15" fill="white" stroke="none" />
+    <circle cx="60" cy="-10" r="8" fill="white" stroke="none" />
+    <circle cx="40" cy="10" r="8" fill="white" stroke="none" />
+    <circle cx="80" cy="10" r="8" fill="white" stroke="none" />
+    <circle cx="60" cy="30" r="8" fill="white" stroke="none" />
+    <circle cx="0" cy="-10" r="12" stroke-width="4" />
+  </g>
+  <text x="400" y="340" fill="white" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" letter-spacing="2">XBOX GAME PASS</text>
+</svg>

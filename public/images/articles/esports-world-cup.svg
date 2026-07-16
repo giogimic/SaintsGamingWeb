@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-esports" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a0845" />
+      <stop offset="100%" stop-color="#6441A5" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-esports)" rx="16" />
+  <g transform="translate(400, 180)" fill="none" stroke="gold" stroke-width="8" stroke-linejoin="round">
+    <path d="M-60,-80 L60,-80 L40,40 L-40,40 Z" />
+    <path d="M-40,40 L-20,100 L20,100 L40,40" />
+    <path d="M-40,-60 C-80,-60 -100,-20 -60,0" />
+    <path d="M40,-60 C80,-60 100,-20 60,0" />
+    <rect x="-40" y="100" width="80" height="20" />
+  </g>
+  <text x="400" y="340" fill="white" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" letter-spacing="2">ESPORTS WORLD CUP</text>
+</svg>

@@ -1,0 +1,336 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Saints Gaming custom colors */
+  --color-sg-gold: oklch(0.82 0.12 85);
+  --color-sg-gold-dim: oklch(0.65 0.1 85);
+  --color-sg-purple: oklch(0.55 0.2 290);
+  --color-sg-blue: oklch(0.6 0.15 250);
+  --color-sg-glow: oklch(0.82 0.12 85 / 40%);
+}
+
+/* Light theme (default) */
+.light, :root {
+  --background: oklch(0.97 0.003 280);
+  --foreground: oklch(0.15 0.01 280);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 280);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 280);
+  --primary: oklch(0.5 0.15 85);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.94 0.005 280);
+  --secondary-foreground: oklch(0.2 0.01 280);
+  --muted: oklch(0.94 0.005 280);
+  --muted-foreground: oklch(0.5 0.01 280);
+  --accent: oklch(0.94 0.01 280);
+  --accent-foreground: oklch(0.2 0.01 280);
+  --destructive: oklch(0.55 0.24 25);
+  --border: oklch(0.9 0.005 280);
+  --input: oklch(0.9 0.005 280);
+  --ring: oklch(0.5 0.15 85);
+  --chart-1: oklch(0.64 0.11 16.73);
+  --chart-2: oklch(0.6 0.118 184.7);
+  --chart-3: oklch(0.39 0.05 227.3);
+  --chart-4: oklch(0.82 0.12 85);
+  --chart-5: oklch(0.64 0.17 25);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.98 0.002 280);
+  --sidebar-foreground: oklch(0.2 0.01 280);
+  --sidebar-primary: oklch(0.5 0.15 85);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.95 0.005 280);
+  --sidebar-accent-foreground: oklch(0.2 0.01 280);
+  --sidebar-border: oklch(0.9 0.005 280);
+  --sidebar-ring: oklch(0.5 0.15 85);
+}
+
+/* Dark theme */
+.dark {
+  --background: oklch(0.11 0.005 280);
+  --foreground: oklch(0.93 0.005 280);
+  --card: oklch(0.15 0.008 280);
+  --card-foreground: oklch(0.93 0.005 280);
+  --popover: oklch(0.15 0.008 280);
+  --popover-foreground: oklch(0.93 0.005 280);
+  --primary: oklch(0.7 0.18 240);
+  --primary-foreground: oklch(0.13 0.01 240);
+  --secondary: oklch(0.2 0.015 280);
+  --secondary-foreground: oklch(0.88 0.005 280);
+  --muted: oklch(0.2 0.01 280);
+  --muted-foreground: oklch(0.6 0.01 280);
+  --accent: oklch(0.22 0.02 280);
+  --accent-foreground: oklch(0.93 0.005 280);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.25 0.015 280);
+  --input: oklch(0.2 0.015 280);
+  --ring: oklch(0.7 0.18 240);
+  --chart-1: oklch(0.7 0.18 240);
+  --chart-2: oklch(0.55 0.2 290);
+  --chart-3: oklch(0.6 0.15 250);
+  --chart-4: oklch(0.7 0.15 150);
+  --chart-5: oklch(0.6 0.22 25);
+  --sidebar: oklch(0.13 0.008 280);
+  --sidebar-foreground: oklch(0.93 0.005 280);
+  --sidebar-primary: oklch(0.7 0.18 240);
+  --sidebar-primary-foreground: oklch(0.13 0.01 240);
+  --sidebar-accent: oklch(0.2 0.015 280);
+  --sidebar-accent-foreground: oklch(0.93 0.005 280);
+  --sidebar-border: oklch(0.25 0.015 280);
+  --sidebar-ring: oklch(0.7 0.18 240);
+}
+
+/* Hacker theme (Vice City styling) */
+.hacker {
+  --background: oklch(0.12 0.05 290);
+  --foreground: oklch(0.85 0.15 170);
+  --card: oklch(0.15 0.05 290);
+  --card-foreground: oklch(0.85 0.15 170);
+  --popover: oklch(0.15 0.05 290);
+  --popover-foreground: oklch(0.85 0.15 170);
+  --primary: oklch(0.6 0.3 340);
+  --primary-foreground: oklch(0.95 0.05 340);
+  --secondary: oklch(0.2 0.1 290);
+  --secondary-foreground: oklch(0.85 0.15 170);
+  --muted: oklch(0.18 0.05 290);
+  --muted-foreground: oklch(0.6 0.1 170);
+  --accent: oklch(0.25 0.1 290);
+  --accent-foreground: oklch(0.6 0.3 340);
+  --destructive: oklch(0.6 0.22 25);
+  --border: oklch(0.6 0.3 340);
+  --input: oklch(0.25 0.1 290);
+  --ring: oklch(0.85 0.15 170);
+  --chart-1: oklch(0.6 0.3 340);
+  --chart-2: oklch(0.85 0.15 170);
+  --chart-3: oklch(0.8 0.2 85);
+  --chart-4: oklch(0.6 0.3 340);
+  --chart-5: oklch(0.85 0.15 170);
+  --sidebar: oklch(0.15 0.05 290);
+  --sidebar-foreground: oklch(0.85 0.15 170);
+  --sidebar-primary: oklch(0.6 0.3 340);
+  --sidebar-primary-foreground: oklch(0.95 0.05 340);
+  --sidebar-accent: oklch(0.25 0.1 290);
+  --sidebar-accent-foreground: oklch(0.85 0.15 170);
+  --sidebar-border: oklch(0.6 0.3 340);
+  --sidebar-ring: oklch(0.85 0.15 170);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ─── Saints Gaming Custom Utilities ───────────────────────────── */
+
+/* Animated grid background for landing page */
+.sg-grid-bg {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-drift 20s linear infinite;
+  opacity: 0.3;
+}
+
+@keyframes grid-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+/* Glow effect for the SG logo */
+.sg-glow {
+  filter: drop-shadow(0 0 20px color-mix(in srgb, var(--primary) 40%, transparent))
+          drop-shadow(0 0 60px color-mix(in srgb, var(--primary) 20%, transparent));
+}
+
+/* Glassmorphism card */
+.sg-glass {
+  @apply bg-card/70 backdrop-blur-xl border-b border-border/50 shadow-lg;
+}
+
+/* 3D Hover Card */
+.sg-3d-card {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
+  transform-style: preserve-3d;
+  @apply bg-card/80 border border-border/50;
+}
+
+.sg-3d-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 15px 45px -10px color-mix(in srgb, var(--primary) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--primary) 60%, transparent);
+  border-color: transparent;
+}
+
+/* Text gradient for headings */
+.sg-text-gradient {
+  background: linear-gradient(135deg, var(--primary), var(--ring), oklch(0.82 0.12 85));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: text-shine 4s linear infinite;
+}
+
+@keyframes text-shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Pulse button for primary actions */
+.sg-pulse-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.sg-pulse-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 40%, transparent) 0%, transparent 60%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+/* Smooth page transitions */
+.sg-page-enter {
+  animation: page-fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── DaisyUI Mockup Components ────────────────────────────────── */
+
+.mockup-code {
+  position: relative;
+  overflow: hidden;
+  overflow-x: auto;
+  min-width: 18rem;
+  background-color: oklch(0.15 0.01 280);
+  color: oklch(0.85 0.15 170);
+  border-radius: var(--radius);
+  direction: ltr;
+  padding-bottom: 1.25rem;
+  padding-top: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+.mockup-code:before {
+  content: "";
+  margin-bottom: 1rem;
+  display: block;
+  height: 0.75rem;
+  width: 0.75rem;
+  border-radius: 9999px;
+  opacity: 0.3;
+  box-shadow: 1.4em 0, 2.8em 0, 4.2em 0;
+}
+.mockup-code pre {
+  padding-right: 1.25rem;
+}
+.mockup-code pre:before {
+  content: attr(data-prefix);
+  display: inline-block;
+  text-align: right;
+  width: 2rem;
+  opacity: 0.5;
+}
+.mockup-code pre[data-prefix=">"]:before {
+  color: oklch(0.6 0.22 25); /* success-like green or accent */
+}
+
+.mockup-window {
+  position: relative;
+  overflow: hidden;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+.mockup-window:before {
+  content: "";
+  margin-bottom: 1rem;
+  margin-top: 1rem;
+  display: block;
+  aspect-ratio: 1 / 1;
+  height: 0.75rem;
+  opacity: 0.3;
+  border-radius: 9999px;
+  box-shadow: 1.4em 0, 2.8em 0, 4.2em 0;
+}

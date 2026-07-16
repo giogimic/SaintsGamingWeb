@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DB_PROVIDER: ${DB_PROVIDER:-sqlite}
+    image: saints-gaming-web
+    container_name: saints-gaming-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Map the SQLite DB file so it persists across container restarts
+      - ./data:/app/prisma/db
+      # Map the uploads directory so user images persist
+      - ./uploads:/app/public/uploads
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - AUTH_TRUST_HOST=true
+      - DB_SKIP_MIGRATION=${DB_SKIP_MIGRATION:-false}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+      - AUTH_URL=${NEXT_PUBLIC_SITE_URL}/api/auth
+      - NEXTAUTH_URL=${NEXT_PUBLIC_SITE_URL}/api/auth
+      - NEXT_PUBLIC_DISCORD_INVITE=${NEXT_PUBLIC_DISCORD_INVITE}
+      - AUTH_DISCORD_ID=${AUTH_DISCORD_ID}
+      - AUTH_DISCORD_SECRET=${AUTH_DISCORD_SECRET}
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

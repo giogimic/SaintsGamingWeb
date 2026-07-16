@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-gta" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff007f" />
+      <stop offset="50%" stop-color="#ff7f00" />
+      <stop offset="100%" stop-color="#ffff00" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-gta)" rx="16" />
+  <g transform="translate(400, 200)" fill="none" stroke="rgba(0,0,0,0.8)" stroke-width="8" stroke-linejoin="round">
+    <path d="M-50,150 L-30,0 C-20,-50 -60,-100 -100,-120" />
+    <path d="M-30,-20 C-50,-30 -80,-30 -120,0" />
+    <path d="M-40,20 C-60,40 -100,50 -120,80" />
+    <circle cx="0" cy="-40" r="100" fill="rgba(255,255,255,0.2)" stroke="none" />
+  </g>
+  <text x="400" y="340" fill="black" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" letter-spacing="2">GTA VI</text>
+</svg>

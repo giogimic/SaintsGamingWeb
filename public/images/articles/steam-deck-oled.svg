@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="bg-steam" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1b2838" />
+      <stop offset="100%" stop-color="#2a475e" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-steam)" rx="16" />
+  <g transform="translate(400, 180)" fill="none" stroke="white" stroke-width="8" stroke-linejoin="round">
+    <rect x="-160" y="-70" width="320" height="140" rx="30" />
+    <rect x="-100" y="-55" width="200" height="110" rx="4" fill="#000" stroke="none" />
+    <circle cx="-130" cy="-20" r="12" fill="white" stroke="none" />
+    <circle cx="130" cy="20" r="12" fill="white" stroke="none" />
+    <rect x="-145" y="10" width="30" height="30" fill="rgba(255,255,255,0.2)" stroke="none" />
+    <rect x="115" y="-40" width="30" height="30" fill="rgba(255,255,255,0.2)" stroke="none" />
+  </g>
+  <text x="400" y="340" fill="white" font-family="sans-serif" font-size="24" font-weight="bold" text-anchor="middle" letter-spacing="2">STEAM DECK OLED</text>
+</svg>
