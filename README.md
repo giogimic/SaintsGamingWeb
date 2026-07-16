@@ -12,6 +12,10 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.1
+- **Feature (Forums)**: Created missing `/forum/[slug]/new` route and `new-thread-form.tsx` to enable front-end thread creation.
+- **Optimization (SEO)**: Added Open Graph (OG) and Twitter Card tags to all core News and Forum dynamic pages, ensuring embeds look perfect when shared on social media like Discord.
+- **Content**: Seeded the database with organic forum posts and news articles, simultaneously scrubbing legacy "dummy" posts for a more authentic, lived-in feel.
 ### v1.1.0-5
 - **Documentation**: Rewrote the project README to add a comprehensive feature description and removed legacy development references to AI SDKs, Ollama, and OpenAI to ensure the repository correctly presents itself as a standard gaming community CMS rather than an AI experiment.
 

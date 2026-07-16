@@ -7,8 +7,20 @@ import { Calendar, User, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "News & Announcements",
+  title: "News & Announcements | Saints Gaming",
   description: "Stay up to date with the latest Saints Gaming community news, updates, and events.",
+  openGraph: {
+    title: "News & Announcements | Saints Gaming",
+    description: "Stay up to date with the latest Saints Gaming community news, updates, and events.",
+    type: "website",
+    url: "https://saintsgaming.net/news",
+    siteName: "Saints Gaming",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "News & Announcements | Saints Gaming",
+    description: "Stay up to date with the latest Saints Gaming community news, updates, and events.",
+  },
 };
 
 export default async function NewsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {

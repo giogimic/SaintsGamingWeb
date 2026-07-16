@@ -17,9 +17,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!subcategory) return { title: "Subcategory Not Found" };
 
+  const description = subcategory.description || `Browse threads in ${subcategory.name}`;
   return {
     title: `${subcategory.name} | Forums`,
-    description: subcategory.description || `Browse threads in ${subcategory.name}`,
+    description,
+    openGraph: {
+      title: `${subcategory.name} | Forums`,
+      description,
+      type: "website",
+      url: `https://saintsgaming.net/forum/${subcategory.slug}`,
+      siteName: "Saints Gaming",
+    },
+    twitter: {
+      card: "summary",
+      title: `${subcategory.name} | Forums`,
+      description,
+    },
   };
 }
 

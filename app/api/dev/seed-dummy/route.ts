@@ -84,6 +84,24 @@ const dummyArticles = [
     isPublished: true,
     promoLinks: []
   },
+  {
+    title: "Understanding Next-Gen Networking for Gamers",
+    slug: "next-gen-networking",
+    excerpt: "With the rise of competitive multiplayer games, having a stable connection is more important than ever. We break down the differences between Wi-Fi 7, standard Ethernet, and what actually matters for your ping.",
+    body: "# Understanding Next-Gen Networking for Gamers\n\nWith the rise of competitive multiplayer games, having a stable connection is more important than ever. We break down the differences between Wi-Fi 7, standard Ethernet, and what actually matters for your ping.\n\n## Wi-Fi 7: The New Standard?\n\nThe latest wireless standard promises latency and speeds that rival wired connections. By utilizing multi-link operation, devices can send and receive data across multiple frequency bands simultaneously. However, you need a compatible router and device to see these benefits.\n\n## The Tried and True Ethernet\n\nDespite wireless advancements, a hardwired Ethernet connection remains the gold standard for gaming. It eliminates packet loss from wireless interference and provides the most stable ping possible.\n\nUltimately, if you're playing tactical shooters where every millisecond counts, run a cable.",
+    coverImage: "/images/articles/vr-gaming-future.svg", // reusing image placeholder
+    isPublished: true,
+    promoLinks: []
+  },
+  {
+    title: "Top 5 Upcoming Indie Games to Watch",
+    slug: "upcoming-indies",
+    excerpt: "While AAA studios focus on live-service models, indie developers are creating some of the most innovative experiences in gaming. Here are our top 5 picks to keep an eye on this year.",
+    body: "# Top 5 Upcoming Indie Games to Watch\n\nWhile AAA studios focus on live-service models, indie developers are creating some of the most innovative experiences in gaming. Here are our top 5 picks to keep an eye on this year.\n\n1. **Hollow Knight: Silksong** - Still waiting, but the hype is real.\n2. **Hades II** - Supergiant's sequel is shaping up to be an incredible evolution of the original.\n3. **Earthblade** - The next project from the creators of Celeste.\n4. **Neva** - A visually stunning adventure from the developers of GRIS.\n5. **Skate Story** - A surreal skateboarding game set in the underworld.\n\nSupport indie developers!",
+    coverImage: "/images/articles/steam-deck-oled.svg", // reusing image placeholder
+    isPublished: true,
+    promoLinks: []
+  }
 ];
 
 
@@ -183,6 +201,22 @@ const dummyArticles = [
         slug: "share-your-gaming-setups",
         body: "Got a cool gaming rig, a massive game collection, or some awesome fan art? Share it here! We'd love to see what our community members are playing on.",
         subcategoryId: showcaseSub.id,
+        isPinned: false,
+        isLocked: false
+      },
+      {
+        title: "About Saints Gaming",
+        slug: "about-saints-gaming",
+        body: "Saints Gaming was founded with a simple goal: to build a mature, long-lasting community where players can connect across multiple games. Whether you're here for our competitive teams, our roleplay servers, or just to chat in the forums, we are thrilled to have you as part of our family.",
+        subcategoryId: announcementsSub.id,
+        isPinned: false,
+        isLocked: true
+      },
+      {
+        title: "Website Development Progress",
+        slug: "website-development-progress",
+        body: "We are currently hard at work building out the rest of the Saints Gaming web infrastructure. The forums, news system, and server trackers are now online! Next up, we will be focusing on the User Control Panel (UCP) for our FiveM servers. Stay tuned for more updates, and report any bugs you find in the support section.",
+        subcategoryId: announcementsSub.id,
         isPinned: false,
         isLocked: false
       }

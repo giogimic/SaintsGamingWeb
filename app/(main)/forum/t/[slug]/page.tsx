@@ -19,9 +19,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!thread) return { title: "Thread Not Found" };
 
+  const description = thread.body.substring(0, 150) + "...";
   return {
     title: `${thread.title} | Forums`,
-    description: thread.body.substring(0, 150) + "...",
+    description,
+    openGraph: {
+      title: `${thread.title} | Forums`,
+      description,
+      type: "article",
+      url: `https://saintsgaming.net/forum/t/${thread.slug}`,
+      siteName: "Saints Gaming",
+    },
+    twitter: {
+      card: "summary",
+      title: `${thread.title} | Forums`,
+      description,
+    },
   };
 }
 

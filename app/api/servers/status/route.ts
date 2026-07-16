@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+import { GameDig } from "gamedig";
+
 // Next.js config to cache this endpoint for 60 seconds
 export const revalidate = 60;
 
@@ -17,24 +19,38 @@ export async function GET() {
             ...server,
             status: "maintenance",
             players: 0,
-            maxPlayers: 32,
+            maxPlayers: 0,
             ping: 0,
           };
         }
 
-        // TODO: In a production environment, implement Battlemetrics API or GameDig here.
-        // Example with GameDig:
-        // const state = await Gamedig.query({ type: 'palworld', host: server.ip, port: server.queryPort || server.port });
-        // return { ...server, status: "online", players: state.players.length, maxPlayers: state.maxplayers, ping: state.ping };
+        try {
+          const type = server.game.toLowerCase();
+          const state = await GameDig.query({
+            type: type as any,
+            host: server.ip,
+            port: server.queryPort || server.port,
+            maxRetries: 1,
+            socketTimeout: 2000,
+          });
 
-        // For now, return a simulated active state
-        return {
-          ...server,
-          status: "online",
-          players: Math.floor(Math.random() * 32),
-          maxPlayers: 32,
-          ping: Math.floor(Math.random() * 50) + 10,
-        };
+          return {
+            ...server,
+            status: "online",
+            players: state.players.length || (state.raw as any)?.numplayers || 0,
+            maxPlayers: state.maxplayers,
+            ping: state.ping,
+          };
+        } catch (_error) {
+          // Silent fallback to offline if server is unreachable
+          return {
+            ...server,
+            status: "offline",
+            players: 0,
+            maxPlayers: 0,
+            ping: 0,
+          };
+        }
       })
     );
 
