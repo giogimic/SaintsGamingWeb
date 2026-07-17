@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 export const metadata: Metadata = {
   title: "Home",
   description:
-    "Saints Gaming — A chill gaming community for all types of gamers since 2007. Chat, play, and hang out.",
+    "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
 };
 
 const FEATURES = [

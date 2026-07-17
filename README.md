@@ -12,6 +12,9 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.10
+- **SEO Optimization**: Updated the global metadata title and description to target "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!" to improve Google search result snippets.
+
 ### v1.1.9
 - **Security**: Masked the password segment of the `DATABASE_URL` within the developer system state dashboard to prevent accidental credential leakage while still allowing debugging of connection strings.
 
