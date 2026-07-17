@@ -21,15 +21,27 @@ export default async function SystemStatePage() {
     if (isSecret && val) {
       displayVal = "******** (Configured)";
     } else if (isUrl && val) {
-      // Show URLs fully as they are crucial for debugging docker connections
-      displayVal = val;
+      if (key === "DATABASE_URL") {
+        try {
+          const parsedUrl = new URL(val);
+          if (parsedUrl.password) {
+            parsedUrl.password = "********";
+          }
+          displayVal = parsedUrl.toString();
+        } catch {
+          displayVal = "******** (Configured)";
+        }
+      } else {
+        // Show other URLs fully as they are crucial for debugging docker connections
+        displayVal = val;
+      }
     }
 
     return { key, value: displayVal, isSecret };
   });
 
   const siteVersionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-  const siteVersion = siteVersionSetting?.value || "v1.1.8";
+  const siteVersion = siteVersionSetting?.value || "v1.1.9";
 
   return (
     <div className="space-y-8">
