@@ -58,8 +58,8 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
   });
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-6xl">
-      <div className="flex flex-col lg:flex-row gap-8">
+    <div className="w-full px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto py-8">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         
         {/* Main Feed Column */}
         <div className="flex-1 space-y-6">
@@ -180,7 +180,7 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
         </div>
 
         {/* Sidebar */}
-        <div className="w-full lg:w-80 shrink-0 space-y-6">
+        <div className="w-full lg:w-96 shrink-0 space-y-6 lg:sticky lg:top-32 h-fit">
           <Card className="bg-muted/30">
             <CardContent className="p-6">
               <h2 className="font-bold text-lg mb-4">Trending in the City</h2>

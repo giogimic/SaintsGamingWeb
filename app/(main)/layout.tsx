@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { MessengerProvider } from "@/components/messenger/messenger-provider";
 import { MessengerPopup } from "@/components/messenger/messenger-popup";
+import { AmbientBackground } from "@/components/shared/ambient-background";
 
 export default async function MainLayout({
   children,
@@ -27,7 +28,7 @@ export default async function MainLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "v1.1.5";
+  let siteVersion = "v1.1.6";
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
@@ -40,7 +41,8 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="flex flex-col min-h-screen relative overflow-hidden">
+    <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30">
+      <AmbientBackground />
       <MessengerProvider>
         <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
         <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>

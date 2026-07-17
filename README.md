@@ -12,6 +12,13 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.6
+- **UI/UX (Immersive Overhaul)**: Redesigned the core application architecture to provide a full-screen, edge-to-edge immersive experience. 
+  - Implemented dynamic, animated ambient backgrounds.
+  - Replaced standard bordered cards with premium Glassmorphism (frosted glass) effects and subtle hover states.
+  - Overhauled User Profiles with edge-to-edge banners and wider media showcases.
+  - Expanded the Social FYP Feed to support ultra-wide monitors with sticky sidebars.
+
 ### v1.1.5
 - **Feature (Social Integration)**: Added ability for users to delete their own FYP posts.
 - **Feature (Messenger Integration)**: Fully integrated the FYP Social Feed directly into the Messenger persistent popup via a new `Social FYP` tab, allowing users to scroll the feed without navigating away from their current page.
