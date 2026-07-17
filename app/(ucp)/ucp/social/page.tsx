@@ -58,13 +58,13 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
   });
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto py-8">
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+    <div className="w-full px-4 sm:px-6 lg:px-12 py-8">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-16">
         
         {/* Main Feed Column */}
         <div className="flex-1 space-y-6">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">For You</h1>
+            <h1 className="text-4xl font-extrabold tracking-tight sg-text-gradient drop-shadow-sm">The Feed</h1>
             <div className="flex bg-muted p-1 rounded-md">
               <Link href="/ucp/social?filter=global" className={`px-4 py-1 text-sm font-medium rounded-sm ${filter === 'global' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Global</Link>
               <Link href="/ucp/social?filter=friends" className={`px-4 py-1 text-sm font-medium rounded-sm ${filter === 'friends' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Friends</Link>
@@ -72,7 +72,7 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
           </div>
 
           {/* Composer */}
-          <Card className="border-primary/20">
+          <Card className="bg-card/20 backdrop-blur-md border-primary/10 shadow-lg">
             <CardContent className="pt-6">
               <form action={createSocialPost} className="space-y-4">
                 <Textarea 
@@ -108,8 +108,8 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
               posts.map(post => {
                 const isLiked = post.reactions.some(r => r.userId === session.user?.id);
                 return (
-                  <Card key={post.id} className="overflow-hidden hover:border-primary/30 transition-colors">
-                    <CardContent className="p-4 sm:p-6">
+                  <Card key={post.id} className="overflow-hidden hover:bg-card/50 hover:border-primary/30 transition-all shadow-md">
+                    <CardContent className="p-4 sm:p-6 lg:p-8">
                       <div className="flex gap-4">
                         <Link href={`/user/${post.author.username}`} className="shrink-0">
                           <div className="w-12 h-12 rounded-full bg-muted overflow-hidden relative border border-border">
@@ -180,8 +180,8 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
         </div>
 
         {/* Sidebar */}
-        <div className="w-full lg:w-96 shrink-0 space-y-6 lg:sticky lg:top-32 h-fit">
-          <Card className="bg-muted/30">
+        <div className="w-full lg:w-96 xl:w-[400px] shrink-0 space-y-6 lg:sticky lg:top-32 h-fit">
+          <Card className="bg-muted/10 backdrop-blur-lg">
             <CardContent className="p-6">
               <h2 className="font-bold text-lg mb-4">Trending in the City</h2>
               <div className="space-y-4">
@@ -206,8 +206,8 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-6">
               <h2 className="font-bold text-lg mb-2">Social Hub</h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                This is your private UCP social feed. Share clips, find groups, and stay updated with the community without leaving the dashboard.
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                This is your private UCP feed. Share clips, find groups, and stay updated with the community without leaving the dashboard.
               </p>
             </CardContent>
           </Card>

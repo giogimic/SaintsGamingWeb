@@ -12,6 +12,9 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.7
+- **UI Tweaks**: Renamed "For You" social page to "The Feed" and removed horizontal constraints for a wider, more edge-to-edge layout on ultra-wide displays.
+
 ### v1.1.6
 - **UI/UX (Immersive Overhaul)**: Redesigned the core application architecture to provide a full-screen, edge-to-edge immersive experience. 
   - Implemented dynamic, animated ambient backgrounds.
