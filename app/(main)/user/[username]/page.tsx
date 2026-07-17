@@ -41,51 +41,57 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
   const isSelf = session?.user?.id === profile.id;
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+    <div className="w-full pb-12 animate-in fade-in duration-500">
       
-      {/* Header Profile Card */}
-      <div className="sg-glass rounded-xl p-8 relative overflow-hidden flex flex-col md:flex-row items-center gap-8 shadow-xl border border-border/50">
-        <div className="absolute top-0 left-0 w-full h-2 bg-primary"></div>
+      {/* Edge-to-Edge Header Profile Banner */}
+      <div className="w-full bg-card/40 backdrop-blur-md border-b border-white/5 relative overflow-hidden flex flex-col items-center justify-center pt-24 pb-12 shadow-2xl mb-8">
+        <div className="absolute top-0 left-0 w-full h-1 bg-primary/80"></div>
         
-        <div className="w-32 h-32 rounded-full bg-muted border-4 border-background flex items-center justify-center overflow-hidden shadow-lg relative shrink-0">
+        {/* Subtle background glow behind avatar */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[80px] rounded-full pointer-events-none"></div>
+
+        <div className="w-40 h-40 rounded-full bg-muted border-4 border-background/50 flex items-center justify-center overflow-hidden shadow-2xl relative shrink-0 z-10 transition-transform hover:scale-105 duration-500">
           {profile.image ? (
             <Image src={profile.image} alt={profile.username} fill className="object-cover" />
           ) : (
-            <UserIcon className="w-16 h-16 text-muted-foreground opacity-50" />
+            <UserIcon className="w-20 h-20 text-muted-foreground opacity-50" />
           )}
         </div>
 
-        <div className="flex-1 text-center md:text-left space-y-4">
+        <div className="text-center space-y-4 mt-6 z-10">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight sg-text-gradient">{profile.username}</h1>
-            <div className="flex items-center justify-center md:justify-start gap-4 mt-2 text-muted-foreground text-sm">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
+            <h1 className="text-5xl font-extrabold tracking-tight sg-text-gradient drop-shadow-sm">{profile.username}</h1>
+            <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground font-medium">
+              <span className="flex items-center gap-1.5 bg-background/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm shadow-sm border border-white/5">
+                <Calendar className="w-4 h-4 text-primary" />
                 Joined {new Date(profile.createdAt).toLocaleDateString()}
               </span>
             </div>
           </div>
 
           {!isSelf && session?.user && (
-            <ProfileActions 
-              targetId={profile.id} 
-              targetUsername={profile.username}
-              targetImage={profile.image}
-              initialFriendship={profile.friendship} 
-            />
+            <div className="pt-2">
+              <ProfileActions 
+                targetId={profile.id} 
+                targetUsername={profile.username}
+                targetImage={profile.image}
+                initialFriendship={profile.friendship} 
+              />
+            </div>
           )}
         </div>
       </div>
 
-      {/* Media Showcase */}
-      <ProfileMediaShowcase 
-        videoUrl={profile.youtubeVideoUrl} 
-        musicUrl={profile.youtubeMusicUrl} 
-        images={profile.profileImages} 
-      />
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Media Showcase */}
+        <ProfileMediaShowcase 
+          videoUrl={profile.youtubeVideoUrl} 
+          musicUrl={profile.youtubeMusicUrl} 
+          images={profile.profileImages} 
+        />
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {/* Steam Wishlist (if any) */}
         {profile.steamWishlist.length > 0 ? (
           <div className="space-y-4">
@@ -139,6 +145,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
             <Shield className="w-8 h-8 mx-auto mb-2 opacity-20" />
             <p className="text-sm">More statistics and badges coming soon!</p>
           </div>
+        </div>
         </div>
       </div>
     </div>
