@@ -31,7 +31,7 @@ export default async function AdminSettingsPage() {
   const fivemServerIp = configMap["fivem_server_ip"] || "";
   const discordGuildId = configMap["discord_guild_id"] || "";
   const discordInviteUrl = configMap["DISCORD_INVITE_URL"] || "https://discord.saintsgaming.net";
-  const siteVersion = configMap["SITE_VERSION"] || "v1.1.2";
+  const siteVersion = configMap["SITE_VERSION"] || "v1.1.3";
   const showUcpInNav = configMap["show_ucp_in_nav"] || "false";
   const showUcpStatsOnProfile = configMap["show_ucp_stats_on_profile"] || "true";
 

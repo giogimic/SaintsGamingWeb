@@ -1,6 +1,8 @@
 import { Navbar, Footer } from "@/components/shared/navbar";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { MessengerProvider } from "@/components/messenger/messenger-provider";
+import { MessengerPopup } from "@/components/messenger/messenger-popup";
 
 export default async function MainLayout({
   children,
@@ -25,7 +27,7 @@ export default async function MainLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "v1.1.2";
+  let siteVersion = "v1.1.3";
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
@@ -39,10 +41,12 @@ export default async function MainLayout({
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">
-
-      <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
-      <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
-      <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
+      <MessengerProvider>
+        <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
+        <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
+        <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
+        <MessengerPopup />
+      </MessengerProvider>
     </div>
   );
 }
