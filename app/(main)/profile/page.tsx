@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getRoleName, getRoleColor, PERMISSION_LEVELS } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark } from "lucide-react";
+import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { SteamWishlist } from "@/components/profile/steam-wishlist";
+import { ProfileMediaSettings } from "./profile-media-settings";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -22,7 +23,7 @@ export default async function ProfilePage() {
   const roleName = getRoleName(roleLevel);
   const roleColor = getRoleColor(roleLevel);
 
-  const [recentThreads, recentReplies, steamWishlist] = await Promise.all([
+  const [recentThreads, recentReplies, steamWishlist, userRecord] = await Promise.all([
     prisma.thread.findMany({
       where: { authorId: user.id },
       orderBy: { createdAt: "desc" },
@@ -37,6 +38,10 @@ export default async function ProfilePage() {
     prisma.steamWishlistItem.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" }
+    }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { youtubeVideoUrl: true, youtubeMusicUrl: true, profileImages: true }
     })
   ]);
 
@@ -109,6 +114,10 @@ export default async function ProfilePage() {
                   Admin Dashboard
                 </Link>
               )}
+              <Link href="/profile/inbox" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Secure Inbox
+              </Link>
               <Link href="/ucp" className={buttonVariants({ variant: "default", className: "w-full justify-start" })}>
                 <Gamepad2 className="mr-2 h-4 w-4" />
                 FiveM UCP
@@ -246,6 +255,12 @@ export default async function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+
+          <ProfileMediaSettings 
+            initialVideoUrl={userRecord?.youtubeVideoUrl || null} 
+            initialMusicUrl={userRecord?.youtubeMusicUrl || null} 
+            images={userRecord?.profileImages || []} 
+          />
           
           <div className="mt-6">
             <SteamWishlist games={steamWishlist} /> 

@@ -12,6 +12,11 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.4
+- **Feature (Social FYP Feed)**: Created a "For You Page" global social feed directly inside the Secure Inbox. Added chronological hashtag-based timeline, `#trending` tag sidebar, and optimistic likes.
+- **Optimization (SEO)**: Added `/user/[username]` public profiles into the `sitemap.ts` dynamic generator so Google can properly index player showcases.
+- **Workflow (Release Protocol)**: Deprecated the legacy `patch.zip` generation process. We now fully rely on Git for version control and deploying updates.
+
 ### v1.1.3
 - **Feature (E2EE Chat System)**: Built a fully functioning End-to-End Encrypted messenger popup seamlessly integrated into the application's global layout. Private keys are dynamically generated and stored in the browser (via Web Crypto API).
 - **Feature (Steam Wishlist Integration)**: Users can now link their Steam accounts and display a dynamic, interactive Steam Wishlist card on their user profile using data fetched from the official Steam Store API.
