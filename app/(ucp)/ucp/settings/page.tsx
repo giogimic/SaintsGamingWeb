@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import Link from "next/link";
 import { linkAccount, updateForumPin, toggleDevConsole } from "../actions";
 import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { AvatarSettings } from "./avatar-settings";
 
 export default async function UcpSettingsPage() {
   const session = await auth();
@@ -91,6 +92,8 @@ export default async function UcpSettingsPage() {
           </form>
         </CardContent>
       </Card>
+
+      <AvatarSettings initialAvatarUrl={user.image} />
 
       <Card className="mt-8">
         <CardHeader>
