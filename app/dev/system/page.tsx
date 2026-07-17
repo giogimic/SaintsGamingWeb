@@ -1,5 +1,12 @@
-import { Cpu, Server, Key } from "lucide-react";
+import { Cpu, Server, Key, Terminal } from "lucide-react";
 import { SystemClient } from "./system-client";
+import { DatabaseMigration } from "@/components/admin/database-migration";
+import { SystemUpdater } from "@/components/admin/system-updater";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { updateSiteSettings } from "@/app/admin/actions";
+import { prisma } from "@/lib/prisma";
 
 export default async function SystemStatePage() {
   // Extract all process environment variables safely
@@ -21,6 +28,9 @@ export default async function SystemStatePage() {
     return { key, value: displayVal, isSecret };
   });
 
+  const siteVersionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
+  const siteVersion = siteVersionSetting?.value || "v1.1.4";
+
   return (
     <div className="space-y-8">
       <div>
@@ -33,6 +43,32 @@ export default async function SystemStatePage() {
       </div>
 
       <SystemClient />
+
+      <div className="border border-border/40 p-6 rounded-lg bg-card mt-8">
+        <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+          <Terminal className="h-5 w-5 text-primary" /> Live Application Settings
+        </h2>
+        
+        <form action={updateSiteSettings} className="space-y-4 mb-8 pb-8 border-b border-border/40">
+          <div className="space-y-2">
+            <Label htmlFor="SITE_VERSION">Site Version</Label>
+            <Input 
+              id="SITE_VERSION" 
+              name="SITE_VERSION" 
+              placeholder="e.g. v1.0.6-40"
+              defaultValue={siteVersion} 
+              className="max-w-md"
+            />
+            <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer.</p>
+          </div>
+          <Button type="submit" variant="secondary">Save Version</Button>
+        </form>
+
+        <div className="space-y-8">
+          <DatabaseMigration />
+          <SystemUpdater />
+        </div>
+      </div>
 
       <div className="border border-border/40 p-6 rounded-lg bg-card mt-8">
         <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
