@@ -42,7 +42,7 @@ export default async function SystemStatePage() {
   });
 
   const siteVersionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-  const siteVersion = siteVersionSetting?.value || "v1.1.11";
+  const siteVersion = siteVersionSetting?.value || "v1.1.12";
 
   const isDocker = fs.existsSync("/.dockerenv");
 
