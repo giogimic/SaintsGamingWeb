@@ -637,6 +637,8 @@ model SocialPost {
   id        String   @id @default(cuid())
   authorId  String
   body      String   // Max ~280 chars
+  visibility String  @default("PUBLIC") // PUBLIC or FRIENDS
+  mediaUrl  String?
   createdAt DateTime @default(now())
 
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)

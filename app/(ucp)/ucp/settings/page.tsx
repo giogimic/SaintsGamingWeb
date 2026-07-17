@@ -17,7 +17,8 @@ export default async function UcpSettingsPage() {
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id }
+    where: { id: session.user.id },
+    include: { profileImages: true }
   });
 
   if (!user) {
@@ -87,6 +88,131 @@ export default async function UcpSettingsPage() {
               <p className="text-xs text-muted-foreground">Choose a simple PIN you will easily remember.</p>
             </div>
             <Button type="submit" variant="secondary">Update Forum PIN</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Profile Customization</CardTitle>
+          <CardDescription>
+            Personalize your public profile with a custom YouTube video or a Spotify/YouTube music playlist.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={async (formData) => {
+            "use server";
+            const { auth } = await import("@/auth");
+            const { prisma } = await import("@/lib/prisma");
+            const { revalidatePath } = await import("next/cache");
+            const session = await auth();
+            if (!session?.user?.id) return;
+            const youtubeVideoUrl = formData.get("youtubeVideoUrl") as string;
+            const youtubeMusicUrl = formData.get("youtubeMusicUrl") as string;
+            await prisma.user.update({
+              where: { id: session.user.id },
+              data: {
+                youtubeVideoUrl: youtubeVideoUrl || null,
+                youtubeMusicUrl: youtubeMusicUrl || null,
+              }
+            });
+            revalidatePath("/ucp/settings");
+            revalidatePath(`/user/${session.user.username}`);
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="youtubeVideoUrl">YouTube Video URL</Label>
+              <Input 
+                id="youtubeVideoUrl" 
+                name="youtubeVideoUrl" 
+                placeholder="e.g. https://www.youtube.com/watch?v=..." 
+                defaultValue={user.youtubeVideoUrl || ""}
+              />
+              <p className="text-xs text-muted-foreground">This video will be embedded on your public profile.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="youtubeMusicUrl">YouTube Music Playlist URL</Label>
+              <Input 
+                id="youtubeMusicUrl" 
+                name="youtubeMusicUrl" 
+                placeholder="e.g. https://music.youtube.com/playlist?list=..." 
+                defaultValue={user.youtubeMusicUrl || ""}
+              />
+            </div>
+            <Button type="submit" variant="secondary">Update Profile Media</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Profile Image Gallery</CardTitle>
+          <CardDescription>
+            Upload images to showcase on your public profile.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {user.profileImages.map((img) => (
+              <div key={img.id} className="relative group rounded-md overflow-hidden border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={img.url} alt="Profile image" className="w-full h-32 object-cover" />
+                <form action={async () => {
+                  "use server";
+                  const { auth } = await import("@/auth");
+                  const { prisma } = await import("@/lib/prisma");
+                  const { deleteUploadedFile } = await import("@/lib/upload");
+                  const { revalidatePath } = await import("next/cache");
+                  const session = await auth();
+                  if (!session?.user?.id) return;
+                  
+                  const image = await prisma.profileImage.findUnique({ where: { id: img.id } });
+                  if (image && image.userId === session.user.id) {
+                    await deleteUploadedFile(image.url);
+                    await prisma.profileImage.delete({ where: { id: img.id } });
+                    revalidatePath("/ucp/settings");
+                    revalidatePath(`/user/${session.user.username}`);
+                  }
+                }} className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Button variant="destructive" size="sm">Delete</Button>
+                </form>
+              </div>
+            ))}
+            {user.profileImages.length === 0 && (
+              <div className="col-span-full text-center py-6 text-sm text-muted-foreground border border-dashed rounded-md">
+                No images in your gallery yet.
+              </div>
+            )}
+          </div>
+
+          <form action={async (formData) => {
+            "use server";
+            const { auth } = await import("@/auth");
+            const { prisma } = await import("@/lib/prisma");
+            const { uploadFile } = await import("@/lib/upload");
+            const { revalidatePath } = await import("next/cache");
+            const session = await auth();
+            if (!session?.user?.id) return;
+            
+            const file = formData.get("image") as File | null;
+            if (!file || file.size === 0) return;
+            
+            const result = await uploadFile(file);
+            if (result.success && result.url) {
+              await prisma.profileImage.create({
+                data: {
+                  url: result.url,
+                  userId: session.user.id
+                }
+              });
+              revalidatePath("/ucp/settings");
+              revalidatePath(`/user/${session.user.username}`);
+            }
+          }} className="flex gap-4 items-end">
+            <div className="space-y-2 flex-1">
+              <Label htmlFor="image">Upload New Image</Label>
+              <Input id="image" name="image" type="file" accept="image/jpeg,image/png,image/gif,image/webp" />
+            </div>
+            <Button type="submit">Upload</Button>
           </form>
         </CardContent>
       </Card>

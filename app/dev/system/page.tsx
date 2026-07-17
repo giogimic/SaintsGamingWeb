@@ -29,7 +29,7 @@ export default async function SystemStatePage() {
   });
 
   const siteVersionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-  const siteVersion = siteVersionSetting?.value || "v1.1.4";
+  const siteVersion = siteVersionSetting?.value || "v1.1.5";
 
   return (
     <div className="space-y-8">

@@ -3,14 +3,17 @@
 import { useMessenger } from "./messenger-provider";
 import { FriendsList } from "./friends-list";
 import { ChatWindow } from "./chat-window";
+import { MiniSocialFeed } from "./mini-social-feed";
 import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 
 export function MessengerPopup() {
   const { data: session } = useSession();
   const { isOpen, setIsOpen, activeChat, isCryptoReady } = useMessenger();
+  const [activeTab, setActiveTab] = useState<"friends" | "fyp">("friends");
 
   if (!session?.user) return null;
 
@@ -40,8 +43,33 @@ export function MessengerPopup() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-hidden relative">
-              {activeChat ? <ChatWindow /> : <FriendsList />}
+            <div className="flex-1 overflow-hidden relative flex flex-col">
+              {!activeChat && (
+                <div className="flex border-b border-border/50 bg-muted/10">
+                  <button 
+                    className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider ${activeTab === 'friends' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setActiveTab("friends")}
+                  >
+                    Friends
+                  </button>
+                  <button 
+                    className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider ${activeTab === 'fyp' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setActiveTab("fyp")}
+                  >
+                    Social FYP
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex-1 overflow-y-auto">
+                {activeChat ? (
+                  <ChatWindow />
+                ) : activeTab === "friends" ? (
+                  <FriendsList />
+                ) : (
+                  <MiniSocialFeed />
+                )}
+              </div>
             </div>
           </motion.div>
         )}

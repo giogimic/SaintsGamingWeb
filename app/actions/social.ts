@@ -106,3 +106,42 @@ export async function togglePostReaction(postId: string) {
     return true; // liked
   }
 }
+
+export async function getMiniFeed() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  // Fetch friendships
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { userId: session.user.id },
+        { friendId: session.user.id }
+      ]
+    }
+  });
+
+  const friendIds = friendships.map(f => f.userId === session.user.id ? f.friendId : f.userId);
+
+  // Fetch posts
+  const posts = await prisma.socialPost.findMany({
+    where: { 
+      OR: [
+        { visibility: "PUBLIC" },
+        { visibility: "FRIENDS", authorId: { in: [session.user.id, ...friendIds] } }
+      ]
+    },
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      author: { select: { username: true, image: true } },
+      _count: { select: { reactions: true } }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 15
+  });
+
+  return posts;
+}
