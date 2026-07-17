@@ -12,6 +12,11 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.5
+- **Feature (Social Integration)**: Added ability for users to delete their own FYP posts.
+- **Feature (Messenger Integration)**: Fully integrated the FYP Social Feed directly into the Messenger persistent popup via a new `Social FYP` tab, allowing users to scroll the feed without navigating away from their current page.
+- **Bug Fix (Build)**: Resolved strict TypeScript type-checking errors related to nullable fields and unused imports that were preventing successful production builds.
+
 ### v1.1.4
 - **Feature (Social FYP Feed)**: Created a "For You Page" global social feed directly inside the Secure Inbox. Added chronological hashtag-based timeline, `#trending` tag sidebar, and optimistic likes.
 - **Optimization (SEO)**: Added `/user/[username]` public profiles into the `sitemap.ts` dynamic generator so Google can properly index player showcases.
