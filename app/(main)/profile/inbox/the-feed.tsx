@@ -498,11 +498,9 @@ export function TheFeed() {
             <div 
               className="mb-3 rounded-xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[400px] relative group cursor-pointer" 
               onClick={() => {
+                setViewingVideo(post);
                 if (post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm")) {
-                  setViewingVideo(post);
                   handleRecordView(post.id);
-                } else {
-                  window.open(post.mediaUrl, "_blank");
                 }
               }}
             >
@@ -644,19 +642,24 @@ export function TheFeed() {
           </button>
           
           <div className="flex-1 flex items-center justify-center relative bg-black/90">
-            <VideoPlayer
-              src={viewingVideo.mediaUrl}
-              autoPlay
-              loop
-              onView={() => handleRecordView(viewingVideo.id)}
-              className="max-h-screen w-full"
-              voiceoverUrl={viewingVideo.voiceoverUrl}
-              backgroundTrackUrl={viewingVideo.backgroundTrackUrl}
-              voiceoverVolume={viewingVideo.voiceoverVolume}
-              backgroundTrackVolume={viewingVideo.backgroundTrackVolume}
-              captionsText={viewingVideo.captionsText}
-              chapters={viewingVideo.chapters ? (() => { try { return JSON.parse(viewingVideo.chapters); } catch { return null; } })() : null}
-            />
+            {viewingVideo.mediaUrl?.endsWith(".mp4") || viewingVideo.mediaUrl?.endsWith(".webm") ? (
+              <VideoPlayer
+                src={viewingVideo.mediaUrl}
+                autoPlay
+                loop
+                onView={() => handleRecordView(viewingVideo.id)}
+                className="max-h-screen w-full"
+                voiceoverUrl={viewingVideo.voiceoverUrl}
+                backgroundTrackUrl={viewingVideo.backgroundTrackUrl}
+                voiceoverVolume={viewingVideo.voiceoverVolume}
+                backgroundTrackVolume={viewingVideo.backgroundTrackVolume}
+                captionsText={viewingVideo.captionsText}
+                chapters={viewingVideo.chapters ? (() => { try { return JSON.parse(viewingVideo.chapters); } catch { return null; } })() : null}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={viewingVideo.mediaUrl} alt="Post attachment" className="max-h-screen w-auto max-w-full object-contain" />
+            )}
           </div>
           
           <div className="w-full md:w-[400px] bg-background border-l border-border/50 flex flex-col h-[50vh] md:h-full">
