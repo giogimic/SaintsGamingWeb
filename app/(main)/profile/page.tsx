@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getRoleName, getRoleColor, PERMISSION_LEVELS } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare } from "lucide-react";
+import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare, BarChart, Bookmark, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
@@ -70,7 +70,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="w-full px-4 md:px-8 py-8 xl:px-12">
       <div className="flex items-center gap-3 mb-8">
         <div className="p-2 rounded-lg bg-primary/10">
           <User className="h-6 w-6 text-primary" />
@@ -117,9 +117,21 @@ export default async function ProfilePage() {
               )}
               <Link href="/profile/inbox" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
                 <MessageSquare className="mr-2 h-4 w-4" />
-                Secure Inbox
+                Secure Inbox & Feed
               </Link>
-              <Link href="/ucp" className={buttonVariants({ variant: "default", className: "w-full justify-start" })}>
+              <Link href="/profile/bookmarks" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+                <Bookmark className="mr-2 h-4 w-4" />
+                Bookmarks Repository
+              </Link>
+              <Link href="/profile/history" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+                <Clock className="mr-2 h-4 w-4" />
+                Watch History
+              </Link>
+              <Link href="/profile/analytics" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+                <BarChart className="mr-2 h-4 w-4" />
+                Engagement Hub
+              </Link>
+              <Link href="/ucp" className={buttonVariants({ variant: "default", className: "w-full justify-start mt-2" })}>
                 <Gamepad2 className="mr-2 h-4 w-4" />
                 FiveM UCP
               </Link>
@@ -258,7 +270,7 @@ export default async function ProfilePage() {
           </Card>
 
           <div className="mt-6 space-y-6">
-            <AvatarSettings initialAvatarUrl={user.image} />
+            <AvatarSettings initialAvatarUrl={user.image || null} />
             
             <ProfileMediaSettings 
               initialVideoUrl={userRecord?.youtubeVideoUrl || null} 

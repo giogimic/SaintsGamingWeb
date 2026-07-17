@@ -42,7 +42,7 @@ export default async function SystemStatePage() {
   });
 
   const siteVersionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-  const siteVersion = siteVersionSetting?.value || "v1.1.13";
+  const siteVersion = siteVersionSetting?.value || "v1.2.0";
 
   const isDocker = fs.existsSync("/.dockerenv");
 
@@ -70,9 +70,8 @@ export default async function SystemStatePage() {
             <Input 
               id="SITE_VERSION" 
               name="SITE_VERSION" 
-              placeholder="e.g. v1.0.6-40"
-              defaultValue={siteVersion} 
-              className="max-w-md"
+              defaultValue={siteVersionSetting?.value || "1.2.1"} 
+              className="font-mono"
             />
             <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer.</p>
           </div>

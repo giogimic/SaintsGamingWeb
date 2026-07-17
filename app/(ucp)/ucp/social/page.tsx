@@ -3,13 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { User as UserIcon, Heart, MessageSquare, Repeat2, Trash2 } from "lucide-react";
+import { User as UserIcon, Heart, MessageSquare, Repeat2, Trash2, Eye, Compass, VolumeX, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { createSocialPost, toggleReaction, deleteSocialPost } from "./actions";
 
-export default async function SocialDashboard(props: { searchParams: Promise<{ filter?: string }> }) {
+export default async function SocialDashboard(props: { searchParams: Promise<{ filter?: string; tag?: string; q?: string }> }) {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/login");
@@ -17,6 +18,8 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
 
   const searchParams = await props.searchParams;
   const filter = searchParams.filter || "global";
+  const tagFilter = searchParams.tag;
+  const searchQuery = searchParams.q;
 
   // Fetch friends to know whose posts to show if filter is 'friends'
   const friendships = await prisma.friendship.findMany({
@@ -31,24 +34,100 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
 
   const friendIds = friendships.map(f => f.userId === session.user.id ? f.friendId : f.userId);
 
+  // Fetch user's muted keywords
+  const mutedEntries = await prisma.socialMutedKeyword.findMany({
+    where: { userId: session.user.id }
+  });
+  const mutedKeywords = mutedEntries.filter(m => m.type === "KEYWORD").map(m => m.keyword.toLowerCase());
+  const mutedHashtags = mutedEntries.filter(m => m.type === "HASHTAG").map(m => m.keyword.toLowerCase());
+
+  // Fetch user preferences
+  const prefs = await prisma.socialUserPreference.findUnique({
+    where: { userId: session.user.id }
+  });
+  const broadenFeed = prefs?.broadenFeed ?? false;
+
+  // Build where clause
+  const whereClause: any = {
+    parentId: null,
+  };
+
+  if (filter === "friends") {
+    whereClause.authorId = { in: [session.user.id, ...friendIds] };
+  } else {
+    whereClause.OR = [
+      { visibility: "PUBLIC" },
+      { visibility: "FRIENDS", authorId: { in: [session.user.id, ...friendIds] } }
+    ];
+  }
+
+  if (tagFilter) {
+    whereClause.hashtags = { some: { hashtag: { name: tagFilter.toLowerCase() } } };
+  }
+
+  if (searchQuery && searchQuery.trim()) {
+    whereClause.body = { contains: searchQuery.trim() };
+  }
+
+  // Exclude muted hashtags
+  if (mutedHashtags.length > 0 && !tagFilter) {
+    whereClause.NOT = {
+      hashtags: { some: { hashtag: { name: { in: mutedHashtags } } } }
+    };
+  }
+
   // Fetch posts
-  const posts = await prisma.socialPost.findMany({
-    where: filter === "friends" 
-      ? { authorId: { in: [session.user.id, ...friendIds] } } 
-      : { 
-          OR: [
-            { visibility: "PUBLIC" },
-            { visibility: "FRIENDS", authorId: { in: [session.user.id, ...friendIds] } }
-          ]
-        },
+  let posts = await prisma.socialPost.findMany({
+    where: whereClause,
     include: {
       author: { select: { id: true, username: true, image: true } },
       reactions: true,
       hashtags: { include: { hashtag: true } }
     },
     orderBy: { createdAt: "desc" },
-    take: 50
+    take: broadenFeed ? 40 : 50
   });
+
+  // Filter muted keywords from body
+  if (mutedKeywords.length > 0) {
+    posts = posts.filter(p => !mutedKeywords.some(kw => p.body.toLowerCase().includes(kw)));
+  }
+
+  // Broaden: add some random older posts
+  if (broadenFeed) {
+    const existingIds = posts.map(p => p.id);
+    const randomPosts = await prisma.socialPost.findMany({
+      where: {
+        parentId: null,
+        id: { notIn: existingIds },
+        ...(mutedHashtags.length > 0 ? {
+          NOT: { hashtags: { some: { hashtag: { name: { in: mutedHashtags } } } } }
+        } : {})
+      },
+      orderBy: { viewCount: "asc" },
+      take: 10,
+      include: {
+        author: { select: { id: true, username: true, image: true } },
+        reactions: true,
+        hashtags: { include: { hashtag: true } }
+      }
+    });
+    // Interleave
+    for (const rp of randomPosts) {
+      const idx = Math.floor(Math.random() * posts.length);
+      posts.splice(idx, 0, rp);
+    }
+  }
+
+  // Record watch history for visible posts
+  const postIds = posts.slice(0, 10).map(p => p.id);
+  for (const pid of postIds) {
+    await prisma.socialWatchHistory.upsert({
+      where: { userId_postId: { userId: session.user.id, postId: pid } },
+      update: { viewedAt: new Date() },
+      create: { userId: session.user.id, postId: pid }
+    }).catch(() => {});
+  }
 
   // Fetch trending hashtags
   const topHashtags = await prisma.socialHashtag.findMany({
@@ -71,6 +150,50 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
             </div>
           </div>
 
+          {/* Feed Controls Bar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Link
+              href={broadenFeed ? "/ucp/social?filter=global" : "/ucp/social?filter=global&broaden=1"}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                broadenFeed 
+                  ? 'bg-primary/10 text-primary border-primary/30 shadow-sm' 
+                  : 'bg-muted/30 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-foreground'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              Broaden
+            </Link>
+
+            <form action="/ucp/social" method="get" className="flex-1 max-w-sm flex items-center gap-1.5">
+              <input type="hidden" name="filter" value={filter} />
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  name="q"
+                  placeholder="Search posts..."
+                  className="h-8 pl-8 text-xs bg-muted/30 border-border/50"
+                  defaultValue={searchQuery || ""}
+                />
+              </div>
+              <Button type="submit" size="sm" variant="ghost" className="h-8 px-2">
+                <Search className="w-3.5 h-3.5" />
+              </Button>
+            </form>
+
+            {mutedEntries.length > 0 && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-500 border border-orange-500/30">
+                <VolumeX className="w-3.5 h-3.5" />
+                {mutedEntries.length} Muted
+              </span>
+            )}
+
+            {(tagFilter || searchQuery) && (
+              <Link href={`/ucp/social?filter=${filter}`} className="text-xs text-primary hover:underline">
+                Clear filters
+              </Link>
+            )}
+          </div>
+
           {/* Composer */}
           <Card className="bg-card/20 backdrop-blur-md border-primary/10 shadow-lg">
             <CardContent className="pt-6">
@@ -82,7 +205,6 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
                   rows={3}
                 />
                 
-                {/* Media Upload hidden input - assuming we integrate lib/upload client-side in the future. For now, simple text. */}
                 <input type="hidden" name="mediaUrl" value="" id="mediaUrlHidden" />
                 
                 <div className="flex justify-between items-center pt-2 border-t border-border">
@@ -102,7 +224,7 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
           <div className="space-y-4">
             {posts.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
-                No posts found. Be the first to say something!
+                {searchQuery ? `No posts match "${searchQuery}".` : "No posts found. Be the first to say something!"}
               </div>
             ) : (
               posts.map(post => {
@@ -128,6 +250,11 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
                             <span className="text-xs text-muted-foreground shrink-0">
                               · {new Date(post.createdAt).toLocaleDateString()}
                             </span>
+                            {post.viewCount > 0 && (
+                              <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5 ml-auto">
+                                <Eye className="w-3 h-3" /> {post.viewCount}
+                              </span>
+                            )}
                           </div>
                           
                           <p className="text-sm md:text-base whitespace-pre-wrap break-words">

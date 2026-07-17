@@ -10,7 +10,29 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 - **Content**: Built-in markdown-supported News system and fully hierarchical Forums.
 - **Infrastructure**: Production-ready Docker cluster support with automated Nginx/Caddy reverse-proxy routing and Let's Encrypt SSL.
 
-## Changelog
+## CHANGELOG
+
+### v1.2.1
+- Complete overhaul of the `VideoPlayer` component supporting audio stems, captions overlays, and smart chapters.
+- Feed upgrade: Originality algorithm, subscriber-only filtering, and advanced tipping options on posts.
+- Analytics Hub upgraded to show engagement rates, post revenue, and status tracking (throttle/flags).
+- New "Advanced Composer" for UCP added to handle stems and caption imports.
+
+### v1.2.0
+- Added Social Feed and Inbox to UCP.
+- Monetization foundations.
+- **Feature (Enhanced Video Player)**: Replaced bare HTML5 `<video>` elements with a custom `VideoPlayer` component featuring an always-visible scrub bar, double-tap ±5s skip zones, play/pause on tap, fullscreen, mute toggle, and keyboard shortcuts (Space/Arrow keys).
+- **Feature (Watch History)**: New `SocialWatchHistory` model tracks every post a user views. Added searchable `/profile/history` page with pagination and "Clear History" functionality. Watch history is fully private.
+- **Feature (Bookmark Folders)**: Overhauled the flat Bookmarks Repository into a folder-based system. Users can create color-coded folders (up to 20), move bookmarks between folders, and search within bookmarks. New `SocialBookmarkFolder` model with folder-sidebar UI.
+- **Feature (Feed Controls Bar)**: Added a controls bar to The Feed with three new tools:
+  - **"Broaden My Horizons" toggle** — injects ~20% random, less-seen content to break the echo chamber effect.
+  - **Post search** — inline search across all post content.
+  - **Muted Keywords manager** — users can mute specific words or hashtags (up to 50), filtering them from the feed entirely.
+- **Feature ("Not Interested" Menu)**: Each post now has a `···` menu allowing users to hide individual posts, mute specific hashtags from that post, or manage their muted keywords list.
+- **Feature (Creator Analytics)**: Replaced the placeholder in the Engagement Hub with a real top-performing posts table showing views, likes, replies, shares, bookmark count, and per-post engagement rate (color-coded). Added overall engagement rate stat.
+- **Feature (Mini Feed Upgrade)**: The Messenger popup's Social FYP tab now supports inline likes, quick replies, "Not Interested" hide, media thumbnails, and automatic watch history tracking.
+- **Feature (UCP Social Sync)**: The UCP Social Dashboard now includes Broaden toggle, post search, muted keyword filtering, view counts, and watch history tracking — matching the upgraded FYP Feed.
+- **Schema**: Added `SocialWatchHistory`, `SocialBookmarkFolder`, `SocialMutedKeyword`, and `SocialUserPreference` models. Added `folderId` to `SocialBookmark`.
 
 ### v1.1.13
 - **UI Tweaks**: Made the Secure Inbox layout fully edge-to-edge instead of a centered max-width box, matching the new full-screen approach.
