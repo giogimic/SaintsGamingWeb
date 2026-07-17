@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { MarkdownEditor } from "./markdown-editor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Send } from "lucide-react";
+import { toast } from "sonner";
 
 interface ReplyFormProps {
   threadId: string;
@@ -39,6 +40,7 @@ export function ReplyForm({ threadId }: ReplyFormProps) {
       }
 
       setBody("");
+      toast.success("Reply posted successfully!");
       router.refresh();
     } catch (err: unknown) {
       setError((err instanceof Error ? err.message : "Unknown error"));

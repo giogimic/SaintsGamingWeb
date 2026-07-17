@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { MessengerProvider } from "@/components/messenger/messenger-provider";
 import { MessengerPopup } from "@/components/messenger/messenger-popup";
 import { AmbientBackground } from "@/components/shared/ambient-background";
-
+import { Toaster } from "sonner";
 export default async function MainLayout({
   children,
 }: {
@@ -48,6 +48,7 @@ export default async function MainLayout({
         <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
         <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
         <MessengerPopup />
+        <Toaster position="bottom-right" theme="dark" />
       </MessengerProvider>
     </div>
   );
