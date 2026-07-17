@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bold, Italic, Link as LinkIcon, List, ListOrdered, Quote, Image as ImageIcon, Sparkles, Wand2 } from "lucide-react";
+import { Bold, Italic, Link as LinkIcon, List, ListOrdered, Quote, Image as ImageIcon, Film, Sparkles, Wand2, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface MarkdownEditorProps {
@@ -19,6 +19,8 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews = false, name }: MarkdownEditorProps) {
   const [mounted, setMounted] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load draft on mount
   useEffect(() => {
@@ -80,8 +82,43 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload/forum", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to upload image");
+      
+      insertText(`![${file.name}](${data.url})`);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleGifInsert = () => {
+    const url = window.prompt("Paste GIF URL (e.g., from Tenor or Giphy):");
+    if (url) {
+      insertText(`![gif](${url})`);
+    }
+  };
+
   return (
     <div className="border border-border/50 rounded-md overflow-hidden bg-background focus-within:ring-1 focus-within:ring-ring">
+      <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+      
       <div className="flex items-center gap-1 border-b border-border/50 bg-muted/30 p-1 flex-wrap">
         <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertText("**", "**")} title="Bold">
           <Bold className="h-4 w-4" />
@@ -102,8 +139,11 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
         <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertText("\n1. ")} title="Numbered List">
           <ListOrdered className="h-4 w-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => insertText("![alt text](", "url)")} title="Image">
-          <ImageIcon className="h-4 w-4" />
+        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => fileInputRef.current?.click()} disabled={isUploading} title="Upload Image">
+          {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleGifInsert} title="Insert GIF URL">
+          <Film className="h-4 w-4" />
         </Button>
         <div className="flex-1" />
         <Button 
@@ -115,7 +155,7 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
           disabled={isEnhancing || !value.trim()}
           title="Fix Grammar & Spelling"
         >
-          <Sparkles className="h-3 w-3" /> Grammar Check
+          {isEnhancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Grammar Check
         </Button>
         <Button 
           type="button" 
@@ -126,7 +166,7 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
           disabled={isEnhancing || !value.trim()}
           title="Improve Flow & Vocabulary"
         >
-          <Wand2 className="h-3 w-3" /> AI Polish
+          {isEnhancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} AI Polish
         </Button>
       </div>
       
