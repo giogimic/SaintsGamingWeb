@@ -41,7 +41,7 @@ export async function GET() {
             maxPlayers: state.maxplayers,
             ping: state.ping,
           };
-        } catch (_error) {
+        } catch {
           // Silent fallback to offline if server is unreachable
           return {
             ...server,

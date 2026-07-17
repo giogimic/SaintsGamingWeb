@@ -12,6 +12,11 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.3
+- **Feature (E2EE Chat System)**: Built a fully functioning End-to-End Encrypted messenger popup seamlessly integrated into the application's global layout. Private keys are dynamically generated and stored in the browser (via Web Crypto API).
+- **Feature (Steam Wishlist Integration)**: Users can now link their Steam accounts and display a dynamic, interactive Steam Wishlist card on their user profile using data fetched from the official Steam Store API.
+- **Bug Fix (Setup Script)**: Fixed an issue where the initial setup script would fail to verify valid Discord OAuth keys due to older HTTP Basic Auth behavior. The script now correctly uses the modern Discord API v10 POST structure.
+
 ### v1.1.2
 - **Feature (UCP/Profile)**: Hid the FiveM UCP links from the main navigation by default to keep the site clean for non-roleplayers. Re-routed UCP access to a dedicated button on the user profile.
 - **Feature (Profile Overhaul)**: The user profile now dynamically queries and aggregates all character data, creating a custom statistics card displaying total combined cash, bank wealth, and inventory items.

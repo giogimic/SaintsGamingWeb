@@ -8,6 +8,7 @@ import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark } from "luc
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { SteamWishlist } from "@/components/profile/steam-wishlist";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -21,7 +22,7 @@ export default async function ProfilePage() {
   const roleName = getRoleName(roleLevel);
   const roleColor = getRoleColor(roleLevel);
 
-  const [recentThreads, recentReplies] = await Promise.all([
+  const [recentThreads, recentReplies, steamWishlist] = await Promise.all([
     prisma.thread.findMany({
       where: { authorId: user.id },
       orderBy: { createdAt: "desc" },
@@ -32,6 +33,10 @@ export default async function ProfilePage() {
       orderBy: { createdAt: "desc" },
       take: 5,
       include: { thread: true },
+    }),
+    prisma.steamWishlistItem.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" }
     })
   ]);
 
@@ -241,6 +246,10 @@ export default async function ProfilePage() {
               </div>
             </CardContent>
           </Card>
+          
+          <div className="mt-6">
+            <SteamWishlist games={steamWishlist} /> 
+          </div>
         </div>
       </div>
     </div>

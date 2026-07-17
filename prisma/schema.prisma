@@ -113,7 +113,15 @@ model User {
   // FiveM
   fivemLicense String?     @unique
   discordId    String?     @unique
-  characters   Character[]
+  characters    Character[]
+  steamWishlist SteamWishlistItem[]
+
+  // E2EE Messenger
+  sentFriendships     Friendship[]      @relation("SentFriendships")
+  receivedFriendships Friendship[]      @relation("ReceivedFriendships")
+  publicKey           UserPublicKey?
+  sentMessages        DirectMessage[]   @relation("SentMessages")
+  receivedMessages    DirectMessage[]   @relation("ReceivedMessages")
 
   @@index([createdAt])
 }
@@ -544,4 +552,62 @@ model RssFeed {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── User Profile Integrations ────────────────────────────────────
+
+model SteamWishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appId     String
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, appId])
+}
+
+// ─── E2EE Messenger & Friends ──────────────────────────────────────
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  status    String   @default("PENDING") // PENDING, ACCEPTED, BLOCKED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation("SentFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("ReceivedFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+model UserPublicKey {
+  userId    String   @id
+  publicKey String   // SPKI format, base64 encoded
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DirectMessage {
+  id               String   @id @default(cuid())
+  senderId         String
+  receiverId       String
+  
+  ciphertext       String
+  iv               String
+  
+  senderCiphertext String
+  senderIv         String
+
+  createdAt        DateTime @default(now())
+
+  sender           User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver         User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, senderId])
 }

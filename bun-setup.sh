@@ -433,9 +433,10 @@ if whiptail --title "Discord Integration" --yesno "Do you want to configure Disc
         if [ $? -ne 0 ]; then break; fi
         
         whiptail --title "Verifying" --infobox "Verifying Discord Client credentials with Discord API..." 8 40
-        DISCORD_CHECK=$(curl -s -X POST https://discord.com/api/oauth2/token \
+        DISCORD_CHECK=$(curl -s -X POST https://discord.com/api/v10/oauth2/token \
           -d "grant_type=client_credentials" \
-          -u "${DISCORD_ID}:${DISCORD_SECRET}")
+          -d "client_id=${DISCORD_ID}" \
+          -d "client_secret=${DISCORD_SECRET}")
           
         if echo "$DISCORD_CHECK" | grep -q "access_token"; then
             whiptail --title "Success" --msgbox "Discord credentials verified successfully!" 8 40
