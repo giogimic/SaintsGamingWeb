@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { text, intent, isNews } = body;
+    const { text, intent, isNews: _isNews } = body;
 
     if (!text) {
       return NextResponse.json({ message: "No text provided" }, { status: 400 });
