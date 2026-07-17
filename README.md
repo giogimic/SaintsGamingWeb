@@ -12,6 +12,9 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.9
+- **Security**: Masked the password segment of the `DATABASE_URL` within the developer system state dashboard to prevent accidental credential leakage while still allowing debugging of connection strings.
+
 ### v1.1.8
 - **UI Tweaks**: Removed horizontal constraints on user profile media grid, making the entire profile page layout strictly edge-to-edge on all display sizes.
 
