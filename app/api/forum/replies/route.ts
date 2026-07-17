@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { processMentions } from "@/lib/mentions";
 
 
 const createReplySchema = z.object({
@@ -103,6 +104,9 @@ export async function POST(req: Request) {
         }
       });
     }
+
+    // Parse Mentions
+    await processMentions(data.body, session.user.id, `/forum/${thread.subcategory.category.slug}/${thread.slug}#reply-${reply.id}`);
 
     return NextResponse.json(reply, { status: 201 });
   } catch (error) {

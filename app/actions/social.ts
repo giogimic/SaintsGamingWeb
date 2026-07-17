@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { processMentions } from "@/lib/mentions";
 
 export async function createSocialPost(
   body: string, 
@@ -59,6 +60,9 @@ export async function createSocialPost(
       }
     });
   }
+
+  // Parse mentions
+  await processMentions(body, session.user.id, `/profile/inbox?post=${post.id}`);
 
   return post;
 }
@@ -224,6 +228,20 @@ export async function togglePostReaction(postId: string) {
         userId: session.user.id
       }
     });
+
+    // Notify author if it's not a self-like
+    const post = await prisma.socialPost.findUnique({ where: { id: postId }, select: { authorId: true } });
+    if (post && post.authorId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          userId: post.authorId,
+          type: "LIKE",
+          message: "Someone liked your post.",
+          link: `/profile/inbox?post=${postId}`
+        }
+      });
+    }
+
     return true; // liked
   }
 }
@@ -314,6 +332,23 @@ export async function replyToSocialPost(parentId: string, body: string, mediaUrl
       mediaUrl: mediaUrl || null,
     }
   });
+
+  // Notify parent author
+  const parent = await prisma.socialPost.findUnique({ where: { id: parentId }, select: { authorId: true } });
+  if (parent && parent.authorId !== session.user.id) {
+    await prisma.notification.create({
+      data: {
+        userId: parent.authorId,
+        type: "REPLY",
+        message: "Someone replied to your post.",
+        link: `/profile/inbox?post=${reply.id}`
+      }
+    });
+  }
+
+  // Parse mentions in reply
+  await processMentions(body, session.user.id, `/profile/inbox?post=${reply.id}`);
+
   return reply;
 }
 
@@ -538,6 +573,15 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
         postId: postId,
         amount: amount,
         message: message
+      }
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: post.authorId,
+        type: "TIP",
+        message: `Someone sent you a tip of $${amount}!`,
+        link: `/profile/inbox?post=${postId}`
       }
     });
   });
