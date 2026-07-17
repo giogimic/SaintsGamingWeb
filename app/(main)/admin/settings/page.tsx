@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updateSiteSettings } from "../actions";
 
 export default async function AdminSettingsPage() {
-  let siteVersion = "1.2.2";
+  let siteVersion = "1.2.3";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || "1.2.2";
+    siteVersion = versionSetting?.value || "1.2.3";
   } catch (e) {}
   
   const session = await auth();

@@ -10,7 +10,10 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 - **Content**: Built-in markdown-supported News system and fully hierarchical Forums.
 - **Infrastructure**: Production-ready Docker cluster support with automated Nginx/Caddy reverse-proxy routing and Let's Encrypt SSL.
 
-## CHANGELOG
+## Changelog
+
+### v1.2.3
+- **Hotfix**: Added missing `swr` dependency that caused Docker compilation failures in the production build.
 
 ### v1.2.2
 - **Command Center Architecture**: Fully migrated standalone Admin and Dev pages into a unified, seamless, glassmorphic modal overlay at `/admin`.
