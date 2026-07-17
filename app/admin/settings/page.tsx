@@ -5,8 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateSiteSettings } from "../actions";
-import { DatabaseMigration } from "@/components/admin/database-migration";
-import { SystemUpdater } from "@/components/admin/system-updater";
 
 export default async function AdminSettingsPage() {
   const session = await auth();
@@ -31,7 +29,6 @@ export default async function AdminSettingsPage() {
   const fivemServerIp = configMap["fivem_server_ip"] || "";
   const discordGuildId = configMap["discord_guild_id"] || "";
   const discordInviteUrl = configMap["DISCORD_INVITE_URL"] || "https://discord.saintsgaming.net";
-  const siteVersion = configMap["SITE_VERSION"] || "v1.1.4";
   const showUcpInNav = configMap["show_ucp_in_nav"] || "false";
   const showUcpStatsOnProfile = configMap["show_ucp_stats_on_profile"] || "true";
 
@@ -157,24 +154,10 @@ export default async function AdminSettingsPage() {
               />
               <p className="text-xs text-muted-foreground">Used for the Join Discord buttons.</p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="SITE_VERSION">Site Version</Label>
-              <Input 
-                id="SITE_VERSION" 
-                name="SITE_VERSION" 
-                placeholder="e.g. v1.0.6-40"
-                defaultValue={siteVersion} 
-              />
-              <p className="text-xs text-muted-foreground">The current running version of the web app displayed in the footer.</p>
-            </div>
           </div>
 
           <Button type="submit">Save Configuration</Button>
         </form>
-
-        <DatabaseMigration />
-        <SystemUpdater />
       </div>
     </div>
   );
