@@ -513,15 +513,33 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
   });
   if (!post) throw new Error("Post not found");
   if (post.authorId === session.user.id) throw new Error("Cannot tip your own post");
+  if (amount <= 0) throw new Error("Invalid amount");
 
-  await prisma.socialTip.create({
-    data: {
-      senderId: session.user.id,
-      receiverId: post.authorId,
-      postId: postId,
-      amount: amount,
-      message: message
+  await prisma.$transaction(async (tx) => {
+    const sender = await tx.user.findUnique({ where: { id: session.user.id }, select: { coins: true } });
+    if (!sender || sender.coins < amount) {
+      throw new Error("Insufficient coins to send this tip.");
     }
+
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: { coins: { decrement: amount } }
+    });
+
+    await tx.user.update({
+      where: { id: post.authorId },
+      data: { coins: { increment: amount } }
+    });
+
+    await tx.socialTip.create({
+      data: {
+        senderId: session.user.id,
+        receiverId: post.authorId,
+        postId: postId,
+        amount: amount,
+        message: message
+      }
+    });
   });
 }
 
