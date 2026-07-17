@@ -37,7 +37,8 @@ import EmojiPicker from "emoji-picker-react";
 import { GiphyFetch } from "@giphy/js-fetch-api";
 import { Grid } from "@giphy/react-components";
 import { VideoPlayer } from "@/components/shared/video-player";
-
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
 
@@ -215,9 +216,9 @@ export function TheFeed() {
   async function handleTip(postId: string) {
     try {
       await tipSocialPost(postId, 5); // Default $5 tip for now
-      alert("Sent a $5 tip to the creator!");
+      toast.success("Sent a $5 tip to the creator!");
     } catch (e: any) {
-      alert(e.message || "Failed to send tip");
+      toast.error(e.message || "Failed to send tip");
     }
   }
 
@@ -240,6 +241,7 @@ export function TheFeed() {
       if (replyingTo) {
         await replyToSocialPost(replyingTo, body, mediaUrl || undefined);
         setReplyingTo(null);
+        toast.success("Reply posted!");
         await handleLoadReplies(replyingTo);
       } else {
         await createSocialPost(body, mediaUrl || undefined, {
@@ -251,6 +253,7 @@ export function TheFeed() {
           chapters: chapters || undefined,
           captionsText: captionsText || undefined,
         });
+        toast.success("Post created successfully!");
         loadFeed();
       }
       setBody("");
@@ -410,7 +413,13 @@ export function TheFeed() {
     const postHashtags = post.hashtags || [];
     
     return (
-      <div key={post.id} className={`flex gap-4 p-4 border-b border-border/50 bg-card hover:bg-muted/5 transition-colors ${isReply ? 'ml-12 border-l border-t-0 rounded-none' : 'rounded-xl border'}`}>
+      <motion.div 
+        key={post.id} 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`flex gap-4 p-4 border-b border-border/50 bg-card hover:bg-muted/5 transition-colors ${isReply ? 'ml-12 border-l border-t-0 rounded-none' : 'rounded-xl border'}`}
+      >
         <div className="w-10 h-10 rounded-full bg-muted overflow-hidden relative shrink-0">
           {post.author?.image ? (
             <Image src={post.author.image} alt={post.author.username} fill className="object-cover" />
@@ -613,7 +622,7 @@ export function TheFeed() {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     );
   };
 
