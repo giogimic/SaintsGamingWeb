@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
-  Shield, Home, Users, MessageSquare, Newspaper, Package, Monitor, Settings, Award, Server,
+  Shield, Users, MessageSquare, Newspaper, Package, Monitor, Settings, Award, Server,
   Database, Activity, Code, Cpu, RefreshCw, X, Menu
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
