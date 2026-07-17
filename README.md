@@ -12,6 +12,9 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.11
+- **Bug Fix**: Disabled the web-based System Updater button for instances running inside a Docker container. Running `update.sh` from within the container was causing the active Next.js build (`.next`) to be wiped without an automatic server restart, breaking the live application.
+
 ### v1.1.10
 - **SEO Optimization**: Updated the global metadata title and description to target "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!" to improve Google search result snippets.
 
