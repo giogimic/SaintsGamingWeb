@@ -129,8 +129,17 @@ model User {
   profileImages       ProfileImage[]
 
   // Social
-  socialPosts         SocialPost[]
-  socialReactions     SocialReaction[]
+  socialPosts            SocialPost[]
+  socialReactions        SocialReaction[]
+  socialBookmarks        SocialBookmark[]
+  socialWatchHistory     SocialWatchHistory[]
+  socialBookmarkFolders  SocialBookmarkFolder[]
+  socialMutedKeywords    SocialMutedKeyword[]
+  socialPreferences      SocialUserPreference?
+  tipsSent               SocialTip[]           @relation("TipsSent")
+  tipsReceived           SocialTip[]           @relation("TipsReceived")
+  subscriptions          SocialSubscription[]  @relation("Subscriber")
+  subscribers            SocialSubscription[]  @relation("SubscribedTo")
 
   @@index([createdAt])
 }
@@ -639,14 +648,37 @@ model SocialPost {
   body      String   // Max ~280 chars
   visibility String  @default("PUBLIC") // PUBLIC or FRIENDS
   mediaUrl  String?
+  parentId  String?
+  viewCount Int      @default(0)
+  shareCount Int     @default(0)
   createdAt DateTime @default(now())
 
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    SocialPost?  @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   SocialPost[] @relation("PostReplies")
   hashtags  SocialPostHashtag[]
   reactions SocialReaction[]
+  bookmarks SocialBookmark[]
+  watchHistory SocialWatchHistory[]
+  tips      SocialTip[]
+
+  // Phase 2 Upgrade Fields
+  revenueEarned         Float    @default(0)
+  isSubscriberOnly      Boolean  @default(false)
+  voiceoverUrl          String?
+  backgroundTrackUrl    String?
+  voiceoverVolume       Float    @default(1.0)
+  backgroundTrackVolume Float    @default(1.0)
+  copyrightStrike       Boolean  @default(false)
+  chapters              String?
+  captionsText          String?
+  originalityScore      Int      @default(100)
+  flagReason            String?
+  throttleStatus        String?
 
   @@index([createdAt])
   @@index([authorId])
+  @@index([parentId])
 }
 
 model SocialHashtag {
@@ -678,4 +710,105 @@ model SocialReaction {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId]) // 1 like per user per post
+}
+
+model SocialBookmark {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  folderId  String?
+  createdAt DateTime @default(now())
+
+  post      SocialPost            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder    SocialBookmarkFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@unique([postId, userId]) // 1 bookmark per user per post
+  @@index([folderId])
+}
+
+// ─── Feed Upgrade: Watch History ────────────────────────────────────
+
+model SocialWatchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  viewedAt  DateTime @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, viewedAt])
+}
+
+// ─── Feed Upgrade: Bookmark Folders ─────────────────────────────────
+
+model SocialBookmarkFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks SocialBookmark[]
+
+  @@unique([userId, name])
+}
+
+// ─── Feed Upgrade: Negative Filtering ───────────────────────────────
+
+model SocialMutedKeyword {
+  id        String   @id @default(cuid())
+  userId    String
+  keyword   String   // either hashtag name or random word
+  type      String   @default("KEYWORD") // KEYWORD or HASHTAG
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, keyword])
+}
+
+model SocialTip {
+  id        String   @id @default(cuid())
+  senderId  String
+  receiverId String
+  postId    String?
+  amount    Float
+  message   String?
+  createdAt DateTime @default(now())
+
+  sender    User        @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver  User        @relation("TipsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  post      SocialPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([receiverId])
+  @@index([postId])
+}
+
+model SocialSubscription {
+  id             String   @id @default(cuid())
+  subscriberId   String
+  subscribedToId String
+  tier           String   @default("STANDARD")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  subscriber     User     @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscribedTo   User     @relation("SubscribedTo", fields: [subscribedToId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, subscribedToId])
+}
+
+// ─── Feed Upgrade: User Feed Preferences ────────────────────────────
+
+model SocialUserPreference {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  broadenFeed     Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

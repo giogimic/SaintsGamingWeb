@@ -53,9 +53,9 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
   const isAdmin = permissionLevel >= 200; // MOD or above
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 flex justify-center p-2 sm:p-4 pointer-events-none">
-      <header className="pointer-events-auto w-full max-w-7xl bg-card/60 backdrop-blur-2xl border border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-xl sm:rounded-2xl transition-all duration-300">
-        <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-6">
+    <div className="sticky top-0 z-50 w-full pointer-events-none">
+      <header className="pointer-events-auto w-full bg-card/60 backdrop-blur-2xl border-b border-border/50 shadow-sm transition-all duration-300">
+        <div className="flex h-14 sm:h-16 items-center justify-between px-4 xl:px-8">
           {/* Logo / Brand */}
           <Link
             href="/home"
@@ -326,7 +326,7 @@ export function Footer({ className, discordLink, siteVersion, showUcpLink = fals
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "1.1.0-5"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "1.2.1"}</span>
           </div>
         </div>
       </div>

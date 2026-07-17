@@ -68,6 +68,13 @@ export async function toggleReaction(postId: string) {
     });
   }
 
+  // Also record in watch history
+  await prisma.socialWatchHistory.upsert({
+    where: { userId_postId: { userId: session.user.id, postId } },
+    update: { viewedAt: new Date() },
+    create: { userId: session.user.id, postId }
+  });
+
   revalidatePath("/ucp/social");
 }
 
