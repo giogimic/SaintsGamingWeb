@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { MessageSquare, Pin, Lock, Share2, MoreHorizontal } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { auth } from "@/auth";
+import { ReplyForm } from "@/components/forum/reply-form";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -39,6 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ThreadPage({ params }: Props) {
+  const session = await auth();
   const resolvedParams = await params;
   const thread = await prisma.thread.findUnique({
     where: { slug: resolvedParams.slug },
@@ -171,8 +174,8 @@ export default async function ThreadPage({ params }: Props) {
         </div>
 
         {/* Replies */}
-        {thread.replies.map((reply) => (
-          <div key={reply.id} id={`reply-${reply.id}`} className="rounded-xl border border-border/50 overflow-hidden bg-card/40 sg-glass flex flex-col md:flex-row">
+        {thread.replies.map((reply, i) => (
+          <div key={reply.id} className="sg-glass border border-border/50 rounded-xl overflow-hidden flex flex-col md:flex-row mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${i * 100}ms`, animationFillMode: "both" }}>
             {/* Author Sidebar */}
             <div className="w-full md:w-48 lg:w-56 bg-muted/30 p-4 border-b md:border-b-0 md:border-r border-border/50 flex flex-row md:flex-col items-center md:items-start gap-4">
               <div className="flex-1 md:flex-none flex flex-row md:flex-col items-center md:items-center gap-4 md:w-full">
@@ -233,13 +236,19 @@ export default async function ThreadPage({ params }: Props) {
 
         {!thread.isLocked && (
           <div className="mt-8 pt-8 border-t border-border/50">
-            <h3 className="text-lg font-bold mb-4">Post a Reply</h3>
-            <div className="bg-card/40 sg-glass border border-border/50 rounded-xl p-4 text-center">
-              <p className="text-muted-foreground mb-4">You must be logged in to reply to this thread.</p>
-              <Link href="/login" className="px-6 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors inline-block">
-                Log In or Register
-              </Link>
-            </div>
+            {session?.user ? (
+              <ReplyForm threadId={thread.id} />
+            ) : (
+              <>
+                <h3 className="text-lg font-bold mb-4">Post a Reply</h3>
+                <div className="bg-card/40 sg-glass border border-border/50 rounded-xl p-4 text-center">
+                  <p className="text-muted-foreground mb-4">You must be logged in to reply to this thread.</p>
+                  <Link href="/login" className="px-6 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors inline-block">
+                    Log In or Register
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
