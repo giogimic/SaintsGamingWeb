@@ -43,7 +43,7 @@ const NAV_ITEMS = [
   { href: "/streams", label: "Streams", icon: Monitor },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink }: { session: Session | null, dbPermissionLevel?: number, discordLink?: string }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false }: { session: Session | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -136,10 +136,12 @@ export function Navbar({ session, dbPermissionLevel, discordLink }: { session: S
                     <UserIcon className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
-                    <Gamepad2 className="mr-2 h-4 w-4" />
-                    FiveM UCP
-                  </DropdownMenuItem>
+                  {showUcpLink && (
+                    <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
+                      <Gamepad2 className="mr-2 h-4 w-4" />
+                      FiveM UCP
+                    </DropdownMenuItem>
+                  )}
                   {isAdmin && (
                     <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer" />}>
                       <Settings className="mr-2 h-4 w-4" />
@@ -213,9 +215,11 @@ export function Navbar({ session, dbPermissionLevel, discordLink }: { session: S
                       <Link href="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
                         <UserIcon className="h-4 w-4" /> Profile
                       </Link>
-                      <Link href="/ucp" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
-                        <Gamepad2 className="h-4 w-4" /> FiveM UCP
-                      </Link>
+                      {showUcpLink && (
+                        <Link href="/ucp" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
+                          <Gamepad2 className="h-4 w-4" /> FiveM UCP
+                        </Link>
+                      )}
                       {isAdmin && (
                         <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
                           <Settings className="h-4 w-4" /> Admin
@@ -248,7 +252,7 @@ export function Navbar({ session, dbPermissionLevel, discordLink }: { session: S
   );
 }
 
-export function Footer({ className, discordLink, siteVersion }: { className?: string, discordLink?: string, siteVersion?: string }) {
+export function Footer({ className, discordLink, siteVersion, showUcpLink = false }: { className?: string, discordLink?: string, siteVersion?: string, showUcpLink?: boolean }) {
   const socialLinks = [
     {
       href: "https://youtube.com/@SaintsGaming",
@@ -308,7 +312,9 @@ export function Footer({ className, discordLink, siteVersion }: { className?: st
             <nav className="flex flex-col gap-2 text-sm text-muted-foreground">
               <Link href="/news" className="hover:text-primary transition-colors">News & Updates</Link>
               <Link href="/streams" className="hover:text-primary transition-colors">Streams</Link>
-              <Link href="/ucp" className="hover:text-primary transition-colors">FiveM UCP</Link>
+              {showUcpLink && (
+                <Link href="/ucp" className="hover:text-primary transition-colors">FiveM UCP</Link>
+              )}
               <Link href="/support" className="hover:text-primary transition-colors">Support</Link>
             </nav>
           </div>

@@ -25,20 +25,24 @@ export default async function MainLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "v1.1.0-5";
+  let siteVersion = "v1.1.2";
+  let showUcpInNav = false;
   try {
-    const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = setting?.value || "v1.1.0-5";
+    const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
+    if (versionSetting) siteVersion = versionSetting.value;
+
+    const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
+    if (ucpNavSetting?.value === "true") showUcpInNav = true;
   } catch {
-    siteVersion = "v1.1.0-5";
+    // defaults
   }
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">
 
-      <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} />
+      <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
       <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
-      <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} />
+      <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
     </div>
   );
 }

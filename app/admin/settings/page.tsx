@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateSiteSettings } from "../actions";
 import { DatabaseMigration } from "@/components/admin/database-migration";
+import { SystemUpdater } from "@/components/admin/system-updater";
 
 export default async function AdminSettingsPage() {
   const session = await auth();
@@ -30,7 +31,9 @@ export default async function AdminSettingsPage() {
   const fivemServerIp = configMap["fivem_server_ip"] || "";
   const discordGuildId = configMap["discord_guild_id"] || "";
   const discordInviteUrl = configMap["DISCORD_INVITE_URL"] || "https://discord.saintsgaming.net";
-  const siteVersion = configMap["SITE_VERSION"] || "v1.1.0-3";
+  const siteVersion = configMap["SITE_VERSION"] || "v1.1.2";
+  const showUcpInNav = configMap["show_ucp_in_nav"] || "false";
+  const showUcpStatsOnProfile = configMap["show_ucp_stats_on_profile"] || "true";
 
   return (
     <div className="max-w-2xl">
@@ -64,6 +67,34 @@ export default async function AdminSettingsPage() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Temporarily prevent players from creating new characters.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="show_ucp_in_nav">Show UCP in Global Navigation</Label>
+              <Select name="show_ucp_in_nav" defaultValue={showUcpInNav}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Enabled (Shown in navbar/footer)</SelectItem>
+                  <SelectItem value="false">Disabled (Only shown on profile)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Displays the FiveM UCP link in the main navigation menus.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="show_ucp_stats_on_profile">Show UCP Stats on Profile</Label>
+              <Select name="show_ucp_stats_on_profile" defaultValue={showUcpStatsOnProfile}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Enabled (Fetch character data)</SelectItem>
+                  <SelectItem value="false">Disabled (Hide stats)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Aggregates and displays the user&apos;s FiveM character wealth and items on their web profile.</p>
             </div>
           </div>
 
@@ -143,6 +174,7 @@ export default async function AdminSettingsPage() {
         </form>
 
         <DatabaseMigration />
+        <SystemUpdater />
       </div>
     </div>
   );
