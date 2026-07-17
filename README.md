@@ -12,6 +12,12 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.2
+- **Feature (UCP/Profile)**: Hid the FiveM UCP links from the main navigation by default to keep the site clean for non-roleplayers. Re-routed UCP access to a dedicated button on the user profile.
+- **Feature (Profile Overhaul)**: The user profile now dynamically queries and aggregates all character data, creating a custom statistics card displaying total combined cash, bank wealth, and inventory items.
+- **Admin Configuration**: Added two new database-driven toggles to the Admin Settings page allowing staff to re-enable UCP links in the global navigation or disable profile stats on the fly without rebooting.
+- **Feature (System Update)**: Added a "Run System Update" button to the Admin Settings that allows head-admins to trigger the backend `update.sh` / `update.bat` script, executing `git pull` and rebuilding the site without SSH access.
+
 ### v1.1.1
 - **Feature (Forums)**: Created missing `/forum/[slug]/new` route and `new-thread-form.tsx` to enable front-end thread creation.
 - **Optimization (SEO)**: Added Open Graph (OG) and Twitter Card tags to all core News and Forum dynamic pages, ensuring embeds look perfect when shared on social media like Discord.

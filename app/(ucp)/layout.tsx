@@ -27,17 +27,21 @@ export default async function UcpLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "v1.1.0-5";
+  let siteVersion = "v1.1.2";
+  let showUcpInNav = false;
   try {
-    const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = setting?.value || "v1.1.0-5";
+    const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
+    if (versionSetting) siteVersion = versionSetting.value;
+
+    const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
+    if (ucpNavSetting?.value === "true") showUcpInNav = true;
   } catch {
-    siteVersion = "v1.1.0-5";
+    // defaults
   }
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} />
+      <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
       
       {/* UCP Secondary Navigation */}
       <div className="pt-24 border-b bg-card/50 sticky top-0 z-40 backdrop-blur-md">
@@ -58,7 +62,7 @@ export default async function UcpLayout({
       </div>
 
       <main className="flex-1 sg-page-enter bg-background/50">{children}</main>
-      <Footer discordLink={discordLink} siteVersion={siteVersion} />
+      <Footer discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
     </div>
   );
 }
