@@ -48,11 +48,11 @@ export default async function DevDashboard() {
  category: "Developer Console",
  icon: <Terminal className="h-4 w-4 text-foreground" />,
  routes: [
- { path: "/dev", desc: "System Index (Here)" },
- { path: "/dev/database", desc: "Raw Table Metrics" },
- { path: "/dev/metrics", desc: "Node.js Telemetry" },
- { path: "/dev/sandbox", desc: "HTTP Testing Sandbox" },
- { path: "/dev/tasks", desc: "Background Task Runner" },
+ { path: "/admin/dev", desc: "System Index (Here)" },
+ { path: "/admin/dev/database", desc: "Raw Table Metrics" },
+ { path: "/admin/dev/metrics", desc: "Node.js Telemetry" },
+ { path: "/admin/dev/sandbox", desc: "HTTP Testing Sandbox" },
+ { path: "/admin/dev/tasks", desc: "Background Task Runner" },
  ]
  }
  ];

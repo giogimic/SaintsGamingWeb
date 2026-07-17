@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { PERMISSION_LEVELS } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { NewsEditor } from "@/components/admin/news-editor";
-import { saveNewsArticle, deleteNewsArticle } from "@/app/admin/news/actions";
+import { saveNewsArticle, deleteNewsArticle } from "@/app/(main)/admin/news/actions";
 
 export const metadata = { title: "Admin - Create Article" };
 

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { 
-  getFYPFeed, 
   getTrendingTags, 
-  createSocialPost, 
+  createSocialPost,
+  getTheFeed, 
   togglePostReaction, 
   replyToSocialPost, 
   toggleBookmark,
@@ -43,7 +43,7 @@ const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv
 
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
 
-export function FYPFeed() {
+export function TheFeed() {
   const [posts, setPosts] = useState<any[]>([]);
   const [trending, setTrending] = useState<{name: string, usageCount: number}[]>([]);
   const [body, setBody] = useState("");
@@ -108,7 +108,7 @@ export function FYPFeed() {
     setLoading(true);
     try {
       const [feed, tags] = await Promise.all([
-        getFYPFeed(filter || undefined, broadenFeed),
+        getTheFeed(filter || undefined, broadenFeed),
         getTrendingTags()
       ]);
       setPosts(feed);

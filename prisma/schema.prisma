@@ -640,7 +640,7 @@ model DirectMessage {
   @@index([receiverId, senderId])
 }
 
-// ─── FYP Social Feed ────────────────────────────────────────────────
+// ─── The Feed ────────────────────────────────────────────────
 
 model SocialPost {
   id        String   @id @default(cuid())

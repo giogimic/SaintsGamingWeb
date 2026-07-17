@@ -27,7 +27,7 @@ const MAX_FILE_SIZE = parseInt(
   10
 ); // 5MB default
 
-const MAX_SOCIAL_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SOCIAL_FILE_SIZE = 250 * 1024 * 1024; // 250MB
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "public/uploads";
 
