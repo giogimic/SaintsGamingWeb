@@ -27,12 +27,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
     template: "%s | Saints Gaming",
-    default: "Saints Gaming",
+    default: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
   },
-  description: "A chill gaming community hosting game servers and modpacks since 2007.",
+  description: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
   openGraph: {
     title: "Saints Gaming",
-    description: "A chill gaming community hosting game servers and modpacks since 2007.",
+    description: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
     url: "https://saintsgaming.net",
     siteName: "Saints Gaming",
     images: [
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Saints Gaming",
-    description: "A chill gaming community hosting game servers and modpacks since 2007.",
+    description: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
     images: ["/og-image.jpg"],
   },
 };
