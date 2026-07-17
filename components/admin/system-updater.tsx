@@ -55,7 +55,7 @@ export function SystemUpdater({ isDocker = false }: { isDocker?: boolean }) {
               <p className="text-sm text-muted-foreground leading-relaxed">
                 We detected that your application is running inside a Docker container. 
                 Running the web-based updater inside Docker will wipe the active Next.js build files and crash the container. 
-                Please perform updates by running <code>git pull</code> and <code>docker compose build --no-cache web</code> directly on your host machine's terminal.
+                Please perform updates by running <code>git pull</code> and <code>docker compose build --no-cache web</code> directly on your host machine&apos;s terminal.
               </p>
             </div>
           </div>
