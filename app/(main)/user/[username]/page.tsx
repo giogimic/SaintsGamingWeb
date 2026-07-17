@@ -82,7 +82,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <div className="w-full px-4 sm:px-6 lg:px-12 space-y-12">
         {/* Media Showcase */}
         <ProfileMediaShowcase 
           videoUrl={profile.youtubeVideoUrl} 
