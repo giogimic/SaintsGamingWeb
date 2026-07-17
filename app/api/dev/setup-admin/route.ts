@@ -45,6 +45,30 @@ export async function POST(req: Request) {
 
     console.log(`[✓] Successfully created/updated Admin user: ${user.username}`);
 
+    // Seed default Roles
+    const roles = [
+      { name: 'Admin', level: 100, color: 'text-red-500' },
+      { name: 'Moderator', level: 50, color: 'text-purple-500' },
+      { name: 'VIP', level: 30, color: 'text-amber-500' },
+      { name: 'User', level: 20, color: 'text-zinc-400' },
+    ];
+    for (const role of roles) {
+      await prisma.role.upsert({ where: { name: role.name }, update: {}, create: role });
+    }
+    console.log(`[✓] Seeded default Roles`);
+
+    // Seed default LevelTiers
+    const tiers = [
+      { level: 1, name: 'Newbie', xpRequired: 0, icon: '🌟' },
+      { level: 5, name: 'Regular', xpRequired: 500, icon: '⭐' },
+      { level: 10, name: 'Veteran', xpRequired: 2000, icon: '🏆' },
+      { level: 25, name: 'Saint', xpRequired: 10000, icon: '👑' },
+    ];
+    for (const tier of tiers) {
+      await prisma.levelTier.upsert({ where: { level: tier.level }, update: {}, create: tier });
+    }
+    console.log(`[✓] Seeded default Level Tiers`);
+
     return NextResponse.json({ message: "Admin created successfully", user: { id: user.id, username: user.username } });
   } catch (error: unknown) {
     console.error("Failed to setup admin:", error);
