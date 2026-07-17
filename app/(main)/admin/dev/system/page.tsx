@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { updateSiteSettings } from "@/app/(main)/admin/actions";
-import { prisma } from "@/lib/prisma";
+
 import fs from "fs";
 
 export default async function SystemStatePage() {
