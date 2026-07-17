@@ -89,7 +89,7 @@ export function MiniSocialFeed() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full p-4">
-        <span className="text-sm text-muted-foreground animate-pulse">Loading FYP...</span>
+        <span className="text-sm text-muted-foreground animate-pulse">Loading The Feed...</span>
       </div>
     );
   }

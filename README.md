@@ -12,6 +12,11 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## CHANGELOG
 
+### v1.2.2
+- **Command Center Architecture**: Fully migrated standalone Admin and Dev pages into a unified, seamless, glassmorphic modal overlay at `/admin`.
+- **Mobile First Admin Tools**: Integrated a collapsible responsive hamburger menu navigation for the Command Center.
+- **Enhanced Social Feed**: Massively increased `MAX_SOCIAL_FILE_SIZE` from 10MB to 250MB, empowering users to share longer, high-quality video content on The Feed.
+
 ### v1.2.1
 - Complete overhaul of the `VideoPlayer` component supporting audio stems, captions overlays, and smart chapters.
 - Feed upgrade: Originality algorithm, subscriber-only filtering, and advanced tipping options on posts.
@@ -30,8 +35,8 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
   - **Muted Keywords manager** — users can mute specific words or hashtags (up to 50), filtering them from the feed entirely.
 - **Feature ("Not Interested" Menu)**: Each post now has a `···` menu allowing users to hide individual posts, mute specific hashtags from that post, or manage their muted keywords list.
 - **Feature (Creator Analytics)**: Replaced the placeholder in the Engagement Hub with a real top-performing posts table showing views, likes, replies, shares, bookmark count, and per-post engagement rate (color-coded). Added overall engagement rate stat.
-- **Feature (Mini Feed Upgrade)**: The Messenger popup's Social FYP tab now supports inline likes, quick replies, "Not Interested" hide, media thumbnails, and automatic watch history tracking.
-- **Feature (UCP Social Sync)**: The UCP Social Dashboard now includes Broaden toggle, post search, muted keyword filtering, view counts, and watch history tracking — matching the upgraded FYP Feed.
+- **Feature (Mini Feed Upgrade)**: The Messenger popup's The Feed tab now supports inline likes, quick replies, "Not Interested" hide, media thumbnails, and automatic watch history tracking.
+- **Feature (UCP Social Sync)**: The UCP Social Dashboard now includes Broaden toggle, post search, muted keyword filtering, view counts, and watch history tracking — matching the upgraded Feed.
 - **Schema**: Added `SocialWatchHistory`, `SocialBookmarkFolder`, `SocialMutedKeyword`, and `SocialUserPreference` models. Added `folderId` to `SocialBookmark`.
 
 ### v1.1.13
@@ -57,15 +62,15 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
   - Implemented dynamic, animated ambient backgrounds.
   - Replaced standard bordered cards with premium Glassmorphism (frosted glass) effects and subtle hover states.
   - Overhauled User Profiles with edge-to-edge banners and wider media showcases.
-  - Expanded the Social FYP Feed to support ultra-wide monitors with sticky sidebars.
+  - Expanded The Feed to support ultra-wide monitors with sticky sidebars.
 
 ### v1.1.5
-- **Feature (Social Integration)**: Added ability for users to delete their own FYP posts.
-- **Feature (Messenger Integration)**: Fully integrated the FYP Social Feed directly into the Messenger persistent popup via a new `Social FYP` tab, allowing users to scroll the feed without navigating away from their current page.
+- **Feature (Social Integration)**: Added ability for users to delete their own posts.
+- **Feature (Messenger Integration)**: Fully integrated The Feed directly into the Messenger persistent popup via a new `The Feed` tab, allowing users to scroll the feed without navigating away from their current page.
 - **Bug Fix (Build)**: Resolved strict TypeScript type-checking errors related to nullable fields and unused imports that were preventing successful production builds.
 
 ### v1.1.4
-- **Feature (Social FYP Feed)**: Created a "For You Page" global social feed directly inside the Secure Inbox. Added chronological hashtag-based timeline, `#trending` tag sidebar, and optimistic likes.
+- **Feature (The Feed)**: Created a global social feed directly inside the Secure Inbox. Added chronological hashtag-based timeline, `#trending` tag sidebar, and optimistic likes.
 - **Optimization (SEO)**: Added `/user/[username]` public profiles into the `sitemap.ts` dynamic generator so Google can properly index player showcases.
 - **Workflow (Release Protocol)**: Deprecated the legacy `patch.zip` generation process. We now fully rely on Git for version control and deploying updates.
 

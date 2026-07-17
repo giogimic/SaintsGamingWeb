@@ -65,7 +65,7 @@ export default async function SubCategoryPage({ params }: Props) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-5xl">
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8">
         <Link
           href="/forum"

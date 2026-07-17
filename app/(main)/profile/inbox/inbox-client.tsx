@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Send, Lock, Loader2, Trash2, Search, Compass } from "lucide-react";
 import Image from "next/image";
-import { FYPFeed } from "./fyp-feed";
+import { TheFeed } from "./the-feed";
 
 export function InboxClient() {
   const [friends, setFriends] = useState<any[]>([]);
@@ -160,14 +160,14 @@ export function InboxClient() {
           </div>
         </div>
         
-        {/* FYP Global Feed Button */}
+        {/* The Feed Button */}
         <div className="p-2 border-b border-border/50">
           <button
             onClick={() => setActiveFriendId(null)}
             className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${!activeFriendId ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'}`}
           >
             <Compass className="w-5 h-5 shrink-0" />
-            <span className="font-bold">For You Page</span>
+            <span className="font-bold">The Feed</span>
           </button>
         </div>
 
@@ -197,7 +197,7 @@ export function InboxClient() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-background relative overflow-hidden">
         {!activeFriendId ? (
-          <FYPFeed />
+          <TheFeed />
         ) : (
           <>
             <div className="absolute top-0 left-0 w-full p-1 bg-green-500/10 border-b border-green-500/20 flex justify-center items-center gap-2 z-10">

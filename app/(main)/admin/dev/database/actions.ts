@@ -26,7 +26,7 @@ export async function clearExpiredSessions() {
  where: { expires: { lt: new Date() } }
  });
  
- revalidatePath("/dev/database");
+ revalidatePath("/admin/dev/database");
  return { success: true, count: result.count };
 }
 
@@ -35,7 +35,7 @@ export async function clearAllNotifications() {
  
  const result = await prisma.notification.deleteMany({});
  
- revalidatePath("/dev/database");
+ revalidatePath("/admin/dev/database");
  return { success: true, count: result.count };
 }
 
@@ -43,7 +43,7 @@ export async function nukeAllThreads() {
   await verifyDev();
   // Deleting a thread will cascade and delete its replies
   const result = await prisma.thread.deleteMany({});
-  revalidatePath("/dev/database");
+  revalidatePath("/admin/dev/database");
   return { success: true, count: result.count };
 }
 
@@ -68,6 +68,6 @@ export async function seedDummyThreads() {
   }));
   
   const result = await prisma.thread.createMany({ data: dummyData });
-  revalidatePath("/dev/database");
+  revalidatePath("/admin/dev/database");
   return { success: true, count: result.count };
 }

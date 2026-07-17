@@ -13,7 +13,7 @@ import { useState } from "react";
 export function MessengerPopup() {
   const { data: session } = useSession();
   const { isOpen, setIsOpen, activeChat, isCryptoReady } = useMessenger();
-  const [activeTab, setActiveTab] = useState<"friends" | "fyp">("friends");
+  const [activeTab, setActiveTab] = useState<"friends" | "feed">("friends");
 
   if (!session?.user) return null;
 
@@ -53,10 +53,10 @@ export function MessengerPopup() {
                     Friends
                   </button>
                   <button 
-                    className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider ${activeTab === 'fyp' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                    onClick={() => setActiveTab("fyp")}
+                    className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider ${activeTab === 'feed' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                    onClick={() => setActiveTab("feed")}
                   >
-                    Social FYP
+                    The Feed
                   </button>
                 </div>
               )}
@@ -67,7 +67,7 @@ export function MessengerPopup() {
                 ) : activeTab === "friends" ? (
                   <FriendsList />
                 ) : (
-                  <MiniSocialFeed />
+                  <>{activeTab === "feed" && <MiniSocialFeed />}</>
                 )}
               </div>
             </div>

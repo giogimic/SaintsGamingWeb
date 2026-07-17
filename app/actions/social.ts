@@ -63,7 +63,7 @@ export async function createSocialPost(
   return post;
 }
 
-export async function getFYPFeed(hashtagFilter?: string, broadenFeed?: boolean) {
+export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) {
   const session = await auth();
   const currentUserId = session?.user?.id;
 
