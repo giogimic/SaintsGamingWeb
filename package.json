@@ -14,7 +14,6 @@
     "release": "node release.mjs"
   },
   "dependencies": {
-    "@ai-sdk/react": "^4.0.12",
     "@auth/prisma-adapter": "^2.11.2",
     "@base-ui/react": "^1.6.0",
     "@giphy/js-fetch-api": "^5.8.0",
