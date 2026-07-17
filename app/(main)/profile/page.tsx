@@ -10,6 +10,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { SteamWishlist } from "@/components/profile/steam-wishlist";
 import { ProfileMediaSettings } from "./profile-media-settings";
+import { AvatarSettings } from "@/app/(ucp)/ucp/settings/avatar-settings";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -69,7 +70,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-8">
         <div className="p-2 rounded-lg bg-primary/10">
           <User className="h-6 w-6 text-primary" />
@@ -256,11 +257,15 @@ export default async function ProfilePage() {
             </CardContent>
           </Card>
 
-          <ProfileMediaSettings 
-            initialVideoUrl={userRecord?.youtubeVideoUrl || null} 
+          <div className="mt-6 space-y-6">
+            <AvatarSettings initialAvatarUrl={user.image} />
+            
+            <ProfileMediaSettings 
+              initialVideoUrl={userRecord?.youtubeVideoUrl || null} 
             initialMusicUrl={userRecord?.youtubeMusicUrl || null} 
             images={userRecord?.profileImages || []} 
           />
+          </div>
           
           <div className="mt-6">
             <SteamWishlist games={steamWishlist} /> 
