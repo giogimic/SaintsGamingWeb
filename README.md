@@ -12,6 +12,9 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.1.8
+- **UI Tweaks**: Removed horizontal constraints on user profile media grid, making the entire profile page layout strictly edge-to-edge on all display sizes.
+
 ### v1.1.7
 - **UI Tweaks**: Renamed "For You" social page to "The Feed" and removed horizontal constraints for a wider, more edge-to-edge layout on ultra-wide displays.
 
