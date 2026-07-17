@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-
+import { processMentions } from "@/lib/mentions";
 
 const replySchema = z.object({
   body: z.string().min(1).max(5000),
@@ -57,6 +57,9 @@ export async function POST(req: Request) {
         }
       });
     }
+
+    // Parse Mentions
+    await processMentions(data.body, session.user.id, `/forum/thread/${thread.slug}#reply-${reply.id}`);
 
     return NextResponse.json(reply, { status: 201 });
   } catch (error) {
