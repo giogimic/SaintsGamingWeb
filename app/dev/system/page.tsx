@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { updateSiteSettings } from "@/app/admin/actions";
 import { prisma } from "@/lib/prisma";
+import fs from "fs";
 
 export default async function SystemStatePage() {
   // Extract all process environment variables safely
@@ -41,7 +42,9 @@ export default async function SystemStatePage() {
   });
 
   const siteVersionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-  const siteVersion = siteVersionSetting?.value || "v1.1.10";
+  const siteVersion = siteVersionSetting?.value || "v1.1.11";
+
+  const isDocker = fs.existsSync("/.dockerenv");
 
   return (
     <div className="space-y-8">
@@ -78,7 +81,7 @@ export default async function SystemStatePage() {
 
         <div className="space-y-8">
           <DatabaseMigration />
-          <SystemUpdater />
+          <SystemUpdater isDocker={isDocker} />
         </div>
       </div>
 

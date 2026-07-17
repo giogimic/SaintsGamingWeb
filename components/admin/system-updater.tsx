@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
-export function SystemUpdater() {
+export function SystemUpdater({ isDocker = false }: { isDocker?: boolean }) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -46,19 +46,35 @@ export function SystemUpdater() {
         <RefreshCw className="h-5 w-5" /> System Update
       </h2>
       
-      <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-md">
-        <div className="flex gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h3 className="font-medium text-amber-500">Live Server Modification</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Clicking this button will execute the root <code>update.sh</code> (or <code>update.bat</code>) script. 
-              By default, this pulls the latest changes from Git, installs dependencies, rebuilds the site, and restarts the web service. 
-              You may experience a brief period of downtime.
-            </p>
+      {isDocker ? (
+        <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-md">
+          <div className="flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-medium text-destructive">Disabled in Docker Environment</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                We detected that your application is running inside a Docker container. 
+                Running the web-based updater inside Docker will wipe the active Next.js build files and crash the container. 
+                Please perform updates by running <code>git pull</code> and <code>docker compose build --no-cache web</code> directly on your host machine's terminal.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-md">
+          <div className="flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h3 className="font-medium text-amber-500">Live Server Modification</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Clicking this button will execute the root <code>update.sh</code> (or <code>update.bat</code>) script. 
+                By default, this pulls the latest changes from Git, installs dependencies, rebuilds the site, and restarts the web service. 
+                You may experience a brief period of downtime.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {status && (
         <div className={`p-4 rounded-md border flex items-start gap-3 ${status.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-destructive/10 border-destructive/20 text-destructive'}`}>
@@ -71,21 +87,23 @@ export function SystemUpdater() {
         </div>
       )}
 
-      <Button 
-        onClick={handleUpdate} 
-        disabled={isUpdating}
-        variant={isUpdating ? "outline" : "default"}
-        className="w-full sm:w-auto"
-      >
-        {isUpdating ? (
-          <>
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            Update in Progress...
-          </>
-        ) : (
-          "Run System Update"
-        )}
-      </Button>
+      {!isDocker && (
+        <Button 
+          onClick={handleUpdate} 
+          disabled={isUpdating}
+          variant={isUpdating ? "outline" : "default"}
+          className="w-full sm:w-auto"
+        >
+          {isUpdating ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Update in Progress...
+            </>
+          ) : (
+            "Run System Update"
+          )}
+        </Button>
+      )}
     </div>
   );
 }
