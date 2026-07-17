@@ -133,6 +133,11 @@ if [ -f .env ]; then
         fi
         sudo docker compose build --no-cache web
         sudo docker compose up -d web
+        if command -v systemctl &> /dev/null; then
+            echo -e "${CYAN}Reloading web proxies if present...${NC}"
+            sudo systemctl reload caddy 2>/dev/null || sudo systemctl restart caddy 2>/dev/null || true
+            sudo systemctl reload nginx 2>/dev/null || sudo systemctl restart nginx 2>/dev/null || true
+        fi
         echo -e "${GREEN}[✓] Safe Update Complete!${NC}"
         exit 0
     elif [ "$UPDATE_OPT" = "2" ]; then
