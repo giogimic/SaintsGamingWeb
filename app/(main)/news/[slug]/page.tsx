@@ -77,21 +77,14 @@ export default async function NewsArticlePage({ params }: Props) {
   const readingTime = Math.ceil(wordCount / 200);
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 animate-in fade-in duration-500">
-      <Link
-        href="/news"
-        className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6 group bg-card/40 px-5 py-2.5 rounded-full border border-border/50 backdrop-blur-md shadow-sm"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-        Back to News
-      </Link>
-
-      <article className="sg-glass rounded-3xl overflow-hidden border border-border/50 shadow-2xl bg-card/60 relative">
+    <article className="w-full min-h-screen animate-in fade-in duration-500 pb-20 -mt-28 pt-28 relative">
+      {/* Hero Header */}
+      <div className="relative w-full h-[50vh] md:h-[70vh] lg:h-[80vh]">
         {article.coverImage ? (
-          <div className="relative h-[30vh] md:h-[45vh] lg:h-[55vh] w-full overflow-hidden">
+          <>
             {article.coverImage.trim().startsWith('<svg') ? (
               <div 
-                className="w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-cover opacity-80"
+                className="w-full h-full [&>svg]:w-full [&>svg]:h-full [&>svg]:object-cover opacity-90"
                 dangerouslySetInnerHTML={{ __html: sanitizeSvg(article.coverImage) }} 
               />
             ) : (
@@ -99,63 +92,77 @@ export default async function NewsArticlePage({ params }: Props) {
                 src={article.coverImage}
                 alt={article.title}
                 fill
-                className="object-cover opacity-80"
+                className="object-cover opacity-90"
                 priority
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent pointer-events-none" />
-          </div>
+          </>
         ) : (
-          <div className="h-[20vh] md:h-[30vh] w-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center relative">
-            <span className="text-6xl md:text-8xl font-bold opacity-10">SG</span>
-            <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+          <div className="w-full h-full bg-gradient-to-br from-primary/30 to-purple-600/30 flex items-center justify-center">
+            <span className="text-6xl md:text-9xl font-bold opacity-10">SG</span>
           </div>
         )}
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-black/30 pointer-events-none" />
 
-        <div className="px-6 pb-16 md:px-16 md:pb-24 lg:px-24 -mt-32 md:-mt-48 relative z-10 max-w-[1200px] mx-auto">
-          <div className="bg-card/80 backdrop-blur-xl border border-border/50 p-8 md:p-12 rounded-3xl shadow-xl">
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
-              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
-                <Calendar className="h-4 w-4" />
-                {article.publishedAt ? format(new Date(article.publishedAt), "MMMM d, yyyy") : "Draft"}
-              </div>
-              <div className="flex items-center gap-1.5 bg-background/50 px-3 py-1.5 rounded-full border border-border/30">
-                <Clock className="h-4 w-4" />
-                {readingTime} min read
-              </div>
+        {/* Back Button Overlay */}
+        <div className="absolute top-28 left-4 md:left-8 z-20">
+          <Link
+            href="/news"
+            className="inline-flex items-center text-sm font-medium text-white hover:text-primary transition-colors group bg-black/40 px-5 py-2.5 rounded-full border border-white/10 backdrop-blur-md shadow-sm"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Back to News
+          </Link>
+        </div>
+      </div>
+
+      {/* Article Content Area */}
+      <div className="relative z-10 px-4 sm:px-6 lg:px-8 -mt-32 md:-mt-48 lg:-mt-64 max-w-[1200px] mx-auto">
+        <div className="bg-background/80 backdrop-blur-2xl border border-border/50 p-8 md:p-12 lg:p-16 rounded-3xl shadow-2xl">
+          
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-8">
+            <div className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/30">
+              <Calendar className="h-4 w-4" />
+              {article.publishedAt ? format(new Date(article.publishedAt), "MMMM d, yyyy") : "Draft"}
             </div>
-
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-8 text-foreground leading-tight">
-              {article.title}
-            </h1>
-
-            <div className="flex items-center gap-4 mb-12 pb-12 border-b border-border/50">
-              {article.author.image ? (
-                <Image 
-                  src={article.author.image} 
-                  alt={article.author.username} 
-                  width={56} 
-                  height={56} 
-                  className="rounded-full ring-2 ring-primary/20"
-                />
-              ) : (
-                <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xl ring-2 ring-primary/20">
-                  {article.author.username.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div>
-                <p className="font-bold text-lg text-foreground">{article.author.username}</p>
-                <p className="text-sm text-primary font-medium uppercase tracking-wider">Author</p>
-              </div>
-            </div>
-
-            <div className="prose prose-invert prose-lg md:prose-xl max-w-none prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground">
-              <ReactMarkdown>{article.body}</ReactMarkdown>
+            <div className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-full border border-border/30">
+              <Clock className="h-4 w-4" />
+              {readingTime} min read
             </div>
           </div>
+
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-8 text-foreground leading-tight">
+            {article.title}
+          </h1>
+
+          <div className="flex items-center gap-4 mb-12 pb-12 border-b border-border/50">
+            {article.author.image ? (
+              <Image 
+                src={article.author.image} 
+                alt={article.author.username} 
+                width={56} 
+                height={56} 
+                className="rounded-full ring-2 ring-primary/30"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xl ring-2 ring-primary/20">
+                {article.author.username.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <p className="font-bold text-lg text-foreground">{article.author.username}</p>
+              <p className="text-sm text-primary font-medium uppercase tracking-wider">Author</p>
+            </div>
+          </div>
+
+          <div className="prose prose-invert prose-lg md:prose-xl max-w-none prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground">
+            <ReactMarkdown>{article.body}</ReactMarkdown>
+          </div>
         </div>
-      </article>
-    </div>
+      </div>
+    </article>
   );
 }
 
