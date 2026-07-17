@@ -123,7 +123,26 @@ model User {
   sentMessages        DirectMessage[]   @relation("SentMessages")
   receivedMessages    DirectMessage[]   @relation("ReceivedMessages")
 
+  // Profile Customization
+  youtubeVideoUrl     String?
+  youtubeMusicUrl     String?
+  profileImages       ProfileImage[]
+
+  // Social
+  socialPosts         SocialPost[]
+  socialReactions     SocialReaction[]
+
   @@index([createdAt])
+}
+
+model ProfileImage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 // ─── Forum ──────────────────────────────────────────────────────
@@ -610,4 +629,51 @@ model DirectMessage {
 
   @@index([senderId, receiverId])
   @@index([receiverId, senderId])
+}
+
+// ─── FYP Social Feed ────────────────────────────────────────────────
+
+model SocialPost {
+  id        String   @id @default(cuid())
+  authorId  String
+  body      String   // Max ~280 chars
+  createdAt DateTime @default(now())
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  hashtags  SocialPostHashtag[]
+  reactions SocialReaction[]
+
+  @@index([createdAt])
+  @@index([authorId])
+}
+
+model SocialHashtag {
+  id        String   @id @default(cuid())
+  name      String   @unique // lowercase without #
+  usageCount Int     @default(0) // Light denormalized count for trending
+  createdAt DateTime @default(now())
+
+  posts     SocialPostHashtag[]
+}
+
+model SocialPostHashtag {
+  postId    String
+  hashtagId String
+
+  post      SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag   SocialHashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+}
+
+model SocialReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId]) // 1 like per user per post
 }

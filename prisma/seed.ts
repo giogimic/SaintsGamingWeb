@@ -70,7 +70,20 @@ async function main() {
       installNotes: "Extract the ModPack.zip into your \\Palworld\\Pal\\Content\\Paks directory!",
     },
   });
-  console.log("Seeded Modpack.");
+
+  await prisma.modpack.upsert({
+    where: { slug: "dimensional-pixelmon" },
+    update: {},
+    create: {
+      name: "Dimensional Pixelmon",
+      slug: "dimensional-pixelmon",
+      game: "Minecraft",
+      description: "The official Dimensional Pixelmon modpack.",
+      version: "1.0",
+      downloadUrl: "http://www.technicpack.net/modpack/dimensional-pixelmon.136119",
+    },
+  });
+  console.log("Seeded Modpacks.");
 
   // 4. Seed Forum Categories & Threads
   const categories = [

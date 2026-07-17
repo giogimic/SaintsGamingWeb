@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useMessenger } from "./messenger-provider";
-import { getMessages, sendMessage, getPublicKey } from "@/app/actions/messenger";
+import { getMessages, sendMessage, getPublicKey, deleteMessage, clearChatHistory } from "@/app/actions/messenger";
 import { importPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage, getLocalPrivateKey } from "@/lib/crypto";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Lock, Loader2, Trash2 } from "lucide-react";
 
 export function ChatWindow() {
   const { activeChat, setActiveChat } = useMessenger();
@@ -112,6 +112,25 @@ export function ChatWindow() {
     }
   }
 
+  async function handleDeleteMessage(id: string) {
+    try {
+      await deleteMessage(id);
+      setMessages(prev => prev.filter(m => m.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function handleClearHistory() {
+    if (!activeChat) return;
+    try {
+      await clearChatHistory(activeChat.id);
+      setMessages([]);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   if (error) {
     return (
       <div className="flex flex-col h-full bg-background">
@@ -146,11 +165,16 @@ export function ChatWindow() {
         <span className="text-[10px] font-medium text-green-500 uppercase tracking-widest">End-to-End Encrypted</span>
       </div>
 
-      <div className="p-2 border-b border-border/50 flex items-center gap-2 mt-6 bg-muted/20">
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setActiveChat(null)}>
-          <ArrowLeft className="h-4 w-4" />
+      <div className="p-2 border-b border-border/50 flex items-center justify-between mt-6 bg-muted/20">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setActiveChat(null)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-xs text-muted-foreground truncate max-w-[120px]">Chat with {activeChat?.username}</span>
+        </div>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={handleClearHistory} title="Clear Chat History">
+          <Trash2 className="h-4 w-4" />
         </Button>
-        <span className="text-xs text-muted-foreground">Chatting with {activeChat?.username}</span>
       </div>
 
       <div 
@@ -163,9 +187,9 @@ export function ChatWindow() {
           </div>
         ) : (
           messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.isSender ? 'justify-end' : 'justify-start'}`}>
+            <div key={msg.id} className={`flex ${msg.isSender ? 'justify-end' : 'justify-start'} group relative`}>
               <div 
-                className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm relative ${
                   msg.isSender 
                     ? 'bg-primary text-primary-foreground rounded-br-sm' 
                     : 'bg-muted text-foreground rounded-bl-sm'
@@ -173,6 +197,14 @@ export function ChatWindow() {
               >
                 {msg.text}
               </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={`absolute top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity ${msg.isSender ? '-left-8 text-destructive' : '-right-8 text-destructive'}`}
+                onClick={() => handleDeleteMessage(msg.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
             </div>
           ))
         )}

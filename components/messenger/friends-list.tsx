@@ -69,6 +69,10 @@ export function FriendsList() {
     } catch {}
   }
 
+  function handleUserClick(username: string) {
+    window.location.href = `/user/${encodeURIComponent(username)}`;
+  }
+
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="p-3 border-b border-border/50">
@@ -91,14 +95,26 @@ export function FriendsList() {
               <p className="text-xs text-muted-foreground">Searching...</p>
             ) : searchResults.length > 0 ? (
               searchResults.map(u => (
-                <div key={u.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                <div 
+                  key={u.id} 
+                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => handleUserClick(u.username)}
+                >
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden relative">
                       {u.image ? <Image src={u.image} alt={u.username} fill className="object-cover"/> : <UserIcon className="h-4 w-4" />}
                     </div>
                     <span className="text-sm font-medium">{u.username}</span>
                   </div>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleAdd(u.id)}>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-7 w-7" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAdd(u.id);
+                    }}
+                  >
                     <UserPlus className="h-4 w-4" />
                   </Button>
                 </div>

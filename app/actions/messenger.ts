@@ -219,3 +219,34 @@ export async function getMessages(otherUserId: string) {
     };
   });
 }
+
+export async function deleteMessage(messageId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const msg = await prisma.directMessage.findUnique({ where: { id: messageId } });
+  if (!msg) throw new Error("Message not found");
+
+  if (msg.senderId !== session.user.id && msg.receiverId !== session.user.id) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.directMessage.delete({ where: { id: messageId } });
+  return true;
+}
+
+export async function clearChatHistory(friendId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await prisma.directMessage.deleteMany({
+    where: {
+      OR: [
+        { senderId: session.user.id, receiverId: friendId },
+        { senderId: friendId, receiverId: session.user.id }
+      ]
+    }
+  });
+
+  return true;
+}
