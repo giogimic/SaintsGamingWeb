@@ -30,7 +30,7 @@ export default async function UcpLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "v1.1.12";
+  let siteVersion = "v1.1.13";
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });

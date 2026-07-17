@@ -5,9 +5,11 @@ import { getFYPFeed, getTrendingTags, createSocialPost, togglePostReaction } fro
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Heart, Loader2, MessageSquare, TrendingUp, Hash } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, X } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import EmojiPicker from "emoji-picker-react";
 
 export function FYPFeed() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -16,6 +18,8 @@ export function FYPFeed() {
   const [isPosting, setIsPosting] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mediaUrl, setMediaUrl] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
   async function loadFeed() {
     setLoading(true);
@@ -40,16 +44,46 @@ export function FYPFeed() {
 
   async function handlePost(e: React.FormEvent) {
     e.preventDefault();
-    if (!body.trim() || body.length > 280) return;
+    if (!body.trim() && !mediaUrl) return;
+    if (body.length > 280) return;
     setIsPosting(true);
     try {
-      await createSocialPost(body);
+      await createSocialPost(body, mediaUrl || undefined);
       setBody("");
+      setMediaUrl("");
       loadFeed();
     } catch (e) {
       console.error(e);
     } finally {
       setIsPosting(false);
+    }
+  }
+
+  async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload/social", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Upload failed");
+      }
+
+      const data = await res.json();
+      setMediaUrl(data.url);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsUploading(false);
     }
   }
 
@@ -96,7 +130,7 @@ export function FYPFeed() {
     <div className="flex h-full bg-background overflow-hidden animate-in fade-in relative">
       
       {/* Main Feed Column */}
-      <div className="flex-1 flex flex-col border-r border-border/50 max-w-3xl">
+      <div className="flex-1 flex flex-col border-r border-border/50">
         <div className="p-4 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-10 flex justify-between items-center">
           <h2 className="font-bold text-xl flex items-center gap-2">
             {filter ? <><Hash className="w-5 h-5 text-primary"/> {filter}</> : "For You Page"}
@@ -120,11 +154,60 @@ export function FYPFeed() {
                   onChange={(e) => setBody(e.target.value)}
                   maxLength={280}
                 />
+                
+                {mediaUrl && (
+                  <div className="relative mt-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[300px]">
+                    <Button 
+                      type="button"
+                      variant="destructive" 
+                      size="icon" 
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full z-10"
+                      onClick={() => setMediaUrl("")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                    {mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") ? (
+                      <video src={mediaUrl} controls className="max-h-[300px] w-auto max-w-full" />
+                    ) : (
+                      <img src={mediaUrl} alt="Upload preview" className="max-h-[300px] w-auto max-w-full object-contain" />
+                    )}
+                  </div>
+                )}
                 <div className="flex justify-between items-center mt-2 border-t border-border/50 pt-3">
-                  <span className={`text-xs ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {body.length} / 280
-                  </span>
-                  <Button type="submit" disabled={!body.trim() || isPosting || body.length > 280} className="rounded-full px-6">
+                  <div className="flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary">
+                          <Smile className="w-5 h-5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent">
+                        <EmojiPicker onEmojiClick={(e) => setBody(prev => prev + e.emoji)} theme="auto" />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <div>
+                      <input 
+                        type="file" 
+                        id="social-media-upload" 
+                        accept="image/*,video/mp4,video/webm" 
+                        className="hidden" 
+                        onChange={handleMediaUpload} 
+                        disabled={isUploading}
+                      />
+                      <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50">
+                        <label htmlFor="social-media-upload" className="cursor-pointer">
+                          {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+                        </label>
+                      </Button>
+                    </div>
+
+                    <span className={`ml-2 text-xs ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      {body.length} / 280
+                    </span>
+                  </div>
+
+                  <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || body.length > 280} className="rounded-full px-6">
                     {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Post"}
                   </Button>
                 </div>
@@ -163,6 +246,15 @@ export function FYPFeed() {
                     <p className="text-sm leading-relaxed mb-3" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                       {renderBody(post.body)}
                     </p>
+                    {post.mediaUrl && (
+                      <div className="mb-3 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[400px]">
+                        {post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm") ? (
+                          <video src={post.mediaUrl} controls className="max-h-[400px] w-auto max-w-full" />
+                        ) : (
+                          <img src={post.mediaUrl} alt="Post attachment" className="max-h-[400px] w-auto max-w-full object-contain" />
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-6 text-muted-foreground">
                       <button 
                         onClick={() => handleLike(post.id)}

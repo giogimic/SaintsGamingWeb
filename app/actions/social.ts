@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
-export async function createSocialPost(body: string) {
+export async function createSocialPost(body: string, mediaUrl?: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
   if (!body.trim() || body.length > 280) throw new Error("Invalid post length");
@@ -16,6 +16,7 @@ export async function createSocialPost(body: string) {
     data: {
       authorId: session.user.id,
       body: body.trim(),
+      mediaUrl: mediaUrl || null,
     }
   });
 
@@ -65,6 +66,7 @@ export async function getFYPFeed(hashtagFilter?: string) {
   return posts.map(post => ({
     id: post.id,
     body: post.body,
+    mediaUrl: post.mediaUrl,
     createdAt: post.createdAt,
     author: post.author,
     likesCount: post.reactions.length,
@@ -135,6 +137,7 @@ export async function getMiniFeed() {
     select: {
       id: true,
       body: true,
+      mediaUrl: true,
       createdAt: true,
       author: { select: { username: true, image: true } },
       _count: { select: { reactions: true } }

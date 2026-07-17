@@ -16,10 +16,18 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
 ];
 
+const ALLOWED_SOCIAL_MIME_TYPES = [
+  ...ALLOWED_MIME_TYPES,
+  "video/mp4",
+  "video/webm",
+];
+
 const MAX_FILE_SIZE = parseInt(
   process.env.MAX_UPLOAD_SIZE || "5242880",
   10
 ); // 5MB default
+
+const MAX_SOCIAL_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "public/uploads";
 
@@ -100,6 +108,58 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   };
 }
 
+/** Upload a social media file (allows video/mp4, video/webm and up to 10MB) */
+export async function uploadSocialMedia(file: File): Promise<UploadResult> {
+  // Validate MIME type
+  if (!ALLOWED_SOCIAL_MIME_TYPES.includes(file.type)) {
+    return {
+      success: false,
+      error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_SOCIAL_MIME_TYPES.join(", ")}`,
+    };
+  }
+
+  // Validate file size
+  if (file.size > MAX_SOCIAL_FILE_SIZE) {
+    return {
+      success: false,
+      error: `File too large. Maximum size: ${(MAX_SOCIAL_FILE_SIZE / 1024 / 1024).toFixed(1)}MB`,
+    };
+  }
+
+  // Validate the original filename
+  const sanitized = sanitizeFilename(file.name);
+  const uniqueName = generateUniqueFilename(sanitized);
+
+  // Ensure the upload directory exists
+  const uploadPath = path.join(/*turbopackIgnore: true*/ process.cwd(), UPLOAD_DIR);
+  await mkdir(uploadPath, { recursive: true });
+
+  // Write the file
+  const filePath = path.join(uploadPath, uniqueName);
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Double-check: validate magic bytes match the claimed MIME type
+  if (!validateMagicBytes(buffer, file.type)) {
+    return {
+      success: false,
+      error: "File content does not match its declared type",
+    };
+  }
+
+  await writeFile(filePath, buffer);
+
+  // Return the public URL path (relative to /public)
+  const url = `/uploads/${uniqueName}`;
+
+  return {
+    success: true,
+    url,
+    filename: sanitized,
+    mimeType: file.type,
+    sizeBytes: file.size,
+  };
+}
+
 /** Validate file magic bytes match the MIME type (basic check) */
 function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
   if (buffer.length < 12) return false;
@@ -108,6 +168,16 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     const isRiff = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46; // RIFF
     const isWebp = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50; // WEBP
     return isRiff && isWebp;
+  }
+
+  if (mimeType === "video/mp4") {
+    // Check for "ftyp" at offset 4
+    if (buffer.length < 8) return false;
+    return buffer[4] === 0x66 && buffer[5] === 0x74 && buffer[6] === 0x79 && buffer[7] === 0x70; // "ftyp"
+  }
+
+  if (mimeType === "video/webm") {
+    return buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3; // EBML Header
   }
 
   const signatures: Record<string, number[][]> = {

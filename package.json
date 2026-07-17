@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-web",
-  "version": "1.1.12",
+  "version": "1.1.13",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -32,6 +32,7 @@
     "date-fns": "^4.4.0",
     "dompurify": "^3.4.11",
     "dotenv": "^16.4.5",
+    "emoji-picker-react": "^4.19.1",
     "framer-motion": "^12.42.0",
     "gamedig": "^5.3.3",
     "lucide-react": "^1.21.0",
