@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
@@ -103,7 +104,20 @@ export function AdminOverlayShell({
     </div>
   );
 
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Hide body scroll when overlay is active
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex sm:items-center justify-center bg-black/80 backdrop-blur-md sm:p-4 md:p-8 animate-in fade-in duration-200">
       <div className="w-full h-full sm:max-w-[1400px] bg-background/95 sm:bg-card/90 sg-glass sm:border border-border/50 sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl relative">
         
@@ -157,6 +171,7 @@ export function AdminOverlayShell({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
