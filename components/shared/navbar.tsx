@@ -13,6 +13,7 @@ import {
   X,
   Video,
   Server,
+  Trophy,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SGVoxelSvgLogo } from "@/components/landing/sg-logo-voxel-svg";
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { href: "/modpacks", label: "Modpacks", icon: Package },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/forum", label: "Forum", icon: MessageSquare },
+  { href: "/forum/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/streams", label: "Streams", icon: Monitor },
 ];
 

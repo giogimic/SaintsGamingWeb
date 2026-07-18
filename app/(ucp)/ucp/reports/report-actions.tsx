@@ -24,8 +24,8 @@ export function ReportActions({ reportId, currentStatus }: { reportId: string, c
       } else {
         toast.error("Failed to update status");
       }
-    } catch (error) {
-      toast.error("An error occurred");
+    } catch {
+      toast.error("Failed to dismiss report");
     } finally {
       setLoading(false);
     }

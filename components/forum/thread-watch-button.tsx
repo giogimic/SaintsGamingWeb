@@ -30,7 +30,7 @@ export function ThreadWatchButton({ threadId, initialIsWatched }: ThreadWatchBut
       } else {
         toast.error("Failed to update subscription");
       }
-    } catch (err) {
+    } catch {
       toast.error("An error occurred");
     } finally {
       setLoading(false);

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { BarChart2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";

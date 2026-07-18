@@ -63,7 +63,7 @@ export default async function ForumSearchPage({ searchParams }: Props) {
         take: 50,
       });
     }
-  } catch (err) {
+  } catch {
     error = "An error occurred while searching.";
   }
 

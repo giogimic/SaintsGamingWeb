@@ -83,6 +83,25 @@ export async function POST(req: Request) {
       return newThread;
     });
 
+    // Fire-and-forget Discord Webhook
+    try {
+      const webhookSetting = await prisma.siteSetting.findUnique({
+        where: { key: "DISCORD_WEBHOOK_URL" }
+      });
+      if (webhookSetting?.value) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        fetch(webhookSetting.value, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `New Thread in Forums: **${thread.title}** by ${session.user.name || "A member"}\n${appUrl}/forum/t/${thread.slug}`
+          })
+        }).catch(console.error);
+      }
+    } catch (err) {
+      console.error("Discord webhook error:", err);
+    }
+
     return NextResponse.json(thread, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
