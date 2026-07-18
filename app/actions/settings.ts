@@ -17,7 +17,7 @@ export async function getSiteVersion() {
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
     return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "1.3.0";
-  } catch (error) {
+  } catch {
     return "1.3.0";
   }
 }

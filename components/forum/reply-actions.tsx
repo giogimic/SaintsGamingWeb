@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, X, Check, MoreHorizontal, Flag, CheckCircle } from "lucide-react";
+import { Edit2, Trash2, X, Check, MoreHorizontal, Flag, CheckCircle, Heart } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import {
@@ -22,13 +22,17 @@ interface ReplyActionsProps {
   isThreadAuthor: boolean;
   isSolution: boolean;
   createdAt: Date;
+  initialLikesCount: number;
+  initialHasLiked: boolean;
 }
 
-export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThreadAuthor, isSolution, createdAt }: ReplyActionsProps) {
+export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThreadAuthor, isSolution, createdAt, initialLikesCount, initialHasLiked }: ReplyActionsProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [body, setBody] = useState(initialBody);
   const [loading, setLoading] = useState(false);
+  const [likesCount, setLikesCount] = useState(initialLikesCount);
+  const [hasLiked, setHasLiked] = useState(initialHasLiked);
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this reply?")) return;
@@ -78,7 +82,7 @@ export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThread
         toast.success(isSolution ? "Solution removed" : "Marked as solution");
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to update solution status");
     }
   };
@@ -98,8 +102,23 @@ export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThread
       } else {
         toast.error("Failed to submit report");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to submit report");
+    }
+  };
+
+  const handleLike = async () => {
+    try {
+      const res = await fetch(`/api/forum/reply/${replyId}/like`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setHasLiked(data.liked);
+        setLikesCount(prev => data.liked ? prev + 1 : prev - 1);
+      } else {
+        toast.error("Failed to update like status");
+      }
+    } catch (err) {
+      toast.error("An error occurred");
     }
   };
 
@@ -114,6 +133,13 @@ export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThread
       <div className={`px-6 py-3 border-b border-border/50 flex justify-between items-center bg-muted/10 ${isSolution ? 'pt-10' : ''}`}>
         <span className="text-xs text-muted-foreground">{createdAt.toLocaleDateString()} at {createdAt.toLocaleTimeString()}</span>
         <div className="flex items-center gap-3 relative z-20">
+          <button 
+            onClick={handleLike} 
+            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${hasLiked ? "text-pink-500 bg-pink-500/10 hover:bg-pink-500/20" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}
+          >
+            <Heart className={`h-4 w-4 ${hasLiked ? "fill-current" : ""}`} />
+            <span className="text-xs font-medium">{likesCount > 0 ? likesCount : ""}</span>
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="hover:text-foreground transition-colors p-1" disabled={loading}>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
-import { MessageSquare, Pin, Lock, Share2, MoreHorizontal } from "lucide-react";
+import { MessageSquare, Pin, Lock, UserPlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { auth } from "@/auth";
 import { ReplyForm } from "@/components/forum/reply-form";
@@ -80,7 +80,8 @@ export default async function ThreadPage({ params }: Props) {
               level: true,
               createdAt: true
             }
-          }
+          },
+          likes: { select: { userId: true } }
         }
       }
     }
@@ -109,6 +110,19 @@ export default async function ThreadPage({ params }: Props) {
   if (!thread) {
     notFound();
   }
+
+  const relatedThreads = await prisma.thread.findMany({
+    where: {
+      subcategoryId: thread.subcategoryId,
+      id: { not: thread.id }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+    include: {
+      author: { select: { username: true } },
+      _count: { select: { replies: true } }
+    }
+  });
 
   // Fire-and-forget increment view count (won't work correctly in SSR without a separate API call in client, but good enough for static generation demo)
   // A better approach is to have a client component hit an API route to increment view count on mount.
@@ -256,16 +270,35 @@ export default async function ThreadPage({ params }: Props) {
 
             {/* Post Content */}
             <ReplyActions 
-              replyId={reply.id}
-              threadId={thread.id}
-              initialBody={reply.body}
-              canEdit={session?.user?.id === reply.authorId || currentUserPermission >= PERMISSION_LEVELS.MODERATOR}
-              isThreadAuthor={session?.user?.id === thread.authorId}
-              isSolution={thread.acceptedAnswerId === reply.id}
-              createdAt={reply.createdAt}
-            />
+                  replyId={reply.id}
+                  threadId={thread.id}
+                  initialBody={reply.body}
+                  canEdit={session?.user?.id === reply.authorId || currentUserPermission >= PERMISSION_LEVELS.MODERATOR}
+                  isThreadAuthor={session?.user?.id === thread.authorId}
+                  isSolution={thread.acceptedAnswerId === reply.id}
+                  createdAt={reply.createdAt}
+                  initialLikesCount={reply.likes?.length || 0}
+                  initialHasLiked={reply.likes?.some(like => like.userId === session?.user?.id) || false}
+                />
           </div>
         ))}
+
+        {relatedThreads.length > 0 && (
+          <div className="mt-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500">
+            <h3 className="text-xl font-bold tracking-tight">You might also like...</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {relatedThreads.map((rt) => (
+                <Link key={rt.id} href={`/forum/t/${rt.slug}`} className="block sg-glass border border-border/50 rounded-xl p-4 hover:border-primary/50 transition-colors bg-card/40">
+                  <h4 className="font-semibold text-primary truncate mb-2">{rt.title}</h4>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>{rt.author.username}</span>
+                    <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3"/> {rt._count.replies}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!thread.isLocked && (
           <div className="mt-8 pt-8 border-t border-border/50">

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Flag, Share2, FolderInput } from "lucide-react";
+import { MoreHorizontal, ShieldAlert, FolderOutput, Share2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +34,7 @@ export function ThreadActions({ threadId, userPermissionLevel = 0 }: ThreadActio
       } else {
         toast.error("Failed to submit report");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to submit report");
     } finally {
       setLoading(false);
@@ -61,7 +59,7 @@ export function ThreadActions({ threadId, userPermissionLevel = 0 }: ThreadActio
         const data = await res.json();
         toast.error(data.message || "Failed to move thread");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to move thread");
     } finally {
       setLoading(false);
