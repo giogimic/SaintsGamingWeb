@@ -79,10 +79,8 @@ export function ThreadActions({ threadId, userPermissionLevel = 0 }: ThreadActio
         <Share2 className="h-4 w-4" />
       </button>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="hover:text-foreground transition-colors p-1" disabled={loading}>
+        <DropdownMenuTrigger className="hover:text-foreground transition-colors p-1" disabled={loading}>
             <MoreHorizontal className="h-4 w-4" />
-          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={handleReport}>
