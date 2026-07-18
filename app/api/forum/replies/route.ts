@@ -100,9 +100,27 @@ export async function POST(req: Request) {
           userId: thread.authorId,
           type: "REPLY",
           message: `${session.user.name || "Someone"} replied to your thread "${thread.title}".`,
-          link: `/forum/${thread.subcategory.category.slug}/${thread.slug}`,
+          link: `/forum/t/${thread.slug}#reply-${reply.id}`,
         }
       });
+    }
+
+    // Trigger Notifications for subscribed users
+    const subscriptions = await prisma.threadSubscription.findMany({
+      where: { threadId: thread.id }
+    });
+
+    for (const sub of subscriptions) {
+      if (sub.userId !== session.user.id && sub.userId !== thread.authorId) {
+        await prisma.notification.create({
+          data: {
+            userId: sub.userId,
+            type: "SYSTEM",
+            message: `${session.user.name || "Someone"} replied to a thread you're watching: "${thread.title}".`,
+            link: `/forum/t/${thread.slug}#reply-${reply.id}`,
+          }
+        });
+      }
     }
 
     // Parse Mentions
