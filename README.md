@@ -114,6 +114,16 @@ We love contributions! If you'd like to help out:
 
 ---
 
-## 📜 License
+## 📝 License
 
 This project is open-source and available under the **MIT License**.
+
+---
+
+## 📜 Changelog
+
+### v1.4.1
+- **MMO Architecture Phase 17 (Part 1)**: Transitioned from `GameSave` to a multi-character `GameCharacter` Prisma SQLite model.
+- **Authoritative Server**: Scaffolded `game-server.js` using `socket.io` for synchronized movement and 4v4 Agility/Speed turn-based combat.
+- **Character Creator**: Implemented `character-creator.tsx` with dynamic classes (Brawler, Invoker, Ranger, Artisan) setting preset skill levels.
+- **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.

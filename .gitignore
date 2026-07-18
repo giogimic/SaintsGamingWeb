@@ -48,10 +48,11 @@ next-env.d.ts
 
 
 # AI / Local Work
+/docs/
 /ai/
 /articles/
 /logs/
 /.agents/
 /.tools/
 /patch/
-
+/the-game/

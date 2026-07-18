@@ -19,10 +19,31 @@ export async function getPublicProfile(username: string) {
       isVIP: true,
       isFounder: true,
       isTrusted: true,
+      level: true,
+      xp: true,
+      coins: true,
+      _count: {
+        select: {
+          threads: true,
+          replies: true,
+          socialPosts: true
+        }
+      },
       profileImages: {
         select: {
           id: true,
           url: true
+        }
+      },
+      achievements: {
+        select: {
+          id: true,
+          badgeId: true,
+          isPinned: true,
+          earnedAt: true
+        },
+        orderBy: {
+          earnedAt: 'desc'
         }
       },
       steamWishlist: {
@@ -30,6 +51,14 @@ export async function getPublicProfile(username: string) {
           appId: true,
           name: true,
           image: true
+        }
+      },
+      gameCharacters: {
+        select: {
+          id: true,
+          name: true,
+          spriteId: true,
+          classId: true,
         }
       }
     }

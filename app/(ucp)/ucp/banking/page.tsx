@@ -47,7 +47,7 @@ export default async function UcpBankingPage() {
           
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
+            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20 sg-glass">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <Landmark className="h-4 w-4" />
@@ -55,29 +55,35 @@ export default async function UcpBankingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-500">${netWorth.toLocaleString()}</div>
+                <div className="text-3xl font-bold sg-text-gradient bg-gradient-to-r from-green-400 to-emerald-600">${netWorth.toLocaleString()}</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Card className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-xl relative overflow-hidden border-none border-t border-white/20">
+              <div className="absolute top-0 right-0 p-4 opacity-20">
+                <CreditCard className="h-16 w-16" />
+              </div>
+              <CardHeader className="pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-blue-100 flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   Bank Balances
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalBank.toLocaleString()}</div>
+              <CardContent className="relative z-10">
+                <div className="text-2xl font-bold drop-shadow-md">${totalBank.toLocaleString()}</div>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Card className="bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-xl relative overflow-hidden border-none border-t border-white/20">
+              <div className="absolute top-0 right-0 p-4 opacity-20">
+                <PiggyBank className="h-16 w-16" />
+              </div>
+              <CardHeader className="pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-orange-100 flex items-center gap-2">
                   <PiggyBank className="h-4 w-4" />
                   Cash on Hand
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalCash.toLocaleString()}</div>
+              <CardContent className="relative z-10">
+                <div className="text-2xl font-bold drop-shadow-md">${totalCash.toLocaleString()}</div>
               </CardContent>
             </Card>
           </div>
@@ -89,14 +95,14 @@ export default async function UcpBankingPage() {
               <h2 className="text-2xl font-bold">Your Accounts</h2>
               
               {characters.map(char => (
-                <Card key={char.id} className="overflow-hidden">
-                  <div className="bg-muted/30 px-6 py-4 border-b flex justify-between items-center">
+                <Card key={char.id} className="overflow-hidden sg-glass border-border/50 hover:border-primary/50 transition-colors">
+                  <div className="bg-muted/10 px-6 py-4 border-b flex justify-between items-center backdrop-blur-sm">
                     <div>
                       <h3 className="font-bold text-lg">{char.firstName} {char.lastName}</h3>
                       <p className="text-xs text-muted-foreground font-mono">ACC-{(char.id).substring(0, 8).toUpperCase()}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-green-500">${char.bank.toLocaleString()}</div>
+                      <div className="text-lg font-bold text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">${char.bank.toLocaleString()}</div>
                       <div className="text-xs text-muted-foreground">Available Balance</div>
                     </div>
                   </div>

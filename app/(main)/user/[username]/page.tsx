@@ -4,8 +4,11 @@ import Image from "next/image";
 import { User as UserIcon, Calendar, Gamepad2, Shield, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
 import { ProfileActions } from "./profile-actions";
 import { ProfileMediaShowcase } from "./profile-media-showcase";
+import { AchievementShowcase } from "@/components/achievements/achievement-showcase";
+import { ActivityStats } from "@/components/profile/activity-stats";
 import { auth } from "@/auth";
 import { Metadata } from "next";
+import Link from "next/link";
 
 export async function generateMetadata(props: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const params = await props.params;
@@ -96,6 +99,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
       </div>
 
       <div className="w-full px-4 sm:px-6 lg:px-12 space-y-12">
+        {/* Achievements */}
+        <AchievementShowcase achievements={profile.achievements} />
+
         {/* Media Showcase */}
         <ProfileMediaShowcase 
           videoUrl={profile.youtubeVideoUrl} 
@@ -105,6 +111,44 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        
+        {/* Saints Tamer MMO Characters */}
+        <div className="space-y-4 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Gamepad2 className="w-6 h-6 text-primary" />
+              Saints Tamer MMO
+            </h2>
+            {isSelf && (
+              <Link href="/profile/terminal" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all hover:scale-105">
+                Play Now
+              </Link>
+            )}
+          </div>
+          
+          {profile.gameCharacters && profile.gameCharacters.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {profile.gameCharacters.map((char) => (
+                <div key={char.id} className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-primary/50 transition-colors">
+                  <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0 border border-white/5">
+                    {/* Placeholder for Character Sprite */}
+                    <Image src={`/assets/npcs/${char.spriteId}.png`} alt={char.spriteId} width={32} height={32} className="pixelated" unoptimized onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{char.name}</h3>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{char.classId}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground bg-muted/20">
+              <Gamepad2 className="w-8 h-8 mx-auto mb-2 opacity-20" />
+              <p className="text-sm">No characters created yet.</p>
+            </div>
+          )}
+        </div>
+
         {/* Steam Wishlist (if any) */}
         {profile.steamWishlist.length > 0 ? (
           <div className="space-y-4">
@@ -148,17 +192,8 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           </div>
         )}
 
-        {/* Stats Placeholder / Badges */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" />
-            Activity
-          </h2>
-          <div className="p-8 border border-dashed rounded-xl text-center text-muted-foreground bg-muted/20">
-            <Shield className="w-8 h-8 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">More statistics and badges coming soon!</p>
-          </div>
-        </div>
+        {/* Activity & Stats */}
+        <ActivityStats profile={profile as any} />
         </div>
       </div>
     </div>

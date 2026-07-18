@@ -13,6 +13,7 @@ import { ReplyActions } from "@/components/forum/reply-actions";
 import { ThreadActions } from "@/components/forum/thread-actions";
 import { ThreadPoll } from "@/components/forum/thread-poll";
 import { ThreadWatchButton } from "@/components/forum/thread-watch-button";
+import { UserBadges } from "@/components/achievements/user-badges";
 import { PERMISSION_LEVELS } from "@/lib/permissions";
 
 type Props = {
@@ -70,7 +71,11 @@ export default async function ThreadPage({ params }: Props) {
           createdAt: true,
           isVIP: true,
           isFounder: true,
-          isTrusted: true
+          isTrusted: true,
+          achievements: {
+            where: { isPinned: true },
+            select: { badgeId: true }
+          }
         }
       },
       replies: {
@@ -85,7 +90,11 @@ export default async function ThreadPage({ params }: Props) {
               createdAt: true,
               isVIP: true,
               isFounder: true,
-              isTrusted: true
+              isTrusted: true,
+              achievements: {
+                where: { isPinned: true },
+                select: { badgeId: true }
+              }
             }
           },
           likes: { select: { userId: true } }
@@ -215,6 +224,7 @@ export default async function ThreadPage({ params }: Props) {
                 <div className="hidden md:block mt-4 space-y-1 text-xs text-muted-foreground w-full text-left bg-background/30 p-2 rounded-md border border-border/30">
                   <div className="flex justify-between"><span>Level:</span> <span>{thread.author.level}</span></div>
                   <div className="flex justify-between"><span>Joined:</span> <span>{format(new Date(thread.author.createdAt), "MMM yyyy")}</span></div>
+                  <UserBadges achievements={thread.author.achievements} />
                 </div>
               </div>
             </div>
@@ -296,10 +306,11 @@ export default async function ThreadPage({ params }: Props) {
                   )}
                   
                   <div className="hidden md:block mt-4 space-y-1 text-xs text-muted-foreground w-full text-left bg-background/30 p-2 rounded-md border border-border/30">
-                    <div className="flex justify-between"><span>Level:</span> <span>{reply.author.level}</span></div>
-                    <div className="flex justify-between"><span>Joined:</span> <span>{format(new Date(reply.author.createdAt), "MMM yyyy")}</span></div>
-                  </div>
+                  <div className="flex justify-between"><span>Level:</span> <span>{reply.author.level}</span></div>
+                  <div className="flex justify-between"><span>Joined:</span> <span>{format(new Date(reply.author.createdAt), "MMM yyyy")}</span></div>
+                  <UserBadges achievements={reply.author.achievements} />
                 </div>
+              </div>
               </div>
             </div>
 

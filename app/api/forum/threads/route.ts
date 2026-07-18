@@ -17,6 +17,7 @@ function generateSlug(title: string) {
 }
 
 import { awardXP, XP_VALUES } from "@/lib/xp";
+import { checkAndAwardAchievements } from "@/lib/achievements";
 
 export async function POST(req: Request) {
   try {
@@ -98,6 +99,9 @@ export async function POST(req: Request) {
 
     // Award XP
     await awardXP(session.user.id, XP_VALUES.THREAD_CREATE);
+
+    // Auto-Award Badges
+    await checkAndAwardAchievements(session.user.id);
 
     return NextResponse.json(thread, { status: 201 });
   } catch (error) {
