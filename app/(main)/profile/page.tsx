@@ -24,7 +24,7 @@ export default async function ProfilePage() {
   const roleName = getRoleName(roleLevel);
   const roleColor = getRoleColor(roleLevel);
 
-  const [recentThreads, recentReplies, steamWishlist, userRecord] = await Promise.all([
+  const [recentThreads, recentReplies, steamWishlist, userRecord, mmoCharacters] = await Promise.all([
     prisma.thread.findMany({
       where: { authorId: user.id },
       orderBy: { createdAt: "desc" },
@@ -43,6 +43,10 @@ export default async function ProfilePage() {
     prisma.user.findUnique({
       where: { id: user.id },
       select: { youtubeVideoUrl: true, youtubeMusicUrl: true, profileImages: true }
+    }),
+    prisma.gameCharacter.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" }
     })
   ]);
 
@@ -171,6 +175,47 @@ export default async function ProfilePage() {
                   <p className="mt-1 text-xs font-mono bg-muted p-1 rounded inline-block">{user.id}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card/50 border-border/50 mt-6 overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+              <Gamepad2 className="w-32 h-32" />
+            </div>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div className="space-y-1">
+                <CardTitle>Saints Tamer MMO</CardTitle>
+                <CardDescription>Your active characters in the SaintsGaming metaverse</CardDescription>
+              </div>
+              <Link href="/profile/terminal" className={buttonVariants({ variant: "default", size: "sm" })}>
+                Play Now
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {mmoCharacters && mmoCharacters.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {mmoCharacters.map((char) => (
+                    <div key={char.id} className="bg-background border border-border/50 rounded-xl p-4 flex items-center gap-4 shadow-sm">
+                      <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0 border border-white/5">
+                        <Image src={`/assets/npcs/${char.spriteId}.png`} alt={char.spriteId} width={32} height={32} className="pixelated" unoptimized onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">{char.name}</h3>
+                        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{char.classId}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-muted/30 rounded-lg">
+                  <Gamepad2 className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <h3 className="text-sm font-medium">No characters found</h3>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4">You haven&apos;t created any MMO characters yet.</p>
+                  <Link href="/profile/terminal" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                    Create Character
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
 
