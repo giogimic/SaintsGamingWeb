@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getLevelData } from "@/lib/xp";
 import { Character } from "@prisma/client";
+import { ShieldCheck, Star, Crown } from "lucide-react";
 
 export default async function UcpDashboard() {
   const session = await auth();
@@ -42,12 +43,20 @@ export default async function UcpDashboard() {
     : 100;
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-4xl font-bold">FiveM User Control Panel</h1>
+    <div className="container mx-auto py-10 px-4 max-w-6xl">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold flex items-center gap-3">
+            FiveM User Control Panel
+            {dbUser.isFounder && <Crown className="w-6 h-6 text-yellow-500" title="Founder" />}
+            {dbUser.isVip && <Star className="w-6 h-6 text-purple-500" title="VIP" />}
+            {dbUser.isTrusted && <ShieldCheck className="w-6 h-6 text-green-500" title="Trusted" />}
+          </h1>
+          <p className="text-muted-foreground mt-2">Manage your characters, vehicles, and assets.</p>
+        </div>
       </div>
       
-      <Card className="mb-8">
+      <Card className="mb-8 sg-glass border-primary/10">
         <CardHeader>
           <CardTitle>Account Overview</CardTitle>
         </CardHeader>
@@ -114,12 +123,13 @@ export default async function UcpDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {dbUser.characters.map((char: Character) => (
-              <Card key={char.id} className="overflow-hidden flex flex-col">
-                <CardHeader className="pb-2">
-                  <CardTitle>{char.firstName} {char.lastName}</CardTitle>
+              <Card key={char.id} className="overflow-hidden flex flex-col sg-glass hover:border-primary/50 transition-colors border-border/50 relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                <CardHeader className="pb-2 relative">
+                  <CardTitle className="text-xl sg-text-gradient">{char.firstName} {char.lastName}</CardTitle>
                   <p className="text-sm text-muted-foreground">{char.phoneNumber || "No phone number"}</p>
                 </CardHeader>
-                <CardContent className="flex-1">
+                <CardContent className="flex-1 relative">
                   <div className="grid grid-cols-2 gap-4 text-sm mb-4 mt-2">
                     <div>
                       <span className="text-muted-foreground block text-xs uppercase tracking-wider">Cash</span>

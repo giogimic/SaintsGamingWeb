@@ -36,6 +36,7 @@ export function AdminOverlayShell({
         { href: "/admin/news", label: "News", icon: Newspaper, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN || isWriter },
         { href: "/admin/streams", label: "Streams", icon: Monitor, isVisible: permissionLevel >= PERMISSION_LEVELS.MODERATOR },
         { href: "/admin/tiers", label: "Level Tiers", icon: Award, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN },
+        { href: "/admin/achievements", label: "Achievements", icon: Award, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN },
       ]
     },
     {

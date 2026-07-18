@@ -127,9 +127,11 @@ model User {
   groupMessages       GroupMessage[]
 
   // Profile Customization
+  gameCharacters      GameCharacter[]
   youtubeVideoUrl     String?
   youtubeMusicUrl     String?
   profileImages       ProfileImage[]
+  pinnedBeastId       String? // ID of the Tuxemon to display on profile
 
   // Social
   socialPosts            SocialPost[]
@@ -147,6 +149,7 @@ model User {
   pollVotes              PollVote[]
   threadSubscriptions    ThreadSubscription[]
   replyLikes             ReplyLike[]
+  achievements           UserAchievement[]
 
   @@index([createdAt])
 }
@@ -661,6 +664,17 @@ model RssFeed {
 
 // ─── User Profile Integrations ────────────────────────────────────
 
+model UserAchievement {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String   // The string identifier for the achievement (e.g. "beta_tester")
+  isPinned  Boolean  @default(false)
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
 model SteamWishlistItem {
   id        String   @id @default(cuid())
   userId    String
@@ -671,6 +685,32 @@ model SteamWishlistItem {
   createdAt DateTime @default(now())
 
   @@unique([userId, appId])
+}
+
+// ─── Saints Tamer Minigame (MMO Architecture) ─────────────────────────
+
+model GameCharacter {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  spriteId  String
+  classId   String
+  stateData String   // JSON string of the Zustand store PlayerState
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model WorldMap {
+  id        String   @id // e.g. "SAINTS_VILLAGE"
+  name      String
+  gridData  String   // JSON 2D Array
+  gatesData String   // JSON
+  npcsData  String   // JSON for NPC dialogues/teams
+  version   Int      @default(1)
+  updatedAt DateTime @updatedAt
 }
 
 // ─── E2EE Messenger & Friends ──────────────────────────────────────

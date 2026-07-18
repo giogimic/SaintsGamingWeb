@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators";
+import { checkAndAwardAchievements } from "@/lib/achievements";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -54,6 +55,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             token.role = dbUser.role;
             token.devConsoleEnabled = dbUser.devConsoleEnabled;
             token.forcePasswordChange = dbUser.forcePasswordChange;
+
+            // Passively check achievements (e.g. Veteran, High Roller) in the background
+            checkAndAwardAchievements(dbUser.id).catch(err => console.error("Auto-award error:", err));
           }
         } catch (error) {
           // If the DB is completely down/missing, clear the token as a safety measure

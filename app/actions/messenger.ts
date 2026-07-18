@@ -2,6 +2,9 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { pusherServer } from "@/lib/pusher";
+import { revalidatePath } from "next/cache";
+import { checkAndAwardAchievements } from "@/lib/achievements";
 
 export async function uploadPublicKey(publicKey: string) {
   const session = await auth();
@@ -103,6 +106,13 @@ export async function acceptFriendRequest(id: string) {
     where: { id },
     data: { status: "ACCEPTED" }
   });
+
+  // Evaluate Social Butterfly achievement for both users
+  await checkAndAwardAchievements(session.user.id);
+  await checkAndAwardAchievements(friendship.userId);
+
+  revalidatePath("/ucp/social");
+  revalidatePath("/ucp/messenger");
   return true;
 }
 

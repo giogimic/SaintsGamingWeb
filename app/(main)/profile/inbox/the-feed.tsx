@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { UserBadges } from "@/components/achievements/user-badges";
 import { formatDistanceToNow } from "date-fns";
 import EmojiPicker from "emoji-picker-react";
 import { GiphyFetch } from "@giphy/js-fetch-api";
@@ -527,6 +528,11 @@ export function TheFeed() {
             )}
             {post.author?.isTrusted && (
               <ShieldCheck className="w-3.5 h-3.5 text-green-500 fill-green-500" title="Trusted User" />
+            )}
+            {post.author?.achievements && post.author.achievements.length > 0 && (
+              <div className="ml-1">
+                <UserBadges achievements={post.author.achievements} inline={true} />
+              </div>
             )}
             {!post.isForumThread && (
               <button 

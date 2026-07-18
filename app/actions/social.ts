@@ -224,7 +224,16 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean, 
     where: whereClause,
     include: {
       author: {
-        select: { id: true, username: true, image: true, permissionLevel: true, isVIP: true, isFounder: true, isTrusted: true }
+        select: { 
+          id: true, 
+          username: true, 
+          image: true, 
+          permissionLevel: true, 
+          isVIP: true, 
+          isFounder: true, 
+          isTrusted: true,
+          achievements: { where: { isPinned: true }, select: { badgeId: true } }
+        }
       },
       reactions: true,
       bookmarks: currentUserId ? { where: { userId: currentUserId } } : false,
@@ -270,7 +279,16 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean, 
       take: 10,
       include: {
         author: {
-          select: { id: true, username: true, image: true, permissionLevel: true, isVIP: true, isFounder: true, isTrusted: true }
+          select: { 
+            id: true, 
+            username: true, 
+            image: true, 
+            permissionLevel: true, 
+            isVIP: true, 
+            isFounder: true, 
+            isTrusted: true,
+            achievements: { where: { isPinned: true }, select: { badgeId: true } }
+          }
         },
         reactions: true,
         bookmarks: currentUserId ? { where: { userId: currentUserId } } : false,
@@ -500,7 +518,18 @@ export async function getPostReplies(postId: string) {
     where: { parentId: postId },
     orderBy: { createdAt: "asc" },
     include: {
-      author: { select: { id: true, username: true, image: true, permissionLevel: true } },
+      author: { 
+        select: { 
+          id: true, 
+          username: true, 
+          image: true, 
+          permissionLevel: true,
+          isVIP: true,
+          isFounder: true,
+          isTrusted: true,
+          achievements: { where: { isPinned: true }, select: { badgeId: true } }
+        } 
+      },
       reactions: true,
     }
   });
