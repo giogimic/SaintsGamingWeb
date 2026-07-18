@@ -12,6 +12,7 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+      - "3001:3001"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

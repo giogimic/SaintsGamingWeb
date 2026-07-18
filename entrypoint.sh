@@ -24,6 +24,10 @@ else
     echo "[*] Skipping schema migration (DB_SKIP_MIGRATION=true)."
 fi
 
+# Start the standalone MMO WebSockets server in the background
+echo "[*] Starting Saints Tamer MMO Server (port 3001)..."
+bun run game-server.js &
+
 # Start the application
 echo "[*] Starting Next.js server..."
 exec bun run start
