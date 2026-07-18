@@ -6,6 +6,7 @@ import DexOverlay from './dex-overlay';
 import BattleOverlay from './battle-overlay';
 import ShopOverlay from './shop-overlay';
 import SkillsOverlay from './skills-overlay';
+import DPad from './dpad';
 import { useGameStore } from './store';
 
 import { loadGameCharacter } from '@/app/actions/game';
@@ -68,9 +69,12 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
   return (
     <div 
       ref={containerRef}
-      className={`relative flex flex-col items-center justify-center w-full h-full max-w-full ${isFullscreen ? 'w-screen h-screen bg-[#1a1a1a]' : ''}`}
+      className={`relative flex flex-col items-center justify-center w-full h-full max-w-full touch-none select-none ${isFullscreen ? 'w-screen h-screen fixed inset-0 z-50 bg-[#1a1a1a]' : ''}`}
     >
       <GameCanvas />
+      
+      {/* Mobile Controls */}
+      <DPad />
 
       {/* Toast Notification */}
       {toast && (

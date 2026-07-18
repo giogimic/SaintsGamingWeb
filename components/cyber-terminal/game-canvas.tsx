@@ -394,7 +394,7 @@ export default function GameCanvas() {
       ref={canvasRef} 
       width={MAP_COLS * TILE_SIZE} 
       height={MAP_ROWS * TILE_SIZE}
-      className="border-4 border-[#333] rounded-lg shadow-2xl cursor-pointer bg-[#4ade80] max-h-[85vh] w-full aspect-video object-contain"
+      className="border-4 border-[#333] rounded-lg shadow-[0_0_50px_rgba(74,222,128,0.2)] cursor-pointer bg-[#4ade80] max-h-[85vh] w-full max-w-5xl aspect-video object-contain touch-none select-none image-pixelated"
     />
   );
 }
