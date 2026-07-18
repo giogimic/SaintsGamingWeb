@@ -87,6 +87,10 @@ export default async function ThreadPage({ params }: Props) {
     }
   });
 
+  if (!thread) {
+    notFound();
+  }
+
   let currentUserPermission = 0;
   let isWatched = false;
   if (session?.user?.id) {
@@ -105,10 +109,6 @@ export default async function ThreadPage({ params }: Props) {
       }
     });
     isWatched = !!sub;
-  }
-
-  if (!thread) {
-    notFound();
   }
 
   const relatedThreads = await prisma.thread.findMany({
