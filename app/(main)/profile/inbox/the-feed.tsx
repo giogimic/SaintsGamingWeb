@@ -20,7 +20,10 @@ import {
   tipSocialPost,
   subscribeToCreator,
   reportSocialPost,
-  deleteSocialPost
+  deleteSocialPost,
+  updateSocialPost,
+  votePoll,
+  pinSocialPost
 } from "@/app/actions/social";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +34,8 @@ import {
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, 
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
-  ChevronLeft, ChevronRight, ArrowRight
+  ChevronLeft, ChevronRight, ArrowRight, BarChart2, Pin,
+  BadgeCheck, Crown, ShieldCheck
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -77,8 +81,11 @@ export function TheFeed() {
   const [loadedReplies, setLoadedReplies] = useState<Record<string, any[]>>({});
   const [loadingReplies, setLoadingReplies] = useState<Record<string, boolean>>({});
   
-  // Video Viewer Overlay
+  // Media Viewer Overlay (Lightbox/Video)
+  const [viewingMedia, setViewingMedia] = useState<any | null>(null);
   const [viewingVideo, setViewingVideo] = useState<any | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
 
   // === Feed Upgrade State ===
   const [broadenFeed, setBroadenFeed] = useState(false);
@@ -91,6 +98,11 @@ export function TheFeed() {
   const [newMuteType, setNewMuteType] = useState<"KEYWORD" | "HASHTAG">("KEYWORD");
   const [hiddenPostIds, setHiddenPostIds] = useState<Set<string>>(new Set());
   const [activePostMenu, setActivePostMenu] = useState<string | null>(null);
+
+  // Poll state
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
 
   // Load preferences on mount
   useEffect(() => {
@@ -109,14 +121,15 @@ export function TheFeed() {
     loadPrefs();
   }, []);
 
-  async function loadFeed() {
+  async function loadFeed(isLoadMore = false) {
     setLoading(true);
     try {
+      const cursor = isLoadMore && posts.length > 0 ? posts[posts.length - 1].id : undefined;
       const [feed, tags] = await Promise.all([
-        getTheFeed(filter || undefined, broadenFeed),
+        getTheFeed(filter || undefined, broadenFeed, cursor),
         getTrendingTags()
       ]);
-      setPosts(feed);
+      setPosts(prev => isLoadMore ? [...prev, ...feed] : feed);
       setTrending(tags);
     } catch (e) {
       console.error(e);
@@ -225,9 +238,32 @@ export function TheFeed() {
       toast.success("Post deleted");
       setPosts(prev => prev.filter(p => p.id !== postId));
       setActivePostMenu(null);
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete post");
+    }
+  }
+
+  async function handlePinToggle(postId: string, currentPinStatus: boolean) {
+    try {
+      await pinSocialPost(postId, !currentPinStatus);
+      toast.success(currentPinStatus ? "Post unpinned" : "Post pinned to top");
+      setActivePostMenu(null);
+      loadFeed();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to pin/unpin post");
+    }
+  }
+
+  async function handleSaveEdit(postId: string) {
+    if (!editBody.trim()) return;
+    try {
+      await updateSocialPost(postId, editBody);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, body: editBody } : p));
+      setEditingPostId(null);
+      toast.success("Post updated");
     } catch (e) {
       console.error(e);
-      toast.error("Failed to delete post");
+      toast.error("Failed to update post");
     }
   }
 
@@ -237,6 +273,17 @@ export function TheFeed() {
       toast.success("Sent a $5 tip to the creator!");
     } catch (e: any) {
       toast.error(e.message || "Failed to send tip");
+    }
+  }
+
+  async function handleVote(pollId: string, optionId: string) {
+    try {
+      await votePoll(pollId, optionId);
+      // Optimistically update poll UI by re-fetching feed or locally patching state
+      // For simplicity here, we can just loadFeed() or specifically fetch the post
+      loadFeed();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to vote");
     }
   }
 
@@ -262,6 +309,11 @@ export function TheFeed() {
         toast.success("Reply posted!");
         await handleLoadReplies(replyingTo);
       } else {
+        const validPollOptions = pollOptions.filter(o => o.trim() !== "");
+        const pollData = showPollForm && pollQuestion.trim() && validPollOptions.length >= 2 
+          ? { question: pollQuestion, options: validPollOptions } 
+          : undefined;
+
         await createSocialPost(body, mediaUrl || undefined, {
           isSubscriberOnly,
           voiceoverUrl: voiceoverUrl || undefined,
@@ -270,6 +322,7 @@ export function TheFeed() {
           backgroundTrackVolume,
           chapters: chapters || undefined,
           captionsText: captionsText || undefined,
+          poll: pollData
         });
         toast.success("Post created successfully!");
         loadFeed();
@@ -283,6 +336,9 @@ export function TheFeed() {
       setCaptionsText("");
       setVoiceoverVolume(1.0);
       setBackgroundTrackVolume(1.0);
+      setShowPollForm(false);
+      setPollQuestion("");
+      setPollOptions(["", ""]);
     } catch (e) {
       console.error(e);
     } finally {
@@ -401,7 +457,8 @@ export function TheFeed() {
   }, []);
 
   const renderBody = (text: string) => {
-    const parts = text.split(/(#[a-zA-Z0-9_]+)/g);
+    // Split by both hashtags (#tag) and mentions (@username)
+    const parts = text.split(/(#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("#")) {
         return (
@@ -412,6 +469,18 @@ export function TheFeed() {
           >
             {part}
           </span>
+        );
+      }
+      if (part.startsWith("@")) {
+        const username = part.replace("@", "");
+        return (
+          <Link 
+            key={i} 
+            href={`/user/${username}`}
+            className="text-primary hover:underline font-bold"
+          >
+            {part}
+          </Link>
         );
       }
       return <span key={i}>{part}</span>;
@@ -448,8 +517,17 @@ export function TheFeed() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
             <span className="font-bold truncate">{post.author?.username}</span>
+            {post.author?.isFounder && (
+              <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" title="Founder" />
+            )}
+            {post.author?.isVIP && (
+              <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" title="VIP" />
+            )}
+            {post.author?.isTrusted && (
+              <ShieldCheck className="w-3.5 h-3.5 text-green-500 fill-green-500" title="Trusted User" />
+            )}
             {!post.isForumThread && (
               <button 
                 onClick={(e) => { e.stopPropagation(); handleSubscribe(post.author.id); }}
@@ -470,6 +548,12 @@ export function TheFeed() {
             {post.viewCount > 0 && (
               <span className="text-[10px] text-muted-foreground/60 flex items-center gap-0.5 ml-auto shrink-0">
                 <Eye className="w-3 h-3" /> {post.viewCount}
+              </span>
+            )}
+            
+            {post.isPinned && (
+              <span className="text-[10px] text-primary flex items-center gap-0.5 ml-2 shrink-0 border border-primary/30 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                <Pin className="w-3 h-3 fill-current" /> Pinned
               </span>
             )}
             
@@ -499,12 +583,34 @@ export function TheFeed() {
                       Report as AI Sludge / Low Effort
                     </button>
                     {post.isAuthor && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingPostId(post.id);
+                            setEditBody(post.body);
+                            setActivePostMenu(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Edit Post
+                        </button>
+                        <button
+                          onClick={() => handleDeletePost(post.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-destructive/10 text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete Post
+                        </button>
+                      </>
+                    )}
+                    {currentUserPermission >= 300 && (
                       <button
-                        onClick={() => handleDeletePost(post.id)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-destructive/10 text-destructive transition-colors"
+                        onClick={() => handlePinToggle(post.id, post.isPinned)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4" />
-                        Delete Post
+                        <Pin className={`w-4 h-4 ${post.isPinned ? "fill-current" : ""}`} />
+                        {post.isPinned ? "Unpin Post" : "Pin Post"}
                       </button>
                     )}
                     {postHashtags.map((tag: string) => (
@@ -533,14 +639,71 @@ export function TheFeed() {
               </div>
             )}
           </div>
-          <div className="text-sm leading-relaxed mb-3" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-            {post.isForumThread ? (
-              <div className="prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown>{post.body}</ReactMarkdown>
-              </div>
-            ) : renderBody(post.body)}
-          </div>
           
+          {editingPostId === post.id ? (
+            <div className="mb-3 space-y-2">
+              <Textarea
+                value={editBody}
+                onChange={(e) => setEditBody(e.target.value)}
+                className="w-full text-sm"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="ghost" onClick={() => setEditingPostId(null)}>Cancel</Button>
+                <Button size="sm" onClick={() => handleSaveEdit(post.id)}>Save</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm leading-relaxed mb-3" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+              {post.isForumThread ? (
+                <div className="prose prose-invert prose-sm max-w-none">
+                  <ReactMarkdown>{post.body}</ReactMarkdown>
+                </div>
+              ) : renderBody(post.body)}
+            </div>
+          )}
+          
+          {post.polls && post.polls.length > 0 && (
+            <div className="mb-3 space-y-2 mt-2">
+              {post.polls.map((poll: any) => {
+                const totalVotes = poll.options.reduce((sum: number, o: any) => sum + (o._count?.votes || 0), 0);
+                return (
+                  <div key={poll.id} className="bg-muted/30 p-4 rounded-xl border border-border/50">
+                    <p className="font-bold mb-3">{poll.question}</p>
+                    <div className="space-y-2">
+                      {poll.options.map((opt: any) => {
+                        const hasVoted = opt.votes && opt.votes.length > 0;
+                        const votes = opt._count?.votes || 0;
+                        const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+                        
+                        return (
+                          <div 
+                            key={opt.id} 
+                            onClick={() => handleVote(poll.id, opt.id)}
+                            className="relative overflow-hidden rounded-lg border border-border/50 bg-background hover:bg-muted/50 transition-colors cursor-pointer p-3 flex justify-between items-center group"
+                          >
+                            <div 
+                              className={`absolute inset-0 opacity-20 ${hasVoted ? 'bg-primary' : 'bg-muted-foreground'}`}
+                              style={{ width: `${percentage}%`, transition: 'width 0.5s ease-out' }}
+                            />
+                            <span className={`relative z-10 text-sm ${hasVoted ? 'font-bold text-primary' : 'font-medium'}`}>
+                              {opt.text}
+                            </span>
+                            <span className="relative z-10 text-xs text-muted-foreground font-medium opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100">
+                              {percentage}% ({votes})
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground text-right">
+                      {totalVotes} total votes
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {post.isForumThread && post.threadUrl && (
             <div className="mb-3">
               <Link href={post.threadUrl} className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
@@ -552,7 +715,7 @@ export function TheFeed() {
             <div 
               className="mb-3 rounded-xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[400px] relative group cursor-pointer" 
               onClick={() => {
-                setViewingVideo(post);
+                setViewingMedia(post);
                 if (post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm")) {
                   handleRecordView(post.id);
                 }
@@ -740,7 +903,6 @@ export function TheFeed() {
             <ChevronRight className="w-8 h-8" />
           </button>
           
-          {/* Mobile Swipe Area (invisible, just catches touches if needed, but for now buttons work) */}
           <div className="flex-1 flex items-center justify-center relative bg-black/90">
             {viewingVideo.mediaUrl?.endsWith(".mp4") || viewingVideo.mediaUrl?.endsWith(".webm") ? (
               <VideoPlayer
@@ -937,6 +1099,31 @@ export function TheFeed() {
                     </div>
                   )}
 
+                  {showPollForm && (
+                    <div className="mx-4 mt-2 p-4 bg-muted/20 border border-border/50 rounded-xl space-y-3">
+                      <Input placeholder="Ask a question..." value={pollQuestion} onChange={e => setPollQuestion(e.target.value)} className="bg-background" />
+                      {pollOptions.map((opt, i) => (
+                        <div key={i} className="flex gap-2">
+                          <Input placeholder={`Option ${i + 1}`} value={opt} onChange={e => {
+                            const newOpts = [...pollOptions];
+                            newOpts[i] = e.target.value;
+                            setPollOptions(newOpts);
+                          }} className="bg-background" />
+                          {pollOptions.length > 2 && (
+                            <Button type="button" variant="ghost" size="icon" onClick={() => setPollOptions(pollOptions.filter((_, idx) => idx !== i))}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      {pollOptions.length < 4 && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => setPollOptions([...pollOptions, ""])}>
+                          <Plus className="w-4 h-4 mr-2" /> Add Option
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center p-3 bg-muted/20 border-t border-border/50">
                     <div className="flex items-center gap-1">
                       <Popover>
@@ -989,6 +1176,10 @@ export function TheFeed() {
                           </label>
                         </Button>
                       </div>
+
+                      <Button type="button" variant="ghost" size="icon" className={`rounded-full hover:text-primary transition-colors ${showPollForm ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setShowPollForm(!showPollForm)}>
+                        <BarChart2 className="w-5 h-5" />
+                      </Button>
 
                       <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
                         <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
@@ -1062,6 +1253,14 @@ export function TheFeed() {
           ) : (
             <div className="space-y-4 pb-20">
               {displayPosts.map(post => renderPost(post))}
+              {displayPosts.length > 0 && (
+                <div className="pt-4 flex justify-center">
+                  <Button variant="outline" onClick={() => loadFeed(false)} disabled={loading}>
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Compass className="w-4 h-4 mr-2" />}
+                    Load More
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1094,6 +1293,36 @@ export function TheFeed() {
           )}
         </div>
       </div>
+
+      {/* Media Lightbox Overlay */}
+      {viewingMedia && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-4 right-4 text-white hover:bg-white/20 z-[101]"
+            onClick={() => setViewingMedia(null)}
+          >
+            <X className="w-8 h-8" />
+          </Button>
+          <div className="w-full max-w-5xl max-h-full flex items-center justify-center relative">
+            {viewingMedia.mediaUrl.endsWith(".mp4") || viewingMedia.mediaUrl.endsWith(".webm") ? (
+              <VideoPlayer 
+                src={viewingMedia.mediaUrl}
+                voiceoverUrl={viewingMedia.voiceoverUrl}
+                backgroundTrackUrl={viewingMedia.backgroundTrackUrl}
+                voiceoverVolume={viewingMedia.voiceoverVolume}
+                backgroundTrackVolume={viewingMedia.backgroundTrackVolume}
+                chapters={viewingMedia.chapters}
+                captionsText={viewingMedia.captionsText}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={viewingMedia.mediaUrl} alt="Expanded media" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

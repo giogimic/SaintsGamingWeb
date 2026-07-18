@@ -1,7 +1,7 @@
 import { getPublicProfile } from "@/app/actions/users";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { User as UserIcon, Calendar, Gamepad2, Shield } from "lucide-react";
+import { User as UserIcon, Calendar, Gamepad2, Shield, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
 import { ProfileActions } from "./profile-actions";
 import { ProfileMediaShowcase } from "./profile-media-showcase";
 import { auth } from "@/auth";
@@ -60,7 +60,20 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
         <div className="text-center space-y-4 mt-6 z-10">
           <div>
-            <h1 className="text-5xl font-extrabold tracking-tight sg-text-gradient drop-shadow-sm">{profile.username}</h1>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-5xl font-extrabold tracking-tight sg-text-gradient drop-shadow-sm">{profile.username}</h1>
+              <div className="flex items-center gap-1 mt-1">
+                {profile.isFounder && (
+                  <Crown className="w-6 h-6 text-yellow-500 fill-yellow-500" title="Founder" />
+                )}
+                {profile.isVIP && (
+                  <BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500" title="VIP" />
+                )}
+                {profile.isTrusted && (
+                  <ShieldCheck className="w-6 h-6 text-green-500 fill-green-500" title="Trusted User" />
+                )}
+              </div>
+            </div>
             <div className="flex items-center justify-center gap-4 mt-3 text-muted-foreground font-medium">
               <span className="flex items-center gap-1.5 bg-background/50 backdrop-blur-sm px-3 py-1 rounded-full text-sm shadow-sm border border-white/5">
                 <Calendar className="w-4 h-4 text-primary" />

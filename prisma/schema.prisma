@@ -123,6 +123,8 @@ model User {
   publicKey           UserPublicKey?
   sentMessages        DirectMessage[]   @relation("SentMessages")
   receivedMessages    DirectMessage[]   @relation("ReceivedMessages")
+  groupMemberships    GroupChatMember[]
+  groupMessages       GroupMessage[]
 
   // Profile Customization
   youtubeVideoUrl     String?
@@ -266,12 +268,15 @@ model Reaction {
 model Poll {
   id        String       @id @default(cuid())
   question  String
-  threadId  String
-  thread    Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  threadId  String?
+  thread    Thread?      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      SocialPost?  @relation("PostPoll", fields: [postId], references: [id], onDelete: Cascade)
   options   PollOption[]
   createdAt DateTime     @default(now())
 
   @@index([threadId])
+  @@index([postId])
 }
 
 model PollOption {
@@ -703,6 +708,7 @@ model DirectMessage {
   senderCiphertext String
   senderIv         String
 
+  isRead           Boolean  @default(false)
   createdAt        DateTime @default(now())
 
   sender           User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
@@ -710,6 +716,39 @@ model DirectMessage {
 
   @@index([senderId, receiverId])
   @@index([receiverId, senderId])
+}
+
+model GroupChat {
+  id        String   @id @default(cuid())
+  name      String?  
+  createdAt DateTime @default(now())
+
+  members   GroupChatMember[]
+  messages  GroupMessage[]
+}
+
+model GroupChatMember {
+  id          String   @id @default(cuid())
+  groupChatId String
+  userId      String
+  joinedAt    DateTime @default(now())
+  role        String   @default("MEMBER") // ADMIN or MEMBER
+
+  groupChat   GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupChatId, userId])
+}
+
+model GroupMessage {
+  id          String   @id @default(cuid())
+  groupChatId String
+  senderId    String
+  body        String
+  createdAt   DateTime @default(now())
+
+  groupChat   GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  sender      User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
 
 // ─── The Feed ────────────────────────────────────────────────
@@ -733,8 +772,10 @@ model SocialPost {
   bookmarks SocialBookmark[]
   watchHistory SocialWatchHistory[]
   tips      SocialTip[]
+  polls     Poll[]       @relation("PostPoll")
 
   // Phase 2 Upgrade Fields
+  isPinned              Boolean  @default(false)
   revenueEarned         Float    @default(0)
   isSubscriberOnly      Boolean  @default(false)
   voiceoverUrl          String?
@@ -747,6 +788,11 @@ model SocialPost {
   originalityScore      Int      @default(100)
   flagReason            String?
   throttleStatus        String?
+
+  // Phase 3 Upgrade Fields
+  isForumThread         Boolean  @default(false)
+  threadUrl             String?
+  threadId              String?  @unique
 
   @@index([createdAt])
   @@index([authorId])

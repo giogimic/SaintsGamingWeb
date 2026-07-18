@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
-import { MessageSquare, Pin, Lock } from "lucide-react";
+import { MessageSquare, Pin, Lock, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { auth } from "@/auth";
 import { ReplyForm } from "@/components/forum/reply-form";
@@ -67,7 +67,10 @@ export default async function ThreadPage({ params }: Props) {
           image: true,
           role: { select: { name: true, color: true } },
           level: true,
-          createdAt: true
+          createdAt: true,
+          isVIP: true,
+          isFounder: true,
+          isTrusted: true
         }
       },
       replies: {
@@ -79,7 +82,10 @@ export default async function ThreadPage({ params }: Props) {
               image: true,
               role: { select: { name: true, color: true } },
               level: true,
-              createdAt: true
+              createdAt: true,
+              isVIP: true,
+              isFounder: true,
+              isTrusted: true
             }
           },
           likes: { select: { userId: true } }
@@ -182,9 +188,20 @@ export default async function ThreadPage({ params }: Props) {
               )}
               
               <div className="text-left md:text-center flex-1">
-                <Link href={`/user/${thread.author.username}`} className="font-bold text-lg hover:text-primary hover:underline break-all block">
-                  {thread.author.username}
-                </Link>
+                <div className="flex items-center justify-start md:justify-center gap-1 flex-wrap mb-1">
+                  <Link href={`/user/${thread.author.username}`} className="font-bold text-lg hover:text-primary hover:underline break-all block">
+                    {thread.author.username}
+                  </Link>
+                  {thread.author.isFounder && (
+                    <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" title="Founder" />
+                  )}
+                  {thread.author.isVIP && (
+                    <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" title="VIP" />
+                  )}
+                  {thread.author.isTrusted && (
+                    <ShieldCheck className="w-4 h-4 text-green-500 fill-green-500" title="Trusted User" />
+                  )}
+                </div>
                 {thread.author.role ? (
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-background/50 border border-border/50 ${thread.author.role.color || "text-foreground"}`}>
                     {thread.author.role.name}
@@ -216,6 +233,7 @@ export default async function ThreadPage({ params }: Props) {
                   userPermissionLevel={currentUserPermission} 
                   isAuthor={session?.user?.id === thread.author.id}
                   subcategorySlug={thread.subcategory.slug}
+                  slug={thread.slug}
                 />
               </div>
             </div>
@@ -253,9 +271,20 @@ export default async function ThreadPage({ params }: Props) {
                 )}
                 
                 <div className="text-left md:text-center flex-1">
-                  <Link href={`/user/${reply.author.username}`} className="font-bold text-lg hover:text-primary hover:underline break-all block">
-                    {reply.author.username}
-                  </Link>
+                  <div className="flex items-center justify-start md:justify-center gap-1 flex-wrap mb-1">
+                    <Link href={`/user/${reply.author.username}`} className="font-bold text-lg hover:text-primary hover:underline break-all block">
+                      {reply.author.username}
+                    </Link>
+                    {reply.author.isFounder && (
+                      <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" title="Founder" />
+                    )}
+                    {reply.author.isVIP && (
+                      <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" title="VIP" />
+                    )}
+                    {reply.author.isTrusted && (
+                      <ShieldCheck className="w-4 h-4 text-green-500 fill-green-500" title="Trusted User" />
+                    )}
+                  </div>
                   {reply.author.role ? (
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-background/50 border border-border/50 ${reply.author.role.color || "text-foreground"}`}>
                       {reply.author.role.name}

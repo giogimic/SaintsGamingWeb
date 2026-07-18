@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Flag, FolderInput, Share2, Trash2 } from "lucide-react";
+import { MoreHorizontal, Flag, FolderInput, Share2, Trash2, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -16,11 +16,13 @@ interface ThreadActionsProps {
   userPermissionLevel?: number;
   isAuthor?: boolean;
   subcategorySlug?: string;
+  slug?: string;
 }
 
-export function ThreadActions({ threadId, userPermissionLevel = 0, isAuthor = false, subcategorySlug }: ThreadActionsProps) {
+export function ThreadActions({ threadId, userPermissionLevel = 0, isAuthor = false, subcategorySlug, slug }: ThreadActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const canEdit = isAuthor || userPermissionLevel >= 300;
 
   const handleReport = async () => {
     const reason = prompt("Please provide a reason for reporting this thread:");
@@ -109,7 +111,15 @@ export function ThreadActions({ threadId, userPermissionLevel = 0, isAuthor = fa
         <DropdownMenuTrigger className="hover:text-foreground transition-colors p-1" disabled={loading}>
             <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={handleShare} className="cursor-pointer">
+            <Share2 className="w-4 h-4 mr-2" /> Share
+          </DropdownMenuItem>
+          {canEdit && slug && (
+            <DropdownMenuItem onClick={() => router.push(`/forum/t/${slug}/edit`)} className="cursor-pointer">
+              <Edit className="w-4 h-4 mr-2" /> Edit Thread
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleReport}>
             <Flag className="h-4 w-4 mr-2" /> Report Thread
           </DropdownMenuItem>

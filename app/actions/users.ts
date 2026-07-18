@@ -16,6 +16,9 @@ export async function getPublicProfile(username: string) {
       createdAt: true,
       youtubeVideoUrl: true,
       youtubeMusicUrl: true,
+      isVIP: true,
+      isFounder: true,
+      isTrusted: true,
       profileImages: {
         select: {
           id: true,
