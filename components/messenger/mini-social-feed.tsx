@@ -206,7 +206,7 @@ export function MiniSocialFeed() {
         </div>
       ))}
       <div className="text-center pt-2">
-        <Link href="/ucp/social" className="text-xs text-primary hover:underline">
+        <Link href="/profile/inbox" className="text-xs text-primary hover:underline">
           View Full Dashboard →
         </Link>
       </div>

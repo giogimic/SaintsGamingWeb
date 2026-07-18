@@ -29,7 +29,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { 
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, 
-  MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag
+  MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
@@ -637,6 +638,28 @@ export function TheFeed() {
 
   const displayPosts = searchResults !== null ? searchResults : posts;
 
+  function navigatePost(direction: number) {
+    if (!viewingVideo || !displayPosts) return;
+    const currentIndex = displayPosts.findIndex((p: any) => p.id === viewingVideo.id);
+    if (currentIndex === -1) return;
+    const nextIndex = currentIndex + direction;
+    if (nextIndex >= 0 && nextIndex < displayPosts.length) {
+      setViewingVideo(displayPosts[nextIndex]);
+    }
+  }
+
+  // Keyboard navigation for viewer
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!viewingVideo) return;
+      if (e.key === "ArrowRight") navigatePost(1);
+      if (e.key === "ArrowLeft") navigatePost(-1);
+      if (e.key === "Escape") setViewingVideo(null);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewingVideo, displayPosts]);
+
   return (
     <div className="flex h-full bg-background overflow-hidden animate-in fade-in relative">
       
@@ -649,7 +672,25 @@ export function TheFeed() {
           >
             <X className="w-6 h-6" />
           </button>
+
+          {/* Navigation Arrows */}
+          <button 
+            onClick={(e) => { e.stopPropagation(); navigatePost(-1); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed hidden md:block"
+            disabled={displayPosts.findIndex((p: any) => p.id === viewingVideo.id) === 0}
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
           
+          <button 
+            onClick={(e) => { e.stopPropagation(); navigatePost(1); }}
+            className="absolute right-4 md:right-[416px] top-1/2 -translate-y-1/2 z-50 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed hidden md:block"
+            disabled={displayPosts.findIndex((p: any) => p.id === viewingVideo.id) === displayPosts.length - 1}
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+          
+          {/* Mobile Swipe Area (invisible, just catches touches if needed, but for now buttons work) */}
           <div className="flex-1 flex items-center justify-center relative bg-black/90">
             {viewingVideo.mediaUrl?.endsWith(".mp4") || viewingVideo.mediaUrl?.endsWith(".webm") ? (
               <VideoPlayer
