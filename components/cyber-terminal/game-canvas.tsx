@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import EasyStar from 'easystarjs';
+import { io, Socket } from 'socket.io-client';
 import { useGameStore } from './store';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './constants';
 import { GAME_MAPS } from './data/maps';
@@ -10,6 +11,7 @@ import { setEncryptedAmbient } from './audio';
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -22,6 +24,37 @@ export default function GameCanvas() {
 
     let currentMapId = useGameStore.getState().currentMapId;
     easystar.setGrid(GAME_MAPS[currentMapId].grid);
+
+    // Socket.io Connection
+    const socket = io(window.location.protocol + '//' + window.location.hostname + ':3001');
+    socketRef.current = socket;
+    
+    socket.on('connect', () => {
+      const state = useGameStore.getState();
+      socket.emit('join_map', {
+        mapId: state.currentMapId,
+        x: state.player.position.x,
+        y: state.player.position.y,
+        name: 'Player', // Could be fetched from actual profile or store
+        spriteId: state.player.equipment?.head ? 'hero_male' : 'villager_1'
+      });
+    });
+
+    socket.on('map_players', (players) => {
+      useGameStore.getState().setOtherPlayers(players);
+    });
+
+    socket.on('player_joined', (data) => {
+      useGameStore.getState().updateOtherPlayer(data.socketId, data);
+    });
+
+    socket.on('player_moved', (data) => {
+      useGameStore.getState().updateOtherPlayer(data.socketId, data);
+    });
+
+    socket.on('player_left', (socketId) => {
+      useGameStore.getState().removeOtherPlayer(socketId);
+    });
 
     // Preload Assets
     const tilesetImg = new Image();
@@ -236,8 +269,15 @@ export default function GameCanvas() {
           if (dist <= speed) {
             currentPixelPos = { ...targetPixelPos };
             isMoving = false;
-            
+
+            // Emit to server now that we've reached the tile
             const currentLogicalPos = useGameStore.getState().player.position;
+            socketRef.current?.emit('move', { 
+              x: currentLogicalPos.x, 
+              y: currentLogicalPos.y,
+              mapId: currentMapId 
+            });
+            
             const mapData = GAME_MAPS[currentMapId];
             const tileType = mapData.grid[currentLogicalPos.y][currentLogicalPos.x];
 
@@ -308,7 +348,34 @@ export default function GameCanvas() {
       
       drawMap(cameraX, cameraY);
       drawEntities();
+
+      // Draw Other Players
+      Object.entries(state.otherPlayers).forEach(([id, op]) => {
+        const opX = op.x * TILE_SIZE - cameraX;
+        const opY = op.y * TILE_SIZE - cameraY;
+        
+        // Simple Placeholder
+        ctx.fillStyle = '#a855f7'; // Purple for others
+        ctx.beginPath();
+        ctx.arc(opX + TILE_SIZE / 2, opY + TILE_SIZE / 2 + 4, TILE_SIZE / 2 - 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(opX + TILE_SIZE / 2, opY + TILE_SIZE / 2 + 6, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Nametag
+        ctx.fillStyle = '#fff';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(op.name, opX + TILE_SIZE / 2, opY - 4);
+      });
+
+      // Draw Local Player
+      ctx.save();
+      ctx.translate(currentPixelPos.x - cameraX, currentPixelPos.y - cameraY);
       drawPlayer();
+      ctx.restore();
       
       ctx.restore();
 
@@ -386,6 +453,9 @@ export default function GameCanvas() {
       canvas.removeEventListener('click', handleClick);
       window.removeEventListener('keydown', handleKeyDown);
       unsubMap();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, []);
 

@@ -54,11 +54,15 @@ export interface ToastMessage {
 export interface GameState {
   gameMode: GameMode;
   player: PlayerState;
+  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string }>;
   pathQueue: Point[];
   currentMapId: string;
   mapEntities: MapEntity[];
   toast: ToastMessage | null;
   setGameMode: (mode: GameMode) => void;
+  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string }) => void;
+  removeOtherPlayer: (socketId: string) => void;
   setPlayerPosition: (pos: Point) => void;
   enqueuePath: (path: Point[]) => void;
   dequeuePath: () => Point | undefined;
@@ -103,28 +107,17 @@ export const useGameStore = create<GameState>()(
         xp: 0,
         hp: 100,
         maxHp: 100,
-        credits: 500, // Starter money
-        inventory: {
-          'capture_script': 5,
-          'patch_kit': 3,
-        },
-        skills: JSON.parse(JSON.stringify(INITIAL_SKILLS)),
-        equipment: {
-          head: null,
-          chest: 'bronze_chestplate',
-          legs: 'bronze_leggings',
-          weapon: 'bronze_sword'
-        },
+        credits: 500,
+        inventory: {},
+        skills: INITIAL_SKILLS,
+        equipment: { head: null, chest: null, legs: null, weapon: null },
         combatStyle: 'MELEE',
-        activeDaemonId: 'd-001',
+        activeDaemonId: null,
         saintRank: 'Rookie',
-        caughtDaemons: ['d-001'],
-        assignedBeasts: {
-          furnace: null,
-          farm: null,
-          fishing_hut: null,
-        }
+        caughtDaemons: [],
+        assignedBeasts: { furnace: null, farm: null, fishing_hut: null }
       },
+      otherPlayers: {},
       pathQueue: [],
       currentMapId: 'SAINTS_VILLAGE',
       mapEntities: [
@@ -134,15 +127,24 @@ export const useGameStore = create<GameState>()(
       ],
       toast: null,
 
-      setGameMode: (mode) =>
-        set((state) => {
-          state.gameMode = mode;
-        }),
-
-      setPlayerPosition: (pos) =>
-        set((state) => {
-          state.player.position = pos;
-        }),
+      setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
+      setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
+      updateOtherPlayer: (socketId, data) => set((state) => {
+        if (!state.otherPlayers[socketId]) {
+          state.otherPlayers[socketId] = { x: data.x, y: data.y, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male' };
+        } else {
+          state.otherPlayers[socketId].x = data.x;
+          state.otherPlayers[socketId].y = data.y;
+          if (data.name) state.otherPlayers[socketId].name = data.name;
+          if (data.spriteId) state.otherPlayers[socketId].spriteId = data.spriteId;
+        }
+      }),
+      removeOtherPlayer: (socketId) => set((state) => {
+        delete state.otherPlayers[socketId];
+      }),
+      setPlayerPosition: (pos) => set((state) => { 
+        state.player.position = pos; 
+      }),
 
       enqueuePath: (path) =>
         set((state) => {
