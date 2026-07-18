@@ -1,8 +1,8 @@
 "use client";
 
 import { ACHIEVEMENTS } from "@/lib/achievements";
-import { ACHIEVEMENT_ICONS } from "./achievement-icons";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Trophy } from "lucide-react";
 
 interface UserBadgesProps {
   achievements: { badgeId: string }[];
@@ -21,36 +21,36 @@ export function UserBadges({ achievements, inline = false }: UserBadgesProps) {
 
   return (
     <div className={containerClass}>
-      <TooltipProvider delayDuration={200}>
+      <TooltipProvider>
         {pinnedBadges.map(({ badgeId }) => {
           const def = ACHIEVEMENTS[badgeId as keyof typeof ACHIEVEMENTS];
           if (!def) return null;
 
-          const IconComponent = ACHIEVEMENT_ICONS[badgeId] || ACHIEVEMENT_ICONS["first_blood"];
+          const IconComponent = def.Icon || Trophy;
 
           let colorClass = "text-foreground drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]";
           let bgClass = "bg-muted";
 
-          if (def.rarity === "COMMON") {
+          if (def.rarity === "Common") {
             colorClass = "text-slate-400 drop-shadow-[0_0_8px_rgba(148,163,184,0.3)]";
             bgClass = "bg-slate-500/10";
-          } else if (def.rarity === "UNCOMMON") {
+          } else if (def.rarity === "Uncommon" as any) { // "Uncommon" isn't in AchievementRarity but keeping it just in case
             colorClass = "text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.3)]";
             bgClass = "bg-green-500/10";
-          } else if (def.rarity === "RARE") {
+          } else if (def.rarity === "Rare") {
             colorClass = "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.3)]";
             bgClass = "bg-blue-500/10";
-          } else if (def.rarity === "EPIC") {
+          } else if (def.rarity === "Epic") {
             colorClass = "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.3)]";
             bgClass = "bg-purple-500/10";
-          } else if (def.rarity === "LEGENDARY") {
+          } else if (def.rarity === "Legendary") {
             colorClass = "text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]";
             bgClass = "bg-yellow-500/10";
           }
 
           return (
             <Tooltip key={badgeId}>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <div className={`rounded-md flex items-center justify-center cursor-help transition-all hover:scale-110 ${bgClass} ${inline ? 'p-1' : 'p-1.5'}`}>
                   <IconComponent className={`${inline ? 'w-4 h-4' : 'w-5 h-5'} ${colorClass}`} />
                 </div>

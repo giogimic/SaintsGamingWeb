@@ -1,9 +1,9 @@
-import { DaemonType } from '../combat';
+import { ElementType } from '../combat';
 
 export interface DaemonSpecies {
   id: string;
   name: string;
-  type: DaemonType;
+  type: ElementType;
   baseHp: number;
   baseAttack: number;
   baseDefense: number;
@@ -16,7 +16,7 @@ export const DAEMON_DEX: Record<string, DaemonSpecies> = {
   'd-001': {
     id: 'd-001',
     name: 'Arachno-Byte',
-    type: 'Data',
+    type: 'Cyber',
     baseHp: 45,
     baseAttack: 60,
     baseDefense: 40,
@@ -27,7 +27,7 @@ export const DAEMON_DEX: Record<string, DaemonSpecies> = {
   'v-001': {
     id: 'v-001',
     name: 'Paladin.exe',
-    type: 'Vaccine',
+    type: 'Solar',
     baseHp: 65,
     baseAttack: 50,
     baseDefense: 70,
@@ -38,7 +38,7 @@ export const DAEMON_DEX: Record<string, DaemonSpecies> = {
   'x-001': {
     id: 'x-001',
     name: 'Skull-Troj',
-    type: 'Virus',
+    type: 'Bio',
     baseHp: 50,
     baseAttack: 70,
     baseDefense: 35,

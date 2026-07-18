@@ -1,7 +1,7 @@
 import { getPublicProfile } from "@/app/actions/users";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { User as UserIcon, Calendar, Gamepad2, Shield, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
+import { User as UserIcon, Calendar, Gamepad2, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
 import { ProfileActions } from "./profile-actions";
 import { ProfileMediaShowcase } from "./profile-media-showcase";
 import { AchievementShowcase } from "@/components/achievements/achievement-showcase";
@@ -67,13 +67,13 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
               <h1 className="text-5xl font-extrabold tracking-tight sg-text-gradient drop-shadow-sm">{profile.username}</h1>
               <div className="flex items-center gap-1 mt-1">
                 {profile.isFounder && (
-                  <Crown className="w-6 h-6 text-yellow-500 fill-yellow-500" title="Founder" />
+                  <span title="Founder"><Crown className="w-6 h-6 text-yellow-500 fill-yellow-500" /></span>
                 )}
                 {profile.isVIP && (
-                  <BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500" title="VIP" />
+                  <span title="VIP"><BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500" /></span>
                 )}
                 {profile.isTrusted && (
-                  <ShieldCheck className="w-6 h-6 text-green-500 fill-green-500" title="Trusted User" />
+                  <span title="Trusted User"><ShieldCheck className="w-6 h-6 text-green-500 fill-green-500" /></span>
                 )}
               </div>
             </div>

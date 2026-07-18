@@ -319,7 +319,7 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean, 
       select: { subscribedToId: true }
     });
     const subIds = subs.map(s => s.subscribedToId);
-    filteredPosts = filteredPosts.filter(p => !p.isSubscriberOnly || p.author.id === currentUserId || subIds.includes(p.author.id));
+    filteredPosts = filteredPosts.filter(p => !p.isSubscriberOnly || p.authorId === currentUserId || subIds.includes(p.authorId));
   } else {
     filteredPosts = filteredPosts.filter(p => !p.isSubscriberOnly);
   }

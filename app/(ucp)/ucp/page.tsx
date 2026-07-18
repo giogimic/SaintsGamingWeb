@@ -48,9 +48,9 @@ export default async function UcpDashboard() {
         <div>
           <h1 className="text-4xl font-bold flex items-center gap-3">
             FiveM User Control Panel
-            {dbUser.isFounder && <Crown className="w-6 h-6 text-yellow-500" title="Founder" />}
-            {dbUser.isVip && <Star className="w-6 h-6 text-purple-500" title="VIP" />}
-            {dbUser.isTrusted && <ShieldCheck className="w-6 h-6 text-green-500" title="Trusted" />}
+            {dbUser.isFounder && <span title="Founder"><Crown className="w-6 h-6 text-yellow-500" /></span>}
+            {dbUser.isVIP && <span title="VIP"><Star className="w-6 h-6 text-purple-500" /></span>}
+            {dbUser.isTrusted && <span title="Trusted"><ShieldCheck className="w-6 h-6 text-green-500" /></span>}
           </h1>
           <p className="text-muted-foreground mt-2">Manage your characters, vehicles, and assets.</p>
         </div>

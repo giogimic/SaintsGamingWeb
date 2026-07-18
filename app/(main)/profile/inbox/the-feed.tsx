@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession } from "next-auth/react";
+
 import { useState, useEffect, useCallback } from "react";
 import { 
   getTrendingTags, 
@@ -54,6 +56,9 @@ const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
 
 export function TheFeed() {
+  const { data: session } = useSession();
+  const currentUserPermission = (session?.user as any)?.permissionLevel || 0;
+
   const [posts, setPosts] = useState<any[]>([]);
   const [trending, setTrending] = useState<{name: string, usageCount: number}[]>([]);
   const [body, setBody] = useState("");
@@ -521,13 +526,13 @@ export function TheFeed() {
           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
             <span className="font-bold truncate">{post.author?.username}</span>
             {post.author?.isFounder && (
-              <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" title="Founder" />
+              <span title="Founder"><Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" /></span>
             )}
             {post.author?.isVIP && (
-              <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" title="VIP" />
+              <span title="VIP"><BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" /></span>
             )}
             {post.author?.isTrusted && (
-              <ShieldCheck className="w-3.5 h-3.5 text-green-500 fill-green-500" title="Trusted User" />
+              <span title="Trusted User"><ShieldCheck className="w-3.5 h-3.5 text-green-500 fill-green-500" /></span>
             )}
             {post.author?.achievements && post.author.achievements.length > 0 && (
               <div className="ml-1">
