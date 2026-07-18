@@ -141,10 +141,8 @@ export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThread
             <span className="text-xs font-medium">{likesCount > 0 ? likesCount : ""}</span>
           </button>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="hover:text-foreground transition-colors p-1" disabled={loading}>
+            <DropdownMenuTrigger className="hover:text-foreground transition-colors p-1" disabled={loading}>
                 <MoreHorizontal className="h-4 w-4" />
-              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {canEdit && (
