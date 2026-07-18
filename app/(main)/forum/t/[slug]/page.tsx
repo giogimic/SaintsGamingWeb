@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
-import { MessageSquare, Pin, Lock, UserPlus } from "lucide-react";
+import { MessageSquare, Pin, Lock } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { auth } from "@/auth";
 import { ReplyForm } from "@/components/forum/reply-form";
