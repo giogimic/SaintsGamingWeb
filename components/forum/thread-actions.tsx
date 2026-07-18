@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Flag, FolderInput, Share2 } from "lucide-react";
+import { MoreHorizontal, Flag, FolderInput, Share2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +14,12 @@ import { toast } from "sonner";
 interface ThreadActionsProps {
   threadId: string;
   userPermissionLevel?: number;
+  isAuthor?: boolean;
+  subcategorySlug?: string;
 }
 
-export function ThreadActions({ threadId, userPermissionLevel = 0 }: ThreadActionsProps) {
+export function ThreadActions({ threadId, userPermissionLevel = 0, isAuthor = false, subcategorySlug }: ThreadActionsProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleReport = async () => {
@@ -73,6 +77,29 @@ export function ThreadActions({ threadId, userPermissionLevel = 0 }: ThreadActio
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this thread? This action cannot be undone.")) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/forum/thread/${threadId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Thread deleted successfully");
+        if (subcategorySlug) {
+          router.push(`/forum/${subcategorySlug}`);
+        } else {
+          router.push("/forum");
+        }
+      } else {
+        toast.error("Failed to delete thread");
+      }
+    } catch {
+      toast.error("Failed to delete thread");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex items-center gap-3">
       <button onClick={handleShare} className="hover:text-foreground transition-colors p-1" title="Share">
@@ -89,6 +116,11 @@ export function ThreadActions({ threadId, userPermissionLevel = 0 }: ThreadActio
           {userPermissionLevel >= 300 && (
             <DropdownMenuItem onClick={handleMove}>
               <FolderInput className="h-4 w-4 mr-2" /> Move Thread
+            </DropdownMenuItem>
+          )}
+          {(isAuthor || userPermissionLevel >= 300) && (
+            <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" /> Delete Thread
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
