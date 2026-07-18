@@ -28,7 +28,7 @@ export async function GET(req: Request, props: { params: Promise<{ path: string[
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
-  } catch (_error) {
+  } catch {
     return new NextResponse('File not found', { status: 404 });
   }
 }

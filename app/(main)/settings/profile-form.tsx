@@ -70,6 +70,7 @@ export function ProfileForm({ user, updateProfileAction }: ProfileFormProps) {
         <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
           <div className="w-24 h-24 rounded-full overflow-hidden bg-muted border-2 border-border/50 relative flex items-center justify-center">
             {avatarUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <span className="text-3xl text-muted-foreground">{user.username.charAt(0).toUpperCase()}</span>

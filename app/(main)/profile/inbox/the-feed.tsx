@@ -638,7 +638,7 @@ export function TheFeed() {
 
   const displayPosts = searchResults !== null ? searchResults : posts;
 
-  function navigatePost(direction: number) {
+  const navigatePost = useCallback((direction: number) => {
     if (!viewingVideo || !displayPosts) return;
     const currentIndex = displayPosts.findIndex((p: any) => p.id === viewingVideo.id);
     if (currentIndex === -1) return;
@@ -646,7 +646,7 @@ export function TheFeed() {
     if (nextIndex >= 0 && nextIndex < displayPosts.length) {
       setViewingVideo(displayPosts[nextIndex]);
     }
-  }
+  }, [viewingVideo, displayPosts]);
 
   // Keyboard navigation for viewer
   useEffect(() => {
@@ -658,7 +658,7 @@ export function TheFeed() {
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewingVideo, displayPosts]);
+  }, [viewingVideo, navigatePost]);
 
   return (
     <div className="flex h-full bg-background overflow-hidden animate-in fade-in relative">
