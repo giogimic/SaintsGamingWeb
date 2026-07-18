@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { toast } from "sonner";
-import { useGameStore, INITIAL_SKILLS } from "./store";
+import { INITIAL_SKILLS } from "./store";
 
 const SPRITES = [
   { id: "hero_male", label: "Male Adventurer" },

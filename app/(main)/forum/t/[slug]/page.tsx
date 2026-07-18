@@ -202,13 +202,13 @@ export default async function ThreadPage({ params }: Props) {
                     {thread.author.username}
                   </Link>
                   {thread.author.isFounder && (
-                    <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" title="Founder" />
+                    <span title="Founder"><Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" /></span>
                   )}
                   {thread.author.isVIP && (
-                    <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" title="VIP" />
+                    <span title="VIP"><BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" /></span>
                   )}
                   {thread.author.isTrusted && (
-                    <ShieldCheck className="w-4 h-4 text-green-500 fill-green-500" title="Trusted User" />
+                    <span title="Trusted User"><ShieldCheck className="w-4 h-4 text-green-500 fill-green-500" /></span>
                   )}
                 </div>
                 {thread.author.role ? (
@@ -286,13 +286,13 @@ export default async function ThreadPage({ params }: Props) {
                       {reply.author.username}
                     </Link>
                     {reply.author.isFounder && (
-                      <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" title="Founder" />
+                      <span title="Founder"><Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" /></span>
                     )}
                     {reply.author.isVIP && (
-                      <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" title="VIP" />
+                      <span title="VIP"><BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" /></span>
                     )}
                     {reply.author.isTrusted && (
-                      <ShieldCheck className="w-4 h-4 text-green-500 fill-green-500" title="Trusted User" />
+                      <span title="Trusted User"><ShieldCheck className="w-4 h-4 text-green-500 fill-green-500" /></span>
                     )}
                   </div>
                   {reply.author.role ? (

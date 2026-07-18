@@ -1,7 +1,7 @@
 'use client';
 
 import { useGameStore } from './store';
-import { SAINTS_DEX, getCreatureById } from './data/saints-dex';
+import { SAINTS_DEX } from './data/saints-dex';
 
 export default function DexOverlay() {
   const caughtDaemons = useGameStore((state) => state.player.caughtDaemons);

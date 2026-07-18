@@ -67,7 +67,7 @@ export function AdminAchievementsClient({ initialRecent }: { initialRecent: any[
           </div>
           <div className="space-y-2 flex-1">
             <label className="text-sm font-medium">Achievement</label>
-            <Select value={selectedBadge} onValueChange={setSelectedBadge}>
+            <Select value={selectedBadge} onValueChange={(v) => setSelectedBadge(v ?? "")}>
               <SelectTrigger>
                 <SelectValue placeholder="Select an achievement..." />
               </SelectTrigger>

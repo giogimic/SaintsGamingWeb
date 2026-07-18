@@ -77,7 +77,7 @@ export interface GameState {
   assignBeast: (facility: 'furnace' | 'farm' | 'fishing_hut', beastId: string | null) => void;
 }
 
-const INITIAL_SKILLS: Record<string, SkillData> = {
+export const INITIAL_SKILLS: Record<string, SkillData> = {
   // Combat
   Attack: { level: 1, xp: 0 }, Constitution: { level: 1, xp: 0 }, Defence: { level: 1, xp: 0 },
   Magic: { level: 1, xp: 0 }, Necromancy: { level: 1, xp: 0 }, Prayer: { level: 1, xp: 0 },

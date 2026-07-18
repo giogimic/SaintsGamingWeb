@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function createGameCharacter(data: {
@@ -16,7 +16,7 @@ export async function createGameCharacter(data: {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const character = await db.gameCharacter.create({
+    const character = await prisma.gameCharacter.create({
       data: {
         userId: session.user.id,
         name: data.name,
@@ -41,7 +41,7 @@ export async function saveGameState(characterId: string, stateData: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    await db.gameCharacter.update({
+    await prisma.gameCharacter.update({
       where: { 
         id: characterId,
         userId: session.user.id // Security check
@@ -63,7 +63,7 @@ export async function loadGameCharacter(characterId: string) {
       return { success: false, error: 'Unauthorized', data: null };
     }
 
-    const save = await db.gameCharacter.findUnique({
+    const save = await prisma.gameCharacter.findUnique({
       where: { 
         id: characterId,
         userId: session.user.id
@@ -84,7 +84,7 @@ export async function getUserCharacters() {
       return { success: false, error: 'Unauthorized', data: [] };
     }
 
-    const characters = await db.gameCharacter.findMany({
+    const characters = await prisma.gameCharacter.findMany({
       where: { userId: session.user.id },
       orderBy: { updatedAt: 'desc' }
     });
@@ -106,7 +106,7 @@ export async function unlockGameAchievement(badgeId: string) {
     const userId = session.user.id;
 
     // Check if they already have it
-    const existing = await db.userAchievement.findUnique({
+    const existing = await prisma.userAchievement.findUnique({
       where: {
         userId_badgeId: {
           userId,
@@ -119,7 +119,7 @@ export async function unlockGameAchievement(badgeId: string) {
       return { success: true, alreadyUnlocked: true };
     }
 
-    await db.userAchievement.create({
+    await prisma.userAchievement.create({
       data: {
         userId,
         badgeId,
@@ -128,7 +128,7 @@ export async function unlockGameAchievement(badgeId: string) {
     });
 
     // Optional: grant some platform XP or Coins
-    await db.user.update({
+    await prisma.user.update({
       where: { id: userId },
       data: {
         coins: { increment: 50 },
@@ -151,7 +151,7 @@ export async function pinBeastToProfile(beastId: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    await db.user.update({
+    await prisma.user.update({
       where: { id: session.user.id },
       data: { pinnedBeastId: beastId }
     });

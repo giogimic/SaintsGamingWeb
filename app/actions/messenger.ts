@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+// import { pusherServer } from "@/lib/pusher"; // TODO: Re-enable when real-time push is implemented
 import { revalidatePath } from "next/cache";
 import { checkAndAwardAchievements } from "@/lib/achievements";
 

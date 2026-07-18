@@ -32,7 +32,7 @@ export function AchievementShowcase({ achievements }: { achievements: UserAchiev
 
             return (
               <Tooltip key={ach.id}>
-                <TooltipTrigger asChild>
+                <TooltipTrigger>
                   <div className="sg-glass p-4 rounded-xl flex flex-col items-center justify-center gap-3 transition-all hover:scale-105 hover:bg-white/5 border border-border/50 cursor-help relative group overflow-hidden">
                     {/* Background subtle glow */}
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
