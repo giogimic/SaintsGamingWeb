@@ -10,16 +10,17 @@ const updateReplySchema = z.object({
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const reply = await prisma.reply.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!reply) {
@@ -36,7 +37,7 @@ export async function DELETE(
     }
 
     await prisma.reply.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json({ message: "Reply deleted" });
@@ -48,16 +49,17 @@ export async function DELETE(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const reply = await prisma.reply.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!reply) {
@@ -77,7 +79,7 @@ export async function PATCH(
     const data = updateReplySchema.parse(body);
 
     const updated = await prisma.reply.update({
-      where: { id: params.id },
+      where: { id },
       data: { body: data.body }
     });
 
