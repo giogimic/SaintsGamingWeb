@@ -63,7 +63,7 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
   }
 
   if (showCreator) {
-    return <CharacterCreator onComplete={() => window.location.href = '/user/me'} />;
+    return <CharacterCreator onComplete={() => window.location.href = '/profile/terminal'} />;
   }
 
   return (
