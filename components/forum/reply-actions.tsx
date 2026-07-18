@@ -117,7 +117,7 @@ export function ReplyActions({ replyId, threadId, initialBody, canEdit, isThread
       } else {
         toast.error("Failed to update like status");
       }
-    } catch (err) {
+    } catch {
       toast.error("An error occurred");
     }
   };
