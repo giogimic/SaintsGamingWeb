@@ -9,6 +9,11 @@ import { MessageSquare, Pin, Lock, Share2, MoreHorizontal } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { auth } from "@/auth";
 import { ReplyForm } from "@/components/forum/reply-form";
+import { ReplyActions } from "@/components/forum/reply-actions";
+import { ThreadActions } from "@/components/forum/thread-actions";
+import { ThreadPoll } from "@/components/forum/thread-poll";
+import { ThreadWatchButton } from "@/components/forum/thread-watch-button";
+import { PERMISSION_LEVELS } from "@/lib/permissions";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -48,6 +53,13 @@ export default async function ThreadPage({ params }: Props) {
     where: { slug: resolvedParams.slug },
     include: {
       subcategory: true,
+      polls: {
+        include: {
+          options: {
+            include: { votes: true }
+          }
+        }
+      },
       author: {
         select: {
           username: true,
@@ -73,6 +85,26 @@ export default async function ThreadPage({ params }: Props) {
       }
     }
   });
+
+  let currentUserPermission = 0;
+  let isWatched = false;
+  if (session?.user?.id) {
+    const userDb = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { permissionLevel: true }
+    });
+    currentUserPermission = userDb?.permissionLevel ?? 0;
+
+    const sub = await prisma.threadSubscription.findUnique({
+      where: {
+        userId_threadId: {
+          userId: session.user.id,
+          threadId: thread.id
+        }
+      }
+    });
+    isWatched = !!sub;
+  }
 
   if (!thread) {
     notFound();
@@ -160,11 +192,17 @@ export default async function ThreadPage({ params }: Props) {
           <div className="flex-1 flex flex-col min-w-0">
             <div className="px-6 py-3 border-b border-border/50 text-xs text-muted-foreground flex justify-between items-center bg-muted/10">
               <span>{format(new Date(thread.createdAt), "MMM d, yyyy 'at' h:mm a")}</span>
-              <div className="flex items-center gap-3">
-                <button className="hover:text-foreground transition-colors"><Share2 className="h-4 w-4" /></button>
-                <button className="hover:text-foreground transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
+              <div className="flex items-center gap-2">
+                {session?.user?.id && (
+                  <ThreadWatchButton threadId={thread.id} initialIsWatched={isWatched} />
+                )}
+                <ThreadActions threadId={thread.id} userPermissionLevel={currentUserPermission} />
               </div>
             </div>
+
+            {thread.polls && thread.polls.length > 0 && (
+              <ThreadPoll poll={thread.polls[0]} currentUserId={session?.user?.id} />
+            )}
             
             <div className="p-6 flex-1 min-h-[150px]">
               <div className="prose prose-invert prose-sm sm:prose-base max-w-none prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground break-words">
@@ -217,21 +255,15 @@ export default async function ThreadPage({ params }: Props) {
             </div>
 
             {/* Post Content */}
-            <div className="flex-1 flex flex-col min-w-0">
-              <div className="px-6 py-3 border-b border-border/50 text-xs text-muted-foreground flex justify-between items-center bg-muted/10">
-                <span>{format(new Date(reply.createdAt), "MMM d, yyyy 'at' h:mm a")}</span>
-                <div className="flex items-center gap-3">
-                  <Link href={`#reply-${reply.id}`} className="hover:text-foreground transition-colors">#{reply.id.substring(reply.id.length - 4)}</Link>
-                  <button className="hover:text-foreground transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
-                </div>
-              </div>
-              
-              <div className="p-6 flex-1 min-h-[150px]">
-                <div className="prose prose-invert prose-sm sm:prose-base max-w-none prose-headings:text-foreground prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-foreground break-words">
-                  <ReactMarkdown>{reply.body}</ReactMarkdown>
-                </div>
-              </div>
-            </div>
+            <ReplyActions 
+              replyId={reply.id}
+              threadId={thread.id}
+              initialBody={reply.body}
+              canEdit={session?.user?.id === reply.authorId || currentUserPermission >= PERMISSION_LEVELS.MODERATOR}
+              isThreadAuthor={session?.user?.id === thread.authorId}
+              isSolution={thread.acceptedAnswerId === reply.id}
+              createdAt={reply.createdAt}
+            />
           </div>
         ))}
 

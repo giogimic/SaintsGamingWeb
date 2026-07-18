@@ -12,6 +12,13 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.3.0
+- **User Polls:** Added dynamic poll builder to New Thread Form and interactive rendering in threads with live voting.
+- **Thread Subscriptions:** Added Watch/Unwatch buttons to thread pages with automated system notifications for new replies.
+- **Thread Moderation:** Added "Move Thread" action for moderators to reassign threads to different subcategories.
+- **Admin Analytics:** Created `/ucp/analytics` dashboard displaying community health metrics and popular tags.
+- **Schema Updates:** Added `Poll`, `PollOption`, `PollVote`, and `ThreadSubscription` models.
+
 ### v1.2.3
 - **Hotfix**: Added missing `swr` dependency that caused Docker compilation failures in the production build.
 
