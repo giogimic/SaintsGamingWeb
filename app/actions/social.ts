@@ -156,6 +156,57 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) 
     }
   }
 
+  // Fetch recent forum threads
+  let forumThreads: any[] = [];
+  try {
+    const recentThreads = await prisma.thread.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: {
+        author: {
+          select: { id: true, username: true, image: true, permissionLevel: true }
+        },
+        subcategory: true,
+        _count: {
+          select: { replies: true }
+        }
+      }
+    });
+
+    forumThreads = recentThreads.map((thread: any) => ({
+      id: thread.id,
+      body: `**${thread.title}**\n\n${thread.body.substring(0, 150)}${thread.body.length > 150 ? '...' : ''}`,
+      mediaUrl: null,
+      createdAt: thread.createdAt,
+      viewCount: thread.viewCount,
+      shareCount: 0,
+      author: thread.author,
+      likesCount: 0,
+      repliesCount: thread._count.replies,
+      hasLiked: false,
+      hasBookmarked: false,
+      hashtags: [],
+      isSubscriberOnly: false,
+      voiceoverUrl: null,
+      backgroundTrackUrl: null,
+      voiceoverVolume: 1,
+      backgroundTrackVolume: 1,
+      copyrightStrike: false,
+      chapters: null,
+      captionsText: null,
+      isForumThread: true,
+      threadUrl: `/forum/t/${thread.slug}`
+    }));
+  } catch (e) {
+    console.error("Failed to fetch forum threads for feed", e);
+  }
+
+  // Interleave forum threads
+  for (let i = 0; i < forumThreads.length; i++) {
+    const insertAt = Math.min(Math.floor(Math.random() * allPosts.length), allPosts.length);
+    allPosts.splice(insertAt, 0, forumThreads[i]);
+  }
+
   // Client-side filter for muted keywords (body text matching)
   let filteredPosts = mutedKeywords.length > 0
     ? allPosts.filter(post => !mutedKeywords.some(kw => post.body.toLowerCase().includes(kw)))
@@ -173,28 +224,34 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) 
     filteredPosts = filteredPosts.filter(p => !p.isSubscriberOnly);
   }
 
-  return filteredPosts.map(post => ({
-    id: post.id,
-    body: post.body,
-    mediaUrl: post.mediaUrl,
-    createdAt: post.createdAt,
-    viewCount: post.viewCount,
-    shareCount: post.shareCount,
-    author: post.author,
-    likesCount: post.reactions.length,
-    repliesCount: post._count.replies,
-    hasLiked: currentUserId ? post.reactions.some(r => r.userId === currentUserId) : false,
-    hasBookmarked: post.bookmarks ? post.bookmarks.length > 0 : false,
-    hashtags: post.hashtags?.map(h => h.hashtag.name) || [],
-    isSubscriberOnly: post.isSubscriberOnly,
-    voiceoverUrl: post.voiceoverUrl,
-    backgroundTrackUrl: post.backgroundTrackUrl,
-    voiceoverVolume: post.voiceoverVolume,
-    backgroundTrackVolume: post.backgroundTrackVolume,
-    copyrightStrike: post.copyrightStrike,
-    chapters: post.chapters ? JSON.parse(post.chapters) : null,
-    captionsText: post.captionsText,
-  }));
+  return filteredPosts.map((post: any) => {
+    if (post.isForumThread) return post; // already mapped
+
+    return {
+      id: post.id,
+      body: post.body,
+      mediaUrl: post.mediaUrl,
+      createdAt: post.createdAt,
+      viewCount: post.viewCount,
+      shareCount: post.shareCount,
+      author: post.author,
+      likesCount: post.reactions.length,
+      repliesCount: post._count.replies,
+      hasLiked: currentUserId ? post.reactions.some((r: any) => r.userId === currentUserId) : false,
+      hasBookmarked: post.bookmarks ? post.bookmarks.length > 0 : false,
+      hashtags: post.hashtags?.map((h: any) => h.hashtag.name) || [],
+      isSubscriberOnly: post.isSubscriberOnly,
+      voiceoverUrl: post.voiceoverUrl,
+      backgroundTrackUrl: post.backgroundTrackUrl,
+      voiceoverVolume: post.voiceoverVolume,
+      backgroundTrackVolume: post.backgroundTrackVolume,
+      copyrightStrike: post.copyrightStrike,
+      chapters: post.chapters ? JSON.parse(post.chapters) : null,
+      captionsText: post.captionsText,
+      isForumThread: false,
+      threadUrl: null
+    };
+  });
 }
 
 export async function getTrendingTags() {
