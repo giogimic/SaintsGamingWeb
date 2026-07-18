@@ -12,6 +12,14 @@ Built from the ground up with a modern tech stack (Next.js App Router, Auth.js v
 
 ## Changelog
 
+### v1.4.0
+- **The Feed:** Unified social feed mixing global social posts with forum posts.
+- **Forum Mirroring:** Every new forum thread is automatically pushed to the social feed.
+- **Badges System:** Added Founder, VIP, and Trusted visual badges across the platform (Feed, Profile, Forums).
+- **Group Chats:** Complete overhaul of the Inbox to support multi-user unencrypted group chats.
+- **Read Receipts:** Added 'Read' indicators for 1-on-1 End-to-End Encrypted sessions.
+- **Schema Updates:** Added `GroupChat`, `GroupChatMember`, `GroupMessage`, `SocialPost`, `SocialLike`, `SocialComment` models and modified `DirectMessage` and `User`.
+
 ### v1.3.0
 - **User Polls:** Added dynamic poll builder to New Thread Form and interactive rendering in threads with live voting.
 - **Thread Subscriptions:** Added Watch/Unwatch buttons to thread pages with automated system notifications for new replies.

@@ -51,6 +51,16 @@ export async function POST(req: Request) {
         }
       });
 
+      const newSocialPost = await tx.socialPost.create({
+        data: {
+          authorId: session.user.id,
+          body: `**${data.title}**\n\n${sanitizedBody.substring(0, 150)}${sanitizedBody.length > 150 ? '...' : ''}`,
+          isForumThread: true,
+          threadUrl: `/forum/t/${slug}`,
+          threadId: newThread.id,
+        }
+      });
+
       if (tagNames.length > 0) {
         for (const tagName of tagNames) {
           const hashtag = await tx.hashtag.upsert({
@@ -65,6 +75,20 @@ export async function POST(req: Request) {
               hashtagId: hashtag.id
             }
           });
+
+          // Also mirror to SocialHashtag for the feed
+          const socialHashtag = await tx.socialHashtag.upsert({
+            where: { name: tagName },
+            update: { usageCount: { increment: 1 } },
+            create: { name: tagName, usageCount: 1 }
+          });
+
+          await tx.socialPostHashtag.create({
+            data: {
+              postId: newSocialPost.id,
+              hashtagId: socialHashtag.id
+            }
+          });
         }
       }
 
@@ -73,6 +97,7 @@ export async function POST(req: Request) {
           data: {
             question: data.pollQuestion,
             threadId: newThread.id,
+            postId: newSocialPost.id,
             options: {
               create: data.pollOptions.map(opt => ({ text: opt }))
             }

@@ -207,6 +207,18 @@ export async function getMessages(otherUserId: string) {
     take: 100 // Last 100 messages for MVP
   });
 
+  // Mark messages sent to us as read
+  const unreadMessageIds = messages
+    .filter(m => m.receiverId === session.user.id && !m.isRead)
+    .map(m => m.id);
+
+  if (unreadMessageIds.length > 0) {
+    await prisma.directMessage.updateMany({
+      where: { id: { in: unreadMessageIds } },
+      data: { isRead: true }
+    });
+  }
+
   // Map them to return only the relevant fields to the current user
   return messages.map(msg => {
     const isSender = msg.senderId === session.user.id;
@@ -215,7 +227,8 @@ export async function getMessages(otherUserId: string) {
       isSender,
       ciphertext: isSender ? msg.senderCiphertext : msg.ciphertext,
       iv: isSender ? msg.senderIv : msg.iv,
-      createdAt: msg.createdAt
+      createdAt: msg.createdAt,
+      isRead: msg.isRead || unreadMessageIds.includes(msg.id)
     };
   });
 }
@@ -247,6 +260,120 @@ export async function clearChatHistory(friendId: string) {
       ]
     }
   });
+
+  return true;
+}
+
+// ==========================================
+// Group Chats
+// ==========================================
+
+export async function createGroupChat(name: string, memberIds: string[]) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const groupChat = await prisma.groupChat.create({
+    data: {
+      name,
+      members: {
+        create: [
+          { userId: session.user.id, role: "ADMIN" },
+          ...memberIds.map(id => ({ userId: id, role: "MEMBER" }))
+        ]
+      }
+    }
+  });
+
+  return groupChat;
+}
+
+export async function getGroupChats() {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  const memberships = await prisma.groupChatMember.findMany({
+    where: { userId: session.user.id },
+    include: {
+      groupChat: {
+        include: {
+          members: {
+            include: {
+              user: {
+                select: { id: true, username: true, image: true }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return memberships.map(m => m.groupChat);
+}
+
+export async function getGroupMessages(groupChatId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+
+  // Verify membership
+  const membership = await prisma.groupChatMember.findUnique({
+    where: { groupChatId_userId: { groupChatId, userId: session.user.id } }
+  });
+
+  if (!membership) throw new Error("Not a member of this group chat.");
+
+  const messages = await prisma.groupMessage.findMany({
+    where: { groupChatId },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    include: {
+      sender: {
+        select: { id: true, username: true, image: true }
+      }
+    }
+  });
+
+  return messages.map(msg => ({
+    ...msg,
+    isSender: msg.senderId === session.user.id
+  }));
+}
+
+export async function sendGroupMessage(groupChatId: string, body: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  // Verify membership
+  const membership = await prisma.groupChatMember.findUnique({
+    where: { groupChatId_userId: { groupChatId, userId: session.user.id } }
+  });
+
+  if (!membership) throw new Error("Not a member of this group chat.");
+
+  await prisma.groupMessage.create({
+    data: {
+      groupChatId,
+      senderId: session.user.id,
+      body
+    }
+  });
+
+  return true;
+}
+
+export async function leaveGroupChat(groupChatId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  await prisma.groupChatMember.delete({
+    where: { groupChatId_userId: { groupChatId, userId: session.user.id } }
+  });
+
+  // If no members left, delete the group chat
+  const count = await prisma.groupChatMember.count({ where: { groupChatId } });
+  if (count === 0) {
+    await prisma.groupChat.delete({ where: { id: groupChatId } });
+  }
 
   return true;
 }

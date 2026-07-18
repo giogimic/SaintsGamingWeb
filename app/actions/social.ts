@@ -16,6 +16,10 @@ export async function createSocialPost(
     backgroundTrackVolume?: number;
     chapters?: string;
     captionsText?: string;
+    poll?: {
+      question: string;
+      options: string[];
+    };
   }
 ) {
   const session = await auth();
@@ -40,6 +44,18 @@ export async function createSocialPost(
       captionsText: options?.captionsText || null,
     }
   });
+
+  if (options?.poll && options.poll.question && options.poll.options.length > 0) {
+    await prisma.poll.create({
+      data: {
+        postId: post.id,
+        question: options.poll.question,
+        options: {
+          create: options.poll.options.map(text => ({ text }))
+        }
+      }
+    });
+  }
 
   // Process hashtags
   for (const tag of uniqueTags) {
@@ -91,7 +107,84 @@ export async function deleteSocialPost(postId: string) {
   return true;
 }
 
-export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) {
+export async function updateSocialPost(postId: string, newBody: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const post = await prisma.socialPost.findUnique({
+    where: { id: postId },
+    select: { authorId: true }
+  });
+
+  if (!post) throw new Error("Post not found");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { permissionLevel: true }
+  });
+
+  if (post.authorId !== session.user.id && (user?.permissionLevel ?? 0) < 300) {
+    throw new Error("Forbidden");
+  }
+
+  await prisma.socialPost.update({
+    where: { id: postId },
+    data: { body: newBody }
+  });
+  return true;
+}
+
+export async function votePoll(pollId: string, optionId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  // Check if already voted on this poll
+  const existingVote = await prisma.pollVote.findFirst({
+    where: {
+      userId: session.user.id,
+      option: { pollId }
+    }
+  });
+
+  if (existingVote) {
+    if (existingVote.optionId === optionId) return true; // Already voted for this
+    
+    // Change vote
+    await prisma.pollVote.delete({ where: { id: existingVote.id } });
+  }
+
+  await prisma.pollVote.create({
+    data: {
+      userId: session.user.id,
+      optionId
+    }
+  });
+
+  return true;
+}
+
+export async function pinSocialPost(postId: string, isPinned: boolean) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { permissionLevel: true }
+  });
+
+  if ((user?.permissionLevel ?? 0) < 300) {
+    throw new Error("Forbidden");
+  }
+
+  await prisma.socialPost.update({
+    where: { id: postId },
+    data: { isPinned }
+  });
+
+  return true;
+}
+
+export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean, cursor?: string) {
   const session = await auth();
   const currentUserId = session?.user?.id;
 
@@ -127,22 +220,38 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) 
     take = 40;
   }
 
-  const posts = await prisma.socialPost.findMany({
+  const queryArgs: any = {
     where: whereClause,
-    orderBy: { createdAt: "desc" },
-    take,
     include: {
       author: {
-        select: { id: true, username: true, image: true, permissionLevel: true }
+        select: { id: true, username: true, image: true, permissionLevel: true, isVIP: true, isFounder: true, isTrusted: true }
       },
       reactions: true,
       bookmarks: currentUserId ? { where: { userId: currentUserId } } : false,
       hashtags: { include: { hashtag: true } },
+      polls: {
+        include: {
+          options: {
+            include: {
+              _count: { select: { votes: true } },
+              votes: currentUserId ? { where: { userId: currentUserId } } : false
+            }
+          }
+        }
+      },
       _count: {
         select: { replies: true }
       }
-    }
-  });
+    },
+    orderBy: [
+      { isPinned: "desc" },
+      { createdAt: "desc" }
+    ],
+    take,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {})
+  };
+
+  const posts = await prisma.socialPost.findMany(queryArgs);
 
   let allPosts = posts;
 
@@ -161,7 +270,7 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) 
       take: 10,
       include: {
         author: {
-          select: { id: true, username: true, image: true, permissionLevel: true }
+          select: { id: true, username: true, image: true, permissionLevel: true, isVIP: true, isFounder: true, isTrusted: true }
         },
         reactions: true,
         bookmarks: currentUserId ? { where: { userId: currentUserId } } : false,
@@ -178,57 +287,6 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) 
       const insertAt = Math.min(Math.floor(Math.random() * allPosts.length), allPosts.length);
       allPosts.splice(insertAt, 0, randomPosts[i]);
     }
-  }
-
-  // Fetch recent forum threads
-  let forumThreads: any[] = [];
-  try {
-    const recentThreads = await prisma.thread.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: {
-        author: {
-          select: { id: true, username: true, image: true, permissionLevel: true }
-        },
-        subcategory: true,
-        _count: {
-          select: { replies: true }
-        }
-      }
-    });
-
-    forumThreads = recentThreads.map((thread: any) => ({
-      id: thread.id,
-      body: `**${thread.title}**\n\n${thread.body.substring(0, 150)}${thread.body.length > 150 ? '...' : ''}`,
-      mediaUrl: null,
-      createdAt: thread.createdAt,
-      viewCount: thread.viewCount,
-      shareCount: 0,
-      author: thread.author,
-      likesCount: 0,
-      repliesCount: thread._count.replies,
-      hasLiked: false,
-      hasBookmarked: false,
-      hashtags: [],
-      isSubscriberOnly: false,
-      voiceoverUrl: null,
-      backgroundTrackUrl: null,
-      voiceoverVolume: 1,
-      backgroundTrackVolume: 1,
-      copyrightStrike: false,
-      chapters: null,
-      captionsText: null,
-      isForumThread: true,
-      threadUrl: `/forum/t/${thread.slug}`
-    }));
-  } catch (e) {
-    console.error("Failed to fetch forum threads for feed", e);
-  }
-
-  // Interleave forum threads
-  for (let i = 0; i < forumThreads.length; i++) {
-    const insertAt = Math.min(Math.floor(Math.random() * allPosts.length), allPosts.length);
-    allPosts.splice(insertAt, 0, forumThreads[i]);
   }
 
   // Client-side filter for muted keywords (body text matching)
