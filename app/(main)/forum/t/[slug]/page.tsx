@@ -210,7 +210,12 @@ export default async function ThreadPage({ params }: Props) {
                 {session?.user?.id && (
                   <ThreadWatchButton threadId={thread.id} initialIsWatched={isWatched} />
                 )}
-                <ThreadActions threadId={thread.id} userPermissionLevel={currentUserPermission} />
+                <ThreadActions 
+                  threadId={thread.id} 
+                  userPermissionLevel={currentUserPermission} 
+                  isAuthor={session?.user?.id === thread.author.id}
+                  subcategorySlug={thread.subcategory.slug}
+                />
               </div>
             </div>
 
