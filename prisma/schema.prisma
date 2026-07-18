@@ -992,20 +992,4 @@ model Report {
   @@index([status])
 }
 
-// ─── Game (Saints Tamer MMO) ────────────────────────────────────
 
-model GameCharacter {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name      String
-  spriteId  String
-  classId   String
-  stateData String   @db.Text
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-}

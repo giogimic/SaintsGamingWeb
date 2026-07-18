@@ -23,7 +23,10 @@ const textFields = [
   { model: 'TicketMessage', fields: ['body'] },
   { model: 'Notification', fields: ['message', 'link'] },
   { model: 'StreamProfile', fields: ['streamTitle', 'channelUrl'] },
-  { model: 'SiteSetting', fields: ['value'] }
+  { model: 'SiteSetting', fields: ['value'] },
+  { model: 'GameCharacter', fields: ['stateData'] },
+  { model: 'WorldMap', fields: ['gridData', 'gatesData'] },
+  { model: 'MmoDaemon', fields: ['stats', 'moves'] }
 ];
 
 let inModel = null;
