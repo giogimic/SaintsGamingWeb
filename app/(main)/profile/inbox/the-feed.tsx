@@ -30,9 +30,10 @@ import {
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, 
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ArrowRight
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import EmojiPicker from "emoji-picker-react";
 import { GiphyFetch } from "@giphy/js-fetch-api";
@@ -40,6 +41,7 @@ import { Grid } from "@giphy/react-components";
 import { VideoPlayer } from "@/components/shared/video-player";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
 
@@ -433,12 +435,19 @@ export function TheFeed() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-bold truncate">{post.author?.username}</span>
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleSubscribe(post.author.id); }}
-              className="ml-2 text-xs text-primary font-medium hover:underline"
-            >
-              Subscribe
-            </button>
+            {!post.isForumThread && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleSubscribe(post.author.id); }}
+                className="ml-2 text-xs text-primary font-medium hover:underline"
+              >
+                Subscribe
+              </button>
+            )}
+            {post.isForumThread && (
+              <span className="ml-2 text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-sm bg-primary/20 text-primary">
+                Forum Thread
+              </span>
+            )}
             <span className="text-muted-foreground/50 mx-1.5">•</span>
             <span className="text-xs text-muted-foreground shrink-0">
               · {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
@@ -500,10 +509,21 @@ export function TheFeed() {
               </div>
             )}
           </div>
-          <p className="text-sm leading-relaxed mb-3" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-            {renderBody(post.body)}
-          </p>
+          <div className="text-sm leading-relaxed mb-3" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+            {post.isForumThread ? (
+              <div className="prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown>{post.body}</ReactMarkdown>
+              </div>
+            ) : renderBody(post.body)}
+          </div>
           
+          {post.isForumThread && post.threadUrl && (
+            <div className="mb-3">
+              <Link href={post.threadUrl} className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
+                Read full thread <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          )}
           {post.mediaUrl && (
             <div 
               className="mb-3 rounded-xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[400px] relative group cursor-pointer" 
@@ -531,15 +551,17 @@ export function TheFeed() {
           )}
 
           <div className="flex items-center gap-6 text-muted-foreground mt-2">
-            <button 
-              onClick={() => handleLike(post.id, isReply, parentId)}
-              className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500 ${post.hasLiked ? 'text-red-500' : ''}`}
-            >
-              <Heart className={`w-4 h-4 ${post.hasLiked ? 'fill-current' : ''}`} />
-              {post.likesCount > 0 && post.likesCount}
-            </button>
+            {!post.isForumThread && (
+              <button 
+                onClick={() => handleLike(post.id, isReply, parentId)}
+                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500 ${post.hasLiked ? 'text-red-500' : ''}`}
+              >
+                <Heart className={`w-4 h-4 ${post.hasLiked ? 'fill-current' : ''}`} />
+                {post.likesCount > 0 && post.likesCount}
+              </button>
+            )}
             
-            {!isReply && (
+            {!isReply && !post.isForumThread && (
               <button 
                 onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
                 className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
@@ -549,25 +571,29 @@ export function TheFeed() {
               </button>
             )}
 
-            <button 
-              onClick={() => handleShare(post)}
-              className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
-            >
-              <Share className="w-4 h-4" />
-              {post.shareCount > 0 && post.shareCount}
-            </button>
+            {!post.isForumThread && (
+              <button 
+                onClick={() => handleShare(post)}
+                className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
+              >
+                <Share className="w-4 h-4" />
+                {post.shareCount > 0 && post.shareCount}
+              </button>
+            )}
 
-            <button 
-              onClick={() => handleTip(post.id)}
-              className="flex items-center gap-1.5 text-xs font-medium transition-colors text-green-500/80 hover:text-green-500"
-            >
-              <DollarSign className="w-4 h-4" />
-              Tip
-            </button>
+            {!post.isForumThread && (
+              <button 
+                onClick={() => handleTip(post.id)}
+                className="flex items-center gap-1.5 text-xs font-medium transition-colors text-green-500/80 hover:text-green-500"
+              >
+                <DollarSign className="w-4 h-4" />
+                Tip
+              </button>
+            )}
 
             <div className="flex-1" />
 
-            {!isReply && (
+            {!isReply && !post.isForumThread && (
               <button 
                 onClick={() => handleBookmark(post.id)}
                 className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-yellow-500 ml-auto ${post.hasBookmarked ? 'text-yellow-500' : ''}`}

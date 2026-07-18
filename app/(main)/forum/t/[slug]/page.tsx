@@ -62,6 +62,7 @@ export default async function ThreadPage({ params }: Props) {
       },
       author: {
         select: {
+          id: true,
           username: true,
           image: true,
           role: { select: { name: true, color: true } },
