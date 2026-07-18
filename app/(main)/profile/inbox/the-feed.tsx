@@ -19,7 +19,8 @@ import {
   searchFeed,
   tipSocialPost,
   subscribeToCreator,
-  reportSocialPost
+  reportSocialPost,
+  deleteSocialPost
 } from "@/app/actions/social";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -209,10 +210,24 @@ export function TheFeed() {
   async function handleReport(postId: string) {
     try {
       await reportSocialPost(postId);
-      alert("Post reported to community standards review.");
-      handleNotInterested(postId);
+      toast.success("Post reported. Thanks for keeping the feed clean!");
+      setActivePostMenu(null);
     } catch (e) {
       console.error(e);
+      toast.error("Failed to report post");
+    }
+  }
+
+  async function handleDeletePost(postId: string) {
+    if (!confirm("Are you sure you want to delete this post?")) return;
+    try {
+      await deleteSocialPost(postId);
+      toast.success("Post deleted");
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      setActivePostMenu(null);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to delete post");
     }
   }
 
@@ -483,6 +498,15 @@ export function TheFeed() {
                       <Flag className="w-4 h-4" />
                       Report as AI Sludge / Low Effort
                     </button>
+                    {post.isAuthor && (
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-destructive/10 text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Post
+                      </button>
+                    )}
                     {postHashtags.map((tag: string) => (
                       <button
                         key={tag}

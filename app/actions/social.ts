@@ -67,6 +67,30 @@ export async function createSocialPost(
   return post;
 }
 
+export async function deleteSocialPost(postId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+
+  const post = await prisma.socialPost.findUnique({
+    where: { id: postId },
+    select: { authorId: true }
+  });
+
+  if (!post) throw new Error("Post not found");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { permissionLevel: true }
+  });
+
+  if (post.authorId !== session.user.id && (user?.permissionLevel ?? 0) < 300) {
+    throw new Error("Forbidden");
+  }
+
+  await prisma.socialPost.delete({ where: { id: postId } });
+  return true;
+}
+
 export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) {
   const session = await auth();
   const currentUserId = session?.user?.id;
@@ -249,7 +273,8 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean) 
       chapters: post.chapters ? JSON.parse(post.chapters) : null,
       captionsText: post.captionsText,
       isForumThread: false,
-      threadUrl: null
+      threadUrl: null,
+      isAuthor: currentUserId ? post.author.id === currentUserId : false
     };
   });
 }
