@@ -11,5 +11,14 @@ module.exports = {
         PORT: 3000,
       },
     },
+    {
+      name: "saints-gaming-mmo",
+      script: "game-server.js",
+      instances: 1, // WebSockets need to be on a single instance unless using Redis adapter
+      env: {
+        NODE_ENV: "production",
+        PORT: 3001,
+      },
+    },
   ],
 };
