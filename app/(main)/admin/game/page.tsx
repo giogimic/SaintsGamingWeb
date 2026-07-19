@@ -121,7 +121,7 @@ export default function GameAdminDashboard() {
           <Card className="sticky top-24">
             <CardHeader>
               <CardTitle>Item Injector</CardTitle>
-              <CardDescription>Force an item into a player's inventory directly through the DB.</CardDescription>
+              <CardDescription>Force an item into a player&apos;s inventory directly through the DB.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>

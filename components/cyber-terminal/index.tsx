@@ -24,7 +24,6 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isReady, setIsReady] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -43,7 +42,7 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
               grid: JSON.parse(dbMap.gridData),
               gates: JSON.parse(dbMap.gatesData) || {}
             };
-          } catch (err) {
+          } catch (_err) {
             console.error('Failed to parse map data:', dbMap.id);
           }
         });

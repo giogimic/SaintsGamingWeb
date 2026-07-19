@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+/* eslint-disable @next/next/no-img-element */
+import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from './store';
 import { getCreatureById, getRandomEncounter, CreatureSchema } from './data/saints-dex';
 import { getCombatMultiplier, calculatePlayerCombatStats } from './combat';
@@ -40,7 +41,7 @@ export default function BattleOverlay() {
       setEnemyMaxHp(encHp);
       setLog([`A wild ${enc.name} appeared!`, `You deployed ${activeDaemon?.name || 'Nothing'}!`]);
     }
-  }, [isPvp]);
+  }, [isPvp, activeDaemon?.name]);
 
   useEffect(() => {
     if (logRef.current) {
@@ -123,7 +124,7 @@ export default function BattleOverlay() {
       // Determine Loot Drop
       let droppedItem = null;
       let dropAmount = 0;
-      let creditsGained = Math.floor(Math.random() * 20) + 5;
+      const creditsGained = Math.floor(Math.random() * 20) + 5;
       const dropRoll = Math.random();
       
       if (dropRoll < 0.2) {
@@ -139,7 +140,7 @@ export default function BattleOverlay() {
 
       setTimeout(() => {
         setLog(prev => {
-          let messages = [`Gained ${xpGain} XP.`, `Found ${creditsGained} Credits.`];
+          const messages = [`Gained ${xpGain} XP.`, `Found ${creditsGained} Credits.`];
           if (droppedItem) messages.push(`Dropped: ${dropAmount}x ${droppedItem.replace('_', ' ')}!`);
           return [...prev, ...messages];
         });

@@ -2,7 +2,7 @@
 
 import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
-import { ITEM_DB, getItem } from './data/items';
+import { ITEM_DB } from './data/items';
 import { calculatePlayerCombatStats } from './combat';
 
 export default function EquipmentOverlay() {
