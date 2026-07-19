@@ -468,6 +468,28 @@ export default function GameCanvas() {
         return;
       }
 
+      // Check if clicked on an NPC/Entity
+      const clickedEntity = state.mapEntities.find(
+        (ent) => ent.position.x === gridX && ent.position.y === gridY
+      );
+
+      if (clickedEntity && clickedEntity.type === 'NPC') {
+        const playerPos = state.player.position;
+        const dist = Math.abs(playerPos.x - gridX) + Math.abs(playerPos.y - gridY);
+        if (dist <= 2) {
+          state.setActiveDialog({
+            npcId: clickedEntity.id,
+            text: clickedEntity.id === 'npc-1' 
+              ? "Welcome to Saints Village. The wilderness outside these walls is extremely dangerous. I'd recommend you get some bronze armor from the Smith before wandering into the tall grass."
+              : "Hello there, traveler."
+          });
+          state.setGameMode('DIALOG');
+        } else {
+          state.showToast("You need to get closer to talk.");
+        }
+        return;
+      }
+
       const playerPos = useGameStore.getState().player.position;
       const distToClick = Math.abs(playerPos.x - gridX) + Math.abs(playerPos.y - gridY);
       
