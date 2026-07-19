@@ -2,18 +2,27 @@
 
 import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
-
-// Mock database of item info. Eventually move to data/items.ts
-const ITEM_DB: Record<string, { name: string, description: string, type: string, spriteKey: string }> = {
-  'wood_logs': { name: 'Wood Logs', description: 'Basic logs chopped from a tree.', type: 'MATERIAL', spriteKey: 'wood' },
-  'copper_ore': { name: 'Copper Ore', description: 'Raw copper ore.', type: 'MATERIAL', spriteKey: 'ore_copper' },
-  'raw_fish': { name: 'Raw Fish', description: 'Needs to be cooked.', type: 'FOOD', spriteKey: 'fish_raw' },
-};
+import { ITEM_DB } from './data/items';
 
 export default function InventoryOverlay() {
   const inventory = useGameStore(state => state.player.inventory);
+  const equipment = useGameStore(state => state.player.equipment);
   const setGameMode = useGameStore(state => state.setGameMode);
   const credits = useGameStore(state => state.player.credits);
+  const equipItem = useGameStore(state => state.equipItem);
+
+  const handleItemClick = (itemId: string, itemInfo: any) => {
+    if (['HEAD', 'CHEST', 'LEGS', 'WEAPON'].includes(itemInfo.type)) {
+      equipItem(itemInfo.type.toLowerCase() as any, itemId);
+      useGameStore.getState().showToast(`Equipped ${itemInfo.name}`);
+    } else if (itemInfo.type === 'FOOD' || itemInfo.type === 'CONSUMABLE') {
+      if (itemInfo.stats?.hp) {
+        useGameStore.getState().modifyHp(itemInfo.stats.hp);
+        useGameStore.getState().modifyInventory(itemId, -1);
+        useGameStore.getState().showToast(`Used ${itemInfo.name}`);
+      }
+    }
+  };
 
   return (
     <RpgPanel title="INVENTORY" onClose={() => setGameMode('EXPLORING')}>
@@ -33,10 +42,18 @@ export default function InventoryOverlay() {
               if (quantity <= 0) return null;
               const itemInfo = ITEM_DB[itemId] || { name: itemId, description: 'Unknown item', type: 'UNKNOWN', spriteKey: 'unknown' };
               
+              const isEquipped = Object.values(equipment).includes(itemId);
+
               return (
-                <div key={itemId} className="relative aspect-square bg-[#1a1a1a] border-2 border-[#3e2723] rounded hover:border-[#ca8a04] transition-colors cursor-pointer group flex items-center justify-center shadow-inner">
+                <div 
+                  key={itemId} 
+                  onClick={() => handleItemClick(itemId, itemInfo)}
+                  className={`relative aspect-square bg-[#1a1a1a] border-2 rounded transition-colors cursor-pointer group flex items-center justify-center shadow-inner ${isEquipped ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.3)]' : 'border-[#3e2723] hover:border-[#ca8a04]'}`}
+                >
                   {/* Item Icon Placeholder */}
-                  <span className="text-[#a1887f] font-mono text-xs text-center p-1 break-all">{itemInfo.name}</span>
+                  <span className={`font-mono text-xs text-center p-1 break-all ${isEquipped ? 'text-[#4ade80]' : 'text-[#a1887f]'}`}>
+                    {itemInfo.name}
+                  </span>
                   
                   {/* Quantity Badge */}
                   <div className="absolute -bottom-2 -right-2 bg-black border border-[#3e2723] text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
@@ -44,10 +61,13 @@ export default function InventoryOverlay() {
                   </div>
 
                   {/* Tooltip on hover */}
-                  <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-black/90 border border-[#ca8a04] p-2 rounded z-50 text-xs shadow-lg pointer-events-none">
+                  <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-black/95 border border-[#ca8a04] p-2 rounded z-50 text-xs shadow-lg pointer-events-none">
                     <p className="text-white font-bold mb-1">{itemInfo.name}</p>
-                    <p className="text-slate-300 italic">{itemInfo.description}</p>
-                    <p className="text-yellow-500 mt-1 uppercase text-[10px]">{itemInfo.type}</p>
+                    <p className="text-slate-300 italic mb-1">{itemInfo.description}</p>
+                    {itemInfo.stats?.atk && <p className="text-red-400 font-mono">+ {itemInfo.stats.atk} ATK</p>}
+                    {itemInfo.stats?.def && <p className="text-blue-400 font-mono">+ {itemInfo.stats.def} DEF</p>}
+                    {itemInfo.stats?.hp && <p className="text-green-400 font-mono">+ {itemInfo.stats.hp} HP</p>}
+                    <p className="text-yellow-500 mt-2 uppercase text-[10px]">{itemInfo.type}</p>
                   </div>
                 </div>
               );

@@ -8,6 +8,8 @@ import ShopOverlay from './shop-overlay';
 import SkillsOverlay from './skills-overlay';
 import InventoryOverlay from './inventory-overlay';
 import PartyOverlay from './party-overlay';
+import EquipmentOverlay from './equipment-overlay';
+import CraftingOverlay from './crafting-overlay';
 import DPad from './dpad';
 import { useGameStore } from './store';
 
@@ -121,6 +123,12 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
               PARTY
             </button>
             <button
+              onClick={() => useGameStore.getState().setGameMode('EQUIPMENT')}
+              className="px-3 py-1 bg-[#4a148c]/90 text-white border-2 border-[#9c27b0] rounded font-bold text-xs hover:bg-[#9c27b0] transition-colors shadow-md pointer-events-auto"
+            >
+              GEAR
+            </button>
+            <button
               onClick={() => useGameStore.getState().setGameMode('INVENTORY')}
               className="px-3 py-1 bg-[#e65100]/90 text-white border-2 border-[#ff9800] rounded font-bold text-xs hover:bg-[#ff9800] transition-colors shadow-md pointer-events-auto"
             >
@@ -148,6 +156,8 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
       {gameMode === 'SKILLS' && <SkillsOverlay />}
       {gameMode === 'INVENTORY' && <InventoryOverlay />}
       {gameMode === 'PARTY' && <PartyOverlay />}
+      {gameMode === 'EQUIPMENT' && <EquipmentOverlay />}
+      {gameMode === 'CRAFTING' && <CraftingOverlay />}
     </div>
   );
 }

@@ -27,6 +27,7 @@ export const GAME_MAPS: Record<string, GameMapData> = {
         if (x >= 10 && x <= 20 && y >= 10 && y <= 20) {
           if (x === 15 && y === 15) return 8; // Clinic
           if (x === 12 && y === 12) return 7; // Shop
+          if (x === 14 && y === 12) return 9; // Crafting Station
           if (x === 18 && y === 18) return 5; // Tree
           return 0; // Safe path
         }
