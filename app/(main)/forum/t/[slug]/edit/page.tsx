@@ -39,7 +39,7 @@ export default async function EditThreadPage({ params }: { params: Promise<{ slu
         initialTitle={thread.title} 
         initialBody={thread.body} 
         slug={slug} 
-        subcategorySlug={thread.subcategory.slug}
+        _subcategorySlug={thread.subcategory.slug}
       />
     </div>
   );

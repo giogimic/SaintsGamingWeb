@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { getRolePrivileges } from '@/lib/permissions';
+import { PERMISSION_LEVELS } from '@/lib/permissions';
 
 async function verifyAdmin() {
   const session = await auth();
@@ -10,8 +10,7 @@ async function verifyAdmin() {
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) return false;
   
-  const privs = getRolePrivileges(user.role);
-  return privs.canManageGameServers;
+  return user.permissionLevel >= PERMISSION_LEVELS.ADMIN;
 }
 
 export async function saveWorldMap(data: {
