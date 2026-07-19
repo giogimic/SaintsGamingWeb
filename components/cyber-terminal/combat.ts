@@ -1,5 +1,9 @@
 export type ElementType = 'Solar' | 'Hydro' | 'Bio' | 'Volt' | 'Geo' | 'Cryo' | 'Aero' | 'Cyber' | 'None';
 
+import type { PlayerState } from './store';
+import { getItem } from './data/items';
+import { getCreatureById } from './data/saints-dex';
+
 type MatchupMap = {
   [key in ElementType]?: {
     strongAgainst: ElementType[];
@@ -32,4 +36,43 @@ export function getCombatMultiplier(attacker: ElementType, defender: ElementType
   if (attackerMatchup?.weakAgainst.includes(defender)) return 0.5;
 
   return 1.0; // Neutral matchup
+}
+
+/**
+ * Calculates the total effective ATK and DEF for a player by combining:
+ * 1. Player Level (Base stats)
+ * 2. Active Daemon stats
+ * 3. Equipment stats
+ */
+export function calculatePlayerCombatStats(player: PlayerState) {
+  // Base stats from level
+  let totalAtk = player.level * 2;
+  let totalDef = player.level * 2;
+
+  // Add Daemon stats
+  if (player.activeDaemonId) {
+    const daemon = getCreatureById(player.activeDaemonId);
+    if (daemon) {
+      totalAtk += daemon.stat_profile.ATK * 0.3; // Daemon contributes 30% of its ATK
+      totalDef += daemon.stat_profile.DEF * 0.3; // Daemon contributes 30% of its DEF
+    }
+  }
+
+  // Add Equipment stats
+  const eq = player.equipment;
+  const slots = [eq.head, eq.chest, eq.legs, eq.weapon];
+  slots.forEach(itemId => {
+    if (itemId) {
+      const item = getItem(itemId);
+      if (item?.stats) {
+        if (item.stats.atk) totalAtk += item.stats.atk;
+        if (item.stats.def) totalDef += item.stats.def;
+      }
+    }
+  });
+
+  return {
+    atk: Math.floor(totalAtk),
+    def: Math.floor(totalDef)
+  };
 }

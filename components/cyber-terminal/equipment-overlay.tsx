@@ -2,12 +2,16 @@
 
 import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
-import { ITEM_DB } from './data/items';
+import { ITEM_DB, getItem } from './data/items';
+import { calculatePlayerCombatStats } from './combat';
 
 export default function EquipmentOverlay() {
-  const equipment = useGameStore(state => state.player.equipment);
+  const player = useGameStore(state => state.player);
+  const equipment = player.equipment;
   const setGameMode = useGameStore(state => state.setGameMode);
   const equipItem = useGameStore(state => state.equipItem);
+
+  const stats = calculatePlayerCombatStats(player);
 
   const handleUnequip = (slot: 'head' | 'chest' | 'legs' | 'weapon') => {
     if (equipment[slot]) {
@@ -47,28 +51,22 @@ export default function EquipmentOverlay() {
     );
   };
 
-  // Calculate total stats
-  let totalAtk = 0;
-  let totalDef = 0;
-  Object.values(equipment).forEach(id => {
-    if (id && ITEM_DB[id]) {
-      totalAtk += ITEM_DB[id].stats?.atk || 0;
-      totalDef += ITEM_DB[id].stats?.def || 0;
-    }
-  });
-
   return (
     <RpgPanel title="EQUIPMENT" onClose={() => setGameMode('EXPLORING')}>
       
       {/* Stats Summary */}
       <div className="flex justify-around items-center bg-black/60 p-3 rounded border border-[#3e2723] mb-6">
-        <div className="text-center">
-          <div className="text-[#e0e0e0] font-bold font-mono text-xs">TOTAL ATK</div>
-          <div className="text-red-400 font-bold font-mono text-xl">{totalAtk}</div>
+        <div className="bg-black/60 border border-[#3e2723] rounded p-4 text-center">
+          <span className="block text-xs text-slate-400 mb-1">TOTAL EFFECTIVE ATK</span>
+          <span className="text-3xl font-mono text-red-500 font-bold drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+            {stats.atk}
+          </span>
         </div>
-        <div className="text-center">
-          <div className="text-[#e0e0e0] font-bold font-mono text-xs">TOTAL DEF</div>
-          <div className="text-blue-400 font-bold font-mono text-xl">{totalDef}</div>
+        <div className="bg-black/60 border border-[#3e2723] rounded p-4 text-center">
+          <span className="block text-xs text-slate-400 mb-1">TOTAL EFFECTIVE DEF</span>
+          <span className="text-3xl font-mono text-blue-400 font-bold drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">
+            {stats.def}
+          </span>
         </div>
       </div>
 
