@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from './store';
 import { getCreatureById, getRandomEncounter, CreatureSchema } from './data/saints-dex';
-import { getCombatMultiplier } from './combat';
+import { getCombatMultiplier, calculatePlayerCombatStats } from './combat';
 import { processAchievements } from './data/achievements';
 
 export default function BattleOverlay() {
@@ -57,7 +57,11 @@ export default function BattleOverlay() {
       
       const multiplier = getCombatMultiplier(enemy.type_primary, activeDaemon.type_primary);
       const baseDmg = enemy.stat_profile.ATK * 0.2;
-      const dmg = Math.max(1, Math.floor(baseDmg * multiplier));
+      
+      const pStats = calculatePlayerCombatStats(playerState);
+      const mitigation = pStats.def * 0.1; // 10% mitigation per DEF point
+
+      const dmg = Math.max(1, Math.floor((baseDmg - mitigation) * multiplier));
       
       let dmgMsg = ``;
       if (multiplier > 1) dmgMsg = `It's highly effective!`;
@@ -84,7 +88,10 @@ export default function BattleOverlay() {
     setIsPlayerTurn(false);
 
     const multiplier = getCombatMultiplier(activeDaemon.type_primary, enemy.type_primary);
-    const baseDmg = activeDaemon.stat_profile.ATK * 0.3 * (1 + playerState.level * 0.1);
+    
+    const pStats = calculatePlayerCombatStats(playerState);
+    const baseDmg = pStats.atk; // Player's effective ATK is the base
+    
     const dmg = Math.max(1, Math.floor(baseDmg * multiplier));
     
     let dmgMsg = ``;
@@ -136,9 +143,13 @@ export default function BattleOverlay() {
   // -------------------------------------------------------------
   const handlePvpAttack = () => {
     if (!activeBattle || !emitSocketEvent) return;
-    // Calculate damage locally then send it so server can apply it
+    
     // In a fully secure MMO, server calculates damage based on stored stats.
-    const dmg = 25 + Math.floor(Math.random() * 10);
+    // For now, client calculates true damage based on effective ATK and sends it.
+    // (Note: PvP doesn't currently sync defender's DEF, so we just use raw ATK for now)
+    const pStats = calculatePlayerCombatStats(playerState);
+    const dmg = Math.max(1, pStats.atk);
+    
     emitSocketEvent('battle_action', {
       battleId: activeBattle.id || activeBattle.battleId,
       action: 'ATTACK',
