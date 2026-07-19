@@ -1,6 +1,7 @@
 'use client';
 
 import { useGameStore } from './store';
+import RpgPanel from './rpg-panel';
 
 const SKILL_CATEGORIES = {
   Combat: ['Attack', 'Constitution', 'Defence', 'Magic', 'Necromancy', 'Prayer', 'Ranged', 'Strength', 'Summoning'],
@@ -48,17 +49,7 @@ export default function SkillsOverlay() {
   };
 
   return (
-    <div className="absolute inset-0 bg-[#0a0a0a]/95 flex flex-col p-4 border-4 border-[#333] rounded-lg backdrop-blur-sm z-30 animate-in fade-in duration-200">
-      <div className="flex justify-between items-center mb-4 border-b-2 border-[#333] pb-2">
-        <h2 className="text-xl md:text-2xl font-bold text-[#ca8a04] tracking-widest uppercase shadow-black drop-shadow-md">Saint Skills</h2>
-        <button 
-          onClick={() => setGameMode('EXPLORING')}
-          className="px-4 py-1 bg-[#333] text-white font-bold rounded hover:bg-[#444] transition-colors"
-        >
-          X
-        </button>
-      </div>
-
+    <RpgPanel title="SAINT SKILLS" onClose={() => setGameMode('EXPLORING')}>
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
         {Object.entries(SKILL_CATEGORIES).map(([category, skillList]) => (
           <div key={category}>
@@ -72,10 +63,10 @@ export default function SkillsOverlay() {
       
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #ca8a04; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4e342e; border-radius: 4px; border: 1px solid #3e2723; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5d4037; }
       `}} />
-    </div>
+    </RpgPanel>
   );
 }
