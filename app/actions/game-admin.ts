@@ -67,3 +67,55 @@ export async function fetchAllMaps() {
     return { success: false, error: 'Internal Server Error', data: [] };
   }
 }
+
+export async function fetchGamePlayers() {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return { success: false, error: 'Unauthorized', data: [] };
+
+    const players = await prisma.gameCharacter.findMany({
+      include: {
+        user: { select: { username: true } }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+    return { success: true, data: players };
+  } catch (err) {
+    console.error('Fetch players failed:', err);
+    return { success: false, error: 'Internal Server Error', data: [] };
+  }
+}
+
+export async function adminGivePlayerItem(characterId: string, itemId: string, amount: number) {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+    const character = await prisma.gameCharacter.findUnique({
+      where: { id: characterId }
+    });
+
+    if (!character || !character.stateData) {
+      return { success: false, error: 'Character not found or corrupt' };
+    }
+
+    const state = JSON.parse(character.stateData);
+    
+    // Inject Item
+    if (!state.inventory[itemId]) {
+      state.inventory[itemId] = amount;
+    } else {
+      state.inventory[itemId] += amount;
+    }
+
+    await prisma.gameCharacter.update({
+      where: { id: characterId },
+      data: { stateData: JSON.stringify(state) }
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('Admin give item failed:', err);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}

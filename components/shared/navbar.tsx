@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   { href: "/forum", label: "Forum", icon: MessageSquare },
   { href: "/forum/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/streams", label: "Streams", icon: Monitor },
+  { href: "/profile/terminal", label: "Play Sandbox", icon: Gamepad2 },
 ];
 
 export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false }: { session: Session | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean }) {
