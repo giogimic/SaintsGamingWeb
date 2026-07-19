@@ -24,6 +24,8 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [chatInput, setChatInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showCreator, setShowCreator] = useState(forceCreate || !characterId);
@@ -181,6 +183,38 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
       {gameMode === 'CRAFTING' && <CraftingOverlay />}
       {gameMode === 'BASE' && <BaseOverlay />}
       {gameMode === 'DIALOG' && <DialogOverlay />}
+
+      {/* Global Chat Bar */}
+      {gameMode === 'EXPLORING' && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[80%] max-w-md z-40 flex shadow-lg">
+          <input 
+            type="text" 
+            placeholder="Press Enter to chat..." 
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && chatInput.trim().length > 0) {
+                emitSocketEvent?.('chat_message', chatInput.trim());
+                useGameStore.getState().setPlayerChat(chatInput.trim());
+                setChatInput('');
+              }
+            }}
+            className="flex-1 bg-black/80 border-2 border-slate-700 text-white font-mono text-xs p-2 rounded-l focus:outline-none focus:border-cyan-500"
+          />
+          <button 
+            onClick={() => {
+              if (chatInput.trim().length > 0) {
+                emitSocketEvent?.('chat_message', chatInput.trim());
+                useGameStore.getState().setPlayerChat(chatInput.trim());
+                setChatInput('');
+              }
+            }}
+            className="bg-slate-700 border-2 border-l-0 border-slate-700 text-white font-bold font-mono text-xs px-4 py-2 rounded-r hover:bg-slate-600"
+          >
+            SEND
+          </button>
+        </div>
+      )}
     </div>
   );
 }

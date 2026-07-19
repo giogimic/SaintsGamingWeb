@@ -17,8 +17,21 @@ export default function DexOverlay() {
 
   return (
     <RpgPanel title="DAEMON REGISTRY" onClose={() => setGameMode('EXPLORING')}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
-        {SAINTS_DEX.map((daemon) => {
+      <div className="flex justify-between items-center mb-4 bg-black/50 p-2 border border-cyan-900 rounded shadow-inner">
+        <span className="text-slate-300 font-bold font-mono text-sm">TOTAL REGISTERED</span>
+        <span className="text-cyan-400 font-mono font-bold text-lg">{caughtDaemons.length} / {SAINTS_DEX.length}</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto custom-scrollbar pr-2 h-[400px]">
+        {[...SAINTS_DEX]
+          .sort((a, b) => {
+            const aCaught = caughtDaemons.includes(a.id);
+            const bCaught = caughtDaemons.includes(b.id);
+            if (aCaught && !bCaught) return -1;
+            if (!aCaught && bCaught) return 1;
+            return 0;
+          })
+          .map((daemon) => {
           const isCaught = caughtDaemons.includes(daemon.id);
           const isActive = activeDaemonId === daemon.id;
 
@@ -71,7 +84,6 @@ export default function DexOverlay() {
             </div>
           );
         })}
-      </div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `

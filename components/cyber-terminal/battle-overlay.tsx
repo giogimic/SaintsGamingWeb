@@ -23,6 +23,7 @@ export default function BattleOverlay() {
   const [enemyMaxHp, setEnemyMaxHp] = useState(100);
   const [log, setLog] = useState<string[]>([]);
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
+  const [floatingTexts, setFloatingTexts] = useState<{id: number, text: string, color: string, isEnemy: boolean}[]>([]);
   
   const activeDaemon = playerState.activeDaemonId ? getCreatureById(playerState.activeDaemonId) : null;
   const logRef = useRef<HTMLDivElement>(null);
@@ -48,6 +49,14 @@ export default function BattleOverlay() {
   if (!activeDaemon) return null;
   if (!isPvp && !enemy) return null;
 
+  const showFloatingText = (text: string, color: string, isEnemy: boolean) => {
+    const id = Date.now() + Math.random();
+    setFloatingTexts(prev => [...prev, { id, text, color, isEnemy }]);
+    setTimeout(() => {
+      setFloatingTexts(prev => prev.filter(ft => ft.id !== id));
+    }, 1000);
+  };
+
   // -------------------------------------------------------------
   // PVE ACTIONS
   // -------------------------------------------------------------
@@ -68,6 +77,7 @@ export default function BattleOverlay() {
       if (multiplier < 1) dmgMsg = `It's not very effective...`;
       
       setLog(prev => [...prev, `${enemy.name} attacks! ${dmgMsg}`]);
+      showFloatingText(`-${dmg}`, '#ef4444', false); // Player took damage
       modifyHp(-dmg);
       
       const newPlayerHp = useGameStore.getState().player.hp;
@@ -99,6 +109,7 @@ export default function BattleOverlay() {
     if (multiplier < 1) dmgMsg = `It's not very effective...`;
     
     setLog(prev => [...prev, `${activeDaemon.name} attacks! ${dmgMsg} (-${dmg} HP)`]);
+    showFloatingText(`-${dmg}`, '#38bdf8', true); // Enemy took damage
     
     const nextEnemyHp = enemyHp - dmg;
     setEnemyHp(Math.max(0, nextEnemyHp));
@@ -200,12 +211,17 @@ export default function BattleOverlay() {
               <div className="h-full bg-red-500 transition-all duration-300" style={{ width: `${enemyHpPercent}%` }} />
             </div>
           </div>
-          <div className="w-32 h-32 bg-black rounded flex items-center justify-center overflow-hidden border border-red-900/50 shadow-[0_0_20px_rgba(220,38,38,0.2)] mb-4 mt-4">
+          <div className="w-32 h-32 bg-black rounded flex items-center justify-center overflow-hidden border border-red-900/50 shadow-[0_0_20px_rgba(220,38,38,0.2)] mb-4 mt-4 relative">
             {(!isPvp && enemy?.assetPath) ? (
               <img src={enemy.assetPath} alt={enemy.name} className="w-full h-full object-cover pixelated" style={{ imageRendering: 'pixelated' }} />
             ) : (
               <span className="text-red-900 text-5xl font-mono">?</span>
             )}
+            {floatingTexts.filter(ft => ft.isEnemy).map(ft => (
+              <div key={ft.id} className="absolute font-bold text-2xl drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] animate-out slide-out-to-top-8 fade-out duration-1000" style={{ color: ft.color }}>
+                {ft.text}
+              </div>
+            ))}
           </div>
           <h3 className="text-xl font-bold text-slate-200">{displayEnemyName}</h3>
         </div>
@@ -221,12 +237,17 @@ export default function BattleOverlay() {
               <div className="h-full bg-cyan-500 transition-all duration-300" style={{ width: `${playerHpPercent}%` }} />
             </div>
           </div>
-          <div className="w-32 h-32 bg-black rounded flex items-center justify-center overflow-hidden border border-cyan-900/50 shadow-[0_0_20px_rgba(34,211,238,0.2)] mb-4 mt-4">
+          <div className="w-32 h-32 bg-black rounded flex items-center justify-center overflow-hidden border border-cyan-900/50 shadow-[0_0_20px_rgba(34,211,238,0.2)] mb-4 mt-4 relative">
             {activeDaemon.assetPath ? (
               <img src={activeDaemon.assetPath} alt={activeDaemon.name} className="w-full h-full object-cover pixelated" style={{ imageRendering: 'pixelated' }} />
             ) : (
               <span className="text-cyan-900 text-5xl font-mono">?</span>
             )}
+            {floatingTexts.filter(ft => !ft.isEnemy).map(ft => (
+              <div key={ft.id} className="absolute font-bold text-2xl drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] animate-out slide-out-to-top-8 fade-out duration-1000" style={{ color: ft.color }}>
+                {ft.text}
+              </div>
+            ))}
           </div>
           <h3 className="text-xl font-bold text-slate-200">{activeDaemon.name}</h3>
         </div>

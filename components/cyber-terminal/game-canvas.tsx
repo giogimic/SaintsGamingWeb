@@ -415,12 +415,31 @@ export default function GameCanvas() {
         ctx.font = '10px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(op.name, opX + TILE_SIZE / 2, opY - 4);
+        
+        // Chat Bubble
+        if (op.chatMessage) {
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillRect(opX + TILE_SIZE / 2 - 40, opY - 30, 80, 20);
+          ctx.fillStyle = '#000';
+          ctx.font = '10px monospace';
+          ctx.fillText(op.chatMessage.substring(0, 15), opX + TILE_SIZE / 2, opY - 16);
+        }
       });
 
       // Draw Local Player
       ctx.save();
       ctx.translate(currentPixelPos.x - cameraX, currentPixelPos.y - cameraY);
       drawPlayer();
+      
+      if (state.localChat) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(TILE_SIZE / 2 - 40, -30, 80, 20);
+        ctx.fillStyle = '#000';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(state.localChat.substring(0, 15), TILE_SIZE / 2, -16);
+      }
+      
       ctx.restore();
       
       ctx.restore();
