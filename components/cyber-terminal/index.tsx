@@ -10,6 +10,7 @@ import InventoryOverlay from './inventory-overlay';
 import PartyOverlay from './party-overlay';
 import EquipmentOverlay from './equipment-overlay';
 import CraftingOverlay from './crafting-overlay';
+import BaseOverlay from './base-overlay';
 import DPad from './dpad';
 import { useGameStore } from './store';
 
@@ -158,6 +159,7 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
       {gameMode === 'PARTY' && <PartyOverlay />}
       {gameMode === 'EQUIPMENT' && <EquipmentOverlay />}
       {gameMode === 'CRAFTING' && <CraftingOverlay />}
+      {gameMode === 'BASE' && <BaseOverlay />}
     </div>
   );
 }

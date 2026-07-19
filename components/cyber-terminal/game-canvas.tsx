@@ -173,11 +173,12 @@ export default function GameCanvas() {
             else if (tile === 8) { srcX = 96; srcY = 0; } // Clinic
             else if (tile === 9) { srcX = 16; srcY = 16; } // Anvil (using arbitrary srcX/Y for now)
             else if (tile === 10) { srcX = 112; srcY = 0; } // Water
+            else if (tile === 12) { srcX = 48; srcY = 16; } // Base Terminal
             
             ctx.drawImage(tilesetImg, srcX, srcY, srcSize, srcSize, destX, destY, TILE_SIZE, TILE_SIZE);
             
             // Draw animated waves/vines over the base tile for gates
-            if (tile >= 3 && tile !== 7 && tile !== 8 && tile !== 9 && tile !== 5 && tile !== 6 && tile !== 10) {
+            if (tile >= 3 && tile !== 7 && tile !== 8 && tile !== 9 && tile !== 5 && tile !== 6 && tile !== 10 && tile !== 12) {
                if (tile === 3) {
                    ctx.fillStyle = 'rgba(21, 128, 61, 0.7)'; // Thick vines
                    ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
@@ -218,6 +219,11 @@ export default function GameCanvas() {
             } else if (tile === 10) {
               ctx.fillStyle = '#0ea5e9';
               ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
+            } else if (tile === 12) {
+              ctx.fillStyle = '#1e1b4b'; // Dark blue terminal
+              ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
+              ctx.fillStyle = '#38bdf8'; // Screen glow
+              ctx.fillRect(destX + 4, destY + 4, TILE_SIZE - 8, TILE_SIZE - 12);
             }
           }
         }
@@ -494,6 +500,14 @@ export default function GameCanvas() {
           return;
         } else {
           state.showToast('You need to get closer to craft.');
+          return;
+        }
+      } else if (tileValue === 12) { // Base Terminal
+        if (distToClick <= 1) {
+          state.setGameMode('BASE');
+          return;
+        } else {
+          state.showToast('You need to get closer to access the terminal.');
           return;
         }
       }

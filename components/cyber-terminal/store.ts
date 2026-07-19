@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING';
+export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE';
 
 export type Point = { x: number; y: number };
 
@@ -43,7 +43,10 @@ export interface PlayerState {
     furnace: string | null;
     farm: string | null;
     fishing_hut: string | null;
+    lumber_mill: string | null;
+    quarry: string | null;
   };
+  lastBaseCollection: number;
 }
 
 export interface ToastMessage {
@@ -82,7 +85,8 @@ export interface GameState {
   gainSkillXp: (skillName: string, amount: number) => void;
   equipItem: (slot: 'head' | 'chest' | 'legs' | 'weapon', itemId: string | null) => void;
   setCombatStyle: (style: 'MELEE' | 'RANGED' | 'MAGIC') => void;
-  assignBeast: (facility: 'furnace' | 'farm' | 'fishing_hut', beastId: string | null) => void;
+  assignBeast: (facility: 'furnace' | 'farm' | 'fishing_hut' | 'lumber_mill' | 'quarry', beastId: string | null) => void;
+  collectBaseResources: () => void;
 }
 
 export const INITIAL_SKILLS: Record<string, SkillData> = {
@@ -119,7 +123,8 @@ export const useGameStore = create<GameState>()(
         activeDaemonId: null,
         saintRank: 'Rookie',
         caughtDaemons: [],
-        assignedBeasts: { furnace: null, farm: null, fishing_hut: null }
+        assignedBeasts: { furnace: null, farm: null, fishing_hut: null, lumber_mill: null, quarry: null },
+        lastBaseCollection: Date.now()
       },
       otherPlayers: {},
       activeBattle: null,
@@ -264,9 +269,43 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           state.player.assignedBeasts[facility] = beastId;
           if (beastId) {
-            state.toast = { id: Date.now(), message: `Beast assigned to the ${facility}!` };
+            state.toast = { id: Date.now(), message: `Beast assigned to the ${facility.replace('_', ' ')}!` };
           }
-        })
+        }),
+
+      collectBaseResources: () => set((state) => {
+        const now = Date.now();
+        const diffMs = now - state.player.lastBaseCollection;
+        const diffSeconds = Math.floor(diffMs / 1000);
+        
+        // Only collect if at least 10 seconds have passed to prevent spam
+        if (diffSeconds < 10) return;
+
+        // Base rate: 1 resource every 10 seconds per assigned beast
+        const cycles = Math.floor(diffSeconds / 10);
+        
+        let collectedWood = 0;
+        let collectedOre = 0;
+
+        if (state.player.assignedBeasts.lumber_mill) collectedWood += cycles;
+        if (state.player.assignedBeasts.quarry) collectedOre += cycles;
+
+        if (collectedWood > 0 || collectedOre > 0) {
+          if (collectedWood > 0) {
+            state.player.inventory['wood_logs'] = (state.player.inventory['wood_logs'] || 0) + collectedWood;
+          }
+          if (collectedOre > 0) {
+            state.player.inventory['copper_ore'] = (state.player.inventory['copper_ore'] || 0) + collectedOre;
+          }
+          state.toast = { 
+            id: Date.now(), 
+            message: `Base yielded: ${collectedWood > 0 ? collectedWood + ' Wood' : ''} ${collectedOre > 0 ? collectedOre + ' Ore' : ''}` 
+          };
+        }
+
+        // Update timestamp keeping the remainder
+        state.player.lastBaseCollection = now - (diffMs % 10000);
+      })
     }))
   )
 );
