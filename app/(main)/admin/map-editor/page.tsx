@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { saveWorldMap, fetchAllMaps } from '@/app/actions/game-admin';
+import { saveWorldMap } from '@/app/actions/game-admin';
 import { GAME_MAPS } from '@/components/cyber-terminal/data/maps';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from '@/components/cyber-terminal/constants';
 
@@ -44,7 +44,7 @@ export default function MapEditorPage() {
         setGrid(newGrid);
       }
     }
-  }, []);
+  }, [grid.length]);
 
   // Draw Grid
   useEffect(() => {

@@ -4,12 +4,7 @@ import { useGameStore } from './store';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-// Using a simplified tile check based on the store to avoid cyclic deps
-const checkTileValid = (x: number, y: number) => {
-  // Rough bounds check, real validation happens in game-canvas WASD handlers anyway, 
-  // but we can trust the enqueuePath to ignore invalid paths if we pass it through
-  return true;
-};
+// Rough bounds check, real validation happens in game-canvas WASD handlers anyway
 
 export default function DPad() {
   const [isTouchDevice, setIsTouchDevice] = useState(false);

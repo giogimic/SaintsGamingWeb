@@ -144,8 +144,7 @@ export default function GameCanvas() {
 
     const drawMap = (cameraX: number, cameraY: number) => {
       const mapData = GAME_MAPS[currentMapId];
-      const timeOffset = Date.now() / 500;
-      
+      const _timeOffset = Date.now() * 0.005;
       const startCol = Math.max(0, Math.floor(cameraX / TILE_SIZE) - 1);
       const endCol = Math.min(mapData.grid[0].length, Math.floor((cameraX + MAP_COLS * TILE_SIZE) / TILE_SIZE) + 2);
       const startRow = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 1);
@@ -398,7 +397,7 @@ export default function GameCanvas() {
       drawEntities();
 
       // Draw Other Players
-      Object.entries(state.otherPlayers).forEach(([id, op]) => {
+      Object.entries(state.otherPlayers).forEach(([_id, op]) => {
         const opX = op.x * TILE_SIZE - cameraX;
         const opY = op.y * TILE_SIZE - cameraY;
         

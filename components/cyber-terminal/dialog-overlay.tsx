@@ -1,8 +1,7 @@
 'use client';
 
 import { useGameStore } from './store';
-import { QUEST_DB, QuestSchema } from './data/quests';
-import { ITEM_DB } from './data/items';
+import { QUEST_DB } from './data/quests';
 
 export default function DialogOverlay() {
   const player = useGameStore(state => state.player);

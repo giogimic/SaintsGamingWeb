@@ -8,8 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
-
-export default function EditThreadClient({ threadId, initialTitle, initialBody, slug, subcategorySlug }: { threadId: string, initialTitle: string, initialBody: string, slug: string, subcategorySlug: string }) {
+export default function EditThreadClient({ threadId, initialTitle, initialBody, slug, _subcategorySlug }: { threadId: string, initialTitle: string, initialBody: string, slug: string, _subcategorySlug: string }) {
   const router = useRouter();
   
   const [title, setTitle] = useState(initialTitle);
