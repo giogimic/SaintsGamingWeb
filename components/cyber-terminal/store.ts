@@ -13,6 +13,7 @@ export interface MapEntity {
   position: Point;
   isMoving: boolean;
   facing: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+  mapId?: string;
 }
 
 export interface SkillData {
@@ -141,9 +142,11 @@ export const useGameStore = create<GameState>()(
       pathQueue: [],
       currentMapId: 'SAINTS_VILLAGE',
       mapEntities: [
-        { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN' },
-        { id: 'anim-1', type: 'ANIMAL', spriteKey: 'chicken', position: { x: 14, y: 18 }, isMoving: false, facing: 'LEFT' },
-        { id: 'anim-2', type: 'ANIMAL', spriteKey: 'cow', position: { x: 8, y: 14 }, isMoving: false, facing: 'RIGHT' }
+        { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
+        { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
+        { id: 'npc-guard', type: 'NPC', spriteKey: 'villager_1', position: { x: 4, y: 2 }, isMoving: false, facing: 'DOWN', mapId: 'VERDANT_OUTPOST' },
+        { id: 'anim-1', type: 'ANIMAL', spriteKey: 'chicken', position: { x: 14, y: 18 }, isMoving: false, facing: 'LEFT', mapId: 'SAINTS_VILLAGE' },
+        { id: 'anim-2', type: 'ANIMAL', spriteKey: 'cow', position: { x: 8, y: 14 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' }
       ],
       toast: null,
       activeDialog: null,

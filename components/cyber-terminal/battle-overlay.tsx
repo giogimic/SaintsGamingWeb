@@ -12,6 +12,8 @@ export default function BattleOverlay() {
   const catchDaemon = useGameStore(state => state.catchDaemon);
   const modifyHp = useGameStore(state => state.modifyHp);
   const gainXp = useGameStore(state => state.gainXp);
+  const modifyInventory = useGameStore(state => state.modifyInventory);
+  const modifyCredits = useGameStore(state => state.modifyCredits);
   const activeBattle = useGameStore(state => state.activeBattle);
   const emitSocketEvent = useGameStore(state => state.emitSocketEvent);
   
@@ -117,11 +119,35 @@ export default function BattleOverlay() {
     if (nextEnemyHp <= 0) {
       setLog(prev => [...prev, `${enemy.name} was deleted!`]);
       const xpGain = Math.floor(enemy.stat_profile.HP * 0.5);
+      
+      // Determine Loot Drop
+      let droppedItem = null;
+      let dropAmount = 0;
+      let creditsGained = Math.floor(Math.random() * 20) + 5;
+      const dropRoll = Math.random();
+      
+      if (dropRoll < 0.2) {
+        droppedItem = 'wood_log';
+        dropAmount = Math.floor(Math.random() * 2) + 1;
+      } else if (dropRoll < 0.4) {
+        droppedItem = 'copper_ore';
+        dropAmount = Math.floor(Math.random() * 2) + 1;
+      } else if (dropRoll < 0.5) {
+        droppedItem = 'patch_kit';
+        dropAmount = 1;
+      }
+
       setTimeout(() => {
-        setLog(prev => [...prev, `Gained ${xpGain} XP.`]);
+        setLog(prev => {
+          let messages = [`Gained ${xpGain} XP.`, `Found ${creditsGained} Credits.`];
+          if (droppedItem) messages.push(`Dropped: ${dropAmount}x ${droppedItem.replace('_', ' ')}!`);
+          return [...prev, ...messages];
+        });
         gainXp(xpGain);
+        modifyCredits(creditsGained);
+        if (droppedItem) modifyInventory(droppedItem, dropAmount);
         processAchievements();
-        setTimeout(() => setGameMode('EXPLORING'), 2000);
+        setTimeout(() => setGameMode('EXPLORING'), 2500);
       }, 1000);
     } else {
       pveEnemyTurn();

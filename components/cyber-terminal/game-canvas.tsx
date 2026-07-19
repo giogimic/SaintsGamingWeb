@@ -266,6 +266,8 @@ export default function GameCanvas() {
     const drawEntities = () => {
       const state = useGameStore.getState();
       state.mapEntities.forEach(entity => {
+        if (entity.mapId && entity.mapId !== currentMapId) return;
+
         const ex = entity.position.x * TILE_SIZE;
         const ey = entity.position.y * TILE_SIZE;
 
@@ -489,18 +491,25 @@ export default function GameCanvas() {
 
       // Check if clicked on an NPC/Entity
       const clickedEntity = state.mapEntities.find(
-        (ent) => ent.position.x === gridX && ent.position.y === gridY
+        (ent) => ent.position.x === gridX && ent.position.y === gridY && (!ent.mapId || ent.mapId === currentMapId)
       );
 
       if (clickedEntity && clickedEntity.type === 'NPC') {
         const playerPos = state.player.position;
         const dist = Math.abs(playerPos.x - gridX) + Math.abs(playerPos.y - gridY);
         if (dist <= 2) {
+          let dialogText = "Hello there, traveler.";
+          if (clickedEntity.id === 'npc-1') {
+            dialogText = "Welcome to Saints Village. The wilderness outside these walls is extremely dangerous. I'd recommend you get some bronze armor from the Smith before wandering into the tall grass.";
+          } else if (clickedEntity.id === 'npc-2') {
+            dialogText = "I'm so hungry... The pond to the south-west has fish, but I can't catch them.";
+          } else if (clickedEntity.id === 'npc-guard') {
+            dialogText = "Halt! The Verdant Outpost is strictly controlled. Prove your strength before passing.";
+          }
+
           state.setActiveDialog({
             npcId: clickedEntity.id,
-            text: clickedEntity.id === 'npc-1' 
-              ? "Welcome to Saints Village. The wilderness outside these walls is extremely dangerous. I'd recommend you get some bronze armor from the Smith before wandering into the tall grass."
-              : "Hello there, traveler."
+            text: dialogText
           });
           state.setGameMode('DIALOG');
         } else {

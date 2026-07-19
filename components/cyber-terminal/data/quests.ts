@@ -43,5 +43,45 @@ export const QUEST_DB: Record<string, QuestSchema> = {
       itemId: 'patch_kit',
       amount: 3
     }
+  },
+  'q_fishing_trip': {
+    id: 'q_fishing_trip',
+    name: 'A Hearty Meal',
+    npcId: 'npc-2',
+    description: 'The Hungry Villager wants 3 Cooked Fish.',
+    dialogs: {
+      start: 'Ugh, I am so hungry. If you can catch some Raw Fish from the pond and cook them for me, I will give you a Binding Crystal.',
+      inProgress: 'You still do not have 3 Cooked Fish? Check the pond to the south-west, then use the fire or anvil area to cook it.',
+      complete: 'Delicious! Here, take this crystal. You can use it to catch wild beasts.'
+    },
+    requirements: {
+      itemId: 'cooked_fish',
+      amount: 3
+    },
+    rewards: {
+      credits: 100,
+      xp: 25,
+      itemId: 'capture_script',
+      amount: 1
+    }
+  },
+  'q_monster_hunter': {
+    id: 'q_monster_hunter',
+    name: 'The Outpost Guard',
+    npcId: 'npc-guard',
+    description: 'The Guard wants you to prove yourself by bringing a Bronze Sword.',
+    dialogs: {
+      start: 'Halt! The Verdant Outpost is dangerous. Prove you can defend yourself by equipping a Bronze Sword. Hand one to me for inspection.',
+      inProgress: 'Still no Bronze Sword? Talk to the Elder in Saints Village if you are lost.',
+      complete: 'Impressive blade. You may proceed freely. Take this gold for your trouble.'
+    },
+    requirements: {
+      itemId: 'bronze_sword',
+      amount: 1
+    },
+    rewards: {
+      credits: 500,
+      xp: 150
+    }
   }
 };
