@@ -14,7 +14,7 @@ import BaseOverlay from './base-overlay';
 import DPad from './dpad';
 import { useGameStore } from './store';
 
-import { loadGameCharacter } from '@/app/actions/game';
+import { loadGameCharacter, saveGameState } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { GAME_MAPS } from './data/maps';
 import { CharacterCreator } from './character-creator';
@@ -71,6 +71,25 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  // AUTO-SAVE LOOP
+  useEffect(() => {
+    if (!characterId || showCreator || isInitializing) return;
+
+    const interval = setInterval(async () => {
+      const state = useGameStore.getState();
+      const stateData = JSON.stringify(state.player);
+      
+      const res = await saveGameState(characterId, stateData);
+      if (res.success) {
+        console.log('[Auto-Save] Successfully synced player state to DB');
+      } else {
+        console.error('[Auto-Save] Failed to sync player state');
+      }
+    }, 15000); // Auto-save every 15 seconds
+
+    return () => clearInterval(interval);
+  }, [characterId, showCreator, isInitializing]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement && containerRef.current) {

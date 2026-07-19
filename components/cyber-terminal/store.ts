@@ -186,11 +186,20 @@ export const useGameStore = create<GameState>()(
       hydratePlayer: (data) =>
         set((state) => {
           if (data.position) state.player.position = data.position;
-          if (data.level) state.player.level = data.level;
-          if (data.xp) state.player.xp = data.xp;
-          if (data.activeDaemonId) state.player.activeDaemonId = data.activeDaemonId;
+          if (data.level !== undefined) state.player.level = data.level;
+          if (data.xp !== undefined) state.player.xp = data.xp;
+          if (data.hp !== undefined) state.player.hp = data.hp;
+          if (data.maxHp !== undefined) state.player.maxHp = data.maxHp;
+          if (data.credits !== undefined) state.player.credits = data.credits;
+          if (data.inventory) state.player.inventory = data.inventory;
+          if (data.skills) state.player.skills = data.skills;
+          if (data.equipment) state.player.equipment = data.equipment;
+          if (data.combatStyle) state.player.combatStyle = data.combatStyle;
+          if (data.activeDaemonId !== undefined) state.player.activeDaemonId = data.activeDaemonId;
           if (data.saintRank) state.player.saintRank = data.saintRank;
           if (data.caughtDaemons) state.player.caughtDaemons = data.caughtDaemons;
+          if (data.assignedBeasts) state.player.assignedBeasts = data.assignedBeasts;
+          if (data.lastBaseCollection !== undefined) state.player.lastBaseCollection = data.lastBaseCollection;
         }),
 
       catchDaemon: (daemonId) =>
