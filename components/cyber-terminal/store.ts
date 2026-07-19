@@ -27,6 +27,8 @@ export interface PlayerState {
   hp: number;
   maxHp: number;
   credits: number;
+  activeQuests: Record<string, { stage: number }>;
+  completedQuests: string[];
   inventory: Record<string, number>;
   skills: Record<string, SkillData>;
   equipment: {
@@ -65,6 +67,8 @@ export interface GameState {
   activeDialog: { npcId: string, text: string } | null;
   setGameMode: (mode: GameMode) => void;
   setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
+  acceptQuest: (questId: string) => void;
+  completeQuest: (questId: string) => void;
   setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string }>) => void;
   updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string }) => void;
   removeOtherPlayer: (socketId: string) => void;
@@ -112,12 +116,14 @@ export const useGameStore = create<GameState>()(
     immer((set) => ({
       gameMode: 'EXPLORING',
       player: {
-        position: { x: 15, y: 16 }, // Default spawn for Saints Village (Center near Clinic)
+        position: { x: 15, y: 16 },
         level: 1,
         xp: 0,
         hp: 100,
         maxHp: 100,
         credits: 500,
+        activeQuests: {},
+        completedQuests: [],
         inventory: {},
         skills: INITIAL_SKILLS,
         equipment: { head: null, chest: null, legs: null, weapon: null },
@@ -142,6 +148,17 @@ export const useGameStore = create<GameState>()(
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
       setActiveDialog: (dialog) => set((state) => { state.activeDialog = dialog; }),
+      acceptQuest: (questId) => set((state) => {
+        if (!state.player.activeQuests[questId]) {
+          state.player.activeQuests[questId] = { stage: 1 };
+        }
+      }),
+      completeQuest: (questId) => set((state) => {
+        delete state.player.activeQuests[questId];
+        if (!state.player.completedQuests.includes(questId)) {
+          state.player.completedQuests.push(questId);
+        }
+      }),
       setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
       updateOtherPlayer: (socketId, data) => set((state) => {
         if (!state.otherPlayers[socketId]) {
@@ -204,6 +221,8 @@ export const useGameStore = create<GameState>()(
           if (data.caughtDaemons) state.player.caughtDaemons = data.caughtDaemons;
           if (data.assignedBeasts) state.player.assignedBeasts = data.assignedBeasts;
           if (data.lastBaseCollection !== undefined) state.player.lastBaseCollection = data.lastBaseCollection;
+          if (data.activeQuests) state.player.activeQuests = data.activeQuests;
+          if (data.completedQuests) state.player.completedQuests = data.completedQuests;
         }),
 
       catchDaemon: (daemonId) =>

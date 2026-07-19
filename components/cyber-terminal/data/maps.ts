@@ -22,6 +22,8 @@ export const GAME_MAPS: Record<string, GameMapData> = {
     grid: Array.from({ length: 32 }, (_, y) => 
       Array.from({ length: 32 }, (_, x) => {
         // Create a basic perimeter wall
+        if (x === 15 && y === 0) return 3; // North Gate
+        if (x === 0 && y === 15) return 4; // West Gate
         if (x === 0 || x === 31 || y === 0 || y === 31) return 1;
         // Central village area
         if (x >= 10 && x <= 20 && y >= 10 && y <= 20) {
