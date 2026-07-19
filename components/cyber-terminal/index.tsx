@@ -6,6 +6,8 @@ import DexOverlay from './dex-overlay';
 import BattleOverlay from './battle-overlay';
 import ShopOverlay from './shop-overlay';
 import SkillsOverlay from './skills-overlay';
+import InventoryOverlay from './inventory-overlay';
+import PartyOverlay from './party-overlay';
 import DPad from './dpad';
 import { useGameStore } from './store';
 
@@ -113,16 +115,28 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
 
           <div className="flex gap-2">
             <button
+              onClick={() => useGameStore.getState().setGameMode('PARTY')}
+              className="px-3 py-1 bg-[#b71c1c]/90 text-white border-2 border-[#ff5252] rounded font-bold text-xs hover:bg-[#ff5252] transition-colors shadow-md pointer-events-auto"
+            >
+              PARTY
+            </button>
+            <button
+              onClick={() => useGameStore.getState().setGameMode('INVENTORY')}
+              className="px-3 py-1 bg-[#e65100]/90 text-white border-2 border-[#ff9800] rounded font-bold text-xs hover:bg-[#ff9800] transition-colors shadow-md pointer-events-auto"
+            >
+              INVENTORY
+            </button>
+            <button
               onClick={() => useGameStore.getState().setGameMode('SKILLS')}
-              className="px-3 py-1 bg-[#166534]/90 text-white border-2 border-[#14532d] rounded font-bold text-xs hover:bg-[#15803d] transition-colors shadow-md pointer-events-auto"
+              className="px-3 py-1 bg-[#1b5e20]/90 text-white border-2 border-[#4caf50] rounded font-bold text-xs hover:bg-[#4caf50] transition-colors shadow-md pointer-events-auto"
             >
               SKILLS
             </button>
             <button
               onClick={() => useGameStore.getState().setGameMode('DEX')}
-              className="px-3 py-1 bg-white/90 text-black border-2 border-[#333] rounded font-bold text-xs hover:bg-gray-200 transition-colors shadow-md pointer-events-auto"
+              className="px-3 py-1 bg-[#0d47a1]/90 text-white border-2 border-[#2196f3] rounded font-bold text-xs hover:bg-[#2196f3] transition-colors shadow-md pointer-events-auto"
             >
-              BEASTIARY
+              DEX
             </button>
           </div>
         </div>
@@ -132,6 +146,8 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
       {gameMode === 'BATTLE' && <BattleOverlay />}
       {gameMode === 'SHOP' && <ShopOverlay />}
       {gameMode === 'SKILLS' && <SkillsOverlay />}
+      {gameMode === 'INVENTORY' && <InventoryOverlay />}
+      {gameMode === 'PARTY' && <PartyOverlay />}
     </div>
   );
 }

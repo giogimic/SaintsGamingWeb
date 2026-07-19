@@ -2,6 +2,7 @@
 
 import { useGameStore } from './store';
 import { SAINTS_DEX } from './data/saints-dex';
+import RpgPanel from './rpg-panel';
 
 export default function DexOverlay() {
   const caughtDaemons = useGameStore((state) => state.player.caughtDaemons);
@@ -15,18 +16,8 @@ export default function DexOverlay() {
   };
 
   return (
-    <div className="absolute inset-0 bg-black/95 flex flex-col p-6 overflow-y-auto border border-cyan-500/50 rounded-lg backdrop-blur-md z-20 animate-in zoom-in duration-200">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-cyan-400 font-mono tracking-wider">DAEMON REGISTRY</h2>
-        <button 
-          onClick={() => setGameMode('EXPLORING')}
-          className="text-slate-400 hover:text-white font-mono"
-        >
-          [ CLOSE ]
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <RpgPanel title="DAEMON REGISTRY" onClose={() => setGameMode('EXPLORING')}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
         {SAINTS_DEX.map((daemon) => {
           const isCaught = caughtDaemons.includes(daemon.id);
           const isActive = activeDaemonId === daemon.id;
@@ -81,6 +72,14 @@ export default function DexOverlay() {
           );
         })}
       </div>
-    </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4e342e; border-radius: 4px; border: 1px solid #3e2723; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5d4037; }
+      `}} />
+    </RpgPanel>
   );
 }

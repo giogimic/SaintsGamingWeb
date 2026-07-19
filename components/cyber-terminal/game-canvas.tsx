@@ -458,6 +458,34 @@ export default function GameCanvas() {
         return;
       }
 
+      const playerPos = useGameStore.getState().player.position;
+      const distToClick = Math.abs(playerPos.x - gridX) + Math.abs(playerPos.y - gridY);
+      
+      // Check for Resource Gathering BEFORE checkTileValid aborts
+      const tileValue = GAME_MAPS[currentMapId].grid[gridY]?.[gridX];
+      if (tileValue === 5 || tileValue === 6 || tileValue === 10) {
+        if (distToClick <= 1) {
+          // Harvest!
+          if (tileValue === 5) {
+            state.showToast('You chopped some Wood Logs!');
+            state.modifyInventory('wood_logs', 1);
+            state.gainSkillXp('Woodcutting', 10);
+          } else if (tileValue === 6) {
+            state.showToast('You mined some Copper Ore!');
+            state.modifyInventory('copper_ore', 1);
+            state.gainSkillXp('Mining', 10);
+          } else if (tileValue === 10) {
+            state.showToast('You caught a Raw Fish!');
+            state.modifyInventory('raw_fish', 1);
+            state.gainSkillXp('Fishing', 10);
+          }
+          return;
+        } else {
+          state.showToast('You need to get closer to gather that.');
+          return;
+        }
+      }
+
       if (!checkTileValid(gridX, gridY)) return;
 
       const startPos = isMoving 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useGameStore } from './store';
+import RpgPanel from './rpg-panel';
 
 export default function ShopOverlay() {
   const player = useGameStore(state => state.player);
@@ -19,13 +20,13 @@ export default function ShopOverlay() {
   };
 
   return (
-    <div className="absolute inset-0 bg-[#eab308]/95 flex flex-col p-6 border-4 border-[#854d0e] rounded-lg backdrop-blur-sm z-30 animate-in fade-in duration-200">
-      <div className="flex justify-between items-center mb-6 border-b-2 border-[#854d0e] pb-2">
-        <h2 className="text-2xl font-bold text-[#854d0e] tracking-widest uppercase">Village Merchant</h2>
-        <span className="text-[#854d0e] font-mono font-bold text-lg">{player.credits} Gold</span>
+    <RpgPanel title="VILLAGE MERCHANT" onClose={() => setGameMode('EXPLORING')}>
+      <div className="flex justify-between items-center mb-6 bg-black/50 p-2 border border-[#ca8a04] rounded shadow-inner">
+        <span className="text-[#e0e0e0] font-bold font-mono">FUNDS</span>
+        <span className="text-[#ca8a04] font-mono font-bold text-lg">{player.credits} G</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-2">
         {/* Item: Binding Crystal */}
         <div className="bg-[#fef08a] border-2 border-[#ca8a04] p-4 rounded-lg flex justify-between items-center">
           <div>
@@ -56,15 +57,14 @@ export default function ShopOverlay() {
           </button>
         </div>
       </div>
-
-      <div className="mt-4 pt-4 border-t-2 border-[#854d0e] flex justify-end">
-        <button 
-          onClick={() => setGameMode('EXPLORING')}
-          className="px-8 py-3 bg-[#854d0e] text-[#fef08a] font-bold rounded shadow hover:bg-[#713f12] transition-colors"
-        >
-          LEAVE SHOP
-        </button>
+        </div>
       </div>
-    </div>
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4e342e; border-radius: 4px; border: 1px solid #3e2723; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5d4037; }
+      `}} />
+    </RpgPanel>
   );
 }
