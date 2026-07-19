@@ -10,6 +10,8 @@ import DPad from './dpad';
 import { useGameStore } from './store';
 
 import { loadGameCharacter } from '@/app/actions/game';
+import { fetchAllMaps } from '@/app/actions/game-admin';
+import { GAME_MAPS } from './data/maps';
 import { CharacterCreator } from './character-creator';
 
 export default function CyberTerminal({ characterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
@@ -22,6 +24,23 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
 
   useEffect(() => {
     async function init() {
+      // Hydrate custom maps from DB
+      const mapsRes = await fetchAllMaps();
+      if (mapsRes.success && mapsRes.data) {
+        mapsRes.data.forEach((dbMap: any) => {
+          try {
+            GAME_MAPS[dbMap.id] = {
+              id: dbMap.id,
+              name: dbMap.name,
+              grid: JSON.parse(dbMap.gridData),
+              gates: JSON.parse(dbMap.gatesData) || {}
+            };
+          } catch (err) {
+            console.error('Failed to parse map data:', dbMap.id);
+          }
+        });
+      }
+
       if (!characterId) {
         setShowCreator(true);
         setIsInitializing(false);
