@@ -72,16 +72,84 @@ io.on("connection", (socket) => {
     io.to(targetSocketId).emit("party_invite_received", { from: socket.id });
   });
 
-  // 4. Authoritative Combat (4v4 Synced)
-  socket.on("engage_battle", (data) => {
-    console.log(`[-] Engaging battle with ${data.targetId}`);
+  // 4. Authoritative PvP Combat
+  socket.on("invite_battle", (targetSocketId) => {
+    if (players[targetSocketId]) {
+      io.to(targetSocketId).emit("battle_invite_received", {
+        from: socket.id,
+        name: players[socket.id]?.name || 'Unknown'
+      });
+    }
+  });
+
+  socket.on("accept_battle", (challengerId) => {
+    if (!players[challengerId]) return;
+
     const battleId = `battle_${Date.now()}`;
+    const p1 = challengerId;
+    const p2 = socket.id;
+
     activeBattles[battleId] = {
-      players: [socket.id],
-      enemies: [data.targetId],
-      turnQueue: []
+      id: battleId,
+      p1,
+      p2,
+      turn: p1, // Challenger goes first
+      p1Hp: 100, // Dummy starting HP, normally fetched from active daemon
+      p2Hp: 100,
+      log: []
     };
-    io.to(socket.id).emit("battle_started", { battleId });
+
+    io.to(p1).emit("battle_started", { battleId, opponent: players[p2], isPlayerTurn: true });
+    io.to(p2).emit("battle_started", { battleId, opponent: players[p1], isPlayerTurn: false });
+  });
+
+  socket.on("battle_action", (data) => {
+    // data = { battleId, action: 'ATTACK', damage: number }
+    const battle = activeBattles[data.battleId];
+    if (!battle) return;
+
+    if (battle.turn !== socket.id) return; // Not their turn
+
+    const isP1 = battle.p1 === socket.id;
+    const opponent = isP1 ? battle.p2 : battle.p1;
+    
+    // Process damage
+    if (isP1) {
+      battle.p2Hp -= data.damage;
+      battle.log.push(`Player 1 dealt ${data.damage} damage!`);
+    } else {
+      battle.p1Hp -= data.damage;
+      battle.log.push(`Player 2 dealt ${data.damage} damage!`);
+    }
+
+    // Check for win/loss
+    if (battle.p1Hp <= 0 || battle.p2Hp <= 0) {
+      const winner = battle.p1Hp > 0 ? battle.p1 : battle.p2;
+      io.to(battle.p1).emit("battle_ended", { winner, log: battle.log });
+      io.to(battle.p2).emit("battle_ended", { winner, log: battle.log });
+      delete activeBattles[data.battleId];
+      return;
+    }
+
+    // Swap turn
+    battle.turn = opponent;
+    
+    // Broadcast state
+    io.to(battle.p1).emit("battle_update", {
+      turn: battle.turn,
+      myHp: battle.p1Hp,
+      oppHp: battle.p2Hp,
+      log: battle.log,
+      lastDamage: data.damage
+    });
+    
+    io.to(battle.p2).emit("battle_update", {
+      turn: battle.turn,
+      myHp: battle.p2Hp,
+      oppHp: battle.p1Hp,
+      log: battle.log,
+      lastDamage: data.damage
+    });
   });
 
   socket.on("disconnect", () => {

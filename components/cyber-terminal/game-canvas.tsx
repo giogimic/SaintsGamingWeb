@@ -31,6 +31,9 @@ export default function GameCanvas() {
     
     socket.on('connect', () => {
       const state = useGameStore.getState();
+      state.setEmitSocketEvent((event, data) => {
+        socket.emit(event, data);
+      });
       socket.emit('join_map', {
         mapId: state.currentMapId,
         x: state.player.position.x,
@@ -54,6 +57,39 @@ export default function GameCanvas() {
 
     socket.on('player_left', (socketId) => {
       useGameStore.getState().removeOtherPlayer(socketId);
+    });
+
+    socket.on('battle_invite_received', (data) => {
+      // For now, auto-accept to keep it simple and testable
+      useGameStore.getState().showToast(`Challenge from ${data.name}! Accepting...`);
+      socket.emit('accept_battle', data.from);
+    });
+
+    socket.on('battle_started', (data) => {
+      useGameStore.getState().setActiveBattle(data);
+      useGameStore.getState().setGameMode('BATTLE');
+    });
+
+    socket.on('battle_update', (data) => {
+      // Merges new data into activeBattle
+      useGameStore.getState().setActiveBattle({
+        ...useGameStore.getState().activeBattle,
+        ...data
+      });
+    });
+
+    socket.on('battle_ended', (data) => {
+      const state = useGameStore.getState();
+      const myId = socketRef.current?.id;
+      if (data.winner === myId) {
+        state.showToast('You won the battle!');
+      } else {
+        state.showToast('You lost the battle...');
+      }
+      setTimeout(() => {
+        state.setActiveBattle(null);
+        state.setGameMode('EXPLORING');
+      }, 3000);
     });
 
     // Preload Assets
@@ -410,6 +446,17 @@ export default function GameCanvas() {
       
       const gridX = Math.floor(mapPixelX / TILE_SIZE);
       const gridY = Math.floor(mapPixelY / TILE_SIZE);
+
+      // Check if clicked on another player
+      const clickedPlayerId = Object.keys(state.otherPlayers).find(
+        (id) => state.otherPlayers[id].x === gridX && state.otherPlayers[id].y === gridY
+      );
+
+      if (clickedPlayerId) {
+        socketRef.current?.emit('invite_battle', clickedPlayerId);
+        state.showToast(`Challenged ${state.otherPlayers[clickedPlayerId].name} to a battle!`);
+        return;
+      }
 
       if (!checkTileValid(gridX, gridY)) return;
 
