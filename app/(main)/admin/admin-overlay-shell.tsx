@@ -68,6 +68,7 @@ export function AdminOverlayShell({
         { href: "/admin/dev/metrics", label: "Metrics", icon: Activity, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/tasks", label: "Tasks", icon: RefreshCw, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/sandbox", label: "API Sandbox", icon: Code, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
+        { href: "/admin/map-editor", label: "Map Editor", icon: Code, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
       ]
     }
   ];
