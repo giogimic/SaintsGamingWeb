@@ -11,7 +11,7 @@ function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Keep track of beast positions in the sanctuary
-  const [beastPositions] = useState<Record<string, { x: number, y: number, tx: number, ty: number, flip: false }>>({});
+  const [beastPositions] = useState<Record<string, { x: number, y: number, tx: number, ty: number, flip: boolean }>>({});
 
   useEffect(() => {
     const canvas = canvasRef.current;
