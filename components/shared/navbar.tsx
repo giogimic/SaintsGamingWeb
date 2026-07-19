@@ -255,7 +255,7 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
   );
 }
 
-export function Footer({ className, discordLink = "https://discord.saintsgaming.net", siteVersion = "1.4.1", showUcpLink = false }: { className?: string, discordLink?: string, siteVersion?: string, showUcpLink?: boolean }) {
+export function Footer({ className, discordLink = "https://discord.saintsgaming.net", siteVersion = "1.4.2", showUcpLink = false }: { className?: string, discordLink?: string, siteVersion?: string, showUcpLink?: boolean }) {
   const socialLinks = [
     {
       href: "https://youtube.com/@SaintsGaming",
