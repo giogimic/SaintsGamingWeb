@@ -60,7 +60,7 @@ export interface ToastMessage {
 export interface GameState {
   gameMode: GameMode;
   player: PlayerState;
-  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string }>;
+  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string }>;
   pathQueue: Point[];
   currentMapId: string;
   mapEntities: MapEntity[];
