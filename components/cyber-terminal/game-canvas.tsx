@@ -171,12 +171,13 @@ export default function GameCanvas() {
             else if (tile === 6) { srcX = 64; srcY = 0; } // Ore
             else if (tile === 7) { srcX = 80; srcY = 0; } // Shop
             else if (tile === 8) { srcX = 96; srcY = 0; } // Clinic
+            else if (tile === 9) { srcX = 16; srcY = 16; } // Anvil (using arbitrary srcX/Y for now)
             else if (tile === 10) { srcX = 112; srcY = 0; } // Water
             
             ctx.drawImage(tilesetImg, srcX, srcY, srcSize, srcSize, destX, destY, TILE_SIZE, TILE_SIZE);
             
             // Draw animated waves/vines over the base tile for gates
-            if (tile >= 3 && tile !== 7 && tile !== 8 && tile !== 5 && tile !== 6 && tile !== 10) {
+            if (tile >= 3 && tile !== 7 && tile !== 8 && tile !== 9 && tile !== 5 && tile !== 6 && tile !== 10) {
                if (tile === 3) {
                    ctx.fillStyle = 'rgba(21, 128, 61, 0.7)'; // Thick vines
                    ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
@@ -210,6 +211,9 @@ export default function GameCanvas() {
               ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
             } else if (tile === 8) {
               ctx.fillStyle = '#f87171';
+              ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
+            } else if (tile === 9) {
+              ctx.fillStyle = '#9ca3af'; // Gray for anvil
               ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
             } else if (tile === 10) {
               ctx.fillStyle = '#0ea5e9';
@@ -482,6 +486,14 @@ export default function GameCanvas() {
           return;
         } else {
           state.showToast('You need to get closer to gather that.');
+          return;
+        }
+      } else if (tileValue === 9) { // Crafting Station
+        if (distToClick <= 1) {
+          state.setGameMode('CRAFTING');
+          return;
+        } else {
+          state.showToast('You need to get closer to craft.');
           return;
         }
       }

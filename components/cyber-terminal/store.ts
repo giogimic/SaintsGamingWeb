@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY';
+export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING';
 
 export type Point = { x: number; y: number };
 
@@ -242,30 +242,23 @@ export const useGameStore = create<GameState>()(
           state.player.inventory[itemId] = Math.max(0, current + amount);
         }),
 
-      gainSkillXp: (skillName, amount) =>
-        set((state) => {
-          const skill = state.player.skills[skillName];
-          if (!skill) return;
-          if (skill.level >= 50) return; // Max level cap
-
-          skill.xp += amount;
-          // Standard generic level curve: Lvl = floor(sqrt(XP / 50)) + 1
-          const newLevel = Math.min(50, Math.floor(Math.sqrt(skill.xp / 50)) + 1);
-          if (newLevel > skill.level) {
-            skill.level = newLevel;
-            state.toast = { id: Date.now(), message: `Level Up! ${skillName} is now level ${newLevel}` };
-          }
-        }),
-
-      equipItem: (slot, itemId) =>
-        set((state) => {
-          state.player.equipment[slot] = itemId;
-        }),
-      
-      setCombatStyle: (style) =>
-        set((state) => {
-          state.player.combatStyle = style;
-        }),
+      gainSkillXp: (skillName, amount) => set((state) => {
+        if (!state.player.skills[skillName]) return;
+        state.player.skills[skillName].xp += amount;
+        
+        // Recalculate level: Lvl = floor(sqrt(XP / 50)) + 1
+        const newLevel = Math.floor(Math.sqrt(state.player.skills[skillName].xp / 50)) + 1;
+        if (newLevel > state.player.skills[skillName].level && newLevel <= 50) {
+          state.player.skills[skillName].level = newLevel;
+          state.toast = { id: Date.now(), message: `${skillName} level up! (${newLevel})` };
+        }
+      }),
+      equipItem: (slot, itemId) => set((state) => {
+        state.player.equipment[slot] = itemId;
+      }),
+      setCombatStyle: (style) => set((state) => {
+        state.player.combatStyle = style;
+      }),
         
       assignBeast: (facility, beastId) =>
         set((state) => {
