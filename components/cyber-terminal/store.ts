@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE';
+export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG';
 
 export type Point = { x: number; y: number };
 
@@ -62,7 +62,9 @@ export interface GameState {
   currentMapId: string;
   mapEntities: MapEntity[];
   toast: ToastMessage | null;
+  activeDialog: { npcId: string, text: string } | null;
   setGameMode: (mode: GameMode) => void;
+  setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
   setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string }>) => void;
   updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string }) => void;
   removeOtherPlayer: (socketId: string) => void;
@@ -136,8 +138,10 @@ export const useGameStore = create<GameState>()(
         { id: 'anim-2', type: 'ANIMAL', spriteKey: 'cow', position: { x: 8, y: 14 }, isMoving: false, facing: 'RIGHT' }
       ],
       toast: null,
+      activeDialog: null,
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
+      setActiveDialog: (dialog) => set((state) => { state.activeDialog = dialog; }),
       setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
       updateOtherPlayer: (socketId, data) => set((state) => {
         if (!state.otherPlayers[socketId]) {
