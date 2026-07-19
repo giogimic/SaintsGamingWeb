@@ -23,6 +23,7 @@ import { CharacterCreator } from './character-creator';
 export default function CyberTerminal({ characterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
+  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const containerRef = useRef<HTMLDivElement>(null);
   const [chatInput, setChatInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
