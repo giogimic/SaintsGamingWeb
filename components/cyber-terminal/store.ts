@@ -63,6 +63,10 @@ export interface GameState {
   setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string }>) => void;
   updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string }) => void;
   removeOtherPlayer: (socketId: string) => void;
+  activeBattle: any;
+  setActiveBattle: (battleData: any) => void;
+  emitSocketEvent?: (event: string, data: any) => void;
+  setEmitSocketEvent: (emitter: (event: string, data: any) => void) => void;
   setPlayerPosition: (pos: Point) => void;
   enqueuePath: (path: Point[]) => void;
   dequeuePath: () => Point | undefined;
@@ -118,6 +122,7 @@ export const useGameStore = create<GameState>()(
         assignedBeasts: { furnace: null, farm: null, fishing_hut: null }
       },
       otherPlayers: {},
+      activeBattle: null,
       pathQueue: [],
       currentMapId: 'SAINTS_VILLAGE',
       mapEntities: [
@@ -141,6 +146,12 @@ export const useGameStore = create<GameState>()(
       }),
       removeOtherPlayer: (socketId) => set((state) => {
         delete state.otherPlayers[socketId];
+      }),
+      setActiveBattle: (battleData) => set((state) => {
+        state.activeBattle = battleData;
+      }),
+      setEmitSocketEvent: (emitter) => set((state) => {
+        state.emitSocketEvent = emitter;
       }),
       setPlayerPosition: (pos) => set((state) => { 
         state.player.position = pos; 
