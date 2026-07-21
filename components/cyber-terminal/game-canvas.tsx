@@ -6,6 +6,7 @@ import { io, Socket } from 'socket.io-client';
 import { useGameStore } from './store';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './constants';
 import { GAME_MAPS } from './data/maps';
+import { QUEST_DB } from './data/quests';
 import { getCreatureById } from './data/saints-dex';
 import { setEncryptedAmbient } from './audio';
 
@@ -498,7 +499,10 @@ export default function GameCanvas() {
         const dist = Math.abs(playerPos.x - gridX) + Math.abs(playerPos.y - gridY);
         if (dist <= 2) {
           let dialogText = "Hello there, traveler.";
-          if (clickedEntity.id === 'npc-1') {
+          const npcQuest = Object.values(QUEST_DB).find(q => q.npcId === clickedEntity.id);
+          if (npcQuest) {
+            dialogText = npcQuest.dialogs.start;
+          } else if (clickedEntity.id === 'npc-1') {
             dialogText = "Welcome to Saints Village. The wilderness outside these walls is extremely dangerous. I'd recommend you get some bronze armor from the Smith before wandering into the tall grass.";
           } else if (clickedEntity.id === 'npc-2') {
             dialogText = "I'm so hungry... The pond to the south-west has fish, but I can't catch them.";

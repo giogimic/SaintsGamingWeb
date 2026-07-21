@@ -122,6 +122,9 @@ This project is open-source and available under the **MIT License**.
 
 ## 📜 Changelog
 
+### v1.4.5
+- **Dynamic Game Quest & NPC Integration**: Connected custom `GameQuest` DB records and Map Editor placed NPCs directly into the cyber terminal engine (`components/cyber-terminal/index.tsx`, `game-canvas.tsx`).
+
 ### v1.4.4
 - **Game Dev Admin Suite**: Introduced dedicated Game Dev category in Admin Overlay Shell.
 - **Quest Creator**: Built Quest Creator UI (`/admin/game-dev/quests`) and `GameQuest` DB model for quest dialogues, item requirements, and payouts.
