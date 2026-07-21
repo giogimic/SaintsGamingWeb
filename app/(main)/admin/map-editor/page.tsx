@@ -88,8 +88,11 @@ export default function MapEditorPage() {
       clientY = (e as React.MouseEvent).clientY;
     }
 
-    const x = Math.floor((clientX - rect.left) / TILE_SIZE);
-    const y = Math.floor((clientY - rect.top) / TILE_SIZE);
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const x = Math.floor(((clientX - rect.left) * scaleX) / TILE_SIZE);
+    const y = Math.floor(((clientY - rect.top) * scaleY) / TILE_SIZE);
 
     if (y >= 0 && y < grid.length && x >= 0 && x < grid[0].length) {
       if (grid[y][x] !== selectedTile) {
