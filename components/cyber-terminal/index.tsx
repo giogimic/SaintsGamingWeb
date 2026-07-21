@@ -17,7 +17,9 @@ import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
+import { fetchAllGameQuests } from '@/app/actions/game-dev';
 import { GAME_MAPS } from './data/maps';
+import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 
 export default function CyberTerminal({ characterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
@@ -43,9 +45,57 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
               grid: JSON.parse(dbMap.gridData),
               gates: JSON.parse(dbMap.gatesData) || {}
             };
+
+            // Parse placed map NPCs if available
+            if (dbMap.npcsData) {
+              const parsedNpcs = JSON.parse(dbMap.npcsData);
+              if (Array.isArray(parsedNpcs)) {
+                const currentEntities = useGameStore.getState().mapEntities;
+                const newEntities = parsedNpcs.map((npc: any) => ({
+                  id: npc.id || `npc_${Math.random()}`,
+                  type: 'NPC' as const,
+                  spriteKey: npc.spriteId || 'villager_1',
+                  position: { x: npc.x, y: npc.y },
+                  isMoving: false,
+                  facing: 'DOWN' as const,
+                  mapId: dbMap.id
+                }));
+                useGameStore.setState({ mapEntities: [...currentEntities, ...newEntities] });
+              }
+            }
           } catch (_err) {
             console.error('Failed to parse map data:', dbMap.id);
           }
+        });
+      }
+
+      // Hydrate custom quests from DB
+      const questsRes = await fetchAllGameQuests();
+      if (questsRes.success && questsRes.data) {
+        questsRes.data.forEach((q: any) => {
+          QUEST_DB[q.id] = {
+            id: q.id,
+            name: q.name,
+            npcId: q.npcId,
+            description: q.description,
+            dialogs: {
+              start: q.dialogStart,
+              inProgress: q.dialogProgress,
+              complete: q.dialogComplete,
+            },
+            requirements: {
+              itemId: q.reqItemId || undefined,
+              amount: q.reqAmount || undefined,
+              skillId: q.reqSkillId || undefined,
+              level: q.reqLevel || undefined,
+            },
+            rewards: {
+              xp: q.rewardXp || undefined,
+              credits: q.rewardCredits || undefined,
+              itemId: q.rewardItemId || undefined,
+              amount: q.rewardAmount || undefined,
+            }
+          };
         });
       }
 
