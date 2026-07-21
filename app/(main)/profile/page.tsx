@@ -197,7 +197,7 @@ export default async function ProfilePage() {
                   {mmoCharacters.map((char) => (
                     <div key={char.id} className="bg-background border border-border/50 rounded-xl p-4 flex items-center gap-4 shadow-sm">
                       <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0 border border-white/5">
-                        <Image src={`/assets/npcs/${char.spriteId}.png`} alt={char.spriteId} width={32} height={32} className="pixelated" unoptimized onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                        <Image src={`/assets/npcs/${char.spriteId}.png`} alt={char.spriteId} width={32} height={32} className="pixelated" unoptimized />
                       </div>
                       <div>
                         <h3 className="font-bold text-lg">{char.name}</h3>
