@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   Shield, Users, MessageSquare, Newspaper, Package, Monitor, Settings, Award, Server,
-  Database, Activity, Code, Cpu, RefreshCw, X, Menu
+  Database, Activity, Code, Cpu, RefreshCw, X, Menu, Gamepad2, ScrollText, Image as ImageIcon, MapPin
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PERMISSION_LEVELS } from "@/lib/permissions";
@@ -60,6 +60,15 @@ export function AdminOverlayShell({
       ]
     },
     {
+      name: "Game Dev",
+      items: [
+        { href: "/admin/game-dev/quests", label: "Quest Creator", icon: ScrollText, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
+        { href: "/admin/game-dev/assets", label: "Asset Studio", icon: ImageIcon, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
+        { href: "/admin/map-editor", label: "World Map Editor", icon: MapPin, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
+        { href: "/admin/game", label: "MMO Sandbox Admin", icon: Gamepad2, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
+      ]
+    },
+    {
       name: "Developer Tools",
       items: [
         { href: "/admin/dev", label: "Console Home", icon: Monitor, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER, exact: true },
@@ -68,8 +77,6 @@ export function AdminOverlayShell({
         { href: "/admin/dev/metrics", label: "Metrics", icon: Activity, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/tasks", label: "Tasks", icon: RefreshCw, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/sandbox", label: "API Sandbox", icon: Code, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
-        { href: "/admin/map-editor", label: "Map Editor", icon: Code, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
-        { href: "/admin/game", label: "Sandbox Admin", icon: Database, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
       ]
     }
   ];

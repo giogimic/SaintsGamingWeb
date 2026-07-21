@@ -713,6 +713,38 @@ model WorldMap {
   updatedAt DateTime @updatedAt
 }
 
+model GameQuest {
+  id             String   @id @default(cuid())
+  name           String
+  npcId          String
+  description    String
+  dialogStart    String
+  dialogProgress String
+  dialogComplete String
+  reqItemId      String?
+  reqAmount      Int      @default(0)
+  reqSkillId     String?
+  reqLevel       Int      @default(0)
+  rewardXp       Int      @default(0)
+  rewardCredits  Int      @default(0)
+  rewardItemId   String?
+  rewardAmount   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model GameAsset {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // Terrain, Monster, NPC, Item, Environment
+  subCategory String?
+  filePath    String
+  width       Int      @default(16)
+  height      Int      @default(16)
+  createdAt   DateTime @default(now())
+}
+
+
 // ─── E2EE Messenger & Friends ──────────────────────────────────────
 
 model Friendship {
