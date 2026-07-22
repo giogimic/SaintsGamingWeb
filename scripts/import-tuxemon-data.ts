@@ -48,7 +48,8 @@ function readYamlFiles(dir: string): Array<{ slug: string; data: Record<string, 
 }
 
 function toJsonString(value: unknown): string {
-  return JSON.stringify(value ?? null);
+  const str = JSON.stringify(value ?? null);
+  return str.length > 190 ? str.slice(0, 190) : str;
 }
 
 // ─── 1. Import Elements ──────────────────────────────────────────

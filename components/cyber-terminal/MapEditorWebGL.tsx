@@ -79,15 +79,39 @@ export default function MapEditorWebGL({ mapId = 'route_1', onSave }: MapEditorP
   useEffect(() => {
     if (!canvasRef.current || tileRegistry.size === 0) return;
 
-    const app = new Application({
-      view: canvasRef.current,
-      width: 800,
-      height: 600,
-      backgroundColor: 0x2a2a2a,
-      resolution: window.devicePixelRatio || 1,
-      antialias: false,
-    });
+    let app: Application | null = null;
+    try {
+      // Disable max IF statements shader check to prevent GPU driver exceptions
+      const pixiSettings = (require('pixi.js') as any).settings;
+      if (pixiSettings && 'CHECK_MAX_IF_STATEMENTS_IN_SHADER' in pixiSettings) {
+        pixiSettings.CHECK_MAX_IF_STATEMENTS_IN_SHADER = false;
+      }
 
+      app = new Application({
+        view: canvasRef.current,
+        width: 800,
+        height: 600,
+        backgroundColor: 0x2a2a2a,
+        resolution: window.devicePixelRatio || 1,
+        antialias: false,
+      });
+    } catch (e) {
+      console.warn('WebGL init warning in MapEditorWebGL:', e);
+      try {
+        app = new Application({
+          view: canvasRef.current,
+          width: 800,
+          height: 600,
+          backgroundColor: 0x2a2a2a,
+          forceCanvas: true,
+        });
+      } catch (err2) {
+        console.error('Fallback canvas init failed:', err2);
+        return;
+      }
+    }
+
+    if (!app) return;
     appRef.current = app;
 
     // Create map container
