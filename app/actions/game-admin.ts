@@ -13,6 +13,10 @@ async function verifyAdmin() {
   return user.permissionLevel >= PERMISSION_LEVELS.ADMIN;
 }
 
+export async function checkAdminPermission() {
+  return await verifyAdmin();
+}
+
 export async function saveWorldMap(data: {
   id: string;
   name: string;

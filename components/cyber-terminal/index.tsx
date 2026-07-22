@@ -37,6 +37,7 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
   const [showSelector, setShowSelector] = useState(false);
   const [showCreator, setShowCreator] = useState(forceCreate || false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -70,6 +71,11 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
 
   useEffect(() => {
     async function init() {
+      // Check admin status for Map Editor access
+      const { checkAdminPermission } = await import('@/app/actions/game-admin');
+      const adminPermission = await checkAdminPermission();
+      setIsAdminUser(adminPermission);
+
       // Hydrate custom maps from DB
       const mapsRes = await fetchAllMaps();
       if (mapsRes.success && mapsRes.data) {
@@ -269,12 +275,14 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
             >
               DEX
             </button>
-            <button
-              onClick={() => useGameStore.getState().setGameMode('MAP_EDITOR')}
-              className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto"
-            >
-              EDITOR
-            </button>
+            {isAdminUser && (
+              <button
+                onClick={() => useGameStore.getState().setGameMode('MAP_EDITOR')}
+                className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto"
+              >
+                EDITOR
+              </button>
+            )}
           </div>
         </div>
       )}
