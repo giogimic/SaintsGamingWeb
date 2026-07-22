@@ -122,7 +122,8 @@ This project is open-source and available under the **MIT License**.
 
 ## 📜 Changelog
 
-### v1.7.0
+### v1.7.1
+- **ESLint Compliance for WebGL Canvas Initializer**: Switched `require('pixi.js')` statements to standard `settings` imports in `MapEditorWebGL.tsx` and `TuxemonBattleScene.tsx`, satisfying Next.js ESLint build rules (`@typescript-eslint/no-require-imports`).
 - **MariaDB Database Seed Truncation & Production Data Sync**: Resolved `P2000` MariaDB string column overflow error during seeding by safely truncating JSON string tags/types in `scripts/import-tuxemon-data.ts`, successfully populating all 411 Tuxemon beast species, movesets, techniques, and maps into the live database.
 - **WebGL Shader & PixiJS Initialization Safeguards**: Resolved `checkMaxIfStatementsInShader` exception by disabling strict shader statement limit checks (`CHECK_MAX_IF_STATEMENTS_IN_SHADER = false`) and wrapping canvas Application instantiation in try-catch fallback blocks across `MapEditorWebGL.tsx` and `TuxemonBattleScene.tsx`.
 - **Database Seeding & WebGL Tile Registry Fallbacks**: Added repo-relative `tuxemon-db` YAML database source, wired automatic DB seeding of all 411 Tuxemon species/techniques into `entrypoint.sh` upon production deployment, and built default tile palette fallbacks into `MapEditorWebGL.tsx`.

@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, settings } from 'pixi.js';
 
 interface TileInfo {
   tileId: number;
@@ -82,9 +82,8 @@ export default function MapEditorWebGL({ mapId = 'route_1', onSave }: MapEditorP
     let app: Application | null = null;
     try {
       // Disable max IF statements shader check to prevent GPU driver exceptions
-      const pixiSettings = (require('pixi.js') as any).settings;
-      if (pixiSettings && 'CHECK_MAX_IF_STATEMENTS_IN_SHADER' in pixiSettings) {
-        pixiSettings.CHECK_MAX_IF_STATEMENTS_IN_SHADER = false;
+      if (settings && 'CHECK_MAX_IF_STATEMENTS_IN_SHADER' in settings) {
+        (settings as any).CHECK_MAX_IF_STATEMENTS_IN_SHADER = false;
       }
 
       app = new Application({
