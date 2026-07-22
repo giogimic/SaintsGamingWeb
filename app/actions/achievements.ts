@@ -66,7 +66,7 @@ export async function revokeAchievement(achievementId: string) {
     revalidatePath(`/user/${deleted.user.username}`);
     revalidatePath("/admin/achievements");
     return { success: true };
-  } catch (_error) {
+  } catch {
     return { error: "Failed to revoke achievement." };
   }
 }

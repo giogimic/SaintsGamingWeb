@@ -112,8 +112,8 @@ model User {
   ticketMessages TicketMessage[]
 
   // FiveM
-  fivemLicense String?     @unique
-  discordId    String?     @unique
+  fivemLicense  String?             @unique
+  discordId     String?             @unique
   characters    Character[]
   steamWishlist SteamWishlistItem[]
 
@@ -127,33 +127,33 @@ model User {
   groupMessages       GroupMessage[]
 
   // Profile Customization
-  gameCharacters      GameCharacter[]
-  youtubeVideoUrl     String?
-  youtubeMusicUrl     String?
-  profileImages       ProfileImage[]
-  pinnedBeastId       String? // ID of the Tuxemon to display on profile
+  gameCharacters  GameCharacter[]
+  youtubeVideoUrl String?
+  youtubeMusicUrl String?
+  profileImages   ProfileImage[]
+  pinnedBeastId   String? // ID of the Tuxemon to display on profile
 
   // Tuxemon Creature System
-  playerTuxemon       PlayerTuxemon[]
-  tuxemonInventory    TuxemonInventoryItem[]
+  playerTuxemon    PlayerTuxemon[]
+  tuxemonInventory TuxemonInventoryItem[]
 
   // Social
-  socialPosts            SocialPost[]
-  socialReactions        SocialReaction[]
-  socialBookmarks        SocialBookmark[]
-  socialWatchHistory     SocialWatchHistory[]
-  socialBookmarkFolders  SocialBookmarkFolder[]
-  socialMutedKeywords    SocialMutedKeyword[]
-  socialPreferences      SocialUserPreference?
-  tipsSent               SocialTip[]           @relation("TipsSent")
-  tipsReceived           SocialTip[]           @relation("TipsReceived")
-  subscriptions          SocialSubscription[]  @relation("Subscriber")
-  subscribers            SocialSubscription[]  @relation("SubscribedTo")
-  reports                Report[]
-  pollVotes              PollVote[]
-  threadSubscriptions    ThreadSubscription[]
-  replyLikes             ReplyLike[]
-  achievements           UserAchievement[]
+  socialPosts           SocialPost[]
+  socialReactions       SocialReaction[]
+  socialBookmarks       SocialBookmark[]
+  socialWatchHistory    SocialWatchHistory[]
+  socialBookmarkFolders SocialBookmarkFolder[]
+  socialMutedKeywords   SocialMutedKeyword[]
+  socialPreferences     SocialUserPreference?
+  tipsSent              SocialTip[]            @relation("TipsSent")
+  tipsReceived          SocialTip[]            @relation("TipsReceived")
+  subscriptions         SocialSubscription[]   @relation("Subscriber")
+  subscribers           SocialSubscription[]   @relation("SubscribedTo")
+  reports               Report[]
+  pollVotes             PollVote[]
+  threadSubscriptions   ThreadSubscription[]
+  replyLikes            ReplyLike[]
+  achievements          UserAchievement[]
 
   @@index([createdAt])
 }
@@ -206,28 +206,28 @@ model SubCategory {
 }
 
 model Thread {
-  id            String          @id @default(cuid())
-  title         String
-  slug          String          @unique
-  body          String // markdown content
-  iconImage     String? // optional thread icon/image
-  isPinned      Boolean         @default(false)
-  isLocked      Boolean         @default(false)
-  viewCount     Int             @default(0)
-  acceptedAnswerId String?      // Q&A Best Answer format
-  authorId      String
-  author        User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  subcategoryId String
-  subcategory   SubCategory     @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
-  replies       Reply[]
-  reactions     Reaction[]
-  images        Image[]
-  hashtags      ThreadHashtag[]
-  polls         Poll[]
-  subscriptions ThreadSubscription[]
-  reports       Report[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id               String               @id @default(cuid())
+  title            String
+  slug             String               @unique
+  body             String // markdown content
+  iconImage        String? // optional thread icon/image
+  isPinned         Boolean              @default(false)
+  isLocked         Boolean              @default(false)
+  viewCount        Int                  @default(0)
+  acceptedAnswerId String? // Q&A Best Answer format
+  authorId         String
+  author           User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subcategoryId    String
+  subcategory      SubCategory          @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  replies          Reply[]
+  reactions        Reaction[]
+  images           Image[]
+  hashtags         ThreadHashtag[]
+  polls            Poll[]
+  subscriptions    ThreadSubscription[]
+  reports          Report[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   @@index([authorId])
   @@index([subcategoryId])
@@ -235,19 +235,19 @@ model Thread {
 }
 
 model Reply {
-  id        String     @id @default(cuid())
+  id        String      @id @default(cuid())
   body      String // markdown content
   authorId  String
-  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   threadId  String
-  thread    Thread     @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread    Thread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
   quotedId  String? // ID of the reply being quoted
   reactions Reaction[]
   likes     ReplyLike[]
   reports   Report[]
   images    Image[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   @@index([authorId])
   @@index([threadId])
@@ -287,11 +287,11 @@ model Poll {
 }
 
 model PollOption {
-  id        String     @id @default(cuid())
-  text      String
-  pollId    String
-  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  votes     PollVote[]
+  id     String     @id @default(cuid())
+  text   String
+  pollId String
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes  PollVote[]
 
   @@index([pollId])
 }
@@ -669,12 +669,12 @@ model RssFeed {
 // ─── User Profile Integrations ────────────────────────────────────
 
 model UserAchievement {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badgeId   String   // The string identifier for the achievement (e.g. "beta_tester")
-  isPinned  Boolean  @default(false)
-  earnedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId  String // The string identifier for the achievement (e.g. "beta_tester")
+  isPinned Boolean  @default(false)
+  earnedAt DateTime @default(now())
 
   @@unique([userId, badgeId])
 }
@@ -700,7 +700,7 @@ model GameCharacter {
   name      String
   spriteId  String
   classId   String
-  stateData String   // JSON string of the Zustand store PlayerState
+  stateData String // JSON string of the Zustand store PlayerState
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -710,9 +710,9 @@ model GameCharacter {
 model WorldMap {
   id        String   @id // e.g. "SAINTS_VILLAGE"
   name      String
-  gridData  String   // JSON 2D Array
-  gatesData String   // JSON
-  npcsData  String   // JSON for NPC dialogues/teams
+  gridData  String // JSON 2D Array
+  gatesData String // JSON
+  npcsData  String // JSON for NPC dialogues/teams
   version   Int      @default(1)
   updatedAt DateTime @updatedAt
 }
@@ -740,14 +740,13 @@ model GameQuest {
 model GameAsset {
   id          String   @id @default(cuid())
   name        String
-  category    String   // Terrain, Monster, NPC, Item, Environment
+  category    String // Terrain, Monster, NPC, Item, Environment
   subCategory String?
   filePath    String
   width       Int      @default(16)
   height      Int      @default(16)
   createdAt   DateTime @default(now())
 }
-
 
 // ─── E2EE Messenger & Friends ──────────────────────────────────────
 
@@ -759,36 +758,36 @@ model Friendship {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation("SentFriendships", fields: [userId], references: [id], onDelete: Cascade)
-  friend    User     @relation("ReceivedFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+  user   User @relation("SentFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("ReceivedFriendships", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@unique([userId, friendId])
 }
 
 model UserPublicKey {
   userId    String   @id
-  publicKey String   // SPKI format, base64 encoded
+  publicKey String // SPKI format, base64 encoded
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model DirectMessage {
-  id               String   @id @default(cuid())
-  senderId         String
-  receiverId       String
-  
-  ciphertext       String
-  iv               String
-  
+  id         String @id @default(cuid())
+  senderId   String
+  receiverId String
+
+  ciphertext String
+  iv         String
+
   senderCiphertext String
   senderIv         String
 
-  isRead           Boolean  @default(false)
-  createdAt        DateTime @default(now())
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  sender           User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver         User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([senderId, receiverId])
   @@index([receiverId, senderId])
@@ -796,11 +795,11 @@ model DirectMessage {
 
 model GroupChat {
   id        String   @id @default(cuid())
-  name      String?  
+  name      String?
   createdAt DateTime @default(now())
 
-  members   GroupChatMember[]
-  messages  GroupMessage[]
+  members  GroupChatMember[]
+  messages GroupMessage[]
 }
 
 model GroupChatMember {
@@ -810,8 +809,8 @@ model GroupChatMember {
   joinedAt    DateTime @default(now())
   role        String   @default("MEMBER") // ADMIN or MEMBER
 
-  groupChat   GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupChatId, userId])
 }
@@ -823,52 +822,52 @@ model GroupMessage {
   body        String
   createdAt   DateTime @default(now())
 
-  groupChat   GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
-  sender      User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }
 
 // ─── The Feed ────────────────────────────────────────────────
 
 model SocialPost {
-  id        String   @id @default(cuid())
-  authorId  String
-  body      String   // Max ~280 chars
-  visibility String  @default("PUBLIC") // PUBLIC or FRIENDS
-  mediaUrl  String?
-  parentId  String?
-  viewCount Int      @default(0)
-  shareCount Int     @default(0)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  authorId   String
+  body       String // Max ~280 chars
+  visibility String   @default("PUBLIC") // PUBLIC or FRIENDS
+  mediaUrl   String?
+  parentId   String?
+  viewCount  Int      @default(0)
+  shareCount Int      @default(0)
+  createdAt  DateTime @default(now())
 
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent    SocialPost?  @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   SocialPost[] @relation("PostReplies")
-  hashtags  SocialPostHashtag[]
-  reactions SocialReaction[]
-  bookmarks SocialBookmark[]
+  author       User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent       SocialPost?          @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      SocialPost[]         @relation("PostReplies")
+  hashtags     SocialPostHashtag[]
+  reactions    SocialReaction[]
+  bookmarks    SocialBookmark[]
   watchHistory SocialWatchHistory[]
-  tips      SocialTip[]
-  polls     Poll[]       @relation("PostPoll")
+  tips         SocialTip[]
+  polls        Poll[]               @relation("PostPoll")
 
   // Phase 2 Upgrade Fields
-  isPinned              Boolean  @default(false)
-  revenueEarned         Float    @default(0)
-  isSubscriberOnly      Boolean  @default(false)
+  isPinned              Boolean @default(false)
+  revenueEarned         Float   @default(0)
+  isSubscriberOnly      Boolean @default(false)
   voiceoverUrl          String?
   backgroundTrackUrl    String?
-  voiceoverVolume       Float    @default(1.0)
-  backgroundTrackVolume Float    @default(1.0)
-  copyrightStrike       Boolean  @default(false)
+  voiceoverVolume       Float   @default(1.0)
+  backgroundTrackVolume Float   @default(1.0)
+  copyrightStrike       Boolean @default(false)
   chapters              String?
   captionsText          String?
-  originalityScore      Int      @default(100)
+  originalityScore      Int     @default(100)
   flagReason            String?
   throttleStatus        String?
 
   // Phase 3 Upgrade Fields
-  isForumThread         Boolean  @default(false)
-  threadUrl             String?
-  threadId              String?  @unique
+  isForumThread Boolean @default(false)
+  threadUrl     String?
+  threadId      String? @unique
 
   @@index([createdAt])
   @@index([authorId])
@@ -876,20 +875,20 @@ model SocialPost {
 }
 
 model SocialHashtag {
-  id        String   @id @default(cuid())
-  name      String   @unique // lowercase without #
-  usageCount Int     @default(0) // Light denormalized count for trending
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String   @unique // lowercase without #
+  usageCount Int      @default(0) // Light denormalized count for trending
+  createdAt  DateTime @default(now())
 
-  posts     SocialPostHashtag[]
+  posts SocialPostHashtag[]
 }
 
 model SocialPostHashtag {
   postId    String
   hashtagId String
 
-  post      SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  hashtag   SocialHashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+  post    SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag SocialHashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
 
   @@id([postId, hashtagId])
 }
@@ -900,8 +899,8 @@ model SocialReaction {
   userId    String
   createdAt DateTime @default(now())
 
-  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId]) // 1 like per user per post
 }
@@ -913,9 +912,9 @@ model SocialBookmark {
   folderId  String?
   createdAt DateTime @default(now())
 
-  post      SocialPost            @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  folder    SocialBookmarkFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  post   SocialPost            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder SocialBookmarkFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@unique([postId, userId]) // 1 bookmark per user per post
   @@index([folderId])
@@ -924,13 +923,13 @@ model SocialBookmark {
 // ─── Feed Upgrade: Watch History ────────────────────────────────────
 
 model SocialWatchHistory {
-  id        String   @id @default(cuid())
-  userId    String
-  postId    String
-  viewedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  postId   String
+  viewedAt DateTime @default(now())
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([userId, postId])
   @@index([userId, viewedAt])
@@ -956,27 +955,27 @@ model SocialBookmarkFolder {
 model SocialMutedKeyword {
   id        String   @id @default(cuid())
   userId    String
-  keyword   String   // either hashtag name or random word
+  keyword   String // either hashtag name or random word
   type      String   @default("KEYWORD") // KEYWORD or HASHTAG
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type, keyword])
 }
 
 model SocialTip {
-  id        String   @id @default(cuid())
-  senderId  String
+  id         String   @id @default(cuid())
+  senderId   String
   receiverId String
-  postId    String?
-  amount    Float
-  message   String?
-  createdAt DateTime @default(now())
+  postId     String?
+  amount     Float
+  message    String?
+  createdAt  DateTime @default(now())
 
-  sender    User        @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver  User        @relation("TipsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
-  post      SocialPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  sender   User        @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User        @relation("TipsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  post     SocialPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
 
   @@index([receiverId])
   @@index([postId])
@@ -991,8 +990,8 @@ model SocialSubscription {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  subscriber     User     @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
-  subscribedTo   User     @relation("SubscribedTo", fields: [subscribedToId], references: [id], onDelete: Cascade)
+  subscriber   User @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscribedTo User @relation("SubscribedTo", fields: [subscribedToId], references: [id], onDelete: Cascade)
 
   @@unique([subscriberId, subscribedToId])
 }
@@ -1000,9 +999,9 @@ model SocialSubscription {
 // ─── Feed Upgrade: User Feed Preferences ────────────────────────────
 
 model SocialUserPreference {
-  id              String  @id @default(cuid())
-  userId          String  @unique
-  broadenFeed     Boolean @default(false)
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  broadenFeed Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -1010,17 +1009,17 @@ model SocialUserPreference {
 // ─── Moderation & Governance ────────────────────────────────────
 
 model Report {
-  id          String   @id @default(cuid())
-  reporterId  String
-  reporter    User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  threadId    String?
-  thread      Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  replyId     String?
-  reply       Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
-  reason      String
-  status      String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  threadId   String?
+  thread     Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  replyId    String?
+  reply      Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  reason     String
+  status     String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([reporterId])
   @@index([threadId])
@@ -1031,118 +1030,123 @@ model Report {
 // ─── Tuxemon Creature System ──────────────────────────────────────
 
 model TuxemonSpecies {
-  id                     String   @id @default(cuid())
-  slug                   String   @unique
-  txmnId                 Int
-  species                String
-  height                 Int
-  weight                 Float
-  catchRate              Float
-  lowerCatchResistance   Float
-  upperCatchResistance   Float
-  stage                  String
-  shape                  String
-  types                  String   // JSON array of element slugs
-  tags                   String   // JSON array of tags
-  terrains               String   // JSON array
-  genderWeights          String   // JSON object
-  sounds                 String   // JSON object
-  spriteFront            String?  // path to front battle sprite
-  spriteBack             String?  // path to back battle sprite
-  spriteOverworld        String?  // path to overworld sprite
-  moveset                TuxemonMove[]
-  evolutions             TuxemonEvolution[]
-  stats                  TuxemonBaseStats?
+  id                   String             @id @default(cuid())
+  slug                 String             @unique
+  txmnId               Int
+  species              String
+  height               Int
+  weight               Float
+  catchRate            Float
+  lowerCatchResistance Float
+  upperCatchResistance Float
+  stage                String
+  shape                String
+  types                String // JSON array of element slugs
+  tags                 String // JSON array of tags
+  terrains             String // JSON array
+  genderWeights        String // JSON object
+  sounds               String // JSON object
+  spriteFront          String? // path to front battle sprite
+  spriteBack           String? // path to back battle sprite
+  spriteOverworld      String? // path to overworld sprite
+  moveset              TuxemonMove[]
+  evolutions           TuxemonEvolution[]
+  stats                TuxemonBaseStats?
+
   @@index([txmnId])
 }
 
 model TuxemonBaseStats {
-  id         String  @id @default(cuid())
-  speciesId  String  @unique
-  species    TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
-  hp         Int
-  meleeAtk   Int
-  meleeDef   Int
-  rangedAtk  Int
-  rangedDef  Int
-  speed      Int
+  id        String         @id @default(cuid())
+  speciesId String         @unique
+  species   TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  hp        Int
+  meleeAtk  Int
+  meleeDef  Int
+  rangedAtk Int
+  rangedDef Int
+  speed     Int
 }
 
 model TuxemonMove {
-  id            String  @id @default(cuid())
-  speciesId     String
-  species       TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
-  techniqueSlug String
-  levelLearned  Int
-  learningMethod String @default("level_up")
+  id             String         @id @default(cuid())
+  speciesId      String
+  species        TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  techniqueSlug  String
+  levelLearned   Int
+  learningMethod String         @default("level_up")
+
   @@unique([speciesId, techniqueSlug])
   @@index([speciesId])
 }
 
 model TuxemonEvolution {
-  id           String  @id @default(cuid())
+  id           String         @id @default(cuid())
   speciesId    String
   species      TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
   targetSlug   String
   atLevel      Int?
   itemRequired String?
+
   @@index([speciesId])
 }
 
 model TuxemonTechnique {
-  slug        String   @id
+  slug        String  @id
   name        String
   type        String
   power       Int?
   accuracy    Float?
   ppCost      Int?
-  effects     String   // JSON array of effect slugs
+  effects     String // JSON array of effect slugs
   animation   String?
   description String?
-  isCapture   Boolean  @default(false)
-  target      String?  // "enemy", "self", "ally", etc.
+  isCapture   Boolean @default(false)
+  target      String? // "enemy", "self", "ally", etc.
 }
 
 model TuxemonElement {
-  slug  String  @id
-  name  String
-  icon  String?
+  slug String  @id
+  name String
+  icon String?
 }
 
 model TuxemonTypeEffectiveness {
-  id             String  @id @default(cuid())
-  attackElement  String
-  defendElement  String
-  multiplier     Float
+  id            String @id @default(cuid())
+  attackElement String
+  defendElement String
+  multiplier    Float
+
   @@unique([attackElement, defendElement])
 }
 
 model TuxemonItem {
-  slug        String   @id
-  name        String
-  category    String
-  description String?
-  effects     String   // JSON
-  price       Int?
-  sprite      String?
+  slug           String  @id
+  name           String
+  category       String
+  description    String?
+  effects        String // JSON
+  price          Int?
+  sprite         String?
   usableInBattle Boolean @default(false)
   usableInField  Boolean @default(false)
 }
 
 model TuxemonEncounter {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  mapName   String?
-  data      String   // JSON: encounter table
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  mapName String?
+  data    String // JSON: encounter table
+
   @@index([mapName])
 }
 
 model TuxemonStatus {
-  slug        String   @id
+  slug        String  @id
   name        String
   description String?
-  duration    String?  // "permanent", "turns", etc.
-  effects     String?  // JSON
+  duration    String? // "permanent", "turns", etc.
+  effects     String? // JSON
 }
 
 // ─── Player's Tuxemon Party & Inventory ──────────────────────────
@@ -1157,22 +1161,24 @@ model PlayerTuxemon {
   xp          Int      @default(0)
   currentHp   Int
   maxHp       Int
-  stats       String   // JSON: {meleeAtk, meleeDef, rangedAtk, rangedDef, speed}
-  moves       String   // JSON array of {techniqueSlug, pp, maxPp}
+  stats       String // JSON: {meleeAtk, meleeDef, rangedAtk, rangedDef, speed}
+  moves       String // JSON array of {techniqueSlug, pp, maxPp}
   status      String?
   isParty     Boolean  @default(false)
   slotIndex   Int?
   capturedAt  DateTime @default(now())
+
   @@index([userId])
   @@index([speciesSlug])
 }
 
 model TuxemonInventoryItem {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  itemSlug  String
-  quantity  Int      @default(1)
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemSlug String
+  quantity Int    @default(1)
+
   @@unique([userId, itemSlug])
   @@index([userId])
 }
@@ -1186,42 +1192,42 @@ model TuxemonMap {
   width         Int
   height        Int
   tileSize      Int      @default(16)
-  tilesetData   String   // JSON: tile layer data
-  collisionData String   // JSON: collision bitmask
-  npcData       String   // JSON: NPC placements
-  triggerData   String?  // JSON: trigger zones
-  encounterZone String?  // links to TuxemonEncounter slug
+  tilesetData   String // JSON: tile layer data
+  collisionData String // JSON: collision bitmask
+  npcData       String // JSON: NPC placements
+  triggerData   String? // JSON: trigger zones
+  encounterZone String? // links to TuxemonEncounter slug
   music         String?
   parentMap     String?
-  environment   String?  // e.g. "forest", "cave", "beach"
+  environment   String? // e.g. "forest", "cave", "beach"
   isIndoors     Boolean  @default(false)
   version       Int      @default(1)
   updatedAt     DateTime @updatedAt
+
   @@index([slug])
 }
 
 // ─── Tile Registry (Tuxemon Tilesets) ─────────────────────────────
 
 model TileRegistry {
-  id              String   @id @default(cuid())
-  tileId          Int      @unique
+  id              String  @id @default(cuid())
+  tileId          Int     @unique
   tilesetName     String
   tilesetPath     String
   srcX            Int
   srcY            Int
-  width           Int      @default(16)
-  height          Int      @default(16)
+  width           Int     @default(16)
+  height          Int     @default(16)
   name            String
-  category        String   // outdoor_grass, indoor_floor, cave, etc.
-  terrainType     String   // grass, water, sand, snow, stone, wood, lava
-  isCollidable    Boolean  @default(false)
-  isAnimated      Boolean  @default(false)
-  animationFrames String?  // JSON: [{srcX, srcY, duration}]
-  encounterRate   Float?   // 0.05 = 5% per step
-  environment     String?  // forest, cave, beach
-  sortOrder       Int      @default(0)
+  category        String // outdoor_grass, indoor_floor, cave, etc.
+  terrainType     String // grass, water, sand, snow, stone, wood, lava
+  isCollidable    Boolean @default(false)
+  isAnimated      Boolean @default(false)
+  animationFrames String? // JSON: [{srcX, srcY, duration}]
+  encounterRate   Float? // 0.05 = 5% per step
+  environment     String? // forest, cave, beach
+  sortOrder       Int     @default(0)
+
   @@index([category])
   @@index([terrainType])
 }
-
-
