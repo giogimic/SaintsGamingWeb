@@ -50,7 +50,11 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
     setIsInitializing(true);
     const res = await loadGameCharacter(charId);
     if (res.success && res.data) {
-      useGameStore.getState().hydratePlayer(JSON.parse(res.data.stateData));
+      useGameStore.getState().hydratePlayer({ 
+        ...JSON.parse(res.data.stateData),
+        name: res.data.name,
+        spriteId: res.data.spriteId
+      });
       setActiveCharacterId(charId);
       setShowSelector(false);
       setShowCreator(false);
