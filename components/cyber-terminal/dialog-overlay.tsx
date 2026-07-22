@@ -45,26 +45,26 @@ export default function DialogOverlay() {
       // Check requirements
       const req = npcQuest.requirements;
       let reqMet = true;
-      if (req.itemId && req.amount) {
+      if (req?.itemId && req?.amount) {
         if ((player.inventory[req.itemId] || 0) < req.amount) {
           reqMet = false;
         }
       }
 
       if (reqMet) {
-        currentText = npcQuest.dialogs.complete;
+        currentText = Array.isArray(npcQuest.dialogs?.complete) ? npcQuest.dialogs.complete.join(" ") : (npcQuest.dialogs?.complete || "Quest complete!");
         actionButtons = (
           <button 
             onClick={() => {
-              if (req.itemId && req.amount) {
+              if (req?.itemId && req?.amount) {
                 modifyInventory(req.itemId, -req.amount);
               }
               const rewards = npcQuest.rewards;
-              if (rewards.credits) modifyCredits(rewards.credits);
-              if (rewards.xp) gainXp(rewards.xp);
-              if (rewards.itemId && rewards.amount) modifyInventory(rewards.itemId, rewards.amount);
+              if (rewards?.credits) modifyCredits(rewards.credits);
+              if (rewards?.xp) gainXp(rewards.xp);
+              if (rewards?.itemId && rewards?.amount) modifyInventory(rewards.itemId, rewards.amount);
               
-              showToast(`Quest Completed: ${npcQuest.name}!`);
+              showToast(`Quest Completed: ${npcQuest.name || npcQuest.title || 'Quest'}!`);
               completeQuest(npcQuest.id);
               handleClose();
             }}
@@ -74,7 +74,7 @@ export default function DialogOverlay() {
           </button>
         );
       } else {
-        currentText = npcQuest.dialogs.inProgress;
+        currentText = Array.isArray(npcQuest.dialogs?.in_progress) ? npcQuest.dialogs.in_progress.join(" ") : (npcQuest.dialogs?.inProgress?.join(" ") || "Quest in progress...");
         actionButtons = (
           <button 
             onClick={handleClose}
@@ -86,7 +86,7 @@ export default function DialogOverlay() {
       }
     } else {
       // Not started yet
-      currentText = npcQuest.dialogs.start;
+      currentText = Array.isArray(npcQuest.dialogs?.intro) ? npcQuest.dialogs.intro.join(" ") : (npcQuest.dialogs?.start?.join(" ") || "Greetings traveler!");
       actionButtons = (
         <div className="flex space-x-2">
           <button 

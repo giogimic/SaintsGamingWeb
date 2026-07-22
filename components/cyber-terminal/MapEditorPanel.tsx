@@ -223,6 +223,58 @@ export default function MapEditorPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
+          {activeTab === 'npcs' && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs text-purple-400 font-bold">NPC & Dialogue Script Editor</span>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-300">NPC Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Prof. Oakwood"
+                  className="bg-black/60 border border-slate-700 rounded p-1 text-xs text-white"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-300">Dialogue Key / Text</label>
+                <textarea
+                  rows={3}
+                  placeholder="Welcome Tamer! Choose your starter beast..."
+                  className="bg-black/60 border border-slate-700 rounded p-1 text-xs text-white"
+                />
+              </div>
+              <button className="py-1 bg-purple-700 hover:bg-purple-600 rounded text-xs font-bold text-white transition-colors">
+                Place NPC on Canvas
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'gates' && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs text-indigo-400 font-bold">Portal & Door Linker</span>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-slate-300">Target Map ID</label>
+                <input
+                  type="text"
+                  placeholder="SPYDER_PAPER_TOWN"
+                  className="bg-black/60 border border-slate-700 rounded p-1 text-xs text-white"
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="text-xs text-slate-300">Spawn X</label>
+                  <input type="number" defaultValue={10} className="bg-black/60 border border-slate-700 rounded p-1 text-xs text-white" />
+                </div>
+                <div className="flex-1 flex flex-col gap-1">
+                  <label className="text-xs text-slate-300">Spawn Y</label>
+                  <input type="number" defaultValue={12} className="bg-black/60 border border-slate-700 rounded p-1 text-xs text-white" />
+                </div>
+              </div>
+              <button className="py-1 bg-indigo-700 hover:bg-indigo-600 rounded text-xs font-bold text-white transition-colors">
+                Link Gate Trigger
+              </button>
+            </div>
+          )}
+
           {activeTab === 'encounters' && (
             <div className="flex flex-col gap-3">
               <span className="text-xs text-rose-400 font-bold">Wild Beast Encounter Zones</span>
