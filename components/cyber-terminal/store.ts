@@ -22,6 +22,8 @@ export interface SkillData {
 }
 
 export interface PlayerState {
+  name?: string;
+  spriteId?: string;
   position: Point;
   level: number;
   xp: number;

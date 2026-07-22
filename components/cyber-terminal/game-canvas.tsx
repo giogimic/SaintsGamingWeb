@@ -230,37 +230,121 @@ export default function GameCanvas() {
       }
     };
 
-    const drawPlayer = () => {
-      // Basic LPC Character Placeholder
-      // We assume an LPC spritesheet where characters are 64x64, but we'll draw a simplified version
-      // Or we can load `/assets/player.png` if it exists!
-      ctx.fillStyle = '#ef4444'; // Red hat/body
+    // Image Cache for Custom Asset Uploads
+    const spriteImageCache: Record<string, HTMLImageElement> = {};
+
+    const renderSpriteImageOrPixel = (
+      x: number,
+      y: number,
+      spriteKey?: string
+    ) => {
+      const key = spriteKey || 'hero_male';
+      const isImage = key.startsWith('/') || key.startsWith('http');
+
+      if (isImage) {
+        if (!spriteImageCache[key]) {
+          const img = new Image();
+          img.src = key;
+          spriteImageCache[key] = img;
+        }
+        const cachedImg = spriteImageCache[key];
+        if (cachedImg.complete && cachedImg.naturalWidth > 0) {
+          // Foot Shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.beginPath();
+          ctx.ellipse(x + TILE_SIZE/2, y + TILE_SIZE - 3, 12, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.drawImage(cachedImg, x, y, TILE_SIZE, TILE_SIZE);
+          return;
+        }
+      }
+
+      // Foot Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.beginPath();
-      ctx.arc(
-        currentPixelPos.x + TILE_SIZE / 2,
-        currentPixelPos.y + TILE_SIZE / 2 + 4,
-        TILE_SIZE / 2 - 8,
-        0,
-        Math.PI * 2
-      );
+      ctx.ellipse(x + TILE_SIZE/2, y + TILE_SIZE - 3, 12, 4, 0, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Face
-      ctx.fillStyle = '#fef08a'; // Pale skin tone
-      ctx.beginPath();
-      ctx.arc(
-        currentPixelPos.x + TILE_SIZE / 2,
-        currentPixelPos.y + TILE_SIZE / 2 + 6,
-        10,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-      
+
+      // Palette per sprite ID
+      let mainColor = '#10b981'; // Emerald Agent
+      let subColor = '#065f46';
+      let skinTone = '#fcd34d';
+      let hairColor = '#3b82f6';
+
+      if (key === 'mage_1' || key === 'INVOKER' || key === 'CYBER') {
+        mainColor = '#a855f7'; // Purple Cybermancer
+        subColor = '#581c87';
+        hairColor = '#ec4899';
+      } else if (key === 'villager_1' || key === 'ARTISAN') {
+        mainColor = '#f59e0b'; // Gold Wanderer
+        subColor = '#78350f';
+        hairColor = '#78350f';
+      } else if (key === 'assassin' || key === 'RANGER') {
+        mainColor = '#06b6d4'; // Cyan Phantom
+        subColor = '#164e63';
+        hairColor = '#0f172a';
+      } else if (key === 'BRAWLER' || key === 'SURVIVOR') {
+        mainColor = '#ef4444'; // Red Brawler
+        subColor = '#7f1d1d';
+        hairColor = '#451a03';
+      }
+
+      // Boots & Legs
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(x + 10, y + 21, 4, 7);
+      ctx.fillRect(x + 18, y + 21, 4, 7);
+
+      ctx.fillStyle = subColor;
+      ctx.fillRect(x + 9, y + 26, 5, 3);
+      ctx.fillRect(x + 18, y + 26, 5, 3);
+
+      // Body / Outfit
+      ctx.fillStyle = mainColor;
+      ctx.fillRect(x + 8, y + 11, 16, 11);
+
+      // Chest Emblem
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 13, y + 13, 6, 5);
+      ctx.fillStyle = mainColor;
+      ctx.fillRect(x + 14, y + 14, 4, 3);
+
+      // Belt & Buckle
+      ctx.fillStyle = '#52525b';
+      ctx.fillRect(x + 8, y + 19, 16, 2);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(x + 14, y + 18, 4, 4);
+
+      // Arms
+      ctx.fillStyle = subColor;
+      ctx.fillRect(x + 5, y + 12, 3, 7);
+      ctx.fillRect(x + 24, y + 12, 3, 7);
+      ctx.fillStyle = skinTone;
+      ctx.fillRect(x + 5, y + 19, 3, 3);
+      ctx.fillRect(x + 24, y + 19, 3, 3);
+
+      // Head / Face
+      ctx.fillStyle = skinTone;
+      ctx.fillRect(x + 9, y + 4, 14, 9);
+
+      // Hair / Hood
+      ctx.fillStyle = hairColor;
+      ctx.fillRect(x + 8, y + 2, 16, 4);
+      ctx.fillRect(x + 8, y + 4, 3, 5);
+      ctx.fillRect(x + 21, y + 4, 3, 5);
+
       // Eyes
-      ctx.fillStyle = '#000';
-      ctx.fillRect(currentPixelPos.x + TILE_SIZE / 2 - 4, currentPixelPos.y + TILE_SIZE / 2 + 4, 2, 4);
-      ctx.fillRect(currentPixelPos.x + TILE_SIZE / 2 + 4, currentPixelPos.y + TILE_SIZE / 2 + 4, 2, 4);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(x + 11, y + 7, 3, 3);
+      ctx.fillRect(x + 18, y + 7, 3, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 12, y + 7, 1, 1);
+      ctx.fillRect(x + 19, y + 7, 1, 1);
+    };
+
+    const drawPlayer = () => {
+      const playerState = useGameStore.getState().player;
+      renderSpriteImageOrPixel(currentPixelPos.x, currentPixelPos.y, playerState.spriteId);
     };
 
     const drawEntities = () => {
@@ -272,22 +356,20 @@ export default function GameCanvas() {
         const ey = entity.position.y * TILE_SIZE;
 
         if (entity.type === 'NPC') {
-          ctx.fillStyle = '#3b82f6'; // Blue for NPC
-          ctx.fillRect(ex + 8, ey + 8, TILE_SIZE - 16, TILE_SIZE - 16);
-          ctx.fillStyle = '#fff';
-          ctx.fillText('NPC', ex + 12, ey + TILE_SIZE / 2);
+          renderSpriteImageOrPixel(ex, ey, entity.spriteKey || 'villager_1');
+
+          // Quest Indicator floating above head
+          const hasQuest = Object.values(QUEST_DB).some(q => q.npcId === entity.id);
+          if (hasQuest) {
+            ctx.fillStyle = '#fbbf24'; // Golden Quest Mark
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('!', ex + TILE_SIZE / 2, ey - 6);
+          }
         } else if (entity.type === 'ANIMAL') {
-          ctx.fillStyle = '#d97706'; // Orange for animal
-          ctx.beginPath();
-          ctx.ellipse(ex + TILE_SIZE/2, ey + TILE_SIZE/2 + 8, 12, 8, 0, 0, Math.PI * 2);
-          ctx.fill();
+          renderSpriteImageOrPixel(ex, ey, entity.spriteKey || 'villager_1');
         } else if (entity.type === 'MONSTER') {
-          ctx.fillStyle = '#dc2626'; // Red for monster
-          ctx.beginPath();
-          ctx.moveTo(ex + 8, ey + TILE_SIZE - 8);
-          ctx.lineTo(ex + TILE_SIZE / 2, ey + 8);
-          ctx.lineTo(ex + TILE_SIZE - 8, ey + TILE_SIZE - 8);
-          ctx.fill();
+          renderSpriteImageOrPixel(ex, ey, entity.spriteKey || 'assassin');
         }
       });
     };
@@ -402,15 +484,7 @@ export default function GameCanvas() {
         const opX = op.x * TILE_SIZE - cameraX;
         const opY = op.y * TILE_SIZE - cameraY;
         
-        // Simple Placeholder
-        ctx.fillStyle = '#a855f7'; // Purple for others
-        ctx.beginPath();
-        ctx.arc(opX + TILE_SIZE / 2, opY + TILE_SIZE / 2 + 4, TILE_SIZE / 2 - 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fef08a';
-        ctx.beginPath();
-        ctx.arc(opX + TILE_SIZE / 2, opY + TILE_SIZE / 2 + 6, 10, 0, Math.PI * 2);
-        ctx.fill();
+        renderSpriteImageOrPixel(opX, opY, op.spriteId || 'mage_1');
 
         // Nametag
         ctx.fillStyle = '#fff';

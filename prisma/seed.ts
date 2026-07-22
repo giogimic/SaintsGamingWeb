@@ -66,7 +66,7 @@ async function main() {
       slug: "saints-gaming-qol",
       game: "Palworld",
       description: "The official mod pack required to play on our servers. Includes essential client-side mods for UI improvements and performance.",
-      version: "1.5.0",
+      version: "1.5.1",
       installNotes: "Extract the ModPack.zip into your \\Palworld\\Pal\\Content\\Paks directory!",
     },
   });
