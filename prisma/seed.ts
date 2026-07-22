@@ -66,7 +66,7 @@ async function main() {
       slug: "saints-gaming-qol",
       game: "Creature Battler",
       description: "The official mod pack required to play on our servers. Includes essential client-side mods for UI improvements and performance.",
-      version: "1.4.5",
+      version: "1.4.6",
       installNotes: "Extract the ModPack.zip into your \\Creature Battler\\Pal\\Content\\Paks directory!",
     },
   });
