@@ -1,0 +1,28 @@
+{
+  "filename": "tilesets_indoor.png",
+  "width": 2048,
+  "height": 2688,
+  "frames": [
+    {
+      "filename": "core_indoor_floors.png",
+      "x": 0,
+      "y": 0,
+      "width": 736,
+      "height": 1344
+    },
+    {
+      "filename": "core_indoor_stairs.png",
+      "x": 736,
+      "y": 0,
+      "width": 720,
+      "height": 1056
+    },
+    {
+      "filename": "core_indoor_walls.png",
+      "x": 0,
+      "y": 1344,
+      "width": 736,
+      "height": 1344
+    }
+  ]
+}

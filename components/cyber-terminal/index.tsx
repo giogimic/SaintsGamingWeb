@@ -2,7 +2,8 @@
 
 import { useRef, useState, useEffect } from 'react';
 import GameCanvas from './game-canvas';
-import DexOverlay from './dex-overlay';
+import SaintsDexOverlay from './TuxepediaOverlay';
+import MapEditorPanel from './MapEditorPanel';
 import BattleOverlay from './battle-overlay';
 import ShopOverlay from './shop-overlay';
 import SkillsOverlay from './skills-overlay';
@@ -268,11 +269,18 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
             >
               DEX
             </button>
+            <button
+              onClick={() => useGameStore.getState().setGameMode('MAP_EDITOR')}
+              className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto"
+            >
+              EDITOR
+            </button>
           </div>
         </div>
       )}
       
-      {gameMode === 'DEX' && <DexOverlay />}
+      {gameMode === 'DEX' && <SaintsDexOverlay />}
+      {gameMode === 'MAP_EDITOR' && <MapEditorPanel onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
       {gameMode === 'BATTLE' && <BattleOverlay />}
       {gameMode === 'SHOP' && <ShopOverlay />}
       {gameMode === 'SKILLS' && <SkillsOverlay />}

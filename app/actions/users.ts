@@ -22,6 +22,7 @@ export async function getPublicProfile(username: string) {
       level: true,
       xp: true,
       coins: true,
+      pinnedBeastId: true,
       _count: {
         select: {
           threads: true,

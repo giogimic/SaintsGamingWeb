@@ -67,10 +67,79 @@ io.on("connection", (socket) => {
     socket.to(p.mapId).emit("player_moved", p);
   });
 
-  // 3. Party System
-  socket.on("invite_party", (targetSocketId) => {
-    io.to(targetSocketId).emit("party_invite_received", { from: socket.id });
+  // 3. Party System (up to 4 players)
+  socket.on("create_party", () => {
+    const partyId = `party_${Date.now()}`;
+    parties[partyId] = { id: partyId, leader: socket.id, members: [socket.id] };
+    players[socket.id].partyId = partyId;
+    socket.emit("party_created", { partyId });
+    console.log(`[*] ${players[socket.id].name} created party ${partyId}`);
   });
+
+  socket.on("invite_to_party", (data) => {
+    const targetSocket = io.sockets.sockets.get(data.targetUserId);
+    if (targetSocket && players[socket.id].partyId) {
+      targetSocket.emit("party_invite", {
+        from: socket.id,
+        fromName: players[socket.id].name,
+        partyId: players[socket.id].partyId
+      });
+    }
+  });
+
+  socket.on("accept_party_invite", (data) => {
+    const partyId = players[data.fromUserId]?.partyId;
+    if (!partyId || !parties[partyId]) return;
+    if (parties[partyId].members.length >= 4) {
+      socket.emit("party_full");
+      return;
+    }
+    parties[partyId].members.push(socket.id);
+    players[socket.id].partyId = partyId;
+    const memberInfo = { userId: socket.id, name: players[socket.id].name, spriteId: players[socket.id].spriteId, position: { x: players[socket.id].x, y: players[socket.id].y } };
+    parties[partyId].members.forEach(mid => {
+      const ms = io.sockets.sockets.get(mid);
+      if (ms) ms.emit("party_member_joined", memberInfo);
+    });
+    const allMembers = parties[partyId].members.map(mid => ({
+      userId: mid, name: players[mid]?.name || 'Unknown', spriteId: players[mid]?.spriteId || 'hero_male',
+      position: { x: players[mid]?.x || 0, y: players[mid]?.y || 0 }
+    }));
+    socket.emit("party_joined", { partyId, members: allMembers });
+  });
+
+  socket.on("leave_party", () => {
+    const partyId = players[socket.id]?.partyId;
+    if (!partyId || !parties[partyId]) return;
+    parties[partyId].members = parties[partyId].members.filter(id => id !== socket.id);
+    players[socket.id].partyId = null;
+    if (parties[partyId].members.length === 0) {
+      delete parties[partyId];
+    } else {
+      if (parties[partyId].leader === socket.id) parties[partyId].leader = parties[partyId].members[0];
+      parties[partyId].members.forEach(mid => {
+        const ms = io.sockets.sockets.get(mid);
+        if (ms) ms.emit("party_member_left", socket.id);
+      });
+    }
+    socket.emit("party_left");
+  });
+
+  socket.on("update_party_position", (data) => {
+    const partyId = players[socket.id]?.partyId;
+    if (!partyId) return;
+    broadcastToParty(partyId, "party_position_update", { userId: socket.id, position: data.position }, socket.id);
+  });
+
+  function broadcastToParty(partyId, event, data, excludeId) {
+    const party = parties[partyId];
+    if (!party) return;
+    party.members.forEach(mid => {
+      if (mid === excludeId) return;
+      const ms = io.sockets.sockets.get(mid);
+      if (ms) ms.emit(event, data);
+    });
+  }
 
   // 4. Authoritative PvP Combat
   socket.on("invite_battle", (targetSocketId) => {

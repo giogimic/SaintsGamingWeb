@@ -1,0 +1,1463 @@
+{
+  "filename": "npc_atlas.png",
+  "width": 2048,
+  "height": 640,
+  "frames": [
+    {
+      "filename": "37707_female.png",
+      "x": 0,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "37707_female_missing.png",
+      "x": 48,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "37707_male.png",
+      "x": 96,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "37707_male_missing.png",
+      "x": 144,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "adventurer.png",
+      "x": 192,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "adventurerblack.png",
+      "x": 240,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "adventurer_beige.png",
+      "x": 288,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "adventurer_green.png",
+      "x": 336,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "adventurer_red.png",
+      "x": 384,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "adventurer_yellow.png",
+      "x": 432,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "barmaid.png",
+      "x": 480,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "barmaid_blonde.png",
+      "x": 528,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "barmaid_red.png",
+      "x": 576,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "beachcomber.png",
+      "x": 624,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "beachcomber_black.png",
+      "x": 672,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "beachcomber_blue.png",
+      "x": 720,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "beachcomber_copper.png",
+      "x": 768,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "beachcomber_fiery.png",
+      "x": 816,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "beachcomber_gray.png",
+      "x": 864,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "bee.png",
+      "x": 912,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "bob.png",
+      "x": 960,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "boss.png",
+      "x": 1008,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "boss_blue.png",
+      "x": 1056,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "boss_green.png",
+      "x": 1104,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "boss_orange.png",
+      "x": 1152,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "boss_red.png",
+      "x": 1200,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "brownheroine_brown.png",
+      "x": 1248,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "brute.png",
+      "x": 1296,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "catgirl.png",
+      "x": 1344,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "catgirl_blonde.png",
+      "x": 1392,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "catgirl_blue.png",
+      "x": 1440,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "catgirl_fiery.png",
+      "x": 1488,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "catgirl_green.png",
+      "x": 1536,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "catgirl_violet.png",
+      "x": 1584,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "ceo.png",
+      "x": 1632,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "childactor.png",
+      "x": 1680,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "childactor_black.png",
+      "x": 1728,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "childactor_blonde.png",
+      "x": 1776,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "childactor_brown.png",
+      "x": 1824,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "childactor_fiery.png",
+      "x": 1872,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie.png",
+      "x": 1920,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie_black.png",
+      "x": 1968,
+      "y": 0,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie_blue.png",
+      "x": 0,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie_brown.png",
+      "x": 48,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie_fiery.png",
+      "x": 96,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie_green.png",
+      "x": 144,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "christie_lapi.png",
+      "x": 192,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "conileaf.png",
+      "x": 240,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude.png",
+      "x": 288,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude_black.png",
+      "x": 336,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude_blonde.png",
+      "x": 384,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude_blue.png",
+      "x": 432,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude_brown.png",
+      "x": 480,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude_fiery.png",
+      "x": 528,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "cooldude_red.png",
+      "x": 576,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "disciple.png",
+      "x": 624,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "disciple_blonde.png",
+      "x": 672,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "disciple_fiery.png",
+      "x": 720,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "disciple_green.png",
+      "x": 768,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "disciple_violet.png",
+      "x": 816,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "dragonrider.png",
+      "x": 864,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "dragonrider_black.png",
+      "x": 912,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "dragonrider_blue.png",
+      "x": 960,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "dragonrider_fiery.png",
+      "x": 1008,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "dragonrider_green.png",
+      "x": 1056,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "enbyasian.png",
+      "x": 1104,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fashionista.png",
+      "x": 1152,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fashionista_black.png",
+      "x": 1200,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fashionista_blue.png",
+      "x": 1248,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fashionista_brown.png",
+      "x": 1296,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fashionista_fiery.png",
+      "x": 1344,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fashionista_red.png",
+      "x": 1392,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "firefighter.png",
+      "x": 1440,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "firenymph.png",
+      "x": 1488,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fisher.png",
+      "x": 1536,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "fisher_fiery.png",
+      "x": 1584,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "florist.png",
+      "x": 1632,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "florist_black.png",
+      "x": 1680,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "florist_blue.png",
+      "x": 1728,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "florist_brown.png",
+      "x": 1776,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "florist_fiery.png",
+      "x": 1824,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "florist_rose.png",
+      "x": 1872,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "ghost.png",
+      "x": 1920,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "girl1.png",
+      "x": 1968,
+      "y": 128,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "goth.png",
+      "x": 0,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "goth_green.png",
+      "x": 48,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "goth_rose.png",
+      "x": 96,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "granny.png",
+      "x": 144,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "granny_blue.png",
+      "x": 192,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "granny_green.png",
+      "x": 240,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "granny_lapi.png",
+      "x": 288,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "granny_yellow.png",
+      "x": 336,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "heroine.png",
+      "x": 384,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "heroine_black.png",
+      "x": 432,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "heroine_brown.png",
+      "x": 480,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "heroine_grey.png",
+      "x": 528,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "heroine_red.png",
+      "x": 576,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "homemaker.png",
+      "x": 624,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "homemaker_black.png",
+      "x": 672,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "homemaker_blonde.png",
+      "x": 720,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "homemaker_brown.png",
+      "x": 768,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "homemaker_fiery.png",
+      "x": 816,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "invisible.png",
+      "x": 864,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "knight.png",
+      "x": 912,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "knightlord.png",
+      "x": 960,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "knight_green.png",
+      "x": 1008,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "knight_red.png",
+      "x": 1056,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "knight_yellow.png",
+      "x": 1104,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "landbird.png",
+      "x": 1152,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "landrace.png",
+      "x": 1200,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "light.png",
+      "x": 1248,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "magician.png",
+      "x": 1296,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "magician_black.png",
+      "x": 1344,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "magician_blonde.png",
+      "x": 1392,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "magician_brown.png",
+      "x": 1440,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "magician_fiery.png",
+      "x": 1488,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "magician_grey.png",
+      "x": 1536,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "maniac.png",
+      "x": 1584,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "maniac_green.png",
+      "x": 1632,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "maniac_rose.png",
+      "x": 1680,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "maniac_violet.png",
+      "x": 1728,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "maniac_yellow.png",
+      "x": 1776,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "miner.png",
+      "x": 1824,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "miner_blue.png",
+      "x": 1872,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "miner_green.png",
+      "x": 1920,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "miner_red.png",
+      "x": 1968,
+      "y": 256,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "miner_yellow.png",
+      "x": 0,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "monk.png",
+      "x": 48,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "monk_black.png",
+      "x": 96,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "monk_blue.png",
+      "x": 144,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "monk_green.png",
+      "x": 192,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "monk_orange.png",
+      "x": 240,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "monk_red.png",
+      "x": 288,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "moth.png",
+      "x": 336,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "naked.png",
+      "x": 384,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "ninja.png",
+      "x": 432,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "ninja_blue.png",
+      "x": 480,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "ninja_red.png",
+      "x": 528,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "nurse.png",
+      "x": 576,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "nurse_blonde.png",
+      "x": 624,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "nurse_blue.png",
+      "x": 672,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "nurse_green.png",
+      "x": 720,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "nurse_lapi.png",
+      "x": 768,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "nurse_red.png",
+      "x": 816,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "omnichannelallie.png",
+      "x": 864,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "omnichannelfemale.png",
+      "x": 912,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "overseer.png",
+      "x": 960,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "penguin.png",
+      "x": 1008,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "picnicker.png",
+      "x": 1056,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "postboy.png",
+      "x": 1104,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "postboy_green.png",
+      "x": 1152,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "postboy_olive.png",
+      "x": 1200,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "postboy_red.png",
+      "x": 1248,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor.png",
+      "x": 1296,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor_black.png",
+      "x": 1344,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor_blue.png",
+      "x": 1392,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor_brown.png",
+      "x": 1440,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor_fiery.png",
+      "x": 1488,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor_green.png",
+      "x": 1536,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "professor_lapi.png",
+      "x": 1584,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "riverboatcaptain.png",
+      "x": 1632,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "robot.png",
+      "x": 1680,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "rockitten.png",
+      "x": 1728,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "rogue.png",
+      "x": 1776,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "rogue_blue.png",
+      "x": 1824,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "rogue_copper.png",
+      "x": 1872,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "rogue_green.png",
+      "x": 1920,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "rogue_red.png",
+      "x": 1968,
+      "y": 384,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "scientist.png",
+      "x": 0,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "scientist_black.png",
+      "x": 48,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "scientist_brown.png",
+      "x": 96,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "scientist_fiery.png",
+      "x": 144,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopassistant.png",
+      "x": 192,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopassistant_black.png",
+      "x": 240,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopassistant_grey.png",
+      "x": 288,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopassistant_red.png",
+      "x": 336,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopkeeper.png",
+      "x": 384,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopkeeper_blonde.png",
+      "x": 432,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "shopkeeper_brown.png",
+      "x": 480,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "snugglepot.png",
+      "x": 528,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "soldier.png",
+      "x": 576,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "spyderboss.png",
+      "x": 624,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "spyderboss_blonde.png",
+      "x": 672,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "spyderboss_fiery.png",
+      "x": 720,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "spyderboss_green.png",
+      "x": 768,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "spyderboss_lapi.png",
+      "x": 816,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "spyderrookie.png",
+      "x": 864,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "swimmer.png",
+      "x": 912,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "swimmer_alt.png",
+      "x": 960,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "swimmer_blue.png",
+      "x": 1008,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "swimmer_green.png",
+      "x": 1056,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "swimmer_orange.png",
+      "x": 1104,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "swimmer_red.png",
+      "x": 1152,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "tennisplayer.png",
+      "x": 1200,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "tennisplayer_fiery.png",
+      "x": 1248,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "tennisplayer_green.png",
+      "x": 1296,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "tennisplayer_lapi.png",
+      "x": 1344,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "varmint.png",
+      "x": 1392,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "warrior.png",
+      "x": 1440,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "witch.png",
+      "x": 1488,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "woodnymph.png",
+      "x": 1536,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt.png",
+      "x": 1584,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt_green.png",
+      "x": 1632,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt_lapi.png",
+      "x": 1680,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt_red.png",
+      "x": 1728,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt_violet.png",
+      "x": 1776,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt_white.png",
+      "x": 1824,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    },
+    {
+      "filename": "xerogrunt_yellow.png",
+      "x": 1872,
+      "y": 512,
+      "width": 48,
+      "height": 128
+    }
+  ]
+}

@@ -68,6 +68,12 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [customAssets, setCustomAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Customization state
+  const [skinTone, setSkinTone] = useState('#fcd34d');
+  const [hairColor, setHairColor] = useState('#3b82f6');
+  const [shirtColor, setShirtColor] = useState('#10b981');
+  const [pantsColor, setPantsColor] = useState('#18181b');
+
   useEffect(() => {
     async function loadAssets() {
       const res = await fetchAllGameAssets();
@@ -108,6 +114,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       inventory: { 'capture_script': 10, 'patch_kit': 5 },
       skills: initialSkills,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
+      customization: { skinTone, hairColor, shirtColor, pantsColor },
       combatStyle: 'MELEE',
       activeDaemonId: 'd-001',
       saintRank: 'Rookie',
@@ -197,6 +204,65 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                 <p className="text-xs text-center font-bold text-foreground truncate w-full">{asset.name}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* CUSTOMIZATION OPTIONS */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">CUSTOMIZE APPEARANCE</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-background/50 p-4 rounded-xl border border-border/40">
+            <div>
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Skin Tone</label>
+              <div className="flex gap-2">
+                {['#fcd34d', '#f87171', '#d97706', '#78350f', '#86efac'].map(color => (
+                  <button 
+                    key={color} 
+                    onClick={() => setSkinTone(color)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${skinTone === color ? 'border-primary scale-125' : 'border-transparent'}`} 
+                    style={{ backgroundColor: color }} 
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Hair Color</label>
+              <div className="flex gap-2">
+                {['#3b82f6', '#ec4899', '#eab308', '#ef4444', '#1e293b'].map(color => (
+                  <button 
+                    key={color} 
+                    onClick={() => setHairColor(color)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${hairColor === color ? 'border-primary scale-125' : 'border-transparent'}`} 
+                    style={{ backgroundColor: color }} 
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Shirt Color</label>
+              <div className="flex gap-2">
+                {['#10b981', '#6366f1', '#f43f5e', '#a855f7', '#f97316'].map(color => (
+                  <button 
+                    key={color} 
+                    onClick={() => setShirtColor(color)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${shirtColor === color ? 'border-primary scale-125' : 'border-transparent'}`} 
+                    style={{ backgroundColor: color }} 
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase mb-1">Pants Color</label>
+              <div className="flex gap-2">
+                {['#18181b', '#0f172a', '#451a03', '#164e63', '#312e81'].map(color => (
+                  <button 
+                    key={color} 
+                    onClick={() => setPantsColor(color)}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${pantsColor === color ? 'border-primary scale-125' : 'border-transparent'}`} 
+                    style={{ backgroundColor: color }} 
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
