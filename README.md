@@ -122,7 +122,8 @@ This project is open-source and available under the **MIT License**.
 
 ## 📜 Changelog
 
-### v1.6.4
+### v1.6.5
+- **Authentic Tuxemon Starter Story Flow**: Configured default player spawn point to `PLAYER_HOUSE_BEDROOM` (`{x: 6, y: 2}`), wiring initial stairs warp to `PLAYER_HOUSE_DOWNSTAIRS` (Mom dialogue), front door exit to `SPYDER_PAPER_TOWN` (Tamer Guide), and Lab warp to `PROFESSOR_LAB` (Prof. Oakwood starter beast selection).
 - **Tuxemon Campaign Maps Integration & WebGL Engine Port**: Imported 38 primary campaign maps (`player_house_bedroom`, `player_house_downstairs`, `spyder_paper_town`, `professor_lab`, `spyder_route1`, etc.) into `components/cyber-terminal/data/campaign-maps.ts`, linking map portals, NPC spawn triggers, and wild encounter pools.
 - **Lint Cleanliness Verification**: Cleaned up React hook dependencies and unused variables across `DialogueBox.tsx`, `TuxemonBattleScene.tsx`, `MapEditorWebGL.tsx`, and `TuxepediaOverlay.tsx`.
 - **Permission Locked Map Editor & Tuxemon Tileset Integration**: Permission-locked the map `EDITOR` button to verified admin accounts (`checkAdminPermission`), updated `drawMap` canvas engine to query `tileRegistryCache` for official overworld Tuxemon tilesets, and fixed grey fallback rendering.
