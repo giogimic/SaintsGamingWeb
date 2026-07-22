@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createGameCharacter } from "@/app/actions/game";
+import { fetchAllGameAssets } from "@/app/actions/game-dev";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Skull, Sparkles, Wrench, Shield, Zap } from "lucide-react";
+import { User, Skull, Sparkles, Wrench, Shield, Zap, ArrowLeft, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
 import { INITIAL_SKILLS } from "./store";
 
-const SPRITES = [
+const PRESET_SPRITES = [
   { id: "hero_male", label: "Agent", icon: User },
   { id: "mage_1", label: "Hacker", icon: Zap },
   { id: "villager_1", label: "Wanderer", icon: Sparkles },
@@ -60,11 +61,22 @@ const CLASSES = [
   }
 ];
 
-export function CharacterCreator({ onComplete }: { onComplete: () => void }) {
+export function CharacterCreator({ onComplete, onCancel }: { onComplete: (characterId: string) => void; onCancel?: () => void }) {
   const [name, setName] = useState("");
-  const [spriteId, setSpriteId] = useState(SPRITES[0].id);
+  const [spriteId, setSpriteId] = useState(PRESET_SPRITES[0].id);
   const [classId, setClassId] = useState(CLASSES[0].id);
+  const [customAssets, setCustomAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadAssets() {
+      const res = await fetchAllGameAssets();
+      if (res.success && res.data) {
+        setCustomAssets(res.data);
+      }
+    }
+    loadAssets();
+  }, []);
 
   const handleCreate = async () => {
     if (!name || name.length < 3) {
@@ -87,12 +99,12 @@ export function CharacterCreator({ onComplete }: { onComplete: () => void }) {
     }
 
     const initialState = {
-      position: { x: 1, y: 1 }, // Start at coordinates 1,1
+      position: { x: 1, y: 1 },
       level: 1,
       xp: 0,
       hp: 100 + (initialSkills['Constitution']?.level || 1) * 10,
       maxHp: 100 + (initialSkills['Constitution']?.level || 1) * 10,
-      credits: 1000, // Boosted starting credits
+      credits: 1000,
       inventory: { 'capture_script': 10, 'patch_kit': 5 },
       skills: initialSkills,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
@@ -110,58 +122,86 @@ export function CharacterCreator({ onComplete }: { onComplete: () => void }) {
       initialState: JSON.stringify(initialState)
     });
 
-    if (result.success) {
-      toast.success("Character Created Successfully!");
-      // Allow slight delay before booting into the game
+    if (result.success && result.character) {
+      toast.success("Character Created! Entering The Lobby...");
       setTimeout(() => {
-        onComplete();
-      }, 500);
+        onComplete(result.character.id);
+      }, 300);
     } else {
-      toast.error(result.error || "Failed to create character. Ensure database is running.");
+      toast.error(result.error || "Failed to create character.");
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4 md:p-8 bg-zinc-950/90 border border-emerald-500/30 rounded-xl text-emerald-50 shadow-[0_0_50px_rgba(16,185,129,0.1)] backdrop-blur-md font-mono mt-4 md:mt-12 overflow-y-auto max-h-[90vh]">
-      <h1 className="text-2xl md:text-3xl font-bold mb-2 text-emerald-400 text-center animate-pulse">SAINTS TAMER MMO</h1>
-      <p className="text-emerald-500/70 text-center mb-8">Character Registration Terminal</p>
+    <div className="w-full max-w-4xl mx-auto p-6 md:p-8 bg-card/90 border border-border/50 rounded-2xl text-foreground sg-glass shadow-2xl backdrop-blur-xl my-4 overflow-y-auto max-h-[90vh]">
+      <div className="flex items-center justify-between mb-4">
+        {onCancel ? (
+          <Button variant="ghost" size="sm" onClick={onCancel} className="text-muted-foreground hover:text-foreground gap-1">
+            <ArrowLeft className="w-4 h-4" /> Back to Lobby
+          </Button>
+        ) : <div />}
+        <div className="flex items-center gap-2">
+          <Gamepad2 className="w-7 h-7 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
+            CREATE OPERATIVE
+          </h1>
+        </div>
+        <div />
+      </div>
+
+      <p className="text-muted-foreground text-center text-sm mb-8">Customize your character identity to enter Saints Gaming Lobby</p>
 
       <div className="space-y-8">
         <div>
-          <label className="block text-sm font-bold text-emerald-400 mb-2">CHARACTER NAME</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">OPERATIVE NAME</label>
           <Input 
             value={name} 
             onChange={(e) => setName(e.target.value)} 
-            className="bg-black/50 border-emerald-500/50 text-emerald-50 focus-visible:ring-emerald-500 font-bold text-lg h-14"
-            placeholder="Enter Name..."
+            className="bg-background/80 border-border/60 text-foreground focus-visible:ring-primary font-bold text-lg h-14 rounded-xl"
+            placeholder="Enter Operative Name..."
             maxLength={16}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-emerald-400 mb-2">SELECT AVATAR</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">SELECT AVATAR / SPRITE</label>
           <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
-            {SPRITES.map(sprite => {
+            {PRESET_SPRITES.map(sprite => {
               const Icon = sprite.icon;
               return (
                 <div 
                   key={sprite.id}
                   onClick={() => setSpriteId(sprite.id)}
-                  className={`p-4 rounded-lg cursor-pointer border-2 transition-all shrink-0 w-32 flex flex-col items-center gap-2 ${spriteId === sprite.id ? 'border-emerald-400 bg-emerald-950/50 shadow-[0_0_15px_rgba(52,211,153,0.3)] scale-105' : 'border-zinc-800 bg-black hover:border-emerald-700'}`}
+                  className={`p-4 rounded-xl cursor-pointer border-2 transition-all shrink-0 w-32 flex flex-col items-center gap-2 ${spriteId === sprite.id ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(168,85,247,0.3)] scale-105' : 'border-border/40 bg-background/50 hover:border-primary/50'}`}
                 >
-                  <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center border border-zinc-800 shadow-inner">
-                    <Icon className="w-8 h-8 text-emerald-400" />
+                  <div className="w-14 h-14 bg-muted/60 rounded-xl flex items-center justify-center border border-border/50 shadow-inner">
+                    <Icon className="w-7 h-7 text-primary" />
                   </div>
-                  <p className="text-xs text-center font-bold text-emerald-200">{sprite.label}</p>
+                  <p className="text-xs text-center font-bold text-foreground">{sprite.label}</p>
                 </div>
               );
             })}
+
+            {/* Custom Uploaded Pixel Art Game Assets */}
+            {customAssets.map(asset => (
+              <div 
+                key={asset.id}
+                onClick={() => setSpriteId(asset.imageUrl)}
+                className={`p-4 rounded-xl cursor-pointer border-2 transition-all shrink-0 w-32 flex flex-col items-center gap-2 ${spriteId === asset.imageUrl ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(168,85,247,0.3)] scale-105' : 'border-border/40 bg-background/50 hover:border-primary/50'}`}
+              >
+                <div className="w-14 h-14 bg-muted/60 rounded-xl flex items-center justify-center border border-border/50 shadow-inner overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={asset.imageUrl} alt={asset.name} className="w-10 h-10 object-contain pixelated" />
+                </div>
+                <p className="text-xs text-center font-bold text-foreground truncate w-full">{asset.name}</p>
+              </div>
+            ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-emerald-400 mb-2">SELECT STARTING CLASS</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">SELECT STARTING CLASS</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CLASSES.map(c => {
               const Icon = c.icon;
@@ -169,16 +209,16 @@ export function CharacterCreator({ onComplete }: { onComplete: () => void }) {
                 <div 
                   key={c.id}
                   onClick={() => setClassId(c.id)}
-                  className={`p-4 rounded-lg cursor-pointer border-2 transition-all flex flex-col gap-2 ${classId === c.id ? 'border-emerald-400 bg-emerald-950/80 shadow-[0_0_15px_rgba(52,211,153,0.3)] transform scale-[1.02]' : 'border-zinc-800 bg-black hover:border-emerald-700'}`}
+                  className={`p-4 rounded-xl cursor-pointer border-2 transition-all flex flex-col gap-2 ${classId === c.id ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(168,85,247,0.3)] transform scale-[1.02]' : 'border-border/40 bg-background/50 hover:border-primary/50'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className="w-5 h-5 text-emerald-400" />
-                    <h3 className="font-bold text-emerald-300">{c.name}</h3>
+                    <Icon className="w-5 h-5 text-primary" />
+                    <h3 className="font-bold text-foreground">{c.name}</h3>
                   </div>
-                  <p className="text-xs text-emerald-500/80 flex-grow">{c.desc}</p>
+                  <p className="text-xs text-muted-foreground flex-grow">{c.desc}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {Object.entries(c.bonuses).map(([skill, lvl]) => (
-                      <span key={skill} className="text-[10px] font-bold bg-emerald-900/50 text-emerald-300 px-2 py-1 rounded border border-emerald-500/20">
+                      <span key={skill} className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-md border border-primary/20">
                         {skill} +{lvl as number}
                       </span>
                     ))}
@@ -192,9 +232,9 @@ export function CharacterCreator({ onComplete }: { onComplete: () => void }) {
         <Button 
           disabled={loading || name.length < 3} 
           onClick={handleCreate}
-          className="w-full h-16 mt-8 text-lg font-bold bg-emerald-600 hover:bg-emerald-500 text-black shadow-[0_0_20px_rgba(5,150,105,0.4)] transition-all disabled:opacity-50 uppercase tracking-widest"
+          className="w-full h-14 mt-8 text-base font-bold bg-gradient-to-r from-purple-600 via-emerald-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white rounded-xl shadow-lg transition-all disabled:opacity-50 uppercase tracking-wider"
         >
-          {loading ? "INITIALIZING SEQUENCE..." : "INITIALIZE CHARACTER"}
+          {loading ? "INITIALIZING OPERATIVE..." : "ENTER THE LOBBY"}
         </Button>
       </div>
     </div>

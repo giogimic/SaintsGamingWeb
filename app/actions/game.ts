@@ -96,6 +96,29 @@ export async function getUserCharacters() {
   }
 }
 
+export async function deleteGameCharacter(characterId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    await prisma.gameCharacter.delete({
+      where: {
+        id: characterId,
+        userId: session.user.id
+      }
+    });
+
+    revalidatePath('/profile');
+    revalidatePath('/profile/terminal');
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete character:', error);
+    return { success: false, error: 'Failed to delete character' };
+  }
+}
+
 export async function unlockGameAchievement(badgeId: string) {
   try {
     const session = await auth();
