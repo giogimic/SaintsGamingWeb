@@ -122,7 +122,8 @@ This project is open-source and available under the **MIT License**.
 
 ## 📜 Changelog
 
-### v1.6.6
+### v1.6.7
+- **Database Seeding & WebGL Tile Registry Fallbacks**: Added repo-relative `tuxemon-db` YAML database source, wired automatic DB seeding of all 411 Tuxemon species/techniques into `entrypoint.sh` upon production deployment, and built default tile palette fallbacks into `MapEditorWebGL.tsx`.
 - **In-Site Collaborative Game Editor & Quest Interface Alignment**: Added NPC Dialogue Script Editor and Warp Portal Linker tabs to `MapEditorPanel.tsx`, exported `QUEST_DB` alias in `components/cyber-terminal/data/quests.ts` with complete type definitions (`GameQuest`), resolving all TypeScript build constraints.
 - **Authentic Tuxemon Starter Story Flow**: Configured default player spawn point to `PLAYER_HOUSE_BEDROOM` (`{x: 6, y: 2}`), wiring initial stairs warp to `PLAYER_HOUSE_DOWNSTAIRS` (Mom dialogue), front door exit to `SPYDER_PAPER_TOWN` (Tamer Guide), and Lab warp to `PROFESSOR_LAB` (Prof. Oakwood starter beast selection).
 - **Tuxemon Campaign Maps Integration & WebGL Engine Port**: Imported 38 primary campaign maps (`player_house_bedroom`, `player_house_downstairs`, `spyder_paper_town`, `professor_lab`, `spyder_route1`, etc.) into `components/cyber-terminal/data/campaign-maps.ts`, linking map portals, NPC spawn triggers, and wild encounter pools.

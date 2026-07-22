@@ -14,11 +14,14 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Path to Tuxemon source
+// Path to Tuxemon database YAML files
+const LOCAL_DB_DIR = path.join(process.cwd(), "tuxemon-db");
 const TUXEMON_ROOT = path.resolve(
   process.env.TUXEMON_PATH || "C:/Users/Matth/OneDrive/Desktop/Tuxemon-0.5-rc1"
 );
-const DB_DIR = path.join(TUXEMON_ROOT, "mods", "tuxemon", "db");
+const DB_DIR = fs.existsSync(LOCAL_DB_DIR) 
+  ? LOCAL_DB_DIR 
+  : path.join(TUXEMON_ROOT, "mods", "tuxemon", "db");
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
