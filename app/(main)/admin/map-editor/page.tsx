@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { saveWorldMap } from '@/app/actions/game-admin';
-import { fetchAllGameQuests } from '@/app/actions/game-dev';
+import { fetchAllGameQuests, fetchAllGameAssets } from '@/app/actions/game-dev';
 import { GAME_MAPS } from '@/components/cyber-terminal/data/maps';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from '@/components/cyber-terminal/constants';
 import { UserPlus, Layers, Save, Trash2 } from 'lucide-react';
@@ -51,18 +51,19 @@ export default function MapEditorPage() {
   const [npcSpriteId, setNpcSpriteId] = useState('npc-1');
   const [selectedQuestId, setSelectedQuestId] = useState<string>('NONE');
   const [availableQuests, setAvailableQuests] = useState<any[]>([]);
+  const [availableAssets, setAvailableAssets] = useState<any[]>([]);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    async function loadQuests() {
-      const res = await fetchAllGameQuests();
-      if (res.success) {
-        setAvailableQuests(res.data);
-      }
+    async function loadDevData() {
+      const qRes = await fetchAllGameQuests();
+      if (qRes.success) setAvailableQuests(qRes.data);
+      const aRes = await fetchAllGameAssets();
+      if (aRes.success) setAvailableAssets(aRes.data);
     }
-    loadQuests();
+    loadDevData();
   }, []);
 
   // Initialize empty grid & map NPCs
@@ -268,8 +269,19 @@ export default function MapEditorPage() {
                   <Input value={npcName} onChange={e => setNpcName(e.target.value)} placeholder="e.g. Village Elder" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground">Sprite ID</label>
-                  <Input value={npcSpriteId} onChange={e => setNpcSpriteId(e.target.value)} placeholder="e.g. npc-1" />
+                  <label className="text-[10px] text-muted-foreground">Sprite / Asset ID</label>
+                  <Input value={npcSpriteId} onChange={e => setNpcSpriteId(e.target.value)} placeholder="e.g. npc-1 or custom asset name" />
+                  {availableAssets.length > 0 && (
+                    <select 
+                      onChange={e => e.target.value !== 'NONE' && setNpcSpriteId(e.target.value)}
+                      className="w-full mt-1.5 h-8 rounded border border-input bg-background px-2 text-[11px]"
+                    >
+                      <option value="NONE">-- Select Custom Asset Sprite --</option>
+                      {availableAssets.map(a => (
+                        <option key={a.id} value={a.filePath}>{a.name} ({a.category})</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="text-[10px] text-muted-foreground">Link Quest</label>

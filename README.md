@@ -122,6 +122,9 @@ This project is open-source and available under the **MIT License**.
 
 ## 📜 Changelog
 
+### v1.4.6
+- **Custom Asset Picker in Map Editor**: Integrated `GameAsset` library into World Map Editor NPC Placement mode to allow admins to select uploaded custom pixel art sprites.
+
 ### v1.4.5
 - **Dynamic Game Quest & NPC Integration**: Connected custom `GameQuest` DB records and Map Editor placed NPCs directly into the cyber terminal engine (`components/cyber-terminal/index.tsx`, `game-canvas.tsx`).
 
