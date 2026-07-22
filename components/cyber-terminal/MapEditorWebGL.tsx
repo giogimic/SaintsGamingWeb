@@ -171,7 +171,7 @@ export default function MapEditorWebGL({ mapId = 'route_1', onSave }: MapEditorP
     return () => {
       app.destroy();
     };
-  }, [tileRegistry, selectedTile, brushSize, isDrawing]);
+  }, [tileRegistry, selectedTile, brushSize, isDrawing, mapGrid]);
 
   const handleSave = () => {
     onSave?.({

@@ -19,7 +19,6 @@ export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBatt
   const appRef = useRef<Application | null>(null);
   const [battleLog, setBattleLog] = useState<string[]>(['Battle started!']);
   const [currentPhase, setCurrentPhase] = useState<'player_turn' | 'enemy_turn' | 'animating' | 'result'>('player_turn');
-  const [selectedMove, setSelectedMove] = useState<number>(0);
   const [showMoves, setShowMoves] = useState(false);
   const [playerHp, setPlayerHp] = useState(playerMonster.currentHp);
   const [enemyHp, setEnemyHp] = useState(enemyMonster.currentHp);
@@ -138,22 +137,7 @@ export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBatt
 
     const playerPercent = playerHp / playerMonster.maxHp;
     const enemyPercent = enemyHp / enemyMonster.maxHp;
-
-    // Update HP bar colors based on percentage
-    const getPlayerColor = () => {
-      if (playerPercent > 0.5) return 0x00ff00;
-      if (playerPercent > 0.2) return 0xffff00;
-      return 0xff0000;
-    };
-
-    const getEnemyColor = () => {
-      if (enemyPercent > 0.5) return 0x00ff00;
-      if (enemyPercent > 0.2) return 0xffff00;
-      return 0xff0000;
-    };
-
-    // This would update the HP bar fills in a real implementation
-    // For now, we're just tracking the state
+    // Log state updates if needed
   }, [playerHp, enemyHp, playerMonster, enemyMonster]);
 
   const handleAttack = async (moveIndex: number) => {

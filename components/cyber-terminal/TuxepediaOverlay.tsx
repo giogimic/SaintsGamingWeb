@@ -257,7 +257,7 @@ export default function SaintsDexOverlay() {
                     const { createSocialPost } = await import('@/app/actions/social');
                     await createSocialPost(`Just registered ${selectedSpecies.species} in Saints Tamer! 🐾 #SaintsTamer #SaintsGaming`);
                     useGameStore.getState().showToast(`Shared ${selectedSpecies.species} to Community Feed!`);
-                  } catch (_err) {
+                  } catch {
                     useGameStore.getState().showToast(`Shared ${selectedSpecies.species} to local feed!`);
                   }
                 }}

@@ -221,7 +221,7 @@ export default function GameCanvas() {
           const activeDaemon = activeId ? getCreatureById(activeId) : null;
           
           if (!activeDaemon || (activeDaemon.type_primary !== gateInfo.requiredElement && activeDaemon.type_secondary !== gateInfo.requiredElement)) {
-            useGameStore.getState().showToast(gateInfo.errorMessage);
+            useGameStore.getState().showToast(gateInfo.errorMessage || 'Path blocked.');
             return false;
           }
         }
