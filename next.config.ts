@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 
 const nextConfig: NextConfig = {
+  // Exclude scripts directory from build
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'].filter(ext => ext),
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.tsx?$/,
+      exclude: /scripts/,
+    });
+    return config;
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'i.imgur.com' },

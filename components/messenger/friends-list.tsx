@@ -166,6 +166,22 @@ export function FriendsList() {
                       </div>
                       <span className="text-sm font-medium">{f.user.username}</span>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-[10px] font-mono text-cyan-400 border-cyan-700/50 hover:bg-cyan-950"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          import('@/lib/game/party-manager').then(({ partyManager }) => {
+                            partyManager.inviteToParty(f.user.id);
+                            alert(`Party invite sent to ${f.user.username}!`);
+                          });
+                        }}
+                      >
+                        + PARTY
+                      </Button>
+                    </div>
                   </div>
                 ))
               ) : (

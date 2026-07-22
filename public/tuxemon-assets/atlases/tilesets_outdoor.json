@@ -1,0 +1,28 @@
+{
+  "filename": "tilesets_outdoor.png",
+  "width": 2048,
+  "height": 4096,
+  "frames": [
+    {
+      "filename": "core_outdoor.png",
+      "x": 0,
+      "y": 0,
+      "width": 592,
+      "height": 1200
+    },
+    {
+      "filename": "core_outdoor_nature.png",
+      "x": 592,
+      "y": 0,
+      "width": 1024,
+      "height": 2048
+    },
+    {
+      "filename": "core_outdoor_water.png",
+      "x": 0,
+      "y": 2048,
+      "width": 1024,
+      "height": 2048
+    }
+  ]
+}

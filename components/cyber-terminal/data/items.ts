@@ -34,9 +34,42 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'bronze_helm': { id: 'bronze_helm', name: 'Bronze Helm', description: 'Basic head protection.', type: 'HEAD', value: 80, stats: { def: 2 } },
   'bronze_chest': { id: 'bronze_chest', name: 'Bronze Platebody', description: 'Basic chest protection.', type: 'CHEST', value: 200, stats: { def: 5 } },
   'bronze_legs': { id: 'bronze_legs', name: 'Bronze Platelegs', description: 'Basic leg protection.', type: 'LEGS', value: 120, stats: { def: 3 } },
+
+  // Tuxemon Capturing & Battle Items
+  'tuxeball': { id: 'tuxeball', name: 'Tuxeball', description: 'Standard device used to capture wild Tuxemon.', type: 'CONSUMABLE', value: 200 },
+  'grand_ball': { id: 'grand_ball', name: 'Grand Ball', description: 'An enhanced Tuxeball with 1.5x catch rate.', type: 'CONSUMABLE', value: 600 },
+  'mega_ball': { id: 'mega_ball', name: 'Mega Ball', description: 'A high-grade Tuxeball with 2.0x catch rate.', type: 'CONSUMABLE', value: 1200 },
+
+  // Higher Tier Gear
+  'mithril_sword': { id: 'mithril_sword', name: 'Mithril Sword', description: 'A lightweight, sharp high-tier sword.', type: 'WEAPON', value: 1200, stats: { atk: 28 } },
+  'mithril_chest': { id: 'mithril_chest', name: 'Mithril Platebody', description: 'Superior mithril chest protection.', type: 'CHEST', value: 1800, stats: { def: 18 } },
 };
 
 export const CRAFTING_RECIPES = [
+  {
+    id: 'tuxeball',
+    resultItemId: 'tuxeball',
+    skill: 'Crafting',
+    levelReq: 1,
+    xpReward: 30,
+    ingredients: { 'copper_ore': 1, 'wood_logs': 1 }
+  },
+  {
+    id: 'grand_ball',
+    resultItemId: 'grand_ball',
+    skill: 'Crafting',
+    levelReq: 10,
+    xpReward: 75,
+    ingredients: { 'copper_ore': 3, 'wood_logs': 2 }
+  },
+  {
+    id: 'cooked_fish',
+    resultItemId: 'cooked_fish',
+    skill: 'Cooking',
+    levelReq: 1,
+    xpReward: 20,
+    ingredients: { 'raw_fish': 1, 'wood_logs': 1 }
+  },
   {
     id: 'bronze_sword',
     resultItemId: 'bronze_sword',
@@ -60,6 +93,14 @@ export const CRAFTING_RECIPES = [
     levelReq: 1,
     xpReward: 15,
     ingredients: { 'wood_logs': 2 }
+  },
+  {
+    id: 'mithril_sword',
+    resultItemId: 'mithril_sword',
+    skill: 'Smithing',
+    levelReq: 25,
+    xpReward: 120,
+    ingredients: { 'copper_ore': 8, 'wood_logs': 3 }
   }
 ];
 

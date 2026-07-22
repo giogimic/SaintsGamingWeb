@@ -1,0 +1,21 @@
+{
+  "filename": "tilesets_buildings.png",
+  "width": 2048,
+  "height": 800,
+  "frames": [
+    {
+      "filename": "core_buildings.png",
+      "x": 0,
+      "y": 0,
+      "width": 760,
+      "height": 800
+    },
+    {
+      "filename": "core_city_and_country.png",
+      "x": 760,
+      "y": 0,
+      "width": 640,
+      "height": 576
+    }
+  ]
+}

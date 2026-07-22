@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import EasyStar from 'easystarjs';
 import { io, Socket } from 'socket.io-client';
 import { useGameStore } from './store';
@@ -10,11 +10,97 @@ import { QUEST_DB } from './data/quests';
 import { getCreatureById } from './data/saints-dex';
 import { setEncryptedAmbient } from './audio';
 
+// TileRegistry cache
+interface TileInfo {
+  tileId: number;
+  tilesetName: string;
+  tilesetPath: string;
+  srcX: number;
+  srcY: number;
+  width: number;
+  height: number;
+  isAnimated: boolean;
+  animationFrames?: Array<{ tileId: number; duration: number }>;
+}
+
+const tileRegistryCache: Map<number, TileInfo> = new Map();
+const tilesetImages: Map<string, HTMLImageElement> = new Map();
+
+// Load tile registry from API
+async function loadTileRegistry() {
+  if (tileRegistryCache.size > 0) return;
+  
+  try {
+    const response = await fetch('/api/tile-registry');
+    const tiles = await response.json();
+    
+    for (const tile of tiles) {
+      tileRegistryCache.set(tile.tileId, {
+        tileId: tile.tileId,
+        tilesetName: tile.tilesetName,
+        tilesetPath: tile.tilesetPath,
+        srcX: tile.srcX,
+        srcY: tile.srcY,
+        width: tile.width,
+        height: tile.height,
+        isAnimated: tile.isAnimated,
+        animationFrames: tile.animationFrames ? JSON.parse(tile.animationFrames) : undefined,
+      });
+    }
+    
+    console.log(`Loaded ${tileRegistryCache.size} tiles from registry`);
+  } catch (error) {
+    console.error('Failed to load tile registry:', error);
+  }
+}
+
+// Load tileset image
+function loadTilesetImage(path: string): HTMLImageElement {
+  if (tilesetImages.has(path)) {
+    return tilesetImages.get(path)!;
+  }
+  
+  const img = new Image();
+  img.src = path;
+  tilesetImages.set(path, img);
+  return img;
+}
+
+// Get current animation frame for animated tiles
+function getAnimationFrame(tile: TileInfo): { srcX: number; srcY: number } {
+  if (!tile.isAnimated || !tile.animationFrames || tile.animationFrames.length === 0) {
+    return { srcX: tile.srcX, srcY: tile.srcY };
+  }
+  
+  const now = Date.now();
+  const totalDuration = tile.animationFrames.reduce((sum, f) => sum + f.duration, 0);
+  const elapsed = now % totalDuration;
+  
+  let accumulated = 0;
+  for (const frame of tile.animationFrames) {
+    accumulated += frame.duration;
+    if (elapsed < accumulated) {
+      const frameTile = tileRegistryCache.get(frame.tileId);
+      if (frameTile) {
+        return { srcX: frameTile.srcX, srcY: frameTile.srcY };
+      }
+    }
+  }
+  
+  return { srcX: tile.srcX, srcY: tile.srcY };
+}
+
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<Socket | null>(null);
+  const [tileRegistryLoaded, setTileRegistryLoaded] = useState(false);
 
   useEffect(() => {
+    // Load tile registry on mount
+    loadTileRegistry().then(() => {
+      setTileRegistryLoaded(true);
+    });
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -236,7 +322,8 @@ export default function GameCanvas() {
     const renderSpriteImageOrPixel = (
       x: number,
       y: number,
-      spriteKey?: string
+      spriteKey?: string,
+      customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string }
     ) => {
       const key = spriteKey || 'hero_male';
       const isImage = key.startsWith('/') || key.startsWith('http');
@@ -266,32 +353,35 @@ export default function GameCanvas() {
       ctx.ellipse(x + TILE_SIZE/2, y + TILE_SIZE - 3, 12, 4, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Palette per sprite ID
-      let mainColor = '#10b981'; // Emerald Agent
-      let subColor = '#065f46';
-      const skinTone = '#fcd34d';
-      let hairColor = '#3b82f6';
+      // Palette per sprite ID (defaults overridden by customization)
+      let mainColor = customization?.shirtColor || '#10b981'; // Emerald Agent
+      let subColor = customization ? (customization.shirtColor === '#10b981' ? '#065f46' : customization.shirtColor) : '#065f46';
+      const skinTone = customization?.skinTone || '#fcd34d';
+      let hairColor = customization?.hairColor || '#3b82f6';
+      const pantsColor = customization?.pantsColor || '#18181b';
 
-      if (key === 'mage_1' || key === 'INVOKER' || key === 'CYBER') {
-        mainColor = '#a855f7'; // Purple Cybermancer
-        subColor = '#581c87';
-        hairColor = '#ec4899';
-      } else if (key === 'villager_1' || key === 'ARTISAN') {
-        mainColor = '#f59e0b'; // Gold Wanderer
-        subColor = '#78350f';
-        hairColor = '#78350f';
-      } else if (key === 'assassin' || key === 'RANGER') {
-        mainColor = '#06b6d4'; // Cyan Phantom
-        subColor = '#164e63';
-        hairColor = '#0f172a';
-      } else if (key === 'BRAWLER' || key === 'SURVIVOR') {
-        mainColor = '#ef4444'; // Red Brawler
-        subColor = '#7f1d1d';
-        hairColor = '#451a03';
+      if (!customization) {
+        if (key === 'mage_1' || key === 'INVOKER' || key === 'CYBER') {
+          mainColor = '#a855f7'; // Purple Cybermancer
+          subColor = '#581c87';
+          hairColor = '#ec4899';
+        } else if (key === 'villager_1' || key === 'ARTISAN') {
+          mainColor = '#f59e0b'; // Gold Wanderer
+          subColor = '#78350f';
+          hairColor = '#78350f';
+        } else if (key === 'assassin' || key === 'RANGER') {
+          mainColor = '#06b6d4'; // Cyan Phantom
+          subColor = '#164e63';
+          hairColor = '#0f172a';
+        } else if (key === 'BRAWLER' || key === 'SURVIVOR') {
+          mainColor = '#ef4444'; // Red Brawler
+          subColor = '#7f1d1d';
+          hairColor = '#451a03';
+        }
       }
 
       // Boots & Legs
-      ctx.fillStyle = '#18181b';
+      ctx.fillStyle = pantsColor;
       ctx.fillRect(x + 10, y + 21, 4, 7);
       ctx.fillRect(x + 18, y + 21, 4, 7);
 
@@ -344,7 +434,7 @@ export default function GameCanvas() {
 
     const drawPlayer = () => {
       const playerState = useGameStore.getState().player;
-      renderSpriteImageOrPixel(currentPixelPos.x, currentPixelPos.y, playerState.spriteId);
+      renderSpriteImageOrPixel(currentPixelPos.x, currentPixelPos.y, playerState.spriteId, playerState.customization);
     };
 
     const drawEntities = () => {

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG';
+export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED';
 
 export type Point = { x: number; y: number };
 
@@ -19,6 +19,40 @@ export interface MapEntity {
 export interface SkillData {
   level: number;
   xp: number;
+}
+
+export interface TuxemonMove {
+  techniqueSlug: string;
+  pp: number;
+  maxPp: number;
+}
+
+export interface TuxemonPartyMember {
+  id: string;
+  speciesSlug: string;
+  nickname: string;
+  level: number;
+  xp: number;
+  currentHp: number;
+  maxHp: number;
+  stats: {
+    meleeAtk: number;
+    meleeDef: number;
+    rangedAtk: number;
+    rangedDef: number;
+    speed: number;
+  };
+  moves: TuxemonMove[];
+  status: string | null;
+}
+
+export interface PartyMember {
+  userId: string;
+  socketId: string;
+  name: string;
+  spriteId: string;
+  position: { x: number; y: number };
+  tuxemonParty: TuxemonPartyMember[];
 }
 
 export interface PlayerState {
@@ -40,6 +74,12 @@ export interface PlayerState {
     legs: string | null;
     weapon: string | null;
   };
+  customization?: {
+    skinTone: string;
+    hairColor: string;
+    shirtColor: string;
+    pantsColor: string;
+  };
   combatStyle: 'MELEE' | 'RANGED' | 'MAGIC';
   activeDaemonId: string | null;
   saintRank: string;
@@ -52,6 +92,13 @@ export interface PlayerState {
     quarry: string | null;
   };
   lastBaseCollection: number;
+  // Tuxemon system
+  tuxemonParty: TuxemonPartyMember[];
+  tuxemonInventory: Record<string, number>;
+  tuxemonSpeciesCaught: string[];
+  // Party system (multiplayer)
+  party: PartyMember[];
+  isPartyLeader: boolean;
 }
 
 export interface ToastMessage {
@@ -62,7 +109,7 @@ export interface ToastMessage {
 export interface GameState {
   gameMode: GameMode;
   player: PlayerState;
-  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string }>;
+  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
   currentMapId: string;
   mapEntities: MapEntity[];
@@ -72,8 +119,8 @@ export interface GameState {
   setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
-  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string; chatMessage?: string }) => void;
+  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;
   localChat: string | null;
@@ -98,6 +145,22 @@ export interface GameState {
   setCombatStyle: (style: 'MELEE' | 'RANGED' | 'MAGIC') => void;
   assignBeast: (facility: 'furnace' | 'farm' | 'fishing_hut' | 'lumber_mill' | 'quarry', beastId: string | null) => void;
   collectBaseResources: () => void;
+  // Tuxemon actions
+  addTuxemonToParty: (member: TuxemonPartyMember) => void;
+  removeTuxemonFromParty: (tuxemonId: string) => void;
+  healTuxemon: (tuxemonId: string, amount: number) => void;
+  addTuxemonItem: (itemSlug: string, amount: number) => void;
+  removeTuxemonItem: (itemSlug: string, amount: number) => void;
+  recordTuxemonCapture: (speciesSlug: string) => void;
+  // Party actions
+  inviteToParty: (userId: string) => void;
+  acceptPartyInvite: (inviteId: string) => void;
+  leaveParty: () => void;
+  updatePartyMemberPosition: (socketId: string, position: { x: number; y: number }) => void;
+  setParty: (members: PartyMember[]) => void;
+  addPartyMember: (member: PartyMember) => void;
+  removePartyMember: (userId: string) => void;
+  clearParty: () => void;
 }
 
 export const INITIAL_SKILLS: Record<string, SkillData> = {
@@ -132,12 +195,20 @@ export const useGameStore = create<GameState>()(
         inventory: {},
         skills: INITIAL_SKILLS,
         equipment: { head: null, chest: null, legs: null, weapon: null },
+        customization: { skinTone: '#fcd34d', hairColor: '#3b82f6', shirtColor: '#10b981', pantsColor: '#18181b' },
         combatStyle: 'MELEE',
         activeDaemonId: null,
         saintRank: 'Rookie',
         caughtDaemons: [],
         assignedBeasts: { furnace: null, farm: null, fishing_hut: null, lumber_mill: null, quarry: null },
-        lastBaseCollection: Date.now()
+        lastBaseCollection: Date.now(),
+        // Tuxemon system
+        tuxemonParty: [],
+        tuxemonInventory: {},
+        tuxemonSpeciesCaught: [],
+        // Party system
+        party: [],
+        isPartyLeader: false
       },
       otherPlayers: {},
       activeBattle: null,
@@ -176,12 +247,13 @@ export const useGameStore = create<GameState>()(
       setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
       updateOtherPlayer: (socketId, data) => set((state) => {
         if (!state.otherPlayers[socketId]) {
-          state.otherPlayers[socketId] = { x: data.x, y: data.y, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male', chatMessage: data.chatMessage };
+          state.otherPlayers[socketId] = { x: data.x, y: data.y, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male', chatMessage: data.chatMessage, customization: data.customization };
         } else {
           state.otherPlayers[socketId].x = data.x;
           state.otherPlayers[socketId].y = data.y;
           if (data.name) state.otherPlayers[socketId].name = data.name;
           if (data.spriteId) state.otherPlayers[socketId].spriteId = data.spriteId;
+          if (data.customization) state.otherPlayers[socketId].customization = data.customization;
           if (data.chatMessage) {
             state.otherPlayers[socketId].chatMessage = data.chatMessage;
             setTimeout(() => set((s) => {
@@ -237,6 +309,7 @@ export const useGameStore = create<GameState>()(
           if (data.inventory) state.player.inventory = data.inventory;
           if (data.skills) state.player.skills = data.skills;
           if (data.equipment) state.player.equipment = data.equipment;
+          if (data.customization) state.player.customization = data.customization;
           if (data.combatStyle) state.player.combatStyle = data.combatStyle;
           if (data.activeDaemonId !== undefined) state.player.activeDaemonId = data.activeDaemonId;
           if (data.saintRank) state.player.saintRank = data.saintRank;
@@ -359,7 +432,109 @@ export const useGameStore = create<GameState>()(
 
         // Update timestamp keeping the remainder
         state.player.lastBaseCollection = now - (diffMs % 10000);
+      }),
+
+      // Tuxemon actions
+      addTuxemonToParty: (member) => set((state) => {
+        if (state.player.tuxemonParty.length < 6) {
+          state.player.tuxemonParty.push(member);
+          state.toast = { id: Date.now(), message: `${member.nickname} joined your party!` };
+        } else {
+          state.toast = { id: Date.now(), message: 'Party is full!' };
+        }
+      }),
+
+      removeTuxemonFromParty: (tuxemonId) => set((state) => {
+        state.player.tuxemonParty = state.player.tuxemonParty.filter(t => t.id !== tuxemonId);
+      }),
+
+      healTuxemon: (tuxemonId, amount) => set((state) => {
+        const tuxemon = state.player.tuxemonParty.find(t => t.id === tuxemonId);
+        if (tuxemon) {
+          tuxemon.currentHp = Math.min(tuxemon.maxHp, tuxemon.currentHp + amount);
+        }
+      }),
+
+      addTuxemonItem: (itemSlug, amount) => set((state) => {
+        const current = state.player.tuxemonInventory[itemSlug] || 0;
+        state.player.tuxemonInventory[itemSlug] = current + amount;
+      }),
+
+      removeTuxemonItem: (itemSlug, amount) => set((state) => {
+        const current = state.player.tuxemonInventory[itemSlug] || 0;
+        const newAmount = Math.max(0, current - amount);
+        if (newAmount === 0) {
+          delete state.player.tuxemonInventory[itemSlug];
+        } else {
+          state.player.tuxemonInventory[itemSlug] = newAmount;
+        }
+      }),
+
+      recordTuxemonCapture: (speciesSlug) => set((state) => {
+        if (!state.player.tuxemonSpeciesCaught.includes(speciesSlug)) {
+          state.player.tuxemonSpeciesCaught.push(speciesSlug);
+          state.toast = { id: Date.now(), message: `New species discovered: ${speciesSlug}!` };
+        }
+      }),
+
+      // Party actions
+      inviteToParty: (userId) => set((state) => {
+        // This will be implemented with Socket.IO in Phase 7
+        console.log('Inviting user to party:', userId);
+      }),
+
+      acceptPartyInvite: (inviteId) => set((state) => {
+        // This will be implemented with Socket.IO in Phase 7
+        console.log('Accepting party invite:', inviteId);
+      }),
+
+      leaveParty: () => set((state) => {
+        state.player.party = [];
+        state.player.isPartyLeader = false;
+        state.toast = { id: Date.now(), message: 'You left the party' };
+      }),
+
+      updatePartyMemberPosition: (socketId, position) => set((state) => {
+        const member = state.player.party.find(m => m.socketId === socketId);
+        if (member) {
+          member.position = position;
+        }
+      }),
+
+      setParty: (members) => set((state) => {
+        state.player.party = members;
+      }),
+
+      addPartyMember: (member) => set((state) => {
+        if (state.player.party.length < 4) {
+          state.player.party.push(member);
+          state.toast = { id: Date.now(), message: `${member.name} joined the party!` };
+        } else {
+          state.toast = { id: Date.now(), message: 'Party is full!' };
+        }
+      }),
+
+      removePartyMember: (userId) => set((state) => {
+        state.player.party = state.player.party.filter(m => m.userId !== userId);
+      }),
+
+      clearParty: () => set((state) => {
+        state.player.party = [];
+        state.player.isPartyLeader = false;
       })
     }))
   )
 );
+
+// XP calculation with party bonus
+export function calculateBattleXP(
+  enemyLevel: number,
+  partySize: number,
+  participated: boolean
+): number {
+  const baseXP = enemyLevel * 10;
+  const partyBonus = 1 + (partySize - 1) * 0.2; // +20% per member
+  const totalXP = baseXP * partyBonus;
+  
+  return participated ? Math.floor(totalXP / partySize) : 0;
+}

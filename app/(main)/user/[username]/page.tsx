@@ -147,6 +147,24 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
               <p className="text-sm">No characters created yet.</p>
             </div>
           )}
+
+          {/* Pinned Beast Showcase */}
+          {profile.pinnedBeastId && (
+            <div className="mt-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-black/80 border border-cyan-500/40 flex items-center justify-center font-mono font-bold text-cyan-400">
+                  🐾
+                </div>
+                <div>
+                  <h4 className="font-bold text-cyan-300 text-sm">PINNED SAINTS BEAST</h4>
+                  <p className="text-xs text-muted-foreground font-mono">{profile.pinnedBeastId}</p>
+                </div>
+              </div>
+              <span className="text-[10px] px-2 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700 rounded font-mono font-bold uppercase">
+                ACTIVE COMPANION
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Steam Wishlist (if any) */}

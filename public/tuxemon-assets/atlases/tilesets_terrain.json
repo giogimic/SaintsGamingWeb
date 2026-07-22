@@ -1,0 +1,28 @@
+{
+  "filename": "tilesets_terrain.png",
+  "width": 2048,
+  "height": 384,
+  "frames": [
+    {
+      "filename": "KelvinShadewing_Terrain.png",
+      "x": 0,
+      "y": 0,
+      "width": 304,
+      "height": 240
+    },
+    {
+      "filename": "Terrain_by_George.png",
+      "x": 304,
+      "y": 0,
+      "width": 240,
+      "height": 384
+    },
+    {
+      "filename": "Terrain_by_KelvinShadewing.png",
+      "x": 544,
+      "y": 0,
+      "width": 304,
+      "height": 240
+    }
+  ]
+}

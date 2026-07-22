@@ -133,6 +133,10 @@ model User {
   profileImages       ProfileImage[]
   pinnedBeastId       String? // ID of the Tuxemon to display on profile
 
+  // Tuxemon Creature System
+  playerTuxemon       PlayerTuxemon[]
+  tuxemonInventory    TuxemonInventoryItem[]
+
   // Social
   socialPosts            SocialPost[]
   socialReactions        SocialReaction[]
@@ -1022,6 +1026,202 @@ model Report {
   @@index([threadId])
   @@index([replyId])
   @@index([status])
+}
+
+// ─── Tuxemon Creature System ──────────────────────────────────────
+
+model TuxemonSpecies {
+  id                     String   @id @default(cuid())
+  slug                   String   @unique
+  txmnId                 Int
+  species                String
+  height                 Int
+  weight                 Float
+  catchRate              Float
+  lowerCatchResistance   Float
+  upperCatchResistance   Float
+  stage                  String
+  shape                  String
+  types                  String   // JSON array of element slugs
+  tags                   String   // JSON array of tags
+  terrains               String   // JSON array
+  genderWeights          String   // JSON object
+  sounds                 String   // JSON object
+  spriteFront            String?  // path to front battle sprite
+  spriteBack             String?  // path to back battle sprite
+  spriteOverworld        String?  // path to overworld sprite
+  moveset                TuxemonMove[]
+  evolutions             TuxemonEvolution[]
+  stats                  TuxemonBaseStats?
+  @@index([txmnId])
+}
+
+model TuxemonBaseStats {
+  id         String  @id @default(cuid())
+  speciesId  String  @unique
+  species    TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  hp         Int
+  meleeAtk   Int
+  meleeDef   Int
+  rangedAtk  Int
+  rangedDef  Int
+  speed      Int
+}
+
+model TuxemonMove {
+  id            String  @id @default(cuid())
+  speciesId     String
+  species       TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  techniqueSlug String
+  levelLearned  Int
+  learningMethod String @default("level_up")
+  @@unique([speciesId, techniqueSlug])
+  @@index([speciesId])
+}
+
+model TuxemonEvolution {
+  id           String  @id @default(cuid())
+  speciesId    String
+  species      TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  targetSlug   String
+  atLevel      Int?
+  itemRequired String?
+  @@index([speciesId])
+}
+
+model TuxemonTechnique {
+  slug        String   @id
+  name        String
+  type        String
+  power       Int?
+  accuracy    Float?
+  ppCost      Int?
+  effects     String   // JSON array of effect slugs
+  animation   String?
+  description String?
+  isCapture   Boolean  @default(false)
+  target      String?  // "enemy", "self", "ally", etc.
+}
+
+model TuxemonElement {
+  slug  String  @id
+  name  String
+  icon  String?
+}
+
+model TuxemonTypeEffectiveness {
+  id             String  @id @default(cuid())
+  attackElement  String
+  defendElement  String
+  multiplier     Float
+  @@unique([attackElement, defendElement])
+}
+
+model TuxemonItem {
+  slug        String   @id
+  name        String
+  category    String
+  description String?
+  effects     String   // JSON
+  price       Int?
+  sprite      String?
+  usableInBattle Boolean @default(false)
+  usableInField  Boolean @default(false)
+}
+
+model TuxemonEncounter {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  mapName   String?
+  data      String   // JSON: encounter table
+  @@index([mapName])
+}
+
+model TuxemonStatus {
+  slug        String   @id
+  name        String
+  description String?
+  duration    String?  // "permanent", "turns", etc.
+  effects     String?  // JSON
+}
+
+// ─── Player's Tuxemon Party & Inventory ──────────────────────────
+
+model PlayerTuxemon {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  speciesSlug String
+  nickname    String?
+  level       Int      @default(1)
+  xp          Int      @default(0)
+  currentHp   Int
+  maxHp       Int
+  stats       String   // JSON: {meleeAtk, meleeDef, rangedAtk, rangedDef, speed}
+  moves       String   // JSON array of {techniqueSlug, pp, maxPp}
+  status      String?
+  isParty     Boolean  @default(false)
+  slotIndex   Int?
+  capturedAt  DateTime @default(now())
+  @@index([userId])
+  @@index([speciesSlug])
+}
+
+model TuxemonInventoryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemSlug  String
+  quantity  Int      @default(1)
+  @@unique([userId, itemSlug])
+  @@index([userId])
+}
+
+// ─── Tuxemon World Maps ──────────────────────────────────────────
+
+model TuxemonMap {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  width         Int
+  height        Int
+  tileSize      Int      @default(16)
+  tilesetData   String   // JSON: tile layer data
+  collisionData String   // JSON: collision bitmask
+  npcData       String   // JSON: NPC placements
+  triggerData   String?  // JSON: trigger zones
+  encounterZone String?  // links to TuxemonEncounter slug
+  music         String?
+  parentMap     String?
+  environment   String?  // e.g. "forest", "cave", "beach"
+  isIndoors     Boolean  @default(false)
+  version       Int      @default(1)
+  updatedAt     DateTime @updatedAt
+  @@index([slug])
+}
+
+// ─── Tile Registry (Tuxemon Tilesets) ─────────────────────────────
+
+model TileRegistry {
+  id              String   @id @default(cuid())
+  tileId          Int      @unique
+  tilesetName     String
+  tilesetPath     String
+  srcX            Int
+  srcY            Int
+  width           Int      @default(16)
+  height          Int      @default(16)
+  name            String
+  category        String   // outdoor_grass, indoor_floor, cave, etc.
+  terrainType     String   // grass, water, sand, snow, stone, wood, lava
+  isCollidable    Boolean  @default(false)
+  isAnimated      Boolean  @default(false)
+  animationFrames String?  // JSON: [{srcX, srcY, duration}]
+  encounterRate   Float?   // 0.05 = 5% per step
+  environment     String?  // forest, cave, beach
+  sortOrder       Int      @default(0)
+  @@index([category])
+  @@index([terrainType])
 }
 
 

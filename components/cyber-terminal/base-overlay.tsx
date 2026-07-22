@@ -124,7 +124,7 @@ export default function BaseOverlay() {
   const collectBaseResources = useGameStore(state => state.collectBaseResources);
   const showToast = useGameStore(state => state.showToast);
 
-  const [assigningTo, setAssigningTo] = useState<'lumber_mill' | 'quarry' | null>(null);
+  const [assigningTo, setAssigningTo] = useState<'lumber_mill' | 'quarry' | 'furnace' | 'farm' | 'fishing_hut' | null>(null);
 
   // Auto collect when opening the base
   useEffect(() => {
@@ -138,7 +138,7 @@ export default function BaseOverlay() {
     }
   };
 
-  const renderFacility = (id: 'lumber_mill' | 'quarry', title: string, description: string, resource: string) => {
+  const renderFacility = (id: 'lumber_mill' | 'quarry' | 'furnace' | 'farm' | 'fishing_hut', title: string, description: string, resource: string) => {
     const assignedId = player.assignedBeasts[id];
     const daemon = assignedId ? getCreatureById(assignedId) : null;
 
@@ -260,7 +260,10 @@ export default function BaseOverlay() {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-10">
             {renderFacility('lumber_mill', 'Lumber Mill', 'Generates Wood Logs passively over time.', 'Wood Log')}
-            {renderFacility('quarry', 'Quarry', 'Mines Copper Ore from the earth passively.', 'Copper Ore')}
+            {renderFacility('quarry', 'Quarry', 'Mines Ore from the earth passively.', 'Ore')}
+            {renderFacility('furnace', 'Furnace', 'Smelts Ores into Metal Bars passively.', 'Metal Bar')}
+            {renderFacility('farm', 'Herb Farm', 'Grows medicinal Herbs passively.', 'Grimy Herb')}
+            {renderFacility('fishing_hut', 'Fishing Hut', 'Catches Fresh Fish passively.', 'Raw Fish')}
           </div>
         </div>
       )}
