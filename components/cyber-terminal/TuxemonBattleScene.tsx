@@ -26,16 +26,38 @@ export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBatt
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Initialize PixiJS application
-    const app = new Application({
-      view: canvasRef.current,
-      width: 800,
-      height: 600,
-      backgroundColor: 0x87ceeb, // Sky blue
-      resolution: window.devicePixelRatio || 1,
-      antialias: true,
-    });
+    let app: Application | null = null;
+    try {
+      const pixiSettings = (require('pixi.js') as any).settings;
+      if (pixiSettings && 'CHECK_MAX_IF_STATEMENTS_IN_SHADER' in pixiSettings) {
+        pixiSettings.CHECK_MAX_IF_STATEMENTS_IN_SHADER = false;
+      }
 
+      app = new Application({
+        view: canvasRef.current,
+        width: 800,
+        height: 600,
+        backgroundColor: 0x87ceeb, // Sky blue
+        resolution: window.devicePixelRatio || 1,
+        antialias: true,
+      });
+    } catch (e) {
+      console.warn('WebGL init warning in TuxemonBattleScene:', e);
+      try {
+        app = new Application({
+          view: canvasRef.current,
+          width: 800,
+          height: 600,
+          backgroundColor: 0x87ceeb,
+          forceCanvas: true,
+        });
+      } catch (err2) {
+        console.error('Fallback canvas init failed:', err2);
+        return;
+      }
+    }
+
+    if (!app) return;
     appRef.current = app;
 
     // Create battle scene layers
