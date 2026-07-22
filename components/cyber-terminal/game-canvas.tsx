@@ -269,7 +269,7 @@ export default function GameCanvas() {
       // Palette per sprite ID
       let mainColor = '#10b981'; // Emerald Agent
       let subColor = '#065f46';
-      let skinTone = '#fcd34d';
+      const skinTone = '#fcd34d';
       let hairColor = '#3b82f6';
 
       if (key === 'mage_1' || key === 'INVOKER' || key === 'CYBER') {
