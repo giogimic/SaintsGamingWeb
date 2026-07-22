@@ -184,7 +184,7 @@ export const useGameStore = create<GameState>()(
     immer((set) => ({
       gameMode: 'EXPLORING',
       player: {
-        position: { x: 15, y: 16 },
+        position: { x: 6, y: 2 },
         level: 1,
         xp: 0,
         hp: 100,
@@ -213,7 +213,7 @@ export const useGameStore = create<GameState>()(
       otherPlayers: {},
       activeBattle: null,
       pathQueue: [],
-      currentMapId: 'SAINTS_VILLAGE',
+      currentMapId: 'PLAYER_HOUSE_BEDROOM',
       mapEntities: [
         { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
         { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },

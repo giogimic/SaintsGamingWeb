@@ -16,8 +16,8 @@ export async function getDiscordInviteUrl() {
 export async function getSiteVersion() {
   try {
     const setting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "1.6.4";
+    return setting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "1.6.5";
   } catch {
-    return "1.6.4";
+    return "1.6.5";
   }
 }
