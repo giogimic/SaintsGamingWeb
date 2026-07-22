@@ -184,27 +184,50 @@ export default async function ProfilePage() {
             </div>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div className="space-y-1">
-                <CardTitle>Saints Tamer MMO</CardTitle>
-                <CardDescription>Your active characters in the SaintsGaming metaverse</CardDescription>
+                <CardTitle>The Lobby</CardTitle>
+                <CardDescription>Your active operatives in the Saints Gaming social world</CardDescription>
               </div>
               <Link href="/profile/terminal" className={buttonVariants({ variant: "default", size: "sm" })}>
-                Play Now
+                Enter The Lobby
               </Link>
             </CardHeader>
             <CardContent>
               {mmoCharacters && mmoCharacters.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {mmoCharacters.map((char) => (
-                    <div key={char.id} className="bg-background border border-border/50 rounded-xl p-4 flex items-center gap-4 shadow-sm">
-                      <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0 border border-white/5">
-                        <Image src={`/assets/npcs/${char.spriteId}.png`} alt={char.spriteId} width={32} height={32} className="pixelated" unoptimized />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg">{char.name}</h3>
-                        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{char.classId}</p>
-                      </div>
-                    </div>
-                  ))}
+                  {mmoCharacters.map((char) => {
+                    let charState = { level: 1 };
+                    try {
+                      if (char.stateData) charState = JSON.parse(char.stateData);
+                    } catch {}
+
+                    const isCustomSprite = char.spriteId && (char.spriteId.startsWith('/') || char.spriteId.startsWith('http'));
+
+                    return (
+                      <Link 
+                        key={char.id} 
+                        href={`/profile/terminal?characterId=${char.id}`}
+                        className="bg-background/80 hover:bg-card border border-border/50 hover:border-emerald-500/50 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm transition-all group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-14 h-14 bg-black/60 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/30 overflow-hidden shadow-inner">
+                            {isCustomSprite ? (
+                              <img src={char.spriteId} alt={char.name} className="w-10 h-10 object-contain pixelated" />
+                            ) : (
+                              <Gamepad2 className="w-7 h-7 text-emerald-400" />
+                            )}
+                          </div>
+                          <div className="truncate">
+                            <h3 className="font-bold text-base truncate group-hover:text-emerald-400 transition-colors">{char.name}</h3>
+                            <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{char.classId || "OPERATIVE"}</p>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-bold px-2 py-1 bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 rounded shrink-0">
+                          LVL {charState.level || 1}
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6 bg-muted/30 rounded-lg">

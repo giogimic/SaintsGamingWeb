@@ -15,14 +15,15 @@ import DialogOverlay from './dialog-overlay';
 import DPad from './dpad';
 import { useGameStore } from './store';
 
-import { loadGameCharacter, saveGameState } from '@/app/actions/game';
+import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/game-dev';
 import { GAME_MAPS } from './data/maps';
 import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
+import { CharacterSelector } from './character-selector';
 
-export default function CyberTerminal({ characterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
+export default function CyberTerminal({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
@@ -30,7 +31,37 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
   const [chatInput, setChatInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [showCreator, setShowCreator] = useState(forceCreate || !characterId);
+
+  const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
+  const [userCharacters, setUserCharacters] = useState<any[]>([]);
+  const [showSelector, setShowSelector] = useState(false);
+  const [showCreator, setShowCreator] = useState(forceCreate || false);
+
+  const loadCharactersList = async () => {
+    const charsRes = await getUserCharacters();
+    if (charsRes.success && charsRes.data) {
+      setUserCharacters(charsRes.data);
+      return charsRes.data;
+    }
+    return [];
+  };
+
+  const selectAndLoadCharacter = async (charId: string) => {
+    setIsInitializing(true);
+    const res = await loadGameCharacter(charId);
+    if (res.success && res.data) {
+      useGameStore.getState().hydratePlayer(JSON.parse(res.data.stateData));
+      setActiveCharacterId(charId);
+      setShowSelector(false);
+      setShowCreator(false);
+      if (typeof window !== 'undefined') {
+        window.history.pushState({}, '', `/profile/terminal?characterId=${charId}`);
+      }
+    } else {
+      setShowSelector(true);
+    }
+    setIsInitializing(false);
+  };
 
   useEffect(() => {
     async function init() {
@@ -46,7 +77,6 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
               gates: JSON.parse(dbMap.gatesData) || {}
             };
 
-            // Parse placed map NPCs if available
             if (dbMap.npcsData) {
               const parsedNpcs = JSON.parse(dbMap.npcsData);
               if (Array.isArray(parsedNpcs)) {
@@ -99,23 +129,22 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
         });
       }
 
-      if (!characterId) {
+      const existingChars = await loadCharactersList();
+
+      if (initialCharacterId) {
+        await selectAndLoadCharacter(initialCharacterId);
+      } else if (forceCreate || existingChars.length === 0) {
         setShowCreator(true);
+        setShowSelector(false);
         setIsInitializing(false);
-        return;
-      }
-      
-      const res = await loadGameCharacter(characterId);
-      if (res.success && res.data) {
-        useGameStore.getState().hydratePlayer(JSON.parse(res.data.stateData));
-        setShowCreator(false);
       } else {
-        setShowCreator(true);
+        setShowSelector(true);
+        setShowCreator(false);
+        setIsInitializing(false);
       }
-      setIsInitializing(false);
     }
     init();
-  }, [characterId]);
+  }, [initialCharacterId, forceCreate]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -127,22 +156,22 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
 
   // AUTO-SAVE LOOP
   useEffect(() => {
-    if (!characterId || showCreator || isInitializing) return;
+    if (!activeCharacterId || showCreator || showSelector || isInitializing) return;
 
     const interval = setInterval(async () => {
       const state = useGameStore.getState();
       const stateData = JSON.stringify(state.player);
       
-      const res = await saveGameState(characterId, stateData);
+      const res = await saveGameState(activeCharacterId, stateData);
       if (res.success) {
         console.log('[Auto-Save] Successfully synced player state to DB');
       } else {
         console.error('[Auto-Save] Failed to sync player state');
       }
-    }, 15000); // Auto-save every 15 seconds
+    }, 15000);
 
     return () => clearInterval(interval);
-  }, [characterId, showCreator, isInitializing]);
+  }, [activeCharacterId, showCreator, showSelector, isInitializing]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement && containerRef.current) {
@@ -159,7 +188,23 @@ export default function CyberTerminal({ characterId, forceCreate }: { characterI
   }
 
   if (showCreator) {
-    return <CharacterCreator onComplete={() => window.location.href = '/profile/terminal'} />;
+    return (
+      <CharacterCreator 
+        onComplete={(newId) => selectAndLoadCharacter(newId)} 
+        onCancel={userCharacters.length > 0 ? () => { setShowCreator(false); setShowSelector(true); } : undefined}
+      />
+    );
+  }
+
+  if (showSelector) {
+    return (
+      <CharacterSelector 
+        characters={userCharacters} 
+        onSelect={(id) => selectAndLoadCharacter(id)} 
+        onCreateNew={() => { setShowSelector(false); setShowCreator(true); }}
+        onRefresh={() => loadCharactersList()}
+      />
+    );
   }
 
   return (
