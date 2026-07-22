@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { Users, Activity, Terminal, Globe, Lock, Shield, Server, FileJson, Link as LinkIcon, MessageSquare } from "lucide-react";
+import { Users, Activity, Terminal, Globe, Lock, Shield, Server, FileJson, Gamepad2, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { DevActions } from "./dev-actions";
 
 export default async function DevDashboard() {
- const [userCount, threadCount, charCount] = await Promise.all([
+  const [userCount, _threadCount, _charCount, gameCharCount, questCount, assetCount] = await Promise.all([
  prisma.user.count(),
  prisma.thread.count(),
  prisma.character.count(),
+ prisma.gameCharacter.count(),
+ prisma.gameQuest.count(),
+ prisma.gameAsset.count(),
  ]);
 
  const APP_ROUTES = [
@@ -42,6 +45,16 @@ export default async function DevDashboard() {
  { path: "/admin/rss", desc: "RSS Feed Configuration" },
  { path: "/admin/modpacks", desc: "Modpack Manager" },
  { path: "/admin/streams", desc: "Stream Authorization" },
+ ]
+ },
+ {
+ category: "Game Dev Suite",
+ icon: <Gamepad2 className="h-4 w-4 text-emerald-400" />,
+ routes: [
+ { path: "/admin/game-dev/quests", desc: "Quest Creator & Dialogue Manager" },
+ { path: "/admin/game-dev/assets", desc: "Pixel Art Asset Studio & Importer" },
+ { path: "/admin/map-editor", desc: "World Map & Quest NPC Placer" },
+ { path: "/admin/game", desc: "MMO Sandbox Admin" },
  ]
  },
  {
@@ -90,29 +103,36 @@ export default async function DevDashboard() {
  </div>
 
  {/* Quick Metrics */}
- <div className="grid gap-4 md:grid-cols-3">
- <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
- <div className="flex items-center gap-2 mb-2">
- <Users className="h-4 w-4 text-muted-foreground" />
- <div className="text-sm text-muted-foreground">Total Users</div>
- </div>
- <div className="text-2xl font-bold text-primary">{userCount}</div>
- </div>
- <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
- <div className="flex items-center gap-2 mb-2">
- <MessageSquare className="h-4 w-4 text-muted-foreground" />
- <div className="text-sm text-muted-foreground">Forum Threads</div>
- </div>
- <div className="text-2xl font-bold text-primary">{threadCount}</div>
- </div>
- <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
- <div className="flex items-center gap-2 mb-2">
- <Activity className="h-4 w-4 text-muted-foreground" />
- <div className="text-sm text-muted-foreground">FiveM Characters</div>
- </div>
- <div className="text-2xl font-bold text-primary">{charCount}</div>
- </div>
- </div>
+ <div className="grid gap-4 md:grid-cols-4">
+    <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
+      <div className="flex items-center gap-2 mb-2">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        <div className="text-sm text-muted-foreground">Total Users</div>
+      </div>
+      <div className="text-2xl font-bold text-primary">{userCount}</div>
+    </div>
+    <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
+      <div className="flex items-center gap-2 mb-2">
+        <Gamepad2 className="h-4 w-4 text-emerald-400" />
+        <div className="text-sm text-muted-foreground">MMO Characters</div>
+      </div>
+      <div className="text-2xl font-bold text-emerald-400">{gameCharCount}</div>
+    </div>
+    <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
+      <div className="flex items-center gap-2 mb-2">
+        <Activity className="h-4 w-4 text-purple-400" />
+        <div className="text-sm text-muted-foreground">Registered Quests</div>
+      </div>
+      <div className="text-2xl font-bold text-purple-400">{questCount}</div>
+    </div>
+    <div className="border border-border/40 p-4 rounded-lg bg-card hover:bg-muted transition-colors">
+      <div className="flex items-center gap-2 mb-2">
+        <FileJson className="h-4 w-4 text-amber-400" />
+        <div className="text-sm text-muted-foreground">Game Assets</div>
+      </div>
+      <div className="text-2xl font-bold text-amber-400">{assetCount}</div>
+    </div>
+  </div>
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
  {/* Frontend Routes Map */}

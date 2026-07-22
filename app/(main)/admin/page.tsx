@@ -19,6 +19,10 @@ export default async function AdminDashboardPage() {
     characterCount,
     propertyCount,
     vehicleCount,
+    gameCharacterCount,
+    gameQuestCount,
+    gameAssetCount,
+    worldMapCount,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.newsArticle.count(),
@@ -29,6 +33,10 @@ export default async function AdminDashboardPage() {
     prisma.character.count(),
     prisma.property.count(),
     prisma.vehicle.count(),
+    prisma.gameCharacter.count(),
+    prisma.gameQuest.count(),
+    prisma.gameAsset.count(),
+    prisma.worldMap.count(),
   ]);
 
   const quickLinks = [
@@ -61,9 +69,16 @@ export default async function AdminDashboardPage() {
       stat: `${categoryCount} Categories`,
     },
     {
+      title: "Game Dev Suite",
+      description: "Manage MMO Quests, Assets, Maps, and Sandboxes.",
+      href: "/admin/game-dev/quests",
+      icon: <Gamepad2 className="h-6 w-6 text-emerald-400" />,
+      stat: `${gameQuestCount} Quests / ${gameAssetCount} Assets`,
+    },
+    {
       title: "User Management",
       description: "View community members and ban/promote users.",
-      href: "/admin/users", // Placeholder for future iteration
+      href: "/admin/users",
       icon: <Users className="h-6 w-6 text-muted-foreground" />,
       stat: `${userCount} Users`,
     },
@@ -117,16 +132,20 @@ export default async function AdminDashboardPage() {
               <span className="font-semibold">{threadCount}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Registered Characters</span>
+              <span className="text-muted-foreground">MMO Characters</span>
+              <span className="font-semibold text-emerald-400">{gameCharacterCount}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Custom World Maps</span>
+              <span className="font-semibold text-purple-400">{worldMapCount}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">FiveM Characters</span>
               <span className="font-semibold">{characterCount}</span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Owned Properties</span>
-              <span className="font-semibold">{propertyCount}</span>
-            </div>
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Owned Vehicles</span>
-              <span className="font-semibold">{vehicleCount}</span>
+              <span className="text-muted-foreground">Properties & Vehicles</span>
+              <span className="font-semibold">{propertyCount + vehicleCount}</span>
             </div>
           </CardContent>
         </Card>
