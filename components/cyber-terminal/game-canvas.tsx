@@ -684,7 +684,7 @@ export default function GameCanvas() {
           let dialogText = "Hello there, traveler.";
           const npcQuest = Object.values(QUEST_DB).find(q => q.npcId === clickedEntity.id);
           if (npcQuest) {
-            dialogText = npcQuest.dialogs.start;
+            dialogText = Array.isArray(npcQuest.dialogs?.intro) ? npcQuest.dialogs.intro.join(" ") : (Array.isArray(npcQuest.dialogs?.start) ? npcQuest.dialogs.start.join(" ") : "Greetings!");
           } else if (clickedEntity.id === 'npc-1') {
             dialogText = "Welcome to Saints Village. The wilderness outside these walls is extremely dangerous. I'd recommend you get some bronze armor from the Smith before wandering into the tall grass.";
           } else if (clickedEntity.id === 'npc-2') {

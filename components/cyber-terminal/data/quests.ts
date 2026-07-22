@@ -1,87 +1,110 @@
-export interface QuestSchema {
+export interface QuestObjective {
   id: string;
-  name: string;
-  npcId: string;
   description: string;
-  dialogs: {
-    start: string;
-    inProgress: string;
-    complete: string;
-  };
-  requirements: {
-    itemId?: string;
-    amount?: number;
-    skillId?: string;
+  targetCount: number;
+  currentCount?: number;
+  type: 'TALK_NPC' | 'CATCH_BEAST' | 'WIN_BATTLE' | 'HARVEST_RESOURCE' | 'CRAFT_ITEM' | 'ASSIGN_FACILITY';
+  targetId: string;
+}
+
+export interface GameQuest {
+  id: string;
+  npcId?: string;
+  title?: string;
+  name?: string;
+  description?: string;
+  summary?: string;
+  requiredLevel?: number;
+  category?: 'MAIN_STORY' | 'TAMER_CHALLENGE' | 'SKILLING' | 'BASE_AUTOMATION';
+  rewardCredits?: number;
+  rewardXp?: number;
+  rewardItems?: Record<string, number>;
+  objectives?: QuestObjective[];
+  requirements?: {
     level?: number;
+    itemId?: string;
+    skillId?: string;
+    amount?: number;
   };
-  rewards: {
+  dialogs?: {
+    intro?: string[];
+    in_progress?: string[];
+    inProgress?: string[];
+    start?: string[];
+    complete?: string[];
+  };
+  rewards?: {
     xp?: number;
     credits?: number;
     itemId?: string;
     amount?: number;
+    items?: Array<{ id: string; amount: number }>;
   };
 }
 
-export const QUEST_DB: Record<string, QuestSchema> = {
-  'q_first_armor': {
-    id: 'q_first_armor',
-    name: 'A Sturdy Start',
-    npcId: 'npc-1',
-    description: 'The Village Elder wants you to craft a Bronze Helm.',
+export const SAINTS_TAMER_QUESTS: Record<string, GameQuest> = {
+  QUEST_STARTER_JOURNEY: {
+    id: 'QUEST_STARTER_JOURNEY',
+    npcId: 'npc_mom',
+    title: 'The Tamer Awakening',
+    name: 'The Tamer Awakening',
+    summary: 'Awaken in your bedroom, speak to Mom downstairs, and head to Professor Oakwood in Paper Town to choose your first companion beast.',
+    requiredLevel: 1,
+    category: 'MAIN_STORY',
+    rewardCredits: 500,
+    rewardXp: 250,
+    rewardItems: { binding_crystal: 5, potion: 3 },
+    requirements: { level: 1 },
     dialogs: {
-      start: 'Welcome to Saints Village. The wilderness outside is extremely dangerous. I want to make sure you are prepared. Bring me 1 Bronze Helm, and I will reward you.',
-      inProgress: 'Have you crafted that Bronze Helm yet? You can mine Copper Ore in the northeast and smelt it at the anvil.',
-      complete: 'Excellent craftsmanship! This will protect you from the weaker Beasts. Here is your reward.'
-    },
-    requirements: {
-      itemId: 'bronze_helm',
-      amount: 1
+      intro: ['Awaken young Tamer! Speak to Mom downstairs to begin your journey.'],
+      in_progress: ['Meet Prof. Oakwood in Paper Town to claim your starter beast.'],
+      inProgress: ['Meet Prof. Oakwood in Paper Town to claim your starter beast.'],
+      start: ['Awaken young Tamer! Speak to Mom downstairs to begin your journey.'],
+      complete: ['You have chosen your starter beast!']
     },
     rewards: {
-      credits: 250,
-      xp: 50,
-      itemId: 'patch_kit',
-      amount: 3
-    }
-  },
-  'q_fishing_trip': {
-    id: 'q_fishing_trip',
-    name: 'A Hearty Meal',
-    npcId: 'npc-2',
-    description: 'The Hungry Villager wants 3 Cooked Fish.',
-    dialogs: {
-      start: 'Ugh, I am so hungry. If you can catch some Raw Fish from the pond and cook them for me, I will give you a Binding Crystal.',
-      inProgress: 'You still do not have 3 Cooked Fish? Check the pond to the south-west, then use the fire or anvil area to cook it.',
-      complete: 'Delicious! Here, take this crystal. You can use it to catch wild beasts.'
-    },
-    requirements: {
-      itemId: 'cooked_fish',
-      amount: 3
-    },
-    rewards: {
-      credits: 100,
-      xp: 25,
-      itemId: 'capture_script',
-      amount: 1
-    }
-  },
-  'q_monster_hunter': {
-    id: 'q_monster_hunter',
-    name: 'The Outpost Guard',
-    npcId: 'npc-guard',
-    description: 'The Guard wants you to prove yourself by bringing a Bronze Sword.',
-    dialogs: {
-      start: 'Halt! The Verdant Outpost is dangerous. Prove you can defend yourself by equipping a Bronze Sword. Hand one to me for inspection.',
-      inProgress: 'Still no Bronze Sword? Talk to the Elder in Saints Village if you are lost.',
-      complete: 'Impressive blade. You may proceed freely. Take this gold for your trouble.'
-    },
-    requirements: {
-      itemId: 'bronze_sword',
-      amount: 1
-    },
-    rewards: {
+      xp: 250,
       credits: 500,
-      xp: 150
-    }
+      itemId: 'binding_crystal',
+      amount: 5,
+      items: [{ id: 'binding_crystal', amount: 5 }]
+    },
+    objectives: [
+      { id: 'obj_1', description: 'Speak to Mom in the living room downstairs', targetCount: 1, type: 'TALK_NPC', targetId: 'npc_mom' },
+      { id: 'obj_2', description: 'Travel to Paper Town and meet Prof. Oakwood in his Lab', targetCount: 1, type: 'TALK_NPC', targetId: 'npc_professor' },
+      { id: 'obj_3', description: 'Choose your starter Saints Beast (Rockitten, Gnawly, or Nuttywutty)', targetCount: 1, type: 'CATCH_BEAST', targetId: 'starter' }
+    ]
+  },
+  QUEST_WILD_BINDING: {
+    id: 'QUEST_WILD_BINDING',
+    npcId: 'npc_guide',
+    title: 'Binding Crystal Mastery',
+    name: 'Binding Crystal Mastery',
+    summary: 'Head into the tall grass on Route 1 and capture 3 wild beasts using Binding Crystals.',
+    requiredLevel: 2,
+    category: 'TAMER_CHALLENGE',
+    rewardCredits: 750,
+    rewardXp: 500,
+    rewardItems: { grand_crystal: 2 },
+    requirements: { level: 2 },
+    dialogs: {
+      intro: ['Test your skills in the tall grass on Route 1.'],
+      in_progress: ['Capture 3 wild beasts using Binding Crystals.'],
+      inProgress: ['Capture 3 wild beasts using Binding Crystals.'],
+      start: ['Test your skills in the tall grass on Route 1.'],
+      complete: ['Excellent work! You are now a master of Binding Crystals.']
+    },
+    rewards: {
+      xp: 500,
+      credits: 750,
+      itemId: 'grand_crystal',
+      amount: 2,
+      items: [{ id: 'grand_crystal', amount: 2 }]
+    },
+    objectives: [
+      { id: 'obj_1', description: 'Capture wild beasts on Route 1', targetCount: 3, type: 'CATCH_BEAST', targetId: 'wild_beast' }
+    ]
   }
 };
+
+export const QUEST_DB: Record<string, GameQuest> = SAINTS_TAMER_QUESTS;
