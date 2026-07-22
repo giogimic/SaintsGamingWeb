@@ -33,7 +33,7 @@ export default function DialogueBox() {
     }, 30);
 
     return () => clearInterval(interval);
-  }, [dialogue?.currentLine]);
+  }, [dialogue?.currentLine, dialogue]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
