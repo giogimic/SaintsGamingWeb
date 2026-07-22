@@ -245,9 +245,28 @@ export default function GameCanvas() {
           const destY = y * TILE_SIZE;
           const srcSize = 16; // Standard 16x16 baseline
 
-          // If image is loaded, draw sprite. Otherwise fallback to green.
-          if (tilesetImg.complete && tilesetImg.naturalWidth > 0) {
-            // Very basic sprite mapping placeholders (Assuming standard 8x8 or 16x16 sheet)
+          const registryTile = tileRegistryCache.get(tile);
+          if (registryTile) {
+            const tileImg = loadTilesetImage(registryTile.tilesetPath);
+            const { srcX, srcY } = getAnimationFrame(registryTile);
+            if (tileImg.complete && tileImg.naturalWidth > 0) {
+              ctx.drawImage(
+                tileImg,
+                srcX,
+                srcY,
+                registryTile.width || 16,
+                registryTile.height || 16,
+                destX,
+                destY,
+                TILE_SIZE,
+                TILE_SIZE
+              );
+            } else {
+              ctx.fillStyle = '#166534';
+              ctx.fillRect(destX, destY, TILE_SIZE, TILE_SIZE);
+            }
+          } else if (tilesetImg.complete && tilesetImg.naturalWidth > 0) {
+            // Basic fallback baseline mapping
             let srcX = 0; let srcY = 0;
             
             if (tile === 0 || tile >= 3) { srcX = 0; srcY = 0; } // Grass
@@ -257,7 +276,7 @@ export default function GameCanvas() {
             else if (tile === 6) { srcX = 64; srcY = 0; } // Ore
             else if (tile === 7) { srcX = 80; srcY = 0; } // Shop
             else if (tile === 8) { srcX = 96; srcY = 0; } // Clinic
-            else if (tile === 9) { srcX = 16; srcY = 16; } // Anvil (using arbitrary srcX/Y for now)
+            else if (tile === 9) { srcX = 16; srcY = 16; } // Anvil
             else if (tile === 10) { srcX = 112; srcY = 0; } // Water
             else if (tile === 12) { srcX = 48; srcY = 16; } // Base Terminal
             
