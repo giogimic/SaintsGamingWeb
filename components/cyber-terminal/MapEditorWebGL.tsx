@@ -42,10 +42,34 @@ export default function MapEditorWebGL({ mapId = 'route_1', onSave }: MapEditorP
         const response = await fetch('/api/tile-registry');
         const tiles: TileInfo[] = await response.json();
         const registry = new Map<number, TileInfo>();
-        tiles.forEach(tile => registry.set(tile.tileId, tile));
+        if (Array.isArray(tiles) && tiles.length > 0) {
+          tiles.forEach(tile => registry.set(tile.tileId, tile));
+        } else {
+          // Default built-in tile palette fallback
+          const defaultTiles: TileInfo[] = [
+            { tileId: 1, name: 'Grass', tilesetName: 'outdoor', tilesetPath: '', srcX: 0, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'GRASS' },
+            { tileId: 2, name: 'Tall Grass', tilesetName: 'outdoor', tilesetPath: '', srcX: 16, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'TALL_GRASS' },
+            { tileId: 3, name: 'Dirt Path', tilesetName: 'outdoor', tilesetPath: '', srcX: 32, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'PATH' },
+            { tileId: 4, name: 'Water', tilesetName: 'water', tilesetPath: '', srcX: 0, srcY: 0, width: 16, height: 16, category: 'water', terrainType: 'WATER' },
+            { tileId: 5, name: 'Tree Wall', tilesetName: 'outdoor', tilesetPath: '', srcX: 48, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'WALL' },
+            { tileId: 6, name: 'Indoor Floor', tilesetName: 'indoor', tilesetPath: '', srcX: 0, srcY: 0, width: 16, height: 16, category: 'indoor', terrainType: 'FLOOR' },
+            { tileId: 7, name: 'Brick Wall', tilesetName: 'indoor', tilesetPath: '', srcX: 16, srcY: 0, width: 16, height: 16, category: 'indoor', terrainType: 'WALL' },
+          ];
+          defaultTiles.forEach(tile => registry.set(tile.tileId, tile));
+        }
         setTileRegistry(registry);
       } catch (error) {
-        console.error('Failed to load tile registry:', error);
+        console.error('Failed to load tile registry, using defaults:', error);
+        const registry = new Map<number, TileInfo>();
+        const defaultTiles: TileInfo[] = [
+          { tileId: 1, name: 'Grass', tilesetName: 'outdoor', tilesetPath: '', srcX: 0, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'GRASS' },
+          { tileId: 2, name: 'Tall Grass', tilesetName: 'outdoor', tilesetPath: '', srcX: 16, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'TALL_GRASS' },
+          { tileId: 3, name: 'Dirt Path', tilesetName: 'outdoor', tilesetPath: '', srcX: 32, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'PATH' },
+          { tileId: 4, name: 'Water', tilesetName: 'water', tilesetPath: '', srcX: 0, srcY: 0, width: 16, height: 16, category: 'water', terrainType: 'WATER' },
+          { tileId: 5, name: 'Tree Wall', tilesetName: 'outdoor', tilesetPath: '', srcX: 48, srcY: 0, width: 16, height: 16, category: 'outdoor', terrainType: 'WALL' },
+        ];
+        defaultTiles.forEach(tile => registry.set(tile.tileId, tile));
+        setTileRegistry(registry);
       }
     };
     loadRegistry();

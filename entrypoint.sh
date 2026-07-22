@@ -20,6 +20,8 @@ if [ "$DB_SKIP_MIGRATION" != "true" ]; then
         exit 1
     fi
     echo "[✓] Database schema ready."
+    echo "[*] Seeding Tuxemon species, techniques, and campaign maps into database..."
+    bun run scripts/import-tuxemon-data.ts || true
 else
     echo "[*] Skipping schema migration (DB_SKIP_MIGRATION=true)."
 fi
