@@ -5,7 +5,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Application, Container, Text, Graphics } from 'pixi.js';
+import { Application, Container, Text, Graphics, settings } from 'pixi.js';
 import { BattleMonster, calculateDamage, attemptCapture } from '@/lib/game/battle-engine';
 
 interface BattleSceneProps {
@@ -28,9 +28,8 @@ export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBatt
 
     let app: Application | null = null;
     try {
-      const pixiSettings = (require('pixi.js') as any).settings;
-      if (pixiSettings && 'CHECK_MAX_IF_STATEMENTS_IN_SHADER' in pixiSettings) {
-        pixiSettings.CHECK_MAX_IF_STATEMENTS_IN_SHADER = false;
+      if (settings && 'CHECK_MAX_IF_STATEMENTS_IN_SHADER' in settings) {
+        (settings as any).CHECK_MAX_IF_STATEMENTS_IN_SHADER = false;
       }
 
       app = new Application({
