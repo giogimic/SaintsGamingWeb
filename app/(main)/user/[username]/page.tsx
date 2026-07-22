@@ -112,16 +112,16 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         
-        {/* Saints Tamer MMO Characters */}
+        {/* Saints Gaming Lobby Operatives */}
         <div className="space-y-4 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Gamepad2 className="w-6 h-6 text-primary" />
-              Saints Tamer MMO
+              The Lobby
             </h2>
             {isSelf && (
-              <Link href="/profile/terminal" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all hover:scale-105">
-                Play Now
+              <Link href="/lobby" className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md font-semibold text-sm shadow-md transition-all hover:scale-105">
+                Enter The Lobby
               </Link>
             )}
           </div>

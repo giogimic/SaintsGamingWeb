@@ -43,7 +43,7 @@ const NAV_ITEMS = [
   { href: "/forum", label: "Forum", icon: MessageSquare },
   { href: "/forum/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/streams", label: "Streams", icon: Monitor },
-  { href: "/profile/terminal", label: "The Lobby", icon: Gamepad2 },
+  { href: "/lobby", label: "The Lobby", icon: Gamepad2 },
 ];
 
 export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false }: { session: Session | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean }) {
@@ -255,7 +255,7 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
   );
 }
 
-export function Footer({ className, discordLink = "https://discord.saintsgaming.net", siteVersion = "1.4.9", showUcpLink = false }: { className?: string, discordLink?: string, siteVersion?: string, showUcpLink?: boolean }) {
+export function Footer({ className, discordLink = "https://discord.saintsgaming.net", siteVersion = "1.5.0", showUcpLink = false }: { className?: string, discordLink?: string, siteVersion?: string, showUcpLink?: boolean }) {
   const socialLinks = [
     {
       href: "https://youtube.com/@SaintsGaming",

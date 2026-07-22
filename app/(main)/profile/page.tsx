@@ -187,7 +187,7 @@ export default async function ProfilePage() {
                 <CardTitle>The Lobby</CardTitle>
                 <CardDescription>Your active operatives in the Saints Gaming social world</CardDescription>
               </div>
-              <Link href="/profile/terminal" className={buttonVariants({ variant: "default", size: "sm" })}>
+              <Link href="/lobby" className={buttonVariants({ variant: "default", size: "sm" })}>
                 Enter The Lobby
               </Link>
             </CardHeader>
@@ -205,7 +205,7 @@ export default async function ProfilePage() {
                     return (
                       <Link 
                         key={char.id} 
-                        href={`/profile/terminal?characterId=${char.id}`}
+                        href={`/lobby?characterId=${char.id}`}
                         className="bg-background/80 hover:bg-card border border-border/50 hover:border-emerald-500/50 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm transition-all group"
                       >
                         <div className="flex items-center gap-3 min-w-0">
@@ -234,7 +234,7 @@ export default async function ProfilePage() {
                   <Gamepad2 className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-50" />
                   <h3 className="text-sm font-medium">No characters found</h3>
                   <p className="text-xs text-muted-foreground mt-1 mb-4">You haven&apos;t created any MMO characters yet.</p>
-                  <Link href="/profile/terminal" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                  <Link href="/lobby" className={buttonVariants({ variant: "outline", size: "sm" })}>
                     Create Character
                   </Link>
                 </div>

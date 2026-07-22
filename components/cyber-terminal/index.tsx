@@ -55,7 +55,7 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
       setShowSelector(false);
       setShowCreator(false);
       if (typeof window !== 'undefined') {
-        window.history.pushState({}, '', `/profile/terminal?characterId=${charId}`);
+        window.history.pushState({}, '', `/lobby?characterId=${charId}`);
       }
     } else {
       setShowSelector(true);
