@@ -111,7 +111,7 @@ export async function deleteGameCharacter(characterId: string) {
     });
 
     revalidatePath('/profile');
-    revalidatePath('/profile/terminal');
+    revalidatePath('/lobby');
     return { success: true };
   } catch (error) {
     console.error('Failed to delete character:', error);

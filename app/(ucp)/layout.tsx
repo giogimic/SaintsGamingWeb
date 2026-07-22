@@ -29,11 +29,11 @@ export default async function UcpLayout({
   });
   const discordLink = discordSetting?.value || "https://discord.saintsgaming.net";
 
-  let siteVersion = "1.4.9";
+  let siteVersion = "1.5.0";
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "1.4.9";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "1.5.0";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
