@@ -120,7 +120,70 @@ This project is open-source and available under the **MIT License**.
 
 ---
 
-## 📜 Changelog
+### v2.0.3
+- **Site Level Progression Engine**: Linked game progression to platform account progression. Unlocking game achievements now grants XP which automatically ranks up the user's site-wide `LevelTier` across the network.
+- **Discord Webhook Broadcasting**: Fully integrated Saints Tamer server actions with the platform Discord Webhooks (`discord.ts`). Top achievements, earned coins, and platform Level Ups are now broadcasted live to community channels.
+- **Map Editor WebGL Synchronization**: Fixed `MapEditorPanel.tsx` to properly extract live 2D grid tilemaps from the PixiJS `MapEditorWebGL.tsx` instance into the database `gridData`, enabling genuine, persistent world building for admins.
+
+### v2.0.2
+- **In-Game Achievements & Badges Overlay**: Created `achievements-overlay.tsx` allowing players to inspect community achievements (*First Beast Capture*, *Campaign Explorer*, *Master Crafter*, *Keeper Conqueror*, *Base Tycoon*) and claim site Coins (+50 Coins) & platform XP directly into their account DB via `unlockGameAchievement` server action.
+
+### v2.0.1
+- **Campaign Map Editor Integration**: Defaulted in-game Map Editor Panel (`MapEditorPanel.tsx`) and Menu Admin Map Editor (`app/(main)/admin/map-editor/page.tsx`) to `PLAYER_HOUSE_BEDROOM` with full editing, node placement, and DB persistence for all 38 Tuxemon campaign maps.
+
+### v2.0.0
+- **Site-Wide Operative Leaderboards Page**: Created public website leaderboard page `app/(main)/leaderboards/page.tsx` ranking community operatives by Character Level, Total 27-Skill XP, Economy Credits, and Caught Tuxemon species count.
+- **Server Action Integration**: Created `getTopLobbyOperatives()` in `app/actions/game.ts` querying database characters and computing real-time rankings with user profile badges.
+- **In-Game Leaderboard Overlay**: Created `leaderboard-overlay.tsx` accessible via top navbar button (`LEADERS`) in The Lobby.
+
+### v1.9.5
+- **In-Game Quest Journal & Task Tracker Overlay**: Created `quest-log-overlay.tsx` allowing players to inspect active campaign tasks, active objective stages, reward payouts (XP & Credits), and completed quest history from the top navigation bar (`QUESTS`).
+- **HUD Mini-Map Radar & Compass Widget**: Created `MiniMapRadar.tsx` rendering real-time map grid preview, player position pulse, nearby NPC indicators, active warp gates, and tile coordinates (`X, Y`) on the top-right corner HUD.
+
+### v1.9.0
+- **Base Automation Passive Beast Resource Farming**: Updated `base-overlay.tsx` allowing caught Tuxemon beasts to be assigned to base facilities (*Lumber Mill*, *Quarry*, *Furnace*, *Farm*, *Fishing Hut*) to generate passive yields over time.
+- **Co-Op Party Shared XP & Member Management**: Upgraded `party-overlay.tsx` with a 4-player online party lobby, username invitations, and +25% Shared XP status indicator.
+
+### v1.8.5
+- **Character RPG Sheet & Stats Overlay**: Created `rpg-stats-overlay.tsx` showing player level, combat style, equipped armor/weapon slots, active perk perks, carry weight capacity, and all 27 skill XP progression bars.
+- **Phase 2 Keeper ARPG Combat**: Enhanced `battle-overlay.tsx` to handle direct Player vs Keeper ARPG combat when defeating trainer beasts.
+### v2.0.5
+- **Dynamic Wild Beast Map Encounters Engine**: Overhauled tall grass trigger mechanics to read map-specific `encounterPool` configurations from the `WorldMap` database model instead of hardcoded random spawns.
+- **Encounter Zones UI in Map Editor**: Built "ENCOUNTERS" tab in `MapEditorPanel.tsx` allowing admins to dynamically assign beast species, minimum/maximum levels, and spawn rates (weights) per map zone.
+
+### v1.8.0
+- **Interactive Professor Lab Starter Choice Event**: Created `ProfessorLabOverlay.tsx` cutscene triggering upon entering `PROFESSOR_LAB`. Players choose between Fire (Ignisaur), Water (Aquaspout), and Wood (Verdantail) starter beasts.
+- **Global Trade Center (GTC) P2P Marketplace**: Created `gtc-overlay.tsx` allowing players to list, browse, search, and buyout caught Tuxemon beasts, crafted equipment with ARPG affixes, and materials.
+- **Dynamic Spatial Audio Engine**: Upgraded `audio.ts` with Howler.js integration (`playTownBgm`, `playBattleBgm`, `playVictorySfx`).
+- **Authoritative Socket.IO Overworld Sync**: Enhanced real-time multiplayer rendering in `game-canvas.tsx` with player name tags and live chat speech bubbles.
+
+### v1.7.7
+- **Automatic Map State Sanitizer**: Upgraded `selectAndLoadCharacter` in `components/the-lobby/index.tsx` so existing character saves with obsolete placeholder map references automatically boot into campaign map `player_house_bedroom` (`{ x: 6, y: 2 }`).
+- **User Profile Operative Showcase Overhaul**: Created `ProfileCharacterDetails.tsx` with expandable tabs for character **Inventory**, **Beast Party & Bank**, and **Global Trade Center (GTC)** trading previews.
+
+### v1.7.6
+- **Tuxemon Campaign Purge**: Removed placeholder test maps, leaving official campaign maps (`player_house_bedroom`, `spyder_paper_town`, `professor_lab`, etc.) as the primary playable world.
+- **Unique Perk & Trait Selection System**: Integrated passive perks in character creation (`Swift Traveler`, `Acrobat Double Jump`, `Pack Mule`, `Master Tamer`, `Stamina Surge`).
+- **Spacebar Tile Hopping & Double Jump Engine**: Enabled 1-tile hopping (and 2-tile Acrobat Double Jump) in `game-canvas.tsx` for crossing obstacles.
+- **Inventory Carry Weight Limits**: Added `inventoryWeight` tracking and capacity limits (100 kg base, 150 kg with Pack Mule) in `inventory-overlay.tsx`.
+
+### v1.7.5
+- **ARPG Rarity & Affix Rolling in Crafting Station**: Integrated ARPG loot rarity rolls (Common, Uncommon, Rare, Epic, Legendary) and stat affixes (`+Damage`, `+XP`, `Lifesteal`) when crafting weapons and equipment in `crafting-overlay.tsx`.
+- **Dialogue & Quest Payout Flow Optimizations**: Refined NPC quest acceptance and turn-in feedback loops in `dialog-overlay.tsx`.
+
+### v1.7.4
+- **Open Source Copyleft Compliance & Tuxemon Attribution**: Added [TUXEMON_ATTRIBUTION.md](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/TUXEMON_ATTRIBUTION.md) and License documentation giving explicit open-source credit to the Tuxemon Project (GPLv3 / CC BY-SA 4.0) and OpenGameArt LPC contributors.
+- **Campaign Map Gate & Quest Flow Organization**: Optimized map warp connections, dialogue scripts, and quest triggers across campaign maps (`PLAYER_HOUSE_BEDROOM`, `PROFESSOR_LAB`, `SPYDER_PAPER_TOWN`).
+
+### v1.7.3
+- **World Map Navigator Component**: Built visual map browser (`WorldMapNavigator.tsx`) with search, campaign/custom category filters, and adjacent gate link indicators.
+- **Linked Map Editors**: Unified the terminal in-game editor (`MapEditorPanel.tsx`) and admin page editor (`app/(main)/admin/map-editor/page.tsx`) with full campaign map loading and multi-map preview toggling.
+- **Tuxemon Campaign Primary Focus**: Made all 38 Tuxemon campaign maps (`PLAYER_HOUSE_BEDROOM`, `PROFESSOR_LAB`, `SPYDER_PAPER_TOWN`, etc.) immediately selectable and editable in canvas editor.
+
+### v1.7.2
+- **Lobby Directory Refactoring**: Reorganized `components/cyber-terminal/` into `components/the-lobby/`, updating component paths and dynamic imports across all lobby routes.
+- **Integration Status Documentation**: Audited and published `INTEGRATION_STATUS.md` detailing Phase 1-4 game state, tile registry, 411 Tuxemon creature database, mobile D-Pad controls, and development roadmap.
+- **Battle System Party Switching & Status Effects**: Enhanced battle overlay with party member selection during combat, turn-based status condition processing (Poison, Burn, Sleep, Freeze, Paralysis), and in-battle item usage.
 
 ### v1.7.1
 - **ESLint Compliance for WebGL Canvas Initializer**: Switched `require('pixi.js')` statements to standard `settings` imports in `MapEditorWebGL.tsx` and `TuxemonBattleScene.tsx`, satisfying Next.js ESLint build rules (`@typescript-eslint/no-require-imports`).
@@ -179,3 +242,14 @@ This project is open-source and available under the **MIT License**.
 - **Authoritative Server**: Scaffolded `game-server.js` using `socket.io` for synchronized movement and 4v4 Agility/Speed turn-based combat.
 - **Character Creator**: Implemented `character-creator.tsx` with dynamic classes (Brawler, Invoker, Ranger, Artisan) setting preset skill levels.
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
+
+---
+
+## ⚖️ License & Open Source Attribution
+
+This repository incorporates open-source game assets, creature data, and campaign map layouts under GPLv3 and CC BY-SA 4.0 copyleft terms.
+
+- **Tuxemon Project:** Monster designs, sprites, movesets, and campaign map data derived from [Tuxemon](https://www.tuxemon.org) / [GitHub](https://github.com/Tuxemon/Tuxemon). Licensed under GPL-3.0 / CC BY-SA 4.0.
+- **Liberated Pixel Cup (LPC):** Base character sprites from [OpenGameArt.org](https://opengameart.org) (CC BY-SA 3.0 / GPL 3.0).
+- **Full License Notice:** See [TUXEMON_ATTRIBUTION.md](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/TUXEMON_ATTRIBUTION.md) for full attribution details.
+

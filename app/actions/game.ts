@@ -150,17 +150,62 @@ export async function unlockGameAchievement(badgeId: string) {
       }
     });
 
-    // Optional: grant some platform XP or Coins
+    // Get current user stats
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp: true, level: true, username: true }
+    });
+
+    let newXp = (user?.xp || 0) + 100;
+    let newLevel = user?.level || 1;
+
+    // Check if they leveled up
+    const nextTier = await prisma.levelTier.findFirst({
+      where: { xpRequired: { lte: newXp } },
+      orderBy: { xpRequired: 'desc' }
+    });
+
+    let leveledUp = false;
+    if (nextTier && nextTier.level > newLevel) {
+      newLevel = nextTier.level;
+      leveledUp = true;
+    }
+
+    // Grant platform XP, Coins, and potentially Level
     await prisma.user.update({
       where: { id: userId },
       data: {
         coins: { increment: 50 },
-        xp: { increment: 100 }
+        xp: newXp,
+        level: newLevel
       }
     });
 
+    // Discord Integration
+    if (process.env.DISCORD_WEBHOOK_URL) {
+      try {
+        const { sendDiscordWebhook } = await import('@/lib/discord');
+        const badgeName = badgeId.replace(/_/g, ' ').toUpperCase();
+        
+        const embeds = [{
+          title: '🏆 Achievement Unlocked!',
+          description: `**${user?.username}** has unlocked the **${badgeName}** achievement in Saints Tamer!`,
+          color: 0xFFD700,
+          fields: [
+            { name: 'Rewards', value: '+100 XP\n+50 Coins', inline: true },
+            ...(leveledUp ? [{ name: 'Level Up!', value: `Reached Level ${newLevel}! 🎉`, inline: true }] : [])
+          ]
+        }];
+
+        // Fire and forget so we don't block the request
+        sendDiscordWebhook(process.env.DISCORD_WEBHOOK_URL, { embeds }).catch(console.error);
+      } catch (err) {
+        console.error('Failed to send discord webhook for achievement', err);
+      }
+    }
+
     revalidatePath('/profile/[username]'); // Revalidate profile to show new badge
-    return { success: true, alreadyUnlocked: false };
+    return { success: true, alreadyUnlocked: false, leveledUp, newLevel };
   } catch (error) {
     console.error('Failed to unlock achievement:', error);
     return { success: false, error: 'Failed to unlock achievement' };
@@ -184,5 +229,59 @@ export async function pinBeastToProfile(beastId: string) {
   } catch (error) {
     console.error('Failed to pin beast:', error);
     return { success: false, error: 'Failed to pin beast' };
+  }
+}
+
+export async function getTopLobbyOperatives() {
+  try {
+    const characters = await prisma.gameCharacter.findMany({
+      take: 50,
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            username: true,
+            image: true,
+            isFounder: true,
+            isVIP: true,
+            isTrusted: true
+          }
+        }
+      }
+    });
+
+    const ranked = characters.map(c => {
+      let state: any = {};
+      try {
+        state = JSON.parse(c.stateData || '{}');
+      } catch {
+        state = {};
+      }
+
+      const skills: Record<string, { level: number; xp: number }> = state.skills || {};
+      const totalXp = Object.values(skills).reduce((sum, s) => sum + (s.xp || 0), 0);
+      const credits = state.credits || 0;
+      const caughtCount = (state.tuxemonSpeciesCaught || state.caughtDaemons || []).length;
+      const level = state.level || 1;
+      const perk = state.perk || 'SWIFT_TRAVELER';
+
+      return {
+        id: c.id,
+        name: c.name,
+        classId: c.classId,
+        spriteId: c.spriteId,
+        level,
+        totalXp,
+        credits,
+        caughtCount,
+        perk,
+        user: c.user
+      };
+    });
+
+    return { success: true, data: ranked };
+  } catch (error) {
+    console.error('Failed to load top operatives:', error);
+    return { success: false, error: 'Failed to load leaderboards', data: [] };
   }
 }

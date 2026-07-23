@@ -13,6 +13,13 @@ import EquipmentOverlay from './equipment-overlay';
 import CraftingOverlay from './crafting-overlay';
 import BaseOverlay from './base-overlay';
 import DialogOverlay from './dialog-overlay';
+import ProfessorLabOverlay from './ProfessorLabOverlay';
+import GtcOverlay from './gtc-overlay';
+import RpgStatsOverlay from './rpg-stats-overlay';
+import QuestLogOverlay from './quest-log-overlay';
+import LeaderboardOverlay from './leaderboard-overlay';
+import AchievementsOverlay from './achievements-overlay';
+import MiniMapRadar from './MiniMapRadar';
 import DPad from './dpad';
 import { useGameStore } from './store';
 
@@ -52,11 +59,25 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
     setIsInitializing(true);
     const res = await loadGameCharacter(charId);
     if (res.success && res.data) {
+      const parsedState = JSON.parse(res.data.stateData);
+      
+      // Map state sanitizer: ensure player boots into a valid Tuxemon campaign map
+      const validMapId = (parsedState.currentMapId && GAME_MAPS[parsedState.currentMapId]) 
+        ? parsedState.currentMapId 
+        : 'PLAYER_HOUSE_BEDROOM';
+
+      const validPosition = GAME_MAPS[validMapId] 
+        ? (parsedState.position || { x: 6, y: 2 })
+        : { x: 6, y: 2 };
+
       useGameStore.getState().hydratePlayer({ 
-        ...JSON.parse(res.data.stateData),
+        ...parsedState,
         name: res.data.name,
-        spriteId: res.data.spriteId
+        spriteId: res.data.spriteId,
+        position: validPosition
       });
+      useGameStore.setState({ currentMapId: validMapId });
+
       setActiveCharacterId(charId);
       setShowSelector(false);
       setShowCreator(false);
@@ -85,7 +106,8 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
               id: dbMap.id,
               name: dbMap.name,
               grid: JSON.parse(dbMap.gridData),
-              gates: JSON.parse(dbMap.gatesData) || {}
+              gates: JSON.parse(dbMap.gatesData) || {},
+              encounterPool: dbMap.encountersData ? JSON.parse(dbMap.encountersData) : []
             };
 
             if (dbMap.npcsData) {
@@ -221,7 +243,7 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
   return (
     <div 
       ref={containerRef}
-      className={`relative flex flex-col items-center justify-center w-full h-full max-w-full touch-none select-none ${isFullscreen ? 'w-screen h-screen fixed inset-0 z-50 bg-[#1a1a1a]' : ''}`}
+      className="relative w-full h-full touch-none select-none bg-[#0a0a0f]"
     >
       <GameCanvas />
       
@@ -246,6 +268,24 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
 
           <div className="flex gap-2">
             <button
+              onClick={() => useGameStore.getState().setGameMode('ACHIEVEMENTS')}
+              className="px-3 py-1 bg-yellow-900/90 text-yellow-200 border-2 border-yellow-500 rounded font-bold text-xs hover:bg-yellow-700 transition-colors shadow-md pointer-events-auto"
+            >
+              BADGES
+            </button>
+            <button
+              onClick={() => useGameStore.getState().setGameMode('LEADERBOARD')}
+              className="px-3 py-1 bg-purple-900/90 text-purple-200 border-2 border-purple-500 rounded font-bold text-xs hover:bg-purple-700 transition-colors shadow-md pointer-events-auto"
+            >
+              LEADERS
+            </button>
+            <button
+              onClick={() => useGameStore.getState().setGameMode('QUESTS')}
+              className="px-3 py-1 bg-[#d84315]/90 text-amber-200 border-2 border-[#ff6e40] rounded font-bold text-xs hover:bg-[#ff6e40] transition-colors shadow-md pointer-events-auto"
+            >
+              QUESTS
+            </button>
+            <button
               onClick={() => useGameStore.getState().setGameMode('PARTY')}
               className="px-3 py-1 bg-[#b71c1c]/90 text-white border-2 border-[#ff5252] rounded font-bold text-xs hover:bg-[#ff5252] transition-colors shadow-md pointer-events-auto"
             >
@@ -262,6 +302,12 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
               className="px-3 py-1 bg-[#e65100]/90 text-white border-2 border-[#ff9800] rounded font-bold text-xs hover:bg-[#ff9800] transition-colors shadow-md pointer-events-auto"
             >
               INVENTORY
+            </button>
+            <button
+              onClick={() => useGameStore.getState().setGameMode('GTC')}
+              className="px-3 py-1 bg-amber-900/90 text-amber-300 border-2 border-amber-500 rounded font-bold text-xs hover:bg-amber-700 transition-colors shadow-md pointer-events-auto flex items-center gap-1"
+            >
+              GTC
             </button>
             <button
               onClick={() => useGameStore.getState().setGameMode('SKILLS')}
@@ -294,10 +340,17 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
       {gameMode === 'SKILLS' && <SkillsOverlay />}
       {gameMode === 'INVENTORY' && <InventoryOverlay />}
       {gameMode === 'PARTY' && <PartyOverlay />}
-      {gameMode === 'EQUIPMENT' && <EquipmentOverlay />}
+      {gameMode === 'EQUIPMENT' && <RpgStatsOverlay />}
       {gameMode === 'CRAFTING' && <CraftingOverlay />}
       {gameMode === 'BASE' && <BaseOverlay />}
       {gameMode === 'DIALOG' && <DialogOverlay />}
+      {gameMode === 'GTC' && <GtcOverlay />}
+      {gameMode === 'QUESTS' && <QuestLogOverlay />}
+      {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
+      {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
+      {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
+
+      {gameMode === 'EXPLORING' && <MiniMapRadar />}
 
       {/* Global Chat Bar */}
       {gameMode === 'EXPLORING' && (

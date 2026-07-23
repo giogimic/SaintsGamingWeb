@@ -10,10 +10,43 @@ import { toast } from "sonner";
 import { INITIAL_SKILLS } from "./store";
 
 const PRESET_SPRITES = [
-  { id: "hero_male", label: "Agent", icon: User },
-  { id: "mage_1", label: "Hacker", icon: Zap },
-  { id: "villager_1", label: "Wanderer", icon: Sparkles },
-  { id: "assassin", label: "Phantom", icon: Skull },
+  { id: "hero_male", label: "Tamer Agent", path: "/tuxemon-assets/npc/npc_001.png", icon: User },
+  { id: "mage_1", label: "Cyber Invoker", path: "/tuxemon-assets/npc/npc_002.png", icon: Zap },
+  { id: "villager_1", label: "Wild Scout", path: "/tuxemon-assets/npc/npc_003.png", icon: Sparkles },
+  { id: "assassin", label: "Void Warden", path: "/tuxemon-assets/npc/npc_004.png", icon: Skull },
+];
+
+const PERKS = [
+  {
+    id: "SWIFT_TRAVELER",
+    name: "Swift Traveler",
+    desc: "+25% Movement Speed across all maps.",
+    icon: Zap
+  },
+  {
+    id: "ACROBAT",
+    name: "Acrobat (Double Jump)",
+    desc: "Perform 2-tile Double Jumps over obstacles and boundaries.",
+    icon: Sparkles
+  },
+  {
+    id: "PACK_MULE",
+    name: "Pack Mule",
+    desc: "+50% Inventory Carry Weight Capacity (150 kg limit).",
+    icon: Shield
+  },
+  {
+    id: "MASTER_TAMER",
+    name: "Master Tamer",
+    desc: "+15% Catch Rate boost for wild Beasts.",
+    icon: User
+  },
+  {
+    id: "STAMINA_SURGE",
+    name: "Stamina Surge",
+    desc: "+30 Max Health & accelerated passive health regen.",
+    icon: Shield
+  }
 ];
 
 const CLASSES = [
@@ -65,6 +98,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [name, setName] = useState("");
   const [spriteId, setSpriteId] = useState(PRESET_SPRITES[0].id);
   const [classId, setClassId] = useState(CLASSES[0].id);
+  const [perkId, setPerkId] = useState(PERKS[0].id);
   const [customAssets, setCustomAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -91,6 +125,16 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     }
 
     setLoading(true);
+    
+    // Check if user is authenticated
+    const session = await fetch('/api/auth/session').then(r => r.json());
+    if (!session?.user) {
+      toast.error("Please log in first to create a character.");
+      setLoading(false);
+      // Redirect to login
+      window.location.href = '/login?callbackUrl=/lobby';
+      return;
+    }
 
     const selectedClass = CLASSES.find(c => c.id === classId);
     
@@ -105,11 +149,11 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     }
 
     const initialState = {
-      position: { x: 1, y: 1 },
+      position: { x: 6, y: 2 },
       level: 1,
       xp: 0,
-      hp: 100 + (initialSkills['Constitution']?.level || 1) * 10,
-      maxHp: 100 + (initialSkills['Constitution']?.level || 1) * 10,
+      hp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
+      maxHp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
       credits: 1000,
       inventory: { 'capture_script': 10, 'patch_kit': 5 },
       skills: initialSkills,
@@ -119,7 +163,10 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       activeDaemonId: 'd-001',
       saintRank: 'Rookie',
       caughtDaemons: ['d-001'],
-      assignedBeasts: { furnace: null, farm: null, fishing_hut: null }
+      assignedBeasts: { furnace: null, farm: null, fishing_hut: null },
+      perk: perkId,
+      maxWeight: perkId === 'PACK_MULE' ? 150 : 100,
+      maxPartySize: 4
     };
 
     const result = await createGameCharacter({
@@ -141,25 +188,27 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 md:p-8 bg-card/90 border border-border/50 rounded-2xl text-foreground sg-glass shadow-2xl backdrop-blur-xl my-4 overflow-y-auto max-h-[90vh]">
-      <div className="flex items-center justify-between mb-4">
-        {onCancel ? (
-          <Button variant="ghost" size="sm" onClick={onCancel} className="text-muted-foreground hover:text-foreground gap-1">
-            <ArrowLeft className="w-4 h-4" /> Back to Lobby
-          </Button>
-        ) : <div />}
-        <div className="flex items-center gap-2">
-          <Gamepad2 className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
-            CREATE OPERATIVE
-          </h1>
-        </div>
-        <div />
-      </div>
+    <div className="fixed inset-0 w-full h-full bg-[#0a0a0f] overflow-y-auto">
+      <div className="min-h-full flex flex-col items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-4xl bg-card/90 border border-border/50 rounded-2xl text-foreground sg-glass shadow-2xl backdrop-blur-xl p-6 md:p-8">
+          <div className="flex items-center justify-between mb-4">
+            {onCancel ? (
+              <Button variant="ghost" size="sm" onClick={onCancel} className="text-muted-foreground hover:text-foreground gap-1">
+                <ArrowLeft className="w-4 h-4" /> Back
+              </Button>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              <Gamepad2 className="w-7 h-7 text-primary" />
+              <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
+                CREATE OPERATIVE
+              </h1>
+            </div>
+            <div />
+          </div>
 
-      <p className="text-muted-foreground text-center text-sm mb-8">Customize your character identity to enter Saints Gaming Lobby</p>
+          <p className="text-muted-foreground text-center text-sm mb-8">Customize your character identity to enter Saints Gaming Lobby</p>
 
-      <div className="space-y-8">
+          <div className="space-y-8">
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">OPERATIVE NAME</label>
           <Input 
@@ -295,13 +344,37 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
           </div>
         </div>
 
-        <Button 
-          disabled={loading || name.length < 3} 
-          onClick={handleCreate}
-          className="w-full h-14 mt-8 text-base font-bold bg-gradient-to-r from-purple-600 via-emerald-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white rounded-xl shadow-lg transition-all disabled:opacity-50 uppercase tracking-wider"
-        >
-          {loading ? "INITIALIZING OPERATIVE..." : "ENTER THE LOBBY"}
-        </Button>
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">SELECT UNIQUE TRAIT / PERK</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PERKS.map(p => {
+              const Icon = p.icon;
+              return (
+                <div 
+                  key={p.id}
+                  onClick={() => setPerkId(p.id)}
+                  className={`p-4 rounded-xl cursor-pointer border-2 transition-all flex flex-col gap-2 ${perkId === p.id ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_15px_rgba(16,185,129,0.3)] transform scale-[1.02]' : 'border-border/40 bg-background/50 hover:border-emerald-500/50'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-5 h-5 text-emerald-400" />
+                    <h3 className="font-bold text-foreground text-sm">{p.name}</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{p.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+            <Button 
+              disabled={loading || name.length < 3} 
+              onClick={handleCreate}
+              className="w-full h-14 mt-8 text-base font-bold bg-gradient-to-r from-purple-600 via-emerald-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white rounded-xl shadow-lg transition-all disabled:opacity-50 uppercase tracking-wider"
+            >
+              {loading ? "INITIALIZING OPERATIVE..." : "ENTER THE LOBBY"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

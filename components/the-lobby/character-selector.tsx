@@ -41,18 +41,20 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 md:p-8 bg-card/90 border border-border/50 rounded-2xl text-foreground sg-glass shadow-2xl backdrop-blur-xl my-4 overflow-y-auto max-h-[90vh]">
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Gamepad2 className="w-8 h-8 text-primary" />
-          <h1 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
-            THE LOBBY VAULT
-          </h1>
-        </div>
-        <p className="text-muted-foreground text-xs md:text-sm">Select your active operative to enter Saints Gaming Lobby</p>
-      </div>
+    <div className="fixed inset-0 w-full h-full bg-[#0a0a0f] overflow-y-auto">
+      <div className="min-h-full flex flex-col items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-4xl bg-card/90 border border-border/50 rounded-2xl text-foreground sg-glass shadow-2xl backdrop-blur-xl p-6 md:p-8">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Gamepad2 className="w-8 h-8 text-primary" />
+              <h1 className="text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
+                THE LOBBY VAULT
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-xs md:text-sm">Select your active operative to enter Saints Gaming Lobby</p>
+          </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {characters.map((char) => {
           let state = { level: 1 };
           try {
@@ -115,17 +117,19 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
           );
         })}
 
-        {/* Create New Card */}
-        <div
-          onClick={onCreateNew}
-          className="p-6 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/60 bg-background/30 hover:bg-primary/5 cursor-pointer transition-all flex flex-col items-center justify-center gap-3 min-h-[180px] group shadow-lg"
-        >
-          <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Plus className="w-6 h-6 text-primary" />
+            {/* Create New Card */}
+            <div
+              onClick={onCreateNew}
+              className="p-6 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/60 bg-background/30 hover:bg-primary/5 cursor-pointer transition-all flex flex-col items-center justify-center gap-3 min-h-[180px] group shadow-lg"
+            >
+              <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="w-6 h-6 text-primary" />
+              </div>
+              <p className="text-sm font-bold text-foreground group-hover:text-primary uppercase tracking-wider">
+                Create Operative
+              </p>
+            </div>
           </div>
-          <p className="text-sm font-bold text-foreground group-hover:text-primary uppercase tracking-wider">
-            Create Operative
-          </p>
         </div>
       </div>
     </div>

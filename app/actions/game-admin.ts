@@ -23,6 +23,7 @@ export async function saveWorldMap(data: {
   gridData: string;
   gatesData: string;
   npcsData: string;
+  encountersData: string;
 }) {
   try {
     const isAdmin = await verifyAdmin();
@@ -38,6 +39,7 @@ export async function saveWorldMap(data: {
           gridData: data.gridData,
           gatesData: data.gatesData,
           npcsData: data.npcsData,
+          encountersData: data.encountersData,
           version: existing.version + 1
         }
       });
@@ -49,6 +51,7 @@ export async function saveWorldMap(data: {
           gridData: data.gridData,
           gatesData: data.gatesData,
           npcsData: data.npcsData,
+          encountersData: data.encountersData,
           version: 1
         }
       });

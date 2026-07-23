@@ -46,7 +46,7 @@ const NAV_ITEMS = [
   { href: "/lobby", label: "The Lobby", icon: Gamepad2 },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false }: { session: Session | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion = "2.0.3" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -329,7 +329,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "1.7.1"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.0.2"}</span>
           </div>
         </div>
       </div>

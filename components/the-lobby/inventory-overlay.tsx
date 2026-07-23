@@ -24,11 +24,26 @@ export default function InventoryOverlay() {
     }
   };
 
+  const playerState = useGameStore(state => state.player);
+  const maxWeight = playerState.maxWeight || (playerState.perk === 'PACK_MULE' ? 150 : 100);
+  const currentWeight = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
+
   return (
     <RpgPanel title="INVENTORY" onClose={() => setGameMode('EXPLORING')}>
-      <div className="flex justify-between items-center bg-black/60 p-2 rounded border border-[#3e2723] mb-4">
-        <span className="text-[#e0e0e0] font-bold font-mono">CREDITS</span>
-        <span className="text-yellow-400 font-bold font-mono text-lg">{credits.toLocaleString()} C</span>
+      <div className="flex justify-between items-center bg-black/60 p-2.5 rounded border border-[#3e2723] mb-4 gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-[#e0e0e0] font-bold font-mono text-xs">CREDITS:</span>
+          <span className="text-yellow-400 font-bold font-mono text-base">{credits.toLocaleString()} C</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[#e0e0e0] font-bold font-mono text-xs">CARRY WEIGHT:</span>
+          <span className={`font-bold font-mono text-base ${currentWeight > maxWeight ? 'text-red-400' : 'text-emerald-400'}`}>
+            {currentWeight} / {maxWeight} kg
+          </span>
+          {playerState.perk === 'PACK_MULE' && (
+            <span className="text-[9px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded uppercase font-bold">PACK MULE</span>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar">
