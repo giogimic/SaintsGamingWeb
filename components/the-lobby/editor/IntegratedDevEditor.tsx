@@ -10,11 +10,7 @@ import {
   Swords, 
   Save, 
   X, 
-  Sliders, 
-  Sparkles, 
-  Eye, 
-  Settings2,
-  RefreshCw
+  Sliders
 } from 'lucide-react';
 
 interface IntegratedDevEditorProps {
@@ -42,16 +38,16 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
   const [encounterRate, setEncounterRate] = useState<number>(15); // 15% chance per step in grass
   const [minLevel, setMinLevel] = useState<number>(2);
   const [maxLevel, setMaxLevel] = useState<number>(5);
-  const [selectedSpecies, setSelectedSpecies] = useState<string>('ignis');
+  const [_selectedSpecies, _setSelectedSpecies] = useState<string>('ignis');
 
   // Battle Parameters State
-  const [battleBackground, setBattleBackground] = useState<string>('forest_field');
+  const [_battleBackground, _setBattleBackground] = useState<string>('forest_field');
   const [weatherEffect, setWeatherEffect] = useState<string>('clear');
   const [aiDifficulty, setAiDifficulty] = useState<string>('normal');
 
   // NPC Configuration State
   const [npcName, setNpcName] = useState<string>('Keeper Alex');
-  const [npcSprite, setNpcSprite] = useState<string>('/assets/sprites/npc_old_man.png');
+  const [_npcSprite, _setNpcSprite] = useState<string>('/assets/sprites/npc_old_man.png');
   const [npcDialogue, setNpcDialogue] = useState<string>('Welcome to the animist grounds, Tamer!');
 
   // Listen for Ctrl+E hotkey toggle

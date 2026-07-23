@@ -10,8 +10,7 @@ import {
   StandardMaterial,
   Texture,
   Mesh,
-  TransformNode,
-  Matrix
+  TransformNode
 } from '@babylonjs/core';
 
 export interface BabylonTileMapData {

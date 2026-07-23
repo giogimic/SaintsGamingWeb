@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import GameCanvas from './game-canvas';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
 import IntegratedDevEditor from './editor/IntegratedDevEditor';
 import SaintsDexOverlay from './SaintsDexOverlay';
