@@ -293,7 +293,7 @@ export interface CraftedItemAffix {
   bonusValue: number;
 }
 
-export function rollCraftedItemAffix(craftingLevel: number): CraftedItemAffix {
+export function rollCraftedItemAffix(_craftingLevel: number): CraftedItemAffix {
   const roll = Math.random() * 100;
   let rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary' = 'Common';
 

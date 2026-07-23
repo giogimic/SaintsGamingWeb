@@ -19,7 +19,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const engineRef = useRef<BabylonEngine | null>(null);
   const player = useGameStore((state) => state.player);
   const otherPlayers = useGameStore((state) => state.otherPlayers);
-  const currentMapId = useGameStore((state) => state.currentMapId);
+  const _currentMapId = useGameStore((state) => state.currentMapId);
 
   useEffect(() => {
     if (!canvasRef.current) return;
