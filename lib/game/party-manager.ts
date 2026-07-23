@@ -4,7 +4,7 @@
 
 import { io, Socket } from 'socket.io-client';
 import { EventEmitter } from 'events';
-import { useGameStore } from '@/components/cyber-terminal/store';
+import { useGameStore } from '@/components/the-lobby/store';
 
 class PartyManager extends EventEmitter {
   private socket: Socket | null = null;

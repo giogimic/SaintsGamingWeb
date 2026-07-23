@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED';
+export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
 
 export type Point = { x: number; y: number };
 
@@ -92,6 +92,9 @@ export interface PlayerState {
     quarry: string | null;
   };
   lastBaseCollection: number;
+  perk?: 'SWIFT_TRAVELER' | 'ACROBAT' | 'PACK_MULE' | 'MASTER_TAMER' | 'STAMINA_SURGE';
+  maxWeight?: number;
+  maxPartySize?: number;
   // Tuxemon system
   tuxemonParty: TuxemonPartyMember[];
   tuxemonInventory: Record<string, number>;

@@ -23,9 +23,10 @@ interface TileInfo {
 interface MapEditorProps {
   mapId?: string;
   onSave?: (mapData: any) => void;
+  onChange?: (grid: number[][]) => void;
 }
 
-export default function MapEditorWebGL({ mapId = 'route_1', onSave }: MapEditorProps) {
+export default function MapEditorWebGL({ mapId = 'route_1', onSave, onChange }: MapEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<Application | null>(null);
   const [selectedTile, setSelectedTile] = useState<number>(1);
@@ -205,7 +206,9 @@ export default function MapEditorWebGL({ mapId = 'route_1', onSave }: MapEditorP
         }
       }
       
+      
       setMapGrid(newGrid);
+      onChange?.(newGrid);
       renderMap();
     };
 

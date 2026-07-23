@@ -6,6 +6,7 @@ import { ProfileActions } from "./profile-actions";
 import { ProfileMediaShowcase } from "./profile-media-showcase";
 import { AchievementShowcase } from "@/components/achievements/achievement-showcase";
 import { ActivityStats } from "@/components/profile/activity-stats";
+import { ProfileCharacterDetails } from "@/components/profile/ProfileCharacterDetails";
 import { auth } from "@/auth";
 import { Metadata } from "next";
 import Link from "next/link";
@@ -127,18 +128,9 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           </div>
           
           {profile.gameCharacters && profile.gameCharacters.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-4">
               {profile.gameCharacters.map((char) => (
-                <div key={char.id} className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-primary/50 transition-colors">
-                  <div className="w-16 h-16 bg-muted rounded-md flex items-center justify-center shrink-0 border border-white/5">
-                    {/* Placeholder for Character Sprite */}
-                    <Image src={`/assets/npcs/${char.spriteId}.png`} alt={char.spriteId} width={32} height={32} className="pixelated" unoptimized onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{char.name}</h3>
-                    <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">{char.classId}</p>
-                  </div>
-                </div>
+                <ProfileCharacterDetails key={char.id} character={char as any} />
               ))}
             </div>
           ) : (

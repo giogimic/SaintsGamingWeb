@@ -38,6 +38,24 @@ export default function CraftingOverlay() {
       modifyInventory(itemId, -qty);
     });
 
+    // Roll ARPG Rarity & Affixes
+    const roll = Math.random();
+    let rarity = 'Common';
+    let affixMsg = '';
+    if (roll < 0.01) {
+      rarity = 'LEGENDARY';
+      affixMsg = ' (+25% Damage, +15% XP, Lifesteal)';
+    } else if (roll < 0.05) {
+      rarity = 'EPIC';
+      affixMsg = ' (+15% Damage, +10% XP)';
+    } else if (roll < 0.15) {
+      rarity = 'RARE';
+      affixMsg = ' (+10% Damage)';
+    } else if (roll < 0.35) {
+      rarity = 'UNCOMMON';
+      affixMsg = ' (+5% Damage)';
+    }
+
     // Grant Item
     modifyInventory(recipe.resultItemId, 1);
     
@@ -45,7 +63,8 @@ export default function CraftingOverlay() {
     gainSkillXp(recipe.skill, recipe.xpReward);
 
     const resultItem = getItem(recipe.resultItemId);
-    showToast(`Crafted ${resultItem?.name}! (+${recipe.xpReward} ${recipe.skill} XP)`);
+    const prefix = rarity !== 'Common' ? `[${rarity}] ` : '';
+    showToast(`Crafted ${prefix}${resultItem?.name}!${affixMsg} (+${recipe.xpReward} ${recipe.skill} XP)`);
   };
 
   return (

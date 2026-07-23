@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 const TUXEMON_MAPS_DIR = 'C:\\Users\\Matth\\OneDrive\\Desktop\\Tuxemon-0.5-rc1\\mods\\tuxemon\\maps';
-const OUTPUT_FILE = path.join(process.cwd(), 'components', 'cyber-terminal', 'data', 'campaign-maps.ts');
+const OUTPUT_FILE = path.join(process.cwd(), 'components', 'the-lobby', 'data', 'campaign-maps.ts');
 
 interface MapDefinition {
   id: string;

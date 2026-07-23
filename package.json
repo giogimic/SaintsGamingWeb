@@ -1,6 +1,6 @@
 {
-  "name": "saints-gaming-web",
-  "version": "1.7.1",
+  "name": "saints-web",
+  "version": "2.0.5",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

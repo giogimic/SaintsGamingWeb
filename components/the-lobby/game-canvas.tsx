@@ -7,8 +7,9 @@ import { useGameStore } from './store';
 import { MAP_COLS, MAP_ROWS, TILE_SIZE } from './constants';
 import { GAME_MAPS } from './data/maps';
 import { QUEST_DB } from './data/quests';
-import { getCreatureById } from './data/saints-dex';
+import { getCreatureById, getRandomEncounter, SAINTS_DEX } from './data/saints-dex';
 import { setEncryptedAmbient } from './audio';
+import VirtualDPad from './VirtualDPad';
 
 // TileRegistry cache
 interface TileInfo {
@@ -204,6 +205,13 @@ export default function GameCanvas() {
         targetPixelPos = { ...currentPixelPos };
         isMoving = false;
         useGameStore.getState().clearPath();
+
+        if (newMapId === 'PROFESSOR_LAB') {
+          const activeDaemon = useGameStore.getState().player.activeDaemonId;
+          if (!activeDaemon) {
+            useGameStore.getState().setGameMode('PROFESSOR_LAB');
+          }
+        }
       }
     );
 
@@ -557,9 +565,50 @@ export default function GameCanvas() {
               }
             } else if (tileType === 2) {
               setEncryptedAmbient(true);
-              if (Math.random() < 0.1) {
-                useGameStore.getState().clearPath();
-                useGameStore.getState().setGameMode('BATTLE');
+              const pool = mapData.encounterPool || [];
+              if (pool.length > 0) {
+                // Calculate total weight to see if an encounter triggers
+                const totalWeight = pool.reduce((sum, e) => sum + e.weight, 0);
+                if (Math.random() < totalWeight) {
+                  useGameStore.getState().clearPath();
+                  let roll = Math.random() * totalWeight;
+                  let selectedEncounter = pool[0];
+                  for (const enc of pool) {
+                    if (roll < enc.weight) {
+                      selectedEncounter = enc;
+                      break;
+                    }
+                    roll -= enc.weight;
+                  }
+                  
+                  const species = getCreatureById(selectedEncounter.speciesId) || SAINTS_DEX[0];
+                  const randomLevel = Math.floor(Math.random() * (selectedEncounter.maxLevel - selectedEncounter.minLevel + 1)) + selectedEncounter.minLevel;
+                  const creature = { ...species, level: randomLevel };
+                  
+                  const activeDaemonId = useGameStore.getState().player.activeDaemonId;
+                  useGameStore.getState().setActiveBattle({
+                    enemy: creature,
+                    playerCreature: activeDaemonId 
+                      ? getCreatureById(activeDaemonId) 
+                      : SAINTS_DEX[0]
+                  });
+                  useGameStore.getState().setGameMode('BATTLE');
+                  useGameStore.getState().showToast(`Wild ${creature.name} (Lv.${randomLevel}) appeared!`);
+                }
+              } else {
+                if (Math.random() < 0.15) {
+                  useGameStore.getState().clearPath();
+                  const creature = getRandomEncounter();
+                  const activeDaemonId = useGameStore.getState().player.activeDaemonId;
+                  useGameStore.getState().setActiveBattle({
+                    enemy: creature,
+                    playerCreature: activeDaemonId 
+                      ? getCreatureById(activeDaemonId) 
+                      : SAINTS_DEX[0]
+                  });
+                  useGameStore.getState().setGameMode('BATTLE');
+                  useGameStore.getState().showToast(`Wild ${creature.name} appeared!`);
+                }
               }
             } else {
               setEncryptedAmbient(false);
@@ -762,6 +811,8 @@ export default function GameCanvas() {
       easystar.calculate();
     };
 
+    let lastFacing: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT' = 'DOWN';
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const state = useGameStore.getState();
       if (state.gameMode !== 'EXPLORING') return;
@@ -771,10 +822,29 @@ export default function GameCanvas() {
       let nextX = pos.x;
       let nextY = pos.y;
 
-      if (e.key === 'w' || e.key === 'ArrowUp') nextY -= 1;
-      else if (e.key === 's' || e.key === 'ArrowDown') nextY += 1;
-      else if (e.key === 'a' || e.key === 'ArrowLeft') nextX -= 1;
-      else if (e.key === 'd' || e.key === 'ArrowRight') nextX += 1;
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        const playerPerk = state.player.perk;
+        const jumpDistance = playerPerk === 'ACROBAT' ? 2 : 1;
+        let jumpX = pos.x;
+        let jumpY = pos.y;
+
+        if (lastFacing === 'UP') jumpY -= jumpDistance;
+        else if (lastFacing === 'DOWN') jumpY += jumpDistance;
+        else if (lastFacing === 'LEFT') jumpX -= jumpDistance;
+        else if (lastFacing === 'RIGHT') jumpX += jumpDistance;
+
+        if (checkTileValid(jumpX, jumpY)) {
+          useGameStore.getState().enqueuePath([{ x: jumpX, y: jumpY }]);
+          useGameStore.getState().showToast(playerPerk === 'ACROBAT' ? '🦘 DOUBLE JUMP!' : '🦘 HOP!');
+        }
+        return;
+      }
+
+      if (e.key === 'w' || e.key === 'ArrowUp') { nextY -= 1; lastFacing = 'UP'; }
+      else if (e.key === 's' || e.key === 'ArrowDown') { nextY += 1; lastFacing = 'DOWN'; }
+      else if (e.key === 'a' || e.key === 'ArrowLeft') { nextX -= 1; lastFacing = 'LEFT'; }
+      else if (e.key === 'd' || e.key === 'ArrowRight') { nextX += 1; lastFacing = 'RIGHT'; }
       else return;
 
       if (checkTileValid(nextX, nextY)) {
@@ -797,11 +867,28 @@ export default function GameCanvas() {
   }, []);
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      width={MAP_COLS * TILE_SIZE} 
-      height={MAP_ROWS * TILE_SIZE}
-      className="border-4 border-[#333] rounded-lg shadow-[0_0_50px_rgba(74,222,128,0.2)] cursor-pointer bg-[#4ade80] max-h-[85vh] w-full max-w-5xl aspect-video object-contain touch-none select-none image-pixelated"
-    />
+    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <canvas 
+        ref={canvasRef} 
+        width={MAP_COLS * TILE_SIZE} 
+        height={MAP_ROWS * TILE_SIZE}
+        className="border-2 border-emerald-500/30 rounded-lg shadow-[0_0_60px_rgba(16,185,129,0.3)] cursor-pointer bg-[#1a1a2e] max-h-[90vh] w-full max-w-6xl aspect-video object-contain touch-none select-none image-pixelated"
+      />
+      {/* HUD Overlay */}
+      <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
+        <div className="bg-black/70 backdrop-blur-sm border border-emerald-500/30 rounded-lg px-3 py-2 text-white text-xs font-mono">
+          <div className="text-emerald-400 font-bold">SAINTS TAMER</div>
+          <div className="text-gray-400">v1.0.0</div>
+        </div>
+      </div>
+      {/* Controls Hint - Desktop Only */}
+      <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm border border-emerald-500/30 rounded-lg px-3 py-2 text-white text-xs font-mono pointer-events-none hidden md:block">
+        <div className="text-emerald-400 font-bold mb-1">CONTROLS</div>
+        <div className="text-gray-300">WASD / Click to Move</div>
+        <div className="text-gray-300">E - Interact</div>
+      </div>
+      {/* Virtual D-Pad for Mobile */}
+      <VirtualDPad />
+    </div>
   );
 }

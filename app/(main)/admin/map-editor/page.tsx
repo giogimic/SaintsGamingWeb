@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { saveWorldMap } from '@/app/actions/game-admin';
 import { fetchAllGameQuests, fetchAllGameAssets } from '@/app/actions/game-dev';
-import { GAME_MAPS } from '@/components/cyber-terminal/data/maps';
-import { MAP_COLS, MAP_ROWS, TILE_SIZE } from '@/components/cyber-terminal/constants';
+import { GAME_MAPS } from '@/components/the-lobby/data/maps';
+import { MAP_COLS, MAP_ROWS, TILE_SIZE } from '@/components/the-lobby/constants';
 import { UserPlus, Layers, Save, Trash2 } from 'lucide-react';
 
 const TILE_TYPES = [
@@ -37,8 +37,8 @@ interface PlacedNPC {
 export default function MapEditorPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  const [mapId, setMapId] = useState('SAINTS_VILLAGE');
-  const [mapName, setMapName] = useState('Saints Village');
+  const [mapId, setMapId] = useState('PLAYER_HOUSE_BEDROOM');
+  const [mapName, setMapName] = useState('Player Bedroom');
   const [grid, setGrid] = useState<number[][]>([]);
   const [placedNpcs, setPlacedNpcs] = useState<PlacedNPC[]>([]);
   
@@ -66,18 +66,17 @@ export default function MapEditorPage() {
     loadDevData();
   }, []);
 
-  // Initialize empty grid & map NPCs
+  // Load selected map grid from GAME_MAPS registry
   useEffect(() => {
-    if (grid.length === 0) {
-      const initialMap = GAME_MAPS['SAINTS_VILLAGE'];
-      if (initialMap) {
-        setGrid(JSON.parse(JSON.stringify(initialMap.grid)));
-      } else {
-        const newGrid = Array(MAP_ROWS).fill(0).map(() => Array(MAP_COLS).fill(0));
-        setGrid(newGrid);
-      }
+    const targetMap = GAME_MAPS[mapId];
+    if (targetMap) {
+      setGrid(JSON.parse(JSON.stringify(targetMap.grid)));
+      setMapName(targetMap.name);
+    } else if (grid.length === 0) {
+      const newGrid = Array(MAP_ROWS).fill(0).map(() => Array(MAP_COLS).fill(0));
+      setGrid(newGrid);
     }
-  }, [grid.length]);
+  }, [mapId]);
 
   // Draw Grid & Placed NPCs
   useEffect(() => {
@@ -188,7 +187,8 @@ export default function MapEditorPage() {
       name: mapName,
       gridData: JSON.stringify(grid),
       gatesData: JSON.stringify({}),
-      npcsData: JSON.stringify(placedNpcs)
+      npcsData: JSON.stringify(placedNpcs),
+      encountersData: JSON.stringify([])
     });
 
     if (result.success) {
@@ -212,6 +212,20 @@ export default function MapEditorPage() {
             <CardTitle>Map & Mode Config</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Select Campaign / Custom Map</label>
+              <select
+                value={mapId}
+                onChange={e => setMapId(e.target.value)}
+                className="w-full mt-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none"
+              >
+                {Object.values(GAME_MAPS).map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} ({m.id})
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Map ID</label>
               <Input value={mapId} onChange={e => setMapId(e.target.value)} placeholder="e.g. SAINTS_VILLAGE" />

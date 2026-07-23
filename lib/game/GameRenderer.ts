@@ -9,7 +9,7 @@
  */
 
 import { Application, Container, Sprite, Texture, Rectangle } from 'pixi.js';
-import { TILE_SIZE } from '@/components/cyber-terminal/constants';
+import { TILE_SIZE } from '@/components/the-lobby/constants';
 
 interface AtlasFrame {
   filename: string;
