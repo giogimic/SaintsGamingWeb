@@ -21,7 +21,6 @@ import { GlobalSearch } from "@/components/shared/global-search";
 import { NotificationsMenu } from "@/components/shared/notifications-menu";
 import { ThemeSwitcher } from "@/components/shared/theme-switcher";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import type { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { User as UserIcon, LogOut, Settings, Gamepad2 } from "lucide-react";
 import {
@@ -46,7 +45,7 @@ const NAV_ITEMS = [
   { href: "/lobby", label: "The Lobby", icon: Gamepad2 },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion = "2.0.3" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion: _siteVersion = "2.0.3" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
