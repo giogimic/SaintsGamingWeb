@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 async function updateMap() {
   const dbMap = await prisma.worldMap.findUnique({ where: { id: 'SAINTS_VILLAGE' } });
   if (dbMap) {
-    let grid = JSON.parse(dbMap.gridData);
+    const grid = JSON.parse(dbMap.gridData);
     if (grid[12] && grid[12][14] !== undefined) {
       grid[12][14] = 9; // Add anvil
       await prisma.worldMap.update({

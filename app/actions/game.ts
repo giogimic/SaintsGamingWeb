@@ -156,7 +156,7 @@ export async function unlockGameAchievement(badgeId: string) {
       select: { xp: true, level: true, username: true }
     });
 
-    let newXp = (user?.xp || 0) + 100;
+    const newXp = (user?.xp || 0) + 100;
     let newLevel = user?.level || 1;
 
     // Check if they leveled up

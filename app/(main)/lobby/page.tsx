@@ -1,4 +1,4 @@
-import { CyberTerminal } from '@/components/the-lobby/dynamic';
+import { TheLobby } from '@/components/the-lobby/dynamic';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -11,7 +11,7 @@ export default async function LobbyPage(props: { searchParams: Promise<{ charact
   
   return (
     <div className="fixed inset-0 w-full h-full bg-[#0a0a0f] overflow-hidden">
-      <CyberTerminal characterId={params.characterId} forceCreate={params.create === 'true'} />
+      <TheLobby characterId={params.characterId} forceCreate={params.create === 'true'} />
     </div>
   );
 }

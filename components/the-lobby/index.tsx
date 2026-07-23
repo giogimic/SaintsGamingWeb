@@ -2,14 +2,15 @@
 
 import { useRef, useState, useEffect } from 'react';
 import GameCanvas from './game-canvas';
-import SaintsDexOverlay from './TuxepediaOverlay';
+import GameCanvasBabylon from './babylon/GameCanvasBabylon';
+import IntegratedDevEditor from './editor/IntegratedDevEditor';
+import SaintsDexOverlay from './SaintsDexOverlay';
 import MapEditorPanel from './MapEditorPanel';
 import BattleOverlay from './battle-overlay';
 import ShopOverlay from './shop-overlay';
 import SkillsOverlay from './skills-overlay';
 import InventoryOverlay from './inventory-overlay';
 import PartyOverlay from './party-overlay';
-import EquipmentOverlay from './equipment-overlay';
 import CraftingOverlay from './crafting-overlay';
 import BaseOverlay from './base-overlay';
 import DialogOverlay from './dialog-overlay';
@@ -31,7 +32,7 @@ import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 
-export default function CyberTerminal({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
+export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
@@ -39,6 +40,8 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
   const [chatInput, setChatInput] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isDevEditorOpen, setIsDevEditorOpen] = useState(false);
+  const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
 
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
@@ -245,10 +248,20 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
       ref={containerRef}
       className="relative w-full h-full touch-none select-none bg-[#0a0a0f]"
     >
-      <GameCanvas />
+      <GameCanvasBabylon 
+        activeBrushTileId={activeBrushTileId}
+        isDevEditorOpen={isDevEditorOpen}
+      />
       
       {/* Mobile Controls */}
       <DPad />
+
+      {/* Integrated Dev Editor Overlay */}
+      <IntegratedDevEditor 
+        isOpen={isDevEditorOpen} 
+        onClose={() => setIsDevEditorOpen(false)} 
+        onBrushTileChange={(tileId) => setActiveBrushTileId(tileId)}
+      />
 
       {/* Toast Notification */}
       {toast && (
@@ -259,12 +272,20 @@ export default function CyberTerminal({ characterId: initialCharacterId, forceCr
 
       {gameMode === 'EXPLORING' && (
         <div className="absolute top-4 left-4 right-4 flex justify-between z-20 pointer-events-none">
-          <button
-            onClick={toggleFullscreen}
-            className="px-3 py-1 bg-white/90 text-black border-2 border-[#333] rounded font-bold text-xs hover:bg-gray-200 transition-colors shadow-md pointer-events-auto"
-          >
-            {isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={toggleFullscreen}
+              className="px-3 py-1 bg-white/90 text-black border-2 border-[#333] rounded font-bold text-xs hover:bg-gray-200 transition-colors shadow-md pointer-events-auto"
+            >
+              {isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}
+            </button>
+            <button
+              onClick={() => setIsDevEditorOpen(!isDevEditorOpen)}
+              className="px-3 py-1 bg-cyan-950/90 text-cyan-300 border-2 border-cyan-500/50 rounded font-bold text-xs hover:bg-cyan-900 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
+            >
+              ⚙ DEV EDITOR (CTRL+E)
+            </button>
+          </div>
 
           <div className="flex gap-2">
             <button

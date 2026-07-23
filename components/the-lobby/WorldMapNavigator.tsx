@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GAME_MAPS, GameMapData } from './data/maps';
+import { GAME_MAPS } from './data/maps';
 
 interface WorldMapNavigatorProps {
   currentMapId: string;

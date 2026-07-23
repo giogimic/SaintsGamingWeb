@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getTopLobbyOperatives } from '@/app/actions/game';
-import { Trophy, Coins, Shield, Crown, BadgeCheck, ShieldCheck, User, Sparkles } from 'lucide-react';
+import { Trophy, Crown, BadgeCheck, ShieldCheck, User, Sparkles } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Global Operatives Leaderboards | Saints Gaming',
