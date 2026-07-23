@@ -129,8 +129,8 @@ async function runImport() {
 
     const { grid } = parseTmxToGrid(content);
 
-    let gates: MapDefinition['gates'] = {};
-    let npcs: MapDefinition['npcs'] = [];
+    const gates: MapDefinition['gates'] = {};
+    const npcs: MapDefinition['npcs'] = [];
 
     if (mapId === 'PLAYER_HOUSE_BEDROOM') {
       setTileSafe(grid, 2, 7, 9);

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import RpgPanel from './rpg-panel';
 import { useGameStore } from './store';
 import { getTopLobbyOperatives } from '@/app/actions/game';
-import { Trophy, Crown, BadgeCheck, ShieldCheck, User } from 'lucide-react';
+import { Trophy, Crown, BadgeCheck, ShieldCheck } from 'lucide-react';
 
 export default function LeaderboardOverlay() {
   const [operatives, setOperatives] = useState<any[]>([]);

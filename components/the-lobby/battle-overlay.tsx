@@ -66,6 +66,23 @@ export default function BattleOverlay() {
     }
   }, [log, activeBattle?.log]);
 
+  const [showPartyModal, setShowPartyModal] = useState(false);
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [caughtList, setCaughtList] = useState<TuxemonCreature[]>([]);
+
+  // Load caught creatures for party modal
+  useEffect(() => {
+    async function loadParty() {
+      if (playerState.caughtDaemons && playerState.caughtDaemons.length > 0) {
+        const creatures = await Promise.all(
+          playerState.caughtDaemons.map(id => getCreatureById(id))
+        );
+        setCaughtList(creatures.filter((c): c is TuxemonCreature => c !== null));
+      }
+    }
+    loadParty();
+  }, [playerState.caughtDaemons]);
+
   if (isLoading) {
     return (
       <div className="absolute inset-0 bg-[#166534]/95 flex items-center justify-center z-30">
@@ -197,23 +214,6 @@ export default function BattleOverlay() {
       pveEnemyTurn();
     }
   };
-
-  const [showPartyModal, setShowPartyModal] = useState(false);
-  const [showItemModal, setShowItemModal] = useState(false);
-  const [caughtList, setCaughtList] = useState<TuxemonCreature[]>([]);
-
-  // Load caught creatures for party modal
-  useEffect(() => {
-    async function loadParty() {
-      if (playerState.caughtDaemons && playerState.caughtDaemons.length > 0) {
-        const creatures = await Promise.all(
-          playerState.caughtDaemons.map(id => getCreatureById(id))
-        );
-        setCaughtList(creatures.filter((c): c is TuxemonCreature => c !== null));
-      }
-    }
-    loadParty();
-  }, [playerState.caughtDaemons]);
 
   const handleSwitchCreature = async (newCreature: TuxemonCreature) => {
     if (!isPlayerTurn || isPvp) return;

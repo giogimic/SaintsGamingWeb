@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import RpgPanel from './rpg-panel';
 import { useGameStore } from './store';
-import { ITEM_DB, getItem } from './data/items';
-import { Scale, Search, Tag, PlusCircle, CheckCircle } from 'lucide-react';
+import { getItem } from './data/items';
+import { Search, PlusCircle, Loader2 } from 'lucide-react';
 
 interface TradeListing {
   id: string;
@@ -26,18 +26,18 @@ export default function GtcOverlay() {
   const [filterType, setFilterType] = useState<'ALL' | 'BEAST' | 'EQUIPMENT' | 'MATERIAL'>('ALL');
   const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    fetchListings();
-  }, [filterType]);
-
-  const fetchListings = async () => {
+  const fetchListings = useCallback(async () => {
     setIsLoading(true);
     const res = await getLiveGtcListings(filterType);
     if (res.success && res.listings) {
       setListings(res.listings as TradeListing[]);
     }
     setIsLoading(false);
-  };
+  }, [filterType]);
+
+  React.useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   // Sell form state
   const [sellType, setSellType] = useState<'EQUIPMENT' | 'MATERIAL'>('MATERIAL');
@@ -168,7 +168,11 @@ export default function GtcOverlay() {
 
             {/* Trade Grid */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-              {filteredListings.length === 0 ? (
+              {isLoading ? (
+                <div className="text-slate-400 text-xs italic text-center p-8 border border-dashed rounded flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading market listings...
+                </div>
+              ) : filteredListings.length === 0 ? (
                 <div className="text-slate-400 text-xs italic text-center p-8 border border-dashed rounded">
                   No active trade listings found.
                 </div>
@@ -215,6 +219,18 @@ export default function GtcOverlay() {
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">CREATE NEW MARKET TRADE</h3>
             
             <div className="space-y-3">
+              <div>
+                <label className="text-xs text-slate-300 block mb-1">Listing Type</label>
+                <select
+                  value={sellType}
+                  onChange={e => setSellType(e.target.value as 'EQUIPMENT' | 'MATERIAL')}
+                  className="w-full bg-black/60 border border-slate-700 rounded p-2 text-xs text-white"
+                >
+                  <option value="MATERIAL">Material</option>
+                  <option value="EQUIPMENT">Equipment</option>
+                </select>
+              </div>
+
               <div>
                 <label className="text-xs text-slate-300 block mb-1">Select Item from Inventory</label>
                 <select

@@ -1,5 +1,5 @@
 /**
- * Battle Engine - Core battle logic and state machine
+ * Battle Engine - Core battle logic and state machine for Tuxemon 15-Type System
  */
 
 export type BattlePhase = 
@@ -19,6 +19,7 @@ export interface BattleMove {
   accuracy: number;
   pp: number;
   maxPp: number;
+  category?: 'physical' | 'special' | 'status';
   target: 'enemy' | 'self' | 'ally';
 }
 
@@ -35,10 +36,18 @@ export interface BattleMonster {
     rangedAtk: number;
     rangedDef: number;
     speed: number;
+    // Tuxemon stat aliases
+    hp?: number;
+    atk?: number;
+    def?: number;
+    spd?: number;
+    ratk?: number;
+    rdef?: number;
   };
   moves: BattleMove[];
   status: string | null;
   types: string[];
+  baseCatchRate?: number;
 }
 
 export interface BattleState {
@@ -53,28 +62,31 @@ export interface BattleState {
   result: 'win' | 'lose' | 'flee' | 'capture' | null;
 }
 
-// Type effectiveness chart (14 elements)
-const TYPE_CHART: Record<string, Record<string, number>> = {
-  fire: { water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, fire: 0.5 },
-  water: { fire: 2, grass: 0.5, ground: 2, rock: 2, dragon: 0.5, water: 0.5 },
-  grass: { water: 2, fire: 0.5, ground: 2, rock: 2, flying: 0.5, poison: 0.5, dragon: 0.5, grass: 0.5 },
-  electric: { water: 2, flying: 2, ground: 0, electric: 0.5, grass: 0.5, dragon: 0.5 },
-  ice: { grass: 2, ground: 2, flying: 2, dragon: 2, fire: 0.5, water: 0.5, ice: 0.5 },
-  ground: { fire: 2, electric: 2, poison: 2, rock: 2, grass: 0.5, flying: 0, bug: 0.5 },
-  flying: { grass: 2, fighting: 2, bug: 2, electric: 0.5, rock: 0.5 },
-  psychic: { fighting: 2, poison: 2, psychic: 0.5 },
-  bug: { grass: 2, psychic: 2, fire: 0.5, fighting: 0.5, flying: 0.5, poison: 0.5, bug: 0.5 },
-  rock: { fire: 2, ice: 2, flying: 2, bug: 2, fighting: 0.5, ground: 0.5 },
-  dragon: { dragon: 2 },
-  dark: { psychic: 2, ghost: 2, fighting: 0.5, dark: 0.5 },
-  ghost: { psychic: 2, ghost: 2, dark: 0.5 },
-  normal: { ghost: 0, rock: 0.5 },
+// Tuxemon 15 Elemental Type Effectiveness Chart
+const TUXEMON_TYPE_CHART: Record<string, Record<string, number>> = {
+  fire: { water: 0.5, earth: 0.5, wood: 2, frost: 2, metal: 2, fire: 0.5 },
+  water: { fire: 2, earth: 2, wood: 0.5, lightning: 0.5, water: 0.5 },
+  earth: { fire: 2, lightning: 2, wood: 0.5, metal: 2, earth: 0.5 },
+  wood: { water: 2, earth: 2, fire: 0.5, metal: 0.5, venom: 0.5, wood: 0.5 },
+  metal: { wood: 2, frost: 2, fire: 0.5, lightning: 0.5, metal: 0.5 },
+  lightning: { water: 2, metal: 2, earth: 0.5, wood: 0.5, lightning: 0.5 },
+  aether: { cosmic: 2, shadow: 2, heroic: 0.5, aether: 0.5 },
+  cosmic: { aether: 2, heroic: 2, shadow: 0.5, cosmic: 0.5 },
+  frost: { wood: 2, sky: 2, fire: 0.5, metal: 0.5, frost: 0.5 },
+  heroic: { shadow: 2, venom: 2, cosmic: 0.5, heroic: 0.5 },
+  normal: { shadow: 0.5, normal: 1 },
+  shadow: { normal: 2, aether: 2, heroic: 0.5, shadow: 0.5 },
+  sky: { wood: 2, venom: 2, lightning: 0.5, frost: 0.5, sky: 0.5 },
+  venom: { wood: 2, heroic: 2, metal: 0.5, venom: 0.5 },
+  none: {}
 };
 
 export function getTypeEffectiveness(attackType: string, defenderTypes: string[]): number {
   let multiplier = 1;
+  const attackKey = attackType.toLowerCase();
   for (const defType of defenderTypes) {
-    const effectiveness = TYPE_CHART[attackType]?.[defType] ?? 1;
+    const defKey = defType.toLowerCase();
+    const effectiveness = TUXEMON_TYPE_CHART[attackKey]?.[defKey] ?? 1;
     multiplier *= effectiveness;
   }
   return multiplier;
@@ -85,12 +97,16 @@ export function calculateDamage(
   defender: BattleMonster,
   move: BattleMove
 ): { damage: number; effectiveness: number; critical: boolean } {
-  // Base damage formula
+  // Base damage formula using Tuxemon stats
   const levelFactor = (2 * attacker.level) / 5 + 2;
-  const attackStat = move.type === 'physical' ? attacker.stats.meleeAtk : attacker.stats.rangedAtk;
-  const defenseStat = move.type === 'physical' ? defender.stats.meleeDef : defender.stats.rangedDef;
+  const attackStat = move.category === 'special' 
+    ? (attacker.stats.rangedAtk || attacker.stats.ratk || 10) 
+    : (attacker.stats.meleeAtk || attacker.stats.atk || 10);
+  const defenseStat = move.category === 'special' 
+    ? (defender.stats.rangedDef || defender.stats.rdef || 10) 
+    : (defender.stats.meleeDef || defender.stats.def || 10);
   
-  let damage = ((levelFactor * move.power * attackStat) / defenseStat) / 50 + 2;
+  let damage = ((levelFactor * move.power * attackStat) / Math.max(1, defenseStat)) / 50 + 2;
   
   // Type effectiveness
   const effectiveness = getTypeEffectiveness(move.type, defender.types);
@@ -102,7 +118,7 @@ export function calculateDamage(
     damage *= 1.5;
   }
   
-  // Random factor (0.85 - 1.0)
+  // Random variance factor (0.85 - 1.0)
   const randomFactor = 0.85 + Math.random() * 0.15;
   damage *= randomFactor;
   
@@ -113,34 +129,83 @@ export function calculateDamage(
   };
 }
 
+export function executeMove(
+  attacker: BattleMonster,
+  defender: BattleMonster,
+  moveIndex: number
+): { success: boolean; damage: number; effectiveness: number; critical: boolean; message: string } {
+  const move = attacker.moves[moveIndex];
+  if (!move || move.pp <= 0) {
+    return {
+      success: false,
+      damage: 0,
+      effectiveness: 1,
+      critical: false,
+      message: `${attacker.nickname} has no PP left for this move!`
+    };
+  }
+
+  // Deduct 1 PP
+  move.pp = Math.max(0, move.pp - 1);
+
+  // Check move accuracy
+  const hit = Math.random() * 100 < move.accuracy;
+  if (!hit) {
+    return {
+      success: false,
+      damage: 0,
+      effectiveness: 1,
+      critical: false,
+      message: `${attacker.nickname}'s ${move.name} missed!`
+    };
+  }
+
+  const result = calculateDamage(attacker, defender, move);
+  defender.currentHp = Math.max(0, defender.currentHp - result.damage);
+
+  let msg = `${attacker.nickname} used ${move.name}!`;
+  if (result.critical) msg += ' Critical Hit!';
+  if (result.effectiveness > 1) msg += ' Super Effective!';
+  if (result.effectiveness < 1 && result.effectiveness > 0) msg += ' Not Very Effective...';
+
+  return {
+    success: true,
+    damage: result.damage,
+    effectiveness: result.effectiveness,
+    critical: result.critical,
+    message: msg
+  };
+}
+
 export function calculateCatchRate(
   monster: BattleMonster,
   ballType: string
 ): number {
-  // Base catch rates by ball type
+  // Tuxeball Multipliers
   const ballMultipliers: Record<string, number> = {
     tuxeball: 1.0,
     grand_ball: 1.5,
     mega_ball: 2.0,
     ultra_ball: 2.5,
-    master_ball: 255, // Always catches
+    master_ball: 255, // 100% catch rate
   };
   
   const ballMultiplier = ballMultipliers[ballType] || 1.0;
-  
-  // HP factor (lower HP = easier to catch)
+  if (ballMultiplier >= 255) return 1.0;
+
+  // HP factor (lower HP = higher catch chance)
   const hpFactor = (3 * monster.maxHp - 2 * monster.currentHp) / (3 * monster.maxHp);
   
-  // Status bonus
+  // Status bonus multiplier
   const statusBonus = monster.status ? 1.5 : 1.0;
   
-  // Base catch rate (species-specific, using 100 as default)
-  const baseCatchRate = 100;
+  // Species Base Catch Rate
+  const baseCatch = monster.baseCatchRate || 100;
   
-  // Calculate catch chance
-  const catchChance = (baseCatchRate * ballMultiplier * hpFactor * statusBonus) / 255;
+  // Calculate catch probability
+  const catchChance = (baseCatch * ballMultiplier * hpFactor * statusBonus) / 255;
   
-  return Math.min(1, Math.max(0, catchChance));
+  return Math.min(1, Math.max(0.05, catchChance));
 }
 
 export function attemptCapture(monster: BattleMonster, ballType: string): boolean {
@@ -148,11 +213,21 @@ export function attemptCapture(monster: BattleMonster, ballType: string): boolea
   return Math.random() < catchRate;
 }
 
+export function checkEvolutionTrigger(
+  level: number,
+  targetLevel?: number,
+  itemUsed?: string,
+  requiredItem?: string
+): boolean {
+  if (targetLevel && level >= targetLevel) return true;
+  if (itemUsed && requiredItem && itemUsed === requiredItem) return true;
+  return false;
+}
+
 export function createBattleState(
   playerTeam: BattleMonster[],
   enemyTeam: BattleMonster[]
 ): BattleState {
-  // Sort by speed for turn order
   const allMonsters = [...playerTeam, ...enemyTeam].sort((a, b) => b.stats.speed - a.stats.speed);
   const turnQueue = allMonsters.map(m => m.id);
   
@@ -164,7 +239,7 @@ export function createBattleState(
     activeEnemyMonster: enemyTeam[0] || null,
     turnQueue,
     currentTurn: 0,
-    log: ['Battle started!'],
+    log: ['Wild encounter started!'],
     result: null,
   };
 }
@@ -184,4 +259,62 @@ export function getNextActiveMonster(
     }
   }
   return null;
+}
+
+/**
+ * Direct Player vs Keeper Combat Math (Phase B Dual Combat)
+ */
+export function calculateKeeperCombatDamage(
+  attackerLevel: number,
+  weaponPower: number,
+  defenderDefence: number,
+  isActionBlock: boolean = false
+): { damage: number; blocked: boolean } {
+  const baseDamage = ((2 * attackerLevel / 5 + 2) * weaponPower * 12) / Math.max(1, defenderDefence) + 2;
+  let finalDamage = Math.max(1, Math.floor(baseDamage * (0.85 + Math.random() * 0.15)));
+
+  if (isActionBlock) {
+    finalDamage = Math.max(1, Math.floor(finalDamage * 0.5)); // Halve damage on Spacebar timing block
+  }
+
+  return {
+    damage: finalDamage,
+    blocked: isActionBlock
+  };
+}
+
+/**
+ * ARPG Crafting Random Affix Generator (Smithing & Crafting Skills)
+ */
+export interface CraftedItemAffix {
+  rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary';
+  affixName: string;
+  bonusType: 'FIRE_DMG' | 'MAX_HP' | 'CRIT_CHANCE' | 'LIFESTEAL' | 'SPEED';
+  bonusValue: number;
+}
+
+export function rollCraftedItemAffix(craftingLevel: number): CraftedItemAffix {
+  const roll = Math.random() * 100;
+  let rarity: 'Common' | 'Rare' | 'Epic' | 'Legendary' = 'Common';
+
+  if (roll > 95) rarity = 'Legendary';
+  else if (roll > 85) rarity = 'Epic';
+  else if (roll > 60) rarity = 'Rare';
+
+  const bonusScale = rarity === 'Legendary' ? 4 : rarity === 'Epic' ? 3 : rarity === 'Rare' ? 2 : 1;
+  const affixes: { name: string; type: CraftedItemAffix['bonusType']; baseVal: number }[] = [
+    { name: 'Ignited', type: 'FIRE_DMG', baseVal: 5 },
+    { name: 'Vital', type: 'MAX_HP', baseVal: 10 },
+    { name: 'Keen', type: 'CRIT_CHANCE', baseVal: 5 },
+    { name: 'Vampiric', type: 'LIFESTEAL', baseVal: 3 },
+    { name: 'Fleet', type: 'SPEED', baseVal: 4 }
+  ];
+
+  const chosen = affixes[Math.floor(Math.random() * affixes.length)];
+  return {
+    rarity,
+    affixName: `${rarity} ${chosen.name}`,
+    bonusType: chosen.type,
+    bonusValue: chosen.baseVal * bonusScale
+  };
 }

@@ -218,6 +218,21 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.0
+- **Multiplayer 2.5D Sync & Production MMO Release**: Integrated real-time Socket.IO overworld position tracking into the Babylon 2.5D billboard sprite engine, rendered multi-player avatar billboards, and verified zero-error production compilation.
+
+### v2.0.9
+- **RuneScape Skill Integration & Dual Combat System**: Enhanced 27-skill XP progression curve formula, added ARPG crafting item random affix rolls, implemented dual-combat mode (Tuxemon beast-vs-beast phase followed by direct player-vs-keeper combat), and integrated Spacebar action-command damage block math.
+
+### v2.0.8
+- **Tuxemon Engine Unification & Critical Mechanics**: Unified elemental types to Tuxemon 15-type chart, aligned 6-stat system (`hp`, `atk`, `def`, `spd`, `ratk`, `rdef`), implemented move PP consumption, level-up evolution trigger evaluation, and species catch rate math with Tuxeball multipliers.
+
+### v2.0.7
+- **Interactive 2.5D Dev Editor & Map Configurator**: Added live 2.5D raycast pointer tile painting, spawn/respawn drag markers, tall grass encounter brush tool, NPC trainer roster setup, and battle background/weather parameters to the Integrated Dev Editor suite.
+
+### v2.0.6
+- **Babylon.js 2.5D Engine & Integrated Dev Editor Foundation**: Installed `@babylonjs/core` and `@babylonjs/gui`. Removed legacy `cyber-terminal` orphan directory (fixing TS compilation), rebranded exports to `TheLobby` and `SaintsDexOverlay`, and scaffolded Babylon.js 2.5D billboard sprite engine and Integrated Dev Editor suite.
+
 ### v1.4.7
 - **Admin & Dev Console Immersion Overhaul**: Added Game Dev Suite quick links, real-time MMO metrics (Characters, Quests, Assets, Maps) to both main Admin Dashboard and Developer Console.
 

@@ -155,6 +155,8 @@ export interface GameState {
   addTuxemonItem: (itemSlug: string, amount: number) => void;
   removeTuxemonItem: (itemSlug: string, amount: number) => void;
   recordTuxemonCapture: (speciesSlug: string) => void;
+  deductMovePp: (tuxemonId: string, moveIndex: number) => void;
+  evolveTuxemon: (tuxemonId: string, newSpeciesSlug: string, newNickname?: string) => void;
   // Party actions
   inviteToParty: (userId: string) => void;
   acceptPartyInvite: (inviteId: string) => void;
@@ -477,6 +479,23 @@ export const useGameStore = create<GameState>()(
         if (!state.player.tuxemonSpeciesCaught.includes(speciesSlug)) {
           state.player.tuxemonSpeciesCaught.push(speciesSlug);
           state.toast = { id: Date.now(), message: `New species discovered: ${speciesSlug}!` };
+        }
+      }),
+
+      deductMovePp: (tuxemonId, moveIndex) => set((state) => {
+        const beast = state.player.tuxemonParty.find(b => b.id === tuxemonId);
+        if (beast && beast.moves[moveIndex]) {
+          beast.moves[moveIndex].pp = Math.max(0, beast.moves[moveIndex].pp - 1);
+        }
+      }),
+
+      evolveTuxemon: (tuxemonId, newSpeciesSlug, newNickname) => set((state) => {
+        const beast = state.player.tuxemonParty.find(b => b.id === tuxemonId);
+        if (beast) {
+          const oldName = beast.nickname || beast.speciesSlug;
+          beast.speciesSlug = newSpeciesSlug;
+          if (newNickname) beast.nickname = newNickname;
+          state.toast = { id: Date.now(), message: `✨ What?! ${oldName} evolved into ${newSpeciesSlug}! ✨` };
         }
       }),
 

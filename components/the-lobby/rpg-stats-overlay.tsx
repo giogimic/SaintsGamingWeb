@@ -3,7 +3,7 @@
 import React from 'react';
 import RpgPanel from './rpg-panel';
 import { useGameStore } from './store';
-import { Shield, Zap, Award, User, Package, Sparkles } from 'lucide-react';
+import { Shield, Award, User, Sparkles } from 'lucide-react';
 import { ITEM_DB } from './data/items';
 
 export default function RpgStatsOverlay() {

@@ -9,7 +9,6 @@
 
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
 
 // Tuxemon source — already extracted on desktop
 const TUXEMON_SOURCE = process.env.TUXEMON_PATH || 'C:\\Users\\Matth\\OneDrive\\Desktop\\Tuxemon-0.5-rc1';

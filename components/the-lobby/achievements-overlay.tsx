@@ -65,6 +65,15 @@ export default function AchievementsOverlay() {
           </span>
         </div>
 
+        {/* Player Info */}
+        {player && (
+          <div className="px-3 py-2 bg-slate-900/40 border border-slate-800 rounded-xl text-[10px] text-slate-400 font-mono flex items-center gap-3">
+            <span>TRAINER: <span className="text-cyan-300 font-bold">{player.name || 'Unknown'}</span></span>
+            <span>LEVEL: <span className="text-amber-300 font-bold">{player.level || 1}</span></span>
+            <span>DAEMONS: <span className="text-purple-300 font-bold">{player.caughtDaemons?.length || 0}</span></span>
+          </div>
+        )}
+
         {/* Achievement List */}
         <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
           {GAME_ACHIEVEMENTS.map(ach => {
