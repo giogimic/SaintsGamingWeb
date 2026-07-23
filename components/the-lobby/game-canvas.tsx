@@ -94,7 +94,7 @@ function getAnimationFrame(tile: TileInfo): { srcX: number; srcY: number } {
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const socketRef = useRef<Socket | null>(null);
-  const [tileRegistryLoaded, setTileRegistryLoaded] = useState(false);
+  const [_tileRegistryLoaded, setTileRegistryLoaded] = useState(false);
 
   useEffect(() => {
     // Load tile registry on mount
