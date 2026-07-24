@@ -255,12 +255,66 @@ else
     sed -i "s/- \"443:443\"/- \"$HTTPS_PORT:443\"/g" docker-compose.yml
 fi
 
-node scripts/setup-env.mjs \
-    --generate-secret \
-    NEXT_PUBLIC_SITE_URL="http://localhost:$WEB_PORT" \
-    NEXT_PUBLIC_DISCORD_INVITE="" \
-    DB_PROVIDER="sqlite" \
-    DATABASE_URL="file:./prisma/db/dev.db"
+# Database Backend Selection
+DB_PROVIDER_OPT=$(whiptail --title "Database Backend" --menu "Select Database Backend:" 16 75 3 \
+"1" "SQLite (Default)" \
+"2" "MariaDB (Docker - Integrated)" \
+"3" "MySQL/MariaDB (External Host)" 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then exit 1; fi
+
+if [ "$DB_PROVIDER_OPT" = "1" ]; then
+    node scripts/setup-env.mjs \
+        --generate-secret \
+        NEXT_PUBLIC_SITE_URL="http://localhost:$WEB_PORT" \
+        NEXT_PUBLIC_DISCORD_INVITE="" \
+        DB_PROVIDER="sqlite" \
+        DATABASE_URL="file:./prisma/db/dev.db"
+elif [ "$DB_PROVIDER_OPT" = "2" ]; then
+    DB_PASS=$(openssl rand -hex 12)
+    DB_ROOT_PASS=$(openssl rand -hex 12)
+    
+    node scripts/setup-env.mjs \
+        --generate-secret \
+        NEXT_PUBLIC_SITE_URL="http://localhost:$WEB_PORT" \
+        NEXT_PUBLIC_DISCORD_INVITE="" \
+        DB_PROVIDER="mysql" \
+        DATABASE_URL="mysql://saints:${DB_PASS}@db:3306/saints_gaming"
+        
+    cat <<EOF >> docker-compose.yml
+
+  db:
+    image: mariadb:10.11
+    container_name: saints-gaming-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: saints_gaming
+      MARIADB_USER: saints
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+EOF
+    sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+elif [ "$DB_PROVIDER_OPT" = "3" ]; then
+    EXT_HOST=$(whiptail --title "External Database" --inputbox "Enter Database Host/IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
+    EXT_PORT=$(whiptail --title "External Database" --inputbox "Enter Database Port:" 10 60 "3306" 3>&1 1>&2 2>&3)
+    EXT_USER=$(whiptail --title "External Database" --inputbox "Enter Database User:" 10 60 "root" 3>&1 1>&2 2>&3)
+    EXT_PASS=$(whiptail --title "External Database" --passwordbox "Enter Database Password:" 10 60 3>&1 1>&2 2>&3)
+    EXT_DB=$(whiptail --title "External Database" --inputbox "Enter Database Name:" 10 60 "saints_gaming" 3>&1 1>&2 2>&3)
+    
+    node scripts/setup-env.mjs \
+        --generate-secret \
+        NEXT_PUBLIC_SITE_URL="http://localhost:$WEB_PORT" \
+        NEXT_PUBLIC_DISCORD_INVITE="" \
+        DB_PROVIDER="mysql" \
+        DATABASE_URL="mysql://${EXT_USER}:${EXT_PASS}@${EXT_HOST}:${EXT_PORT}/${EXT_DB}"
+fi
 
 # Setup Wizard
 DOMAIN=$(whiptail --title "Domain Setup" --inputbox "Enter your Domain Name (e.g. saintsgaming.net):" 10 60 "saintsgaming.net" 3>&1 1>&2 2>&3)
