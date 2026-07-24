@@ -15,6 +15,7 @@ if [ "$DB_SKIP_MIGRATION" != "true" ]; then
         sleep 3
     fi
     echo "[*] Pushing database schema..."
+    rm -rf prisma/migrations 2>/dev/null || true
     if ! bunx prisma db push --accept-data-loss; then
         echo "[!] ERROR: Database migration failed! Aborting startup."
         exit 1

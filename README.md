@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.12
+- **Production MariaDB Schema Push Fix & Docker Auto-Deploy**: Resolved Docker container startup crash where legacy SQLite migration files caused `prisma db push` MariaDB table conflicts (`Table 'Account' already exists`). Added automatic clearing of `prisma/migrations` in `entrypoint.sh` for clean production deployment.
+
 ### v2.1.11
 - **Critical Hotkey Conflict Resolution**: Fixed global keydown collision where pressing `D` (WASD right movement) intercepted input to trigger `setGameMode('DEX')`, locking overworld movement and opening Saints Dex. Re-mapped Dex hotkey to `X` (`DEX [X]`), restoring 100% unimpeded WASD movement.
 
