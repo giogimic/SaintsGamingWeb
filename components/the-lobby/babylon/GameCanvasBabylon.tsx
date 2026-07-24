@@ -157,6 +157,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       height: mapHeight,
       tileSize: 1,
       tiles: mapData.grid,
+      tileLayers: (mapData as any).tileLayers,
+      tilesets: (mapData as any).tilesets,
       npcs: mapData.npcs
     });
 
