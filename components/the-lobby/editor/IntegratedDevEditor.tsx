@@ -115,6 +115,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       setMapNpcs(targetMap.npcs || []);
       setEncounterPool(targetMap.encounterPool || []);
     }
+    setMapSearchQuery('');
     showToast(`Warped to map: ${targetMapId}`);
   };
 
@@ -223,6 +224,25 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       dialogueKey: npcDialogue
     };
     setMapNpcs([...mapNpcs, newNpc]);
+    
+    // Also inject instantly into live 2.5D loop
+    useGameStore.setState((state) => ({
+      mapEntities: [
+        ...(state.mapEntities || []),
+        {
+          id: newNpc.id,
+          type: 'NPC',
+          spriteKey: npcSprite,
+          position: { x: spawnX, y: spawnY },
+          isMoving: false,
+          facing: 'DOWN',
+          mapId: currentMapId,
+          name: npcName,
+          dialogueKey: npcDialogue
+        }
+      ]
+    }));
+    
     showToast(`Placed ${npcName} at (${spawnX}, ${spawnY})`);
   };
 
@@ -236,6 +256,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          grid: currentMapData.grid,
           npcs: mapNpcs,
           encounterPool: encounterPool,
           spawnPoint: { x: spawnX, y: spawnY },
@@ -250,7 +271,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
   };
 
   return (
-    <div className="fixed inset-y-4 right-4 z-50 w-[480px] bg-[#0c0d14]/95 border border-cyan-500/30 rounded-xl shadow-2xl backdrop-blur-xl flex flex-col text-slate-200 overflow-hidden font-sans">
+    <div className="fixed inset-y-4 right-4 z-50 w-[480px] sg-glass bg-slate-950/80 border border-cyan-500/40 rounded-2xl shadow-2xl flex flex-col text-slate-200 overflow-hidden font-sans">
       
       {/* Editor Header Bar */}
       <div className="px-4 py-3 bg-gradient-to-r from-cyan-950/80 via-slate-900 to-indigo-950/80 border-b border-cyan-500/20 flex items-center justify-between">

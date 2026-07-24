@@ -14,6 +14,8 @@ export interface MapEntity {
   isMoving: boolean;
   facing: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
   mapId?: string;
+  name?: string;
+  dialogueKey?: string;
 }
 
 export interface SkillData {
@@ -218,7 +220,7 @@ export const useGameStore = create<GameState>()(
       otherPlayers: {},
       activeBattle: null,
       pathQueue: [],
-      currentMapId: 'PLAYER_HOUSE_BEDROOM',
+      currentMapId: 'COTTON_TOWN',
       mapEntities: [
         { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
         { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
