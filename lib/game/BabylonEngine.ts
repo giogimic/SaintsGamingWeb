@@ -45,6 +45,9 @@ export class BabylonEngine {
   private entityMeshes: Map<string, Mesh> = new Map();
   private isRunning: boolean = false;
   private defaultPlayerTexture?: Texture;
+  private woodFloorTexture?: Texture;
+  private indoorWallTexture?: Texture;
+  private currentMapId: string = '';
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -89,6 +92,44 @@ export class BabylonEngine {
 
     // Generate procedurally crisp player texture fallback
     this.createDefaultPlayerTexture();
+    this.createProceduralTextures();
+  }
+
+  private createProceduralTextures() {
+    // Wood Floor Texture
+    const woodTex = new DynamicTexture('woodFloorTex', { width: 128, height: 128 }, this.scene, false);
+    const wCtx = woodTex.getContext();
+    wCtx.fillStyle = '#8b5a2b'; // Base wood brown
+    wCtx.fillRect(0, 0, 128, 128);
+    wCtx.fillStyle = '#6b4226'; // Darker streaks
+    for (let i = 0; i < 8; i++) { // Draw wooden planks
+      wCtx.fillRect(0, i * 16, 128, 1); // horizontal plank lines
+      // Draw random grain
+      for (let j = 0; j < 20; j++) {
+        wCtx.fillRect(Math.random() * 128, i * 16 + Math.random() * 15, Math.random() * 20 + 10, 1);
+      }
+    }
+    woodTex.update();
+    this.woodFloorTexture = woodTex;
+
+    // Indoor Wall Texture (Plaster with skirting board)
+    const wallTex = new DynamicTexture('indoorWallTex', { width: 128, height: 128 }, this.scene, false);
+    const pCtx = wallTex.getContext();
+    pCtx.fillStyle = '#e2e8f0'; // Light slate plaster
+    pCtx.fillRect(0, 0, 128, 128);
+    // Skirting board at bottom
+    pCtx.fillStyle = '#cbd5e1'; 
+    pCtx.fillRect(0, 110, 128, 18);
+    // Top trim
+    pCtx.fillStyle = '#cbd5e1';
+    pCtx.fillRect(0, 0, 128, 8);
+    // Subtle plaster noise
+    pCtx.fillStyle = 'rgba(0,0,0,0.02)';
+    for (let i = 0; i < 200; i++) {
+      pCtx.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
+    }
+    wallTex.update();
+    this.indoorWallTexture = wallTex;
   }
 
   private updateCameraAspect = () => {
@@ -169,7 +210,8 @@ export class BabylonEngine {
     this.tileMeshes = [];
     this.objectMeshes = [];
 
-    const { width, height, tileSize, tiles, npcs } = mapData;
+    const { width, height, tileSize, tiles, npcs, id: mapId } = mapData;
+    this.currentMapId = mapId || '';
 
     for (let r = 0; r < height; r++) {
       for (let c = 0; c < width; c++) {
@@ -198,8 +240,7 @@ export class BabylonEngine {
           const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, { size: tileSize * 0.9 }, this.scene);
           block.position = new Vector3(posX, tileSize * 0.45, posZ);
           const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
-          const checker = ((r + c) % 2 === 0) ? 0.02 : 0;
-          wallMat.diffuseColor = new Color3(0.18 + checker, 0.28 + checker, 0.18 + checker);
+          this.applyTileMaterial(wallMat, tileId, r, c, true);
           block.material = wallMat;
           block.parent = this.rootNode;
           this.objectMeshes.push(block);
@@ -247,10 +288,37 @@ export class BabylonEngine {
     }
   }
 
-  private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0) {
+  private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {
     const isAlt = (r + c) % 2 === 0;
     const tone = isAlt ? 0.035 : 0; // Checkerboard micro-contrast for grid movement visibility
 
+    const isIndoor = this.currentMapId && (
+      this.currentMapId.includes('HOUSE') ||
+      this.currentMapId.includes('BEDROOM') ||
+      this.currentMapId.includes('ROOM') ||
+      this.currentMapId.includes('LAB') ||
+      this.currentMapId.includes('CENTER') ||
+      this.currentMapId.includes('DOJO') ||
+      this.currentMapId.includes('TOWER') ||
+      this.currentMapId.includes('MART') ||
+      this.currentMapId.includes('HQ')
+    );
+
+    if (isIndoor) {
+      if (tileId === 0) {
+        // Wooden Floor for indoor rooms
+        if (this.woodFloorTexture) mat.diffuseTexture = this.woodFloorTexture;
+        mat.diffuseColor = new Color3(1 - tone, 1 - tone, 1 - tone); 
+        return;
+      } else if (tileId === 1) {
+        // Indoor Plaster Wall or Bookshelf
+        if (this.indoorWallTexture) mat.diffuseTexture = this.indoorWallTexture;
+        mat.diffuseColor = new Color3(1 - tone, 1 - tone, 1 - tone);
+        return;
+      }
+    }
+
+    // Default Outdoor Environments
     switch (tileId) {
       case 0: mat.diffuseColor = new Color3(0.12 + tone, 0.42 + tone, 0.18 + tone); break; // Safe Grass
       case 1: mat.diffuseColor = new Color3(0.15 + tone, 0.25 + tone, 0.15 + tone); break; // Wall / Tree Boundary
