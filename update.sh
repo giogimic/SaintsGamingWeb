@@ -12,16 +12,11 @@ if [ -f "docker-compose.yml" ] && command -v docker &> /dev/null; then
         sudo systemctl reload nginx 2>/dev/null || sudo systemctl restart nginx 2>/dev/null || true
     fi
 else
-    # Check if bun or npm is available
-    if command -v bun &> /dev/null; then
-        bun install
-        bunx prisma db push --accept-data-loss
-        bun run build
-    else
-        npm install
-        npx prisma db push --accept-data-loss
-        npm run build
-    fi
+    # Non-Docker: use npm
+    echo "Installing dependencies with npm..."
+    npm install
+    npx prisma db push --accept-data-loss
+    npm run build
     # Check if pm2 is running and reload
     if command -v pm2 &> /dev/null; then
         pm2 reload all
