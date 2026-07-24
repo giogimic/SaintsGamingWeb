@@ -68,3 +68,7 @@ export function searchMapIndex(query: string): MapIndexEntry[] {
 export function getMapMetadata(mapId: string): MapIndexEntry | undefined {
   return getMapIndexList().find((m) => m.id === mapId);
 }
+
+export function registerNewMap(newMap: GameMapData) {
+  GAME_MAPS[newMap.id] = newMap;
+}

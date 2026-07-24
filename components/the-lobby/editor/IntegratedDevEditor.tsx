@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../store';
-import { searchMapIndex } from '../data/map-index';
+import { searchMapIndex, registerNewMap } from '../data/map-index';
 import { GAME_MAPS } from '../data/maps';
 
 import { 
@@ -19,7 +19,9 @@ import {
   Search,
   Plus,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Upload
 } from 'lucide-react';
 
 interface IntegratedDevEditorProps {
@@ -39,6 +41,12 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   // Map Search & Index State
   const [mapSearchQuery, setMapSearchQuery] = useState<string>('');
+  const [isCreatingNewMap, setIsCreatingNewMap] = useState<boolean>(false);
+  const [newMapSlug, setNewMapSlug] = useState<string>('');
+  const [newMapName, setNewMapName] = useState<string>('');
+  const [newMapWidth, setNewMapWidth] = useState<number>(24);
+  const [newMapHeight, setNewMapHeight] = useState<number>(24);
+
   const mapIndex = searchMapIndex(mapSearchQuery);
 
   // Active Map Reference
@@ -105,6 +113,65 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
     showToast(`Warped to map: ${targetMapId}`);
   };
 
+  const handleCreateNewMapSubmit = () => {
+    if (!newMapSlug) {
+      showToast('Please enter a valid Map ID slug!');
+      return;
+    }
+
+    const cleanSlug = newMapSlug.toUpperCase().replace(/\s+/g, '_');
+    const newGrid = Array(newMapHeight).fill(0).map((_, r) =>
+      Array(newMapWidth).fill(0).map((_, c) =>
+        (r === 0 || r === newMapHeight - 1 || c === 0 || c === newMapWidth - 1) ? 1 : 0
+      )
+    );
+
+    const newMapData = {
+      id: cleanSlug,
+      name: newMapName || cleanSlug,
+      grid: newGrid,
+      gates: {},
+      npcs: [],
+      encounterPool: []
+    };
+
+    registerNewMap(newMapData);
+    useGameStore.setState({ currentMapId: cleanSlug });
+    setIsCreatingNewMap(false);
+    showToast(`Created & Warped to new map: ${cleanSlug}`);
+  };
+
+  const handleExportMapJson = () => {
+    const jsonStr = JSON.stringify(currentMapData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentMapId}_map.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${currentMapId}_map.json`);
+  };
+
+  const handleImportMapJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target?.result as string);
+        if (imported.id && imported.grid) {
+          registerNewMap(imported);
+          useGameStore.setState({ currentMapId: imported.id });
+          showToast(`Imported & Loaded map: ${imported.id}`);
+        }
+      } catch {
+        showToast('Invalid Map JSON file');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleBrushSelect = (tileId: number) => {
     setBrushTileId(tileId);
     if (onBrushTileChange) onBrushTileChange(tileId);
@@ -144,14 +211,10 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   const handleSaveConfig = async () => {
     try {
-      // Live update player spawn in state
       setPlayerPosition({ x: spawnX, y: spawnY });
-      
-      // Update local map data reference
       currentMapData.npcs = mapNpcs;
       currentMapData.encounterPool = encounterPool;
 
-      // Post update to persistence API
       await fetch(`/api/maps/${currentMapId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -180,7 +243,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
             Integrated Dev Editor
           </span>
           <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded font-mono">
-            v2.1.3
+            v2.1.6
           </span>
         </div>
         <button
@@ -196,8 +259,66 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       <div className="p-3 bg-slate-950/60 border-b border-white/10 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs font-mono text-cyan-400">
           <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-cyan-400" /> Active Map:</span>
-          <strong className="text-white bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">{currentMapId}</strong>
+          <div className="flex items-center gap-1">
+            <strong className="text-white bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">{currentMapId}</strong>
+            <button
+              onClick={() => setIsCreatingNewMap(!isCreatingNewMap)}
+              className="px-2 py-0.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow font-mono"
+            >
+              <Plus className="w-3 h-3" /> New
+            </button>
+          </div>
         </div>
+
+        {/* Modal form for creating a brand new map */}
+        {isCreatingNewMap && (
+          <div className="p-3 bg-slate-900 border border-cyan-500/40 rounded space-y-2 text-xs">
+            <span className="font-bold text-white block font-mono">Create New Campaign Map</span>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                value={newMapSlug}
+                onChange={(e) => setNewMapSlug(e.target.value)}
+                placeholder="ID (e.g. MYSTICAL_GROVE)"
+                className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+              />
+              <input
+                type="text"
+                value={newMapName}
+                onChange={(e) => setNewMapName(e.target.value)}
+                placeholder="Name (e.g. Mystical Grove)"
+                className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] text-slate-400">Width</label>
+                <input
+                  type="number"
+                  value={newMapWidth}
+                  onChange={(e) => setNewMapWidth(parseInt(e.target.value) || 24)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-400">Height</label>
+                <input
+                  type="number"
+                  value={newMapHeight}
+                  onChange={(e) => setNewMapHeight(parseInt(e.target.value) || 24)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleCreateNewMapSubmit}
+              className="w-full py-1 bg-green-600 hover:bg-green-500 text-white rounded font-bold text-xs"
+            >
+              Generate Map Grid & Teleport
+            </button>
+          </div>
+        )}
+
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
           <input
@@ -264,13 +385,26 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
                 <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
                   2.5D Painting Terrain Brush
                 </span>
-                <button
-                  onClick={handleFillGrid}
-                  className="px-2 py-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
-                  title="Flood fill whole map with active brush tile"
-                >
-                  <RefreshCw className="w-3 h-3" /> Fill Entire Map
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={handleExportMapJson}
+                    className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                    title="Export map JSON"
+                  >
+                    <Download className="w-3 h-3" /> JSON
+                  </button>
+                  <label className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold flex items-center gap-1 font-mono cursor-pointer">
+                    <Upload className="w-3 h-3" /> Import
+                    <input type="file" accept=".json" onChange={handleImportMapJson} className="hidden" />
+                  </label>
+                  <button
+                    onClick={handleFillGrid}
+                    className="px-2 py-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                    title="Flood fill whole map with active brush tile"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Fill
+                  </button>
+                </div>
               </div>
               <p className="text-slate-400 text-[11px]">
                 Click any terrain tile below, then click directly on the 2.5D Babylon canvas to paint.
