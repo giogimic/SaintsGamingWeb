@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
 import { useGameStore } from '../store';
 import { GAME_MAPS } from '../data/maps';
+import { soundSynth } from '@/lib/game/sound-synth';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
 
 interface GameCanvasBabylonProps {
@@ -62,6 +63,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (roll < 15) { // 15% chance per step in grass
         const pool = mapData.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
         const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
+        soundSynth.playEncounterSound();
         showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
         useGameStore.getState().setGameMode('BATTLE');
       }
@@ -77,32 +79,61 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   };
 
   const tryMoveDirection = (dx: number, dy: number) => {
-    const curX = player.position?.x ?? 6;
-    const curY = player.position?.y ?? 2;
+    const currentPlayer = useGameStore.getState().player;
+    const curX = currentPlayer.position?.x ?? 6;
+    const curY = currentPlayer.position?.y ?? 2;
     tryMovePlayerTo(curX + dx, curY + dy);
   };
 
   // Interact / Talk Handler
   const handleInteract = () => {
-    const curX = player.position?.x ?? 6;
-    const curY = player.position?.y ?? 2;
+    const currentPlayer = useGameStore.getState().player;
+    const curX = currentPlayer.position?.x ?? 6;
+    const curY = currentPlayer.position?.y ?? 2;
     const currentTile = mapData.grid[curY]?.[curX];
 
     // Resource Node Harvesting
     if (currentTile === 5) {
+      soundSynth.playWoodcuttingSound();
       gainSkillXp('woodcutting', 25);
       showToast('Harvested Wood Logs (+25 Woodcutting XP)');
       return;
     } else if (currentTile === 6) {
+      soundSynth.playMiningSound();
       gainSkillXp('mining', 30);
       showToast('Mined Copper Ore (+30 Mining XP)');
       return;
     }
 
-    // NPC Interaction Check
-    const nearbyNpc = mapData.npcs?.find((npc) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
+    // NPC Interaction Check (Combined Map Data + Dynamic Entities)
+    const dynamicEntities = useGameStore.getState().mapEntities || [];
+    let nearbyNpc = null;
+    let isDynamic = false;
+
+    // Check static imported Tuxemon NPCs first
+    nearbyNpc = mapData.npcs?.find((npc) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
+    
+    // Fallback to checking Dev Editor placed dynamic entities
+    if (!nearbyNpc) {
+      const ent = dynamicEntities.find((e) => Math.abs(e.position.x - curX) <= 2 && Math.abs(e.position.y - curY) <= 2 && (e.mapId === currentMapId || !e.mapId));
+      if (ent) {
+        nearbyNpc = {
+          id: ent.id,
+          name: ent.name || 'NPC',
+          dialogueKey: ent.dialogueKey || 'Hello, traveler.'
+        };
+        isDynamic = true;
+      }
+    }
+
     if (nearbyNpc) {
-      showToast(`${nearbyNpc.name}: "${nearbyNpc.dialogueKey || 'Greetings, Tamer! Welcome to the grounds.'}"`);
+      useGameStore.setState({
+        activeDialog: {
+          npcId: nearbyNpc.id,
+          text: nearbyNpc.dialogueKey || 'Greetings, Tamer! Welcome to the grounds.'
+        },
+        gameMode: 'DIALOG'
+      });
     } else {
       showToast('No NPC nearby. Use WASD / Arrows or D-Pad to move.');
     }
@@ -130,18 +161,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     // Start 60FPS Render Loop
     babylonEngine.startRenderLoop(() => {
-      if (player && player.position) {
-        const px = player.position.x ?? 6;
-        const py = player.position.y ?? 2;
+      const freshPlayer = useGameStore.getState().player;
+      if (freshPlayer && freshPlayer.position) {
+        const px = freshPlayer.position.x ?? 6;
+        const py = freshPlayer.position.y ?? 2;
         const worldX = px - mapWidth / 2;
         const worldZ = mapHeight / 2 - py;
 
         babylonEngine.updateEntity({
           id: 'player_main',
-          name: player.name || 'Hero',
+          name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          spriteUrl: player.spriteId ? `/assets/sprites/${player.spriteId}.png` : undefined,
+          spriteUrl: freshPlayer.spriteId ? `/assets/sprites/${freshPlayer.spriteId}.png` : undefined,
           isPlayer: true
         });
 
@@ -150,8 +182,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
 
       // Render connected multiplayer players
-      if (otherPlayers) {
-        Object.entries(otherPlayers).forEach(([socketId, other]) => {
+      const freshOtherPlayers = useGameStore.getState().otherPlayers;
+      if (freshOtherPlayers) {
+        Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
           const ox = (other.x || 6) - mapWidth / 2;
           const oz = mapHeight / 2 - (other.y || 2);
           babylonEngine.updateEntity({
@@ -162,6 +195,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spriteUrl: other.spriteId ? `/assets/sprites/${other.spriteId}.png` : undefined,
             isPlayer: false
           });
+        });
+      }
+
+      // Render dynamic map entities (NPCs / Animals) from the global store
+      const mapEntities = useGameStore.getState().mapEntities;
+      if (mapEntities) {
+        mapEntities.forEach((ent) => {
+          if (ent.mapId === currentMapId || !ent.mapId) {
+            const ex = ent.position.x - mapWidth / 2;
+            const ez = mapHeight / 2 - ent.position.y;
+            babylonEngine.updateEntity({
+              id: ent.id,
+              name: '',
+              x: ex,
+              y: ez,
+              spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/assets/sprites/${ent.spriteKey}.png`) : undefined,
+              isPlayer: false
+            });
+          }
         });
       }
     });
@@ -228,7 +280,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [player.position, mapWidth, mapHeight]);
+  }, [mapWidth, mapHeight, mapData.grid, mapData.gates]);
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">

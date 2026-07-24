@@ -4,7 +4,6 @@ import { useRef, useState, useEffect } from 'react';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
 import IntegratedDevEditor from './editor/IntegratedDevEditor';
 import SaintsDexOverlay from './SaintsDexOverlay';
-import MapEditorPanel from './MapEditorPanel';
 import BattleOverlay from './battle-overlay';
 import ShopOverlay from './shop-overlay';
 import SkillsOverlay from './skills-overlay';
@@ -21,6 +20,7 @@ import LeaderboardOverlay from './leaderboard-overlay';
 import AchievementsOverlay from './achievements-overlay';
 import MiniMapRadar from './MiniMapRadar';
 import DPad from './dpad';
+import SaintsHudOrbs from './hud/SaintsHudOrbs';
 import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
@@ -296,15 +296,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
             >
               {isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}
             </button>
-            <button
-              onClick={() => {
-                if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
-                setIsDevEditorOpen(!isDevEditorOpen);
-              }}
-              className="px-3 py-1 bg-cyan-950/90 text-cyan-300 border-2 border-cyan-500/50 rounded font-bold text-xs hover:bg-cyan-900 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
-            >
-              ⚙ DEV EDITOR (CTRL+E)
-            </button>
             {gameMode !== 'EXPLORING' && (
               <button
                 onClick={() => useGameStore.getState().setGameMode('EXPLORING')}
@@ -372,10 +363,13 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
             </button>
             {isAdminUser && (
               <button
-                onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('MAP_EDITOR'); }}
-                className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto"
+                onClick={() => { 
+                  if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
+                  setIsDevEditorOpen(!isDevEditorOpen); 
+                }}
+                className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
               >
-                EDITOR
+                {isDevEditorOpen ? 'CLOSE EDITOR' : 'EDITOR'}
               </button>
             )}
           </div>
@@ -383,7 +377,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       )}
       
       {gameMode === 'DEX' && <SaintsDexOverlay />}
-      {gameMode === 'MAP_EDITOR' && <MapEditorPanel onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
       {gameMode === 'BATTLE' && <BattleOverlay />}
       {gameMode === 'SHOP' && <ShopOverlay />}
       {gameMode === 'SKILLS' && <SkillsOverlay />}
@@ -400,6 +393,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
 
       {gameMode === 'EXPLORING' && <MiniMapRadar />}
+      {gameMode === 'EXPLORING' && <SaintsHudOrbs />}
 
       {/* Global Chat Bar */}
       {gameMode === 'EXPLORING' && (

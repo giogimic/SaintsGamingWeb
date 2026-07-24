@@ -2260,7 +2260,24 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "37707_male",
+        "name": "37707 Male",
+        "x": 33,
+        "y": 8,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "37707_female",
+        "name": "37707 Female",
+        "x": 12,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -3888,7 +3905,24 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "37707_male_missing",
+        "name": "37707 Male Missing",
+        "x": 33,
+        "y": 8,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "37707_female_missing",
+        "name": "37707 Female Missing",
+        "x": 12,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -20269,7 +20303,32 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "maple_wren",
+        "name": "Maple Wren",
+        "x": 10,
+        "y": 6,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "cfanatic1",
+        "name": "Cfanatic1",
+        "x": 12,
+        "y": 33,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "cfanatic2",
+        "name": "Cfanatic2",
+        "x": 8,
+        "y": 33,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -21977,7 +22036,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "knight1",
+        "name": "Knight1",
+        "x": 12,
+        "y": 13,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -22925,7 +22993,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "xerogrunt1",
+        "name": "Xerogrunt1",
+        "x": 6,
+        "y": 3,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -23241,7 +23318,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "tabanurse",
+        "name": "Tabanurse",
+        "x": 5,
+        "y": 4,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -23557,7 +23643,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "cotton_breeder",
+        "name": "Cotton Breeder",
+        "x": 4,
+        "y": 4,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -23873,7 +23968,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "cotton_misa_gramps",
+        "name": "Cotton Misa Gramps",
+        "x": 5,
+        "y": 4,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -24189,7 +24293,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "cotton_misa_bro",
+        "name": "Cotton Misa Bro",
+        "x": 7,
+        "y": 5,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -24505,7 +24618,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "tuxemart_keeper",
+        "name": "Tuxemart Keeper",
+        "x": 1,
+        "y": 5,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -26213,7 +26335,48 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "aeble",
+        "name": "Aeble",
+        "x": 14,
+        "y": 10,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "allie",
+        "name": "Allie",
+        "x": 22,
+        "y": 10,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "liela",
+        "name": "Liela",
+        "x": 38,
+        "y": 17,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "grace",
+        "name": "Grace",
+        "x": 0,
+        "y": 29,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "tallon",
+        "name": "Tallon",
+        "x": 0,
+        "y": 28,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -31751,7 +31914,40 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "eclipse_bank_bob",
+        "name": "Eclipse Bank Bob",
+        "x": 8,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_may",
+        "name": "Eclipse Bank May",
+        "x": 5,
+        "y": 6,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_brock",
+        "name": "Eclipse Bank Brock",
+        "x": 10,
+        "y": 3,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_daisy",
+        "name": "Eclipse Bank Daisy",
+        "x": 5,
+        "y": 10,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -32157,7 +32353,40 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "eclipse_bank_jeff",
+        "name": "Eclipse Bank Jeff",
+        "x": 4,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_raj",
+        "name": "Eclipse Bank Raj",
+        "x": 3,
+        "y": 2,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_lile",
+        "name": "Eclipse Bank Lile",
+        "x": 10,
+        "y": 18,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_kai",
+        "name": "Eclipse Bank Kai",
+        "x": 11,
+        "y": 3,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -32563,7 +32792,40 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "eclipse_bank_ethan",
+        "name": "Eclipse Bank Ethan",
+        "x": 4,
+        "y": 18,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_lucas",
+        "name": "Eclipse Bank Lucas",
+        "x": 7,
+        "y": 13,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_bank_ava",
+        "name": "Eclipse Bank Ava",
+        "x": 10,
+        "y": 17,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_zircon",
+        "name": "Eclipse Zircon",
+        "x": 10,
+        "y": 11,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -32879,7 +33141,32 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "eclipse_cathedral_jada",
+        "name": "Eclipse Cathedral Jada",
+        "x": 6,
+        "y": 8,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_cathedral_nurse",
+        "name": "Eclipse Cathedral Nurse",
+        "x": 5,
+        "y": 4,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "eclipse_cathedral_enforcer",
+        "name": "Eclipse Cathedral Enforcer",
+        "x": 7,
+        "y": 10,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -33542,6 +33829,22 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
         "y": 4,
         "sprite": "npc_mom",
         "dialogueKey": "mom_greeting"
+      },
+      {
+        "id": "callie_wren",
+        "name": "Callie Wren",
+        "x": 8,
+        "y": 3,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "kay_wren",
+        "name": "Kay Wren",
+        "x": 4,
+        "y": 6,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
       }
     ],
     "encounterPool": [
@@ -33911,6 +34214,62 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
         "y": 3,
         "sprite": "npc_prof",
         "dialogueKey": "choose_starter_beast"
+      },
+      {
+        "id": "kay_wren",
+        "name": "Kay Wren",
+        "x": 4,
+        "y": 6,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "allie",
+        "name": "Allie",
+        "x": 6,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "knight1",
+        "name": "Knight1",
+        "x": 7,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "knight2",
+        "name": "Knight2",
+        "x": 7,
+        "y": 16,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "tuxeball_green",
+        "name": "Tuxeball Green",
+        "x": 9,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "tuxeball_yellow",
+        "name": "Tuxeball Yellow",
+        "x": 11,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "tuxeball_red",
+        "name": "Tuxeball Red",
+        "x": 10,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
       }
     ],
     "encounterPool": [
@@ -35620,7 +35979,32 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "spyder_candy_henrik",
+        "name": "Spyder Candy Henrik",
+        "x": 6,
+        "y": 4,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_greenwash_guard",
+        "name": "Spyder Greenwash Guard",
+        "x": 25,
+        "y": 24,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_candy_eliane",
+        "name": "Spyder Candy Eliane",
+        "x": 5,
+        "y": 1,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -37328,7 +37712,88 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "spyder_cottontown_hacker",
+        "name": "Spyder Cottontown Hacker",
+        "x": 25,
+        "y": 30,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_cottontown_monk",
+        "name": "Spyder Cottontown Monk",
+        "x": 5,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_statue_orange",
+        "name": "Spyder Statue Orange",
+        "x": 3,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_papertown_mom",
+        "name": "Spyder Papertown Mom",
+        "x": 22,
+        "y": 18,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_statue_blue",
+        "name": "Spyder Statue Blue",
+        "x": 4,
+        "y": 9,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_statue_red",
+        "name": "Spyder Statue Red",
+        "x": 6,
+        "y": 9,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_statue_grey",
+        "name": "Spyder Statue Grey",
+        "x": 7,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_statue_green",
+        "name": "Spyder Statue Green",
+        "x": 5,
+        "y": 5,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_dragonscave_lazybrute",
+        "name": "Spyder Dragonscave Lazybrute",
+        "x": 3,
+        "y": 36,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_confusedperson",
+        "name": "Spyder Confusedperson",
+        "x": 6,
+        "y": 33,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -37644,7 +38109,56 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "spyder_cottoncenter_ada",
+        "name": "Spyder Cottoncenter Ada",
+        "x": 10,
+        "y": 7,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_cottonhouse2_davis",
+        "name": "Spyder Cottonhouse2 Davis",
+        "x": 8,
+        "y": 8,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_cottonartshop_luvinia",
+        "name": "Spyder Cottonartshop Luvinia",
+        "x": 8,
+        "y": 9,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_cottoncafe_lotus",
+        "name": "Spyder Cottoncafe Lotus",
+        "x": 11,
+        "y": 9,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_cottoncafe_cayden",
+        "name": "Spyder Cottoncafe Cayden",
+        "x": 11,
+        "y": 8,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_cathedral_nurse",
+        "name": "Spyder Cathedral Nurse",
+        "x": 5,
+        "y": 4,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",
@@ -38535,6 +39049,62 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
         "y": 10,
         "sprite": "npc_guide",
         "dialogueKey": "paper_town_welcome"
+      },
+      {
+        "id": "spyder_sign",
+        "name": "Spyder Sign",
+        "x": 4,
+        "y": 15,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_dante",
+        "name": "Spyder Dante",
+        "x": 15,
+        "y": 8,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_rockittenfrolicking",
+        "name": "Spyder Rockittenfrolicking",
+        "x": 24,
+        "y": 2,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_conileaffrolicking",
+        "name": "Spyder Conileaffrolicking",
+        "x": 27,
+        "y": 3,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_papertown_silver",
+        "name": "Spyder Papertown Silver",
+        "x": 10,
+        "y": 14,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_billie",
+        "name": "Spyder Billie",
+        "x": 13,
+        "y": 14,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      },
+      {
+        "id": "spyder_captain",
+        "name": "Spyder Captain",
+        "x": 4,
+        "y": 14,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
       }
     ],
     "encounterPool": [
@@ -39404,7 +39974,16 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = {
       ]
     ],
     "gates": {},
-    "npcs": [],
+    "npcs": [
+      {
+        "id": "spyder_route1_bjorn",
+        "name": "Spyder Route1 Bjorn",
+        "x": 13,
+        "y": 11,
+        "sprite": "villager_1",
+        "dialogueKey": "Hello there!"
+      }
+    ],
     "encounterPool": [
       {
         "speciesId": "rockitten",

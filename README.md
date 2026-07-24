@@ -218,6 +218,12 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.9
+- **Tuxemon Map Data AST Extraction & 2.5D Movement Fix**: Extracted 70+ Tuxemon NPCs from desktop `.tmx` and `.yaml` source files into `campaign-maps.ts` and `IntegratedDevEditor`. Resolved 2.5D player render loop stale closures (minimap position was moving while overworld canvas was locked at spawn). Connected Spacebar interact key to launch full-screen RPG `DialogOverlay` with portrait text box, and enabled instant live-rendering of newly placed Dev Editor NPCs onto the 2.5D Babylon grid.
+
+### v2.1.8
+- **Saints MMO Standard HUD Orbs, WebAudio Sound Effects Engine & Interface Frame**: Added circular stat Orbs (HP, Spirit/Prayer, Run Energy, XP Tracker Bar), procedural WebAudio sound synthesizer (woodcutting chop, mining clink, level-up fanfare, wild encounter swoosh), and verified zero-error type safety.
+
 ### v2.1.7
 - **Movement Engine Overhaul, Character Importer & Clean Overlay Layering**: Added Click-to-Move raycasting, on-screen D-Pad & Talk/Interact floating action button, added Character & Sprite Customizer Tab to Dev Editor, resolved modal overlay stacking, and verified zero-error type safety.
 
