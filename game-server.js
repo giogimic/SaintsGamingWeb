@@ -67,6 +67,18 @@ io.on("connection", (socket) => {
     socket.to(p.mapId).emit("player_moved", p);
   });
 
+  // 2.5 Chat Sync
+  socket.on("chat_message", (message) => {
+    if (!players[socket.id]) return;
+    const p = players[socket.id];
+    
+    // Broadcast the chat message to everyone else in the map
+    socket.to(p.mapId).emit("player_chat", {
+      socketId: socket.id,
+      message: message
+    });
+  });
+
   // 3. Party System (up to 4 players)
   socket.on("create_party", () => {
     const partyId = `party_${Date.now()}`;

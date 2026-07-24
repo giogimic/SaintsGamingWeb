@@ -144,6 +144,19 @@ export default function GameCanvas() {
       useGameStore.getState().updateOtherPlayer(data.socketId, data);
     });
 
+    socket.on('player_chat', (data) => {
+      useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
+      
+      // Auto-clear chat message after 5 seconds
+      setTimeout(() => {
+        const store = useGameStore.getState();
+        const op = store.otherPlayers[data.socketId];
+        if (op && op.chatMessage === data.message) {
+          store.updateOtherPlayer(data.socketId, { chatMessage: undefined });
+        }
+      }, 5000);
+    });
+
     socket.on('player_left', (socketId) => {
       useGameStore.getState().removeOtherPlayer(socketId);
     });
