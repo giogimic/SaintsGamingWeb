@@ -277,6 +277,9 @@ This project is open-source and available under the **MIT License**.
 - **Interactive 2.5D Dev Editor & Map Configurator**: Added live 2.5D raycast pointer tile painting, spawn/respawn drag markers, tall grass encounter brush tool, NPC trainer roster setup, and battle background/weather parameters to the Integrated Dev Editor suite.
 
 ### v2.0.6
+### v2.1.17
+- **Dedicated Python Utilities Suite (`/tools/`)**: Created a clean `/tools/` directory containing python scripts for remote updates (`update_live.py`), restarts (`restart_live.py`), status monitoring (`check_status.py`), log checking (`check_logs.py`), and DB seeding (`seed_database.py`), along with complete usage documentation.
+
 ### v2.1.16
 - **Rich Tuxemon Tileset & Layer Rendering Engine**: Imported 96 full Tuxemon tileset graphics into `public/assets/tilesets/`. Re-parsed all 235 campaign TMX maps to extract multi-layer GIDs (floors, walls, furniture, decorations) and exact collision boundaries. Upgraded `BabylonEngine.ts` to render rich multi-layered texture planes using UV coordinate mapping, restoring full visual fidelity to Tuxemon indoor rooms and outdoor locations.
 
