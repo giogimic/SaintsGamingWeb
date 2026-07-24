@@ -125,7 +125,7 @@ export interface GameState {
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
   setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x: number; y: number; name?: string; spriteId?: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
+  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; spriteId?: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;
   localChat: string | null;
@@ -254,20 +254,22 @@ export const useGameStore = create<GameState>()(
       setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
       updateOtherPlayer: (socketId, data) => set((state) => {
         if (!state.otherPlayers[socketId]) {
-          state.otherPlayers[socketId] = { x: data.x, y: data.y, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male', chatMessage: data.chatMessage, customization: data.customization };
+          state.otherPlayers[socketId] = { x: data.x || 0, y: data.y || 0, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male', chatMessage: data.chatMessage, customization: data.customization };
         } else {
-          state.otherPlayers[socketId].x = data.x;
-          state.otherPlayers[socketId].y = data.y;
+          if (data.x !== undefined) state.otherPlayers[socketId].x = data.x;
+          if (data.y !== undefined) state.otherPlayers[socketId].y = data.y;
           if (data.name) state.otherPlayers[socketId].name = data.name;
           if (data.spriteId) state.otherPlayers[socketId].spriteId = data.spriteId;
           if (data.customization) state.otherPlayers[socketId].customization = data.customization;
-          if (data.chatMessage) {
+          if (data.chatMessage !== undefined) {
             state.otherPlayers[socketId].chatMessage = data.chatMessage;
-            setTimeout(() => set((s) => {
-              if (s.otherPlayers[socketId]?.chatMessage === data.chatMessage) {
-                s.otherPlayers[socketId].chatMessage = undefined;
-              }
-            }), 4000);
+            if (data.chatMessage) {
+              setTimeout(() => set((s) => {
+                if (s.otherPlayers[socketId]?.chatMessage === data.chatMessage) {
+                  s.otherPlayers[socketId].chatMessage = undefined;
+                }
+              }), 4000);
+            }
           }
         }
       }),
