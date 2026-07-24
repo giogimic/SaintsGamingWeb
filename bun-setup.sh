@@ -131,6 +131,34 @@ if [ -f .env ]; then
             sed -i "s/- \"80:80\"/- \"$HTTP_PORT:80\"/g" docker-compose.yml
             sed -i "s/- \"443:443\"/- \"$HTTPS_PORT:443\"/g" docker-compose.yml
         fi
+
+        # Restore DB block if using integrated MariaDB
+        if grep -q "DATABASE_URL=.*@db:3306" .env; then
+            echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
+            DB_PASS=$(grep '^MARIADB_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
+            DB_ROOT_PASS=$(grep '^MARIADB_ROOT_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
+            cat <<EOF >> docker-compose.yml
+
+  db:
+    image: mariadb:10.11
+    container_name: saints-gaming-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: saints_gaming
+      MARIADB_USER: saints
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+EOF
+            sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+        fi
+
         sudo docker compose build --no-cache web
         sudo docker compose up -d web
         if command -v systemctl &> /dev/null; then
@@ -156,6 +184,34 @@ if [ -f .env ]; then
             sed -i "s/- \"80:80\"/- \"$HTTP_PORT:80\"/g" docker-compose.yml
             sed -i "s/- \"443:443\"/- \"$HTTPS_PORT:443\"/g" docker-compose.yml
         fi
+
+        # Restore DB block if using integrated MariaDB
+        if grep -q "DATABASE_URL=.*@db:3306" .env; then
+            echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
+            DB_PASS=$(grep '^MARIADB_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
+            DB_ROOT_PASS=$(grep '^MARIADB_ROOT_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
+            cat <<EOF >> docker-compose.yml
+
+  db:
+    image: mariadb:10.11
+    container_name: saints-gaming-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: saints_gaming
+      MARIADB_USER: saints
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+EOF
+            sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+        fi
+
         sudo docker compose build --no-cache
         sudo docker compose up -d
         echo -e "${GREEN}[✓] Clean Reinstall Complete!${NC}"
