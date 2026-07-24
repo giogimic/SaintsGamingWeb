@@ -18,7 +18,8 @@ import {
   Compass,
   Search,
   Plus,
-  Trash2
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 
 interface IntegratedDevEditorProps {
@@ -109,6 +110,16 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
     if (onBrushTileChange) onBrushTileChange(tileId);
   };
 
+  const handleFillGrid = () => {
+    if (!currentMapData.grid) return;
+    for (let r = 0; r < currentMapData.grid.length; r++) {
+      for (let c = 0; c < (currentMapData.grid[r]?.length || 0); c++) {
+        currentMapData.grid[r][c] = brushTileId;
+      }
+    }
+    showToast(`Filled map grid with Tile ID ${brushTileId}`);
+  };
+
   const handleAddEncounterSpecies = () => {
     setEncounterPool([...encounterPool, { speciesId: selectedSpecies, minLevel, maxLevel, weight: 30 }]);
     showToast(`Added ${selectedSpecies} to encounter pool`);
@@ -169,7 +180,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
             Integrated Dev Editor
           </span>
           <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded font-mono">
-            v2.1.1
+            v2.1.3
           </span>
         </div>
         <button
@@ -249,9 +260,18 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
         {activeTab === 'maps' && (
           <div className="space-y-4 animate-in fade-in duration-200">
             <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-2">
-              <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
-                2.5D Painting Terrain Brush
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
+                  2.5D Painting Terrain Brush
+                </span>
+                <button
+                  onClick={handleFillGrid}
+                  className="px-2 py-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                  title="Flood fill whole map with active brush tile"
+                >
+                  <RefreshCw className="w-3 h-3" /> Fill Entire Map
+                </button>
+              </div>
               <p className="text-slate-400 text-[11px]">
                 Click any terrain tile below, then click directly on the 2.5D Babylon canvas to paint.
               </p>
