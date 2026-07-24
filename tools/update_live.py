@@ -49,9 +49,12 @@ if grep -q "DATABASE_URL=.*@db:3306" .env; then
       retries: 5
 EOF
     if ! grep -q "depends_on:" docker-compose.yml; then
-        sed -i '/container_name: saints-gaming-web/a \\    depends_on:\\n      db:\\n        condition: service_healthy' docker-compose.yml
+        sed -i '/container_name: saints-gaming-web/a \\    depends_on:\\n      db:\\n        condition: service_started' docker-compose.yml
     fi
 fi
+
+echo "[*] Ensuring database container is running..."
+docker compose up -d db || true
 
 echo "[*] Building latest production Web container (--no-cache)..."
 docker compose build --no-cache web
