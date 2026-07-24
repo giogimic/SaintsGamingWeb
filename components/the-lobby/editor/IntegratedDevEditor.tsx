@@ -52,7 +52,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   // Character & Sprite Customizer State
   const [charNameInput, setCharNameInput] = useState<string>(player.name || 'Hero');
-  const [charClassInput, setCharClassInput] = useState<string>(player.animistClass || 'Animist');
+  const [charClassInput, setCharClassInput] = useState<string>((player as any).animistClass || 'Animist');
   const [charSpriteInput, setCharSpriteInput] = useState<string>(player.spriteId || 'player');
 
   // Active Map Reference

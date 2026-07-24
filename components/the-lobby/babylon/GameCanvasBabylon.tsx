@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
 import { useGameStore } from '../store';
 import { GAME_MAPS } from '../data/maps';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, HandHand } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
 
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
@@ -286,7 +286,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             <ChevronDown className="w-4 h-4" />
           </button>
           <div className="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
-            <HandHand className="w-3 h-3 text-cyan-400" />
+            <Hand className="w-3 h-3 text-cyan-400" />
           </div>
         </div>
       </div>
