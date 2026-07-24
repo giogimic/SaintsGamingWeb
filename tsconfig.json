@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
+    "public/assets/tilesets",
     "release-*",
     "scratch",
     "temp_extract"
