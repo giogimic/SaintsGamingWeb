@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.1
+- **Full-Bleed 2.5D Viewport & Campaign Map Visual Overhaul**: Replaced hardcoded colored block rendering with full campaign map loading, 2.5D world props (trees, rocks, tall grass tufts, water planes), WASD/Arrow key movement, procedurally crisp player character pixel art sprites, and responsive full-screen viewport layout.
+
 ### v2.1.0
 - **Multiplayer 2.5D Sync & Production MMO Release**: Integrated real-time Socket.IO overworld position tracking into the Babylon 2.5D billboard sprite engine, rendered multi-player avatar billboards, and verified zero-error production compilation.
 

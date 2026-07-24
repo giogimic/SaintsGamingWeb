@@ -9,6 +9,7 @@ import {
   MeshBuilder,
   StandardMaterial,
   Texture,
+  DynamicTexture,
   Mesh,
   TransformNode
 } from '@babylonjs/core';
@@ -19,6 +20,7 @@ export interface BabylonTileMapData {
   tileSize: number;
   tiles: number[][]; // 2D array of tile IDs
   tilesetUrl?: string;
+  npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
 }
 
 export interface BabylonEntityData {
@@ -26,7 +28,7 @@ export interface BabylonEntityData {
   name: string;
   x: number;
   y: number;
-  spriteUrl: string;
+  spriteUrl?: string;
   isPlayer?: boolean;
   isNpc?: boolean;
   isTuxemon?: boolean;
@@ -39,8 +41,10 @@ export class BabylonEngine {
   private camera: FreeCamera;
   private rootNode: TransformNode;
   private tileMeshes: Mesh[] = [];
+  private objectMeshes: Mesh[] = [];
   private entityMeshes: Map<string, Mesh> = new Map();
   private isRunning: boolean = false;
+  private defaultPlayerTexture?: Texture;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -50,40 +54,77 @@ export class BabylonEngine {
     });
 
     this.scene = new Scene(this.engine);
-    this.scene.clearColor = new Color4(0.04, 0.04, 0.06, 1.0); // Dark sleek background
+    this.scene.clearColor = new Color4(0.02, 0.03, 0.05, 1.0); // Deep immersive dark space
 
-    // Create Root Node for 2.5D Isometric Transform
+    // Root Node for 2.5D Isometric World
     this.rootNode = new TransformNode('rootNode', this.scene);
 
-    // Set up 2.5D Orthographic Camera looking down at a 45 degree angle
-    this.camera = new FreeCamera('camera2D', new Vector3(0, 15, -15), this.scene);
+    // 2.5D Camera: Orthographic angled at 45 degrees looking down
+    this.camera = new FreeCamera('camera2D', new Vector3(0, 14, -14), this.scene);
     this.camera.setTarget(Vector3.Zero());
     this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
 
-    // Adjust Orthographic frustum for pixel crispness
-    const aspect = this.engine.getRenderWidth() / this.engine.getRenderHeight();
-    const orthoSize = 10;
+    this.updateCameraAspect();
+
+    // Lighting
+    const light = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.2), this.scene);
+    light.intensity = 1.1;
+
+    // Window Resize Handler
+    window.addEventListener('resize', this.onResize);
+
+    // Generate procedurally crisp player texture fallback
+    this.createDefaultPlayerTexture();
+  }
+
+  private updateCameraAspect = () => {
+    if (!this.engine || !this.camera) return;
+    const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
+    const orthoSize = 8;
     this.camera.orthoLeft = -orthoSize * aspect;
     this.camera.orthoRight = orthoSize * aspect;
     this.camera.orthoTop = orthoSize;
     this.camera.orthoBottom = -orthoSize;
-
-    // Ambient Lighting
-    const light = new HemisphericLight('ambientLight', new Vector3(0, 1, 0), this.scene);
-    light.intensity = 1.0;
-
-    // Window Resize Handler
-    window.addEventListener('resize', this.onResize);
-  }
+  };
 
   private onResize = () => {
     if (!this.engine) return;
     this.engine.resize();
-    const aspect = this.engine.getRenderWidth() / this.engine.getRenderHeight();
-    const orthoSize = 10;
-    this.camera.orthoLeft = -orthoSize * aspect;
-    this.camera.orthoRight = orthoSize * aspect;
+    this.updateCameraAspect();
   };
+
+  private createDefaultPlayerTexture() {
+    const dynTex = new DynamicTexture('defaultPlayerTex', { width: 64, height: 64 }, this.scene, false);
+    const ctx = dynTex.getContext();
+    
+    // Draw pixel art character body
+    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.clearRect(0, 0, 64, 64);
+    
+    // Character Head
+    ctx.fillStyle = '#f6d7b0';
+    ctx.fillRect(20, 8, 24, 20);
+    // Hair
+    ctx.fillStyle = '#4a2810';
+    ctx.fillRect(18, 6, 28, 10);
+    // Eyes
+    ctx.fillStyle = '#101010';
+    ctx.fillRect(24, 16, 4, 6);
+    ctx.fillRect(36, 16, 4, 6);
+    // Tunic (Saints Gaming Purple)
+    ctx.fillStyle = '#8b5cf6';
+    ctx.fillRect(16, 28, 32, 22);
+    // Gold Trim
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(28, 28, 8, 22);
+    // Legs
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fillRect(20, 50, 10, 14);
+    ctx.fillRect(34, 50, 10, 14);
+
+    dynTex.update();
+    this.defaultPlayerTexture = dynTex;
+  }
 
   public startRenderLoop(onTick?: (deltaTime: number) => void) {
     if (this.isRunning) return;
@@ -102,55 +143,108 @@ export class BabylonEngine {
   }
 
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.1) {
-    const targetVector = new Vector3(targetX, 15, targetZ - 15);
+    const targetVector = new Vector3(targetX, 14, targetZ - 14);
     this.camera.position = Vector3.Lerp(this.camera.position, targetVector, lerpFactor);
     this.camera.setTarget(new Vector3(targetX, 0, targetZ));
   }
 
   public loadTilemap(mapData: BabylonTileMapData) {
-    // Clear old tiles
+    // Clear old meshes
     this.tileMeshes.forEach((mesh) => mesh.dispose());
+    this.objectMeshes.forEach((mesh) => mesh.dispose());
     this.tileMeshes = [];
+    this.objectMeshes = [];
 
-    const { width, height, tileSize, tiles } = mapData;
+    const { width, height, tileSize, tiles, npcs } = mapData;
 
     for (let r = 0; r < height; r++) {
       for (let c = 0; c < width; c++) {
-        const tileId = tiles[r]?.[c] || 0;
+        const tileId = tiles[r]?.[c] ?? 0;
+        const posX = (c - width / 2) * tileSize;
+        const posZ = (height / 2 - r) * tileSize;
+
+        // Ground Plane
         const ground = MeshBuilder.CreatePlane(
           `tile_${r}_${c}`,
           { size: tileSize },
           this.scene
         );
 
-        ground.rotation.x = Math.PI / 2; // Flat on ground (XZ plane)
-        ground.position = new Vector3(
-          (c - width / 2) * tileSize,
-          0,
-          (height / 2 - r) * tileSize
-        );
+        ground.rotation.x = Math.PI / 2; // Flat on ground
+        ground.position = new Vector3(posX, 0, posZ);
         ground.parent = this.rootNode;
 
         const mat = new StandardMaterial(`tileMat_${r}_${c}`, this.scene);
         this.applyTileMaterial(mat, tileId);
         ground.material = mat;
-
         this.tileMeshes.push(ground);
+
+        // Render 2.5D World Props based on tile ID
+        if (tileId === 1) { // Wall / Tree Block
+          const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, { size: tileSize * 0.9 }, this.scene);
+          block.position = new Vector3(posX, tileSize * 0.45, posZ);
+          const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
+          wallMat.diffuseColor = new Color3(0.18, 0.28, 0.18);
+          block.material = wallMat;
+          block.parent = this.rootNode;
+          this.objectMeshes.push(block);
+        } else if (tileId === 2 || tileId === 3) { // Tall Grass Tuft
+          const tuft = MeshBuilder.CreatePlane(`tuft_${r}_${c}`, { width: 0.8, height: 0.8 }, this.scene);
+          tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
+          tuft.position = new Vector3(posX, 0.4, posZ);
+          const tuftMat = new StandardMaterial(`tuftMat_${r}_${c}`, this.scene);
+          tuftMat.diffuseColor = new Color3(0.05, 0.6, 0.15);
+          tuft.material = tuftMat;
+          tuft.parent = this.rootNode;
+          this.objectMeshes.push(tuft);
+        } else if (tileId === 5) { // Woodcutting Tree
+          const tree = MeshBuilder.CreatePlane(`tree_${r}_${c}`, { width: 1.4, height: 1.8 }, this.scene);
+          tree.billboardMode = Mesh.BILLBOARDMODE_Y;
+          tree.position = new Vector3(posX, 0.9, posZ);
+          const treeMat = new StandardMaterial(`treeMat_${r}_${c}`, this.scene);
+          treeMat.diffuseColor = new Color3(0.1, 0.5, 0.2);
+          tree.material = treeMat;
+          tree.parent = this.rootNode;
+          this.objectMeshes.push(tree);
+        } else if (tileId === 6) { // Ore Node
+          const ore = MeshBuilder.CreateBox(`ore_${r}_${c}`, { width: 0.7, height: 0.5, depth: 0.7 }, this.scene);
+          ore.position = new Vector3(posX, 0.25, posZ);
+          const oreMat = new StandardMaterial(`oreMat_${r}_${c}`, this.scene);
+          oreMat.diffuseColor = new Color3(0.8, 0.5, 0.2);
+          ore.material = oreMat;
+          ore.parent = this.rootNode;
+          this.objectMeshes.push(ore);
+        }
       }
+    }
+
+    // Render Map NPCs as 2.5D Billboards
+    if (npcs) {
+      npcs.forEach((npc) => {
+        this.updateEntity({
+          id: `npc_${npc.id}`,
+          name: npc.name,
+          x: (npc.x - width / 2) * tileSize,
+          y: (height / 2 - npc.y) * tileSize,
+          isNpc: true
+        });
+      });
     }
   }
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number) {
     switch (tileId) {
-      case 1: mat.diffuseColor = new Color3(0.1, 0.4, 0.15); break; // Grass
-      case 2: mat.diffuseColor = new Color3(0.45, 0.3, 0.15); break; // Dirt Path
-      case 3: mat.diffuseColor = new Color3(0.05, 0.5, 0.1); break; // Tall Grass
-      case 4: mat.diffuseColor = new Color3(0.1, 0.3, 0.6); break; // Water
-      case 5: mat.diffuseColor = new Color3(0.35, 0.35, 0.4); break; // Rock Wall
-      case 6: mat.diffuseColor = new Color3(0.4, 0.25, 0.1); break; // Wood Floor
-      case 7: mat.diffuseColor = new Color3(0.3, 0.3, 0.3); break; // Cobblestone
-      case 8: mat.diffuseColor = new Color3(0.5, 0.45, 0.25); break; // Sand
-      default: mat.diffuseColor = new Color3(0.2, 0.2, 0.25); break;
+      case 0: mat.diffuseColor = new Color3(0.12, 0.42, 0.18); break; // Safe Grass
+      case 1: mat.diffuseColor = new Color3(0.15, 0.25, 0.15); break; // Wall / Tree Boundary
+      case 2: // Tall Grass Encounter
+      case 3: mat.diffuseColor = new Color3(0.08, 0.48, 0.12); break;
+      case 4: mat.diffuseColor = new Color3(0.1, 0.35, 0.65); break; // Water
+      case 5: mat.diffuseColor = new Color3(0.15, 0.35, 0.18); break; // Woodcutting Tree
+      case 6: mat.diffuseColor = new Color3(0.35, 0.3, 0.25); break; // Ore Rock
+      case 7: mat.diffuseColor = new Color3(0.45, 0.35, 0.15); break; // Shop Ground
+      case 8: mat.diffuseColor = new Color3(0.2, 0.4, 0.5); break; // Clinic
+      case 10: mat.diffuseColor = new Color3(0.05, 0.3, 0.6); break; // Fishing Water
+      default: mat.diffuseColor = new Color3(0.15, 0.38, 0.2); break;
     }
   }
 
@@ -162,7 +256,7 @@ export class BabylonEngine {
   }
 
   public enableTilePicking(onTileClick: (r: number, c: number) => void) {
-    this.scene.onPointerDown = (evt, pickResult) => {
+    this.scene.onPointerDown = (_evt, pickResult) => {
       if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.name.startsWith('tile_')) {
         const parts = pickResult.pickedMesh.name.split('_');
         if (parts.length === 3) {
@@ -185,25 +279,31 @@ export class BabylonEngine {
       // Create 2.5D Billboard Sprite Plane
       spriteMesh = MeshBuilder.CreatePlane(
         `entity_${entity.id}`,
-        { width: 1.2, height: 1.5 },
+        { width: 1.2, height: 1.6 },
         this.scene
       );
 
-      // Set Billboard Mode so sprite always faces 2.5D camera
+      // Billboard Y Mode: Sprite faces 2.5D camera angle
       spriteMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       mat.useAlphaFromDiffuseTexture = true;
+      mat.backFaceCulling = false;
+
       if (entity.spriteUrl) {
         mat.diffuseTexture = new Texture(entity.spriteUrl, this.scene);
         mat.diffuseTexture.hasAlpha = true;
+      } else if (this.defaultPlayerTexture) {
+        mat.diffuseTexture = this.defaultPlayerTexture;
+        mat.diffuseTexture.hasAlpha = true;
       }
       spriteMesh.material = mat;
+      spriteMesh.parent = this.rootNode;
       this.entityMeshes.set(entity.id, spriteMesh);
     }
 
-    // Smooth position interpolation
-    const targetPos = new Vector3(entity.x, 0.75, entity.y);
+    // Smooth lerp movement across 2.5D coordinates
+    const targetPos = new Vector3(entity.x, 0.8, entity.y);
     spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.2);
   }
 
