@@ -135,8 +135,8 @@ if [ -f .env ]; then
         # Restore DB block if using integrated MariaDB
         if grep -q "DATABASE_URL=.*@db:3306" .env; then
             echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
-            DB_PASS=$(grep '^MARIADB_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
-            DB_ROOT_PASS=$(grep '^MARIADB_ROOT_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
+            DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+            if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
             cat <<EOF >> docker-compose.yml
 
   db:
@@ -147,7 +147,7 @@ if [ -f .env ]; then
       MARIADB_DATABASE: saints_gaming
       MARIADB_USER: saints
       MARIADB_PASSWORD: ${DB_PASS}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
@@ -157,7 +157,7 @@ if [ -f .env ]; then
       retries: 5
 EOF
             if ! grep -q "depends_on:" docker-compose.yml; then
-                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_started' docker-compose.yml
             fi
         fi
 
@@ -190,8 +190,8 @@ EOF
         # Restore DB block if using integrated MariaDB
         if grep -q "DATABASE_URL=.*@db:3306" .env; then
             echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
-            DB_PASS=$(grep '^MARIADB_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
-            DB_ROOT_PASS=$(grep '^MARIADB_ROOT_PASSWORD=' .env | cut -d'=' -f2 || openssl rand -hex 12)
+            DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+            if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
             cat <<EOF >> docker-compose.yml
 
   db:
@@ -202,7 +202,7 @@ EOF
       MARIADB_DATABASE: saints_gaming
       MARIADB_USER: saints
       MARIADB_PASSWORD: ${DB_PASS}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
@@ -212,7 +212,7 @@ EOF
       retries: 5
 EOF
             if ! grep -q "depends_on:" docker-compose.yml; then
-                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_started' docker-compose.yml
             fi
         fi
 
