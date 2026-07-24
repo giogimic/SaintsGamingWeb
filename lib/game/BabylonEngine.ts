@@ -189,7 +189,7 @@ export class BabylonEngine {
         ground.parent = this.rootNode;
 
         const mat = new StandardMaterial(`tileMat_${r}_${c}`, this.scene);
-        this.applyTileMaterial(mat, tileId);
+        this.applyTileMaterial(mat, tileId, r, c);
         ground.material = mat;
         this.tileMeshes.push(ground);
 
@@ -198,7 +198,8 @@ export class BabylonEngine {
           const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, { size: tileSize * 0.9 }, this.scene);
           block.position = new Vector3(posX, tileSize * 0.45, posZ);
           const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
-          wallMat.diffuseColor = new Color3(0.18, 0.28, 0.18);
+          const checker = ((r + c) % 2 === 0) ? 0.02 : 0;
+          wallMat.diffuseColor = new Color3(0.18 + checker, 0.28 + checker, 0.18 + checker);
           block.material = wallMat;
           block.parent = this.rootNode;
           this.objectMeshes.push(block);
@@ -246,26 +247,29 @@ export class BabylonEngine {
     }
   }
 
-  private applyTileMaterial(mat: StandardMaterial, tileId: number) {
+  private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0) {
+    const isAlt = (r + c) % 2 === 0;
+    const tone = isAlt ? 0.035 : 0; // Checkerboard micro-contrast for grid movement visibility
+
     switch (tileId) {
-      case 0: mat.diffuseColor = new Color3(0.12, 0.42, 0.18); break; // Safe Grass
-      case 1: mat.diffuseColor = new Color3(0.15, 0.25, 0.15); break; // Wall / Tree Boundary
+      case 0: mat.diffuseColor = new Color3(0.12 + tone, 0.42 + tone, 0.18 + tone); break; // Safe Grass
+      case 1: mat.diffuseColor = new Color3(0.15 + tone, 0.25 + tone, 0.15 + tone); break; // Wall / Tree Boundary
       case 2: // Tall Grass Encounter
-      case 3: mat.diffuseColor = new Color3(0.08, 0.48, 0.12); break;
-      case 4: mat.diffuseColor = new Color3(0.1, 0.35, 0.65); break; // Water
-      case 5: mat.diffuseColor = new Color3(0.15, 0.35, 0.18); break; // Woodcutting Tree
-      case 6: mat.diffuseColor = new Color3(0.35, 0.3, 0.25); break; // Ore Rock
-      case 7: mat.diffuseColor = new Color3(0.45, 0.35, 0.15); break; // Shop Ground
-      case 8: mat.diffuseColor = new Color3(0.2, 0.4, 0.5); break; // Clinic
-      case 10: mat.diffuseColor = new Color3(0.05, 0.3, 0.6); break; // Fishing Water
-      default: mat.diffuseColor = new Color3(0.15, 0.38, 0.2); break;
+      case 3: mat.diffuseColor = new Color3(0.08 + tone, 0.48 + tone, 0.12 + tone); break;
+      case 4: mat.diffuseColor = new Color3(0.1 + tone, 0.35 + tone, 0.65 + tone); break; // Water
+      case 5: mat.diffuseColor = new Color3(0.15 + tone, 0.35 + tone, 0.18 + tone); break; // Woodcutting Tree
+      case 6: mat.diffuseColor = new Color3(0.35 + tone, 0.3 + tone, 0.25 + tone); break; // Ore Rock
+      case 7: mat.diffuseColor = new Color3(0.45 + tone, 0.35 + tone, 0.15 + tone); break; // Shop Ground
+      case 8: mat.diffuseColor = new Color3(0.2 + tone, 0.4 + tone, 0.5 + tone); break; // Clinic
+      case 10: mat.diffuseColor = new Color3(0.05 + tone, 0.3 + tone, 0.6 + tone); break; // Fishing Water
+      default: mat.diffuseColor = new Color3(0.15 + tone, 0.38 + tone, 0.2 + tone); break;
     }
   }
 
   public updateSingleTile(r: number, c: number, tileId: number) {
     const tileMesh = this.scene.getMeshByName(`tile_${r}_${c}`) as Mesh;
     if (tileMesh && tileMesh.material) {
-      this.applyTileMaterial(tileMesh.material as StandardMaterial, tileId);
+      this.applyTileMaterial(tileMesh.material as StandardMaterial, tileId, r, c);
     }
   }
 
@@ -288,6 +292,7 @@ export class BabylonEngine {
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
+    const targetPos = new Vector3(entity.x, 0.8, entity.y);
 
     if (!spriteMesh) {
       // Create 2.5D Billboard Sprite Plane
@@ -313,12 +318,15 @@ export class BabylonEngine {
       }
       spriteMesh.material = mat;
       spriteMesh.parent = this.rootNode;
-      this.entityMeshes.set(entity.id, spriteMesh);
-    }
 
-    // Smooth lerp movement across 2.5D coordinates
-    const targetPos = new Vector3(entity.x, 0.8, entity.y);
-    spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.2);
+      // SET INITIAL POSITION IMMEDIATELY to prevent teleport from (0,0,0) on spawn
+      spriteMesh.position.copyFrom(targetPos);
+
+      this.entityMeshes.set(entity.id, spriteMesh);
+    } else {
+      // Smooth lerp movement across 2.5D coordinates
+      spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.3);
+    }
   }
 
   public removeEntity(id: string) {

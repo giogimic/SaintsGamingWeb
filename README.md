@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.10
+- **Grid Shading, Smooth Camera & Sprite Spawn Fix**: Implemented alternating checkerboard tone shading across all 2.5D ground tiles (`BabylonEngine.ts`) so tile sliding during WASD movement is visually obvious. Eliminated sprite lerp teleporting on spawn by copying target vectors immediately upon mesh creation. Added live `Pos: (X, Y)` indicators in 2.5D HUD badge and canvas click-focus.
+
 ### v2.1.9
 - **Tuxemon Map Data AST Extraction & 2.5D Movement Fix**: Extracted 70+ Tuxemon NPCs from desktop `.tmx` and `.yaml` source files into `campaign-maps.ts` and `IntegratedDevEditor`. Resolved 2.5D player render loop stale closures (minimap position was moving while overworld canvas was locked at spawn). Connected Spacebar interact key to launch full-screen RPG `DialogOverlay` with portrait text box, and enabled instant live-rendering of newly placed Dev Editor NPCs onto the 2.5D Babylon grid.
 
