@@ -152,6 +152,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     // Load actual map grid and NPCs
     babylonEngine.loadTilemap({
+      id: currentMapId,
       width: mapWidth,
       height: mapHeight,
       tileSize: 1,

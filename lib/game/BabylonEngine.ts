@@ -15,6 +15,7 @@ import {
 } from '@babylonjs/core';
 
 export interface BabylonTileMapData {
+  id?: string;
   width: number;
   height: number;
   tileSize: number;
