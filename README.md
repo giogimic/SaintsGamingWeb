@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.15
+- **Indoor Procedural Textures**: Upgraded the `BabylonEngine` renderer! Indoor maps (Bedrooms, Houses, Labs, Dojos, etc) now dynamically generate and apply procedural wood floor and plaster wall textures to their map tiles, massively improving the visual aesthetics of the game.
+
 ### v2.1.14
 - **Overlays Fixed**: The `IntegratedDevEditor` now automatically hides conflicting UI overlays (MiniMap, HUD Orbs, Chat Bar) when opened, resolving overlap issues.
 - **Tuxemon NPCs Importer**: Integrated dynamic character sprite importing! The Dev Editor now maps and lists 208 available character sprites from `/tuxemon-assets/npc/` inside the `Heroes` and `NPCs` visual drop-down menus.
