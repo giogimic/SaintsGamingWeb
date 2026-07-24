@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.3
+- **Overworld Interactive Triggers & Wild Encounter System**: Connected tall grass encounter triggers (tile 2) to launch wild Tuxemon battles, implemented warp gate map transitions (tile 3/4), overworld NPC dialogue triggers, and resource harvesting (Woodcutting & Mining) with skill XP gains.
+
 ### v2.1.2
 - **Universal Map Index & All-Component Dev Editor Suite**: Added central `map-index.ts` registry indexing all campaign maps, added searchable map warp selector in `IntegratedDevEditor.tsx`, expanded 6 full editor tabs (Tiles, Spawns, Grass Encounters, NPCs/Dialogue, Battle Arenas, Quests), and added `POST /api/maps/[slug]` API for permanent MariaDB database persistence.
 

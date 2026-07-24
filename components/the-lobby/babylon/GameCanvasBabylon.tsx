@@ -23,6 +23,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const currentMapId = useGameStore((state) => state.currentMapId);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
+  const showToast = useGameStore((state) => state.showToast);
+  const gainSkillXp = useGameStore((state) => state.gainSkillXp);
 
   // Load Active Map Data or Default Fallback
   const mapData = GAME_MAPS[currentMapId] || {
@@ -120,23 +122,47 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
   }, [isDevEditorOpen, activeBrushTileId]);
 
-  // Handle WASD & Arrow Keys Keyboard Movement
+  // Handle WASD, Arrow Keys & Action Key (E / Space) Triggers
   useEffect(() => {
     let lastMoveTime = 0;
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture WASD if user is typing in chat/input elements
+      // Don't capture inputs if user is typing in form elements
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
       }
 
       const now = Date.now();
+      const key = e.key.toLowerCase();
+
+      // Action Key 'E' or Space: Interact with NPCs or Harvest Resource Nodes
+      if (key === 'e' || key === ' ') {
+        const curX = player.position?.x || 6;
+        const curY = player.position?.y || 2;
+        const currentTile = mapData.grid[curY]?.[curX];
+
+        // Resource Node Harvesting
+        if (currentTile === 5) {
+          gainSkillXp('woodcutting', 25);
+          showToast('Harvested Wood Logs (+25 Woodcutting XP)');
+        } else if (currentTile === 6) {
+          gainSkillXp('mining', 30);
+          showToast('Mined Copper Ore (+30 Mining XP)');
+        }
+
+        // NPC Interaction Check
+        const nearbyNpc = mapData.npcs?.find((npc) => Math.abs(npc.x - curX) <= 1 && Math.abs(npc.y - curY) <= 1);
+        if (nearbyNpc) {
+          showToast(`${nearbyNpc.name}: "${nearbyNpc.dialogueKey || 'Greetings, Tamer!'}"`);
+        }
+        return;
+      }
+
       if (now - lastMoveTime < 120) return; // 120ms movement throttle
 
       let dx = 0;
       let dy = 0;
 
-      const key = e.key.toLowerCase();
       if (key === 'w' || key === 'arrowup') dy = -1;
       else if (key === 's' || key === 'arrowdown') dy = 1;
       else if (key === 'a' || key === 'arrowleft') dx = -1;
@@ -154,13 +180,32 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           setPlayerPosition({ x: nextX, y: nextY });
           emitSocketEvent?.('move', { x: nextX, y: nextY });
           lastMoveTime = now;
+
+          // Tall Grass Wild Encounter Trigger Check (Tile 2)
+          if (targetTile === 2) {
+            const roll = Math.random() * 100;
+            if (roll < 12) { // 12% chance per step in grass
+              const pool = mapData.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
+              const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
+              showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
+              useGameStore.getState().setGameMode('BATTLE');
+            }
+          }
+
+          // Warp Gate Transition Check (Tile 3/4)
+          if ((targetTile === 3 || targetTile === 4) && mapData.gates?.[targetTile]) {
+            const gate = mapData.gates[targetTile];
+            useGameStore.setState({ currentMapId: gate.targetMapId });
+            setPlayerPosition(gate.spawnPoint);
+            showToast(`Warped to ${gate.targetMapId}`);
+          }
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [player.position, mapWidth, mapHeight, setPlayerPosition, emitSocketEvent]);
+  }, [player.position, mapWidth, mapHeight, setPlayerPosition, emitSocketEvent, gainSkillXp, showToast]);
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">
@@ -174,7 +219,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
         <span>Map: <strong className="text-white">{mapData.name || currentMapId}</strong></span>
         <span className="text-slate-500">|</span>
-        <span className="text-slate-400">WASD / Arrows to Move</span>
+        <span className="text-slate-400">WASD to Move | Press E to Interact</span>
       </div>
     </div>
   );
