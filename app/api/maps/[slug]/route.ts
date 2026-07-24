@@ -24,3 +24,39 @@ export async function GET(
     return NextResponse.json({ error: "Failed to fetch map" }, { status: 500 });
   }
 }
+
+/**
+ * POST /api/maps/[slug] — Update or create map configuration
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await params;
+    const body = await request.json();
+
+    const updated = await prisma.tuxemonMap.upsert({
+      where: { slug },
+      update: {
+        gridData: body.grid ? JSON.stringify(body.grid) : undefined,
+        npcData: body.npcs ? JSON.stringify(body.npcs) : undefined,
+        encounterData: body.encounterPool ? JSON.stringify(body.encounterPool) : undefined,
+      },
+      create: {
+        slug,
+        name: body.name || slug,
+        width: body.width || 24,
+        height: body.height || 24,
+        gridData: JSON.stringify(body.grid || []),
+        npcData: JSON.stringify(body.npcs || []),
+        encounterData: JSON.stringify(body.encounterPool || []),
+      }
+    });
+
+    return NextResponse.json({ success: true, map: updated });
+  } catch (error) {
+    console.error("Failed to update map:", error);
+    return NextResponse.json({ error: "Failed to update map" }, { status: 500 });
+  }
+}
