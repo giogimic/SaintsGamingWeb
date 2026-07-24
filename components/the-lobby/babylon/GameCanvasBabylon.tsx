@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
 import { useGameStore } from '../store';
+import { GAME_MAPS } from '../data/maps';
 
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
@@ -19,7 +20,23 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const engineRef = useRef<BabylonEngine | null>(null);
   const player = useGameStore((state) => state.player);
   const otherPlayers = useGameStore((state) => state.otherPlayers);
-  const _currentMapId = useGameStore((state) => state.currentMapId);
+  const currentMapId = useGameStore((state) => state.currentMapId);
+  const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
+  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
+
+  // Load Active Map Data or Default Fallback
+  const mapData = GAME_MAPS[currentMapId] || {
+    id: 'DEFAULT_MAP',
+    name: 'Tamer Grounds',
+    grid: Array(24).fill(0).map((_, r) => 
+      Array(24).fill(0).map((_, c) => 
+        (r === 0 || r === 23 || c === 0 || c === 23) ? 1 : (r % 5 === 0 && c % 5 === 0) ? 2 : 0
+      )
+    )
+  };
+
+  const mapWidth = mapData.grid[0]?.length || 24;
+  const mapHeight = mapData.grid.length || 24;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -32,51 +49,47 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       onCanvasReady(babylonEngine);
     }
 
-    // Load map tile data
-    const defaultTiles = Array(20).fill(0).map(() => Array(20).fill(1));
+    // Load actual map grid and NPCs
     babylonEngine.loadTilemap({
-      width: 20,
-      height: 20,
+      width: mapWidth,
+      height: mapHeight,
       tileSize: 1,
-      tiles: defaultTiles
+      tiles: mapData.grid,
+      npcs: mapData.npcs
     });
-
-    // Enable live tile painting if Dev Editor is active
-    if (isDevEditorOpen) {
-      babylonEngine.enableTilePicking((r, c) => {
-        babylonEngine.updateSingleTile(r, c, activeBrushTileId);
-      });
-    } else {
-      babylonEngine.disableTilePicking();
-    }
 
     // Start 60FPS Render Loop
     babylonEngine.startRenderLoop(() => {
       if (player && player.position) {
         const px = player.position.x || 6;
         const py = player.position.y || 2;
+        const worldX = px - mapWidth / 2;
+        const worldZ = mapHeight / 2 - py;
+
         babylonEngine.updateEntity({
           id: 'player_main',
           name: player.name || 'Hero',
-          x: px - 10,
-          y: 10 - py,
-          spriteUrl: player.spriteId ? `/assets/sprites/${player.spriteId}.png` : '/assets/sprites/player.png',
+          x: worldX,
+          y: worldZ,
+          spriteUrl: player.spriteId ? `/assets/sprites/${player.spriteId}.png` : undefined,
           isPlayer: true
         });
 
-        // Camera tracks player smoothly
-        babylonEngine.setCameraPosition(px - 10, 10 - py, 0.1);
+        // Camera tracks player position smoothly
+        babylonEngine.setCameraPosition(worldX, worldZ, 0.1);
       }
 
       // Render connected multiplayer players
       if (otherPlayers) {
         Object.entries(otherPlayers).forEach(([socketId, other]) => {
+          const ox = (other.x || 6) - mapWidth / 2;
+          const oz = mapHeight / 2 - (other.y || 2);
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
             name: other.name || 'Tamer',
-            x: (other.x || 10) - 10,
-            y: 10 - (other.y || 10),
-            spriteUrl: other.spriteId ? `/assets/sprites/${other.spriteId}.png` : '/assets/sprites/player.png',
+            x: ox,
+            y: oz,
+            spriteUrl: other.spriteId ? `/assets/sprites/${other.spriteId}.png` : undefined,
             isPlayer: false
           });
         });
@@ -87,19 +100,81 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       babylonEngine.dispose();
       engineRef.current = null;
     };
-  }, []);
+  }, [currentMapId]);
+
+  // Handle Live Dev Editor Tile Picking
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+
+    if (isDevEditorOpen) {
+      engine.enableTilePicking((r, c) => {
+        engine.updateSingleTile(r, c, activeBrushTileId);
+        // Mutate grid locally in mapData for immediate feedback
+        if (mapData.grid[r]) {
+          mapData.grid[r][c] = activeBrushTileId;
+        }
+      });
+    } else {
+      engine.disableTilePicking();
+    }
+  }, [isDevEditorOpen, activeBrushTileId]);
+
+  // Handle WASD & Arrow Keys Keyboard Movement
+  useEffect(() => {
+    let lastMoveTime = 0;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture WASD if user is typing in chat/input elements
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastMoveTime < 120) return; // 120ms movement throttle
+
+      let dx = 0;
+      let dy = 0;
+
+      const key = e.key.toLowerCase();
+      if (key === 'w' || key === 'arrowup') dy = -1;
+      else if (key === 's' || key === 'arrowdown') dy = 1;
+      else if (key === 'a' || key === 'arrowleft') dx = -1;
+      else if (key === 'd' || key === 'arrowright') dx = 1;
+
+      if (dx !== 0 || dy !== 0) {
+        const curX = player.position?.x || 6;
+        const curY = player.position?.y || 2;
+        const nextX = Math.max(0, Math.min(mapWidth - 1, curX + dx));
+        const nextY = Math.max(0, Math.min(mapHeight - 1, curY + dy));
+
+        // Check grid collision (tile 1 = wall/solid)
+        const targetTile = mapData.grid[nextY]?.[nextX];
+        if (targetTile !== 1) {
+          setPlayerPosition({ x: nextX, y: nextY });
+          emitSocketEvent?.('move', { x: nextX, y: nextY });
+          lastMoveTime = now;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [player.position, mapWidth, mapHeight, setPlayerPosition, emitSocketEvent]);
 
   return (
-    <div className="relative w-full h-full bg-[#050508] overflow-hidden select-none">
+    <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">
       <canvas
         ref={canvasRef}
         className="w-full h-full outline-none touch-none cursor-crosshair"
       />
       
-      {/* 2.5D Watermark & Controls Badge */}
-      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded bg-black/70 backdrop-blur border border-white/10 text-xs font-mono text-cyan-400 flex items-center gap-2">
+      {/* 2.5D HUD Badge */}
+      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded bg-black/75 backdrop-blur border border-cyan-500/30 text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-lg">
         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-        Babylon 2.5D Engine | Press <kbd className="px-1.5 py-0.5 bg-cyan-950 border border-cyan-500/30 rounded text-[10px] text-cyan-300">Ctrl + E</kbd> for Dev Editor
+        <span>Map: <strong className="text-white">{mapData.name || currentMapId}</strong></span>
+        <span className="text-slate-500">|</span>
+        <span className="text-slate-400">WASD / Arrows to Move</span>
       </div>
     </div>
   );
