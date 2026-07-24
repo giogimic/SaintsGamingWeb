@@ -64,7 +64,13 @@ export function MessengerProvider({ children }: { children: React.ReactNode }) {
 export function useMessenger() {
   const context = useContext(MessengerContext);
   if (context === undefined) {
-    throw new Error("useMessenger must be used within a MessengerProvider");
+    return {
+      isOpen: false,
+      setIsOpen: () => {},
+      activeChat: null,
+      setActiveChat: () => {},
+      isCryptoReady: false
+    };
   }
   return context;
 }
