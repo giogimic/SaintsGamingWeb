@@ -16,18 +16,21 @@ function scanDir(subDir) {
     });
 }
 
-function generateTsFile(varName, list, outputPath) {
-  const content = `// Auto-generated asset list\nexport const ${varName} = [\n` +
-    list.map(item => `  { id: '${item.id}', path: '${item.path}' }`).join(',\n') +
+function generateCombinedTsFile(monsters, items, outputPath) {
+  const content = `// Auto-generated asset list\n` +
+    `export const TUXEMON_MONSTERS = [\n` +
+    monsters.map(item => `  { id: '${item.id}', path: '${item.path}' }`).join(',\n') +
+    `\n];\n\n` +
+    `export const TUXEMON_ITEMS = [\n` +
+    items.map(item => `  { id: '${item.id}', path: '${item.path}' }`).join(',\n') +
     `\n];\n`;
   fs.writeFileSync(outputPath, content, 'utf8');
   console.log(`Generated ${outputPath}`);
 }
 
 const monsters = scanDir('monster/player');
-generateTsFile('TUXEMON_MONSTERS', monsters, path.join(OUTPUT_DIR, 'monsters.ts'));
-
 const items = scanDir('items');
-generateTsFile('TUXEMON_ITEMS', items, path.join(OUTPUT_DIR, 'items.ts'));
+
+generateCombinedTsFile(monsters, items, path.join(OUTPUT_DIR, 'generated-assets.ts'));
 
 console.log(`Indexed ${monsters.length} monsters and ${items.length} items.`);
