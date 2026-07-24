@@ -158,7 +158,14 @@ if [ -f .env ]; then
         if grep -q "DATABASE_URL=.*@db:3306" .env; then
             echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
             DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-            if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
+            if [ -z "$DB_PASS" ]; then
+                # If password is missing from .env, try to extract from docker-compose.yml
+                if db_service_exists; then
+                    DB_PASS=$(grep 'MARIADB_PASSWORD:' docker-compose.yml | awk '{print $2}')
+                fi
+                # If still missing, generate new password
+                if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
+            fi
             if ! db_service_exists; then
                 cat <<EOF >> docker-compose.yml
 
@@ -180,6 +187,10 @@ if [ -f .env ]; then
       retries: 5
 EOF
                 inject_depends_on
+            else
+                # Update existing db service password in docker-compose.yml to match .env
+                sed -i "s/MARIADB_PASSWORD: .*/MARIADB_PASSWORD: ${DB_PASS}/" docker-compose.yml
+                sed -i "s/MARIADB_ROOT_PASSWORD: .*/MARIADB_ROOT_PASSWORD: ${DB_PASS}/" docker-compose.yml
             fi
         fi
 
@@ -213,7 +224,14 @@ EOF
         if grep -q "DATABASE_URL=.*@db:3306" .env; then
             echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
             DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-            if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
+            if [ -z "$DB_PASS" ]; then
+                # If password is missing from .env, try to extract from docker-compose.yml
+                if db_service_exists; then
+                    DB_PASS=$(grep 'MARIADB_PASSWORD:' docker-compose.yml | awk '{print $2}')
+                fi
+                # If still missing, generate new password
+                if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
+            fi
             if ! db_service_exists; then
                 cat <<EOF >> docker-compose.yml
 
@@ -235,6 +253,10 @@ EOF
       retries: 5
 EOF
                 inject_depends_on
+            else
+                # Update existing db service password in docker-compose.yml to match .env
+                sed -i "s/MARIADB_PASSWORD: .*/MARIADB_PASSWORD: ${DB_PASS}/" docker-compose.yml
+                sed -i "s/MARIADB_ROOT_PASSWORD: .*/MARIADB_ROOT_PASSWORD: ${DB_PASS}/" docker-compose.yml
             fi
         fi
 

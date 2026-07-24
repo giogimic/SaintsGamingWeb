@@ -118,6 +118,18 @@ if !errorlevel! equ 0 (
     for /f "usebackq tokens=*" %%A in (`powershell -NoProfile -Command "if (Test-Path .env) { (Get-Content .env | Select-String '^DATABASE_URL=') -replace '.*://[^:]*:([^@]+)@.*','$1' }"`) do set "DB_PASS=%%A"
     set "DB_ROOT_PASS=!DB_PASS!"
 
+    :: If password is missing from .env, try to extract from docker-compose.yml
+    if "!DB_PASS!"=="" (
+        for /f "usebackq tokens=*" %%A in (`powershell -NoProfile -Command "if (Test-Path docker-compose.yml) { (Get-Content docker-compose.yml | Select-String 'MARIADB_PASSWORD:') -replace '.*:\s*(.*)','$1' }"`) do set "DB_PASS=%%A"
+    )
+
+    :: If still missing, generate new password
+    if "!DB_PASS!"=="" (
+        for /f "delims=" %%a in ('powershell -Command "-join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | %% {[char]$_})" ') do set "DB_PASS=%%a"
+    )
+
+    set "DB_ROOT_PASS=!DB_PASS!"
+
     powershell -NoProfile -Command "if (-not (Select-String -Path docker-compose.yml -Pattern '^  db:' -Quiet)) { exit 0 } else { exit 1 }"
     if !errorlevel! equ 0 (
         echo. >> docker-compose.yml
@@ -138,6 +150,9 @@ if !errorlevel! equ 0 (
         echo       timeout: 5s >> docker-compose.yml
         echo       retries: 5 >> docker-compose.yml
         powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_started'; if ($c -notmatch 'depends_on:') { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
+    ) else (
+        :: Update existing db service password in docker-compose.yml to match .env
+        powershell -NoProfile -Command "$c = Get-Content docker-compose.yml -Raw; $c = $c -replace 'MARIADB_PASSWORD: .*', 'MARIADB_PASSWORD: !DB_PASS!'; $c = $c -replace 'MARIADB_ROOT_PASSWORD: .*', 'MARIADB_ROOT_PASSWORD: !DB_PASS!'; Set-Content docker-compose.yml -Value $c"
     )
 )
 exit /b
