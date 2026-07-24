@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../store';
 import { searchMapIndex, registerNewMap } from '../data/map-index';
 import { GAME_MAPS } from '../data/maps';
+import { TUXEMON_SPRITES } from '../data/sprites';
 
 import { 
   Layers, 
@@ -89,7 +90,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   // NPC Configuration State
   const [npcName, setNpcName] = useState<string>('Keeper Alex');
-  const [npcSprite, _setNpcSprite] = useState<string>('/assets/sprites/npc_old_man.png');
+  const [npcSprite, setNpcSprite] = useState<string>('/tuxemon-assets/npc/heroine.png');
   const [npcDialogue, setNpcDialogue] = useState<string>('Welcome to the animist grounds, Tamer!');
   const [mapNpcs, setMapNpcs] = useState<Array<{ id: string; name: string; x: number; y: number; sprite: string; dialogueKey: string }>>(
     currentMapData.npcs || []
@@ -511,16 +512,19 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
               </div>
 
               <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Sprite ID / Asset Path</label>
+                <label className="text-[10px] text-slate-400 block mb-1">Sprite Asset Path</label>
                 <select
                   value={charSpriteInput}
                   onChange={(e) => setCharSpriteInput(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
                 >
-                  <option value="player">Default Player Hero</option>
-                  <option value="villager_1">Villager Sprite 1</option>
-                  <option value="villager_2">Villager Sprite 2</option>
-                  <option value="npc_old_man">Old Keeper Sprite</option>
+                  <option value="player">Default Player Hero (/assets/sprites/)</option>
+                  <option disabled>--- Tuxemon NPCS ---</option>
+                  {TUXEMON_SPRITES.map(sprite => (
+                    <option key={sprite} value={`/tuxemon-assets/npc/${sprite}.png`}>
+                      {sprite}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -659,6 +663,21 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
                   rows={2}
                   className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono text-[11px]"
                 />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Sprite Visual</label>
+                <select
+                  value={npcSprite}
+                  onChange={(e) => setNpcSprite(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                >
+                  {TUXEMON_SPRITES.map(sprite => (
+                    <option key={sprite} value={`/tuxemon-assets/npc/${sprite}.png`}>
+                      {sprite}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <button

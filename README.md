@@ -218,6 +218,10 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.14
+- **Overlays Fixed**: The `IntegratedDevEditor` now automatically hides conflicting UI overlays (MiniMap, HUD Orbs, Chat Bar) when opened, resolving overlap issues.
+- **Tuxemon NPCs Importer**: Integrated dynamic character sprite importing! The Dev Editor now maps and lists 208 available character sprites from `/tuxemon-assets/npc/` inside the `Heroes` and `NPCs` visual drop-down menus.
+
 ### v2.1.13
 - **Excluded SQLite Migrations from Docker & MariaDB**: Added `prisma/migrations` to `.dockerignore` and purged legacy SQLite migration files. This ensures Docker production builds push clean Prisma schemas directly to MariaDB without migration conflicts.
 
