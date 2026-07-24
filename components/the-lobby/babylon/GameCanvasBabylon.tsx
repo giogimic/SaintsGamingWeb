@@ -175,7 +175,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           x: worldX,
           y: worldZ,
           spriteUrl: freshPlayer.spriteId ? `/assets/sprites/${freshPlayer.spriteId}.png` : undefined,
-          isPlayer: true
+          isPlayer: true,
+          chatMessage: useGameStore.getState().localChat || undefined
         });
 
         // Camera tracks player position smoothly
@@ -194,7 +195,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             x: ox,
             y: oz,
             spriteUrl: other.spriteId ? `/assets/sprites/${other.spriteId}.png` : undefined,
-            isPlayer: false
+            isPlayer: false,
+            chatMessage: other.chatMessage
           });
         });
       }

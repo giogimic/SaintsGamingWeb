@@ -13,6 +13,7 @@ import {
   Mesh,
   TransformNode
 } from '@babylonjs/core';
+import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 
 export interface BabylonTileMapData {
   id?: string;
@@ -33,6 +34,7 @@ export interface BabylonEntityData {
   isPlayer?: boolean;
   isNpc?: boolean;
   isTuxemon?: boolean;
+  chatMessage?: string;
 }
 
 export class BabylonEngine {
@@ -49,6 +51,8 @@ export class BabylonEngine {
   private woodFloorTexture?: Texture;
   private indoorWallTexture?: Texture;
   private currentMapId: string = '';
+  private guiTexture: AdvancedDynamicTexture;
+  private chatBubbles: Map<string, Rectangle> = new Map();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -59,6 +63,8 @@ export class BabylonEngine {
 
     this.scene = new Scene(this.engine);
     this.scene.clearColor = new Color4(0.02, 0.03, 0.05, 1.0); // Deep immersive dark space
+
+    this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
 
     // Root Node for 2.5D Isometric World
     this.rootNode = new TransformNode('rootNode', this.scene);
@@ -396,6 +402,43 @@ export class BabylonEngine {
       // Smooth lerp movement across 2.5D coordinates
       spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.3);
     }
+
+    // Handle Chat Bubble
+    let chatBubble = this.chatBubbles.get(entity.id);
+    if (entity.chatMessage) {
+      if (!chatBubble) {
+        chatBubble = new Rectangle(`chatBubble_${entity.id}`);
+        chatBubble.width = "180px";
+        chatBubble.height = "50px";
+        chatBubble.cornerRadius = 25;
+        chatBubble.color = "#22d3ee"; // cyan-400
+        chatBubble.thickness = 2;
+        chatBubble.background = "rgba(0,0,0,0.85)";
+        
+        const text = new TextBlock();
+        text.text = entity.chatMessage;
+        text.color = "white";
+        text.fontSize = 12;
+        text.fontFamily = "monospace";
+        text.textWrapping = true;
+        
+        chatBubble.addControl(text);
+        this.guiTexture.addControl(chatBubble);
+        chatBubble.linkWithMesh(spriteMesh);
+        chatBubble.linkOffsetY = -70; // Float above head
+        
+        this.chatBubbles.set(entity.id, chatBubble);
+      } else {
+        const textBlock = chatBubble.children[0] as TextBlock;
+        if (textBlock.text !== entity.chatMessage) {
+          textBlock.text = entity.chatMessage;
+        }
+      }
+    } else if (chatBubble) {
+      this.guiTexture.removeControl(chatBubble);
+      chatBubble.dispose();
+      this.chatBubbles.delete(entity.id);
+    }
   }
 
   public removeEntity(id: string) {
@@ -404,11 +447,18 @@ export class BabylonEngine {
       mesh.dispose();
       this.entityMeshes.delete(id);
     }
+    const chatBubble = this.chatBubbles.get(id);
+    if (chatBubble) {
+      this.guiTexture.removeControl(chatBubble);
+      chatBubble.dispose();
+      this.chatBubbles.delete(id);
+    }
   }
 
   public dispose() {
     window.removeEventListener('resize', this.onResize);
     this.stopRenderLoop();
+    this.guiTexture.dispose();
     this.scene.dispose();
     this.engine.dispose();
   }
