@@ -115,8 +115,8 @@ exit /b
 findstr /R "DATABASE_URL=.*@db:3306" .env >nul
 if !errorlevel! equ 0 (
     echo Restoring Integrated Database Configuration...
-    for /f "tokens=2 delims==" %%A in ('findstr "^MARIADB_PASSWORD=" .env') do set "DB_PASS=%%A"
-    for /f "tokens=2 delims==" %%A in ('findstr "^MARIADB_ROOT_PASSWORD=" .env') do set "DB_ROOT_PASS=%%A"
+    for /f "usebackq tokens=*" %%A in (`powershell -NoProfile -Command "if (Test-Path .env) { (Get-Content .env | Select-String '^DATABASE_URL=') -replace '.*://[^:]*:([^@]+)@.*','$1' }"`) do set "DB_PASS=%%A"
+    set "DB_ROOT_PASS=!DB_PASS!"
     
     findstr /c:"container_name: saints-gaming-db" docker-compose.yml >nul
     if !errorlevel! neq 0 (
@@ -129,7 +129,7 @@ if !errorlevel! equ 0 (
         echo       MARIADB_DATABASE: saints_gaming >> docker-compose.yml
         echo       MARIADB_USER: saints >> docker-compose.yml
         echo       MARIADB_PASSWORD: !DB_PASS! >> docker-compose.yml
-        echo       MARIADB_ROOT_PASSWORD: !DB_ROOT_PASS! >> docker-compose.yml
+        echo       MARIADB_ROOT_PASSWORD: !DB_PASS! >> docker-compose.yml
         echo     volumes: >> docker-compose.yml
         echo       - ./mysql_data:/var/lib/mysql >> docker-compose.yml
         echo     healthcheck: >> docker-compose.yml
@@ -137,7 +137,7 @@ if !errorlevel! equ 0 (
         echo       interval: 10s >> docker-compose.yml
         echo       timeout: 5s >> docker-compose.yml
         echo       retries: 5 >> docker-compose.yml
-        powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_healthy'; if ($c -notmatch [regex]::Escape($insert)) { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
+        powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_started'; if ($c -notmatch 'depends_on:') { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
     )
 )
 exit /b
@@ -300,7 +300,7 @@ if errorlevel 3 (
     echo       interval: 10s >> docker-compose.yml
     echo       timeout: 5s >> docker-compose.yml
     echo       retries: 5 >> docker-compose.yml
-    powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_healthy'; if ($c -notmatch [regex]::Escape($insert)) { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
+    powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_started'; if ($c -notmatch 'depends_on:') { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
 ) else (
     set DB_NAME=SQLite
 )
