@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
 import { useGameStore } from '../store';
 import { GAME_MAPS } from '../data/maps';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, HandHand } from 'lucide-react';
 
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
@@ -40,6 +41,73 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const mapWidth = mapData.grid[0]?.length || 24;
   const mapHeight = mapData.grid.length || 24;
 
+  // Unified Movement Execution Engine
+  const tryMovePlayerTo = (targetX: number, targetY: number) => {
+    const nextX = Math.max(0, Math.min(mapWidth - 1, targetX));
+    const nextY = Math.max(0, Math.min(mapHeight - 1, targetY));
+
+    // Collision check (Tile 1 = Solid Wall)
+    const targetTile = mapData.grid[nextY]?.[nextX];
+    if (targetTile === 1) {
+      showToast('Blocked by obstacle!');
+      return;
+    }
+
+    setPlayerPosition({ x: nextX, y: nextY });
+    emitSocketEvent?.('move', { x: nextX, y: nextY });
+
+    // Tall Grass Wild Encounter Trigger Check (Tile 2)
+    if (targetTile === 2) {
+      const roll = Math.random() * 100;
+      if (roll < 15) { // 15% chance per step in grass
+        const pool = mapData.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
+        const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
+        showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
+        useGameStore.getState().setGameMode('BATTLE');
+      }
+    }
+
+    // Warp Gate Transition Check (Tile 3/4)
+    if ((targetTile === 3 || targetTile === 4) && mapData.gates?.[targetTile]) {
+      const gate = mapData.gates[targetTile];
+      useGameStore.setState({ currentMapId: gate.targetMapId });
+      setPlayerPosition(gate.spawnPoint);
+      showToast(`Warped to ${gate.targetMapId}`);
+    }
+  };
+
+  const tryMoveDirection = (dx: number, dy: number) => {
+    const curX = player.position?.x ?? 6;
+    const curY = player.position?.y ?? 2;
+    tryMovePlayerTo(curX + dx, curY + dy);
+  };
+
+  // Interact / Talk Handler
+  const handleInteract = () => {
+    const curX = player.position?.x ?? 6;
+    const curY = player.position?.y ?? 2;
+    const currentTile = mapData.grid[curY]?.[curX];
+
+    // Resource Node Harvesting
+    if (currentTile === 5) {
+      gainSkillXp('woodcutting', 25);
+      showToast('Harvested Wood Logs (+25 Woodcutting XP)');
+      return;
+    } else if (currentTile === 6) {
+      gainSkillXp('mining', 30);
+      showToast('Mined Copper Ore (+30 Mining XP)');
+      return;
+    }
+
+    // NPC Interaction Check
+    const nearbyNpc = mapData.npcs?.find((npc) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
+    if (nearbyNpc) {
+      showToast(`${nearbyNpc.name}: "${nearbyNpc.dialogueKey || 'Greetings, Tamer! Welcome to the grounds.'}"`);
+    } else {
+      showToast('No NPC nearby. Use WASD / Arrows or D-Pad to move.');
+    }
+  };
+
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -63,8 +131,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Start 60FPS Render Loop
     babylonEngine.startRenderLoop(() => {
       if (player && player.position) {
-        const px = player.position.x || 6;
-        const py = player.position.y || 2;
+        const px = player.position.x ?? 6;
+        const py = player.position.y ?? 2;
         const worldX = px - mapWidth / 2;
         const worldZ = mapHeight / 2 - py;
 
@@ -104,7 +172,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
   }, [currentMapId]);
 
-  // Handle Live Dev Editor Tile Picking
+  // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -112,21 +180,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c) => {
         engine.updateSingleTile(r, c, activeBrushTileId);
-        // Mutate grid locally in mapData for immediate feedback
         if (mapData.grid[r]) {
           mapData.grid[r][c] = activeBrushTileId;
         }
       });
     } else {
-      engine.disableTilePicking();
+      // Click-to-move in exploration mode
+      engine.enableTilePicking((r, c) => {
+        tryMovePlayerTo(c, r);
+      });
     }
   }, [isDevEditorOpen, activeBrushTileId]);
 
-  // Handle WASD, Arrow Keys & Action Key (E / Space) Triggers
+  // Handle Keyboard WASD & Arrow Key Movement
   useEffect(() => {
     let lastMoveTime = 0;
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture inputs if user is typing in form elements
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
@@ -135,30 +204,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const now = Date.now();
       const key = e.key.toLowerCase();
 
-      // Action Key 'E' or Space: Interact with NPCs or Harvest Resource Nodes
+      // Interact Key (E / Space)
       if (key === 'e' || key === ' ') {
-        const curX = player.position?.x || 6;
-        const curY = player.position?.y || 2;
-        const currentTile = mapData.grid[curY]?.[curX];
-
-        // Resource Node Harvesting
-        if (currentTile === 5) {
-          gainSkillXp('woodcutting', 25);
-          showToast('Harvested Wood Logs (+25 Woodcutting XP)');
-        } else if (currentTile === 6) {
-          gainSkillXp('mining', 30);
-          showToast('Mined Copper Ore (+30 Mining XP)');
-        }
-
-        // NPC Interaction Check
-        const nearbyNpc = mapData.npcs?.find((npc) => Math.abs(npc.x - curX) <= 1 && Math.abs(npc.y - curY) <= 1);
-        if (nearbyNpc) {
-          showToast(`${nearbyNpc.name}: "${nearbyNpc.dialogueKey || 'Greetings, Tamer!'}"`);
-        }
+        handleInteract();
         return;
       }
 
-      if (now - lastMoveTime < 120) return; // 120ms movement throttle
+      if (now - lastMoveTime < 100) return; // Throttle step frequency
 
       let dx = 0;
       let dy = 0;
@@ -169,43 +221,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       else if (key === 'd' || key === 'arrowright') dx = 1;
 
       if (dx !== 0 || dy !== 0) {
-        const curX = player.position?.x || 6;
-        const curY = player.position?.y || 2;
-        const nextX = Math.max(0, Math.min(mapWidth - 1, curX + dx));
-        const nextY = Math.max(0, Math.min(mapHeight - 1, curY + dy));
-
-        // Check grid collision (tile 1 = wall/solid)
-        const targetTile = mapData.grid[nextY]?.[nextX];
-        if (targetTile !== 1) {
-          setPlayerPosition({ x: nextX, y: nextY });
-          emitSocketEvent?.('move', { x: nextX, y: nextY });
-          lastMoveTime = now;
-
-          // Tall Grass Wild Encounter Trigger Check (Tile 2)
-          if (targetTile === 2) {
-            const roll = Math.random() * 100;
-            if (roll < 12) { // 12% chance per step in grass
-              const pool = mapData.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
-              const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
-              showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
-              useGameStore.getState().setGameMode('BATTLE');
-            }
-          }
-
-          // Warp Gate Transition Check (Tile 3/4)
-          if ((targetTile === 3 || targetTile === 4) && mapData.gates?.[targetTile]) {
-            const gate = mapData.gates[targetTile];
-            useGameStore.setState({ currentMapId: gate.targetMapId });
-            setPlayerPosition(gate.spawnPoint);
-            showToast(`Warped to ${gate.targetMapId}`);
-          }
-        }
+        tryMoveDirection(dx, dy);
+        lastMoveTime = now;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [player.position, mapWidth, mapHeight, setPlayerPosition, emitSocketEvent, gainSkillXp, showToast]);
+  }, [player.position, mapWidth, mapHeight]);
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">
@@ -219,7 +242,53 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
         <span>Map: <strong className="text-white">{mapData.name || currentMapId}</strong></span>
         <span className="text-slate-500">|</span>
-        <span className="text-slate-400">WASD to Move | Press E to Interact</span>
+        <span className="text-slate-400">WASD / Click to Move</span>
+      </div>
+
+      {/* On-Screen Touch / Mouse Control D-Pad & Talk Action Button */}
+      <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+        <button
+          onClick={handleInteract}
+          className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-full shadow-xl border border-amber-400/50 flex items-center gap-1.5 active:scale-95 transition-all font-mono"
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>TALK / INTERACT (E)</span>
+        </button>
+
+        <div className="relative w-32 h-32 bg-black/60 backdrop-blur rounded-full border border-white/10 p-2 flex items-center justify-center shadow-2xl">
+          {/* D-Pad Buttons */}
+          <button
+            onClick={() => tryMoveDirection(0, -1)}
+            className="absolute top-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-t-lg active:scale-90 transition-transform"
+            title="Move Up (W)"
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => tryMoveDirection(-1, 0)}
+            className="absolute left-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-l-lg active:scale-90 transition-transform"
+            title="Move Left (A)"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => tryMoveDirection(1, 0)}
+            className="absolute right-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-r-lg active:scale-90 transition-transform"
+            title="Move Right (D)"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => tryMoveDirection(0, 1)}
+            className="absolute bottom-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-b-lg active:scale-90 transition-transform"
+            title="Move Down (S)"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+          <div className="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
+            <HandHand className="w-3 h-3 text-cyan-400" />
+          </div>
+        </div>
       </div>
     </div>
   );

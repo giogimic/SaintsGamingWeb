@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.7
+- **Movement Engine Overhaul, Character Importer & Clean Overlay Layering**: Added Click-to-Move raycasting, on-screen D-Pad & Talk/Interact floating action button, added Character & Sprite Customizer Tab to Dev Editor, resolved modal overlay stacking, and verified zero-error type safety.
+
 ### v2.1.6
 - **In-Engine Map Creator & JSON Exporter/Importer Suite**: Added `+ Create Map` modal to Dev Editor allowing instant in-game map generation (slug, dimensions, category), JSON map export & import utilities, and permanent database creation.
 

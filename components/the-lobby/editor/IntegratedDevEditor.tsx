@@ -21,7 +21,8 @@ import {
   Trash2,
   RefreshCw,
   Download,
-  Upload
+  Upload,
+  UserPlus
 } from 'lucide-react';
 
 interface IntegratedDevEditorProps {
@@ -30,7 +31,7 @@ interface IntegratedDevEditorProps {
   onBrushTileChange?: (tileId: number) => void;
 }
 
-type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests';
+type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars';
 
 export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen, onClose, onBrushTileChange }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('maps');
@@ -49,6 +50,11 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   const mapIndex = searchMapIndex(mapSearchQuery);
 
+  // Character & Sprite Customizer State
+  const [charNameInput, setCharNameInput] = useState<string>(player.name || 'Hero');
+  const [charClassInput, setCharClassInput] = useState<string>(player.animistClass || 'Animist');
+  const [charSpriteInput, setCharSpriteInput] = useState<string>(player.spriteId || 'player');
+
   // Active Map Reference
   const currentMapData = GAME_MAPS[currentMapId] || {
     id: currentMapId,
@@ -65,7 +71,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
   const [respawnY, _setRespawnY] = useState<number>(10);
 
   // Encounter Configuration State
-  const [_encounterRate, _setEncounterRate] = useState<number>(15); // 15% chance per step in grass
+  const [_encounterRate, _setEncounterRate] = useState<number>(15);
   const [minLevel, setMinLevel] = useState<number>(2);
   const [maxLevel, setMaxLevel] = useState<number>(5);
   const [selectedSpecies, setSelectedSpecies] = useState<string>('ignis');
@@ -89,7 +95,6 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
     currentMapData.npcs || []
   );
 
-  // Listen for Ctrl+E hotkey toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key.toLowerCase() === 'e') {
@@ -172,6 +177,18 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
     reader.readAsText(file);
   };
 
+  const handleApplyCharacterConfig = () => {
+    useGameStore.setState((state) => ({
+      player: {
+        ...state.player,
+        name: charNameInput,
+        animistClass: charClassInput as any,
+        spriteId: charSpriteInput
+      }
+    }));
+    showToast(`Loaded Character: ${charNameInput} [${charClassInput}]`);
+  };
+
   const handleBrushSelect = (tileId: number) => {
     setBrushTileId(tileId);
     if (onBrushTileChange) onBrushTileChange(tileId);
@@ -243,7 +260,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
             Integrated Dev Editor
           </span>
           <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded font-mono">
-            v2.1.6
+            v2.1.7
           </span>
         </div>
         <button
@@ -346,9 +363,10 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       </div>
 
       {/* Editor Tab Navigation */}
-      <div className="flex bg-slate-950/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium">
+      <div className="flex bg-slate-950/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium overflow-x-auto">
         {[
           { id: 'maps', label: 'Tiles', icon: Layers },
+          { id: 'chars', label: 'Heroes', icon: UserPlus },
           { id: 'spawns', label: 'Spawns', icon: MapPin },
           { id: 'encounters', label: 'Grass', icon: Trees },
           { id: 'npcs', label: 'NPCs', icon: UserCheck },
@@ -361,7 +379,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as EditorTab)}
-              className={`flex-1 py-1.5 px-2 rounded flex items-center justify-center gap-1 transition-all ${
+              className={`flex-1 min-w-[54px] py-1.5 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
                 isActive 
                   ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white font-bold shadow' 
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -435,6 +453,62 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: HEROES & SPRITE CUSTOMIZER */}
+        {activeTab === 'chars' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+              <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
+                Character & Sprite Importer
+              </span>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Hero Name</label>
+                <input
+                  type="text"
+                  value={charNameInput}
+                  onChange={(e) => setCharNameInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Animist Class</label>
+                <select
+                  value={charClassInput}
+                  onChange={(e) => setCharClassInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                >
+                  <option value="Animist">Animist (Spirit Weaver)</option>
+                  <option value="Invoker">Invoker (Elemental Surge)</option>
+                  <option value="Naturalist">Naturalist (Resource Master)</option>
+                  <option value="Tamer">Tamer (Beast Commander)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-slate-400 block mb-1">Sprite ID / Asset Path</label>
+                <select
+                  value={charSpriteInput}
+                  onChange={(e) => setCharSpriteInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                >
+                  <option value="player">Default Player Hero</option>
+                  <option value="villager_1">Villager Sprite 1</option>
+                  <option value="villager_2">Villager Sprite 2</option>
+                  <option value="npc_old_man">Old Keeper Sprite</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleApplyCharacterConfig}
+                className="w-full py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 shadow"
+              >
+                <UserPlus className="w-4 h-4" /> Apply Character to 2.5D Hero
+              </button>
             </div>
           </div>
         )}
