@@ -218,19 +218,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     }
   };
 
-  if (isInitializing) {
-    return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
-  }
-
-  if (showCreator) {
-    return (
-      <CharacterCreator 
-        onComplete={(newId) => selectAndLoadCharacter(newId)} 
-        onCancel={userCharacters.length > 0 ? () => { setShowCreator(false); setShowSelector(true); } : undefined}
-      />
-    );
-  }
-
   useEffect(() => {
     // Standard game hotkeys (I, K, P, D, B)
     const handleGlobalHotkeys = (e: KeyboardEvent) => {
@@ -248,6 +235,19 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
   }, []);
+
+  if (isInitializing) {
+    return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
+  }
+
+  if (showCreator) {
+    return (
+      <CharacterCreator 
+        onComplete={(newId) => selectAndLoadCharacter(newId)} 
+        onCancel={userCharacters.length > 0 ? () => { setShowCreator(false); setShowSelector(true); } : undefined}
+      />
+    );
+  }
 
   if (showSelector) {
     return (
