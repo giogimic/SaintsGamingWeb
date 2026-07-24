@@ -11,7 +11,8 @@ import {
   Texture,
   DynamicTexture,
   Mesh,
-  TransformNode
+  TransformNode,
+  Vector4
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 
@@ -22,6 +23,8 @@ export interface BabylonTileMapData {
   tileSize: number;
   tiles: number[][]; // 2D array of tile IDs
   tilesetUrl?: string;
+  tileLayers?: Array<{ name: string; grid: number[][] }>;
+  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
 }
 
@@ -51,6 +54,8 @@ export class BabylonEngine {
   private woodFloorTexture?: Texture;
   private indoorWallTexture?: Texture;
   private currentMapId: string = '';
+  private tilesetTextureCache: Map<string, Texture> = new Map();
+  private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
   private guiTexture: AdvancedDynamicTexture;
   private chatBubbles: Map<string, Rectangle> = new Map();
 
@@ -217,66 +222,127 @@ export class BabylonEngine {
     this.tileMeshes = [];
     this.objectMeshes = [];
 
-    const { width, height, tileSize, tiles, npcs, id: mapId } = mapData;
+    const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
     this.currentMapId = mapId || '';
 
-    for (let r = 0; r < height; r++) {
-      for (let c = 0; c < width; c++) {
-        const tileId = tiles[r]?.[c] ?? 0;
-        const posX = (c - width / 2) * tileSize;
-        const posZ = (height / 2 - r) * tileSize;
+    // If rich multi-layer tilesets exist, render rich layers!
+    if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
+      // Sort tilesets descending by firstgid
+      const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
-        // Ground Plane
-        const ground = MeshBuilder.CreatePlane(
-          `tile_${r}_${c}`,
-          { size: tileSize },
-          this.scene
-        );
+      tileLayers.forEach((layer, layerIdx) => {
+        const heightOffset = layerIdx * 0.02; // Small vertical offset to prevent z-fighting
 
-        ground.rotation.x = Math.PI / 2; // Flat on ground
-        ground.position = new Vector3(posX, 0, posZ);
-        ground.parent = this.rootNode;
+        for (let r = 0; r < height; r++) {
+          for (let c = 0; c < width; c++) {
+            const gid = layer.grid[r]?.[c] ?? 0;
+            if (gid === 0) continue;
 
-        const mat = new StandardMaterial(`tileMat_${r}_${c}`, this.scene);
-        this.applyTileMaterial(mat, tileId, r, c);
-        ground.material = mat;
-        this.tileMeshes.push(ground);
+            const ts = sortedTilesets.find(t => gid >= t.firstgid);
+            if (!ts || !ts.imageSource) continue;
 
-        // Render 2.5D World Props based on tile ID
-        if (tileId === 1) { // Wall / Tree Block
-          const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, { size: tileSize * 0.9 }, this.scene);
-          block.position = new Vector3(posX, tileSize * 0.45, posZ);
-          const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
-          this.applyTileMaterial(wallMat, tileId, r, c, true);
-          block.material = wallMat;
-          block.parent = this.rootNode;
-          this.objectMeshes.push(block);
-        } else if (tileId === 2 || tileId === 3) { // Tall Grass Tuft
-          const tuft = MeshBuilder.CreatePlane(`tuft_${r}_${c}`, { width: 0.8, height: 0.8 }, this.scene);
-          tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
-          tuft.position = new Vector3(posX, 0.4, posZ);
-          const tuftMat = new StandardMaterial(`tuftMat_${r}_${c}`, this.scene);
-          tuftMat.diffuseColor = new Color3(0.05, 0.6, 0.15);
-          tuft.material = tuftMat;
-          tuft.parent = this.rootNode;
-          this.objectMeshes.push(tuft);
-        } else if (tileId === 5) { // Woodcutting Tree
-          const tree = MeshBuilder.CreatePlane(`tree_${r}_${c}`, { width: 1.4, height: 1.8 }, this.scene);
-          tree.billboardMode = Mesh.BILLBOARDMODE_Y;
-          tree.position = new Vector3(posX, 0.9, posZ);
-          const treeMat = new StandardMaterial(`treeMat_${r}_${c}`, this.scene);
-          treeMat.diffuseColor = new Color3(0.1, 0.5, 0.2);
-          tree.material = treeMat;
-          tree.parent = this.rootNode;
-          this.objectMeshes.push(tree);
-        } else if (tileId === 6) { // Ore Node
-          const ore = MeshBuilder.CreateBox(`ore_${r}_${c}`, { width: 0.7, height: 0.5, depth: 0.7 }, this.scene);
-          ore.position = new Vector3(posX, 0.25, posZ);
-          const oreMat = new StandardMaterial(`oreMat_${r}_${c}`, this.scene);
-          oreMat.diffuseColor = new Color3(0.8, 0.5, 0.2);
-          ore.material = oreMat;
-          ore.parent = this.rootNode;
-          this.objectMeshes.push(ore);
+            const posX = (c - width / 2) * tileSize;
+            const posZ = (height / 2 - r) * tileSize;
+
+            const localId = gid - ts.firstgid;
+            const col = localId % ts.columns;
+            const row = Math.floor(localId / ts.columns);
+
+            // Estimate total rows from localId or default 64
+            const estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns));
+            
+            const u0 = col / ts.columns;
+            const u1 = (col + 1) / ts.columns;
+            const v1 = 1 - (row / estimatedRows);
+            const v0 = 1 - ((row + 1) / estimatedRows);
+
+            const plane = MeshBuilder.CreatePlane(
+              `tile_${layerIdx}_${r}_${c}`,
+              { size: tileSize, frontUVs: new Vector4(u0, v0, u1, v1) },
+              this.scene
+            );
+
+            plane.rotation.x = Math.PI / 2;
+            plane.position = new Vector3(posX, heightOffset, posZ);
+            plane.parent = this.rootNode;
+
+            let mat = this.tilesetMaterialCache.get(ts.imageSource);
+            if (!mat) {
+              mat = new StandardMaterial(`mat_${ts.imageSource}`, this.scene);
+              let tex = this.tilesetTextureCache.get(ts.imageSource);
+              if (!tex) {
+                tex = new Texture(`/assets/tilesets/${ts.imageSource}`, this.scene);
+                tex.hasAlpha = true;
+                this.tilesetTextureCache.set(ts.imageSource, tex);
+              }
+              mat.diffuseTexture = tex;
+              mat.useAlphaFromDiffuseTexture = true;
+              mat.backFaceCulling = false;
+              this.tilesetMaterialCache.set(ts.imageSource, mat);
+            }
+            plane.material = mat;
+            this.tileMeshes.push(plane);
+          }
+        }
+      });
+    } else {
+      // Fallback simple grid rendering
+      for (let r = 0; r < height; r++) {
+        for (let c = 0; c < width; c++) {
+          const tileId = tiles[r]?.[c] ?? 0;
+          const posX = (c - width / 2) * tileSize;
+          const posZ = (height / 2 - r) * tileSize;
+
+          const ground = MeshBuilder.CreatePlane(
+            `tile_${r}_${c}`,
+            { size: tileSize },
+            this.scene
+          );
+
+          ground.rotation.x = Math.PI / 2;
+          ground.position = new Vector3(posX, 0, posZ);
+          ground.parent = this.rootNode;
+
+          const mat = new StandardMaterial(`tileMat_${r}_${c}`, this.scene);
+          this.applyTileMaterial(mat, tileId, r, c);
+          ground.material = mat;
+          this.tileMeshes.push(ground);
+
+          if (tileId === 1) {
+            const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, { size: tileSize * 0.9 }, this.scene);
+            block.position = new Vector3(posX, tileSize * 0.45, posZ);
+            const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
+            this.applyTileMaterial(wallMat, tileId, r, c, true);
+            block.material = wallMat;
+            block.parent = this.rootNode;
+            this.objectMeshes.push(block);
+          } else if (tileId === 2 || tileId === 3) { // Tall Grass Tuft
+            const tuft = MeshBuilder.CreatePlane(`tuft_${r}_${c}`, { width: 0.8, height: 0.8 }, this.scene);
+            tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
+            tuft.position = new Vector3(posX, 0.4, posZ);
+            const tuftMat = new StandardMaterial(`tuftMat_${r}_${c}`, this.scene);
+            tuftMat.diffuseColor = new Color3(0.05, 0.6, 0.15);
+            tuft.material = tuftMat;
+            tuft.parent = this.rootNode;
+            this.objectMeshes.push(tuft);
+          } else if (tileId === 5) { // Woodcutting Tree
+            const tree = MeshBuilder.CreatePlane(`tree_${r}_${c}`, { width: 1.4, height: 1.8 }, this.scene);
+            tree.billboardMode = Mesh.BILLBOARDMODE_Y;
+            tree.position = new Vector3(posX, 0.9, posZ);
+            const treeMat = new StandardMaterial(`treeMat_${r}_${c}`, this.scene);
+            treeMat.diffuseColor = new Color3(0.1, 0.5, 0.2);
+            tree.material = treeMat;
+            tree.parent = this.rootNode;
+            this.objectMeshes.push(tree);
+          } else if (tileId === 6) { // Ore Node
+            const ore = MeshBuilder.CreateBox(`ore_${r}_${c}`, { width: 0.7, height: 0.5, depth: 0.7 }, this.scene);
+            ore.position = new Vector3(posX, 0.25, posZ);
+            const oreMat = new StandardMaterial(`oreMat_${r}_${c}`, this.scene);
+            oreMat.diffuseColor = new Color3(0.8, 0.5, 0.2);
+            ore.material = oreMat;
+            ore.parent = this.rootNode;
+            this.objectMeshes.push(ore);
+          }
         }
       }
     }

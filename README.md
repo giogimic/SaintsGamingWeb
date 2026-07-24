@@ -277,7 +277,8 @@ This project is open-source and available under the **MIT License**.
 - **Interactive 2.5D Dev Editor & Map Configurator**: Added live 2.5D raycast pointer tile painting, spawn/respawn drag markers, tall grass encounter brush tool, NPC trainer roster setup, and battle background/weather parameters to the Integrated Dev Editor suite.
 
 ### v2.0.6
-- **Babylon.js 2.5D Engine & Integrated Dev Editor Foundation**: Installed `@babylonjs/core` and `@babylonjs/gui`. Removed legacy `cyber-terminal` orphan directory (fixing TS compilation), rebranded exports to `TheLobby` and `SaintsDexOverlay`, and scaffolded Babylon.js 2.5D billboard sprite engine and Integrated Dev Editor suite.
+### v2.1.16
+- **Rich Tuxemon Tileset & Layer Rendering Engine**: Imported 96 full Tuxemon tileset graphics into `public/assets/tilesets/`. Re-parsed all 235 campaign TMX maps to extract multi-layer GIDs (floors, walls, furniture, decorations) and exact collision boundaries. Upgraded `BabylonEngine.ts` to render rich multi-layered texture planes using UV coordinate mapping, restoring full visual fidelity to Tuxemon indoor rooms and outdoor locations.
 
 ### v1.4.7
 - **Admin & Dev Console Immersion Overhaul**: Added Game Dev Suite quick links, real-time MMO metrics (Characters, Quests, Assets, Maps) to both main Admin Dashboard and Developer Console.
