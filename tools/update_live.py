@@ -19,7 +19,8 @@ def update_live():
 set -e
 cd /home/giogimic/Saints-Gaming-Web
 
-echo "[*] Pulling latest updates from Git main branch..."
+echo "[*] Resetting server working tree and pulling latest main..."
+git reset --hard HEAD
 git pull origin main
 
 echo "[*] Restoring docker-compose DB linking setup..."

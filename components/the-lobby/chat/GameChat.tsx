@@ -18,21 +18,12 @@ interface ChatMessage {
 }
 
 function FriendsWrapper() {
-  try {
-    const { activeChat } = useMessenger();
-    return activeChat ? (
-      <div className="h-full bg-background"><ChatWindow /></div>
-    ) : (
-      <div className="h-full bg-background"><FriendsList /></div>
-    );
-  } catch (_e) {
-    return (
-      <div className="p-4 text-center text-xs font-mono text-slate-400">
-        <p className="mb-2 text-amber-400">Messenger Not Linked</p>
-        <p className="text-[11px] text-slate-500">Sign in to your Saints Gaming account to access site friends list and direct messages.</p>
-      </div>
-    );
-  }
+  const { activeChat } = useMessenger();
+  return activeChat ? (
+    <div className="h-full bg-background"><ChatWindow /></div>
+  ) : (
+    <div className="h-full bg-background"><FriendsList /></div>
+  );
 }
 
 export function GameChat() {
