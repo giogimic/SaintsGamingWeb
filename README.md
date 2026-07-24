@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.11
+- **Critical Hotkey Conflict Resolution**: Fixed global keydown collision where pressing `D` (WASD right movement) intercepted input to trigger `setGameMode('DEX')`, locking overworld movement and opening Saints Dex. Re-mapped Dex hotkey to `X` (`DEX [X]`), restoring 100% unimpeded WASD movement.
+
 ### v2.1.10
 - **Grid Shading, Smooth Camera & Sprite Spawn Fix**: Implemented alternating checkerboard tone shading across all 2.5D ground tiles (`BabylonEngine.ts`) so tile sliding during WASD movement is visually obvious. Eliminated sprite lerp teleporting on spawn by copying target vectors immediately upon mesh creation. Added live `Pos: (X, Y)` indicators in 2.5D HUD badge and canvas click-focus.
 
