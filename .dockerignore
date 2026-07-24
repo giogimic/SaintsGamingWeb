@@ -2,6 +2,7 @@ Dockerfile
 .dockerignore
 node_modules
 npm-debug.log
+bun.lock
 README.md
 .next
 .git
@@ -15,5 +16,9 @@ seed-*.js
 release-*
 *.zip
 mysql_data
+data
+uploads
+logs
 db
 prisma/migrations
+docker_build.log

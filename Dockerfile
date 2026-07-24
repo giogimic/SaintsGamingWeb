@@ -1,4 +1,4 @@
-FROM oven/bun:1-debian
+FROM node:22-bookworm-slim
 
 # Install OS dependencies required for Prisma/native packages and healthchecks.
 # Debian/glibc avoids Alpine musl native-module mismatches in Ubuntu-like deployments.
@@ -17,25 +17,22 @@ WORKDIR /app
 # Accept database provider as build arg (sqlite or mysql)
 ARG DB_PROVIDER=sqlite
 
-# Install dependencies using Bun
-COPY package.json package-lock.json* bun.lock* ./
-RUN bun install --frozen-lockfile || bun install
+# Install dependencies using npm (respects trustedDependencies/ignoreScripts in package.json)
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # Copy the rest of the application code
 COPY . .
 
-# Swap Prisma provider if MySQL/MariaDB is selected, then generate and build
-RUN if [ "$DB_PROVIDER" = "mysql" ]; then \
-      sed -i 's/provider = "sqlite"/provider = "mysql"/g' prisma/schema.prisma && \
-      bun run scripts/prepare-mysql-schema.js && \
-      echo "[*] Building for MySQL/MariaDB..." && \
-      DATABASE_URL="mysql://build:build@localhost:3306/build" bunx prisma generate && \
-      DATABASE_URL="mysql://build:build@localhost:3306/build" bun run build; \
-    else \
-      echo "[*] Building for SQLite..." && \
-      DATABASE_URL="file:./db/dev.db" bunx prisma generate && \
-      DATABASE_URL="file:./db/dev.db" bun run build; \
-    fi
+# Generate Prisma client and build the Next.js app.
+# NOTE: We always generate with SQLite at build time because it does NOT require
+# a live database connection. For MySQL, the provider swap + re-generate happens
+# at runtime in entrypoint.sh once the database container is actually reachable.
+RUN echo "[*] Generating Prisma client (SQLite baseline)..." \
+    && DATABASE_URL="file:./prisma/db/dev.db" npx prisma generate
+
+RUN echo "[*] Building Next.js application..." \
+    && DATABASE_URL="file:./prisma/db/dev.db" npm run build
 
 # Next.js telemetry disable
 ENV NEXT_TELEMETRY_DISABLED=1
