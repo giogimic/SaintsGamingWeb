@@ -1,11 +1,14 @@
 import paramiko
 import sys
+import os
 
 sys.stdout.reconfigure(encoding='utf-8')
 
 HOSTNAME = "saintsgaming.net"
 USERNAME = "giogimic"
-PASSWORD = "REDACTED"
+PASSWORD = os.environ.get("SAINTS_SSH_PASS", "")
+if not PASSWORD:
+    PASSWORD = input("Enter SSH password: ")
 
 def restart_live():
     client = paramiko.SSHClient()
