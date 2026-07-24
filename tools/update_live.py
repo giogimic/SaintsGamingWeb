@@ -27,8 +27,8 @@ echo "[*] Restoring docker-compose DB linking setup..."
 cp docker-compose.base.yml docker-compose.yml
 
 if grep -q "DATABASE_URL=.*@db:3306" .env; then
-    DB_PASS=$(grep '^MARIADB_PASSWORD=' .env | cut -d'=' -f2)
-    DB_ROOT_PASS=$(grep '^MARIADB_ROOT_PASSWORD=' .env | cut -d'=' -f2)
+    # Extract password from DATABASE_URL (format: mysql://user:pass@host:port/db)
+    DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
     cat <<EOF >> docker-compose.yml
 
   db:
@@ -39,7 +39,7 @@ if grep -q "DATABASE_URL=.*@db:3306" .env; then
       MARIADB_DATABASE: saints_gaming
       MARIADB_USER: saints
       MARIADB_PASSWORD: ${DB_PASS}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
@@ -53,17 +53,18 @@ EOF
     fi
 fi
 
-echo "[*] Ensuring database container is running..."
+echo "[*] Starting database container first..."
 docker compose up -d db || true
+echo "[*] Waiting 15s for MariaDB to initialize..."
+sleep 15
 
 echo "[*] Building latest production Web container (--no-cache)..."
 docker compose build --no-cache web
 
-echo "[*] Restarting production container..."
+echo "[*] Starting web container..."
 docker compose up -d web
 
 docker network connect saints-gaming-web_default saints-gaming-web || true
-docker restart saints-gaming-web || true
 echo "[✓] Deployment completed successfully!"
 """
 
