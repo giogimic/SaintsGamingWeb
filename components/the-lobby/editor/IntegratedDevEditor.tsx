@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../store';
-import { getMapIndexList, searchMapIndex } from '../data/map-index';
+import { searchMapIndex } from '../data/map-index';
 import { GAME_MAPS } from '../data/maps';
 
 import { 
@@ -17,7 +17,6 @@ import {
   BookOpen,
   Compass,
   Search,
-  CheckCircle,
   Plus,
   Trash2
 } from 'lucide-react';
@@ -53,11 +52,11 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
   const [brushTileId, setBrushTileId] = useState<number>(1);
   const [spawnX, setSpawnX] = useState<number>(player.position?.x || 10);
   const [spawnY, setSpawnY] = useState<number>(player.position?.y || 10);
-  const [respawnX, setRespawnX] = useState<number>(10);
-  const [respawnY, setRespawnY] = useState<number>(10);
+  const [respawnX, _setRespawnX] = useState<number>(10);
+  const [respawnY, _setRespawnY] = useState<number>(10);
 
   // Encounter Configuration State
-  const [encounterRate, setEncounterRate] = useState<number>(15); // 15% chance per step in grass
+  const [_encounterRate, _setEncounterRate] = useState<number>(15); // 15% chance per step in grass
   const [minLevel, setMinLevel] = useState<number>(2);
   const [maxLevel, setMaxLevel] = useState<number>(5);
   const [selectedSpecies, setSelectedSpecies] = useState<string>('ignis');
@@ -70,12 +69,12 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   // Battle Parameters State
   const [battleBackground, setBattleBackground] = useState<string>('forest_field');
-  const [weatherEffect, setWeatherEffect] = useState<string>('clear');
-  const [aiDifficulty, setAiDifficulty] = useState<string>('normal');
+  const [_weatherEffect, _setWeatherEffect] = useState<string>('clear');
+  const [_aiDifficulty, _setAiDifficulty] = useState<string>('normal');
 
   // NPC Configuration State
   const [npcName, setNpcName] = useState<string>('Keeper Alex');
-  const [npcSprite, setNpcSprite] = useState<string>('/assets/sprites/npc_old_man.png');
+  const [npcSprite, _setNpcSprite] = useState<string>('/assets/sprites/npc_old_man.png');
   const [npcDialogue, setNpcDialogue] = useState<string>('Welcome to the animist grounds, Tamer!');
   const [mapNpcs, setMapNpcs] = useState<Array<{ id: string; name: string; x: number; y: number; sprite: string; dialogueKey: string }>>(
     currentMapData.npcs || []
