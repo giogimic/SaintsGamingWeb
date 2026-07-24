@@ -222,7 +222,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       babylonEngine.dispose();
       engineRef.current = null;
     };
-  }, [currentMapId]);
+  }, [currentMapId, mapData.grid]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
@@ -242,7 +242,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tryMovePlayerTo(c, r);
       });
     }
-  }, [isDevEditorOpen, activeBrushTileId]);
+  }, [isDevEditorOpen, activeBrushTileId, mapData.grid]);
 
   // Handle Keyboard WASD & Arrow Key Movement
   useEffect(() => {
@@ -287,12 +287,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       <canvas
         ref={canvasRef}
         className="w-full h-full outline-none touch-none cursor-crosshair"
+        tabIndex={0}
+        onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
       
       {/* 2.5D HUD Badge */}
       <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded bg-black/75 backdrop-blur border border-cyan-500/30 text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-lg">
         <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
         <span>Map: <strong className="text-white">{mapData.name || currentMapId}</strong></span>
+        <span className="text-slate-500">|</span>
+        <span>Pos: <strong className="text-amber-400">({player.position?.x ?? 0}, {player.position?.y ?? 0})</strong></span>
         <span className="text-slate-500">|</span>
         <span className="text-slate-400">WASD / Click to Move</span>
       </div>
