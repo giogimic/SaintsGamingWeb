@@ -104,7 +104,24 @@ if ! command -v docker &> /dev/null; then
     sudo usermod -aG docker $USER
 fi
 
-
+# Helper function to inject depends_on into docker-compose.yml cleanly via Node
+inject_depends_on() {
+    node -e "
+const fs = require('fs');
+let c = fs.readFileSync('docker-compose.yml', 'utf8');
+if (!c.includes('depends_on:')) {
+    c = c.replace('container_name: saints-gaming-web', 'container_name: saints-gaming-web\n    depends_on:\n      db:\n        condition: service_started');
+    fs.writeFileSync('docker-compose.yml', c);
+}
+" 2>/dev/null || python3 -c "
+with open('docker-compose.yml', 'r') as f:
+    c = f.read()
+if 'depends_on:' not in c:
+    c = c.replace('container_name: saints-gaming-web', 'container_name: saints-gaming-web\n    depends_on:\n      db:\n        condition: service_started')
+    with open('docker-compose.yml', 'w') as f:
+        f.write(c)
+" 2>/dev/null || true
+}
 
 # Smart State Detection
 if [ -f .env ]; then
@@ -156,9 +173,7 @@ if [ -f .env ]; then
       timeout: 5s
       retries: 5
 EOF
-            if ! grep -q "depends_on:" docker-compose.yml; then
-                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_started' docker-compose.yml
-            fi
+            inject_depends_on
         fi
 
         sudo docker compose build --no-cache web
@@ -211,9 +226,7 @@ EOF
       timeout: 5s
       retries: 5
 EOF
-            if ! grep -q "depends_on:" docker-compose.yml; then
-                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_started' docker-compose.yml
-            fi
+            inject_depends_on
         fi
 
         sudo docker compose build --no-cache
@@ -332,7 +345,6 @@ if [ "$DB_PROVIDER_OPT" = "1" ]; then
         DATABASE_URL="file:./prisma/db/dev.db"
 elif [ "$DB_PROVIDER_OPT" = "2" ]; then
     DB_PASS=$(openssl rand -hex 12)
-    DB_ROOT_PASS=$(openssl rand -hex 12)
     
     node scripts/setup-env.mjs \
         --generate-secret \
@@ -351,7 +363,7 @@ elif [ "$DB_PROVIDER_OPT" = "2" ]; then
       MARIADB_DATABASE: saints_gaming
       MARIADB_USER: saints
       MARIADB_PASSWORD: ${DB_PASS}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
@@ -360,7 +372,7 @@ elif [ "$DB_PROVIDER_OPT" = "2" ]; then
       timeout: 5s
       retries: 5
 EOF
-    sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+    inject_depends_on
 elif [ "$DB_PROVIDER_OPT" = "3" ]; then
     EXT_HOST=$(whiptail --title "External Database" --inputbox "Enter Database Host/IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
     EXT_PORT=$(whiptail --title "External Database" --inputbox "Enter Database Port:" 10 60 "3306" 3>&1 1>&2 2>&3)
@@ -579,7 +591,6 @@ DB_OPTION=$(whiptail --title "Database Configuration" --radiolist "Select your d
 if [ "$DB_OPTION" = "2" ]; then
     DB_NAME="MariaDB (Docker)"
     DB_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 16)
-    DB_ROOT_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 16)
     DB_URL="mysql://saints:${DB_PASS}@db:3306/saints_gaming"
     node scripts/setup-env.mjs DATABASE_URL="$DB_URL" DB_PROVIDER="mysql"
     cat <<EOF >> docker-compose.yml
@@ -592,7 +603,7 @@ if [ "$DB_OPTION" = "2" ]; then
       MARIADB_DATABASE: saints_gaming
       MARIADB_USER: saints
       MARIADB_PASSWORD: ${DB_PASS}
-      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
     volumes:
       - ./mysql_data:/var/lib/mysql
     healthcheck:
@@ -601,7 +612,7 @@ if [ "$DB_OPTION" = "2" ]; then
       timeout: 5s
       retries: 5
 EOF
-    sed -i '/container_name: saints-gaming-web/a\    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+    inject_depends_on
 elif [ "$DB_OPTION" = "3" ]; then
     DB_NAME="MySQL (External)"
     
@@ -613,7 +624,6 @@ elif [ "$DB_OPTION" = "3" ]; then
     
     DB_URL="mysql://${EXT_USER}:${EXT_PASS}@${EXT_HOST}:${EXT_PORT}/${EXT_DB}"
     
-    # Optional: We could try to ping it, but since Bun/Prisma will do it on startup, we just save it.
     node scripts/setup-env.mjs DATABASE_URL="$DB_URL" DB_PROVIDER="mysql"
 else
     DB_NAME="SQLite"
@@ -653,7 +663,7 @@ if [ "$DB_OPTION" = "2" ]; then
     DB_READY=0
     DB_WAIT_RETRIES=30
     for i in $(seq 1 $DB_WAIT_RETRIES); do
-        sudo docker compose exec -T db mysqladmin ping -h localhost -uroot -p"${DB_ROOT_PASS}" > /dev/null 2>&1 && DB_READY=1 && break
+        sudo docker compose exec -T db mysqladmin ping -h localhost -uroot -p"${DB_PASS}" > /dev/null 2>&1 && DB_READY=1 && break
         printf "."
         sleep 2
     done
