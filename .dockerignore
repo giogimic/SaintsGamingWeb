@@ -16,3 +16,4 @@ release-*
 *.zip
 mysql_data
 db
+prisma/migrations
