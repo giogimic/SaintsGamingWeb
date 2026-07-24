@@ -98,6 +98,7 @@ goto FRESH_INSTALL
 
 :UPDATE
 echo Performing safe update...
+call :RESTORE_DB_BLOCK
 docker compose up -d --build
 echo Safe Update Complete!
 exit /b
@@ -105,9 +106,42 @@ exit /b
 :CLEAN
 echo Performing clean reinstall...
 docker compose down
+call :RESTORE_DB_BLOCK
 docker compose up -d --build
 echo Clean Reinstall Complete!
 exit /b
+
+:RESTORE_DB_BLOCK
+findstr /R "DATABASE_URL=.*@db:3306" .env >nul
+if !errorlevel! equ 0 (
+    echo Restoring Integrated Database Configuration...
+    for /f "tokens=2 delims==" %%A in ('findstr "^MARIADB_PASSWORD=" .env') do set "DB_PASS=%%A"
+    for /f "tokens=2 delims==" %%A in ('findstr "^MARIADB_ROOT_PASSWORD=" .env') do set "DB_ROOT_PASS=%%A"
+    
+    findstr /c:"container_name: saints-gaming-db" docker-compose.yml >nul
+    if !errorlevel! neq 0 (
+        echo. >> docker-compose.yml
+        echo   db: >> docker-compose.yml
+        echo     image: mariadb:10.11 >> docker-compose.yml
+        echo     container_name: saints-gaming-db >> docker-compose.yml
+        echo     restart: unless-stopped >> docker-compose.yml
+        echo     environment: >> docker-compose.yml
+        echo       MARIADB_DATABASE: saints_gaming >> docker-compose.yml
+        echo       MARIADB_USER: saints >> docker-compose.yml
+        echo       MARIADB_PASSWORD: !DB_PASS! >> docker-compose.yml
+        echo       MARIADB_ROOT_PASSWORD: !DB_ROOT_PASS! >> docker-compose.yml
+        echo     volumes: >> docker-compose.yml
+        echo       - ./mysql_data:/var/lib/mysql >> docker-compose.yml
+        echo     healthcheck: >> docker-compose.yml
+        echo       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"] >> docker-compose.yml
+        echo       interval: 10s >> docker-compose.yml
+        echo       timeout: 5s >> docker-compose.yml
+        echo       retries: 5 >> docker-compose.yml
+        powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_healthy'; if ($c -notmatch [regex]::Escape($insert)) { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
+    )
+)
+exit /b
+
 
 :WIPE
 echo.
