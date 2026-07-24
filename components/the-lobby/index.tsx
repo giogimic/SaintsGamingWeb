@@ -30,13 +30,15 @@ import { GAME_MAPS } from './data/maps';
 import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
+import { io, Socket } from 'socket.io-client';
+import { GameChat } from './chat/GameChat';
 
 export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [chatInput, setChatInput] = useState('');
+  const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isDevEditorOpen, setIsDevEditorOpen] = useState(false);
@@ -180,6 +182,107 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     }
     init();
   }, [initialCharacterId, forceCreate]);
+
+  // SOCKET.IO CONNECTION
+  useEffect(() => {
+    // Check if running in browser
+    if (typeof window === 'undefined') return;
+
+    // Connect to port 3001 for the game MMO server
+    const socket = io(window.location.protocol + '//' + window.location.hostname + ':3001');
+    socketRef.current = socket;
+    
+    socket.on('connect', () => {
+      const state = useGameStore.getState();
+      state.setEmitSocketEvent((event, data) => {
+        socket.emit(event, data);
+      });
+      socket.emit('join_map', {
+        mapId: state.currentMapId,
+        x: state.player.position?.x ?? 6,
+        y: state.player.position?.y ?? 2,
+        name: state.player.name || 'Player',
+        spriteId: state.player.equipment?.head ? 'hero_male' : 'villager_1'
+      });
+    });
+    
+    socket.on('map_players', (players) => {
+      useGameStore.getState().setOtherPlayers(players);
+    });
+    
+    socket.on('player_joined', (data) => {
+      useGameStore.getState().updateOtherPlayer(data.socketId, data);
+    });
+    
+    socket.on('player_moved', (data) => {
+      useGameStore.getState().updateOtherPlayer(data.socketId, data);
+    });
+    
+    socket.on('player_chat', (data) => {
+      useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
+      
+      // Dispatch custom event for the GameChat Log UI
+      const state = useGameStore.getState();
+      const op = state.otherPlayers[data.socketId];
+      const msgEvent = new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: op?.name || 'Tamer',
+          text: data.message,
+          timestamp: Date.now(),
+          type: 'LOCAL'
+        }
+      });
+      window.dispatchEvent(msgEvent);
+
+      setTimeout(() => {
+        const store = useGameStore.getState();
+        const currentOp = store.otherPlayers[data.socketId];
+        if (currentOp && currentOp.chatMessage === data.message) {
+          store.updateOtherPlayer(data.socketId, { chatMessage: undefined });
+        }
+      }, 7000);
+    });
+    
+    socket.on('player_left', (socketId) => {
+      useGameStore.getState().removeOtherPlayer(socketId);
+    });
+    
+    socket.on('battle_invite_received', (data) => {
+      useGameStore.getState().showToast(`Challenge from ${data.name}! Accepting...`);
+      socket.emit('accept_battle', data.from);
+    });
+    
+    socket.on('battle_started', (data) => {
+      useGameStore.getState().setActiveBattle(data);
+      useGameStore.getState().setGameMode('BATTLE');
+    });
+    
+    socket.on('battle_update', (data) => {
+      useGameStore.getState().setActiveBattle({
+        ...useGameStore.getState().activeBattle,
+        ...data
+      });
+    });
+    
+    socket.on('battle_ended', (data) => {
+      const state = useGameStore.getState();
+      const myId = socketRef.current?.id;
+      if (data.winner === myId) {
+        state.showToast('You won the battle!');
+      } else {
+        state.showToast('You lost the battle...');
+      }
+      setTimeout(() => {
+        state.setActiveBattle(null);
+        state.setGameMode('EXPLORING');
+      }, 3000);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -395,36 +498,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'EXPLORING' && !isDevEditorOpen && <MiniMapRadar />}
       {gameMode === 'EXPLORING' && !isDevEditorOpen && <SaintsHudOrbs />}
 
-      {/* Global Chat Bar */}
+      {/* Unified Game Chat UI */}
       {gameMode === 'EXPLORING' && !isDevEditorOpen && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[80%] max-w-md z-40 flex shadow-lg">
-          <input 
-            type="text" 
-            placeholder="Press Enter to chat..." 
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && chatInput.trim().length > 0) {
-                emitSocketEvent?.('chat_message', chatInput.trim());
-                useGameStore.getState().setPlayerChat(chatInput.trim());
-                setChatInput('');
-              }
-            }}
-            className="flex-1 bg-black/80 border-2 border-slate-700 text-white font-mono text-xs p-2 rounded-l focus:outline-none focus:border-cyan-500"
-          />
-          <button 
-            onClick={() => {
-              if (chatInput.trim().length > 0) {
-                emitSocketEvent?.('chat_message', chatInput.trim());
-                useGameStore.getState().setPlayerChat(chatInput.trim());
-                setChatInput('');
-              }
-            }}
-            className="bg-slate-700 border-2 border-l-0 border-slate-700 text-white font-bold font-mono text-xs px-4 py-2 rounded-r hover:bg-slate-600"
-          >
-            SEND
-          </button>
-        </div>
+        <GameChat />
       )}
     </div>
   );
