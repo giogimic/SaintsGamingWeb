@@ -1,5 +1,4 @@
 // Rich Generated Campaign Maps Data
-import { GameMapData } from './maps';
 
 export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
   "37707_TOWER": {

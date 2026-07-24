@@ -156,7 +156,9 @@ if [ -f .env ]; then
       timeout: 5s
       retries: 5
 EOF
-            sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+            if ! grep -q "depends_on:" docker-compose.yml; then
+                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+            fi
         fi
 
         sudo docker compose build --no-cache web
@@ -209,7 +211,9 @@ EOF
       timeout: 5s
       retries: 5
 EOF
-            sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+            if ! grep -q "depends_on:" docker-compose.yml; then
+                sed -i '/container_name: saints-gaming-web/a \    depends_on:\n      db:\n        condition: service_healthy' docker-compose.yml
+            fi
         fi
 
         sudo docker compose build --no-cache
