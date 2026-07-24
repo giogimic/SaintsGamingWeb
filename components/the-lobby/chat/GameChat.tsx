@@ -99,7 +99,7 @@ export function GameChat() {
             <div className="h-full bg-background"><FriendsList /></div>
           )
         ) : (
-          <ScrollArea className="h-full w-full p-2 text-xs font-mono" viewportRef={scrollRef}>
+          <div ref={scrollRef} className="h-full w-full p-2 text-xs font-mono overflow-y-auto">
             {messages.filter(m => activeTab === 'LOCAL' ? m.type === 'LOCAL' : m.type === activeTab).map((msg) => (
               <div key={msg.id} className="mb-1 leading-tight hover:bg-white/5 p-1 rounded transition-colors">
                 <span className="text-slate-500">[{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}] </span>
@@ -112,7 +112,7 @@ export function GameChat() {
             {messages.filter(m => activeTab === 'LOCAL' ? m.type === 'LOCAL' : m.type === activeTab).length === 0 && (
               <div className="text-slate-500 italic text-center mt-10">No messages yet.</div>
             )}
-          </ScrollArea>
+          </div>
         )}
       </div>
 
