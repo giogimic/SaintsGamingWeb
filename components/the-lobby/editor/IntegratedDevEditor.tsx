@@ -5,8 +5,7 @@ import { useGameStore } from '../store';
 import { searchMapIndex, registerNewMap } from '../data/map-index';
 import { GAME_MAPS } from '../data/maps';
 import { TUXEMON_SPRITES } from '../data/sprites';
-import { TUXEMON_MONSTERS } from '../data/monsters';
-import { TUXEMON_ITEMS } from '../data/items';
+import { TUXEMON_MONSTERS, TUXEMON_ITEMS } from '../data/generated-assets';
 
 import { 
   Layers, 
