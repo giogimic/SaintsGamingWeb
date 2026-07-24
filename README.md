@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.13
+- **Excluded SQLite Migrations from Docker & MariaDB**: Added `prisma/migrations` to `.dockerignore` and purged legacy SQLite migration files. This ensures Docker production builds push clean Prisma schemas directly to MariaDB without migration conflicts.
+
 ### v2.1.12
 - **Production MariaDB Schema Push Fix & Docker Auto-Deploy**: Resolved Docker container startup crash where legacy SQLite migration files caused `prisma db push` MariaDB table conflicts (`Table 'Account' already exists`). Added automatic clearing of `prisma/migrations` in `entrypoint.sh` for clean production deployment.
 
