@@ -229,7 +229,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
       else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
       else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
-      else if (key === 'd') useGameStore.getState().setGameMode('DEX');
+      else if (key === 'x') useGameStore.getState().setGameMode('DEX');
       else if (key === 'b') useGameStore.getState().setGameMode('ACHIEVEMENTS');
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
@@ -359,7 +359,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
               onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('DEX'); }}
               className="px-3 py-1 bg-[#0d47a1]/90 text-white border-2 border-[#2196f3] rounded font-bold text-xs hover:bg-[#2196f3] transition-colors shadow-md pointer-events-auto"
             >
-              DEX [D]
+              DEX [X]
             </button>
             {isAdminUser && (
               <button
