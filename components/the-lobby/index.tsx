@@ -392,11 +392,11 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
       {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
 
-      {gameMode === 'EXPLORING' && <MiniMapRadar />}
-      {gameMode === 'EXPLORING' && <SaintsHudOrbs />}
+      {gameMode === 'EXPLORING' && !isDevEditorOpen && <MiniMapRadar />}
+      {gameMode === 'EXPLORING' && !isDevEditorOpen && <SaintsHudOrbs />}
 
       {/* Global Chat Bar */}
-      {gameMode === 'EXPLORING' && (
+      {gameMode === 'EXPLORING' && !isDevEditorOpen && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[80%] max-w-md z-40 flex shadow-lg">
           <input 
             type="text" 
