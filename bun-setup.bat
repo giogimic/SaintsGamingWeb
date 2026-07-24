@@ -117,9 +117,9 @@ if !errorlevel! equ 0 (
     echo Restoring Integrated Database Configuration...
     for /f "usebackq tokens=*" %%A in (`powershell -NoProfile -Command "if (Test-Path .env) { (Get-Content .env | Select-String '^DATABASE_URL=') -replace '.*://[^:]*:([^@]+)@.*','$1' }"`) do set "DB_PASS=%%A"
     set "DB_ROOT_PASS=!DB_PASS!"
-    
-    findstr /c:"container_name: saints-gaming-db" docker-compose.yml >nul
-    if !errorlevel! neq 0 (
+
+    powershell -NoProfile -Command "if (-not (Select-String -Path docker-compose.yml -Pattern '^  db:' -Quiet)) { exit 0 } else { exit 1 }"
+    if !errorlevel! equ 0 (
         echo. >> docker-compose.yml
         echo   db: >> docker-compose.yml
         echo     image: mariadb:10.11 >> docker-compose.yml
@@ -276,31 +276,34 @@ if errorlevel 3 (
     node scripts\setup-env.mjs DATABASE_URL="mysql://!EXT_USER!:!EXT_PASS!@!EXT_HOST!:!EXT_PORT!/!EXT_DB!" DB_PROVIDER="mysql"
 ) else if errorlevel 2 (
     set DB_NAME=MariaDB ^(Docker^)
-    
+
     :: Generate secure random passwords using powershell
     for /f "delims=" %%a in ('powershell -Command "-join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | %% {[char]$_})" ') do set "DB_PASS=%%a"
     for /f "delims=" %%a in ('powershell -Command "-join ((48..57) + (65..90) + (97..122) | Get-Random -Count 16 | %% {[char]$_})" ') do set "DB_ROOT_PASS=%%a"
-    
+
     node scripts\setup-env.mjs DATABASE_URL="mysql://saints:!DB_PASS!@db:3306/saints_gaming" DB_PROVIDER="mysql"
-    
-    echo. >> docker-compose.yml
-    echo   db: >> docker-compose.yml
-    echo     image: mariadb:10.11 >> docker-compose.yml
-    echo     container_name: saints-gaming-db >> docker-compose.yml
-    echo     restart: unless-stopped >> docker-compose.yml
-    echo     environment: >> docker-compose.yml
-    echo       MARIADB_DATABASE: saints_gaming >> docker-compose.yml
-    echo       MARIADB_USER: saints >> docker-compose.yml
-    echo       MARIADB_PASSWORD: !DB_PASS! >> docker-compose.yml
-    echo       MARIADB_ROOT_PASSWORD: !DB_ROOT_PASS! >> docker-compose.yml
-    echo     volumes: >> docker-compose.yml
-    echo       - ./mysql_data:/var/lib/mysql >> docker-compose.yml
-    echo     healthcheck: >> docker-compose.yml
-    echo       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"] >> docker-compose.yml
-    echo       interval: 10s >> docker-compose.yml
-    echo       timeout: 5s >> docker-compose.yml
-    echo       retries: 5 >> docker-compose.yml
-    powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_started'; if ($c -notmatch 'depends_on:') { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
+
+    powershell -NoProfile -Command "if (-not (Select-String -Path docker-compose.yml -Pattern '^  db:' -Quiet)) { exit 0 } else { exit 1 }"
+    if !errorlevel! equ 0 (
+        echo. >> docker-compose.yml
+        echo   db: >> docker-compose.yml
+        echo     image: mariadb:10.11 >> docker-compose.yml
+        echo     container_name: saints-gaming-db >> docker-compose.yml
+        echo     restart: unless-stopped >> docker-compose.yml
+        echo     environment: >> docker-compose.yml
+        echo       MARIADB_DATABASE: saints_gaming >> docker-compose.yml
+        echo       MARIADB_USER: saints >> docker-compose.yml
+        echo       MARIADB_PASSWORD: !DB_PASS! >> docker-compose.yml
+        echo       MARIADB_ROOT_PASSWORD: !DB_ROOT_PASS! >> docker-compose.yml
+        echo     volumes: >> docker-compose.yml
+        echo       - ./mysql_data:/var/lib/mysql >> docker-compose.yml
+        echo     healthcheck: >> docker-compose.yml
+        echo       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"] >> docker-compose.yml
+        echo       interval: 10s >> docker-compose.yml
+        echo       timeout: 5s >> docker-compose.yml
+        echo       retries: 5 >> docker-compose.yml
+        powershell -NoProfile -Command "$p='docker-compose.yml'; $c=[System.IO.File]::ReadAllText($p); $marker='    container_name: saints-gaming-web'; $insert='    depends_on:\r\n      db:\r\n        condition: service_started'; if ($c -notmatch 'depends_on:') { $c=$c -replace [regex]::Escape($marker), ($marker + [Environment]::NewLine + $insert) }; [System.IO.File]::WriteAllText($p, $c)"
+    )
 ) else (
     set DB_NAME=SQLite
 )
