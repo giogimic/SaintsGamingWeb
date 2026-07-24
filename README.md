@@ -218,6 +218,9 @@ This project is open-source and available under the **MIT License**.
 ### v1.4.8
 - **Character Selection & Custom Sprite Overhaul**: Added `CharacterSelector` screen for existing character saves, custom uploaded `GameAsset` avatar support during registration, fixed profile card sprite rendering, and resolved character creation boot loop.
 
+### v2.1.5
+- **Senior UI/UX & Game Designer Polish Overhaul**: Added mouse wheel camera zoom (orthographic sizing 4 to 18) in `BabylonEngine.ts`, global keyboard shortcuts (`I` for Inventory, `K` for Skills, `P` for Party, `D` for Dex, `B` for Badges), enhanced 2.5D HUD profile badges, and verified zero-error type safety.
+
 ### v2.1.4
 - **Dev Editor Common Sense Upgrade & Flood-Fill Utilities**: Added `Fill Entire Map` flood-fill shortcut button to terrain tab, enhanced UX brush feedback, improved active map header warp links, and verified zero-error type safety.
 
