@@ -5,6 +5,8 @@ import { useGameStore } from '../store';
 import { searchMapIndex, registerNewMap } from '../data/map-index';
 import { GAME_MAPS } from '../data/maps';
 import { TUXEMON_SPRITES } from '../data/sprites';
+import { TUXEMON_MONSTERS } from '../data/monsters';
+import { TUXEMON_ITEMS } from '../data/items';
 
 import { 
   Layers, 
@@ -32,7 +34,7 @@ interface IntegratedDevEditorProps {
   onBrushTileChange?: (tileId: number) => void;
 }
 
-type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars';
+type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets';
 
 export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen, onClose, onBrushTileChange }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('maps');
@@ -388,12 +390,14 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       <div className="flex bg-slate-950/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium overflow-x-auto">
         {[
           { id: 'maps', label: 'Tiles', icon: Layers },
+          { id: 'index', label: 'Index', icon: Search },
           { id: 'chars', label: 'Heroes', icon: UserPlus },
           { id: 'spawns', label: 'Spawns', icon: MapPin },
           { id: 'encounters', label: 'Grass', icon: Trees },
           { id: 'npcs', label: 'NPCs', icon: UserCheck },
           { id: 'battles', label: 'Battle', icon: Swords },
-          { id: 'quests', label: 'Quests', icon: BookOpen }
+          { id: 'quests', label: 'Quests', icon: BookOpen },
+          { id: 'assets', label: 'Assets', icon: Layers }
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -416,6 +420,59 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
       {/* Editor Content Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+
+        {/* TAB: MAP INDEX VIEWER */}
+        {activeTab === 'index' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+              <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
+                Global Map Index
+              </span>
+              <p className="text-slate-400 text-[11px]">
+                Browse all registered maps in the engine. Teleport directly to them to test collisions and logic.
+              </p>
+              
+              <div className="bg-slate-950 rounded border border-slate-800 overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-900/80 border-b border-slate-800 text-[10px] uppercase text-slate-400">
+                      <th className="p-2 font-medium">Name</th>
+                      <th className="p-2 font-medium">Category</th>
+                      <th className="p-2 font-medium">Size</th>
+                      <th className="p-2 font-medium text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {searchMapIndex('').map((m) => (
+                      <tr key={m.id} className="hover:bg-cyan-950/30 transition-colors">
+                        <td className="p-2">
+                          <div className="font-mono text-cyan-300">{m.name}</div>
+                          <div className="text-[9px] text-slate-500">{m.id}</div>
+                        </td>
+                        <td className="p-2">
+                          <span className="text-[10px] text-indigo-300 bg-indigo-950 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                            {m.category}
+                          </span>
+                        </td>
+                        <td className="p-2 text-slate-400 font-mono text-[10px]">
+                          {m.width}x{m.height}
+                        </td>
+                        <td className="p-2 text-right">
+                          <button
+                            onClick={() => handleWarpToMap(m.id)}
+                            className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10px] font-bold shadow"
+                          >
+                            Teleport
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: TILES & TERRAIN */}
         {activeTab === 'maps' && (
@@ -726,6 +783,45 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
               </p>
               <div className="p-2 bg-slate-950 rounded border border-slate-800 text-[11px] font-mono text-cyan-300">
                 1. Speak with {npcName} (Intro to Animists)
+              </div>
+            </div>
+          </div>
+        )}
+        {/* TAB: ASSETS VIEWER */}
+        {activeTab === 'assets' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+              <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
+                Asset Library ({TUXEMON_ITEMS.length} Items, {TUXEMON_MONSTERS.length} Monsters)
+              </span>
+              <p className="text-slate-400 text-[11px]">
+                Browse all available mapped items and monster sprites.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-cyan-400 font-mono text-[10px] uppercase mb-2">Tuxemon Monsters</h4>
+                  <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto bg-slate-950 p-2 border border-slate-800 rounded">
+                    {TUXEMON_MONSTERS.map(m => (
+                      <div key={m.id} className="flex flex-col items-center bg-slate-900 border border-slate-800 rounded p-1">
+                        <img src={m.path} alt={m.id} className="h-10 w-auto object-contain" />
+                        <span className="text-[9px] text-slate-500 truncate w-full text-center mt-1" title={m.id}>{m.id}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-cyan-400 font-mono text-[10px] uppercase mb-2">Game Items</h4>
+                  <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto bg-slate-950 p-2 border border-slate-800 rounded">
+                    {TUXEMON_ITEMS.map(i => (
+                      <div key={i.id} className="flex flex-col items-center bg-slate-900 border border-slate-800 rounded p-1">
+                        <img src={i.path} alt={i.id} className="h-8 w-auto object-contain" />
+                        <span className="text-[8px] text-slate-500 truncate w-full text-center mt-1" title={i.id}>{i.id.substring(0, 8)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
