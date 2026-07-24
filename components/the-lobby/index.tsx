@@ -287,8 +287,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         </div>
       )}
 
-      {gameMode === 'EXPLORING' && (
-        <div className="absolute top-4 left-4 right-4 flex justify-between z-20 pointer-events-none">
+      {gameMode !== 'BATTLE' && (
+        <div className="absolute top-4 left-4 right-4 flex justify-between z-40 pointer-events-none">
           <div className="flex gap-2">
             <button
               onClick={toggleFullscreen}
@@ -297,71 +297,82 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
               {isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}
             </button>
             <button
-              onClick={() => setIsDevEditorOpen(!isDevEditorOpen)}
+              onClick={() => {
+                if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
+                setIsDevEditorOpen(!isDevEditorOpen);
+              }}
               className="px-3 py-1 bg-cyan-950/90 text-cyan-300 border-2 border-cyan-500/50 rounded font-bold text-xs hover:bg-cyan-900 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
             >
               ⚙ DEV EDITOR (CTRL+E)
             </button>
+            {gameMode !== 'EXPLORING' && (
+              <button
+                onClick={() => useGameStore.getState().setGameMode('EXPLORING')}
+                className="px-3 py-1 bg-red-950/90 text-red-300 border-2 border-red-500/50 rounded font-bold text-xs hover:bg-red-900 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
+              >
+                ✕ CLOSE OVERLAY
+              </button>
+            )}
           </div>
 
           <div className="flex gap-2">
             <button
-              onClick={() => useGameStore.getState().setGameMode('ACHIEVEMENTS')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('ACHIEVEMENTS'); }}
               className="px-3 py-1 bg-yellow-900/90 text-yellow-200 border-2 border-yellow-500 rounded font-bold text-xs hover:bg-yellow-700 transition-colors shadow-md pointer-events-auto"
             >
-              BADGES
+              BADGES [B]
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('LEADERBOARD')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('LEADERBOARD'); }}
               className="px-3 py-1 bg-purple-900/90 text-purple-200 border-2 border-purple-500 rounded font-bold text-xs hover:bg-purple-700 transition-colors shadow-md pointer-events-auto"
             >
               LEADERS
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('QUESTS')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('QUESTS'); }}
               className="px-3 py-1 bg-[#d84315]/90 text-amber-200 border-2 border-[#ff6e40] rounded font-bold text-xs hover:bg-[#ff6e40] transition-colors shadow-md pointer-events-auto"
             >
               QUESTS
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('PARTY')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('PARTY'); }}
               className="px-3 py-1 bg-[#b71c1c]/90 text-white border-2 border-[#ff5252] rounded font-bold text-xs hover:bg-[#ff5252] transition-colors shadow-md pointer-events-auto"
             >
-              PARTY
+              PARTY [P]
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('EQUIPMENT')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('EQUIPMENT'); }}
               className="px-3 py-1 bg-[#4a148c]/90 text-white border-2 border-[#9c27b0] rounded font-bold text-xs hover:bg-[#9c27b0] transition-colors shadow-md pointer-events-auto"
             >
               GEAR
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('INVENTORY')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('INVENTORY'); }}
               className="px-3 py-1 bg-[#e65100]/90 text-white border-2 border-[#ff9800] rounded font-bold text-xs hover:bg-[#ff9800] transition-colors shadow-md pointer-events-auto"
             >
-              INVENTORY
+              INVENTORY [I]
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('GTC')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('GTC'); }}
               className="px-3 py-1 bg-amber-900/90 text-amber-300 border-2 border-amber-500 rounded font-bold text-xs hover:bg-amber-700 transition-colors shadow-md pointer-events-auto flex items-center gap-1"
             >
               GTC
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('SKILLS')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('SKILLS'); }}
               className="px-3 py-1 bg-[#1b5e20]/90 text-white border-2 border-[#4caf50] rounded font-bold text-xs hover:bg-[#4caf50] transition-colors shadow-md pointer-events-auto"
             >
-              SKILLS
+              SKILLS [K]
             </button>
             <button
-              onClick={() => useGameStore.getState().setGameMode('DEX')}
+              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('DEX'); }}
               className="px-3 py-1 bg-[#0d47a1]/90 text-white border-2 border-[#2196f3] rounded font-bold text-xs hover:bg-[#2196f3] transition-colors shadow-md pointer-events-auto"
             >
-              DEX
+              DEX [D]
             </button>
             {isAdminUser && (
               <button
-                onClick={() => useGameStore.getState().setGameMode('MAP_EDITOR')}
+                onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('MAP_EDITOR'); }}
                 className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto"
               >
                 EDITOR
