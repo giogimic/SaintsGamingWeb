@@ -277,6 +277,9 @@ This project is open-source and available under the **MIT License**.
 - **Interactive 2.5D Dev Editor & Map Configurator**: Added live 2.5D raycast pointer tile painting, spawn/respawn drag markers, tall grass encounter brush tool, NPC trainer roster setup, and battle background/weather parameters to the Integrated Dev Editor suite.
 
 ### v2.0.6
+### v2.1.18
+- **Integrated Game Chat & Site Friends Messenger**: Redesigned game chat window into a multi-channel terminal (`MAP`, `WORLD`, `PARTY`, `FRIENDS`). Integrated site-wide Friends List and E2EE private direct messaging. Connected `global_chat` and `party_chat` socket handlers in `game-server.js`. Rendered dynamic 3D speech bubbles over local and remote player characters in BabylonJS. Added quick emote popups and message history filters.
+
 ### v2.1.17
 - **Dedicated Python Utilities Suite (`/tools/`)**: Created a clean `/tools/` directory containing python scripts for remote updates (`update_live.py`), restarts (`restart_live.py`), status monitoring (`check_status.py`), log checking (`check_logs.py`), and DB seeding (`seed_database.py`), along with complete usage documentation.
 

@@ -79,6 +79,33 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("global_chat", (message) => {
+    if (!players[socket.id]) return;
+    const p = players[socket.id];
+    io.emit("global_chat_msg", {
+      sender: p.name || 'Tamer',
+      message: message,
+      timestamp: Date.now()
+    });
+  });
+
+  socket.on("party_chat", (message) => {
+    if (!players[socket.id]) return;
+    const p = players[socket.id];
+    if (p.partyId && parties[p.partyId]) {
+      parties[p.partyId].members.forEach((mid) => {
+        const ms = io.sockets.sockets.get(mid);
+        if (ms) {
+          ms.emit("party_chat_msg", {
+            sender: p.name || 'Tamer',
+            message: message,
+            timestamp: Date.now()
+          });
+        }
+      });
+    }
+  });
+
   // 3. Party System (up to 4 players)
   socket.on("create_party", () => {
     const partyId = `party_${Date.now()}`;

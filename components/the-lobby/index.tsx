@@ -243,6 +243,32 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         }
       }, 7000);
     });
+
+    socket.on('global_chat_msg', (data) => {
+      const msgEvent = new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: data.sender || 'Tamer',
+          text: data.message,
+          timestamp: data.timestamp || Date.now(),
+          type: 'GLOBAL'
+        }
+      });
+      window.dispatchEvent(msgEvent);
+    });
+
+    socket.on('party_chat_msg', (data) => {
+      const msgEvent = new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: data.sender || 'Tamer',
+          text: data.message,
+          timestamp: data.timestamp || Date.now(),
+          type: 'PARTY'
+        }
+      });
+      window.dispatchEvent(msgEvent);
+    });
     
     socket.on('player_left', (socketId) => {
       useGameStore.getState().removeOtherPlayer(socketId);
