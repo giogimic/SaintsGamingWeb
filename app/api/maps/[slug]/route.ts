@@ -39,18 +39,19 @@ export async function POST(
     const updated = await prisma.tuxemonMap.upsert({
       where: { slug },
       update: {
-        gridData: body.grid ? JSON.stringify(body.grid) : undefined,
+        tilesetData: body.grid ? JSON.stringify(body.grid) : undefined,
         npcData: body.npcs ? JSON.stringify(body.npcs) : undefined,
-        encounterData: body.encounterPool ? JSON.stringify(body.encounterPool) : undefined,
+        encounterZone: body.encounterPool ? JSON.stringify(body.encounterPool) : undefined,
       },
       create: {
         slug,
         name: body.name || slug,
         width: body.width || 24,
         height: body.height || 24,
-        gridData: JSON.stringify(body.grid || []),
+        tilesetData: JSON.stringify(body.grid || []),
+        collisionData: JSON.stringify([]),
         npcData: JSON.stringify(body.npcs || []),
-        encounterData: JSON.stringify(body.encounterPool || []),
+        encounterZone: JSON.stringify(body.encounterPool || []),
       }
     });
 
