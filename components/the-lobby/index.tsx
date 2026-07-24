@@ -231,6 +231,24 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     );
   }
 
+  useEffect(() => {
+    // Standard game hotkeys (I, K, P, D, B)
+    const handleGlobalHotkeys = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      const key = e.key.toLowerCase();
+      if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
+      else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
+      else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
+      else if (key === 'd') useGameStore.getState().setGameMode('DEX');
+      else if (key === 'b') useGameStore.getState().setGameMode('ACHIEVEMENTS');
+    };
+    window.addEventListener('keydown', handleGlobalHotkeys);
+    return () => window.removeEventListener('keydown', handleGlobalHotkeys);
+  }, []);
+
   if (showSelector) {
     return (
       <CharacterSelector 

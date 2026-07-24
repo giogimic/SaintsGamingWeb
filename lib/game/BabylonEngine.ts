@@ -73,6 +73,20 @@ export class BabylonEngine {
     // Window Resize Handler
     window.addEventListener('resize', this.onResize);
 
+    // Camera Mouse Wheel Zoom Handler
+    this.canvas.addEventListener('wheel', (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+      const currentOrtho = this.camera.orthoTop || 8;
+      const newOrtho = Math.max(4, Math.min(18, currentOrtho * zoomFactor));
+      
+      const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
+      this.camera.orthoLeft = -newOrtho * aspect;
+      this.camera.orthoRight = newOrtho * aspect;
+      this.camera.orthoTop = newOrtho;
+      this.camera.orthoBottom = -newOrtho;
+    }, { passive: false });
+
     // Generate procedurally crisp player texture fallback
     this.createDefaultPlayerTexture();
   }
