@@ -123,6 +123,11 @@ if 'depends_on:' not in c:
 " 2>/dev/null || true
 }
 
+# Helper function to check if db service already exists in docker-compose.yml
+db_service_exists() {
+    grep -q "^  db:" docker-compose.yml
+}
+
 # Smart State Detection
 if [ -f .env ]; then
     UPDATE_OPT=$(whiptail --title "Existing Installation Detected" --menu "How would you like to proceed?" 16 75 4 \
@@ -154,7 +159,8 @@ if [ -f .env ]; then
             echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
             DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
             if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
-            cat <<EOF >> docker-compose.yml
+            if ! db_service_exists; then
+                cat <<EOF >> docker-compose.yml
 
   db:
     image: mariadb:10.11
@@ -173,7 +179,8 @@ if [ -f .env ]; then
       timeout: 5s
       retries: 5
 EOF
-            inject_depends_on
+                inject_depends_on
+            fi
         fi
 
         sudo docker compose build --no-cache web
@@ -207,7 +214,8 @@ EOF
             echo -e "${CYAN}Restoring Integrated Database Configuration...${NC}"
             DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
             if [ -z "$DB_PASS" ]; then DB_PASS=$(openssl rand -hex 12); fi
-            cat <<EOF >> docker-compose.yml
+            if ! db_service_exists; then
+                cat <<EOF >> docker-compose.yml
 
   db:
     image: mariadb:10.11
@@ -226,7 +234,8 @@ EOF
       timeout: 5s
       retries: 5
 EOF
-            inject_depends_on
+                inject_depends_on
+            fi
         fi
 
         sudo docker compose build --no-cache
@@ -345,15 +354,16 @@ if [ "$DB_PROVIDER_OPT" = "1" ]; then
         DATABASE_URL="file:./prisma/db/dev.db"
 elif [ "$DB_PROVIDER_OPT" = "2" ]; then
     DB_PASS=$(openssl rand -hex 12)
-    
+
     node scripts/setup-env.mjs \
         --generate-secret \
         NEXT_PUBLIC_SITE_URL="http://localhost:$WEB_PORT" \
         NEXT_PUBLIC_DISCORD_INVITE="" \
         DB_PROVIDER="mysql" \
         DATABASE_URL="mysql://saints:${DB_PASS}@db:3306/saints_gaming"
-        
-    cat <<EOF >> docker-compose.yml
+
+    if ! db_service_exists; then
+        cat <<EOF >> docker-compose.yml
 
   db:
     image: mariadb:10.11
@@ -372,7 +382,8 @@ elif [ "$DB_PROVIDER_OPT" = "2" ]; then
       timeout: 5s
       retries: 5
 EOF
-    inject_depends_on
+        inject_depends_on
+    fi
 elif [ "$DB_PROVIDER_OPT" = "3" ]; then
     EXT_HOST=$(whiptail --title "External Database" --inputbox "Enter Database Host/IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
     EXT_PORT=$(whiptail --title "External Database" --inputbox "Enter Database Port:" 10 60 "3306" 3>&1 1>&2 2>&3)
@@ -593,7 +604,8 @@ if [ "$DB_OPTION" = "2" ]; then
     DB_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 16)
     DB_URL="mysql://saints:${DB_PASS}@db:3306/saints_gaming"
     node scripts/setup-env.mjs DATABASE_URL="$DB_URL" DB_PROVIDER="mysql"
-    cat <<EOF >> docker-compose.yml
+    if ! db_service_exists; then
+        cat <<EOF >> docker-compose.yml
 
   db:
     image: mariadb:10.11
@@ -612,7 +624,8 @@ if [ "$DB_OPTION" = "2" ]; then
       timeout: 5s
       retries: 5
 EOF
-    inject_depends_on
+        inject_depends_on
+    fi
 elif [ "$DB_OPTION" = "3" ]; then
     DB_NAME="MySQL (External)"
     
