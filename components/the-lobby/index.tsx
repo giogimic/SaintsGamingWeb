@@ -411,94 +411,80 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
       {/* Toast Notification */}
       {toast && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-green-950/90 text-green-400 border border-green-500/50 rounded font-bold text-sm whitespace-nowrap animate-in slide-in-from-top-4 duration-300 z-50 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-          [!] {toast.message}
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className="relative px-5 py-2.5 bg-black/80 backdrop-blur-xl border border-emerald-500/30 rounded-xl font-bold text-sm whitespace-nowrap shadow-[0_0_25px_rgba(16,185,129,0.2)]">
+            <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+            <span className="text-emerald-400 font-mono text-xs mr-2">▶</span>
+            <span className="text-emerald-200 font-mono text-xs">{toast.message}</span>
+          </div>
         </div>
       )}
 
       {gameMode !== 'BATTLE' && (
-        <div className="absolute top-4 left-4 right-4 flex justify-between z-40 pointer-events-none">
-          <div className="flex gap-2">
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-40 pointer-events-none">
+          {/* Left: System Controls */}
+          <div className="flex gap-1.5 pointer-events-auto">
             <button
               onClick={toggleFullscreen}
-              className="px-3 py-1 bg-white/90 text-black border-2 border-[#333] rounded font-bold text-xs hover:bg-gray-200 transition-colors shadow-md pointer-events-auto"
+              className="px-3 py-1.5 bg-black/70 backdrop-blur-sm text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg"
             >
-              {isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}
+              {isFullscreen ? '⛶ EXIT' : '⛶ FULLSCREEN'}
             </button>
             {gameMode !== 'EXPLORING' && (
               <button
                 onClick={() => useGameStore.getState().setGameMode('EXPLORING')}
-                className="px-3 py-1 bg-red-950/90 text-red-300 border-2 border-red-500/50 rounded font-bold text-xs hover:bg-red-900 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
+                className="px-3 py-1.5 bg-red-950/70 backdrop-blur-sm text-red-300 border border-red-500/30 rounded-lg text-[11px] font-mono font-medium hover:bg-red-900/80 hover:text-red-200 transition-all shadow-lg"
               >
-                ✕ CLOSE OVERLAY
+                ✕ CLOSE
               </button>
             )}
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('ACHIEVEMENTS'); }}
-              className="px-3 py-1 bg-yellow-900/90 text-yellow-200 border-2 border-yellow-500 rounded font-bold text-xs hover:bg-yellow-700 transition-colors shadow-md pointer-events-auto"
-            >
-              BADGES [B]
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('LEADERBOARD'); }}
-              className="px-3 py-1 bg-purple-900/90 text-purple-200 border-2 border-purple-500 rounded font-bold text-xs hover:bg-purple-700 transition-colors shadow-md pointer-events-auto"
-            >
-              LEADERS
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('QUESTS'); }}
-              className="px-3 py-1 bg-[#d84315]/90 text-amber-200 border-2 border-[#ff6e40] rounded font-bold text-xs hover:bg-[#ff6e40] transition-colors shadow-md pointer-events-auto"
-            >
-              QUESTS
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('PARTY'); }}
-              className="px-3 py-1 bg-[#b71c1c]/90 text-white border-2 border-[#ff5252] rounded font-bold text-xs hover:bg-[#ff5252] transition-colors shadow-md pointer-events-auto"
-            >
-              PARTY [P]
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('EQUIPMENT'); }}
-              className="px-3 py-1 bg-[#4a148c]/90 text-white border-2 border-[#9c27b0] rounded font-bold text-xs hover:bg-[#9c27b0] transition-colors shadow-md pointer-events-auto"
-            >
-              GEAR
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('INVENTORY'); }}
-              className="px-3 py-1 bg-[#e65100]/90 text-white border-2 border-[#ff9800] rounded font-bold text-xs hover:bg-[#ff9800] transition-colors shadow-md pointer-events-auto"
-            >
-              INVENTORY [I]
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('GTC'); }}
-              className="px-3 py-1 bg-amber-900/90 text-amber-300 border-2 border-amber-500 rounded font-bold text-xs hover:bg-amber-700 transition-colors shadow-md pointer-events-auto flex items-center gap-1"
-            >
-              GTC
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('SKILLS'); }}
-              className="px-3 py-1 bg-[#1b5e20]/90 text-white border-2 border-[#4caf50] rounded font-bold text-xs hover:bg-[#4caf50] transition-colors shadow-md pointer-events-auto"
-            >
-              SKILLS [K]
-            </button>
-            <button
-              onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode('DEX'); }}
-              className="px-3 py-1 bg-[#0d47a1]/90 text-white border-2 border-[#2196f3] rounded font-bold text-xs hover:bg-[#2196f3] transition-colors shadow-md pointer-events-auto"
-            >
-              DEX [X]
-            </button>
+          {/* Right: Game Menu Bar */}
+          <div className="flex gap-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-1 shadow-2xl pointer-events-auto">
+            {[
+              { mode: 'PARTY', label: 'Party', key: 'P', icon: '⚔️' },
+              { mode: 'INVENTORY', label: 'Items', key: 'I', icon: '🎒' },
+              { mode: 'SKILLS', label: 'Skills', key: 'K', icon: '📊' },
+              { mode: 'EQUIPMENT', label: 'Gear', key: null, icon: '🛡️' },
+              { mode: 'DEX', label: 'Dex', key: 'X', icon: '📖' },
+              { mode: 'QUESTS', label: 'Quests', key: null, icon: '📜' },
+              { mode: 'GTC', label: 'GTC', key: null, icon: '💱' },
+              { mode: 'ACHIEVEMENTS', label: 'Badges', key: 'B', icon: '🏅' },
+              { mode: 'LEADERBOARD', label: 'Leaders', key: null, icon: '🏆' },
+            ].map((item) => (
+              <button
+                key={item.mode}
+                onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode(item.mode as any); }}
+                className={`group relative flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all ${
+                  gameMode === item.mode
+                    ? 'bg-indigo-600/60 text-white shadow-lg shadow-indigo-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                }`}
+                title={item.key ? `${item.label} [${item.key}]` : item.label}
+              >
+                <span className="text-base leading-none">{item.icon}</span>
+                <span className="mt-0.5 leading-none">{item.label}</span>
+                {item.key && (
+                  <span className="absolute -bottom-0.5 right-0.5 text-[8px] text-cyan-400/60 font-bold">{item.key}</span>
+                )}
+              </button>
+            ))}
             {isAdminUser && (
               <button
                 onClick={() => { 
                   if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
                   setIsDevEditorOpen(!isDevEditorOpen); 
                 }}
-                className="px-3 py-1 bg-[#006064]/90 text-cyan-300 border-2 border-cyan-400 rounded font-bold text-xs hover:bg-cyan-700 transition-colors shadow-md pointer-events-auto flex items-center gap-1 font-mono"
+                className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border ${
+                  isDevEditorOpen
+                    ? 'bg-cyan-600/40 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/20'
+                    : 'text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 border-transparent'
+                }`}
+                title="Dev Editor [Ctrl+E]"
               >
-                {isDevEditorOpen ? 'CLOSE EDITOR' : 'EDITOR'}
+                <span className="text-base leading-none">🔧</span>
+                <span className="mt-0.5 leading-none">Editor</span>
               </button>
             )}
           </div>

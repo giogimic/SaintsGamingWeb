@@ -119,7 +119,7 @@ export interface GameState {
   currentMapId: string;
   mapEntities: MapEntity[];
   toast: ToastMessage | null;
-  activeDialog: { npcId: string, text: string } | null;
+  activeDialog: { npcId: string; npcName?: string; text: string } | null;
   setGameMode: (mode: GameMode) => void;
   setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
   acceptQuest: (questId: string) => void;
