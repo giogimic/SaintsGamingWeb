@@ -6,6 +6,8 @@ import {
   Color3,
   Color4,
   HemisphericLight,
+  DirectionalLight,
+  ShadowGenerator,
   MeshBuilder,
   StandardMaterial,
   Texture,
@@ -49,41 +51,67 @@ export class BabylonEngine {
   private tileMeshes: Mesh[] = [];
   private objectMeshes: Mesh[] = [];
   private entityMeshes: Map<string, Mesh> = new Map();
+  private shadowMeshes: Map<string, Mesh> = new Map();
   private isRunning: boolean = false;
-  private defaultPlayerTexture?: Texture;
-  private woodFloorTexture?: Texture;
-  private indoorWallTexture?: Texture;
+  private defaultPlayerTexture?: DynamicTexture;
+  private woodFloorTexture?: DynamicTexture;
+  private indoorWallTexture?: DynamicTexture;
+  private waterTexture?: DynamicTexture;
+  private waterAnimTime: number = 0;
   private currentMapId: string = '';
+  private currentMapWidth: number = 24;
+  private currentMapHeight: number = 24;
+  private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
+  private waterMaterials: StandardMaterial[] = [];
   private guiTexture: AdvancedDynamicTexture;
   private chatBubbles: Map<string, Rectangle> = new Map();
+  private shadowGen?: ShadowGenerator;
+  private cameraTargetX: number = 0;
+  private cameraTargetZ: number = 0;
+  private cameraSnapped: boolean = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.engine = new Engine(this.canvas, true, {
       preserveDrawingBuffer: true,
-      stencil: true
+      stencil: true,
+      antialias: false // Keep pixel art crisp
     });
 
     this.scene = new Scene(this.engine);
-    this.scene.clearColor = new Color4(0.02, 0.03, 0.05, 1.0); // Deep immersive dark space
+    this.scene.clearColor = new Color4(0.02, 0.04, 0.06, 1.0);
 
-    this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, this.scene);
+    this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI('UI', true, this.scene);
 
     // Root Node for 2.5D Isometric World
     this.rootNode = new TransformNode('rootNode', this.scene);
 
-    // 2.5D Camera: Orthographic angled at 45 degrees looking down
+    // 2.5D Camera: Orthographic angled at ~40 degrees looking down
     this.camera = new FreeCamera('camera2D', new Vector3(0, 14, -14), this.scene);
     this.camera.setTarget(Vector3.Zero());
     this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
 
-    this.updateCameraAspect();
+    this.updateCameraAspect(10);
 
-    // Lighting
-    const light = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.2), this.scene);
-    light.intensity = 1.1;
+    // Primary ambient light
+    const ambientLight = new HemisphericLight('ambientLight', new Vector3(0.2, 1, -0.3), this.scene);
+    ambientLight.intensity = 0.85;
+    ambientLight.diffuse = new Color3(0.95, 0.95, 1.0);
+    ambientLight.groundColor = new Color3(0.15, 0.2, 0.15);
+
+    // Directional sun light for 2.5D depth
+    const dirLight = new DirectionalLight('sunLight', new Vector3(-0.5, -1.0, 0.5), this.scene);
+    dirLight.intensity = 0.55;
+    dirLight.diffuse = new Color3(1.0, 0.97, 0.88);
+    dirLight.position = new Vector3(5, 15, -10);
+
+    // Shadow Generator (soft shadows for 2.5D depth)
+    this.shadowGen = new ShadowGenerator(512, dirLight);
+    this.shadowGen.useBlurExponentialShadowMap = true;
+    this.shadowGen.blurKernel = 16;
+    this.shadowGen.darkness = 0.4;
 
     // Window Resize Handler
     window.addEventListener('resize', this.onResize);
@@ -92,9 +120,8 @@ export class BabylonEngine {
     this.canvas.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      const currentOrtho = this.camera.orthoTop || 8;
-      const newOrtho = Math.max(4, Math.min(18, currentOrtho * zoomFactor));
-      
+      const currentOrtho = this.camera.orthoTop || 10;
+      const newOrtho = Math.max(5, Math.min(22, currentOrtho * zoomFactor));
       const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
       this.camera.orthoLeft = -newOrtho * aspect;
       this.camera.orthoRight = newOrtho * aspect;
@@ -102,7 +129,7 @@ export class BabylonEngine {
       this.camera.orthoBottom = -newOrtho;
     }, { passive: false });
 
-    // Generate procedurally crisp player texture fallback
+    // Generate procedural textures
     this.createDefaultPlayerTexture();
     this.createProceduralTextures();
   }
@@ -111,43 +138,81 @@ export class BabylonEngine {
     // Wood Floor Texture
     const woodTex = new DynamicTexture('woodFloorTex', { width: 128, height: 128 }, this.scene, false);
     const wCtx = woodTex.getContext();
-    wCtx.fillStyle = '#8b5a2b'; // Base wood brown
+    wCtx.fillStyle = '#7a4f2a';
     wCtx.fillRect(0, 0, 128, 128);
-    wCtx.fillStyle = '#6b4226'; // Darker streaks
-    for (let i = 0; i < 8; i++) { // Draw wooden planks
-      wCtx.fillRect(0, i * 16, 128, 1); // horizontal plank lines
-      // Draw random grain
-      for (let j = 0; j < 20; j++) {
-        wCtx.fillRect(Math.random() * 128, i * 16 + Math.random() * 15, Math.random() * 20 + 10, 1);
+    wCtx.fillStyle = '#5c3519';
+    for (let i = 0; i < 8; i++) {
+      wCtx.fillRect(0, i * 16, 128, 2);
+      for (let j = 0; j < 25; j++) {
+        wCtx.globalAlpha = 0.3;
+        wCtx.fillRect(Math.random() * 128, i * 16 + Math.random() * 14, Math.random() * 30 + 5, 1);
       }
     }
+    wCtx.globalAlpha = 1;
     woodTex.update();
     this.woodFloorTexture = woodTex;
 
-    // Indoor Wall Texture (Plaster with skirting board)
+    // Indoor Wall Texture
     const wallTex = new DynamicTexture('indoorWallTex', { width: 128, height: 128 }, this.scene, false);
     const pCtx = wallTex.getContext();
-    pCtx.fillStyle = '#e2e8f0'; // Light slate plaster
+    pCtx.fillStyle = '#d4dae4';
     pCtx.fillRect(0, 0, 128, 128);
-    // Skirting board at bottom
-    pCtx.fillStyle = '#cbd5e1'; 
+    pCtx.fillStyle = '#bdc5d1';
     pCtx.fillRect(0, 110, 128, 18);
-    // Top trim
-    pCtx.fillStyle = '#cbd5e1';
-    pCtx.fillRect(0, 0, 128, 8);
-    // Subtle plaster noise
-    pCtx.fillStyle = 'rgba(0,0,0,0.02)';
-    for (let i = 0; i < 200; i++) {
-      pCtx.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
+    pCtx.fillRect(0, 0, 128, 10);
+    pCtx.fillStyle = 'rgba(0,0,0,0.025)';
+    for (let i = 0; i < 300; i++) {
+      pCtx.fillRect(Math.random() * 128, Math.random() * 128, Math.random() * 3 + 1, Math.random() * 3 + 1);
     }
     wallTex.update();
     this.indoorWallTexture = wallTex;
+
+    // Animated Water Base Texture
+    const waterTex = new DynamicTexture('waterTex', { width: 128, height: 128 }, this.scene, true);
+    this.waterTexture = waterTex;
+    this.updateWaterTexture(0);
   }
 
-  private updateCameraAspect = () => {
+  private updateWaterTexture(time: number) {
+    if (!this.waterTexture) return;
+    const ctx = this.waterTexture.getContext();
+    const w = 128; const h = 128;
+    // Base deep water
+    ctx.fillStyle = '#1a4a7a';
+    ctx.fillRect(0, 0, w, h);
+    // Animated shimmer ripples
+    ctx.strokeStyle = 'rgba(100,180,255,0.4)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 6; i++) {
+      const phase = (time * 0.8 + i * 0.9) % (Math.PI * 2);
+      const y = (i / 6) * h + Math.sin(phase) * 8;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 4) {
+        const wy = y + Math.sin(x * 0.15 + phase) * 4;
+        if (x === 0) ctx.moveTo(x, wy);
+        else ctx.lineTo(x, wy);
+      }
+      ctx.stroke();
+    }
+    // Foam highlights
+    ctx.fillStyle = 'rgba(200,230,255,0.15)';
+    for (let i = 0; i < 12; i++) {
+      const fx = (Math.sin(time * 0.3 + i) * 0.5 + 0.5) * w;
+      const fy = (Math.cos(time * 0.4 + i * 1.3) * 0.5 + 0.5) * h;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 4 + Math.sin(time + i) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    this.waterTexture.update();
+    // Apply to water materials
+    this.waterMaterials.forEach(m => {
+      m.diffuseTexture = this.waterTexture!;
+    });
+  }
+
+  private updateCameraAspect = (orthoSize: number = 10) => {
     if (!this.engine || !this.camera) return;
     const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
-    const orthoSize = 8;
     this.camera.orthoLeft = -orthoSize * aspect;
     this.camera.orthoRight = orthoSize * aspect;
     this.camera.orthoTop = orthoSize;
@@ -157,37 +222,92 @@ export class BabylonEngine {
   private onResize = () => {
     if (!this.engine) return;
     this.engine.resize();
-    this.updateCameraAspect();
+    // Re-apply current ortho size on resize
+    const currentOrtho = this.camera.orthoTop || 10;
+    this.updateCameraAspect(currentOrtho);
   };
 
   private createDefaultPlayerTexture() {
     const dynTex = new DynamicTexture('defaultPlayerTex', { width: 64, height: 64 }, this.scene, false);
     const ctx = dynTex.getContext();
-    
-    // Draw pixel art character body
-    ctx.fillStyle = 'rgba(0,0,0,0)';
+
     ctx.clearRect(0, 0, 64, 64);
-    
-    // Character Head
-    ctx.fillStyle = '#f6d7b0';
-    ctx.fillRect(20, 8, 24, 20);
-    // Hair
-    ctx.fillStyle = '#4a2810';
-    ctx.fillRect(18, 6, 28, 10);
-    // Eyes
-    ctx.fillStyle = '#101010';
-    ctx.fillRect(24, 16, 4, 6);
-    ctx.fillRect(36, 16, 4, 6);
-    // Tunic (Saints Gaming Purple)
-    ctx.fillStyle = '#8b5cf6';
-    ctx.fillRect(16, 28, 32, 22);
-    // Gold Trim
-    ctx.fillStyle = '#eab308';
-    ctx.fillRect(28, 28, 8, 22);
+
+    // Shadow (oval using scale trick — ICanvasRenderingContext lacks ellipse)
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.save();
+    ctx.scale(1, 0.28);
+    ctx.beginPath();
+    ctx.arc(32, 60 / 0.28, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     // Legs
     ctx.fillStyle = '#1e1b4b';
-    ctx.fillRect(20, 50, 10, 14);
-    ctx.fillRect(34, 50, 10, 14);
+    ctx.fillRect(20, 46, 10, 16);
+    ctx.fillRect(34, 46, 10, 16);
+
+    // Boots
+    ctx.fillStyle = '#3b2a1a';
+    ctx.fillRect(19, 58, 12, 5);
+    ctx.fillRect(33, 58, 12, 5);
+
+    // Tunic Body (Saints purple)
+    ctx.fillStyle = '#7c3aed';
+    ctx.fillRect(14, 26, 36, 22);
+
+    // Gold belt
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(14, 44, 36, 3);
+    ctx.fillRect(29, 41, 6, 7);
+
+    // Gold tunic trim center
+    ctx.fillStyle = '#d4a017';
+    ctx.fillRect(28, 26, 8, 18);
+
+    // Cloak/cape sides
+    ctx.fillStyle = '#5b21b6';
+    ctx.fillRect(10, 28, 6, 18);
+    ctx.fillRect(48, 28, 6, 18);
+
+    // Arms / Gauntlets
+    ctx.fillStyle = '#8b5cf6';
+    ctx.fillRect(10, 26, 6, 14);
+    ctx.fillRect(48, 26, 6, 14);
+
+    // Hands
+    ctx.fillStyle = '#f6c99a';
+    ctx.fillRect(10, 38, 7, 7);
+    ctx.fillRect(47, 38, 7, 7);
+
+    // Neck
+    ctx.fillStyle = '#f6c99a';
+    ctx.fillRect(28, 20, 8, 7);
+
+    // Head
+    ctx.fillStyle = '#f6c99a';
+    ctx.fillRect(18, 8, 28, 20);
+
+    // Hair
+    ctx.fillStyle = '#1a0a00';
+    ctx.fillRect(16, 4, 32, 10);
+    ctx.fillRect(16, 8, 4, 12);
+    ctx.fillRect(44, 8, 4, 12);
+
+    // Eyes (expressive)
+    ctx.fillStyle = '#101828';
+    ctx.fillRect(22, 16, 5, 6);
+    ctx.fillRect(37, 16, 5, 6);
+    ctx.fillStyle = '#3b82f6'; // Blue iris
+    ctx.fillRect(23, 17, 3, 4);
+    ctx.fillRect(38, 17, 3, 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(24, 17, 1, 1);
+    ctx.fillRect(39, 17, 1, 1);
+
+    // Mouth
+    ctx.fillStyle = '#c07050';
+    ctx.fillRect(26, 24, 12, 2);
 
     dynTex.update();
     this.defaultPlayerTexture = dynTex;
@@ -199,6 +319,13 @@ export class BabylonEngine {
 
     this.engine.runRenderLoop(() => {
       const deltaTime = this.engine.getDeltaTime() / 1000;
+      this.waterAnimTime += deltaTime;
+
+      // Animate water tiles every ~3 frames for performance
+      if (Math.round(this.waterAnimTime * 30) % 3 === 0) {
+        this.updateWaterTexture(this.waterAnimTime);
+      }
+
       if (onTick) onTick(deltaTime);
       this.scene.render();
     });
@@ -209,10 +336,41 @@ export class BabylonEngine {
     this.engine.stopRenderLoop();
   }
 
-  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.1) {
-    const targetVector = new Vector3(targetX, 14, targetZ - 14);
-    this.camera.position = Vector3.Lerp(this.camera.position, targetVector, lerpFactor);
-    this.camera.setTarget(new Vector3(targetX, 0, targetZ));
+  /**
+   * Move camera instantly to a world position (used on map load / spawn)
+   */
+  public snapCameraTo(worldX: number, worldZ: number) {
+    this.cameraTargetX = worldX;
+    this.cameraTargetZ = worldZ;
+    this.camera.position = new Vector3(worldX, 14, worldZ - 14);
+    this.camera.setTarget(new Vector3(worldX, 0, worldZ));
+    this.cameraSnapped = true;
+  }
+
+  /**
+   * Smoothly follow a world position each tick
+   */
+  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.08) {
+    this.cameraTargetX = targetX;
+    this.cameraTargetZ = targetZ;
+
+    if (!this.cameraSnapped) {
+      // Snap immediately on first call
+      this.snapCameraTo(targetX, targetZ);
+      return;
+    }
+
+    const targetCamPos = new Vector3(targetX, 14, targetZ - 14);
+    this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, lerpFactor);
+    this.camera.setTarget(Vector3.Lerp(
+      this.camera.getTarget(),
+      new Vector3(targetX, 0, targetZ),
+      lerpFactor
+    ));
+  }
+
+  public resetCameraSnap() {
+    this.cameraSnapped = false;
   }
 
   public loadTilemap(mapData: BabylonTileMapData) {
@@ -221,17 +379,26 @@ export class BabylonEngine {
     this.objectMeshes.forEach((mesh) => mesh.dispose());
     this.tileMeshes = [];
     this.objectMeshes = [];
+    this.waterMaterials = [];
+    this.cameraSnapped = false; // Force snap on next setCameraPosition
 
     const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
     this.currentMapId = mapId || '';
+    this.currentMapWidth = width;
+    this.currentMapHeight = height;
+    this.currentTileSize = tileSize;
 
-    // If rich multi-layer tilesets exist, render rich layers!
+    // Auto-scale camera ortho based on map size for a good initial view
+    // Show ~15 tiles vertically by default
+    const targetOrtho = Math.max(8, Math.min(18, (height / 2) * tileSize * 0.65));
+    this.updateCameraAspect(targetOrtho);
+
+    // Rich multi-layer tileset rendering
     if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
-      // Sort tilesets descending by firstgid
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
       tileLayers.forEach((layer, layerIdx) => {
-        const heightOffset = layerIdx * 0.02; // Small vertical offset to prevent z-fighting
+        const heightOffset = layerIdx * 0.02;
 
         for (let r = 0; r < height; r++) {
           for (let c = 0; c < width; c++) {
@@ -247,10 +414,8 @@ export class BabylonEngine {
             const localId = gid - ts.firstgid;
             const col = localId % ts.columns;
             const row = Math.floor(localId / ts.columns);
-
-            // Estimate total rows from localId or default 64
             const estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns));
-            
+
             const u0 = col / ts.columns;
             const u1 = (col + 1) / ts.columns;
             const v1 = 1 - (row / estimatedRows);
@@ -286,68 +451,108 @@ export class BabylonEngine {
         }
       });
     } else {
-      // Fallback simple grid rendering
+      // Fallback: simple colored grid rendering with 2.5D geometry
       for (let r = 0; r < height; r++) {
         for (let c = 0; c < width; c++) {
           const tileId = tiles[r]?.[c] ?? 0;
           const posX = (c - width / 2) * tileSize;
           const posZ = (height / 2 - r) * tileSize;
 
+          // Ground plane for every tile
           const ground = MeshBuilder.CreatePlane(
             `tile_${r}_${c}`,
             { size: tileSize },
             this.scene
           );
-
           ground.rotation.x = Math.PI / 2;
           ground.position = new Vector3(posX, 0, posZ);
           ground.parent = this.rootNode;
+          ground.receiveShadows = true;
 
           const mat = new StandardMaterial(`tileMat_${r}_${c}`, this.scene);
           this.applyTileMaterial(mat, tileId, r, c);
           ground.material = mat;
           this.tileMeshes.push(ground);
 
+          // 3D geometry for walls / objects
           if (tileId === 1) {
-            const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, { size: tileSize * 0.9 }, this.scene);
+            // Solid 3D wall block
+            const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, {
+              width: tileSize * 0.95,
+              height: tileSize * 0.9,
+              depth: tileSize * 0.95
+            }, this.scene);
             block.position = new Vector3(posX, tileSize * 0.45, posZ);
             const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
             this.applyTileMaterial(wallMat, tileId, r, c, true);
             block.material = wallMat;
             block.parent = this.rootNode;
+            block.receiveShadows = true;
+            if (this.shadowGen) this.shadowGen.addShadowCaster(block);
             this.objectMeshes.push(block);
-          } else if (tileId === 2 || tileId === 3) { // Tall Grass Tuft
-            const tuft = MeshBuilder.CreatePlane(`tuft_${r}_${c}`, { width: 0.8, height: 0.8 }, this.scene);
-            tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
-            tuft.position = new Vector3(posX, 0.4, posZ);
-            const tuftMat = new StandardMaterial(`tuftMat_${r}_${c}`, this.scene);
-            tuftMat.diffuseColor = new Color3(0.05, 0.6, 0.15);
-            tuft.material = tuftMat;
-            tuft.parent = this.rootNode;
-            this.objectMeshes.push(tuft);
-          } else if (tileId === 5) { // Woodcutting Tree
-            const tree = MeshBuilder.CreatePlane(`tree_${r}_${c}`, { width: 1.4, height: 1.8 }, this.scene);
-            tree.billboardMode = Mesh.BILLBOARDMODE_Y;
-            tree.position = new Vector3(posX, 0.9, posZ);
+          } else if (tileId === 2 || tileId === 3) {
+            // Tall Grass Tufts (2 crossed billboards for volume)
+            for (let t = 0; t < 2; t++) {
+              const tuft = MeshBuilder.CreatePlane(`tuft_${r}_${c}_${t}`, { width: tileSize * 0.85, height: tileSize * 0.75 }, this.scene);
+              tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
+              tuft.rotation.y = t * (Math.PI / 2);
+              tuft.position = new Vector3(posX, tileSize * 0.38, posZ);
+              const tuftMat = new StandardMaterial(`tuftMat_${r}_${c}_${t}`, this.scene);
+              tuftMat.diffuseColor = new Color3(0.1, 0.62, 0.18);
+              tuftMat.emissiveColor = new Color3(0.02, 0.12, 0.04);
+              tuft.material = tuftMat;
+              tuft.parent = this.rootNode;
+              this.objectMeshes.push(tuft);
+            }
+          } else if (tileId === 5) {
+            // Tree: trunk box + billboard foliage
+            const trunk = MeshBuilder.CreateBox(`trunk_${r}_${c}`, { width: 0.3, height: 0.9, depth: 0.3 }, this.scene);
+            trunk.position = new Vector3(posX, 0.45, posZ);
+            const trunkMat = new StandardMaterial(`trunkMat_${r}_${c}`, this.scene);
+            trunkMat.diffuseColor = new Color3(0.35, 0.22, 0.12);
+            trunk.material = trunkMat;
+            trunk.parent = this.rootNode;
+            trunk.receiveShadows = true;
+            if (this.shadowGen) this.shadowGen.addShadowCaster(trunk);
+            this.objectMeshes.push(trunk);
+
+            const foliage = MeshBuilder.CreatePlane(`tree_${r}_${c}`, { width: tileSize * 1.4, height: tileSize * 1.5 }, this.scene);
+            foliage.billboardMode = Mesh.BILLBOARDMODE_Y;
+            foliage.position = new Vector3(posX, tileSize * 0.9, posZ);
             const treeMat = new StandardMaterial(`treeMat_${r}_${c}`, this.scene);
-            treeMat.diffuseColor = new Color3(0.1, 0.5, 0.2);
-            tree.material = treeMat;
-            tree.parent = this.rootNode;
-            this.objectMeshes.push(tree);
-          } else if (tileId === 6) { // Ore Node
-            const ore = MeshBuilder.CreateBox(`ore_${r}_${c}`, { width: 0.7, height: 0.5, depth: 0.7 }, this.scene);
-            ore.position = new Vector3(posX, 0.25, posZ);
+            treeMat.diffuseColor = new Color3(0.1, 0.52, 0.2);
+            treeMat.emissiveColor = new Color3(0.01, 0.08, 0.02);
+            foliage.material = treeMat;
+            foliage.parent = this.rootNode;
+            if (this.shadowGen) this.shadowGen.addShadowCaster(foliage);
+            this.objectMeshes.push(foliage);
+          } else if (tileId === 6) {
+            // Ore Rock
+            const ore = MeshBuilder.CreateBox(`ore_${r}_${c}`, { width: tileSize * 0.7, height: tileSize * 0.45, depth: tileSize * 0.7 }, this.scene);
+            ore.position = new Vector3(posX, tileSize * 0.22, posZ);
+            ore.rotation.y = Math.random() * Math.PI;
             const oreMat = new StandardMaterial(`oreMat_${r}_${c}`, this.scene);
-            oreMat.diffuseColor = new Color3(0.8, 0.5, 0.2);
+            oreMat.diffuseColor = new Color3(0.55, 0.45, 0.35);
+            oreMat.specularColor = new Color3(0.4, 0.3, 0.2);
+            oreMat.emissiveColor = new Color3(0.08, 0.06, 0.03);
             ore.material = oreMat;
             ore.parent = this.rootNode;
+            ore.receiveShadows = true;
+            if (this.shadowGen) this.shadowGen.addShadowCaster(ore);
             this.objectMeshes.push(ore);
+          } else if (tileId === 4 || tileId === 10) {
+            // Animated Water
+            if (mat) {
+              this.waterMaterials.push(mat);
+              // Update immediately with current water texture
+              if (this.waterTexture) mat.diffuseTexture = this.waterTexture;
+            }
           }
         }
       }
     }
 
-    // Render Map NPCs as 2.5D Billboards
+    // Render Map NPCs
     if (npcs) {
       npcs.forEach((npc) => {
         this.updateEntity({
@@ -363,7 +568,7 @@ export class BabylonEngine {
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {
     const isAlt = (r + c) % 2 === 0;
-    const tone = isAlt ? 0.035 : 0; // Checkerboard micro-contrast for grid movement visibility
+    const tone = isAlt ? 0.025 : 0;
 
     const isIndoor = this.currentMapId && (
       this.currentMapId.includes('HOUSE') ||
@@ -377,33 +582,79 @@ export class BabylonEngine {
       this.currentMapId.includes('HQ')
     );
 
+    // Specular highlight for all tiles (slight gloss)
+    mat.specularColor = new Color3(0.05, 0.05, 0.05);
+    mat.specularPower = 32;
+
     if (isIndoor) {
       if (tileId === 0) {
-        // Wooden Floor for indoor rooms
-        if (this.woodFloorTexture) mat.diffuseTexture = this.woodFloorTexture;
-        mat.diffuseColor = new Color3(1 - tone, 1 - tone, 1 - tone); 
+        if (this.woodFloorTexture) {
+          mat.diffuseTexture = this.woodFloorTexture;
+        }
+        mat.diffuseColor = new Color3(1 + tone, 1 + tone, 1 + tone);
+        mat.specularColor = new Color3(0.12, 0.08, 0.04);
         return;
       } else if (tileId === 1) {
-        // Indoor Plaster Wall or Bookshelf
-        if (this.indoorWallTexture) mat.diffuseTexture = this.indoorWallTexture;
-        mat.diffuseColor = new Color3(1 - tone, 1 - tone, 1 - tone);
+        if (isBlock && this.indoorWallTexture) {
+          mat.diffuseTexture = this.indoorWallTexture;
+        }
+        mat.diffuseColor = new Color3(0.85 + tone, 0.88 + tone, 0.92 + tone);
         return;
       }
     }
 
-    // Default Outdoor Environments
     switch (tileId) {
-      case 0: mat.diffuseColor = new Color3(0.12 + tone, 0.42 + tone, 0.18 + tone); break; // Safe Grass
-      case 1: mat.diffuseColor = new Color3(0.15 + tone, 0.25 + tone, 0.15 + tone); break; // Wall / Tree Boundary
-      case 2: // Tall Grass Encounter
-      case 3: mat.diffuseColor = new Color3(0.08 + tone, 0.48 + tone, 0.12 + tone); break;
-      case 4: mat.diffuseColor = new Color3(0.1 + tone, 0.35 + tone, 0.65 + tone); break; // Water
-      case 5: mat.diffuseColor = new Color3(0.15 + tone, 0.35 + tone, 0.18 + tone); break; // Woodcutting Tree
-      case 6: mat.diffuseColor = new Color3(0.35 + tone, 0.3 + tone, 0.25 + tone); break; // Ore Rock
-      case 7: mat.diffuseColor = new Color3(0.45 + tone, 0.35 + tone, 0.15 + tone); break; // Shop Ground
-      case 8: mat.diffuseColor = new Color3(0.2 + tone, 0.4 + tone, 0.5 + tone); break; // Clinic
-      case 10: mat.diffuseColor = new Color3(0.05 + tone, 0.3 + tone, 0.6 + tone); break; // Fishing Water
-      default: mat.diffuseColor = new Color3(0.15 + tone, 0.38 + tone, 0.2 + tone); break;
+      // Safe Grass — lush green
+      case 0: mat.diffuseColor = new Color3(0.15 + tone, 0.48 + tone, 0.20 + tone); break;
+      // Wall / Boundary — dark stone
+      case 1:
+        mat.diffuseColor = new Color3(0.22 + tone, 0.24 + tone, 0.26 + tone);
+        mat.specularColor = new Color3(0.15, 0.15, 0.15);
+        mat.specularPower = 20;
+        break;
+      // Tall Grass (encounter) — vibrant emerald
+      case 2:
+      case 3: mat.diffuseColor = new Color3(0.08 + tone, 0.55 + tone, 0.15 + tone); break;
+      // Water — animated (handled separately)
+      case 4:
+        mat.diffuseColor = new Color3(0.15 + tone, 0.42 + tone, 0.72 + tone);
+        mat.emissiveColor = new Color3(0.02, 0.06, 0.12);
+        mat.specularColor = new Color3(0.5, 0.6, 0.8);
+        mat.specularPower = 64;
+        break;
+      // Woodcutting Tree tile
+      case 5: mat.diffuseColor = new Color3(0.12 + tone, 0.38 + tone, 0.18 + tone); break;
+      // Ore / Mining
+      case 6: mat.diffuseColor = new Color3(0.38 + tone, 0.34 + tone, 0.28 + tone); break;
+      // Shop
+      case 7:
+        mat.diffuseColor = new Color3(0.52 + tone, 0.42 + tone, 0.22 + tone);
+        mat.emissiveColor = new Color3(0.05, 0.04, 0.01);
+        break;
+      // Clinic / Healing
+      case 8:
+        mat.diffuseColor = new Color3(0.18 + tone, 0.48 + tone, 0.58 + tone);
+        mat.emissiveColor = new Color3(0.02, 0.06, 0.08);
+        break;
+      // Fishing Water
+      case 10:
+        mat.diffuseColor = new Color3(0.08 + tone, 0.32 + tone, 0.65 + tone);
+        mat.emissiveColor = new Color3(0.01, 0.04, 0.10);
+        mat.specularColor = new Color3(0.4, 0.5, 0.7);
+        mat.specularPower = 48;
+        break;
+      // Crafting anvil
+      case 9:
+        mat.diffuseColor = new Color3(0.4 + tone, 0.4 + tone, 0.42 + tone);
+        mat.specularColor = new Color3(0.3, 0.3, 0.35);
+        mat.specularPower = 40;
+        break;
+      // Base terminal
+      case 12:
+        mat.diffuseColor = new Color3(0.08 + tone, 0.1 + tone, 0.22 + tone);
+        mat.emissiveColor = new Color3(0.03, 0.05, 0.15);
+        break;
+      default: mat.diffuseColor = new Color3(0.18 + tone, 0.44 + tone, 0.20 + tone); break;
     }
   }
 
@@ -416,12 +667,20 @@ export class BabylonEngine {
 
   public enableTilePicking(onTileClick: (r: number, c: number) => void) {
     this.scene.onPointerDown = (_evt, pickResult) => {
-      if (pickResult.hit && pickResult.pickedMesh && pickResult.pickedMesh.name.startsWith('tile_')) {
-        const parts = pickResult.pickedMesh.name.split('_');
-        if (parts.length === 3) {
-          const r = parseInt(parts[1], 10);
-          const c = parseInt(parts[2], 10);
-          onTileClick(r, c);
+      if (pickResult.hit && pickResult.pickedMesh) {
+        const name = pickResult.pickedMesh.name;
+        // Match tile_ with 3 parts (tile_r_c) or 4 parts (tile_layer_r_c)
+        if (name.startsWith('tile_')) {
+          const parts = name.split('_');
+          if (parts.length === 3) {
+            const r = parseInt(parts[1], 10);
+            const c = parseInt(parts[2], 10);
+            onTileClick(r, c);
+          } else if (parts.length === 4) {
+            const r = parseInt(parts[2], 10);
+            const c = parseInt(parts[3], 10);
+            onTileClick(r, c);
+          }
         }
       }
     };
@@ -433,17 +692,16 @@ export class BabylonEngine {
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
-    const targetPos = new Vector3(entity.x, 0.8, entity.y);
+    const targetPos = new Vector3(entity.x, 0.85, entity.y);
 
     if (!spriteMesh) {
       // Create 2.5D Billboard Sprite Plane
       spriteMesh = MeshBuilder.CreatePlane(
         `entity_${entity.id}`,
-        { width: 1.2, height: 1.6 },
+        { width: this.currentTileSize * 1.1, height: this.currentTileSize * 1.5 },
         this.scene
       );
 
-      // Billboard Y Mode: Sprite faces 2.5D camera angle
       spriteMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
@@ -452,21 +710,48 @@ export class BabylonEngine {
 
       if (entity.spriteUrl) {
         mat.diffuseTexture = new Texture(entity.spriteUrl, this.scene);
-        mat.diffuseTexture.hasAlpha = true;
+        (mat.diffuseTexture as Texture).hasAlpha = true;
       } else if (this.defaultPlayerTexture) {
         mat.diffuseTexture = this.defaultPlayerTexture;
         mat.diffuseTexture.hasAlpha = true;
       }
+
+      // NPC color tint
+      if (entity.isNpc) {
+        mat.diffuseColor = new Color3(0.9, 1.0, 0.9);
+      }
+
       spriteMesh.material = mat;
       spriteMesh.parent = this.rootNode;
 
-      // SET INITIAL POSITION IMMEDIATELY to prevent teleport from (0,0,0) on spawn
+      // SET INITIAL POSITION IMMEDIATELY (no lerp on first frame)
       spriteMesh.position.copyFrom(targetPos);
+
+      // Add to shadow casters
+      if (this.shadowGen) this.shadowGen.addShadowCaster(spriteMesh);
+
+      // Shadow blob on the ground
+      const shadow = MeshBuilder.CreateDisc(`shadow_${entity.id}`, { radius: this.currentTileSize * 0.35, tessellation: 12 }, this.scene);
+      shadow.rotation.x = Math.PI / 2;
+      shadow.position = new Vector3(entity.x, 0.01, entity.y);
+      const shadowMat = new StandardMaterial(`shadowMat_${entity.id}`, this.scene);
+      shadowMat.diffuseColor = new Color3(0, 0, 0);
+      shadowMat.alpha = 0.35;
+      shadow.material = shadowMat;
+      shadow.parent = this.rootNode;
+      this.shadowMeshes.set(entity.id, shadow);
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Smooth lerp movement across 2.5D coordinates
-      spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.3);
+      // Smooth lerp movement
+      spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.25);
+
+      // Move shadow blob with entity
+      const shadowBlob = this.shadowMeshes.get(entity.id);
+      if (shadowBlob) {
+        shadowBlob.position.x += (entity.x - shadowBlob.position.x) * 0.25;
+        shadowBlob.position.z += (entity.y - shadowBlob.position.z) * 0.25;
+      }
     }
 
     // Handle Chat Bubble
@@ -474,25 +759,25 @@ export class BabylonEngine {
     if (entity.chatMessage) {
       if (!chatBubble) {
         chatBubble = new Rectangle(`chatBubble_${entity.id}`);
-        chatBubble.width = "180px";
-        chatBubble.height = "50px";
-        chatBubble.cornerRadius = 25;
-        chatBubble.color = "#22d3ee"; // cyan-400
+        chatBubble.width = '190px';
+        chatBubble.height = '52px';
+        chatBubble.cornerRadius = 26;
+        chatBubble.color = '#22d3ee';
         chatBubble.thickness = 2;
-        chatBubble.background = "rgba(0,0,0,0.85)";
-        
+        chatBubble.background = 'rgba(5,10,20,0.9)';
+
         const text = new TextBlock();
         text.text = entity.chatMessage;
-        text.color = "white";
+        text.color = 'white';
         text.fontSize = 12;
-        text.fontFamily = "monospace";
+        text.fontFamily = 'monospace';
         text.textWrapping = true;
-        
+
         chatBubble.addControl(text);
         this.guiTexture.addControl(chatBubble);
         chatBubble.linkWithMesh(spriteMesh);
-        chatBubble.linkOffsetY = -70; // Float above head
-        
+        chatBubble.linkOffsetY = -75;
+
         this.chatBubbles.set(entity.id, chatBubble);
       } else {
         const textBlock = chatBubble.children[0] as TextBlock;
@@ -512,6 +797,11 @@ export class BabylonEngine {
     if (mesh) {
       mesh.dispose();
       this.entityMeshes.delete(id);
+    }
+    const shadowBlob = this.shadowMeshes.get(id);
+    if (shadowBlob) {
+      shadowBlob.dispose();
+      this.shadowMeshes.delete(id);
     }
     const chatBubble = this.chatBubbles.get(id);
     if (chatBubble) {
