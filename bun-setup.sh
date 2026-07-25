@@ -1,8 +1,11 @@
 #!/bin/bash
-# Universal Smart Setup Script for Ubuntu/Debian/Linux
+# =============================================================================
+#  DEPRECATED — This script has been renamed to setup.sh
+#  This wrapper exists for backward compatibility only.
+# =============================================================================
+echo "Note: bun-setup.sh is deprecated. Redirecting to setup.sh..."
+exec bash "$(dirname "$0")/setup.sh" "$@"
 
-# --- Colors & Styling ---
-CYAN='\033[0;36m'
 PURPLE='\033[0;35m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
