@@ -511,11 +511,15 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
                   { id: 0, name: 'Safe Grass', color: 'bg-emerald-600' },
                   { id: 1, name: 'Wall / Tree', color: 'bg-slate-700' },
                   { id: 2, name: 'Tall Grass', color: 'bg-green-500' },
+                  { id: 3, name: 'Gate A', color: 'bg-amber-500' },
                   { id: 4, name: 'Water', color: 'bg-blue-600' },
                   { id: 5, name: 'Wood Tree', color: 'bg-amber-800' },
                   { id: 6, name: 'Ore Rock', color: 'bg-[#8d6e63]' },
                   { id: 7, name: 'Shop Tile', color: 'bg-amber-600' },
-                  { id: 8, name: 'Clinic Tile', color: 'bg-cyan-600' }
+                  { id: 8, name: 'Clinic Tile', color: 'bg-cyan-600' },
+                  { id: 9, name: 'Crafting', color: 'bg-gray-500' },
+                  { id: 10, name: 'Fishing', color: 'bg-sky-600' },
+                  { id: 12, name: 'Base Hub', color: 'bg-indigo-800' }
                 ].map((tile) => (
                   <button
                     key={tile.id}
@@ -649,10 +653,11 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
                     onChange={(e) => setSelectedSpecies(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
                   >
-                    <option value="ignis">Ignis (Fire)</option>
-                    <option value="aqua_fox">Aqua Fox (Water)</option>
-                    <option value="wood_golem">Wood Golem (Wood)</option>
-                    <option value="spark_pup">Spark Pup (Lightning)</option>
+                    {TUXEMON_MONSTERS.slice(0, 80).map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.id.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>

@@ -541,12 +541,50 @@ export class BabylonEngine {
             if (this.shadowGen) this.shadowGen.addShadowCaster(ore);
             this.objectMeshes.push(ore);
           } else if (tileId === 4 || tileId === 10) {
-            // Animated Water
+            // Animated Water / Fishing
             if (mat) {
               this.waterMaterials.push(mat);
               // Update immediately with current water texture
               if (this.waterTexture) mat.diffuseTexture = this.waterTexture;
             }
+            // Fishing spot gets a small marker buoy
+            if (tileId === 10) {
+              const buoy = MeshBuilder.CreateBox(`buoy_${r}_${c}`, { width: 0.15, height: 0.4, depth: 0.15 }, this.scene);
+              buoy.position = new Vector3(posX + 0.2, 0.25, posZ - 0.1);
+              const buoyMat = new StandardMaterial(`buoyMat_${r}_${c}`, this.scene);
+              buoyMat.diffuseColor = new Color3(0.9, 0.2, 0.1);
+              buoyMat.emissiveColor = new Color3(0.15, 0.03, 0.01);
+              buoy.material = buoyMat;
+              buoy.parent = this.rootNode;
+              this.objectMeshes.push(buoy);
+            }
+          } else if (tileId === 9) {
+            // Crafting Anvil — small metallic box with specular highlight
+            const anvil = MeshBuilder.CreateBox(`anvil_${r}_${c}`, { width: tileSize * 0.5, height: tileSize * 0.35, depth: tileSize * 0.4 }, this.scene);
+            anvil.position = new Vector3(posX, tileSize * 0.18, posZ);
+            const anvilMat = new StandardMaterial(`anvilMat_${r}_${c}`, this.scene);
+            anvilMat.diffuseColor = new Color3(0.3, 0.3, 0.35);
+            anvilMat.specularColor = new Color3(0.6, 0.6, 0.7);
+            anvilMat.specularPower = 24;
+            anvil.material = anvilMat;
+            anvil.parent = this.rootNode;
+            anvil.receiveShadows = true;
+            if (this.shadowGen) this.shadowGen.addShadowCaster(anvil);
+            this.objectMeshes.push(anvil);
+          } else if (tileId === 12) {
+            // Base Terminal — glowing pillar
+            const pillar = MeshBuilder.CreateBox(`terminal_${r}_${c}`, { width: tileSize * 0.35, height: tileSize * 1.0, depth: tileSize * 0.35 }, this.scene);
+            pillar.position = new Vector3(posX, tileSize * 0.5, posZ);
+            const pillarMat = new StandardMaterial(`terminalMat_${r}_${c}`, this.scene);
+            pillarMat.diffuseColor = new Color3(0.12, 0.15, 0.35);
+            pillarMat.emissiveColor = new Color3(0.05, 0.08, 0.25);
+            pillarMat.specularColor = new Color3(0.3, 0.4, 0.8);
+            pillarMat.specularPower = 48;
+            pillar.material = pillarMat;
+            pillar.parent = this.rootNode;
+            pillar.receiveShadows = true;
+            if (this.shadowGen) this.shadowGen.addShadowCaster(pillar);
+            this.objectMeshes.push(pillar);
           }
         }
       }

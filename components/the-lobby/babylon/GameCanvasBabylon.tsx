@@ -69,12 +69,47 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     }
 
-    // Warp Gate Transition Check (Tile 3/4)
-    if ((targetTile === 3 || targetTile === 4) && mapData.gates?.[targetTile]) {
+    // Warp Gate Transition Check — supports any tile ID mapped in gates
+    if (mapData.gates) {
       const gate = mapData.gates[targetTile];
-      useGameStore.setState({ currentMapId: gate.targetMapId });
-      setPlayerPosition(gate.spawnPoint);
-      showToast(`Warped to ${gate.targetMapId}`);
+      if (gate && gate.targetMapId) {
+        useGameStore.setState({ currentMapId: gate.targetMapId });
+        setPlayerPosition(gate.spawnPoint || { x: 6, y: 2 });
+        showToast(`Warped to ${gate.targetMapId}`);
+        return;
+      }
+    }
+
+    // Shop Tile (7) — auto-open shop
+    if (targetTile === 7) {
+      showToast('Welcome to the Shop!');
+      useGameStore.getState().setGameMode('SHOP');
+    }
+
+    // Clinic Tile (8) — auto-heal
+    if (targetTile === 8) {
+      const state = useGameStore.getState();
+      state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
+      showToast('Your team has been fully healed!');
+    }
+
+    // Fishing Spot (10)
+    if (targetTile === 10) {
+      soundSynth.playEncounterSound?.();
+      gainSkillXp('fishing', 20);
+      showToast('Fishing... caught something! (+20 Fishing XP)');
+    }
+
+    // Crafting Anvil (9)
+    if (targetTile === 9) {
+      showToast('Crafting Station accessed!');
+      useGameStore.getState().setGameMode('CRAFTING');
+    }
+
+    // Base Terminal (12)
+    if (targetTile === 12) {
+      showToast('Base Terminal online!');
+      useGameStore.getState().setGameMode('BASE');
     }
   };
 
@@ -111,7 +146,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     let isDynamic = false;
 
     // Check static imported Tuxemon NPCs first
-    nearbyNpc = mapData.npcs?.find((npc) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
+    nearbyNpc = mapData.npcs?.find((npc: any) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
     
     // Fallback to checking Dev Editor placed dynamic entities
     if (!nearbyNpc) {
@@ -130,6 +165,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       useGameStore.setState({
         activeDialog: {
           npcId: nearbyNpc.id,
+          npcName: nearbyNpc.name || 'Stranger',
           text: nearbyNpc.dialogueKey || 'Greetings, Tamer! Welcome to the grounds.'
         },
         gameMode: 'DIALOG'
