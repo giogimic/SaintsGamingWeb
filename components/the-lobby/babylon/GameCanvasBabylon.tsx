@@ -28,8 +28,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const showToast = useGameStore((state) => state.showToast);
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
 
-  // Load Active Map Data or Default Fallback
-  const mapData = GAME_MAPS[currentMapId] || {
+  // Load Active Map Data or Default Fallback — cast as any for optional fields
+  const mapData = (GAME_MAPS[currentMapId] || {
     id: 'DEFAULT_MAP',
     name: 'Tamer Grounds',
     grid: Array(24).fill(0).map((_, r) => 
@@ -37,7 +37,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         (r === 0 || r === 23 || c === 0 || c === 23) ? 1 : (r % 5 === 0 && c % 5 === 0) ? 2 : 0
       )
     )
-  };
+  }) as any;
 
   const mapWidth = mapData.grid[0]?.length || 24;
   const mapHeight = mapData.grid.length || 24;
@@ -155,12 +155,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       id: currentMapId,
       width: mapWidth,
       height: mapHeight,
-      tileSize: 1,
+      tileSize: 1, // 1 BJS world unit per tile
       tiles: mapData.grid,
       tileLayers: (mapData as any).tileLayers,
       tilesets: (mapData as any).tilesets,
       npcs: mapData.npcs
     });
+
+    // Snap camera to player's starting position immediately (no lerp on first frame)
+    const initPlayer = useGameStore.getState().player;
+    if (initPlayer?.position) {
+      const initX = (initPlayer.position.x ?? 6) - mapWidth / 2;
+      const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2);
+      babylonEngine.snapCameraTo(initX, initZ);
+    }
 
     // Start 60FPS Render Loop
     babylonEngine.startRenderLoop(() => {
@@ -181,8 +189,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           chatMessage: useGameStore.getState().localChat || undefined
         });
 
-        // Camera tracks player position smoothly
-        babylonEngine.setCameraPosition(worldX, worldZ, 0.1);
+        // Camera smoothly tracks player (already snapped on first tick)
+        babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
       }
 
       // Render connected multiplayer players
@@ -212,7 +220,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const ez = mapHeight / 2 - ent.position.y;
             babylonEngine.updateEntity({
               id: ent.id,
-              name: '',
+              name: ent.name || '',
               x: ex,
               y: ez,
               spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/assets/sprites/${ent.spriteKey}.png`) : undefined,
@@ -297,13 +305,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       />
       
       {/* 2.5D HUD Badge */}
-      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded bg-black/75 backdrop-blur border border-cyan-500/30 text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-lg">
-        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-        <span>Map: <strong className="text-white">{mapData.name || currentMapId}</strong></span>
-        <span className="text-slate-500">|</span>
-        <span>Pos: <strong className="text-amber-400">({player.position?.x ?? 0}, {player.position?.y ?? 0})</strong></span>
-        <span className="text-slate-500">|</span>
-        <span className="text-slate-400">WASD / Click to Move</span>
+      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
+        <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
+        <span className="text-slate-400">Map:</span>
+        <strong className="text-white">{mapData.name || currentMapId}</strong>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-400">Pos:</span>
+        <strong className="text-amber-300">({player.position?.x ?? 0}, {player.position?.y ?? 0})</strong>
+        <span className="text-slate-600">|</span>
+        <span className="text-slate-500 hidden sm:inline">BGD / Click to Move</span>
       </div>
 
       {/* On-Screen Touch / Mouse Control D-Pad & Talk Action Button */}
