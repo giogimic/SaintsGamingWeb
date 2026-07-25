@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameStore } from './store';
 import { QUEST_DB } from './data/quests';
 import { MessageSquare, Scroll, CheckCircle, XCircle, ChevronRight } from 'lucide-react';
@@ -21,25 +21,18 @@ export default function DialogOverlay() {
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
 
-  if (!activeDialog) return null;
-
-  const handleClose = () => {
-    setActiveDialog(null);
-    setGameMode('EXPLORING');
-  };
-
   // Resolve NPC display name from activeDialog, quest data, or fallback
-  const npcQuest = Object.values(QUEST_DB).find(q => q.npcId === activeDialog.npcId);
-  
-  // Use the name passed in activeDialog first, then quest NPC name, then a cleaned-up npcId
-  const npcDisplayName = activeDialog.npcName 
-    || (npcQuest as any)?.npcName 
-    || (activeDialog.npcId ? activeDialog.npcId.replace(/^npc[_-]?/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Stranger');
+  const npcQuest = activeDialog ? Object.values(QUEST_DB).find(q => q.npcId === activeDialog.npcId) : undefined;
 
-  let currentText = activeDialog.text;
+  // Use the name passed in activeDialog first, then quest NPC name, then a cleaned-up npcId
+  const npcDisplayName = activeDialog?.npcName
+    || (npcQuest as any)?.npcName
+    || (activeDialog?.npcId ? activeDialog.npcId.replace(/^npc[_-]?/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Stranger');
+
+  let currentText = activeDialog?.text || '';
   let questState: 'none' | 'new' | 'active' | 'completable' | 'done' = 'none';
 
-  if (npcQuest) {
+  if (activeDialog && npcQuest) {
     const isCompleted = player.completedQuests.includes(npcQuest.id);
     const isActive = !!player.activeQuests[npcQuest.id];
 
@@ -68,7 +61,7 @@ export default function DialogOverlay() {
     }
   }
 
-  // Typewriter effect
+  // Typewriter effect — must be called before any early return (Rules of Hooks)
   useEffect(() => {
     if (!currentText) return;
     setDisplayedText('');
@@ -84,6 +77,13 @@ export default function DialogOverlay() {
     }, 22);
     return () => clearInterval(interval);
   }, [currentText]);
+
+  if (!activeDialog) return null;
+
+  const handleClose = () => {
+    setActiveDialog(null);
+    setGameMode('EXPLORING');
+  };
 
   const skipTypewriter = () => {
     if (isTyping) {
@@ -102,7 +102,7 @@ export default function DialogOverlay() {
     if (rewards?.credits) modifyCredits(rewards.credits);
     if (rewards?.xp) gainXp(rewards.xp);
     if (rewards?.itemId && rewards?.amount) modifyInventory(rewards.itemId, rewards.amount);
-    
+
     showToast(`Quest Completed: ${npcQuest.name || (npcQuest as any).title || 'Quest'}!`);
     completeQuest(npcQuest.id);
     handleClose();
@@ -134,21 +134,21 @@ export default function DialogOverlay() {
   return (
     <div className="absolute inset-0 z-50 flex items-end justify-center pointer-events-none pb-6 sm:pb-12 px-4">
       {/* Overlay dim */}
-      <div 
-        className="absolute inset-0 bg-black/30 pointer-events-auto" 
-        onClick={skipTypewriter} 
+      <div
+        className="absolute inset-0 bg-black/30 pointer-events-auto"
+        onClick={skipTypewriter}
       />
 
       {/* Dialog Box */}
-      <div 
+      <div
         className="relative w-full max-w-2xl pointer-events-auto animate-in slide-in-from-bottom-8 fade-in duration-300"
         onClick={skipTypewriter}
       >
         {/* Decorative top border glow */}
         <div className="absolute -top-px left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-indigo-400/80 to-transparent" />
-        
+
         <div className="bg-gradient-to-b from-[#1a1840]/98 to-[#0f0d2e]/98 backdrop-blur-xl border border-indigo-500/30 rounded-xl shadow-[0_0_40px_rgba(99,102,241,0.15)] overflow-hidden">
-          
+
           {/* NPC Name Header */}
           <div className="px-5 py-2.5 bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-indigo-900/60 border-b border-indigo-500/20 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -187,14 +187,14 @@ export default function DialogOverlay() {
                 <div className="flex justify-end gap-2.5 mt-4 animate-in fade-in duration-200">
                   {questState === 'new' && (
                     <>
-                      <button 
+                      <button
                         onClick={handleClose}
                         className="px-4 py-2 bg-slate-800/80 text-slate-300 font-bold font-mono text-xs rounded-lg border border-slate-700/60 hover:bg-slate-700 hover:text-white transition-all flex items-center gap-1.5 active:scale-95"
                       >
                         <XCircle className="w-3.5 h-3.5" />
                         DECLINE
                       </button>
-                      <button 
+                      <button
                         onClick={handleAcceptQuest}
                         className="px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold font-mono text-xs rounded-lg shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all active:scale-95"
                       >
@@ -205,7 +205,7 @@ export default function DialogOverlay() {
                   )}
 
                   {questState === 'completable' && (
-                    <button 
+                    <button
                       onClick={handleCompleteQuest}
                       className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold font-mono text-xs rounded-lg shadow-lg shadow-emerald-500/20 flex items-center gap-1.5 transition-all active:scale-95"
                     >
@@ -215,7 +215,7 @@ export default function DialogOverlay() {
                   )}
 
                   {(questState === 'none' || questState === 'active' || questState === 'done') && (
-                    <button 
+                    <button
                       onClick={handleClose}
                       className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold font-mono text-xs rounded-lg shadow-lg shadow-indigo-500/20 flex items-center gap-1.5 transition-all active:scale-95"
                     >
