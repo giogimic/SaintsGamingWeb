@@ -504,12 +504,12 @@ export const useGameStore = create<GameState>()(
       }),
 
       // Party actions
-      inviteToParty: (userId) => set((state) => {
+      inviteToParty: (userId) => set((_state) => {
         // This will be implemented with Socket.IO in Phase 7
         console.log('Inviting user to party:', userId);
       }),
 
-      acceptPartyInvite: (inviteId) => set((state) => {
+      acceptPartyInvite: (inviteId) => set((_state) => {
         // This will be implemented with Socket.IO in Phase 7
         console.log('Accepting party invite:', inviteId);
       }),
