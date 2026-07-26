@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameAssetItem, SpriteFrame } from '@/lib/game/assets/AssetManager';
 import { AssetPathResolver } from '@/lib/game/assets/AssetPathResolver';
-import { Eye, Play, Pause, ZoomIn, Shield, Tag, Layers, RefreshCw, X, Copy } from 'lucide-react';
+import { Eye, Play, Pause, Tag, X, Copy } from 'lucide-react';
 
 export interface SpritePreviewProps {
   asset: GameAssetItem | null;
