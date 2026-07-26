@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { SpriteSheetSlicer, SpriteFrame } from './SpriteSheetSlicer';
+import type { SpriteFrame } from './SpriteSheetSlicer';
 export type { SpriteFrame };
-import { AssetPathResolver } from './AssetPathResolver';
 
 export interface GameAssetItem {
   id: string;
