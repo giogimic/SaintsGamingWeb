@@ -6,13 +6,8 @@ import {
   Sliders,
   Save,
   RefreshCw,
-  Shield,
-  Layers,
   Zap,
   Users,
-  Swords,
-  MessageSquare,
-  Sparkles,
   Check,
 } from 'lucide-react';
 
@@ -22,7 +17,7 @@ export interface GameConfigEditorProps {
 }
 
 export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
-  gameSlug = 'tuxemon',
+  gameSlug: _gameSlug = 'tuxemon',
   onSaveSuccess,
 }) => {
   const [config, setConfig] = useState<Partial<GameConfigInput>>({

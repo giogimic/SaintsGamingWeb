@@ -7,16 +7,10 @@ import { CharacterClassSystem, CharacterClassDefinition } from '@/lib/game/Chara
 import SpritePreview from './SpritePreview';
 import {
   Search,
-  Filter,
-  Tag,
-  Grid,
   Check,
   RefreshCw,
   UserCheck,
-  Shield,
-  Layers,
   Sparkles,
-  Sliders,
 } from 'lucide-react';
 
 export interface SpriteBrowserProps {
