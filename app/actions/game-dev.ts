@@ -91,25 +91,35 @@ export async function fetchAllGameQuests() {
 // ─── ASSET ACTIONS ──────────────────────────────────────────────
 
 export async function createGameAsset(data: {
-  name: string;
-  category: string;
+  name?: string;
+  category?: string;
   subCategory?: string;
-  filePath: string;
+  filePath?: string;
   width?: number;
   height?: number;
+  type?: string;
+  source?: string;
+  tags?: string[];
+  categories?: string[];
+  metadata?: any;
 }) {
   try {
     const isDev = await verifyDevAdmin();
     if (!isDev) return { success: false, error: 'Unauthorized' };
 
+    const type = data.type || (data.category?.toUpperCase() === 'TERRAIN' ? 'TILESET' : 'SPRITE');
+    const source = data.source || data.filePath || '';
+    const tags = data.tags || (data.category ? [data.category.toLowerCase()] : []);
+    const categories = data.categories || (data.category ? [data.category.toLowerCase()] : []);
+    const metadata = data.metadata || { width: data.width || 16, height: data.height || 16, name: data.name };
+
     const asset = await prisma.gameAsset.create({
       data: {
-        name: data.name,
-        category: data.category,
-        subCategory: data.subCategory || null,
-        filePath: data.filePath,
-        width: data.width || 16,
-        height: data.height || 16,
+        type,
+        source,
+        tags: JSON.stringify(tags),
+        categories: JSON.stringify(categories),
+        metadata: JSON.stringify(metadata),
       }
     });
 

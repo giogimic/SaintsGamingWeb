@@ -36,6 +36,9 @@ export interface BabylonEntityData {
   x: number;
   y: number;
   spriteUrl?: string;
+  direction?: 'down' | 'up' | 'left' | 'right';
+  isMoving?: boolean;
+  frameIndex?: number;
   isPlayer?: boolean;
   isNpc?: boolean;
   isTuxemon?: boolean;
@@ -436,7 +439,8 @@ export class BabylonEngine {
               mat = new StandardMaterial(`mat_${ts.imageSource}`, this.scene);
               let tex = this.tilesetTextureCache.get(ts.imageSource);
               if (!tex) {
-                tex = new Texture(`/assets/tilesets/${ts.imageSource}`, this.scene);
+                const tilesetPath = `/tuxemon-assets/tilesets/${ts.imageSource}`;
+                tex = new Texture(tilesetPath, this.scene);
                 tex.hasAlpha = true;
                 this.tilesetTextureCache.set(ts.imageSource, tex);
               }
@@ -747,8 +751,23 @@ export class BabylonEngine {
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
-        mat.diffuseTexture = new Texture(entity.spriteUrl, this.scene);
-        (mat.diffuseTexture as Texture).hasAlpha = true;
+        const tex = new Texture(entity.spriteUrl, this.scene);
+        tex.hasAlpha = true;
+
+        // If sprite is standard 3-col x 4-row NPC sheet
+        if (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/')) {
+          tex.uScale = 1 / 3;
+          tex.vScale = 1 / 4;
+
+          const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
+          const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
+          const colIdx = entity.frameIndex || 0;
+
+          tex.uOffset = colIdx * (1 / 3);
+          tex.vOffset = rowIdx * (1 / 4);
+        }
+
+        mat.diffuseTexture = tex;
       } else if (this.defaultPlayerTexture) {
         mat.diffuseTexture = this.defaultPlayerTexture;
         mat.diffuseTexture.hasAlpha = true;
@@ -783,6 +802,21 @@ export class BabylonEngine {
     } else {
       // Smooth lerp movement
       spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.25);
+
+      // Update texture direction UVs on existing mesh
+      if (spriteMesh.material && (spriteMesh.material as StandardMaterial).diffuseTexture) {
+        const tex = (spriteMesh.material as StandardMaterial).diffuseTexture as Texture;
+        if (tex && (entity.isNpc || entity.isPlayer || (entity.spriteUrl && entity.spriteUrl.includes('/npc/')))) {
+          const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
+          const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
+          const colIdx = entity.frameIndex || 0;
+
+          tex.uScale = 1 / 3;
+          tex.vScale = 1 / 4;
+          tex.uOffset = colIdx * (1 / 3);
+          tex.vOffset = rowIdx * (1 / 4);
+        }
+      }
 
       // Move shadow blob with entity
       const shadowBlob = this.shadowMeshes.get(entity.id);

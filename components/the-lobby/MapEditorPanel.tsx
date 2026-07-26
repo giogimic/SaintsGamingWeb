@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import MapEditorWebGL from './MapEditorWebGL';
 import WorldMapNavigator from './WorldMapNavigator';
 import { GAME_MAPS } from './data/maps';
 import { useGameStore } from './store';
@@ -412,8 +411,16 @@ export default function MapEditorPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Right Canvas Container */}
-        <div className="flex-1 bg-black relative flex items-center justify-center p-2">
-          <MapEditorWebGL mapId={mapSlug} onChange={setMapGridData} />
+        <div className="flex-1 bg-black relative flex flex-col items-center justify-center p-6 text-center">
+          <div className="bg-slate-900/80 border border-cyan-500/40 p-6 rounded-xl max-w-md shadow-xl backdrop-blur">
+            <span className="text-cyan-400 font-bold text-base block mb-2">[ 2.5D BABYLON DEV EDITOR ACTIVE ]</span>
+            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
+              Map painting, entity spawns, and collision bounds are now edited directly in full 2.5D graphics via the integrated Dev Editor tab (<code className="text-emerald-400 font-mono">F12</code> or <code className="text-emerald-400 font-mono">Dev Editor &gt; maps</code>).
+            </p>
+            <span className="text-[11px] text-slate-400 bg-black/50 px-3 py-1.5 rounded border border-slate-800 inline-block font-mono">
+              Map Slug: {mapSlug}
+            </span>
+          </div>
         </div>
       </div>
     </div>
