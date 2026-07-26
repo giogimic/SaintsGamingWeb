@@ -10,10 +10,14 @@ import { toast } from "sonner";
 import { INITIAL_SKILLS } from "./store";
 
 const PRESET_SPRITES = [
-  { id: "hero_male", label: "Tamer Agent", path: "/tuxemon-assets/npc/npc_001.png", icon: User },
-  { id: "mage_1", label: "Cyber Invoker", path: "/tuxemon-assets/npc/npc_002.png", icon: Zap },
-  { id: "villager_1", label: "Wild Scout", path: "/tuxemon-assets/npc/npc_003.png", icon: Sparkles },
-  { id: "assassin", label: "Void Warden", path: "/tuxemon-assets/npc/npc_004.png", icon: Skull },
+  { id: "adventurer", label: "Tamer Adventurer", path: "/tuxemon-assets/npc/adventurer.png", icon: User },
+  { id: "heroine", label: "Saints Heroine", path: "/tuxemon-assets/npc/heroine.png", icon: Sparkles },
+  { id: "warrior", label: "Frontline Warrior", path: "/tuxemon-assets/npc/warrior.png", icon: Shield },
+  { id: "dragonrider", label: "Dragon Rider", path: "/tuxemon-assets/npc/dragonrider.png", icon: Zap },
+  { id: "alchemist", label: "Cyber Alchemist", path: "/tuxemon-assets/npc/alchemist.png", icon: Wrench },
+  { id: "catgirl", label: "Wild Scout", path: "/tuxemon-assets/npc/catgirl.png", icon: Sparkles },
+  { id: "firefighter", label: "Void Warden", path: "/tuxemon-assets/npc/firefighter.png", icon: Skull },
+  { id: "fashionista", label: "Style Specialist", path: "/tuxemon-assets/npc/fashionista.png", icon: User },
 ];
 
 const PERKS = [

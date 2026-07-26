@@ -711,13 +711,18 @@ model GameCharacter {
 
 model WorldMap {
   id             String   @id // e.g. "SAINTS_VILLAGE"
+  gameId         String?  @default("tuxemon")
   name           String
   gridData       String // JSON 2D Array
   gatesData      String // JSON
   npcsData       String // JSON for NPC dialogues/teams
   encountersData String   @default("[]") // JSON for wild beast encounters
+  tileLayersData String   @default("[]") // JSON for TMX tile layers
+  tilesetsData   String   @default("[]") // JSON for tilesets metadata
   version        Int      @default(1)
   updatedAt      DateTime @updatedAt
+
+  @@index([gameId])
 }
 
 model GameQuest {
@@ -741,14 +746,150 @@ model GameQuest {
 }
 
 model GameAsset {
-  id          String   @id @default(cuid())
-  name        String
-  category    String // Terrain, Monster, NPC, Item, Environment
-  subCategory String?
-  filePath    String
-  width       Int      @default(16)
-  height      Int      @default(16)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  gameId        String?  // null = shared across all games
+  type          String   @default("SPRITE") // SPRITE, TILESET, AUDIO, ITEM_ICON, MONSTER, UI_ELEMENT, EFFECT, BACKGROUND, PARTICLE
+  source        String   @default("") // canonical file path
+  atlasSource   String?  // atlas file if from atlas
+  atlasFrame    String?  // JSON: {x, y, width, height} for atlas extraction
+  tags          String   @default("[]") // JSON string: ["tuxemon", "npc", "male"] for SQLite compat
+  categories    String   @default("[]") // JSON string: ["npcs", "heroes"] for SQLite compat
+  metadata      String   @default("{}") // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
+  customLabels  String?  // JSON string: {en: "Hero", es: "Héroe"}
+  isActive      Boolean  @default(true)
+  usageCount    Int      @default(0)
+  fileSize      Int      @default(0)
+  cdnUrl        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([gameId])
+  @@index([type])
+}
+
+model GameConfig {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  version       String   @default("1.0.0")
+  description   String?
+  isActive      Boolean  @default(false)
+
+  // Game rules
+  maxLevel      Int      @default(100)
+  baseStats     String   @default("{}") // JSON: {hp: 100, atk: 50, ...}
+  combatFormula String   @default("tuxemon-standard")
+  skillFormula  String   @default("runescape-style")
+  xpCurve       String   @default("exponential")
+  xpCurveData   String?  // JSON: custom XP table
+
+  // Asset pack references
+  spritePackIds  String   @default("[]") // JSON: ["tuxemon-npcs", "tuxemon-monsters"]
+  tilesetPackIds String   @default("[]") // JSON: ["tuxemon-outdoor", "tuxemon-indoor"]
+
+  // Performance settings
+  maxEntitiesPerMap  Int    @default(100)
+  maxPlayersPerMap   Int    @default(50)
+  chunkSize          Int    @default(32)
+  optimizationLevel  String @default("medium")
+
+  // Social settings
+  enableChat     Boolean @default(true)
+  enableParties  Boolean @default(true)
+  enableTrading  Boolean @default(true)
+  enablePvP      Boolean @default(true)
+  maxPartySize   Int     @default(4)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  classes       CharacterClass[]
+
+  @@index([isActive])
+}
+
+model CharacterClass {
+  id            String    @id @default(cuid())
+  gameId        String
+  game          GameConfig @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  slug          String
+  name          String
+  description   String    @default("")
+  icon          String?   // emoji or asset path
+  color         String    @default("#6366f1")
+  iconAssetId   String?
+
+  baseStats     String    @default("{}") // JSON: {hp: 100, atk: 50, ...}
+  growthRates   String    @default("{}") // JSON: {hp: 1.5, atk: 1.2, ...}
+
+  allowedSpriteTags String @default("[]") // JSON: ["hero", "player", "male"]
+  spriteFilters     String @default("{}") // JSON: {gender: ["male"], style: ["warrior"]}
+
+  startingEquipment  String @default("[]") // JSON
+  learnableSkills    String @default("[]") // JSON
+
+  perks         String @default("[]") // JSON: ["MASTER_TAMER"]
+  abilities     String @default("[]") // JSON: ["beast_empathy"]
+
+  // RPG progression
+  skillProgression   String @default("[]") // JSON: skill unlocks per level
+  abilityProgression String @default("[]") // JSON: ability unlocks per level
+  perkProgression    String @default("[]") // JSON: perk unlocks per level
+
+  isPlayable    Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([gameId, slug])
+  @@index([gameId])
+}
+
+model LootTable {
+  id            String   @id @default(cuid())
+  gameId        String
+  name          String
+  description   String?
+
+  entries       String   // JSON: array of loot entries
+  rollsPerDrop  Int      @default(1)
+  guaranteedDrops String @default("[]") // JSON
+
+  commonWeight    Int @default(60)
+  uncommonWeight  Int @default(25)
+  rareWeight      Int @default(10)
+  epicWeight      Int @default(4)
+  legendaryWeight Int @default(1)
+
+  minLevel      Int?
+  maxLevel      Int?
+  requiredTags  String   @default("[]") // JSON
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+model MonsterSpritePool {
+  id                     String   @id @default(cuid())
+  gameId                 String
+  speciesSlug            String   // references TuxemonSpecies.slug
+  spriteAssetId          String   // primary sprite (front)
+  shinySpriteAssetId     String?
+  backSpriteAssetId      String?
+  overworldSpriteAssetId String? // overworld (directional)
+
+  frameCount    Int      @default(4)
+  directions    Int      @default(4)
+  frameRate     Int      @default(8)
+
+  variants      String   @default("{}") // JSON: { male: spriteId, female: spriteId }
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([gameId])
+  @@index([speciesSlug])
 }
 
 model GtcListing {

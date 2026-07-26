@@ -27,13 +27,18 @@ import {
   UserPlus
 } from 'lucide-react';
 
+import AssetEditor from './AssetEditor';
+import GameConfigEditor from './GameConfigEditor';
+import ClassEditor from './ClassEditor';
+import SpriteBrowser from './SpriteBrowser';
+
 interface IntegratedDevEditorProps {
   isOpen: boolean;
   onClose: () => void;
   onBrushTileChange?: (tileId: number) => void;
 }
 
-type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets';
+type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
 
 export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen, onClose, onBrushTileChange }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('maps');
@@ -391,12 +396,15 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
           { id: 'maps', label: 'Tiles', icon: Layers },
           { id: 'index', label: 'Index', icon: Search },
           { id: 'chars', label: 'Heroes', icon: UserPlus },
+          { id: 'classes', label: 'Classes', icon: UserCheck },
           { id: 'spawns', label: 'Spawns', icon: MapPin },
           { id: 'encounters', label: 'Grass', icon: Trees },
           { id: 'npcs', label: 'NPCs', icon: UserCheck },
           { id: 'battles', label: 'Battle', icon: Swords },
           { id: 'quests', label: 'Quests', icon: BookOpen },
-          { id: 'assets', label: 'Assets', icon: Layers }
+          { id: 'assets', label: 'Assets', icon: Layers },
+          { id: 'sprites', label: 'Sprites', icon: UserPlus },
+          { id: 'gameConfig', label: 'Engine', icon: Sliders },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -791,43 +799,35 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
             </div>
           </div>
         )}
-        {/* TAB: ASSETS VIEWER */}
+        {/* TAB: ASSET MANAGER */}
         {activeTab === 'assets' && (
-          <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
-              <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
-                Asset Library ({TUXEMON_ITEMS.length} Items, {TUXEMON_MONSTERS.length} Monsters)
-              </span>
-              <p className="text-slate-400 text-[11px]">
-                Browse all available mapped items and monster sprites.
-              </p>
-              
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-cyan-400 font-mono text-[10px] uppercase mb-2">Tuxemon Monsters</h4>
-                  <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto bg-slate-950 p-2 border border-slate-800 rounded">
-                    {TUXEMON_MONSTERS.map(m => (
-                      <div key={m.id} className="flex flex-col items-center bg-slate-900 border border-slate-800 rounded p-1">
-                        <img src={m.path} alt={m.id} className="h-10 w-auto object-contain" />
-                        <span className="text-[9px] text-slate-500 truncate w-full text-center mt-1" title={m.id}>{m.id}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          <div className="h-[520px] animate-in fade-in duration-200">
+            <AssetEditor />
+          </div>
+        )}
 
-                <div>
-                  <h4 className="text-cyan-400 font-mono text-[10px] uppercase mb-2">Game Items</h4>
-                  <div className="grid grid-cols-6 gap-2 max-h-40 overflow-y-auto bg-slate-950 p-2 border border-slate-800 rounded">
-                    {TUXEMON_ITEMS.map(i => (
-                      <div key={i.id} className="flex flex-col items-center bg-slate-900 border border-slate-800 rounded p-1">
-                        <img src={i.path} alt={i.id} className="h-8 w-auto object-contain" />
-                        <span className="text-[8px] text-slate-500 truncate w-full text-center mt-1" title={i.id}>{i.id.substring(0, 8)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* TAB: CHARACTER CLASSES */}
+        {activeTab === 'classes' && (
+          <div className="h-[520px] animate-in fade-in duration-200">
+            <ClassEditor />
+          </div>
+        )}
+
+        {/* TAB: SPRITE POOL BROWSER */}
+        {activeTab === 'sprites' && (
+          <div className="h-[520px] animate-in fade-in duration-200">
+            <SpriteBrowser
+              onSelect={(selected) => {
+                showToast(`Selected sprite: ${selected[0]?.source.split('/').pop()}`);
+              }}
+            />
+          </div>
+        )}
+
+        {/* TAB: GAME ENGINE CONFIG */}
+        {activeTab === 'gameConfig' && (
+          <div className="h-[520px] animate-in fade-in duration-200">
+            <GameConfigEditor onSaveSuccess={() => showToast('Engine Configuration Saved!')} />
           </div>
         )}
 

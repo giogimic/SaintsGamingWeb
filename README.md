@@ -277,6 +277,27 @@ This project is open-source and available under the **MIT License**.
 - **Interactive 2.5D Dev Editor & Map Configurator**: Added live 2.5D raycast pointer tile painting, spawn/respawn drag markers, tall grass encounter brush tool, NPC trainer roster setup, and battle background/weather parameters to the Integrated Dev Editor suite.
 
 ### v2.0.6
+### v2.1.24
+- **Ultimate Game Engine Editors & Class System (Phase 4.3, 5 & 6)**:
+  - **Integrated Asset Manager**: Mounted `AssetEditor.tsx` into Dev Editor (`Ctrl+E`), enabling tag filtering, reclassifying mislabeled assets, bulk tag operations, and asset search.
+  - **Game Engine & Character Class Editors**: Created `CharacterClassSystem`, `GameConfigEditor`, and `ClassEditor` components for managing multi-game rules, max levels, stat growth formulas, and allowed sprite tag filters.
+  - **Interactive Sprite Browser**: Created `SpriteBrowser.tsx` and `SpritePreview.tsx` components featuring class-filtered sprite selection, 4-direction view toggling, hover walk-cycle animation loop, and detailed metadata inspection.
+  - **Dev Editor Navigation**: Added `Classes`, `Engine`, and `Sprites` tabs to the Integrated Dev Editor suite.
+
+### v2.1.23
+- **True Map Recreation & Directional Animated Entities (Phase 2 & Phase 3)**:
+  - **Map Database Validation Audit**: Created `scripts/validate-maps.ts` map auditor script. Validated all 235 database maps (182 maps fully verified with multi-layer TMX tilesets).
+  - **Map Chunk Loader**: Implemented `MapChunkLoader.ts` for camera viewport-driven chunk loading and distant chunk unloading.
+  - **Directional Animated Billboards**: Upgraded `BabylonEngine.ts` entity rendering with 4-way direction (`down`, `up`, `left`, `right`) and 3-frame ping-pong walk cycle UV mapping for player, NPCs, and overworld entities.
+  - **Character Creator Presets**: Updated `character-creator.tsx` preset choices to point to real Tuxemon NPC sprite sheet assets (`adventurer.png`, `heroine.png`, `warrior.png`, `dragonrider.png`, `alchemist.png`, `catgirl.png`, etc.).
+
+### v2.1.22
+- **Ultimate Game Engine Foundational Implementation (Phase 0 & Phase 1)**:
+  - **Native Asset Slicing & Interpretation Layer**: Created `SpriteSheetSlicer`, `AssetPathResolver`, and `AssetManager` modules to natively slice 48x128 NPC sheets into 12 directional frames (4 directions x 3 walk cycle frames) and index assets into an expanded `GameAsset` database schema with tag & category management.
+  - **Database Schema Expansion**: Added `GameConfig`, `CharacterClass`, `LootTable`, `MonsterSpritePool`, and `WorldMap` game extensions to Prisma schema.
+  - **Campaign Map Migration & API**: Migrated 235 campaign maps into `WorldMap` database table, eliminated the 11.3 MB client bundle import, and added lazy-loading API endpoints `/api/maps/[id]` and `/api/maps` with client caching.
+  - **System Unification & Cleanup**: Consolidated legacy rendering paths into Babylon.js engine and updated texture path resolution.
+
 ### v2.1.18
 - **Integrated Game Chat & Site Friends Messenger**: Redesigned game chat window into a multi-channel terminal (`MAP`, `WORLD`, `PARTY`, `FRIENDS`). Integrated site-wide Friends List and E2EE private direct messaging. Connected `global_chat` and `party_chat` socket handlers in `game-server.js`. Rendered dynamic 3D speech bubbles over local and remote player characters in BabylonJS. Added quick emote popups and message history filters.
 
