@@ -744,7 +744,8 @@ export class BabylonEngine {
         this.scene
       );
 
-      spriteMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
+      // For orthographic 2.5D, fixed tilt is much more stable than billboarding
+      spriteMesh.rotation.x = Math.PI / 4;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       mat.useAlphaFromDiffuseTexture = true;
@@ -752,7 +753,8 @@ export class BabylonEngine {
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
-        const tex = new Texture(entity.spriteUrl, this.scene);
+        // Use nearest neighbor (1) sampling mode for crisp pixel art and to prevent alpha erosion
+        const tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
         tex.hasAlpha = true;
 
         // If sprite is standard 3-col x 4-row NPC sheet
@@ -812,7 +814,8 @@ export class BabylonEngine {
         
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
-          tex = new Texture(entity.spriteUrl, this.scene);
+          // Use nearest neighbor (1) sampling mode
+          tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
           tex.hasAlpha = true;
           mat.diffuseTexture = tex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
