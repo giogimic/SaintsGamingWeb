@@ -804,9 +804,24 @@ export class BabylonEngine {
       // Smooth lerp movement
       spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.25);
 
-      // Update texture direction UVs on existing mesh
-      if (spriteMesh.material && (spriteMesh.material as StandardMaterial).diffuseTexture) {
-        const tex = (spriteMesh.material as StandardMaterial).diffuseTexture as Texture;
+      // Check if sprite URL changed
+      const mat = spriteMesh.material as StandardMaterial;
+      if (mat) {
+        let tex = mat.diffuseTexture as Texture;
+        const currentUrl = tex ? tex.name : null;
+        
+        // If the URL changed (and it's not falling back to the default dynamic texture)
+        if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
+          tex = new Texture(entity.spriteUrl, this.scene);
+          tex.hasAlpha = true;
+          mat.diffuseTexture = tex;
+        } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
+          mat.diffuseTexture = this.defaultPlayerTexture;
+          mat.diffuseTexture.hasAlpha = true;
+          tex = this.defaultPlayerTexture as Texture;
+        }
+
+        // Update texture direction UVs on existing mesh
         if (tex && (entity.isNpc || entity.isPlayer || (entity.spriteUrl && entity.spriteUrl.includes('/npc/')))) {
           const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
           const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
