@@ -37,8 +37,18 @@ if [ "$DB_SKIP_MIGRATION" != "true" ]; then
         exit 1
     fi
     echo "[✓] Database schema ready."
-    echo "[*] Seeding Tuxemon species, techniques, and campaign maps into database..."
-    npx tsx scripts/import-tuxemon-data.ts || true
+    # Only seed if the database is new/empty (file < 500KB means no data yet)
+    DB_FILE="/app/prisma/db/dev.db"
+    DB_SIZE=0
+    if [ -f "$DB_FILE" ]; then
+        DB_SIZE=$(stat -c%s "$DB_FILE" 2>/dev/null || echo 0)
+    fi
+    if [ "$DB_SIZE" -lt 512000 ]; then
+        echo "[*] Fresh database detected — seeding Tuxemon data..."
+        npx tsx scripts/import-tuxemon-data.ts || true
+    else
+        echo "[*] Database already seeded (${DB_SIZE} bytes) — skipping seed."
+    fi
 else
     echo "[*] Skipping schema migration (DB_SKIP_MIGRATION=true)."
 fi
