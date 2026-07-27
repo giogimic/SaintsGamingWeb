@@ -66,7 +66,7 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         fi
     fi
 
-    sudo docker compose build --no-cache web > docker_build.log 2>&1
+    sudo docker compose build web > docker_build.log 2>&1
     if [ $? -ne 0 ]; then
         echo -e "${RED}[!] Build failed! Check docker_build.log for details.${NC}"
         exit 1
