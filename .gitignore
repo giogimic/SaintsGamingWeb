@@ -55,7 +55,6 @@ docker-compose.yml
 
 
 # AI / Local Work
-/docs/
 /ai/
 /articles/
 /logs/

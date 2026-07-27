@@ -1,0 +1,97 @@
+# Master Architecture & Execution Plan: Babylon.js 2.5D Tuxemon & RuneScape MMO
+
+**Vision:** A browser-based MMORPG combining the open-world skill progression of RuneScape with the creature collection and sprite combat of Tuxemon (Pokémon-style), rendered using a **Babylon.js 2.5D billboard sprite engine** with a fully decoupled **Integrated Dev Editor & Configuration Suite**.
+
+---
+
+## 1. Repository & Folder Architecture
+
+```
+saints-web/
+├── app/
+│   ├── (main)/
+│   │   ├── lobby/               # Main MMO Client Page (/lobby)
+│   │   └── admin/
+│   │       ├── game-dev/        # Dev Panel Configurator Routes
+│   │       └── map-editor/      # Admin Map Editor Route
+│   └── api/
+│       └── game/                # MMO Game Save & Config API Routes
+├── components/
+│   ├── the-lobby/
+│   │   ├── babylon/             # Babylon.js 2.5D Billboard Render Engine
+│   │   │   ├── BabylonEngine.ts # Core 2.5D Renderer & Scene Manager
+│   │   │   ├── BillboardSpriteManager.ts # Sprite & Billboard Layering
+│   │   │   ├── TilemapChunkManager.ts  # 2.5D Tilemap Chunking & Layers
+│   │   │   └── CameraController.ts    # Orthographic/Perspective Lerp Camera
+│   │   ├── editor/              # Integrated In-Game Dev Editor Suite
+│   │   │   ├── IntegratedDevEditor.tsx # Decoupled Main Editor Overlay Container
+│   │   │   ├── MapTilePaletteTab.tsx   # Tile Paint & Palette Selector
+│   │   │   ├── SpawnsConfigTab.tsx     # Player Spawn & Respawn Editor
+│   │   │   ├── WildEncounterTab.tsx    # Tall Grass & Encounter Zone Brush
+│   │   │   ├── NpcTrainerTab.tsx       # NPC, Dialogue & Trainer Battle Setter
+│   │   │   └── BattleParamsTab.tsx     # Weather, Background & AI Settings
+│   │   ├── overlays/            # Game UI Overlays (React on top of Babylon Canvas)
+│   │   │   ├── SaintsDexOverlay.tsx   # Tuxemon Creature Registry
+│   │   │   ├── character-creator.tsx # Character Class Selector
+│   │   │   ├── battle-overlay.tsx     # Turn-Based & Player Combat UI
+│   │   │   ├── inventory-overlay.tsx  # Item & Equipment UI
+│   │   │   └── skill-panel.tsx        # 27-Skill Progression Display
+│   │   ├── store.ts             # Global Game & Editor Zustand State
+│   │   └── dynamic.tsx          # Client-Only Dynamic Import Component
+├── lib/
+│   └── game/
+│       ├── battle-engine.ts     # Tuxemon 15-Type Battle Math & PP
+│       ├── encounter-system.ts  # Wild Encounter Zone Calculators
+│       └── config-schema.ts     # Strict Zod Schemas for Map/Spawn Configs
+└── prisma/
+    └── schema.prisma            # Tuxemon Species, Game Save & Map Schema
+```
+
+---
+
+## 2. Core Architectural Principles
+
+1. **Zero Magic Numbers / Everything Configurable:** Every map dimension, spawn tile, encounter rate, species list, NPC path, dialogue node, and battle parameter MUST be loaded from dynamic configuration state editable via the **Integrated Dev Editor**.
+2. **Decoupled Integrated Dev Editor:** The Dev Editor runs as a separate UI overlay toggleable (`Ctrl+E` or Dev Button) independently from the game engine loop.
+3. **Babylon.js 2.5D Billboard Engine:** Renders Tuxemon 2D sprites as 2.5D billboards on textured quad planes with fixed orthographic/perspective camera angles, maintaining high performance (60+ FPS) and crisp 16x16 / 32x32 pixel art.
+4. **Tuxemon Baseline Engine Integration:** Tuxemon's 411 species, 15 elemental types, and 6 stat fields (`hp`, `atk`, `def`, `spd`, `ratk`, `rdef`) serve as the primary game database standard.
+
+---
+
+## 3. Phased Execution Roadmap
+
+### Phase 1: Build Blocker Cleanup, Rebranding & Dev Editor Scaffolding (CURRENT PHASE)
+- [x] **1.1 Cleanup Broken Legacy Code:** Delete orphaned `components/cyber-terminal/` directory (Resolves 38 TS errors; `npx tsc --noEmit` now 100% clean).
+- [ ] **1.2 Component Rebranding:** Update exports in `components/the-lobby/dynamic.tsx` and `index.tsx` from `CyberTerminal` to `TheLobby`. Rename `TuxepediaOverlay.tsx` to `SaintsDexOverlay.tsx`.
+- [ ] **1.3 Babylon.js Engine Scaffolding:** Create `lib/game/BabylonEngine.ts` initializing Babylon `<canvas>`, scene, camera, orthographic projection, and 60FPS render loop.
+- [ ] **1.4 Integrated Dev Editor Shell:** Build `components/the-lobby/editor/IntegratedDevEditor.tsx` with decoupled Zustand state, keyboard shortcut (`Ctrl+E`), and tab navigation shell (Maps/Tiles, Player Spawns, Encounters, NPCs, Battles).
+
+---
+
+### Phase 2: Integrated Dev Editor Modules & Live Painting Tools
+- [ ] **2.1 Map & Tile Placement Tool:** Live painting of 2.5D tile layers, collision blocks, terrain height, and visual tile palette selection.
+- [ ] **2.2 Player Spawn & Respawn Point Setter:** Visual marker placement for world default spawn, area respawns, and checkpoint triggers.
+- [ ] **2.3 Wild Encounter Zone (Tall Grass) Brush:** Paint encounter zones on tiles, configure species probabilities, level min/max, and encounter frequency.
+- [ ] **2.4 NPC & Trainer Configuration:** Place NPCs on map grid, set sprites, dialogue trees, quest triggers, and battle team rosters.
+- [ ] **2.5 Battle Parameter Settings:** Configure arena background sprites, weather effects (Rain, Sun, Fog), and AI trainer difficulty presets.
+
+---
+
+### Phase 3: Tuxemon Asset & Data Pipeline Unification
+- [ ] **3.1 15-Type & 6-Stat Standard Unification:** Update `battle-engine.ts` and species store to standard Tuxemon 15 elemental types and 6 stat fields.
+- [ ] **3.2 Move PP & Level-Up Learning:** PP consumption per turn, move forgetting/learning UI on level up.
+- [ ] **3.3 Species Evolution Engine:** Automatic evolution checks (`at_level`, item requirement, step counter) with evolution animation sequence.
+- [ ] **3.4 Tuxeball & Catch Rate Math:** Implement species-specific catch rates and Tuxeball item multipliers.
+
+---
+
+### Phase 4: RuneScape Skill Integration & Dual Combat
+- [ ] **4.1 Character Class Creation:** Select initial character class (Animist, Invoker, Naturalist, Tamer) with starting stat distributions.
+- [ ] **4.2 27-Skill Matrix & Automation:** Connect Gathering (Woodcutting, Mining, Fishing) and Base Automation (assigning Tuxemon to facilities).
+- [ ] **4.3 Dual-Combat System:** Turn-based Tuxemon battles $\leftrightarrow$ direct Keeper player combat with equipped weapons/armor.
+
+---
+
+### Phase 5: Multiplayer Sync & Deployment Verification
+- [ ] **5.1 Socket.IO Overworld & Battle Sync:** Sync player position, animation state, and party combat invitations.
+- [ ] **5.2 Full Build & Docker Verification:** Run `npx tsc --noEmit`, `npx next lint`, and verify containerized build.

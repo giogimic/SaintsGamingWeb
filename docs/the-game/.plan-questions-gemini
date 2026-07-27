@@ -1,0 +1,27 @@
+# Gemini Plan Questions & Vision Alignment (Confirmed & Updated)
+
+This document records the master vision and confirmed technical architecture for **The Lobby / Tuxemon & RuneScape 2.5D MMO Engine**.
+
+---
+
+## 1. Master Vision Alignment
+
+* **Core Concept:** Browser-based MMORPG combining RuneScape's open-world skill progression (27 skills, base automation, ARPG crafting) with Pokémon / Tuxemon's creature collection and sprite-based turn-based combat.
+* **Rendering Engine:** **Babylon.js 2.5D Engine** using Tuxemon 2D assets as billboard sprites and textured 2.5D quad maps with dynamic camera lerping.
+* **Primary Requirement (Integrated Dev Editor):** Complete in-game editor & dev menu to configure map tiles, player spawns, respawn points, wild encounter tall-grass zones, NPC dialogue/trainers, and battle parameters without hardcoded magic numbers.
+
+---
+
+## 2. Confirmed Architectural Points
+
+1. **Clean Codebase Foundation:** `components/cyber-terminal/` deleted, TypeScript compilation 100% clean.
+2. **Rebranding:** Component exports renamed to `TheLobby` and `SaintsDexOverlay`.
+3. **Decoupled Editor Shell:** Integrated Dev Editor overlay toggles independently (`Ctrl+E`) without interrupting the main engine render loop.
+4. **Tuxemon Engine Standard:** 411 species, 15 elemental types, 6 stat fields, PP movesets, evolution engine, species catch rates, and Tuxeball hierarchy.
+
+---
+
+## 3. Current Phase Status
+
+* **Phase 1 (Foundation, Rebranding & Dev Editor Scaffolding):** IN PROGRESS (Plan Updated).
+* **Next Steps:** Write Babylon.js engine scaffold and Dev Editor menu structure once execution is triggered.
