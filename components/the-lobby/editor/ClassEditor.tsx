@@ -3,20 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { CharacterClassDefinition, CharacterClassSystem } from '@/lib/game/CharacterClassSystem';
 import SpriteBrowser from './SpriteBrowser';
-import { GameAssetItem } from '@/lib/game/assets/AssetManager';
 import {
   UserCheck,
   Plus,
-  Trash2,
-  Save,
   Tag,
-  Shield,
   Eye,
-  RefreshCw,
-  Sparkles,
-  Sliders,
-  Check,
-  X,
 } from 'lucide-react';
 
 export interface ClassEditorProps {

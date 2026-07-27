@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GameConfigInput } from '@/lib/game/GameConfigManager';
 import {
   Sliders,
   Save,
   RefreshCw,
-  Zap,
-  Users,
   Check,
 } from 'lucide-react';
 
