@@ -220,7 +220,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          spriteUrl: freshPlayer.spriteId ? `/assets/sprites/${freshPlayer.spriteId}.png` : undefined,
+          spriteUrl: freshPlayer.spriteId ? (freshPlayer.spriteId.includes('/') ? freshPlayer.spriteId : `/assets/sprites/${freshPlayer.spriteId}.png`) : undefined,
           isPlayer: true,
           chatMessage: useGameStore.getState().localChat || undefined
         });
@@ -240,7 +240,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             name: other.name || 'Tamer',
             x: ox,
             y: oz,
-            spriteUrl: other.spriteId ? `/assets/sprites/${other.spriteId}.png` : undefined,
+            spriteUrl: other.spriteId ? (other.spriteId.includes('/') ? other.spriteId : `/assets/sprites/${other.spriteId}.png`) : undefined,
             isPlayer: false,
             chatMessage: other.chatMessage
           });
