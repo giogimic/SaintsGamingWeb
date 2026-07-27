@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 /**
- * GET /api/maps/[slug] — Get a specific map
+ * GET /api/maps/[slug] — Get a specific map by slug (TuxemonMap) or id (WorldMap)
  */
 export async function GET(
   request: NextRequest,
@@ -10,15 +10,31 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const map = await prisma.tuxemonMap.findUnique({
-      where: { slug },
-    });
 
-    if (!map) {
-      return NextResponse.json({ error: "Map not found" }, { status: 404 });
+    // Try TuxemonMap by slug first
+    const tuxMap = await prisma.tuxemonMap.findUnique({ where: { slug } });
+    if (tuxMap) {
+      return NextResponse.json(tuxMap);
     }
 
-    return NextResponse.json(map);
+    // Fall back to WorldMap by id (supports numeric/uuid lookups)
+    const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+    if (worldMap) {
+      return NextResponse.json({
+        id: worldMap.id,
+        gameId: worldMap.gameId,
+        name: worldMap.name,
+        grid: JSON.parse(worldMap.gridData || '[]'),
+        gates: JSON.parse(worldMap.gatesData || '{}'),
+        npcs: JSON.parse(worldMap.npcsData || '[]'),
+        encounterPool: JSON.parse(worldMap.encountersData || '[]'),
+        tileLayers: JSON.parse(worldMap.tileLayersData || '[]'),
+        tilesets: JSON.parse(worldMap.tilesetsData || '[]'),
+        version: worldMap.version,
+      });
+    }
+
+    return NextResponse.json({ error: "Map not found" }, { status: 404 });
   } catch (error) {
     console.error("Failed to fetch map:", error);
     return NextResponse.json({ error: "Failed to fetch map" }, { status: 500 });
