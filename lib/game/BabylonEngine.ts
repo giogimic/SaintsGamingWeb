@@ -748,6 +748,7 @@ export class BabylonEngine {
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       mat.useAlphaFromDiffuseTexture = true;
+      mat.transparencyMode = 2; // ALPHATESTANDBLEND
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
