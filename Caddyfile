@@ -1,3 +1,0 @@
-localhost, www.localhost { 
-    reverse_proxy web:3000 
-} 
