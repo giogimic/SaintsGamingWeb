@@ -3,22 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  Filter,
-  Tag,
   Grid,
   List,
-  Upload,
   RefreshCw,
   Edit2,
-  Trash2,
   Folder,
-  Layers,
-  Sparkles,
   CheckSquare,
   Square,
-  Shield,
-  Eye,
-  Zap,
 } from 'lucide-react';
 import { AssetManager, GameAssetItem } from '@/lib/game/assets/AssetManager';
 
