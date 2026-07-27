@@ -56,11 +56,32 @@ echo -e "${GREEN}[✓] Code updated.${NC}\n"
 if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     echo -e "${CYAN}[*] Docker environment detected. Rebuilding web container...${NC}"
 
-    # Sync MariaDB password in docker-compose.yml if using integrated DB
+    # --- Verify & Fix MariaDB Credentials (prevents P1000 on updates) ---
+    # The db container data volume retains the password from first-run setup.
+    # If .env was ever changed, the running MariaDB password may differ.
+    # We ONLY update the web container — never the db container — via --no-deps.
     if grep -q "DATABASE_URL=.*@db:3306" .env 2>/dev/null; then
         DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-        if [ -n "$DB_PASS" ]; then
-            echo -e "${CYAN}[*] Syncing MariaDB password in docker-compose.yml...${NC}"
+        DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
+        if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
+            echo -e "${CYAN}[*] Verifying MariaDB credentials match .env...${NC}"
+            # Test if the current .env credentials actually work against the live DB
+            if ! sudo docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
+                echo -e "${YELLOW}[!] Credential mismatch detected — resetting MariaDB user password to match .env...${NC}"
+                # Use root to reset the user password to what .env expects
+                sudo docker exec saints-gaming-db mariadb -u root -p"$DB_PASS" -e \
+                    "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || \
+                sudo docker exec saints-gaming-db mariadb -u root -e \
+                    "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    echo -e "${GREEN}[✓] MariaDB credentials synced successfully.${NC}"
+                else
+                    echo -e "${RED}[!] Could not auto-fix MariaDB credentials. You may need to run setup.sh.${NC}"
+                fi
+            else
+                echo -e "${GREEN}[✓] MariaDB credentials are valid.${NC}"
+            fi
+            # Also keep docker-compose.yml in sync for future restarts
             sed -i "s/MARIADB_PASSWORD: .*/MARIADB_PASSWORD: ${DB_PASS}/" docker-compose.yml
             sed -i "s/MARIADB_ROOT_PASSWORD: .*/MARIADB_ROOT_PASSWORD: ${DB_PASS}/" docker-compose.yml
         fi
@@ -72,7 +93,11 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         exit 1
     fi
 
-    sudo docker compose up -d web >> docker_build.log 2>&1
+    # CRITICAL: Use --no-deps to ONLY restart the web container.
+    # Without this, Docker Compose may also restart the db container, which
+    # causes MariaDB to ignore its env vars (since the data volume exists),
+    # resulting in a credential mismatch (P1000) on the next web boot.
+    sudo docker compose up -d --no-deps web >> docker_build.log 2>&1
     if [ $? -ne 0 ]; then
         echo -e "${RED}[!] Failed to start web container. Check docker_build.log.${NC}"
         exit 1
