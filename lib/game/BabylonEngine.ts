@@ -703,7 +703,7 @@ export class BabylonEngine {
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,
           isNpc: true,
-          spriteUrl: npc.spriteId ? `/assets/sprites/${npc.spriteId}.png` : '/assets/sprites/villager_1.png'
+          spriteUrl: npc.sprite ? `/assets/sprites/${npc.sprite}.png` : '/assets/sprites/villager_1.png'
         });
       });
     }

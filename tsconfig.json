@@ -41,6 +41,7 @@
     "public/assets/tilesets",
     "release-*",
     "scratch",
-    "temp_extract"
+    "temp_extract",
+    "scripts"
   ]
 }
