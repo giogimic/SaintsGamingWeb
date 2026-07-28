@@ -123,6 +123,7 @@ export interface GameState {
   toast: ToastMessage | null;
   activeDialog: { npcId: string; npcName?: string; text: string } | null;
   setGameMode: (mode: GameMode) => void;
+  setIsMapTransitioning: (isTransitioning: boolean) => void;
   setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
@@ -131,6 +132,7 @@ export interface GameState {
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;
   localChat: string | null;
+  isMapTransitioning: boolean;
   activeBattle: any;
   setActiveBattle: (battleData: any) => void;
   emitSocketEvent?: (event: string, data: any) => void;
@@ -221,6 +223,7 @@ export const useGameStore = create<GameState>()(
         isPartyLeader: false
       },
       otherPlayers: {},
+      isMapTransitioning: false,
       activeBattle: null,
       pathQueue: [],
       currentMapId: 'COTTON_TOWN',
@@ -235,6 +238,7 @@ export const useGameStore = create<GameState>()(
       activeDialog: null,
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
+      setIsMapTransitioning: (isTransitioning) => set((state) => { state.isMapTransitioning = isTransitioning; }),
       setActiveDialog: (dialog) => set((state) => { state.activeDialog = dialog; }),
       localChat: null,
       setPlayerChat: (message) => {
