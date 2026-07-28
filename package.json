@@ -1,6 +1,6 @@
 {
   "name": "saints-web",
-  "version": "2.1.37",
+  "version": "2.1.38",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
