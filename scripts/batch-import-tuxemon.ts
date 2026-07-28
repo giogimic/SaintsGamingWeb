@@ -95,7 +95,8 @@ async function importAllMaps() {
           imageSource: `/assets/tilesets/${destImageName}`,
           columns: parseInt(tsxXml['@_columns'], 10) || Math.floor(parseInt(imageNode['@_width'], 10) / parseInt(tsxXml['@_tilewidth'], 10)),
           tilewidth: parseInt(tsxXml['@_tilewidth'], 10),
-          tileheight: parseInt(tsxXml['@_tileheight'], 10)
+          tileheight: parseInt(tsxXml['@_tileheight'], 10),
+          imageheight: parseInt(imageNode['@_height'], 10)
         });
       }
 
