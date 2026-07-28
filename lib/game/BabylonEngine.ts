@@ -695,10 +695,11 @@ export class BabylonEngine {
       npcs.forEach((npc) => {
         this.updateEntity({
           id: `npc_${npc.id}`,
-          name: npc.name,
+          name: npc.name || npc.id,
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,
-          isNpc: true
+          isNpc: true,
+          spriteUrl: npc.spriteId ? `/assets/sprites/${npc.spriteId}.png` : '/assets/sprites/villager_1.png'
         });
       });
     }
