@@ -72,11 +72,28 @@ export async function saveWorldMap(data: {
 
 export async function fetchAllMaps() {
   try {
-    const maps = await prisma.worldMap.findMany();
+    const maps = await prisma.worldMap.findMany({
+      select: {
+        id: true,
+        name: true
+      }
+    });
     return { success: true, data: maps };
   } catch (err) {
     console.error('Fetch maps failed:', err);
     return { success: false, error: 'Internal Server Error', data: [] };
+  }
+}
+}
+
+export async function fetchMapById(mapId: string) {
+  try {
+    const map = await prisma.worldMap.findUnique({ where: { id: mapId } });
+    if (!map) return { success: false, error: 'Not found' };
+    return { success: true, data: map };
+  } catch (err) {
+    console.error('Fetch map failed:', err);
+    return { success: false, error: 'Internal Server Error' };
   }
 }
 

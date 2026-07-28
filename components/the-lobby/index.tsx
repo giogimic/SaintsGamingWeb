@@ -26,7 +26,7 @@ import { useGameStore } from './store';
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/game-dev';
-import { GAME_MAPS } from './data/maps';
+import { GAME_MAPS, loadMap } from './data/maps';
 import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
@@ -38,12 +38,14 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const toast = useGameStore((state) => state.toast);
   const activeDialog = useGameStore((state) => state.activeDialog);
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
+  const currentMapId = useGameStore((state) => state.currentMapId);
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isDevEditorOpen, setIsDevEditorOpen] = useState(false);
-  const [editorTab, setEditorTab] = useState<string>('maps');
+  const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
+  const [editorTab, setEditorTab] = useState<'visual' | 'logic'>('visual');
   const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
   const [activeLayerIdx, setActiveLayerIdx] = useState<number>(0);
   const [editorClickedTile, setEditorClickedTile] = useState<{r: number, c: number} | null>(null);
@@ -109,41 +111,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       // Fetch logic tiles from DB
       await useGameStore.getState().fetchLogicTiles();
 
-      // Hydrate custom maps from DB
+      // Fetch custom maps list for the dev editor dropdown
       const mapsRes = await fetchAllMaps();
       if (mapsRes.success && mapsRes.data) {
-        mapsRes.data.forEach((dbMap: any) => {
-          try {
-            GAME_MAPS[dbMap.id] = {
-              id: dbMap.id,
-              name: dbMap.name,
-              grid: JSON.parse(dbMap.gridData || '[]'),
-              gates: dbMap.gatesData ? JSON.parse(dbMap.gatesData) : {},
-              encounterPool: dbMap.encountersData ? JSON.parse(dbMap.encountersData) : [],
-              tileLayers: dbMap.tileLayersData ? JSON.parse(dbMap.tileLayersData) : [],
-              tilesets: dbMap.tilesetsData ? JSON.parse(dbMap.tilesetsData) : []
-            };
-
-            if (dbMap.npcsData) {
-              const parsedNpcs = JSON.parse(dbMap.npcsData);
-              if (Array.isArray(parsedNpcs)) {
-                const currentEntities = useGameStore.getState().mapEntities;
-                const newEntities = parsedNpcs.map((npc: any) => ({
-                  id: npc.id || `npc_${Math.random()}`,
-                  type: 'NPC' as const,
-                  spriteKey: npc.spriteId || 'villager_1',
-                  position: { x: npc.x, y: npc.y },
-                  isMoving: false,
-                  facing: 'DOWN' as const,
-                  mapId: dbMap.id
-                }));
-                useGameStore.setState({ mapEntities: [...currentEntities, ...newEntities] });
-              }
-            }
-          } catch {
-            console.error('Failed to parse map data:', dbMap.id);
-          }
-        });
+        setDevMapList(mapsRes.data);
       }
 
       // Hydrate custom quests from DB
@@ -433,12 +404,19 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
       {/* Integrated Dev Editor Overlay */}
       <IntegratedDevEditor 
+        activeMapId={currentMapId}
+        onMapSelect={(id) => {
+          loadMap(id).then(() => {
+            useGameStore.getState().setCurrentMap(id);
+          });
+        }}
+        devMapList={devMapList}
         isOpen={isDevEditorOpen} 
         onClose={() => setIsDevEditorOpen(false)} 
         onBrushTileChange={(tileId) => setActiveBrushTileId(tileId)}
         activeLayerIdx={activeLayerIdx}
         onLayerChange={(idx) => setActiveLayerIdx(idx)}
-        onTabChange={(tab) => { setEditorTab(tab); setEditorClickedTile(null); }}
+        onTabChange={(tab) => { setEditorTab(tab as any); setEditorClickedTile(null); }}
         clickedTile={editorClickedTile}
       />
 
