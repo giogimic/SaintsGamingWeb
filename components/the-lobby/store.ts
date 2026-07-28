@@ -191,6 +191,7 @@ export const useGameStore = create<GameState>()(
     immer((set) => ({
       gameMode: 'EXPLORING',
       player: {
+        spriteId: 'adventurer',
         position: { x: 6, y: 2 },
         level: 1,
         xp: 0,
