@@ -1,6 +1,6 @@
 {
   "name": "saints-web",
-  "version": "2.1.53",
+  "version": "2.1.54",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -38,6 +38,7 @@
     "dotenv": "^16.4.5",
     "easystarjs": "^0.4.4",
     "emoji-picker-react": "^4.19.1",
+    "fast-xml-parser": "^5.10.1",
     "framer-motion": "^12.42.0",
     "gamedig": "^5.3.3",
     "howler": "^2.2.4",
@@ -48,6 +49,7 @@
     "next-auth": "5.0.0-beta.31",
     "next-themes": "^0.4.6",
     "node-cache": "^5.1.2",
+    "pako": "^3.0.1",
     "pixi.js": "^7.4.3",
     "pm2": "^7.0.3",
     "prisma": "6.2.0",
@@ -83,6 +85,7 @@
     "@types/howler": "^2.2.13",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20",
+    "@types/pako": "^2.0.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/xml2js": "^0.4.14",
