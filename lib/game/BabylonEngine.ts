@@ -761,14 +761,85 @@ export class BabylonEngine {
     tileMesh.setVerticesData(VertexBuffer.UVKind, uvData);
   }
 
+  // --- LOGIC GRID OVERLAY SYSTEM ---
+
+  private logicOverlayMeshes: Mesh[] = [];
+  
+  public enableLogicGridOverlay(logicGrid: number[][]) {
+    if (this.logicOverlayMeshes.length > 0) {
+      this.logicOverlayMeshes.forEach(m => m.dispose());
+      this.logicOverlayMeshes = [];
+    }
+
+    const height = logicGrid.length;
+    const width = logicGrid[0]?.length || 0;
+    const yOffset = 0.5; // Render high above other layers so it's always clickable/visible
+
+    for (let r = 0; r < height; r++) {
+      for (let c = 0; c < width; c++) {
+        const logicId = logicGrid[r]?.[c] || 0;
+        
+        const plane = MeshBuilder.CreatePlane(`logic_${r}_${c}`, { size: this.currentTileSize }, this.scene);
+        plane.rotation.x = Math.PI / 2;
+        const posX = (c - width / 2) * this.currentTileSize;
+        const posZ = (height / 2 - r) * this.currentTileSize;
+        plane.position = new Vector3(posX, yOffset, posZ);
+        plane.parent = this.rootNode;
+        plane.isPickable = true; // IMPORTANT: intercept clicks
+
+        const mat = new StandardMaterial(`logicMat_${r}_${c}`, this.scene);
+        mat.alpha = 0.5; // Semi-transparent
+        this.applyLogicMaterialColor(mat, logicId);
+        plane.material = mat;
+        
+        this.logicOverlayMeshes.push(plane);
+      }
+    }
+  }
+
+  public disableLogicGridOverlay() {
+    this.logicOverlayMeshes.forEach(m => m.dispose());
+    this.logicOverlayMeshes = [];
+  }
+
+  public updateLogicTile(r: number, c: number, logicId: number) {
+    const plane = this.scene.getMeshByName(`logic_${r}_${c}`) as Mesh;
+    if (plane && plane.material) {
+      this.applyLogicMaterialColor(plane.material as StandardMaterial, logicId);
+    }
+  }
+
+  private applyLogicMaterialColor(mat: StandardMaterial, logicId: number) {
+    if (logicId === 0) {
+      mat.diffuseColor = Color3.FromHexString("#064e3b"); // Walkable (emerald-900)
+      mat.alpha = 0.2; // less visible
+    } else if (logicId === 1) {
+      mat.diffuseColor = Color3.FromHexString("#dc2626"); // Solid (red-600)
+      mat.alpha = 0.7;
+    } else if (logicId === 2) {
+      mat.diffuseColor = Color3.FromHexString("#22c55e"); // Grass (green-500)
+      mat.alpha = 0.7;
+    } else if (logicId === 3 || logicId === 4) {
+      mat.diffuseColor = Color3.FromHexString("#f59e0b"); // Gate (amber)
+      mat.alpha = 0.7;
+    } else {
+      mat.diffuseColor = Color3.FromHexString("#6366f1"); // Other nodes (indigo)
+      mat.alpha = 0.6;
+    }
+  }
+
   public enableTilePicking(onTileClick: (r: number, c: number, layerIdx?: number) => void) {
     this.scene.onPointerDown = (_evt, pickResult) => {
       if (pickResult.hit && pickResult.pickedMesh) {
         const name = pickResult.pickedMesh.name;
-        // Match tile_ with 3 parts (tile_r_c) or 4 parts (tile_layer_r_c)
-        if (name.startsWith('tile_')) {
+        // Match tile_ with 3 parts (tile_r_c) or 4 parts (tile_layer_r_c) or logic_r_c
+        if (name.startsWith('tile_') || name.startsWith('logic_')) {
           const parts = name.split('_');
-          if (parts.length === 3) {
+          if (parts[0] === 'logic') {
+            const r = parseInt(parts[1], 10);
+            const c = parseInt(parts[2], 10);
+            onTileClick(r, c, -2);
+          } else if (parts.length === 3) {
             const r = parseInt(parts[1], 10);
             const c = parseInt(parts[2], 10);
             onTileClick(r, c, -1);

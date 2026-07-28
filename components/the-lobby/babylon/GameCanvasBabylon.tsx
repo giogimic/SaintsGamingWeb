@@ -194,6 +194,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   };
 
   useEffect(() => {
+    if (engineRef.current) {
+      if (activeLayerIdx === -2) {
+        engineRef.current.enableLogicGridOverlay(activeMap?.grid || []);
+      } else {
+        engineRef.current.disableLogicGridOverlay();
+      }
+    }
+  }, [activeLayerIdx, activeMap]);
+
+  useEffect(() => {
     // Wait until map data is fully loaded from the API before mounting engine
     if (!canvasRef.current || !mapData) return;
 
@@ -305,6 +315,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c, clickedLayerIdx) => {
+        if (activeLayerIdx === -2) {
+          // Painting Logic directly on the activeMap.grid
+          if (activeMap?.grid?.[r]) {
+            activeMap.grid[r][c] = activeBrushTileId;
+            engine.updateLogicTile(r, c, activeBrushTileId);
+          }
+          return;
+        }
+
         const targetLayerIdx = activeLayerIdx !== -1 ? activeLayerIdx : (clickedLayerIdx || -1);
         
         // Always try to use the rich tileset array if present
@@ -325,7 +344,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tryMovePlayerTo(c, r);
       });
     }
-  }, [isDevEditorOpen, activeBrushTileId, mapData]);
+  }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
 
   // Handle Keyboard WASD & Arrow Key Movement
   useEffect(() => {
