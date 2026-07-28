@@ -22,7 +22,7 @@ import { NotificationsMenu } from "@/components/shared/notifications-menu";
 import { ThemeSwitcher } from "@/components/shared/theme-switcher";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { signOut } from "next-auth/react";
-import { User as UserIcon, LogOut, Settings, Gamepad2, X, Menu, Video } from "lucide-react";
+import { User as UserIcon, LogOut, Settings, Gamepad2 } from "lucide-react";
 import packageJson from '../../package.json';
 import {
   DropdownMenu,
