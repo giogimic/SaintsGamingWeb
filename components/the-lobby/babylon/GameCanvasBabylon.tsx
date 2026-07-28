@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
+import { resolveEncounter } from '@/lib/game/TuxemonDb';
 import { useGameStore } from '../store';
 import { loadMap } from '../data/maps';
 import type { GameMapData } from '../data/maps';
@@ -125,11 +126,26 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         case 'ENCOUNTER':
           const roll = Math.random() * 100;
           if (roll < (payload.chance * 100 || 15)) {
-            const pool = activeMap?.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
-            const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
-            soundSynth.playEncounterSound();
-            showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
-            useGameStore.getState().setGameMode('BATTLE');
+            let wildSpecies: any = null;
+            
+            // activeMap.encounterPool contains strings like ["spyder_route1"]
+            const pool = activeMap?.encounterPool;
+            if (pool && pool.length > 0) {
+              const zone = pool[Math.floor(Math.random() * pool.length)];
+              // This is async, but we can fire and forget the transition
+              resolveEncounter(zone).then((encounterData) => {
+                if (encounterData) {
+                  soundSynth.playEncounterSound();
+                  showToast(`Wild ${encounterData.speciesId.toUpperCase()} appeared! (Lv ${encounterData.minLevel}-${encounterData.maxLevel})`);
+                  useGameStore.getState().setGameMode('BATTLE');
+                }
+              });
+            } else {
+              // Fallback
+              soundSynth.playEncounterSound();
+              showToast(`Wild IGNIS appeared!`);
+              useGameStore.getState().setGameMode('BATTLE');
+            }
           }
           break;
         case 'OPEN_SHOP':
