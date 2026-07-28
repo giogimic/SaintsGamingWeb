@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Authoritative MMO Server
 const { Server } = require("socket.io");
 const http = require("http");

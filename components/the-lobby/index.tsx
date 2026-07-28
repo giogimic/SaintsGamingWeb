@@ -36,7 +36,6 @@ import { GameChat } from './chat/GameChat';
 export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
-  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -134,7 +133,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
                 useGameStore.setState({ mapEntities: [...currentEntities, ...newEntities] });
               }
             }
-          } catch (_err) {
+          } catch {
             console.error('Failed to parse map data:', dbMap.id);
           }
         });

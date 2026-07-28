@@ -1,5 +1,6 @@
 {
   "extends": ["next/core-web-vitals", "next/typescript"],
+  "ignorePatterns": ["public/**/*.tsx"],
   "plugins": ["unused-imports"],
   "rules": {
     "unused-imports/no-unused-imports": "error",
