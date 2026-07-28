@@ -729,7 +729,7 @@ export class BabylonEngine {
     const ts = sortedTilesets.find(t => tileId >= t.firstgid);
     if (!ts || !ts.imageSource) return;
 
-    let mat = this.tilesetMaterialCache.get(ts.imageSource);
+    const mat = this.tilesetMaterialCache.get(ts.imageSource);
     if (mat) {
       tileMesh.material = mat;
     }
