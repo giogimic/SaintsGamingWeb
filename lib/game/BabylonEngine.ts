@@ -392,9 +392,9 @@ export class BabylonEngine {
     this.currentMapHeight = height;
     this.currentTileSize = tileSize;
 
-    // Auto-scale camera ortho based on map size for a good initial view
-    // Show ~15 tiles vertically by default
-    const targetOrtho = Math.max(8, Math.min(18, (height / 2) * tileSize * 0.65));
+    // Use a fixed zoom level for a classic GBA/SNES style RPG look (~6 tiles vertically)
+    // rather than zooming way out for large maps.
+    const targetOrtho = 6.0;
     this.updateCameraAspect(targetOrtho);
 
     // Rich multi-layer tileset rendering

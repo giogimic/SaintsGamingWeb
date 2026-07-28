@@ -116,7 +116,7 @@ export interface ToastMessage {
 export interface GameState {
   gameMode: GameMode;
   player: PlayerState;
-  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
+  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
   currentMapId: string;
   mapEntities: MapEntity[];
@@ -126,8 +126,8 @@ export interface GameState {
   setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
-  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; spriteId?: string; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
+  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; spriteId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;
   localChat: string | null;
@@ -257,13 +257,15 @@ export const useGameStore = create<GameState>()(
       setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
       updateOtherPlayer: (socketId, data) => set((state) => {
         if (!state.otherPlayers[socketId]) {
-          state.otherPlayers[socketId] = { x: data.x || 0, y: data.y || 0, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male', chatMessage: data.chatMessage, customization: data.customization };
+          state.otherPlayers[socketId] = { x: data.x || 0, y: data.y || 0, name: data.name || 'Unknown', spriteId: data.spriteId || 'hero_male', direction: data.direction, isMoving: data.isMoving, chatMessage: data.chatMessage, customization: data.customization };
         } else {
           if (data.x !== undefined) state.otherPlayers[socketId].x = data.x;
           if (data.y !== undefined) state.otherPlayers[socketId].y = data.y;
-          if (data.name) state.otherPlayers[socketId].name = data.name;
-          if (data.spriteId) state.otherPlayers[socketId].spriteId = data.spriteId;
-          if (data.customization) state.otherPlayers[socketId].customization = data.customization;
+          if (data.name !== undefined) state.otherPlayers[socketId].name = data.name;
+          if (data.spriteId !== undefined) state.otherPlayers[socketId].spriteId = data.spriteId;
+          if (data.direction !== undefined) state.otherPlayers[socketId].direction = data.direction;
+          if (data.isMoving !== undefined) state.otherPlayers[socketId].isMoving = data.isMoving;
+          if (data.customization !== undefined) state.otherPlayers[socketId].customization = data.customization;
           if (data.chatMessage !== undefined) {
             state.otherPlayers[socketId].chatMessage = data.chatMessage;
             if (data.chatMessage) {

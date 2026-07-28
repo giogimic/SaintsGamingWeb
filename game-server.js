@@ -63,6 +63,8 @@ io.on("connection", (socket) => {
     
     p.x = data.x;
     p.y = data.y;
+    if (data.direction) p.direction = data.direction;
+    if (data.isMoving !== undefined) p.isMoving = data.isMoving;
 
     // Broadcast to everyone else in the same map
     socket.to(p.mapId).emit("player_moved", p);

@@ -93,7 +93,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }, 250);
 
     // Update server position
-    emitSocketEvent?.('move', { x: nextX, y: nextY, direction: dir });
+    emitSocketEvent?.('move', { x: nextX, y: nextY, direction: dir, mapId: currentMapId });
 
     // Tall Grass Wild Encounter Trigger Check (Tile 2)
     if (targetTile === 2) {
@@ -297,7 +297,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spriteUrl: other.spriteId
               ? (other.spriteId.startsWith('/') ? other.spriteId : `/tuxemon-assets/npc/${other.spriteId}.png`)
               : undefined,
-            isPlayer: false,
+            isPlayer: true,
+            direction: other.direction,
+            isMoving: other.isMoving,
             chatMessage: other.chatMessage
           });
         });
