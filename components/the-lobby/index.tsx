@@ -77,7 +77,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
         name: res.data.name,
-        spriteId: res.data.spriteId,
+        spriteId: res.data.spriteId || 'adventurer',
         position: validPosition
       });
       useGameStore.setState({ currentMapId: validMapId });
@@ -202,7 +202,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         x: state.player.position?.x ?? 6,
         y: state.player.position?.y ?? 2,
         name: state.player.name || 'Player',
-        spriteId: state.player.equipment?.head ? 'hero_male' : 'villager_1'
+        spriteId: state.player.spriteId || 'adventurer'
       });
     });
     
