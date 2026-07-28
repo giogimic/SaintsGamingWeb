@@ -64,14 +64,30 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number) => {
     if (!activeMap) return;
-    const nextX = Math.max(0, Math.min(mapWidth - 1, targetX));
-    const nextY = Math.max(0, Math.min(mapHeight - 1, targetY));
+    
+    // Bounds Check
+    if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
+      return; // Cannot walk off the map
+    }
 
-    // Collision check (Tile 1 = Solid Wall)
+    const nextX = targetX;
+    const nextY = targetY;
+
+    // Logic Grid Collision Check
     const targetTile = activeMap.grid[nextY]?.[nextX];
-    if (targetTile === 1) {
+    // 1=Wall, 5=Tree, 6=Rock
+    if ([1, 5, 6].includes(targetTile)) {
       showToast('Blocked by obstacle!');
       return;
+    }
+
+    // NPC Collision Check
+    const dynamicEntities = useGameStore.getState().mapEntities || [];
+    const isStaticNpc = activeMap.npcs?.some((npc: any) => npc.x === nextX && npc.y === nextY);
+    const isDynamicNpc = dynamicEntities.some((e) => Math.round(e.position.x) === nextX && Math.round(e.position.y) === nextY && (e.mapId === currentMapId || !e.mapId));
+    
+    if (isStaticNpc || isDynamicNpc) {
+      return; // Blocked by NPC
     }
 
     const currentPos = useGameStore.getState().player?.position;
@@ -84,15 +100,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     else if (nextY > currentPos.y) dir = 'down';
     else if (nextY < currentPos.y) dir = 'up';
 
-    setPlayerPosition({ x: nextX, y: nextY }, dir, true);
+    if (isDevEditorOpen) {
+      setPlayerPosition({ x: nextX, y: nextY }, dir, false);
+    } else {
+      setPlayerPosition({ x: nextX, y: nextY }, dir, true);
 
-    // After a short delay, stop moving
-    setTimeout(() => {
-      const latestPlayer = useGameStore.getState().player;
-      if (latestPlayer.position.x === nextX && latestPlayer.position.y === nextY) {
-        setPlayerPosition({ x: nextX, y: nextY }, dir, false);
-      }
-    }, 250);
+      setTimeout(() => {
+        const store = useGameStore.getState();
+        if (store.player.position.x === nextX && store.player.position.y === nextY) {
+          store.setPlayerPosition({ x: nextX, y: nextY }, undefined, false);
+        }
+      }, 250);
+    }
 
     // Update server position
     emitSocketEvent?.('move', { x: nextX, y: nextY, direction: dir, mapId: currentMapId });
@@ -105,7 +124,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
         soundSynth.playEncounterSound();
         showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
-        useGameStore.getState().setGameMode('BATTLE');
+        useGameStore.getState().setGameMode('BATTLING');
       }
     }
 
@@ -184,7 +203,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const currentPlayer = useGameStore.getState().player;
     const curX = currentPlayer.position?.x ?? 6;
     const curY = currentPlayer.position?.y ?? 2;
-    const currentTile = activeMap?.grid?.[curY]?.[curX];
+    const dir = currentPlayer.direction || 'down';
+    
+    let faceX = curX;
+    let faceY = curY;
+    
+    if (dir === 'up') faceY -= 1;
+    else if (dir === 'down') faceY += 1;
+    else if (dir === 'left') faceX -= 1;
+    else if (dir === 'right') faceX += 1;
+
+    const currentTile = activeMap?.grid?.[faceY]?.[faceX];
 
     // Resource Node Harvesting
     if (currentTile === 5) {
@@ -205,11 +234,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     let isDynamic = false;
 
     // Check static imported Tuxemon NPCs first
-    nearbyNpc = activeMap?.npcs?.find((npc: any) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
+    nearbyNpc = activeMap?.npcs?.find((npc: any) => npc.x === faceX && npc.y === faceY);
     
     // Fallback to checking Dev Editor placed dynamic entities
     if (!nearbyNpc) {
-      const ent = dynamicEntities.find((e) => Math.abs(e.position.x - curX) <= 2 && Math.abs(e.position.y - curY) <= 2 && (e.mapId === currentMapId || !e.mapId));
+      const ent = dynamicEntities.find((e) => Math.round(e.position.x) === faceX && Math.round(e.position.y) === faceY && (e.mapId === currentMapId || !e.mapId));
       if (ent) {
         nearbyNpc = {
           id: ent.id,
@@ -230,7 +259,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         gameMode: 'DIALOG'
       });
     } else {
-      showToast('No NPC nearby. Use WASD / Arrows or D-Pad to move.');
+      showToast('Nothing to interact with here.');
     }
   };
 
