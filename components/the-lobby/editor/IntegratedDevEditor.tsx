@@ -43,6 +43,9 @@ interface IntegratedDevEditorProps {
   onLayerChange?: (idx: number) => void;
   onTabChange?: (tab: string) => void;
   clickedTile?: {r: number, c: number} | null;
+  activeMapId?: string;
+  onMapSelect?: (id: string) => void;
+  devMapList?: { id: string; name: string }[];
 }
 
 type EditorTab = 'maps' | 'logic' | 'logicRegistry' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
