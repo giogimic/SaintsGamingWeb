@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { CAMPAIGN_MAPS } from "@/components/the-lobby/data/campaign-maps";
 
 /**
  * GET /api/maps/[slug] — Get a specific map by slug (TuxemonMap) or id (WorldMap)
@@ -19,7 +20,12 @@ export async function GET(
 
     // Fall back to WorldMap by id (supports numeric/uuid lookups)
     const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+    const campaignMap = (CAMPAIGN_MAPS as any)[slug];
+
     if (worldMap) {
+      const dbLayers = JSON.parse(worldMap.tileLayersData || '[]');
+      const dbTilesets = JSON.parse(worldMap.tilesetsData || '[]');
+
       return NextResponse.json({
         id: worldMap.id,
         gameId: worldMap.gameId,
@@ -28,10 +34,13 @@ export async function GET(
         gates: JSON.parse(worldMap.gatesData || '{}'),
         npcs: JSON.parse(worldMap.npcsData || '[]'),
         encounterPool: JSON.parse(worldMap.encountersData || '[]'),
-        tileLayers: JSON.parse(worldMap.tileLayersData || '[]'),
-        tilesets: JSON.parse(worldMap.tilesetsData || '[]'),
+        // Prefer DB layers if they exist, otherwise fallback to original campaign TMX data
+        tileLayers: dbLayers.length > 0 ? dbLayers : (campaignMap?.tileLayers || []),
+        tilesets: dbTilesets.length > 0 ? dbTilesets : (campaignMap?.tilesets || []),
         version: worldMap.version,
       });
+    } else if (campaignMap) {
+      return NextResponse.json(campaignMap);
     }
 
     return NextResponse.json({ error: "Map not found" }, { status: 404 });

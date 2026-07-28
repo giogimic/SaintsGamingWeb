@@ -239,7 +239,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           y: worldZ,
           // Fix: /assets/sprites/ does not exist. Sprites are in /assets/npcs/ or full path from Tuxemon
           spriteUrl: freshPlayer.spriteId
-            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/assets/npcs/${freshPlayer.spriteId}.png`)
+            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/tuxemon-assets/npc/${freshPlayer.spriteId}.png`)
             : undefined,
           isPlayer: true,
           chatMessage: useGameStore.getState().localChat || undefined
@@ -261,7 +261,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             x: ox,
             y: oz,
             spriteUrl: other.spriteId
-              ? (other.spriteId.startsWith('/') ? other.spriteId : `/assets/npcs/${other.spriteId}.png`)
+              ? (other.spriteId.startsWith('/') ? other.spriteId : `/tuxemon-assets/npc/${other.spriteId}.png`)
               : undefined,
             isPlayer: false,
             chatMessage: other.chatMessage
