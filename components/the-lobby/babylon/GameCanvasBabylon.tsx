@@ -65,6 +65,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number) => {
     if (!activeMap) return;
+    if (useGameStore.getState().isMapTransitioning) return;
     
     // Bounds Check
     if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
@@ -74,12 +75,23 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const nextX = targetX;
     const nextY = targetY;
 
+    const currentPos = useGameStore.getState().player?.position;
+    if (!currentPos) return;
+
+    // Determine intended direction even if we hit a wall
+    let dir: 'up' | 'down' | 'left' | 'right' = 'down';
+    if (nextX > currentPos.x) dir = 'right';
+    else if (nextX < currentPos.x) dir = 'left';
+    else if (nextY > currentPos.y) dir = 'down';
+    else if (nextY < currentPos.y) dir = 'up';
+
     // Logic Grid Collision Check
     const targetTileId = activeMap.grid[nextY]?.[nextX];
     const logicTile = useGameStore.getState().logicTiles[targetTileId];
     
     if (logicTile?.isSolid) {
-      showToast('Blocked by obstacle!');
+      // Just turn to face the wall, don't move.
+      setPlayerPosition(currentPos, dir, false);
       return;
     }
 
@@ -89,18 +101,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const isDynamicNpc = dynamicEntities.some((e) => Math.round(e.position.x) === nextX && Math.round(e.position.y) === nextY && (e.mapId === currentMapId || !e.mapId));
     
     if (isStaticNpc || isDynamicNpc) {
+      setPlayerPosition(currentPos, dir, false);
       return; // Blocked by NPC
     }
-
-    const currentPos = useGameStore.getState().player?.position;
-    if (!currentPos) return;
-
-    // Determine direction
-    let dir: 'up' | 'down' | 'left' | 'right' = 'down';
-    if (nextX > currentPos.x) dir = 'right';
-    else if (nextX < currentPos.x) dir = 'left';
-    else if (nextY > currentPos.y) dir = 'down';
-    else if (nextY < currentPos.y) dir = 'up';
 
     if (isDevEditorOpen) {
       setPlayerPosition({ x: nextX, y: nextY }, dir, false);
@@ -459,7 +462,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         return;
       }
 
-      if (now - lastMoveTime < 100) return; // Throttle step frequency
+      if (now - lastMoveTime < 240) return; // Throttle step frequency to match animation speed
 
       let dx = 0;
       let dy = 0;
