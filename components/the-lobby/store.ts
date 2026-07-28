@@ -61,6 +61,8 @@ export interface PlayerState {
   name?: string;
   spriteId?: string;
   position: Point;
+  direction?: 'up' | 'down' | 'left' | 'right';
+  isMoving?: boolean;
   level: number;
   xp: number;
   hp: number;
@@ -133,7 +135,7 @@ export interface GameState {
   setActiveBattle: (battleData: any) => void;
   emitSocketEvent?: (event: string, data: any) => void;
   setEmitSocketEvent: (emitter: (event: string, data: any) => void) => void;
-  setPlayerPosition: (pos: Point) => void;
+  setPlayerPosition: (pos: Point, direction?: 'up' | 'down' | 'left' | 'right', isMoving?: boolean) => void;
   enqueuePath: (path: Point[]) => void;
   dequeuePath: () => Point | undefined;
   clearPath: () => void;
@@ -283,8 +285,10 @@ export const useGameStore = create<GameState>()(
       setEmitSocketEvent: (emitter) => set((state) => {
         state.emitSocketEvent = emitter;
       }),
-      setPlayerPosition: (pos) => set((state) => { 
+      setPlayerPosition: (pos, direction, isMoving) => set((state) => { 
         state.player.position = pos; 
+        if (direction) state.player.direction = direction;
+        if (isMoving !== undefined) state.player.isMoving = isMoving;
       }),
 
       enqueuePath: (path) =>

@@ -72,8 +72,28 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       return;
     }
 
-    setPlayerPosition({ x: nextX, y: nextY });
-    emitSocketEvent?.('move', { x: nextX, y: nextY });
+    const currentPos = useGameStore.getState().player?.position;
+    if (!currentPos) return;
+
+    // Determine direction
+    let dir: 'up' | 'down' | 'left' | 'right' = 'down';
+    if (nextX > currentPos.x) dir = 'right';
+    else if (nextX < currentPos.x) dir = 'left';
+    else if (nextY > currentPos.y) dir = 'down';
+    else if (nextY < currentPos.y) dir = 'up';
+
+    setPlayerPosition({ x: nextX, y: nextY }, dir, true);
+
+    // After a short delay, stop moving
+    setTimeout(() => {
+      const latestPlayer = useGameStore.getState().player;
+      if (latestPlayer.position.x === nextX && latestPlayer.position.y === nextY) {
+        setPlayerPosition({ x: nextX, y: nextY }, dir, false);
+      }
+    }, 250);
+
+    // Update server position
+    emitSocketEvent?.('move', { x: nextX, y: nextY, direction: dir });
 
     // Tall Grass Wild Encounter Trigger Check (Tile 2)
     if (targetTile === 2) {
@@ -254,6 +274,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/tuxemon-assets/npc/${freshPlayer.spriteId}.png`)
             : undefined,
           isPlayer: true,
+          direction: freshPlayer.direction,
+          isMoving: freshPlayer.isMoving,
           chatMessage: useGameStore.getState().localChat || undefined
         });
 
