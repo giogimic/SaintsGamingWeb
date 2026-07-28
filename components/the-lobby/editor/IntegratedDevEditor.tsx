@@ -42,6 +42,7 @@ interface IntegratedDevEditorProps {
   activeLayerIdx?: number;
   onLayerChange?: (idx: number) => void;
   onTabChange?: (tab: string) => void;
+  clickedTile?: {r: number, c: number} | null;
 }
 
 type EditorTab = 'maps' | 'logic' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
@@ -52,13 +53,25 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
   onBrushTileChange,
   activeLayerIdx = 0,
   onLayerChange,
-  onTabChange
+  onTabChange,
+  clickedTile
 }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('maps');
   
+  // Track Map clicks
+  useEffect(() => {
+    if (clickedTile) {
+      if (activeTab === 'spawns' || activeTab === 'npcs') {
+        setSpawnX(clickedTile.c);
+        setSpawnY(clickedTile.r);
+      }
+    }
+  }, [clickedTile, activeTab]);
+
   useEffect(() => {
     if (onTabChange) onTabChange(activeTab);
   }, [activeTab, onTabChange]);
+  
   const player = useGameStore((state) => state.player);
   const currentMapId = useGameStore((state) => state.currentMapId);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);

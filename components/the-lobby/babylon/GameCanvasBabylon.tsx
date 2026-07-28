@@ -13,13 +13,15 @@ interface GameCanvasBabylonProps {
   activeBrushTileId?: number;
   activeLayerIdx?: number;
   isDevEditorOpen?: boolean;
+  onMapClick?: (r: number, c: number) => void;
 }
 
 export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   onCanvasReady,
   activeBrushTileId = 1,
   activeLayerIdx = -1,
-  isDevEditorOpen = false
+  isDevEditorOpen = false,
+  onMapClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BabylonEngine | null>(null);
@@ -347,6 +349,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
           return;
         }
+
+        if (onMapClick) onMapClick(r, c);
 
         const targetLayerIdx = activeLayerIdx !== -1 ? activeLayerIdx : (clickedLayerIdx || -1);
         
