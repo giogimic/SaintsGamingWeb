@@ -930,8 +930,17 @@ export class BabylonEngine {
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Smooth lerp movement (slower for 60fps to look like a walk cycle)
-      spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.08);
+      // Constant speed movement (looks like walking, not teleporting)
+      // Player moves at approx 4 tiles per second
+      const moveSpeed = 4.0 * (this.engine.getDeltaTime() / 1000);
+      const dirVec = targetPos.subtract(spriteMesh.position);
+      const dist = dirVec.length();
+
+      if (dist > moveSpeed) {
+        spriteMesh.position.addInPlace(dirVec.normalize().scale(moveSpeed));
+      } else {
+        spriteMesh.position = targetPos;
+      }
 
       // Check if sprite URL changed
       const mat = spriteMesh.material as StandardMaterial;
@@ -952,7 +961,8 @@ export class BabylonEngine {
         }
 
         // Update texture direction UVs on existing mesh
-        if (tex && (entity.isNpc || entity.isPlayer || (entity.spriteUrl && entity.spriteUrl.includes('/npc/')))) {
+        // ONLY scale/animate if using an actual sprite sheet, NOT the procedural defaultPlayerTexture
+        if (tex && entity.spriteUrl && (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/'))) {
           const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
           const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
           
@@ -961,9 +971,8 @@ export class BabylonEngine {
           tex.vOffset = rowIdx * (1 / 4);
 
           // Animate walk cycle if moving
-          const distSq = Vector3.DistanceSquared(spriteMesh.position, targetPos);
-          if (distSq > 0.001) {
-            const frame = Math.floor(Date.now() / 180) % 4; // 0, 1, 2, 3
+          if (entity.isMoving || dist > 0.01) {
+            const frame = Math.floor(Date.now() / 150) % 4; // 0, 1, 2, 3
             const colIdx = frame === 3 ? 1 : (frame === 1 ? 2 : 0); // 0, 2, 0, 1 sequence for standing, right leg, standing, left leg
             tex.uOffset = colIdx * (1 / 3);
           } else {
