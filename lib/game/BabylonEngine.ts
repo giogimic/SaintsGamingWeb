@@ -832,12 +832,21 @@ export class BabylonEngine {
         if (tex && (entity.isNpc || entity.isPlayer || (entity.spriteUrl && entity.spriteUrl.includes('/npc/')))) {
           const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
           const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
-          const colIdx = entity.frameIndex || 0;
-
+          
           tex.uScale = 1 / 3;
           tex.vScale = 1 / 4;
-          tex.uOffset = colIdx * (1 / 3);
           tex.vOffset = rowIdx * (1 / 4);
+
+          // Animate walk cycle if moving
+          const distSq = Vector3.DistanceSquared(spriteMesh.position, targetPos);
+          if (distSq > 0.001) {
+            const frame = Math.floor(Date.now() / 180) % 4; // 0, 1, 2, 3
+            const colIdx = frame === 3 ? 1 : (frame === 1 ? 2 : 0); // 0, 2, 0, 1 sequence for standing, right leg, standing, left leg
+            tex.uOffset = colIdx * (1 / 3);
+          } else {
+            // Standing still (middle column)
+            tex.uOffset = 1 / 3;
+          }
         }
       }
 
