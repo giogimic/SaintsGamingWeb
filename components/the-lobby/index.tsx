@@ -47,6 +47,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
   const [activeLayerIdx, setActiveLayerIdx] = useState<number>(0);
   const [editorClickedTile, setEditorClickedTile] = useState<{r: number, c: number} | null>(null);
+  const [uiScale, setUiScale] = useState(1);
 
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
@@ -189,7 +190,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         setIsInitializing(false);
       }
     }
+    
+    const handleResize = () => {
+      const scale = Math.max(0.6, Math.min(1.5, window.innerWidth / 1280));
+      setUiScale(scale);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
     init();
+    return () => window.removeEventListener('resize', handleResize);
   }, [initialCharacterId, forceCreate]);
 
   // SOCKET.IO CONNECTION
@@ -412,8 +421,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         }}
       />
       
-      {/* Mobile Controls */}
-      <DPad />
+      {/* SCALED UI CONTAINER */}
+      <div 
+        className="absolute inset-0 pointer-events-none" 
+        style={{ zoom: uiScale }}
+      >
+        {/* Mobile Controls */}
+        <div className="pointer-events-auto">
+          <DPad />
+        </div>
 
       {/* Integrated Dev Editor Overlay */}
       <IntegratedDevEditor 
@@ -537,6 +553,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'EXPLORING' && !isDevEditorOpen && (
         <GameChat />
       )}
+      </div>
     </div>
   );
 }

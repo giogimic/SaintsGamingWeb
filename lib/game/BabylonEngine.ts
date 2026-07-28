@@ -396,7 +396,8 @@ export class BabylonEngine {
     const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
     const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
     const viewHalfWidth = this.camera?.orthoRight || 10;
-    const viewHalfHeight = this.camera?.orthoTop || 10;
+    // Due to the camera's 45 degree pitch, the ground area seen is vertically elongated
+    const viewHalfHeight = (this.camera?.orthoTop || 10) * 1.414;
 
     if (halfWidth > viewHalfWidth) {
       worldX = Math.max(-halfWidth + viewHalfWidth, Math.min(halfWidth - viewHalfWidth, worldX));
@@ -423,7 +424,8 @@ export class BabylonEngine {
     const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
     const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
     const viewHalfWidth = this.camera?.orthoRight || 10;
-    const viewHalfHeight = this.camera?.orthoTop || 10;
+    // Due to the camera's 45 degree pitch, the ground area seen is vertically elongated
+    const viewHalfHeight = (this.camera?.orthoTop || 10) * 1.414;
 
     if (halfWidth > viewHalfWidth) {
       targetX = Math.max(-halfWidth + viewHalfWidth, Math.min(halfWidth - viewHalfWidth, targetX));
