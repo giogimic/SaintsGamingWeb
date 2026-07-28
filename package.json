@@ -1,6 +1,6 @@
 {
   "name": "saints-web",
-  "version": "2.1.55",
+  "version": "2.1.56",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -43,7 +43,7 @@
     "gamedig": "^5.3.3",
     "howler": "^2.2.4",
     "immer": "^11.1.15",
-    "js-yaml": "^5.2.1",
+    "js-yaml": "^5.2.2",
     "lucide-react": "^1.21.0",
     "next": "^15.1.4",
     "next-auth": "5.0.0-beta.31",
