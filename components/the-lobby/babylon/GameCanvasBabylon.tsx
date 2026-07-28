@@ -124,7 +124,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
         soundSynth.playEncounterSound();
         showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
-        useGameStore.getState().setGameMode('BATTLING');
+        useGameStore.getState().setGameMode('BATTLE');
       }
     }
 
