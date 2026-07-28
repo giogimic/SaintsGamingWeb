@@ -84,7 +84,7 @@ export async function fetchAllMaps() {
     return { success: false, error: 'Internal Server Error', data: [] };
   }
 }
-}
+
 
 export async function fetchMapById(mapId: string) {
   try {
