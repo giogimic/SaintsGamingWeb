@@ -27,7 +27,7 @@ export interface BabylonTileMapData {
   tiles: number[][]; // 2D array of tile IDs
   tilesetUrl?: string;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
-  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
+  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
 }
 
@@ -502,14 +502,18 @@ export class BabylonEngine {
             const col = localId % ts.columns;
             const row = Math.floor(localId / ts.columns);
             
-            // Hardcode known rows for our core tilesets
+            // Use exact imageheight if we parsed it, otherwise fallback
             let estimatedRows = 24;
-            if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
-            else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
-            else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
-            else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
-            else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
-            else estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns)); // fallback
+            if (ts.imageheight && ts.tileheight) {
+              estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
+            } else {
+              if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
+              else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
+              else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
+              else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
+              else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
+              else estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns));
+            }
 
             const u0 = col / ts.columns;
             const u1 = (col + 1) / ts.columns;
@@ -797,7 +801,7 @@ export class BabylonEngine {
     }
   }
 
-  public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>) {
+  public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number }>) {
     if (layerIdx === -1) {
       const tileMesh = this.scene.getMeshByName(`tile_${r}_${c}`) as Mesh;
       if (tileMesh && tileMesh.material) {
@@ -823,14 +827,18 @@ export class BabylonEngine {
     const tsCol = localGid % ts.columns;
     const tsRow = Math.floor(localGid / ts.columns);
     
-    // Hardcode known rows for our core tilesets
+    // Use exact imageheight if we parsed it, otherwise fallback
     let estimatedRows = 24;
-    if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
-    else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
-    else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
-    else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
-    else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
-    else estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns)); // fallback
+    if (ts.imageheight && ts.tileheight) {
+      estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
+    } else {
+      if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
+      else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
+      else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
+      else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
+      else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
+      else estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns));
+    }
     
     const u0 = tsCol / ts.columns;
     const v1 = 1 - (tsRow / estimatedRows);
