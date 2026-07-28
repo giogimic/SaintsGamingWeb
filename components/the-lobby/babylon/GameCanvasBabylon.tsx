@@ -109,13 +109,32 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     }
 
-    // Warp Gate Transition Check — supports any tile ID mapped in gates
+    // Warp Gate Transition Check - supports any tile ID mapped in gates
     if (activeMap.gates) {
       const gate = activeMap.gates[targetTile];
       if (gate && gate.targetMapId) {
-        useGameStore.setState({ currentMapId: gate.targetMapId });
-        setPlayerPosition(gate.spawnPoint || { x: 6, y: 2 });
-        showToast(`Warped to ${gate.targetMapId}`);
+        if (isDevEditorOpen) {
+          useGameStore.setState({ currentMapId: gate.targetMapId });
+          setPlayerPosition(gate.spawnPoint || { x: 6, y: 2 });
+          showToast(`Warped to ${gate.targetMapId}`);
+        } else {
+          // Cinematic Fade Transition
+          const store = useGameStore.getState();
+          if (store.isMapTransitioning) return; // Prevent double warp
+          
+          store.setIsMapTransitioning(true);
+          
+          setTimeout(() => {
+            useGameStore.setState({ currentMapId: gate.targetMapId });
+            setPlayerPosition(gate.spawnPoint || { x: 6, y: 2 });
+            
+            // Wait for Babylon geometry to generate before fading back in
+            setTimeout(() => {
+              useGameStore.getState().setIsMapTransitioning(false);
+              showToast(`Warped to ${gate.targetMapId}`);
+            }, 100);
+          }, 300);
+        }
         return;
       }
     }

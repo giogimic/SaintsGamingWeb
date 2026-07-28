@@ -330,6 +330,55 @@ export class BabylonEngine {
         this.updateWaterTexture(this.waterAnimTime);
       }
 
+      // Smooth Grid Interpolation & Walking Animations
+      this.entityMeshes.forEach((mesh) => {
+        const state = mesh.metadata;
+        if (!state) return;
+
+        // 1. Movement Interpolation
+        if (state.isEditor) {
+          mesh.position = state.targetPos;
+        } else {
+          const dist = Vector3.Distance(mesh.position, state.targetPos);
+          if (dist > 0.005) {
+            // Speed = 4 tiles per second (250ms per tile to match GameCanvasBabylon setTimeout)
+            const speed = 4.0; 
+            const moveStep = speed * deltaTime;
+            if (moveStep >= dist) {
+              mesh.position = state.targetPos;
+            } else {
+              const dir = state.targetPos.subtract(mesh.position).normalize();
+              mesh.position.addInPlace(dir.scale(moveStep));
+            }
+          } else {
+            mesh.position = state.targetPos;
+          }
+        }
+
+        // 2. UV Frame Cycling (Animation)
+        if (mesh.material) {
+          const mat = mesh.material as StandardMaterial;
+          const tex = mat.diffuseTexture as Texture;
+          if (tex && (state.isNpc || state.isPlayer || tex.name.includes('/npc/'))) {
+            // Update row (direction)
+            const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
+            const rowIdx = dirMap[state.direction || 'down'] ?? 3;
+            tex.vOffset = rowIdx * (1 / 4);
+
+            // Update column (animation frame)
+            if (state.isMoving) {
+              state.animTime += deltaTime * 6; // 6 frames per sec
+              const frameSeq = [0, 1, 2, 1]; // walk cycle
+              const f = frameSeq[Math.floor(state.animTime) % 4];
+              tex.uOffset = f * (1 / 3);
+            } else {
+              state.animTime = 0;
+              tex.uOffset = 1 * (1 / 3); // Idle frame is index 1
+            }
+          }
+        }
+      });
+
       if (onTick) onTick(deltaTime);
       this.scene.render();
     });
@@ -903,8 +952,21 @@ export class BabylonEngine {
         this.scene
       );
 
+      // Initialize Metadata for Animation & Movement
+      spriteMesh.metadata = {
+        targetPos: targetPos,
+        isMoving: entity.isMoving || false,
+        animTime: 0,
+        direction: entity.direction || 'down',
+        isNpc: entity.isNpc || false,
+        isPlayer: entity.isPlayer || false,
+        isEditor: !!this.scene.onPointerDown // Simple heuristic: if tile picking is enabled, it's dev editor
+      };
+      
+      // Initial position snap
+      spriteMesh.position = targetPos;
+
       // For orthographic 2.5D, fixed tilt is much more stable than billboarding
-      // Negative PI/4 tilts the sprite back to perfectly face the 45-degree angled down camera
       spriteMesh.rotation.x = Math.PI / 4;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
@@ -913,21 +975,13 @@ export class BabylonEngine {
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
-        // Use nearest neighbor (1) sampling mode for crisp pixel art and to prevent alpha erosion
+        // Use nearest neighbor (1) sampling mode for crisp pixel art
         const tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
         tex.hasAlpha = true;
 
-        // If sprite is standard 3-col x 4-row NPC sheet
         if (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/')) {
           tex.uScale = 1 / 3;
           tex.vScale = 1 / 4;
-
-          const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
-          const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
-          const colIdx = entity.frameIndex || 0;
-
-          tex.uOffset = colIdx * (1 / 3);
-          tex.vOffset = rowIdx * (1 / 4);
         }
 
         mat.diffuseTexture = tex;
@@ -936,90 +990,52 @@ export class BabylonEngine {
         mat.diffuseTexture.hasAlpha = true;
       }
 
-      // NPC color tint
-      if (entity.isNpc) {
-        mat.diffuseColor = new Color3(0.9, 1.0, 0.9);
-      }
-
       spriteMesh.material = mat;
-      spriteMesh.parent = this.rootNode;
-
-      // SET INITIAL POSITION IMMEDIATELY (no lerp on first frame)
-      spriteMesh.position.copyFrom(targetPos);
-
-      // Add to shadow casters
-      if (this.shadowGen) this.shadowGen.addShadowCaster(spriteMesh);
-
-      // Shadow blob on the ground
-      const shadow = MeshBuilder.CreateDisc(`shadow_${entity.id}`, { radius: this.currentTileSize * 0.35, tessellation: 12 }, this.scene);
+      
+      // Simple drop shadow
+      const shadow = MeshBuilder.CreatePlane(`shadow_${entity.id}`, { size: this.currentTileSize * 0.8 }, this.scene);
       shadow.rotation.x = Math.PI / 2;
-      shadow.position = new Vector3(entity.x, 0.01, entity.y);
+      shadow.position.y = -0.7; // Relative to spriteMesh center
+      shadow.parent = spriteMesh;
+      
       const shadowMat = new StandardMaterial(`shadowMat_${entity.id}`, this.scene);
       shadowMat.diffuseColor = new Color3(0, 0, 0);
-      shadowMat.alpha = 0.35;
+      shadowMat.alpha = 0.3;
+      shadowMat.transparencyMode = 2;
+      shadowMat.zOffset = -1; // Prevent Z-fighting with floor
       shadow.material = shadowMat;
-      shadow.parent = this.rootNode;
       this.shadowMeshes.set(entity.id, shadow);
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Constant speed movement (looks like walking, not teleporting)
-      // Player moves at approx 4 tiles per second
-      const moveSpeed = 4.0 * (this.engine.getDeltaTime() / 1000);
-      const dirVec = targetPos.subtract(spriteMesh.position);
-      const dist = dirVec.length();
-
-      if (dist > moveSpeed) {
-        spriteMesh.position.addInPlace(dirVec.normalize().scale(moveSpeed));
-      } else {
-        spriteMesh.position = targetPos;
+      // Update Metadata
+      if (spriteMesh.metadata) {
+        spriteMesh.metadata.targetPos = targetPos;
+        spriteMesh.metadata.isMoving = entity.isMoving || false;
+        spriteMesh.metadata.direction = entity.direction || spriteMesh.metadata.direction;
+        spriteMesh.metadata.isEditor = !!this.scene.onPointerDown;
       }
 
       // Check if sprite URL changed
       const mat = spriteMesh.material as StandardMaterial;
+      const tex = mat?.diffuseTexture as Texture;
+      const currentUrl = tex?.name;
+      
       if (mat) {
-        let tex = mat.diffuseTexture as Texture;
-        const currentUrl = tex ? tex.name : null;
-        
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
           // Use nearest neighbor (1) sampling mode
-          tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
-          tex.hasAlpha = true;
-          mat.diffuseTexture = tex;
+          const newTex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
+          newTex.hasAlpha = true;
+          
+          if (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/')) {
+            newTex.uScale = 1 / 3;
+            newTex.vScale = 1 / 4;
+          }
+          mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
           mat.diffuseTexture = this.defaultPlayerTexture;
-          mat.diffuseTexture.hasAlpha = true;
-          tex = this.defaultPlayerTexture as Texture;
         }
-
-        // Update texture direction UVs on existing mesh
-        // ONLY scale/animate if using an actual sprite sheet, NOT the procedural defaultPlayerTexture
-        if (tex && entity.spriteUrl && (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/'))) {
-          const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
-          const rowIdx = dirMap[entity.direction || 'down'] ?? 3;
-          
-          tex.uScale = 1 / 3;
-          tex.vScale = 1 / 4;
-          tex.vOffset = rowIdx * (1 / 4);
-
-          // Animate walk cycle if moving
-          if (entity.isMoving || dist > 0.01) {
-            const frame = Math.floor(Date.now() / 150) % 4; // 0, 1, 2, 3
-            const colIdx = frame === 3 ? 1 : (frame === 1 ? 2 : 0); // 0, 2, 0, 1 sequence for standing, right leg, standing, left leg
-            tex.uOffset = colIdx * (1 / 3);
-          } else {
-            // Standing still (middle column)
-            tex.uOffset = 1 / 3;
-          }
-        }
-      }
-
-      // Move shadow blob with entity
-      const shadowBlob = this.shadowMeshes.get(entity.id);
-      if (shadowBlob) {
-        shadowBlob.position.x += (entity.x - shadowBlob.position.x) * 0.08;
-        shadowBlob.position.z += (entity.y - shadowBlob.position.z) * 0.08;
       }
     }
 

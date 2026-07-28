@@ -36,6 +36,8 @@ import { GameChat } from './chat/GameChat';
 export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
+  const activeDialog = useGameStore((state) => state.activeDialog);
+  const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -512,7 +514,13 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'EQUIPMENT' && <RpgStatsOverlay />}
       {gameMode === 'CRAFTING' && <CraftingOverlay />}
       {gameMode === 'BASE' && <BaseOverlay />}
-      {gameMode === 'DIALOG' && <DialogOverlay />}
+      {activeDialog && <DialogOverlay />}
+      
+      {/* Cinematic Map Transition Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
+      />
+      
       {gameMode === 'GTC' && <GtcOverlay />}
       {gameMode === 'QUESTS' && <QuestLogOverlay />}
       {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
