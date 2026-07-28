@@ -42,6 +42,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isDevEditorOpen, setIsDevEditorOpen] = useState(false);
+  const [editorTab, setEditorTab] = useState<string>('maps');
   const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
   const [activeLayerIdx, setActiveLayerIdx] = useState<number>(0);
 
@@ -399,7 +400,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     >
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
-        activeLayerIdx={activeLayerIdx}
+        activeLayerIdx={editorTab === 'logic' ? -2 : activeLayerIdx}
         isDevEditorOpen={isDevEditorOpen}
       />
       
@@ -413,6 +414,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         onBrushTileChange={(tileId) => setActiveBrushTileId(tileId)}
         activeLayerIdx={activeLayerIdx}
         onLayerChange={(idx) => setActiveLayerIdx(idx)}
+        onTabChange={(tab) => setEditorTab(tab)}
       />
 
       {/* Toast Notification */}

@@ -25,7 +25,8 @@ import {
   RefreshCw,
   Download,
   Upload,
-  UserPlus
+  UserPlus,
+  Grid
 } from 'lucide-react';
 
 import AssetEditor from './AssetEditor';
@@ -40,18 +41,24 @@ interface IntegratedDevEditorProps {
   onBrushTileChange?: (tileId: number) => void;
   activeLayerIdx?: number;
   onLayerChange?: (idx: number) => void;
+  onTabChange?: (tab: string) => void;
 }
 
-type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
+type EditorTab = 'maps' | 'logic' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
 
 export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ 
   isOpen, 
   onClose, 
   onBrushTileChange,
   activeLayerIdx = 0,
-  onLayerChange
+  onLayerChange,
+  onTabChange
 }) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('maps');
+  
+  useEffect(() => {
+    if (onTabChange) onTabChange(activeTab);
+  }, [activeTab, onTabChange]);
   const player = useGameStore((state) => state.player);
   const currentMapId = useGameStore((state) => state.currentMapId);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
@@ -443,6 +450,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
       <div className="flex bg-slate-950/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium overflow-x-auto">
         {[
           { id: 'maps', label: 'Tiles', icon: Layers },
+          { id: 'logic', label: 'Logic', icon: Grid },
           { id: 'index', label: 'Index', icon: Search },
           { id: 'chars', label: 'Heroes', icon: UserPlus },
           { id: 'classes', label: 'Classes', icon: UserCheck },
@@ -573,6 +581,69 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   tileLayers={currentMapData?.tileLayers || [{ name: 'Base Grid', grid: currentMapData?.grid || [] }]}
                   onAddLayer={handleAddLayer}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 1.5: LOGIC & COLLISION */}
+        {activeTab === 'logic' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
+                  Invisible Logic & Collision Brush
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      if (!currentMapData.grid) return;
+                      for (let r = 0; r < currentMapData.grid.length; r++) {
+                        for (let c = 0; c < currentMapData.grid[r].length; c++) {
+                          currentMapData.grid[r][c] = brushTileId;
+                        }
+                      }
+                      showToast(`Filled logic map with tile ${brushTileId}`);
+                    }}
+                    className="px-2 py-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                    title="Flood fill logic map with active brush tile"
+                  >
+                    <RefreshCw className="w-3 h-3" /> Fill
+                  </button>
+                </div>
+              </div>
+              <p className="text-slate-400 text-[11px]">
+                Paint invisible collision boundaries, grass encounter zones, and warp gates. This edits the base logic grid directly.
+              </p>
+              
+              <div className="grid grid-cols-4 gap-2 pt-2">
+                {[
+                  { id: 0, name: 'Walkable', color: 'bg-emerald-900' },
+                  { id: 1, name: 'Solid Wall', color: 'bg-red-600' },
+                  { id: 2, name: 'Tall Grass', color: 'bg-green-500' },
+                  { id: 3, name: 'Gate A', color: 'bg-amber-500' },
+                  { id: 4, name: 'Gate B', color: 'bg-amber-600' },
+                  { id: 5, name: 'Wood Tree', color: 'bg-amber-800' },
+                  { id: 6, name: 'Ore Rock', color: 'bg-[#8d6e63]' },
+                  { id: 7, name: 'Shop Tile', color: 'bg-yellow-400' },
+                  { id: 8, name: 'Clinic Tile', color: 'bg-pink-500' },
+                  { id: 9, name: 'Crafting', color: 'bg-gray-500' },
+                  { id: 10, name: 'Fishing', color: 'bg-sky-600' },
+                  { id: 12, name: 'Base Hub', color: 'bg-indigo-800' }
+                ].map((tile) => (
+                  <button
+                    key={tile.id}
+                    onClick={() => handleBrushSelect(tile.id)}
+                    className={`p-2 rounded border flex flex-col items-center gap-1 transition-all ${
+                      brushTileId === tile.id
+                        ? 'border-cyan-400 bg-cyan-950/60 ring-2 ring-cyan-500/40'
+                        : 'border-slate-800 bg-slate-900/90 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded ${tile.color} ${tile.id === 0 ? 'opacity-30' : ''}`} />
+                    <span className="text-[10px] text-slate-300 font-mono text-center leading-tight">{tile.name}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
