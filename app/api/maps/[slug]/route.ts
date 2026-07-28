@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { CAMPAIGN_MAPS } from "@/components/the-lobby/data/campaign-maps";
+import { TUXEMON_CAMPAIGN_MAPS } from "@/components/the-lobby/data/campaign-maps";
 
 /**
  * GET /api/maps/[slug] — Get a specific map by slug (TuxemonMap) or id (WorldMap)
@@ -20,7 +20,7 @@ export async function GET(
 
     // Fall back to WorldMap by id (supports numeric/uuid lookups)
     const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
-    const campaignMap = (CAMPAIGN_MAPS as any)[slug];
+    const campaignMap = (TUXEMON_CAMPAIGN_MAPS as any)[slug];
 
     if (worldMap) {
       const dbLayers = JSON.parse(worldMap.tileLayersData || '[]');
