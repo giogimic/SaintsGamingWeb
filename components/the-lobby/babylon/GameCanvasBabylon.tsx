@@ -129,8 +129,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         case 'ENCOUNTER':
           const roll = Math.random() * 100;
           if (roll < (payload.chance * 100 || 15)) {
-            let wildSpecies: any = null;
-            
             // activeMap.encounterPool contains strings like ["spyder_route1"]
             const pool = activeMap?.encounterPool;
             if (pool && pool.length > 0) {
