@@ -1388,3 +1388,15 @@ model TileRegistry {
   @@index([category])
   @@index([terrainType])
 }
+//  Map Logic Tile Registry (Modular Interaction Events) 
+model MapLogicTile {
+  id                Int     @id // e.g., 0, 1, 5, etc.
+  name              String
+  color             String
+  isSolid           Boolean @default(false)
+  interactable      Boolean @default(false)
+  onInteractAction  String? // e.g. "HARVEST", "SHOP", "CLINIC"
+  onInteractPayload String? // JSON string: { xp: 25, item: "wood", transformTo: 6 }
+  onStepAction      String? // e.g. "ENCOUNTER"
+  onStepPayload     String? // JSON string: { chance: 0.1 }
+}

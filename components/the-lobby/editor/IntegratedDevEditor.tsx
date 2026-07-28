@@ -45,7 +45,7 @@ interface IntegratedDevEditorProps {
   clickedTile?: {r: number, c: number} | null;
 }
 
-type EditorTab = 'maps' | 'logic' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
+type EditorTab = 'maps' | 'logic' | 'logicRegistry' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
 
 export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ 
   isOpen, 
@@ -74,6 +74,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
   
   const player = useGameStore((state) => state.player);
   const currentMapId = useGameStore((state) => state.currentMapId);
+  const logicTiles = useGameStore((state) => state.logicTiles);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
   const showToast = useGameStore((state) => state.showToast);
 
@@ -139,6 +140,39 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
   const [mapNpcs, setMapNpcs] = useState<Array<{ id: string; name: string; x: number; y: number; sprite: string; dialogueKey: string }>>(
     currentMapData.npcs || []
   );
+
+  // Logic Tile Config State
+  const [newLogicTile, setNewLogicTile] = useState({
+    id: 20,
+    name: 'New Tile',
+    color: 'bg-emerald-500',
+    isSolid: false,
+    interactable: false,
+    onInteractAction: '',
+    onInteractPayload: '',
+    onStepAction: '',
+    onStepPayload: ''
+  });
+
+  const handleSaveLogicTile = async () => {
+    try {
+      const payload = {
+        ...newLogicTile,
+        onInteractPayload: newLogicTile.onInteractPayload ? JSON.parse(newLogicTile.onInteractPayload) : null,
+        onStepPayload: newLogicTile.onStepPayload ? JSON.parse(newLogicTile.onStepPayload) : null
+      };
+      const res = await fetch('/api/world/logic-tiles', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        showToast('Logic Tile Saved!');
+        await useGameStore.getState().fetchLogicTiles();
+      }
+    } catch (e) {
+      showToast('Failed to save logic tile');
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -464,6 +498,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {[
           { id: 'maps', label: 'Tiles', icon: Layers },
           { id: 'logic', label: 'Logic', icon: Grid },
+          { id: 'logicRegistry', label: 'Tile Assets', icon: Layers },
           { id: 'index', label: 'Index', icon: Search },
           { id: 'chars', label: 'Heroes', icon: UserPlus },
           { id: 'classes', label: 'Classes', icon: UserCheck },
@@ -630,20 +665,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
               </p>
               
               <div className="grid grid-cols-4 gap-2 pt-2">
-                {[
-                  { id: 0, name: 'Walkable', color: 'bg-emerald-900' },
-                  { id: 1, name: 'Solid Wall', color: 'bg-red-600' },
-                  { id: 2, name: 'Tall Grass', color: 'bg-green-500' },
-                  { id: 3, name: 'Gate A', color: 'bg-amber-500' },
-                  { id: 4, name: 'Gate B', color: 'bg-amber-600' },
-                  { id: 5, name: 'Wood Tree', color: 'bg-amber-800' },
-                  { id: 6, name: 'Ore Rock', color: 'bg-[#8d6e63]' },
-                  { id: 7, name: 'Shop Tile', color: 'bg-yellow-400' },
-                  { id: 8, name: 'Clinic Tile', color: 'bg-pink-500' },
-                  { id: 9, name: 'Crafting', color: 'bg-gray-500' },
-                  { id: 10, name: 'Fishing', color: 'bg-sky-600' },
-                  { id: 12, name: 'Base Hub', color: 'bg-indigo-800' }
-                ].map((tile) => (
+                {Object.values(logicTiles).map((tile) => (
                   <button
                     key={tile.id}
                     onClick={() => handleBrushSelect(tile.id)}
@@ -658,6 +680,65 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 1.6: LOGIC TILE MANAGER */}
+        {activeTab === 'logicRegistry' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+              <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
+                Logic Asset Registry
+              </span>
+              <p className="text-[11px] text-slate-400">
+                Create modular interactions and collision blocks. Assign these blocks on the Logic tab.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 uppercase font-bold">Tile ID</label>
+                  <input type="number" value={newLogicTile.id} onChange={e => setNewLogicTile({...newLogicTile, id: parseInt(e.target.value)})} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 uppercase font-bold">Name</label>
+                  <input type="text" value={newLogicTile.name} onChange={e => setNewLogicTile({...newLogicTile, name: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex items-center gap-2 text-xs text-slate-300">
+                  <input type="checkbox" checked={newLogicTile.isSolid} onChange={e => setNewLogicTile({...newLogicTile, isSolid: e.target.checked})} className="rounded border-slate-700 bg-slate-900 text-cyan-500" />
+                  Is Solid Boundary?
+                </label>
+                <label className="flex items-center gap-2 text-xs text-slate-300">
+                  <input type="checkbox" checked={newLogicTile.interactable} onChange={e => setNewLogicTile({...newLogicTile, interactable: e.target.checked})} className="rounded border-slate-700 bg-slate-900 text-cyan-500" />
+                  Is Interactable (E)?
+                </label>
+              </div>
+
+              {newLogicTile.interactable && (
+                <div className="space-y-2 p-2 bg-slate-950 rounded border border-slate-800">
+                  <label className="text-[10px] text-slate-400 uppercase font-bold">On Interact Action</label>
+                  <input type="text" placeholder="e.g. HARVEST_WOOD" value={newLogicTile.onInteractAction} onChange={e => setNewLogicTile({...newLogicTile, onInteractAction: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                  <label className="text-[10px] text-slate-400 uppercase font-bold">Payload (JSON)</label>
+                  <textarea placeholder='{"xp": 25}' value={newLogicTile.onInteractPayload} onChange={e => setNewLogicTile({...newLogicTile, onInteractPayload: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 h-16" />
+                </div>
+              )}
+
+              <div className="space-y-2 p-2 bg-slate-950 rounded border border-slate-800">
+                <label className="text-[10px] text-slate-400 uppercase font-bold">On Step Action</label>
+                <input type="text" placeholder="e.g. ENCOUNTER" value={newLogicTile.onStepAction} onChange={e => setNewLogicTile({...newLogicTile, onStepAction: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                <label className="text-[10px] text-slate-400 uppercase font-bold">Payload (JSON)</label>
+                <textarea placeholder='{"chance": 0.15}' value={newLogicTile.onStepPayload} onChange={e => setNewLogicTile({...newLogicTile, onStepPayload: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 h-16" />
+              </div>
+
+              <button
+                onClick={handleSaveLogicTile}
+                className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold text-sm shadow flex items-center justify-center gap-2"
+              >
+                <Save className="w-4 h-4" /> Save Logic Asset
+              </button>
             </div>
           </div>
         )}

@@ -74,9 +74,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const nextY = targetY;
 
     // Logic Grid Collision Check
-    const targetTile = activeMap.grid[nextY]?.[nextX];
-    // 1=Wall, 5=Tree, 6=Rock
-    if ([1, 5, 6].includes(targetTile)) {
+    const targetTileId = activeMap.grid[nextY]?.[nextX];
+    const logicTile = useGameStore.getState().logicTiles[targetTileId];
+    
+    if (logicTile?.isSolid) {
       showToast('Blocked by obstacle!');
       return;
     }
@@ -116,21 +117,49 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Update server position
     emitSocketEvent?.('move', { x: nextX, y: nextY, direction: dir, mapId: currentMapId });
 
-    // Tall Grass Wild Encounter Trigger Check (Tile 2)
-    if (targetTile === 2) {
-      const roll = Math.random() * 100;
-      if (roll < 15) { // 15% chance per step in grass
-        const pool = activeMap?.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
-        const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
-        soundSynth.playEncounterSound();
-        showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
-        useGameStore.getState().setGameMode('BATTLE');
+    // Logic Tile Step Event Trigger
+    if (logicTile?.onStepAction) {
+      const payload = logicTile.onStepPayload ? JSON.parse(logicTile.onStepPayload) : {};
+      
+      switch (logicTile.onStepAction) {
+        case 'ENCOUNTER':
+          const roll = Math.random() * 100;
+          if (roll < (payload.chance * 100 || 15)) {
+            const pool = activeMap?.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
+            const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
+            soundSynth.playEncounterSound();
+            showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
+            useGameStore.getState().setGameMode('BATTLE');
+          }
+          break;
+        case 'OPEN_SHOP':
+          showToast('Welcome to the Shop!');
+          useGameStore.getState().setGameMode('SHOP');
+          break;
+        case 'CLINIC_HEAL':
+          const state = useGameStore.getState();
+          state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
+          showToast('Your team has been fully healed!');
+          break;
+        case 'FISHING':
+          soundSynth.playEncounterSound?.();
+          gainSkillXp('fishing', payload.xp || 20);
+          showToast(`Fishing... caught something! (+${payload.xp || 20} Fishing XP)`);
+          break;
+        case 'OPEN_CRAFTING':
+          showToast('Crafting Station accessed!');
+          useGameStore.getState().setGameMode('CRAFTING');
+          break;
+        case 'OPEN_BASE':
+          showToast('Base Terminal online!');
+          useGameStore.getState().setGameMode('BASE');
+          break;
       }
     }
 
     // Warp Gate Transition Check - supports any tile ID mapped in gates
     if (activeMap.gates) {
-      const gate = activeMap.gates[targetTile];
+      const gate = activeMap.gates[targetTileId];
       if (gate && gate.targetMapId) {
         if (isDevEditorOpen) {
           useGameStore.setState({ currentMapId: gate.targetMapId });
@@ -157,38 +186,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         return;
       }
     }
-
-    // Shop Tile (7) — auto-open shop
-    if (targetTile === 7) {
-      showToast('Welcome to the Shop!');
-      useGameStore.getState().setGameMode('SHOP');
-    }
-
-    // Clinic Tile (8) — auto-heal
-    if (targetTile === 8) {
-      const state = useGameStore.getState();
-      state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
-      showToast('Your team has been fully healed!');
-    }
-
-    // Fishing Spot (10)
-    if (targetTile === 10) {
-      soundSynth.playEncounterSound?.();
-      gainSkillXp('fishing', 20);
-      showToast('Fishing... caught something! (+20 Fishing XP)');
-    }
-
-    // Crafting Anvil (9)
-    if (targetTile === 9) {
-      showToast('Crafting Station accessed!');
-      useGameStore.getState().setGameMode('CRAFTING');
-    }
-
-    // Base Terminal (12)
-    if (targetTile === 12) {
-      showToast('Base Terminal online!');
-      useGameStore.getState().setGameMode('BASE');
-    }
   };
 
   const tryMoveDirection = (dx: number, dy: number) => {
@@ -213,19 +210,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     else if (dir === 'left') faceX -= 1;
     else if (dir === 'right') faceX += 1;
 
-    const currentTile = activeMap?.grid?.[faceY]?.[faceX];
+    const currentTileId = activeMap?.grid?.[faceY]?.[faceX];
+    const logicTile = useGameStore.getState().logicTiles[currentTileId];
 
-    // Resource Node Harvesting
-    if (currentTile === 5) {
-      soundSynth.playWoodcuttingSound();
-      gainSkillXp('woodcutting', 25);
-      showToast('Harvested Wood Logs (+25 Woodcutting XP)');
-      return;
-    } else if (currentTile === 6) {
-      soundSynth.playMiningSound();
-      gainSkillXp('mining', 30);
-      showToast('Mined Copper Ore (+30 Mining XP)');
-      return;
+    // Resource Node Harvesting and Dynamic Tile Interactions
+    if (logicTile?.interactable && logicTile?.onInteractAction) {
+      const payload = logicTile.onInteractPayload ? JSON.parse(logicTile.onInteractPayload) : {};
+      
+      switch (logicTile.onInteractAction) {
+        case 'HARVEST_WOOD':
+          soundSynth.playWoodcuttingSound();
+          gainSkillXp('woodcutting', payload.xp || 25);
+          showToast(`Harvested Wood Logs (+${payload.xp || 25} Woodcutting XP)`);
+          return;
+        case 'HARVEST_ORE':
+          soundSynth.playMiningSound();
+          gainSkillXp('mining', payload.xp || 30);
+          showToast(`Mined Copper Ore (+${payload.xp || 30} Mining XP)`);
+          return;
+      }
     }
 
     // NPC Interaction Check (Combined Map Data + Dynamic Entities)

@@ -104,6 +104,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       const { checkAdminPermission } = await import('@/app/actions/game-admin');
       const adminPermission = await checkAdminPermission();
       setIsAdminUser(adminPermission);
+      
+      // Fetch logic tiles from DB
+      await useGameStore.getState().fetchLogicTiles();
 
       // Hydrate custom maps from DB
       const mapsRes = await fetchAllMaps();
