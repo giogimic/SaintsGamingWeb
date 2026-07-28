@@ -482,7 +482,7 @@ export class BabylonEngine {
               if (!tex) {
                 // Normalize imageSource: strip any directory prefix the DB may have stored
                 // to always resolve to /tuxemon-assets/tilesets/{filename.png}
-                const rawSource = ts.imageSource.replace(/^(.*\\/tilesets\\/|tilesets\\/)/i, '');
+                const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
                 const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
                 // Use Nearest sampling mode (1) for pixel-perfect crisp textures!
                 tex = new Texture(tilesetPath, this.scene, true, false, 1);
