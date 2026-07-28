@@ -44,6 +44,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [editorTab, setEditorTab] = useState<string>('maps');
   const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
   const [activeLayerIdx, setActiveLayerIdx] = useState<number>(0);
+  const [editorClickedTile, setEditorClickedTile] = useState<{r: number, c: number} | null>(null);
 
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
@@ -401,6 +402,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={editorTab === 'logic' ? -2 : activeLayerIdx}
         isDevEditorOpen={isDevEditorOpen}
+        onMapClick={(r, c) => {
+          if (isDevEditorOpen) setEditorClickedTile({r, c});
+        }}
       />
       
       {/* Mobile Controls */}
@@ -413,7 +417,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         onBrushTileChange={(tileId) => setActiveBrushTileId(tileId)}
         activeLayerIdx={activeLayerIdx}
         onLayerChange={(idx) => setActiveLayerIdx(idx)}
-        onTabChange={(tab) => setEditorTab(tab)}
+        onTabChange={(tab) => { setEditorTab(tab); setEditorClickedTile(null); }}
+        clickedTile={editorClickedTile}
       />
 
       {/* Toast Notification */}
