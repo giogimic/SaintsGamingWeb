@@ -749,7 +749,7 @@ export class BabylonEngine {
 
       // For orthographic 2.5D, fixed tilt is much more stable than billboarding
       // Negative PI/4 tilts the sprite back to perfectly face the 45-degree angled down camera
-      spriteMesh.rotation.x = -Math.PI / 4;
+      spriteMesh.rotation.x = Math.PI / 4;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       mat.useAlphaFromDiffuseTexture = true;
@@ -807,8 +807,8 @@ export class BabylonEngine {
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Smooth lerp movement
-      spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.25);
+      // Smooth lerp movement (slower for 60fps to look like a walk cycle)
+      spriteMesh.position = Vector3.Lerp(spriteMesh.position, targetPos, 0.08);
 
       // Check if sprite URL changed
       const mat = spriteMesh.material as StandardMaterial;
@@ -844,8 +844,8 @@ export class BabylonEngine {
       // Move shadow blob with entity
       const shadowBlob = this.shadowMeshes.get(entity.id);
       if (shadowBlob) {
-        shadowBlob.position.x += (entity.x - shadowBlob.position.x) * 0.25;
-        shadowBlob.position.z += (entity.y - shadowBlob.position.z) * 0.25;
+        shadowBlob.position.x += (entity.x - shadowBlob.position.x) * 0.08;
+        shadowBlob.position.z += (entity.y - shadowBlob.position.z) * 0.08;
       }
     }
 
