@@ -180,8 +180,13 @@ async function importAllMaps() {
             if (!obj) continue;
             const ox = parseFloat(obj['@_x']);
             const oy = parseFloat(obj['@_y']);
+            const oWidth = parseFloat(obj['@_width']) || tileSize;
+            const oHeight = parseFloat(obj['@_height']) || tileSize;
+            
             const objC = Math.floor(ox / tileSize);
             const objR = Math.floor(oy / tileSize);
+            const wTiles = Math.max(1, Math.floor(oWidth / tileSize));
+            const hTiles = Math.max(1, Math.floor(oHeight / tileSize));
             
             const props = Array.isArray(obj.properties?.property) ? obj.properties.property : (obj.properties?.property ? [obj.properties.property] : []);
             
@@ -224,6 +229,15 @@ async function importAllMaps() {
                   const encounterZone = parts[0].trim();
                   if (!mapEncounters.includes(encounterZone)) {
                     mapEncounters.push(encounterZone);
+                  }
+                  
+                  // Bake the encounter bounding box into the logicGrid as ID 2 (Encounter/Tall Grass)
+                  for (let r = objR; r < objR + hTiles && r < height; r++) {
+                    for (let c = objC; c < objC + wTiles && c < width; c++) {
+                      if (logicGrid[r] && logicGrid[r][c] !== 1) { // Don't overwrite walls
+                        logicGrid[r][c] = 2; // Encounter logic ID
+                      }
+                    }
                   }
                 }
               }
