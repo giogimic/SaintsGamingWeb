@@ -57,7 +57,9 @@ export default function MapEditorPanel({ onClose }: { onClose: () => void }) {
         gridData: JSON.stringify(gridToSave),
         gatesData: JSON.stringify({}),
         npcsData: JSON.stringify([]),
-        encountersData: JSON.stringify(encounters)
+        encountersData: JSON.stringify(encounters),
+        tileLayersData: JSON.stringify([]),
+        tilesetsData: JSON.stringify([])
       });
 
       if (res.success) {

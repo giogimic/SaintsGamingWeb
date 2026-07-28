@@ -43,6 +43,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [isInitializing, setIsInitializing] = useState(true);
   const [isDevEditorOpen, setIsDevEditorOpen] = useState(false);
   const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
+  const [activeLayerIdx, setActiveLayerIdx] = useState<number>(0);
 
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
@@ -109,9 +110,11 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
             GAME_MAPS[dbMap.id] = {
               id: dbMap.id,
               name: dbMap.name,
-              grid: JSON.parse(dbMap.gridData),
-              gates: JSON.parse(dbMap.gatesData) || {},
-              encounterPool: dbMap.encountersData ? JSON.parse(dbMap.encountersData) : []
+              grid: JSON.parse(dbMap.gridData || '[]'),
+              gates: dbMap.gatesData ? JSON.parse(dbMap.gatesData) : {},
+              encounterPool: dbMap.encountersData ? JSON.parse(dbMap.encountersData) : [],
+              tileLayers: dbMap.tileLayersData ? JSON.parse(dbMap.tileLayersData) : [],
+              tilesets: dbMap.tilesetsData ? JSON.parse(dbMap.tilesetsData) : []
             };
 
             if (dbMap.npcsData) {
@@ -396,6 +399,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     >
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
+        activeLayerIdx={activeLayerIdx}
         isDevEditorOpen={isDevEditorOpen}
       />
       
@@ -407,6 +411,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         isOpen={isDevEditorOpen} 
         onClose={() => setIsDevEditorOpen(false)} 
         onBrushTileChange={(tileId) => setActiveBrushTileId(tileId)}
+        activeLayerIdx={activeLayerIdx}
+        onLayerChange={(idx) => setActiveLayerIdx(idx)}
       />
 
       {/* Toast Notification */}

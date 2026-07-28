@@ -24,6 +24,8 @@ export async function saveWorldMap(data: {
   gatesData: string;
   npcsData: string;
   encountersData: string;
+  tileLayersData: string;
+  tilesetsData: string;
 }) {
   try {
     const isAdmin = await verifyAdmin();
@@ -40,6 +42,8 @@ export async function saveWorldMap(data: {
           gatesData: data.gatesData,
           npcsData: data.npcsData,
           encountersData: data.encountersData,
+          tileLayersData: data.tileLayersData,
+          tilesetsData: data.tilesetsData,
           version: existing.version + 1
         }
       });
@@ -52,6 +56,8 @@ export async function saveWorldMap(data: {
           gatesData: data.gatesData,
           npcsData: data.npcsData,
           encountersData: data.encountersData,
+          tileLayersData: data.tileLayersData,
+          tilesetsData: data.tilesetsData,
           version: 1
         }
       });

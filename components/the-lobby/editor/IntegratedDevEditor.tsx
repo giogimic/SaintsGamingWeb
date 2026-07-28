@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../store';
 import { searchMapIndex, registerNewMap } from '../data/map-index';
 import { GAME_MAPS } from '../data/maps';
+import { saveWorldMap } from '@/app/actions/game-admin';
 import { TUXEMON_SPRITES } from '../data/sprites';
 import { TUXEMON_MONSTERS } from '../data/generated-assets';
 
@@ -31,16 +32,25 @@ import AssetEditor from './AssetEditor';
 import GameConfigEditor from './GameConfigEditor';
 import ClassEditor from './ClassEditor';
 import SpriteBrowser from './SpriteBrowser';
+import TilesetPicker from './TilesetPicker';
 
 interface IntegratedDevEditorProps {
   isOpen: boolean;
   onClose: () => void;
   onBrushTileChange?: (tileId: number) => void;
+  activeLayerIdx?: number;
+  onLayerChange?: (idx: number) => void;
 }
 
 type EditorTab = 'maps' | 'spawns' | 'encounters' | 'npcs' | 'battles' | 'quests' | 'chars' | 'index' | 'assets' | 'classes' | 'gameConfig' | 'sprites';
 
-export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen, onClose, onBrushTileChange }) => {
+export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ 
+  isOpen, 
+  onClose, 
+  onBrushTileChange,
+  activeLayerIdx = 0,
+  onLayerChange
+}) => {
   const [activeTab, setActiveTab] = useState<EditorTab>('maps');
   const player = useGameStore((state) => state.player);
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -67,7 +77,15 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
     id: currentMapId,
     name: currentMapId,
     grid: Array(24).fill(0).map(() => Array(24).fill(0)),
-    gates: {}
+    gates: {},
+    tileLayers: [{ name: 'Ground', grid: Array(24).fill(0).map(() => Array(24).fill(0)) }],
+    tilesets: [
+      { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+      { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+      { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+      { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+      { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 }
+    ]
   };
 
   // Editor State Controls
@@ -145,7 +163,15 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       grid: newGrid,
       gates: {},
       npcs: [],
-      encounterPool: []
+      encounterPool: [],
+      tileLayers: [{ name: 'Ground', grid: newGrid }],
+      tilesets: [
+        { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+        { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+        { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+        { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+        { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 }
+      ]
     };
 
     registerNewMap(newMapData);
@@ -204,12 +230,32 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
 
   const handleFillGrid = () => {
     if (!currentMapData.grid) return;
-    for (let r = 0; r < currentMapData.grid.length; r++) {
-      for (let c = 0; c < (currentMapData.grid[r]?.length || 0); c++) {
-        currentMapData.grid[r][c] = brushTileId;
+    const layer = currentMapData.tileLayers?.[activeLayerIdx] || { grid: currentMapData.grid };
+    for (let r = 0; r < layer.grid.length; r++) {
+      for (let c = 0; c < layer.grid[r].length; c++) {
+        layer.grid[r][c] = brushTileId;
       }
     }
-    showToast(`Filled map grid with Tile ID ${brushTileId}`);
+    showToast(`Filled layer ${activeLayerIdx} with tile ${brushTileId}`);
+  };
+
+  const handleAddLayer = () => {
+    if (!currentMapData) return;
+    if (!currentMapData.tileLayers) {
+      currentMapData.tileLayers = [{ name: 'Ground', grid: currentMapData.grid }];
+    }
+    
+    const w = currentMapData.grid[0]?.length || 24;
+    const h = currentMapData.grid.length || 24;
+    
+    currentMapData.tileLayers.push({
+      name: `Layer ${currentMapData.tileLayers.length}`,
+      grid: Array(h).fill(0).map(() => Array(w).fill(0))
+    });
+    
+    // Force re-render
+    useGameStore.setState({ currentMapId });
+    showToast(`Added Layer ${currentMapData.tileLayers.length - 1}`);
   };
 
   const handleAddEncounterSpecies = () => {
@@ -259,19 +305,22 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
       currentMapData.npcs = mapNpcs;
       currentMapData.encounterPool = encounterPool;
 
-      await fetch(`/api/maps/${currentMapId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          grid: currentMapData.grid,
-          npcs: mapNpcs,
-          encounterPool: encounterPool,
-          spawnPoint: { x: spawnX, y: spawnY },
-          respawnPoint: { x: respawnX, y: respawnY }
-        })
+      const res = await saveWorldMap({
+        id: currentMapId,
+        name: currentMapData.name || currentMapId,
+        gridData: JSON.stringify(currentMapData.grid || []),
+        gatesData: JSON.stringify(currentMapData.gates || {}),
+        npcsData: JSON.stringify(mapNpcs || []),
+        encountersData: JSON.stringify(encounterPool || []),
+        tileLayersData: JSON.stringify(currentMapData.tileLayers || []),
+        tilesetsData: JSON.stringify(currentMapData.tilesets || [])
       });
 
-      showToast(`Dev Editor Configuration Saved for ${currentMapId}!`);
+      if (res.success) {
+        showToast(`Dev Editor Configuration Saved for ${currentMapId}!`);
+      } else {
+        showToast(`Error saving: ${res.error}`);
+      }
     } catch {
       showToast('Configuration saved locally!');
     }
@@ -514,34 +563,16 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({ isOpen
                 Click any terrain tile below, then click directly on the 2.5D Babylon canvas to paint.
               </p>
               
-              <div className="grid grid-cols-4 gap-2 pt-2">
-                {[
-                  { id: 0, name: 'Safe Grass', color: 'bg-emerald-600' },
-                  { id: 1, name: 'Wall / Tree', color: 'bg-slate-700' },
-                  { id: 2, name: 'Tall Grass', color: 'bg-green-500' },
-                  { id: 3, name: 'Gate A', color: 'bg-amber-500' },
-                  { id: 4, name: 'Water', color: 'bg-blue-600' },
-                  { id: 5, name: 'Wood Tree', color: 'bg-amber-800' },
-                  { id: 6, name: 'Ore Rock', color: 'bg-[#8d6e63]' },
-                  { id: 7, name: 'Shop Tile', color: 'bg-amber-600' },
-                  { id: 8, name: 'Clinic Tile', color: 'bg-cyan-600' },
-                  { id: 9, name: 'Crafting', color: 'bg-gray-500' },
-                  { id: 10, name: 'Fishing', color: 'bg-sky-600' },
-                  { id: 12, name: 'Base Hub', color: 'bg-indigo-800' }
-                ].map((tile) => (
-                  <button
-                    key={tile.id}
-                    onClick={() => handleBrushSelect(tile.id)}
-                    className={`p-2 rounded border flex flex-col items-center gap-1 transition-all ${
-                      brushTileId === tile.id
-                        ? 'border-cyan-400 bg-cyan-950/60 ring-2 ring-cyan-500/40'
-                        : 'border-slate-800 bg-slate-900/90 hover:border-slate-700'
-                    }`}
-                  >
-                    <span className={`w-5 h-5 rounded ${tile.color}`} />
-                    <span className="text-[10px] text-slate-300 font-mono">{tile.name}</span>
-                  </button>
-                ))}
+              <div className="pt-2">
+                <TilesetPicker 
+                  tilesets={currentMapData?.tilesets || []}
+                  activeBrushTileId={brushTileId}
+                  onBrushSelect={handleBrushSelect}
+                  activeLayerIdx={activeLayerIdx}
+                  onLayerChange={(idx) => onLayerChange && onLayerChange(idx)}
+                  tileLayers={currentMapData?.tileLayers || [{ name: 'Base Grid', grid: currentMapData?.grid || [] }]}
+                  onAddLayer={handleAddLayer}
+                />
               </div>
             </div>
           </div>
