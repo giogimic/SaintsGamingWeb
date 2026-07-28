@@ -11,12 +11,14 @@ import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand 
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
   activeBrushTileId?: number;
+  activeLayerIdx?: number;
   isDevEditorOpen?: boolean;
 }
 
 export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   onCanvasReady,
   activeBrushTileId = 1,
+  activeLayerIdx = -1,
   isDevEditorOpen = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -302,10 +304,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (!engine) return;
 
     if (isDevEditorOpen) {
-      engine.enableTilePicking((r, c) => {
-        engine.updateSingleTile(r, c, activeBrushTileId);
-        if (activeMap?.grid?.[r]) {
-          activeMap.grid[r][c] = activeBrushTileId;
+      engine.enableTilePicking((r, c, clickedLayerIdx) => {
+        const targetLayerIdx = activeLayerIdx !== -1 ? activeLayerIdx : (clickedLayerIdx || -1);
+        
+        // Always try to use the rich tileset array if present
+        if (targetLayerIdx !== -1 && activeMap?.tileLayers?.[targetLayerIdx]) {
+          engine.updateSingleTile(r, c, activeBrushTileId, targetLayerIdx, activeMap.tilesets);
+          activeMap.tileLayers[targetLayerIdx].grid[r][c] = activeBrushTileId;
+        } else {
+          // Fallback to legacy single grid
+          engine.updateSingleTile(r, c, activeBrushTileId);
+          if (activeMap?.grid?.[r]) {
+            activeMap.grid[r][c] = activeBrushTileId;
+          }
         }
       });
     } else {

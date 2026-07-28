@@ -188,7 +188,9 @@ export default function MapEditorPage() {
       gridData: JSON.stringify(grid),
       gatesData: JSON.stringify({}),
       npcsData: JSON.stringify(placedNpcs),
-      encountersData: JSON.stringify([])
+      encountersData: JSON.stringify([]),
+      tileLayersData: JSON.stringify([]),
+      tilesetsData: JSON.stringify([])
     });
 
     if (result.success) {

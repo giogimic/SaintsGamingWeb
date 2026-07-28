@@ -13,6 +13,8 @@ export interface GameMapData {
   name: string;
   grid: number[][]; // 0: safe, 1: wall/boundary, 2: tall grass, 3-4: gates, 5: tree(woodcutting), 6: ore(mining), 7: shop, 8: clinic, 10: fishing spot
   gates: Record<number, MapGate>;
+  tileLayers?: Array<{ name: string; grid: number[][] }>;
+  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
   npcs?: Array<{
     id: string;
     name: string;
@@ -27,8 +29,6 @@ export interface GameMapData {
     maxLevel: number;
     weight: number;
   }>;
-  tileLayers?: any[];
-  tilesets?: any[];
 }
 
 const mapCache: Record<string, GameMapData> = {};

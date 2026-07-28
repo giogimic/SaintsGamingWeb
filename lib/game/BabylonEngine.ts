@@ -14,7 +14,8 @@ import {
   DynamicTexture,
   Mesh,
   TransformNode,
-  Vector4
+  Vector4,
+  VertexBuffer
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 
@@ -417,7 +418,15 @@ export class BabylonEngine {
             const localId = gid - ts.firstgid;
             const col = localId % ts.columns;
             const row = Math.floor(localId / ts.columns);
-            const estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns));
+            
+            // Hardcode known rows for our core tilesets
+            let estimatedRows = 24;
+            if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
+            else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
+            else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
+            else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
+            else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
+            else estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns)); // fallback
 
             const u0 = col / ts.columns;
             const u1 = (col + 1) / ts.columns;
@@ -703,14 +712,56 @@ export class BabylonEngine {
     }
   }
 
-  public updateSingleTile(r: number, c: number, tileId: number) {
-    const tileMesh = this.scene.getMeshByName(`tile_${r}_${c}`) as Mesh;
-    if (tileMesh && tileMesh.material) {
-      this.applyTileMaterial(tileMesh.material as StandardMaterial, tileId, r, c);
+  public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>) {
+    if (layerIdx === -1) {
+      const tileMesh = this.scene.getMeshByName(`tile_${r}_${c}`) as Mesh;
+      if (tileMesh && tileMesh.material) {
+        this.applyTileMaterial(tileMesh.material as StandardMaterial, tileId, r, c);
+      }
+      return;
     }
+
+    const meshName = `tile_${layerIdx}_${r}_${c}`;
+    const tileMesh = this.scene.getMeshByName(meshName) as Mesh;
+    if (!tileMesh || !tileMesh.material || !tilesets || tilesets.length === 0) return;
+
+    const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
+    const ts = sortedTilesets.find(t => tileId >= t.firstgid);
+    if (!ts || !ts.imageSource) return;
+
+    let mat = this.tilesetMaterialCache.get(ts.imageSource);
+    if (mat) {
+      tileMesh.material = mat;
+    }
+
+    const localGid = tileId - ts.firstgid;
+    const tsCol = localGid % ts.columns;
+    const tsRow = Math.floor(localGid / ts.columns);
+    
+    // Hardcode known rows for our core tilesets
+    let estimatedRows = 24;
+    if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
+    else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
+    else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
+    else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
+    else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
+    else estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns)); // fallback
+    
+    const u0 = tsCol / ts.columns;
+    const v1 = 1 - (tsRow / estimatedRows);
+    const u1 = (tsCol + 1) / ts.columns;
+    const v0 = 1 - ((tsRow + 1) / estimatedRows);
+
+    const uvData = [
+      u0, v0,
+      u1, v0,
+      u1, v1,
+      u0, v1
+    ];
+    tileMesh.setVerticesData(VertexBuffer.UVKind, uvData);
   }
 
-  public enableTilePicking(onTileClick: (r: number, c: number) => void) {
+  public enableTilePicking(onTileClick: (r: number, c: number, layerIdx?: number) => void) {
     this.scene.onPointerDown = (_evt, pickResult) => {
       if (pickResult.hit && pickResult.pickedMesh) {
         const name = pickResult.pickedMesh.name;
@@ -720,11 +771,12 @@ export class BabylonEngine {
           if (parts.length === 3) {
             const r = parseInt(parts[1], 10);
             const c = parseInt(parts[2], 10);
-            onTileClick(r, c);
+            onTileClick(r, c, -1);
           } else if (parts.length === 4) {
+            const layerIdx = parseInt(parts[1], 10);
             const r = parseInt(parts[2], 10);
             const c = parseInt(parts[3], 10);
-            onTileClick(r, c);
+            onTileClick(r, c, layerIdx);
           }
         }
       }
