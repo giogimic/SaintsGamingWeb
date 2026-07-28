@@ -4,6 +4,18 @@ import { immer } from 'zustand/middleware/immer';
 
 export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
 
+export interface MapLogicTile {
+  id: number;
+  name: string;
+  color: string;
+  isSolid: boolean;
+  interactable: boolean;
+  onInteractAction: string | null;
+  onInteractPayload: string | null;
+  onStepAction: string | null;
+  onStepPayload: string | null;
+}
+
 export type Point = { x: number; y: number };
 
 export interface MapEntity {
@@ -114,6 +126,7 @@ export interface ToastMessage {
 }
 
 export interface GameState {
+  logicTiles: Record<number, MapLogicTile>;
   gameMode: GameMode;
   player: PlayerState;
   otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
@@ -133,6 +146,9 @@ export interface GameState {
   setPlayerChat: (message: string) => void;
   localChat: string | null;
   isMapTransitioning: boolean;
+  
+  // Game Data
+  fetchLogicTiles: () => Promise<void>;
   activeBattle: any;
   setActiveBattle: (battleData: any) => void;
   emitSocketEvent?: (event: string, data: any) => void;
@@ -193,6 +209,7 @@ export const INITIAL_SKILLS: Record<string, SkillData> = {
 export const useGameStore = create<GameState>()(
   subscribeWithSelector(
     immer((set) => ({
+      logicTiles: {},
       gameMode: 'EXPLORING',
       player: {
         spriteId: 'adventurer',
@@ -247,6 +264,19 @@ export const useGameStore = create<GameState>()(
           if (state.localChat === message) state.localChat = null; 
         }), 4000);
       },
+      
+      fetchLogicTiles: async () => {
+        try {
+          const res = await fetch('/api/world/logic-tiles');
+          const json = await res.json();
+          if (json.success) {
+            set((state) => { state.logicTiles = json.data; });
+          }
+        } catch (e) {
+          console.error('Failed to fetch logic tiles', e);
+        }
+      },
+      
       acceptQuest: (questId) => set((state) => {
         if (!state.player.activeQuests[questId]) {
           state.player.activeQuests[questId] = { stage: 1 };
