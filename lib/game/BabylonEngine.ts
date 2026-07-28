@@ -748,7 +748,8 @@ export class BabylonEngine {
       );
 
       // For orthographic 2.5D, fixed tilt is much more stable than billboarding
-      spriteMesh.rotation.x = Math.PI / 4;
+      // Negative PI/4 tilts the sprite back to perfectly face the 45-degree angled down camera
+      spriteMesh.rotation.x = -Math.PI / 4;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       mat.useAlphaFromDiffuseTexture = true;
