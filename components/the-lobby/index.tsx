@@ -407,7 +407,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         activeMapId={currentMapId}
         onMapSelect={(id) => {
           loadMap(id).then(() => {
-            useGameStore.getState().setCurrentMap(id);
+            useGameStore.setState({ currentMapId: id });
           });
         }}
         devMapList={devMapList}
