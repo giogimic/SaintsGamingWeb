@@ -344,6 +344,22 @@ export class BabylonEngine {
    * Move camera instantly to a world position (used on map load / spawn)
    */
   public snapCameraTo(worldX: number, worldZ: number) {
+    const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
+    const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
+    const viewHalfWidth = this.camera?.orthoRight || 10;
+    const viewHalfHeight = this.camera?.orthoTop || 10;
+
+    if (halfWidth > viewHalfWidth) {
+      worldX = Math.max(-halfWidth + viewHalfWidth, Math.min(halfWidth - viewHalfWidth, worldX));
+    } else {
+      worldX = 0;
+    }
+    if (halfHeight > viewHalfHeight) {
+      worldZ = Math.max(-halfHeight + viewHalfHeight, Math.min(halfHeight - viewHalfHeight, worldZ));
+    } else {
+      worldZ = 0;
+    }
+
     this.cameraTargetX = worldX;
     this.cameraTargetZ = worldZ;
     this.camera.position = new Vector3(worldX, 14, worldZ - 14);
@@ -355,6 +371,22 @@ export class BabylonEngine {
    * Smoothly follow a world position each tick
    */
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.08) {
+    const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
+    const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
+    const viewHalfWidth = this.camera?.orthoRight || 10;
+    const viewHalfHeight = this.camera?.orthoTop || 10;
+
+    if (halfWidth > viewHalfWidth) {
+      targetX = Math.max(-halfWidth + viewHalfWidth, Math.min(halfWidth - viewHalfWidth, targetX));
+    } else {
+      targetX = 0;
+    }
+    if (halfHeight > viewHalfHeight) {
+      targetZ = Math.max(-halfHeight + viewHalfHeight, Math.min(halfHeight - viewHalfHeight, targetZ));
+    } else {
+      targetZ = 0;
+    }
+
     this.cameraTargetX = targetX;
     this.cameraTargetZ = targetZ;
 
@@ -445,14 +477,15 @@ export class BabylonEngine {
 
             let mat = this.tilesetMaterialCache.get(ts.imageSource);
             if (!mat) {
-              mat = new StandardMaterial(`mat_${ts.imageSource}`, this.scene);
+              mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
               let tex = this.tilesetTextureCache.get(ts.imageSource);
               if (!tex) {
                 // Normalize imageSource: strip any directory prefix the DB may have stored
                 // to always resolve to /tuxemon-assets/tilesets/{filename.png}
-                const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+                const rawSource = ts.imageSource.replace(/^(.*\\/tilesets\\/|tilesets\\/)/i, '');
                 const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
-                tex = new Texture(tilesetPath, this.scene);
+                // Use Nearest sampling mode (1) for pixel-perfect crisp textures!
+                tex = new Texture(tilesetPath, this.scene, true, false, 1);
                 tex.hasAlpha = true;
                 this.tilesetTextureCache.set(ts.imageSource, tex);
               }
