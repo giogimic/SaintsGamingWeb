@@ -439,7 +439,10 @@ export class BabylonEngine {
               mat = new StandardMaterial(`mat_${ts.imageSource}`, this.scene);
               let tex = this.tilesetTextureCache.get(ts.imageSource);
               if (!tex) {
-                const tilesetPath = `/tuxemon-assets/tilesets/${ts.imageSource}`;
+                // Normalize imageSource: strip any directory prefix the DB may have stored
+                // to always resolve to /tuxemon-assets/tilesets/{filename.png}
+                const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+                const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
                 tex = new Texture(tilesetPath, this.scene);
                 tex.hasAlpha = true;
                 this.tilesetTextureCache.set(ts.imageSource, tex);

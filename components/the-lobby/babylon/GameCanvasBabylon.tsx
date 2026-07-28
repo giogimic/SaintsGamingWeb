@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
 import { useGameStore } from '../store';
-import { GAME_MAPS } from '../data/maps';
+import { loadMap } from '../data/maps';
+import type { GameMapData } from '../data/maps';
 import { soundSynth } from '@/lib/game/sound-synth';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
 
@@ -28,27 +29,42 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const showToast = useGameStore((state) => state.showToast);
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
 
-  // Load Active Map Data or Default Fallback — cast as any for optional fields
-  const mapData = (GAME_MAPS[currentMapId] || {
-    id: 'DEFAULT_MAP',
-    name: 'Tamer Grounds',
-    grid: Array(24).fill(0).map((_, r) => 
-      Array(24).fill(0).map((_, c) => 
-        (r === 0 || r === 23 || c === 0 || c === 23) ? 1 : (r % 5 === 0 && c % 5 === 0) ? 2 : 0
-      )
-    )
-  }) as any;
+  // Async map state — engine only mounts AFTER map data is ready
+  const [mapData, setMapData] = useState<GameMapData | null>(null);
 
-  const mapWidth = mapData.grid[0]?.length || 24;
-  const mapHeight = mapData.grid.length || 24;
+  useEffect(() => {
+    setMapData(null); // Reset on map change so engine remounts cleanly
+    loadMap(currentMapId).then((data) => {
+      setMapData(data);
+    }).catch(() => {
+      // Fallback map if API fails
+      setMapData({
+        id: currentMapId,
+        name: 'Tamer Grounds',
+        grid: Array(24).fill(0).map((_, r) =>
+          Array(24).fill(0).map((_, c) =>
+            (r === 0 || r === 23 || c === 0 || c === 23) ? 1 : (r % 5 === 0 && c % 5 === 0) ? 2 : 0
+          )
+        ),
+        gates: {},
+        npcs: [],
+      });
+    });
+  }, [currentMapId]);
+
+  // Derive dimensions — use loaded map data or safe defaults
+  const activeMap = mapData as any;
+  const mapWidth = activeMap?.grid?.[0]?.length || 24;
+  const mapHeight = activeMap?.grid?.length || 24;
 
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number) => {
+    if (!activeMap) return;
     const nextX = Math.max(0, Math.min(mapWidth - 1, targetX));
     const nextY = Math.max(0, Math.min(mapHeight - 1, targetY));
 
     // Collision check (Tile 1 = Solid Wall)
-    const targetTile = mapData.grid[nextY]?.[nextX];
+    const targetTile = activeMap.grid[nextY]?.[nextX];
     if (targetTile === 1) {
       showToast('Blocked by obstacle!');
       return;
@@ -61,7 +77,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (targetTile === 2) {
       const roll = Math.random() * 100;
       if (roll < 15) { // 15% chance per step in grass
-        const pool = mapData.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
+        const pool = activeMap?.encounterPool || [{ speciesId: 'ignis', minLevel: 2, maxLevel: 5 }];
         const wildSpecies = pool[Math.floor(Math.random() * pool.length)];
         soundSynth.playEncounterSound();
         showToast(`Wild ${wildSpecies.speciesId.toUpperCase()} appeared!`);
@@ -70,8 +86,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
 
     // Warp Gate Transition Check — supports any tile ID mapped in gates
-    if (mapData.gates) {
-      const gate = mapData.gates[targetTile];
+    if (activeMap.gates) {
+      const gate = activeMap.gates[targetTile];
       if (gate && gate.targetMapId) {
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(gate.spawnPoint || { x: 6, y: 2 });
@@ -125,7 +141,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const currentPlayer = useGameStore.getState().player;
     const curX = currentPlayer.position?.x ?? 6;
     const curY = currentPlayer.position?.y ?? 2;
-    const currentTile = mapData.grid[curY]?.[curX];
+    const currentTile = activeMap?.grid?.[curY]?.[curX];
 
     // Resource Node Harvesting
     if (currentTile === 5) {
@@ -146,7 +162,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     let isDynamic = false;
 
     // Check static imported Tuxemon NPCs first
-    nearbyNpc = mapData.npcs?.find((npc: any) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
+    nearbyNpc = activeMap?.npcs?.find((npc: any) => Math.abs(npc.x - curX) <= 2 && Math.abs(npc.y - curY) <= 2);
     
     // Fallback to checking Dev Editor placed dynamic entities
     if (!nearbyNpc) {
@@ -176,7 +192,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   };
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    // Wait until map data is fully loaded from the API before mounting engine
+    if (!canvasRef.current || !mapData) return;
 
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
@@ -186,16 +203,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       onCanvasReady(babylonEngine);
     }
 
-    // Load actual map grid and NPCs
+    // Load actual map grid and NPCs with fully resolved async data
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
       height: mapHeight,
       tileSize: 1, // 1 BJS world unit per tile
-      tiles: mapData.grid,
-      tileLayers: (mapData as any).tileLayers,
-      tilesets: (mapData as any).tilesets,
-      npcs: mapData.npcs
+      tiles: activeMap.grid,
+      tileLayers: activeMap.tileLayers,
+      tilesets: activeMap.tilesets,
+      npcs: activeMap.npcs
     });
 
     // Snap camera to player's starting position immediately (no lerp on first frame)
@@ -220,7 +237,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          spriteUrl: freshPlayer.spriteId ? (freshPlayer.spriteId.includes('/') ? freshPlayer.spriteId : `/assets/sprites/${freshPlayer.spriteId}.png`) : undefined,
+          // Fix: /assets/sprites/ does not exist. Sprites are in /assets/npcs/ or full path from Tuxemon
+          spriteUrl: freshPlayer.spriteId
+            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/assets/npcs/${freshPlayer.spriteId}.png`)
+            : undefined,
           isPlayer: true,
           chatMessage: useGameStore.getState().localChat || undefined
         });
@@ -240,7 +260,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             name: other.name || 'Tamer',
             x: ox,
             y: oz,
-            spriteUrl: other.spriteId ? (other.spriteId.includes('/') ? other.spriteId : `/assets/sprites/${other.spriteId}.png`) : undefined,
+            spriteUrl: other.spriteId
+              ? (other.spriteId.startsWith('/') ? other.spriteId : `/assets/npcs/${other.spriteId}.png`)
+              : undefined,
             isPlayer: false,
             chatMessage: other.chatMessage
           });
@@ -271,7 +293,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       babylonEngine.dispose();
       engineRef.current = null;
     };
-  }, [currentMapId, mapData.grid]);
+  // Re-run when mapData resolves or currentMapId changes
+  }, [currentMapId, mapData]);
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
@@ -281,8 +304,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c) => {
         engine.updateSingleTile(r, c, activeBrushTileId);
-        if (mapData.grid[r]) {
-          mapData.grid[r][c] = activeBrushTileId;
+        if (activeMap?.grid?.[r]) {
+          activeMap.grid[r][c] = activeBrushTileId;
         }
       });
     } else {
@@ -291,7 +314,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tryMovePlayerTo(c, r);
       });
     }
-  }, [isDevEditorOpen, activeBrushTileId, mapData.grid]);
+  }, [isDevEditorOpen, activeBrushTileId, mapData]);
 
   // Handle Keyboard WASD & Arrow Key Movement
   useEffect(() => {
@@ -329,10 +352,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mapWidth, mapHeight, mapData.grid, mapData.gates]);
+  }, [mapWidth, mapHeight, mapData]);
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">
+      {/* Loading screen while async map data is fetching */}
+      {!mapData && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">
+          <div className="w-12 h-12 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin mb-4" />
+          <p className="text-violet-300 font-mono text-sm animate-pulse">Loading {currentMapId.replace(/_/g, ' ')}...</p>
+        </div>
+      )}
+
       <canvas
         ref={canvasRef}
         className="w-full h-full outline-none touch-none cursor-crosshair"
@@ -344,7 +375,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
         <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
         <span className="text-slate-400">Map:</span>
-        <strong className="text-white">{mapData.name || currentMapId}</strong>
+        <strong className="text-white">{activeMap?.name || currentMapId}</strong>
         <span className="text-slate-600">|</span>
         <span className="text-slate-400">Pos:</span>
         <strong className="text-amber-300">({player.position?.x ?? 0}, {player.position?.y ?? 0})</strong>
