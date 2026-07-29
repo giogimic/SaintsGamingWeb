@@ -1,5 +1,12 @@
 # Changelog
 
+### v2.1.57
+- **Classic RPG Interface Overhaul**: Replaced the floating Game Menu Bar with a static `ClassicPanel.tsx` in the bottom right corner, bringing an immersive classic RPG layout (Inventory, Skills, Equipment, Quests, GTC).
+- **Classic Inventory & Skill Trees**: Scaled down `inventory-overlay.tsx` to a 4-column item grid, and redesigned `skills-overlay.tsx` into a classic 3-column stats list with hover tooltips to fit inside the new Classic Panel.
+- **Classic Chat Interface**: Redesigned `GameChat.tsx` layout to resemble classic RPG brown opaque chat boxes with channel tabs at the bottom.
+- **Immersive Chat Bubbles**: Overhauled BabylonJS 3D chat bubbles into retro yellow text with black outlines rendered directly above player models in world space.
+- **Action Hotbar**: Added a 6-slot quick-access Hotbar overlay at the bottom-center of the UI during exploration mode.
+- **Player Animation Fix**: Fixed a bug where WASD movement directions were mapped to the wrong Sprite Sheet rows (W mapped to left, D mapped to up, etc.). Corrected WebGL UV V-Offset row bindings.
 ### v2.0.3
 - **Site Level Progression Engine**: Linked game progression to platform account progression. Unlocking game achievements now grants XP which automatically ranks up the user's site-wide `LevelTier` across the network.
 - **Discord Webhook Broadcasting**: Fully integrated Saints Tamer server actions with the platform Discord Webhooks (`discord.ts`). Top achievements, earned coins, and platform Level Ups are now broadcasted live to community channels.

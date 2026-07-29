@@ -6,21 +6,18 @@ import IntegratedDevEditor from './editor/IntegratedDevEditor';
 import SaintsDexOverlay from './SaintsDexOverlay';
 import BattleOverlay from './battle-overlay';
 import ShopOverlay from './shop-overlay';
-import SkillsOverlay from './skills-overlay';
-import InventoryOverlay from './inventory-overlay';
 import PartyOverlay from './party-overlay';
 import CraftingOverlay from './crafting-overlay';
 import BaseOverlay from './base-overlay';
 import DialogOverlay from './dialog-overlay';
 import ProfessorLabOverlay from './ProfessorLabOverlay';
-import GtcOverlay from './gtc-overlay';
-import RpgStatsOverlay from './rpg-stats-overlay';
-import QuestLogOverlay from './quest-log-overlay';
 import LeaderboardOverlay from './leaderboard-overlay';
 import AchievementsOverlay from './achievements-overlay';
 import MiniMapRadar from './MiniMapRadar';
 import DPad from './dpad';
 import SaintsHudOrbs from './hud/SaintsHudOrbs';
+import ClassicPanel from './ClassicPanel';
+import Hotbar from './Hotbar';
 import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
@@ -452,37 +449,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
               </button>
             )}
           </div>
-
-          {/* Right: Game Menu Bar */}
-          <div className="flex gap-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-1 shadow-2xl pointer-events-auto">
-            {[
-              { mode: 'PARTY', label: 'Party', key: 'P', icon: '⚔️' },
-              { mode: 'INVENTORY', label: 'Items', key: 'I', icon: '🎒' },
-              { mode: 'SKILLS', label: 'Skills', key: 'K', icon: '📊' },
-              { mode: 'EQUIPMENT', label: 'Gear', key: null, icon: '🛡️' },
-              { mode: 'DEX', label: 'Dex', key: 'X', icon: '📖' },
-              { mode: 'QUESTS', label: 'Quests', key: null, icon: '📜' },
-              { mode: 'GTC', label: 'GTC', key: null, icon: '💱' },
-              { mode: 'ACHIEVEMENTS', label: 'Badges', key: 'B', icon: '🏅' },
-              { mode: 'LEADERBOARD', label: 'Leaders', key: null, icon: '🏆' },
-            ].map((item) => (
-              <button
-                key={item.mode}
-                onClick={() => { setIsDevEditorOpen(false); useGameStore.getState().setGameMode(item.mode as any); }}
-                className={`group relative flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all ${
-                  gameMode === item.mode
-                    ? 'bg-indigo-600/60 text-white shadow-lg shadow-indigo-500/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/10'
-                }`}
-                title={item.key ? `${item.label} [${item.key}]` : item.label}
-              >
-                <span className="text-base leading-none">{item.icon}</span>
-                <span className="mt-0.5 leading-none">{item.label}</span>
-                {item.key && (
-                  <span className="absolute -bottom-0.5 right-0.5 text-[8px] text-cyan-400/60 font-bold">{item.key}</span>
-                )}
-              </button>
-            ))}
+          {/* Right: Game Menu Bar (Removed - using ClassicPanel) */}
+          <div className="flex gap-1 pointer-events-auto">
             {isAdminUser && (
               <button
                 onClick={() => { 
@@ -492,7 +460,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
                 className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border ${
                   isDevEditorOpen
                     ? 'bg-cyan-600/40 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/20'
-                    : 'text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 border-transparent'
+                    : 'bg-black/60 backdrop-blur-md text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 border-white/10'
                 }`}
                 title="Dev Editor [Ctrl+E]"
               >
@@ -503,14 +471,33 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           </div>
         </div>
       )}
+
+      {/* Classic RPG Interface Panel */}
+      <div 
+        className="absolute inset-0 pointer-events-none" 
+        style={{ zoom: uiScale }}
+      >
+        <ClassicPanel />
+      </div>
+
+      {/* Overlays that aren't part of ClassicPanel */}
+      <div 
+        className="absolute inset-0 pointer-events-none flex items-center justify-center" 
+        style={{ zoom: uiScale }}
+      >
+        {gameMode === 'CRAFTING' && <CraftingOverlay />}
+        {gameMode === 'BASE' && <BaseOverlay />}
+        {gameMode === 'DIALOG' && <DialogOverlay />}
+        {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay />}
+        {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
+        {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
+        {gameMode === 'PARTY' && <PartyOverlay />}
+        {gameMode === 'DEX' && <SaintsDexOverlay />}
+      </div>
       
-      {gameMode === 'DEX' && <SaintsDexOverlay />}
       {gameMode === 'BATTLE' && <BattleOverlay />}
       {gameMode === 'SHOP' && <ShopOverlay />}
-      {gameMode === 'SKILLS' && <SkillsOverlay />}
-      {gameMode === 'INVENTORY' && <InventoryOverlay />}
-      {gameMode === 'PARTY' && <PartyOverlay />}
-      {gameMode === 'EQUIPMENT' && <RpgStatsOverlay />}
+      {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
       {gameMode === 'CRAFTING' && <CraftingOverlay />}
       {gameMode === 'BASE' && <BaseOverlay />}
       {activeDialog && <DialogOverlay />}
@@ -520,8 +507,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
       />
       
-      {gameMode === 'GTC' && <GtcOverlay />}
-      {gameMode === 'QUESTS' && <QuestLogOverlay />}
       {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
       {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
       {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
@@ -529,9 +514,12 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'EXPLORING' && !isDevEditorOpen && <MiniMapRadar />}
       {gameMode === 'EXPLORING' && !isDevEditorOpen && <SaintsHudOrbs />}
 
-      {/* Unified Game Chat UI */}
+      {/* Unified Game Chat UI & Hotbar */}
       {gameMode === 'EXPLORING' && !isDevEditorOpen && (
-        <GameChat />
+        <>
+          <Hotbar />
+          <GameChat />
+        </>
       )}
     </div>
   );

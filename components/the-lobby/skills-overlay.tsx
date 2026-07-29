@@ -19,43 +19,40 @@ export default function SkillsOverlay() {
     return Math.pow(level, 2) * 50; // Inverse of Lvl = floor(sqrt(XP / 50)) + 1
   };
 
-  const renderSkillBar = (skillName: string) => {
-    const data = skills[skillName];
-    if (!data) return null;
-    
-    const nextLevelXp = getXpForNextLevel(data.level);
-    const prevLevelXp = getXpForNextLevel(data.level - 1);
-    const currentTierXp = data.xp - prevLevelXp;
-    const tierTotalXp = nextLevelXp - prevLevelXp;
-    const progress = Math.min(100, Math.max(0, (currentTierXp / tierTotalXp) * 100));
 
-    return (
-      <div key={skillName} className="bg-[#1a1a1a] p-2 border-2 border-[#333] rounded flex flex-col gap-1">
-        <div className="flex justify-between items-center">
-          <span className="text-[#ca8a04] font-bold text-sm">{skillName}</span>
-          <span className="text-white font-mono text-sm">Lv.{data.level}</span>
-        </div>
-        <div className="w-full h-2 bg-black rounded-full overflow-hidden border border-[#333]">
-          <div 
-            className="h-full bg-[#ca8a04] transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="text-right text-[10px] text-gray-500 font-mono">
-          {Math.floor(data.xp)} / {nextLevelXp} XP
-        </div>
-      </div>
-    );
-  };
 
   return (
     <RpgPanel title="SAINT SKILLS" onClose={() => setGameMode('EXPLORING')}>
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
+      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
         {Object.entries(SKILL_CATEGORIES).map(([category, skillList]) => (
-          <div key={category}>
-            <h3 className="text-white font-bold mb-2 border-b border-[#333] pb-1 uppercase tracking-wide text-sm">{category}</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-              {skillList.map(skill => renderSkillBar(skill))}
+          <div key={category} className="mb-4">
+            <h3 className="text-[#383024] font-bold mb-1 border-b-2 border-[#a89b88] pb-1 uppercase tracking-wide text-xs drop-shadow-[1px_1px_0px_rgba(255,255,255,0.4)]">{category}</h3>
+            <div className="grid grid-cols-3 gap-[3px]">
+              {skillList.map(skill => {
+                const data = skills[skill] || { level: 1, xp: 0 };
+                const nextLevelXp = getXpForNextLevel(data.level);
+                
+                return (
+                  <div 
+                    key={skill} 
+                    className="group relative bg-[#52493d] border-2 border-[#383024] border-t-[#7a6f5d] border-l-[#7a6f5d] p-1 flex items-center justify-between hover:bg-[#63594b] cursor-help h-[36px]"
+                  >
+                    {/* Fake Icon Placeholder (first letter) */}
+                    <div className="w-5 h-5 bg-[#221c13] rounded-full flex items-center justify-center border border-black shadow-inner">
+                      <span className="text-[#d5c3a3] text-[10px] font-bold uppercase">{skill.substring(0,2)}</span>
+                    </div>
+                    <span className="text-[#ffff00] font-bold text-[13px] font-mono drop-shadow-[1px_1px_1px_black]">
+                      {data.level}
+                    </span>
+
+                    {/* Tooltip on Hover */}
+                    <div className="hidden group-hover:flex absolute top-[-40px] left-1/2 -translate-x-1/2 bg-[#383024] border border-[#a89b88] p-1 flex-col whitespace-nowrap z-50 text-[10px] text-[#d5c3a3] shadow-[2px_2px_0px_rgba(0,0,0,0.5)]">
+                      <span className="text-white font-bold">{skill} XP:</span>
+                      <span>{Math.floor(data.xp).toLocaleString()} / {nextLevelXp.toLocaleString()}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
