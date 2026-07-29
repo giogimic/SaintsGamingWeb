@@ -127,6 +127,19 @@ function serverTick() {
           direction: direction, // Face the wall but don't move
           reason: blockedByNpc ? "npc_collision" : "wall_collision",
         });
+
+        // Broadcast direction change to others!
+        if (player.direction !== direction) {
+          socket.to(player.mapId).emit("player_moved", {
+            socketId: player.socketId,
+            x: player.x,
+            y: player.y,
+            name: player.name,
+            spriteId: player.spriteId,
+            direction: direction,
+            isMoving: false,
+          });
+        }
       }
       player.direction = direction;
       player.lastAckedSeq = seq;

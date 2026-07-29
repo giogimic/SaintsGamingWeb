@@ -70,31 +70,41 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (!activeMap) return;
     if (useGameStore.getState().isMapTransitioning) return;
     
-    // Bounds Check
-    if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
-      return; // Cannot walk off the map
-    }
+    const currentPos = useGameStore.getState().player?.position;
+    if (!currentPos) return;
 
     const nextX = targetX;
     const nextY = targetY;
 
-    const currentPos = useGameStore.getState().player?.position;
-    if (!currentPos) return;
-
-    // Determine intended direction even if we hit a wall
+    // Determine intended direction
     let dir: 'up' | 'down' | 'left' | 'right' = 'down';
     if (nextX > currentPos.x) dir = 'right';
     else if (nextX < currentPos.x) dir = 'left';
     else if (nextY > currentPos.y) dir = 'down';
     else if (nextY < currentPos.y) dir = 'up';
 
+    // Bounds Check
+    if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
+      // Turn to face the boundary, but don't move
+      setPlayerPosition(currentPos, dir, false);
+      const store = useGameStore.getState();
+      const seq = store.incrementMoveSeq();
+      store.addPendingMove({ seq, direction: dir, predictedPos: currentPos });
+      emitSocketEvent?.('move_intent', { direction: dir, seq });
+      return;
+    }
+
     // Logic Grid Collision Check
     const targetTileId = activeMap.grid[nextY]?.[nextX];
     const logicTile = useGameStore.getState().logicTiles[targetTileId];
     
     if (logicTile?.isSolid) {
-      // Just turn to face the wall, don't move.
+      // Turn to face the wall, don't move
       setPlayerPosition(currentPos, dir, false);
+      const store = useGameStore.getState();
+      const seq = store.incrementMoveSeq();
+      store.addPendingMove({ seq, direction: dir, predictedPos: currentPos });
+      emitSocketEvent?.('move_intent', { direction: dir, seq });
       return;
     }
 
@@ -105,6 +115,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     
     if (isStaticNpc || isDynamicNpc) {
       setPlayerPosition(currentPos, dir, false);
+      const store = useGameStore.getState();
+      const seq = store.incrementMoveSeq();
+      store.addPendingMove({ seq, direction: dir, predictedPos: currentPos });
+      emitSocketEvent?.('move_intent', { direction: dir, seq });
       return; // Blocked by NPC
     }
 
@@ -377,7 +391,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               toX: targetX,
               toY: targetY,
               startTime: now,
-              duration: 100, // 100ms interpolation
+              duration: 200, // 200ms interpolation (matches server MOVE_COOLDOWN)
             };
             interp = interpBufferRef.current[interpKey];
           }
