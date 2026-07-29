@@ -1,3 +1,9 @@
+### 2.1.70
+- **MMO Sharding Integration:** Upgraded Game Server to dynamically spin up instance channels (Ch.1, Ch.2, etc.) based on population limits (max 50 players/shard).
+- **Socket Grid Isolation:** Integrated `WorldManager` with `PlayerManager` so that server physics and broadcasts are perfectly isolated to specific instance channels.
+- **MMO Player Defeat Flow:** Implemented player health and death logic. When a player's HP reaches 0, they are safely teleported to Saints Village, bypassing permanent death.
+- **Aggressive Combat AI:** Creatures whose health falls below 50% now enter an `ENRAGED` state and will retaliate using Area of Effect (AoE) attacks against players in range.
+
 ### 2.1.69
 - **MMO Combat & AI**: Transformed legacy combat into a real-time MMO system. Added generic CreatureManager, EncounterManager, server-authoritative wandering AI, real-time capture action logic in CombatManager, Babylon.js Selection Rings, and visual projectile arcs.
 

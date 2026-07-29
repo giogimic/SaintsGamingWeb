@@ -24,9 +24,10 @@
 
 ---
 
-## 1. ARCHITECTURE & STATE (ZUSTAND + CANVAS)
-- **The Game Engine (Lerp & Camera Modernization):** Procedural HTML5 `<canvas>` rendering using `requestAnimationFrame`. We use **Linear Interpolation (Lerp)** for 60FPS fluid motion. Crucially, the engine uses a **Viewport Camera System**: The map grid can be massive (e.g., 64x64), but the canvas translates to center dynamically on the player, ensuring tiles are properly scaled on widescreen/mobile displays.
-- **State Management:** **Zustand** (with `immer` middleware) for the global store. 
+## 1. ARCHITECTURE & STATE (BABYLON.JS + SERVER AUTHORITY)
+- **The Game Engine (Babylon.js):** 3D/2.5D rendering using Babylon.js. The client provides visual representation (smooth interpolation of movement, visual FX for projectiles), but all logic is strictly server-authoritative.
+- **Server Authority (Socket.io):** A robust game server layer handles all true game state, entity positions, collision, and combat calculations. The client only sends player input (intent) to the server.
+- **State Management:** **Zustand** (with `immer` middleware) for global client-side UI store (hotbars, inventory), while the Server dictates the spatial grid, MMO combat math, and dynamic instancing.
 - **Next.js integration:** Export the game as `<CyberTerminal />` (keep the component name for backwards compatibility, but UI says Saints Tamer) marked `'use client'`, and load it via `next/dynamic` with `ssr: false`.
 
 ---

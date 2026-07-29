@@ -1,6 +1,6 @@
 import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
-import { AIState, SpawnMode } from "./types";
+import { AIState, SpawnMode, BehavioralState } from "./types";
 
 export interface CreatureState {
   entityId: string;
@@ -11,6 +11,7 @@ export interface CreatureState {
   y: number;
   spawnMode: SpawnMode;
   aiState: AIState;
+  behavior: BehavioralState;
   ownerId?: string; // If SpawnMode is ENCOUNTER_PRIVATE, this is the player's accountId or partyId
   hp: number;
   maxHp: number;
@@ -27,6 +28,33 @@ export class CreatureManager {
     this.engine.events.on("updateEntities", (dt) => this.tickAI(dt));
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("spawnCreature", (data) => this.spawnCreature(data));
+    this.engine.events.on("creatureDamaged", (data) => this.handleCreatureDamaged(data));
+    this.engine.events.on("requestCreatureState", (entityId, callback) => {
+      callback(this.creatures.get(entityId));
+    });
+  }
+
+  private handleCreatureDamaged(data: { entityId: string, attackerId: string, damage: number }) {
+    const creature = this.creatures.get(data.entityId);
+    if (!creature) return;
+
+    creature.hp = Math.max(0, creature.hp - data.damage);
+    const hpPercent = creature.hp / creature.maxHp;
+
+    if (hpPercent <= 0) {
+      // Creature defeated, engine logic elsewhere would handle despawn
+    } else if (hpPercent < 0.15) {
+      creature.behavior = BehavioralState.FLEEING;
+      creature.aiState = AIState.FLEE;
+    } else if (hpPercent < 0.50) {
+      creature.behavior = BehavioralState.ENRAGED;
+      creature.aiState = AIState.ATTACK; // Transition to attack when enraged
+    } else {
+      creature.behavior = BehavioralState.ALERT;
+      creature.aiState = AIState.CHASE; // Transition to chase/alert
+    }
+
+    this.dirtyEntities.add(data.entityId);
   }
 
   private spawnCreature(data: { templateId: string, mapId: string, x: number, y: number, spawnMode: SpawnMode, ownerId?: string }) {
@@ -41,6 +69,7 @@ export class CreatureManager {
       y: data.y,
       spawnMode: data.spawnMode,
       aiState: AIState.IDLE,
+      behavior: BehavioralState.CALM,
       ownerId: data.ownerId,
       hp: 100,
       maxHp: 100,
@@ -110,6 +139,74 @@ export class CreatureManager {
             }
           }
         }
+      } else if (creature.aiState === AIState.FLEE) {
+        // Simple fleeing logic: Move rapidly every 1 second in a random valid direction
+        if (now - creature.lastMoveTime > 1000) {
+          const dirs: Array<"up" | "down" | "left" | "right"> = ["up", "down", "left", "right"];
+          const validDirs = dirs.filter(dir => {
+            let nextX = creature.x;
+            let nextY = creature.y;
+            if (dir === "up") nextY -= 1;
+            else if (dir === "down") nextY += 1;
+            else if (dir === "left") nextX -= 1;
+            else if (dir === "right") nextX += 1;
+            return this.worldManager.isWalkable(creature.mapId, nextX, nextY) && !this.worldManager.isOccupied(creature.mapId, nextX, nextY);
+          });
+          
+          if (validDirs.length > 0) {
+            const dir = validDirs[Math.floor(Math.random() * validDirs.length)];
+            let nextX = creature.x;
+            let nextY = creature.y;
+            if (dir === "up") nextY -= 1;
+            else if (dir === "down") nextY += 1;
+            else if (dir === "left") nextX -= 1;
+            else if (dir === "right") nextX += 1;
+            
+            this.worldManager.moveEntity(creature.mapId, creature.x, creature.y, nextX, nextY, entityId);
+            creature.x = nextX;
+            creature.y = nextY;
+            creature.direction = dir;
+            creature.isMoving = true;
+            creature.lastMoveTime = now;
+            this.dirtyEntities.add(entityId);
+            
+            setTimeout(() => {
+              const c = this.creatures.get(entityId);
+              if (c) {
+                c.isMoving = false;
+                this.dirtyEntities.add(entityId);
+              }
+            }, 250);
+          }
+        }
+      } else if (creature.aiState === AIState.ATTACK) {
+        // Enraged creatures unleash AoE attacks every 2 seconds
+        if (now - creature.lastMoveTime > 2000) {
+          creature.lastMoveTime = now;
+          
+          // Emit a decoupled attack event. The PlayerManager will listen and apply damage
+          // to any players within the radius.
+          this.engine.events.emit("creatureAoEAttack", {
+            attackerId: creature.entityId,
+            mapId: creature.mapId,
+            x: creature.x,
+            y: creature.y,
+            radius: 3,
+            damage: 15
+          });
+
+          // Optional: visual broadcast so clients see an attack animation
+          this.engine.events.emit("networkBroadcast", {
+            room: creature.mapId,
+            event: "combat_update",
+            data: {
+              type: "AOE_ATTACK",
+              attackerId: creature.entityId,
+              radius: 3,
+              damage: 15
+            }
+          });
+        }
       }
     }
   }
@@ -132,7 +229,9 @@ export class CreatureManager {
           direction: creature.direction,
           isMoving: creature.isMoving,
           hp: creature.hp,
-          ownerId: creature.ownerId
+          maxHp: creature.maxHp,
+          ownerId: creature.ownerId,
+          behavior: creature.behavior
         });
       }
     }

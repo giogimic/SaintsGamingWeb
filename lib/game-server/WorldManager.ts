@@ -5,10 +5,12 @@ const mapLoader = require("../game/map-loader.js");
 const spatialGrid = require("../game/spatial-grid.js");
 
 export interface MapInstance {
-  instanceId: string; // e.g. "lobby_ch1"
-  mapId: string;      // e.g. "lobby" (Map Definition)
-  // Later: add players set, unique entity lists, etc.
+  instanceId: string; // e.g. "SAINTS_VILLAGE_ch1"
+  mapId: string;      // e.g. "SAINTS_VILLAGE" (Map Definition)
+  playerCount: number;
 }
+
+const MAX_PLAYERS_PER_SHARD = 50;
 
 export class WorldManager {
   // World -> Instances (e.g. Map Definition -> Lobby Channel 1, Player Base, etc.)
@@ -28,13 +30,65 @@ export class WorldManager {
   }
 
   public createInstance(instanceId: string, mapId: string): MapInstance {
-    const instance = { instanceId, mapId };
+    const instance: MapInstance = { instanceId, mapId, playerCount: 0 };
     this.instances.set(instanceId, instance);
     return instance;
   }
 
   public getInstance(instanceId: string): MapInstance | undefined {
     return this.instances.get(instanceId);
+  }
+
+  public joinMap(mapId: string, accountId: string, isPrivate: boolean = false): MapInstance {
+    if (isPrivate) {
+      // Private instances (e.g. player bases) are isolated per account
+      const instanceId = `${mapId}_${accountId}`;
+      let instance = this.instances.get(instanceId);
+      if (!instance) {
+        instance = this.createInstance(instanceId, mapId);
+      }
+      instance.playerCount++;
+      return instance;
+    }
+
+    // Public maps use dynamic sharding
+    // Find an existing shard with space
+    let availableShard: MapInstance | undefined;
+    let maxShardNum = 0;
+
+    for (const [id, instance] of this.instances.entries()) {
+      if (instance.mapId === mapId && !id.includes("_acc")) {
+        // Extract channel number (e.g., SAINTS_VILLAGE_ch1 -> 1)
+        const match = id.match(/_ch(\d+)$/);
+        if (match) {
+          const shardNum = parseInt(match[1]);
+          if (shardNum > maxShardNum) maxShardNum = shardNum;
+        }
+
+        if (instance.playerCount < MAX_PLAYERS_PER_SHARD) {
+          availableShard = instance;
+          break;
+        }
+      }
+    }
+
+    // If no available shard, create a new one
+    if (!availableShard) {
+      const newShardNum = maxShardNum + 1;
+      const newInstanceId = `${mapId}_ch${newShardNum}`;
+      availableShard = this.createInstance(newInstanceId, mapId);
+    }
+
+    availableShard.playerCount++;
+    return availableShard;
+  }
+
+  public leaveInstance(instanceId: string, accountId: string) {
+    const instance = this.instances.get(instanceId);
+    if (instance) {
+      instance.playerCount = Math.max(0, instance.playerCount - 1);
+      // Optional: Clean up empty instances to free memory (skip for now to avoid rapid thrashing)
+    }
   }
 
   // COLLISION AUTHORITY: 
