@@ -117,12 +117,12 @@ export default function GtcOverlay() {
       <div className="flex flex-col gap-4 h-full">
         
         {/* Navigation Bar */}
-        <div className="flex justify-between items-center bg-black/60 p-2 rounded-lg border border-slate-800">
+        <div className="flex justify-between items-center bg-[#050b14]/60 p-2 rounded-lg border border-[#806f47]/50">
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('BUY')}
               className={`px-3 py-1.5 rounded text-xs font-bold font-mono transition-colors flex items-center gap-1 ${
-                activeTab === 'BUY' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+                activeTab === 'BUY' ? 'bg-[#806f47]/80 text-[#e2d5b3] border border-[#cbb26a]' : 'text-[#806f47] hover:text-[#e2d5b3] border border-transparent'
               }`}
             >
               <Search className="w-3.5 h-3.5" /> BROWSE MARKET
@@ -130,14 +130,14 @@ export default function GtcOverlay() {
             <button
               onClick={() => setActiveTab('SELL')}
               className={`px-3 py-1.5 rounded text-xs font-bold font-mono transition-colors flex items-center gap-1 ${
-                activeTab === 'SELL' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                activeTab === 'SELL' ? 'bg-[#806f47]/80 text-[#e2d5b3] border border-[#cbb26a]' : 'text-[#806f47] hover:text-[#e2d5b3] border border-transparent'
               }`}
             >
               <PlusCircle className="w-3.5 h-3.5" /> POST LISTING
             </button>
           </div>
 
-          <div className="text-xs font-mono font-bold text-amber-400 bg-amber-950/40 px-3 py-1 rounded border border-amber-900">
+          <div className="text-xs font-mono font-bold text-[#eab308] bg-[#806f47]/20 px-3 py-1 rounded border border-[#806f47]/50">
             BALANCE: {credits.toLocaleString()} C
           </div>
         </div>
@@ -152,12 +152,12 @@ export default function GtcOverlay() {
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Search trades by name or seller..."
-                className="flex-1 bg-black/60 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="flex-1 bg-[#050b14]/80 border border-[#806f47]/40 rounded px-3 py-1.5 text-xs text-[#e2d5b3] focus:outline-none focus:border-[#cbb26a]"
               />
               <select
                 value={filterType}
                 onChange={(e: any) => setFilterType(e.target.value)}
-                className="bg-black/60 border border-slate-700 rounded px-2 text-xs text-white"
+                className="bg-[#050b14]/80 border border-[#806f47]/40 rounded px-2 text-xs text-[#e2d5b3]"
               >
                 <option value="ALL">All Category</option>
                 <option value="BEAST">Beasts</option>
@@ -180,7 +180,7 @@ export default function GtcOverlay() {
                 filteredListings.map(listing => (
                   <div
                     key={listing.id}
-                    className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex items-center justify-between hover:border-slate-700 transition-colors"
+                    className="p-3 bg-[#0b1320]/60 border border-[#806f47]/40 rounded-lg flex items-center justify-between hover:border-[#cbb26a] transition-colors"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -201,10 +201,10 @@ export default function GtcOverlay() {
 
                     <button
                       onClick={() => handleBuyout(listing)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded transition-colors flex items-center gap-1 shadow"
+                      className="px-4 py-2 bg-[#806f47] hover:bg-[#cbb26a] text-white font-bold text-xs rounded transition-colors flex items-center gap-1 shadow"
                     >
                       <span>BUYOUT</span>
-                      <span className="text-amber-300 font-mono">({listing.price} C)</span>
+                      <span className="text-[#050b14] font-mono">({listing.price} C)</span>
                     </button>
                   </div>
                 ))
@@ -215,8 +215,8 @@ export default function GtcOverlay() {
 
         {/* TAB 2: POST LISTING */}
         {activeTab === 'SELL' && (
-          <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-lg space-y-4">
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider">CREATE NEW MARKET TRADE</h3>
+          <div className="p-4 bg-[#0b1320]/60 border border-[#806f47]/40 rounded-lg space-y-4">
+            <h3 className="text-xs font-bold text-[#eab308] uppercase tracking-wider">CREATE NEW MARKET TRADE</h3>
             
             <div className="space-y-3">
               <div>
@@ -224,7 +224,7 @@ export default function GtcOverlay() {
                 <select
                   value={sellType}
                   onChange={e => setSellType(e.target.value as 'EQUIPMENT' | 'MATERIAL')}
-                  className="w-full bg-black/60 border border-slate-700 rounded p-2 text-xs text-white"
+                  className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
                 >
                   <option value="MATERIAL">Material</option>
                   <option value="EQUIPMENT">Equipment</option>
@@ -236,7 +236,7 @@ export default function GtcOverlay() {
                 <select
                   value={selectedItemId}
                   onChange={e => setSelectedItemId(e.target.value)}
-                  className="w-full bg-black/60 border border-slate-700 rounded p-2 text-xs text-white"
+                  className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
                 >
                   {Object.entries(inventory).map(([id, qty]) => {
                     if (qty <= 0) return null;
@@ -258,13 +258,13 @@ export default function GtcOverlay() {
                   step={50}
                   value={sellPrice}
                   onChange={e => setSellPrice(parseInt(e.target.value) || 0)}
-                  className="w-full bg-black/60 border border-slate-700 rounded p-2 text-xs text-white"
+                  className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
                 />
               </div>
 
               <button
                 onClick={handlePostListing}
-                className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded transition-colors uppercase tracking-wider"
+                className="w-full py-2.5 bg-[#806f47] hover:bg-[#cbb26a] text-white font-bold text-xs rounded transition-colors uppercase tracking-wider"
               >
                 POST TRADE TO GTC
               </button>

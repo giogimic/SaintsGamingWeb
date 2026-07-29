@@ -30,14 +30,14 @@ export default function InventoryOverlay() {
 
   return (
     <RpgPanel title="INVENTORY" onClose={() => setGameMode('EXPLORING')}>
-      <div className="flex justify-between items-center bg-black/60 p-2.5 rounded border border-[#3e2723] mb-4 gap-4">
+      <div className="flex justify-between items-center bg-[#050b14]/60 p-2.5 rounded border border-[#806f47]/50 mb-4 gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-[#e0e0e0] font-bold font-mono text-xs">CREDITS:</span>
-          <span className="text-yellow-400 font-bold font-mono text-base">{credits.toLocaleString()} C</span>
+          <span className="text-[#e2d5b3] font-bold font-mono text-xs">CREDITS:</span>
+          <span className="text-[#eab308] font-bold font-mono text-base">{credits.toLocaleString()} C</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[#e0e0e0] font-bold font-mono text-xs">CARRY WEIGHT:</span>
-          <span className={`font-bold font-mono text-base ${currentWeight > maxWeight ? 'text-red-400' : 'text-emerald-400'}`}>
+          <span className="text-[#e2d5b3] font-bold font-mono text-xs">CARRY WEIGHT:</span>
+          <span className={`font-bold font-mono text-base ${currentWeight > maxWeight ? 'text-red-400' : 'text-[#4ade80]'}`}>
             {currentWeight} / {maxWeight} kg
           </span>
           {playerState.perk === 'PACK_MULE' && (
@@ -63,21 +63,21 @@ export default function InventoryOverlay() {
                 <div 
                   key={itemId} 
                   onClick={() => handleItemClick(itemId, itemInfo)}
-                  className={`relative aspect-square bg-[#1a1a1a] border-2 rounded transition-colors cursor-pointer group flex items-center justify-center shadow-inner ${isEquipped ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.3)]' : 'border-[#3e2723] hover:border-[#ca8a04]'}`}
+                  className={`relative aspect-square bg-[#0b1320]/60 border-2 rounded transition-colors cursor-pointer group flex items-center justify-center shadow-inner ${isEquipped ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.3)]' : 'border-[#806f47]/40 hover:border-[#cbb26a]'}`}
                 >
                   {/* Item Icon Placeholder */}
-                  <span className={`font-mono text-xs text-center p-1 break-all ${isEquipped ? 'text-[#4ade80]' : 'text-[#a1887f]'}`}>
+                  <span className={`font-mono text-xs text-center p-1 break-all ${isEquipped ? 'text-[#4ade80]' : 'text-[#806f47]'}`}>
                     {itemInfo.name}
                   </span>
                   
                   {/* Quantity Badge */}
-                  <div className="absolute -bottom-2 -right-2 bg-black border border-[#3e2723] text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
+                  <div className="absolute -bottom-2 -right-2 bg-[#050b14] border border-[#806f47]/80 text-[#e2d5b3] text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
                     {quantity}
                   </div>
 
                   {/* Tooltip on hover */}
-                  <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-black/95 border border-[#ca8a04] p-2 rounded z-50 text-xs shadow-lg pointer-events-none">
-                    <p className="text-white font-bold mb-1">{itemInfo.name}</p>
+                  <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-[#050b14]/95 border border-[#cbb26a] p-2 rounded z-50 text-xs shadow-lg pointer-events-none">
+                    <p className="text-[#e2d5b3] font-bold mb-1">{itemInfo.name}</p>
                     <p className="text-slate-300 italic mb-1">{itemInfo.description}</p>
                     {itemInfo.stats?.atk && <p className="text-red-400 font-mono">+ {itemInfo.stats.atk} ATK</p>}
                     {itemInfo.stats?.def && <p className="text-blue-400 font-mono">+ {itemInfo.stats.def} DEF</p>}
@@ -94,8 +94,8 @@ export default function InventoryOverlay() {
       <style dangerouslySetInnerHTML={{__html: `
         .custom-scrollbar::-webkit-scrollbar { width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4e342e; border-radius: 4px; border: 1px solid #3e2723; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5d4037; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; border: 1px solid #806f47; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
       `}} />
     </RpgPanel>
   );

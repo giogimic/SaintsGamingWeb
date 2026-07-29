@@ -68,11 +68,11 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
   };
 
   return (
-    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-6 max-w-4xl mx-auto shadow-2xl">
+    <div className="bg-[#050b14] border border-slate-800 rounded-xl p-4 space-y-6 max-w-4xl mx-auto shadow-2xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
         <div className="flex items-center gap-2">
-          <Sliders className="w-5 h-5 text-cyan-400" />
+          <Sliders className="w-5 h-5 text-[#cbb26a]" />
           <h2 className="font-bold text-slate-100 text-sm font-mono uppercase tracking-wide">
             Game Engine Configuration
           </h2>
@@ -80,7 +80,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs font-mono flex items-center gap-1.5 shadow-lg transition"
+          className="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-blue-600 hover:from-amber-500 hover:to-blue-500 text-white font-bold rounded-lg text-xs font-mono flex items-center gap-1.5 shadow-lg transition"
         >
           {saving ? (
             <RefreshCw className="w-4 h-4 animate-spin text-white" />
@@ -95,8 +95,8 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
         {/* Basic Game Info */}
-        <div className="p-4 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
-          <span className="font-bold text-cyan-400 block uppercase text-[11px]">
+        <div className="p-4 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
+          <span className="font-bold text-[#cbb26a] block uppercase text-[11px]">
             1. Metadata & Identification
           </span>
           <div>
@@ -105,7 +105,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               type="text"
               value={config.slug || ''}
               onChange={(e) => setConfig({ ...config, slug: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
           <div>
@@ -114,7 +114,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               type="text"
               value={config.name || ''}
               onChange={(e) => setConfig({ ...config, name: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
           <div>
@@ -123,14 +123,14 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               rows={2}
               value={config.description || ''}
               onChange={(e) => setConfig({ ...config, description: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
         </div>
 
         {/* Combat & Gameplay Formulas */}
-        <div className="p-4 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
-          <span className="font-bold text-cyan-400 block uppercase text-[11px]">
+        <div className="p-4 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
+          <span className="font-bold text-[#cbb26a] block uppercase text-[11px]">
             2. Rules & Formula Systems
           </span>
           <div>
@@ -138,7 +138,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
             <select
               value={config.combatFormula || 'tuxemon-standard'}
               onChange={(e) => setConfig({ ...config, combatFormula: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             >
               <option value="tuxemon-standard">Tuxemon Standard (15 Types / 6 Stats)</option>
               <option value="pokemon-gen3">Pokémon Gen 3 Standard</option>
@@ -150,7 +150,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
             <select
               value={config.skillFormula || 'runescape-style'}
               onChange={(e) => setConfig({ ...config, skillFormula: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             >
               <option value="runescape-style">RuneScape-Style Progression (27 Skills)</option>
               <option value="linear">Linear Skill Progression</option>
@@ -162,14 +162,14 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               type="number"
               value={config.maxLevel || 100}
               onChange={(e) => setConfig({ ...config, maxLevel: parseInt(e.target.value) || 100 })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
         </div>
 
         {/* Social Features */}
-        <div className="p-4 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
-          <span className="font-bold text-cyan-400 block uppercase text-[11px]">
+        <div className="p-4 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
+          <span className="font-bold text-[#cbb26a] block uppercase text-[11px]">
             3. Social & Multiplayer Toggles
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -179,12 +179,12 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               { key: 'enableTrading', label: 'Item Trading' },
               { key: 'enablePvP', label: 'PvP Battles' },
             ].map(({ key, label }) => (
-              <label key={key} className="flex items-center gap-2 bg-slate-950 p-2 rounded border border-slate-800 cursor-pointer">
+              <label key={key} className="flex items-center gap-2 bg-[#050b14] p-2 rounded border border-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={!!(config as any)[key]}
                   onChange={(e) => setConfig({ ...config, [key]: e.target.checked })}
-                  className="rounded border-slate-700 bg-slate-900 text-cyan-500"
+                  className="rounded border-slate-700 bg-[#0b1320] text-amber-500"
                 />
                 <span className="text-slate-300 text-[10px]">{label}</span>
               </label>
@@ -196,14 +196,14 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               type="number"
               value={config.maxPartySize || 4}
               onChange={(e) => setConfig({ ...config, maxPartySize: parseInt(e.target.value) || 4 })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
         </div>
 
         {/* Performance & Optimization */}
-        <div className="p-4 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
-          <span className="font-bold text-cyan-400 block uppercase text-[11px]">
+        <div className="p-4 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
+          <span className="font-bold text-[#cbb26a] block uppercase text-[11px]">
             4. Performance & Chunk Limits
           </span>
           <div>
@@ -212,7 +212,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               type="number"
               value={config.chunkSize || 32}
               onChange={(e) => setConfig({ ...config, chunkSize: parseInt(e.target.value) || 32 })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
           <div>
@@ -221,7 +221,7 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
               type="number"
               value={config.maxEntitiesPerMap || 100}
               onChange={(e) => setConfig({ ...config, maxEntitiesPerMap: parseInt(e.target.value) || 100 })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
         </div>

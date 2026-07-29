@@ -47,13 +47,13 @@ export default function TilesetPicker({
       <div className="flex flex-col gap-1 bg-black/40 p-2 rounded border border-slate-800">
         <div className="flex justify-between items-center mb-1">
            <span className="text-[10px] font-bold text-slate-400">TILE LAYERS</span>
-           <button onClick={onAddLayer} className="text-[10px] bg-cyan-700 hover:bg-cyan-600 text-white px-1.5 rounded transition-colors">+ Layer</button>
+           <button onClick={onAddLayer} className="text-[10px] bg-amber-700 hover:bg-[#806f47] text-white px-1.5 rounded transition-colors">+ Layer</button>
         </div>
         {tileLayers.map((layer, idx) => (
           <button 
             key={idx} 
             onClick={() => onLayerChange(idx)}
-            className={`text-left text-xs px-2 py-1 rounded transition-colors ${activeLayerIdx === idx ? 'bg-cyan-600 text-white font-bold' : 'bg-slate-900 text-slate-400 hover:bg-slate-800'}`}
+            className={`text-left text-xs px-2 py-1 rounded transition-colors ${activeLayerIdx === idx ? 'bg-[#806f47] text-white font-bold' : 'bg-[#0b1320] text-slate-400 hover:bg-slate-800'}`}
           >
             L{idx}: {layer.name}
           </button>
@@ -65,7 +65,7 @@ export default function TilesetPicker({
         <select 
           value={activeTsIdx} 
           onChange={(e) => setActiveTsIdx(parseInt(e.target.value))}
-          className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+          className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
         >
           {tilesets.map((t, i) => (
             <option key={i} value={i}>{t.imageSource}</option>
@@ -86,9 +86,9 @@ export default function TilesetPicker({
         </div>
       )}
       
-      <div className="flex justify-between items-center text-[10px] text-cyan-300 bg-slate-900 border border-slate-800 p-1.5 rounded">
+      <div className="flex justify-between items-center text-[10px] text-[#e2d5b3] bg-[#0b1320] border border-slate-800 p-1.5 rounded">
         <span>Active Brush GID:</span>
-        <span className="font-bold text-white bg-slate-950 px-2 py-0.5 rounded">{activeBrushTileId}</span>
+        <span className="font-bold text-white bg-[#050b14] px-2 py-0.5 rounded">{activeBrushTileId}</span>
       </div>
     </div>
   );

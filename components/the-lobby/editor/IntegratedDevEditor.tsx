@@ -384,16 +384,16 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-4 right-4 z-50 w-[480px] sg-glass bg-slate-950/80 border border-cyan-500/40 rounded-2xl shadow-2xl flex flex-col text-slate-200 overflow-hidden font-sans">
+    <div className="fixed inset-y-4 right-4 z-50 w-[480px] sg-glass bg-[#050b14]/80 border border-[#806f47]/40 rounded-2xl shadow-2xl flex flex-col text-slate-200 overflow-hidden font-sans">
       
       {/* Editor Header Bar */}
-      <div className="px-4 py-3 bg-gradient-to-r from-cyan-950/80 via-slate-900 to-indigo-950/80 border-b border-cyan-500/20 flex items-center justify-between">
+      <div className="px-4 py-3 bg-gradient-to-r from-[#162238] via-[#0b1320] to-[#162238] border-b border-[#806f47]/20 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sliders className="w-5 h-5 text-cyan-400 animate-pulse" />
+          <Sliders className="w-5 h-5 text-[#cbb26a] animate-pulse" />
           <span className="font-bold text-sm tracking-wide text-white uppercase font-mono">
             Integrated Dev Editor
           </span>
-          <span className="px-1.5 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded font-mono">
+          <span className="px-1.5 py-0.5 text-[10px] bg-[#806f47]/20 text-[#e2d5b3] border border-[#806f47]/40 rounded font-mono">
             v2.1.60
           </span>
         </div>
@@ -407,14 +407,14 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
       </div>
 
       {/* Map Selector & Teleport Bar */}
-      <div className="p-3 bg-slate-950/60 border-b border-white/10 flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs font-mono text-cyan-400">
-          <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-cyan-400" /> Active Map:</span>
+      <div className="p-3 bg-[#050b14]/60 border-b border-white/10 flex flex-col gap-2">
+        <div className="flex items-center justify-between text-xs font-mono text-[#cbb26a]">
+          <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-[#cbb26a]" /> Active Map:</span>
           <div className="flex items-center gap-1">
-            <strong className="text-white bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">{currentMapId}</strong>
+            <strong className="text-white bg-[#050b14]/60 px-2 py-0.5 rounded border border-[#806f47]/30">{currentMapId}</strong>
             <button
               onClick={() => setIsCreatingNewMap(!isCreatingNewMap)}
-              className="px-2 py-0.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10px] font-bold flex items-center gap-1 shadow font-mono"
+              className="px-2 py-0.5 bg-[#806f47] hover:bg-[#cbb26a] text-white rounded text-[10px] font-bold flex items-center gap-1 shadow font-mono"
             >
               <Plus className="w-3 h-3" /> New
             </button>
@@ -423,7 +423,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
 
         {/* Modal form for creating a brand new map */}
         {isCreatingNewMap && (
-          <div className="p-3 bg-slate-900 border border-cyan-500/40 rounded space-y-2 text-xs">
+          <div className="p-3 bg-[#0b1320] border border-[#806f47]/40 rounded space-y-2 text-xs">
             <span className="font-bold text-white block font-mono">Create New Campaign Map</span>
             <div className="grid grid-cols-2 gap-2">
               <input
@@ -431,14 +431,14 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 value={newMapSlug}
                 onChange={(e) => setNewMapSlug(e.target.value)}
                 placeholder="ID (e.g. MYSTICAL_GROVE)"
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
               />
               <input
                 type="text"
                 value={newMapName}
                 onChange={(e) => setNewMapName(e.target.value)}
                 placeholder="Name (e.g. Mystical Grove)"
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -448,7 +448,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   type="number"
                   value={newMapWidth}
                   onChange={(e) => setNewMapWidth(parseInt(e.target.value) || 24)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
                 />
               </div>
               <div>
@@ -457,7 +457,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   type="number"
                   value={newMapHeight}
                   onChange={(e) => setNewMapHeight(parseInt(e.target.value) || 24)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
                 />
               </div>
             </div>
@@ -477,19 +477,19 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
             value={mapSearchQuery}
             onChange={(e) => setMapSearchQuery(e.target.value)}
             placeholder="Search campaign maps to warp..."
-            className="w-full pl-8 pr-3 py-1.5 bg-slate-900/90 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+            className="w-full pl-8 pr-3 py-1.5 bg-[#0b1320]/90 border border-slate-700/80 rounded text-xs text-slate-200 focus:outline-none focus:border-[#806f47] font-mono"
           />
         </div>
         {mapSearchQuery && (
-          <div className="max-h-32 overflow-y-auto bg-slate-900 border border-slate-700 rounded text-xs divide-y divide-slate-800">
+          <div className="max-h-32 overflow-y-auto bg-[#0b1320] border border-slate-700 rounded text-xs divide-y divide-slate-800">
             {mapIndex.map((m) => (
               <div
                 key={m.id}
                 onClick={() => handleWarpToMap(m.id)}
-                className="px-3 py-1.5 hover:bg-cyan-950/80 cursor-pointer flex items-center justify-between"
+                className="px-3 py-1.5 hover:bg-[#050b14]/80 cursor-pointer flex items-center justify-between"
               >
                 <span className="font-mono text-white">{m.name}</span>
-                <span className="text-[10px] text-cyan-400 bg-cyan-950 px-1.5 py-0.5 rounded">{m.category}</span>
+                <span className="text-[10px] text-[#cbb26a] bg-[#050b14] px-1.5 py-0.5 rounded">{m.category}</span>
               </div>
             ))}
           </div>
@@ -497,7 +497,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
       </div>
 
       {/* Editor Tab Navigation */}
-      <div className="flex bg-slate-950/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium overflow-x-auto">
+      <div className="flex bg-[#050b14]/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium overflow-x-auto">
         {[
           { id: 'maps', label: 'Tiles', icon: Layers },
           { id: 'logic', label: 'Logic', icon: Grid },
@@ -522,7 +522,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
               onClick={() => setActiveTab(tab.id as EditorTab)}
               className={`flex-1 min-w-[54px] py-1.5 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
                 isActive 
-                  ? 'bg-gradient-to-r from-cyan-600 to-indigo-600 text-white font-bold shadow' 
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white font-bold shadow' 
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
@@ -539,7 +539,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB: MAP INDEX VIEWER */}
         {activeTab === 'index' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
                 Global Map Index
               </span>
@@ -547,10 +547,10 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 Browse all registered maps in the engine. Teleport directly to them to test collisions and logic.
               </p>
               
-              <div className="bg-slate-950 rounded border border-slate-800 overflow-hidden">
+              <div className="bg-[#050b14] rounded border border-slate-800 overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-900/80 border-b border-slate-800 text-[10px] uppercase text-slate-400">
+                    <tr className="bg-[#0b1320]/80 border-b border-slate-800 text-[10px] uppercase text-slate-400">
                       <th className="p-2 font-medium">Name</th>
                       <th className="p-2 font-medium">Category</th>
                       <th className="p-2 font-medium">Size</th>
@@ -559,13 +559,13 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {searchMapIndex('').map((m) => (
-                      <tr key={m.id} className="hover:bg-cyan-950/30 transition-colors">
+                      <tr key={m.id} className="hover:bg-[#050b14]/30 transition-colors">
                         <td className="p-2">
-                          <div className="font-mono text-cyan-300">{m.name}</div>
+                          <div className="font-mono text-[#e2d5b3]">{m.name}</div>
                           <div className="text-[9px] text-slate-500">{m.id}</div>
                         </td>
                         <td className="p-2">
-                          <span className="text-[10px] text-indigo-300 bg-indigo-950 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                          <span className="text-[10px] text-[#e2d5b3] bg-[#050b14] px-1.5 py-0.5 rounded border border-[#806f47]/20">
                             {m.category}
                           </span>
                         </td>
@@ -575,7 +575,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                         <td className="p-2 text-right">
                           <button
                             onClick={() => handleWarpToMap(m.id)}
-                            className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10px] font-bold shadow"
+                            className="px-2 py-1 bg-[#806f47] hover:bg-[#cbb26a] text-white rounded text-[10px] font-bold shadow"
                           >
                             Teleport
                           </button>
@@ -592,7 +592,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 1: TILES & TERRAIN */}
         {activeTab === 'maps' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-2">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
                   2.5D Painting Terrain Brush
@@ -600,18 +600,18 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 <div className="flex gap-1">
                   <button
                     onClick={handleExportMapJson}
-                    className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                    className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-[#e2d5b3] border border-[#806f47]/30 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
                     title="Export map JSON"
                   >
                     <Download className="w-3 h-3" /> JSON
                   </button>
-                  <label className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 rounded text-[10px] font-bold flex items-center gap-1 font-mono cursor-pointer">
+                  <label className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-[#e2d5b3] border border-[#806f47]/30 rounded text-[10px] font-bold flex items-center gap-1 font-mono cursor-pointer">
                     <Upload className="w-3 h-3" /> Import
                     <input type="file" accept=".json" onChange={handleImportMapJson} className="hidden" />
                   </label>
                   <button
                     onClick={handleFillGrid}
-                    className="px-2 py-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                    className="px-2 py-1 bg-amber-900 hover:bg-amber-800 text-amber-200 border border-[#806f47]/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
                     title="Flood fill whole map with active brush tile"
                   >
                     <RefreshCw className="w-3 h-3" /> Fill
@@ -640,7 +640,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 1.5: LOGIC & COLLISION */}
         {activeTab === 'logic' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-2">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
                   Invisible Logic & Collision Brush
@@ -656,7 +656,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                       }
                       showToast(`Filled logic map with tile ${brushTileId}`);
                     }}
-                    className="px-2 py-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-200 border border-indigo-500/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
+                    className="px-2 py-1 bg-amber-900 hover:bg-amber-800 text-amber-200 border border-[#806f47]/40 rounded text-[10px] font-bold flex items-center gap-1 font-mono"
                     title="Flood fill logic map with active brush tile"
                   >
                     <RefreshCw className="w-3 h-3" /> Fill
@@ -674,8 +674,8 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                     onClick={() => handleBrushSelect(tile.id)}
                     className={`p-2 rounded border flex flex-col items-center gap-1 transition-all ${
                       brushTileId === tile.id
-                        ? 'border-cyan-400 bg-cyan-950/60 ring-2 ring-cyan-500/40'
-                        : 'border-slate-800 bg-slate-900/90 hover:border-slate-700'
+                        ? 'border-amber-400 bg-[#050b14]/60 ring-2 ring-amber-500/40'
+                        : 'border-slate-800 bg-[#0b1320]/90 hover:border-slate-700'
                     }`}
                   >
                     <span className={`w-5 h-5 rounded ${tile.color} ${tile.id === 0 ? 'opacity-30' : ''}`} />
@@ -690,7 +690,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 1.6: LOGIC TILE MANAGER */}
         {activeTab === 'logicRegistry' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
                 Logic Asset Registry
               </span>
@@ -701,44 +701,44 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 uppercase font-bold">Tile ID</label>
-                  <input type="number" value={newLogicTile.id} onChange={e => setNewLogicTile({...newLogicTile, id: parseInt(e.target.value)})} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                  <input type="number" value={newLogicTile.id} onChange={e => setNewLogicTile({...newLogicTile, id: parseInt(e.target.value)})} className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-[#806f47]" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 uppercase font-bold">Name</label>
-                  <input type="text" value={newLogicTile.name} onChange={e => setNewLogicTile({...newLogicTile, name: e.target.value})} className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                  <input type="text" value={newLogicTile.name} onChange={e => setNewLogicTile({...newLogicTile, name: e.target.value})} className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-[#806f47]" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="flex items-center gap-2 text-xs text-slate-300">
-                  <input type="checkbox" checked={newLogicTile.isSolid} onChange={e => setNewLogicTile({...newLogicTile, isSolid: e.target.checked})} className="rounded border-slate-700 bg-slate-900 text-cyan-500" />
+                  <input type="checkbox" checked={newLogicTile.isSolid} onChange={e => setNewLogicTile({...newLogicTile, isSolid: e.target.checked})} className="rounded border-slate-700 bg-[#0b1320] text-amber-500" />
                   Is Solid Boundary?
                 </label>
                 <label className="flex items-center gap-2 text-xs text-slate-300">
-                  <input type="checkbox" checked={newLogicTile.interactable} onChange={e => setNewLogicTile({...newLogicTile, interactable: e.target.checked})} className="rounded border-slate-700 bg-slate-900 text-cyan-500" />
+                  <input type="checkbox" checked={newLogicTile.interactable} onChange={e => setNewLogicTile({...newLogicTile, interactable: e.target.checked})} className="rounded border-slate-700 bg-[#0b1320] text-amber-500" />
                   Is Interactable (E)?
                 </label>
               </div>
 
               {newLogicTile.interactable && (
-                <div className="space-y-2 p-2 bg-slate-950 rounded border border-slate-800">
+                <div className="space-y-2 p-2 bg-[#050b14] rounded border border-slate-800">
                   <label className="text-[10px] text-slate-400 uppercase font-bold">On Interact Action</label>
-                  <input type="text" placeholder="e.g. HARVEST_WOOD" value={newLogicTile.onInteractAction} onChange={e => setNewLogicTile({...newLogicTile, onInteractAction: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                  <input type="text" placeholder="e.g. HARVEST_WOOD" value={newLogicTile.onInteractAction} onChange={e => setNewLogicTile({...newLogicTile, onInteractAction: e.target.value})} className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-[#806f47]" />
                   <label className="text-[10px] text-slate-400 uppercase font-bold">Payload (JSON)</label>
-                  <textarea placeholder='{"xp": 25}' value={newLogicTile.onInteractPayload} onChange={e => setNewLogicTile({...newLogicTile, onInteractPayload: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 h-16" />
+                  <textarea placeholder='{"xp": 25}' value={newLogicTile.onInteractPayload} onChange={e => setNewLogicTile({...newLogicTile, onInteractPayload: e.target.value})} className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 h-16" />
                 </div>
               )}
 
-              <div className="space-y-2 p-2 bg-slate-950 rounded border border-slate-800">
+              <div className="space-y-2 p-2 bg-[#050b14] rounded border border-slate-800">
                 <label className="text-[10px] text-slate-400 uppercase font-bold">On Step Action</label>
-                <input type="text" placeholder="e.g. ENCOUNTER" value={newLogicTile.onStepAction} onChange={e => setNewLogicTile({...newLogicTile, onStepAction: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-cyan-500" />
+                <input type="text" placeholder="e.g. ENCOUNTER" value={newLogicTile.onStepAction} onChange={e => setNewLogicTile({...newLogicTile, onStepAction: e.target.value})} className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none focus:border-[#806f47]" />
                 <label className="text-[10px] text-slate-400 uppercase font-bold">Payload (JSON)</label>
-                <textarea placeholder='{"chance": 0.15}' value={newLogicTile.onStepPayload} onChange={e => setNewLogicTile({...newLogicTile, onStepPayload: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 h-16" />
+                <textarea placeholder='{"chance": 0.15}' value={newLogicTile.onStepPayload} onChange={e => setNewLogicTile({...newLogicTile, onStepPayload: e.target.value})} className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-300 h-16" />
               </div>
 
               <button
                 onClick={handleSaveLogicTile}
-                className="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold text-sm shadow flex items-center justify-center gap-2"
+                className="w-full py-2 bg-[#806f47] hover:bg-[#cbb26a] text-white rounded font-bold text-sm shadow flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" /> Save Logic Asset
               </button>
@@ -749,7 +749,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 7: HEROES & SPRITE CUSTOMIZER */}
         {activeTab === 'chars' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
                 Character & Sprite Importer
               </span>
@@ -760,7 +760,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   type="text"
                   value={charNameInput}
                   onChange={(e) => setCharNameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                 />
               </div>
 
@@ -769,7 +769,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 <select
                   value={charClassInput}
                   onChange={(e) => setCharClassInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
                 >
                   <option value="Animist">Animist (Spirit Weaver)</option>
                   <option value="Invoker">Invoker (Elemental Surge)</option>
@@ -783,7 +783,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 <select
                   value={charSpriteInput}
                   onChange={(e) => setCharSpriteInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
                 >
                   <option value="player">Default Player Hero (/assets/sprites/)</option>
                   <option disabled>--- Tuxemon NPCS ---</option>
@@ -797,7 +797,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
 
               <button
                 onClick={handleApplyCharacterConfig}
-                className="w-full py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 shadow"
+                className="w-full py-2 bg-gradient-to-r from-amber-600 to-amber-600 hover:from-amber-500 hover:to-amber-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 shadow"
               >
                 <UserPlus className="w-4 h-4" /> Apply Character to 2.5D Hero
               </button>
@@ -808,7 +808,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 2: SPAWNS & WARPS */}
         {activeTab === 'spawns' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
                 Player Spawn Coordinates
               </span>
@@ -819,7 +819,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                     type="number"
                     value={spawnX}
                     onChange={(e) => setSpawnX(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#806f47] font-mono"
                   />
                 </div>
                 <div>
@@ -828,7 +828,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                     type="number"
                     value={spawnY}
                     onChange={(e) => setSpawnY(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+                    className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-[#806f47] font-mono"
                   />
                 </div>
               </div>
@@ -839,7 +839,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 3: TALL GRASS ENCOUNTERS */}
         {activeTab === 'encounters' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-slate-300 font-mono text-[11px] uppercase tracking-wide">
                   Wild Encounter Pool
@@ -858,7 +858,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   <select
                     value={selectedSpecies}
                     onChange={(e) => setSelectedSpecies(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                    className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
                   >
                     {TUXEMON_MONSTERS.slice(0, 80).map(m => (
                       <option key={m.id} value={m.id}>
@@ -873,7 +873,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                     type="number"
                     value={minLevel}
                     onChange={(e) => setMinLevel(parseInt(e.target.value) || 1)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                    className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
                   />
                 </div>
                 <div>
@@ -882,7 +882,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                     type="number"
                     value={maxLevel}
                     onChange={(e) => setMaxLevel(parseInt(e.target.value) || 5)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+                    className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
                   />
                 </div>
               </div>
@@ -890,7 +890,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
               <div className="space-y-1 pt-2 divide-y divide-slate-800">
                 {encounterPool.map((pool, idx) => (
                   <div key={idx} className="pt-1.5 flex items-center justify-between text-slate-300">
-                    <span className="font-mono text-cyan-300">{pool.speciesId}</span>
+                    <span className="font-mono text-[#e2d5b3]">{pool.speciesId}</span>
                     <span className="text-[10px] text-slate-400">Lvl {pool.minLevel}-{pool.maxLevel} ({pool.weight}%)</span>
                     <button
                       onClick={() => handleRemoveEncounterSpecies(idx)}
@@ -908,7 +908,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 4: NPCS & TRAINER BATTLES */}
         {activeTab === 'npcs' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
                 Overworld NPC Placer
               </span>
@@ -919,7 +919,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   type="text"
                   value={npcName}
                   onChange={(e) => setNpcName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono"
                 />
               </div>
 
@@ -929,7 +929,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                   value={npcDialogue}
                   onChange={(e) => setNpcDialogue(e.target.value)}
                   rows={2}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono text-[11px]"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1 text-slate-200 font-mono text-[11px]"
                 />
               </div>
 
@@ -938,7 +938,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 <select
                   value={npcSprite}
                   onChange={(e) => setNpcSprite(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
                 >
                   {TUXEMON_SPRITES.map(sprite => (
                     <option key={sprite} value={`/tuxemon-assets/npc/${sprite}.png`}>
@@ -950,7 +950,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
 
               <button
                 onClick={handleAddNpc}
-                className="w-full py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold text-xs flex items-center justify-center gap-1 shadow"
+                className="w-full py-1.5 bg-[#806f47] hover:bg-[#cbb26a] text-white rounded font-bold text-xs flex items-center justify-center gap-1 shadow"
               >
                 <Plus className="w-4 h-4" /> Place NPC at Spawn Location
               </button>
@@ -961,7 +961,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 5: BATTLES & ARENAS */}
         {activeTab === 'battles' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-3">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-3">
               <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
                 Battle Arena Configuration
               </span>
@@ -970,7 +970,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
                 <select
                   value={battleBackground}
                   onChange={(e) => setBattleBackground(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
+                  className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono"
                 >
                   <option value="forest_field">Forest Field</option>
                   <option value="cave_arena">Cave Arena</option>
@@ -985,14 +985,14 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
         {/* TAB 6: QUESTS */}
         {activeTab === 'quests' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="p-3 bg-slate-900/60 rounded-lg border border-slate-800 space-y-2">
+            <div className="p-3 bg-[#0b1320]/60 rounded-lg border border-slate-800 space-y-2">
               <span className="font-bold text-slate-300 block font-mono text-[11px] uppercase tracking-wide">
                 Active Map Quests
               </span>
               <p className="text-slate-400 text-[11px]">
                 Quests connected to NPCs on {currentMapId}:
               </p>
-              <div className="p-2 bg-slate-950 rounded border border-slate-800 text-[11px] font-mono text-cyan-300">
+              <div className="p-2 bg-[#050b14] rounded border border-slate-800 text-[11px] font-mono text-[#e2d5b3]">
                 1. Speak with {npcName} (Intro to Animists)
               </div>
             </div>
@@ -1033,9 +1033,9 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
       </div>
 
       {/* Editor Footer Action Bar */}
-      <div className="px-4 py-3 bg-slate-950 border-t border-slate-800/80 flex items-center justify-between">
+      <div className="px-4 py-3 bg-[#050b14] border-t border-slate-800/80 flex items-center justify-between">
         <span className="text-[11px] text-slate-400 font-mono">
-          Press <kbd className="px-1.5 py-0.5 bg-slate-900 border border-slate-700 rounded text-cyan-300">Ctrl+E</kbd> to toggle
+          Press <kbd className="px-1.5 py-0.5 bg-[#0b1320] border border-slate-700 rounded text-[#e2d5b3]">Ctrl+E</kbd> to toggle
         </span>
         <button
           onClick={handleSaveConfig}
