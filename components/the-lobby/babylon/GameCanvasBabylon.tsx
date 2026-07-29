@@ -34,6 +34,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const showToast = useGameStore((state) => state.showToast);
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
 
+  // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
+  const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
+
   // Async map state — engine only mounts AFTER map data is ready
   const [mapData, setMapData] = useState<GameMapData | null>(null);
 
@@ -118,8 +121,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }, 250);
     }
 
-    // Update server position
-    emitSocketEvent?.('move', { x: nextX, y: nextY, direction: dir, mapId: currentMapId });
+    // Send move intent to server (Phase 2 — server-authoritative)
+    const store = useGameStore.getState();
+    const seq = store.incrementMoveSeq();
+    store.addPendingMove({ seq, direction: dir, predictedPos: { x: nextX, y: nextY } });
+    emitSocketEvent?.('move_intent', { direction: dir, seq });
 
     // Logic Tile Step Event Trigger
     if (logicTile?.onStepAction) {
@@ -353,12 +359,38 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
       }
 
-      // Render connected multiplayer players
+      // Render connected multiplayer players with interpolation (Phase 2)
       const freshOtherPlayers = useGameStore.getState().otherPlayers;
+      const now = performance.now();
       if (freshOtherPlayers) {
         Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
-          const ox = (other.x || 6) - mapWidth / 2;
-          const oz = mapHeight / 2 - (other.y || 2);
+          const targetX = other.x || 6;
+          const targetY = other.y || 2;
+          const interpKey = socketId;
+          let interp = interpBufferRef.current[interpKey];
+
+          // If target position changed, start a new interpolation
+          if (!interp || interp.toX !== targetX || interp.toY !== targetY) {
+            interpBufferRef.current[interpKey] = {
+              fromX: interp ? interp.toX : targetX,
+              fromY: interp ? interp.toY : targetY,
+              toX: targetX,
+              toY: targetY,
+              startTime: now,
+              duration: 100, // 100ms interpolation
+            };
+            interp = interpBufferRef.current[interpKey];
+          }
+
+          // Calculate interpolated position
+          const elapsed = now - interp.startTime;
+          const t = Math.min(1, elapsed / interp.duration);
+          const smoothT = t * t * (3 - 2 * t); // Smooth-step easing
+          const interpX = interp.fromX + (interp.toX - interp.fromX) * smoothT;
+          const interpY = interp.fromY + (interp.toY - interp.fromY) * smoothT;
+
+          const ox = interpX - mapWidth / 2;
+          const oz = mapHeight / 2 - interpY;
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
             name: other.name || 'Tamer',
@@ -373,6 +405,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             chatMessage: other.chatMessage
           });
         });
+
+        // Clean up interpolation entries for disconnected players
+        for (const key of Object.keys(interpBufferRef.current)) {
+          if (!freshOtherPlayers[key]) {
+            delete interpBufferRef.current[key];
+          }
+        }
       }
 
       // Render dynamic map entities (NPCs / Animals) from the global store

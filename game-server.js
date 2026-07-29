@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Authoritative MMO Server
+// ═══════════════════════════════════════════════════════════════════
+//  Saints Tamer — Authoritative MMO Game Server (Phase 2)
+//  Server-Side Physics, Collision Detection, Client Reconciliation
+// ═══════════════════════════════════════════════════════════════════
+
 const { Server } = require("socket.io");
 const http = require("http");
+const mapLoader = require("./lib/game/map-loader");
 
 const server = http.createServer();
 const io = new Server(server, {
@@ -11,70 +16,293 @@ const io = new Server(server, {
   }
 });
 
-// In-Memory Game State
-const players = {}; // socket.id -> { x, y, name, spriteId, mapId, characterId }
+// ─── Constants ─────────────────────────────────────────────────────
+const TICK_RATE = 15; // Server ticks per second
+const TICK_INTERVAL = Math.floor(1000 / TICK_RATE); // ~66ms
+const MOVE_COOLDOWN_MS = 200; // Minimum time between moves per player
+
+// ─── In-Memory Game State ──────────────────────────────────────────
+const players = {}; // socket.id -> PlayerState
 const parties = {};
 const activeBattles = {};
+
+/**
+ * PlayerState:
+ * {
+ *   socketId, x, y, name, spriteId, mapId, characterId,
+ *   direction, isMoving, partyId,
+ *   moveIntent: { direction, seq } | null,   // Pending move intent
+ *   lastMoveTime: number,                     // Throttle moves
+ *   lastAckedSeq: number,                     // Last acknowledged client seq
+ * }
+ */
+
+// ─── Direction Vectors ─────────────────────────────────────────────
+const DIRECTION_DELTA = {
+  up:    { dx:  0, dy: -1 },
+  down:  { dx:  0, dy:  1 },
+  left:  { dx: -1, dy:  0 },
+  right: { dx:  1, dy:  0 },
+};
+
+// ═══════════════════════════════════════════════════════════════════
+//  SERVER TICK LOOP — Processes all pending move intents
+// ═══════════════════════════════════════════════════════════════════
+
+function serverTick() {
+  const now = Date.now();
+
+  for (const [socketId, player] of Object.entries(players)) {
+    if (!player.moveIntent) continue;
+
+    const { direction, seq } = player.moveIntent;
+    player.moveIntent = null; // Consume the intent
+
+    // Throttle: don't process moves faster than MOVE_COOLDOWN_MS
+    if (now - player.lastMoveTime < MOVE_COOLDOWN_MS) {
+      continue;
+    }
+
+    const delta = DIRECTION_DELTA[direction];
+    if (!delta) continue;
+
+    const targetX = player.x + delta.dx;
+    const targetY = player.y + delta.dy;
+
+    // ── Server-Side Collision Check ──
+    const walkable = mapLoader.isWalkableSync(player.mapId, targetX, targetY);
+
+    // ── NPC Collision Check ──
+    let blockedByNpc = false;
+    const cachedMap = mapLoader.getCachedMap(player.mapId);
+    if (cachedMap?.npcs) {
+      blockedByNpc = cachedMap.npcs.some(
+        (npc) => npc.x === targetX && npc.y === targetY
+      );
+    }
+
+    // ── Other Player Collision Check (optional — uncomment if desired) ──
+    // const blockedByPlayer = Object.values(players).some(
+    //   (p) => p.socketId !== socketId && p.mapId === player.mapId && p.x === targetX && p.y === targetY
+    // );
+
+    if (walkable && !blockedByNpc) {
+      // ✅ Valid move — update authoritative position
+      player.x = targetX;
+      player.y = targetY;
+      player.direction = direction;
+      player.isMoving = true;
+      player.lastMoveTime = now;
+      player.lastAckedSeq = seq;
+
+      // Broadcast to everyone in the map (including the mover for reconciliation)
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) {
+        // Send ack to the moving player with their sequence number
+        socket.emit("move_ack", {
+          seq,
+          x: player.x,
+          y: player.y,
+          direction: player.direction,
+        });
+
+        // Broadcast to others in the map
+        socket.to(player.mapId).emit("player_moved", {
+          socketId: player.socketId,
+          x: player.x,
+          y: player.y,
+          name: player.name,
+          spriteId: player.spriteId,
+          direction: player.direction,
+          isMoving: true,
+        });
+      }
+    } else {
+      // ❌ Invalid move — send correction back to the client
+      const socket = io.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.emit("position_correction", {
+          seq,
+          x: player.x,
+          y: player.y,
+          direction: direction, // Face the wall but don't move
+          reason: blockedByNpc ? "npc_collision" : "wall_collision",
+        });
+      }
+      player.direction = direction;
+      player.lastAckedSeq = seq;
+    }
+  }
+
+  // Clear isMoving flag for players who haven't moved recently
+  for (const player of Object.values(players)) {
+    if (player.isMoving && now - player.lastMoveTime > 300) {
+      player.isMoving = false;
+      // Broadcast stop to others
+      const socket = io.sockets.sockets.get(player.socketId);
+      if (socket) {
+        socket.to(player.mapId).emit("player_moved", {
+          socketId: player.socketId,
+          x: player.x,
+          y: player.y,
+          name: player.name,
+          spriteId: player.spriteId,
+          direction: player.direction,
+          isMoving: false,
+        });
+      }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CONNECTION HANDLER
+// ═══════════════════════════════════════════════════════════════════
 
 io.on("connection", (socket) => {
   console.log(`[+] Player connected: ${socket.id}`);
 
-  // 1. Join Map (Room)
-  socket.on("join_map", (data) => {
+  // ─── 1. Join Map (Room) ────────────────────────────────────────
+  socket.on("join_map", async (data) => {
     // data = { mapId, x, y, name, spriteId }
-    players[socket.id] = { socketId: socket.id, ...data };
-    
+
+    // Ensure the map collision data is loaded before allowing join
+    await mapLoader.loadMapData(data.mapId);
+
+    // Validate spawn position — if the tile is solid, snap to a safe default
+    let spawnX = data.x ?? 6;
+    let spawnY = data.y ?? 2;
+    if (!mapLoader.isWalkableSync(data.mapId, spawnX, spawnY)) {
+      // Find first walkable tile near the spawn point
+      const dims = mapLoader.getMapDimensions(data.mapId);
+      if (dims) {
+        let found = false;
+        for (let r = 0; r < dims.height && !found; r++) {
+          for (let c = 0; c < dims.width && !found; c++) {
+            if (mapLoader.isWalkableSync(data.mapId, c, r)) {
+              spawnX = c;
+              spawnY = r;
+              found = true;
+            }
+          }
+        }
+      }
+    }
+
+    players[socket.id] = {
+      socketId: socket.id,
+      x: spawnX,
+      y: spawnY,
+      name: data.name || 'Tamer',
+      spriteId: data.spriteId || 'adventurer',
+      mapId: data.mapId,
+      characterId: data.characterId,
+      direction: 'down',
+      isMoving: false,
+      partyId: null,
+      moveIntent: null,
+      lastMoveTime: 0,
+      lastAckedSeq: 0,
+    };
+
     // Join socket.io room for this map
     socket.join(data.mapId);
 
-    // Get all other players currently in this map to send to the newly joined player
+    // Get all other players currently in this map
     const mapPlayers = {};
     for (const [id, p] of Object.entries(players)) {
       if (p.mapId === data.mapId && id !== socket.id) {
         mapPlayers[id] = p;
       }
     }
-    
+
     // Send current players to the new player
     socket.emit("map_players", mapPlayers);
 
-    // Broadcast to others in the map that someone joined
+    // Broadcast to others that someone joined
     socket.to(data.mapId).emit("player_joined", players[socket.id]);
-    
-    console.log(`[*] ${data.name} joined map ${data.mapId} at ${data.x},${data.y}`);
+
+    console.log(`[*] ${data.name} joined map ${data.mapId} at ${spawnX},${spawnY}`);
   });
 
-  // 2. Movement Sync
-  socket.on("move", (data) => {
-    // data = { x, y, mapId }
+  // ─── 2. Movement Intent (Server-Authoritative) ─────────────────
+  socket.on("move_intent", (data) => {
+    // data = { direction: 'up'|'down'|'left'|'right', seq: number }
     if (!players[socket.id]) return;
-    
+    if (!DIRECTION_DELTA[data.direction]) return;
+
+    // Queue the intent — the server tick loop will process it
+    players[socket.id].moveIntent = {
+      direction: data.direction,
+      seq: data.seq || 0,
+    };
+  });
+
+  // ─── 2.1 Legacy Move Handler (backwards compatibility) ─────────
+  // Kept for any clients that haven't updated yet.
+  // Validates the position instead of blindly trusting it.
+  socket.on("move", async (data) => {
+    // data = { x, y, mapId, direction }
+    if (!players[socket.id]) return;
+
     const p = players[socket.id];
-    
+
     // If they changed maps, handle room transition
     if (p.mapId !== data.mapId) {
       socket.leave(p.mapId);
       socket.to(p.mapId).emit("player_left", socket.id);
-      
+
+      // Load new map collision data
+      await mapLoader.loadMapData(data.mapId);
+
       p.mapId = data.mapId;
       socket.join(p.mapId);
       socket.to(p.mapId).emit("player_joined", p);
     }
-    
+
+    // Validate: only allow 1-tile moves
+    const dx = Math.abs(data.x - p.x);
+    const dy = Math.abs(data.y - p.y);
+    if (dx + dy > 1) {
+      // Teleport attempt — reject and rubber-band
+      socket.emit("position_correction", {
+        seq: 0,
+        x: p.x,
+        y: p.y,
+        direction: p.direction,
+        reason: "invalid_distance",
+      });
+      return;
+    }
+
+    // Validate target tile
+    if (!mapLoader.isWalkableSync(data.mapId, data.x, data.y)) {
+      socket.emit("position_correction", {
+        seq: 0,
+        x: p.x,
+        y: p.y,
+        direction: data.direction || p.direction,
+        reason: "wall_collision",
+      });
+      return;
+    }
+
+    // Accept the move
     p.x = data.x;
     p.y = data.y;
     if (data.direction) p.direction = data.direction;
     if (data.isMoving !== undefined) p.isMoving = data.isMoving;
+    p.lastMoveTime = Date.now();
 
     // Broadcast to everyone else in the same map
     socket.to(p.mapId).emit("player_moved", p);
   });
 
-  // 2.5 Chat Sync
+  // ─── 2.5 Chat Sync ─────────────────────────────────────────────
   socket.on("chat_message", (message) => {
     if (!players[socket.id]) return;
     const p = players[socket.id];
-    
+
     // Broadcast the chat message to everyone else in the map
     socket.to(p.mapId).emit("player_chat", {
       socketId: socket.id,
@@ -109,7 +337,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 3. Party System (up to 4 players)
+  // ─── 3. Party System (up to 4 players) ─────────────────────────
   socket.on("create_party", () => {
     const partyId = `party_${Date.now()}`;
     parties[partyId] = { id: partyId, leader: socket.id, members: [socket.id] };
@@ -183,7 +411,7 @@ io.on("connection", (socket) => {
     });
   }
 
-  // 4. Authoritative PvP Combat
+  // ─── 4. Authoritative PvP Combat ───────────────────────────────
   socket.on("invite_battle", (targetSocketId) => {
     if (players[targetSocketId]) {
       io.to(targetSocketId).emit("battle_invite_received", {
@@ -263,6 +491,7 @@ io.on("connection", (socket) => {
     });
   });
 
+  // ─── 5. Disconnect ─────────────────────────────────────────────
   socket.on("disconnect", () => {
     console.log(`[-] Player disconnected: ${socket.id}`);
     const p = players[socket.id];
@@ -273,7 +502,40 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = 3001;
-server.listen(PORT, () => {
-  console.log(`[SAINTS TAMER] Authoritative MMO Server running on port ${PORT}`);
+// ═══════════════════════════════════════════════════════════════════
+//  SERVER STARTUP
+// ═══════════════════════════════════════════════════════════════════
+
+const PORT = process.env.GAME_SERVER_PORT || 3001;
+
+async function start() {
+  // Initialize map loader — preload logic tiles from DB
+  await mapLoader.initialize();
+
+  // Start the physics tick loop
+  setInterval(serverTick, TICK_INTERVAL);
+  console.log(`[SAINTS TAMER] Server tick loop started at ${TICK_RATE} TPS (${TICK_INTERVAL}ms)`);
+
+  // Start HTTP server
+  server.listen(PORT, () => {
+    console.log(`[SAINTS TAMER] Authoritative MMO Server running on port ${PORT}`);
+  });
+}
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("[SAINTS TAMER] Shutting down...");
+  await mapLoader.shutdown();
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  console.log("[SAINTS TAMER] Shutting down...");
+  await mapLoader.shutdown();
+  process.exit(0);
+});
+
+start().catch((err) => {
+  console.error("[SAINTS TAMER] Failed to start:", err);
+  process.exit(1);
 });
