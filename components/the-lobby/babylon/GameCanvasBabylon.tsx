@@ -707,6 +707,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             <Hand className="w-3 h-3 text-cyan-400" />
           </div>
         </div>
+        </div>
       )}
     </div>
   );
