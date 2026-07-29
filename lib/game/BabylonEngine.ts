@@ -14,7 +14,6 @@ import {
   DynamicTexture,
   Mesh,
   TransformNode,
-  Vector4,
   VertexBuffer
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
@@ -522,9 +521,13 @@ export class BabylonEngine {
 
             const plane = MeshBuilder.CreatePlane(
               `tile_${layerIdx}_${r}_${c}`,
-              { size: tileSize, frontUVs: new Vector4(u0, v0, u1, v1) },
+              { size: tileSize },
               this.scene
             );
+
+            // Manually set UV coordinates — frontUVs is silently ignored on single-sided planes
+            const uvs = [u0, v0, u1, v0, u1, v1, u0, v1];
+            plane.setVerticesData(VertexBuffer.UVKind, uvs);
 
             plane.rotation.x = Math.PI / 2;
             plane.position = new Vector3(posX, heightOffset, posZ);
