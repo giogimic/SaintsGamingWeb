@@ -1,3 +1,6 @@
+### 2.1.69
+- **MMO Combat & AI**: Transformed legacy combat into a real-time MMO system. Added generic CreatureManager, EncounterManager, server-authoritative wandering AI, real-time capture action logic in CombatManager, Babylon.js Selection Rings, and visual projectile arcs.
+
 ### 2.1.68
 - **Babylon.js RPG Engine Audit**: Minor code review and preparatory refactoring for the Babylon.js engine (`GameCanvasBabylon.tsx`, `maps.ts`, `store.ts`, `BabylonEngine.ts`, and `WorldSimulation.ts`).
 
