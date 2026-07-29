@@ -291,7 +291,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     socket.on('move_ack', (data) => {
       // Server acknowledged our move — clear pending moves up to this seq
       // data = { seq, x, y, direction }
-      useGameStore.getState().clearPendingMovesUpTo(data.seq);
+      useGameStore.getState().clearPendingMovesUpTo(data.seq, data.x, data.y);
     });
 
     socket.on('position_correction', (data) => {

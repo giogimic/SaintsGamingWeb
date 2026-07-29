@@ -69,6 +69,21 @@ export interface PartyMember {
   tuxemonParty: TuxemonPartyMember[];
 }
 
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  timestamp: number;
+};
+
+const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
+  up:    { dx:  0, dy: -1 },
+  down:  { dx:  0, dy:  1 },
+  left:  { dx: -1, dy:  0 },
+  right: { dx:  1, dy:  0 },
+};
+
 export interface PlayerState {
   name?: string;
   spriteId?: string;
@@ -158,7 +173,7 @@ export interface GameState {
   pendingMoves: PendingMove[];
   incrementMoveSeq: () => number;
   addPendingMove: (move: PendingMove) => void;
-  clearPendingMovesUpTo: (seq: number) => void;
+  clearPendingMovesUpTo: (seq: number, serverX?: number, serverY?: number) => void;
   applyServerCorrection: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => void;
   
   // UI Customization
@@ -294,8 +309,23 @@ export const useGameStore = create<GameState>()(
           state.pendingMoves = state.pendingMoves.slice(-30);
         }
       }),
-      clearPendingMovesUpTo: (seq) => set((state) => {
-        state.pendingMoves = state.pendingMoves.filter(m => m.seq > seq);
+      clearPendingMovesUpTo: (seq, serverX, serverY) => set((state) => {
+        const remainingMoves = state.pendingMoves.filter(m => m.seq > seq);
+        
+        if (serverX !== undefined && serverY !== undefined) {
+           let px = serverX;
+           let py = serverY;
+           for (const m of remainingMoves) {
+              const delta = DIRECTION_DELTA[m.direction];
+              if (delta) {
+                 px += delta.dx;
+                 py += delta.dy;
+              }
+           }
+           state.player.position = { x: px, y: py };
+        }
+        
+        state.pendingMoves = remainingMoves;
       }),
       applyServerCorrection: (x, y, direction) => set((state) => {
         state.player.position = { x, y };
