@@ -12,13 +12,7 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    // Try TuxemonMap by slug first
-    const tuxMap = await prisma.tuxemonMap.findUnique({ where: { slug } });
-    if (tuxMap) {
-      return NextResponse.json(tuxMap);
-    }
-
-    // Fall back to WorldMap by id (supports numeric/uuid lookups)
+    // Try WorldMap first — our batch importer stores complete TMX data here
     const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
     const campaignMap = (TUXEMON_CAMPAIGN_MAPS as any)[slug];
 
@@ -34,12 +28,30 @@ export async function GET(
         gates: JSON.parse(worldMap.gatesData || '{}'),
         npcs: JSON.parse(worldMap.npcsData || '[]'),
         encounterPool: JSON.parse(worldMap.encountersData || '[]'),
-        // Prefer DB layers if they exist, otherwise fallback to original campaign TMX data
         tileLayers: dbLayers.length > 0 ? dbLayers : (campaignMap?.tileLayers || []),
         tilesets: dbTilesets.length > 0 ? dbTilesets : (campaignMap?.tilesets || []),
         version: worldMap.version,
       });
-    } else if (campaignMap) {
+    }
+
+    // Fall back to TuxemonMap by slug (older legacy data)
+    const tuxMap = await prisma.tuxemonMap.findUnique({ where: { slug } });
+    if (tuxMap) {
+      return NextResponse.json({
+        id: tuxMap.slug,
+        name: tuxMap.name,
+        grid: JSON.parse(tuxMap.collisionData || '[]'),
+        gates: {},
+        npcs: JSON.parse(tuxMap.npcData || '[]'),
+        encounterPool: tuxMap.encounterZone ? JSON.parse(tuxMap.encounterZone) : [],
+        tileLayers: JSON.parse(tuxMap.tilesetData || '[]'),
+        tilesets: [],
+        version: tuxMap.version,
+      });
+    }
+
+    // Last resort: static campaign map data
+    if (campaignMap) {
       return NextResponse.json(campaignMap);
     }
 

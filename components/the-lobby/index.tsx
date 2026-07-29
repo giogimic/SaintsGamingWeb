@@ -402,7 +402,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           <DPad />
         </div>
 
-      {/* Integrated Dev Editor Overlay */}
+
+      {/* Integrated Dev Editor Overlay — must be OUTSIDE the pointer-events-none container */}
+      </div>
       <IntegratedDevEditor 
         activeMapId={currentMapId}
         onMapSelect={(id) => {
@@ -531,7 +533,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'EXPLORING' && !isDevEditorOpen && (
         <GameChat />
       )}
-      </div>
     </div>
   );
 }
