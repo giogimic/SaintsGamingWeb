@@ -514,10 +514,16 @@ export class BabylonEngine {
               else estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns));
             }
 
-            const u0 = col / ts.columns;
-            const u1 = (col + 1) / ts.columns;
-            const v1 = 1 - (row / estimatedRows);
-            const v0 = 1 - ((row + 1) / estimatedRows);
+            // Half-pixel inset to prevent tile edge bleeding/seams
+            const imgW = ts.columns * (ts.tilewidth || 16);
+            const imgH = estimatedRows * (ts.tileheight || 16);
+            const hpU = 0.5 / imgW;
+            const hpV = 0.5 / imgH;
+
+            const u0 = col / ts.columns + hpU;
+            const u1 = (col + 1) / ts.columns - hpU;
+            const v1 = 1 - (row / estimatedRows) - hpV;
+            const v0 = 1 - ((row + 1) / estimatedRows) + hpV;
 
             const plane = MeshBuilder.CreatePlane(
               `tile_${layerIdx}_${r}_${c}`,
@@ -543,7 +549,8 @@ export class BabylonEngine {
                 const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
                 const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
                 // Use Nearest sampling mode (1) for pixel-perfect crisp textures!
-                tex = new Texture(tilesetPath, this.scene, true, false, 1);
+                // Parameter 4 (invertY) MUST be true so that texture (0,0) is Bottom-Left, matching our UV math where v=1 is Top
+                tex = new Texture(tilesetPath, this.scene, true, true, 1);
                 tex.hasAlpha = true;
                 this.tilesetTextureCache.set(ts.imageSource, tex);
               }
@@ -843,10 +850,16 @@ export class BabylonEngine {
       else estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns));
     }
     
-    const u0 = tsCol / ts.columns;
-    const v1 = 1 - (tsRow / estimatedRows);
-    const u1 = (tsCol + 1) / ts.columns;
-    const v0 = 1 - ((tsRow + 1) / estimatedRows);
+    // Half-pixel inset to prevent tile edge bleeding/seams
+    const imgW = ts.columns * (ts.tilewidth || 16);
+    const imgH = estimatedRows * (ts.tileheight || 16);
+    const hpU = 0.5 / imgW;
+    const hpV = 0.5 / imgH;
+
+    const u0 = tsCol / ts.columns + hpU;
+    const u1 = (tsCol + 1) / ts.columns - hpU;
+    const v1 = 1 - (tsRow / estimatedRows) - hpV;
+    const v0 = 1 - ((tsRow + 1) / estimatedRows) + hpV;
 
     const uvData = [
       u0, v0,
