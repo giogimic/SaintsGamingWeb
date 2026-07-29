@@ -18,6 +18,7 @@ import DPad from './dpad';
 import SaintsHudOrbs from './hud/SaintsHudOrbs';
 import ClassicPanel from './ClassicPanel';
 import Hotbar from './Hotbar';
+import DraggablePanel from './DraggablePanel';
 import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
@@ -451,6 +452,18 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           </div>
           {/* Right: Game Menu Bar (Removed - using ClassicPanel) */}
           <div className="flex gap-1 pointer-events-auto">
+            <button
+              onClick={() => useGameStore.getState().setIsUiEditMode(!useGameStore.getState().isUiEditMode)}
+              className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border ${
+                useGameStore.getState().isUiEditMode
+                  ? 'bg-amber-600/40 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/20'
+                  : 'bg-black/60 backdrop-blur-md text-amber-400 hover:text-amber-300 hover:bg-amber-950/50 border-white/10'
+              }`}
+              title="Edit UI Layout"
+            >
+              <span className="text-base leading-none">📐</span>
+              <span className="mt-0.5 leading-none">Edit UI</span>
+            </button>
             {isAdminUser && (
               <button
                 onClick={() => { 
@@ -473,12 +486,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       )}
 
       {/* Classic RPG Interface Panel */}
-      <div 
-        className="absolute inset-0 pointer-events-none" 
-        style={{ zoom: uiScale }}
-      >
+      <DraggablePanel id="classic-panel" className="absolute inset-0 pointer-events-none">
         <ClassicPanel />
-      </div>
+      </DraggablePanel>
 
       {/* Overlays that aren't part of ClassicPanel */}
       <div 
@@ -511,14 +521,26 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
       {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
 
-      {gameMode === 'EXPLORING' && !isDevEditorOpen && <MiniMapRadar />}
-      {gameMode === 'EXPLORING' && !isDevEditorOpen && <SaintsHudOrbs />}
+      {gameMode === 'EXPLORING' && !isDevEditorOpen && (
+        <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
+          <MiniMapRadar />
+        </DraggablePanel>
+      )}
+      {gameMode === 'EXPLORING' && !isDevEditorOpen && (
+        <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
+          <SaintsHudOrbs />
+        </DraggablePanel>
+      )}
 
       {/* Unified Game Chat UI & Hotbar */}
       {gameMode === 'EXPLORING' && !isDevEditorOpen && (
         <>
-          <Hotbar />
-          <GameChat />
+          <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
+            <Hotbar />
+          </DraggablePanel>
+          <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
+            <GameChat />
+          </DraggablePanel>
         </>
       )}
     </div>
