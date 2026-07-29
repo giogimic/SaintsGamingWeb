@@ -17,6 +17,7 @@ import MiniMapRadar from './MiniMapRadar';
 import DPad from './dpad';
 import SaintsHudOrbs from './hud/SaintsHudOrbs';
 import ClassicPanel from './ClassicPanel';
+import { UiEditToolbar } from './editor/UiEditToolbar';
 import Hotbar from './Hotbar';
 import DraggablePanel from './DraggablePanel';
 import GameTitleScreen from './GameTitleScreen';
@@ -40,6 +41,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const activeDialog = useGameStore((state) => state.activeDialog);
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
   const currentMapId = useGameStore((state) => state.currentMapId);
+  const isUiEditMode = useGameStore((state) => state.isUiEditMode);
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -464,9 +466,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           {/* Right: Game Menu Bar (Removed - using ClassicPanel) */}
           <div className="flex gap-1 pointer-events-auto">
             <button
-              onClick={() => useGameStore.getState().setIsUiEditMode(!useGameStore.getState().isUiEditMode)}
+              onClick={() => useGameStore.getState().setIsUiEditMode(!isUiEditMode)}
               className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border ${
-                useGameStore.getState().isUiEditMode
+                isUiEditMode
                   ? 'bg-amber-600/40 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/20'
                   : 'bg-black/60 backdrop-blur-md text-amber-400 hover:text-amber-300 hover:bg-amber-950/50 border-white/10'
               }`}
@@ -496,16 +498,19 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         </div>
       )}
 
-      {/* Main Game Canvas (Babylon.js) */}
+      {/* Render the Game Canvas Layer (Lowest Z-Index) */}
       <GameCanvasBabylon />
 
-      {/* Title & Auth Overlays */}
+      {/* UI Edit Toolbar (Only visible in edit mode) */}
+      <UiEditToolbar />
+
+      {/* --- UI Overlays (Higher Z-Index) --- */}
       {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
       {gameMode === 'LOGIN' && <GameLogin />}
       {gameMode === 'SERVER_SELECT' && <ServerSelect />}
 
       {/* Classic RPG Interface Panel */}
-      <DraggablePanel id="classic-panel" className="absolute inset-0 pointer-events-none">
+      <DraggablePanel id="classic-panel" className="absolute bottom-4 right-4 pointer-events-none">
         <ClassicPanel />
       </DraggablePanel>
 

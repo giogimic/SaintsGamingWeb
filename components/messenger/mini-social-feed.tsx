@@ -7,6 +7,7 @@ import { User as UserIcon, Heart, MessageSquare, EyeOff, Loader2 } from "lucide-
 import { getMiniFeed, togglePostReaction, replyToSocialPost, recordWatchHistory } from "@/app/actions/social";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { UiPresetEmbed } from "@/components/social/UiPresetEmbed";
 
 type MiniPost = {
   id: string;
@@ -135,9 +136,15 @@ export function MiniSocialFeed() {
             </div>
           </div>
           
-          <p className="whitespace-pre-wrap break-words text-muted-foreground leading-relaxed line-clamp-3">
-            {post.body}
-          </p>
+          <div className="whitespace-pre-wrap break-words text-muted-foreground leading-relaxed line-clamp-3">
+            {post.body.split(/(\[ui-preset:[a-zA-Z0-9_-]+\])/g).map((part, i) => {
+              if (part.startsWith("[ui-preset:") && part.endsWith("]")) {
+                const presetId = part.slice(11, -1);
+                return <UiPresetEmbed key={i} presetId={presetId} />;
+              }
+              return <span key={i}>{part}</span>;
+            })}
+          </div>
 
           {/* Media thumbnail */}
           {post.mediaUrl && (
