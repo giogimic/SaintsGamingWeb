@@ -76,6 +76,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const nextX = targetX;
     const nextY = targetY;
 
+    // Prevent cross-map teleporting from clicking (unless in dev editor)
+    const dist = Math.abs(nextX - currentPos.x) + Math.abs(nextY - currentPos.y);
+    if (!isDevEditorOpen && dist > 1) {
+      return;
+    }
+
     // Determine intended direction
     let dir: 'up' | 'down' | 'left' | 'right' = 'down';
     if (nextX > currentPos.x) dir = 'right';
