@@ -27,12 +27,12 @@ export default function QuestLogOverlay() {
       <div className="flex flex-col gap-4 h-full font-mono text-xs overflow-hidden">
         
         {/* Header Tabs */}
-        <div className="flex justify-between items-center bg-black/60 p-2 rounded-lg border border-slate-800">
+        <div className="flex justify-between items-center bg-[#050b14]/60 p-2 rounded-lg border border-[#806f47]/50">
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('ACTIVE')}
               className={`px-3 py-1.5 rounded font-bold transition-colors flex items-center gap-1.5 ${
-                activeTab === 'ACTIVE' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-white'
+                activeTab === 'ACTIVE' ? 'bg-[#806f47]/80 text-[#e2d5b3] border border-[#cbb26a]' : 'text-[#806f47] hover:text-[#e2d5b3] border border-transparent'
               }`}
             >
               <Clock className="w-3.5 h-3.5" /> ACTIVE TASKS ({activeQuests.length})
@@ -40,14 +40,14 @@ export default function QuestLogOverlay() {
             <button
               onClick={() => setActiveTab('COMPLETED')}
               className={`px-3 py-1.5 rounded font-bold transition-colors flex items-center gap-1.5 ${
-                activeTab === 'COMPLETED' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                activeTab === 'COMPLETED' ? 'bg-[#1e293b]/80 text-emerald-400 border border-emerald-700/50' : 'text-[#806f47] hover:text-emerald-400 border border-transparent'
               }`}
             >
               <CheckCircle className="w-3.5 h-3.5" /> COMPLETED ({completedQuests.length})
             </button>
           </div>
 
-          <div className="text-[10px] text-amber-400 font-bold bg-amber-950/40 px-2.5 py-1 rounded border border-amber-900 flex items-center gap-1">
+          <div className="text-[10px] text-[#e2d5b3] font-bold bg-[#806f47]/20 px-2.5 py-1 rounded border border-[#806f47]/50 flex items-center gap-1">
             <BookOpen className="w-3.5 h-3.5" /> CAMPAIGN JOURNAL
           </div>
         </div>
@@ -65,10 +65,10 @@ export default function QuestLogOverlay() {
                 const stageIdx = qState?.stage || 0;
 
                 return (
-                  <div key={q.id} className="p-4 bg-slate-900/80 border border-amber-500/40 rounded-xl space-y-2 shadow-lg">
+                  <div key={q.id} className="p-4 bg-[#0b1320]/60 border border-[#806f47]/40 rounded-xl space-y-2 shadow-lg">
                     <div className="flex justify-between items-start">
-                      <h3 className="font-extrabold text-sm text-amber-300">{q.title}</h3>
-                      <span className="text-[9px] px-2 py-0.5 bg-amber-950 text-amber-300 border border-amber-800 rounded font-bold uppercase">
+                      <h3 className="font-extrabold text-sm text-[#e2d5b3]">{q.title}</h3>
+                      <span className="text-[9px] px-2 py-0.5 bg-[#050b14]/90 text-[#cbb26a] border border-[#806f47]/50 rounded font-bold uppercase">
                         STAGE {stageIdx + 1}
                       </span>
                     </div>
@@ -76,10 +76,10 @@ export default function QuestLogOverlay() {
                     <p className="text-xs text-slate-300 leading-relaxed">{q.description}</p>
 
                     {/* Reward Summary */}
-                    <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-[10px]">
+                    <div className="pt-2 border-t border-[#806f47]/30 flex justify-between items-center text-[10px]">
                       <div className="flex gap-3 text-slate-400">
                         <span>XP: <strong className="text-emerald-400">+{q.rewards?.xp || 100}</strong></span>
-                        <span>Credits: <strong className="text-amber-400">+{q.rewards?.credits || 50} C</strong></span>
+                        <span>Credits: <strong className="text-[#eab308]">+{q.rewards?.credits || 50} C</strong></span>
                       </div>
                       <div className="text-emerald-400 font-bold flex items-center gap-1">
                         <Award className="w-3.5 h-3.5" /> ACTIVE OBJECTIVE
@@ -101,10 +101,10 @@ export default function QuestLogOverlay() {
               </div>
             ) : (
               completedQuests.map(q => (
-                <div key={q.id} className="p-3 bg-emerald-950/20 border border-emerald-800/40 rounded-lg space-y-1">
+                <div key={q.id} className="p-3 bg-[#050b14]/40 border border-emerald-900/40 rounded-lg space-y-1">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-xs text-emerald-300">{q.title}</h3>
-                    <span className="text-[9px] px-2 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-700 rounded font-bold uppercase">
+                    <h3 className="font-bold text-xs text-emerald-400">{q.title}</h3>
+                    <span className="text-[9px] px-2 py-0.5 bg-[#050b14]/90 text-emerald-500 border border-emerald-900/50 rounded font-bold uppercase">
                       COMPLETED
                     </span>
                   </div>

@@ -117,9 +117,9 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-slate-100 font-mono rounded-lg overflow-hidden border border-slate-800">
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-100 font-mono rounded-lg overflow-hidden border border-slate-800">
       {/* Top Action Toolbar */}
-      <div className="flex items-center justify-between p-3 bg-slate-900 border-b border-slate-800 gap-3">
+      <div className="flex items-center justify-between p-3 bg-[#0b1320] border-b border-slate-800 gap-3">
         <div className="flex items-center gap-2 flex-1">
           <div className="relative flex-1 max-w-xs">
             <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
@@ -128,14 +128,14 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
               placeholder="Search assets, paths, tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/60 border border-slate-700 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+              className="w-full bg-black/60 border border-slate-700 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
             />
           </div>
 
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-black/60 border border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+            className="bg-black/60 border border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
           >
             <option value="ALL">All Types</option>
             <option value="SPRITE">Sprites (NPC / Player)</option>
@@ -147,7 +147,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
           </select>
 
           {selectedTag && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-950 border border-cyan-500/50 text-cyan-300 rounded text-xs">
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#050b14] border border-[#806f47]/50 text-[#e2d5b3] rounded text-xs">
               Tag: #{selectedTag}
               <button onClick={() => setSelectedTag(null)} className="hover:text-red-400 font-bold ml-1">
                 ×
@@ -169,13 +169,13 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
           <div className="flex items-center border border-slate-700 rounded bg-black/40">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 ${viewMode === 'grid' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1.5 ${viewMode === 'grid' ? 'bg-[#806f47] text-white' : 'text-slate-400 hover:text-white'}`}
             >
               <Grid className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-1.5 ${viewMode === 'list' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1.5 ${viewMode === 'list' ? 'bg-[#806f47] text-white' : 'text-slate-400 hover:text-white'}`}
             >
               <List className="w-3.5 h-3.5" />
             </button>
@@ -186,7 +186,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Category / Tag Sidebar */}
-        <div className="w-56 bg-slate-900/80 border-r border-slate-800 p-3 flex flex-col gap-4 overflow-y-auto">
+        <div className="w-56 bg-[#0b1320]/80 border-r border-slate-800 p-3 flex flex-col gap-4 overflow-y-auto">
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Categories</span>
             <div className="flex flex-col gap-1 text-xs">
@@ -198,7 +198,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                   }}
                   className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-800 text-slate-300 text-left transition-colors"
                 >
-                  <Folder className="w-3.5 h-3.5 text-cyan-400" />
+                  <Folder className="w-3.5 h-3.5 text-[#cbb26a]" />
                   <span className="capitalize">{cat}</span>
                 </button>
               ))}
@@ -214,8 +214,8 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                   onClick={() => setSelectedTag(t)}
                   className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
                     selectedTag === t
-                      ? 'bg-cyan-600 border-cyan-400 text-white'
-                      : 'bg-black/40 border-slate-700 text-slate-300 hover:border-cyan-500'
+                      ? 'bg-[#806f47] border-amber-400 text-white'
+                      : 'bg-black/40 border-slate-700 text-slate-300 hover:border-[#806f47]'
                   }`}
                 >
                   #{t}
@@ -226,7 +226,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
         </div>
 
         {/* Center Grid / List View */}
-        <div className="flex-1 p-3 overflow-y-auto bg-slate-950">
+        <div className="flex-1 p-3 overflow-y-auto bg-[#050b14]">
           {loading ? (
             <div className="flex items-center justify-center h-full text-xs text-slate-400">Loading assets...</div>
           ) : assets.length === 0 ? (
@@ -243,8 +243,8 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                       setActiveAsset(asset);
                       if (onAssetSelect) onAssetSelect(asset);
                     }}
-                    className={`relative aspect-square bg-slate-900 border rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:border-cyan-400 ${
-                      isActive ? 'border-cyan-500 ring-2 ring-cyan-500/30' : 'border-slate-800'
+                    className={`relative aspect-square bg-[#0b1320] border rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer transition-all hover:border-amber-400 ${
+                      isActive ? 'border-[#806f47] ring-2 ring-amber-500/30' : 'border-slate-800'
                     }`}
                   >
                     <button
@@ -252,9 +252,9 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                         e.stopPropagation();
                         toggleSelectAsset(asset.id);
                       }}
-                      className="absolute top-1 left-1 z-10 text-slate-400 hover:text-cyan-300"
+                      className="absolute top-1 left-1 z-10 text-slate-400 hover:text-[#e2d5b3]"
                     >
-                      {isSelected ? <CheckSquare className="w-3.5 h-3.5 text-cyan-400" /> : <Square className="w-3.5 h-3.5" />}
+                      {isSelected ? <CheckSquare className="w-3.5 h-3.5 text-[#cbb26a]" /> : <Square className="w-3.5 h-3.5" />}
                     </button>
 
                     <div className="w-12 h-12 relative flex items-center justify-center overflow-hidden">
@@ -281,7 +281,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                   key={asset.id}
                   onClick={() => setActiveAsset(asset)}
                   className={`flex items-center justify-between p-2 rounded border cursor-pointer ${
-                    activeAsset?.id === asset.id ? 'bg-slate-800 border-cyan-500' : 'bg-slate-900 border-slate-800 hover:bg-slate-850'
+                    activeAsset?.id === asset.id ? 'bg-slate-800 border-[#806f47]' : 'bg-[#0b1320] border-slate-800 hover:bg-slate-850'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -300,8 +300,8 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
 
         {/* Right Asset Preview & Inspector Pane */}
         {activeAsset && (
-          <div className="w-72 bg-slate-900/90 border-l border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto">
-            <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">[ ASSET INSPECTOR ]</span>
+          <div className="w-72 bg-[#0b1320]/90 border-l border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto">
+            <span className="text-xs font-bold text-[#cbb26a] uppercase tracking-wider">[ ASSET INSPECTOR ]</span>
 
             {/* Preview Box */}
             <div className="w-full aspect-square bg-black/60 border border-slate-800 rounded-lg flex items-center justify-center p-4 relative overflow-hidden">
@@ -316,7 +316,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
             <div className="flex flex-col gap-1 text-xs">
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Type</span>
-                <span className="text-cyan-300 font-bold">{activeAsset.type}</span>
+                <span className="text-[#e2d5b3] font-bold">{activeAsset.type}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Game</span>
@@ -352,11 +352,11 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                   value={newTagInput}
                   onChange={(e) => setNewTagInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                  className="flex-1 bg-black/60 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="flex-1 bg-black/60 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
                 />
                 <button
                   onClick={handleAddTag}
-                  className="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded text-xs font-bold"
+                  className="px-2.5 py-1 bg-amber-700 hover:bg-[#806f47] text-white rounded text-xs font-bold"
                 >
                   Add
                 </button>
@@ -387,7 +387,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
       {/* Reclassify Modal */}
       {reclassifyModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-purple-500/50 p-6 rounded-xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+          <div className="bg-[#0b1320] border border-purple-500/50 p-6 rounded-xl w-full max-w-md shadow-2xl flex flex-col gap-4">
             <span className="text-purple-400 font-bold text-sm tracking-wider">[ RECLASSIFY GAME ASSET ]</span>
             <p className="text-xs text-slate-300 leading-relaxed">
               Fix mislabeled items by reassigning asset type and categories across selected items ({selectedAssetIds.size || 1}).

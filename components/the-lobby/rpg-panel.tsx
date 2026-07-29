@@ -11,25 +11,24 @@ interface RpgPanelProps {
 export default function RpgPanel({ title, onClose, children }: RpgPanelProps) {
   return (
     <div className="absolute inset-2 md:inset-8 z-30 animate-in fade-in zoom-in-95 duration-200 flex flex-col pointer-events-auto">
-      {/* Outer container with thick border and shadow */}
-      <div className="w-full h-full relative flex flex-col rounded-lg overflow-hidden border-[6px] border-[#3e2723] bg-[#271c19] shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_0_40px_rgba(0,0,0,0.9)]">
+      {/* Outer container with thin gold border and translucent slate background */}
+      <div className="w-full h-full relative flex flex-col rounded-md overflow-hidden border-2 border-[#806f47] bg-[#0b1320]/85 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.7),inset_0_0_20px_rgba(11,19,32,0.9)]">
         
         {/* Header bar */}
-        <div className="flex justify-between items-center p-3 border-b-4 border-[#3e2723] bg-gradient-to-b from-[#4e342e] to-[#3e2723] shadow-[0_2px_10px_rgba(0,0,0,0.5)] z-10">
-          <h2 className="text-xl md:text-2xl font-bold text-[#e0e0e0] tracking-widest uppercase drop-shadow-[2px_2px_0px_#000]" style={{ fontFamily: 'monospace' }}>
+        <div className="flex justify-between items-center p-2.5 border-b border-[#806f47]/50 bg-gradient-to-b from-[#1e293b]/80 to-[#0f172a]/90 shadow-md z-10">
+          <h2 className="text-lg md:text-xl font-bold text-[#e2d5b3] tracking-wider uppercase drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]" style={{ fontFamily: 'monospace' }}>
             {title}
           </h2>
           <button 
             onClick={onClose}
-            className="w-8 h-8 bg-[#b71c1c] text-white font-bold rounded-sm border-2 border-[#ff5252] hover:bg-[#ff5252] shadow-[inset_0_-2px_0_rgba(0,0,0,0.3)] transition-colors flex items-center justify-center leading-none"
+            className="w-6 h-6 bg-[#801717]/80 text-[#e2d5b3] font-bold rounded-sm border border-[#a83232] hover:bg-[#a83232] hover:text-white transition-colors flex items-center justify-center leading-none text-xs"
           >
-            X
+            ✕
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 relative overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]">
-          <div className="absolute inset-0 bg-black/40" /> {/* Darken texture */}
+        <div className="flex-1 relative overflow-hidden bg-gradient-to-b from-transparent to-[#050b14]/50">
           <div className="relative w-full h-full p-4 flex flex-col z-10">
             {children}
           </div>

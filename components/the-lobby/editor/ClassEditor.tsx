@@ -120,18 +120,18 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
   };
 
   return (
-    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4 shadow-2xl max-w-5xl mx-auto">
+    <div className="bg-[#050b14] border border-slate-800 rounded-xl p-4 space-y-4 shadow-2xl max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
         <div className="flex items-center gap-2">
-          <UserCheck className="w-5 h-5 text-cyan-400" />
+          <UserCheck className="w-5 h-5 text-[#cbb26a]" />
           <h2 className="font-bold text-slate-100 text-sm font-mono uppercase tracking-wide">
             Character Class Editor
           </h2>
         </div>
         <button
           onClick={handleAddNewClass}
-          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-slate-800 rounded-lg text-xs font-mono flex items-center gap-1 transition"
+          className="px-3 py-1.5 bg-[#0b1320] hover:bg-slate-800 text-[#e2d5b3] border border-slate-800 rounded-lg text-xs font-mono flex items-center gap-1 transition"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Class</span>
@@ -141,7 +141,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
       {/* Main Split Layout */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Class Selection List */}
-        <div className="space-y-2 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+        <div className="space-y-2 bg-[#0b1320]/60 p-3 rounded-lg border border-slate-800">
           <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block mb-1">
             Classes ({classes.length})
           </span>
@@ -151,8 +151,8 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
               onClick={() => setActiveClass(cls)}
               className={`w-full text-left p-2.5 rounded-lg font-mono text-xs border transition flex items-center justify-between ${
                 activeClass.id === cls.id
-                  ? 'bg-cyan-950/60 border-cyan-500 text-cyan-200 shadow-sm'
-                  : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:border-slate-700'
+                  ? 'bg-[#050b14]/60 border-[#806f47] text-amber-200 shadow-sm'
+                  : 'bg-[#050b14]/80 border-slate-800 text-slate-300 hover:border-slate-700'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
         </div>
 
         {/* Class Detail Editor */}
-        <div className="md:col-span-3 space-y-4 font-mono text-xs bg-slate-900/40 p-4 rounded-lg border border-slate-800">
+        <div className="md:col-span-3 space-y-4 font-mono text-xs bg-[#0b1320]/40 p-4 rounded-lg border border-slate-800">
           {/* Metadata */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -177,7 +177,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
                 type="text"
                 value={activeClass.name}
                 onChange={(e) => updateClassInList({ ...activeClass, name: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+                className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
               />
             </div>
             <div>
@@ -186,7 +186,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
                 type="text"
                 value={activeClass.slug}
                 onChange={(e) => updateClassInList({ ...activeClass, slug: e.target.value })}
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+                className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
               />
             </div>
           </div>
@@ -197,19 +197,19 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
               type="text"
               value={activeClass.description}
               onChange={(e) => updateClassInList({ ...activeClass, description: e.target.value })}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
+              className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             />
           </div>
 
           {/* Sprite Tag Filters */}
-          <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2">
+          <div className="p-3 bg-[#050b14] rounded-lg border border-slate-800 space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-cyan-400 text-[11px] font-bold uppercase">
+              <div className="flex items-center gap-1.5 text-[#cbb26a] text-[11px] font-bold uppercase">
                 <Tag className="w-3.5 h-3.5" />
                 <span>Allowed Sprite Tag Filters</span>
               </div>
               <span className="text-[10px] text-slate-400">
-                Matching Sprites in Pool: <strong className="text-cyan-300">{matchingSpritesCount}</strong>
+                Matching Sprites in Pool: <strong className="text-[#e2d5b3]">{matchingSpritesCount}</strong>
               </span>
             </div>
 
@@ -217,7 +217,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
               {activeClass.allowedSpriteTags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-2 py-0.5 bg-slate-900 border border-cyan-500/40 text-cyan-300 rounded text-[11px] flex items-center gap-1"
+                  className="px-2 py-0.5 bg-[#0b1320] border border-[#806f47]/40 text-[#e2d5b3] rounded text-[11px] flex items-center gap-1"
                 >
                   #{tag}
                   <button
@@ -237,11 +237,11 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                className="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200"
+                className="flex-1 bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-slate-200"
               />
               <button
                 onClick={handleAddTag}
-                className="px-3 py-1 bg-cyan-700 hover:bg-cyan-600 text-white font-bold rounded text-xs"
+                className="px-3 py-1 bg-amber-700 hover:bg-[#806f47] text-white font-bold rounded text-xs"
               >
                 Add Tag
               </button>
@@ -268,8 +268,8 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
           )}
 
           {/* Base Stats Sliders */}
-          <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 space-y-2">
-            <span className="text-cyan-400 text-[11px] font-bold uppercase block">
+          <div className="p-3 bg-[#050b14] rounded-lg border border-slate-800 space-y-2">
+            <span className="text-[#cbb26a] text-[11px] font-bold uppercase block">
               Base Stats Configuration
             </span>
             <div className="grid grid-cols-3 gap-3">
@@ -288,7 +288,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
                         },
                       })
                     }
-                    className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-slate-200"
+                    className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-slate-200"
                   />
                 </div>
               ))}

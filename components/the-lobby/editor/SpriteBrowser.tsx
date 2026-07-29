@@ -102,9 +102,9 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-[#050b14] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
       {/* Top Controls Toolbar */}
-      <div className="p-3 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3 bg-[#0b1320]/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
         {/* Search Input */}
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -113,7 +113,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             placeholder="Search sprites by name or tag..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+            className="w-full bg-[#050b14] border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47] font-mono"
           />
         </div>
 
@@ -123,8 +123,8 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             onClick={() => setActiveClassFilter(!activeClassFilter)}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${
               activeClassFilter
-                ? 'bg-cyan-600/30 text-cyan-300 border border-cyan-500/50 shadow-sm'
-                : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'
+                ? 'bg-[#806f47]/30 text-[#e2d5b3] border border-[#806f47]/50 shadow-sm'
+                : 'bg-[#050b14] text-slate-400 border border-slate-800 hover:text-slate-200'
             }`}
           >
             <UserCheck className="w-3.5 h-3.5" />
@@ -133,13 +133,13 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         )}
 
         {/* Grid Size Toggle */}
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+        <div className="flex items-center gap-1 bg-[#050b14] p-1 rounded-lg border border-slate-800">
           {(['small', 'medium', 'large'] as const).map((size) => (
             <button
               key={size}
               onClick={() => setGridSize(size)}
               className={`px-2 py-0.5 text-[10px] font-mono capitalize rounded ${
-                gridSize === size ? 'bg-cyan-700 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                gridSize === size ? 'bg-amber-700 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {size}
@@ -154,7 +154,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         <div className="flex-1 p-3 overflow-y-auto min-h-[300px]">
           {loading ? (
             <div className="flex items-center justify-center h-full text-slate-500 font-mono text-xs gap-2">
-              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
+              <RefreshCw className="w-4 h-4 animate-spin text-[#cbb26a]" />
               <span>Loading Sprite Library...</span>
             </div>
           ) : sprites.length === 0 ? (
@@ -164,7 +164,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
               {activeClassFilter && (
                 <button
                   onClick={() => setActiveClassFilter(false)}
-                  className="mt-2 text-cyan-400 underline hover:text-cyan-300"
+                  className="mt-2 text-[#cbb26a] underline hover:text-[#e2d5b3]"
                 >
                   Show All Sprites (Disable Class Filter)
                 </button>
@@ -204,7 +204,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
 
         {/* Side Preview Pane */}
         {previewAsset && (
-          <div className="w-72 border-l border-slate-800 p-3 bg-slate-900/60 overflow-y-auto hidden lg:block">
+          <div className="w-72 border-l border-slate-800 p-3 bg-[#0b1320]/60 overflow-y-auto hidden lg:block">
             <SpritePreview
               asset={previewAsset}
               onSelect={(asset) => onSelect([asset])}
@@ -215,22 +215,22 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
 
       {/* Multi-Select Confirm Footer */}
       {multiSelect && (
-        <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
+        <div className="p-3 bg-[#0b1320] border-t border-slate-800 flex items-center justify-between">
           <span className="text-xs text-slate-400 font-mono">
-            Selected: <strong className="text-cyan-300">{selectedIds.size}</strong> sprites
+            Selected: <strong className="text-[#e2d5b3]">{selectedIds.size}</strong> sprites
           </span>
           <div className="flex items-center gap-2">
             {onClose && (
               <button
                 onClick={onClose}
-                className="px-3 py-1.5 bg-slate-950 text-slate-400 hover:text-white border border-slate-800 rounded-lg text-xs font-mono"
+                className="px-3 py-1.5 bg-[#050b14] text-slate-400 hover:text-white border border-slate-800 rounded-lg text-xs font-mono"
               >
                 Cancel
               </button>
             )}
             <button
               onClick={handleConfirmMultiSelect}
-              className="px-4 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-lg text-xs font-mono shadow-md hover:from-cyan-500 hover:to-blue-500 flex items-center gap-1"
+              className="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-blue-600 text-white font-bold rounded-lg text-xs font-mono shadow-md hover:from-amber-500 hover:to-blue-500 flex items-center gap-1"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Confirm Selection</span>
@@ -291,9 +291,9 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
       onClick={onClick}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
-      className={`relative group flex flex-col items-center justify-center p-2 rounded-lg border transition cursor-pointer select-none bg-slate-900/80 ${
+      className={`relative group flex flex-col items-center justify-center p-2 rounded-lg border transition cursor-pointer select-none bg-[#0b1320]/80 ${
         isSelected
-          ? 'border-cyan-500 ring-2 ring-cyan-500/30 bg-cyan-950/40'
+          ? 'border-[#806f47] ring-2 ring-amber-500/30 bg-[#050b14]/40'
           : isActive
           ? 'border-slate-600 bg-slate-800/80'
           : 'border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
@@ -328,7 +328,7 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
       </div>
 
       {/* Label */}
-      <span className="text-[9px] font-mono text-slate-400 truncate w-full text-center mt-1 group-hover:text-cyan-300">
+      <span className="text-[9px] font-mono text-slate-400 truncate w-full text-center mt-1 group-hover:text-[#e2d5b3]">
         {asset.source.split('/').pop()?.replace('.png', '')}
       </span>
     </div>
