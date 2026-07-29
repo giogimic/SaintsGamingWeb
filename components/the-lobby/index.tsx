@@ -19,6 +19,9 @@ import SaintsHudOrbs from './hud/SaintsHudOrbs';
 import ClassicPanel from './ClassicPanel';
 import Hotbar from './Hotbar';
 import DraggablePanel from './DraggablePanel';
+import GameTitleScreen from './GameTitleScreen';
+import GameLogin from './GameLogin';
+import ServerSelect from './ServerSelect';
 import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
@@ -85,16 +88,14 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         spriteId: res.data.spriteId || 'adventurer',
         position: validPosition
       });
-      useGameStore.setState({ currentMapId: validMapId });
+      useGameStore.setState({ currentMapId: validMapId, gameMode: 'EXPLORING' });
 
       setActiveCharacterId(charId);
-      setShowSelector(false);
-      setShowCreator(false);
       if (typeof window !== 'undefined') {
         window.history.pushState({}, '', `/lobby?characterId=${charId}`);
       }
     } else {
-      setShowSelector(true);
+      useGameStore.getState().setGameMode('CHARACTER_SELECT');
     }
     setIsInitializing(false);
   };
@@ -149,13 +150,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
       if (initialCharacterId) {
         await selectAndLoadCharacter(initialCharacterId);
-      } else if (forceCreate || existingChars.length === 0) {
-        setShowCreator(true);
-        setShowSelector(false);
-        setIsInitializing(false);
       } else {
-        setShowSelector(true);
-        setShowCreator(false);
         setIsInitializing(false);
       }
     }
@@ -356,21 +351,21 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
   }
 
-  if (showCreator) {
+  if (gameMode === 'CHARACTER_CREATOR' || showCreator) {
     return (
       <CharacterCreator 
         onComplete={(newId) => selectAndLoadCharacter(newId)} 
-        onCancel={userCharacters.length > 0 ? () => { setShowCreator(false); setShowSelector(true); } : undefined}
+        onCancel={userCharacters.length > 0 ? () => { useGameStore.getState().setGameMode('CHARACTER_SELECT'); setShowCreator(false); } : undefined}
       />
     );
   }
 
-  if (showSelector) {
+  if (gameMode === 'CHARACTER_SELECT' || showSelector) {
     return (
       <CharacterSelector 
         characters={userCharacters} 
         onSelect={(id) => selectAndLoadCharacter(id)} 
-        onCreateNew={() => { setShowSelector(false); setShowCreator(true); }}
+        onCreateNew={() => { useGameStore.getState().setGameMode('CHARACTER_CREATOR'); setShowSelector(false); setShowCreator(true); }}
         onRefresh={() => loadCharactersList()}
       />
     );
@@ -484,6 +479,14 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           </div>
         </div>
       )}
+
+      {/* Main Game Canvas (Babylon.js) */}
+      <GameCanvasBabylon />
+
+      {/* Title & Auth Overlays */}
+      {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
+      {gameMode === 'LOGIN' && <GameLogin />}
+      {gameMode === 'SERVER_SELECT' && <ServerSelect />}
 
       {/* Classic RPG Interface Panel */}
       <DraggablePanel id="classic-panel" className="absolute inset-0 pointer-events-none">
