@@ -361,7 +361,7 @@ export class BabylonEngine {
           const tex = mat.diffuseTexture as Texture;
           if (tex && (state.isNpc || state.isPlayer || tex.name.includes('/npc/'))) {
             // Update row (direction)
-            const dirMap: Record<string, number> = { down: 3, left: 2, right: 1, up: 0 };
+            const dirMap: Record<string, number> = { down: 3, left: 0, right: 2, up: 1 };
             const rowIdx = dirMap[state.direction || 'down'] ?? 3;
             tex.vOffset = rowIdx * (1 / 4);
 
@@ -1086,29 +1086,33 @@ export class BabylonEngine {
       }
     }
 
-    // Handle Chat Bubble
+    // Handle Chat Bubble (Runescape Style - Yellow text, no background)
     let chatBubble = this.chatBubbles.get(entity.id);
     if (entity.chatMessage) {
       if (!chatBubble) {
+        // We use a Rectangle as an invisible container to hold the text
         chatBubble = new Rectangle(`chatBubble_${entity.id}`);
-        chatBubble.width = '190px';
-        chatBubble.height = '52px';
-        chatBubble.cornerRadius = 26;
-        chatBubble.color = '#22d3ee';
-        chatBubble.thickness = 2;
-        chatBubble.background = 'rgba(5,10,20,0.9)';
-
+        chatBubble.width = '200px';
+        chatBubble.height = '40px';
+        chatBubble.thickness = 0;
+        chatBubble.background = 'transparent';
+        
         const text = new TextBlock();
         text.text = entity.chatMessage;
-        text.color = 'white';
-        text.fontSize = 12;
-        text.fontFamily = 'monospace';
+        text.color = '#ffff00'; // Runescape yellow
+        text.fontSize = 14;
+        text.fontFamily = 'Arial, sans-serif';
+        text.fontWeight = 'bold';
         text.textWrapping = true;
+        text.shadowColor = 'black';
+        text.shadowBlur = 2;
+        text.shadowOffsetX = 1;
+        text.shadowOffsetY = 1;
 
         chatBubble.addControl(text);
         this.guiTexture.addControl(chatBubble);
         chatBubble.linkWithMesh(spriteMesh);
-        chatBubble.linkOffsetY = -75;
+        chatBubble.linkOffsetY = -70;
 
         this.chatBubbles.set(entity.id, chatBubble);
       } else {

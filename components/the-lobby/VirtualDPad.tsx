@@ -57,16 +57,16 @@ export default function VirtualDPad() {
   if (!isTouchDevice) return null;
 
   const buttonClass = (direction: string) => `
-    w-14 h-14 rounded-xl font-bold text-lg select-none touch-none
-    flex items-center justify-center transition-all duration-100
+    w-14 h-14 rounded-2xl font-bold text-lg select-none touch-none
+    flex items-center justify-center transition-all duration-200 backdrop-blur-md
     ${activeDirection === direction 
-      ? 'bg-emerald-500 text-white scale-95 shadow-[0_0_15px_rgba(16,185,129,0.5)]' 
-      : 'bg-slate-800/80 text-emerald-400 border border-emerald-500/30 hover:bg-slate-700/80'}
+      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white scale-90 shadow-[0_0_20px_rgba(99,102,241,0.6)] border border-white/20' 
+      : 'bg-black/40 text-indigo-300 border border-white/10 shadow-lg hover:bg-black/60 hover:text-white'}
   `;
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 md:hidden">
-      <div className="grid grid-cols-3 gap-1 w-[180px]">
+    <div className="fixed bottom-24 right-6 z-50 md:hidden">
+      <div className="grid grid-cols-3 gap-1.5 w-[190px]">
         <div />
         <button
           className={buttonClass('up')}
@@ -89,8 +89,8 @@ export default function VirtualDPad() {
         >
           ◀
         </button>
-        <div className="w-14 h-14 rounded-xl bg-slate-900/50 border border-slate-700/30 flex items-center justify-center">
-          <div className="w-4 h-4 rounded-full bg-emerald-500/30" />
+        <div className="w-14 h-14 rounded-2xl bg-black/20 backdrop-blur-sm border border-white/5 flex items-center justify-center shadow-inner">
+          <div className="w-4 h-4 rounded-full bg-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.2)]" />
         </div>
         <button
           className={buttonClass('right')}
