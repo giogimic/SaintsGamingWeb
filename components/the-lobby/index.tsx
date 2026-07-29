@@ -146,7 +146,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         });
       }
 
-      const existingChars = await loadCharactersList();
+      await loadCharactersList();
 
       if (initialCharacterId) {
         await selectAndLoadCharacter(initialCharacterId);
