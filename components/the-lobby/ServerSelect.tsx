@@ -23,8 +23,7 @@ export default function ServerSelect() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const host = window.location.hostname;
-        const res = await fetch(`http://${host}:3001/status`);
+        const res = await fetch(`/api/game/server-status`);
         if (res.ok) {
           const data = await res.json();
           setServers([

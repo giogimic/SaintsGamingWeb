@@ -53,7 +53,7 @@ export default async function DevDashboard() {
  routes: [
  { path: "/admin/game-dev/quests", desc: "Quest Creator & Dialogue Manager" },
  { path: "/admin/game-dev/assets", desc: "Pixel Art Asset Studio & Importer" },
- { path: "/admin/map-editor", desc: "World Map & Quest NPC Placer" },
+ { path: "/admin/dev/lobby", desc: "Lobby & MMO Server Management" },
  { path: "/admin/game", desc: "MMO Sandbox Admin" },
  ]
  },
