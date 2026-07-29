@@ -17,6 +17,7 @@ import {
   VertexBuffer
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
+import { TILESET_SIZES } from "../../components/the-lobby/data/tileset-sizes";
 
 export interface BabylonTileMapData {
   id?: string;
@@ -503,7 +504,11 @@ export class BabylonEngine {
             
             // Calculate exact rows if possible
             let estimatedRows = 24;
-            if (ts.imageheight && ts.tileheight) {
+            const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+            const sizes = TILESET_SIZES[rawSource];
+            if (sizes && sizes.h && ts.tileheight) {
+              estimatedRows = Math.floor(sizes.h / ts.tileheight);
+            } else if (ts.imageheight && ts.tileheight) {
               estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
             } else if (ts.tilecount && ts.columns) {
               estimatedRows = Math.ceil(ts.tilecount / ts.columns);
@@ -554,7 +559,6 @@ export class BabylonEngine {
               if (!tex) {
                 // Normalize imageSource: strip any directory prefix the DB may have stored
                 // to always resolve to /tuxemon-assets/tilesets/{filename.png}
-                const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
                 const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
                 // Use Nearest sampling mode (1) for pixel-perfect crisp textures!
                 // invertY = false so (0,0) is Top-Left
@@ -847,7 +851,11 @@ export class BabylonEngine {
     
     // Calculate exact rows if possible
     let estimatedRows = 24;
-    if (ts.imageheight && ts.tileheight) {
+    const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+    const sizes = TILESET_SIZES[rawSource];
+    if (sizes && sizes.h && ts.tileheight) {
+      estimatedRows = Math.floor(sizes.h / ts.tileheight);
+    } else if (ts.imageheight && ts.tileheight) {
       estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
     } else if (ts.tilecount && ts.columns) {
       estimatedRows = Math.ceil(ts.tilecount / ts.columns);
