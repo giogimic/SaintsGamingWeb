@@ -181,6 +181,7 @@ export interface GameState {
   setIsUiEditMode: (isEditMode: boolean) => void;
   uiSettings: Record<string, { x: number; y: number; scale: number }>;
   updateUiSetting: (id: string, setting: Partial<{ x: number; y: number; scale: number }>) => void;
+  loadUiPreset: (presetData: Record<string, { x: number; y: number; scale: number }>) => void;
   
   // Game Data
   fetchLogicTiles: () => Promise<void>;
@@ -341,6 +342,14 @@ export const useGameStore = create<GameState>()(
           state.uiSettings[id] = { x: 0, y: 0, scale: 1 };
         }
         state.uiSettings[id] = { ...state.uiSettings[id], ...setting };
+      }),
+      loadUiPreset: (presetData) => set((state) => {
+        state.uiSettings = presetData;
+        if (typeof window !== 'undefined') {
+          Object.keys(presetData).forEach(key => {
+            localStorage.setItem(`saints-ui-${key}`, JSON.stringify(presetData[key]));
+          });
+        }
       }),
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),

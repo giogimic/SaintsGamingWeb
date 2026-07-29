@@ -69,7 +69,7 @@ export default function DraggablePanel({ id, children, defaultPosition = { x: 0,
       }}
     >
       {isUiEditMode && (
-        <div className="absolute -top-10 left-0 min-w-[200px] bg-black/90 border border-sg-primary/50 rounded-lg p-2 flex items-center gap-2 shadow-xl z-50">
+        <div className="absolute -top-10 left-0 min-w-[200px] bg-black/90 border border-sg-primary/50 rounded-lg p-2 flex items-center gap-2 shadow-xl z-50 pointer-events-auto">
           <div 
             className="cursor-move p-1 hover:bg-white/10 rounded touch-none"
             onPointerDown={(e) => dragControls.start(e)}

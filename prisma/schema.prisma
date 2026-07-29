@@ -154,6 +154,7 @@ model User {
   threadSubscriptions   ThreadSubscription[]
   replyLikes            ReplyLike[]
   achievements          UserAchievement[]
+  uiPresets             UiPreset[]
 
   @@index([createdAt])
 }
@@ -1400,3 +1401,17 @@ model MapLogicTile {
   onStepAction      String? // e.g. "ENCOUNTER"
   onStepPayload     String? // JSON string: { chance: 0.1 }
 }
+
+model UiPreset {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  data        String   // JSON string containing UI settings
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { createSocialPost, toggleReaction, deleteSocialPost } from "./actions";
+import { UiPresetEmbed } from "@/components/social/UiPresetEmbed";
 
 export default async function SocialDashboard(props: { searchParams: Promise<{ filter?: string; tag?: string; q?: string }> }) {
   const session = await auth();
@@ -258,9 +259,13 @@ export default async function SocialDashboard(props: { searchParams: Promise<{ f
                           </div>
                           
                           <p className="text-sm md:text-base whitespace-pre-wrap break-words">
-                            {post.body.split(/(#[a-zA-Z0-9_]+)/g).map((part, i) => {
+                            {post.body.split(/(\[ui-preset:[a-zA-Z0-9_-]+\]|#[a-zA-Z0-9_]+)/g).map((part, i) => {
                               if (part.startsWith('#')) {
                                 return <span key={i} className="text-primary font-medium">{part}</span>;
+                              }
+                              if (part.startsWith("[ui-preset:") && part.endsWith("]")) {
+                                const presetId = part.slice(11, -1);
+                                return <UiPresetEmbed key={i} presetId={presetId} />;
                               }
                               return part;
                             })}

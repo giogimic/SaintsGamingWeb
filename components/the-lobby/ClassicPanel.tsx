@@ -32,7 +32,7 @@ export default function ClassicPanel() {
   `;
 
   return (
-    <div className="absolute bottom-4 right-4 w-[340px] z-40 pointer-events-auto flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.7)]"
+    <div className="w-[340px] z-40 pointer-events-auto flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.7)]"
       style={{
         backgroundColor: 'rgba(11, 19, 32, 0.85)',
         backdropFilter: 'blur(8px)',

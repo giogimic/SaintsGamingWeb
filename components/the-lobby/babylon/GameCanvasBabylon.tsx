@@ -634,7 +634,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       <canvas
         ref={canvasRef}
-        className="w-full h-full outline-none touch-none cursor-crosshair"
+        className={`w-full h-full outline-none touch-none ${isDevEditorOpen ? 'cursor-crosshair' : 'cursor-default'}`}
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
