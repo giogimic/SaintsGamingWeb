@@ -394,7 +394,7 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
             Integrated Dev Editor
           </span>
           <span className="px-1.5 py-0.5 text-[10px] bg-[#806f47]/20 text-[#e2d5b3] border border-[#806f47]/40 rounded font-mono">
-            v2.1.60
+            v2.1.67
           </span>
         </div>
         <button
