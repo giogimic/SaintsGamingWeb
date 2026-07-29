@@ -1,4 +1,18 @@
-### 2.1.67\n- **UI & Input Refinement**: Fixed WASD movement bug, added touch device detection to hide mobile controls on desktop, and introduced a unified Game Options menu (ESC) to replace scattered UI buttons.\n\n### 2.1.66\n- **Hotfix**: Fixed an invalid React hook declaration in the Inventory UI that was causing Next.js production builds to fail.\n\n### 2.1.65\n- **UI/UX Overhaul for The Lobby**: Implemented full cinema mode layout to bypass main site navbar/footer.\n- **MMO Mechanics**: Unified keyboard WASD movement with Joystick pathfinding logic to prevent double-jumps.\n- **UI Polish**: Fixed 'long-faced' classic panels by adopting a wider, dual-pane inventory system. Added strict viewport bounds to DraggablePanel.\n\n<div align="center">
+### 2.1.68
+- **Babylon.js RPG Engine Audit**: Minor code review and preparatory refactoring for the Babylon.js engine (`GameCanvasBabylon.tsx`, `maps.ts`, `store.ts`, `BabylonEngine.ts`, and `WorldSimulation.ts`).
+
+### 2.1.67
+- **UI & Input Refinement**: Fixed WASD movement bug, added touch device detection to hide mobile controls on desktop, and introduced a unified Game Options menu (ESC) to replace scattered UI buttons.
+
+### 2.1.66
+- **Hotfix**: Fixed an invalid React hook declaration in the Inventory UI that was causing Next.js production builds to fail.
+
+### 2.1.65
+- **UI/UX Overhaul for The Lobby**: Implemented full cinema mode layout to bypass main site navbar/footer.
+- **MMO Mechanics**: Unified keyboard WASD movement with Joystick pathfinding logic to prevent double-jumps.
+- **UI Polish**: Fixed 'long-faced' classic panels by adopting a wider, dual-pane inventory system. Added strict viewport bounds to DraggablePanel.
+
+<div align="center">
   <h1>✨ Saints Gaming Web ✨</h1>
   <p><em>A modern, full-stack community management system and 2.5D MMO game server.</em></p>
   <p>

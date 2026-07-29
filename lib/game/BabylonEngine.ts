@@ -14,10 +14,20 @@ import {
   DynamicTexture,
   Mesh,
   TransformNode,
-  VertexBuffer
+  VertexBuffer,
+  VertexData
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../../components/the-lobby/data/tileset-sizes";
+
+export interface BabylonMapChunk {
+  chunkX: number;
+  chunkY: number;
+  width: number;
+  height: number;
+  grid: number[][];
+  tileLayers?: Array<{ name: string; grid: number[][] }>;
+}
 
 export interface BabylonTileMapData {
   id?: string;
@@ -29,7 +39,37 @@ export interface BabylonTileMapData {
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
+  chunks?: BabylonMapChunk[];
 }
+
+export interface SpriteSheetConfig {
+  columns: number;
+  rows: number;
+  idleFrame: number;
+  walkCycle: number[];
+  walkSpeed: number; // frames per sec
+  directions: {
+    down: number;
+    left: number;
+    right: number;
+    up: number;
+    [key: string]: number;
+  };
+}
+
+export const DEFAULT_SPRITE_CONFIG: SpriteSheetConfig = {
+  columns: 3,
+  rows: 4,
+  idleFrame: 1,
+  walkCycle: [0, 1, 2, 1],
+  walkSpeed: 6,
+  directions: {
+    down: 3,
+    left: 2,
+    right: 1,
+    up: 0
+  }
+};
 
 export interface BabylonEntityData {
   id: string;
@@ -44,6 +84,7 @@ export interface BabylonEntityData {
   isNpc?: boolean;
   isTuxemon?: boolean;
   chatMessage?: string;
+  spriteConfig?: SpriteSheetConfig;
 }
 
 export class BabylonEngine {
@@ -360,21 +401,23 @@ export class BabylonEngine {
         if (mesh.material) {
           const mat = mesh.material as StandardMaterial;
           const tex = mat.diffuseTexture as Texture;
-          if (tex && (state.isNpc || state.isPlayer || tex.name.includes('/npc/'))) {
+          if (tex && (state.isNpc || state.isPlayer || state.spriteConfig || tex.name.includes('/npc/'))) {
+            const config = state.spriteConfig || DEFAULT_SPRITE_CONFIG;
+            
             // Update row (direction)
-            const dirMap: Record<string, number> = { down: 3, left: 2, right: 1, up: 0 };
-            const rowIdx = dirMap[state.direction || 'down'] ?? 3;
-            tex.vOffset = rowIdx * (1 / 4);
+            const dir = state.direction || 'down';
+            const rowIdx = config.directions[dir] ?? config.directions.down;
+            tex.vOffset = rowIdx * (1 / config.rows);
 
             // Update column (animation frame)
             if (state.isMoving) {
-              state.animTime += deltaTime * 6; // 6 frames per sec
-              const frameSeq = [0, 1, 2, 1]; // walk cycle
-              const f = frameSeq[Math.floor(state.animTime) % 4];
-              tex.uOffset = f * (1 / 3);
+              state.animTime += deltaTime * config.walkSpeed;
+              const frameSeq = config.walkCycle;
+              const f = frameSeq[Math.floor(state.animTime) % frameSeq.length];
+              tex.uOffset = f * (1 / config.columns);
             } else {
               state.animTime = 0;
-              tex.uOffset = 1 * (1 / 3); // Idle frame is index 1
+              tex.uOffset = config.idleFrame * (1 / config.columns);
             }
           }
         }
@@ -485,19 +528,44 @@ export class BabylonEngine {
     if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
-      tileLayers.forEach((layer, layerIdx) => {
-        const heightOffset = layerIdx * 0.02;
+      const tilesetVertexData: Map<string, { positions: number[], indices: number[], uvs: number[], vertexIndex: number }> = new Map();
 
-        for (let r = 0; r < height; r++) {
-          for (let c = 0; c < width; c++) {
-            const gid = layer.grid[r]?.[c] ?? 0;
-            if (gid === 0) continue;
+      // Normalize input: if chunks aren't provided, treat the base map as a single chunk at 0,0
+      const chunksToRender: BabylonMapChunk[] = mapData.chunks?.length 
+        ? mapData.chunks 
+        : [{
+            chunkX: 0, chunkY: 0, 
+            width: width, height: height, 
+            grid: tiles || [], 
+            tileLayers: tileLayers
+          }];
 
-            const ts = sortedTilesets.find(t => gid >= t.firstgid);
-            if (!ts || !ts.imageSource) continue;
+      chunksToRender.forEach(chunk => {
+        if (!chunk.tileLayers) return;
+        
+        // Calculate the world-space offset for the center of this chunk
+        // Assuming chunkX/Y are grid coordinates where 1 unit = chunkWidth tiles
+        const chunkOffsetX = chunk.chunkX * chunk.width * tileSize;
+        const chunkOffsetZ = -(chunk.chunkY * chunk.height * tileSize); // -Z is down in our setup
 
-            const posX = (c - width / 2) * tileSize;
-            const posZ = (height / 2 - r) * tileSize;
+        chunk.tileLayers.forEach((layer, layerIdx) => {
+          const heightOffset = layerIdx * 0.02;
+
+          for (let r = 0; r < chunk.height; r++) {
+            for (let c = 0; c < chunk.width; c++) {
+              const gid = layer.grid[r]?.[c] ?? 0;
+              if (gid === 0) continue;
+
+              const ts = sortedTilesets.find(t => gid >= t.firstgid);
+              if (!ts || !ts.imageSource) continue;
+
+              // Local position relative to the center of the entire map
+              const localX = (c - width / 2) * tileSize;
+              const localZ = (height / 2 - r) * tileSize;
+              
+              // Apply chunk offset
+              const posX = localX + chunkOffsetX;
+              const posZ = localZ + chunkOffsetZ;
 
             const localId = gid - ts.firstgid;
             const col = localId % ts.columns;
@@ -534,184 +602,244 @@ export class BabylonEngine {
             const v0 = row / estimatedRows + hpV; // Top of tile
             const v1 = (row + 1) / estimatedRows - hpV; // Bottom of tile
 
-            const plane = MeshBuilder.CreatePlane(
-              `tile_${layerIdx}_${r}_${c}`,
-              { size: tileSize },
-              this.scene
+            let vData = tilesetVertexData.get(ts.imageSource);
+            if (!vData) {
+              vData = { positions: [], indices: [], uvs: [], vertexIndex: 0 };
+              tilesetVertexData.set(ts.imageSource, vData);
+            }
+
+            // Vertices for the quad (flat on XZ plane with Math.PI/2 rotation behavior factored in)
+            const x0 = posX - tileSize / 2;
+            const x1 = posX + tileSize / 2;
+            const z0 = posZ - tileSize / 2;
+            const z1 = posZ + tileSize / 2;
+            const y = heightOffset;
+
+            // Notice vertex order is adapted so normal points UP (positive Y)
+            vData.positions.push(
+              x0, y, z1, // Top-left
+              x1, y, z1, // Top-right
+              x1, y, z0, // Bottom-right
+              x0, y, z0  // Bottom-left
             );
 
-            // Plane vertices: 0=Bottom-Left, 1=Bottom-Right, 2=Top-Right, 3=Top-Left
-            const uvs = [
-              u0, v1, // Bottom-Left Vertex -> Bottom of Tile
-              u1, v1, // Bottom-Right Vertex -> Bottom of Tile
-              u1, v0, // Top-Right Vertex -> Top of Tile
-              u0, v0  // Top-Left Vertex -> Top of Tile
-            ];
-            plane.setVerticesData(VertexBuffer.UVKind, uvs);
+            // Match UVs to vertices (u0,v0 is top-left in standard WebGL texture if invertY=false)
+            vData.uvs.push(
+              u0, v0, // Top-Left
+              u1, v0, // Top-Right
+              u1, v1, // Bottom-Right
+              u0, v1  // Bottom-Left
+            );
 
-            plane.rotation.x = Math.PI / 2;
-            plane.position = new Vector3(posX, heightOffset, posZ);
-            plane.parent = this.rootNode;
-
-            let mat = this.tilesetMaterialCache.get(ts.imageSource);
-            if (!mat) {
-              mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
-              let tex = this.tilesetTextureCache.get(ts.imageSource);
-              if (!tex) {
-                // Normalize imageSource: strip any directory prefix the DB may have stored
-                // to always resolve to /tuxemon-assets/tilesets/{filename.png}
-                const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
-                // Use Nearest sampling mode (1) for pixel-perfect crisp textures!
-                // invertY = false so (0,0) is Top-Left
-                tex = new Texture(tilesetPath, this.scene, true, false, 1);
-                tex.hasAlpha = true;
-                this.tilesetTextureCache.set(ts.imageSource, tex);
-              }
-              mat.diffuseTexture = tex;
-              mat.useAlphaFromDiffuseTexture = true;
-              mat.backFaceCulling = false;
-              this.tilesetMaterialCache.set(ts.imageSource, mat);
-            }
-            plane.material = mat;
-            this.tileMeshes.push(plane);
+            // Triangle indices
+            const vi = vData.vertexIndex;
+            vData.indices.push(
+              vi + 0, vi + 2, vi + 1,
+              vi + 0, vi + 3, vi + 2
+            );
+            vData.vertexIndex += 4;
           }
         }
       });
+    });
+
+      // Build one mesh per tileset
+      tilesetVertexData.forEach((vData, imageSource) => {
+        if (vData.vertexIndex === 0) return;
+        
+        const mesh = new Mesh(`tileset_mesh_${imageSource}`, this.scene);
+        
+        const vertexData = new VertexData();
+        vertexData.positions = vData.positions;
+        vertexData.indices = vData.indices;
+        vertexData.uvs = vData.uvs;
+        
+        const normals: number[] = [];
+        VertexData.ComputeNormals(vData.positions, vData.indices, normals);
+        vertexData.normals = normals;
+        
+        vertexData.applyToMesh(mesh, false);
+        mesh.parent = this.rootNode;
+        mesh.receiveShadows = true;
+
+        let mat = this.tilesetMaterialCache.get(imageSource);
+        if (!mat) {
+          mat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
+          let tex = this.tilesetTextureCache.get(imageSource);
+          if (!tex) {
+            const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+            const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
+            tex = new Texture(tilesetPath, this.scene, true, false, 1);
+            tex.hasAlpha = true;
+            this.tilesetTextureCache.set(imageSource, tex);
+          }
+          mat.diffuseTexture = tex;
+          mat.useAlphaFromDiffuseTexture = true;
+          mat.backFaceCulling = false;
+          // Subtly enhance color for the classic RPG vibe
+          mat.specularColor = new Color3(0.05, 0.05, 0.05);
+          mat.specularPower = 32;
+          this.tilesetMaterialCache.set(imageSource, mat);
+        }
+        mesh.material = mat;
+        this.tileMeshes.push(mesh);
+      });
     } else {
       // Fallback: simple colored grid rendering with 2.5D geometry
+      const baseGrounds: Record<number, Mesh> = {};
+      const baseObjects: Record<number, Mesh[]> = {};
+
       for (let r = 0; r < height; r++) {
         for (let c = 0; c < width; c++) {
           const tileId = tiles[r]?.[c] ?? 0;
           const posX = (c - width / 2) * tileSize;
           const posZ = (height / 2 - r) * tileSize;
 
-          // Ground plane for every tile
-          const ground = MeshBuilder.CreatePlane(
-            `tile_${r}_${c}`,
-            { size: tileSize },
-            this.scene
-          );
-          ground.rotation.x = Math.PI / 2;
-          ground.position = new Vector3(posX, 0, posZ);
-          ground.parent = this.rootNode;
-          ground.receiveShadows = true;
+          // Ground plane base
+          let groundBase = baseGrounds[tileId];
+          if (!groundBase) {
+            groundBase = MeshBuilder.CreatePlane(`base_ground_${tileId}`, { size: tileSize }, this.scene);
+            groundBase.rotation.x = Math.PI / 2;
+            const mat = new StandardMaterial(`baseMat_${tileId}`, this.scene);
+            this.applyTileMaterial(mat, tileId, 0, 0); // Tone variance lost, but it's fine for instancing
+            groundBase.material = mat;
+            groundBase.receiveShadows = true;
+            this.tileMeshes.push(groundBase);
+            baseGrounds[tileId] = groundBase;
+            groundBase.isVisible = false; // Hide the base mesh
+          }
 
-          const mat = new StandardMaterial(`tileMat_${r}_${c}`, this.scene);
-          this.applyTileMaterial(mat, tileId, r, c);
-          ground.material = mat;
-          this.tileMeshes.push(ground);
+          // Instance the ground
+          const inst = groundBase.createInstance(`ground_${r}_${c}`);
+          inst.position = new Vector3(posX, 0, posZ);
+          inst.parent = this.rootNode;
+          
+          if (tileId === 4 || tileId === 10) {
+            if (groundBase.material && !this.waterMaterials.includes(groundBase.material as StandardMaterial)) {
+              this.waterMaterials.push(groundBase.material as StandardMaterial);
+              if (this.waterTexture) (groundBase.material as StandardMaterial).diffuseTexture = this.waterTexture;
+            }
+          }
 
-          // 3D geometry for walls / objects
-          if (tileId === 1) {
-            // Solid 3D wall block
-            const block = MeshBuilder.CreateBox(`wall_${r}_${c}`, {
-              width: tileSize * 0.95,
-              height: tileSize * 0.9,
-              depth: tileSize * 0.95
-            }, this.scene);
-            block.position = new Vector3(posX, tileSize * 0.45, posZ);
-            const wallMat = new StandardMaterial(`wallMat_${r}_${c}`, this.scene);
-            this.applyTileMaterial(wallMat, tileId, r, c, true);
-            block.material = wallMat;
-            block.parent = this.rootNode;
-            block.receiveShadows = true;
-            if (this.shadowGen) this.shadowGen.addShadowCaster(block);
-            this.objectMeshes.push(block);
-          } else if (tileId === 2 || tileId === 3) {
-            // Tall Grass Tufts (2 crossed billboards for volume)
-            for (let t = 0; t < 2; t++) {
-              const tuft = MeshBuilder.CreatePlane(`tuft_${r}_${c}_${t}`, { width: tileSize * 0.85, height: tileSize * 0.75 }, this.scene);
-              tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
-              tuft.rotation.y = t * (Math.PI / 2);
-              tuft.position = new Vector3(posX, tileSize * 0.38, posZ);
-              const tuftMat = new StandardMaterial(`tuftMat_${r}_${c}_${t}`, this.scene);
-              tuftMat.diffuseColor = new Color3(0.1, 0.62, 0.18);
-              tuftMat.emissiveColor = new Color3(0.02, 0.12, 0.04);
-              tuft.material = tuftMat;
-              tuft.parent = this.rootNode;
-              this.objectMeshes.push(tuft);
+          // 3D Objects Instancing
+          if (tileId === 1 || tileId === 2 || tileId === 3 || tileId === 5 || tileId === 6 || tileId === 9 || tileId === 10 || tileId === 12) {
+            let objs = baseObjects[tileId];
+            if (!objs) {
+              objs = [];
+              if (tileId === 1) {
+                const block = MeshBuilder.CreateBox(`base_wall`, { width: tileSize * 0.95, height: tileSize * 0.9, depth: tileSize * 0.95 }, this.scene);
+                const wallMat = new StandardMaterial(`baseWallMat`, this.scene);
+                this.applyTileMaterial(wallMat, tileId, 0, 0, true);
+                block.material = wallMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(block);
+                objs.push(block);
+              } else if (tileId === 2 || tileId === 3) {
+                for (let t = 0; t < 2; t++) {
+                  const tuft = MeshBuilder.CreatePlane(`base_tuft_${t}`, { width: tileSize * 0.85, height: tileSize * 0.75 }, this.scene);
+                  tuft.billboardMode = Mesh.BILLBOARDMODE_Y;
+                  tuft.rotation.y = t * (Math.PI / 2);
+                  const tuftMat = new StandardMaterial(`baseTuftMat`, this.scene);
+                  tuftMat.diffuseColor = new Color3(0.1, 0.62, 0.18);
+                  tuftMat.emissiveColor = new Color3(0.02, 0.12, 0.04);
+                  tuft.material = tuftMat;
+                  objs.push(tuft);
+                }
+              } else if (tileId === 5) {
+                const trunk = MeshBuilder.CreateBox(`base_trunk`, { width: 0.3, height: 0.9, depth: 0.3 }, this.scene);
+                const trunkMat = new StandardMaterial(`baseTrunkMat`, this.scene);
+                trunkMat.diffuseColor = new Color3(0.35, 0.22, 0.12);
+                trunk.material = trunkMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(trunk);
+                objs.push(trunk);
+                
+                const foliage = MeshBuilder.CreatePlane(`base_tree`, { width: tileSize * 1.4, height: tileSize * 1.5 }, this.scene);
+                foliage.billboardMode = Mesh.BILLBOARDMODE_Y;
+                const treeMat = new StandardMaterial(`baseTreeMat`, this.scene);
+                treeMat.diffuseColor = new Color3(0.1, 0.52, 0.2);
+                treeMat.emissiveColor = new Color3(0.01, 0.08, 0.02);
+                foliage.material = treeMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(foliage);
+                objs.push(foliage);
+              } else if (tileId === 6) {
+                const ore = MeshBuilder.CreateBox(`base_ore`, { width: tileSize * 0.7, height: tileSize * 0.45, depth: tileSize * 0.7 }, this.scene);
+                const oreMat = new StandardMaterial(`baseOreMat`, this.scene);
+                oreMat.diffuseColor = new Color3(0.55, 0.45, 0.35);
+                oreMat.specularColor = new Color3(0.4, 0.3, 0.2);
+                oreMat.emissiveColor = new Color3(0.08, 0.06, 0.03);
+                ore.material = oreMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(ore);
+                objs.push(ore);
+              } else if (tileId === 10) {
+                const buoy = MeshBuilder.CreateBox(`base_buoy`, { width: 0.15, height: 0.4, depth: 0.15 }, this.scene);
+                const buoyMat = new StandardMaterial(`baseBuoyMat`, this.scene);
+                buoyMat.diffuseColor = new Color3(0.9, 0.2, 0.1);
+                buoyMat.emissiveColor = new Color3(0.15, 0.03, 0.01);
+                buoy.material = buoyMat;
+                objs.push(buoy);
+              } else if (tileId === 9) {
+                const anvil = MeshBuilder.CreateBox(`base_anvil`, { width: tileSize * 0.5, height: tileSize * 0.35, depth: tileSize * 0.4 }, this.scene);
+                const anvilMat = new StandardMaterial(`baseAnvilMat`, this.scene);
+                anvilMat.diffuseColor = new Color3(0.3, 0.3, 0.35);
+                anvilMat.specularColor = new Color3(0.6, 0.6, 0.7);
+                anvilMat.specularPower = 24;
+                anvil.material = anvilMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(anvil);
+                objs.push(anvil);
+              } else if (tileId === 12) {
+                const pillar = MeshBuilder.CreateBox(`base_terminal`, { width: tileSize * 0.35, height: tileSize * 1.0, depth: tileSize * 0.35 }, this.scene);
+                const pillarMat = new StandardMaterial(`baseTerminalMat`, this.scene);
+                pillarMat.diffuseColor = new Color3(0.12, 0.15, 0.35);
+                pillarMat.emissiveColor = new Color3(0.05, 0.08, 0.25);
+                pillarMat.specularColor = new Color3(0.3, 0.4, 0.8);
+                pillarMat.specularPower = 48;
+                pillar.material = pillarMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(pillar);
+                objs.push(pillar);
+              }
+              
+              objs.forEach(o => {
+                o.isVisible = false;
+                this.objectMeshes.push(o);
+              });
+              baseObjects[tileId] = objs;
             }
-          } else if (tileId === 5) {
-            // Tree: trunk box + billboard foliage
-            const trunk = MeshBuilder.CreateBox(`trunk_${r}_${c}`, { width: 0.3, height: 0.9, depth: 0.3 }, this.scene);
-            trunk.position = new Vector3(posX, 0.45, posZ);
-            const trunkMat = new StandardMaterial(`trunkMat_${r}_${c}`, this.scene);
-            trunkMat.diffuseColor = new Color3(0.35, 0.22, 0.12);
-            trunk.material = trunkMat;
-            trunk.parent = this.rootNode;
-            trunk.receiveShadows = true;
-            if (this.shadowGen) this.shadowGen.addShadowCaster(trunk);
-            this.objectMeshes.push(trunk);
 
-            const foliage = MeshBuilder.CreatePlane(`tree_${r}_${c}`, { width: tileSize * 1.4, height: tileSize * 1.5 }, this.scene);
-            foliage.billboardMode = Mesh.BILLBOARDMODE_Y;
-            foliage.position = new Vector3(posX, tileSize * 0.9, posZ);
-            const treeMat = new StandardMaterial(`treeMat_${r}_${c}`, this.scene);
-            treeMat.diffuseColor = new Color3(0.1, 0.52, 0.2);
-            treeMat.emissiveColor = new Color3(0.01, 0.08, 0.02);
-            foliage.material = treeMat;
-            foliage.parent = this.rootNode;
-            if (this.shadowGen) this.shadowGen.addShadowCaster(foliage);
-            this.objectMeshes.push(foliage);
-          } else if (tileId === 6) {
-            // Ore Rock
-            const ore = MeshBuilder.CreateBox(`ore_${r}_${c}`, { width: tileSize * 0.7, height: tileSize * 0.45, depth: tileSize * 0.7 }, this.scene);
-            ore.position = new Vector3(posX, tileSize * 0.22, posZ);
-            ore.rotation.y = Math.random() * Math.PI;
-            const oreMat = new StandardMaterial(`oreMat_${r}_${c}`, this.scene);
-            oreMat.diffuseColor = new Color3(0.55, 0.45, 0.35);
-            oreMat.specularColor = new Color3(0.4, 0.3, 0.2);
-            oreMat.emissiveColor = new Color3(0.08, 0.06, 0.03);
-            ore.material = oreMat;
-            ore.parent = this.rootNode;
-            ore.receiveShadows = true;
-            if (this.shadowGen) this.shadowGen.addShadowCaster(ore);
-            this.objectMeshes.push(ore);
-          } else if (tileId === 4 || tileId === 10) {
-            // Animated Water / Fishing
-            if (mat) {
-              this.waterMaterials.push(mat);
-              // Update immediately with current water texture
-              if (this.waterTexture) mat.diffuseTexture = this.waterTexture;
+            // Create instances
+            if (tileId === 1) {
+              const inst = objs[0].createInstance(`wall_${r}_${c}`);
+              inst.position = new Vector3(posX, tileSize * 0.45, posZ);
+              inst.parent = this.rootNode;
+            } else if (tileId === 2 || tileId === 3) {
+              objs.forEach((base, i) => {
+                const inst = base.createInstance(`tuft_${r}_${c}_${i}`);
+                inst.position = new Vector3(posX, tileSize * 0.38, posZ);
+                inst.parent = this.rootNode;
+              });
+            } else if (tileId === 5) {
+              const trunkInst = objs[0].createInstance(`trunk_${r}_${c}`);
+              trunkInst.position = new Vector3(posX, 0.45, posZ);
+              trunkInst.parent = this.rootNode;
+              const foliageInst = objs[1].createInstance(`tree_${r}_${c}`);
+              foliageInst.position = new Vector3(posX, tileSize * 0.9, posZ);
+              foliageInst.parent = this.rootNode;
+            } else if (tileId === 6) {
+              const oreInst = objs[0].createInstance(`ore_${r}_${c}`);
+              oreInst.position = new Vector3(posX, tileSize * 0.22, posZ);
+              oreInst.rotation.y = Math.random() * Math.PI;
+              oreInst.parent = this.rootNode;
+            } else if (tileId === 10) {
+              const buoyInst = objs[0].createInstance(`buoy_${r}_${c}`);
+              buoyInst.position = new Vector3(posX + 0.2, 0.25, posZ - 0.1);
+              buoyInst.parent = this.rootNode;
+            } else if (tileId === 9) {
+              const anvilInst = objs[0].createInstance(`anvil_${r}_${c}`);
+              anvilInst.position = new Vector3(posX, tileSize * 0.18, posZ);
+              anvilInst.parent = this.rootNode;
+            } else if (tileId === 12) {
+              const pillarInst = objs[0].createInstance(`terminal_${r}_${c}`);
+              pillarInst.position = new Vector3(posX, tileSize * 0.5, posZ);
+              pillarInst.parent = this.rootNode;
             }
-            // Fishing spot gets a small marker buoy
-            if (tileId === 10) {
-              const buoy = MeshBuilder.CreateBox(`buoy_${r}_${c}`, { width: 0.15, height: 0.4, depth: 0.15 }, this.scene);
-              buoy.position = new Vector3(posX + 0.2, 0.25, posZ - 0.1);
-              const buoyMat = new StandardMaterial(`buoyMat_${r}_${c}`, this.scene);
-              buoyMat.diffuseColor = new Color3(0.9, 0.2, 0.1);
-              buoyMat.emissiveColor = new Color3(0.15, 0.03, 0.01);
-              buoy.material = buoyMat;
-              buoy.parent = this.rootNode;
-              this.objectMeshes.push(buoy);
-            }
-          } else if (tileId === 9) {
-            // Crafting Anvil — small metallic box with specular highlight
-            const anvil = MeshBuilder.CreateBox(`anvil_${r}_${c}`, { width: tileSize * 0.5, height: tileSize * 0.35, depth: tileSize * 0.4 }, this.scene);
-            anvil.position = new Vector3(posX, tileSize * 0.18, posZ);
-            const anvilMat = new StandardMaterial(`anvilMat_${r}_${c}`, this.scene);
-            anvilMat.diffuseColor = new Color3(0.3, 0.3, 0.35);
-            anvilMat.specularColor = new Color3(0.6, 0.6, 0.7);
-            anvilMat.specularPower = 24;
-            anvil.material = anvilMat;
-            anvil.parent = this.rootNode;
-            anvil.receiveShadows = true;
-            if (this.shadowGen) this.shadowGen.addShadowCaster(anvil);
-            this.objectMeshes.push(anvil);
-          } else if (tileId === 12) {
-            // Base Terminal — glowing pillar
-            const pillar = MeshBuilder.CreateBox(`terminal_${r}_${c}`, { width: tileSize * 0.35, height: tileSize * 1.0, depth: tileSize * 0.35 }, this.scene);
-            pillar.position = new Vector3(posX, tileSize * 0.5, posZ);
-            const pillarMat = new StandardMaterial(`terminalMat_${r}_${c}`, this.scene);
-            pillarMat.diffuseColor = new Color3(0.12, 0.15, 0.35);
-            pillarMat.emissiveColor = new Color3(0.05, 0.08, 0.25);
-            pillarMat.specularColor = new Color3(0.3, 0.4, 0.8);
-            pillarMat.specularPower = 48;
-            pillar.material = pillarMat;
-            pillar.parent = this.rootNode;
-            pillar.receiveShadows = true;
-            if (this.shadowGen) this.shadowGen.addShadowCaster(pillar);
-            this.objectMeshes.push(pillar);
           }
         }
       }
@@ -1008,7 +1136,8 @@ export class BabylonEngine {
         direction: entity.direction || 'down',
         isNpc: entity.isNpc || false,
         isPlayer: entity.isPlayer || false,
-        isEditor: !!this.scene.onPointerDown // Simple heuristic: if tile picking is enabled, it's dev editor
+        isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
+        spriteConfig: entity.spriteConfig || DEFAULT_SPRITE_CONFIG
       };
       
       // Initial position snap
@@ -1027,9 +1156,10 @@ export class BabylonEngine {
         const tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
         tex.hasAlpha = true;
 
-        if (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/')) {
-          tex.uScale = 1 / 3;
-          tex.vScale = 1 / 4;
+        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/')) {
+          const config = entity.spriteConfig || DEFAULT_SPRITE_CONFIG;
+          tex.uScale = 1 / config.columns;
+          tex.vScale = 1 / config.rows;
         }
 
         mat.diffuseTexture = tex;
@@ -1062,6 +1192,9 @@ export class BabylonEngine {
         spriteMesh.metadata.isMoving = entity.isMoving || false;
         spriteMesh.metadata.direction = entity.direction || spriteMesh.metadata.direction;
         spriteMesh.metadata.isEditor = !!this.scene.onPointerDown;
+        if (entity.spriteConfig) {
+          spriteMesh.metadata.spriteConfig = entity.spriteConfig;
+        }
       }
 
       // Check if sprite URL changed
@@ -1076,9 +1209,10 @@ export class BabylonEngine {
           const newTex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
           newTex.hasAlpha = true;
           
-          if (entity.isNpc || entity.isPlayer || entity.spriteUrl.includes('/npc/')) {
-            newTex.uScale = 1 / 3;
-            newTex.vScale = 1 / 4;
+          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/')) {
+            const config = entity.spriteConfig || DEFAULT_SPRITE_CONFIG;
+            newTex.uScale = 1 / config.columns;
+            newTex.vScale = 1 / config.rows;
           }
           mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {

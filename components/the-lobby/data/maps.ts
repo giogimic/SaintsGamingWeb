@@ -8,6 +8,23 @@ export interface MapGate {
   errorMessage?: string;
 }
 
+export interface MapChunkData {
+  chunkX: number;
+  chunkY: number;
+  width: number;
+  height: number;
+  grid?: number[][];
+  tileLayers?: Array<{ name: string; grid: number[][] }>;
+  npcs?: Array<{
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    sprite: string;
+    dialogueKey: string;
+  }>;
+}
+
 export interface GameMapData {
   id: string;
   name: string;
@@ -29,6 +46,7 @@ export interface GameMapData {
     maxLevel: number;
     weight: number;
   }>;
+  chunks?: MapChunkData[];
 }
 
 const mapCache: Record<string, GameMapData> = {};
