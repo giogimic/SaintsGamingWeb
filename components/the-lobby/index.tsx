@@ -488,7 +488,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         {gameMode === 'CRAFTING' && <CraftingOverlay />}
         {gameMode === 'BASE' && <BaseOverlay />}
         {gameMode === 'DIALOG' && <DialogOverlay />}
-        {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay />}
+        {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
         {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
         {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
         {gameMode === 'PARTY' && <PartyOverlay />}
