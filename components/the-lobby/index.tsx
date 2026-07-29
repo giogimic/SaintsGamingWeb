@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
 import IntegratedDevEditor from './editor/IntegratedDevEditor';
 import SaintsDexOverlay from './SaintsDexOverlay';
-import BattleOverlay from './battle-overlay';
+import TargetFrame from './target-frame';
 import ShopOverlay from './shop-overlay';
 import PartyOverlay from './party-overlay';
 import CraftingOverlay from './crafting-overlay';
@@ -174,8 +174,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     // Check if running in browser
     if (typeof window === 'undefined') return;
 
-    // Connect to port 3001 for the game MMO server
-    const socket = io(window.location.protocol + '//' + window.location.hostname + ':3001');
+    // Connect to the unified Next.js MMO server
+    const socket = io(); // Connects to the same host that served the page
     socketRef.current = socket;
     
     socket.on('connect', () => {
@@ -201,7 +201,12 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     });
     
     socket.on('player_moved', (data) => {
-      useGameStore.getState().updateOtherPlayer(data.socketId, data);
+      if (data.socketId === socket.id) {
+        // Phase 2: Client Prediction enabled. We ignore this general state delta for ourselves
+        // because we strictly reconcile using 'move_ack' and 'position_correction' to prevent judder.
+      } else {
+        useGameStore.getState().updateOtherPlayer(data.socketId, data);
+      }
     });
     
     socket.on('player_chat', (data) => {
@@ -289,6 +294,21 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         state.setActiveBattle(null);
         state.setGameMode('EXPLORING');
       }, 3000);
+    });
+
+    // --- PHASE 3: MMO Real-Time Combat ---
+    socket.on('combat_update', (data) => {
+      // Dispatch custom event so the BattleOverlay can render damage numbers and logs
+      const msgEvent = new CustomEvent('combat_update_event', { detail: data });
+      window.dispatchEvent(msgEvent);
+    });
+
+    socket.on('capture_start', (data) => {
+      window.dispatchEvent(new CustomEvent('capture_start_event', { detail: data }));
+    });
+
+    socket.on('capture_result', (data) => {
+      window.dispatchEvent(new CustomEvent('capture_result_event', { detail: data }));
     });
 
     // ─── Phase 2: Server-Authoritative Movement Reconciliation ───
@@ -499,15 +519,13 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
         {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
         {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
+        {gameMode === 'BATTLE' && <TargetFrame />}
         {gameMode === 'PARTY' && <PartyOverlay />}
         {gameMode === 'DEX' && <SaintsDexOverlay />}
       </div>
       
-      {gameMode === 'BATTLE' && <BattleOverlay />}
       {gameMode === 'SHOP' && <ShopOverlay />}
       {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
-      {gameMode === 'CRAFTING' && <CraftingOverlay />}
-      {gameMode === 'BASE' && <BaseOverlay />}
       {activeDialog && <DialogOverlay />}
       
       {/* Cinematic Map Transition Overlay */}

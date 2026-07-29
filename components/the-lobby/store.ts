@@ -86,6 +86,7 @@ const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
 };
 
 export interface PlayerState {
+  accountId?: string;
   name?: string;
   spriteId?: string;
   spriteConfig?: import('@/lib/game/BabylonEngine').SpriteSheetConfig;
@@ -97,6 +98,12 @@ export interface PlayerState {
   hp: number;
   maxHp: number;
   credits: number;
+  currency: {
+    copper: number;
+    silver: number;
+    gold: number;
+    platinum: number;
+  };
   activeQuests: Record<string, { stage: number }>;
   completedQuests: string[];
   inventory: Record<string, number>;
@@ -189,6 +196,12 @@ export interface GameState {
   fetchLogicTiles: () => Promise<void>;
   activeBattle: any;
   setActiveBattle: (battleData: any) => void;
+  activeEnemies: Record<string, any>;
+  setActiveEnemies: (enemies: Record<string, any>) => void;
+  combatTarget: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string } | null;
+  setCombatTarget: (target: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string } | null) => void;
+  cooldowns: Record<string, number>;
+  setCooldown: (abilityId: string, timestamp: number) => void;
   emitSocketEvent?: (event: string, data: any) => void;
   setEmitSocketEvent: (emitter: (event: string, data: any) => void) => void;
   setPlayerPosition: (pos: Point, direction?: 'up' | 'down' | 'left' | 'right', isMoving?: boolean) => void;
@@ -257,6 +270,7 @@ export const useGameStore = create<GameState>()(
         hp: 100,
         maxHp: 100,
         credits: 500,
+        currency: { copper: 50000, silver: 0, gold: 0, platinum: 0 },
         activeQuests: {},
         completedQuests: [],
         inventory: {},
@@ -280,6 +294,9 @@ export const useGameStore = create<GameState>()(
       otherPlayers: {},
       isMapTransitioning: false,
       activeBattle: null,
+      activeEnemies: {},
+      combatTarget: null,
+      cooldowns: {},
       pathQueue: [],
       currentMapId: 'cotton_town',
       mapEntities: [
@@ -336,6 +353,10 @@ export const useGameStore = create<GameState>()(
         state.player.isMoving = false;
         // Clear all pending moves since the server corrected us
         state.pendingMoves = [];
+      }),
+
+      setCombatTarget: (target) => set((state) => {
+        state.combatTarget = target;
       }),
 
       setIsUiEditMode: (isEditMode) => set((state) => { state.isUiEditMode = isEditMode; }),
@@ -417,6 +438,12 @@ export const useGameStore = create<GameState>()(
       }),
       setActiveBattle: (battleData) => set((state) => {
         state.activeBattle = battleData;
+      }),
+      setActiveEnemies: (enemies) => set((state) => {
+        state.activeEnemies = enemies;
+      }),
+      setCooldown: (abilityId, timestamp) => set((state) => {
+        state.cooldowns[abilityId] = timestamp;
       }),
       setEmitSocketEvent: (emitter) => set((state) => {
         state.emitSocketEvent = emitter;

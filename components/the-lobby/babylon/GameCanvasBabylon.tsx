@@ -34,6 +34,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const showToast = useGameStore((state) => state.showToast);
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
+  const combatTarget = useGameStore((state) => state.combatTarget);
 
   // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
@@ -107,10 +108,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const result = WorldSimulation.tryMove(worldState, targetX, targetY);
 
     if (result.type === 'BLOCKED') {
+      // Phase 2: Client Prediction (Turn in place)
       setPlayerPosition(currentPos, result.direction, false);
       const seq = store.incrementMoveSeq();
       store.addPendingMove({ seq, direction: result.direction, predictedPos: currentPos });
-      emitSocketEvent?.('move_intent', { direction: result.direction, seq });
+      emitSocketEvent?.('input', { type: "MOVE", direction: result.direction, sequence: seq, timestamp: Date.now() });
       return;
     }
 
@@ -140,18 +142,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (isDevEditorOpen) {
         setPlayerPosition({ x: targetX, y: targetY }, dir, false);
       } else {
-        setPlayerPosition({ x: targetX, y: targetY }, dir, true);
-        setTimeout(() => {
-          const freshStore = useGameStore.getState();
-          if (freshStore.player.position.x === targetX && freshStore.player.position.y === targetY) {
-            freshStore.setPlayerPosition({ x: targetX, y: targetY }, undefined, false);
-          }
-        }, 250);
+        // Phase 2: Client Prediction Enabled (instant local movement)
+        setPlayerPosition({ x: targetX, y: targetY }, dir, false);
       }
 
       const seq = store.incrementMoveSeq();
       store.addPendingMove({ seq, direction: dir, predictedPos: { x: targetX, y: targetY } });
-      emitSocketEvent?.('move_intent', { direction: dir, seq });
+      emitSocketEvent?.('input', { type: "MOVE", direction: dir, sequence: seq, timestamp: Date.now() });
 
       // Handle Step Actions
       if (result.stepAction) {
@@ -431,6 +428,32 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
   // Re-run when mapData resolves or currentMapId changes
   }, [currentMapId, mapData]);
+
+  // Handle Combat Target Selection Ring
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    engine.updateSelectionRing(combatTarget?.entityId ?? null);
+  }, [combatTarget]);
+
+  // Handle Combat Projectile Events (Capture)
+  useEffect(() => {
+    const handleCaptureStart = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const data = customEvent.detail;
+      const engine = engineRef.current;
+      if (engine && data.entityId && data.targetId) {
+        // e.g. entityId = socketId, targetId = creatureId
+        engine.renderProjectile(data.entityId, data.targetId, 'tuxeball', data.castTimeMs || 1500);
+      }
+    };
+
+    window.addEventListener('capture_start_event', handleCaptureStart);
+    return () => {
+      window.removeEventListener('capture_start_event', handleCaptureStart);
+    };
+  }, []);
+
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {

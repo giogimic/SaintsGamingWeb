@@ -1,13 +1,13 @@
 {
   "name": "saints-web",
-  "version": "2.1.68",
+  "version": "2.1.69",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
     "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && prisma generate && prisma db push",
-    "dev": "next dev",
+    "dev": "npx tsx server.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

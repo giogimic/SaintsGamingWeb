@@ -116,6 +116,7 @@ export class BabylonEngine {
   private cameraTargetX: number = 0;
   private cameraTargetZ: number = 0;
   private cameraSnapped: boolean = false;
+  private selectionRingMesh?: Mesh;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -1261,6 +1262,96 @@ export class BabylonEngine {
       chatBubble.dispose();
       this.chatBubbles.delete(entity.id);
     }
+  }
+
+  // --- COMBAT VISUAL FX ---
+
+  public updateSelectionRing(targetId: string | null) {
+    if (!targetId) {
+      if (this.selectionRingMesh) {
+        this.selectionRingMesh.isVisible = false;
+      }
+      return;
+    }
+
+    const targetMesh = this.entityMeshes.get(targetId);
+    if (!targetMesh) return;
+
+    if (!this.selectionRingMesh) {
+      // Create a glowing torus for the selection ring
+      this.selectionRingMesh = MeshBuilder.CreateTorus('selectionRing', { diameter: this.currentTileSize * 1.5, thickness: 0.1, tessellation: 32 }, this.scene);
+      this.selectionRingMesh.rotation.x = 0; // Flat on the ground
+      
+      const mat = new StandardMaterial('selectionRingMat', this.scene);
+      mat.diffuseColor = new Color3(0.2, 0.8, 1.0); // Cyan
+      mat.emissiveColor = new Color3(0.2, 0.8, 1.0);
+      mat.alpha = 0.8;
+      this.selectionRingMesh.material = mat;
+      
+      // Add a simple rotation animation
+      this.scene.onBeforeRenderObservable.add(() => {
+        if (this.selectionRingMesh && this.selectionRingMesh.isVisible) {
+          this.selectionRingMesh.rotation.y += 0.05;
+        }
+      });
+    }
+
+    this.selectionRingMesh.isVisible = true;
+    // Position slightly above the ground to avoid Z-fighting
+    this.selectionRingMesh.position = new Vector3(targetMesh.position.x, 0.1, targetMesh.position.z);
+  }
+
+  public renderProjectile(sourceId: string, targetId: string, fxType: string, castTimeMs: number) {
+    const sourceMesh = this.entityMeshes.get(sourceId);
+    const targetMesh = this.entityMeshes.get(targetId);
+    
+    if (!sourceMesh || !targetMesh) return;
+
+    // Create projectile (a glowing sphere)
+    const projectile = MeshBuilder.CreateSphere(`projectile_${Date.now()}`, { diameter: 0.5 }, this.scene);
+    projectile.position = new Vector3(sourceMesh.position.x, 1.5, sourceMesh.position.z);
+    
+    const mat = new StandardMaterial('projectileMat', this.scene);
+    mat.diffuseColor = new Color3(1, 0.4, 0.4); // Reddish for Tuxeball
+    mat.emissiveColor = new Color3(1, 0.2, 0.2);
+    projectile.material = mat;
+
+    // Simple animation loop to move the projectile towards the target
+    const startTime = performance.now();
+    const startPos = projectile.position.clone();
+    
+    const animObserver = this.scene.onBeforeRenderObservable.add(() => {
+      const now = performance.now();
+      const progress = Math.min(1, (now - startTime) / castTimeMs);
+      
+      // Arc interpolation
+      const targetPos = new Vector3(targetMesh.position.x, 0.5, targetMesh.position.z);
+      
+      // Linear interpolation for X and Z
+      const currentX = startPos.x + (targetPos.x - startPos.x) * progress;
+      const currentZ = startPos.z + (targetPos.z - startPos.z) * progress;
+      
+      // Parabolic arc for Y (throw arc)
+      const peakHeight = 4.0;
+      const currentY = startPos.y + (targetPos.y - startPos.y) * progress + Math.sin(progress * Math.PI) * peakHeight;
+      
+      projectile.position = new Vector3(currentX, currentY, currentZ);
+      
+      if (progress >= 1.0) {
+        // Impact
+        this.scene.onBeforeRenderObservable.remove(animObserver);
+        
+        // Simple impact FX (expand and fade)
+        const impactObserver = this.scene.onBeforeRenderObservable.add(() => {
+          projectile.scaling.scaleInPlace(1.1);
+          mat.alpha -= 0.1;
+          if (mat.alpha <= 0) {
+            this.scene.onBeforeRenderObservable.remove(impactObserver);
+            projectile.dispose();
+          }
+        });
+      }
+    });
   }
 
   public removeEntity(id: string) {
