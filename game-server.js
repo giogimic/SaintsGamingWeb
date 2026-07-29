@@ -9,6 +9,20 @@ const http = require("http");
 const mapLoader = require("./lib/game/map-loader");
 
 const server = http.createServer();
+
+// Simple HTTP endpoint to expose live server status to the lobby UI
+server.on('request', (req, res) => {
+  if (req.method === 'GET' && req.url === '/status') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      players: Object.keys(players).length,
+      capacity: 500,
+      status: 'online'
+    }));
+  }
+});
+
 const io = new Server(server, {
   cors: {
     origin: "*",

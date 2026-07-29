@@ -39,7 +39,7 @@ export default function GameLogin() {
 
   return (
     <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative w-full max-w-sm bg-[#383024] border-4 border-[#52493d] rounded-xl shadow-2xl p-6">
+      <div className="relative w-full max-w-sm sg-glass border border-white/10 rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.3)] p-6">
         
         {/* Close / Back button */}
         <button 
@@ -51,12 +51,12 @@ export default function GameLogin() {
 
         <button 
           onClick={() => setGameMode('TITLE_SCREEN')}
-          className="flex items-center gap-2 text-[#d5c3a3] hover:text-white mb-6 text-sm transition-colors"
+          className="flex items-center gap-2 text-violet-300 hover:text-white mb-6 text-sm transition-colors"
         >
           <ArrowLeft size={16} /> Back to Title
         </button>
 
-        <h2 className="text-2xl font-bold text-center text-amber-500 mb-6 font-serif drop-shadow-md">
+        <h2 className="text-2xl font-bold text-center sg-text-gradient mb-6 font-serif">
           Authentication
         </h2>
 
@@ -68,24 +68,24 @@ export default function GameLogin() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-xs font-bold text-[#d5c3a3] uppercase tracking-wider mb-1">Email or Username</label>
+            <label className="block text-xs font-bold text-violet-300 uppercase tracking-wider mb-1">Email or Username</label>
             <input 
               type="text" 
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-[#1e1a14] border-2 border-[#52493d] rounded-lg px-4 py-2 text-white outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-violet-500 transition-colors focus:shadow-[0_0_15px_rgba(139,92,246,0.2)]"
               placeholder="Enter your email"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#d5c3a3] uppercase tracking-wider mb-1">Password</label>
+            <label className="block text-xs font-bold text-violet-300 uppercase tracking-wider mb-1">Password</label>
             <input 
               type="password" 
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-[#1e1a14] border-2 border-[#52493d] rounded-lg px-4 py-2 text-white outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-violet-500 transition-colors focus:shadow-[0_0_15px_rgba(139,92,246,0.2)]"
               placeholder="••••••••"
               required
             />
@@ -94,7 +94,7 @@ export default function GameLogin() {
           <button 
             type="submit" 
             disabled={loading}
-            className="mt-4 w-full py-3 bg-amber-600 hover:bg-amber-500 active:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-lg border-2 border-amber-400/50 flex items-center justify-center gap-2 transition-colors shadow-lg"
+            className="mt-4 w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] flex items-center justify-center gap-2"
           >
             {loading ? 'Authenticating...' : (
               <>
@@ -107,7 +107,7 @@ export default function GameLogin() {
 
         <div className="mt-6 text-center text-xs text-gray-400">
           Don&apos;t have an account? <br/>
-          <a href="/register" target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:underline">
+          <a href="/register" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-fuchsia-400 hover:underline transition-colors mt-1 inline-block">
             Register on the Website
           </a>
         </div>
