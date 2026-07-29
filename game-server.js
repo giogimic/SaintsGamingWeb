@@ -53,15 +53,14 @@ function serverTick() {
   const now = Date.now();
 
   for (const [socketId, player] of Object.entries(players)) {
-    if (!player.moveIntent) continue;
-
-    const { direction, seq } = player.moveIntent;
-    player.moveIntent = null; // Consume the intent
+    if (!player.moveQueue || player.moveQueue.length === 0) continue;
 
     // Throttle: don't process moves faster than MOVE_COOLDOWN_MS
     if (now - player.lastMoveTime < MOVE_COOLDOWN_MS) {
-      continue;
+      continue; // Skip this tick for this player, keep intent in queue
     }
+
+    const { direction, seq } = player.moveQueue.shift(); // Consume the intent
 
     const delta = DIRECTION_DELTA[direction];
     if (!delta) continue;
@@ -200,10 +199,21 @@ io.on("connection", (socket) => {
       direction: 'down',
       isMoving: false,
       partyId: null,
-      moveIntent: null,
+      moveQueue: [],
       lastMoveTime: 0,
       lastAckedSeq: 0,
     };
+
+    // If server forced a different spawn than requested, tell the client immediately
+    if (spawnX !== data.x || spawnY !== data.y) {
+      socket.emit("position_correction", {
+        seq: 0,
+        x: spawnX,
+        y: spawnY,
+        direction: 'down',
+        reason: "invalid_spawn",
+      });
+    }
 
     // Join socket.io room for this map
     socket.join(data.mapId);
@@ -232,10 +242,12 @@ io.on("connection", (socket) => {
     if (!DIRECTION_DELTA[data.direction]) return;
 
     // Queue the intent — the server tick loop will process it
-    players[socket.id].moveIntent = {
-      direction: data.direction,
-      seq: data.seq || 0,
-    };
+    if (players[socket.id].moveQueue.length < 10) {
+      players[socket.id].moveQueue.push({
+        direction: data.direction,
+        seq: data.seq || 0,
+      });
+    }
   });
 
   // ─── 2.1 Legacy Move Handler (backwards compatibility) ─────────
