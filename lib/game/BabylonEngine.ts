@@ -361,7 +361,7 @@ export class BabylonEngine {
           const tex = mat.diffuseTexture as Texture;
           if (tex && (state.isNpc || state.isPlayer || tex.name.includes('/npc/'))) {
             // Update row (direction)
-            const dirMap: Record<string, number> = { down: 3, up: 2, left: 1, right: 0 };
+            const dirMap: Record<string, number> = { down: 3, left: 2, right: 1, up: 0 };
             const rowIdx = dirMap[state.direction || 'down'] ?? 3;
             tex.vOffset = rowIdx * (1 / 4);
 
