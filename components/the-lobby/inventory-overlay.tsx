@@ -3,6 +3,7 @@
 import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
 import { ITEM_DB } from './data/items';
+import { useState } from 'react';
 
 export default function InventoryOverlay() {
   const inventory = useGameStore(state => state.player.inventory);
@@ -11,10 +12,7 @@ export default function InventoryOverlay() {
   const credits = useGameStore(state => state.player.credits);
   const equipItem = useGameStore(state => state.equipItem);
 
-  const [selectedItem, setSelectedItem] = import('react').then(m => m.useState<string | null>(null));
-  
-  // Use React hooks directly if available or fallback safely
-  const [activeItem, setActiveItem] = (typeof window !== 'undefined' ? require('react').useState<string | null>(null) : [null, () => {}]);
+  const [activeItem, setActiveItem] = useState<string | null>(null);
 
   const handleItemClick = (itemId: string, itemInfo: any) => {
     setActiveItem(itemId);
