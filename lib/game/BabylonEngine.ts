@@ -501,10 +501,12 @@ export class BabylonEngine {
             const col = localId % ts.columns;
             const row = Math.floor(localId / ts.columns);
             
-            // Use exact imageheight if we parsed it, otherwise fallback
+            // Calculate exact rows if possible
             let estimatedRows = 24;
             if (ts.imageheight && ts.tileheight) {
               estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
+            } else if (ts.tilecount && ts.columns) {
+              estimatedRows = Math.ceil(ts.tilecount / ts.columns);
             } else {
               if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
               else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
@@ -520,10 +522,11 @@ export class BabylonEngine {
             const hpU = 0.5 / imgW;
             const hpV = 0.5 / imgH;
 
+            // InvertY = false means Texture (0,0) is Top-Left
             const u0 = col / ts.columns + hpU;
             const u1 = (col + 1) / ts.columns - hpU;
-            const v1 = 1 - (row / estimatedRows) - hpV;
-            const v0 = 1 - ((row + 1) / estimatedRows) + hpV;
+            const v0 = row / estimatedRows + hpV; // Top of tile
+            const v1 = (row + 1) / estimatedRows - hpV; // Bottom of tile
 
             const plane = MeshBuilder.CreatePlane(
               `tile_${layerIdx}_${r}_${c}`,
@@ -531,8 +534,13 @@ export class BabylonEngine {
               this.scene
             );
 
-            // Manually set UV coordinates — frontUVs is silently ignored on single-sided planes
-            const uvs = [u0, v0, u1, v0, u1, v1, u0, v1];
+            // Plane vertices: 0=Bottom-Left, 1=Bottom-Right, 2=Top-Right, 3=Top-Left
+            const uvs = [
+              u0, v1, // Bottom-Left Vertex -> Bottom of Tile
+              u1, v1, // Bottom-Right Vertex -> Bottom of Tile
+              u1, v0, // Top-Right Vertex -> Top of Tile
+              u0, v0  // Top-Left Vertex -> Top of Tile
+            ];
             plane.setVerticesData(VertexBuffer.UVKind, uvs);
 
             plane.rotation.x = Math.PI / 2;
@@ -549,8 +557,8 @@ export class BabylonEngine {
                 const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
                 const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
                 // Use Nearest sampling mode (1) for pixel-perfect crisp textures!
-                // Parameter 4 (invertY) MUST be true so that texture (0,0) is Bottom-Left, matching our UV math where v=1 is Top
-                tex = new Texture(tilesetPath, this.scene, true, true, 1);
+                // invertY = false so (0,0) is Top-Left
+                tex = new Texture(tilesetPath, this.scene, true, false, 1);
                 tex.hasAlpha = true;
                 this.tilesetTextureCache.set(ts.imageSource, tex);
               }
@@ -837,10 +845,12 @@ export class BabylonEngine {
     const tsCol = localGid % ts.columns;
     const tsRow = Math.floor(localGid / ts.columns);
     
-    // Use exact imageheight if we parsed it, otherwise fallback
+    // Calculate exact rows if possible
     let estimatedRows = 24;
     if (ts.imageheight && ts.tileheight) {
       estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
+    } else if (ts.tilecount && ts.columns) {
+      estimatedRows = Math.ceil(ts.tilecount / ts.columns);
     } else {
       if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
       else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
@@ -856,16 +866,18 @@ export class BabylonEngine {
     const hpU = 0.5 / imgW;
     const hpV = 0.5 / imgH;
 
+    // InvertY = false means Texture (0,0) is Top-Left
     const u0 = tsCol / ts.columns + hpU;
     const u1 = (tsCol + 1) / ts.columns - hpU;
-    const v1 = 1 - (tsRow / estimatedRows) - hpV;
-    const v0 = 1 - ((tsRow + 1) / estimatedRows) + hpV;
+    const v0 = tsRow / estimatedRows + hpV; // Top of tile
+    const v1 = (tsRow + 1) / estimatedRows - hpV; // Bottom of tile
 
+    // Plane vertices: 0=Bottom-Left, 1=Bottom-Right, 2=Top-Right, 3=Top-Left
     const uvData = [
-      u0, v0,
-      u1, v0,
-      u1, v1,
-      u0, v1
+      u0, v1, // Bottom-Left Vertex -> Bottom of Tile
+      u1, v1, // Bottom-Right Vertex -> Bottom of Tile
+      u1, v0, // Top-Right Vertex -> Top of Tile
+      u0, v0  // Top-Left Vertex -> Top of Tile
     ];
     tileMesh.setVerticesData(VertexBuffer.UVKind, uvData);
   }
