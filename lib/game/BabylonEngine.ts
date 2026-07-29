@@ -342,7 +342,8 @@ export class BabylonEngine {
           const dist = Vector3.Distance(mesh.position, state.targetPos);
           if (dist > 0.005) {
             // Speed = 4 tiles per second (250ms per tile to match GameCanvasBabylon setTimeout)
-            const speed = 4.0; 
+            // If distance is large (> 1.5 tiles), rubber-band rapidly at 3x speed
+            const speed = dist > 1.5 ? 12.0 : 4.0; 
             const moveStep = speed * deltaTime;
             if (moveStep >= dist) {
               mesh.position = state.targetPos;
