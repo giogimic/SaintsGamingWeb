@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type GameMode = 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
+export type GameMode = 'TITLE_SCREEN' | 'LOGIN' | 'SERVER_SELECT' | 'CHARACTER_SELECT' | 'CHARACTER_CREATOR' | 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
 
 export interface MapLogicTile {
   id: number;
@@ -216,7 +216,7 @@ export const useGameStore = create<GameState>()(
   subscribeWithSelector(
     immer((set) => ({
       logicTiles: {},
-      gameMode: 'EXPLORING',
+      gameMode: 'TITLE_SCREEN',
       player: {
         spriteId: 'adventurer',
         position: { x: 6, y: 2 },
