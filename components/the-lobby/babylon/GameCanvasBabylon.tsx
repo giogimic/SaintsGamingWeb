@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BabylonEngine } from '@/lib/game/BabylonEngine';
 import { resolveEncounter } from '@/lib/game/TuxemonDb';
 import { useGameStore } from '../store';
@@ -8,6 +8,7 @@ import { loadMap } from '../data/maps';
 import type { GameMapData } from '../data/maps';
 import { soundSynth } from '@/lib/game/sound-synth';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
+import { findPath } from '@/lib/game/pathfinding';
 
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
@@ -36,9 +37,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
+  const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
+  const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Async map state — engine only mounts AFTER map data is ready
   const [mapData, setMapData] = useState<GameMapData | null>(null);
+
+  const clearAutoWalk = useCallback(() => {
+    if (autoWalkIntervalRef.current) {
+      clearInterval(autoWalkIntervalRef.current);
+      autoWalkIntervalRef.current = null;
+    }
+    autoWalkPathRef.current = [];
+  }, []);
 
   useEffect(() => {
     setMapData(null); // Reset on map change so engine remounts cleanly
@@ -76,7 +87,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const nextX = targetX;
     const nextY = targetY;
 
-    // Prevent cross-map teleporting from clicking (unless in dev editor)
+    // Prevent cross-map teleporting (unless in dev editor)
+    // For auto-walk, tryMovePlayerTo is only called with adjacent tiles
     const dist = Math.abs(nextX - currentPos.x) + Math.abs(nextY - currentPos.y);
     if (!isDevEditorOpen && dist > 1) {
       return;
@@ -310,6 +322,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   };
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 's', 'a', 'd'].includes(e.key)) {
+            clearAutoWalk();
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [clearAutoWalk]);
+
+  useEffect(() => {
     if (engineRef.current) {
       if (activeLayerIdx === -2) {
         engineRef.current.enableLogicGridOverlay(activeMap?.grid || []);
@@ -494,9 +516,50 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       });
     } else {
-      // Click-to-move in exploration mode
+      // Click-to-move in exploration mode with Pathfinding
       engine.enableTilePicking((r, c) => {
-        tryMovePlayerTo(c, r);
+        const currentPos = useGameStore.getState().player?.position;
+        if (!currentPos) return;
+
+        const dist = Math.abs(c - currentPos.x) + Math.abs(r - currentPos.y);
+        
+        if (dist === 1) {
+           clearAutoWalk();
+           tryMovePlayerTo(c, r);
+        } else {
+           const isWalkable = (x: number, y: number) => {
+             const logicTiles = useGameStore.getState().logicTiles;
+             const tileId = activeMap.grid[y]?.[x];
+             if (logicTiles[tileId]?.isSolid) return false;
+             
+             const dynamicEntities = useGameStore.getState().mapEntities || [];
+             const isStaticNpc = activeMap.npcs?.some((npc: any) => npc.x === x && npc.y === y);
+             const isDynamicNpc = dynamicEntities.some((e) => Math.round(e.position.x) === x && Math.round(e.position.y) === y && (e.mapId === currentMapId || !e.mapId));
+             if (isStaticNpc || isDynamicNpc) return false;
+
+             return true;
+           };
+
+           const path = findPath(currentPos.x, currentPos.y, c, r, mapWidth, mapHeight, isWalkable);
+           if (path.length > 0) {
+             clearAutoWalk();
+             autoWalkPathRef.current = path;
+             
+             // Take first step immediately
+             const nextStep = autoWalkPathRef.current.shift()!;
+             tryMovePlayerTo(nextStep.x, nextStep.y);
+             
+             // Start interval for remaining steps
+             autoWalkIntervalRef.current = setInterval(() => {
+               if (autoWalkPathRef.current.length === 0) {
+                 clearAutoWalk();
+                 return;
+               }
+               const step = autoWalkPathRef.current.shift()!;
+               tryMovePlayerTo(step.x, step.y);
+             }, 250);
+           }
+        }
       });
     }
   }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
@@ -509,6 +572,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
         return;
       }
+
+      clearAutoWalk(); // Cancel any click-to-move pathfinding
 
       const now = Date.now();
       const key = e.key.toLowerCase();
