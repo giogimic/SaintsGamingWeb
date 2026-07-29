@@ -243,7 +243,7 @@ export const useGameStore = create<GameState>()(
       isMapTransitioning: false,
       activeBattle: null,
       pathQueue: [],
-      currentMapId: 'COTTON_TOWN',
+      currentMapId: 'cotton_town',
       mapEntities: [
         { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
         { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
