@@ -1,5 +1,12 @@
 # Changelog
 
+### v2.1.64
+- **Drift-Compensating Game Loop**: Replaced Node's setInterval with a recursive setTimeout loop that calculates and compensates for execution drift in game-server.js for a solid 15 TPS.
+- **O(1) Spatial Hash Grid Collision**: Built SpatialGrid class in spatial-grid.js and wired it into game-server.js. Map NPCs and players are dynamically loaded into the grid, making collision checks an instant dictionary lookup instead of O(N) array scans.
+- **Input Buffering Optimization**: Limited the moveQueue queue depth to exactly 2 items, balancing jitter-tolerance while preventing the ice skating bug during lag spikes.
+- **Rapid Rubber-Banding Interpolation**: Modified the client's updateEntity loop in BabylonEngine.ts. The client now dynamically adjusts its lerp speed based on the discrepancy distance. If the server heavily corrects a misprediction (dist > 1.5 tiles), the player mesh will smoothly zip back into place at 3x speed.
+
+
 ### v2.1.60 — Server-Authoritative Physics & Collision (Phase 2)
 - **Server-Side Collision Detection**: Created `lib/game/map-loader.js` — a Prisma-backed utility that loads map collision grids and logic tiles from the database, caches them in memory, and provides `isWalkable()` / `isWalkableSync()` for O(1) tile lookups during physics ticks.
 - **Authoritative Game Server Rewrite**: Rewrote `game-server.js` to process `move_intent` events (direction + sequence number) instead of trusting raw client coordinates. Added a 15 TPS server tick loop that validates movement against collision grids, NPC positions, and map bounds. Sends `move_ack` for valid moves and `position_correction` for rubber-banding invalid ones.

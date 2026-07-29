@@ -7,6 +7,7 @@
 const { Server } = require("socket.io");
 const http = require("http");
 const mapLoader = require("./lib/game/map-loader");
+const spatialGrid = require("./lib/game/spatial-grid");
 
 const server = http.createServer();
 
@@ -34,6 +35,8 @@ const io = new Server(server, {
 const TICK_RATE = 15; // Server ticks per second
 const TICK_INTERVAL = Math.floor(1000 / TICK_RATE); // ~66ms
 const MOVE_COOLDOWN_MS = 200; // Minimum time between moves per player
+
+let expectedTickTime = Date.now() + TICK_INTERVAL;
 
 // ─── In-Memory Game State ──────────────────────────────────────────
 const players = {}; // socket.id -> PlayerState
@@ -85,22 +88,12 @@ function serverTick() {
     // ── Server-Side Collision Check ──
     const walkable = mapLoader.isWalkableSync(player.mapId, targetX, targetY);
 
-    // ── NPC Collision Check ──
-    let blockedByNpc = false;
-    const cachedMap = mapLoader.getCachedMap(player.mapId);
-    if (cachedMap?.npcs) {
-      blockedByNpc = cachedMap.npcs.some(
-        (npc) => npc.x === targetX && npc.y === targetY
-      );
-    }
+    // ── Entity Collision Check (O(1) Spatial Hash) ──
+    const occupied = spatialGrid.isOccupied(player.mapId, targetX, targetY);
 
-    // ── Other Player Collision Check (optional — uncomment if desired) ──
-    // const blockedByPlayer = Object.values(players).some(
-    //   (p) => p.socketId !== socketId && p.mapId === player.mapId && p.x === targetX && p.y === targetY
-    // );
-
-    if (walkable && !blockedByNpc) {
+    if (walkable && !occupied) {
       // ✅ Valid move — update authoritative position
+      spatialGrid.moveEntity(player.mapId, player.x, player.y, targetX, targetY, socketId);
       player.x = targetX;
       player.y = targetY;
       player.direction = direction;
@@ -139,7 +132,7 @@ function serverTick() {
           x: player.x,
           y: player.y,
           direction: direction, // Face the wall but don't move
-          reason: blockedByNpc ? "npc_collision" : "wall_collision",
+          reason: occupied ? "entity_collision" : "wall_collision",
         });
 
         // Broadcast direction change to others!
@@ -179,7 +172,14 @@ function serverTick() {
       }
     }
   }
+
+  // Schedule next tick accounting for drift
+  expectedTickTime += TICK_INTERVAL;
+  const sleepTime = Math.max(0, expectedTickTime - Date.now());
+  setTimeout(serverTick, sleepTime);
 }
+
+// Start loop is handled in start() function
 
 // ═══════════════════════════════════════════════════════════════════
 //  CONNECTION HANDLER
@@ -193,7 +193,14 @@ io.on("connection", (socket) => {
     // data = { mapId, x, y, name, spriteId }
 
     // Ensure the map collision data is loaded before allowing join
-    await mapLoader.loadMapData(data.mapId);
+    const cachedMap = await mapLoader.loadMapData(data.mapId);
+    
+    // Register NPCs in the spatial grid (idempotent due to Set)
+    if (cachedMap && cachedMap.npcs) {
+      cachedMap.npcs.forEach(npc => {
+        spatialGrid.addEntity(data.mapId, npc.x, npc.y, `npc_${npc.id}`);
+      });
+    }
 
     // Validate spawn position — if the tile is solid, snap to a safe default
     let spawnX = data.x ?? 6;
@@ -242,6 +249,9 @@ io.on("connection", (socket) => {
       });
     }
 
+    // Add player to spatial grid
+    spatialGrid.addEntity(data.mapId, spawnX, spawnY, socket.id);
+
     // Join socket.io room for this map
     socket.join(data.mapId);
 
@@ -269,7 +279,8 @@ io.on("connection", (socket) => {
     if (!DIRECTION_DELTA[data.direction]) return;
 
     // Queue the intent — the server tick loop will process it
-    if (players[socket.id].moveQueue.length < 10) {
+    // Input Buffer Tuning: Limit queue to 2 to prevent stale "ice skating"
+    if (players[socket.id].moveQueue.length < 2) {
       players[socket.id].moveQueue.push({
         direction: data.direction,
         seq: data.seq || 0,
@@ -293,6 +304,9 @@ io.on("connection", (socket) => {
 
       // Load new map collision data
       await mapLoader.loadMapData(data.mapId);
+      
+      spatialGrid.removeEntity(p.mapId, p.x, p.y, socket.id);
+      spatialGrid.addEntity(data.mapId, data.x, data.y, socket.id);
 
       p.mapId = data.mapId;
       socket.join(p.mapId);
@@ -535,6 +549,7 @@ io.on("connection", (socket) => {
     console.log(`[-] Player disconnected: ${socket.id}`);
     const p = players[socket.id];
     if (p && p.mapId) {
+      spatialGrid.removeEntity(p.mapId, p.x, p.y, socket.id);
       socket.to(p.mapId).emit("player_left", socket.id);
     }
     delete players[socket.id];
@@ -552,8 +567,8 @@ async function start() {
   await mapLoader.initialize();
 
   // Start the physics tick loop
-  setInterval(serverTick, TICK_INTERVAL);
-  console.log(`[SAINTS TAMER] Server tick loop started at ${TICK_RATE} TPS (${TICK_INTERVAL}ms)`);
+  setTimeout(serverTick, TICK_INTERVAL);
+  console.log(`[SAINTS TAMER] Server tick loop started at ${TICK_RATE} TPS (drift-compensated)`);
 
   // Start HTTP server
   server.listen(PORT, () => {
