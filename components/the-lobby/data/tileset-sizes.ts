@@ -1,0 +1,1 @@
+export const TILESET_SIZES: Record<string, {w:number, h:number}> = {};
