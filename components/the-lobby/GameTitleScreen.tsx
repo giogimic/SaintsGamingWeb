@@ -18,23 +18,23 @@ export default function GameTitleScreen() {
 
   return (
     <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
-      <div className="absolute inset-0 pointer-events-none opacity-20" 
-           style={{ backgroundImage: 'radial-gradient(circle at center, #2a1f3d 0%, #000 100%)' }} />
+      <div className="absolute inset-0 pointer-events-none opacity-30" 
+           style={{ backgroundImage: 'radial-gradient(circle at center, #4c1d95 0%, #000 100%)' }} />
 
       <div className="relative z-10 flex flex-col items-center animate-in fade-in zoom-in duration-1000">
-        <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-600 mb-2 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] font-serif tracking-widest">
+        <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-violet-400 to-fuchsia-400 mb-2 drop-shadow-[0_5px_15px_rgba(139,92,246,0.6)] font-serif tracking-widest">
           SAINTS
         </h1>
-        <h2 className="text-2xl font-bold text-amber-100/50 tracking-[0.5em] mb-12 uppercase">
+        <h2 className="text-2xl font-bold text-violet-100/50 tracking-[0.5em] mb-12 uppercase">
           Online
         </h2>
 
         <div className="flex flex-col gap-4 w-64">
           <button 
             onClick={handleStart}
-            className="group relative flex items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 border-2 border-amber-400/50 rounded-xl text-amber-50 font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(217,119,6,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(217,119,6,0.6)]"
+            className="group relative flex items-center justify-center gap-3 w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 border border-white/20 rounded-xl text-white font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(139,92,246,0.6)]"
           >
-            <Play size={20} className="group-hover:animate-pulse" />
+            <Play size={20} fill="currentColor" className="group-hover:animate-pulse" />
             Enter World
           </button>
           
@@ -51,7 +51,7 @@ export default function GameTitleScreen() {
         
         {status === 'authenticated' && (
           <div className="mt-12 text-sm text-gray-500 font-mono">
-            Signed in as <span className="text-amber-500/70">{session?.user?.name || 'Player'}</span>
+            Signed in as <span className="text-violet-400 font-bold">{session?.user?.name || 'Player'}</span>
           </div>
         )}
       </div>
