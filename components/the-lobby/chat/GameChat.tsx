@@ -105,7 +105,7 @@ export function GameChat() {
   );
 
   return (
-    <div className="absolute bottom-4 left-4 w-[480px] h-[200px] flex flex-col z-50 pointer-events-auto shadow-[2px_2px_10px_rgba(0,0,0,0.8)]" style={{
+    <div className="w-[480px] h-[200px] flex flex-col z-50 pointer-events-auto shadow-[2px_2px_10px_rgba(0,0,0,0.8)]" style={{
       backgroundColor: '#52493d',
       border: '2px solid #383024',
       borderTopColor: '#7a6f5d',

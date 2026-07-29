@@ -405,7 +405,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {/* SCALED UI CONTAINER */}
       <div 
         className="absolute inset-0 pointer-events-none" 
-        style={{ zoom: uiScale }}
       >
         {/* Mobile Controls */}
         <div className="pointer-events-auto">
@@ -513,7 +512,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {/* Overlays that aren't part of ClassicPanel */}
       <div 
         className="absolute inset-0 pointer-events-none flex items-center justify-center" 
-        style={{ zoom: uiScale }}
       >
         {gameMode === 'CRAFTING' && <CraftingOverlay />}
         {gameMode === 'BASE' && <BaseOverlay />}

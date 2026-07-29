@@ -566,42 +566,60 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Handle Keyboard WASD & Arrow Key Movement
   useEffect(() => {
+    const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
     let lastMoveTime = 0;
+    let animationFrameId: number;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
-        return;
-      }
-
-      clearAutoWalk(); // Cancel any click-to-move pathfinding
-
-      const now = Date.now();
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      
       const key = e.key.toLowerCase();
-
-      // Interact Key (E / Space)
-      if (key === 'e' || key === ' ') {
+      if (key in keys) {
+        keys[key as keyof typeof keys] = true;
+        clearAutoWalk(); // Cancel any click-to-move pathfinding
+      } else if (key === 'e' || key === ' ') {
         handleInteract();
-        return;
-      }
-
-      if (now - lastMoveTime < 240) return; // Throttle step frequency to match animation speed
-
-      let dx = 0;
-      let dy = 0;
-
-      if (key === 'w' || key === 'arrowup') dy = -1;
-      else if (key === 's' || key === 'arrowdown') dy = 1;
-      else if (key === 'a' || key === 'arrowleft') dx = -1;
-      else if (key === 'd' || key === 'arrowright') dx = 1;
-
-      if (dx !== 0 || dy !== 0) {
-        tryMoveDirection(dx, dy);
-        lastMoveTime = now;
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      const key = e.key.toLowerCase();
+      if (key in keys) {
+        keys[key as keyof typeof keys] = false;
+      }
+    };
+
+    const gameLoop = () => {
+      const now = Date.now();
+      if (now - lastMoveTime >= 240) {
+        let dx = 0;
+        let dy = 0;
+
+        if (keys.w || keys.arrowup) dy = -1;
+        else if (keys.s || keys.arrowdown) dy = 1;
+        else if (keys.a || keys.arrowleft) dx = -1;
+        else if (keys.d || keys.arrowright) dx = 1;
+
+        if (dx !== 0 || dy !== 0) {
+          tryMoveDirection(dx, dy);
+          lastMoveTime = now;
+        }
+      }
+      animationFrameId = requestAnimationFrame(gameLoop);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    animationFrameId = requestAnimationFrame(gameLoop);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [mapWidth, mapHeight, mapData]);
 
   return (
