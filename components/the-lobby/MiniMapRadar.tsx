@@ -24,6 +24,7 @@ export default function MiniMapRadar() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
   const currentMapId = useGameStore(state => state.currentMapId);
+  const instanceId = useGameStore(state => state.instanceId);
   const playerPos = useGameStore(state => state.player.position);
   const mapEntities = useGameStore(state => state.mapEntities);
 
@@ -138,7 +139,16 @@ export default function MiniMapRadar() {
   }, [draw]);
 
   const mapData = GAME_MAPS[currentMapId];
-  const mapName = mapData?.name || currentMapId;
+  let mapName = mapData?.name || currentMapId;
+  
+  // Extract channel from instanceId (e.g. SAINTS_VILLAGE_ch1 -> "Ch. 1")
+  let channelText = "";
+  if (instanceId && instanceId.includes("_ch")) {
+    const chMatch = instanceId.match(/_ch(\d+)$/);
+    if (chMatch) channelText = ` (Ch. ${chMatch[1]})`;
+  } else if (instanceId && instanceId.includes("_acc")) {
+    channelText = " (Private)";
+  }
 
   return (
     <div className="absolute top-16 right-4 z-20 pointer-events-none flex flex-col items-end gap-1 font-mono select-none">
@@ -155,9 +165,9 @@ export default function MiniMapRadar() {
       </div>
 
       {/* Map Name Tag */}
-      <div className="bg-black/85 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] text-emerald-300 flex items-center gap-1.5 shadow-lg backdrop-blur-sm max-w-[8.5rem] overflow-hidden">
+      <div className="bg-black/85 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] text-emerald-300 flex items-center gap-1.5 shadow-lg backdrop-blur-sm max-w-[10rem] overflow-hidden">
         <Map className="w-3 h-3 text-emerald-400 shrink-0" />
-        <span className="truncate">{mapName}</span>
+        <span className="truncate">{mapName}{channelText}</span>
       </div>
 
       {/* Coordinates */}

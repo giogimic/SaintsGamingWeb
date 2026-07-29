@@ -14,6 +14,8 @@ export interface PlayerState {
   direction: "up" | "down" | "left" | "right";
   isMoving: boolean;
   lastMoveTime: number;
+  hp: number;
+  maxHp: number;
 }
 
 const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
@@ -34,6 +36,8 @@ export class PlayerManager {
     this.engine.events.on("clientJoinRequest", (data) => this.handleClientJoin(data));
     this.engine.events.on("playerInput", (data) => this.queueInput(data));
     this.engine.events.on("playerDisconnected", (data) => this.handleDisconnect(data));
+    this.engine.events.on("playerDamaged", (data) => this.handlePlayerDamaged(data));
+    this.engine.events.on("creatureAoEAttack", (data) => this.handleCreatureAoEAttack(data));
     this.engine.events.on("processInputs", () => this.processInputs());
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
   }
@@ -41,13 +45,15 @@ export class PlayerManager {
   private async handleClientJoin({ accountId, socketId, data }: any) {
     // Generate entity ID
     const entityId = `player_${accountId}_${Date.now()}`;
-    const instanceId = `${data.mapId}_ch1`; // Default instance for v1
-    
-    // Ensure map definition is loaded and instance exists
+    // Ensure map definition is loaded
     await this.worldManager.loadMap(data.mapId);
-    if (!this.worldManager.getInstance(instanceId)) {
-      this.worldManager.createInstance(instanceId, data.mapId);
-    }
+    
+    // Check if it's a private instance request
+    const isPrivate = data.mapId === 'BASE' || data.isPrivate === true;
+    
+    // Use dynamic sharding to get an instance
+    const instance = this.worldManager.joinMap(data.mapId, accountId, isPrivate);
+    const instanceId = instance.instanceId;
 
     const player: PlayerState = {
       entityId,
@@ -60,7 +66,9 @@ export class PlayerManager {
       y: data.y || 2,
       direction: "down",
       isMoving: false,
-      lastMoveTime: 0
+      lastMoveTime: 0,
+      hp: 100,
+      maxHp: 100
     };
 
     this.players.set(entityId, player);
@@ -88,7 +96,130 @@ export class PlayerManager {
       data: mapPlayers 
     });
 
+    // Notify the client what shard they are in
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "map_joined",
+      data: {
+        instanceId: player.mapId,
+        mapId: instance.mapId
+      }
+    });
+
     // Broadcast join to others
+    this.engine.events.emit("networkBroadcast", {
+      room: player.mapId,
+      event: "player_joined",
+      data: {
+        socketId: player.socketId,
+        entityId: player.entityId,
+        x: player.x,
+        y: player.y,
+        direction: player.direction,
+        name: player.name,
+        spriteId: player.spriteId,
+        isMoving: player.isMoving
+      }
+    });
+  }
+
+  private handleCreatureAoEAttack(data: { attackerId: string, mapId: string, x: number, y: number, radius: number, damage: number }) {
+    for (const player of this.players.values()) {
+      if (player.mapId === data.mapId) {
+        const dx = player.x - data.x;
+        const dy = player.y - data.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist <= data.radius) {
+          this.handlePlayerDamaged({
+            entityId: player.entityId,
+            attackerId: data.attackerId,
+            damage: data.damage
+          });
+        }
+      }
+    }
+  }
+
+  private handlePlayerDamaged(data: { entityId: string, attackerId: string, damage: number }) {
+    const player = this.players.get(data.entityId);
+    if (!player) return;
+
+    player.hp = Math.max(0, player.hp - data.damage);
+    this.dirtyEntities.add(player.entityId);
+    console.log(`[PlayerManager] ${player.name} took ${data.damage} damage! HP: ${player.hp}/${player.maxHp}`);
+
+    if (player.hp <= 0) {
+      this.handlePlayerDefeated(player);
+    }
+  }
+
+  private handlePlayerDefeated(player: PlayerState) {
+    console.log(`[PlayerManager] ${player.name} was defeated! Teleporting to Safe Zone.`);
+    
+    // Restore HP
+    player.hp = player.maxHp;
+    
+    // Remove from current instance spatial grid
+    this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
+    this.worldManager.leaveInstance(player.mapId, player.accountId);
+
+    // Leave socket room
+    this.engine.events.emit("networkBroadcast", {
+      room: player.mapId,
+      event: "player_left",
+      data: player.socketId
+    });
+    this.engine.events.emit("leaveRoom", { socketId: player.socketId, room: player.mapId });
+    
+    // Teleport to SAINTS_VILLAGE coordinate X: 10, Y: 15
+    const safeMapId = "SAINTS_VILLAGE";
+    const safeInstance = this.worldManager.joinMap(safeMapId, player.accountId, false);
+    
+    player.mapId = safeInstance.instanceId;
+    player.x = 10;
+    player.y = 15;
+    player.direction = "down";
+    player.isMoving = false;
+    this.dirtyEntities.add(player.entityId);
+
+    // Add to new spatial grid
+    this.worldManager.addEntity(player.mapId, player.x, player.y, player.entityId);
+    
+    // Join new socket room
+    this.engine.events.emit("joinRoom", { socketId: player.socketId, room: player.mapId });
+
+    // Tell the client they were defeated and give new position
+    this.engine.events.emit("directMessage", {
+      socketId: player.socketId,
+      event: "player_defeated",
+      data: {
+        instanceId: player.mapId,
+        mapId: safeInstance.mapId,
+        x: player.x,
+        y: player.y
+      }
+    });
+
+    // Send full map state to the reborn player
+    const mapPlayers: any = {};
+    for (const p of this.players.values()) {
+      if (p.mapId === player.mapId && p.entityId !== player.entityId) {
+        mapPlayers[p.socketId] = {
+           socketId: p.socketId,
+           entityId: p.entityId,
+           x: p.x, y: p.y, direction: p.direction, name: p.name, spriteId: p.spriteId, isMoving: p.isMoving
+        };
+      }
+    }
+    
+    this.engine.events.emit("directMessage", { 
+      socketId: player.socketId, 
+      event: "map_players", 
+      data: mapPlayers 
+    });
+
+    // Broadcast join to others in safe zone
     this.engine.events.emit("networkBroadcast", {
       room: player.mapId,
       event: "player_joined",
@@ -149,6 +280,9 @@ export class PlayerManager {
               event: "move_ack",
               data: { seq: input.sequence, x: player.x, y: player.y, direction: player.direction }
             });
+            
+            // Emit playerMoved to interrupt any ongoing channel/cast
+            this.engine.events.emit("playerMoved", entityId);
           } else {
             // Collision
             player.direction = input.direction;
@@ -189,7 +323,9 @@ export class PlayerManager {
           x: player.x,
           y: player.y,
           direction: player.direction,
-          isMoving: player.isMoving
+          isMoving: player.isMoving,
+          hp: player.hp,
+          maxHp: player.maxHp
         });
       }
     }
@@ -211,6 +347,7 @@ export class PlayerManager {
     let player = Array.from(this.players.values()).find(p => p.accountId === accountId);
     if (player) {
       this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
+      this.worldManager.leaveInstance(player.mapId, player.accountId);
       this.players.delete(player.entityId);
       this.inputQueues.delete(player.entityId);
       

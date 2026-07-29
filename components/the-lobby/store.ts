@@ -162,10 +162,13 @@ export interface GameState {
   otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
   currentMapId: string;
+  instanceId: string;
   mapEntities: MapEntity[];
   toast: ToastMessage | null;
   activeDialog: { npcId: string; npcName?: string; text: string } | null;
   setGameMode: (mode: GameMode) => void;
+  setCurrentMapId: (id: string) => void;
+  setInstanceId: (id: string) => void;
   setIsMapTransitioning: (isTransitioning: boolean) => void;
   setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
   acceptQuest: (questId: string) => void;
@@ -198,8 +201,8 @@ export interface GameState {
   setActiveBattle: (battleData: any) => void;
   activeEnemies: Record<string, any>;
   setActiveEnemies: (enemies: Record<string, any>) => void;
-  combatTarget: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string } | null;
-  setCombatTarget: (target: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string } | null) => void;
+  combatTarget: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string, behavior?: string } | null;
+  setCombatTarget: (target: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string, behavior?: string } | null) => void;
   cooldowns: Record<string, number>;
   setCooldown: (abilityId: string, timestamp: number) => void;
   emitSocketEvent?: (event: string, data: any) => void;
@@ -299,6 +302,7 @@ export const useGameStore = create<GameState>()(
       cooldowns: {},
       pathQueue: [],
       currentMapId: 'cotton_town',
+      instanceId: '',
       mapEntities: [
         { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
         { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
@@ -376,6 +380,8 @@ export const useGameStore = create<GameState>()(
       }),
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
+      setCurrentMapId: (id) => set((state) => { state.currentMapId = id }),
+      setInstanceId: (id) => set((state) => { state.instanceId = id }),
       setIsMapTransitioning: (isTransitioning) => set((state) => { state.isMapTransitioning = isTransitioning; }),
       setActiveDialog: (dialog) => set((state) => { state.activeDialog = dialog; }),
       localChat: null,

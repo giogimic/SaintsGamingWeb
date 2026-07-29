@@ -34,6 +34,13 @@ export enum AIState {
   SCRIPTED = "SCRIPTED"
 }
 
+export enum BehavioralState {
+  CALM = "CALM",
+  ALERT = "ALERT",
+  ENRAGED = "ENRAGED",
+  FLEEING = "FLEEING"
+}
+
 export enum SpawnMode {
   STATIC = "STATIC",
   ROAMING = "ROAMING",

@@ -192,6 +192,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       });
     });
     
+    socket.on('map_joined', (data) => {
+      useGameStore.getState().setInstanceId(data.instanceId);
+    });
+
     socket.on('map_players', (players) => {
       useGameStore.getState().setOtherPlayers(players);
     });
@@ -202,8 +206,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     
     socket.on('player_moved', (data) => {
       if (data.socketId === socket.id) {
-        // Phase 2: Client Prediction enabled. We ignore this general state delta for ourselves
+        // Phase 2: Client Prediction enabled. We ignore movement deltas for ourselves
         // because we strictly reconcile using 'move_ack' and 'position_correction' to prevent judder.
+        // However, we MUST accept HP updates if we took damage.
+        if (data.hp !== undefined) {
+           useGameStore.setState((state) => {
+              state.player.hp = data.hp;
+              if (data.maxHp !== undefined) state.player.maxHp = data.maxHp;
+           });
+        }
       } else {
         useGameStore.getState().updateOtherPlayer(data.socketId, data);
       }
@@ -311,6 +322,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       window.dispatchEvent(new CustomEvent('capture_result_event', { detail: data }));
     });
 
+    socket.on('capture_interrupted', (data) => {
+      window.dispatchEvent(new CustomEvent('capture_interrupted_event', { detail: data }));
+    });
+
     // ─── Phase 2: Server-Authoritative Movement Reconciliation ───
     socket.on('move_ack', (data) => {
       // Server acknowledged our move — clear pending moves up to this seq
@@ -326,6 +341,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       if (data.reason === 'invalid_distance') {
         console.warn('[Net] Server rejected move: teleport attempt detected');
       }
+    });
+
+    socket.on('player_defeated', (data) => {
+      const state = useGameStore.getState();
+      state.showToast("You blacked out... Respawning at Safe Zone");
+      state.setInstanceId(data.instanceId);
+      state.setCurrentMapId(data.mapId);
+      state.setPlayerPosition({ x: data.x, y: data.y }, 'down', false);
+      state.modifyHp(9999); // Full heal (clamped to maxHp by modifyHp)
     });
 
     return () => {

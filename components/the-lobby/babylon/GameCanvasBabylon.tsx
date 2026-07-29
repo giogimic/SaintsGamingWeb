@@ -448,9 +448,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
 
+    const handleCaptureInterrupted = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const data = customEvent.detail;
+      const engine = engineRef.current;
+      if (engine && data.entityId) {
+        engine.disposeProjectile(data.entityId);
+      }
+    };
+
     window.addEventListener('capture_start_event', handleCaptureStart);
+    window.addEventListener('capture_interrupted_event', handleCaptureInterrupted);
     return () => {
       window.removeEventListener('capture_start_event', handleCaptureStart);
+      window.removeEventListener('capture_interrupted_event', handleCaptureInterrupted);
     };
   }, []);
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useGameStore } from './store';
+import { Flame, AlertTriangle, Wind } from 'lucide-react';
 
 export default function TargetFrame() {
   const combatTarget = useGameStore(state => state.combatTarget);
@@ -25,10 +26,30 @@ export default function TargetFrame() {
         
         <div className="h-4 w-full bg-black/50 rounded-full overflow-hidden border border-white/10 relative">
           <div 
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-300 ease-out"
+            className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${target.behavior === 'ENRAGED' ? 'bg-gradient-to-r from-orange-600 to-red-500' : 'bg-gradient-to-r from-red-600 to-red-400'}`}
             style={{ width: `${hpPercent}%` }}
           />
         </div>
+        
+        {target.behavior && target.behavior !== 'CALM' && (
+          <div className="absolute -top-3 -right-3">
+            {target.behavior === 'ENRAGED' && (
+              <div className="bg-red-500/80 backdrop-blur border border-red-400 p-2 rounded-full shadow-lg shadow-red-500/50 animate-pulse">
+                <Flame size={16} className="text-white" />
+              </div>
+            )}
+            {target.behavior === 'ALERT' && (
+              <div className="bg-yellow-500/80 backdrop-blur border border-yellow-400 p-2 rounded-full shadow-lg shadow-yellow-500/50">
+                <AlertTriangle size={16} className="text-white" />
+              </div>
+            )}
+            {target.behavior === 'FLEEING' && (
+              <div className="bg-blue-500/80 backdrop-blur border border-blue-400 p-2 rounded-full shadow-lg shadow-blue-500/50 animate-bounce">
+                <Wind size={16} className="text-white" />
+              </div>
+            )}
+          </div>
+        )}
         
         {target.isCasting && target.castName && (
           <div className="mt-2 text-xs text-orange-300 font-mono text-center animate-pulse">

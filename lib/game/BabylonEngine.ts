@@ -117,6 +117,7 @@ export class BabylonEngine {
   private cameraTargetZ: number = 0;
   private cameraSnapped: boolean = false;
   private selectionRingMesh?: Mesh;
+  private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -1301,14 +1302,26 @@ export class BabylonEngine {
     this.selectionRingMesh.position = new Vector3(targetMesh.position.x, 0.1, targetMesh.position.z);
   }
 
+  public disposeProjectile(sourceId: string) {
+    const proj = this.activeProjectiles.get(sourceId);
+    if (proj) {
+      this.scene.onBeforeRenderObservable.remove(proj.observer);
+      proj.mesh.dispose();
+      this.activeProjectiles.delete(sourceId);
+    }
+  }
+
   public renderProjectile(sourceId: string, targetId: string, fxType: string, castTimeMs: number) {
     const sourceMesh = this.entityMeshes.get(sourceId);
     const targetMesh = this.entityMeshes.get(targetId);
     
     if (!sourceMesh || !targetMesh) return;
 
+    // Dispose existing if any
+    this.disposeProjectile(sourceId);
+
     // Create projectile (a glowing sphere)
-    const projectile = MeshBuilder.CreateSphere(`projectile_${Date.now()}`, { diameter: 0.5 }, this.scene);
+    const projectile = MeshBuilder.CreateSphere(`projectile_${sourceId}`, { diameter: 0.5 }, this.scene);
     projectile.position = new Vector3(sourceMesh.position.x, 1.5, sourceMesh.position.z);
     
     const mat = new StandardMaterial('projectileMat', this.scene);
@@ -1340,6 +1353,7 @@ export class BabylonEngine {
       if (progress >= 1.0) {
         // Impact
         this.scene.onBeforeRenderObservable.remove(animObserver);
+        this.activeProjectiles.delete(sourceId);
         
         // Simple impact FX (expand and fade)
         const impactObserver = this.scene.onBeforeRenderObservable.add(() => {
@@ -1352,6 +1366,8 @@ export class BabylonEngine {
         });
       }
     });
+
+    this.activeProjectiles.set(sourceId, { mesh: projectile, observer: animObserver });
   }
 
   public removeEntity(id: string) {
