@@ -34,6 +34,7 @@ import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
 import { GameChat } from './chat/GameChat';
+import GameOptionsMenu from './hud/GameOptionsMenu';
 
 export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
@@ -59,6 +60,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [showSelector, setShowSelector] = useState(false);
   const [showCreator, setShowCreator] = useState(forceCreate || false);
   const [isAdminUser, setIsAdminUser] = useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -356,7 +358,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         return;
       }
       const key = e.key.toLowerCase();
-      if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
+      if (key === 'escape') setIsOptionsOpen(prev => !prev);
+      else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
       else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
       else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
       else if (key === 'x') useGameStore.getState().setGameMode('DEX');
@@ -445,64 +448,30 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       )}
 
       {gameMode !== 'BATTLE' && (
-        <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-40 pointer-events-none">
-          {/* Left: System Controls */}
-          <div className="flex gap-1.5 pointer-events-auto">
-            <button
-              onClick={toggleFullscreen}
-              className="px-3 py-1.5 bg-black/70 backdrop-blur-sm text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95"
-            >
-              {isFullscreen ? '⛶ EXIT' : '⛶ FULLSCREEN'}
-            </button>
-            <button
-              onClick={() => window.location.href = '/'}
-              className="px-3 py-1.5 bg-slate-900/80 backdrop-blur-sm text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-slate-800 hover:text-white transition-all shadow-lg active:scale-95"
-            >
-              ⎋ LEAVE GAME
-            </button>
-            {gameMode !== 'EXPLORING' && (
-              <button
-                onClick={() => useGameStore.getState().setGameMode('EXPLORING')}
-                className="px-3 py-1.5 bg-red-950/70 backdrop-blur-sm text-red-300 border border-red-500/30 rounded-lg text-[11px] font-mono font-medium hover:bg-red-900/80 hover:text-red-200 transition-all shadow-lg active:scale-95"
-              >
-                ✕ CLOSE
-              </button>
-            )}
-          </div>
-          {/* Right: Game Menu Bar (Removed - using ClassicPanel) */}
-          <div className="flex gap-1 pointer-events-auto">
-            <button
-              onClick={() => useGameStore.getState().setIsUiEditMode(!isUiEditMode)}
-              className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border active:scale-95 ${
-                isUiEditMode
-                  ? 'bg-amber-600/40 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/20'
-                  : 'bg-black/60 backdrop-blur-md text-amber-400 hover:text-amber-300 hover:bg-amber-950/50 border-white/10'
-              }`}
-              title="Edit UI Layout"
-            >
-              <span className="text-base leading-none">📐</span>
-              <span className="mt-0.5 leading-none">Edit UI</span>
-            </button>
-            {isAdminUser && (
-              <button
-                onClick={() => { 
-                  if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
-                  setIsDevEditorOpen(!isDevEditorOpen); 
-                }}
-                className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border active:scale-95 ${
-                  isDevEditorOpen
-                    ? 'bg-cyan-600/40 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/20'
-                    : 'bg-black/60 backdrop-blur-md text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 border-white/10'
-                }`}
-                title="Dev Editor [Ctrl+E]"
-              >
-                <span className="text-base leading-none">🔧</span>
-                <span className="mt-0.5 leading-none">Editor</span>
-              </button>
-            )}
-          </div>
+        <div className="absolute top-3 right-3 z-40 pointer-events-none">
+          <button
+            onClick={() => setIsOptionsOpen(true)}
+            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
+          >
+            <span className="text-sm leading-none">⚙️</span>
+            <span>OPTIONS (ESC)</span>
+          </button>
         </div>
       )}
+
+      <GameOptionsMenu 
+        isOpen={isOptionsOpen}
+        onClose={() => setIsOptionsOpen(false)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        isAdminUser={isAdminUser}
+        isDevEditorOpen={isDevEditorOpen}
+        onToggleDevEditor={() => {
+          if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
+          setIsDevEditorOpen(!isDevEditorOpen); 
+          setIsOptionsOpen(false);
+        }}
+      />
 
       {/* Render the Game Canvas Layer (Lowest Z-Index) */}
       <GameCanvasBabylon />

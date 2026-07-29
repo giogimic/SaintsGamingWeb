@@ -39,6 +39,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
   const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   // Async map state — engine only mounts AFTER map data is ready
   const [mapData, setMapData] = useState<GameMapData | null>(null);
@@ -605,12 +610,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       // Only attempt to queue a move if a key is held AND the queue is completely empty.
       // This forces 1 key press = 1 tile, preventing the player from skipping tiles or double-jumping.
-      if ((dx !== 0 || dy !== 0) && state.pathQueue.length === 0 && !state.player.isMoving && state.gameMode === 'EXPLORING') {
+      if ((dx !== 0 || dy !== 0) && !state.player.isMoving && state.gameMode === 'EXPLORING') {
         const pos = state.player.position;
         if (pos) {
           const nextX = pos.x + dx;
           const nextY = pos.y + dy;
-          state.enqueuePath([{ x: nextX, y: nextY }]);
+          tryMovePlayerTo(nextX, nextY);
         }
       }
       
@@ -658,8 +663,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       </div>
 
       {/* On-Screen Touch / Mouse Control D-Pad & Talk Action Button */}
-      <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center gap-2 pointer-events-auto">
-        <button
+      {isTouchDevice && (
+        <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+          <button
           onClick={handleInteract}
           className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-full shadow-xl border border-amber-400/50 flex items-center gap-1.5 active:scale-95 transition-all font-mono"
         >
@@ -701,7 +707,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             <Hand className="w-3 h-3 text-cyan-400" />
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
