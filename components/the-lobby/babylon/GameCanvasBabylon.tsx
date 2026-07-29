@@ -9,7 +9,7 @@ import type { GameMapData } from '../data/maps';
 import { soundSynth } from '@/lib/game/sound-synth';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
 import { findPath } from '@/lib/game/pathfinding';
-
+import { WorldSimulation } from '@/lib/game/WorldSimulation';
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
   activeBrushTileId?: number;
@@ -84,166 +84,122 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number) => {
     if (!activeMap) return;
-    if (useGameStore.getState().isMapTransitioning) return;
     
-    const currentPos = useGameStore.getState().player?.position;
+    const store = useGameStore.getState();
+    if (store.isMapTransitioning) return;
+    
+    const currentPos = store.player?.position;
     if (!currentPos) return;
 
-    const nextX = targetX;
-    const nextY = targetY;
+    const worldState = {
+      currentMapId,
+      mapWidth,
+      mapHeight,
+      mapGrid: activeMap.grid,
+      gates: activeMap.gates || [],
+      staticNpcs: activeMap.npcs || [],
+      dynamicEntities: store.mapEntities || [],
+      logicTiles: store.logicTiles,
+      playerPos: currentPos,
+      isDevEditorOpen
+    };
 
-    // Prevent cross-map teleporting (unless in dev editor)
-    // For auto-walk, tryMovePlayerTo is only called with adjacent tiles
-    const dist = Math.abs(nextX - currentPos.x) + Math.abs(nextY - currentPos.y);
-    if (!isDevEditorOpen && dist > 1) {
+    const result = WorldSimulation.tryMove(worldState, targetX, targetY);
+
+    if (result.type === 'BLOCKED') {
+      setPlayerPosition(currentPos, result.direction, false);
+      const seq = store.incrementMoveSeq();
+      store.addPendingMove({ seq, direction: result.direction, predictedPos: currentPos });
+      emitSocketEvent?.('move_intent', { direction: result.direction, seq });
       return;
     }
 
-    // Determine intended direction
-    let dir: 'up' | 'down' | 'left' | 'right' = 'down';
-    if (nextX > currentPos.x) dir = 'right';
-    else if (nextX < currentPos.x) dir = 'left';
-    else if (nextY > currentPos.y) dir = 'down';
-    else if (nextY < currentPos.y) dir = 'up';
-
-    // Bounds Check
-    if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
-      // Turn to face the boundary, but don't move
-      setPlayerPosition(currentPos, dir, false);
-      const store = useGameStore.getState();
-      const seq = store.incrementMoveSeq();
-      store.addPendingMove({ seq, direction: dir, predictedPos: currentPos });
-      emitSocketEvent?.('move_intent', { direction: dir, seq });
-      return;
-    }
-
-    // Logic Grid Collision Check
-    const targetTileId = activeMap.grid[nextY]?.[nextX];
-    const logicTile = useGameStore.getState().logicTiles[targetTileId];
-    
-    if (logicTile?.isSolid) {
-      // Turn to face the wall, don't move
-      setPlayerPosition(currentPos, dir, false);
-      const store = useGameStore.getState();
-      const seq = store.incrementMoveSeq();
-      store.addPendingMove({ seq, direction: dir, predictedPos: currentPos });
-      emitSocketEvent?.('move_intent', { direction: dir, seq });
-      return;
-    }
-
-    // NPC Collision Check
-    const dynamicEntities = useGameStore.getState().mapEntities || [];
-    const isStaticNpc = activeMap.npcs?.some((npc: any) => npc.x === nextX && npc.y === nextY);
-    const isDynamicNpc = dynamicEntities.some((e) => Math.round(e.position.x) === nextX && Math.round(e.position.y) === nextY && (e.mapId === currentMapId || !e.mapId));
-    
-    if (isStaticNpc || isDynamicNpc) {
-      setPlayerPosition(currentPos, dir, false);
-      const store = useGameStore.getState();
-      const seq = store.incrementMoveSeq();
-      store.addPendingMove({ seq, direction: dir, predictedPos: currentPos });
-      emitSocketEvent?.('move_intent', { direction: dir, seq });
-      return; // Blocked by NPC
-    }
-
-    if (isDevEditorOpen) {
-      setPlayerPosition({ x: nextX, y: nextY }, dir, false);
-    } else {
-      setPlayerPosition({ x: nextX, y: nextY }, dir, true);
-
-      setTimeout(() => {
-        const store = useGameStore.getState();
-        if (store.player.position.x === nextX && store.player.position.y === nextY) {
-          store.setPlayerPosition({ x: nextX, y: nextY }, undefined, false);
-        }
-      }, 250);
-    }
-
-    // Send move intent to server (Phase 2 — server-authoritative)
-    const store = useGameStore.getState();
-    const seq = store.incrementMoveSeq();
-    store.addPendingMove({ seq, direction: dir, predictedPos: { x: nextX, y: nextY } });
-    emitSocketEvent?.('move_intent', { direction: dir, seq });
-
-    // Logic Tile Step Event Trigger
-    if (logicTile?.onStepAction) {
-      const payload = logicTile.onStepPayload ? JSON.parse(logicTile.onStepPayload) : {};
-      
-      switch (logicTile.onStepAction) {
-        case 'ENCOUNTER':
-          const roll = Math.random() * 100;
-          if (roll < (payload.chance * 100 || 15)) {
-            // activeMap.encounterPool contains strings like ["spyder_route1"]
-            const pool = activeMap?.encounterPool;
-            if (pool && pool.length > 0) {
-              const zone = pool[Math.floor(Math.random() * pool.length)];
-              // This is async, but we can fire and forget the transition
-              resolveEncounter(zone).then((encounterData) => {
-                if (encounterData) {
-                  soundSynth.playEncounterSound();
-                  showToast(`Wild ${encounterData.speciesId.toUpperCase()} appeared! (Lv ${encounterData.minLevel}-${encounterData.maxLevel})`);
-                  useGameStore.getState().setGameMode('BATTLE');
-                }
-              });
-            } else {
-              // Fallback
-              soundSynth.playEncounterSound();
-              showToast(`Wild IGNIS appeared!`);
-              useGameStore.getState().setGameMode('BATTLE');
-            }
-          }
-          break;
-        case 'OPEN_SHOP':
-          showToast('Welcome to the Shop!');
-          useGameStore.getState().setGameMode('SHOP');
-          break;
-        case 'CLINIC_HEAL':
-          const state = useGameStore.getState();
-          state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
-          showToast('Your team has been fully healed!');
-          break;
-        case 'FISHING':
-          soundSynth.playEncounterSound?.();
-          gainSkillXp('fishing', payload.xp || 20);
-          showToast(`Fishing... caught something! (+${payload.xp || 20} Fishing XP)`);
-          break;
-        case 'OPEN_CRAFTING':
-          showToast('Crafting Station accessed!');
-          useGameStore.getState().setGameMode('CRAFTING');
-          break;
-        case 'OPEN_BASE':
-          showToast('Base Terminal online!');
-          useGameStore.getState().setGameMode('BASE');
-          break;
-      }
-    }
-
-    // Warp Gate Transition Check
-    if (Array.isArray(activeMap.gates)) {
-      const gate = activeMap.gates.find((g: any) => g.position?.x === nextX && g.position?.y === nextY);
-      if (gate && gate.targetMapId) {
-        if (isDevEditorOpen) {
+    if (result.type === 'WARP') {
+      const gate = result.gate;
+      if (isDevEditorOpen) {
+        useGameStore.setState({ currentMapId: gate.targetMapId });
+        setPlayerPosition(gate.targetSpawn || { x: 6, y: 2 });
+        showToast(`Warped to ${gate.targetMapId}`);
+      } else {
+        if (store.isMapTransitioning) return;
+        store.setIsMapTransitioning(true);
+        setTimeout(() => {
           useGameStore.setState({ currentMapId: gate.targetMapId });
           setPlayerPosition(gate.targetSpawn || { x: 6, y: 2 });
-          showToast(`Warped to ${gate.targetMapId}`);
-        } else {
-          // Cinematic Fade Transition
-          const store = useGameStore.getState();
-          if (store.isMapTransitioning) return; // Prevent double warp
-          
-          store.setIsMapTransitioning(true);
-          
           setTimeout(() => {
-            useGameStore.setState({ currentMapId: gate.targetMapId });
-            setPlayerPosition(gate.targetSpawn || { x: 6, y: 2 });
-            
-            // Wait for Babylon geometry to generate before fading back in
-            setTimeout(() => {
-              useGameStore.getState().setIsMapTransitioning(false);
-              showToast(`Warped to ${gate.targetMapId}`);
-            }, 100);
-          }, 300);
+            useGameStore.getState().setIsMapTransitioning(false);
+            showToast(`Warped to ${gate.targetMapId}`);
+          }, 100);
+        }, 300);
+      }
+      return;
+    }
+
+    if (result.type === 'MOVED') {
+      const dir = result.direction;
+      if (isDevEditorOpen) {
+        setPlayerPosition({ x: targetX, y: targetY }, dir, false);
+      } else {
+        setPlayerPosition({ x: targetX, y: targetY }, dir, true);
+        setTimeout(() => {
+          const freshStore = useGameStore.getState();
+          if (freshStore.player.position.x === targetX && freshStore.player.position.y === targetY) {
+            freshStore.setPlayerPosition({ x: targetX, y: targetY }, undefined, false);
+          }
+        }, 250);
+      }
+
+      const seq = store.incrementMoveSeq();
+      store.addPendingMove({ seq, direction: dir, predictedPos: { x: targetX, y: targetY } });
+      emitSocketEvent?.('move_intent', { direction: dir, seq });
+
+      // Handle Step Actions
+      if (result.stepAction) {
+        const payload = result.stepPayload || {};
+        switch (result.stepAction) {
+          case 'ENCOUNTER':
+            const roll = Math.random() * 100;
+            if (roll < (payload.chance * 100 || 15)) {
+              const pool = activeMap?.encounterPool;
+              if (pool && pool.length > 0) {
+                const zone = pool[Math.floor(Math.random() * pool.length)];
+                resolveEncounter(zone).then((encounterData) => {
+                  if (encounterData) {
+                    soundSynth.playEncounterSound();
+                    showToast(`Wild ${encounterData.speciesId.toUpperCase()} appeared! (Lv ${encounterData.minLevel}-${encounterData.maxLevel})`);
+                    useGameStore.getState().setGameMode('BATTLE');
+                  }
+                });
+              } else {
+                soundSynth.playEncounterSound();
+                showToast(`Wild IGNIS appeared!`);
+                useGameStore.getState().setGameMode('BATTLE');
+              }
+            }
+            break;
+          case 'OPEN_SHOP':
+            showToast('Welcome to the Shop!');
+            useGameStore.getState().setGameMode('SHOP');
+            break;
+          case 'CLINIC_HEAL':
+            const state = useGameStore.getState();
+            state.hydratePlayer({ ...state.player, hp: state.player.maxHp || 99 });
+            showToast('Your team has been fully healed!');
+            break;
+          case 'FISHING':
+            soundSynth.playEncounterSound?.();
+            gainSkillXp('fishing', payload.xp || 20);
+            showToast(`Fishing... caught something! (+${payload.xp || 20} Fishing XP)`);
+            break;
+          case 'OPEN_CRAFTING':
+            showToast('Crafting Station accessed!');
+            useGameStore.getState().setGameMode('CRAFTING');
+            break;
+          case 'OPEN_BASE':
+            showToast('Base Terminal online!');
+            useGameStore.getState().setGameMode('BASE');
+            break;
         }
-        return;
       }
     }
   };
@@ -257,71 +213,56 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Interact / Talk Handler
   const handleInteract = () => {
-    const currentPlayer = useGameStore.getState().player;
+    const store = useGameStore.getState();
+    const currentPlayer = store.player;
     const curX = currentPlayer.position?.x ?? 6;
     const curY = currentPlayer.position?.y ?? 2;
     const dir = currentPlayer.direction || 'down';
-    
-    let faceX = curX;
-    let faceY = curY;
-    
-    if (dir === 'up') faceY -= 1;
-    else if (dir === 'down') faceY += 1;
-    else if (dir === 'left') faceX -= 1;
-    else if (dir === 'right') faceX += 1;
 
-    const currentTileId = activeMap?.grid?.[faceY]?.[faceX];
-    const logicTile = useGameStore.getState().logicTiles[currentTileId];
+    const worldState = {
+      currentMapId,
+      mapWidth,
+      mapHeight,
+      mapGrid: activeMap?.grid || [],
+      gates: activeMap?.gates || [],
+      staticNpcs: activeMap?.npcs || [],
+      dynamicEntities: store.mapEntities || [],
+      logicTiles: store.logicTiles,
+      playerPos: { x: curX, y: curY },
+      isDevEditorOpen
+    };
 
-    // Resource Node Harvesting and Dynamic Tile Interactions
-    if (logicTile?.interactable && logicTile?.onInteractAction) {
-      const payload = logicTile.onInteractPayload ? JSON.parse(logicTile.onInteractPayload) : {};
-      
-      switch (logicTile.onInteractAction) {
+    const result = WorldSimulation.tryInteract(worldState, dir);
+
+    if (result.type === 'RESOURCE_HARVEST') {
+      switch (result.action) {
         case 'HARVEST_WOOD':
           soundSynth.playWoodcuttingSound();
-          gainSkillXp('woodcutting', payload.xp || 25);
-          showToast(`Harvested Wood Logs (+${payload.xp || 25} Woodcutting XP)`);
-          return;
+          gainSkillXp('woodcutting', result.payload.xp || 25);
+          showToast(`Harvested Wood Logs (+${result.payload.xp || 25} Woodcutting XP)`);
+          break;
         case 'HARVEST_ORE':
           soundSynth.playMiningSound();
-          gainSkillXp('mining', payload.xp || 30);
-          showToast(`Mined Copper Ore (+${payload.xp || 30} Mining XP)`);
-          return;
+          gainSkillXp('mining', result.payload.xp || 30);
+          showToast(`Mined Copper Ore (+${result.payload.xp || 30} Mining XP)`);
+          break;
       }
+      return;
     }
 
-    // NPC Interaction Check (Combined Map Data + Dynamic Entities)
-    const dynamicEntities = useGameStore.getState().mapEntities || [];
-    let nearbyNpc = null;
-    let isDynamic = false;
-
-    // Check static imported Tuxemon NPCs first
-    nearbyNpc = activeMap?.npcs?.find((npc: any) => npc.x === faceX && npc.y === faceY);
-    
-    // Fallback to checking Dev Editor placed dynamic entities
-    if (!nearbyNpc) {
-      const ent = dynamicEntities.find((e) => Math.round(e.position.x) === faceX && Math.round(e.position.y) === faceY && (e.mapId === currentMapId || !e.mapId));
-      if (ent) {
-        nearbyNpc = {
-          id: ent.id,
-          name: ent.name || 'NPC',
-          dialogueKey: ent.dialogueKey || 'Hello, traveler.'
-        };
-        isDynamic = true;
-      }
-    }
-
-    if (nearbyNpc) {
+    if (result.type === 'NPC_DIALOGUE') {
       useGameStore.setState({
         activeDialog: {
-          npcId: nearbyNpc.id,
-          npcName: nearbyNpc.name || 'Stranger',
-          text: nearbyNpc.dialogueKey || 'Greetings, Tamer! Welcome to the grounds.'
+          npcId: result.npcId,
+          npcName: result.npcName,
+          text: result.text
         },
         gameMode: 'DIALOG'
       });
-    } else {
+      return;
+    }
+    
+    if (result.type === 'NONE') {
       showToast('Nothing to interact with here.');
     }
   };
@@ -399,7 +340,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           isPlayer: true,
           direction: freshPlayer.direction,
           isMoving: freshPlayer.isMoving,
-          chatMessage: useGameStore.getState().localChat || undefined
+          chatMessage: useGameStore.getState().localChat || undefined,
+          spriteConfig: freshPlayer.spriteConfig
         });
 
         // Camera smoothly tracks player (already snapped on first tick)
@@ -449,7 +391,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,
-            chatMessage: other.chatMessage
+            chatMessage: other.chatMessage,
+            spriteConfig: (other as any).spriteConfig
           });
         });
 
@@ -474,7 +417,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               x: ex,
               y: ez,
               spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/assets/sprites/${ent.spriteKey}.png`) : undefined,
-              isPlayer: false
+              isPlayer: false,
+              spriteConfig: ent.spriteConfig
             });
           }
         });

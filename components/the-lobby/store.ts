@@ -28,6 +28,7 @@ export interface MapEntity {
   mapId?: string;
   name?: string;
   dialogueKey?: string;
+  spriteConfig?: import('@/lib/game/BabylonEngine').SpriteSheetConfig;
 }
 
 export interface SkillData {
@@ -87,6 +88,7 @@ const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
 export interface PlayerState {
   name?: string;
   spriteId?: string;
+  spriteConfig?: import('@/lib/game/BabylonEngine').SpriteSheetConfig;
   position: Point;
   direction?: 'up' | 'down' | 'left' | 'right';
   isMoving?: boolean;
