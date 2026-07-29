@@ -11,7 +11,16 @@ export default function InventoryOverlay() {
   const credits = useGameStore(state => state.player.credits);
   const equipItem = useGameStore(state => state.equipItem);
 
+  const [selectedItem, setSelectedItem] = import('react').then(m => m.useState<string | null>(null));
+  
+  // Use React hooks directly if available or fallback safely
+  const [activeItem, setActiveItem] = (typeof window !== 'undefined' ? require('react').useState<string | null>(null) : [null, () => {}]);
+
   const handleItemClick = (itemId: string, itemInfo: any) => {
+    setActiveItem(itemId);
+  };
+
+  const handleItemAction = (itemId: string, itemInfo: any) => {
     if (['HEAD', 'CHEST', 'LEGS', 'WEAPON'].includes(itemInfo.type)) {
       equipItem(itemInfo.type.toLowerCase() as any, itemId);
       useGameStore.getState().showToast(`Equipped ${itemInfo.name}`);
@@ -20,6 +29,7 @@ export default function InventoryOverlay() {
         useGameStore.getState().modifyHp(itemInfo.stats.hp);
         useGameStore.getState().modifyInventory(itemId, -1);
         useGameStore.getState().showToast(`Used ${itemInfo.name}`);
+        if (inventory[itemId] === 1) setActiveItem(null); // Deselect if last consumed
       }
     }
   };
@@ -46,49 +56,88 @@ export default function InventoryOverlay() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {Object.keys(inventory).length === 0 ? (
-          <div className="flex items-center justify-center h-full text-slate-400 font-mono italic">
-            Your inventory is empty.
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-            {Object.entries(inventory).map(([itemId, quantity]) => {
-              if (quantity <= 0) return null;
-              const itemInfo = ITEM_DB[itemId] || { name: itemId, description: 'Unknown item', type: 'UNKNOWN', spriteKey: 'unknown' };
+      <div className="flex-1 flex gap-4 h-full min-h-[300px]">
+        {/* Left Side: Inventory Grid */}
+        <div className="flex-[2] overflow-y-auto custom-scrollbar pr-2 border-r border-[#806f47]/30">
+          {Object.keys(inventory).length === 0 ? (
+            <div className="flex items-center justify-center h-full text-slate-400 font-mono italic">
+              Your inventory is empty.
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              {Object.entries(inventory).map(([itemId, quantity]) => {
+                if (quantity <= 0) return null;
+                const itemInfo = ITEM_DB[itemId] || { name: itemId, description: 'Unknown item', type: 'UNKNOWN', spriteKey: 'unknown' };
+                
+                const isEquipped = Object.values(equipment).includes(itemId);
+                const isSelected = activeItem === itemId;
+
+                return (
+                  <div 
+                    key={itemId} 
+                    onClick={() => handleItemClick(itemId, itemInfo)}
+                    className={`relative aspect-square bg-[#0b1320]/60 border-2 rounded transition-all cursor-pointer group flex items-center justify-center shadow-inner 
+                      ${isSelected ? 'border-[#eab308] shadow-[0_0_15px_rgba(234,179,8,0.4)] scale-105 z-10' : 
+                      isEquipped ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.2)]' : 
+                      'border-[#806f47]/40 hover:border-[#cbb26a]'}`}
+                  >
+                    {/* Item Icon Placeholder */}
+                    <span className={`font-mono text-xs text-center p-1 break-all ${isEquipped ? 'text-[#4ade80]' : isSelected ? 'text-[#eab308]' : 'text-[#806f47]'}`}>
+                      {itemInfo.name.substring(0, 8)}
+                    </span>
+                    
+                    {/* Quantity Badge */}
+                    <div className="absolute -bottom-1.5 -right-1.5 bg-[#050b14] border border-[#806f47]/80 text-[#e2d5b3] text-[10px] font-bold px-1.5 rounded-sm shadow">
+                      {quantity}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Item Details Panel */}
+        <div className="flex-[1] flex flex-col bg-[#050b14]/40 rounded p-4 border border-[#806f47]/20 shadow-inner">
+          {activeItem && ITEM_DB[activeItem] && inventory[activeItem] > 0 ? (
+            <div className="flex flex-col h-full animate-in fade-in duration-200">
+              <div className="w-16 h-16 bg-[#0b1320] border border-[#806f47] rounded flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(0,0,0,0.5)] mx-auto">
+                <span className="text-[#cbb26a] font-mono text-xs text-center break-all">{ITEM_DB[activeItem].name}</span>
+              </div>
+              <h3 className="text-[#e2d5b3] font-bold text-center mb-1 text-lg">{ITEM_DB[activeItem].name}</h3>
+              <div className="text-center mb-4">
+                <span className="bg-[#1e293b] text-[#94a3b8] text-[10px] px-2 py-0.5 rounded font-mono uppercase border border-[#334155]">{ITEM_DB[activeItem].type}</span>
+              </div>
               
-              const isEquipped = Object.values(equipment).includes(itemId);
+              <div className="text-[#a1a1aa] text-sm mb-4 flex-1 font-sans leading-relaxed text-center">
+                {ITEM_DB[activeItem].description}
+              </div>
 
-              return (
-                <div 
-                  key={itemId} 
-                  onClick={() => handleItemClick(itemId, itemInfo)}
-                  className={`relative aspect-square bg-[#0b1320]/60 border-2 rounded transition-colors cursor-pointer group flex items-center justify-center shadow-inner ${isEquipped ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.3)]' : 'border-[#806f47]/40 hover:border-[#cbb26a]'}`}
-                >
-                  {/* Item Icon Placeholder */}
-                  <span className={`font-mono text-xs text-center p-1 break-all ${isEquipped ? 'text-[#4ade80]' : 'text-[#806f47]'}`}>
-                    {itemInfo.name}
-                  </span>
-                  
-                  {/* Quantity Badge */}
-                  <div className="absolute -bottom-2 -right-2 bg-[#050b14] border border-[#806f47]/80 text-[#e2d5b3] text-[10px] font-bold px-1.5 py-0.5 rounded shadow">
-                    {quantity}
-                  </div>
-
-                  {/* Tooltip on hover */}
-                  <div className="absolute hidden group-hover:block bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 bg-[#050b14]/95 border border-[#cbb26a] p-2 rounded z-50 text-xs shadow-lg pointer-events-none">
-                    <p className="text-[#e2d5b3] font-bold mb-1">{itemInfo.name}</p>
-                    <p className="text-slate-300 italic mb-1">{itemInfo.description}</p>
-                    {itemInfo.stats?.atk && <p className="text-red-400 font-mono">+ {itemInfo.stats.atk} ATK</p>}
-                    {itemInfo.stats?.def && <p className="text-blue-400 font-mono">+ {itemInfo.stats.def} DEF</p>}
-                    {itemInfo.stats?.hp && <p className="text-green-400 font-mono">+ {itemInfo.stats.hp} HP</p>}
-                    <p className="text-yellow-500 mt-2 uppercase text-[10px]">{itemInfo.type}</p>
-                  </div>
+              {ITEM_DB[activeItem].stats && (
+                <div className="bg-[#0b1320] p-3 rounded border border-[#806f47]/30 mb-4">
+                  {Object.entries(ITEM_DB[activeItem].stats).map(([stat, val]) => (
+                    <div key={stat} className="flex justify-between items-center py-0.5">
+                      <span className="text-[#94a3b8] text-xs uppercase font-mono">{stat}</span>
+                      <span className="text-[#4ade80] text-sm font-bold">+{val}</span>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+
+              <button 
+                onClick={() => handleItemAction(activeItem, ITEM_DB[activeItem])}
+                className="w-full py-2.5 bg-gradient-to-r from-[#806f47] to-[#998650] hover:from-[#998650] hover:to-[#cbb26a] text-black font-bold uppercase tracking-wider rounded border border-[#e2d5b3]/50 shadow-lg transition-all active:scale-95"
+              >
+                {['HEAD', 'CHEST', 'LEGS', 'WEAPON'].includes(ITEM_DB[activeItem].type) ? 'Equip Item' : 'Use Item'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center text-[#806f47]/50">
+              <div className="w-16 h-16 border-2 border-dashed border-[#806f47]/30 rounded mb-4" />
+              <p className="font-mono text-xs">Select an item to view details</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `

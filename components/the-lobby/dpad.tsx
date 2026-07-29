@@ -33,14 +33,14 @@ export default function DPad() {
   return (
     <div className="absolute bottom-24 right-6 z-40 flex flex-col items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity pointer-events-auto">
       <button 
-        className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-90 active:border-white/20 transition-all shadow-lg backdrop-blur-md"
+        className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-95 transition-all shadow-lg backdrop-blur-md"
         onPointerDown={(e) => { e.preventDefault(); handleMove(0, -1); }}
       >
         <span title="Up"><ArrowUp className="w-6 h-6" /></span>
       </button>
       <div className="flex gap-1.5">
         <button 
-          className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-90 active:border-white/20 transition-all shadow-lg backdrop-blur-md"
+          className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-95 transition-all shadow-lg backdrop-blur-md"
           onPointerDown={(e) => { e.preventDefault(); handleMove(-1, 0); }}
         >
           <span title="Left"><ArrowLeft className="w-6 h-6" /></span>
@@ -49,14 +49,14 @@ export default function DPad() {
           <div className="w-4 h-4 rounded-full bg-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.2)]" />
         </div>
         <button 
-          className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-90 active:border-white/20 transition-all shadow-lg backdrop-blur-md"
+          className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-95 transition-all shadow-lg backdrop-blur-md"
           onPointerDown={(e) => { e.preventDefault(); handleMove(1, 0); }}
         >
           <span title="Right"><ArrowRight className="w-6 h-6" /></span>
         </button>
       </div>
       <button 
-        className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-90 active:border-white/20 transition-all shadow-lg backdrop-blur-md"
+        className="w-14 h-14 bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center text-indigo-300 hover:bg-black/60 hover:text-white active:bg-gradient-to-br active:from-indigo-500 active:to-purple-600 active:text-white active:scale-95 transition-all shadow-lg backdrop-blur-md"
         onPointerDown={(e) => { e.preventDefault(); handleMove(0, 1); }}
       >
         <span title="Down"><ArrowDown className="w-6 h-6" /></span>

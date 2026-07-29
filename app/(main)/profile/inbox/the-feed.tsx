@@ -37,7 +37,7 @@ import {
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, 
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
   ChevronLeft, ChevronRight, ArrowRight, BarChart2, Pin,
-  BadgeCheck, Crown, ShieldCheck
+  BadgeCheck, Crown, ShieldCheck, FileArchive, Download
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -54,6 +54,8 @@ import ReactMarkdown from "react-markdown";
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
 
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
+
+const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
 
 export function TheFeed() {
   const { data: session } = useSession();
@@ -732,7 +734,15 @@ export function TheFeed() {
                 }
               }}
             >
-              {post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm") ? (
+              {isArchive(post.mediaUrl) ? (
+                <div className="flex flex-col items-center justify-center p-8 bg-muted/20 w-full h-full text-center">
+                  <FileArchive className="w-16 h-16 text-primary mb-3" />
+                  <span className="text-sm font-semibold mb-2 text-primary break-all px-4">{post.mediaUrl.split('/').pop()}</span>
+                  <a href={post.mediaUrl} download target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors font-bold text-sm" onClick={(e) => e.stopPropagation()}>
+                    <Download className="w-4 h-4" /> Download Archive
+                  </a>
+                </div>
+              ) : post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm") ? (
                 <>
                   <video src={post.mediaUrl} className="max-h-[400px] w-auto max-w-full opacity-90 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -1101,7 +1111,13 @@ export function TheFeed() {
                       >
                         <X className="w-4 h-4" />
                       </Button>
-                      {mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") ? (
+                      {isArchive(mediaUrl) ? (
+                        <div className="flex flex-col items-center justify-center p-8 text-center w-full">
+                          <FileArchive className="w-12 h-12 text-primary mb-2" />
+                          <span className="text-sm font-medium text-primary/80">Archive Attached</span>
+                          <span className="text-xs text-muted-foreground mt-1 break-all max-w-[80%]">{mediaUrl.split('/').pop()}</span>
+                        </div>
+                      ) : mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") ? (
                         <video src={mediaUrl} controls className="max-h-[300px] w-auto max-w-full" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1176,7 +1192,7 @@ export function TheFeed() {
                         <input 
                           type="file" 
                           id="social-media-upload-main" 
-                          accept="image/*,video/mp4,video/webm" 
+                          accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
                           className="hidden" 
                           onChange={handleMediaUpload} 
                           disabled={isUploading}
@@ -1317,7 +1333,16 @@ export function TheFeed() {
             <X className="w-8 h-8" />
           </Button>
           <div className="w-full max-w-5xl max-h-full flex items-center justify-center relative">
-            {viewingMedia.mediaUrl.endsWith(".mp4") || viewingMedia.mediaUrl.endsWith(".webm") ? (
+            {isArchive(viewingMedia.mediaUrl) ? (
+              <div className="bg-background/90 p-8 rounded-2xl flex flex-col items-center justify-center text-center max-w-md w-full shadow-2xl">
+                <FileArchive className="w-20 h-20 text-primary mb-4" />
+                <h3 className="text-xl font-bold mb-2">Archive File</h3>
+                <p className="text-sm text-muted-foreground mb-6 break-all">{viewingMedia.mediaUrl.split('/').pop()}</p>
+                <a href={viewingMedia.mediaUrl} download target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-colors font-bold w-full justify-center">
+                  <Download className="w-5 h-5" /> Download Now
+                </a>
+              </div>
+            ) : viewingMedia.mediaUrl.endsWith(".mp4") || viewingMedia.mediaUrl.endsWith(".webm") ? (
               <VideoPlayer 
                 src={viewingMedia.mediaUrl}
                 voiceoverUrl={viewingMedia.voiceoverUrl}
