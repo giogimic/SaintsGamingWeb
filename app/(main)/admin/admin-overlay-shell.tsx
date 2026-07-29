@@ -65,7 +65,7 @@ export function AdminOverlayShell({
         { href: "/admin/game-dev/tuxemon", label: "Tuxemon Database", icon: Gamepad2, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/game-dev/quests", label: "Quest Creator", icon: ScrollText, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/game-dev/assets", label: "Asset Studio", icon: ImageIcon, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
-        { href: "/admin/map-editor", label: "World Map Editor", icon: MapPin, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
+        { href: "/admin/dev/lobby", label: "Lobby Mgmt", icon: MapPin, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/game", label: "MMO Sandbox Admin", icon: Gamepad2, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
       ]
     },
