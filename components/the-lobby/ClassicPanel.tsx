@@ -32,7 +32,7 @@ export default function ClassicPanel() {
   `;
 
   return (
-    <div className="w-[340px] z-40 pointer-events-auto flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.7)]"
+    <div className="w-[95vw] sm:w-[600px] lg:w-[800px] max-w-full z-40 pointer-events-auto flex flex-col shadow-[0_8px_30px_rgba(0,0,0,0.7)]"
       style={{
         backgroundColor: 'rgba(11, 19, 32, 0.85)',
         backdropFilter: 'blur(8px)',
@@ -61,7 +61,7 @@ export default function ClassicPanel() {
 
       {/* CONTENT AREA (Only visible if a tab is open) */}
       {isOpen && (
-        <div className="h-[430px] relative overflow-hidden m-[4px] bg-gradient-to-b from-transparent to-[#050b14]/50 rounded border border-[#806f47]/30">
+        <div className="h-[60vh] min-h-[450px] max-h-[750px] relative overflow-hidden m-[4px] bg-gradient-to-b from-transparent to-[#050b14]/50 rounded border border-[#806f47]/30">
           {gameMode === 'INVENTORY' && (
             <div className="absolute inset-0 overflow-auto scale-wrapper">
                <InventoryOverlay />

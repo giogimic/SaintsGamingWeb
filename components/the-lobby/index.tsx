@@ -450,14 +450,20 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           <div className="flex gap-1.5 pointer-events-auto">
             <button
               onClick={toggleFullscreen}
-              className="px-3 py-1.5 bg-black/70 backdrop-blur-sm text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg"
+              className="px-3 py-1.5 bg-black/70 backdrop-blur-sm text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95"
             >
               {isFullscreen ? '⛶ EXIT' : '⛶ FULLSCREEN'}
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="px-3 py-1.5 bg-slate-900/80 backdrop-blur-sm text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-slate-800 hover:text-white transition-all shadow-lg active:scale-95"
+            >
+              ⎋ LEAVE GAME
             </button>
             {gameMode !== 'EXPLORING' && (
               <button
                 onClick={() => useGameStore.getState().setGameMode('EXPLORING')}
-                className="px-3 py-1.5 bg-red-950/70 backdrop-blur-sm text-red-300 border border-red-500/30 rounded-lg text-[11px] font-mono font-medium hover:bg-red-900/80 hover:text-red-200 transition-all shadow-lg"
+                className="px-3 py-1.5 bg-red-950/70 backdrop-blur-sm text-red-300 border border-red-500/30 rounded-lg text-[11px] font-mono font-medium hover:bg-red-900/80 hover:text-red-200 transition-all shadow-lg active:scale-95"
               >
                 ✕ CLOSE
               </button>
@@ -467,7 +473,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           <div className="flex gap-1 pointer-events-auto">
             <button
               onClick={() => useGameStore.getState().setIsUiEditMode(!isUiEditMode)}
-              className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border ${
+              className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border active:scale-95 ${
                 isUiEditMode
                   ? 'bg-amber-600/40 text-amber-300 border-amber-500/40 shadow-lg shadow-amber-500/20'
                   : 'bg-black/60 backdrop-blur-md text-amber-400 hover:text-amber-300 hover:bg-amber-950/50 border-white/10'
@@ -483,7 +489,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
                   if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
                   setIsDevEditorOpen(!isDevEditorOpen); 
                 }}
-                className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border ${
+                className={`group flex flex-col items-center px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all border active:scale-95 ${
                   isDevEditorOpen
                     ? 'bg-cyan-600/40 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/20'
                     : 'bg-black/60 backdrop-blur-md text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/50 border-white/10'

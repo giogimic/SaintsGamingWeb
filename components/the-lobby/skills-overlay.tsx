@@ -27,7 +27,7 @@ export default function SkillsOverlay() {
         {Object.entries(SKILL_CATEGORIES).map(([category, skillList]) => (
           <div key={category} className="mb-4">
             <h3 className="text-[#e2d5b3] font-bold mb-1 border-b border-[#806f47]/50 pb-1 uppercase tracking-wide text-xs drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]">{category}</h3>
-            <div className="grid grid-cols-3 gap-[3px]">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-[3px]">
               {skillList.map(skill => {
                 const data = skills[skill] || { level: 1, xp: 0 };
                 const nextLevelXp = getXpForNextLevel(data.level);

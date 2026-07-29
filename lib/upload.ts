@@ -16,10 +16,19 @@ const ALLOWED_MIME_TYPES = [
   "image/webp",
 ];
 
+const ALLOWED_ARCHIVE_MIME_TYPES = [
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/x-7z-compressed",
+  "application/vnd.rar",
+  "application/x-rar-compressed",
+  "application/x-tar",
+  "application/x-bzip2",
+  "application/gzip",
+];
+
 const ALLOWED_SOCIAL_MIME_TYPES = [
-  ...ALLOWED_MIME_TYPES,
-  "video/mp4",
-  "video/webm",
+  ...ALLOWED_ARCHIVE_MIME_TYPES,
 ];
 
 const MAX_FILE_SIZE = parseInt(
@@ -178,6 +187,32 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
 
   if (mimeType === "video/webm") {
     return buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3; // EBML Header
+  }
+
+  // Archive checks
+  if (ALLOWED_ARCHIVE_MIME_TYPES.includes(mimeType)) {
+    if (mimeType === "application/zip" || mimeType === "application/x-zip-compressed") {
+      return buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04;
+    }
+    if (mimeType === "application/x-7z-compressed") {
+      return buffer[0] === 0x37 && buffer[1] === 0x7A && buffer[2] === 0xBC && buffer[3] === 0xAF;
+    }
+    if (mimeType === "application/vnd.rar" || mimeType === "application/x-rar-compressed") {
+      return buffer[0] === 0x52 && buffer[1] === 0x61 && buffer[2] === 0x72 && buffer[3] === 0x21;
+    }
+    if (mimeType === "application/x-bzip2") {
+      return buffer[0] === 0x42 && buffer[1] === 0x5A && buffer[2] === 0x68;
+    }
+    if (mimeType === "application/gzip") {
+      return buffer[0] === 0x1F && buffer[1] === 0x8B;
+    }
+    if (mimeType === "application/x-tar") {
+      if (buffer.length >= 262) {
+        return buffer[257] === 0x75 && buffer[258] === 0x73 && buffer[259] === 0x74 && buffer[260] === 0x61 && buffer[261] === 0x72;
+      }
+      return true; // Weak fallback if smaller
+    }
+    return false;
   }
 
   const signatures: Record<string, number[][]> = {

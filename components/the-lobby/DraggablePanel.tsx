@@ -29,17 +29,33 @@ export default function DraggablePanel({ id, children, defaultPosition = { x: 0,
     y.set(setting.y);
   }, [setting.x, setting.y, x, y]);
 
-  // Load from local storage on mount
+  // Load from local storage on mount, with bounds checking
   useEffect(() => {
+    let initialX = defaultPosition.x;
+    let initialY = defaultPosition.y;
+    let initialScale = defaultScale;
+
     const saved = localStorage.getItem(`saints-ui-${id}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        updateUiSetting(id, parsed);
+        if (typeof parsed.x === 'number') initialX = parsed.x;
+        if (typeof parsed.y === 'number') initialY = parsed.y;
+        if (typeof parsed.scale === 'number') initialScale = parsed.scale;
       } catch (e) {}
-    } else {
-        updateUiSetting(id, { x: defaultPosition.x, y: defaultPosition.y, scale: defaultScale });
     }
+
+    // Strict boundary enforcement even on initial load
+    if (typeof window !== 'undefined') {
+      const margin = 20;
+      const editorTopBarHeight = 50;
+      if (initialX < margin) initialX = margin;
+      if (initialY < editorTopBarHeight) initialY = editorTopBarHeight;
+      if (initialX > window.innerWidth - 100) initialX = window.innerWidth - 100;
+      if (initialY > window.innerHeight - 100) initialY = window.innerHeight - 100;
+    }
+
+    updateUiSetting(id, { x: initialX, y: initialY, scale: initialScale });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -51,10 +67,32 @@ export default function DraggablePanel({ id, children, defaultPosition = { x: 0,
   }, [uiSettings, id]);
 
   const handleDragEnd = () => {
-    // Read the final position directly from the motion values
+    // Clamp the final position within the viewport (with a small margin so the edit bar is always visible)
+    const margin = 20;
+    const editorTopBarHeight = 50; // The height of the absolute -top-10 editor bar
+    
+    let finalX = x.get();
+    let finalY = y.get();
+
+    // Prevent dragging off the left or top edge
+    if (finalX < margin) finalX = margin;
+    if (finalY < editorTopBarHeight) finalY = editorTopBarHeight;
+
+    // Prevent dragging completely off the right or bottom edge
+    // We don't have the exact width/height of the children here dynamically without a ResizeObserver, 
+    // so we use a safe right/bottom margin that guarantees at least the drag handle is visible
+    if (typeof window !== 'undefined') {
+      if (finalX > window.innerWidth - 100) finalX = window.innerWidth - 100;
+      if (finalY > window.innerHeight - 100) finalY = window.innerHeight - 100;
+    }
+
+    // Snap the UI visually
+    x.set(finalX);
+    y.set(finalY);
+
     updateUiSetting(id, { 
-      x: x.get(), 
-      y: y.get() 
+      x: finalX, 
+      y: finalY 
     });
   };
 

@@ -593,21 +593,27 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
 
     const gameLoop = () => {
-      const now = Date.now();
-      if (now - lastMoveTime >= 240) {
-        let dx = 0;
-        let dy = 0;
+      const state = useGameStore.getState();
+      
+      let dx = 0;
+      let dy = 0;
 
-        if (keys.w || keys.arrowup) dy = -1;
-        else if (keys.s || keys.arrowdown) dy = 1;
-        else if (keys.a || keys.arrowleft) dx = -1;
-        else if (keys.d || keys.arrowright) dx = 1;
+      if (keys.w || keys.arrowup) dy = -1;
+      else if (keys.s || keys.arrowdown) dy = 1;
+      else if (keys.a || keys.arrowleft) dx = -1;
+      else if (keys.d || keys.arrowright) dx = 1;
 
-        if (dx !== 0 || dy !== 0) {
-          tryMoveDirection(dx, dy);
-          lastMoveTime = now;
+      // Only attempt to queue a move if a key is held AND the queue is completely empty.
+      // This forces 1 key press = 1 tile, preventing the player from skipping tiles or double-jumping.
+      if ((dx !== 0 || dy !== 0) && state.pathQueue.length === 0 && !state.player.isMoving && state.gameMode === 'EXPLORING') {
+        const pos = state.player.position;
+        if (pos) {
+          const nextX = pos.x + dx;
+          const nextY = pos.y + dy;
+          state.enqueuePath([{ x: nextX, y: nextY }]);
         }
       }
+      
       animationFrameId = requestAnimationFrame(gameLoop);
     };
 
