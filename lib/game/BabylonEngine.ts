@@ -26,7 +26,7 @@ export interface BabylonTileMapData {
   tiles: number[][]; // 2D array of tile IDs
   tilesetUrl?: string;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
-  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number }>;
+  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
 }
 
@@ -819,7 +819,7 @@ export class BabylonEngine {
     }
   }
 
-  public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number }>) {
+  public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>) {
     if (layerIdx === -1) {
       const tileMesh = this.scene.getMeshByName(`tile_${r}_${c}`) as Mesh;
       if (tileMesh && tileMesh.material) {
