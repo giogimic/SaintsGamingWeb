@@ -127,6 +127,19 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
 
     echo -e "${GREEN}[✓] Web container rebuilt and restarted.${NC}\n"
 
+    # --- Restart Game Server (MMO Socket Server) ---
+    if command -v pm2 &>/dev/null; then
+        echo -e "${CYAN}[*] Restarting game server (saints-gaming-mmo)...${NC}"
+        pm2 restart saints-gaming-mmo 2>/dev/null || pm2 start game-server.js --name saints-gaming-mmo 2>/dev/null || true
+        echo -e "${GREEN}[✓] Game server restarted.${NC}"
+    elif sudo docker ps | grep -q "saints-gaming-mmo" 2>/dev/null; then
+        echo -e "${CYAN}[*] Restarting game server container...${NC}"
+        sudo docker restart saints-gaming-mmo 2>/dev/null || true
+        echo -e "${GREEN}[✓] Game server container restarted.${NC}"
+    else
+        echo -e "${YELLOW}[!] No PM2 or Docker game server found. You may need to manually restart game-server.js${NC}"
+    fi
+
     # Reload proxy server if present
     if command -v systemctl &>/dev/null; then
         echo -e "${CYAN}[*] Reloading web proxies if present...${NC}"
@@ -153,7 +166,7 @@ else
     npm run build
 
     if command -v pm2 &>/dev/null; then
-        echo -e "${CYAN}[*] Reloading PM2 processes...${NC}"
+        echo -e "${CYAN}[*] Reloading PM2 processes (web + game server)...${NC}"
         pm2 reload all
     fi
 fi
