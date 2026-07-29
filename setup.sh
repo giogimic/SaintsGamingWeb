@@ -74,6 +74,7 @@ fi
 chmod +x *.sh 2>/dev/null || true
 
 # --- Data Loss Prevention: MySQL Volume Check ---
+MUST_REUSE_ENV=0
 if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
     echo -e "${RED}${BOLD}[!] WARNING: Existing Database Volume Detected!${NC}"
     echo -e "${YELLOW}    The directory ./mysql_data contains data. If you proceed with a fresh setup,${NC}"
@@ -83,6 +84,9 @@ if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
         if whiptail --title "Wipe Database?" --yesno "Would you like to DELETE the existing database volume to start completely fresh?\n\nWARNING: THIS CANNOT BE UNDONE!" 10 60; then
             echo -e "${RED}[*] Wiping existing database volume...${NC}"
             sudo rm -rf ./mysql_data
+        else
+            echo -e "${YELLOW}[!] Keeping existing database volume...${NC}"
+            MUST_REUSE_ENV=1
         fi
     else
         echo -e "${GREEN}[*] Setup aborted. Your data is safe.${NC}"
@@ -96,8 +100,13 @@ REUSE_ENV=0
 if [ -f .env ]; then
     echo -e "${YELLOW}[!] A .env file already exists — this looks like an existing installation.${NC}"
     if whiptail --title "Existing Install Detected" --yesno "A .env file already exists.\n\nDo you want to continue and overwrite settings?\n\n(Select NO to cancel and run ./update.sh instead)" 12 65; then
-        if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
-            if whiptail --title "Preserve Credentials" --yesno "Would you like to KEEP the existing database credentials from the current .env file?\n(Highly recommended if you didn't wipe mysql_data)" 10 65; then
+        if [ "$MUST_REUSE_ENV" = "1" ]; then
+            echo -e "${CYAN}[*] Forcing credential preservation because mysql_data was kept.${NC}"
+            REUSE_ENV=1
+            OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+            OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+        else
+            if whiptail --title "Preserve Credentials" --yesno "Would you like to KEEP the existing database credentials from the current .env file?" 10 65; then
                 REUSE_ENV=1
                 OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
                 OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
@@ -106,6 +115,11 @@ if [ -f .env ]; then
     else
         exit 0
     fi
+elif [ "$MUST_REUSE_ENV" = "1" ]; then
+    echo -e "${RED}[!] Error: mysql_data exists but .env is missing!${NC}"
+    echo -e "${YELLOW}    We cannot safely generate new passwords without locking the database!${NC}"
+    echo -e "${YELLOW}    Please wipe mysql_data or run setup.sh again and choose to wipe it.${NC}"
+    exit 1
 fi
 
 # --- Port Auto-Discovery ---
