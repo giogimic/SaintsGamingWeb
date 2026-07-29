@@ -13,23 +13,36 @@ RED='\033[0;31m'
 NC='\033[0m'
 BOLD='\033[1m'
 
+clear
+echo -e "${PURPLE}${BOLD}"
+echo "  ___   _   ___ _  _ _____ ___    ___   _   __  __ ___ _  _  ___ "
+echo " / __| /_\ |_ _| \| |_   _/ __|  / __| /_\ |  \/  |_ _| \| |/ __|"
+echo " \__ \/ _ \ | || .  | | | \__ \  | (_ |/ _ \| |\/| || || .  | (_ |"
+echo " |___/_/ \_\___|_|\_| |_| |___/  \___/_/ \_\_|  |_|___|_|\_|\___| "
+echo -e "${NC}"
+echo -e "${CYAN}${BOLD}Welcome to the Saints Gaming Setup Wizard!${NC}\n"
+
 trap ctrl_c INT
 function ctrl_c() {
     echo -e "\n${RED}[!] Setup interrupted!${NC}"
-    if whiptail --title "Interrupt Detected" --yesno "Do you want to cancel the deployment? (Y/N)" 10 50; then
-        echo -e "${YELLOW}Canceling setup...${NC}"
+    if command -v whiptail &>/dev/null; then
+        if whiptail --title "Interrupt Detected" --yesno "Do you want to cancel the deployment? (Y/N)" 10 50; then
+            echo -e "${YELLOW}Canceling setup...${NC}"
+            exit 1
+        fi
+    else
         exit 1
     fi
 }
 
 spinner() {
     local pid=$1
-    local delay=0.15
-    local spinstr='|/-\'
+    local delay=0.1
+    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
         local temp=${spinstr#?}
         local last_log=$(tail -n 1 docker_build.log 2>/dev/null | tr -d '\n' | tr -d '\r' | cut -c1-70)
-        printf "\r [%c]  %-70s" "$spinstr" "$last_log"
+        printf "\r ${PURPLE}[%c]${NC}  %-70s" "$spinstr" "$last_log"
         local spinstr=$temp${spinstr%"$temp"}
         sleep $delay
     done
@@ -37,31 +50,60 @@ spinner() {
 }
 
 # --- Root / Sudo Check ---
-if [ "$EUID" -ne 0 ] && ! command -v sudo &>/dev/null; then
-    echo -e "${RED}[!] Error: This script requires root privileges or sudo.${NC}"
+if [ "$EUID" -eq 0 ]; then
+    echo -e "${RED}[!] Error: Do NOT run this script as root (e.g., sudo ./setup.sh).${NC}"
+    echo -e "${YELLOW}    Please run it as your normal user: ./setup.sh${NC}"
+    echo -e "${YELLOW}    The script will securely prompt for your sudo password when necessary.${NC}"
     exit 1
 fi
+
+echo -e "${CYAN}[*] Requesting sudo privileges for installation...${NC}"
+if ! sudo -v; then
+    echo -e "${RED}[!] Error: This script requires sudo privileges to install packages and manage Docker.${NC}"
+    exit 1
+fi
+
+# Keep sudo alive
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 # --- Install Prerequisites ---
 if ! command -v whiptail &>/dev/null || ! command -v curl &>/dev/null || ! command -v openssl &>/dev/null; then
     sudo apt-get update && sudo apt-get install -y whiptail net-tools curl openssl
 fi
 
-# --- Fix File Permissions ---
-if [ -n "$SUDO_USER" ]; then
-    REAL_USER="$SUDO_USER"
-else
-    REAL_USER="$USER"
-fi
-echo -e "${CYAN}Fixing file ownership and permissions for $REAL_USER...${NC}"
-sudo chown -R "$REAL_USER:$REAL_USER" .
 chmod +x *.sh 2>/dev/null || true
 
+# --- Data Loss Prevention: MySQL Volume Check ---
+if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
+    echo -e "${RED}${BOLD}[!] WARNING: Existing Database Volume Detected!${NC}"
+    echo -e "${YELLOW}    The directory ./mysql_data contains data. If you proceed with a fresh setup,${NC}"
+    echo -e "${YELLOW}    new passwords will be generated, which may cause a credential mismatch with${NC}"
+    echo -e "${YELLOW}    your existing database, locking you out of your data!${NC}"
+    if whiptail --title "Data Loss Warning!" --yesno "An existing database volume (mysql_data) was found.\n\nAre you absolutely sure you want to run setup? This may lock you out of your existing data.\n\n(Select NO to abort, or YES if you are wiping everything)" 12 70; then
+        if whiptail --title "Wipe Database?" --yesno "Would you like to DELETE the existing database volume to start completely fresh?\n\nWARNING: THIS CANNOT BE UNDONE!" 10 60; then
+            echo -e "${RED}[*] Wiping existing database volume...${NC}"
+            sudo rm -rf ./mysql_data
+        fi
+    else
+        echo -e "${GREEN}[*] Setup aborted. Your data is safe.${NC}"
+        echo -e "${YELLOW}    Use ./update.sh to update an existing deployment without overwriting credentials.${NC}"
+        exit 0
+    fi
+fi
+
 # --- Guard: Must be a fresh install ---
+REUSE_ENV=0
 if [ -f .env ]; then
     echo -e "${YELLOW}[!] A .env file already exists — this looks like an existing installation.${NC}"
-    echo -e "${YELLOW}    Use ${BOLD}./update.sh${NC}${YELLOW} to update an existing deployment.${NC}"
-    if ! whiptail --title "Existing Install Detected" --yesno "A .env file already exists.\n\nDo you want to continue anyway and overwrite settings?\n\n(Select NO to cancel and run ./update.sh instead)" 12 65; then
+    if whiptail --title "Existing Install Detected" --yesno "A .env file already exists.\n\nDo you want to continue and overwrite settings?\n\n(Select NO to cancel and run ./update.sh instead)" 12 65; then
+        if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
+            if whiptail --title "Preserve Credentials" --yesno "Would you like to KEEP the existing database credentials from the current .env file?\n(Highly recommended if you didn't wipe mysql_data)" 10 65; then
+                REUSE_ENV=1
+                OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+                OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+            fi
+        fi
+    else
         exit 0
     fi
 fi
@@ -214,7 +256,12 @@ else
 fi
 
 # --- Generate .env (pure bash, no Node.js required) ---
-AUTH_SECRET=$(openssl rand -base64 32)
+if [ "$REUSE_ENV" = "1" ] && [ -n "$OLD_AUTH_SECRET" ]; then
+    AUTH_SECRET=$OLD_AUTH_SECRET
+else
+    AUTH_SECRET=$(openssl rand -base64 32)
+fi
+
 DB_NAME="SQLite"
 DB_PROVIDER="sqlite"
 DATABASE_URL="file:./prisma/db/dev.db"
@@ -222,7 +269,11 @@ DATABASE_URL="file:./prisma/db/dev.db"
 if [ "$DB_PROVIDER_OPT" = "2" ]; then
     DB_NAME="MariaDB (Docker)"
     DB_PROVIDER="mysql"
-    DB_PASS=$(openssl rand -base64 18 | tr -dc 'a-zA-Z0-9' | head -c 16)
+    if [ "$REUSE_ENV" = "1" ] && [ -n "$OLD_DB_PASS" ]; then
+        DB_PASS=$OLD_DB_PASS
+    else
+        DB_PASS=$(openssl rand -base64 18 | tr -dc 'a-zA-Z0-9' | head -c 16)
+    fi
     DATABASE_URL="mysql://saints:${DB_PASS}@db:3306/saints_gaming"
 
     if ! db_service_exists; then
@@ -414,8 +465,6 @@ echo -e "${PURPLE}${BOLD}========================================${NC}"
 echo -e "${CYAN}${BOLD}  Starting Cluster Build...${NC}"
 echo -e "${PURPLE}${BOLD}========================================${NC}"
 
-if [ "$EUID" -ne 0 ] && command -v sudo &>/dev/null; then sudo -v; fi
-
 # Remove any leftover containers from failed installs
 sudo docker rm -f saints-gaming-web saints-gaming-db >/dev/null 2>&1 || true
 
@@ -487,10 +536,8 @@ if [ $SERVER_READY -eq 1 ]; then
         done
     fi
 
-    echo -e "\n${CYAN}[*] Verifying permissions for data directories...${NC}"
-    sudo chown -R "$REAL_USER:$REAL_USER" data uploads 2>/dev/null || true
+    # Ensure MySQL data is owned by 999 (the mysql user id in container)
     sudo chown -R 999:999 mysql_data 2>/dev/null || true
-    sudo chmod -R 775 data uploads 2>/dev/null || true
 
     clear
     echo -e "${PURPLE}${BOLD}"
@@ -509,7 +556,7 @@ if [ $SERVER_READY -eq 1 ]; then
     echo -e "  View Logs:      sudo docker logs saints-gaming-web -f"
     echo -e "  Stop Cluster:   sudo docker compose down"
     echo -e "  Restart:        sudo docker compose restart"
-    echo -e "  Update:         bash update.sh"
+    echo -e "  Update:         ./update.sh"
     echo -e "============================================================\n"
 else
     echo -e "${RED}[!] Server took too long to start. It may still be running migrations.${NC}"
