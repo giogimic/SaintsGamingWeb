@@ -34,6 +34,7 @@ if ! sudo -v; then
 fi
 
 # Keep sudo alive
+trap 'kill $(jobs -p) 2>/dev/null' EXIT
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
 # --- Guard: .env must exist ---
@@ -76,12 +77,13 @@ if grep -q "DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/de
 fi
 
 # --- Git Pull ---
-echo -e "${CYAN}[*] Pulling latest code from Git...${NC}"
-git pull
+echo -e "${CYAN}[*] Pulling latest code from Git (forcing to origin/main)...${NC}"
+git fetch --all
 if [ $? -ne 0 ]; then
-    echo -e "${RED}[!] git pull failed. Check your internet connection or resolve merge conflicts.${NC}"
+    echo -e "${RED}[!] git fetch failed. Check your internet connection.${NC}"
     exit 1
 fi
+git reset --hard origin/main
 echo -e "${GREEN}[✓] Code updated.${NC}\n"
 
 # --- Docker Environment ---
@@ -143,8 +145,8 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     # Reload proxy server if present
     if command -v systemctl &>/dev/null; then
         echo -e "${CYAN}[*] Reloading web proxies if present...${NC}"
-        sudo systemctl reload caddy 2>/dev/null || sudo systemctl restart caddy 2>/dev/null || true
-        sudo systemctl reload nginx 2>/dev/null || sudo systemctl restart nginx 2>/dev/null || true
+        if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
+        if systemctl is-active --quiet nginx; then sudo systemctl reload nginx 2>/dev/null; fi
     fi
 
 else
