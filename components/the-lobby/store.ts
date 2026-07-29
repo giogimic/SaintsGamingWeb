@@ -147,6 +147,12 @@ export interface GameState {
   localChat: string | null;
   isMapTransitioning: boolean;
   
+  // UI Customization
+  isUiEditMode: boolean;
+  setIsUiEditMode: (isEditMode: boolean) => void;
+  uiSettings: Record<string, { x: number; y: number; scale: number }>;
+  updateUiSetting: (id: string, setting: Partial<{ x: number; y: number; scale: number }>) => void;
+  
   // Game Data
   fetchLogicTiles: () => Promise<void>;
   activeBattle: any;
@@ -253,6 +259,16 @@ export const useGameStore = create<GameState>()(
       ],
       toast: null,
       activeDialog: null,
+      isUiEditMode: false,
+      uiSettings: {},
+
+      setIsUiEditMode: (isEditMode) => set((state) => { state.isUiEditMode = isEditMode; }),
+      updateUiSetting: (id, setting) => set((state) => {
+        if (!state.uiSettings[id]) {
+          state.uiSettings[id] = { x: 0, y: 0, scale: 1 };
+        }
+        state.uiSettings[id] = { ...state.uiSettings[id], ...setting };
+      }),
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
       setIsMapTransitioning: (isTransitioning) => set((state) => { state.isMapTransitioning = isTransitioning; }),
