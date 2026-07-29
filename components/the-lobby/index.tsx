@@ -287,6 +287,23 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       }, 3000);
     });
 
+    // ─── Phase 2: Server-Authoritative Movement Reconciliation ───
+    socket.on('move_ack', (data) => {
+      // Server acknowledged our move — clear pending moves up to this seq
+      // data = { seq, x, y, direction }
+      useGameStore.getState().clearPendingMovesUpTo(data.seq);
+    });
+
+    socket.on('position_correction', (data) => {
+      // Server rejected our move or we're desynced — rubber-band back
+      // data = { seq, x, y, direction, reason }
+      const store = useGameStore.getState();
+      store.applyServerCorrection(data.x, data.y, data.direction);
+      if (data.reason === 'invalid_distance') {
+        console.warn('[Net] Server rejected move: teleport attempt detected');
+      }
+    });
+
     return () => {
       socket.disconnect();
     };

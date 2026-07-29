@@ -1,5 +1,14 @@
 # Changelog
 
+### v2.1.60 — Server-Authoritative Physics & Collision (Phase 2)
+- **Server-Side Collision Detection**: Created `lib/game/map-loader.js` — a Prisma-backed utility that loads map collision grids and logic tiles from the database, caches them in memory, and provides `isWalkable()` / `isWalkableSync()` for O(1) tile lookups during physics ticks.
+- **Authoritative Game Server Rewrite**: Rewrote `game-server.js` to process `move_intent` events (direction + sequence number) instead of trusting raw client coordinates. Added a 15 TPS server tick loop that validates movement against collision grids, NPC positions, and map bounds. Sends `move_ack` for valid moves and `position_correction` for rubber-banding invalid ones.
+- **Client-Side Prediction & Reconciliation**: Updated `store.ts` with `moveSequence`, `pendingMoves` buffer, and `applyServerCorrection()`. The client predicts movement locally for zero-latency feel while the server validates asynchronously.
+- **Move Intent Protocol**: `GameCanvasBabylon.tsx` now sends `move_intent { direction, seq }` instead of `move { x, y }`. Tracks pending moves with sequence numbers for server reconciliation.
+- **Entity Interpolation**: Added 100ms smooth-step interpolation buffer for rendering other players in the Babylon render loop. Remote player movement now appears buttery smooth regardless of network jitter.
+- **Socket Reconciliation Handlers**: Added `move_ack` and `position_correction` listeners in `index.tsx` for server-authoritative movement feedback.
+- **Anti-Cheat**: Server rejects teleport attempts (>1 tile distance), wall-walking, and NPC clipping. Legacy `move` handler kept for backwards compatibility but now validates all coordinates.
+
 ### v2.1.57
 - **Classic RPG Interface Overhaul**: Replaced the floating Game Menu Bar with a static `ClassicPanel.tsx` in the bottom right corner, bringing an immersive classic RPG layout (Inventory, Skills, Equipment, Quests, GTC).
 - **Classic Inventory & Skill Trees**: Scaled down `inventory-overlay.tsx` to a 4-column item grid, and redesigned `skills-overlay.tsx` into a classic 3-column stats list with hover tooltips to fit inside the new Classic Panel.

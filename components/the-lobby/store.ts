@@ -125,6 +125,12 @@ export interface ToastMessage {
   message: string;
 }
 
+export interface PendingMove {
+  seq: number;
+  direction: 'up' | 'down' | 'left' | 'right';
+  predictedPos: Point;
+}
+
 export interface GameState {
   logicTiles: Record<number, MapLogicTile>;
   gameMode: GameMode;
@@ -146,6 +152,14 @@ export interface GameState {
   setPlayerChat: (message: string) => void;
   localChat: string | null;
   isMapTransitioning: boolean;
+  
+  // Server Reconciliation (Phase 2)
+  moveSequence: number;
+  pendingMoves: PendingMove[];
+  incrementMoveSeq: () => number;
+  addPendingMove: (move: PendingMove) => void;
+  clearPendingMovesUpTo: (seq: number) => void;
+  applyServerCorrection: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => void;
   
   // UI Customization
   isUiEditMode: boolean;
@@ -259,8 +273,37 @@ export const useGameStore = create<GameState>()(
       ],
       toast: null,
       activeDialog: null,
+      moveSequence: 0,
+      pendingMoves: [],
       isUiEditMode: false,
       uiSettings: {},
+
+      // Server Reconciliation (Phase 2)
+      incrementMoveSeq: () => {
+        let seq = 0;
+        set((state) => {
+          state.moveSequence += 1;
+          seq = state.moveSequence;
+        });
+        return seq;
+      },
+      addPendingMove: (move) => set((state) => {
+        state.pendingMoves.push(move);
+        // Cap the buffer at 60 to prevent memory leaks
+        if (state.pendingMoves.length > 60) {
+          state.pendingMoves = state.pendingMoves.slice(-30);
+        }
+      }),
+      clearPendingMovesUpTo: (seq) => set((state) => {
+        state.pendingMoves = state.pendingMoves.filter(m => m.seq > seq);
+      }),
+      applyServerCorrection: (x, y, direction) => set((state) => {
+        state.player.position = { x, y };
+        state.player.direction = direction;
+        state.player.isMoving = false;
+        // Clear all pending moves since the server corrected us
+        state.pendingMoves = [];
+      }),
 
       setIsUiEditMode: (isEditMode) => set((state) => { state.isUiEditMode = isEditMode; }),
       updateUiSetting: (id, setting) => set((state) => {
