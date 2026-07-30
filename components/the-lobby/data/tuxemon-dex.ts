@@ -16,9 +16,9 @@ export interface CreatureStatProfile {
 
 export interface TuxemonCreature {
   id: string;
-  txmnId: number;
+  dexNumber: number;
   name: string;
-  species: string;
+  speciesName: string;
   type_primary: ElementType;
   type_secondary: ElementType;
   stat_profile: CreatureStatProfile;
@@ -30,7 +30,7 @@ export interface TuxemonCreature {
   spriteOverworld: string;
   passive_ability: string;
   world_skill: string;
-  moveset: Array<{
+  learnedAbilities: Array<{
     technique: string;
     level: number;
     name: string;
@@ -74,29 +74,29 @@ export function getTypeEffectiveness(attackType: string, defenderTypes: string[]
 
 // Fetch all creatures from database
 export async function getAllCreatures(): Promise<TuxemonCreature[]> {
-  const species = await prisma.tuxemonSpecies.findMany({
+  const species = await prisma.creatureTemplate.findMany({
     include: {
-      moveset: {
+      learnedAbilities: {
         include: {
           species: true,
         },
       },
       evolutions: true,
     },
-    orderBy: { txmnId: 'asc' },
+    orderBy: { dexNumber: 'asc' },
   });
 
-  const techniques = await prisma.tuxemonTechnique.findMany();
+  const techniques = await prisma.abilityDictionary.findMany();
   const techniqueMap = new Map(techniques.map(t => [t.slug, t]));
 
   return species.map(s => {
     const types = JSON.parse(s.types) as string[];
-    const moveset = s.moveset.map(m => {
-      const tech = techniqueMap.get(m.techniqueSlug);
+    const learnedAbilities = s.learnedAbilities.map(m => {
+      const tech = techniqueMap.get(m.abilitySlug);
       return {
-        technique: m.techniqueSlug,
+        technique: m.abilitySlug,
         level: m.levelLearned,
-        name: tech?.name || m.techniqueSlug,
+        name: tech?.name || m.abilitySlug,
         power: tech?.power || null,
         accuracy: tech?.accuracy || null,
         type: tech?.type || 'normal',
@@ -105,9 +105,9 @@ export async function getAllCreatures(): Promise<TuxemonCreature[]> {
 
     return {
       id: s.slug,
-      txmnId: s.txmnId,
+      dexNumber: s.dexNumber,
       name: s.slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-      species: s.species,
+      speciesName: s.speciesName,
       type_primary: (types[0] || 'normal') as ElementType,
       type_secondary: (types[1] || 'none') as ElementType,
       stat_profile: {
@@ -124,9 +124,9 @@ export async function getAllCreatures(): Promise<TuxemonCreature[]> {
       spriteFront: s.spriteFront || '',
       spriteBack: s.spriteBack || '',
       spriteOverworld: s.spriteOverworld || '',
-      passive_ability: `Unique ability for ${s.species}`,
-      world_skill: `World skill for ${s.species}`,
-      moveset,
+      passive_ability: `Unique ability for ${s.speciesName}`,
+      world_skill: `World skill for ${s.speciesName}`,
+      learnedAbilities,
       evolutions: s.evolutions.map(e => ({
         target: e.targetSlug,
         atLevel: e.atLevel,
@@ -138,28 +138,28 @@ export async function getAllCreatures(): Promise<TuxemonCreature[]> {
 
 // Fetch creature by ID
 export async function getCreatureById(id: string): Promise<TuxemonCreature | null> {
-  const s = await prisma.tuxemonSpecies.findUnique({
+  const s = await prisma.creatureTemplate.findUnique({
     where: { slug: id },
     include: {
-      moveset: true,
+      learnedAbilities: true,
       evolutions: true,
     },
   });
 
   if (!s) return null;
 
-  const techniques = await prisma.tuxemonTechnique.findMany({
-    where: { slug: { in: s.moveset.map(m => m.techniqueSlug) } },
+  const techniques = await prisma.abilityDictionary.findMany({
+    where: { slug: { in: s.learnedAbilities.map(m => m.abilitySlug) } },
   });
   const techniqueMap = new Map(techniques.map(t => [t.slug, t]));
 
   const types = JSON.parse(s.types) as string[];
-  const moveset = s.moveset.map(m => {
-    const tech = techniqueMap.get(m.techniqueSlug);
+  const learnedAbilities = s.learnedAbilities.map(m => {
+    const tech = techniqueMap.get(m.abilitySlug);
     return {
-      technique: m.techniqueSlug,
+      technique: m.abilitySlug,
       level: m.levelLearned,
-      name: tech?.name || m.techniqueSlug,
+      name: tech?.name || m.abilitySlug,
       power: tech?.power || null,
       accuracy: tech?.accuracy || null,
       type: tech?.type || 'normal',
@@ -168,9 +168,9 @@ export async function getCreatureById(id: string): Promise<TuxemonCreature | nul
 
   return {
     id: s.slug,
-    txmnId: s.txmnId,
+    dexNumber: s.dexNumber,
     name: s.slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    species: s.species,
+    speciesName: s.speciesName,
     type_primary: (types[0] || 'normal') as ElementType,
     type_secondary: (types[1] || 'none') as ElementType,
     stat_profile: {
@@ -187,9 +187,9 @@ export async function getCreatureById(id: string): Promise<TuxemonCreature | nul
     spriteFront: s.spriteFront || '',
     spriteBack: s.spriteBack || '',
     spriteOverworld: s.spriteOverworld || '',
-    passive_ability: `Unique ability for ${s.species}`,
-    world_skill: `World skill for ${s.species}`,
-    moveset,
+    passive_ability: `Unique ability for ${s.speciesName}`,
+    world_skill: `World skill for ${s.speciesName}`,
+    learnedAbilities,
     evolutions: s.evolutions.map(e => ({
       target: e.targetSlug,
       atLevel: e.atLevel,
@@ -200,20 +200,20 @@ export async function getCreatureById(id: string): Promise<TuxemonCreature | nul
 
 // Get random encounter based on map
 export async function getRandomEncounter(mapSlug: string): Promise<TuxemonCreature | null> {
-  const encounter = await prisma.tuxemonEncounter.findFirst({
+  const encounter = await prisma.encounterTable.findFirst({
     where: { mapName: { contains: mapSlug } },
   });
 
   if (!encounter) {
     // Fallback to random low-level creature
-    const count = await prisma.tuxemonSpecies.count({
+    const count = await prisma.creatureTemplate.count({
       where: { stage: 'basic' },
     });
     const skip = Math.floor(Math.random() * count);
-    const species = await prisma.tuxemonSpecies.findFirst({
+    const species = await prisma.creatureTemplate.findFirst({
       where: { stage: 'basic' },
       skip,
-      include: { moveset: true, evolutions: true },
+      include: { learnedAbilities: true, evolutions: true },
     });
     
     if (!species) return null;

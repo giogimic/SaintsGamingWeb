@@ -6,14 +6,14 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET() {
   try {
-    const speciesList = await prisma.tuxemonSpecies.findMany({
+    const speciesList = await prisma.creatureTemplate.findMany({
       include: {
         stats: true,
-        moveset: true,
+        learnedAbilities: true,
         evolutions: true,
       },
       orderBy: {
-        txmnId: "asc",
+        dexNumber: "asc",
       },
     });
 

@@ -53,6 +53,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (autoWalkIntervalRef.current) {
       clearInterval(autoWalkIntervalRef.current);
       autoWalkIntervalRef.current = null;
+      const state = useGameStore.getState();
+      if (state.player.isMoving) {
+        state.setPlayerPosition(state.player.position, state.player.direction, false);
+      }
     }
     autoWalkPathRef.current = [];
   }, []);
@@ -143,7 +147,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         setPlayerPosition({ x: targetX, y: targetY }, dir, false);
       } else {
         // Phase 2: Client Prediction Enabled (instant local movement)
-        setPlayerPosition({ x: targetX, y: targetY }, dir, false);
+        setPlayerPosition({ x: targetX, y: targetY }, dir, true);
       }
 
       const seq = store.incrementMoveSeq();
@@ -586,15 +590,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       else if (keys.a || keys.arrowleft) dx = -1;
       else if (keys.d || keys.arrowright) dx = 1;
 
-      // Only attempt to queue a move if a key is held AND the queue is completely empty.
-      // This forces 1 key press = 1 tile, preventing the player from skipping tiles or double-jumping.
-      if ((dx !== 0 || dy !== 0) && !state.player.isMoving && state.gameMode === 'EXPLORING') {
+      const now = performance.now();
+      const isTryingToMove = dx !== 0 || dy !== 0;
+
+      // 250ms movement cooldown matching BabylonEngine's 4.0 tiles/sec interpolation
+      if (isTryingToMove && state.gameMode === 'EXPLORING' && (now - lastMoveTime) >= 250) {
+        lastMoveTime = now;
         const pos = state.player.position;
         if (pos) {
           const nextX = pos.x + dx;
           const nextY = pos.y + dy;
           tryMovePlayerTo(nextX, nextY);
         }
+      } else if (!isTryingToMove && state.player.isMoving && (now - lastMoveTime) >= 250 && !autoWalkIntervalRef.current) {
+        // Stop moving animation if no keys are pressed and we finished the last move tween
+        useGameStore.getState().setPlayerPosition(state.player.position, state.player.direction, false);
       }
       
       animationFrameId = requestAnimationFrame(gameLoop);

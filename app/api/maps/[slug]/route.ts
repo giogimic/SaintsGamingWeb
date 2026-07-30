@@ -35,7 +35,7 @@ export async function GET(
     }
 
     // Fall back to TuxemonMap by slug (older legacy data)
-    const tuxMap = await prisma.tuxemonMap.findUnique({ where: { slug } });
+    const tuxMap = await prisma.saintsMap.findUnique({ where: { slug } });
     if (tuxMap) {
       return NextResponse.json({
         id: tuxMap.slug,
@@ -73,7 +73,7 @@ export async function POST(
     const { slug } = await params;
     const body = await request.json();
 
-    const updated = await prisma.tuxemonMap.upsert({
+    const updated = await prisma.saintsMap.upsert({
       where: { slug },
       update: {
         tilesetData: body.grid ? JSON.stringify(body.grid) : undefined,

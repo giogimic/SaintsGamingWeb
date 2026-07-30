@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 /**
- * GET /api/tuxemon/species/[slug] — Get a Tuxemon species with moveset
+ * GET /api/tuxemon/species/[slug] — Get a Tuxemon species with learnedAbilities
  */
 export async function GET(
   request: NextRequest,
@@ -10,10 +10,10 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const species = await prisma.tuxemonSpecies.findUnique({
+    const species = await prisma.creatureTemplate.findUnique({
       where: { slug },
       include: {
-        moveset: {
+        learnedAbilities: {
           orderBy: { levelLearned: "asc" },
         },
         evolutions: true,

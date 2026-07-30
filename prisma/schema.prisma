@@ -133,9 +133,9 @@ model User {
   profileImages   ProfileImage[]
   pinnedBeastId   String? // ID of the Tuxemon to display on profile
 
-  // Tuxemon Creature System
-  playerTuxemon    PlayerTuxemon[]
-  tuxemonInventory TuxemonInventoryItem[]
+  // Generic Creature System
+  playerCreatures PlayerCreature[]
+  playerInventory PlayerInventoryItem[]
 
   // Social
   socialPosts           SocialPost[]
@@ -1185,13 +1185,13 @@ model Report {
   @@index([status])
 }
 
-// ─── Tuxemon Creature System ──────────────────────────────────────
+// ─── Generic Creature Engine ──────────────────────────────────────
 
-model TuxemonSpecies {
+model CreatureTemplate {
   id                   String             @id @default(cuid())
   slug                 String             @unique
-  txmnId               Int
-  species              String
+  dexNumber            Int                // Replaces txmnId
+  speciesName          String             // Replaces species
   height               Int
   weight               Float
   catchRate            Float
@@ -1207,41 +1207,41 @@ model TuxemonSpecies {
   spriteFront          String? // path to front battle sprite
   spriteBack           String? // path to back battle sprite
   spriteOverworld      String? // path to overworld sprite
-  moveset              TuxemonMove[]
-  evolutions           TuxemonEvolution[]
-  stats                TuxemonBaseStats?
+  learnedAbilities     CreatureLearnedAbility[]
+  evolutions           CreatureEvolution[]
+  stats                CreatureBaseStats?
 
-  @@index([txmnId])
+  @@index([dexNumber])
 }
 
-model TuxemonBaseStats {
-  id        String         @id @default(cuid())
-  speciesId String         @unique
-  species   TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+model CreatureBaseStats {
+  id        String           @id @default(cuid())
+  speciesId String           @unique
+  species   CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
   hp        Int
-  meleeAtk  Int
-  meleeDef  Int
-  rangedAtk Int
-  rangedDef Int
-  speed     Int
+  physicalPower   Int        // Replaces meleeAtk
+  physicalDefense Int        // Replaces meleeDef
+  abilityPower    Int        // Replaces rangedAtk
+  abilityDefense  Int        // Replaces rangedDef
+  combatTempo     Int        // Replaces speed
 }
 
-model TuxemonMove {
-  id             String         @id @default(cuid())
+model CreatureLearnedAbility {
+  id             String           @id @default(cuid())
   speciesId      String
-  species        TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
-  techniqueSlug  String
+  species        CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  abilitySlug    String
   levelLearned   Int
-  learningMethod String         @default("level_up")
+  learningMethod String           @default("level_up")
 
-  @@unique([speciesId, techniqueSlug])
+  @@unique([speciesId, abilitySlug])
   @@index([speciesId])
 }
 
-model TuxemonEvolution {
-  id           String         @id @default(cuid())
+model CreatureEvolution {
+  id           String           @id @default(cuid())
   speciesId    String
-  species      TuxemonSpecies @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  species      CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
   targetSlug   String
   atLevel      Int?
   itemRequired String?
@@ -1249,27 +1249,27 @@ model TuxemonEvolution {
   @@index([speciesId])
 }
 
-model TuxemonTechnique {
+model AbilityDictionary {
   slug        String  @id
   name        String
   type        String
   power       Int?
   accuracy    Float?
-  ppCost      Int?
-  effects     String // JSON array of effect slugs
+  cooldown    Int?    // Replaces ppCost (GCD mechanic)
+  effects     String  // JSON array of effect slugs
   animation   String?
   description String?
   isCapture   Boolean @default(false)
   target      String? // "enemy", "self", "ally", etc.
 }
 
-model TuxemonElement {
+model CreatureElement {
   slug String  @id
   name String
   icon String?
 }
 
-model TuxemonTypeEffectiveness {
+model ElementEffectiveness {
   id            String @id @default(cuid())
   attackElement String
   defendElement String
@@ -1278,7 +1278,7 @@ model TuxemonTypeEffectiveness {
   @@unique([attackElement, defendElement])
 }
 
-model TuxemonItem {
+model GameItem {
   slug           String  @id
   name           String
   category       String
@@ -1290,7 +1290,7 @@ model TuxemonItem {
   usableInField  Boolean @default(false)
 }
 
-model TuxemonEncounter {
+model EncounterTable {
   id      String  @id @default(cuid())
   slug    String  @unique
   mapName String?
@@ -1299,7 +1299,7 @@ model TuxemonEncounter {
   @@index([mapName])
 }
 
-model TuxemonStatus {
+model StatusEffectDictionary {
   slug        String  @id
   name        String
   description String?
@@ -1307,9 +1307,9 @@ model TuxemonStatus {
   effects     String? // JSON
 }
 
-// ─── Player's Tuxemon Party & Inventory ──────────────────────────
+// ─── Player's Creature Party & Inventory ──────────────────────────
 
-model PlayerTuxemon {
+model PlayerCreature {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1319,8 +1319,8 @@ model PlayerTuxemon {
   xp          Int      @default(0)
   currentHp   Int
   maxHp       Int
-  stats       String // JSON: {meleeAtk, meleeDef, rangedAtk, rangedDef, speed}
-  moves       String // JSON array of {techniqueSlug, pp, maxPp}
+  stats       String   // JSON: {physicalPower, physicalDefense, abilityPower, abilityDefense, combatTempo}
+  abilities   String   // JSON array of {abilitySlug, currentCooldown}
   status      String?
   isParty     Boolean  @default(false)
   slotIndex   Int?
@@ -1330,7 +1330,7 @@ model PlayerTuxemon {
   @@index([speciesSlug])
 }
 
-model TuxemonInventoryItem {
+model PlayerInventoryItem {
   id       String @id @default(cuid())
   userId   String
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1341,9 +1341,9 @@ model TuxemonInventoryItem {
   @@index([userId])
 }
 
-// ─── Tuxemon World Maps ──────────────────────────────────────────
+// ─── Saints World Maps ──────────────────────────────────────────
 
-model TuxemonMap {
+model SaintsMap {
   id            String   @id @default(cuid())
   slug          String   @unique
   name          String
@@ -1354,7 +1354,7 @@ model TuxemonMap {
   collisionData String // JSON: collision bitmask
   npcData       String // JSON: NPC placements
   triggerData   String? // JSON: trigger zones
-  encounterZone String? // links to TuxemonEncounter slug
+  encounterZone String? // links to EncounterTable slug
   music         String?
   parentMap     String?
   environment   String? // e.g. "forest", "cave", "beach"

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "speciesSlug is required" }, { status: 400 });
     }
 
-    const species = await prisma.tuxemonSpecies.findUnique({
+    const species = await prisma.creatureTemplate.findUnique({
       where: { slug: speciesSlug },
       include: { evolutions: true },
     });
@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ canEvolve: false, message: "Evolution requirements not met." });
     }
 
-    const targetSpecies = await prisma.tuxemonSpecies.findUnique({
+    const targetSpecies = await prisma.creatureTemplate.findUnique({
       where: { slug: validEvolution.targetSlug },
-      include: { stats: true, moveset: true },
+      include: { stats: true, learnedAbilities: true },
     });
 
     return NextResponse.json({

@@ -25,7 +25,7 @@ interface TuxemonSpeciesData {
 
 export default function SaintsDexOverlay() {
   const setGameMode = useGameStore((state) => state.setGameMode);
-  const caughtSpecies = useGameStore((state) => state.player.tuxemonSpeciesCaught || []);
+  const caughtSpecies = useGameStore((state) => state.player.creaturesCaught || []);
   const caughtDaemons = useGameStore((state) => state.player.caughtDaemons || []);
   
   const [dbSpecies, setDbSpecies] = useState<TuxemonSpeciesData[]>([]);
