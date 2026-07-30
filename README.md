@@ -1,3 +1,6 @@
+### 2.1.72
+- **UI Hotfix**: Reverted flexbox restructuring in the Next.js layouts and opted for a safer explicit `min-h-[calc(100vh-7rem)]` approach to prevent the game canvas from collapsing or hiding entirely behind the layout structure.
+
 ### 2.1.71
 - **UI & Layout Fix**: Fixed a CSS Flexbox bug that caused the game canvas to collapse into a tiny sliver on the Lobby page. Ensured the Next.js `main` layout propagates 100% height to the absolute positioned canvas wrapper.
 - **AI Rules Update**: Incorporated the Gameplay Bible's strict core philosophy into the AI instructions, mandating that future agent implementations enforce server authority and respect the game's social and creative identity.
