@@ -21,6 +21,9 @@
 
 # Changelog
 
+## [2.1.81] - 2026-07-30
+- Documentation Cleanup: Removed the raw `docs/gameplay-bible` notes and various empty legacy documentation stubs from the public repository to prevent confusion. The official source of truth is now firmly established in `docs/architecture` and `docs/developer-guide`.
+
 ## [2.1.80] - 2026-07-30
 - Documentation Synthesis: Extracted the complete Saints Gaming MMO Architecture and Editor Rules from the private `.tools/Gameplay Bible` into professional public markdown documentation in `docs/architecture` and `docs/developer-guide`.
 

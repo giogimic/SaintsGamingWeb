@@ -1,3 +1,0 @@
-# Creature Editor
-
-
