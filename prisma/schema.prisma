@@ -133,6 +133,10 @@ model User {
   profileImages   ProfileImage[]
   pinnedBeastId   String? // ID of the Tuxemon to display on profile
 
+  // Guilds
+  guildMemberships GuildMember[]
+  ledGuilds        Guild[]       @relation("GuildLeader")
+
   // Generic Creature System
   // Generic Creature System
   playerCreatures PlayerCreature[]
@@ -1500,5 +1504,32 @@ model PlayerQuestState {
   completedAt    DateTime?
 
   @@unique([userId, questSlug])
+  @@index([userId])
+}
+
+// ─── Phase 8: Guilds ──────────────────────────────────────────────
+
+model Guild {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tag       String   @unique
+  leaderId  String
+  leader    User     @relation("GuildLeader", fields: [leaderId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   GuildMember[]
+}
+
+model GuildMember {
+  id        String   @id @default(cuid())
+  guildId   String
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank      String   @default("MEMBER") // "LEADER", "OFFICER", "MEMBER"
+  joinedAt  DateTime @default(now())
+
+  @@unique([guildId, userId])
   @@index([userId])
 }

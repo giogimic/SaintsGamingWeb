@@ -13,6 +13,7 @@ import { DialogueManager } from "./lib/game-server/DialogueManager";
 import { QuestManager } from "./lib/game-server/QuestManager";
 import { SkillManager } from "./lib/game-server/SkillManager";
 import { InventoryManager } from "./lib/game-server/InventoryManager";
+import { PartyManager } from "./lib/game-server/PartyManager";
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
@@ -24,7 +25,8 @@ app.prepare().then(async () => {
   // Initialize MMO Backbone
   const gameEngine = new GameEngine();
   const worldManager = new WorldManager(gameEngine);
-  const playerManager = new PlayerManager(gameEngine, worldManager);
+  const partyManager = new PartyManager(gameEngine);
+  const playerManager = new PlayerManager(gameEngine, worldManager, partyManager);
   const creatureManager = new CreatureManager(gameEngine, worldManager);
   const encounterManager = new EncounterManager(gameEngine);
   const combatManager = new CombatManager(gameEngine, playerManager, creatureManager);

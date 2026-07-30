@@ -30,12 +30,14 @@ const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
 
 const MOVE_COOLDOWN_MS = 200;
 
+import { PartyManager } from "./PartyManager";
+
 export class PlayerManager {
   private players = new Map<string, PlayerState>(); 
   private inputQueues = new Map<string, PlayerInput[]>();
   private dirtyEntities = new Set<string>(); // Entities that changed this tick
 
-  constructor(private engine: GameEngine, private worldManager: WorldManager) {
+  constructor(private engine: GameEngine, private worldManager: WorldManager, private partyManager?: PartyManager) {
     this.engine.events.on("clientJoinRequest", (data) => this.handleClientJoin(data));
     this.engine.events.on("playerInput", (data) => this.queueInput(data));
     this.engine.events.on("playerDisconnected", (data) => this.handleDisconnect(data));
@@ -86,9 +88,28 @@ export class PlayerManager {
     // Check if it's a private instance request
     const isPrivate = data.mapId === 'BASE' || data.isPrivate === true;
     
-    // Use dynamic sharding to get an instance
-    const instance = this.worldManager.joinMap(data.mapId, accountId, isPrivate);
-    const instanceId = instance.instanceId;
+    // Phase 8: Shard Syncing (Party Lock Rule)
+    let instanceId: string | undefined;
+    
+    if (this.partyManager) {
+      const leaderId = this.partyManager.getPartyLeader(accountId);
+      if (leaderId && leaderId !== accountId) {
+        // Find if the leader is online and on the exact same base map
+        // We need to iterate over this.players to find the leader
+        const leader = Array.from(this.players.values()).find(p => p.accountId === leaderId);
+        if (leader && leader.mapId.startsWith(data.mapId)) {
+          // Force join the leader's exact instance!
+          const joined = this.worldManager.forceJoinInstance(leader.mapId, accountId);
+          if (joined) instanceId = leader.mapId;
+        }
+      }
+    }
+
+    if (!instanceId) {
+      // Use dynamic sharding to get an instance
+      const instance = this.worldManager.joinMap(data.mapId, accountId, isPrivate);
+      instanceId = instance.instanceId;
+    }
 
     const player: PlayerState = {
       entityId,
@@ -146,7 +167,7 @@ export class PlayerManager {
       event: "map_joined",
       data: {
         instanceId: player.mapId,
-        mapId: instance.mapId
+        mapId: data.mapId
       }
     });
 

@@ -103,6 +103,24 @@ export class SocketHandler {
         });
       });
 
+      // --- PHASE 8: Social & Party Systems ---
+      socket.on("party_chat", (message) => {
+        this.engine.events.emit("partyChat", { accountId, message });
+      });
+      socket.on("party_invite", (targetName) => {
+        this.engine.events.emit("partyInvite", { accountId, targetName });
+      });
+      socket.on("party_join", (leaderName) => {
+        this.engine.events.emit("partyJoin", { accountId, leaderName });
+      });
+      socket.on("party_leave", () => {
+        this.engine.events.emit("partyLeave", { accountId });
+      });
+      
+      socket.on("global_chat", (message) => {
+        this.engine.events.emit("globalChat", { accountId, message });
+      });
+
       socket.on("disconnect", () => {
         console.log(`[Socket] Client disconnected: ${socket.id} (Account: ${accountId})`);
         this.engine.events.emit("playerDisconnected", { accountId, socketId: socket.id });
