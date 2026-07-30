@@ -97,26 +97,7 @@ export class DialogueManager {
 
     // Evaluate actions on selection (e.g. accepting a quest)
     if (nodeData.action === "ACCEPT_QUEST" && nodeData.questSlug) {
-      // Create PlayerQuestState
-      try {
-        const dbUser = await prisma.account.findFirst({
-          where: { id: accountId },
-          select: { userId: true }
-        });
-        
-        if (dbUser) {
-           await prisma.playerQuestState.upsert({
-            where: {
-              userId_questSlug: { userId: dbUser.userId, questSlug: nodeData.questSlug }
-            },
-            update: { status: "ACTIVE" },
-            create: { userId: dbUser.userId, questSlug: nodeData.questSlug, status: "ACTIVE" }
-          });
-          console.log(`[DialogueManager] ${accountId} accepted quest ${nodeData.questSlug}`);
-        }
-      } catch (e) {
-        console.error("Failed to accept quest", e);
-      }
+      this.engine.events.emit("acceptQuest", { accountId, questSlug: nodeData.questSlug });
     }
 
     this.engine.events.emit("directMessage", {

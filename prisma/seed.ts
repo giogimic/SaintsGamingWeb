@@ -200,6 +200,69 @@ async function main() {
     }
   }
   console.log("Seeded Game Servers.");
+
+  // 6. Seed Phase 6 Narrative Systems
+  const elderDialogue = {
+    node_start: {
+      text: "Ah, another Tamer arrives in Saints Village. The wilds are dangerous today.",
+      options: [
+        { label: "I can handle it.", nextNode: "node_confident" },
+        { label: "Do you have any work for me?", nextNode: "node_quest" },
+        { label: "Goodbye.", nextNode: "exit" }
+      ]
+    },
+    node_confident: {
+      text: "Confidence is good. But arrogance will get you killed out there. Stay safe.",
+      options: [
+        { label: "I will.", nextNode: "exit" }
+      ]
+    },
+    node_quest: {
+      text: "Actually, yes. The Slimes to the north have been acting aggressively. Can you thin their numbers?",
+      options: [
+        { label: "I will defeat 3 Slimes.", nextNode: "node_accept", action: "ACCEPT_QUEST", questSlug: "quest-slime-hunter" },
+        { label: "Maybe later.", nextNode: "exit" }
+      ]
+    },
+    node_accept: {
+      text: "Thank you. May the Saints protect you.",
+      options: [
+        { label: "Goodbye.", nextNode: "exit" }
+      ]
+    }
+  };
+
+  await prisma.npcDialogueTree.upsert({
+    where: { npcId: 'npc_Elder' },
+    update: { data: JSON.stringify(elderDialogue) },
+    create: { npcId: 'npc_Elder', name: 'Elder', data: JSON.stringify(elderDialogue) }
+  });
+
+  const questTemplate = await prisma.questTemplate.upsert({
+    where: { slug: 'quest-slime-hunter' },
+    update: {},
+    create: {
+      slug: 'quest-slime-hunter',
+      title: 'The Slime Menace',
+      description: 'Defeat 3 Slimes for the Village Elder.',
+      rewards: JSON.stringify({ xp: 150, copper: 50 })
+    }
+  });
+
+  await prisma.questObjective.upsert({
+    where: { questId_stage: { questId: questTemplate.id, stage: 1 } },
+    update: {},
+    create: {
+      questId: questTemplate.id,
+      stage: 1,
+      type: "KILL",
+      targetSlug: "Slime",
+      requiredQty: 3,
+      description: "Defeat 3 Slimes"
+    }
+  });
+
+  console.log("Seeded Phase 6 Narrative Data.");
 }
 
 main()

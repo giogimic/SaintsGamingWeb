@@ -65,6 +65,22 @@ export class WorldManager {
   public createInstance(instanceId: string, mapId: string): MapInstance {
     const instance: MapInstance = { instanceId, mapId, playerCount: 0 };
     this.instances.set(instanceId, instance);
+
+    // Phase 6: Spawn NPCs for this instance
+    const mapData = mapLoader.getCachedMap(mapId);
+    if (mapData && mapData.npcs) {
+      for (const npc of mapData.npcs) {
+        this.engine.events.emit("spawnCreature", {
+          templateId: npc.id || npc.templateId || "Villager",
+          entityType: "NPC",
+          mapId: instanceId, // Spawning specifically into this shard/instance
+          x: npc.x,
+          y: npc.y,
+          spawnMode: "STATIC"
+        });
+      }
+    }
+
     return instance;
   }
 
