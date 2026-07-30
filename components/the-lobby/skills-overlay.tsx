@@ -14,9 +14,14 @@ export default function SkillsOverlay() {
   const skills = useGameStore(state => state.player.skills);
   const setGameMode = useGameStore(state => state.setGameMode);
 
-  // Helper to calculate XP needed for next level
+  // Helper to calculate XP needed for next level (matches server)
   const getXpForNextLevel = (level: number) => {
-    return Math.pow(level, 2) * 50; // Inverse of Lvl = floor(sqrt(XP / 50)) + 1
+    if (level >= 99) return 0;
+    let requiredXp = 0;
+    for (let i = 1; i <= level; i++) {
+      requiredXp += Math.floor(i + 300 * Math.pow(2, i / 7)) / 4;
+    }
+    return requiredXp;
   };
 
 
@@ -29,7 +34,8 @@ export default function SkillsOverlay() {
             <h3 className="text-[#e2d5b3] font-bold mb-1 border-b border-[#806f47]/50 pb-1 uppercase tracking-wide text-xs drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]">{category}</h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-[3px]">
               {skillList.map(skill => {
-                const data = skills[skill] || { level: 1, xp: 0 };
+                const slug = skill.toLowerCase();
+                const data = skills[slug] || { level: 1, xp: 0 };
                 const nextLevelXp = getXpForNextLevel(data.level);
                 
                 return (

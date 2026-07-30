@@ -4,63 +4,45 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const tiles = await prisma.mapLogicTile.findMany();
-    // Return them mapped by id for O(1) lookup in the frontend
-    const tileMap = tiles.reduce((acc, tile) => {
-      acc[tile.id] = tile;
-      return acc;
-    }, {} as Record<number, any>);
-    
-    return NextResponse.json({ success: true, data: tileMap });
+    return NextResponse.json(tiles);
   } catch (error) {
-    console.error("[GET_LOGIC_TILES]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch logic tiles" }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
-    // Basic auth check can go here if needed
-    const body = await req.json();
-    const { 
-      id, 
-      name, 
-      color, 
-      isSolid, 
-      interactable, 
-      onInteractAction, 
-      onInteractPayload, 
-      onStepAction, 
-      onStepPayload 
-    } = body;
+    const data = await req.json();
+    const { id, name, color, isSolid, interactable, onInteractAction, onInteractPayload, onStepAction, onStepPayload } = data;
 
-    const newTile = await prisma.mapLogicTile.upsert({
-      where: { id: parseInt(id) },
+    const tile = await prisma.mapLogicTile.upsert({
+      where: { id: Number(id) },
       update: {
         name,
         color,
-        isSolid,
-        interactable,
-        onInteractAction,
+        isSolid: Boolean(isSolid),
+        interactable: Boolean(interactable),
+        onInteractAction: onInteractAction || null,
         onInteractPayload: onInteractPayload ? JSON.stringify(onInteractPayload) : null,
-        onStepAction,
+        onStepAction: onStepAction || null,
         onStepPayload: onStepPayload ? JSON.stringify(onStepPayload) : null
       },
       create: {
-        id: parseInt(id),
+        id: Number(id),
         name,
         color,
-        isSolid,
-        interactable,
-        onInteractAction,
+        isSolid: Boolean(isSolid),
+        interactable: Boolean(interactable),
+        onInteractAction: onInteractAction || null,
         onInteractPayload: onInteractPayload ? JSON.stringify(onInteractPayload) : null,
-        onStepAction,
+        onStepAction: onStepAction || null,
         onStepPayload: onStepPayload ? JSON.stringify(onStepPayload) : null
       }
     });
 
-    return NextResponse.json({ success: true, data: newTile });
+    return NextResponse.json(tile);
   } catch (error) {
-    console.error("[POST_LOGIC_TILE]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[API/LogicTiles] POST error:", error);
+    return NextResponse.json({ error: "Failed to save logic tile" }, { status: 500 });
   }
 }

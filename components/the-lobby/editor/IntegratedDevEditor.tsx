@@ -362,24 +362,21 @@ export const IntegratedDevEditor: React.FC<IntegratedDevEditorProps> = ({
       currentMapData.npcs = mapNpcs;
       currentMapData.encounterPool = encounterPool;
 
-      const res = await saveWorldMap({
-        id: currentMapId,
+      useGameStore.getState().emitSocketEvent?.("admin_save_map", {
+        mapId: currentMapId,
         name: currentMapData.name || currentMapId,
-        gridData: JSON.stringify(currentMapData.grid || []),
-        gatesData: JSON.stringify(currentMapData.gates || {}),
-        npcsData: JSON.stringify(mapNpcs || []),
-        encountersData: JSON.stringify(encounterPool || []),
-        tileLayersData: JSON.stringify(currentMapData.tileLayers || []),
-        tilesetsData: JSON.stringify(currentMapData.tilesets || [])
+        grid: currentMapData.grid || [],
+        gates: currentMapData.gates || {},
+        npcs: mapNpcs || [],
+        encountersData: encounterPool || [],
+        tilesetData: currentMapData.tileLayers || [],
+        width: currentMapData.grid[0]?.length || 24,
+        height: currentMapData.grid.length || 24,
       });
 
-      if (res.success) {
-        showToast(`Dev Editor Configuration Saved for ${currentMapId}!`);
-      } else {
-        showToast(`Error saving: ${res.error}`);
-      }
+      showToast(`Dev Editor Configuration Saved for ${currentMapId}! Hot Reloading...`);
     } catch {
-      showToast('Configuration saved locally!');
+      showToast('Failed to emit save event!');
     }
   };
 

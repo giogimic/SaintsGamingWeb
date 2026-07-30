@@ -9,6 +9,10 @@ import { PlayerManager } from "./lib/game-server/PlayerManager";
 import { CombatManager } from "./lib/game-server/CombatManager";
 import { CreatureManager } from "./lib/game-server/CreatureManager";
 import { EncounterManager } from "./lib/game-server/EncounterManager";
+import { DialogueManager } from "./lib/game-server/DialogueManager";
+import { QuestManager } from "./lib/game-server/QuestManager";
+import { SkillManager } from "./lib/game-server/SkillManager";
+import { InventoryManager } from "./lib/game-server/InventoryManager";
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
@@ -23,7 +27,11 @@ app.prepare().then(async () => {
   const playerManager = new PlayerManager(gameEngine, worldManager);
   const creatureManager = new CreatureManager(gameEngine, worldManager);
   const encounterManager = new EncounterManager(gameEngine);
-  const combatManager = new CombatManager(gameEngine);
+  const combatManager = new CombatManager(gameEngine, playerManager, creatureManager);
+  const dialogueManager = new DialogueManager(gameEngine);
+  const questManager = new QuestManager(gameEngine);
+  const skillManager = new SkillManager(gameEngine);
+  const inventoryManager = new InventoryManager(gameEngine, worldManager);
   
   const server = createServer(async (req, res) => {
     try {
@@ -59,6 +67,10 @@ app.prepare().then(async () => {
   const socketHandler = new SocketHandler(io, gameEngine);
   
   await worldManager.initialize();
+  await dialogueManager.initialize();
+  await questManager.initialize();
+  await skillManager.initialize();
+  await inventoryManager.initialize();
   socketHandler.initialize();
 
   // Start the tick loop

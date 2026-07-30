@@ -55,46 +55,25 @@ const PERKS = [
 
 const CLASSES = [
   {
-    id: "BRAWLER",
-    name: "The Brawler",
+    id: "MELEE",
+    name: "The Brawler (Melee)",
     desc: "A frontline fighter with unmatched raw damage output.",
     bonuses: { Attack: 15, Strength: 10, Constitution: 5 },
     icon: Shield
   },
   {
-    id: "INVOKER",
-    name: "The Invoker",
-    desc: "A mystical tactician specializing in summoning algorithms.",
-    bonuses: { Summoning: 15, Magic: 10, Defence: 5 },
+    id: "MAGIC",
+    name: "The Invoker (Magic)",
+    desc: "A mystical tactician specializing in arcane abilities.",
+    bonuses: { Magic: 15, Defence: 5 },
     icon: Sparkles
   },
   {
-    id: "RANGER",
-    name: "The Ranger",
-    desc: "A swift and deadly scout who strikes from the shadows.",
-    bonuses: { Ranged: 15, Agility: 10, Hunter: 5 },
+    id: "RANGED",
+    name: "The Ranger (Ranged)",
+    desc: "A swift scout who strikes from the shadows.",
+    bonuses: { Ranged: 15, Agility: 10 },
     icon: Zap
-  },
-  {
-    id: "ARTISAN",
-    name: "The Artisan",
-    desc: "A master of creation, building tools and weapons.",
-    bonuses: { Crafting: 15, Smithing: 10, Mining: 5 },
-    icon: Wrench
-  },
-  {
-    id: "CYBER",
-    name: "The Cybermancer",
-    desc: "Blends arcane magic with heavy technological combat.",
-    bonuses: { Magic: 10, Attack: 10, Defence: 10 },
-    icon: Sparkles
-  },
-  {
-    id: "SURVIVOR",
-    name: "The Survivor",
-    desc: "Extremely resilient with high health and stamina.",
-    bonuses: { Constitution: 15, Defence: 10, Agility: 5 },
-    icon: Shield
   }
 ];
 
@@ -163,7 +142,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       skills: initialSkills,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
       customization: { skinTone, hairColor, shirtColor, pantsColor },
-      combatStyle: 'MELEE',
+      combatStyle: classId,
       activeDaemonId: 'd-001',
       saintRank: 'Rookie',
       caughtDaemons: ['d-001'],
@@ -204,22 +183,22 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
             <div className="flex items-center gap-2">
               <Gamepad2 className="w-7 h-7 text-primary" />
               <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
-                CREATE OPERATIVE
+                AWAKEN SAINT
               </h1>
             </div>
             <div />
           </div>
 
-          <p className="text-muted-foreground text-center text-sm mb-8">Customize your character identity to enter Saints Gaming Lobby</p>
+          <p className="text-muted-foreground text-center text-sm mb-8">Customize your character identity to enter the Saints Gaming world.</p>
 
           <div className="space-y-8">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">OPERATIVE NAME</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">CHARACTER NAME</label>
           <Input 
             value={name} 
             onChange={(e) => setName(e.target.value)} 
             className="bg-background/80 border-border/60 text-foreground focus-visible:ring-primary font-bold text-lg h-14 rounded-xl"
-            placeholder="Enter Operative Name..."
+            placeholder="Enter Character Name..."
             maxLength={16}
           />
         </div>
@@ -320,7 +299,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
         </div>
 
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">SELECT STARTING CLASS</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-primary mb-2">CHOOSE COMBAT STYLE</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CLASSES.map(c => {
               const Icon = c.icon;

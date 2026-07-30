@@ -34,6 +34,10 @@ export class CreatureManager {
     });
   }
 
+  public getCreature(entityId: string): CreatureState | undefined {
+    return this.creatures.get(entityId);
+  }
+
   private handleCreatureDamaged(data: { entityId: string, attackerId: string, damage: number }) {
     const creature = this.creatures.get(data.entityId);
     if (!creature) return;
@@ -41,8 +45,27 @@ export class CreatureManager {
     creature.hp = Math.max(0, creature.hp - data.damage);
     const hpPercent = creature.hp / creature.maxHp;
 
+    this.engine.events.emit("networkBroadcast", {
+      room: creature.mapId,
+      event: "creature_hp_update",
+      data: { entityId: data.entityId, hpPercent }
+    });
+
     if (hpPercent <= 0) {
-      // Creature defeated, engine logic elsewhere would handle despawn
+      this.engine.events.emit("entityDeath", { 
+        entityId: data.entityId, 
+        mapId: creature.mapId, 
+        x: creature.x, 
+        y: creature.y 
+      });
+      this.worldManager.removeEntity(creature.mapId, creature.x, creature.y, data.entityId);
+      this.creatures.delete(data.entityId);
+      this.engine.events.emit("networkBroadcast", {
+        room: creature.mapId,
+        event: "creature_despawned",
+        data: { entityId: data.entityId }
+      });
+      return;
     } else if (hpPercent < 0.15) {
       creature.behavior = BehavioralState.FLEEING;
       creature.aiState = AIState.FLEE;

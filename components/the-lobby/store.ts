@@ -60,6 +60,25 @@ export interface CreaturePartyMember {
   status: string | null;
 }
 
+export interface BattleCreature {
+  id?: string;
+  templateId?: string;
+  hp: number;
+  maxHp: number;
+  level: number;
+  spriteKey: string;
+  name: string;
+}
+
+export interface BattleState {
+  id: string;
+  accountId: string;
+  phase: "WAITING_FOR_INPUT" | "RESOLUTION" | "TURN_END";
+  wildCreature: BattleCreature;
+  playerCreature: BattleCreature;
+  log: string[];
+}
+
 export interface PartyMember {
   userId: string;
   socketId: string;
@@ -164,12 +183,12 @@ export interface GameState {
   instanceId: string;
   mapEntities: MapEntity[];
   toast: ToastMessage | null;
-  activeDialog: { npcId: string; npcName?: string; text: string } | null;
+  activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null;
   setGameMode: (mode: GameMode) => void;
   setCurrentMapId: (id: string) => void;
   setInstanceId: (id: string) => void;
   setIsMapTransitioning: (isTransitioning: boolean) => void;
-  setActiveDialog: (dialog: { npcId: string, text: string } | null) => void;
+  setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
   setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
@@ -196,8 +215,8 @@ export interface GameState {
   
   // Game Data
   fetchLogicTiles: () => Promise<void>;
-  activeBattle: any;
-  setActiveBattle: (battleData: any) => void;
+  activeBattle: BattleState | null;
+  setActiveBattle: (battleData: BattleState | null) => void;
   activeEnemies: Record<string, any>;
   setActiveEnemies: (enemies: Record<string, any>) => void;
   combatTarget: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string, behavior?: string } | null;
