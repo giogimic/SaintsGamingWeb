@@ -31,6 +31,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const player = useGameStore((state) => state.player);
   const otherPlayers = useGameStore((state) => state.otherPlayers);
   const currentMapId = useGameStore((state) => state.currentMapId);
+  const activeMapData = useGameStore((state) => state.activeMapData);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const showToast = useGameStore((state) => state.showToast);
@@ -65,6 +66,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   useEffect(() => {
     setIsEngineReady(false);
+    
+    // Phase 9: If activeMapData is pushed via Socket.io hot-reload, use it instantly!
+    if (activeMapData) {
+      setMapData(activeMapData);
+      // Brief delay to allow React to flush to DOM before remounting Engine
+      setTimeout(() => setIsEngineReady(true), 50);
+      return;
+    }
+    
     setMapData(null); // Reset on map change so engine remounts cleanly
     loadMap(currentMapId).then((data) => {
       setMapData(data);
@@ -82,7 +92,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         npcs: [],
       });
     });
-  }, [currentMapId]);
+  }, [currentMapId, activeMapData]);
 
   // Derive dimensions — use loaded map data or safe defaults
   const activeMap = mapData as any;

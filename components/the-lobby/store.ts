@@ -181,12 +181,14 @@ export interface GameState {
   pathQueue: Point[];
   currentMapId: string;
   instanceId: string;
+  activeMapData: any | null; // For dynamically loaded maps from DB
   mapEntities: MapEntity[];
   toast: ToastMessage | null;
   activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null;
   setGameMode: (mode: GameMode) => void;
   setCurrentMapId: (id: string) => void;
   setInstanceId: (id: string) => void;
+  setActiveMapData: (data: any) => void;
   setIsMapTransitioning: (isTransitioning: boolean) => void;
   setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
@@ -319,8 +321,9 @@ export const useGameStore = create<GameState>()(
       combatTarget: null,
       cooldowns: {},
       pathQueue: [],
-      currentMapId: 'cotton_town',
-      instanceId: '',
+      currentMapId: 'SAINTS_VILLAGE',
+      instanceId: 'SAINTS_VILLAGE',
+      activeMapData: null,
       mapEntities: [
         { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
         { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
@@ -398,9 +401,10 @@ export const useGameStore = create<GameState>()(
       }),
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
-      setCurrentMapId: (id) => set((state) => { state.currentMapId = id }),
-      setInstanceId: (id) => set((state) => { state.instanceId = id }),
-      setIsMapTransitioning: (isTransitioning) => set((state) => { state.isMapTransitioning = isTransitioning; }),
+      setCurrentMapId: (id) => set({ currentMapId: id, activeMapData: null }),
+      setInstanceId: (id) => set({ instanceId: id }),
+      setActiveMapData: (data) => set({ activeMapData: data }),
+      setIsMapTransitioning: (isMapTransitioning) => set({ isMapTransitioning }),
       setActiveDialog: (dialog) => set((state) => { state.activeDialog = dialog; }),
       localChat: null,
       setPlayerChat: (message) => {

@@ -34,6 +34,7 @@ import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
+import { useSession } from 'next-auth/react';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 
@@ -44,6 +45,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
   const currentMapId = useGameStore((state) => state.currentMapId);
   const isUiEditMode = useGameStore((state) => state.isUiEditMode);
+  const { data: session, status } = useSession();
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -185,11 +187,13 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
   // SOCKET.IO CONNECTION
   useEffect(() => {
-    // Check if running in browser
-    if (typeof window === 'undefined') return;
+    // Phase 10: Require active NextAuth session before connecting to the socket
+    if (typeof window === 'undefined' || status !== 'authenticated' || !session?.user?.id) return;
 
-    // Connect to the unified Next.js MMO server
-    const socket = io(); // Connects to the same host that served the page
+    // Connect to the unified Next.js MMO server with the session token
+    const socket = io({
+      auth: { token: session.user.id }
+    });
     socketRef.current = socket;
     
     socket.on('connect', () => {
@@ -289,6 +293,20 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     
     socket.on('player_left', (socketId) => {
       useGameStore.getState().removeOtherPlayer(socketId);
+    });
+    
+    // Phase 9: Real-Time Map Editor Synchronization
+    socket.on('map_reloaded', async (data) => {
+      const mapId = data.mapId;
+      useGameStore.getState().showToast(`Map updated by admin! Hot-reloading ${mapId}...`);
+      try {
+        // Bust the local cache and fetch the fresh map
+        const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}?t=${Date.now()}`);
+        const freshMapData = await res.json();
+        useGameStore.getState().setActiveMapData(freshMapData);
+      } catch (err) {
+        console.error("Failed to hot-reload map data:", err);
+      }
     });
     
     socket.on('battle_invite_received', (data) => {
@@ -406,8 +424,9 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
-  }, []);
+  }, [activeCharacterId, status, session]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {

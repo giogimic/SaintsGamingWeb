@@ -34,19 +34,18 @@ export async function GET(
       });
     }
 
-    // Fall back to TuxemonMap by slug (older legacy data)
-    const tuxMap = await prisma.saintsMap.findUnique({ where: { slug } });
-    if (tuxMap) {
+    // Fall back to GameMap by id
+    const gameMap = await prisma.gameMap.findUnique({ where: { id: slug } });
+    if (gameMap) {
       return NextResponse.json({
-        id: tuxMap.slug,
-        name: tuxMap.name,
-        grid: JSON.parse(tuxMap.collisionData || '[]'),
-        gates: {},
-        npcs: JSON.parse(tuxMap.npcData || '[]'),
-        encounterPool: tuxMap.encounterZone ? JSON.parse(tuxMap.encounterZone) : [],
-        tileLayers: JSON.parse(tuxMap.tilesetData || '[]'),
+        id: gameMap.id,
+        name: gameMap.name,
+        grid: JSON.parse(gameMap.tilesetData || '[]'),
+        gates: JSON.parse(gameMap.gates || '{}'),
+        npcs: JSON.parse(gameMap.npcs || '[]'),
+        encounterPool: JSON.parse(gameMap.encounters || '[]'),
+        tileLayers: [],
         tilesets: [],
-        version: tuxMap.version,
       });
     }
 
@@ -73,22 +72,21 @@ export async function POST(
     const { slug } = await params;
     const body = await request.json();
 
-    const updated = await prisma.saintsMap.upsert({
-      where: { slug },
+    const updated = await prisma.gameMap.upsert({
+      where: { id: slug },
       update: {
         tilesetData: body.grid ? JSON.stringify(body.grid) : undefined,
-        npcData: body.npcs ? JSON.stringify(body.npcs) : undefined,
-        encounterZone: body.encounterPool ? JSON.stringify(body.encounterPool) : undefined,
+        npcs: body.npcs ? JSON.stringify(body.npcs) : undefined,
+        encounters: body.encounterPool ? JSON.stringify(body.encounterPool) : undefined,
       },
       create: {
-        slug,
+        id: slug,
         name: body.name || slug,
         width: body.width || 24,
         height: body.height || 24,
         tilesetData: JSON.stringify(body.grid || []),
-        collisionData: JSON.stringify([]),
-        npcData: JSON.stringify(body.npcs || []),
-        encounterZone: JSON.stringify(body.encounterPool || []),
+        npcs: JSON.stringify(body.npcs || []),
+        encounters: JSON.stringify(body.encounterPool || []),
       }
     });
 
