@@ -517,9 +517,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         }}
       />
 
-      {/* Render the Game Canvas Layer (Lowest Z-Index) */}
-      <GameCanvasBabylon />
-
       {/* UI Edit Toolbar (Only visible in edit mode) */}
       <UiEditToolbar />
 
