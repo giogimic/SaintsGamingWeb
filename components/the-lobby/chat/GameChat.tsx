@@ -56,6 +56,19 @@ export function GameChat() {
     const text = chatInput.trim();
     if (!text) return;
 
+    // Phase 8: Social Commands
+    if (text.startsWith('/p join ')) {
+      const leaderName = text.replace('/p join ', '').trim();
+      emitSocketEvent?.('party_join', leaderName);
+      setChatInput('');
+      return;
+    }
+    if (text === '/p leave') {
+      emitSocketEvent?.('party_leave', {});
+      setChatInput('');
+      return;
+    }
+
     if (activeTab === 'LOCAL') {
       emitSocketEvent?.('chat_message', text);
       useGameStore.getState().setPlayerChat(text);

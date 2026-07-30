@@ -92,6 +92,15 @@ export class WorldManager {
     return this.instances.get(instanceId);
   }
 
+  public forceJoinInstance(instanceId: string, accountId: string): MapInstance | undefined {
+    const instance = this.instances.get(instanceId);
+    if (instance) {
+      instance.playerCount++;
+      return instance;
+    }
+    return undefined;
+  }
+
   public joinMap(mapId: string, accountId: string, isPrivate: boolean = false): MapInstance {
     if (isPrivate) {
       // Private instances (e.g. player bases) are isolated per account
