@@ -10,60 +10,52 @@
 
 <br />
 
-## Screenshot
-*(Insert gameplay or engine screenshot here)*
-
 ## What is Saints?
-Saints Gaming is an ambitious project combining a full web platform (forums, administration, social features) with an embedded, real-time multiplayer 2.5D ORPG engine. The project is split into a reusable core engine and game-specific implementations (e.g., Tuxemon integration).
+Saints Gaming is an ambitious project combining a full web platform (forums, administration, social features) with an embedded, real-time multiplayer 2.5D MMO engine. The project is strictly server-authoritative and features a powerful in-game object/map editor.
 
 ## Core Features
-- **Authoritative MMO Server:** Secure, real-time socket communication utilizing sharded instance channels.
+- **Authoritative MMO Server:** Secure, real-time socket communication utilizing dynamic sharding and instancing.
 - **2.5D WebGL Renderer:** Powered by Babylon.js with an orthographic camera and classic sprite projection.
+- **Dual Combat Engine:** Real-Time MMO combat in the overworld, seamlessly transitioning to Instanced Turn-Based Encounters for creature capturing.
 - **Integrated Tooling:** Live map editing and configuration without leaving the game client.
-- **Social Ecosystem:** Fully featured forum system, friend lists, and cross-platform presence.
 - **Generic Entity Framework:** Extendable systems for creatures, items, and quests.
 
 ## Tech Stack
-- **Framework:** Next.js 13+ (App Router) & React 18
+- **Framework:** Next.js 15+ (App Router) & React 19
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS & shadcn/ui
 - **Database:** Prisma ORM connected to MariaDB
 - **Game Engine:** Custom Babylon.js 2.5D wrapper
 - **Multiplayer:** Socket.io
 
-## Project Structure
-The repository is strictly divided to maintain a clean boundary between engine logic, shared components, and game content:
-- `src/engine/` - Core engine logic (Networking, Renderer, Input, UI systems)
-- `src/game/` - Saints Gaming content (Creatures, Maps, Quests)
-- `src/editor/` - In-game map and database editor components
-- `src/shared/` - Shared UI and utilities
-- `src/server/` - Socket.io authoritative game server
+## Deployment & Setup
 
-## Getting Started
+**IMPORTANT**: To completely eliminate human error and manage the production server safely, **use the provided automation scripts**. They automatically handle Node.js environments, dependencies, database backups, and reverse proxies (Caddy) using Docker. Do not manually run `npm install` on your production server.
 
-### Local Development
-Please refer to the [Getting Started Guide](docs/developer-guide/installation.md) for full instructions on setting up the local database, Next.js environment, and Socket.io server manually via NPM.
+### 1. Initial Setup
+Run the interactive setup script to configure credentials and launch the environment:
+```bash
+./scripts/setup.sh
+```
 
-### Production (Docker)
-To completely eliminate human error and manage the production server safely, use the provided automation scripts. They automatically handle Node.js environments, dependencies, database backups, and reverse proxies (Caddy) using Docker.
+### 2. Updating the Server
+To pull the latest code, backup the database, rebuild containers, and restart gracefully:
+```bash
+./scripts/update.sh
+```
 
-- **Initial Setup:** `./scripts/setup.sh`
-- **Safe Updating:** `./scripts/update.sh`
+*(For manual local development without Docker, refer to [Installation Guide](docs/developer-guide/installation.md)).*
 
 ## Documentation
-The `docs/` folder contains the ultimate source of truth for this project:
-- **[Vision](docs/vision/game-idea.md)**
-- **[Architecture](docs/architecture/overview.md)**
-- **[Gameplay Bible](docs/gameplay-bible/01-core-philosophy.md)**
-- **[Developer Guide](docs/developer-guide/developer-handbook.md)**
-- **[Reference](docs/reference/api.md)**
-
-## Contributing
-We welcome contributions! Before submitting PRs, please read the [Developer Handbook](docs/reference/developer-handbook.md) and adhere to our coding conventions.
+The `docs/` folder contains the ultimate source of truth for the engine's architecture:
+- **[Game Vision & GDD](docs/vision/game-idea.md)**
+- **[Architectural Overview](docs/architecture/overview.md)**
+- **[Networking & Server Authority](docs/architecture/networking.md)**
+- **[Database & Hot/Cold State](docs/architecture/database.md)**
+- **[The Game Loop & Combat Engine](docs/architecture/game-loop.md)**
+- **[World Building & Map Editor](docs/developer-guide/world-building.md)**
+- **[Project Structure & Developer Guide](docs/developer-guide/project-structure.md)**
 
 ## License
 - **Code:** Private / proprietary until stated otherwise.
-- **Assets:** Tuxemon assets and LPC sprites are licensed under GPL-3.0 / CC BY-SA 4.0. See [docs/TUXEMON_ATTRIBUTION.md](docs/TUXEMON_ATTRIBUTION.md) for details.
-
-## Changelog
-- **v2.1.78**: Completed engine documentation structure and Phase 2 Vertical Slice execution. Fixed map loading and auto-save state bugs.
+- **Assets:** Tuxemon assets and LPC sprites are licensed under GPL-3.0 / CC BY-SA 4.0. See `docs/TUXEMON_ATTRIBUTION.md` for details.
