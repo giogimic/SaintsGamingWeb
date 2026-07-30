@@ -12,13 +12,65 @@ export interface PersistenceManager {
 
 // Placeholder implementation for v1 (interfaces only)
 // No fake saving - database schema and storage to be implemented later.
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 export class DatabasePersistenceManager implements PersistenceManager {
   public async savePlayerPosition(accountId: string, mapId: string, x: number, y: number): Promise<void> {
-    // Implemented in future phases with Prisma
+    if (accountId.startsWith("acc_")) return; // Skip anonymous connections
+    
+    try {
+      const dbUser = await prisma.account.findFirst({
+        where: { id: accountId },
+        select: { userId: true }
+      });
+      const userId = dbUser?.userId || accountId;
+
+      const character = await prisma.gameCharacter.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'asc' }
+      });
+
+      if (character) {
+        const stateData = JSON.parse(character.stateData || "{}");
+        stateData.mapId = mapId;
+        stateData.x = x;
+        stateData.y = y;
+
+        await prisma.gameCharacter.update({
+          where: { id: character.id },
+          data: { stateData: JSON.stringify(stateData) }
+        });
+        console.log(`[PersistenceManager] Saved position for ${userId} to ${mapId} (${x}, ${y})`);
+      }
+    } catch (err) {
+      console.error("[PersistenceManager] Failed to save player position:", err);
+    }
   }
 
   public async loadPlayerPosition(accountId: string): Promise<{ mapId: string, x: number, y: number } | null> {
-    // Implemented in future phases with Prisma
+    if (accountId.startsWith("acc_")) return null;
+    
+    try {
+      const dbUser = await prisma.account.findFirst({
+        where: { id: accountId },
+        select: { userId: true }
+      });
+      const userId = dbUser?.userId || accountId;
+
+      const character = await prisma.gameCharacter.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'asc' }
+      });
+
+      if (character && character.stateData) {
+        const stateData = JSON.parse(character.stateData);
+        if (stateData.mapId && typeof stateData.x === 'number' && typeof stateData.y === 'number') {
+          return { mapId: stateData.mapId, x: stateData.x, y: stateData.y };
+        }
+      }
+    } catch (err) {
+      console.error("[PersistenceManager] Failed to load player position:", err);
+    }
     return null;
   }
 
