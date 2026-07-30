@@ -9,6 +9,7 @@ export class QuestManager {
     this.engine.events.on("monsterKilled", (data) => this.handleEvent("KILL", data));
     this.engine.events.on("itemGathered", (data) => this.handleEvent("GATHER", data));
     this.engine.events.on("dialogue_start", (data) => this.handleEvent("TALK", data));
+    this.engine.events.on("acceptQuest", (data) => this.acceptQuest(data));
   }
 
   public async initialize() {
@@ -108,6 +109,45 @@ export class QuestManager {
         // (For now, we emit to the event bus for the PlayerManager to handle)
         this.engine.events.emit("grantRewards", { accountId, rewards });
       }
+    }
+  }
+
+  public async acceptQuest({ accountId, questSlug }: { accountId: string, questSlug: string }) {
+    try {
+      const dbUser = await prisma.account.findFirst({
+        where: { id: accountId },
+        select: { userId: true }
+      });
+      if (!dbUser) return;
+      
+      const userId = dbUser.userId;
+
+      // Check if already active or completed
+      const existing = await prisma.playerQuestState.findFirst({
+        where: { userId, questSlug }
+      });
+
+      if (existing) {
+        console.log(`[QuestManager] Quest ${questSlug} already exists for ${userId}`);
+        return;
+      }
+
+      await prisma.playerQuestState.create({
+        data: {
+          userId,
+          questSlug,
+          status: "ACTIVE",
+          currentStage: 1,
+          progress: 0
+        }
+      });
+
+      const template = await prisma.questTemplate.findUnique({ where: { slug: questSlug }});
+      if (template) {
+        this.notifyClient(accountId, `Quest Accepted: ${template.title}`);
+      }
+    } catch (e) {
+      console.error("[QuestManager] Error accepting quest:", e);
     }
   }
 
