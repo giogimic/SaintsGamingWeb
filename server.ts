@@ -17,9 +17,29 @@ const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(async () => {
+  // Initialize MMO Backbone
+  const gameEngine = new GameEngine();
+  const worldManager = new WorldManager(gameEngine);
+  const playerManager = new PlayerManager(gameEngine, worldManager);
+  const creatureManager = new CreatureManager(gameEngine, worldManager);
+  const encounterManager = new EncounterManager(gameEngine);
+  const combatManager = new CombatManager(gameEngine);
+  
   const server = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url!, true);
+      
+      // Intercept the server-status API to use our live integrated MMO engine
+      if (parsedUrl.pathname === '/api/game/server-status') {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ 
+          players: playerManager.getPlayerCount(), 
+          capacity: 500, 
+          status: 'online' 
+        }));
+        return;
+      }
+      
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error("Error occurred handling", req.url, err);
@@ -36,13 +56,6 @@ app.prepare().then(async () => {
     },
   });
 
-  // Initialize MMO Backbone
-  const gameEngine = new GameEngine();
-  const worldManager = new WorldManager(gameEngine);
-  const playerManager = new PlayerManager(gameEngine, worldManager);
-  const creatureManager = new CreatureManager(gameEngine, worldManager);
-  const encounterManager = new EncounterManager(gameEngine);
-  const combatManager = new CombatManager(gameEngine);
   const socketHandler = new SocketHandler(io, gameEngine);
   
   await worldManager.initialize();

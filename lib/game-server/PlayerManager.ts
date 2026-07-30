@@ -42,6 +42,10 @@ export class PlayerManager {
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
   }
 
+  public getPlayerCount(): number {
+    return this.players.size;
+  }
+
   private async handleClientJoin({ accountId, socketId, data }: any) {
     // Generate entity ID
     const entityId = `player_${accountId}_${Date.now()}`;
