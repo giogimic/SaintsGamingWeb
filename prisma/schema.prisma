@@ -1533,3 +1533,18 @@ model GuildMember {
   @@unique([guildId, userId])
   @@index([userId])
 }
+
+// ─── Game Content ───────────────────────────────────────────────
+
+model GameMap {
+  id            String   @id // e.g. 'SAINTS_VILLAGE'
+  name          String
+  width         Int      @default(24)
+  height        Int      @default(24)
+  tilesetData   String?  // JSON stringified grid layers
+  npcs          String?  // JSON stringified static NPCs
+  encounters    String?  // JSON stringified encounter pool
+  gates         String?  // JSON stringified teleport gates
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

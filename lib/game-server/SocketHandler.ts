@@ -1,23 +1,47 @@
 import { Server, Socket } from "socket.io";
 import { GameEngine } from "./GameEngine";
 import { PlayerInput } from "./types";
+import { getToken } from "next-auth/jwt";
 
 export class SocketHandler {
   constructor(private io: Server, private engine: GameEngine) {}
 
   public initialize() {
+    // Phase 10: Enforce Production Authentication
+    this.io.use(async (socket, next) => {
+      try {
+        const token = await getToken({ 
+          req: socket.request as any, 
+          secret: process.env.AUTH_SECRET,
+          cookieName: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token"
+        });
+
+        // Fallback for development/testing if a static auth token is passed
+        const bypassToken = socket.handshake.auth?.token;
+        if (bypassToken && process.env.NODE_ENV === "development") {
+           (socket as any).userId = bypassToken;
+           return next();
+        }
+
+        if (!token || !token.id) {
+          return next(new Error("Unauthorized: Invalid or missing session token."));
+        }
+
+        (socket as any).userId = token.id;
+        next();
+      } catch (err) {
+        console.error("[Socket] Auth error:", err);
+        next(new Error("Authentication error"));
+      }
+    });
+
     this.io.on("connection", (socket: Socket) => {
-      console.log(`[Socket] Client connected: ${socket.id}`);
-      
-      // Maintain a map of socket.id -> accountId for this connection
-      let accountId = `acc_${socket.id}`;
+      const accountId = (socket as any).userId;
+      console.log(`[Socket] Client connected: ${socket.id} (User: ${accountId})`);
       
       // We do not store game state here. The socket only communicates.
       
       socket.on("join_map", (data) => {
-        if (data.accountId) {
-          accountId = data.accountId;
-        }
         console.log(`[Socket] ${accountId} attempting to join map`);
         this.engine.events.emit("clientJoinRequest", { accountId, socketId: socket.id, data });
       });
