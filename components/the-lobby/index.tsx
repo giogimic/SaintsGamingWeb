@@ -440,7 +440,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   return (
     <div 
       ref={containerRef}
-      className="relative flex-1 w-full h-full touch-none select-none bg-[#0a0a0f]"
+      className="relative w-full h-full touch-none select-none bg-[#0a0a0f]"
     >
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
