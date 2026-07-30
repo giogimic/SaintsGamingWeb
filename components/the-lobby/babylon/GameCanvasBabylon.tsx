@@ -10,6 +10,7 @@ import { soundSynth } from '@/lib/game/sound-synth';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
 import { findPath } from '@/lib/game/pathfinding';
 import { WorldSimulation } from '@/lib/game/WorldSimulation';
+import { FloatingHealthBars } from './FloatingHealthBar';
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
   activeBrushTileId?: number;
@@ -41,6 +42,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
   const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isEngineReady, setIsEngineReady] = useState(false);
 
   useEffect(() => {
     setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -62,6 +64,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }, []);
 
   useEffect(() => {
+    setIsEngineReady(false);
     setMapData(null); // Reset on map change so engine remounts cleanly
     loadMap(currentMapId).then((data) => {
       setMapData(data);
@@ -159,24 +162,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const payload = result.stepPayload || {};
         switch (result.stepAction) {
           case 'ENCOUNTER':
-            const roll = Math.random() * 100;
-            if (roll < (payload.chance * 100 || 15)) {
-              const pool = activeMap?.encounterPool;
-              if (pool && pool.length > 0) {
-                const zone = pool[Math.floor(Math.random() * pool.length)];
-                resolveEncounter(zone).then((encounterData) => {
-                  if (encounterData) {
-                    soundSynth.playEncounterSound();
-                    showToast(`Wild ${encounterData.speciesId.toUpperCase()} appeared! (Lv ${encounterData.minLevel}-${encounterData.maxLevel})`);
-                    useGameStore.getState().setGameMode('BATTLE');
-                  }
-                });
-              } else {
-                soundSynth.playEncounterSound();
-                showToast(`Wild IGNIS appeared!`);
-                useGameStore.getState().setGameMode('BATTLE');
-              }
-            }
+            emitSocketEvent?.('encounter_check', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'OPEN_SHOP':
             showToast('Welcome to the Shop!');
@@ -279,6 +265,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }, [clearAutoWalk]);
 
   useEffect(() => {
+    const handleCombatUpdate = (e: Event) => {
+      if (!engineRef.current) return;
+      const data = (e as CustomEvent).detail;
+      if (data.type === 'ATTACK_RESULT') {
+        engineRef.current.spawnProjectile(data.attackerId, data.targetId, data.abilityId);
+        
+        // Also show floating damage text via Babylon Engine
+        if (!data.isMiss && data.damage > 0) {
+          engineRef.current.renderDamageText(data.targetId, data.damage, data.isCrit);
+        } else if (data.isMiss) {
+          engineRef.current.renderDamageText(data.targetId, "MISS", false);
+        }
+      }
+    };
+    window.addEventListener('combat_update_event', handleCombatUpdate);
+    return () => window.removeEventListener('combat_update_event', handleCombatUpdate);
+  }, []);
+
+  useEffect(() => {
     if (engineRef.current) {
       if (activeLayerIdx === -2) {
         engineRef.current.enableLogicGridOverlay(activeMap?.grid || []);
@@ -295,10 +300,32 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
     engineRef.current = babylonEngine;
+    setIsEngineReady(true);
 
     if (onCanvasReady) {
       onCanvasReady(babylonEngine);
     }
+
+    babylonEngine.onEntityClick = (entityId) => {
+      const state = useGameStore.getState();
+      let targetName = 'Unknown Target';
+      
+      if (entityId.startsWith('npc_')) {
+        const trueId = entityId.replace('npc_', '');
+        const npc = activeMap.npcs?.find((n: any) => n.id === trueId);
+        targetName = npc?.name || `NPC ${trueId}`;
+      } else if (state.otherPlayers?.[entityId]) {
+        targetName = state.otherPlayers[entityId].name;
+      }
+
+      state.setCombatTarget({
+        entityId,
+        name: targetName,
+        hp: 100, // TODO: Sync from server
+        maxHp: 100,
+        behavior: 'CALM'
+      });
+    };
 
     // Load actual map grid and NPCs with fully resolved async data
     babylonEngine.loadTilemap({
@@ -345,42 +372,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           spriteConfig: freshPlayer.spriteConfig
         });
 
-        // Camera smoothly tracks player (already snapped on first tick)
-        babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
+        // Camera smoothly tracks player mesh (for fluid interpolation)
+        const playerMesh = babylonEngine.getEntityMesh('player_main');
+        if (playerMesh) {
+          babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.08);
+        } else {
+          babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
+        }
       }
 
-      // Render connected multiplayer players with interpolation (Phase 2)
+      // Render connected multiplayer players
       const freshOtherPlayers = useGameStore.getState().otherPlayers;
-      const now = performance.now();
       if (freshOtherPlayers) {
         Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
           const targetX = other.x || 6;
           const targetY = other.y || 2;
-          const interpKey = socketId;
-          let interp = interpBufferRef.current[interpKey];
-
-          // If target position changed, start a new interpolation
-          if (!interp || interp.toX !== targetX || interp.toY !== targetY) {
-            interpBufferRef.current[interpKey] = {
-              fromX: interp ? interp.toX : targetX,
-              fromY: interp ? interp.toY : targetY,
-              toX: targetX,
-              toY: targetY,
-              startTime: now,
-              duration: 200, // 200ms interpolation (matches server MOVE_COOLDOWN)
-            };
-            interp = interpBufferRef.current[interpKey];
-          }
-
-          // Calculate interpolated position
-          const elapsed = now - interp.startTime;
-          const t = Math.min(1, elapsed / interp.duration);
-          const smoothT = t * t * (3 - 2 * t); // Smooth-step easing
-          const interpX = interp.fromX + (interp.toX - interp.fromX) * smoothT;
-          const interpY = interp.fromY + (interp.toY - interp.fromY) * smoothT;
-
-          const ox = interpX - mapWidth / 2;
-          const oz = mapHeight / 2 - interpY;
+          
+          const ox = targetX - mapWidth / 2;
+          const oz = mapHeight / 2 - targetY;
+          
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
             name: other.name || 'Tamer',
@@ -396,13 +406,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spriteConfig: (other as any).spriteConfig
           });
         });
-
-        // Clean up interpolation entries for disconnected players
-        for (const key of Object.keys(interpBufferRef.current)) {
-          if (!freshOtherPlayers[key]) {
-            delete interpBufferRef.current[key];
-          }
-        }
       }
 
       // Render dynamic map entities (NPCs / Animals) from the global store
@@ -440,34 +443,67 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.updateSelectionRing(combatTarget?.entityId ?? null);
   }, [combatTarget]);
 
-  // Handle Combat Projectile Events (Capture)
+  // Handle Combat Projectile & HP Events
   useEffect(() => {
-    const handleCaptureStart = (e: Event) => {
+    const handleCombatUpdate = (e: Event) => {
       const customEvent = e as CustomEvent;
       const data = customEvent.detail;
       const engine = engineRef.current;
-      if (engine && data.entityId && data.targetId) {
-        // e.g. entityId = socketId, targetId = creatureId
-        engine.renderProjectile(data.entityId, data.targetId, 'tuxeball', data.castTimeMs || 1500);
+      if (engine && data.attackerId && data.targetId) {
+        // Fire projectile
+        engine.renderProjectile(data.attackerId, data.targetId, 'fireball', 500); // 500ms cast/travel time
+        
+        // Show damage text slightly delayed to match projectile impact
+        setTimeout(() => {
+          engine.renderDamageText(data.targetId, data.damage, data.isCrit);
+        }, 500);
       }
     };
 
-    const handleCaptureInterrupted = (e: Event) => {
+    const handleHpUpdate = (e: Event) => {
       const customEvent = e as CustomEvent;
       const data = customEvent.detail;
       const engine = engineRef.current;
       if (engine && data.entityId) {
-        engine.disposeProjectile(data.entityId);
+        engine.renderHealthBar(data.entityId, data.hpPercent);
       }
     };
 
-    window.addEventListener('capture_start_event', handleCaptureStart);
-    window.addEventListener('capture_interrupted_event', handleCaptureInterrupted);
-    return () => {
-      window.removeEventListener('capture_start_event', handleCaptureStart);
-      window.removeEventListener('capture_interrupted_event', handleCaptureInterrupted);
+    const handleLootDropped = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const data = customEvent.detail;
+      const engine = engineRef.current;
+      if (engine && data.id) {
+        // Render a loot bag as a temporary entity (assuming we have an item sprite)
+        engine.updateEntity({
+          id: data.id,
+          name: 'Loot',
+          x: data.x - (activeMap?.width || 0) / 2,
+          y: (activeMap?.height || 0) / 2 - data.y,
+          spriteUrl: '/assets/sprites/16x16-rpg-items.png',
+          isPlayer: false,
+          spriteConfig: {
+            columns: 1,
+            rows: 1,
+            idleFrame: 0,
+            walkCycle: [0],
+            walkSpeed: 0,
+            directions: { down: 0, up: 0, left: 0, right: 0 }
+          }
+        });
+      }
     };
-  }, []);
+
+    window.addEventListener('combat_update_event', handleCombatUpdate);
+    window.addEventListener('creature_hp_update_event', handleHpUpdate);
+    window.addEventListener('loot_dropped_event', handleLootDropped);
+    
+    return () => {
+      window.removeEventListener('combat_update_event', handleCombatUpdate);
+      window.removeEventListener('creature_hp_update_event', handleHpUpdate);
+      window.removeEventListener('loot_dropped_event', handleLootDropped);
+    };
+  }, [activeMap]);
 
 
   // Handle Live Dev Editor Tile Picking & Click-to-Move
@@ -637,6 +673,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
+
+      {isEngineReady && engineRef.current && (
+        <FloatingHealthBars engine={engineRef.current} />
+      )}
       
       {/* 2.5D HUD Badge */}
       <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">

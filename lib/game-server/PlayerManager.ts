@@ -1,7 +1,8 @@
 import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
-
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 export interface PlayerState {
   entityId: string;
   accountId: string;
@@ -16,6 +17,7 @@ export interface PlayerState {
   lastMoveTime: number;
   hp: number;
   maxHp: number;
+  isLocked: boolean;
 }
 
 const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
@@ -40,10 +42,27 @@ export class PlayerManager {
     this.engine.events.on("creatureAoEAttack", (data) => this.handleCreatureAoEAttack(data));
     this.engine.events.on("processInputs", () => this.processInputs());
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
+    this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
+    this.engine.events.on("unlockPlayerMovement", (accountId) => this.setPlayerLock(accountId, false));
+  }
+
+  private setPlayerLock(accountId: string, isLocked: boolean) {
+    const player = Array.from(this.players.values()).find(p => p.accountId === accountId);
+    if (player) {
+      player.isLocked = isLocked;
+      // Clear queue if locked
+      if (isLocked) {
+        this.inputQueues.set(player.entityId, []);
+      }
+    }
   }
 
   public getPlayerCount(): number {
     return this.players.size;
+  }
+
+  public getPlayer(entityId: string): PlayerState | undefined {
+    return this.players.get(entityId);
   }
 
   private async handleClientJoin({ accountId, socketId, data }: any) {
@@ -72,7 +91,8 @@ export class PlayerManager {
       isMoving: false,
       lastMoveTime: 0,
       hp: 100,
-      maxHp: 100
+      maxHp: 100,
+      isLocked: false
     };
 
     this.players.set(entityId, player);
@@ -259,6 +279,7 @@ export class PlayerManager {
       if (!player) continue;
 
       if (now - player.lastMoveTime < MOVE_COOLDOWN_MS) continue;
+      if (player.isLocked) continue;
 
       const input = queue.shift()!;
       if (input.type === "MOVE" && input.direction) {
@@ -347,19 +368,37 @@ export class PlayerManager {
     this.dirtyEntities.clear();
   }
 
-  private handleDisconnect({ accountId, socketId }: any) {
-    let player = Array.from(this.players.values()).find(p => p.accountId === accountId);
+  private async handleDisconnect({ accountId, socketId }: { accountId: string, socketId: string }) {
+    const player = Array.from(this.players.values()).find(p => p.socketId === socketId);
     if (player) {
       this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
-      this.worldManager.leaveInstance(player.mapId, player.accountId);
+      this.worldManager.leaveInstance(player.mapId, accountId);
       this.players.delete(player.entityId);
       this.inputQueues.delete(player.entityId);
-      
       this.engine.events.emit("networkBroadcast", {
         room: player.mapId,
         event: "player_left",
         data: socketId
       });
+      
+      // Persist to Database! (If it's a real character ID from the database)
+      if (accountId && !accountId.startsWith('acc_')) {
+        try {
+          // Resolve instanceId back to map slug if needed, but for now we'll just save position
+          const stateData = JSON.stringify({
+             currentMapId: player.mapId.split('_')[0], // Extract base map slug from instance
+             position: { x: player.x, y: player.y }
+          });
+          
+          await prisma.gameCharacter.update({
+            where: { id: accountId },
+            data: { stateData }
+          });
+          console.log(`[PlayerManager] Persisted ${player.name} to DB.`);
+        } catch (err) {
+          console.error(`[PlayerManager] Failed to persist ${player.name}:`, err);
+        }
+      }
     }
   }
 }

@@ -10,6 +10,9 @@ export class GameEngine {
   private lastNetworkTick = Date.now();
   private isRunning = false;
   
+  // Mapping of AccountId -> SocketId
+  private accountSocketMap = new Map<string, string>();
+  
   // Event Bus for decoupling systems (Combat, World, Player managers)
   public events = new EventEmitter();
 
@@ -19,6 +22,18 @@ export class GameEngine {
     this.lastNetworkTick = Date.now();
     this.tickLoop();
     console.log(`[GameEngine] Started (Sim: ${this.tickRate} TPS, Net: ${this.networkTickRate} TPS)`);
+    
+    // Listen for join/leave to maintain socket map
+    this.events.on("clientJoinRequest", ({ accountId, socketId }) => {
+      this.accountSocketMap.set(accountId, socketId);
+    });
+    this.events.on("playerDisconnected", ({ accountId }) => {
+      this.accountSocketMap.delete(accountId);
+    });
+  }
+
+  public getSocketIdForAccount(accountId: string): string | undefined {
+    return this.accountSocketMap.get(accountId);
   }
 
   public stop() {

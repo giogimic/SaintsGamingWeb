@@ -23,6 +23,7 @@ import DraggablePanel from './DraggablePanel';
 import GameTitleScreen from './GameTitleScreen';
 import GameLogin from './GameLogin';
 import ServerSelect from './ServerSelect';
+import BattleOverlay from './BattleOverlay';
 import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
@@ -104,11 +105,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       useGameStore.setState({ currentMapId: validMapId, gameMode: 'EXPLORING' });
 
       setActiveCharacterId(charId);
+      setShowCreator(false);
+      setShowSelector(false);
+      
       if (typeof window !== 'undefined') {
         window.history.pushState({}, '', `/lobby?characterId=${charId}`);
       }
     } else {
       useGameStore.getState().setGameMode('CHARACTER_SELECT');
+      setShowSelector(true);
     }
     setIsInitializing(false);
   };
@@ -193,6 +198,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         socket.emit(event, data);
       });
       socket.emit('join_map', {
+        accountId: activeCharacterId || state.player.accountId,
         mapId: state.currentMapId,
         x: state.player.position?.x ?? 6,
         y: state.player.position?.y ?? 2,
@@ -295,9 +301,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       useGameStore.getState().setGameMode('BATTLE');
     });
     
+    socket.on('battle_started', (data) => {
+      const state = useGameStore.getState();
+      state.setActiveBattle(data);
+      state.setGameMode('BATTLE');
+    });
+
     socket.on('battle_update', (data) => {
       useGameStore.getState().setActiveBattle({
-        ...useGameStore.getState().activeBattle,
+        ...useGameStore.getState().activeBattle!,
         ...data
       });
     });
@@ -323,16 +335,12 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       window.dispatchEvent(msgEvent);
     });
 
-    socket.on('capture_start', (data) => {
-      window.dispatchEvent(new CustomEvent('capture_start_event', { detail: data }));
+    socket.on('loot_dropped', (data) => {
+      window.dispatchEvent(new CustomEvent('loot_dropped_event', { detail: data }));
     });
 
-    socket.on('capture_result', (data) => {
-      window.dispatchEvent(new CustomEvent('capture_result_event', { detail: data }));
-    });
-
-    socket.on('capture_interrupted', (data) => {
-      window.dispatchEvent(new CustomEvent('capture_interrupted_event', { detail: data }));
+    socket.on('creature_hp_update', (data) => {
+      window.dispatchEvent(new CustomEvent('creature_hp_update_event', { detail: data }));
     });
 
     // ─── Phase 2: Server-Authoritative Movement Reconciliation ───
@@ -359,6 +367,32 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       state.setCurrentMapId(data.mapId);
       state.setPlayerPosition({ x: data.x, y: data.y }, 'down', false);
       state.modifyHp(9999); // Full heal (clamped to maxHp by modifyHp)
+    });
+
+    // --- PHASE 6: Dialogue ---
+    socket.on('dialogue_start', (data) => {
+      useGameStore.getState().setActiveDialog(data);
+      useGameStore.getState().setGameMode('DIALOG');
+    });
+
+    socket.on('dialogue_end', () => {
+      useGameStore.getState().setActiveDialog(null);
+      useGameStore.getState().setGameMode('EXPLORING');
+    });
+
+    // --- PHASE 7: Skills & Toast ---
+    socket.on('skill_xp_gained', (data) => {
+      useGameStore.setState((state) => {
+        if (!state.player.skills[data.skillSlug]) {
+          state.player.skills[data.skillSlug] = { level: 1, xp: 0 };
+        }
+        state.player.skills[data.skillSlug].xp = data.totalXp;
+        state.player.skills[data.skillSlug].level = data.level;
+      });
+    });
+
+    socket.on('show_toast', (data) => {
+      useGameStore.getState().showToast(data.message);
     });
 
     return () => {
@@ -550,7 +584,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
         {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
         {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-        {gameMode === 'BATTLE' && <TargetFrame />}
+        {gameMode === 'BATTLE' && <BattleOverlay />}
         {gameMode === 'PARTY' && <PartyOverlay />}
         {gameMode === 'DEX' && <SaintsDexOverlay />}
       </div>

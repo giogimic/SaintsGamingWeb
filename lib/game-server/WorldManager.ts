@@ -18,10 +18,43 @@ export class WorldManager {
 
   constructor(private engine: GameEngine) {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
+    this.engine.events.on("adminSaveMap", (data) => this.handleAdminSaveMap(data));
+  }
+
+  private async handleAdminSaveMap(data: any) {
+    if (!data.mapId) return;
+    const success = await mapLoader.saveMapData(data.mapId, data);
+    if (success) {
+      console.log(`[WorldManager] Map ${data.mapId} saved to database and hot reloaded.`);
+      // Optionally broadcast to all players in map to reload
+      this.engine.events.emit("networkBroadcast", {
+        room: data.mapId,
+        event: "map_reloaded",
+        data: { mapId: data.mapId }
+      });
+    }
   }
 
   public async initialize() {
     await mapLoader.initialize();
+    this.startAiLoop();
+  }
+
+  private startAiLoop() {
+    // Phase 6: Finite State Machine for NPC AI
+    // Ticks at 1Hz to save server performance
+    setInterval(() => this.processAiTick(), 1000);
+    console.log("[WorldManager] 1Hz NPC AI Loop started.");
+  }
+
+  private processAiTick() {
+    // We would loop through active instances and process NPC pathing
+    // For now, this is a stub for the architecture.
+    for (const [instanceId, instance] of this.instances.entries()) {
+      if (instance.playerCount > 0) {
+        this.engine.events.emit("aiTick", { instanceId, mapId: instance.mapId });
+      }
+    }
   }
 
   public async loadMap(mapId: string) {

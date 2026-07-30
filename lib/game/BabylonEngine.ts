@@ -15,7 +15,8 @@ import {
   Mesh,
   TransformNode,
   VertexBuffer,
-  VertexData
+  VertexData,
+  Matrix
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../../components/the-lobby/data/tileset-sizes";
@@ -109,6 +110,24 @@ export class BabylonEngine {
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
+
+  public onEntityClick?: (entityId: string) => void;
+
+  public getEntityScreenPosition(entityId: string): { x: number, y: number, isVisible: boolean } | null {
+    const mesh = this.entityMeshes.get(entityId);
+    if (!mesh) return null;
+    
+    // Project 3D coordinate to screen coordinate (offset up for health bar)
+    const pos = Vector3.Project(
+      mesh.position.add(new Vector3(0, 1.8, 0)),
+      Matrix.Identity(),
+      this.scene.getTransformMatrix(),
+      this.camera.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight())
+    );
+    
+    return { x: pos.x, y: pos.y, isVisible: pos.z < 1.0 && pos.z > 0.0 };
+  }
+
   private waterMaterials: StandardMaterial[] = [];
   private guiTexture: AdvancedDynamicTexture;
   private chatBubbles: Map<string, Rectangle> = new Map();
@@ -175,6 +194,19 @@ export class BabylonEngine {
       this.camera.orthoTop = newOrtho;
       this.camera.orthoBottom = -newOrtho;
     }, { passive: false });
+
+    // Entity Pointer Interaction
+    this.scene.onPointerObservable.add((pointerInfo) => {
+      if (pointerInfo.type === 1) { // PointerEventTypes.POINTERDOWN
+        if (pointerInfo.pickInfo?.hit && pointerInfo.pickInfo.pickedMesh) {
+          const name = pointerInfo.pickInfo.pickedMesh.name;
+          if (name.startsWith('entity_') && this.onEntityClick) {
+            const entityId = name.replace('entity_', '');
+            this.onEntityClick(entityId);
+          }
+        }
+      }
+    });
 
     // Generate procedural textures
     this.createDefaultPlayerTexture();
@@ -1118,6 +1150,10 @@ export class BabylonEngine {
     this.scene.onPointerDown = undefined;
   }
 
+  public getEntityMesh(entityId: string) {
+    return this.entityMeshes.get(entityId);
+  }
+
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
     const targetPos = new Vector3(entity.x, 0.85, entity.y);
@@ -1147,6 +1183,9 @@ export class BabylonEngine {
 
       // For orthographic 2.5D, fixed tilt is much more stable than billboarding
       spriteMesh.rotation.x = Math.PI / 4;
+      
+      // Make entities pickable for combat targeting
+      spriteMesh.isPickable = true;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
       mat.useAlphaFromDiffuseTexture = true;
@@ -1368,6 +1407,135 @@ export class BabylonEngine {
     });
 
     this.activeProjectiles.set(sourceId, { mesh: projectile, observer: animObserver });
+  }
+
+  public renderDamageText(targetId: string, damage: number | string, isCrit: boolean) {
+    const targetMesh = this.entityMeshes.get(targetId);
+    if (!targetMesh) return;
+
+    // Create a plane for the text
+    const plane = MeshBuilder.CreatePlane(`dmgTxt_${Date.now()}`, { width: 2, height: 1 }, this.scene);
+    plane.position = targetMesh.position.clone();
+    plane.position.y += 2.5; // Start above head
+    plane.billboardMode = Mesh.BILLBOARDMODE_ALL; // Always face camera
+
+    // Create dynamic texture
+    const dt = new DynamicTexture(`dt_${Date.now()}`, { width: 256, height: 128 }, this.scene, false);
+    dt.hasAlpha = true;
+    
+    const mat = new StandardMaterial(`mat_${Date.now()}`, this.scene);
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.backFaceCulling = false;
+    plane.material = mat;
+
+    const font = isCrit ? "bold 64px Arial" : "bold 48px Arial";
+    const color = isCrit ? "yellow" : "white";
+    
+    // Draw text
+    dt.drawText(damage.toString(), null, null, font, color, "transparent", true);
+
+    // Animate: float up and fade out over 1.5s
+    const startTime = performance.now();
+    const durationMs = 1500;
+    
+    const observer = this.scene.onBeforeRenderObservable.add(() => {
+      const progress = (performance.now() - startTime) / durationMs;
+      if (progress >= 1.0) {
+        this.scene.onBeforeRenderObservable.remove(observer);
+        plane.dispose();
+        mat.dispose();
+        dt.dispose();
+        return;
+      }
+      
+      plane.position.y += 0.02; // Float up
+      mat.alpha = 1.0 - progress; // Fade out
+    });
+  }
+
+  public spawnProjectile(attackerId: string, targetId: string, abilityId: string) {
+    const attacker = this.entityMeshes.get(attackerId);
+    const target = this.entityMeshes.get(targetId);
+    if (!attacker || !target) return;
+
+    const projectileId = `proj_${Date.now()}_${Math.random()}`;
+    const mesh = MeshBuilder.CreateSphere(projectileId, { diameter: 0.5 }, this.scene);
+    mesh.position = attacker.position.clone();
+    mesh.position.y += 1.0; // Shoot from chest height
+
+    const mat = new StandardMaterial(`mat_${projectileId}`, this.scene);
+    mat.emissiveColor = new Color3(1, 0.5, 0); // Orange fireball
+    mat.diffuseColor = new Color3(1, 0.2, 0);
+    mesh.material = mat;
+
+    const targetPos = target.position.clone();
+    targetPos.y += 1.0;
+
+    const durationMs = 300;
+    const startTime = performance.now();
+
+    const observer = this.scene.onBeforeRenderObservable.add(() => {
+      const now = performance.now();
+      const progress = Math.min(1.0, (now - startTime) / durationMs);
+      
+      mesh.position = Vector3.Lerp(attacker.position.clone().add(new Vector3(0, 1.0, 0)), targetPos, progress);
+
+      if (progress >= 1.0) {
+        this.scene.onBeforeRenderObservable.remove(observer);
+        mesh.dispose();
+        mat.dispose();
+        this.activeProjectiles.delete(projectileId);
+      }
+    });
+
+    this.activeProjectiles.set(projectileId, { mesh, observer });
+  }
+
+  public renderHealthBar(targetId: string, hpPercent: number) {
+    const targetMesh = this.entityMeshes.get(targetId);
+    if (!targetMesh) return;
+
+    let hpBarGroup = this.scene.getMeshByName(`hpGroup_${targetId}`);
+    let fgMesh = this.scene.getMeshByName(`hpFg_${targetId}`);
+
+    if (!hpBarGroup || !fgMesh) {
+      // Create new health bar
+      hpBarGroup = MeshBuilder.CreatePlane(`hpGroup_${targetId}`, { width: 1.5, height: 0.2 }, this.scene);
+      hpBarGroup.position.y = 2.0; // Above head
+      hpBarGroup.parent = targetMesh; // Attach to entity
+      hpBarGroup.billboardMode = Mesh.BILLBOARDMODE_ALL;
+
+      const bgMat = new StandardMaterial(`hpBgMat_${targetId}`, this.scene);
+      bgMat.diffuseColor = new Color3(0.2, 0.2, 0.2);
+      bgMat.emissiveColor = new Color3(0.2, 0.2, 0.2);
+      hpBarGroup.material = bgMat;
+
+      fgMesh = MeshBuilder.CreatePlane(`hpFg_${targetId}`, { width: 1.5, height: 0.2 }, this.scene);
+      fgMesh.parent = hpBarGroup;
+      fgMesh.position.z = -0.01; // Slightly in front of bg
+
+      const fgMat = new StandardMaterial(`hpFgMat_${targetId}`, this.scene);
+      fgMat.diffuseColor = new Color3(0.2, 0.8, 0.2); // Green
+      fgMat.emissiveColor = new Color3(0.2, 0.8, 0.2);
+      fgMesh.material = fgMat;
+    }
+
+    // Update width and color based on HP
+    fgMesh.scaling.x = Math.max(0.01, hpPercent);
+    fgMesh.position.x = -0.75 + (1.5 * fgMesh.scaling.x) / 2; // Keep left-aligned
+
+    const mat = fgMesh.material as StandardMaterial;
+    if (hpPercent < 0.2) {
+      mat.diffuseColor = new Color3(0.8, 0.1, 0.1); // Red
+      mat.emissiveColor = new Color3(0.8, 0.1, 0.1);
+    } else if (hpPercent < 0.5) {
+      mat.diffuseColor = new Color3(0.8, 0.8, 0.1); // Yellow
+      mat.emissiveColor = new Color3(0.8, 0.8, 0.1);
+    } else {
+      mat.diffuseColor = new Color3(0.2, 0.8, 0.2); // Green
+      mat.emissiveColor = new Color3(0.2, 0.8, 0.2);
+    }
   }
 
   public removeEntity(id: string) {

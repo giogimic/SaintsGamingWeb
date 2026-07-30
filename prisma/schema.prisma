@@ -134,8 +134,11 @@ model User {
   pinnedBeastId   String? // ID of the Tuxemon to display on profile
 
   // Generic Creature System
+  // Generic Creature System
   playerCreatures PlayerCreature[]
   playerInventory PlayerInventoryItem[]
+  playerSkills    PlayerSkill[]
+  playerQuestStates PlayerQuestState[]
 
   // Social
   socialPosts           SocialPost[]
@@ -1331,14 +1334,45 @@ model PlayerCreature {
 }
 
 model PlayerInventoryItem {
-  id       String @id @default(cuid())
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  itemSlug String
-  quantity Int    @default(1)
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemSlug    String
+  quantity    Int      @default(1)
+  
+  // Phase 7: ARPG Gear System
+  durability  Int?     // Current durability. Null if item is indestructible (e.g. wood, stone)
+  affixes     String?  // JSON: { "attackPower": +5, "lifesteal": 0.05 }
 
-  @@unique([userId, itemSlug])
+  @@unique([userId, itemSlug, id]) // Remove old unique constraint that prevented duplicates. Players can have multiple identical swords with different durability/affixes.
   @@index([userId])
+}
+
+// ─── Phase 7: The 27-Skill Matrix & Economy ─────────────────────
+
+model PlayerSkill {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillSlug String   // e.g. "woodcutting", "mining", "combat_melee"
+  level     Int      @default(1)
+  xp        Int      @default(0)
+
+  @@unique([userId, skillSlug])
+  @@index([userId])
+}
+
+model ItemTemplate {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String?
+  category       String   // "WEAPON", "ARMOR", "RESOURCE", "TOOL", "CONSUMABLE"
+  subCategory    String?  // "SWORD", "PICKAXE", "ORE"
+  tier           Int      @default(1)
+  baseDurability Int?     // If null, indestructible
+  baseStats      String?  // JSON: { "attackPower": 10, "gatherSpeed": 1.5 }
+  stackable      Boolean  @default(true)
 }
 
 // ─── Saints World Maps ──────────────────────────────────────────
@@ -1415,3 +1449,56 @@ model UiPreset {
   @@index([userId])
 }
 
+
+// ─── Quests & Narrative Engine ──────────────────────────────────────
+
+model NpcDialogueTree {
+  id        String   @id @default(cuid())
+  npcId     String   @unique
+  name      String   // Internal reference name
+  data      String   // JSON containing the node_start branching tree
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestTemplate {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  title          String
+  description    String
+  levelReq       Int              @default(1)
+  isRepeatable   Boolean          @default(false)
+  timeLimitMins  Int?             // Optional time limit
+  rewards        String           // JSON: { xp: 100, gold: 50, items: [{slug: "iron_sword", qty: 1}] }
+  objectives     QuestObjective[]
+  createdAt      DateTime         @default(now())
+}
+
+model QuestObjective {
+  id          String        @id @default(cuid())
+  questId     String
+  quest       QuestTemplate @relation(fields: [questId], references: [id], onDelete: Cascade)
+  stage       Int           // 1, 2, 3...
+  type        String        // "KILL", "GATHER", "TALK", "EXPLORE"
+  targetSlug  String        // e.g. "goblin", "iron_ore", "npc_blacksmith"
+  requiredQty Int           @default(1)
+  description String
+
+  @@unique([questId, stage])
+  @@index([questId])
+}
+
+model PlayerQuestState {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questSlug      String
+  status         String        @default("ACTIVE") // "ACTIVE", "COMPLETED", "FAILED"
+  currentStage   Int           @default(1)
+  progress       Int           @default(0) // How many of the requiredQty have been collected/killed
+  acceptedAt     DateTime      @default(now())
+  completedAt    DateTime?
+
+  @@unique([userId, questSlug])
+  @@index([userId])
+}
