@@ -375,6 +375,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       window.dispatchEvent(new CustomEvent('loot_dropped_event', { detail: data }));
     });
 
+    socket.on('loot_despawned', (data) => {
+      window.dispatchEvent(new CustomEvent('loot_despawned_event', { detail: data }));
+    });
+
     socket.on('creature_hp_update', (data) => {
       window.dispatchEvent(new CustomEvent('creature_hp_update_event', { detail: data }));
     });

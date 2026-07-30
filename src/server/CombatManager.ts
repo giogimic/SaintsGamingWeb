@@ -40,6 +40,7 @@ export class CombatManager {
       // In a full DB implementation, we'd calculate this based on equipped gear.
       // For now, use basic level-scaled stats for the demo.
       return {
+        mapId: player.mapId,
         physicalPower: 10 + player.hp * 0.5,
         abilityPower: 10 + player.hp * 0.5,
         combatTempo: 100,
@@ -53,6 +54,7 @@ export class CombatManager {
     const creature = this.creatureManager.getCreature(entityId);
     if (creature) {
       return {
+        mapId: creature.mapId,
         physicalPower: 25,
         abilityPower: 20,
         combatTempo: 90,
@@ -65,6 +67,7 @@ export class CombatManager {
 
     // Fallback if entity not found
     return {
+      mapId: "SAINTS_VILLAGE",
       physicalPower: 10,
       abilityPower: 10,
       combatTempo: 100,
@@ -98,7 +101,7 @@ export class CombatManager {
     if (!isHit) {
       // Missed
       this.engine.events.emit("networkBroadcast", {
-        room: "lobby_ch1", // TODO: use actual mapId of entity
+        room: attackerStats.mapId || "SAINTS_VILLAGE",
         event: "combat_update",
         data: {
           type: "ATTACK_RESULT",
@@ -148,7 +151,7 @@ export class CombatManager {
 
     // Execute ability visually
     this.engine.events.emit("networkBroadcast", {
-      room: "lobby_ch1",
+      room: attackerStats.mapId || "SAINTS_VILLAGE",
       event: "combat_update",
       data: {
         type: "ATTACK_RESULT",

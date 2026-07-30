@@ -54,8 +54,46 @@ async function loadMapData(mapId) {
     
     // Fallback if map not found (create empty fallback in memory)
     console.warn(`[MapLoader] Map "${mapId}" not found in DB. Falling back to blank map.`);
-    const grid = Array(20).fill(null).map(() => Array(20).fill(0));
-    mapCache[mapId] = { id: mapId, name: 'Unknown', grid, gates: {}, npcs: [], width: 20, height: 20 };
+    let grid = Array(20).fill(null).map(() => Array(20).fill(0));
+    let npcs = [];
+    let width = 20;
+    let height = 20;
+
+    // Auto-Seed SAINTS_VILLAGE as a sandbox map if missing
+    if (mapId === 'SAINTS_VILLAGE' || mapId === 'DEMO_SANDBOX') {
+      width = 30;
+      height = 30;
+      grid = [];
+      for (let y = 0; y < height; y++) {
+        const row = [];
+        for (let x = 0; x < width; x++) {
+          let tile = 1;
+          if (x < 10 && y < 10) tile = 3;
+          else if (x > 20 && y < 10) tile = 10;
+          else if (x > 20 && y > 20) tile = (x + y) % 2 === 0 ? 5 : 6;
+          else if (x >= 12 && x <= 16 && y >= 12 && y <= 16) tile = 18;
+          row.push(tile);
+        }
+        grid.push(row);
+      }
+      npcs = [{ id: "npc_guide_1", templateId: "Villager", name: "Guide", x: 14, y: 14, sprite: "npc_default", direction: "down" }];
+      
+      // Attempt to save this auto-seeded map back to the database asynchronously
+      prisma.gameMap.upsert({
+        where: { id: 'SAINTS_VILLAGE' },
+        update: {},
+        create: {
+          id: 'SAINTS_VILLAGE',
+          name: "Saints Village Sandbox",
+          width,
+          height,
+          tilesetData: JSON.stringify(grid),
+          npcs: JSON.stringify(npcs),
+        }
+      }).catch(err => console.error("[MapLoader] Failed to auto-seed SAINTS_VILLAGE:", err.message));
+    }
+
+    mapCache[mapId] = { id: mapId, name: mapId === 'SAINTS_VILLAGE' ? 'Saints Village Sandbox' : 'Unknown', grid, gates: {}, npcs, width, height };
     return mapCache[mapId];
 
   } catch (err) {

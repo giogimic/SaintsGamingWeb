@@ -22,6 +22,7 @@ export class InventoryManager {
   constructor(private engine: GameEngine, private worldManager: WorldManager) {
     this.engine.events.on("gatherInteractRequest", (data) => this.handleGather(data));
     this.engine.events.on("entityDeath", (data) => this.handleEntityDeath(data));
+    this.engine.events.on("pickupLootRequest", (data) => this.handlePickupLootRequest(data));
   }
 
   public async initialize() {
@@ -153,6 +154,15 @@ export class InventoryManager {
       event: "loot_dropped",
       data: { id: lootId, x: data.x, y: data.y, items }
     });
+  }
+
+  private handlePickupLootRequest(data: { accountId: string, socketId: string, mapId: string, x: number, y: number }) {
+    for (const [lootId, loot] of this.activeLootBags.entries()) {
+      if (loot.mapId === data.mapId && loot.x === data.x && loot.y === data.y) {
+        this.pickupLoot(data.accountId, data.socketId, lootId, loot);
+        return;
+      }
+    }
   }
 
   private async pickupLoot(accountId: string, socketId: string, lootId: string, loot: any) {

@@ -374,11 +374,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       onCanvasReady(babylonEngine);
     }
 
-    babylonEngine.onEntityClick = (entityId) => {
-      const state = useGameStore.getState();
-      let targetName = 'Unknown Target';
-      
-      if (entityId.startsWith('npc_')) {
+      babylonEngine.onEntityClick = (entityId) => {
+        const state = useGameStore.getState();
+        let targetName = 'Unknown Target';
+        
+        if (entityId.startsWith('loot_')) {
+          const sprite = babylonEngine.getEntityMesh(entityId);
+          if (sprite) {
+            const mapId = state.currentMapId;
+            const x = Math.round(sprite.position.x + (activeMap?.width || 0) / 2);
+            const y = Math.round((activeMap?.height || 0) / 2 - sprite.position.z);
+            state.emitSocketEvent('pickup_loot', { mapId, x, y });
+          }
+          return;
+        }
+
+        if (entityId.startsWith('npc_')) {
         const trueId = entityId.replace('npc_', '');
         const npc = activeMap.npcs?.find((n: any) => n.id === trueId);
         targetName = npc?.name || `NPC ${trueId}`;
@@ -562,14 +573,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
 
+    const handleLootDespawned = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const data = customEvent.detail;
+      const engine = engineRef.current;
+      if (engine && data.id) {
+        engine.removeEntity(data.id);
+      }
+    };
+
     window.addEventListener('combat_update_event', handleCombatUpdate);
     window.addEventListener('creature_hp_update_event', handleHpUpdate);
     window.addEventListener('loot_dropped_event', handleLootDropped);
+    window.addEventListener('loot_despawned_event', handleLootDespawned);
     
     return () => {
       window.removeEventListener('combat_update_event', handleCombatUpdate);
       window.removeEventListener('creature_hp_update_event', handleHpUpdate);
       window.removeEventListener('loot_dropped_event', handleLootDropped);
+      window.removeEventListener('loot_despawned_event', handleLootDespawned);
     };
   }, [activeMap]);
 
