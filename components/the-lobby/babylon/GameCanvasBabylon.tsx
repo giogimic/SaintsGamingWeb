@@ -279,9 +279,52 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       }
     };
+
+    // Phase 7: Node Depletion Visuals
+    // We store the original tiles so we can restore them when the node respawns
+    const depletedOriginals = new Map<string, { l1: number, l2: number }>();
+
+    const handleNodeDepleted = (e: Event) => {
+      const data = (e as CustomEvent).detail;
+      const { x, y } = data;
+      if (engineRef.current && mapData) {
+        // Save original tiles from Object layers (usually layer 1 or 2)
+        const l1 = mapData.tileLayers?.[1]?.grid?.[y]?.[x] || 0;
+        const l2 = mapData.tileLayers?.[2]?.grid?.[y]?.[x] || 0;
+        depletedOriginals.set(`${x}_${y}`, { l1, l2 });
+
+        // Clear the tiles visually
+        if (l1) engineRef.current.updateSingleTile(y, x, 0, 1, mapData.tilesets);
+        if (l2) engineRef.current.updateSingleTile(y, x, 0, 2, mapData.tilesets);
+
+        // Optionally place a stump tile (e.g. ID 15) on layer 1
+        // engineRef.current.updateSingleTile(y, x, 15, 1, mapData.tilesets);
+      }
+    };
+
+    const handleNodeRespawned = (e: Event) => {
+      const data = (e as CustomEvent).detail;
+      const { x, y } = data;
+      if (engineRef.current && mapData) {
+        // Restore original tiles
+        const orig = depletedOriginals.get(`${x}_${y}`);
+        if (orig) {
+          if (orig.l1) engineRef.current.updateSingleTile(y, x, orig.l1, 1, mapData.tilesets);
+          if (orig.l2) engineRef.current.updateSingleTile(y, x, orig.l2, 2, mapData.tilesets);
+          depletedOriginals.delete(`${x}_${y}`);
+        }
+      }
+    };
+
     window.addEventListener('combat_update_event', handleCombatUpdate);
-    return () => window.removeEventListener('combat_update_event', handleCombatUpdate);
-  }, []);
+    window.addEventListener('node_depleted_event', handleNodeDepleted);
+    window.addEventListener('node_respawned_event', handleNodeRespawned);
+    return () => {
+      window.removeEventListener('combat_update_event', handleCombatUpdate);
+      window.removeEventListener('node_depleted_event', handleNodeDepleted);
+      window.removeEventListener('node_respawned_event', handleNodeRespawned);
+    };
+  }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
 
   useEffect(() => {
     if (engineRef.current) {

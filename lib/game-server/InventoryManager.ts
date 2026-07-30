@@ -7,6 +7,15 @@ const prisma = new PrismaClient();
 // Using require for legacy map loader
 const mapLoader = require("../game/map-loader.js");
 
+// Phase 7: The 27-Skill Matrix & Economy
+// Mapping Logic Tile IDs to their corresponding Skill, Drops, and Respawn Time
+const RESOURCE_NODE_MAP: Record<number, { skillSlug: string, resourceSlug: string, xpAmount: number, respawnTimeMs: number }> = {
+  3: { skillSlug: "woodcutting", resourceSlug: "wood_log", xpAmount: 25, respawnTimeMs: 10000 },
+  4: { skillSlug: "mining", resourceSlug: "ore_copper", xpAmount: 25, respawnTimeMs: 15000 },
+  // 3 = LogicTile: Tree
+  // 4 = LogicTile: Rock
+};
+
 export class InventoryManager {
   private activeLootBags = new Map<string, { mapId: string, x: number, y: number, items: { itemId: string, quantity: number }[] }>();
 
@@ -42,12 +51,27 @@ export class InventoryManager {
 
     // Use mapLoader to find the logic tile at (x, y)
     const mapDef = mapLoader.getMapDataSync(instance.mapId);
-    if (!mapDef) return;
+    if (!mapDef || !mapDef.grid || !mapDef.grid[y] || mapDef.grid[y][x] === undefined) return;
 
-    // --- DEMO STUB ---
-    const resourceSlug = "wood";
-    const skillSlug = "woodcutting";
-    const xpAmount = 25;
+    const tileId = mapDef.grid[y][x];
+    const nodeConfig = RESOURCE_NODE_MAP[tileId];
+
+    if (!nodeConfig) {
+      // Not a gatherable node
+      return;
+    }
+
+    // Phase 7: Check if node is on cooldown (depleted)
+    if (this.worldManager.isNodeDepleted(instance.instanceId, x, y)) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "show_toast",
+        data: { message: "This resource is depleted." }
+      });
+      return;
+    }
+
+    const { resourceSlug, skillSlug, xpAmount, respawnTimeMs } = nodeConfig;
     
     // Check DB for player
     const dbUser = await prisma.account.findFirst({
@@ -60,7 +84,7 @@ export class InventoryManager {
     // 2. Do they have the right tool equipped?
     // We check `PlayerEquipment` (not yet in schema, checking Inventory instead)
     const pickaxe = await prisma.playerInventoryItem.findFirst({
-      where: { userId, itemSlug: "axe_bronze" } // placeholder
+      where: { userId, itemSlug: skillSlug === "mining" ? "pickaxe_bronze" : "axe_bronze" } // placeholder
     });
     
     // We will let them gather barehanded for the demo, just for ease.
@@ -91,6 +115,9 @@ export class InventoryManager {
       data: { message: `Harvested +1 ${resourceSlug}` }
     });
     
+    // Phase 7: Deplete Node
+    this.worldManager.depleteNode(instance.instanceId, x, y, respawnTimeMs);
+
     // 6. Degrade Tool Durability (if using one)
     if (pickaxe && pickaxe.durability !== null) {
       const newDurability = pickaxe.durability - 1;
