@@ -1,3 +1,7 @@
+### 2.1.71
+- **UI & Layout Fix**: Fixed a CSS Flexbox bug that caused the game canvas to collapse into a tiny sliver on the Lobby page. Ensured the Next.js `main` layout propagates 100% height to the absolute positioned canvas wrapper.
+- **AI Rules Update**: Incorporated the Gameplay Bible's strict core philosophy into the AI instructions, mandating that future agent implementations enforce server authority and respect the game's social and creative identity.
+
 ### 2.1.70
 - **MMO Sharding Integration:** Upgraded Game Server to dynamically spin up instance channels (Ch.1, Ch.2, etc.) based on population limits (max 50 players/shard).
 - **Socket Grid Isolation:** Integrated `WorldManager` with `PlayerManager` so that server physics and broadcasts are perfectly isolated to specific instance channels.

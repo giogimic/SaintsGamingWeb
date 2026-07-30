@@ -32,7 +32,7 @@ export default async function MainLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.70";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.71";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
@@ -45,7 +45,7 @@ export default async function MainLayout({
       <AmbientBackground />
       <MessengerProvider>
         <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} siteVersion={siteVersion} />
-        <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
+        <main className="flex-1 flex flex-col sg-page-enter z-10 pt-28">{children}</main>
         <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
         <MessengerPopup />
         <Toaster position="bottom-right" theme="dark" />
