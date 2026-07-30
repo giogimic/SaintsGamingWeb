@@ -15,6 +15,10 @@ const MAX_PLAYERS_PER_SHARD = 50;
 export class WorldManager {
   // World -> Instances (e.g. Map Definition -> Lobby Channel 1, Player Base, etc.)
   private instances = new Map<string, MapInstance>();
+  
+  // Phase 7: Track depleted nodes to prevent gathering while on cooldown
+  // Key: instanceId_x_y -> expirationTimestamp
+  private depletedNodes = new Map<string, number>();
 
   constructor(private engine: GameEngine) {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
@@ -163,6 +167,43 @@ export class WorldManager {
 
   public moveEntity(instanceId: string, oldX: number, oldY: number, newX: number, newY: number, entityId: string) {
     spatialGrid.moveEntity(instanceId, oldX, oldY, newX, newY, entityId);
+  }
+
+  // --- Phase 7: Node Depletion Engine ---
+
+  public isNodeDepleted(instanceId: string, x: number, y: number): boolean {
+    const key = `${instanceId}_${x}_${y}`;
+    const expiration = this.depletedNodes.get(key);
+    if (expiration && Date.now() < expiration) {
+      return true;
+    }
+    // Clean up expired ones lazily
+    if (expiration) {
+      this.depletedNodes.delete(key);
+    }
+    return false;
+  }
+
+  public depleteNode(instanceId: string, x: number, y: number, durationMs: number) {
+    const key = `${instanceId}_${x}_${y}`;
+    this.depletedNodes.set(key, Date.now() + durationMs);
+
+    // Notify clients to show stump / empty rock
+    this.engine.events.emit("networkBroadcast", {
+      room: instanceId,
+      event: "node_depleted",
+      data: { x, y }
+    });
+
+    // Schedule respawn
+    setTimeout(() => {
+      this.depletedNodes.delete(key);
+      this.engine.events.emit("networkBroadcast", {
+        room: instanceId,
+        event: "node_respawned",
+        data: { x, y }
+      });
+    }, durationMs);
   }
 
   private resolveCollisions() {

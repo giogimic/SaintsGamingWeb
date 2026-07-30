@@ -343,6 +343,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       window.dispatchEvent(new CustomEvent('creature_hp_update_event', { detail: data }));
     });
 
+    // --- PHASE 7: Gathering & Economy ---
+    socket.on('node_depleted', (data) => {
+      window.dispatchEvent(new CustomEvent('node_depleted_event', { detail: data }));
+    });
+
+    socket.on('node_respawned', (data) => {
+      window.dispatchEvent(new CustomEvent('node_respawned_event', { detail: data }));
+    });
+
     // ─── Phase 2: Server-Authoritative Movement Reconciliation ───
     socket.on('move_ack', (data) => {
       // Server acknowledged our move — clear pending moves up to this seq
