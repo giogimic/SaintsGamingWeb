@@ -1,8 +1,8 @@
 import { GameEngine } from "./GameEngine";
 
 // Using require for legacy JS modules (they can be converted to TS later)
-const mapLoader = require("../game/map-loader.js");
-const spatialGrid = require("../game/spatial-grid.js");
+const mapLoader = require("../engine/map-loader.js");
+const spatialGrid = require("../engine/spatial-grid.js");
 
 export interface MapInstance {
   instanceId: string; // e.g. "SAINTS_VILLAGE_ch1"

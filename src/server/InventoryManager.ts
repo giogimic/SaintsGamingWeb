@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Using require for legacy map loader
-const mapLoader = require("../game/map-loader.js");
+const mapLoader = require("../engine/map-loader.js");
 
 // Phase 7: The 27-Skill Matrix & Economy
 // Mapping Logic Tile IDs to their corresponding Skill, Drops, and Respawn Time

@@ -40,17 +40,15 @@ The repository is strictly divided to maintain a clean boundary between engine l
 - `src/server/` - Socket.io authoritative game server
 
 ## Getting Started
-Please refer to the [Getting Started Guide](docs/getting-started/installation.md) for full instructions on setting up the database, Next.js environment, and Socket.io server.
+Please refer to the [Getting Started Guide](docs/developer-guide/installation.md) for full instructions on setting up the database, Next.js environment, and Socket.io server.
 
 ## Documentation
 The `docs/` folder contains the ultimate source of truth for this project:
+- **[Vision](docs/vision/game-idea.md)**
 - **[Architecture](docs/architecture/overview.md)**
-- **[Gameplay](docs/gameplay/combat.md)**
-- **[Editor Tools](docs/editor/maps.md)**
-- **[Developer Reference](docs/reference/developer-handbook.md)**
-
-## Roadmap
-Check [Current Phase](docs/roadmap/current-phase.md) to see what we are currently building, or view the [Backlog](docs/roadmap/backlog.md) for planned features.
+- **[Gameplay Bible](docs/gameplay-bible/01-core-philosophy.md)**
+- **[Developer Guide](docs/developer-guide/developer-handbook.md)**
+- **[Reference](docs/reference/api.md)**
 
 ## Contributing
 We welcome contributions! Before submitting PRs, please read the [Developer Handbook](docs/reference/developer-handbook.md) and adhere to our coding conventions.
@@ -58,3 +56,6 @@ We welcome contributions! Before submitting PRs, please read the [Developer Hand
 ## License
 - **Code:** Private / proprietary until stated otherwise.
 - **Assets:** Tuxemon assets and LPC sprites are licensed under GPL-3.0 / CC BY-SA 4.0. See [docs/TUXEMON_ATTRIBUTION.md](docs/TUXEMON_ATTRIBUTION.md) for details.
+
+## Changelog
+- **v2.1.78**: Completed engine documentation structure and Phase 2 Vertical Slice execution. Fixed map loading and auto-save state bugs.
