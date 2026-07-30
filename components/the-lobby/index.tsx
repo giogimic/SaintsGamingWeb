@@ -403,6 +403,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       }
       const key = e.key.toLowerCase();
       if (key === 'escape') setIsOptionsOpen(prev => !prev);
+      else if (key === '`' && isAdminUser) setIsDevEditorOpen(prev => !prev);
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
       else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
       else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
@@ -411,7 +412,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
-  }, []);
+  }, [isAdminUser]);
 
   if (isInitializing) {
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;

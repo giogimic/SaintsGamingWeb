@@ -1,3 +1,7 @@
+### 2.1.75
+- **MMO Integration**: Successfully hooked up the internal `PlayerManager` inside `server.ts` to the `/api/game/server-status` endpoint. The Server Select UI now instantly reflects the true online status of the Next.js hosted engine without pinging legacy ports.
+- **Map Editor Accessibility**: Restored the \` (Backtick) global hotkey allowing Developers to seamlessly toggle the Integrated Dev Editor directly in-game while live multiplayer syncing remains active.
+
 ### 2.1.74
 - **Ultimate UI Hotfix**: Changed the inline style property from `minHeight` to `height: calc(100vh - 7rem)` on the Lobby wrapper to ensure percentage-based child heights (`h-full`) resolve correctly, fixing the persistent 0-height container collapse.
 
