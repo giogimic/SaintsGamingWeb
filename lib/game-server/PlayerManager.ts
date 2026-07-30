@@ -1,6 +1,7 @@
 import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
+import { DatabasePersistenceManager } from "./PersistenceManager";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -44,6 +45,17 @@ export class PlayerManager {
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
     this.engine.events.on("unlockPlayerMovement", (accountId) => this.setPlayerLock(accountId, false));
+
+    // Phase 5: Periodic Database Flushing (Hot to Cold State)
+    setInterval(() => this.flushPlayerPositions(), 60000);
+  }
+
+  private persistence = new DatabasePersistenceManager();
+
+  private async flushPlayerPositions() {
+    for (const player of this.players.values()) {
+      await this.persistence.savePlayerPosition(player.accountId, player.mapId, player.x, player.y);
+    }
   }
 
   private setPlayerLock(accountId: string, isLocked: boolean) {
@@ -94,6 +106,14 @@ export class PlayerManager {
       maxHp: 100,
       isLocked: false
     };
+
+    // Phase 5: DB Hydration (Cold to Hot State)
+    const savedPos = await this.persistence.loadPlayerPosition(accountId);
+    if (savedPos) {
+      player.mapId = savedPos.mapId;
+      player.x = savedPos.x;
+      player.y = savedPos.y;
+    }
 
     this.players.set(entityId, player);
     this.inputQueues.set(entityId, []);
@@ -371,6 +391,9 @@ export class PlayerManager {
   private async handleDisconnect({ accountId, socketId }: { accountId: string, socketId: string }) {
     const player = Array.from(this.players.values()).find(p => p.socketId === socketId);
     if (player) {
+      // Phase 5: Emergency Flush on Disconnect
+      await this.persistence.savePlayerPosition(player.accountId, player.mapId, player.x, player.y);
+      
       this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
       this.worldManager.leaveInstance(player.mapId, accountId);
       this.players.delete(player.entityId);
@@ -380,25 +403,6 @@ export class PlayerManager {
         event: "player_left",
         data: socketId
       });
-      
-      // Persist to Database! (If it's a real character ID from the database)
-      if (accountId && !accountId.startsWith('acc_')) {
-        try {
-          // Resolve instanceId back to map slug if needed, but for now we'll just save position
-          const stateData = JSON.stringify({
-             currentMapId: player.mapId.split('_')[0], // Extract base map slug from instance
-             position: { x: player.x, y: player.y }
-          });
-          
-          await prisma.gameCharacter.update({
-            where: { id: accountId },
-            data: { stateData }
-          });
-          console.log(`[PlayerManager] Persisted ${player.name} to DB.`);
-        } catch (err) {
-          console.error(`[PlayerManager] Failed to persist ${player.name}:`, err);
-        }
-      }
     }
   }
 }
