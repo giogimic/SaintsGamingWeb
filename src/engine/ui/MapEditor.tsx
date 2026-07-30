@@ -374,7 +374,7 @@ export default function MapEditor() {
     };
 
     try {
-      const res = await fetch("/api/maps", {
+      const res = await fetch(`/api/maps/${map.slug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

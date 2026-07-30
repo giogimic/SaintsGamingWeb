@@ -7,7 +7,7 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { User, Skull, Sparkles, Wrench, Shield, Zap, ArrowLeft, Gamepad2 } from "lucide-react";
 import { toast } from "sonner";
-import { INITIAL_SKILLS } from "./store";
+import { INITIAL_SKILLS, useGameStore } from "./store";
 
 const PRESET_SPRITES = [
   { id: "adventurer", label: "Tamer Adventurer", path: "/tuxemon-assets/npc/adventurer.png", icon: User },
@@ -109,16 +109,6 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
 
     setLoading(true);
     
-    // Check if user is authenticated
-    const session = await fetch('/api/auth/session').then(r => r.json());
-    if (!session?.user) {
-      toast.error("Please log in first to create a character.");
-      setLoading(false);
-      // Redirect to login
-      window.location.href = '/login?callbackUrl=/lobby';
-      return;
-    }
-
     const selectedClass = CLASSES.find(c => c.id === classId);
     
     // Construct initial skills with class bonuses
@@ -132,8 +122,8 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     }
 
     const initialState = {
-      currentMapId: 'PLAYER_HOUSE_BEDROOM',
-      position: { x: 6, y: 2 },
+      currentMapId: 'DEMO_SANDBOX',
+      position: { x: 14, y: 15 },
       level: 1,
       xp: 0,
       hp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
@@ -168,6 +158,10 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     } else {
       toast.error(result.error || "Failed to create character.");
       setLoading(false);
+      if (result.error === 'Unauthorized') {
+        useGameStore.getState().setGameMode('LOGIN');
+        window.dispatchEvent(new CustomEvent('close_creator'));
+      }
     }
   };
 

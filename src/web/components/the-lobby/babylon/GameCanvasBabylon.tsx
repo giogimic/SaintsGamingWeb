@@ -11,6 +11,23 @@ import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand 
 import { findPath } from '@/engine/pathfinding';
 import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
+
+const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
+  const playerPos = useGameStore((state) => state.player.position);
+  return (
+    <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
+      <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
+      <span className="text-slate-400">Map:</span>
+      <strong className="text-white">{activeMapName || currentMapId}</strong>
+      <span className="text-slate-600">|</span>
+      <span className="text-slate-400">Pos:</span>
+      <strong className="text-amber-300">({playerPos?.x ?? 0}, {playerPos?.y ?? 0})</strong>
+      <span className="text-slate-600">|</span>
+      <span className="text-slate-500 hidden sm:inline">BGD / Click to Move</span>
+    </div>
+  );
+};
+
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
   activeBrushTileId?: number;
@@ -28,8 +45,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<BabylonEngine | null>(null);
-  const player = useGameStore((state) => state.player);
-  const otherPlayers = useGameStore((state) => state.otherPlayers);
   const currentMapId = useGameStore((state) => state.currentMapId);
   const activeMapData = useGameStore((state) => state.activeMapData);
   const setPlayerPosition = useGameStore((state) => state.setPlayerPosition);
@@ -731,17 +746,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         <FloatingHealthBars engine={engineRef.current} />
       )}
       
-      {/* 2.5D HUD Badge */}
-      <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
-        <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
-        <span className="text-slate-400">Map:</span>
-        <strong className="text-white">{activeMap?.name || currentMapId}</strong>
-        <span className="text-slate-600">|</span>
-        <span className="text-slate-400">Pos:</span>
-        <strong className="text-amber-300">({player.position?.x ?? 0}, {player.position?.y ?? 0})</strong>
-        <span className="text-slate-600">|</span>
-        <span className="text-slate-500 hidden sm:inline">BGD / Click to Move</span>
-      </div>
+      <CanvasHudBadge activeMapName={activeMap?.name} currentMapId={currentMapId} />
 
       {/* On-Screen Touch / Mouse Control D-Pad & Talk Action Button */}
       {isTouchDevice && (
