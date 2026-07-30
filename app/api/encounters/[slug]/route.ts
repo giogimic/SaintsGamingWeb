@@ -10,7 +10,7 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
-    const encounter = await prisma.tuxemonEncounter.findUnique({
+    const encounter = await prisma.encounterTable.findUnique({
       where: { slug },
     });
 

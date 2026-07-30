@@ -5,20 +5,20 @@ import { Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function TuxemonAdminPage() {
-  const speciesList = await prisma.tuxemonSpecies.findMany({
+  const speciesList = await prisma.creatureTemplate.findMany({
     include: {
       stats: true,
-      moveset: true,
+      learnedAbilities: true,
       evolutions: true,
     },
     orderBy: {
-      txmnId: 'asc',
+      dexNumber: 'asc',
     },
     take: 100,
   });
 
-  const totalCount = await prisma.tuxemonSpecies.count();
-  const totalMoves = await prisma.tuxemonTechnique.count();
+  const totalCount = await prisma.creatureTemplate.count();
+  const totalMoves = await prisma.abilityDictionary.count();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -30,7 +30,7 @@ export default async function TuxemonAdminPage() {
             Saints Beast Species Database
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Browse and manage all 411 registered Saints Beast species, stats, and movesets.
+            Browse and manage all 411 registered Saints Beast species, stats, and learnedAbilitiess.
           </p>
         </div>
         <Link
@@ -83,17 +83,17 @@ export default async function TuxemonAdminPage() {
                       {species.spriteFront ? (
                         <img
                           src={species.spriteFront}
-                          alt={species.species}
+                          alt={species.speciesName}
                           className="w-12 h-12 object-contain pixelated"
                           style={{ imageRendering: 'pixelated' }}
                         />
                       ) : (
-                        <span className="text-cyan-400 font-mono font-bold text-xs">#{species.txmnId}</span>
+                        <span className="text-cyan-400 font-mono font-bold text-xs">#{species.dexNumber}</span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-base truncate text-foreground">{species.species}</h3>
-                      <span className="text-xs text-muted-foreground font-mono">#{species.txmnId}</span>
+                      <h3 className="font-bold text-base truncate text-foreground">{species.speciesName}</h3>
+                      <span className="text-xs text-muted-foreground font-mono">#{species.dexNumber}</span>
                     </div>
                   </div>
 
@@ -111,8 +111,8 @@ export default async function TuxemonAdminPage() {
                   {species.stats && (
                     <div className="grid grid-cols-3 gap-1 text-[10px] text-muted-foreground font-mono bg-muted/30 p-2 rounded border border-border/40">
                       <span>HP: {species.stats.hp}</span>
-                      <span>ATK: {species.stats.meleeAtk}</span>
-                      <span>SPD: {species.stats.speed}</span>
+                      <span>ATK: {species.stats.physicalPower}</span>
+                      <span>SPD: {species.stats.combatTempo}</span>
                     </div>
                   )}
                 </div>

@@ -36,13 +36,12 @@ export interface SkillData {
   xp: number;
 }
 
-export interface TuxemonMove {
-  techniqueSlug: string;
-  pp: number;
-  maxPp: number;
+export interface CreatureAbility {
+  abilitySlug: string;
+  currentCooldown: number;
 }
 
-export interface TuxemonPartyMember {
+export interface CreaturePartyMember {
   id: string;
   speciesSlug: string;
   nickname: string;
@@ -51,13 +50,13 @@ export interface TuxemonPartyMember {
   currentHp: number;
   maxHp: number;
   stats: {
-    meleeAtk: number;
-    meleeDef: number;
-    rangedAtk: number;
-    rangedDef: number;
-    speed: number;
+    physicalPower: number;
+    physicalDefense: number;
+    abilityPower: number;
+    abilityDefense: number;
+    combatTempo: number;
   };
-  moves: TuxemonMove[];
+  abilities: CreatureAbility[];
   status: string | null;
 }
 
@@ -67,7 +66,7 @@ export interface PartyMember {
   name: string;
   spriteId: string;
   position: { x: number; y: number };
-  tuxemonParty: TuxemonPartyMember[];
+  creatureParty: CreaturePartyMember[];
 }
 
 export type ChatMessage = {
@@ -135,10 +134,10 @@ export interface PlayerState {
   perk?: 'SWIFT_TRAVELER' | 'ACROBAT' | 'PACK_MULE' | 'MASTER_TAMER' | 'STAMINA_SURGE';
   maxWeight?: number;
   maxPartySize?: number;
-  // Tuxemon system
-  tuxemonParty: TuxemonPartyMember[];
-  tuxemonInventory: Record<string, number>;
-  tuxemonSpeciesCaught: string[];
+  // Creature system
+  creatureParty: CreaturePartyMember[];
+  creatureInventory: Record<string, number>;
+  creaturesCaught: string[];
   // Party system (multiplayer)
   party: PartyMember[];
   isPartyLeader: boolean;
@@ -224,15 +223,15 @@ export interface GameState {
   setCombatStyle: (style: 'MELEE' | 'RANGED' | 'MAGIC') => void;
   assignBeast: (facility: 'furnace' | 'farm' | 'fishing_hut' | 'lumber_mill' | 'quarry', beastId: string | null) => void;
   collectBaseResources: () => void;
-  // Tuxemon actions
-  addTuxemonToParty: (member: TuxemonPartyMember) => void;
-  removeTuxemonFromParty: (tuxemonId: string) => void;
-  healTuxemon: (tuxemonId: string, amount: number) => void;
-  addTuxemonItem: (itemSlug: string, amount: number) => void;
-  removeTuxemonItem: (itemSlug: string, amount: number) => void;
-  recordTuxemonCapture: (speciesSlug: string) => void;
-  deductMovePp: (tuxemonId: string, moveIndex: number) => void;
-  evolveTuxemon: (tuxemonId: string, newSpeciesSlug: string, newNickname?: string) => void;
+  // Creature actions
+  addCreatureToParty: (member: CreaturePartyMember) => void;
+  removeCreatureFromParty: (creatureId: string) => void;
+  healCreature: (creatureId: string, amount: number) => void;
+  addCreatureItem: (itemSlug: string, amount: number) => void;
+  removeCreatureItem: (itemSlug: string, amount: number) => void;
+  recordCreatureCapture: (speciesSlug: string) => void;
+  deductAbilityCooldown: (creatureId: string, abilityIndex: number) => void;
+  evolveCreature: (creatureId: string, newSpeciesSlug: string, newNickname?: string) => void;
   // Party actions
   inviteToParty: (userId: string) => void;
   acceptPartyInvite: (inviteId: string) => void;
@@ -286,10 +285,10 @@ export const useGameStore = create<GameState>()(
         caughtDaemons: [],
         assignedBeasts: { furnace: null, farm: null, fishing_hut: null, lumber_mill: null, quarry: null },
         lastBaseCollection: Date.now(),
-        // Tuxemon system
-        tuxemonParty: [],
-        tuxemonInventory: {},
-        tuxemonSpeciesCaught: [],
+        // Creature system
+        creatureParty: [],
+        creatureInventory: {},
+        creaturesCaught: [],
         // Party system
         party: [],
         isPartyLeader: false
@@ -617,58 +616,58 @@ export const useGameStore = create<GameState>()(
         state.player.lastBaseCollection = now - (diffMs % 10000);
       }),
 
-      // Tuxemon actions
-      addTuxemonToParty: (member) => set((state) => {
-        if (state.player.tuxemonParty.length < 6) {
-          state.player.tuxemonParty.push(member);
+      // Creature actions
+      addCreatureToParty: (member) => set((state) => {
+        if (state.player.creatureParty.length < 6) {
+          state.player.creatureParty.push(member);
           state.toast = { id: Date.now(), message: `${member.nickname} joined your party!` };
         } else {
           state.toast = { id: Date.now(), message: 'Party is full!' };
         }
       }),
 
-      removeTuxemonFromParty: (tuxemonId) => set((state) => {
-        state.player.tuxemonParty = state.player.tuxemonParty.filter(t => t.id !== tuxemonId);
+      removeCreatureFromParty: (creatureId) => set((state) => {
+        state.player.creatureParty = state.player.creatureParty.filter(t => t.id !== creatureId);
       }),
 
-      healTuxemon: (tuxemonId, amount) => set((state) => {
-        const tuxemon = state.player.tuxemonParty.find(t => t.id === tuxemonId);
-        if (tuxemon) {
-          tuxemon.currentHp = Math.min(tuxemon.maxHp, tuxemon.currentHp + amount);
+      healCreature: (creatureId, amount) => set((state) => {
+        const creature = state.player.creatureParty.find(t => t.id === creatureId);
+        if (creature) {
+          creature.currentHp = Math.min(creature.maxHp, creature.currentHp + amount);
         }
       }),
 
-      addTuxemonItem: (itemSlug, amount) => set((state) => {
-        const current = state.player.tuxemonInventory[itemSlug] || 0;
-        state.player.tuxemonInventory[itemSlug] = current + amount;
+      addCreatureItem: (itemSlug, amount) => set((state) => {
+        const current = state.player.creatureInventory[itemSlug] || 0;
+        state.player.creatureInventory[itemSlug] = current + amount;
       }),
 
-      removeTuxemonItem: (itemSlug, amount) => set((state) => {
-        const current = state.player.tuxemonInventory[itemSlug] || 0;
+      removeCreatureItem: (itemSlug, amount) => set((state) => {
+        const current = state.player.creatureInventory[itemSlug] || 0;
         const newAmount = Math.max(0, current - amount);
         if (newAmount === 0) {
-          delete state.player.tuxemonInventory[itemSlug];
+          delete state.player.creatureInventory[itemSlug];
         } else {
-          state.player.tuxemonInventory[itemSlug] = newAmount;
+          state.player.creatureInventory[itemSlug] = newAmount;
         }
       }),
 
-      recordTuxemonCapture: (speciesSlug) => set((state) => {
-        if (!state.player.tuxemonSpeciesCaught.includes(speciesSlug)) {
-          state.player.tuxemonSpeciesCaught.push(speciesSlug);
+      recordCreatureCapture: (speciesSlug) => set((state) => {
+        if (!state.player.creaturesCaught.includes(speciesSlug)) {
+          state.player.creaturesCaught.push(speciesSlug);
           state.toast = { id: Date.now(), message: `New species discovered: ${speciesSlug}!` };
         }
       }),
 
-      deductMovePp: (tuxemonId, moveIndex) => set((state) => {
-        const beast = state.player.tuxemonParty.find(b => b.id === tuxemonId);
-        if (beast && beast.moves[moveIndex]) {
-          beast.moves[moveIndex].pp = Math.max(0, beast.moves[moveIndex].pp - 1);
+      deductAbilityCooldown: (creatureId, abilityIndex) => set((state) => {
+        const beast = state.player.creatureParty.find(b => b.id === creatureId);
+        if (beast && beast.abilities[abilityIndex]) {
+          beast.abilities[abilityIndex].currentCooldown = Date.now();
         }
       }),
 
-      evolveTuxemon: (tuxemonId, newSpeciesSlug, newNickname) => set((state) => {
-        const beast = state.player.tuxemonParty.find(b => b.id === tuxemonId);
+      evolveCreature: (creatureId, newSpeciesSlug, newNickname) => set((state) => {
+        const beast = state.player.creatureParty.find(b => b.id === creatureId);
         if (beast) {
           const oldName = beast.nickname || beast.speciesSlug;
           beast.speciesSlug = newSpeciesSlug;

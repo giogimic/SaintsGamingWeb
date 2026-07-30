@@ -82,9 +82,18 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         ? parsedState.currentMapId 
         : 'PLAYER_HOUSE_BEDROOM';
 
-      const validPosition = GAME_MAPS[validMapId] 
-        ? (parsedState.position || { x: 6, y: 2 })
-        : { x: 6, y: 2 };
+      const mapDef = GAME_MAPS[validMapId];
+      let validPosition = parsedState.position || { x: 6, y: 2 };
+      
+      if (mapDef) {
+        // Clamp position to ensure they don't spawn out of bounds (e.g. from a previous session on a larger map)
+        const mw = (mapDef as any).width || (mapDef as any).grid?.[0]?.length || 24;
+        const mh = (mapDef as any).height || (mapDef as any).grid?.length || 24;
+        validPosition.x = Math.max(0, Math.min(mw - 1, validPosition.x));
+        validPosition.y = Math.max(0, Math.min(mh - 1, validPosition.y));
+      } else {
+        validPosition = { x: 6, y: 2 };
+      }
 
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,

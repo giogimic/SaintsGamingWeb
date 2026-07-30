@@ -1,3 +1,15 @@
+## [2.1.76] - 2026-07-30
+
+### Added
+- Completed the Saints Gaming Master Development Blueprint, fully documenting 23 major engine, MMO, and gameplay architecture systems.
+- Executed Phase 2, Step 1: Built the Generic Creature Engine architecture.
+
+### Changed
+- Decoupled hard-coded Tuxemon database tables into a generic framework (CreatureTemplate, AbilityDictionary, PlayerCreature, EncounterTable).
+- Migrated Zustand store.ts client state to generic creatureParty / creatureInventory structures.
+- Updated all API routes and the Admin Dashboard to fetch the normalized Creature schema.
+- Resolved 35+ TypeScript build errors to ensure strict type compliance with the new generic schema.
+
 # Changelog
 
 ### v2.1.64
