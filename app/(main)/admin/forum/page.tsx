@@ -1,8 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { CategoryManager } from "@/components/admin/category-manager";
+import { CategoryManager } from "@/web/components/admin/category-manager";
 import { redirect } from "next/navigation";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 export const metadata = {
   title: "Admin - Forum Management",

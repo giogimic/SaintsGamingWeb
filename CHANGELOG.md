@@ -1,3 +1,12 @@
+## [2.1.77] - 2026-07-30
+
+### Changed
+- Reorganized codebase to strictly separate Engine vs Game domains following standard game engine architectures.
+- Migrated all React components, utility libraries, hooks, and types out of root folders into `src/engine/`, `src/game/`, `src/editor/`, `src/shared/`, `src/server/`, and `src/web/`.
+- Updated `tsconfig.json` paths and automated the refactoring of 1,500+ import statements across the Next.js `app/` router.
+- Consolidated documentation into a dedicated `docs/` hierarchy (architecture, editor, gameplay, getting-started, reference) serving as a single source of truth.
+- Moved root deployment scripts to `scripts/` and cleaned up the project root.
+
 ## [2.1.76] - 2026-07-30
 
 ### Added

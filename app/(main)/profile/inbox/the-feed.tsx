@@ -27,11 +27,11 @@ import {
   votePoll,
   pinSocialPost
 } from "@/app/actions/social";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Card, CardContent } from "@/shared/ui/card";
+import { Button } from "@/shared/ui/button";
+import { Textarea } from "@/shared/ui/textarea";
+import { Input } from "@/shared/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { 
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, 
@@ -41,12 +41,12 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { UserBadges } from "@/components/achievements/user-badges";
+import { UserBadges } from "@/web/components/achievements/user-badges";
 import { formatDistanceToNow } from "date-fns";
 import EmojiPicker from "emoji-picker-react";
 import { GiphyFetch } from "@giphy/js-fetch-api";
 import { Grid } from "@giphy/react-components";
-import { VideoPlayer } from "@/components/shared/video-player";
+import { VideoPlayer } from "@/shared/components/video-player";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";

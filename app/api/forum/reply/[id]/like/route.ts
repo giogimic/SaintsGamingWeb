@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { awardXP, XP_VALUES } from "@/lib/xp";
+import { prisma } from "@/web/lib/prisma";
+import { awardXP, XP_VALUES } from "@/web/lib/xp";
 
 export async function POST(
   req: Request,

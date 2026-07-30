@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadSocialMedia } from "@/lib/upload";
+import { uploadSocialMedia } from "@/web/lib/upload";
 
 export async function POST(req: Request) {
   try {

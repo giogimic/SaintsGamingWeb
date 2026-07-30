@@ -3,18 +3,18 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { format } from "date-fns";
 import { MessageSquare, Pin, Lock, Crown, BadgeCheck, ShieldCheck } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { auth } from "@/auth";
-import { ReplyForm } from "@/components/forum/reply-form";
-import { ReplyActions } from "@/components/forum/reply-actions";
-import { ThreadActions } from "@/components/forum/thread-actions";
-import { ThreadPoll } from "@/components/forum/thread-poll";
-import { ThreadWatchButton } from "@/components/forum/thread-watch-button";
-import { UserBadges } from "@/components/achievements/user-badges";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { ReplyForm } from "@/web/components/forum/reply-form";
+import { ReplyActions } from "@/web/components/forum/reply-actions";
+import { ThreadActions } from "@/web/components/forum/thread-actions";
+import { ThreadPoll } from "@/web/components/forum/thread-poll";
+import { ThreadWatchButton } from "@/web/components/forum/thread-watch-button";
+import { UserBadges } from "@/web/components/achievements/user-badges";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 type Props = {
   params: Promise<{ slug: string }>;

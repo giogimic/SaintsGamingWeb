@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import { processMentions } from "@/lib/mentions";
+import { processMentions } from "@/web/lib/mentions";
 
 const replySchema = z.object({
   body: z.string().min(1).max(5000),

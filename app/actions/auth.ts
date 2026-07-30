@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 

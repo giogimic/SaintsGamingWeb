@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Button } from '@/shared/ui/button';
+import { Badge } from '@/shared/ui/badge';
 import { Image as ImageIcon, Upload, Trash2, Tag, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { createGameAsset, deleteGameAsset, fetchAllGameAssets } from '@/app/actions/game-dev';

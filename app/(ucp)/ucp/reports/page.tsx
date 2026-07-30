@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import Link from "next/link";

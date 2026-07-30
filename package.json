@@ -1,6 +1,6 @@
 {
   "name": "saints-web",
-  "version": "2.1.76",
+  "version": "2.1.77",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "release": "node release.mjs"
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { SGVoxelLogo } from "@/components/landing/sg-logo-true-3d";
+import { SGVoxelLogo } from "@/web/components/landing/sg-logo-true-3d";
 
 /**
  * Standalone 3D Voxel Logo Template

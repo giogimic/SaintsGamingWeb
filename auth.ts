@@ -4,9 +4,9 @@ import Credentials from "next-auth/providers/credentials";
 import Discord from "next-auth/providers/discord";
 import bcrypt from "bcryptjs";
 import { authConfig } from "./auth.config";
-import { prisma } from "@/lib/prisma";
-import { loginSchema } from "@/lib/validators";
-import { checkAndAwardAchievements } from "@/lib/achievements";
+import { prisma } from "@/web/lib/prisma";
+import { loginSchema } from "@/shared/lib/validators";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,

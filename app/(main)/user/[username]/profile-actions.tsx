@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import { UserPlus, UserMinus, UserCheck, MessageSquare, Loader2 } from "lucide-react";
 import { sendFriendRequest, acceptFriendRequest, removeFriend } from "@/app/actions/messenger";
-import { useMessenger } from "@/components/messenger/messenger-provider";
+import { useMessenger } from "@/web/components/messenger/messenger-provider";
 
 export function ProfileActions({ 
   targetId, 

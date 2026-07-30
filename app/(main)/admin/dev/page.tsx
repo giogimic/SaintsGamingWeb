@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { Users, Activity, Terminal, Globe, Lock, Shield, Server, FileJson, Gamepad2, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
 import { DevActions } from "./dev-actions";

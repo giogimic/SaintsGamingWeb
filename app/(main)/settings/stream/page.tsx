@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { StreamProfileForm } from "@/components/settings/stream-profile-form";
+import { prisma } from "@/web/lib/prisma";
+import { StreamProfileForm } from "@/web/components/settings/stream-profile-form";
 
 export const metadata = {
   title: "Stream Settings",

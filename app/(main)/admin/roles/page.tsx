@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { redirect } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import {
@@ -10,8 +10,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from "@/shared/ui/table";
+import { Badge } from "@/shared/ui/badge";
 
 export const metadata = {
   title: "Admin - Role Management",

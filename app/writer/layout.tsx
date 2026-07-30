@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import Link from "next/link";
 import { PenTool, Home, Newspaper } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/shared/ui/button";
 
 export default async function WriterLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();

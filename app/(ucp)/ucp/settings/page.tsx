@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { prisma } from "@/web/lib/prisma";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/ui/card";
 import Link from "next/link";
 import { linkAccount, updateForumPin, toggleDevConsole } from "../actions";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { AvatarSettings } from "./avatar-settings";
 
 export default async function UcpSettingsPage() {
@@ -106,7 +106,7 @@ export default async function UcpSettingsPage() {
           <form action={async (formData) => {
             "use server";
             const { auth } = await import("@/auth");
-            const { prisma } = await import("@/lib/prisma");
+            const { prisma } = await import("@/web/lib/prisma");
             const { revalidatePath } = await import("next/cache");
             const session = await auth();
             if (!session?.user?.id) return;
@@ -162,8 +162,8 @@ export default async function UcpSettingsPage() {
                 <form action={async () => {
                   "use server";
                   const { auth } = await import("@/auth");
-                  const { prisma } = await import("@/lib/prisma");
-                  const { deleteUploadedFile } = await import("@/lib/upload");
+                  const { prisma } = await import("@/web/lib/prisma");
+                  const { deleteUploadedFile } = await import("@/web/lib/upload");
                   const { revalidatePath } = await import("next/cache");
                   const session = await auth();
                   if (!session?.user?.id) return;
@@ -190,8 +190,8 @@ export default async function UcpSettingsPage() {
           <form action={async (formData) => {
             "use server";
             const { auth } = await import("@/auth");
-            const { prisma } = await import("@/lib/prisma");
-            const { uploadFile } = await import("@/lib/upload");
+            const { prisma } = await import("@/web/lib/prisma");
+            const { uploadFile } = await import("@/web/lib/upload");
             const { revalidatePath } = await import("next/cache");
             const session = await auth();
             if (!session?.user?.id) return;

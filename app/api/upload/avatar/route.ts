@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { uploadFile } from "@/lib/upload";
-import { prisma } from "@/lib/prisma";
+import { uploadFile } from "@/web/lib/upload";
+import { prisma } from "@/web/lib/prisma";
 
 export async function POST(req: Request) {
   try {

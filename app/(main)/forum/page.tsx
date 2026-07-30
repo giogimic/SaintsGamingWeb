@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
 import { MessageSquare, Lock, Folder } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 export const metadata = {
   title: "Forums | Saints Gaming",

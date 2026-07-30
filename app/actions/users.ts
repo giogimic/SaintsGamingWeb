@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 
 export async function getPublicProfile(username: string) {

@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 import { Trophy, Medal } from "lucide-react";

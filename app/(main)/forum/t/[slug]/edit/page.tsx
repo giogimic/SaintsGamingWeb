@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import EditThreadClient from "./edit-client";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 export default async function EditThreadPage({ params }: { params: Promise<{ slug: string }> }) {
   const session = await auth();

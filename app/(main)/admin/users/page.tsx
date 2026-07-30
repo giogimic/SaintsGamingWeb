@@ -1,8 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { redirect } from "next/navigation";
-import { UserManager } from "@/components/admin/user-manager";
+import { UserManager } from "@/web/components/admin/user-manager";
 import { Users } from "lucide-react";
 
 export const metadata = {

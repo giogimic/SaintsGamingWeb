@@ -8,8 +8,8 @@ import {
   Shield, Users, MessageSquare, Newspaper, Package, Monitor, Settings, Award, Server,
   Database, Activity, Code, Cpu, RefreshCw, X, Menu, Gamepad2, ScrollText, Image as ImageIcon, MapPin
 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { buttonVariants } from "@/shared/ui/button";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 export function AdminOverlayShell({ 
   children, 

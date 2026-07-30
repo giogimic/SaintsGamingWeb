@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { AdminOverlayShell } from "./admin-overlay-shell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

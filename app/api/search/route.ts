@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { prisma } from "@/web/lib/prisma";
+import { rateLimit, getClientIp } from "@/web/lib/rate-limit";
 
 export async function GET(req: Request) {
   try {

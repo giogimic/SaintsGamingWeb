@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { StreamManager } from "@/components/admin/stream-manager";
+import { prisma } from "@/web/lib/prisma";
+import { StreamManager } from "@/web/components/admin/stream-manager";
 
 export const metadata = {
   title: "Admin - Stream Approvals",

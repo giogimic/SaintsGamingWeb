@@ -1,11 +1,11 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
-import { sendTicketReplyEmail } from "@/lib/email";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { sendTicketReplyEmail } from "@/web/lib/email";
 
 
 export async function createTicket(formData: FormData) {

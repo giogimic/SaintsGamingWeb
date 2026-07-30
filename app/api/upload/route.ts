@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
-import { uploadFile } from "@/lib/upload";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { uploadFile } from "@/web/lib/upload";
 
 export async function POST(req: Request) {
   try {

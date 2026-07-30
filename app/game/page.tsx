@@ -5,14 +5,14 @@
  * Integrates overworld, battle, dialogue, menus, and map editor
  */
 import { useEffect, useState } from "react";
-import { useGameStore } from "@/lib/game/store";
-import { gameEngine } from "@/lib/game/engine";
-import OverworldCanvas from "@/components/game/OverworldCanvas";
-import BattleScene from "@/components/game/BattleScene";
-import DialogueBox from "@/components/game/DialogueBox";
-import MapEditor from "@/components/game/MapEditor";
-import GameMenu from "@/components/game/GameMenu";
-import HUD from "@/components/game/HUD";
+import { useGameStore } from "@/engine/store";
+import { gameEngine } from "@/engine/engine";
+import OverworldCanvas from "@/engine/ui/OverworldCanvas";
+import BattleScene from "@/engine/ui/BattleScene";
+import DialogueBox from "@/engine/ui/DialogueBox";
+import MapEditor from "@/engine/ui/MapEditor";
+import GameMenu from "@/engine/ui/GameMenu";
+import HUD from "@/engine/ui/HUD";
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);

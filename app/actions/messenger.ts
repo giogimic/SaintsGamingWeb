@@ -1,10 +1,10 @@
 "use server";
 
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-// import { pusherServer } from "@/lib/pusher"; // TODO: Re-enable when real-time push is implemented
+import { prisma } from "@/web/lib/prisma";
+// import { pusherServer } from "@/web/lib/pusher"; // TODO: Re-enable when real-time push is implemented
 import { revalidatePath } from "next/cache";
-import { checkAndAwardAchievements } from "@/lib/achievements";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export async function uploadPublicKey(publicKey: string) {
   const session = await auth();

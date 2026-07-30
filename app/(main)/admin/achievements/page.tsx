@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
 import { getRecentAchievements } from "@/app/actions/achievements";
 import { AdminAchievementsClient } from "./admin-achievements-client";

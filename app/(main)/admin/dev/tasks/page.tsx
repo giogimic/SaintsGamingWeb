@@ -2,7 +2,7 @@
 
 import { RefreshCw, Play, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import { runTask_ClearCache, runTask_SyncDiscordRoles, runTask_AuditLogs } from "./actions";
 
 type TaskStatus = "IDLE" | "RUNNING" | "SUCCESS" | "ERROR";

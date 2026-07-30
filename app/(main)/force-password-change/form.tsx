@@ -2,10 +2,10 @@
 
 import { useActionState, useEffect } from "react";
 import { forcePasswordChangeAction } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Card, CardContent } from "@/shared/ui/card";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function ForcePasswordChangeForm() {

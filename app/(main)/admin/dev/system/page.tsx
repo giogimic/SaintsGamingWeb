@@ -1,12 +1,12 @@
 import { Cpu, Server, Key, Terminal } from "lucide-react";
 import { SystemClient } from "./system-client";
-import { DatabaseMigration } from "@/components/admin/database-migration";
-import { SystemUpdater } from "@/components/admin/system-updater";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { DatabaseMigration } from "@/web/components/admin/database-migration";
+import { SystemUpdater } from "@/web/components/admin/system-updater";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Button } from "@/shared/ui/button";
 import { updateSiteSettings } from "@/app/(main)/admin/actions";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import fs from "fs";
 
 export default async function SystemStatePage() {

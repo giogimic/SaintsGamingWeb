@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { Car, MapPin, SearchX } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/shared/ui/card";
+import { Badge } from "@/shared/ui/badge";
 
 export const metadata = { title: "My Garage | UCP" };
 

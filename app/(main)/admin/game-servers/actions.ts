@@ -1,8 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { revalidatePath } from "next/cache";
 
 export async function getGameServers() {

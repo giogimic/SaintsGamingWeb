@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { z } from "zod";
 
 const subcategorySchema = z.object({

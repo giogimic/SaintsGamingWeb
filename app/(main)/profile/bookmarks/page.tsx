@@ -8,8 +8,8 @@ import {
   getBookmarksWithFolders, 
   moveBookmarkToFolder 
 } from "@/app/actions/social-folders";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
 import { 
   ArrowLeft, Bookmark, Heart, MessageSquare, FolderPlus, Folder, 
   Trash2, Loader2, Search, X, MoreVertical 

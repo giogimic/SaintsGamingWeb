@@ -1,9 +1,9 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { processMentions } from "@/lib/mentions";
+import { processMentions } from "@/web/lib/mentions";
 
 export async function createSocialPost(
   body: string, 

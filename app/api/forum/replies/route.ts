@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
-import { processMentions } from "@/lib/mentions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { processMentions } from "@/web/lib/mentions";
 
 
 const createReplySchema = z.object({
@@ -12,7 +12,7 @@ const createReplySchema = z.object({
   forumPin: z.string().optional(),
 });
 
-import { awardXP, XP_VALUES } from "@/lib/xp";
+import { awardXP, XP_VALUES } from "@/web/lib/xp";
 
 export async function POST(req: Request) {
   try {

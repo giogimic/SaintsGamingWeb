@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { updateProfileMedia, uploadProfileImage, deleteProfileImage } from "@/app/actions/profile";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
+import { Button } from "@/shared/ui/button";
 import { Loader2, Video, Music, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
 

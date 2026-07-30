@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { format } from "date-fns";
 import { Calendar, User, ArrowRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/shared/ui/card";
 
 export const metadata: Metadata = {
   title: "News & Announcements | Saints Gaming",

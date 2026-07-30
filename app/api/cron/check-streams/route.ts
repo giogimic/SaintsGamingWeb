@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 
 // To trigger this securely, you can configure a cron job to call:
 // https://yoursite.com/api/cron/check-streams?secret=YOUR_CRON_SECRET

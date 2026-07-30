@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Database } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 
 export function DummyContentButton() {
   const [isLoading, setIsLoading] = useState(false);

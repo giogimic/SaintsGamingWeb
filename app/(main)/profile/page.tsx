@@ -1,14 +1,14 @@
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { getRoleName, getRoleColor, PERMISSION_LEVELS } from "@/lib/permissions";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Button, buttonVariants } from "@/shared/ui/button";
+import { getRoleName, getRoleColor, PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { Badge } from "@/shared/ui/badge";
 import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare, BarChart, Bookmark, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { prisma } from "@/lib/prisma";
-import { SteamWishlist } from "@/components/profile/steam-wishlist";
+import { prisma } from "@/web/lib/prisma";
+import { SteamWishlist } from "@/web/components/profile/steam-wishlist";
 import { ProfileMediaSettings } from "./profile-media-settings";
 import { AvatarSettings } from "@/app/(ucp)/ucp/settings/avatar-settings";
 
