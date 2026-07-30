@@ -442,7 +442,11 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
     const interval = setInterval(async () => {
       const state = useGameStore.getState();
-      const stateData = JSON.stringify(state.player);
+      const stateDataToSave = {
+        ...state.player,
+        currentMapId: state.currentMapId
+      };
+      const stateData = JSON.stringify(stateDataToSave);
       
       const res = await saveGameState(activeCharacterId, stateData);
       if (res.success) {

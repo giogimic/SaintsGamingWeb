@@ -132,6 +132,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     }
 
     const initialState = {
+      currentMapId: 'PLAYER_HOUSE_BEDROOM',
       position: { x: 6, y: 2 },
       level: 1,
       xp: 0,
