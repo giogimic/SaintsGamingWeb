@@ -1,3 +1,6 @@
+### 2.1.74
+- **Ultimate UI Hotfix**: Changed the inline style property from `minHeight` to `height: calc(100vh - 7rem)` on the Lobby wrapper to ensure percentage-based child heights (`h-full`) resolve correctly, fixing the persistent 0-height container collapse.
+
 ### 2.1.73
 - **Critical UI Hotfix**: Switched the `min-h-[calc(100vh-7rem)]` class to an inline `style` property on the Lobby wrapper to guarantee the browser correctly renders the game container height immediately, bypassing potential Next.js Tailwind JIT compilation delays.
 - **Canvas Duplicate Fix**: Removed a duplicate `GameCanvasBabylon` component that was rendering over the active canvas and potentially crashing the WebGL context.
