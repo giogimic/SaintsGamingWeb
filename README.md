@@ -40,7 +40,15 @@ The repository is strictly divided to maintain a clean boundary between engine l
 - `src/server/` - Socket.io authoritative game server
 
 ## Getting Started
-Please refer to the [Getting Started Guide](docs/developer-guide/installation.md) for full instructions on setting up the database, Next.js environment, and Socket.io server.
+
+### Local Development
+Please refer to the [Getting Started Guide](docs/developer-guide/installation.md) for full instructions on setting up the local database, Next.js environment, and Socket.io server manually via NPM.
+
+### Production (Docker)
+To completely eliminate human error and manage the production server safely, use the provided automation scripts. They automatically handle Node.js environments, dependencies, database backups, and reverse proxies (Caddy) using Docker.
+
+- **Initial Setup:** `./scripts/setup.sh`
+- **Safe Updating:** `./scripts/update.sh`
 
 ## Documentation
 The `docs/` folder contains the ultimate source of truth for this project:

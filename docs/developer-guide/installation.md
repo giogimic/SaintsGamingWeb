@@ -31,16 +31,30 @@ Ensure you have the following installed:
    npm run dev
    ```
 
-## Production Docker Deployment
+## Production Docker Deployment (Preferred)
 
-This project uses Docker Compose to easily orchestrate the Next.js app, MariaDB, and the Socket.IO game server.
+To completely eliminate human error when managing the production server (Node versions, dependencies, database syncing, and proxy configurations), you should exclusively use our provided bash automation scripts. Docker fully manages the Node.js environment internally, meaning you **do not** need to manually run `npm install` or maintain Node.js on the host OS.
 
-1. Configure `.env` with strong passwords.
-2. Run the interactive setup script:
+### Initial Setup
+To set up a fresh server:
+1. Run the interactive setup script:
    ```bash
-   sudo bash setup.sh
+   ./scripts/setup.sh
    ```
-3. The script will automatically prompt you for database credentials, generate secrets, build the Docker images, and launch the containers.
+2. The script will automatically prompt you for database credentials, generate secrets, build the Docker images, and launch the containers (including Caddy as a reverse proxy).
+
+### Updating the Server
+When new code is pushed to the repository, **do not** manually run `git pull` or `npm` commands. Instead, simply run:
+
+```bash
+./scripts/update.sh
+```
+
+This script safely automates the entire update pipeline:
+1. Performs an automated database backup.
+2. Pulls the latest code from `main`.
+3. Rebuilds the Docker containers and applies any database schema changes.
+4. Restarts the Node server and reloads the Caddy proxy seamlessly.
 
 ## Database
 
