@@ -28,7 +28,7 @@ const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
   right: { dx:  1, dy:  0 },
 };
 
-const MOVE_COOLDOWN_MS = 200;
+const MOVE_COOLDOWN_MS = 150;
 
 import { PartyManager } from "./PartyManager";
 

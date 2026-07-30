@@ -128,6 +128,17 @@ export class SocketHandler {
       });
 
       // --- PHASE 8: Social & Party Systems ---
+      socket.on("pickup_loot", (data) => {
+        // data: { mapId, x, y }
+        this.engine.events.emit("pickupLootRequest", {
+          accountId,
+          socketId: socket.id,
+          mapId: data.mapId,
+          x: data.x,
+          y: data.y
+        });
+      });
+      
       socket.on("party_chat", (message) => {
         this.engine.events.emit("partyChat", { accountId, message });
       });
@@ -143,6 +154,25 @@ export class SocketHandler {
       
       socket.on("global_chat", (message) => {
         this.engine.events.emit("globalChat", { accountId, message });
+      });
+
+      // --- PHASE 9: Demo Features (Combat & Local Chat) ---
+      socket.on("chat_message", (message) => {
+        // Emit to local/global for now so players see chat bubbles
+        this.engine.events.emit("networkBroadcast", {
+          room: undefined, // Broadcast globally for the demo until rooms are enforced
+          event: "player_chat",
+          data: { socketId: socket.id, message }
+        });
+      });
+
+      socket.on("combat_cast", (data) => {
+        // data contains { targetId, move: { name, type, power, ... } }
+        this.engine.events.emit("combatRequestAction", {
+          entityId: `player_${accountId}`,
+          targetId: data.targetId,
+          move: data.move
+        });
       });
 
       socket.on("disconnect", () => {
