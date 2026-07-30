@@ -1,15 +1,15 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { User as UserIcon, Heart, MessageSquare, Repeat2, Trash2, Eye, Compass, VolumeX, Search } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/shared/ui/card";
+import { Button } from "@/shared/ui/button";
+import { Textarea } from "@/shared/ui/textarea";
+import { Input } from "@/shared/ui/input";
 import { createSocialPost, toggleReaction, deleteSocialPost } from "./actions";
-import { UiPresetEmbed } from "@/components/social/UiPresetEmbed";
+import { UiPresetEmbed } from "@/web/components/social/UiPresetEmbed";
 
 export default async function SocialDashboard(props: { searchParams: Promise<{ filter?: string; tag?: string; q?: string }> }) {
   const session = await auth();

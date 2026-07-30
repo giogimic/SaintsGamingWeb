@@ -1,12 +1,12 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { redirect } from "next/navigation";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent } from "@/components/ui/card";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Checkbox } from "@/shared/ui/checkbox";
+import { Card, CardContent } from "@/shared/ui/card";
 import { Rss, Trash2, Power } from "lucide-react";
 import { addRssFeed, deleteRssFeed, toggleRssFeed } from "./actions";
 

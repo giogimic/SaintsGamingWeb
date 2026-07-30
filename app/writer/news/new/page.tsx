@@ -1,8 +1,8 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { redirect } from "next/navigation";
-import { NewsEditor } from "@/components/admin/news-editor";
+import { NewsEditor } from "@/web/components/admin/news-editor";
 import { saveWriterNewsArticle, deleteWriterNewsArticle } from "@/app/writer/news/actions";
 
 export const metadata = { title: "Writer - Create Article" };

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-import { registerSchema } from "@/lib/validators";
+import { prisma } from "@/web/lib/prisma";
+import { registerSchema } from "@/shared/lib/validators";
 import { ZodError } from "zod";
-import { sendWelcomeEmail } from "@/lib/email";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { sendWelcomeEmail } from "@/web/lib/email";
+import { rateLimit, getClientIp } from "@/web/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {

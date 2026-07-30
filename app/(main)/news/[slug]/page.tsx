@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { format } from "date-fns";
 import { Calendar, ArrowLeft, Clock } from "lucide-react";
 import ReactMarkdown from "react-markdown";

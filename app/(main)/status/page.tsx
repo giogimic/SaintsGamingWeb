@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { Server, Users, Clock, Map as MapIcon, ShieldAlert, HeartPulse, Wrench } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/shared/ui/card";
 
 interface ServerStatus {
   server: {

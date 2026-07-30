@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { prisma } from "@/web/lib/prisma";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import { DeleteCharacterButton } from "./delete-character-button";
 
 export default async function AdminCharactersPage() {

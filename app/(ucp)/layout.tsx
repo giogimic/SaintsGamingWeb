@@ -1,10 +1,10 @@
-import { Navbar, Footer } from "@/components/shared/navbar";
+import { Navbar, Footer } from "@/shared/components/navbar";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { MessengerProvider } from "@/components/messenger/messenger-provider";
-import { MessengerPopup } from "@/components/messenger/messenger-popup";
-import { AmbientBackground } from "@/components/shared/ambient-background";
-import { UcpNavigation } from "@/components/ucp/ucp-navigation";
+import { prisma } from "@/web/lib/prisma";
+import { MessengerProvider } from "@/web/components/messenger/messenger-provider";
+import { MessengerPopup } from "@/web/components/messenger/messenger-popup";
+import { AmbientBackground } from "@/shared/components/ambient-background";
+import { UcpNavigation } from "@/web/components/ucp/ucp-navigation";
 
 export default async function UcpLayout({
   children,
@@ -33,7 +33,7 @@ export default async function UcpLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.75";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.77";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;

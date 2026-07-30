@@ -1,8 +1,8 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
-import { StreamGrid } from "@/components/streams/stream-grid";
+import { prisma } from "@/web/lib/prisma";
+import { StreamGrid } from "@/web/components/streams/stream-grid";
 import { MonitorPlay } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import Link from "next/link";
 
 export const metadata: Metadata = {

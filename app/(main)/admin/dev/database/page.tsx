@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { Database, Trash2, CheckCircle2 } from "lucide-react";
 import { clearExpiredSessions, clearAllNotifications, nukeAllThreads, seedDummyThreads } from "./actions";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import { DummyContentButton } from "./dummy-content-button";
 
 export const metadata = { title: "Dev - Database Health" };

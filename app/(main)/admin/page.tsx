@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
 import { Users, FileText, Gamepad2, Tv, MessageSquare, LayoutDashboard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
 export const metadata = {
   title: "Admin Dashboard",

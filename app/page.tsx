@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { SGVoxelLogo } from "@/components/landing/sg-logo-true-3d";
+import { SGVoxelLogo } from "@/web/components/landing/sg-logo-true-3d";
 import { getDiscordInviteUrl } from "./actions/settings";
-import { PalmCanopyVignetteV5 } from "@/components/landing/palm-canopy-vignette-v5";
-import { DigitalSnowV5 } from "@/components/landing/digital-snow-v5";
+import { PalmCanopyVignetteV5 } from "@/web/components/landing/palm-canopy-vignette-v5";
+import { DigitalSnowV5 } from "@/web/components/landing/digital-snow-v5";
 
 // ── Theme color palettes ──────────────────────────────────────────
 // Each theme defines the colors used across the landing page.

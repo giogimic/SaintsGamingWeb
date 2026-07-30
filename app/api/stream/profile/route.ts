@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import cache from "@/lib/cache";
+import cache from "@/shared/lib/cache";
 
 const profileSchema = z.object({
   platform: z.enum(["twitch", "youtube", "kick"]),

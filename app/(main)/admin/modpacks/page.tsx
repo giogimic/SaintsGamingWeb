@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { ModpackManager } from "@/components/admin/modpack-manager";
+import { prisma } from "@/web/lib/prisma";
+import { ModpackManager } from "@/web/components/admin/modpack-manager";
 
 export const metadata = {
   title: "Admin - Modpack Management",

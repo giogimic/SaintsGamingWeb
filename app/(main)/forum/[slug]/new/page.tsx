@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { ArrowLeft } from "lucide-react";
 import { NewThreadForm } from "./new-thread-form";
 import { auth } from "@/auth";

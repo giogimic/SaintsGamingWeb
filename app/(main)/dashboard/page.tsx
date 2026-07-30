@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { prisma } from "@/web/lib/prisma";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { User, Mail, Shield, ShieldCheck, Gamepad2, Settings, LifeBuoy } from "lucide-react";
-import { getRoleName, getRoleColor } from "@/lib/permissions";
-import { Button } from "@/components/ui/button";
+import { getRoleName, getRoleColor } from "@/web/lib/permissions";
+import { Button } from "@/shared/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 

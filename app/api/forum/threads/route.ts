@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 
 const createThreadSchema = z.object({
@@ -16,8 +16,8 @@ function generateSlug(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
-import { awardXP, XP_VALUES } from "@/lib/xp";
-import { checkAndAwardAchievements } from "@/lib/achievements";
+import { awardXP, XP_VALUES } from "@/web/lib/xp";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export async function POST(req: Request) {
   try {

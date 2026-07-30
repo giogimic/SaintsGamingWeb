@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 
 /**
  * GET /api/tuxemon/species/[slug] — Get a Tuxemon species with learnedAbilities

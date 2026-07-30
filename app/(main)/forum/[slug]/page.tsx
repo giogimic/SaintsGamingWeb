@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { formatDistanceToNow } from "date-fns";
 import { ArrowLeft, MessageSquare, Pin, Lock, User } from "lucide-react";
 

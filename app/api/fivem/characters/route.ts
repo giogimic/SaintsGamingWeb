@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // Assuming a db instance in lib
+import { prisma } from "@/web/lib/prisma"; // Assuming a db instance in lib
 
 // This is a simple API for the FiveM server to interact with the database.
 // In a real scenario, protect this with an API key/secret in the headers.

@@ -1,4 +1,4 @@
-import { TheLobby } from '@/components/the-lobby/dynamic';
+import { TheLobby } from '@/web/components/the-lobby/dynamic';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

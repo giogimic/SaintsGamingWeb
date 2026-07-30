@@ -2,8 +2,8 @@
 
 import { Code, Send, Play } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/shared/ui/button";
+import { Textarea } from "@/shared/ui/textarea";
 
 export default function DevSandboxPage() {
  const [endpoint, setEndpoint] = useState("/api/webhooks/store");

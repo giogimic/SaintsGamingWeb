@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { z } from "zod";
-import cache from "@/lib/cache";
+import cache from "@/shared/lib/cache";
 
 const adminStreamSchema = z.object({
   id: z.string(),

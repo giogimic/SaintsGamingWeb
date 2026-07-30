@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { TUXEMON_CAMPAIGN_MAPS } from "@/components/the-lobby/data/campaign-maps";
+import { prisma } from "@/web/lib/prisma";
+import { TUXEMON_CAMPAIGN_MAPS } from "@/web/components/the-lobby/data/campaign-maps";
 
 /**
  * GET /api/maps/[slug] — Get a specific map by slug (TuxemonMap) or id (WorldMap)

@@ -1,9 +1,9 @@
-import { Navbar, Footer } from "@/components/shared/navbar";
+import { Navbar, Footer } from "@/shared/components/navbar";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { MessengerProvider } from "@/components/messenger/messenger-provider";
-import { MessengerPopup } from "@/components/messenger/messenger-popup";
-import { AmbientBackground } from "@/components/shared/ambient-background";
+import { prisma } from "@/web/lib/prisma";
+import { MessengerProvider } from "@/web/components/messenger/messenger-provider";
+import { MessengerPopup } from "@/web/components/messenger/messenger-popup";
+import { AmbientBackground } from "@/shared/components/ambient-background";
 import { Toaster } from "sonner";
 export default async function MainLayout({
   children,
@@ -32,7 +32,7 @@ export default async function MainLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.76";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.77";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;

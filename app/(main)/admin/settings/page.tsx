@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { updateSiteSettings } from "../actions";
 
 export default async function AdminSettingsPage() {
@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.75";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.77";
   const maxCharacters = configMap["ucp_max_characters"] || "3";
   const startingCash = configMap["ucp_starting_cash"] || "5000";
   const startingBank = configMap["ucp_starting_bank"] || "10000";

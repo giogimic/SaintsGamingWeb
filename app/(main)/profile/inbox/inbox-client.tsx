@@ -6,10 +6,10 @@ import {
   deleteMessage, clearChatHistory, createGroupChat, getGroupChats, 
   getGroupMessages, sendGroupMessage, leaveGroupChat
 } from "@/app/actions/messenger";
-import { importPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage, getLocalPrivateKey } from "@/lib/crypto";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { importPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage, getLocalPrivateKey } from "@/web/lib/crypto";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Textarea } from "@/shared/ui/textarea";
 import { ArrowLeft, Send, Lock, Loader2, Trash2, Search, Compass, Users, Plus, Check } from "lucide-react";
 import Image from "next/image";
 import { TheFeed } from "./the-feed";

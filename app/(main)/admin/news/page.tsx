@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PERMISSION_LEVELS } from "@/lib/permissions";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { prisma } from "@/web/lib/prisma";
+import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent } from "@/shared/ui/card";
 import { Plus, Eye, Edit } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { DeleteArticleButton } from "@/components/admin/delete-article-button";
+import { Badge } from "@/shared/ui/badge";
+import { DeleteArticleButton } from "@/web/components/admin/delete-article-button";
 
 export default async function AdminNewsPage() {
   const session = await auth();

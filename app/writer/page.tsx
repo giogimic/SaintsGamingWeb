@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { prisma } from "@/web/lib/prisma";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Newspaper, Send, Clock } from "lucide-react";
 
 export const metadata = { title: "Writer - Dashboard" };

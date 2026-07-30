@@ -1,7 +1,7 @@
 'use server';
 
 import { auth } from '@/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/web/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
 export async function createGameCharacter(data: {
@@ -184,7 +184,7 @@ export async function unlockGameAchievement(badgeId: string) {
     // Discord Integration
     if (process.env.DISCORD_WEBHOOK_URL) {
       try {
-        const { sendDiscordWebhook } = await import('@/lib/discord');
+        const { sendDiscordWebhook } = await import('@/web/lib/discord');
         const badgeName = badgeId.replace(/_/g, ' ').toUpperCase();
         
         const embeds = [{

@@ -1,10 +1,10 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
 import { format } from "date-fns";
 import { MessageSquare, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Button } from "@/shared/ui/button";
 
 export const metadata: Metadata = {
   title: "Search Forums | Saints Gaming",
