@@ -1,108 +1,53 @@
-# MISSION BRIEF: THE SAINTS TAMER RPG
+# Vision & Game Design Document: Saints Tamer
 
-**Role:** You are an Expert React Architect and Game Developer working inside Antigravity, with full access to the local repo, terminal, and package manager.
-**Objective:** Continue development of "Saints Tamer" — a 2D top-down Sandbox MMO RPG built entirely within a React component.
-**Context:** This game is embedded inside the **SaintsGaming** web profile, a **Next.js 16** app. The component must work as a client-only island inside that app (App Router, React Server Components by default), so treat SSR-safety as a first-class constraint, not an afterthought.
-**Tone:** Teen/adult, organic fantasy, survival.
-**Inspirations:** RuneScape (Old School), Pokémon, Yokai Watch.
+## 1. Executive Summary
+**Saints Tamer** is a 2D top-down Sandbox MMO RPG embedded within the SaintsGaming web platform. Built as an interactive React component using Next.js 16 (App Router), the game combines the organic fantasy of classic 16-bit RPGs with a robust server-authoritative multiplayer backend. 
 
-**CRITICAL COPYRIGHT & LORE CONSTRAINTS:**
-- DO NOT use copyrighted terms (Pokémon, Digimon, Pikachu, Pokédex, RuneScape, etc.) in ANY code, UI text, variables, comments, or asset names.
-- NO religious references. NO sports references. NO "Saints Row" references.
-- **S.A.I.N.T.** stands for **Society of Animists, Invokers, Naturalists, and Tamers**.
+The game draws mechanical inspiration from Old School RuneScape, Pokémon, and Yokai Watch, targeting a teen/adult demographic with a focus on survival, deep skill progression, and strategic combat.
 
----
+**Core Lore Identity:** S.A.I.N.T. stands for the **Society of Animists, Invokers, Naturalists, and Tamers**. The game takes place in an original, organic fantasy setting.
 
-## 0. OPERATING PROTOCOL
-1. **Plan first, in text only.** Before writing or editing any file, output a short numbered plan.
-2. **Wait for confirmation on multi-file plans.**
-3. **Patch, don't rewrite.** Make the smallest diff that satisfies the objective.
-4. **Self-check against constraints** before presenting the change.
-5. **State assumptions, don't stall on them.**
-6. **Stay inside the declared dependency list** (`zustand`, `immer`, `easystarjs`, `howler`, `vitest`).
-7. **One objective at a time.**
+## 2. Technical Architecture
+The project maintains a strict separation between client-side rendering and server-side authority to ensure a secure, unexploitable MMO experience:
 
----
+- **The Game Engine (Babylon.js):** Utilizes Babylon.js to render a 2.5D orthographic world. The client is solely responsible for visual representation, smooth movement interpolation, and FX rendering.
+- **Server Authority (Socket.io):** The backend dictates all true game state. Spatial grids, collision detection, and combat mathematics are calculated server-side, with the client acting only to send player intent.
+- **State Management:** Client-side UI state (hotbars, inventory) is managed via **Zustand** (with Immer middleware), ensuring predictable React data flows.
+- **Web Integration:** The game is seamlessly integrated into the Next.js App Router via a dynamically loaded, SSR-disabled client wrapper.
 
-## 1. ARCHITECTURE & STATE (BABYLON.JS + SERVER AUTHORITY)
-- **The Game Engine (Babylon.js):** 3D/2.5D rendering using Babylon.js. The client provides visual representation (smooth interpolation of movement, visual FX for projectiles), but all logic is strictly server-authoritative.
-- **Server Authority (Socket.io):** A robust game server layer handles all true game state, entity positions, collision, and combat calculations. The client only sends player input (intent) to the server.
-- **State Management:** **Zustand** (with `immer` middleware) for global client-side UI store (hotbars, inventory), while the Server dictates the spatial grid, MMO combat math, and dynamic instancing.
-- **Next.js integration:** Export the game as `<CyberTerminal />` (keep the component name for backwards compatibility, but UI says Saints Tamer) marked `'use client'`, and load it via `next/dynamic` with `ssr: false`.
+## 3. Asset & Art Direction
+The game utilizes a massive, unified 16x16 pixel art baseline to create a cohesive, expansive world:
+- **Environment:** Classic RPG tilesets for sprawling maps and diverse biomes.
+- **UI System:** Premium RPG GUI overlays constructed using CSS `border-image` framing.
+- **Characters (LPC):** Liberated Pixel Cup (LPC) bases enable dynamic rendering of equipped armor and weapons.
+- **Beasts & Encounters:** Hundreds of meticulously designed creatures, NPCs, and ambient wildlife populate the world, providing interactive hunting, gathering, and taming experiences.
 
----
-
-## 2. ASSET STRATEGY (LPC & OPENGAMEART)
-We leverage open-source assets to build a massive world without API costs. All assets adhere strictly to a **16x16 Baseline** to prevent clashing art styles.
-- **World Tiles:** We use the `zelda-like-tilesets-and-sprites` pack from OpenGameArt to draw the massive maps.
-- **UI System:** We use the `rpg-gui-construction-kit-v10` for premium React overlay frames, using CSS `border-image`.
-- **Items:** All inventory icons use the `16x16-rpg-items` pack for consistency.
-- **Beast Assets (Tuxemon):** We use the massive [Tuxemon Set](https://opengameart.org/content/tuxemon-set-1-154-monsters-front-and-back-sprites-and-menu-animations).
-- **Player Assets (LPC):** We use the Liberated Pixel Cup (LPC) base assets for naked character bodies and dynamic armor/weapon layers.
-- **NPCs:** We use the `48-animated-old-school-rpg-characters` pack (16x16) for Keepers, Villagers, and Shopkeepers.
-- **Ambient Animals:** We use the `lpc-style-farm-animals` pack for ambiance and Gathering/Hunter skills.
-- **Roaming Monsters:** We use `limbo-land-monster-sprites` and `bat-sprite` for aggressive mobs in Player vs Monster combat.
-- **Dynamic Lore & Quests (Ollama Pre-Generation):** We use local LLMs (like Llama 3 via Ollama) strictly during **development** to procedurally generate hundreds of NPC dialogues, Keeper taunts, and Beast lore entries, saving them to static JSON databases.
-
----
-
-## 3. THE 27-SKILL SANDBOX MATRIX (LEVEL 1-50 PROGRESSION)
-The core of the game is leveling up 27 distinct skills. `store.ts` tracks XP for every single skill using the curve `Lvl = floor(sqrt(XP / 50)) + 1`. Max level is 50.
+## 4. The 27-Skill Sandbox Matrix
+Progression is non-linear and deeply rewarding. Players can level up 27 distinct skills from Level 1 to 50, driving an interconnected economy.
 
 ### Combat Skills (Player vs Keeper)
-Govern the player's ability to survive direct attacks from enemy Keepers.
-- **Summoning:** XP is gained passively by entering Beast-vs-Beast combat. Governs the max tier of Beast you can bind.
-- **Strength / Attack / Defence:** XP is gained by engaging a Keeper in melee combat with equipped weapons.
-  - *Lv 1-10:* Bronze/Wood gear
-  - *Lv 11-20:* Iron gear
-  - *Lv 21-30:* Steel gear
-  - *Lv 31-40:* Mithril gear
-  - *Lv 41-50:* Rune/Dragon tier gear
-- **Magic:** XP gained by casting spells in combat.
-- **Ranged:** XP gained by using bows/crossbows.
+- **Summoning:** Determines the maximum tier of Beast you can command.
+- **Melee (Strength/Attack/Defence):** Progresses through tiers of crafted gear (Bronze → Dragon).
+- **Ranged & Magic:** specialized combat trees for ranged attacks and spellcasting.
 
-### Gathering Skills
-Clicking a tile checks your level and grants resources + XP.
-- **Woodcutting:** Lv 1: Normal Trees, Lv 20: Oak Trees, Lv 40: Willow Trees.
-- **Mining:** Lv 1: Copper/Tin, Lv 15: Iron, Lv 30: Coal/Iron, Lv 50: Mithril.
-- **Fishing:** Lv 1: Net fishing, Lv 20: Harpoon fishing.
-- **Farming & Hunter:** Trapping roaming critters and growing herbs in patches.
+### Gathering & Artisan Skills
+- **Gathering:** Woodcutting, Mining, Fishing, Farming, and Hunter skills fuel the economy.
+- **Artisan:** Smithing, Crafting, Cooking, Herblore, Fletching, Runecrafting, and Construction. 
+- *Modernization Note:* Crafted gear rolls random Rarities (Common to Legendary) and Affixes (e.g., +5% Fire Damage, Lifesteal), providing a deep ARPG-style loot chase.
 
-### Artisan Skills (RNG Affix Modernization)
-- **Smithing & Crafting:** Turn Ore into armor/weapons for Player Combat. **Modernization:** Crafted gear rolls random Rarities (Common to Legendary) and Affixes (e.g., *+5% Fire Damage*, *Lifesteal*), creating an addictive ARPG loot chase.
-- **Cooking & Herblore:** Cook fish or mix farmed herbs into potions to heal.
-- **Fletching:** Lv 1: Shortbows, Lv 20: Oak Longbows, Lv 40: Willow Crossbows.
-- **Runecrafting:** Craft magic runes.
-- **Construction:** Build player housing/guild halls.
+### Base Automation
+Captured Beasts can be assigned to automated tasks (e.g., a Fire Beast smelting bars at a Furnace), blending active exploration with idle-game resource generation.
 
-### Support Skills & Base Automation
-- **Base Automation:** Caught Beasts do not sit idle. You can assign a Fire Beast to the Furnace to passively smelt bars, or a Plant Beast to Farm herbs while you are exploring. This provides an idle-game resource loop.
-- **Agility:** Lv 1: Hop over fences. Lv 25: Swing across ravines. Lv 50: Traverse crumbling floors.
-- **Thieving:** Pickpocket NPCs and pick locks.
+## 5. Dual-Combat & Synergy System
+Combat is active, strategic, and occurs seamlessly on the world map:
+1. **Wild Encounters:** Turn-based elemental combat against wild Beasts. Players use their tamed Beasts to weaken targets before throwing Binding Crystals to capture them.
+2. **Keeper Battles:** Multi-stage encounters. Defeat an enemy trainer's Beast first; once it falls, the trainer attacks you directly, shifting the fight to Player vs Keeper combat using crafted weapons and armor.
+3. **Synergy & Action Commands:** Execute "Elemental Reactions" by exploiting debuffs, and use precisely timed Action Commands (e.g., pressing Spacebar on impact) to mitigate incoming damage.
+4. **Roaming Monsters:** Aggressive, untameable monsters roam the overworld, triggering immediate, real-time player combat.
 
----
-
-## 4. DUAL-COMBAT & SYNERGY SYSTEM
-Combat has distinct phases and encounter types, modernized for active engagement:
-1. **Wild Encounters (Beast vs Beast):** Standard turn-based elemental combat against wild Beasts hiding in tall grass. You use your active Beast to fight and throw Binding Crystals to capture them.
-2. **Keeper Battles (Player vs Keeper):** When fighting an enemy trainer (a "Keeper"), you first defeat their Beast. Once their Beast falls, the Keeper attacks YOU directly. Your Beast retreats, and your personal **Combat Skills** dictate your damage output. You use crafted weapons and armor here.
-3. **Synergy & Action Commands:** During Keeper combat, if your Beast previously applied an elemental debuff (e.g., "Soaked"), you can trigger an **Elemental Reaction** (e.g., Lightning magic) for massive bonus damage. Furthermore, you can press the Spacebar at the exact moment of an enemy attack to execute an **Action Command Block**, halving incoming damage.
-4. **Roaming Monsters (Player vs Monster):** While exploring dungeons or dark forests, distinct "Monsters" (unlike tameable Beasts) roam the procedural Canvas. Walking into one triggers immediate Player Combat.
-
----
-
-## 5. WEBSITE INTEGRATION (PHASE 12)
-The game must tie into the larger Saints Web platform seamlessly:
-- **Cloud Saves:** `store.ts` state is pushed to a Prisma `GameSave` model linked to the NextAuth `User`.
-- **Achievements:** Milestones (Level 50 skill, catching first Beast) trigger Server Actions to unlock `UserAchievement` badges on the main platform.
-- **The Feed:** Manual "Share" buttons allow players to brag about rare catches directly to the `SocialPost` feed.
-- **Profiles:** Users can select a "Pinned Beast" which renders as a pixel-art sprite on their public Saints Web profile.
-
----
-
-## 6. EXECUTION OBJECTIVES
-Work through these in order. (Items 1-12 completed previously, system currently operating in Phase 13+).
-
-13. **Dynamic Equipment State:** Build out the `equipment` object in `store.ts` to allow players to wear Head, Chest, Legs, and Weapon items.
-14. **Player Combat Math:** Map out the specific `gainXp` triggers for Combat Styles (Summoning XP on Beast battle, Strength XP on Player melee hit).
-15. **LPC Rendering Integration:** Prepare the Canvas engine to support drawing layered PNGs for the player (base body + equipped armor).
+## 6. Saints Web Platform Integration
+Saints Tamer is not an isolated game; it is the beating heart of the SaintsGaming platform:
+- **Cloud Saves:** Game state is synchronized directly to the user's web account via Prisma.
+- **Achievements:** In-game milestones unlock badges and titles on the user's community profile.
+- **Social Feed:** Players can broadcast rare catches and achievements directly to the platform's social timeline.
+- **Profile Showcases:** Users can pin their favorite tamed Beasts to their public web profile, bridging their forum identity with their in-game accomplishments.
