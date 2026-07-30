@@ -121,7 +121,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   };
 
   useEffect(() => {
-    async function init() {
+    async function initData() {
       // Check admin status for Map Editor access
       const { checkAdminPermission } = await import('@/app/actions/game-admin');
       const adminPermission = await checkAdminPermission();
@@ -165,14 +165,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           };
         });
       }
-
-      await loadCharactersList();
-
-      if (initialCharacterId) {
-        await selectAndLoadCharacter(initialCharacterId);
-      } else {
-        setIsInitializing(false);
-      }
     }
     
     const handleResize = () => {
@@ -181,9 +173,35 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     };
     handleResize();
     window.addEventListener('resize', handleResize);
-    init();
+    initData();
     return () => window.removeEventListener('resize', handleResize);
-  }, [initialCharacterId, forceCreate]);
+  }, []);
+
+  // Auth-dependent initialization
+  useEffect(() => {
+    if (status === 'authenticated') {
+      loadCharactersList().then(() => {
+        if (initialCharacterId && isInitializing) {
+          selectAndLoadCharacter(initialCharacterId);
+        } else if (isInitializing) {
+          setIsInitializing(false);
+        }
+      });
+    } else if (status === 'unauthenticated') {
+      if (isInitializing) {
+        setIsInitializing(false);
+      }
+    }
+  }, [status, initialCharacterId, isInitializing]);
+
+  // Handle fallback events like unauthorized creation
+  useEffect(() => {
+    const handleCloseCreator = () => {
+      setShowCreator(false);
+    };
+    window.addEventListener('close_creator', handleCloseCreator);
+    return () => window.removeEventListener('close_creator', handleCloseCreator);
+  }, []);
 
   // SOCKET.IO CONNECTION
   useEffect(() => {

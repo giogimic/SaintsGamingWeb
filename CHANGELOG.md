@@ -21,6 +21,11 @@
 
 # Changelog
 
+## [2.1.79] - 2026-07-30
+- **Demo Sandbox Environment**: Created `DEMO_SANDBOX` map for live multiplayer and world interaction testing.
+- **Editor Pipeline Fix**: Corrected the `MapEditor` API POST route to accurately save structural map changes to the database.
+- **Seamless Spawning**: Defaulted new character spawns to the `DEMO_SANDBOX` for rapid testing iteration.
+- **Interaction Testing**: Added a Guide NPC, Interactive Trees (`HARVEST_WOOD`), and Ore Rocks (`HARVEST_ORE`) into the sandbox.
 ### v2.1.64
 - **Drift-Compensating Game Loop**: Replaced Node's setInterval with a recursive setTimeout loop that calculates and compensates for execution drift in game-server.js for a solid 15 TPS.
 - **O(1) Spatial Hash Grid Collision**: Built SpatialGrid class in spatial-grid.js and wired it into game-server.js. Map NPCs and players are dynamically loaded into the grid, making collision checks an instant dictionary lookup instead of O(N) array scans.

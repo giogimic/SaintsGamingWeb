@@ -61,7 +61,7 @@ export class WorldSimulation {
 
     // NPC Collision Check
     const isStaticNpc = staticNpcs?.some((npc: any) => npc.x === targetX && npc.y === targetY);
-    const isDynamicNpc = dynamicEntities.some((e) => 
+    const isDynamicNpc = (dynamicEntities || []).some((e) => 
       Math.round(e.position.x) === targetX && 
       Math.round(e.position.y) === targetY && 
       (e.mapId === currentMapId || !e.mapId)
@@ -130,7 +130,7 @@ export class WorldSimulation {
     
     let nearbyNpc = nearbyStaticNpc;
     if (!nearbyNpc) {
-      const ent = dynamicEntities.find((e) => 
+      const ent = (dynamicEntities || []).find((e) => 
         Math.round(e.position.x) === faceX && 
         Math.round(e.position.y) === faceY && 
         (e.mapId === currentMapId || !e.mapId)
