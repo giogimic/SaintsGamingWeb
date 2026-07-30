@@ -1,3 +1,7 @@
+### 2.1.73
+- **Critical UI Hotfix**: Switched the `min-h-[calc(100vh-7rem)]` class to an inline `style` property on the Lobby wrapper to guarantee the browser correctly renders the game container height immediately, bypassing potential Next.js Tailwind JIT compilation delays.
+- **Canvas Duplicate Fix**: Removed a duplicate `GameCanvasBabylon` component that was rendering over the active canvas and potentially crashing the WebGL context.
+
 ### 2.1.72
 - **UI Hotfix**: Reverted flexbox restructuring in the Next.js layouts and opted for a safer explicit `min-h-[calc(100vh-7rem)]` approach to prevent the game canvas from collapsing or hiding entirely behind the layout structure.
 
