@@ -21,6 +21,9 @@
 
 # Changelog
 
+## [2.1.80] - 2026-07-30
+- Documentation Synthesis: Extracted the complete Saints Gaming MMO Architecture and Editor Rules from the private `.tools/Gameplay Bible` into professional public markdown documentation in `docs/architecture` and `docs/developer-guide`.
+
 ## [2.1.79] - 2026-07-30
 - **Demo Sandbox Environment**: Created `DEMO_SANDBOX` map for live multiplayer and world interaction testing.
 - **Editor Pipeline Fix**: Corrected the `MapEditor` API POST route to accurately save structural map changes to the database.
