@@ -384,7 +384,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const mapId = state.currentMapId;
             const x = Math.round(sprite.position.x + (activeMap?.width || 0) / 2);
             const y = Math.round((activeMap?.height || 0) / 2 - sprite.position.z);
-            state.emitSocketEvent('pickup_loot', { mapId, x, y });
+            state.emitSocketEvent?.('pickup_loot', { mapId, x, y });
           }
           return;
         }
