@@ -247,18 +247,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const result = WorldSimulation.tryInteract(worldState, dir);
 
     if (result.type === 'RESOURCE_HARVEST') {
-      switch (result.action) {
-        case 'HARVEST_WOOD':
-          soundSynth.playWoodcuttingSound();
-          gainSkillXp('woodcutting', result.payload.xp || 25);
-          showToast(`Harvested Wood Logs (+${result.payload.xp || 25} Woodcutting XP)`);
-          break;
-        case 'HARVEST_ORE':
-          soundSynth.playMiningSound();
-          gainSkillXp('mining', result.payload.xp || 30);
-          showToast(`Mined Copper Ore (+${result.payload.xp || 30} Mining XP)`);
-          break;
+      if (result.action === 'HARVEST_WOOD') {
+        soundSynth.playWoodcuttingSound();
+      } else if (result.action === 'HARVEST_ORE') {
+        soundSynth.playMiningSound();
       }
+      
+      // Phase 5: Server Authority for Gathering
+      store.emitSocketEvent?.('gather_interact', {
+        mapId: currentMapId,
+        targetX: result.targetX,
+        targetY: result.targetY
+      });
       return;
     }
 
