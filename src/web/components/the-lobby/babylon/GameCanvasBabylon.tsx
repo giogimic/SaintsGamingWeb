@@ -13,6 +13,7 @@ import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
 
 import QuestTrackerOverlay from '../quest-tracker-overlay';
+import CraftingOverlay from '../crafting-overlay';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -249,6 +250,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const result = WorldSimulation.tryInteract(worldState, dir);
 
     if (result.type === 'RESOURCE_HARVEST') {
+      if (result.action === 'OPEN_CRAFTING') {
+        useGameStore.setState({ gameMode: 'CRAFTING' });
+        return;
+      }
+
       if (result.action === 'HARVEST_WOOD') {
         soundSynth.playWoodcuttingSound();
       } else if (result.action === 'HARVEST_ORE') {
@@ -765,6 +771,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
+      
+      {/* Quest Tracker */}
+      {!isDevEditorOpen && <QuestTrackerOverlay />}
+
+      {/* Crafting Menu */}
+      <CraftingOverlay />
 
       {isEngineReady && engineRef.current && (
         <FloatingHealthBars engine={engineRef.current} />

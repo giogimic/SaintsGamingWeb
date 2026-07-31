@@ -1379,6 +1379,18 @@ model ItemTemplate {
   stackable      Boolean  @default(true)
 }
 
+model CraftingRecipe {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  outputItemSlug String
+  outputQuantity Int      @default(1)
+  skillSlug      String   // e.g. "smithing", "fletching"
+  levelReq       Int      @default(1)
+  xpReward       Int      @default(10)
+  ingredients    String   // JSON: [{ "itemSlug": "iron_ore", "qty": 2 }]
+  timeMs         Int      @default(3000) // Time it takes to craft
+}
+
 // ─── Saints World Maps ──────────────────────────────────────────
 
 model SaintsMap {
