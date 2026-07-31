@@ -177,6 +177,14 @@ export class SocketHandler {
         });
       });
 
+      socket.on("craft_item", (recipeSlug) => {
+        this.engine.events.emit("craftRequestAction", {
+          accountId,
+          socketId: socket.id,
+          recipeSlug
+        });
+      });
+
       socket.on("disconnect", () => {
         console.log(`[Socket] Client disconnected: ${socket.id} (Account: ${accountId})`);
         this.engine.events.emit("playerDisconnected", { accountId, socketId: socket.id });

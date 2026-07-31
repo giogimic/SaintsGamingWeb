@@ -12,7 +12,7 @@ const DEFAULT_LOGIC_TILES = [
   { id: 6, name: 'Ore Rock', color: 'bg-[#8d6e63]', isSolid: true, interactable: true, onInteractAction: 'HARVEST_ORE', onInteractPayload: '{"xp":25, "resource":"ore"}' },
   { id: 7, name: 'Shop Tile', color: 'bg-yellow-400', isSolid: false, onStepAction: 'OPEN_SHOP' },
   { id: 8, name: 'Clinic Tile', color: 'bg-pink-500', isSolid: false, onStepAction: 'CLINIC_HEAL' },
-  { id: 9, name: 'Crafting', color: 'bg-gray-500', isSolid: false, onStepAction: 'OPEN_CRAFTING' },
+  { id: 9, name: 'Crafting Table', color: 'bg-gray-500', isSolid: true, interactable: true, onInteractAction: 'OPEN_CRAFTING' },
   { id: 10, name: 'Fishing', color: 'bg-sky-600', isSolid: false, onStepAction: 'FISHING' },
   { id: 12, name: 'Base Hub', color: 'bg-indigo-800', isSolid: false, onStepAction: 'OPEN_BASE' }
 ];
