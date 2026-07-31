@@ -22,7 +22,7 @@ export type MoveSimulationResult =
 
 export type InteractSimulationResult =
   | { type: 'NONE' }
-  | { type: 'RESOURCE_HARVEST'; action: string; payload: any }
+  | { type: 'RESOURCE_HARVEST'; action: string; payload: any; targetX: number; targetY: number }
   | { type: 'NPC_DIALOGUE'; npcId: string; npcName: string; text: string }
   | { type: 'SIGN_READ'; content: string };
 
@@ -122,7 +122,7 @@ export class WorldSimulation {
       try {
         payload = logicTile.onInteractPayload ? JSON.parse(logicTile.onInteractPayload) : {};
       } catch (e) {}
-      return { type: 'RESOURCE_HARVEST', action: logicTile.onInteractAction, payload };
+      return { type: 'RESOURCE_HARVEST', action: logicTile.onInteractAction, payload, targetX: faceX, targetY: faceY };
     }
 
     // Check NPCs
