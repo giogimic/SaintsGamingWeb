@@ -178,6 +178,33 @@ export class WorldManager {
     spatialGrid.moveEntity(instanceId, oldX, oldY, newX, newY, entityId);
   }
 
+  // --- Phase 8: Line of Sight (Bresenham) ---
+  public hasLineOfSight(instanceId: string, x0: number, y0: number, x1: number, y1: number): boolean {
+    let dx = Math.abs(x1 - x0);
+    let dy = Math.abs(y1 - y0);
+    let sx = (x0 < x1) ? 1 : -1;
+    let sy = (y0 < y1) ? 1 : -1;
+    let err = dx - dy;
+
+    // To prevent infinite loops or long rays
+    let maxDist = 20;
+
+    while(true) {
+      if (maxDist-- <= 0) return false;
+      if (x0 === x1 && y0 === y1) return true;
+      
+      // If a tile is not walkable, LOS is blocked. (Ignore the starting tile itself to prevent self-blocking)
+      // Actually, we should check if the current tile (except starting point) is an obstacle.
+      if (!this.isWalkable(instanceId, x0, y0)) {
+        return false;
+      }
+
+      let e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; x0 += sx; }
+      if (e2 < dx) { err += dx; y0 += sy; }
+    }
+  }
+
   // --- Phase 7: Node Depletion Engine ---
 
   public isNodeDepleted(instanceId: string, x: number, y: number): boolean {

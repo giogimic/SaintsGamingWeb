@@ -37,6 +37,7 @@ export enum AIState {
 export enum BehavioralState {
   CALM = "CALM",
   ALERT = "ALERT",
+  HOSTILE = "HOSTILE",
   ENRAGED = "ENRAGED",
   FLEEING = "FLEEING"
 }
