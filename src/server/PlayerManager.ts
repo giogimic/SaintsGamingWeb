@@ -47,6 +47,11 @@ export class PlayerManager {
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
     this.engine.events.on("unlockPlayerMovement", (accountId) => this.setPlayerLock(accountId, false));
+    
+    // Phase 8: Data requests from other managers
+    this.engine.events.on("requestPlayersInMap", ({ mapId, callback }) => {
+      callback(this.getPlayersInMap(mapId));
+    });
 
     // Phase 5: Periodic Database Flushing (Hot to Cold State)
     setInterval(() => this.flushPlayerPositions(), 60000);
@@ -77,6 +82,10 @@ export class PlayerManager {
 
   public getPlayer(entityId: string): PlayerState | undefined {
     return this.players.get(entityId);
+  }
+
+  public getPlayersInMap(mapId: string): PlayerState[] {
+    return Array.from(this.players.values()).filter(p => p.mapId === mapId);
   }
 
   private async handleClientJoin({ accountId, socketId, data }: any) {

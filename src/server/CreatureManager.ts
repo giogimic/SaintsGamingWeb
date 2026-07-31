@@ -121,128 +121,144 @@ export class CreatureManager {
   }
 
   private tickWanderAI({ instanceId, mapId }: { instanceId: string, mapId: string }) {
+    // 1-TPS NPC/Creature AI Loop
+    let playersInMap: any[] = [];
+    this.engine.events.emit("requestPlayersInMap", {
+      mapId: instanceId,
+      callback: (players: any[]) => { playersInMap = players; }
+    });
+
     const now = Date.now();
     for (const [entityId, creature] of this.creatures.entries()) {
       if (creature.mapId !== instanceId) continue;
       
-      // Phase 6: 1-TPS NPC/Creature Wander AI Loop
-      if (creature.aiState === AIState.IDLE || creature.aiState === AIState.WANDER) {
-        // 25% chance to wander every tick (which is 1 second)
-        if (Math.random() < 0.25) {
-          const dirs: Array<"up" | "down" | "left" | "right"> = ["up", "down", "left", "right"];
-          const dir = dirs[Math.floor(Math.random() * dirs.length)];
-          
-          let nextX = creature.x;
-          let nextY = creature.y;
-          
-          if (dir === "up") nextY -= 1;
-          else if (dir === "down") nextY += 1;
-          else if (dir === "left") nextX -= 1;
-          else if (dir === "right") nextX += 1;
+      const dirs: Array<"up" | "down" | "left" | "right"> = ["up", "down", "left", "right"];
+      let nextX = creature.x;
+      let nextY = creature.y;
+      let chosenDir: "up" | "down" | "left" | "right" | null = null;
 
-          if (
-            this.worldManager.isWalkable(creature.mapId, nextX, nextY) &&
-            !this.worldManager.isOccupied(creature.mapId, nextX, nextY)
-          ) {
-            this.worldManager.moveEntity(creature.mapId, creature.x, creature.y, nextX, nextY, entityId);
-            creature.x = nextX;
-            creature.y = nextY;
-            creature.direction = dir;
-            creature.isMoving = true;
-            creature.lastMoveTime = now;
-            this.dirtyEntities.add(entityId);
-            
-            // Reset moving flag after short delay
-            setTimeout(() => {
-              const c = this.creatures.get(entityId);
-              if (c) {
-                c.isMoving = false;
-                this.dirtyEntities.add(entityId);
-              }
-            }, 250);
-          } else {
-            creature.direction = dir; // Just turn
-            creature.lastMoveTime = now;
-            this.dirtyEntities.add(entityId);
+      // 1. Target Acquisition & State Transitions (Aggro Check)
+      let closestPlayer = null;
+      let closestDist = Infinity;
+
+      for (const p of playersInMap) {
+        const dx = p.x - creature.x;
+        const dy = p.y - creature.y;
+        const dist = Math.abs(dx) + Math.abs(dy); // Manhattan distance
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestPlayer = p;
+        }
+      }
+
+      // Neutral/Hostile Aggro Logic
+      if (closestPlayer && closestDist <= 7) {
+        const hasLoS = this.worldManager.hasLineOfSight(instanceId, creature.x, creature.y, closestPlayer.x, closestPlayer.y);
+        
+        if (hasLoS) {
+          if (creature.behavior === BehavioralState.HOSTILE || creature.behavior === BehavioralState.ENRAGED) {
+             // If close enough to attack
+             if (closestDist <= 1) {
+               creature.aiState = AIState.ATTACK;
+             } else {
+               creature.aiState = AIState.CHASE;
+             }
+          } else if (creature.behavior === BehavioralState.FLEEING) {
+             creature.aiState = AIState.FLEE;
           }
+        } else if (creature.aiState === AIState.CHASE || creature.aiState === AIState.FLEE) {
+           // Lost LoS
+           creature.aiState = AIState.WANDER;
+        }
+      } else if (creature.aiState === AIState.CHASE || creature.aiState === AIState.FLEE) {
+        // Target too far
+        creature.aiState = AIState.WANDER;
+      }
+
+      // 2. State Execution
+      if (creature.aiState === AIState.IDLE || creature.aiState === AIState.WANDER) {
+        // 25% chance to wander every tick
+        if (Math.random() < 0.25) {
+          chosenDir = dirs[Math.floor(Math.random() * dirs.length)];
+        }
+      } else if (creature.aiState === AIState.CHASE && closestPlayer) {
+        // Simple Chase Pathing (Move towards player)
+        const dx = closestPlayer.x - creature.x;
+        const dy = closestPlayer.y - creature.y;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          chosenDir = dx > 0 ? "right" : "left";
+        } else {
+          chosenDir = dy > 0 ? "down" : "up";
+        }
+      } else if (creature.aiState === AIState.FLEE && closestPlayer) {
+        // Simple Flee Pathing (Move away from player)
+        const dx = closestPlayer.x - creature.x;
+        const dy = closestPlayer.y - creature.y;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          chosenDir = dx > 0 ? "left" : "right";
+        } else {
+          chosenDir = dy > 0 ? "up" : "down";
+        }
+      } else if (creature.aiState === AIState.ATTACK) {
+        // Emit an attack event
+        this.engine.events.emit("creatureAoEAttack", {
+          attackerId: creature.entityId,
+          mapId: creature.mapId,
+          x: creature.x,
+          y: creature.y,
+          radius: 3,
+          damage: 15
+        });
+
+        this.engine.events.emit("networkBroadcast", {
+          room: creature.mapId,
+          event: "combat_update",
+          data: {
+            type: "AOE_ATTACK",
+            attackerId: creature.entityId,
+            radius: 3,
+            damage: 15
+          }
+        });
+      }
+
+      // 3. Movement Execution
+      if (chosenDir) {
+        if (chosenDir === "up") nextY -= 1;
+        else if (chosenDir === "down") nextY += 1;
+        else if (chosenDir === "left") nextX -= 1;
+        else if (chosenDir === "right") nextX += 1;
+
+        if (
+          this.worldManager.isWalkable(creature.mapId, nextX, nextY) &&
+          !this.worldManager.isOccupied(creature.mapId, nextX, nextY)
+        ) {
+          this.worldManager.moveEntity(creature.mapId, creature.x, creature.y, nextX, nextY, entityId);
+          creature.x = nextX;
+          creature.y = nextY;
+          creature.direction = chosenDir;
+          creature.isMoving = true;
+          creature.lastMoveTime = now;
+          this.dirtyEntities.add(entityId);
+          
+          setTimeout(() => {
+            const c = this.creatures.get(entityId);
+            if (c) {
+              c.isMoving = false;
+              this.dirtyEntities.add(entityId);
+            }
+          }, 250);
+        } else {
+          creature.direction = chosenDir; // Turn to face blocked path
+          creature.lastMoveTime = now;
+          this.dirtyEntities.add(entityId);
         }
       }
     }
   }
 
   private tickCombatAI(dt: number) {
-    const now = Date.now();
-    for (const [entityId, creature] of this.creatures.entries()) {
-      if (creature.aiState === AIState.FLEE) {
-        // Simple fleeing logic: Move rapidly every 1 second in a random valid direction
-        if (now - creature.lastMoveTime > 1000) {
-          const dirs: Array<"up" | "down" | "left" | "right"> = ["up", "down", "left", "right"];
-          const validDirs = dirs.filter(dir => {
-            let nextX = creature.x;
-            let nextY = creature.y;
-            if (dir === "up") nextY -= 1;
-            else if (dir === "down") nextY += 1;
-            else if (dir === "left") nextX -= 1;
-            else if (dir === "right") nextX += 1;
-            return this.worldManager.isWalkable(creature.mapId, nextX, nextY) && !this.worldManager.isOccupied(creature.mapId, nextX, nextY);
-          });
-          
-          if (validDirs.length > 0) {
-            const dir = validDirs[Math.floor(Math.random() * validDirs.length)];
-            let nextX = creature.x;
-            let nextY = creature.y;
-            if (dir === "up") nextY -= 1;
-            else if (dir === "down") nextY += 1;
-            else if (dir === "left") nextX -= 1;
-            else if (dir === "right") nextX += 1;
-            
-            this.worldManager.moveEntity(creature.mapId, creature.x, creature.y, nextX, nextY, entityId);
-            creature.x = nextX;
-            creature.y = nextY;
-            creature.direction = dir;
-            creature.isMoving = true;
-            creature.lastMoveTime = now;
-            this.dirtyEntities.add(entityId);
-            
-            setTimeout(() => {
-              const c = this.creatures.get(entityId);
-              if (c) {
-                c.isMoving = false;
-                this.dirtyEntities.add(entityId);
-              }
-            }, 250);
-          }
-        }
-      } else if (creature.aiState === AIState.ATTACK) {
-        // Enraged creatures unleash AoE attacks every 2 seconds
-        if (now - creature.lastMoveTime > 2000) {
-          creature.lastMoveTime = now;
-          
-          // Emit a decoupled attack event. The PlayerManager will listen and apply damage
-          // to any players within the radius.
-          this.engine.events.emit("creatureAoEAttack", {
-            attackerId: creature.entityId,
-            mapId: creature.mapId,
-            x: creature.x,
-            y: creature.y,
-            radius: 3,
-            damage: 15
-          });
-
-          // Optional: visual broadcast so clients see an attack animation
-          this.engine.events.emit("networkBroadcast", {
-            room: creature.mapId,
-            event: "combat_update",
-            data: {
-              type: "AOE_ATTACK",
-              attackerId: creature.entityId,
-              radius: 3,
-              damage: 15
-            }
-          });
-        }
-      }
-    }
+    // Legacy high-frequency logic. Moved to 1Hz aiTick for performance.
   }
 
   private broadcastDeltas() {
