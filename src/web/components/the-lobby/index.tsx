@@ -24,6 +24,7 @@ import GameTitleScreen from './GameTitleScreen';
 import GameLogin from './GameLogin';
 import ServerSelect from './ServerSelect';
 import BattleOverlay from './BattleOverlay';
+import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
@@ -336,12 +337,6 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       useGameStore.getState().setActiveBattle(data);
       useGameStore.getState().setGameMode('BATTLE');
     });
-    
-    socket.on('battle_started', (data) => {
-      const state = useGameStore.getState();
-      state.setActiveBattle(data);
-      state.setGameMode('BATTLE');
-    });
 
     socket.on('battle_update', (data) => {
       useGameStore.getState().setActiveBattle({
@@ -561,6 +556,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
       {/* Integrated Dev Editor Overlay — must be OUTSIDE the pointer-events-none container */}
       </div>
+
+      {/* Turn-Based Battle Overlay */}
+      {gameMode === 'BATTLE' && <TurnBattleOverlay />}
+
       <IntegratedDevEditor 
         activeMapId={currentMapId}
         onMapSelect={(id) => {
