@@ -69,3 +69,11 @@ docker-compose.yml
 deploy.py
 fix_seed.py
 scripts/deploy-beta*.py
+# temp
+refactor.js
+docker_build.log
+
+# databases
+*.db
+*.sqlite
+*.sqlite3
