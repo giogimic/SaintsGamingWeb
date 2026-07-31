@@ -15,17 +15,17 @@ export interface GameConfigEditorProps {
 }
 
 export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
-  gameSlug: _gameSlug = 'tuxemon',
+  gameSlug: _gameSlug = 'creature',
   onSaveSuccess,
 }) => {
   const [config, setConfig] = useState<Partial<GameConfigInput>>({
-    slug: 'tuxemon',
-    name: 'Tuxemon Demo',
+    slug: 'creature',
+    name: 'Creature Demo',
     version: '1.0.0',
-    description: 'Official Tuxemon multi-game engine demo',
+    description: 'Official Creature multi-game engine demo',
     maxLevel: 100,
     baseStats: { hp: 100, atk: 50, def: 40, spd: 50, ratk: 50, rdef: 40 },
-    combatFormula: 'tuxemon-standard',
+    combatFormula: 'creature-standard',
     skillFormula: 'runescape-style',
     xpCurve: 'exponential',
     maxEntitiesPerMap: 100,
@@ -136,11 +136,11 @@ export const GameConfigEditor: React.FC<GameConfigEditorProps> = ({
           <div>
             <label className="text-slate-400 block mb-1 text-[10px]">Combat Formula</label>
             <select
-              value={config.combatFormula || 'tuxemon-standard'}
+              value={config.combatFormula || 'creature-standard'}
               onChange={(e) => setConfig({ ...config, combatFormula: e.target.value })}
               className="w-full bg-[#050b14] border border-slate-800 rounded px-2.5 py-1.5 text-slate-200"
             >
-              <option value="tuxemon-standard">Tuxemon Standard (15 Types / 6 Stats)</option>
+              <option value="creature-standard">Creature Standard (15 Types / 6 Stats)</option>
               <option value="pokemon-gen3">Pokémon Gen 3 Standard</option>
               <option value="custom-rpg">Custom Action RPG</option>
             </select>

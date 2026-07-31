@@ -16,7 +16,7 @@ interface AchievementDef {
 }
 
 const GAME_ACHIEVEMENTS: AchievementDef[] = [
-  { id: 'first_capture', title: 'First Companion Bound', desc: 'Capture or claim your first Tuxemon beast companion.', rewardCoins: 50, rewardXp: 100, category: 'Taming' },
+  { id: 'first_capture', title: 'First Companion Bound', desc: 'Capture or claim your first Creature beast companion.', rewardCoins: 50, rewardXp: 100, category: 'Taming' },
   { id: 'campaign_explorer', title: 'Campaign Explorer', desc: 'Warp through 5 different campaign region maps.', rewardCoins: 100, rewardXp: 250, category: 'Exploration' },
   { id: 'master_crafter', title: 'Master Weapon Crafter', desc: 'Craft a weapon with ARPG stat affixes at the Crafting Station.', rewardCoins: 75, rewardXp: 150, category: 'Crafting' },
   { id: 'keeper_conqueror', title: 'Keeper Conqueror', desc: 'Defeat a trainer Keeper in Phase 2 ARPG combat.', rewardCoins: 150, rewardXp: 300, category: 'Combat' },

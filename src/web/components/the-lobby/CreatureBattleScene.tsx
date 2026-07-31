@@ -1,5 +1,5 @@
 /**
- * Tuxemon Battle Scene - WebGL-based battle rendering with PixiJS
+ * Creature Battle Scene - WebGL-based battle rendering with PixiJS
  */
 
 'use client';
@@ -14,7 +14,7 @@ interface BattleSceneProps {
   onBattleEnd: (result: 'win' | 'lose' | 'capture' | 'flee') => void;
 }
 
-export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBattleEnd }: BattleSceneProps) {
+export default function CreatureBattleScene({ playerMonster, enemyMonster, onBattleEnd }: BattleSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<Application | null>(null);
   const [battleLog, setBattleLog] = useState<string[]>(['Battle started!']);
@@ -41,7 +41,7 @@ export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBatt
         antialias: true,
       });
     } catch (e) {
-      console.warn('WebGL init warning in TuxemonBattleScene:', e);
+      console.warn('WebGL init warning in CreatureBattleScene:', e);
       try {
         app = new Application({
           view: canvasRef.current,
@@ -239,7 +239,7 @@ export default function TuxemonBattleScene({ playerMonster, enemyMonster, onBatt
     if (currentPhase !== 'player_turn') return;
 
     setCurrentPhase('animating');
-    const success = attemptCapture(enemyMonster, 'tuxeball');
+    const success = attemptCapture(enemyMonster, 'capture_device');
 
     if (success) {
       setBattleLog(prev => [...prev, `Gotcha! ${enemyMonster.nickname} was caught!`]);

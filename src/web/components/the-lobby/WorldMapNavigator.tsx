@@ -24,8 +24,8 @@ export default function WorldMapNavigator({
 
   const filteredMaps = allMaps.filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || m.id.toLowerCase().includes(searchTerm.toLowerCase());
-    if (categoryFilter === 'CAMPAIGN') return matchesSearch && (m.id.startsWith('tuxemon_') || m.id.startsWith('player_') || m.id.startsWith('spyder_') || m.id.startsWith('professor_'));
-    if (categoryFilter === 'CUSTOM') return matchesSearch && (!m.id.startsWith('tuxemon_') && !m.id.startsWith('player_') && !m.id.startsWith('spyder_') && !m.id.startsWith('professor_'));
+    if (categoryFilter === 'CAMPAIGN') return matchesSearch && (m.id.startsWith('creature_') || m.id.startsWith('player_') || m.id.startsWith('spyder_') || m.id.startsWith('professor_'));
+    if (categoryFilter === 'CUSTOM') return matchesSearch && (!m.id.startsWith('creature_') && !m.id.startsWith('player_') && !m.id.startsWith('spyder_') && !m.id.startsWith('professor_'));
     return matchesSearch;
   });
 

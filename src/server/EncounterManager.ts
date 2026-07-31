@@ -42,9 +42,9 @@ export class EncounterManager {
     // 50% chance to trigger an encounter in tall grass
     if (Math.random() > 0.5) {
       const templates = [
-        { id: "Pebblad", spriteKey: "tuxemon/pebblad" },
-        { id: "Vulcan", spriteKey: "tuxemon/vulcan" },
-        { id: "Aquan", spriteKey: "tuxemon/aquan" }
+        { id: "Pebblad", spriteKey: "creature/pebblad" },
+        { id: "Vulcan", spriteKey: "creature/vulcan" },
+        { id: "Aquan", spriteKey: "creature/aquan" }
       ];
       const template = templates[Math.floor(Math.random() * templates.length)];
       
@@ -56,7 +56,7 @@ export class EncounterManager {
         hp: 120,
         maxHp: 120,
         level: 6,
-        spriteKey: "tuxemon/starter"
+        spriteKey: "creature/starter"
       };
 
       if (!data.accountId.startsWith("acc_")) {
@@ -79,7 +79,7 @@ export class EncounterManager {
               hp: activeCreature.currentHp,
               maxHp: activeCreature.maxHp,
               level: activeCreature.level,
-              spriteKey: `tuxemon/${activeCreature.speciesSlug.toLowerCase()}`
+              spriteKey: `creature/${activeCreature.speciesSlug.toLowerCase()}`
             };
           }
         } catch (e) {

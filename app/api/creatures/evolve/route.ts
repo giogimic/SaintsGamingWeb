@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 
 /**
- * POST /api/tuxemon/evolve — Trigger Tuxemon Evolution
+ * POST /api/creatures/evolve — Trigger Creature Evolution
  */
 export async function POST(request: NextRequest) {
   try {

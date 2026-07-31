@@ -8,7 +8,7 @@ export const playTownBgm = () => {
   if (typeof window === 'undefined') return;
   if (!townBgm) {
     townBgm = new Howl({
-      src: ['/tuxemon-assets/audio/music/town.ogg', '/tuxemon-assets/audio/music/town.mp3'],
+      src: ['/game-assets/audio/music/town.ogg', '/game-assets/audio/music/town.mp3'],
       loop: true,
       volume: 0.3,
       html5: true
@@ -24,7 +24,7 @@ export const playBattleBgm = () => {
   if (typeof window === 'undefined') return;
   if (!battleBgm) {
     battleBgm = new Howl({
-      src: ['/tuxemon-assets/audio/music/battle.ogg', '/tuxemon-assets/audio/music/battle.mp3'],
+      src: ['/game-assets/audio/music/battle.ogg', '/game-assets/audio/music/battle.mp3'],
       loop: true,
       volume: 0.4,
       html5: true
@@ -40,7 +40,7 @@ export const playVictorySfx = () => {
   if (typeof window === 'undefined') return;
   if (!victorySfx) {
     victorySfx = new Howl({
-      src: ['/tuxemon-assets/audio/sound/victory.wav'],
+      src: ['/game-assets/audio/sound/victory.wav'],
       volume: 0.5
     });
   }

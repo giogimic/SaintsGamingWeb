@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 
 /**
- * GET /api/tuxemon/species/[slug] — Get a Tuxemon species with learnedAbilities
+ * GET /api/creatures/species/[slug] — Get a Creature species with learnedAbilities
  */
 export async function GET(
   request: NextRequest,

@@ -130,6 +130,23 @@ export class SocketHandler {
       });
 
       // --- PHASE 8: Social & Party Systems ---
+      // --- PHASE 9: Global Trading Center (GTC) ---
+      socket.on("gtc_create_listing", (data) => {
+        this.engine.events.emit("gtcCreateListing", {
+          accountId,
+          socketId: socket.id,
+          ...data
+        });
+      });
+
+      socket.on("gtc_purchase_listing", (data) => {
+        this.engine.events.emit("gtcPurchaseListing", {
+          accountId,
+          socketId: socket.id,
+          listingId: data.listingId
+        });
+      });
+
       socket.on("pickup_loot", (data) => {
         // data: { mapId, x, y }
         this.engine.events.emit("pickupLootRequest", {

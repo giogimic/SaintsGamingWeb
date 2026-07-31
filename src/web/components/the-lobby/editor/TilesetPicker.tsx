@@ -77,7 +77,7 @@ export default function TilesetPicker({
         <div className="bg-black/60 rounded border border-slate-700 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
            <img 
              ref={imgRef}
-             src={`/tuxemon-assets/tilesets/${ts.imageSource}`} 
+             src={`/game-assets/tilesets/${ts.imageSource}`} 
              alt="Tileset" 
              onClick={handleImageClick}
              className="cursor-crosshair w-full"

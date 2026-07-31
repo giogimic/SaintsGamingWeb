@@ -133,12 +133,12 @@ export class SpriteSheetSlicer {
    * Extract intelligent tags from filename and path
    */
   static deriveTagsFromFilename(filename: string, categoryPath: string): string[] {
-    const tags = new Set<string>(['tuxemon']);
+    const tags = new Set<string>(['creature']);
     const cleanName = filename.toLowerCase().replace(/\.[^/.]+$/, '');
     const pathParts = categoryPath.toLowerCase().split(/[/\\]/);
 
     pathParts.forEach((part) => {
-      if (part && !['public', 'game-assets', 'tuxemon-assets'].includes(part)) {
+      if (part && !['public', 'game-assets', 'creature-assets'].includes(part)) {
         tags.add(part);
       }
     });

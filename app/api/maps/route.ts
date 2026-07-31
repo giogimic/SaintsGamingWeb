@@ -4,7 +4,7 @@ import { prisma } from '@/web/lib/prisma';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const gameId = searchParams.get('gameId') || 'tuxemon';
+    const gameId = searchParams.get('gameId') || 'creature';
 
     const maps = await prisma.worldMap.findMany({
       where: { gameId },

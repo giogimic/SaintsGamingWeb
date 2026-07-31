@@ -83,7 +83,7 @@ export interface BabylonEntityData {
   frameIndex?: number;
   isPlayer?: boolean;
   isNpc?: boolean;
-  isTuxemon?: boolean;
+  isCreature?: boolean;
   chatMessage?: string;
   spriteConfig?: SpriteSheetConfig;
 }
@@ -702,7 +702,7 @@ export class BabylonEngine {
           let tex = this.tilesetTextureCache.get(imageSource);
           if (!tex) {
             const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const tilesetPath = `/tuxemon-assets/tilesets/${rawSource}`;
+            const tilesetPath = `/game-assets/tilesets/${rawSource}`;
             tex = new Texture(tilesetPath, this.scene, true, false, 1);
             tex.hasAlpha = true;
             this.tilesetTextureCache.set(imageSource, tex);
@@ -1364,7 +1364,7 @@ export class BabylonEngine {
     projectile.position = new Vector3(sourceMesh.position.x, 1.5, sourceMesh.position.z);
     
     const mat = new StandardMaterial('projectileMat', this.scene);
-    mat.diffuseColor = new Color3(1, 0.4, 0.4); // Reddish for Tuxeball
+    mat.diffuseColor = new Color3(1, 0.4, 0.4); // Reddish for Capture Device
     mat.emissiveColor = new Color3(1, 0.2, 0.2);
     projectile.material = mat;
 

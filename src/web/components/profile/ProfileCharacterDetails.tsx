@@ -151,7 +151,7 @@ export function ProfileCharacterDetails({ character }: ProfileCharacterDetailsPr
             <div className="space-y-3">
               {caughtDaemons.length === 0 ? (
                 <div className="text-xs text-muted-foreground italic p-4 text-center border border-dashed rounded-lg">
-                  No Tuxemon beasts bound to this character yet.
+                  No Creature beasts bound to this character yet.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -184,7 +184,7 @@ export function ProfileCharacterDetails({ character }: ProfileCharacterDetailsPr
                 </div>
               ) : gtcListings.length === 0 ? (
                 <div className="text-xs text-muted-foreground italic p-4 text-center border border-dashed border-amber-900/30 rounded-lg bg-amber-950/10">
-                  No active trade listings posted. Players can list rare Tuxemon beasts, crafted armor affixes, and raw materials for community trade.
+                  No active trade listings posted. Players can list rare Creature beasts, crafted armor affixes, and raw materials for community trade.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">

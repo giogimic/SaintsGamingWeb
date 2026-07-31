@@ -118,7 +118,7 @@ export class GameConfigManager {
         description: input.description,
         maxLevel: input.maxLevel ?? 100,
         baseStats: JSON.stringify(input.baseStats ?? {}),
-        combatFormula: input.combatFormula ?? 'tuxemon-standard',
+        combatFormula: input.combatFormula ?? 'creature-standard',
         skillFormula: input.skillFormula ?? 'runescape-style',
         xpCurve: input.xpCurve ?? 'exponential',
         spritePackIds: JSON.stringify(input.spritePackIds ?? []),

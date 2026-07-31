@@ -2,7 +2,8 @@
 
 import { useRef, useState, useEffect } from 'react';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
-import IntegratedDevEditor from './editor/IntegratedDevEditor';
+import { StudioEditorShell } from './editor/StudioEditorShell';
+import { useEditorStore } from './editor/editor-store';
 import SaintsDexOverlay from './SaintsDexOverlay';
 import TargetFrame from './target-frame';
 import ShopOverlay from './shop-overlay';
@@ -51,13 +52,13 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const socketRef = useRef<Socket | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isDevEditorOpen, setIsDevEditorOpen] = useState(false);
   const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
-  const [editorTab, setEditorTab] = useState<'visual' | 'logic'>('visual');
-  const [activeBrushTileId, setActiveBrushTileId] = useState<number>(1);
-  const [activeLayerIdx, setActiveLayerIdx] = useState<number>(0);
-  const [editorClickedTile, setEditorClickedTile] = useState<{r: number, c: number} | null>(null);
   const [uiScale, setUiScale] = useState(1);
+  
+  const isCreationMode = useEditorStore((state) => state.isCreationMode);
+  const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
+  const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
+  const setClickedTile = useEditorStore((state) => state.setClickedTile);
 
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
@@ -81,7 +82,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
       
-      // Map state sanitizer: ensure player boots into a valid Tuxemon campaign map
+      // Map state sanitizer: ensure player boots into a valid Creature campaign map
       const validMapId = (parsedState.currentMapId && GAME_MAPS[parsedState.currentMapId]) 
         ? parsedState.currentMapId 
         : 'PLAYER_HOUSE_BEDROOM';
@@ -494,8 +495,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         return;
       }
       const key = e.key.toLowerCase();
-      if (key === 'escape') setIsOptionsOpen(prev => !prev);
-      else if (key === '`' && isAdminUser) setIsDevEditorOpen(prev => !prev);
+      if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
+      else if (key === 'e' && isAdminUser) {
+        useEditorStore.getState().toggleCreationMode();
+      }
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
       else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
       else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
@@ -537,10 +540,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     >
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
-        activeLayerIdx={editorTab === 'logic' ? -2 : activeLayerIdx}
-        isDevEditorOpen={isDevEditorOpen}
+        activeLayerIdx={activeLayerIdx}
+        isDevEditorOpen={isCreationMode}
         onMapClick={(r, c) => {
-          if (isDevEditorOpen) setEditorClickedTile({r, c});
+          if (isCreationMode) setClickedTile({r, c});
         }}
       />
       
@@ -560,22 +563,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {/* Turn-Based Battle Overlay */}
       {gameMode === 'BATTLE' && <TurnBattleOverlay />}
 
-      <IntegratedDevEditor 
-        activeMapId={currentMapId}
-        onMapSelect={(id) => {
-          loadMap(id).then(() => {
-            useGameStore.setState({ currentMapId: id });
-          });
-        }}
-        devMapList={devMapList}
-        isOpen={isDevEditorOpen} 
-        onClose={() => setIsDevEditorOpen(false)} 
-        onBrushTileChange={(tileId) => setActiveBrushTileId(tileId)}
-        activeLayerIdx={activeLayerIdx}
-        onLayerChange={(idx) => setActiveLayerIdx(idx)}
-        onTabChange={(tab) => { setEditorTab(tab as any); setEditorClickedTile(null); }}
-        clickedTile={editorClickedTile}
-      />
+      <StudioEditorShell />
 
       {/* Toast Notification */}
       {toast && (
@@ -590,9 +578,22 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
       {gameMode !== 'BATTLE' && (
         <div className="absolute top-3 right-3 z-40 pointer-events-none">
+          {isAdminUser && (
+            <button
+              onClick={() => useEditorStore.getState().toggleCreationMode()}
+              className={`pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-2
+                ${isCreationMode 
+                  ? 'bg-[#cbb26a] text-black border-[#806f47] hover:bg-amber-500 shadow-[0_0_15px_rgba(203,178,106,0.3)]' 
+                  : 'bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a]'
+                }`}
+            >
+              <span className="text-sm leading-none">🔨</span>
+              <span>STUDIO (Ctrl+E)</span>
+            </button>
+          )}
           <button
             onClick={() => setIsOptionsOpen(true)}
-            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
+            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2 ml-2"
           >
             <span className="text-sm leading-none">⚙️</span>
             <span>OPTIONS (ESC)</span>
@@ -606,10 +607,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
         isAdminUser={isAdminUser}
-        isDevEditorOpen={isDevEditorOpen}
+        isCreationMode={isCreationMode}
         onToggleDevEditor={() => {
-          if (!isDevEditorOpen) useGameStore.getState().setGameMode('EXPLORING');
-          setIsDevEditorOpen(!isDevEditorOpen); 
+          if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
+          useEditorStore.getState().toggleCreationMode(); 
           setIsOptionsOpen(false);
         }}
       />
@@ -655,19 +656,19 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
       {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
 
-      {gameMode === 'EXPLORING' && !isDevEditorOpen && (
+      {gameMode === 'EXPLORING' && !isCreationMode && (
         <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
           <MiniMapRadar />
         </DraggablePanel>
       )}
-      {gameMode === 'EXPLORING' && !isDevEditorOpen && (
+      {gameMode === 'EXPLORING' && !isCreationMode && (
         <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
           <SaintsHudOrbs />
         </DraggablePanel>
       )}
 
       {/* Unified Game Chat UI & Hotbar */}
-      {gameMode === 'EXPLORING' && !isDevEditorOpen && (
+      {gameMode === 'EXPLORING' && !isCreationMode && (
         <>
           <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
             <Hotbar />

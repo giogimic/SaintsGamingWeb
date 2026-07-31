@@ -1,5 +1,5 @@
 /**
- * Battle Engine - Core battle logic and state machine for Tuxemon 15-Type System
+ * Battle Engine - Core battle logic and state machine for Creature 15-Type System
  */
 
 export type BattlePhase = 
@@ -36,7 +36,7 @@ export interface BattleMonster {
     rangedAtk: number;
     rangedDef: number;
     speed: number;
-    // Tuxemon stat aliases
+    // Creature stat aliases
     hp?: number;
     atk?: number;
     def?: number;
@@ -62,8 +62,8 @@ export interface BattleState {
   result: 'win' | 'lose' | 'flee' | 'capture' | null;
 }
 
-// Tuxemon 15 Elemental Type Effectiveness Chart
-const TUXEMON_TYPE_CHART: Record<string, Record<string, number>> = {
+// Creature 15 Elemental Type Effectiveness Chart
+const creature_TYPE_CHART: Record<string, Record<string, number>> = {
   fire: { water: 0.5, earth: 0.5, wood: 2, frost: 2, metal: 2, fire: 0.5 },
   water: { fire: 2, earth: 2, wood: 0.5, lightning: 0.5, water: 0.5 },
   earth: { fire: 2, lightning: 2, wood: 0.5, metal: 2, earth: 0.5 },
@@ -86,7 +86,7 @@ export function getTypeEffectiveness(attackType: string, defenderTypes: string[]
   const attackKey = attackType.toLowerCase();
   for (const defType of defenderTypes) {
     const defKey = defType.toLowerCase();
-    const effectiveness = TUXEMON_TYPE_CHART[attackKey]?.[defKey] ?? 1;
+    const effectiveness = creature_TYPE_CHART[attackKey]?.[defKey] ?? 1;
     multiplier *= effectiveness;
   }
   return multiplier;
@@ -97,7 +97,7 @@ export function calculateDamage(
   defender: BattleMonster,
   move: BattleMove
 ): { damage: number; effectiveness: number; critical: boolean } {
-  // Base damage formula using Tuxemon stats
+  // Base damage formula using Creature stats
   const levelFactor = (2 * attacker.level) / 5 + 2;
   const attackStat = move.category === 'special' 
     ? (attacker.stats.rangedAtk || attacker.stats.ratk || 10) 
@@ -181,9 +181,9 @@ export function calculateCatchRate(
   monster: BattleMonster,
   ballType: string
 ): number {
-  // Tuxeball Multipliers
+  // Capture Device Multipliers
   const ballMultipliers: Record<string, number> = {
-    tuxeball: 1.0,
+    capture_device: 1.0,
     grand_ball: 1.5,
     mega_ball: 2.0,
     ultra_ball: 2.5,

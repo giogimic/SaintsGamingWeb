@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 
 /**
- * GET /api/tuxemon — Get all Tuxemon species for Tuxepedia
+ * GET /api/creatures — Get all Creature species for Tuxepedia
  */
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
 
     return NextResponse.json(speciesList);
   } catch (error) {
-    console.error("Failed to fetch Tuxemon species list:", error);
-    return NextResponse.json({ error: "Failed to fetch Tuxemon list" }, { status: 500 });
+    console.error("Failed to fetch Creature species list:", error);
+    return NextResponse.json({ error: "Failed to fetch Creature list" }, { status: 500 });
   }
 }

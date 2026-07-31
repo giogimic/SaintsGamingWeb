@@ -1,3 +1,13 @@
+## [2.1.86] - 2026-07-31
+
+### Changed
+- **Map Editor UI Refactor (Phase A)**: Transitioned the monolithic `IntegratedDevEditor.tsx` into a system of highly modular, draggable floating panels that align with the vision: *"Building a game should feel like playing the game."*
+- **Centralized Panel State Management**: Built a robust Zustand store (`editor-store.ts`) to globally manage the `isCreationMode` toggle, active editor tools, and floating panel states (position, size, z-index, visibility).
+- **Draggable UI Architecture**: Created `DraggablePanel.tsx`—a reusable floating window container with bounds clamping and z-index sorting.
+- **Decomposition**: Extracted the old editor into separate components: `WorldBuilderPanel.tsx`, `PropertiesPanel.tsx`, `AssetBrowserPanel.tsx`, `NpcEditorPanel.tsx`, and `DevToolsPanel.tsx`.
+- **Global Studio Shell**: Implemented `StudioEditorShell.tsx` overlay featuring a centralized bottom-dock Toolbar.
+- **Engine Canvas Bridging**: Updated `GameCanvasBabylon.tsx` to read directly from `useEditorStore` to seamlessly coordinate map clicks and tile painting across detached panels.
+
 ## [2.1.77] - 2026-07-30
 
 ### Changed

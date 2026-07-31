@@ -52,8 +52,22 @@ export class WorldManager {
   }
 
   private processAiTick() {
+    const now = Date.now();
+    for (const [key, expireTime] of this.depletedNodes.entries()) {
+      if (now >= expireTime) {
+        this.depletedNodes.delete(key);
+        const [instanceId, xStr, yStr] = key.split('_');
+        
+        this.engine.events.emit("networkBroadcast", {
+          room: instanceId,
+          event: "node_respawned",
+          data: { instanceId, x: parseInt(xStr), y: parseInt(yStr) }
+        });
+        console.log(`[WorldManager] Node respawned at ${xStr}, ${yStr}`);
+      }
+    }
+
     // We would loop through active instances and process NPC pathing
-    // For now, this is a stub for the architecture.
     for (const [instanceId, instance] of this.instances.entries()) {
       if (instance.playerCount > 0) {
         this.engine.events.emit("aiTick", { instanceId, mapId: instance.mapId });
@@ -220,26 +234,15 @@ export class WorldManager {
     return false;
   }
 
-  public depleteNode(instanceId: string, x: number, y: number, durationMs: number) {
+  public setNodeDepleted(instanceId: string, x: number, y: number, respawnTimeMs: number) {
     const key = `${instanceId}_${x}_${y}`;
-    this.depletedNodes.set(key, Date.now() + durationMs);
-
-    // Notify clients to show stump / empty rock
+    this.depletedNodes.set(key, Date.now() + respawnTimeMs);
+    
     this.engine.events.emit("networkBroadcast", {
       room: instanceId,
       event: "node_depleted",
-      data: { x, y }
+      data: { instanceId, x, y, respawnTimeMs }
     });
-
-    // Schedule respawn
-    setTimeout(() => {
-      this.depletedNodes.delete(key);
-      this.engine.events.emit("networkBroadcast", {
-        room: instanceId,
-        event: "node_respawned",
-        data: { x, y }
-      });
-    }, durationMs);
   }
 
   private resolveCollisions() {

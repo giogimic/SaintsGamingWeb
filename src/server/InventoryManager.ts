@@ -83,12 +83,22 @@ export class InventoryManager {
     const userId = dbUser.userId;
 
     // 2. Do they have the right tool equipped?
-    // We check `PlayerEquipment` (not yet in schema, checking Inventory instead)
-    const pickaxe = await prisma.playerInventoryItem.findFirst({
-      where: { userId, itemSlug: skillSlug === "mining" ? "pickaxe_bronze" : "axe_bronze" } // placeholder
+    const requiredToolSlug = skillSlug === "mining" ? "pickaxe_bronze" : "axe_bronze";
+    let tool = await prisma.playerInventoryItem.findFirst({
+      where: { userId, itemSlug: requiredToolSlug }
     });
     
-    // We will let them gather barehanded for the demo, just for ease.
+    if (!tool) {
+      // Demo logic: Give them a free tool to test Gathering
+      tool = await prisma.playerInventoryItem.create({
+        data: { userId, itemSlug: requiredToolSlug, quantity: 1 }
+      });
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "show_toast",
+        data: { message: `Demo: Granted free ${requiredToolSlug} to gather!` }
+      });
+    }
 
     // 3. Grant Resource
     let invItem = await prisma.playerInventoryItem.findFirst({
@@ -116,23 +126,23 @@ export class InventoryManager {
       data: { message: `Harvested +1 ${resourceSlug}` }
     });
     
-    // Phase 7: Deplete Node
-    this.worldManager.depleteNode(instance.instanceId, x, y, respawnTimeMs);
+    // Phase 10: Deplete Node via the updated method
+    this.worldManager.setNodeDepleted(instance.instanceId, x, y, respawnTimeMs);
 
     // 6. Degrade Tool Durability (if using one)
-    if (pickaxe && pickaxe.durability !== null) {
-      const newDurability = pickaxe.durability - 1;
+    if (tool && tool.durability !== null) {
+      const newDurability = tool.durability - 1;
       if (newDurability <= 0) {
         // Destroy tool
-        await prisma.playerInventoryItem.delete({ where: { id: pickaxe.id } });
+        await prisma.playerInventoryItem.delete({ where: { id: tool.id } });
         this.engine.events.emit("directMessage", {
           socketId,
           event: "show_toast",
-          data: { message: `Your axe_bronze broke!` }
+          data: { message: `Your ${requiredToolSlug} broke!` }
         });
       } else {
         await prisma.playerInventoryItem.update({
-          where: { id: pickaxe.id },
+          where: { id: tool.id },
           data: { durability: newDurability }
         });
       }

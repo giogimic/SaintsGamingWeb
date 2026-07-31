@@ -14,7 +14,7 @@ export interface CreatureStatProfile {
   RDEF: number;
 }
 
-export interface TuxemonCreature {
+export interface GameCreature {
   id: string;
   dexNumber: number;
   name: string;
@@ -73,7 +73,7 @@ export function getTypeEffectiveness(attackType: string, defenderTypes: string[]
 }
 
 // Fetch all creatures from database
-export async function getAllCreatures(): Promise<TuxemonCreature[]> {
+export async function getAllCreatures(): Promise<GameCreature[]> {
   const species = await prisma.creatureTemplate.findMany({
     include: {
       learnedAbilities: {
@@ -137,7 +137,7 @@ export async function getAllCreatures(): Promise<TuxemonCreature[]> {
 }
 
 // Fetch creature by ID
-export async function getCreatureById(id: string): Promise<TuxemonCreature | null> {
+export async function getCreatureById(id: string): Promise<GameCreature | null> {
   const s = await prisma.creatureTemplate.findUnique({
     where: { slug: id },
     include: {
@@ -199,7 +199,7 @@ export async function getCreatureById(id: string): Promise<TuxemonCreature | nul
 }
 
 // Get random encounter based on map
-export async function getRandomEncounter(mapSlug: string): Promise<TuxemonCreature | null> {
+export async function getRandomEncounter(mapSlug: string): Promise<GameCreature | null> {
   const encounter = await prisma.encounterTable.findFirst({
     where: { mapName: { contains: mapSlug } },
   });
@@ -231,8 +231,8 @@ export async function getRandomEncounter(mapSlug: string): Promise<TuxemonCreatu
 
 // Calculate damage
 export function calculateDamage(
-  attacker: TuxemonCreature,
-  defender: TuxemonCreature,
+  attacker: GameCreature,
+  defender: GameCreature,
   move: { power: number | null; type: string; accuracy: number | null }
 ): { damage: number; effectiveness: number; critical: boolean; missed: boolean } {
   // Check accuracy
@@ -268,7 +268,7 @@ export function calculateDamage(
 
 // Calculate catch rate
 export function calculateCatchRate(
-  creature: TuxemonCreature,
+  creature: GameCreature,
   currentHp: number,
   maxHp: number,
   status: string | null = null,

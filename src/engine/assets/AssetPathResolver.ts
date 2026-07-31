@@ -18,18 +18,18 @@ export class AssetPathResolver {
   }
 
   /**
-   * Fallback resolver checking tuxemon-assets path if needed
+   * Fallback resolver checking creature-assets path if needed
    */
   static resolveWithFallback(type: keyof typeof AssetPathResolver.ROOTS, filename: string): string[] {
     const canonical = AssetPathResolver.resolve(type, filename);
     const legacyMap: Record<string, string> = {
-      sprites: `/tuxemon-assets/npc/${filename}`,
-      monsters: `/tuxemon-assets/monster/${filename}`,
-      tilesets: `/tuxemon-assets/tilesets/${filename}`,
-      items: `/tuxemon-assets/items/${filename}`,
-      ui: `/tuxemon-assets/ui/${filename}`,
-      audio: `/tuxemon-assets/audio/${filename}`,
-      atlases: `/tuxemon-assets/atlases/${filename}`,
+      sprites: `/game-assets/npc/${filename}`,
+      monsters: `/game-assets/monster/${filename}`,
+      tilesets: `/game-assets/tilesets/${filename}`,
+      items: `/game-assets/items/${filename}`,
+      ui: `/game-assets/ui/${filename}`,
+      audio: `/game-assets/audio/${filename}`,
+      atlases: `/game-assets/atlases/${filename}`,
     };
     return [canonical, legacyMap[type] || canonical];
   }
