@@ -111,7 +111,9 @@ export class SocketHandler {
           socketId: socket.id,
           mapId: data.mapId,
           targetId: data.targetId,
-          nextNode: data.nextNode
+          nextNode: data.nextNode,
+          action: data.action,
+          questSlug: data.questSlug
         });
       });
 

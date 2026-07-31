@@ -159,5 +159,11 @@ export class QuestManager {
       event: "show_toast",
       data: { message }
     });
+    
+    // Also broadcast quest_sync to force clients to refetch quests
+    this.engine.events.emit("networkBroadcast", {
+      event: "quest_sync",
+      data: { accountId }
+    });
   }
 }

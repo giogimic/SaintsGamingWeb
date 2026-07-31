@@ -72,7 +72,7 @@ export class DialogueManager {
     });
   }
 
-  private async handleDialogueSelect({ accountId, socketId, mapId, targetId, nextNode }: any) {
+  private async handleDialogueSelect({ accountId, socketId, mapId, targetId, nextNode, action, questSlug }: any) {
     if (nextNode === "exit") {
       this.engine.events.emit("directMessage", {
         socketId,
@@ -96,8 +96,8 @@ export class DialogueManager {
     }
 
     // Evaluate actions on selection (e.g. accepting a quest)
-    if (nodeData.action === "ACCEPT_QUEST" && nodeData.questSlug) {
-      this.engine.events.emit("acceptQuest", { accountId, questSlug: nodeData.questSlug });
+    if (action === "ACCEPT_QUEST" && questSlug) {
+      this.engine.events.emit("acceptQuest", { accountId, questSlug });
     }
 
     this.engine.events.emit("directMessage", {

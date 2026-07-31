@@ -51,12 +51,12 @@ export default function DialogOverlay() {
     }
   };
 
-  const handleOptionClick = (nextNode: string) => {
+  const handleOptionClick = (opt: any) => {
     if (!emitSocketEvent) {
       console.warn("No socket connection!");
       return;
     }
-    
+
     // Clear typing and show loading state
     setDisplayedText('');
     setIsTyping(true);
@@ -64,7 +64,9 @@ export default function DialogOverlay() {
     emitSocketEvent('dialogue_select', {
       mapId: currentMapId,
       targetId: activeDialog.npcId,
-      nextNode
+      nextNode: opt.nextNode,
+      action: opt.action,
+      questSlug: opt.questSlug
     });
   };
 
@@ -120,7 +122,7 @@ export default function DialogOverlay() {
                 {activeDialog.options.map((opt, i) => (
                   <button
                     key={i}
-                    onClick={(e) => { e.stopPropagation(); handleOptionClick(opt.nextNode); }}
+                    onClick={(e) => { e.stopPropagation(); handleOptionClick(opt); }}
                     className="px-4 py-2 bg-[#162238] hover:bg-[#cbb26a]/20 border border-[#806f47]/30 hover:border-[#cbb26a] text-slate-200 text-sm font-medium rounded transition-all duration-200 text-left relative group w-full"
                   >
                     <span className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#cbb26a]">&gt;</span>

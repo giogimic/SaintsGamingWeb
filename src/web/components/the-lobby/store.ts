@@ -227,6 +227,8 @@ export interface GameState {
   setCooldown: (abilityId: string, timestamp: number) => void;
   emitSocketEvent?: (event: string, data: any) => void;
   setEmitSocketEvent: (emitter: (event: string, data: any) => void) => void;
+  refreshQuestsCounter: number;
+  triggerQuestRefresh: () => void;
   setPlayerPosition: (pos: Point, direction?: 'up' | 'down' | 'left' | 'right', isMoving?: boolean) => void;
   enqueuePath: (path: Point[]) => void;
   dequeuePath: () => Point | undefined;
@@ -475,6 +477,10 @@ export const useGameStore = create<GameState>()(
       }),
       setEmitSocketEvent: (emitter) => set((state) => {
         state.emitSocketEvent = emitter;
+      }),
+      refreshQuestsCounter: 0,
+      triggerQuestRefresh: () => set((state) => {
+        state.refreshQuestsCounter += 1;
       }),
       setPlayerPosition: (pos, direction, isMoving) => set((state) => { 
         state.player.position = pos; 
