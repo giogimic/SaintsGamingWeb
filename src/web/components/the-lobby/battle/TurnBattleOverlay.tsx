@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useGameStore } from '../store';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 
 export function TurnBattleOverlay() {
   const activeBattle = useGameStore(state => state.activeBattle);
