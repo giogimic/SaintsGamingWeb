@@ -1,6 +1,6 @@
 // Rich Generated Campaign Maps Data
 
-export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
+export const creature_CAMPAIGN_MAPS: Record<string, any> = {
   "37707_TOWER": {
     "id": "37707_TOWER",
     "name": "37707 TOWER",
@@ -12789,7 +12789,7 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
     "tilesets": [
       {
         "firstgid": 1313,
-        "imageSource": "My_tuxemon_sheet.png",
+        "imageSource": "My_creature_sheet.png",
         "columns": 8,
         "tilewidth": 16,
         "tileheight": 16
@@ -22433,7 +22433,7 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
     "tilesets": [
       {
         "firstgid": 1313,
-        "imageSource": "My_tuxemon_sheet_BW.png",
+        "imageSource": "My_creature_sheet_BW.png",
         "columns": 8,
         "tilewidth": 16,
         "tileheight": 16
@@ -687394,9 +687394,9 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
       }
     ]
   },
-  "START_TUXEMON": {
-    "id": "START_TUXEMON",
-    "name": "START TUXEMON",
+  "START_creature": {
+    "id": "START_creature",
+    "name": "START creature",
     "width": 8,
     "height": 8,
     "grid": [

@@ -1,6 +1,6 @@
 /**
  * Game State Store — Zustand
- * Central state management for the Tuxemon game engine
+ * Central state management for the Creature game engine
  */
 import { create } from "zustand";
 
@@ -131,7 +131,7 @@ interface GameState {
   // Inventory (item slug → quantity)
   inventory: Record<string, number>;
 
-  // Party (player's Tuxemon)
+  // Party (player's Creature)
   party: BattleMonster[];
 
   // Stats

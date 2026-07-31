@@ -14,11 +14,11 @@ export interface ClassEditorProps {
   gameId?: string;
 }
 
-export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) => {
+export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'creature' }) => {
   const defaultClasses: CharacterClassDefinition[] = [
     {
       id: 'class_tamer',
-      gameId: 'tuxemon',
+      gameId: 'creature',
       slug: 'tamer',
       name: 'Tamer',
       description: 'Beast-focused class with enhanced capture rates and wild creature empathy.',
@@ -27,7 +27,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
       growthRates: { hp: 1.4, atk: 1.3, def: 1.3, spd: 1.5, ratk: 1.2, rdef: 1.2 },
       allowedSpriteTags: ['hero', 'player', 'tamer', 'adventurer'],
       spriteFilters: {},
-      startingEquipment: ['tuxeball_pouch', 'basic_net'],
+      startingEquipment: ['capture_device_pouch', 'basic_net'],
       learnableSkills: [{ level: 1, skill: 'capture' }],
       perks: ['MASTER_TAMER'],
       abilities: ['beast_empathy'],
@@ -36,7 +36,7 @@ export const ClassEditor: React.FC<ClassEditorProps> = ({ gameId = 'tuxemon' }) 
     },
     {
       id: 'class_animist',
-      gameId: 'tuxemon',
+      gameId: 'creature',
       slug: 'animist',
       name: 'Animist',
       description: 'Spirit-focused class attuned to elemental forces and nature summoning.',

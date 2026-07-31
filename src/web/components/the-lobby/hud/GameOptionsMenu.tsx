@@ -10,7 +10,7 @@ interface GameOptionsMenuProps {
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   isAdminUser: boolean;
-  isDevEditorOpen: boolean;
+  isCreationMode: boolean;
   onToggleDevEditor: () => void;
 }
 
@@ -22,7 +22,7 @@ export default function GameOptionsMenu({
   isFullscreen,
   onToggleFullscreen,
   isAdminUser,
-  isDevEditorOpen,
+  isCreationMode,
   onToggleDevEditor,
 }: GameOptionsMenuProps) {
   const [activeTab, setActiveTab] = useState<TabType>('GAME');
@@ -118,6 +118,18 @@ export default function GameOptionsMenu({
                 <div className="bg-black/30 border border-white/5 p-5 rounded-xl">
                   <h4 className="text-sm font-semibold text-amber-400 mb-4 uppercase tracking-wider">Customization</h4>
                   
+                  {isAdminUser && (
+                    <div className="flex items-center justify-between p-3 bg-black/40 border border-[#806f47]/30 rounded mb-6">
+                      <span className="text-slate-300 font-bold text-xs uppercase">Studio Editor Mode (Ctrl+E)</span>
+                      <button 
+                        onClick={onToggleDevEditor}
+                        className={`w-10 h-5 rounded-full relative transition-colors ${isCreationMode ? 'bg-[#cbb26a]' : 'bg-slate-700'}`}
+                      >
+                        <div className={`absolute top-0.5 bottom-0.5 w-4 rounded-full bg-black transition-all ${isCreationMode ? 'left-[22px]' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-6">
                     <div>
                       <div className="text-white font-medium">Edit UI Layout</div>
@@ -135,24 +147,7 @@ export default function GameOptionsMenu({
                     </button>
                   </div>
                   
-                  {isAdminUser && (
-                    <div className="flex items-center justify-between pt-6 border-t border-white/10">
-                      <div>
-                        <div className="text-white font-medium">Developer Editor</div>
-                        <div className="text-slate-400 text-sm mt-1">Open the map and logic tile editor (Admins only).</div>
-                      </div>
-                      <button
-                        onClick={onToggleDevEditor}
-                        className={`px-5 py-2 rounded-lg text-sm font-medium transition-all active:scale-95 shadow-lg border ${
-                          isDevEditorOpen 
-                            ? 'bg-cyan-600/40 text-cyan-300 border-cyan-500/40' 
-                            : 'bg-slate-800 hover:bg-slate-700 text-white border-white/10'
-                        }`}
-                      >
-                        {isDevEditorOpen ? 'Close Editor' : 'Open Editor'}
-                      </button>
-                    </div>
-                  )}
+
                 </div>
               </div>
             )}

@@ -208,7 +208,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
           <div>
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Quick Tags</span>
             <div className="flex flex-wrap gap-1">
-              {['tuxemon', 'npc', 'hero', 'combat', 'civilian', 'male', 'female', 'blue', 'fiery'].map((t) => (
+              {['creature', 'npc', 'hero', 'combat', 'civilian', 'male', 'female', 'blue', 'fiery'].map((t) => (
                 <button
                   key={t}
                   onClick={() => setSelectedTag(t)}
@@ -403,7 +403,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
                 <option value="SPRITE">SPRITE (NPC / Hero Character)</option>
                 <option value="TILESET">TILESET (Terrain / Environment)</option>
                 <option value="ITEM_ICON">ITEM_ICON (Inventory Icon)</option>
-                <option value="MONSTER">MONSTER (Tuxemon Beast)</option>
+                <option value="MONSTER">MONSTER (Creature Beast)</option>
                 <option value="AUDIO">AUDIO (SFX / Music)</option>
                 <option value="UI_ELEMENT">UI_ELEMENT (Menu Graphics)</option>
               </select>

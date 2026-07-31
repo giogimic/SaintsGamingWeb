@@ -1,5 +1,5 @@
 // Generated list of available sprites
-export const TUXEMON_SPRITES = [
+export const GAME_SPRITES = [
   "37707_female",
   "37707_female_missing",
   "37707_male",

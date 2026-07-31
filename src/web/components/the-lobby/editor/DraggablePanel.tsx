@@ -1,0 +1,126 @@
+'use client';
+
+import React, { useRef, useState, useEffect } from 'react';
+import { PanelId, useEditorStore } from './editor-store';
+import { X, Minus, Move, Maximize2 } from 'lucide-react';
+
+interface DraggablePanelProps {
+  id: PanelId;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}
+
+export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, icon }) => {
+  const panelState = useEditorStore((state) => state.panels[id]);
+  const closePanel = useEditorStore((state) => state.closePanel);
+  const toggleCollapse = useEditorStore((state) => state.toggleCollapse);
+  const updatePanelPosition = useEditorStore((state) => state.updatePanelPosition);
+  const bringToFront = useEditorStore((state) => state.bringToFront);
+  const isActive = useEditorStore((state) => state.activePanel === id);
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  if (!panelState?.isOpen) return null;
+
+  const { x, y, width, height, title, isCollapsed, zIndex } = panelState;
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Only drag from the header
+    if ((e.target as HTMLElement).closest('.panel-controls')) return;
+    
+    bringToFront(id);
+    setIsDragging(true);
+    setDragOffset({
+      x: e.clientX - x,
+      y: e.clientY - y
+    });
+    
+    if (panelRef.current) {
+      panelRef.current.setPointerCapture(e.pointerId);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      // Clamp to screen bounds loosely
+      const newX = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffset.x));
+      const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.y));
+      updatePanelPosition(id, newX, newY);
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      setIsDragging(false);
+      if (panelRef.current) {
+        panelRef.current.releasePointerCapture(e.pointerId);
+      }
+    }
+  };
+
+  return (
+    <div
+      ref={panelRef}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onMouseDown={() => bringToFront(id)}
+      style={{
+        position: 'fixed',
+        left: x,
+        top: y,
+        width: isCollapsed ? width : width,
+        height: isCollapsed ? 'auto' : height,
+        zIndex,
+        touchAction: 'none'
+      }}
+      className={`
+        sg-glass bg-[#050b14]/90 rounded-xl border flex flex-col overflow-hidden font-sans
+        transition-colors duration-200 shadow-2xl
+        ${isActive ? 'border-[#cbb26a]/60 shadow-[0_0_20px_rgba(203,178,106,0.1)]' : 'border-[#806f47]/30'}
+      `}
+    >
+      {/* Header / Drag Handle */}
+      <div 
+        onPointerDown={handlePointerDown}
+        className={`
+          flex items-center justify-between px-3 py-2 cursor-move
+          bg-gradient-to-r select-none
+          ${isActive ? 'from-[#162238] via-[#0b1320] to-[#162238] border-b border-[#cbb26a]/30' : 'from-[#0b1320] to-[#050b14] border-b border-[#806f47]/20'}
+        `}
+      >
+        <div className="flex items-center gap-2 pointer-events-none">
+          {icon && <span className="text-[#cbb26a]">{icon}</span>}
+          <span className={`font-bold text-xs tracking-wide uppercase font-mono ${isActive ? 'text-white' : 'text-slate-400'}`}>
+            {title}
+          </span>
+        </div>
+        
+        {/* Controls */}
+        <div className="panel-controls flex items-center gap-1">
+          <button 
+            onClick={(e) => { e.stopPropagation(); toggleCollapse(id); }}
+            className="p-1 text-slate-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+          >
+            {isCollapsed ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); closePanel(id); }}
+            className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      {!isCollapsed && (
+        <div className="flex-1 overflow-y-auto p-3 text-slate-300 relative custom-scrollbar">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};

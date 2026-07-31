@@ -368,7 +368,7 @@ export class GameEngine {
     const monsterData = monsters[Math.floor(Math.random() * monsters.length)];
     
     // Fetch monster species data
-    const speciesResponse = await fetch(`/api/tuxemon/species/${monsterData.slug}`);
+    const speciesResponse = await fetch(`/api/creatures/species/${monsterData.slug}`);
     if (!speciesResponse.ok) return;
 
     const species = await speciesResponse.json();
@@ -383,8 +383,8 @@ export class GameEngine {
       maxHp: 50,
       types: JSON.parse(species.types),
       moves: [], // TODO: load from moveset
-      spriteFront: species.spriteFront || `/tuxemon-assets/sprites/${species.slug}_front.png`,
-      spriteBack: species.spriteBack || `/tuxemon-assets/sprites/${species.slug}_back.png`,
+      spriteFront: species.spriteFront || `/game-assets/sprites/${species.slug}_front.png`,
+      spriteBack: species.spriteBack || `/game-assets/sprites/${species.slug}_back.png`,
       status: null,
       xp: 0,
     };

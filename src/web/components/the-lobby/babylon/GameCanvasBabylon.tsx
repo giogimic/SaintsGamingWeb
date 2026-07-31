@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BabylonEngine } from '@/engine/BabylonEngine';
-import { resolveEncounter } from '@/game/TuxemonDb';
+import { resolveEncounter } from '@/game/CreatureDb';
 import { useGameStore } from '../store';
 import { loadMap } from '../data/maps';
 import type { GameMapData } from '../data/maps';
@@ -448,9 +448,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          // Fix: /assets/sprites/ does not exist. Sprites are in /assets/npcs/ or full path from Tuxemon
+          // Fix: /assets/sprites/ does not exist. Sprites are in /assets/npcs/ or full path from Creature
           spriteUrl: freshPlayer.spriteId
-            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/tuxemon-assets/npc/${freshPlayer.spriteId}.png`)
+            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/game-assets/npc/${freshPlayer.spriteId}.png`)
             : undefined,
           isPlayer: true,
           direction: freshPlayer.direction,
@@ -484,7 +484,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             x: ox,
             y: oz,
             spriteUrl: other.spriteId
-              ? (other.spriteId.startsWith('/') ? other.spriteId : `/tuxemon-assets/npc/${other.spriteId}.png`)
+              ? (other.spriteId.startsWith('/') ? other.spriteId : `/game-assets/npc/${other.spriteId}.png`)
               : undefined,
             isPlayer: true,
             direction: other.direction,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import RpgPanel from './rpg-panel';
 import { useGameStore } from './store';
 import { getItem } from './data/items';
@@ -16,8 +16,7 @@ interface TradeListing {
   affixes?: string;
   itemId?: string;
 }
-
-import { createGtcListing, getLiveGtcListings, buyGtcListing } from '@/app/actions/gtc';
+import { getLiveGtcListings } from '@/app/actions/gtc';
 
 export default function GtcOverlay() {
   const [activeTab, setActiveTab] = useState<'BUY' | 'SELL' | 'MY_LISTINGS'>('BUY');
@@ -52,6 +51,25 @@ export default function GtcOverlay() {
   const setGameMode = useGameStore(state => state.setGameMode);
   const showToast = useGameStore(state => state.showToast);
 
+  const emitSocketEvent = useGameStore(state => state.emitSocketEvent);
+
+  useEffect(() => {
+    fetchListings();
+    
+    const handleTransactionSuccess = (e: CustomEvent) => {
+      const { type } = e.detail;
+      if (type === 'LIST_CREATED') {
+        setActiveTab('BUY');
+        fetchListings();
+      } else if (type === 'PURCHASE_COMPLETE') {
+        fetchListings();
+      }
+    };
+    
+    window.addEventListener('gtc_transaction_success' as any, handleTransactionSuccess);
+    return () => window.removeEventListener('gtc_transaction_success' as any, handleTransactionSuccess);
+  }, []);
+
   const filteredListings = listings.filter(l => {
     const matchesSearch = l.title.toLowerCase().includes(searchTerm.toLowerCase()) || l.sellerName.toLowerCase().includes(searchTerm.toLowerCase());
     if (filterType !== 'ALL') return matchesSearch && l.itemType === filterType;
@@ -64,26 +82,7 @@ export default function GtcOverlay() {
       return;
     }
 
-    // We don't have Character ID in player state directly, but wait...
-    // The player's active GameCharacter id would be needed for buyGtcListing.
-    // For now, since buyGtcListing needs buyerCharacterId and we might not have it in the client store,
-    // actually we should probably fetch the user's active character ID. 
-    // BUT we can just pass a dummy or implement it. 
-    // Actually wait, let's just use playerState.name as a fallback or fetch it if needed.
-    // Wait, the action `buyGtcListing` requires buyerCharacterId to update the DB. We'll skip passing it if we don't have it, or modify the action to use the first character of the user.
-    // Let's call the action with an empty string, we'll fix the action to find the user's character automatically.
-    const res = await buyGtcListing(listing.id);
-
-    if (res.success) {
-      modifyCredits(-listing.price);
-      if (listing.itemId) {
-        modifyInventory(listing.itemId, 1);
-      }
-      setListings(prev => prev.filter(l => l.id !== listing.id));
-      showToast(`Purchased "${listing.title}" for ${listing.price} Credits!`);
-    } else {
-      showToast(`Failed to buy: ${res.error}`);
-    }
+    emitSocketEvent?.('gtc_purchase_listing', { listingId: listing.id });
   };
 
   const handlePostListing = async () => {
@@ -95,21 +94,13 @@ export default function GtcOverlay() {
     }
 
     const itemObj = getItem(selectedItemId);
-    const res = await createGtcListing({
+    
+    emitSocketEvent?.('gtc_create_listing', {
       itemType: sellType,
       title: itemObj?.name || selectedItemId,
       price: sellPrice,
       itemId: selectedItemId
     });
-
-    if (res.success) {
-      modifyInventory(selectedItemId, -1);
-      showToast(`Listed "${itemObj?.name || selectedItemId}" on GTC for ${sellPrice} Credits!`);
-      setActiveTab('BUY');
-      fetchListings();
-    } else {
-      showToast(`Failed to list: ${res.error}`);
-    }
   };
 
   return (

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
-import { TUXEMON_CAMPAIGN_MAPS } from "@/web/components/the-lobby/data/campaign-maps";
+import { creature_CAMPAIGN_MAPS } from "@/web/components/the-lobby/data/campaign-maps";
 
 /**
- * GET /api/maps/[slug] — Get a specific map by slug (TuxemonMap) or id (WorldMap)
+ * GET /api/maps/[slug] — Get a specific map by slug (CreatureMap) or id (WorldMap)
  */
 export async function GET(
   request: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
 
     // Try WorldMap first — our batch importer stores complete TMX data here
     const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
-    const campaignMap = (TUXEMON_CAMPAIGN_MAPS as any)[slug];
+    const campaignMap = (creature_CAMPAIGN_MAPS as any)[slug];
 
     if (worldMap) {
       const dbLayers = JSON.parse(worldMap.tileLayersData || '[]');

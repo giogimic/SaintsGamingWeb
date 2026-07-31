@@ -15,6 +15,7 @@ import { SkillManager } from "./src/server/SkillManager";
 import { InventoryManager } from "./src/server/InventoryManager";
 import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
+import { EconomyManager } from "./src/server/EconomyManager";
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
@@ -36,6 +37,7 @@ app.prepare().then(async () => {
   const skillManager = new SkillManager(gameEngine);
   const inventoryManager = new InventoryManager(gameEngine, worldManager);
   const craftingManager = new CraftingManager(gameEngine, playerManager);
+  const economyManager = new EconomyManager(gameEngine, playerManager);
   
   const server = createServer(async (req, res) => {
     try {
@@ -76,6 +78,7 @@ app.prepare().then(async () => {
   await skillManager.initialize();
   await inventoryManager.initialize();
   await craftingManager.initialize();
+  await economyManager.initialize();
   socketHandler.initialize();
 
   // Start the tick loop

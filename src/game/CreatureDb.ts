@@ -1,20 +1,20 @@
-// lib/game/TuxemonDb.ts
+// lib/game/CreatureDb.ts
 
 let _dbCache: any = null;
 let _fetchPromise: Promise<any> | null = null;
 
-export async function getTuxemonDb() {
+export async function getCreatureDb() {
   if (_dbCache) return _dbCache;
   if (_fetchPromise) return _fetchPromise;
 
-  _fetchPromise = fetch('/data/tuxemon_db.json')
+  _fetchPromise = fetch('/data/creature_db.json')
     .then(res => res.json())
     .then(data => {
       _dbCache = data;
       return data;
     })
     .catch(err => {
-      console.error('Failed to load Tuxemon DB:', err);
+      console.error('Failed to load Creature DB:', err);
       return { monster: {}, encounter: {}, shape: {}, technique: {} };
     });
 
@@ -22,7 +22,7 @@ export async function getTuxemonDb() {
 }
 
 export async function resolveEncounter(encounterZone: string) {
-  const db = await getTuxemonDb();
+  const db = await getCreatureDb();
   const zone = db.encounter?.[encounterZone];
   if (!zone || !zone.monsters || zone.monsters.length === 0) {
     return null;

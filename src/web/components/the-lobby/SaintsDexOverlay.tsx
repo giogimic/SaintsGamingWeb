@@ -6,7 +6,7 @@ import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
 import { SAINTS_DEX } from './data/saints-dex';
 
-interface TuxemonSpeciesData {
+interface CreatureSpeciesData {
   id: string;
   slug: string;
   txmnId: number;
@@ -28,16 +28,16 @@ export default function SaintsDexOverlay() {
   const caughtSpecies = useGameStore((state) => state.player.creaturesCaught || []);
   const caughtDaemons = useGameStore((state) => state.player.caughtDaemons || []);
   
-  const [dbSpecies, setDbSpecies] = useState<TuxemonSpeciesData[]>([]);
+  const [dbSpecies, setDbSpecies] = useState<CreatureSpeciesData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [selectedSpecies, setSelectedSpecies] = useState<TuxemonSpeciesData | null>(null);
+  const [selectedSpecies, setSelectedSpecies] = useState<CreatureSpeciesData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadSpecies() {
       try {
-        const res = await fetch('/api/tuxemon');
+        const res = await fetch('/api/creatures');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -53,7 +53,7 @@ export default function SaintsDexOverlay() {
     loadSpecies();
   }, []);
 
-  // Merge static SAINTS_DEX fallback with Tuxemon species from DB
+  // Merge static SAINTS_DEX fallback with Creature species from DB
   const displayList = dbSpecies.length > 0 ? dbSpecies : SAINTS_DEX.map(d => ({
     id: d.id,
     slug: d.id,

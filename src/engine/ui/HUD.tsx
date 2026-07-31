@@ -47,7 +47,7 @@ export default function HUD() {
             ))
           ) : (
             <div className="bg-gray-900/90 backdrop-blur-sm rounded-lg px-3 py-2 text-gray-500 text-sm">
-              No Tuxemon in party
+              No Creature in party
             </div>
           )}
         </div>

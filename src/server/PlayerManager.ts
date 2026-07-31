@@ -80,6 +80,38 @@ export class PlayerManager {
     return this.players.size;
   }
 
+  // --- Phase 9: Economy Helpers ---
+  public getPlayerByAccountId(accountId: string): PlayerState | undefined {
+    // Find player by accountId
+    for (const player of this.players.values()) {
+      if (player.accountId === accountId) return player;
+    }
+    return undefined;
+  }
+
+  public hasItem(accountId: string, itemId: string, amount: number = 1): boolean {
+    const player = this.getPlayerByAccountId(accountId);
+    if (!player) return false;
+    // We don't have inventory on PlayerState right now!
+    return false;
+  }
+
+  public async removeItem(accountId: string, itemId: string, amount: number = 1): Promise<boolean> {
+    return false;
+  }
+
+  public async addItem(accountId: string, itemId: string, amount: number = 1): Promise<boolean> {
+    return false;
+  }
+
+  public async addCredits(accountId: string, amount: number): Promise<boolean> {
+    return false;
+  }
+
+  public async removeCredits(accountId: string, amount: number): Promise<boolean> {
+    return false;
+  }
+
   public getPlayer(entityId: string): PlayerState | undefined {
     return this.players.get(entityId);
   }

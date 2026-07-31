@@ -19,7 +19,7 @@ export const TILESET_SIZES: Record<string, {w:number, h:number}> = {
     "w": 96,
     "h": 96
   },
-  "Cave_Tiles_by_ArMM1998_(Tuxemon_Style).png": {
+  "Cave_Tiles_by_ArMM1998_(Creature_Style).png": {
     "w": 256,
     "h": 160
   },
@@ -163,11 +163,11 @@ export const TILESET_SIZES: Record<string, {w:number, h:number}> = {
     "w": 112,
     "h": 192
   },
-  "My_tuxemon_sheet.png": {
+  "My_creature_sheet.png": {
     "w": 128,
     "h": 208
   },
-  "My_tuxemon_sheet_BW.png": {
+  "My_creature_sheet_BW.png": {
     "w": 128,
     "h": 208
   },

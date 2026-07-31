@@ -35,10 +35,10 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'bronze_chest': { id: 'bronze_chest', name: 'Bronze Platebody', description: 'Basic chest protection.', type: 'CHEST', value: 200, stats: { def: 5 } },
   'bronze_legs': { id: 'bronze_legs', name: 'Bronze Platelegs', description: 'Basic leg protection.', type: 'LEGS', value: 120, stats: { def: 3 } },
 
-  // Tuxemon Capturing & Battle Items
-  'tuxeball': { id: 'tuxeball', name: 'Tuxeball', description: 'Standard device used to capture wild Tuxemon.', type: 'CONSUMABLE', value: 200 },
-  'grand_ball': { id: 'grand_ball', name: 'Grand Ball', description: 'An enhanced Tuxeball with 1.5x catch rate.', type: 'CONSUMABLE', value: 600 },
-  'mega_ball': { id: 'mega_ball', name: 'Mega Ball', description: 'A high-grade Tuxeball with 2.0x catch rate.', type: 'CONSUMABLE', value: 1200 },
+  // Creature Capturing & Battle Items
+  'capture_device': { id: 'capture_device', name: 'Capture Device', description: 'Standard device used to capture wild Creature.', type: 'CONSUMABLE', value: 200 },
+  'grand_ball': { id: 'grand_ball', name: 'Grand Ball', description: 'An enhanced Capture Device with 1.5x catch rate.', type: 'CONSUMABLE', value: 600 },
+  'mega_ball': { id: 'mega_ball', name: 'Mega Ball', description: 'A high-grade Capture Device with 2.0x catch rate.', type: 'CONSUMABLE', value: 1200 },
 
   // Higher Tier Gear
   'mithril_sword': { id: 'mithril_sword', name: 'Mithril Sword', description: 'A lightweight, sharp high-tier sword.', type: 'WEAPON', value: 1200, stats: { atk: 28 } },
@@ -47,8 +47,8 @@ export const ITEM_DB: Record<string, ItemSchema> = {
 
 export const CRAFTING_RECIPES = [
   {
-    id: 'tuxeball',
-    resultItemId: 'tuxeball',
+    id: 'capture_device',
+    resultItemId: 'capture_device',
     skill: 'Crafting',
     levelReq: 1,
     xpReward: 30,
