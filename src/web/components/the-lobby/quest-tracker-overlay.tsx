@@ -1,0 +1,104 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { ScrollText, Target, CheckCircle2 } from "lucide-react";
+import { useGameStore } from "@/web/components/the-lobby/store";
+
+interface QuestObjective {
+  id: string;
+  type: string;
+  targetSlug: string;
+  requiredQty: number;
+  description: string;
+}
+
+interface ActiveQuest {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  stage: number;
+  progress: number;
+  objective: QuestObjective | null;
+}
+
+export default function QuestTrackerOverlay() {
+  const [quests, setQuests] = useState<ActiveQuest[]>([]);
+  const { refreshQuestsCounter } = useGameStore();
+
+  const fetchQuests = async () => {
+    try {
+      const res = await fetch("/api/quests/active");
+      if (res.ok) {
+        const data = await res.json();
+        setQuests(data.quests || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch quests:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuests();
+
+    fetchQuests();
+  }, [refreshQuestsCounter]);
+
+  if (quests.length === 0) return null;
+
+  return (
+    <div className="absolute right-4 top-24 w-64 pointer-events-none z-40 space-y-3">
+      {quests.map((quest) => {
+        const obj = quest.objective;
+        const isComplete = obj && quest.progress >= obj.requiredQty;
+
+        return (
+          <div 
+            key={quest.id} 
+            className="bg-[#0b1320]/80 border border-[#806f47]/30 backdrop-blur-md rounded-md p-3 shadow-lg pointer-events-auto"
+          >
+            <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
+              <ScrollText className="w-4 h-4 text-[#cbb26a]" />
+              <h4 className="text-sm font-bold text-[#e2d5b3] drop-shadow-sm uppercase tracking-wide">
+                {quest.title}
+              </h4>
+            </div>
+            
+            {obj ? (
+              <div className="flex items-start gap-2 mt-2">
+                {isComplete ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                ) : (
+                  <Target className="w-4 h-4 text-[#806f47] mt-0.5 shrink-0" />
+                )}
+                
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs ${isComplete ? 'text-slate-400 line-through' : 'text-slate-200'} leading-tight`}>
+                    {obj.description}
+                  </p>
+                  
+                  {!isComplete && obj.requiredQty > 1 && (
+                    <div className="mt-1.5 w-full bg-[#162238] rounded-full h-1.5 border border-[#050b14]">
+                      <div 
+                        className="bg-[#cbb26a] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.max(0, (quest.progress / obj.requiredQty) * 100))}%` }}
+                      />
+                    </div>
+                  )}
+                  
+                  {!isComplete && obj.requiredQty > 1 && (
+                    <p className="text-[10px] text-right text-slate-400 mt-0.5 font-mono">
+                      {quest.progress} / {obj.requiredQty}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 mt-1 italic">No active objectives.</p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

@@ -12,6 +12,8 @@ import { findPath } from '@/engine/pathfinding';
 import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
 
+import QuestTrackerOverlay from '../quest-tracker-overlay';
+
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
   return (
@@ -769,6 +771,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       )}
       
       <CanvasHudBadge activeMapName={activeMap?.name} currentMapId={currentMapId} />
+      
+      <QuestTrackerOverlay />
 
       {/* On-Screen Touch / Mouse Control D-Pad & Talk Action Button */}
       {isTouchDevice && (
