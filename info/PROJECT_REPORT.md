@@ -333,8 +333,8 @@ try {
 5. Build Admin Realtime Dashboard at `app/(main)/admin/realtime/page.tsx`
 
 ### Near-Term — /info Documentation (Milestone 3)
-6. Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin, ucp
-7. Retire `docs/TODO.md` (point it to `/info/`)
+6. ~~Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin~~ **Done (v2.1.105)** — overviews landed; deepen as needed (UCP still light)
+7. Retire `docs/TODO.md` (point it to `/info/`) — still open
 
 ### Medium-Term — MMO Scaling (Milestone 4)
 8. Spatial partitioning — zone-based entity broadcasting (only send players who are in the same map zone)
@@ -355,7 +355,7 @@ try {
 
 ### Where Development Should Resume
 
-See `info/CONTINUE.md`. Optional polish (AOI vitest soak, WorldMap ops docs, upload migrate script) shipped in v2.1.103 — pick a new feature from the long-term list or product priorities.
+See `info/CONTINUE.md`. System `/info` overviews shipped in v2.1.105. Prioritize core site work; Discord / FiveM / S3 / heavy AI are back-line.
 
 ### Files That Matter Most (Priority Order)
 
