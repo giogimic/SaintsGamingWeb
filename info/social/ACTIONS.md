@@ -1,12 +1,23 @@
 # Social & Messenger Actions Map
 
 Companion to [`OVERVIEW.md`](./OVERVIEW.md).  
-Primary files: `app/actions/social.ts`, `social-folders.ts`, `messenger.ts`.  
+Primary files: `app/actions/social.ts` (barrel), `app/actions/social/*.ts`, `social-folders.ts`, `messenger.ts`.  
 UI: `app/(main)/profile/inbox/`, `src/web/components/messenger/`.
+
+**Import path:** always `@/app/actions/social` (barrel). Domain modules are implementation detail.
 
 ---
 
-## Feed (`social.ts`)
+## Feed (barrel → domain modules)
+
+| Module | Actions |
+| :--- | :--- |
+| `social/feed.ts` | `getTheFeed`, `getMiniFeed`, `searchFeed`, `getTrendingTags`, `getUserFeedPreferences`, `updateFeedPreferences` |
+| `social/posts.ts` | `createSocialPost`, `updateSocialPost`, `deleteSocialPost`, `replyToSocialPost`, `getPostReplies`, `pinSocialPost`, `votePoll` |
+| `social/engagement.ts` | `togglePostReaction`, `toggleBookmark`, `incrementShareCount`, `incrementViewCount`, `tipSocialPost`, `subscribeToCreator` |
+| `social/history.ts` | `recordWatchHistory`, `getWatchHistory`, `clearWatchHistory` |
+| `social/moderation.ts` | `getMutedKeywords`, `addMutedKeyword`, `removeMutedKeyword`, `reportSocialPost`, `appealSocialPost` |
+| `social/analytics.ts` | `getPostAnalytics`, `getCreatorTopPosts` |
 
 | Action | Purpose |
 | :--- | :--- |
@@ -89,6 +100,6 @@ Achievements / XP may run after tips, posts, etc. — use `src/web/lib/achieveme
 
 ---
 
-## Refactor note
+## Layout note
 
-`social.ts` is large (~900+ lines). If splitting, keep **exported action names stable** and group by domain (posts, reactions, tips, prefs, moderation) so call sites do not break.
+Split complete (v2.1.109): barrel `app/actions/social.ts` re-exports domain modules under `app/actions/social/`. Keep **exported action names stable**; prefer barrel imports at call sites.

@@ -9,7 +9,7 @@ Covers **The Feed**, reactions/tips, friends, and DMs/groups. XP awards and noti
 | Piece | Path |
 | :--- | :--- |
 | Inbox / feed UI | `app/(main)/profile/inbox/` (`the-feed.tsx`, `inbox-client.tsx`) |
-| Domain logic | `app/actions/social.ts` — `getTheFeed`, `createSocialPost`, reactions, bookmarks, tips, mute, subscribe |
+| Domain logic | `app/actions/social.ts` barrel → `social/{posts,feed,engagement,history,moderation,analytics}.ts` |
 | Folders | `app/actions/social-folders.ts` |
 | Media upload | `POST /api/upload/social` → [`../uploads/STORAGE.md`](../uploads/STORAGE.md) |
 
@@ -55,6 +55,6 @@ Full export map: [`ACTIONS.md`](./ACTIONS.md).
 
 ## Rules
 
-1. Prefer extending `social.ts` / `messenger.ts` over new parallel “feed” APIs.
-2. `social.ts` is large — split by domain carefully if refactoring; keep action names stable.
+1. Prefer extending domain modules under `app/actions/social/` (or `messenger.ts`) over new parallel “feed” APIs.
+2. Import from `@/app/actions/social` only; keep exported action names stable.
 3. Mute / ban checks belong in permissions helpers, not ad-hoc in UI.
