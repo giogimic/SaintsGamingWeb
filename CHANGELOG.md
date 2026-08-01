@@ -1,3 +1,10 @@
+## [2.1.103] - 2026-08-01
+
+### Added
+- **AOI InterestManager vitest soak**: zone math, neighborhood keys, synthetic multi-entity fanout (far entities isolated; fanout ≪ full-map broadcast).
+- **WorldMap ops docs**: `info/database/WORLDMAP.md` (migrate/verify, loaders, GameMap mirror rules).
+- **Legacy uploads migrate script**: `scripts/migrate-local-uploads-to-s3.ts` (`--dry-run`, `--skip-existing`).
+
 ## [2.1.102] - 2026-08-01
 
 ### Added

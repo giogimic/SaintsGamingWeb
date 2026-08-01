@@ -41,3 +41,16 @@ Behavior:
 
 - `POST /api/upload`, `/api/upload/avatar`, `/api/upload/forum`, `/api/upload/social`
 - UCP profile gallery server actions
+
+---
+
+## Legacy local → bucket migrate
+
+After enabling S3, copy existing disk files (keys stay `uploads/<filename>` so CDN can serve the same path shape as `/uploads/...`):
+
+```bash
+npx tsx scripts/migrate-local-uploads-to-s3.ts --dry-run
+npx tsx scripts/migrate-local-uploads-to-s3.ts --skip-existing
+```
+
+This does **not** rewrite DB rows. Relative `/uploads/...` URLs keep working if the CDN (or reverse proxy) fronts that prefix to the bucket.

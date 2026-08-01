@@ -9,25 +9,23 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Optional S3/CDN uploads landed (v2.1.102).** Remaining optional polish: AOI soak / database docs.
+**Optional polish track closed for now (v2.1.103).** Pick a new feature from `info/PROJECT_REPORT.md` or product priorities.
 
-### Done
+### Done (this branch)
 
 - **M1–M4**: Realtime platform + MMO AOI/binary/Redis scaling
-- **Discord bridge (v2.1.99)**: `POST /api/discord/events` + `info/discord/BRIDGE.md`
-- **Achievement automation (v2.1.99)**
+- **Discord bridge (v2.1.99)** · **Achievements (v2.1.99)**
 - **Campaign maps → WorldMap (v2.1.100)**
-- **FiveM bridge (v2.1.101)**: `POST /api/fivem/events` + `info/fivem/BRIDGE.md`
-- **S3/CDN uploads (v2.1.102)**:
-  - Env-gated in `upload.ts` / `s3-storage.ts`
-  - Docs: `info/uploads/STORAGE.md`
-  - Local fallback when S3 unset or PutObject fails
+- **FiveM bridge (v2.1.101)**
+- **S3/CDN uploads (v2.1.102)**
+- **AOI soak tests + WorldMap ops docs + local→S3 migrate script (v2.1.103)**
 
-### Next concrete steps (in order)
+### Suggested next (open product / tech debt)
 
-1. Optional: deeper multi-client AOI soak test
-2. Optional: expand `/info/database/` docs for WorldMap ops
-3. Optional: migrate existing local `/uploads` objects to the bucket (ops script)
+1. Live multi-socket AOI soak against a running `server.ts` (manual / staging)
+2. AI content moderation / recommendations (long-term list)
+3. Admin live metrics dashboard beyond `/admin/realtime`
+4. Expand other `/info/*` planned sections (frontend, backend, social)
 
 ---
 
@@ -36,6 +34,6 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 1. **This file** — current task
 2. `info/AI_DEVELOPMENT_RULES.md` — constraints + existing solutions
 3. `info/PROJECT_REPORT.md` — what exists / broken / order
-4. Discord: `info/discord/BRIDGE.md` · FiveM: `info/fivem/BRIDGE.md` · Uploads: `info/uploads/STORAGE.md`
+4. Bridges: `info/discord/BRIDGE.md` · `info/fivem/BRIDGE.md` · `info/uploads/STORAGE.md` · `info/database/WORLDMAP.md`
 5. If realtime: `info/realtime/ARCHITECTURE.md` then `info/realtime/EVENTS.md`
 6. `/logs/LOCAL_CHANGELOG.md` — recent local work notes

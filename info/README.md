@@ -24,9 +24,9 @@ A new developer or AI assistant should be able to open this project, read `/info
 | [discord/](./discord/) | 🟢 Bridge live | Bot ingestion contract (`BRIDGE.md`) |
 | [fivem/](./fivem/) | 🟢 Bridge live | Server character/stats contract (`BRIDGE.md`) |
 | [uploads/](./uploads/) | 🟢 S3 optional | Local + env-gated S3/CDN (`STORAGE.md`) |
+| [database/](./database/) | 🟢 WorldMap ops | Campaign map migrate/verify (`WORLDMAP.md`) |
 | frontend/ | 🔴 Planned | Component architecture, design tokens, routing guide |
 | backend/ | 🔴 Planned | API routes catalog, server actions, auth flows |
-| database/ | 🔴 Planned | Schema overview, model relationships, migration guide |
 | game/ | 🔴 Planned | MMO engine, game loop, Babylon.js client architecture |
 | social/ | 🔴 Planned | Social feed, messenger, friends, subscriptions, XP |
 | admin/ | 🔴 Planned | Admin panel features, access control, dev tools |
@@ -36,7 +36,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 ## Quick Reference
 
 ### Current Version
-`2.1.102` — Optional S3/CDN uploads (on top of FiveM bridge + WorldMap + Discord + realtime M1–M4)
+`2.1.103` — AOI soak tests + WorldMap ops docs + local→S3 migrate script
 
 ### Key Entry Points
 | File | Role |
