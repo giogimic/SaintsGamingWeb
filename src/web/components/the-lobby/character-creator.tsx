@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createGameCharacter } from "@/app/actions/game";
-import { Input } from "@/shared/ui/input";
-import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, ChevronRight } from "lucide-react";
+import { getStarterHeroes } from "@/app/actions/starter-heroes";
+import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { INITIAL_SKILLS, useGameStore } from "./store";
 
@@ -41,63 +41,17 @@ const CLASSES = [
   },
 ];
 
-// Curated starter hero templates
-const STARTER_HEROES = [
-  {
-    id: 'warrior',
-    name: 'Warrior',
-    classId: 'WARRIOR',
-    sprite: 'warrior',
-    flavor: 'Frontline champion. High HP, unstoppable in melee.',
-    tag: 'Beginner Friendly',
-    tagColor: '#34d399',
-  },
-  {
-    id: 'paladin',
-    name: 'Paladin',
-    classId: 'WARRIOR',
-    sprite: 'knight',
-    flavor: 'Holy guardian. Superior defense, supports allies.',
-    tag: 'Defensive',
-    tagColor: '#60a5fa',
-  },
-  {
-    id: 'mystic',
-    name: 'Mystic',
-    classId: 'MAGE',
-    sprite: 'magician',
-    flavor: 'Master of arcane arts. High burst, low defense.',
-    tag: 'Advanced',
-    tagColor: '#a78bfa',
-  },
-  {
-    id: 'shadow',
-    name: 'Shadow',
-    classId: 'THIEF',
-    sprite: 'rogue',
-    flavor: 'Swift and lethal. Strike before you\'re seen.',
-    tag: 'Skill Cap',
-    tagColor: '#f472b6',
-  },
-  {
-    id: 'ranger',
-    name: 'Ranger',
-    classId: 'THIEF',
-    sprite: 'ninja',
-    flavor: 'Agile hunter. Precision strikes from distance.',
-    tag: 'Mobile',
-    tagColor: '#fbbf24',
-  },
-  {
-    id: 'monk',
-    name: 'Monk',
-    classId: 'WARRIOR',
-    sprite: 'monk',
-    flavor: 'Inner strength fighter. Balanced offense and utility.',
-    tag: 'Balanced',
-    tagColor: '#fb923c',
-  },
+// Fallback starter heroes (shown if DB is empty or unreachable)
+const FALLBACK_HEROES = [
+  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399' },
+  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa' },
+  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician', flavor: 'Master of arcane arts. High burst, low defense.', tag: 'Advanced', tagColor: '#a78bfa' },
+  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue', flavor: "Swift and lethal. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#f472b6' },
+  { slug: 'ranger', name: 'Ranger', classId: 'THIEF', spriteKey: 'ninja', flavor: 'Agile hunter. Precision strikes from distance.', tag: 'Mobile', tagColor: '#fbbf24' },
+  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength fighter. Balanced offense and utility.', tag: 'Balanced', tagColor: '#fb923c' },
 ];
+
+type DbHero = { slug: string; name: string; classId: string; spriteKey: string; flavor: string; tag: string; tagColor: string };
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
@@ -173,6 +127,17 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [step, setStep] = useState<CreatorStep>('HERO_PICK');
   const [name, setName] = useState('');
   const [spriteId, setSpriteId] = useState('warrior');
+  const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
+  const [heroesLoading, setHeroesLoading] = useState(true);
+
+  useEffect(() => {
+    getStarterHeroes().then(res => {
+      if (res.success && res.data.length > 0) setDbHeroes(res.data as DbHero[]);
+      setHeroesLoading(false);
+    }).catch(() => setHeroesLoading(false));
+  }, []);
+
+  const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
   const [classId, setClassId] = useState('WARRIOR');
   const [perkId, setPerkId] = useState(PERKS[0].id);
   const [loading, setLoading] = useState(false);
@@ -197,8 +162,8 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const currentNum = stepToNum[step];
   const progressPct = ((currentNum - 1) / 4) * 100;
 
-  const handleHeroPick = (hero: typeof STARTER_HEROES[0]) => {
-    setSpriteId(hero.sprite);
+  const handleHeroPick = (hero: DbHero) => {
+    setSpriteId(hero.spriteKey);
     setClassId(hero.classId);
     setStep('NAME');
   };
@@ -345,90 +310,97 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                   Pick a starting archetype — you can customise appearance in the next step
                 </p>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {STARTER_HEROES.map(hero => {
-                    const cls = CLASSES.find(c => c.id === hero.classId)!;
-                    return (
-                      <div
-                        key={hero.id}
-                        onClick={() => handleHeroPick(hero)}
-                        className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group"
-                        style={{
-                          background: 'rgba(255,255,255,0.03)',
-                          border: '1px solid rgba(139,92,246,0.15)',
-                        }}
-                        onMouseEnter={e => {
-                          const el = e.currentTarget as HTMLElement;
-                          el.style.background = cls.bg;
-                          el.style.border = `1px solid ${cls.border}`;
-                          el.style.boxShadow = `0 0 25px ${cls.glow}, 0 8px 25px rgba(0,0,0,0.4)`;
-                          el.style.transform = 'translateY(-3px) scale(1.02)';
-                        }}
-                        onMouseLeave={e => {
-                          const el = e.currentTarget as HTMLElement;
-                          el.style.background = 'rgba(255,255,255,0.03)';
-                          el.style.border = '1px solid rgba(139,92,246,0.15)';
-                          el.style.boxShadow = 'none';
-                          el.style.transform = 'none';
-                        }}
-                      >
-                        {/* Tag */}
+                {heroesLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 className="w-8 h-8 text-violet-500/50 animate-spin" />
+                    <p className="text-violet-600/30 text-xs font-mono">Loading heroes...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {starterHeroes.map(hero => {
+                      const cls = CLASSES.find(c => c.id === hero.classId) ?? CLASSES[0];
+                      return (
                         <div
-                          className="absolute top-3 right-3 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest"
+                          key={hero.slug}
+                          onClick={() => { setSpriteId(hero.spriteKey); setClassId(hero.classId); setStep('NAME'); }}
+                          className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group"
                           style={{
-                            background: `${hero.tagColor}18`,
-                            border: `1px solid ${hero.tagColor}40`,
-                            color: hero.tagColor,
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(139,92,246,0.15)',
+                          }}
+                          onMouseEnter={e => {
+                            const el = e.currentTarget as HTMLElement;
+                            el.style.background = cls.bg;
+                            el.style.border = `1px solid ${cls.border}`;
+                            el.style.boxShadow = `0 0 25px ${cls.glow}, 0 8px 25px rgba(0,0,0,0.4)`;
+                            el.style.transform = 'translateY(-3px) scale(1.02)';
+                          }}
+                          onMouseLeave={e => {
+                            const el = e.currentTarget as HTMLElement;
+                            el.style.background = 'rgba(255,255,255,0.03)';
+                            el.style.border = '1px solid rgba(139,92,246,0.15)';
+                            el.style.boxShadow = 'none';
+                            el.style.transform = 'none';
                           }}
                         >
-                          {hero.tag}
-                        </div>
-
-                        <div className="p-5">
-                          {/* Sprite preview */}
+                          {/* Tag */}
                           <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110"
+                            className="absolute top-3 right-3 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest"
                             style={{
-                              background: 'rgba(255,255,255,0.05)',
-                              border: `1px solid ${cls.accent}30`,
+                              background: `${hero.tagColor}18`,
+                              border: `1px solid ${hero.tagColor}40`,
+                              color: hero.tagColor,
                             }}
                           >
-                            <div
-                              className="pixelated bg-no-repeat"
-                              style={{
-                                backgroundImage: `url('/game-assets/characters/${hero.sprite}.png')`,
-                                backgroundPosition: '0px -64px',
-                                backgroundSize: '96px 128px',
-                                width: '32px',
-                                height: '32px',
-                                transform: 'scale(1.5)',
-                              }}
-                            />
+                            {hero.tag}
                           </div>
 
-                          <h3
-                            className="text-lg font-black mb-1 transition-colors"
-                            style={{ color: 'rgba(237,233,254,0.85)' }}
-                          >
-                            {hero.name}
-                          </h3>
-                          <p
-                            className="text-[10px] font-black uppercase tracking-widest mb-3 font-mono"
-                            style={{ color: `${cls.accent}70` }}
-                          >
-                            {cls.name}
-                          </p>
-                          <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(196,181,253,0.45)' }}>
-                            {hero.flavor}
-                          </p>
+                          <div className="p-5">
+                            {/* Sprite preview */}
+                            <div
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110"
+                              style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                border: `1px solid ${cls.accent}30`,
+                              }}
+                            >
+                              <div
+                                className="pixelated bg-no-repeat"
+                                style={{
+                                  backgroundImage: `url('/game-assets/npc/${hero.spriteKey}.png')`,
+                                  backgroundPosition: '0px -64px',
+                                  backgroundSize: '96px 128px',
+                                  width: '32px',
+                                  height: '32px',
+                                  transform: 'scale(1.5)',
+                                }}
+                              />
+                            </div>
+
+                            <h3
+                              className="text-lg font-black mb-1 transition-colors"
+                              style={{ color: 'rgba(237,233,254,0.85)' }}
+                            >
+                              {hero.name}
+                            </h3>
+                            <p
+                              className="text-[10px] font-black uppercase tracking-widest mb-3 font-mono"
+                              style={{ color: `${cls.accent}70` }}
+                            >
+                              {cls.name}
+                            </p>
+                            <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(196,181,253,0.45)' }}>
+                              {hero.flavor}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <p className="text-center text-violet-600/25 text-xs font-mono mt-6">
-                  Click any hero to begin
+                  {heroesLoading ? '' : `${starterHeroes.length} heroes available · Manage in Studio → Heroes`}
                 </p>
               </div>
             )}

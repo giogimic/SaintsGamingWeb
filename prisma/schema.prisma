@@ -1560,3 +1560,27 @@ model GameMap {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// ─── Character Creator: Starter Heroes ──────────────────────────
+// Each row is one archetype card shown on the HERO_PICK step.
+// Managed entirely through Studio. No code changes needed to add heroes.
+
+model StarterHero {
+  id          String   @id @default(cuid())
+  slug        String   @unique          // e.g. "warrior", "mystic" — used as stable key
+  name        String                    // Display name on card
+  classId     String                    // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
+  spriteKey   String                    // Key in GAME_SPRITES (no extension), e.g. "warrior"
+  flavor      String                    // Short 1-line description shown on card
+  tag         String   @default("Balanced")  // Difficulty/style badge text
+  tagColor    String   @default("#a78bfa")   // Hex color for the badge
+  sortOrder   Int      @default(0)      // Display order in HERO_PICK grid
+  isActive    Boolean  @default(true)   // Toggle off to hide without deleting
+  startingMap String   @default("DEMO_SANDBOX")
+  startingX   Int      @default(14)
+  startingY   Int      @default(15)
+  startingInventory String @default("{\"capture_script\":10,\"patch_kit\":5}") // JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
