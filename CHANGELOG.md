@@ -1,3 +1,16 @@
+## [2.1.93] - 2026-08-01
+
+### Fixed
+- **Character Selection Sprite Hydration**:
+  - Updated `hydratePlayer` in `store.ts` to set `name`, `spriteId`, and `accountId` when loading character data, restoring selected character sprites on the 2.5D Babylon game canvas.
+- **Multiplayer Visibility & Duplicate Entities**:
+  - Guarded initial socket `join_map` request to only emit once character selection is complete, preventing pre-join orphaned player entities.
+  - Added cleanup logic in `PlayerManager.ts` to automatically remove stale entities for the same socket/account upon re-joining.
+  - Filtered local client `socket.id` out of `otherPlayers` in `index.tsx` to eliminate local phantom mesh duplicate overlays.
+- **Real-Time Local & Global Chat Broadcast**:
+  - Implemented server-side handler for `"globalChat"` in `SocketHandler.ts` to broadcast `global_chat_msg` to all connected clients.
+  - Enriched local `player_chat` payload with sender name and room targeting, eliminating local chat log duplication and missing sender labels.
+
 ## [2.1.92] - 2026-08-01
 
 ### Fixed

@@ -116,11 +116,23 @@ export class PlayerManager {
     return this.players.get(entityId);
   }
 
-  public getPlayersInMap(mapId: string): PlayerState[] {
+  public getPlayersInMap(mapId?: string): PlayerState[] {
+    if (!mapId) return Array.from(this.players.values());
     return Array.from(this.players.values()).filter(p => p.mapId === mapId);
   }
 
   private async handleClientJoin({ accountId, socketId, data }: any) {
+    // Clean up existing player entities for this socket or account to prevent duplicate entities
+    for (const [existingId, existingPlayer] of Array.from(this.players.entries())) {
+      if (existingPlayer.socketId === socketId || (accountId && existingPlayer.accountId === accountId)) {
+        this.worldManager.removeEntity(existingPlayer.mapId, existingPlayer.x, existingPlayer.y, existingId);
+        this.worldManager.leaveInstance(existingPlayer.mapId, existingPlayer.accountId);
+        this.players.delete(existingId);
+        this.inputQueues.delete(existingId);
+        this.engine.events.emit("leaveRoom", { socketId: existingPlayer.socketId, room: existingPlayer.mapId });
+      }
+    }
+
     // Generate entity ID
     const entityId = `player_${accountId}_${Date.now()}`;
     // Ensure map definition is loaded
