@@ -346,7 +346,7 @@ try {
 12. Achievement unlock automation from game events and social actions
 13. FiveM server → `/api/internal/events` bridge for character events and game stats
 14. AI content recommendations, game event generation, chat moderation assist
-15. Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model
+15. ~~Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model~~ **Done (v2.1.100)**
 16. S3/CDN migration for uploaded files
 
 ---
@@ -355,7 +355,7 @@ try {
 
 ### Where Development Should Resume
 
-Start with **Realtime Milestone 2 — notification wiring**. This is 3 files, each requiring the same 10-line pattern already implemented in `app/api/forum/reply/route.ts`. No new infrastructure needed.
+See `info/CONTINUE.md`. Next optional work: FiveM → `/api/internal/events` bridge, then S3/CDN for uploads.
 
 ### Files That Matter Most (Priority Order)
 
