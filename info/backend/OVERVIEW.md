@@ -67,8 +67,13 @@ Colocated: `app/(main)/admin/actions.ts`, `app/(ucp)/ucp/actions.ts`.
 
 ---
 
+## Detailed catalog
+
+Full route + actions inventory: [`API_CATALOG.md`](./API_CATALOG.md).
+
 ## Cross-links
 
 - Realtime bus: [`../realtime/ARCHITECTURE.md`](../realtime/ARCHITECTURE.md)
 - Maps DB: [`../database/WORLDMAP.md`](../database/WORLDMAP.md)
-- Discord / FiveM bridges: back-line — see those folders only when needed
+- Admin gates: [`../admin/PERMISSIONS.md`](../admin/PERMISSIONS.md)
+- Discord / FiveM / AI bridges: **back-line** — see those folders only when needed
