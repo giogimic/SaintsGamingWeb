@@ -34,7 +34,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 ## Quick Reference
 
 ### Current Version
-`2.1.99` — Discord bot bridge + achievement auto-award automation (on top of realtime M1–M4)
+`2.1.100` — Campaign maps migrated to WorldMap DB (on top of Discord bridge + realtime M1–M4)
 
 ### Key Entry Points
 | File | Role |

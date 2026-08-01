@@ -1,3 +1,15 @@
+## [2.1.100] - 2026-08-01
+
+### Changed
+- **Campaign maps → WorldMap DB (complete)**:
+  - Moved the ~12MB dump out of the app bundle to `scripts/data/campaign-maps.generated.ts` (seed source only).
+  - Stubbed `src/web/components/the-lobby/data/campaign-maps.ts` so accidental imports cannot pull map payloads.
+  - Fixed `scripts/migrate-campaign-maps-to-db.ts` to upsert `WorldMap` + `GameMap` collision mirror (235 maps, `gameId=tuxemon`).
+  - `/api/maps` and `/api/maps/[slug]` are DB-only; POST requires Developer permission.
+  - Server `map-loader.js` prefers `WorldMap`, then `GameMap`.
+  - `WorldMapNavigator` + `listMaps()` load the map index from `/api/maps`.
+  - Regenerators (`import-full-tuxemon-campaign`, `reimport-rich-tuxemon-maps`, `import-tuxemon.mjs`) write to `scripts/data/`.
+
 ## [2.1.99] - 2026-08-01
 
 ### Added

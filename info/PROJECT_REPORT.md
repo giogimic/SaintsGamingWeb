@@ -168,9 +168,10 @@ A unified Socket.io event bus. Events are Zod-validated, CRITICAL ones persisted
 ### Game Asset Pipeline
 - `GameAsset` Prisma model with full metadata (type, source, tags, categories, atlas mapping)
 - Tuxemon batch import scripts in `scripts/` (14 import/export/migration scripts)
-- `campaign-maps.ts` — 11.8MB Tuxemon campaign map data file
+- Campaign map seed dump: `scripts/data/campaign-maps.generated.ts` (~12MB, scripts only — not app-bundled)
+- App stub: `src/web/components/the-lobby/data/campaign-maps.ts` (empty exports)
 - `WorldMap` DB model — maps stored as JSON strings (grid, gates, npcs, encounters, tile layers, tilesets)
-- Migration script: `scripts/migrate-campaign-maps-to-db.ts`
+- Migration script: `scripts/migrate-campaign-maps-to-db.ts` (upserts WorldMap + GameMap mirror)
 - **Key directory**: `scripts/`, `src/web/components/the-lobby/data/`
 
 ### Saints Studio (In-Game Editor)
@@ -312,7 +313,7 @@ try {
 | `GameCanvasBabylon.tsx` is 33KB | **Medium** | Monolithic renderer file — high cognitive load for AI; candidate for modular split |
 | `social.ts` is 969 lines | **Medium** | Should be split by domain (posts, friends, reactions, subscriptions) |
 | `StarterHeroEditorPanel.tsx` is 49KB | **Low** | Works well but huge; hardest file for AI to work in safely |
-| `campaign-maps.ts` is 11.8MB | **Low** | Already being migrated to DB via `WorldMap` model — finish migration |
+| Campaign map dump size | **Low** | Resolved in v2.1.100 — seed lives under `scripts/data/`; runtime loads `WorldMap` via `/api/maps` |
 | Achievement unlocks not automated | **Medium** | Achievements exist but are never awarded by game or social events |
 | `docs/TODO.md` is stale at v2.1.62 | **Low** | Not updated since v2.1.62; `/info/PROJECT_REPORT.md` supersedes it |
 | `legacy/` and `scratch/` in repo | **Low** | Should be audited and removed or `.gitignore`d |

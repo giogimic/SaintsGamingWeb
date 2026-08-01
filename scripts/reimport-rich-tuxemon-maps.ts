@@ -4,7 +4,7 @@ import zlib from 'zlib';
 
 const TUXEMON_MAPS_DIR = 'C:\\Users\\Matth\\OneDrive\\Desktop\\Tuxemon-0.5-rc1\\mods\\tuxemon\\maps';
 const TILESETS_DIR = path.join(process.cwd(), 'public', 'assets', 'tilesets');
-const OUTPUT_FILE = path.join(process.cwd(), 'components', 'the-lobby', 'data', 'campaign-maps.ts');
+const OUTPUT_FILE = path.join(process.cwd(), 'scripts', 'data', 'campaign-maps.generated.ts');
 
 interface TilesetInfo {
   firstgid: number;
@@ -164,10 +164,11 @@ async function run() {
 
   console.log(`[✓] Successfully parsed ${Object.keys(mapsData).length} rich campaign maps!`);
   
-  const fileContent = `// Rich Generated Campaign Maps Data
-import { GameMapData } from './maps';
+  const fileContent = `// Rich Generated Campaign Maps Data (seed source — do not import from app runtime)
+// After regenerating, run: npx tsx scripts/migrate-campaign-maps-to-db.ts
 
 export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = ${JSON.stringify(mapsData, null, 2)};
+export const creature_CAMPAIGN_MAPS = TUXEMON_CAMPAIGN_MAPS;
 `;
 
   fs.writeFileSync(OUTPUT_FILE, fileContent);

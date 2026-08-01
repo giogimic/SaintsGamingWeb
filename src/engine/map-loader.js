@@ -30,6 +30,33 @@ async function loadMapData(mapId) {
   }
 
   try {
+    // Primary: WorldMap (campaign migration target)
+    const worldMap = await prisma.worldMap.findUnique({ where: { id: mapId } });
+    if (worldMap) {
+      const grid = JSON.parse(worldMap.gridData || '[]');
+      const npcs = JSON.parse(worldMap.npcsData || '[]');
+      const gates = JSON.parse(worldMap.gatesData || '{}');
+      const encounters = JSON.parse(worldMap.encountersData || '[]');
+      const height = Array.isArray(grid) ? grid.length : 20;
+      const width = Array.isArray(grid?.[0]) ? grid[0].length : 20;
+
+      const data = {
+        id: worldMap.id,
+        name: worldMap.name,
+        grid,
+        gates,
+        npcs,
+        encountersData: encounters,
+        tileLayers: JSON.parse(worldMap.tileLayersData || '[]'),
+        tilesets: JSON.parse(worldMap.tilesetsData || '[]'),
+        width,
+        height,
+      };
+      mapCache[mapId] = data;
+      console.log(`[MapLoader] Loaded WorldMap "${mapId}" (${data.width}x${data.height})`);
+      return data;
+    }
+
     const gameMap = await prisma.gameMap.findUnique({ where: { id: mapId } });
     if (gameMap) {
       const grid = JSON.parse(gameMap.tilesetData || '[]');
