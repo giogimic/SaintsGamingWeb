@@ -1,7 +1,7 @@
-# CONTINUE HERE — AI / Dev Handoff
+# CONTINUE HERE — Dev Handoff
 
 **Last updated:** 2026-08-01  
-**Point every new agent session at this file first.**
+**Point every new session at this file first.**
 
 This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are: `README.md`, `CHANGELOG.md`, `docs/TUXEMON_ATTRIBUTION.md`.
 
@@ -23,7 +23,7 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 ### Suggested next (open product / tech debt)
 
 1. Live multi-socket AOI soak against a running `server.ts` (manual / staging)
-2. AI content moderation / recommendations (long-term list)
+2. Content moderation / recommendations (long-term list)
 3. Admin live metrics dashboard beyond `/admin/realtime`
 4. Expand other `/info/*` planned sections (frontend, backend, social)
 
@@ -32,7 +32,7 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 ## Mandatory Read Order (before coding)
 
 1. **This file** — current task
-2. `info/AI_DEVELOPMENT_RULES.md` — constraints + existing solutions
+2. `info/DEVELOPMENT_RULES.md` — constraints + existing solutions
 3. `info/PROJECT_REPORT.md` — what exists / broken / order
 4. Bridges: `info/discord/BRIDGE.md` · `info/fivem/BRIDGE.md` · `info/uploads/STORAGE.md` · `info/database/WORLDMAP.md`
 5. If realtime: `info/realtime/ARCHITECTURE.md` then `info/realtime/EVENTS.md`

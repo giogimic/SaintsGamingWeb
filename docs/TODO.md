@@ -1,7 +1,7 @@
 # Current State & TODOs
 
 ## What we just did (v2.1.62):
-1. **Updated AGENTS.md Guidelines:** Appended new strict rules for AI pitfall prevention, gaming component best practices (like using `requestAnimationFrame` and `useRef`), and social media feed architectures.
+1. **Updated AGENTS.md Guidelines:** Appended coding guidelines, gaming component best practices (like using `requestAnimationFrame` and `useRef`), and social media feed architectures.
 2. **Fixed GameChat Visibility:** Removed `absolute bottom-4 left-4` styling from `GameChat.tsx` so it naturally anchors properly inside its `DraggablePanel`.
 3. **Refactored WASD Movement:** Replaced throttled `keydown` listeners in `GameCanvasBabylon.tsx` with a proper `requestAnimationFrame` polling loop, resolving jagged movement and dropped inputs.
 4. **Resolved UI Scaling Distortions:** Removed explicit `style={{ zoom: uiScale }}` attributes in `index.tsx`, fixing severe distortions of child menus and overlays.

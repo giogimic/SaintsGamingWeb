@@ -1,8 +1,8 @@
-# Saints Gaming — AI Development Rules
+# Saints Gaming — Development Rules
 
 **Version**: 2.0 | **Last Updated**: 2026-08-01 | **Supersedes**: v1.0
 
-These rules are mandatory for every AI assistant (Cursor, Claude, Gemini, GPT, Copilot) before touching a single file. The biggest source of breakage in this project is AI assistants that skip research and create duplicate systems.
+These rules are mandatory before modifying the codebase. The biggest source of breakage is skipping research and creating duplicate systems.
 
 ---
 
