@@ -1,3 +1,18 @@
+## [2.1.89] - 2026-08-01
+
+### Added
+- **Studio Starter Hero Management**: Fully integrated Character Creation management into Saints Studio via `StarterHeroEditorPanel.tsx` and the `Heroes` tab on the Studio dock toolbar.
+- **Database Model & Server Actions**:
+  - Added `StarterHero` model to Prisma schema (`prisma/schema.prisma`) and pushed to SQLite database.
+  - Built `app/actions/starter-heroes.ts` with public fetch, admin CRUD, active toggling, JSON batch importing, and idempotent seeding.
+- **Studio Hero Archetype Generator & Requirements**:
+  - **Requirements & Guidelines Guide**: Interactive overlay inside Studio detailing exact field specifications (slug format, class IDs, sprite key validation, JSON inventory specs).
+  - **1-Click Archetype Generator Presets**: Built-in archetype templates (Tuxemon Beast Master, Arcane Elementalist, Spyder Operative, Grand Knight Lord, Nature Druid, Cyber Savant).
+  - **Random Hero Generator**: 1-click randomizer that picks from Tuxemon/GAME_SPRITES with harmonious tags, colors, and class assignments.
+  - **JSON Import / Export Modal**: Allows creators to copy or paste JSON hero definitions directly.
+  - **Live Validation Status**: Real-time validation checks for slug syntax, sprite registry existence, and inventory JSON format.
+- **Dynamic Character Creator Sync**: Updated `character-creator.tsx` to dynamically query active `StarterHero` archetypes from the database (with robust offline fallback), reflecting Studio edits in real time.
+
 ## [2.1.88] - 2026-08-01
 
 ### Changed
