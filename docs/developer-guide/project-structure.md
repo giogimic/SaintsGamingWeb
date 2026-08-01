@@ -11,34 +11,38 @@ To contribute effectively to this repository, developers must adhere to the foll
 
 ## Project Structure Overview
 
-The project is structured as a Next.js 16 Application with a deeply embedded Node.js/Socket.io backend and a Babylon.js frontend.
+The project is structured as a Next.js 15+ Application (App Router) with an integrated Socket.io backend and a custom 2.5D Babylon.js renderer frontend.
 
-- `/app`: The Next.js App Router containing standard web routes (Landing Page, Admin Panels) and the core `/(main)/game` route where the canvas lives.
-- `/components`: React UI components.
-  - `/components/game/ui`: The overlays that sit on top of the Babylon Canvas (Hotbars, Inventory, Target Frames, Turn-Based Battle Screen).
-- `/game-engine`: The core game client logic.
-  - `/game-engine/babylon`: The rendering pipeline (`BabylonEngine.ts`).
-  - `/game-engine/state`: Zustand stores (`store.ts`) for managing UI state outside of the standard React render cycle to prevent performance bottlenecks.
-- `/server`: The authoritative Node.js/Socket.io game server layer.
-  - Handles the 20-tick-per-second physics simulation.
-  - Validates all Socket intents (`combat_cast`, `move`).
-- `/prisma`: Database schema and migration files. Contains the definitive data models for `User`, `GameCharacter`, `Map`, and `PlayerCreature`.
-- `/scripts`: Deployment and automation scripts (e.g., `update.sh`, `setup.sh`). **Always use these for production deployments.**
+- `/app`: Next.js App Router containing web pages, admin tooling, user control panel (`(ucp)`), and the primary game route `/(main)/lobby`.
+- `/src/web/components/the-lobby/`: The main lobby & web game UI system:
+  - `index.tsx`: Main lobby orchestrator & Socket.io event connections.
+  - `store.ts`: Zustand store for state management (`player`, `otherPlayers`, `activeBattle`, `logicTiles`).
+  - `babylon/GameCanvasBabylon.tsx`: Babylon.js 2.5D WebGL canvas integration.
+  - `MobileGameLauncher.tsx`: Dedicated mobile launcher overlay for device fullscreen mode.
+  - `dpad.tsx`: Directional touch D-Pad (bottom-left) and Action Control Pad (bottom-right).
+  - `character-selector.tsx` & `character-creator.tsx`: Hero selection and customization screens.
+  - `ServerSelect.tsx`: Realm connection selector and dev server manager.
+  - `editor/`: Saints Studio map & logic tile editor.
+  - `chat/GameChat.tsx`: Multi-channel chat UI (Public, Global, Clan, Friends).
+- `/src/server/`: The authoritative Socket.io game server layer:
+  - `GameEngine.ts`: 20 TPS simulation and 10 TPS network broadcast clock.
+  - `PlayerManager.ts`: Player state tracking, input queueing, pre-join cleanup, and position flushing.
+  - `SocketHandler.ts`: Socket connection handling, JWT session auth, combat, and chat routing.
+  - `WorldManager.ts`: Map definition loading, dynamic sharding, instance management, and collision checks.
+  - `PartyManager.ts`: Party creation, invites, and clan chat routing.
+- `/src/engine/`: Custom game client algorithms:
+  - `BabylonEngine.ts`: 2.5D orthographic camera, sprite sheet rendering, damage numbers, and projectile FX.
+  - `WorldSimulation.ts`: Client movement prediction and step tile trigger actions.
+- `/prisma`: Database schema and migration files. Defines models for `User`, `GameCharacter`, `StarterHero`, `MapData`, and `GameServer`.
+- `/scripts`: Deployment and automation scripts (`update.sh`, `setup.sh`, `release.mjs`).
 
-## Current Development Roadmap (Demo World)
+## Current Development Roadmap
 
-The current sprint is focused on achieving the complete "Demo World" vertical slice.
-
-**Completed Phases:**
-- Integration of Babylon.js 2.5D rendering pipeline.
-- Zustand state management for hotbars and inventory.
-- Server-authoritative WASD / Click-to-move interpolation.
-- Strict logic grid and NPC collision.
-- Real-Time Hotbar UI with Global Cooldowns.
-
-**Active Development:**
-- Server-Side Combat Math (Damage calculations, Miss/Crit rolls).
-- Health Bars above dynamic map entities.
-- Projectile FX flying across the 2.5D canvas.
-- Turn-Based Creature Engine (State Machine, ARPG Damage formula, Capture Mechanics).
-- Prisma Sync: Implementing periodic Hot-State to Cold-State database flushing.
+**Completed Features & Infrastructure:**
+- Custom 2.5D Babylon.js WebGL orthographic rendering engine with 96x128px LPC/Tuxemon 4-directional sprite sheet mapping.
+- Server-authoritative movement with sequence reconciliation (`move_ack` / `position_correction`).
+- Mobile Touch Launcher (`MobileGameLauncher.tsx`) with device fullscreen API, continuous D-Pad, and Touch Action Pad.
+- Multi-channel real-time chat (Local, Global, Party, System) with overhead speech bubbles.
+- Saints Studio Starter Hero Editor with archetype presets and database persistence.
+- Live Studio Realm Server Controls (Start, Stop, Real-Time Player Metrics).
+- Dynamic sharding and instance management for public maps and private player bases.
