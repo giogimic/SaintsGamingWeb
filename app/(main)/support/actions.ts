@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { sendTicketReplyEmail } from "@/web/lib/email";
+import { emitNotificationCreated } from "@/web/lib/realtime-emit";
 
 
 export async function createTicket(formData: FormData) {
@@ -93,7 +94,7 @@ export async function addTicketMessage(formData: FormData) {
       console.error("Failed to send ticket reply email:", err);
     });
 
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         userId: ticket.authorId,
         type: "SYSTEM",
@@ -101,6 +102,7 @@ export async function addTicketMessage(formData: FormData) {
         link: `/support/${ticketId}`,
       }
     });
+    await emitNotificationCreated(notification);
   }
 
   revalidatePath(`/support/${ticketId}`);

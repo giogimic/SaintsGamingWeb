@@ -1,7 +1,7 @@
 # Saints Gaming Realtime Platform — Event Catalog
 
 ## Current Implementation Status
-**Status**: 🟡 Milestone 1 In Progress — Notifications live, others planned.
+**Status**: 🟢 Milestone 2 live — notifications, presence, chat push, forum live replies, and admin dashboard wired.
 
 ---
 
@@ -31,15 +31,15 @@ Every event follows this standard envelope:
 | :--- | :--- |
 | Priority | `CRITICAL` |
 | Persisted | Yes (`RealtimeEvent` table) |
-| Producer | Forum API, Social Actions, Support System |
-| Consumers | `notifications-menu.tsx` (bell badge + Sonner toast) |
+| Producer | Forum API, Social Actions, Support System, Mentions (`emitNotificationCreated`) |
+| Consumers | `notifications-menu.tsx` (bell badge + Sonner toast) via `RealtimeProvider` |
 
 **Payload:**
 ```typescript
 {
   notificationId: string;
   userId: string;
-  type: string;       // "REPLY" | "MENTION" | "SYSTEM"
+  type: string;       // "REPLY" | "MENTION" | "SYSTEM" | "LIKE" | "TIP"
   message: string;
   link: string | null;
 }
@@ -47,14 +47,14 @@ Every event follows this standard envelope:
 
 ---
 
-### `chat.message.created` 🔴 Planned (Milestone 2)
+### `chat.message.created` 🟢 Live (Milestone 2)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `NORMAL` |
-| Persisted | No (stored in `DirectMessage` table) |
-| Producer | Messenger API (`social.ts`) |
-| Consumers | `MessengerPopup`, `ChatWindow` |
+| Persisted | No (stored in `DirectMessage` / `GroupMessage` tables) |
+| Producer | `app/actions/messenger.ts` (`sendMessage`, `sendGroupMessage`) |
+| Consumers | `ChatWindow` (instant refetch via `useRealtimeStore.lastChatMessage`) |
 
 **Payload:**
 ```typescript
@@ -63,20 +63,20 @@ Every event follows this standard envelope:
   fromUserId: string;
   toUserId?: string;
   groupId?: string;
-  content: string;
+  content: string; // E2EE ciphertext for DMs; plaintext for groups
 }
 ```
 
 ---
 
-### `presence.updated` 🔴 Planned (Milestone 2)
+### `presence.updated` 🟢 Live (Milestone 2)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `EPHEMERAL` |
 | Persisted | No |
-| Producer | `SocketHandler` (connect/disconnect), MMO GameEngine |
-| Consumers | `UserAvatarBadge`, Friend List |
+| Producer | `SocketHandler` connect/disconnect (friend fan-out) |
+| Consumers | `FriendsList` online indicators via `useRealtimeStore.presenceByUserId` |
 
 **Payload:**
 ```typescript
@@ -89,14 +89,14 @@ Every event follows this standard envelope:
 
 ---
 
-### `forum.reply.created` 🔴 Planned (Milestone 2)
+### `forum.reply.created` 🟢 Live (Milestone 2)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `NORMAL` |
 | Persisted | No (stored in `Reply` table) |
-| Producer | Forum replies API |
-| Consumers | `ThreadView` (live reply stream for active viewers) |
+| Producer | `app/api/forum/replies/route.ts`, `app/api/forum/reply/route.ts` → room `thread:{id}` |
+| Consumers | `LiveThreadReplies` (toast + `router.refresh`) |
 
 **Payload:**
 ```typescript
@@ -139,4 +139,5 @@ Every event follows this standard envelope:
 1. Add payload interface to `src/shared/events/types.ts`
 2. Add Zod schema + `RegistryEntry` to `src/shared/events/registry.ts`
 3. Emit via `RealtimeService.publishEvent()` (server) or read from `useRealtimeStore` (client)
-4. Add catalog entry to this file
+4. Prefer `src/web/lib/realtime-emit.ts` from API routes / server actions
+5. Add catalog entry to this file

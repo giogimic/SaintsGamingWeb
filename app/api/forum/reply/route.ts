@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
 import { processMentions } from "@/web/lib/mentions";
+import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
 
 const replySchema = z.object({
   body: z.string().min(1).max(5000),
@@ -45,6 +46,14 @@ export async function POST(req: Request) {
       data: { updatedAt: new Date() }
     });
 
+    await emitForumReplyCreated({
+      replyId: reply.id,
+      threadId: thread.id,
+      authorId: session.user.id,
+      authorName: (session.user as any).username || session.user.name || "Someone",
+      excerpt: data.body.slice(0, 200),
+    });
+
     // Notification Logic
     if (thread.authorId !== session.user.id) {
       const notification = await prisma.notification.create({
@@ -57,22 +66,7 @@ export async function POST(req: Request) {
         }
       });
 
-      // Push instant notification via RealtimeService
-      try {
-        const { getRealtimeService } = await import("@/../../server");
-        const realtime = getRealtimeService();
-        if (realtime) {
-          await realtime.emitToUser(thread.authorId, "notification.created", {
-            notificationId: notification.id,
-            userId: thread.authorId,
-            type: "REPLY",
-            message: notification.message,
-            link: notification.link,
-          });
-        }
-      } catch {
-        // Non-fatal: notification is persisted in DB, will be shown on next load
-      }
+      await emitNotificationCreated(notification);
     }
 
     // Parse Mentions

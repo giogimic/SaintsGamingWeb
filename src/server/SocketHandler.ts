@@ -3,6 +3,7 @@ import { GameEngine } from "./GameEngine";
 import { PlayerInput } from "./types";
 import { getToken } from "next-auth/jwt";
 import { RealtimeService } from "./realtime/RealtimeService";
+import { prisma } from "@/web/lib/prisma";
 
 export class SocketHandler {
   constructor(
@@ -10,6 +11,43 @@ export class SocketHandler {
     private engine: GameEngine,
     public realtime: RealtimeService
   ) {}
+
+  /** Fan presence to accepted friends (and self) via private user rooms. */
+  private async broadcastPresence(
+    accountId: string,
+    status: "online" | "offline" | "away" | "playing"
+  ) {
+    if (!accountId) return;
+    const payload = {
+      userId: accountId,
+      status,
+      lastSeen: Date.now(),
+    };
+    try {
+      await this.realtime.emitToUser(accountId, "presence.updated", payload);
+
+      const friendships = await prisma.friendship.findMany({
+        where: {
+          status: "ACCEPTED",
+          OR: [{ userId: accountId }, { friendId: accountId }],
+        },
+        select: { userId: true, friendId: true },
+      });
+
+      const friendIds = new Set<string>();
+      for (const f of friendships) {
+        friendIds.add(f.userId === accountId ? f.friendId : f.userId);
+      }
+
+      await Promise.all(
+        Array.from(friendIds).map((friendId) =>
+          this.realtime.emitToUser(friendId, "presence.updated", payload)
+        )
+      );
+    } catch (err) {
+      console.warn(`[Socket] presence.updated failed for ${accountId}:`, err);
+    }
+  }
 
   public initialize() {
     // Phase 10: Enforce Production Authentication
@@ -47,6 +85,23 @@ export class SocketHandler {
       // Join private user room so RealtimeService can target this user
       socket.join(`user:${accountId}`);
 
+      // Bridge socket presence to the website realtime bus (Milestone 2)
+      void this.broadcastPresence(accountId, "online");
+
+      // Website realtime room joins (e.g. thread:{id} for live forum replies)
+      socket.on("join_room", async (room: string) => {
+        if (!room || typeof room !== "string") return;
+        const allowed = await this.realtime.authorizeRoomJoin(accountId, room);
+        if (allowed) {
+          socket.join(room);
+        }
+      });
+
+      socket.on("leave_room", (room: string) => {
+        if (!room || typeof room !== "string") return;
+        socket.leave(room);
+      });
+
       // Gracefully handle admin force-disconnect
       socket.on("force_disconnect", (data: { reason: string }) => {
         console.log(`[Socket] force_disconnect received by ${accountId}: ${data?.reason}`);
@@ -58,6 +113,7 @@ export class SocketHandler {
       socket.on("join_map", (data) => {
         console.log(`[Socket] ${accountId} attempting to join map`);
         this.engine.events.emit("clientJoinRequest", { accountId, socketId: socket.id, data });
+        void this.broadcastPresence(accountId, "playing");
       });
 
       socket.on("input", (input: PlayerInput) => {
@@ -239,6 +295,14 @@ export class SocketHandler {
       socket.on("disconnect", () => {
         console.log(`[Socket] Client disconnected: ${socket.id} (Account: ${accountId})`);
         this.engine.events.emit("playerDisconnected", { accountId, socketId: socket.id });
+
+        // Only mark offline when the user has no remaining sockets
+        const stillConnected = Array.from(this.io.sockets.sockets.values()).some(
+          (s) => (s as any).userId === accountId && s.id !== socket.id
+        );
+        if (!stillConnected) {
+          void this.broadcastPresence(accountId, "offline");
+        }
       });
     });
     

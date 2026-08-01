@@ -13,6 +13,7 @@ const createReplySchema = z.object({
 });
 
 import { awardXP, XP_VALUES } from "@/web/lib/xp";
+import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
 
 export async function POST(req: Request) {
   try {
@@ -93,9 +94,18 @@ export async function POST(req: Request) {
     // Award XP
     await awardXP(session.user.id, XP_VALUES.REPLY_CREATE);
 
+    // Live thread stream for viewers currently on this thread
+    await emitForumReplyCreated({
+      replyId: reply.id,
+      threadId: thread.id,
+      authorId: session.user.id,
+      authorName: session.user.name || "Someone",
+      excerpt: data.body.slice(0, 200),
+    });
+
     // Trigger Notification for the thread author
     if (thread.authorId !== session.user.id) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           userId: thread.authorId,
           type: "REPLY",
@@ -103,6 +113,7 @@ export async function POST(req: Request) {
           link: `/forum/t/${thread.slug}#reply-${reply.id}`,
         }
       });
+      await emitNotificationCreated(notification);
     }
 
     // Trigger Notifications for subscribed users
@@ -112,7 +123,7 @@ export async function POST(req: Request) {
 
     for (const sub of subscriptions) {
       if (sub.userId !== session.user.id && sub.userId !== thread.authorId) {
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             userId: sub.userId,
             type: "SYSTEM",
@@ -120,6 +131,7 @@ export async function POST(req: Request) {
             link: `/forum/t/${thread.slug}#reply-${reply.id}`,
           }
         });
+        await emitNotificationCreated(notification);
       }
     }
 

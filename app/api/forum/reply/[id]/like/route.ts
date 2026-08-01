@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { awardXP, XP_VALUES } from "@/web/lib/xp";
+import { emitNotificationCreated } from "@/web/lib/realtime-emit";
 
 export async function POST(
   req: Request,
@@ -59,7 +60,7 @@ export async function POST(
         await awardXP(reply.authorId, 5); // 5 XP for a like
         
         // Notify author
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             userId: reply.authorId,
             type: "SYSTEM",
@@ -67,6 +68,7 @@ export async function POST(
             link: `/forum/t/${reply.threadId}#reply-${reply.id}`,
           }
         });
+        await emitNotificationCreated(notification);
       }
 
       return NextResponse.json({ liked: true });

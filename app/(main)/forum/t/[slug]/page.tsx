@@ -13,6 +13,7 @@ import { ReplyActions } from "@/web/components/forum/reply-actions";
 import { ThreadActions } from "@/web/components/forum/thread-actions";
 import { ThreadPoll } from "@/web/components/forum/thread-poll";
 import { ThreadWatchButton } from "@/web/components/forum/thread-watch-button";
+import { LiveThreadReplies } from "@/web/components/forum/live-thread-replies";
 import { UserBadges } from "@/web/components/achievements/user-badges";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
 
@@ -145,6 +146,7 @@ export default async function ThreadPage({ params }: Props) {
 
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <LiveThreadReplies threadId={thread.id} currentUserId={session?.user?.id} />
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <Link href="/forum" className="hover:text-primary transition-colors">Forums</Link>

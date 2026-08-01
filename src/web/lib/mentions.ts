@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { emitNotificationCreated } from "./realtime-emit";
 
 /**
  * Extracts unique @usernames from a text block.
@@ -40,15 +41,18 @@ export async function processMentions(text: string, authorId: string, link: stri
 
     if (users.length === 0) return;
 
-    // Create notifications for all matched users
-    await prisma.notification.createMany({
-      data: users.map(user => ({
-        userId: user.id,
-        type: "MENTION",
-        message: `${authorName} mentioned you in a post.`,
-        link: link,
-      }))
-    });
+    // Create + push individually so we have IDs for realtime emit
+    for (const user of users) {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: "MENTION",
+          message: `${authorName} mentioned you in a post.`,
+          link: link,
+        }
+      });
+      await emitNotificationCreated(notification);
+    }
   } catch (error) {
     console.error("Failed to process mentions:", error);
   }

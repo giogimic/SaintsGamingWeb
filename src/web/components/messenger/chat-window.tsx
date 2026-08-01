@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { useMessenger } from "./messenger-provider";
 import { getMessages, sendMessage, getPublicKey, deleteMessage, clearChatHistory } from "@/app/actions/messenger";
 import { importPrivateKey, importPublicKey, deriveSharedKey, encryptMessage, decryptMessage, getLocalPrivateKey } from "@/web/lib/crypto";
+import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { ArrowLeft, Send, Lock, Loader2, Trash2 } from "lucide-react";
 
 export function ChatWindow() {
   const { activeChat, setActiveChat } = useMessenger();
+  const lastChatMessage = useRealtimeStore((s) => s.lastChatMessage);
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [sharedKey, setSharedKey] = useState<CryptoKey | null>(null);
@@ -74,13 +76,23 @@ export function ChatWindow() {
     }
   }
 
-  // Polling
+  // Polling (fallback) + instant refetch on realtime chat signal
   useEffect(() => {
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedKey, activeChat]);
+
+  useEffect(() => {
+    if (!activeChat || !lastChatMessage) return;
+    const fromActive = lastChatMessage.fromUserId === activeChat.id;
+    const toActive = lastChatMessage.toUserId === activeChat.id;
+    if (fromActive || toActive) {
+      void fetchMessages();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastChatMessage, activeChat?.id]);
 
   // Scroll to bottom on new message
   useEffect(() => {

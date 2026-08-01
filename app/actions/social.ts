@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { processMentions } from "@/web/lib/mentions";
+import { emitNotificationCreated } from "@/web/lib/realtime-emit";
 
 export async function createSocialPost(
   body: string, 
@@ -390,7 +391,7 @@ export async function togglePostReaction(postId: string) {
     // Notify author if it's not a self-like
     const post = await prisma.socialPost.findUnique({ where: { id: postId }, select: { authorId: true } });
     if (post && post.authorId !== session.user.id) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           userId: post.authorId,
           type: "LIKE",
@@ -398,6 +399,7 @@ export async function togglePostReaction(postId: string) {
           link: `/profile/inbox?post=${postId}`
         }
       });
+      await emitNotificationCreated(notification);
     }
 
     return true; // liked
@@ -494,7 +496,7 @@ export async function replyToSocialPost(parentId: string, body: string, mediaUrl
   // Notify parent author
   const parent = await prisma.socialPost.findUnique({ where: { id: parentId }, select: { authorId: true } });
   if (parent && parent.authorId !== session.user.id) {
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         userId: parent.authorId,
         type: "REPLY",
@@ -502,6 +504,7 @@ export async function replyToSocialPost(parentId: string, body: string, mediaUrl
         link: `/profile/inbox?post=${reply.id}`
       }
     });
+    await emitNotificationCreated(notification);
   }
 
   // Parse mentions in reply
@@ -719,7 +722,7 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
   if (post.authorId === session.user.id) throw new Error("Cannot tip your own post");
   if (amount <= 0) throw new Error("Invalid amount");
 
-  await prisma.$transaction(async (tx) => {
+  const tipNotification = await prisma.$transaction(async (tx) => {
     const sender = await tx.user.findUnique({ where: { id: session.user.id }, select: { coins: true } });
     if (!sender || sender.coins < amount) {
       throw new Error("Insufficient coins to send this tip.");
@@ -745,7 +748,7 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
       }
     });
 
-    await tx.notification.create({
+    return tx.notification.create({
       data: {
         userId: post.authorId,
         type: "TIP",
@@ -754,6 +757,8 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
       }
     });
   });
+
+  await emitNotificationCreated(tipNotification);
 }
 
 export async function subscribeToCreator(creatorId: string) {
