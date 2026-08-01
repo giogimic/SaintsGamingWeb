@@ -9,22 +9,23 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Deepening `/info` for social + game (v2.1.107).**  
+**Core `/info` deep docs landed (v2.1.108).**  
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
-### Done (docs track)
+### Docs track complete (for now)
 
 | Version | What |
 | :--- | :--- |
-| 2.1.105 | System overviews (frontend → forum) |
-| 2.1.106 | Backend `API_CATALOG` + admin `PERMISSIONS` |
-| 2.1.107 | Social `ACTIONS` + game `SOCKETS` |
+| 2.1.105 | System overviews |
+| 2.1.106 | Backend API catalog + admin permissions |
+| 2.1.107 | Social actions + game sockets |
+| 2.1.108 | Frontend routes map |
 
-### Suggested next
+### Suggested next (code / ship)
 
-1. Deepen frontend route map (optional) or stop docs and do core code
-2. Core code: split `social.ts`, canvas debt, or more vitest
-3. Staging smoke / merge PR #1 when ready
+1. Split `app/actions/social.ts` by domain (keep export names stable)
+2. More vitest on permissions / forum / messenger helpers
+3. Staging smoke + merge PR #1 (forum, lobby, realtime)
 
 ---
 

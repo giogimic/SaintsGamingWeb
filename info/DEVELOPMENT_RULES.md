@@ -16,7 +16,7 @@ Complete **all five steps** before writing code.
 | :--- | :--- |
 | Anything realtime | `/info/realtime/ARCHITECTURE.md` then `/info/realtime/EVENTS.md` |
 | Any new feature | `/info/PROJECT_REPORT.md` → "Completed Systems" section |
-| Frontend / routing / theme | `/info/frontend/OVERVIEW.md` |
+| Frontend / routing / theme | `/info/frontend/OVERVIEW.md` + `ROUTES.md` |
 | API / actions / server.ts | `/info/backend/OVERVIEW.md` + `API_CATALOG.md` |
 | Auth, session, permissions | `/info/auth/OVERVIEW.md` + `src/web/lib/permissions.ts` |
 | Social / messenger | `/info/social/OVERVIEW.md` + `ACTIONS.md` |

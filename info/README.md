@@ -21,7 +21,7 @@ A new developer should be able to open this project, read `/info`, and understan
 
 | Directory | Status | Contents |
 | :--- | :--- | :--- |
-| [frontend/](./frontend/) | 🟢 | Layouts, theming, routes (`OVERVIEW.md`) |
+| [frontend/](./frontend/) | 🟢 | Layouts, theming, routes (`OVERVIEW.md`, `ROUTES.md`) |
 | [backend/](./backend/) | 🟢 | `server.ts`, APIs, actions (`OVERVIEW.md`, `API_CATALOG.md`) |
 | [auth/](./auth/) | 🟢 | NextAuth, sessions, permissions (`OVERVIEW.md`) |
 | [social/](./social/) | 🟢 | Feed, messenger (`OVERVIEW.md`, `ACTIONS.md`) |
@@ -39,7 +39,7 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.107` — Social actions map + MMO sockets/managers map
+`2.1.108` — Frontend routes map; core /info deep docs in place
 
 ### Key Entry Points
 | File | Role |
