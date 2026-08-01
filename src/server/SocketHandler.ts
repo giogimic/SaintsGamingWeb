@@ -2,9 +2,14 @@ import { Server, Socket } from "socket.io";
 import { GameEngine } from "./GameEngine";
 import { PlayerInput } from "./types";
 import { getToken } from "next-auth/jwt";
+import { RealtimeService } from "./realtime/RealtimeService";
 
 export class SocketHandler {
-  constructor(private io: Server, private engine: GameEngine) {}
+  constructor(
+    private io: Server,
+    private engine: GameEngine,
+    public realtime: RealtimeService
+  ) {}
 
   public initialize() {
     // Phase 10: Enforce Production Authentication
@@ -38,9 +43,18 @@ export class SocketHandler {
     this.io.on("connection", (socket: Socket) => {
       const accountId = (socket as any).userId;
       console.log(`[Socket] Client connected: ${socket.id} (User: ${accountId})`);
-      
+
+      // Join private user room so RealtimeService can target this user
+      socket.join(`user:${accountId}`);
+
+      // Gracefully handle admin force-disconnect
+      socket.on("force_disconnect", (data: { reason: string }) => {
+        console.log(`[Socket] force_disconnect received by ${accountId}: ${data?.reason}`);
+        socket.disconnect(true);
+      });
+
       // We do not store game state here. The socket only communicates.
-      
+
       socket.on("join_map", (data) => {
         console.log(`[Socket] ${accountId} attempting to join map`);
         this.engine.events.emit("clientJoinRequest", { accountId, socketId: socket.id, data });

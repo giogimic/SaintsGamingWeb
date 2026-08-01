@@ -5,6 +5,9 @@ import { MessengerProvider } from "@/web/components/messenger/messenger-provider
 import { MessengerPopup } from "@/web/components/messenger/messenger-popup";
 import { AmbientBackground } from "@/shared/components/ambient-background";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/web/components/auth-provider";
+import { RealtimeProvider } from "@/web/components/realtime/RealtimeProvider";
+
 export default async function MainLayout({
   children,
 }: {
@@ -32,7 +35,7 @@ export default async function MainLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.94";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.95";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
@@ -43,13 +46,18 @@ export default async function MainLayout({
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30">
       <AmbientBackground />
-      <MessengerProvider>
-        <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} siteVersion={siteVersion} />
-        <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
-        <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
-        <MessengerPopup />
-        <Toaster position="bottom-right" theme="dark" />
-      </MessengerProvider>
+      <AuthProvider session={session}>
+        <RealtimeProvider>
+          <MessengerProvider>
+            <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} siteVersion={siteVersion} />
+            <main className="flex-1 sg-page-enter z-10 pt-28">{children}</main>
+            <Footer className="z-10" discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
+            <MessengerPopup />
+            <Toaster position="bottom-right" theme="dark" />
+          </MessengerProvider>
+        </RealtimeProvider>
+      </AuthProvider>
     </div>
   );
 }
+
