@@ -77,11 +77,9 @@ Progressive member tiers (0–60) are for community badges / gates, not admin na
 | `/admin/realtime` | Realtime Bus | ≥ Developer |
 | `/admin/dev/system` | System State | ≥ Developer |
 | `/admin/dev/database` | DB Health | ≥ Developer |
-| `/admin/dev/metrics` | Metrics | ≥ Developer (if linked in overlay) |
-| `/admin/dev/tasks` | Tasks | ≥ Developer (if linked) |
-| `/admin/dev/sandbox` | Sandbox | ≥ Developer (if linked) |
-
-Confirm exact Developer Tools list in `admin-overlay-shell.tsx` when adding items.
+| `/admin/dev/metrics` | Metrics | ≥ Developer |
+| `/admin/dev/tasks` | Tasks | ≥ Developer |
+| `/admin/dev/sandbox` | API Sandbox | ≥ Developer |
 
 ---
 

@@ -22,10 +22,10 @@ A new developer should be able to open this project, read `/info`, and understan
 | Directory | Status | Contents |
 | :--- | :--- | :--- |
 | [frontend/](./frontend/) | 🟢 | Layouts, theming, routes (`OVERVIEW.md`) |
-| [backend/](./backend/) | 🟢 | `server.ts`, APIs, actions (`OVERVIEW.md`) |
+| [backend/](./backend/) | 🟢 | `server.ts`, APIs, actions (`OVERVIEW.md`, `API_CATALOG.md`) |
 | [auth/](./auth/) | 🟢 | NextAuth, sessions, permissions (`OVERVIEW.md`) |
 | [social/](./social/) | 🟢 | Feed, messenger, friends (`OVERVIEW.md`) |
-| [admin/](./admin/) | 🟢 | Staff console map (`OVERVIEW.md`) |
+| [admin/](./admin/) | 🟢 | Staff console (`OVERVIEW.md`, `PERMISSIONS.md`) |
 | [game/](./game/) | 🟢 | MMO lobby + engine notes (`OVERVIEW.md`) |
 | [forum/](./forum/) | 🟢 | Boards + text enhance (`OVERVIEW.md`, `TEXT_ENHANCE.md`) |
 | [realtime/](./realtime/) | 🟢 | Bus architecture + event catalog |
@@ -39,7 +39,7 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.105` — Expanded `/info` system overviews (frontend → game)
+`2.1.106` — Deepened backend API catalog + admin permissions map
 
 ### Key Entry Points
 | File | Role |
