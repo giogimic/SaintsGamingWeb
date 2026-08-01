@@ -1,3 +1,9 @@
+## [2.1.106] - 2026-08-01
+
+### Added
+- **`info/backend/API_CATALOG.md`**: route + server-actions inventory with live-emit checklist.
+- **`info/admin/PERMISSIONS.md`**: nav gates by level, admin APIs, new-page checklist.
+
 ## [2.1.105] - 2026-08-01
 
 ### Added
