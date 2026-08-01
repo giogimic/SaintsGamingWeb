@@ -1,3 +1,17 @@
+## [2.1.102] - 2026-08-01
+
+### Added
+- **Optional S3/CDN uploads**:
+  - Env-gated PutObject/DeleteObject via `@aws-sdk/client-s3` (`s3-storage.ts`).
+  - Requires `S3_BUCKET` + credentials + `CDN_BASE_URL`; otherwise local `public/uploads` unchanged.
+  - MinIO/R2 via `S3_ENDPOINT` / `S3_FORCE_PATH_STYLE`.
+  - `next.config.ts` adds CDN host to `images.remotePatterns` when configured.
+  - Docs: `info/uploads/STORAGE.md`; env vars in `.env.example`.
+  - Vitest coverage for S3 enablement + URL/key helpers.
+
+### Fixed
+- `deleteUploadedFile` no longer breaks on `/uploads/...` paths (`path.join` absolute-segment bug).
+
 ## [2.1.101] - 2026-08-01
 
 ### Added

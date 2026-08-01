@@ -46,7 +46,7 @@ These systems already exist. Do not rebuild them:
 | Read realtime state on client | `useRealtimeStore` in `src/web/hooks/useRealtimeStore.ts` |
 | Authentication check | `const session = await auth()` from `@/auth` |
 | Permission check | `hasPermission(userLevel, PERMISSION_LEVELS.X)` from `src/web/lib/permissions.ts` |
-| File upload | `uploadAvatar()`, `uploadForumImage()`, `uploadSocialMedia()` in `src/web/lib/upload.ts` |
+| File upload | `uploadFile()`, `uploadSocialMedia()`, `deleteUploadedFile()` in `src/web/lib/upload.ts` |
 | Award XP | `awardXP(userId, amount)` from `src/web/lib/xp.ts` |
 | Send email | `sendPasswordResetEmail()`, `sendVerificationEmail()` in `src/web/lib/email.ts` |
 | Discord webhook | `sendDiscordWebhook(url, payload)` from `src/web/lib/discord.ts` |
@@ -124,9 +124,9 @@ If it is a replacement, **plan the migration explicitly** — do not delete work
 
 ### Upload Rules
 
-- **All uploads go through `src/web/lib/upload.ts`**. This file handles MIME validation, file size limits, directory creation, and crypto-random filename generation.
-- Local storage is the current target. The comment in `upload.ts` notes it should swap to S3 later. When that happens, change only `upload.ts`.
-- Social media uploads support images and video (`/api/upload/social`). Forum uploads are images only. Modpack uploads are archives only.
+- **All uploads go through `src/web/lib/upload.ts`**. MIME validation, size limits, magic bytes, local disk, and optional S3 live here (plus `s3-storage.ts`). Never write uploads from routes directly.
+- **Default = local** (`public/uploads`). **Optional S3/CDN** when `S3_BUCKET` + credentials + `CDN_BASE_URL` are set — see `info/uploads/STORAGE.md`. On S3 failure, fall back to local.
+- Forum uploads are images only (`uploadFile`). Social/modpack archives use `uploadSocialMedia` via `/api/upload/social`.
 
 ---
 
