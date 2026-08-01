@@ -1,3 +1,11 @@
+## [2.1.87] - 2026-07-31
+
+### Changed
+- **Lobby Redesign**: Re-styled `GameLogin.tsx`, `ServerSelect.tsx`, and `character-selector.tsx` to a lighter Nintendo aesthetic.
+- **Character Creator**: Redesigned `character-creator.tsx` to a multi-step "Dark Souls" style wizard where users directly select `GAME_SPRITES` models.
+- **HUD Redesign**: Decoupled the dark UI box into clean, separate pill-shaped floating indicators in `SaintsHudOrbs.tsx`.
+- **Options Menu**: Updated `GameOptionsMenu.tsx` to match the new lighter aesthetic.
+
 ## [2.1.86] - 2026-07-31
 
 ### Changed
