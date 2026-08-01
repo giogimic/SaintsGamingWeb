@@ -1,3 +1,12 @@
+## [2.1.104] - 2026-08-01
+
+### Added
+- **Forum Settings** (`/admin/forum/settings`): text-enhance provider menu (Gemini cloud / Ollama local / off).
+- Curated Ollama model catalog with estimated RAM + download size; download/pull from admin UI.
+- `GET /api/ai/config`, `GET|POST /api/ai/local`; enhance route respects SiteSetting provider.
+- Markdown editor hides Grammar/Polish when enhancement is disabled.
+- Docs: `info/forum/TEXT_ENHANCE.md`.
+
 ## [2.1.103] - 2026-08-01
 
 ### Added

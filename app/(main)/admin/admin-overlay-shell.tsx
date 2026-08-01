@@ -33,6 +33,7 @@ export function AdminOverlayShell({
       name: "Community",
       items: [
         { href: "/admin/forum", label: "Forum", icon: MessageSquare, isVisible: permissionLevel >= PERMISSION_LEVELS.HEAD_MODERATOR },
+        { href: "/admin/forum/settings", label: "Forum Settings", icon: Settings, isVisible: permissionLevel >= PERMISSION_LEVELS.HEAD_MODERATOR },
         { href: "/admin/news", label: "News", icon: Newspaper, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN || isWriter },
         { href: "/admin/streams", label: "Streams", icon: Monitor, isVisible: permissionLevel >= PERMISSION_LEVELS.MODERATOR },
         { href: "/admin/tiers", label: "Level Tiers", icon: Award, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN },

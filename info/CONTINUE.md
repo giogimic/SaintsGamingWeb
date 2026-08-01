@@ -9,23 +9,19 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Optional polish track closed for now (v2.1.103).** Pick a new feature from `info/PROJECT_REPORT.md` or product priorities.
+**Forum Settings + text enhance providers landed (v2.1.104).**
 
-### Done (this branch)
+### Done (recent)
 
-- **M1–M4**: Realtime platform + MMO AOI/binary/Redis scaling
-- **Discord bridge (v2.1.99)** · **Achievements (v2.1.99)**
-- **Campaign maps → WorldMap (v2.1.100)**
-- **FiveM bridge (v2.1.101)**
-- **S3/CDN uploads (v2.1.102)**
-- **AOI soak tests + WorldMap ops docs + local→S3 migrate script (v2.1.103)**
+- Realtime M1–M4, Discord, WorldMap, FiveM, S3/CDN, ops polish (through v2.1.103)
+- **Forum Settings (v2.1.104)**: Gemini / Ollama / off; local model catalog + pull UI
+  - `/admin/forum/settings` · `info/forum/TEXT_ENHANCE.md`
 
-### Suggested next (open product / tech debt)
+### Suggested next
 
-1. Live multi-socket AOI soak against a running `server.ts` (manual / staging)
-2. Content moderation / recommendations (long-term list)
-3. Admin live metrics dashboard beyond `/admin/realtime`
-4. Expand other `/info/*` planned sections (frontend, backend, social)
+1. Staging: install Ollama, pull a light model, smoke Grammar/Polish
+2. Live multi-socket AOI soak (optional)
+3. Other product items from `info/PROJECT_REPORT.md`
 
 ---
 
@@ -34,6 +30,6 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 1. **This file** — current task
 2. `info/DEVELOPMENT_RULES.md` — constraints + existing solutions
 3. `info/PROJECT_REPORT.md` — what exists / broken / order
-4. Bridges: `info/discord/BRIDGE.md` · `info/fivem/BRIDGE.md` · `info/uploads/STORAGE.md` · `info/database/WORLDMAP.md`
+4. Bridges + ops: discord / fivem / uploads / database / `info/forum/TEXT_ENHANCE.md`
 5. If realtime: `info/realtime/ARCHITECTURE.md` then `info/realtime/EVENTS.md`
 6. `/logs/LOCAL_CHANGELOG.md` — recent local work notes

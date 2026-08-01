@@ -25,6 +25,7 @@ A new developer should be able to open this project, read `/info`, and understan
 | [fivem/](./fivem/) | 🟢 Bridge live | Server character/stats contract (`BRIDGE.md`) |
 | [uploads/](./uploads/) | 🟢 S3 optional | Local + env-gated S3/CDN (`STORAGE.md`) |
 | [database/](./database/) | 🟢 WorldMap ops | Campaign map migrate/verify (`WORLDMAP.md`) |
+| [forum/](./forum/) | 🟢 Text enhance | Gemini/Ollama Forum Settings (`TEXT_ENHANCE.md`) |
 | frontend/ | 🔴 Planned | Component architecture, design tokens, routing guide |
 | backend/ | 🔴 Planned | API routes catalog, server actions, auth flows |
 | game/ | 🔴 Planned | MMO engine, game loop, Babylon.js client architecture |
@@ -36,7 +37,7 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.103` — AOI soak tests + WorldMap ops docs + local→S3 migrate script
+`2.1.104` — Forum Settings text enhance (Gemini / Ollama local models)
 
 ### Key Entry Points
 | File | Role |
