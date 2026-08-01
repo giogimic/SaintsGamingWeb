@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   Shield, Users, MessageSquare, Newspaper, Package, Monitor, Settings, Award, Server,
-  Database, Activity, Code, Cpu, RefreshCw, X, Menu, Gamepad2, ScrollText, Image as ImageIcon, MapPin
+  Database, Activity, Code, Cpu, RefreshCw, X, Menu, Gamepad2, ScrollText, Image as ImageIcon, MapPin, Radio
 } from "lucide-react";
 import { buttonVariants } from "@/shared/ui/button";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
@@ -73,6 +73,7 @@ export function AdminOverlayShell({
       name: "Developer Tools",
       items: [
         { href: "/admin/dev", label: "Console Home", icon: Monitor, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER, exact: true },
+        { href: "/admin/realtime", label: "Realtime Bus", icon: Radio, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/system", label: "System State", icon: Cpu, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/database", label: "DB Health", icon: Database, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },
         { href: "/admin/dev/metrics", label: "Metrics", icon: Activity, isVisible: permissionLevel >= PERMISSION_LEVELS.DEVELOPER },

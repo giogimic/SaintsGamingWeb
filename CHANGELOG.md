@@ -1,3 +1,14 @@
+## [2.1.96] - 2026-08-01
+
+### Added
+- **Realtime Milestone 2 — live site ↔ game wiring**:
+  - Shared emit helpers in `src/web/lib/realtime-emit.ts` for server actions and API routes.
+  - Instant `notification.created` push for social likes/replies/tips, forum reply + subscriber notifications, reply likes, support ticket replies, and @mentions.
+  - `presence.updated` friend fan-out on socket connect/disconnect with online indicators in Friends List.
+  - `chat.message.created` delivery for DMs and group chats; Chat Window refetches immediately on signal.
+  - Admin Realtime Dashboard at `/admin/realtime` with live metrics, circuit breaker controls, force-disconnect, and recent CRITICAL event list.
+  - Live forum thread updates via `forum.reply.created` room broadcasts (`thread:{id}`) and `LiveThreadReplies` auto-refresh.
+
 ## [2.1.94] - 2026-08-01
 
 ### Fixed

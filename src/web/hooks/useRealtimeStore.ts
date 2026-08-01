@@ -22,6 +22,31 @@ export interface ClientNotification {
   createdAt: string;
 }
 
+export type PresenceStatus = "online" | "offline" | "away" | "playing";
+
+export interface PresenceEntry {
+  status: PresenceStatus;
+  lastSeen: number;
+}
+
+export interface ChatMessageSignal {
+  messageId: string;
+  fromUserId: string;
+  toUserId?: string;
+  groupId?: string;
+  content: string;
+  receivedAt: number;
+}
+
+export interface ForumReplySignal {
+  replyId: string;
+  threadId: string;
+  authorId: string;
+  authorName: string;
+  excerpt: string;
+  receivedAt: number;
+}
+
 interface RealtimeState {
   // ─── Notifications ──────────────────────────────────────────────
   notifications: ClientNotification[];
@@ -31,6 +56,20 @@ interface RealtimeState {
   setUnreadCount: (count: number) => void;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
+
+  // ─── Presence ───────────────────────────────────────────────────
+  presenceByUserId: Record<string, PresenceEntry>;
+  setPresence: (userId: string, status: PresenceStatus, lastSeen: number) => void;
+
+  // ─── Chat delivery signals ──────────────────────────────────────
+  lastChatMessage: ChatMessageSignal | null;
+  setLastChatMessage: (msg: ChatMessageSignal) => void;
+
+  // ─── Forum live thread ──────────────────────────────────────────
+  watchedThreadId: string | null;
+  setWatchedThreadId: (threadId: string | null) => void;
+  lastForumReply: ForumReplySignal | null;
+  setLastForumReply: (reply: ForumReplySignal | null) => void;
 
   // ─── Event Deduplication ────────────────────────────────────────
   processedEventIds: Set<string>;
@@ -43,7 +82,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   unreadCount: 0,
 
   addNotification: (n: ClientNotification) => {
-    const { notifications, processedEventIds } = get();
+    const { notifications } = get();
 
     // Skip if already in store (double safety besides provider dedup)
     if (notifications.some((existing) => existing.id === n.id)) return;
@@ -85,6 +124,29 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       unreadCount: 0,
     }));
   },
+
+  // ─── Presence ─────────────────────────────────────────────────────
+  presenceByUserId: {},
+
+  setPresence: (userId, status, lastSeen) => {
+    set((state) => ({
+      presenceByUserId: {
+        ...state.presenceByUserId,
+        [userId]: { status, lastSeen },
+      },
+    }));
+  },
+
+  // ─── Chat delivery signals ────────────────────────────────────────
+  lastChatMessage: null,
+
+  setLastChatMessage: (msg) => set({ lastChatMessage: msg }),
+
+  // ─── Forum live thread ────────────────────────────────────────────
+  watchedThreadId: null,
+  setWatchedThreadId: (threadId) => set({ watchedThreadId: threadId }),
+  lastForumReply: null,
+  setLastForumReply: (reply) => set({ lastForumReply: reply }),
 
   // ─── Event Deduplication ──────────────────────────────────────────
   processedEventIds: new Set<string>(),
