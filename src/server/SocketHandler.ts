@@ -172,16 +172,36 @@ export class SocketHandler {
       });
       
       socket.on("global_chat", (message) => {
-        this.engine.events.emit("globalChat", { accountId, message });
+        if (!message || typeof message !== 'string') return;
+        this.engine.events.emit("requestPlayersInMap", {
+          mapId: undefined,
+          callback: (players: any[]) => {
+            const player = players.find(p => p.socketId === socket.id || p.accountId === accountId);
+            const sender = player?.name || "Tamer";
+            this.io.emit("global_chat_msg", {
+              sender,
+              message,
+              timestamp: Date.now()
+            });
+          }
+        });
       });
 
       // --- PHASE 9: Demo Features (Combat & Local Chat) ---
       socket.on("chat_message", (message) => {
-        // Emit to local/global for now so players see chat bubbles
-        this.engine.events.emit("networkBroadcast", {
-          room: undefined, // Broadcast globally for the demo until rooms are enforced
-          event: "player_chat",
-          data: { socketId: socket.id, message }
+        if (!message || typeof message !== 'string') return;
+        this.engine.events.emit("requestPlayersInMap", {
+          mapId: undefined,
+          callback: (players: any[]) => {
+            const player = players.find(p => p.socketId === socket.id || p.accountId === accountId);
+            const sender = player?.name || "Tamer";
+            const room = player?.mapId;
+            this.engine.events.emit("networkBroadcast", {
+              room,
+              event: "player_chat",
+              data: { socketId: socket.id, sender, message }
+            });
+          }
         });
       });
 

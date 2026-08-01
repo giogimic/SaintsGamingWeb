@@ -231,14 +231,18 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       state.setEmitSocketEvent((event, data) => {
         socket.emit(event, data);
       });
-      socket.emit('join_map', {
-        accountId: activeCharacterId || state.player.accountId,
-        mapId: state.currentMapId,
-        x: state.player.position?.x ?? 6,
-        y: state.player.position?.y ?? 2,
-        name: state.player.name || 'Player',
-        spriteId: state.player.spriteId || 'adventurer'
-      });
+
+      const effectiveAccountId = activeCharacterId || state.player.accountId;
+      if (effectiveAccountId) {
+        socket.emit('join_map', {
+          accountId: effectiveAccountId,
+          mapId: state.currentMapId,
+          x: state.player.position?.x ?? 6,
+          y: state.player.position?.y ?? 2,
+          name: state.player.name || 'Player',
+          spriteId: state.player.spriteId || 'adventurer'
+        });
+      }
     });
     
     socket.on('map_joined', (data) => {
@@ -246,11 +250,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     });
 
     socket.on('map_players', (players) => {
-      useGameStore.getState().setOtherPlayers(players);
+      const filtered = { ...players };
+      if (socket.id) delete filtered[socket.id];
+      useGameStore.getState().setOtherPlayers(filtered);
     });
     
     socket.on('player_joined', (data) => {
-      useGameStore.getState().updateOtherPlayer(data.socketId, data);
+      if (data.socketId !== socket.id) {
+        useGameStore.getState().updateOtherPlayer(data.socketId, data);
+      }
     });
     
     socket.on('player_moved', (data) => {
@@ -277,29 +285,31 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     });
     
     socket.on('player_chat', (data) => {
-      useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
-      
-      // Dispatch custom event for the GameChat Log UI
-      const state = useGameStore.getState();
-      const op = state.otherPlayers[data.socketId];
-      const msgEvent = new CustomEvent('game_chat_msg', {
-        detail: {
-          id: Date.now().toString() + Math.random(),
-          sender: op?.name || 'Tamer',
-          text: data.message,
-          timestamp: Date.now(),
-          type: 'LOCAL'
-        }
-      });
-      window.dispatchEvent(msgEvent);
+      if (data.socketId !== socket.id) {
+        useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
+        
+        // Dispatch custom event for the GameChat Log UI
+        const state = useGameStore.getState();
+        const op = state.otherPlayers[data.socketId];
+        const msgEvent = new CustomEvent('game_chat_msg', {
+          detail: {
+            id: Date.now().toString() + Math.random(),
+            sender: data.sender || op?.name || 'Tamer',
+            text: data.message,
+            timestamp: Date.now(),
+            type: 'LOCAL'
+          }
+        });
+        window.dispatchEvent(msgEvent);
 
-      setTimeout(() => {
-        const store = useGameStore.getState();
-        const currentOp = store.otherPlayers[data.socketId];
-        if (currentOp && currentOp.chatMessage === data.message) {
-          store.updateOtherPlayer(data.socketId, { chatMessage: undefined });
-        }
-      }, 7000);
+        setTimeout(() => {
+          const store = useGameStore.getState();
+          const currentOp = store.otherPlayers[data.socketId];
+          if (currentOp && currentOp.chatMessage === data.message) {
+            store.updateOtherPlayer(data.socketId, { chatMessage: undefined });
+          }
+        }, 7000);
+      }
     });
 
     socket.on('global_chat_msg', (data) => {

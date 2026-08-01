@@ -511,6 +511,9 @@ export const useGameStore = create<GameState>()(
 
       hydratePlayer: (data) =>
         set((state) => {
+          if (data.name) state.player.name = data.name;
+          if (data.spriteId) state.player.spriteId = data.spriteId;
+          if (data.accountId) state.player.accountId = data.accountId;
           if (data.position) state.player.position = data.position;
           if (data.level !== undefined) state.player.level = data.level;
           if (data.xp !== undefined) state.player.xp = data.xp;
