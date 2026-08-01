@@ -425,7 +425,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     <div
                       className="pixelated bg-no-repeat"
                       style={{
-                        backgroundImage: `url('/game-assets/characters/${spriteId}.png')`,
+                        backgroundImage: `url('/game-assets/npc/${spriteId}.png')`,
                         backgroundPosition: '0px -64px',
                         backgroundSize: '96px 128px',
                         width: '32px', height: '32px',
@@ -536,7 +536,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                             <div
                               className="pixelated bg-no-repeat"
                               style={{
-                                backgroundImage: `url('/game-assets/characters/${sprite}.png')`,
+                                backgroundImage: `url('/game-assets/npc/${sprite}.png')`,
                                 backgroundPosition: '0px -64px',
                                 backgroundSize: '96px 128px',
                                 width: '32px', height: '32px',
@@ -682,7 +682,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     <div
                       className="pixelated bg-no-repeat"
                       style={{
-                        backgroundImage: `url('/game-assets/characters/${spriteId}.png')`,
+                        backgroundImage: `url('/game-assets/npc/${spriteId}.png')`,
                         backgroundPosition: '0px -64px',
                         backgroundSize: '96px 128px',
                         width: '32px', height: '32px',
