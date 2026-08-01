@@ -2,7 +2,7 @@
 
 **Version**: 2.1.95 | **Audit Date**: 2026-08-01 | **Status**: Active Development
 
-> This is the primary onboarding document. Any new developer, contractor, or AI assistant should read this in full before touching the codebase. It is the single source of truth for what exists, what is missing, and where to continue.
+> This is the primary onboarding document. Any new developer or contractor should read this in full before touching the codebase. It is the single source of truth for what exists, what is missing, and where to continue.
 
 ---
 
@@ -310,9 +310,9 @@ try {
 | No spatial partitioning in MMO | **High** | Server broadcasts all entities to all clients — doesn't scale past ~30 simultaneous players |
 | No binary message packing | **Medium** | JSON over WebSocket — Protocol Buffers or ArrayBuffer would cut bandwidth 80% |
 | No Redis socket adapter | **Low/Infra** | Single-node only; needed before multi-PM2 or multi-server scaling |
-| `GameCanvasBabylon.tsx` is 33KB | **Medium** | Monolithic renderer file — high cognitive load for AI; candidate for modular split |
+| `GameCanvasBabylon.tsx` is 33KB | **Medium** | Monolithic renderer file — high cognitive load; candidate for modular split |
 | `social.ts` is 969 lines | **Medium** | Should be split by domain (posts, friends, reactions, subscriptions) |
-| `StarterHeroEditorPanel.tsx` is 49KB | **Low** | Works well but huge; hardest file for AI to work in safely |
+| `StarterHeroEditorPanel.tsx` is 49KB | **Low** | Works well but huge; edit carefully |
 | Campaign map dump size | **Low** | Resolved in v2.1.100 — seed lives under `scripts/data/`; runtime loads `WorldMap` via `/api/maps` |
 | Achievement unlocks not automated | **Medium** | Achievements exist but are never awarded by game or social events |
 | `docs/TODO.md` is stale at v2.1.62 | **Low** | Not updated since v2.1.62; `/info/PROJECT_REPORT.md` supersedes it |
@@ -351,7 +351,7 @@ try {
 
 ---
 
-## Cursor / AI Migration Notes
+## Migration Notes
 
 ### Where Development Should Resume
 
@@ -389,10 +389,10 @@ See `info/CONTINUE.md`. Optional polish (AOI vitest soak, WorldMap ops docs, upl
 | `prisma/schema.prisma` | 🟠 High | Field removal breaks existing queries. Always migrate, never delete and recreate. |
 | `src/shared/events/registry.ts` | 🟡 Medium | New unregistered events bypass Zod validation. Always add here first. |
 
-### What Context an AI Needs Before Starting
+### What to Read Before Starting
 
 **Read these files in order before any session:**
-1. `info/AI_DEVELOPMENT_RULES.md` — constraints and existing solutions table
+1. `info/DEVELOPMENT_RULES.md` — constraints and existing solutions table
 2. `info/PROJECT_REPORT.md` (this file) — what exists and what is missing
 3. `info/realtime/ARCHITECTURE.md` — if touching anything socket/realtime
 4. `info/realtime/EVENTS.md` — if adding a new realtime event

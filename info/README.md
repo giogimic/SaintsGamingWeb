@@ -1,9 +1,9 @@
 # Saints Gaming — /info/ Knowledge Base
 
 This directory is the authoritative internal knowledge base for Saints Gaming Web.
-A new developer or AI assistant should be able to open this project, read `/info`, and understand everything needed to continue development safely.
+A new developer should be able to open this project, read `/info`, and understand everything needed to continue development safely.
 
-**Read order: PROJECT_REPORT → AI_DEVELOPMENT_RULES → system-specific docs**
+**Read order: PROJECT_REPORT → DEVELOPMENT_RULES → system-specific docs**
 
 ---
 
@@ -12,7 +12,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 | Document | Purpose |
 | :--- | :--- |
 | [PROJECT_REPORT.md](./PROJECT_REPORT.md) | **Full project audit** — what exists, what is missing, broken connections, tech debt, and dev order |
-| [AI_DEVELOPMENT_RULES.md](./AI_DEVELOPMENT_RULES.md) | **Mandatory AI rules** — existing solutions table, prohibited actions, per-system constraints |
+| [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) | **Mandatory coding rules** — existing solutions table, prohibited actions, per-system constraints |
 
 ---
 
@@ -52,10 +52,10 @@ A new developer or AI assistant should be able to open this project, read `/info
 | `src/web/lib/upload.ts` | All file upload logic (avatar, forum, social, modpacks) |
 
 ### What NOT to Rebuild (Already Exists)
-See the full table in [AI_DEVELOPMENT_RULES.md § Identify Existing Solutions](./AI_DEVELOPMENT_RULES.md).
+See the full table in [DEVELOPMENT_RULES.md § Identify Existing Solutions](./DEVELOPMENT_RULES.md).
 
 ### Realtime Events
 See [realtime/EVENTS.md](./realtime/EVENTS.md) — **always check before adding a new event**.
 
 ### Before Making Changes
-Read [AI_DEVELOPMENT_RULES.md](./AI_DEVELOPMENT_RULES.md).
+Read [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md).
