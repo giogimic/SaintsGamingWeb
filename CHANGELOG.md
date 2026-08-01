@@ -1,3 +1,20 @@
+## [2.1.99] - 2026-08-01
+
+### Added
+- **Discord Bot Bridge**:
+  - `POST /api/discord/events` with actions `member_joined`, `role_sync`, `community_announce`, `link_account`.
+  - Role sync via `DISCORD_ROLE_MAP` (never auto-demotes staff unless `forceDemote`).
+  - Realtime events: `discord.member.linked`, `discord.role.synced`, `discord.community.announce`.
+  - Discord OAuth `signIn` / `linkAccount` writes `User.discordId`.
+  - Bot contract documented in `info/discord/BRIDGE.md`.
+- **Achievement unlock automation**:
+  - New badges: `first_reply`, `social_starter`, `tipper`.
+  - `checkAndAwardAchievements` now creates SYSTEM notifications + realtime push on unlock.
+  - Wired after forum replies, social posts, and tips (threads/friends/login already covered).
+
+### Changed
+- `/api/internal/events` forwards envelope `source` and broadcasts globally when no `userId` target.
+
 ## [2.1.98] - 2026-08-01
 
 ### Added

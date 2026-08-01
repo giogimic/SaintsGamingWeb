@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { processMentions } from "@/web/lib/mentions";
 import { emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export async function createSocialPost(
   body: string, 
@@ -80,6 +81,9 @@ export async function createSocialPost(
 
   // Parse mentions
   await processMentions(body, session.user.id, `/profile/inbox?post=${post.id}`);
+
+  // Auto-award social_starter / related badges
+  void checkAndAwardAchievements(session.user.id);
 
   return post;
 }
@@ -759,6 +763,9 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
   });
 
   await emitNotificationCreated(tipNotification);
+
+  // Auto-award tipper badge for sender
+  void checkAndAwardAchievements(session.user.id);
 }
 
 export async function subscribeToCreator(creatorId: string) {

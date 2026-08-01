@@ -1,7 +1,7 @@
 # Saints Gaming Realtime Platform — Event Catalog
 
 ## Current Implementation Status
-**Status**: 🟢 Milestones 1–3 live — notifications, presence, chat, forum, admin dashboard, and coarse MMO online/offline bridge.
+**Status**: 🟢 Milestones 1–4 + Discord bridge live — includes AOI/binary net and Discord bot ingestion.
 
 ---
 
@@ -151,6 +151,34 @@ Every event follows this standard envelope:
   playerCount?: number;
 }
 ```
+
+---
+
+### `discord.member.linked` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `POST /api/discord/events` (`member_joined`, `link_account`) |
+| Consumers | SYSTEM notification + optional audit |
+
+### `discord.role.synced` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `POST /api/discord/events` (`role_sync`) via `DISCORD_ROLE_MAP` |
+| Consumers | SYSTEM notification |
+
+### `discord.community.announce` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `EPHEMERAL` |
+| Producer | `POST /api/discord/events` (`community_announce` without target) |
+| Consumers | `RealtimeProvider` Sonner toast |
+
+See also: [`info/discord/BRIDGE.md`](../discord/BRIDGE.md)
 
 ---
 

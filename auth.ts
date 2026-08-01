@@ -73,6 +73,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  events: {
+    async linkAccount({ user, account }) {
+      if (account.provider === "discord" && user.id) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { discordId: account.providerAccountId },
+          });
+        } catch (err) {
+          console.error("[AUTH] Failed to link discordId:", err);
+        }
+      }
+    },
+    async signIn({ user, account }) {
+      if (account?.provider === "discord" && user.id) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { discordId: account.providerAccountId },
+          });
+        } catch (err) {
+          console.error("[AUTH] Failed to sync discordId on sign-in:", err);
+        }
+      }
+    },
+  },
   providers: [
     Discord({
       clientId: process.env.AUTH_DISCORD_ID,

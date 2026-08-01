@@ -13,6 +13,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { useRealtimeStore, PresenceStatus } from "@/web/hooks/useRealtimeStore";
 import { EventEnvelope } from "@/shared/events/types";
 
@@ -183,6 +184,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           setMmoPlayerOffline(p.userId, p.playerCount);
           break;
         }
+        case "discord.community.announce": {
+          const p = envelope.payload as {
+            message: string;
+            link: string | null;
+          };
+          toast(p.message, {
+            action: p.link
+              ? { label: "Open", onClick: () => { window.location.href = p.link!; } }
+              : undefined,
+          });
+          break;
+        }
         default:
           break;
       }
@@ -205,6 +218,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     });
     nextSocket.on("game.player.offline", (envelope: EventEnvelope) => {
       handleEvent("game.player.offline", envelope);
+    });
+    nextSocket.on("discord.community.announce", (envelope: EventEnvelope) => {
+      handleEvent("discord.community.announce", envelope);
     });
 
     return () => {

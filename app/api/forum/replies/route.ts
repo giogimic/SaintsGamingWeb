@@ -14,6 +14,7 @@ const createReplySchema = z.object({
 
 import { awardXP, XP_VALUES } from "@/web/lib/xp";
 import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export async function POST(req: Request) {
   try {
@@ -137,6 +138,9 @@ export async function POST(req: Request) {
 
     // Parse Mentions
     await processMentions(data.body, session.user.id, `/forum/${thread.subcategory.category.slug}/${thread.slug}#reply-${reply.id}`);
+
+    // Auto-award first_reply / related badges
+    void checkAndAwardAchievements(session.user.id);
 
     return NextResponse.json(reply, { status: 201 });
   } catch (error) {
