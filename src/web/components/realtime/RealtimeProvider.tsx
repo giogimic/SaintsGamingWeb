@@ -39,6 +39,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     setPresence,
     setLastChatMessage,
     setLastForumReply,
+    setMmoPlayerOnline,
+    setMmoPlayerOffline,
     watchedThreadId,
     processedEventIds,
     addProcessedEventId,
@@ -163,6 +165,24 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           });
           break;
         }
+        case "game.player.online": {
+          const p = envelope.payload as {
+            userId: string;
+            characterName: string;
+            mapId: string;
+            playerCount?: number;
+          };
+          setMmoPlayerOnline(p.userId, p.characterName, p.mapId, p.playerCount);
+          break;
+        }
+        case "game.player.offline": {
+          const p = envelope.payload as {
+            userId: string;
+            playerCount?: number;
+          };
+          setMmoPlayerOffline(p.userId, p.playerCount);
+          break;
+        }
         default:
           break;
       }
@@ -179,6 +199,12 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     });
     nextSocket.on("forum.reply.created", (envelope: EventEnvelope) => {
       handleEvent("forum.reply.created", envelope);
+    });
+    nextSocket.on("game.player.online", (envelope: EventEnvelope) => {
+      handleEvent("game.player.online", envelope);
+    });
+    nextSocket.on("game.player.offline", (envelope: EventEnvelope) => {
+      handleEvent("game.player.offline", envelope);
     });
 
     return () => {

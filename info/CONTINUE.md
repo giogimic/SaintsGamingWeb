@@ -9,30 +9,22 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Realtime Milestone 2 — mostly wired; polish remaining**
+**Realtime Milestones 1–3 landed (v2.1.97). Next: MMO scaling / ecosystem bridges.**
 
-Infrastructure (Milestone 1) is done. Milestone 2 producers/consumers for notifications, presence, chat push, and admin dashboard are implemented in **v2.1.96**.
+### Done
 
-### Done this session (v2.1.96)
-
-1. Wired `notification.created` after DB create in:
-   - `app/actions/social.ts` (like / reply / tip)
-   - `app/api/forum/replies/route.ts` (author + subscribers)
-   - `app/(main)/support/actions.ts` (ticket replies)
-   - `app/api/forum/reply/[id]/like/route.ts`
-   - `src/web/lib/mentions.ts` (mention creates + emit)
-   - Shared helper: `src/web/lib/realtime-emit.ts`
-2. Wired `presence.updated` on socket connect/disconnect in `SocketHandler.ts` (friend fan-out)
-3. Wired `chat.message.created` in `app/actions/messenger.ts` (DM + group fan-out)
-4. Consumed presence in `friends-list.tsx`; chat refetch signal in `chat-window.tsx`
-5. Built Admin Realtime Dashboard → `/admin/realtime` + `/api/admin/realtime`
-6. Wired `forum.reply.created` + `LiveThreadReplies` + `join_room`/`leave_room` for `thread:{id}`
+- **M1**: Realtime bus, Zod registry, reconnect sync, notification infra
+- **M2 (v2.1.96)**: notification/presence/chat/forum wiring + admin realtime dashboard
+- **M3 (v2.1.97)**: `game.player.online` / `game.player.offline` coarse bridge + ServerStatusCard consumers
+- Smoke: `npx tsx server.ts` boots; `/api/game/server-status` online; registry validates both game events
 
 ### Next concrete steps (in order)
 
-1. Smoke-test on running `npx tsx server.ts`: notifications toast, friend online/`In game` dots, DM instant refetch, live forum refresh, admin circuit breaker
-2. **Milestone 3:** `game.player.online` — coarse status only; never push movement/combat ticks
-3. Medium-term: MMO spatial partitioning / binary packing / Redis adapter
+1. Optional deeper smoke with two authenticated clients (join_map → live player count)
+2. **Milestone 4 — MMO scaling**: spatial partitioning (zone broadcast), binary packing for movement, Redis socket adapter for multi-instance
+3. Discord bot → `/api/internal/events` bridge
+4. Achievement unlock automation from game/social events
+5. Finish campaign map migration `campaign-maps.ts` → `WorldMap` DB
 
 ---
 
@@ -48,9 +40,9 @@ Infrastructure (Milestone 1) is done. Milestone 2 producers/consumers for notifi
 
 ## Rules Snapshot (non-negotiable)
 
-- Realtime: `RealtimeService.publishEvent()` / `emitToUser()` only — never raw `io.emit()` from API routes
+- Realtime: `RealtimeService.publishEvent()` / `emitToUser()` / `emitGlobal()` only — never raw `io.emit()` from API routes
 - Prefer `src/web/lib/realtime-emit.ts` helpers from server actions / API routes
+- MMO → website: only via `ecosystemBroadcast` → SocketHandler bridge (coarse events)
 - Client realtime state: `useRealtimeStore` only — never `socket.on()` in page components
 - New events: register in `src/shared/events/registry.ts` + update `info/realtime/EVENTS.md`
 - MMO ticks stay in MMO — website bus gets coarse ecosystem events only
-- After meaningful local work: append `/logs/LOCAL_CHANGELOG.md` and update **Current Focus** / **Next steps** above

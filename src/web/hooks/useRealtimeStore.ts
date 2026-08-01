@@ -71,6 +71,12 @@ interface RealtimeState {
   lastForumReply: ForumReplySignal | null;
   setLastForumReply: (reply: ForumReplySignal | null) => void;
 
+  // ─── MMO coarse online roster (Milestone 3) ──────────────────────
+  mmoPlayerCount: number;
+  mmoOnlineByUserId: Record<string, { characterName: string; mapId: string }>;
+  setMmoPlayerOnline: (userId: string, characterName: string, mapId: string, playerCount?: number) => void;
+  setMmoPlayerOffline: (userId: string, playerCount?: number) => void;
+
   // ─── Event Deduplication ────────────────────────────────────────
   processedEventIds: Set<string>;
   addProcessedEventId: (id: string) => void;
@@ -147,6 +153,34 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   setWatchedThreadId: (threadId) => set({ watchedThreadId: threadId }),
   lastForumReply: null,
   setLastForumReply: (reply) => set({ lastForumReply: reply }),
+
+  // ─── MMO coarse online roster ─────────────────────────────────────
+  mmoPlayerCount: 0,
+  mmoOnlineByUserId: {},
+
+  setMmoPlayerOnline: (userId, characterName, mapId, playerCount) => {
+    set((state) => {
+      const next = {
+        ...state.mmoOnlineByUserId,
+        [userId]: { characterName, mapId },
+      };
+      return {
+        mmoOnlineByUserId: next,
+        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(next).length,
+      };
+    });
+  },
+
+  setMmoPlayerOffline: (userId, playerCount) => {
+    set((state) => {
+      const next = { ...state.mmoOnlineByUserId };
+      delete next[userId];
+      return {
+        mmoOnlineByUserId: next,
+        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(next).length,
+      };
+    });
+  },
 
   // ─── Event Deduplication ──────────────────────────────────────────
   processedEventIds: new Set<string>(),

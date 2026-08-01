@@ -306,6 +306,14 @@ export class SocketHandler {
       });
     });
     
+    // Bridge coarse MMO ecosystem events → website realtime bus (Milestone 3)
+    this.engine.events.on(
+      "ecosystemBroadcast",
+      ({ type, payload }: { type: string; payload: Record<string, unknown> }) => {
+        void this.realtime.emitGlobal(type, payload, { source: "mmo" });
+      }
+    );
+
     // Listen for GameEngine broadcasts to send deltas back
     this.engine.events.on("networkBroadcast", ({ room, event, data }) => {
       if (room) {

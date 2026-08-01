@@ -67,6 +67,12 @@ export interface GamePlayerOnlinePayload {
   userId: string;
   characterName: string;
   mapId: string;
+  playerCount?: number;
+}
+
+export interface GamePlayerOfflinePayload {
+  userId: string;
+  playerCount?: number;
 }
 
 export interface GameLevelUpPayload {
