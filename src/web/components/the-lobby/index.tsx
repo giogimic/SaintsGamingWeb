@@ -37,6 +37,7 @@ import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
+import { decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { MobileGameLauncher } from './MobileGameLauncher';
@@ -265,7 +266,16 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       }
     });
     
-    socket.on('player_moved', (data) => {
+    socket.on('player_moved', (raw) => {
+      // Milestone 4: accept compact binary deltas (fallback JSON for older peers)
+      let data = raw as any;
+      const bin = normalizeBinaryPayload(raw);
+      if (bin) {
+        const decoded = decodePlayerMoved(bin);
+        if (!decoded) return;
+        data = decoded;
+      }
+
       if (data.socketId === socket.id) {
         // Phase 2: Client Prediction enabled. We ignore movement deltas for ourselves
         // because we strictly reconcile using 'move_ack' and 'position_correction' to prevent judder.

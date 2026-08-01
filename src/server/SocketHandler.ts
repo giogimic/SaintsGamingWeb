@@ -315,13 +315,32 @@ export class SocketHandler {
     );
 
     // Listen for GameEngine broadcasts to send deltas back
-    this.engine.events.on("networkBroadcast", ({ room, event, data }) => {
-      if (room) {
-        this.io.to(room).emit(event, data);
-      } else {
-        this.io.emit(event, data);
+    // Supports single `room`, multi-room AOI `rooms[]`, and binary Buffer payloads.
+    this.engine.events.on(
+      "networkBroadcast",
+      ({
+        room,
+        rooms,
+        event,
+        data,
+      }: {
+        room?: string;
+        rooms?: string[];
+        event: string;
+        data: unknown;
+      }) => {
+        const targets =
+          rooms && rooms.length > 0 ? rooms : room ? [room] : null;
+
+        if (targets) {
+          for (const r of targets) {
+            this.io.to(r).emit(event, data);
+          }
+        } else {
+          this.io.emit(event, data);
+        }
       }
-    });
+    );
 
     this.engine.events.on("directMessage", ({ socketId, event, data }) => {
       this.io.to(socketId).emit(event, data);

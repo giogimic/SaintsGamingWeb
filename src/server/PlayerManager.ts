@@ -13,6 +13,8 @@ export interface PlayerState {
   mapId: string;
   x: number;
   y: number;
+  zoneX: number;
+  zoneY: number;
   direction: "up" | "down" | "left" | "right";
   isMoving: boolean;
   lastMoveTime: number;
@@ -31,6 +33,8 @@ const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
 const MOVE_COOLDOWN_MS = 150;
 
 import { PartyManager } from "./PartyManager";
+import { InterestManager } from "./net/InterestManager";
+import { encodePlayerMoved } from "@/shared/net/movementCodec";
 
 export class PlayerManager {
   private players = new Map<string, PlayerState>(); 
@@ -164,6 +168,10 @@ export class PlayerManager {
       instanceId = instance.instanceId;
     }
 
+    const startX = data.x || 6;
+    const startY = data.y || 2;
+    const startZone = InterestManager.zoneOf(startX, startY);
+
     const player: PlayerState = {
       entityId,
       accountId,
@@ -171,8 +179,10 @@ export class PlayerManager {
       name: data.name || "Tamer",
       spriteId: data.spriteId || "adventurer",
       mapId: instanceId, // We store instanceId in mapId field for simplicity in v1
-      x: data.x || 6,
-      y: data.y || 2,
+      x: startX,
+      y: startY,
+      zoneX: startZone.zx,
+      zoneY: startZone.zy,
       direction: "down",
       isMoving: false,
       lastMoveTime: 0,
@@ -187,14 +197,21 @@ export class PlayerManager {
       player.mapId = savedPos.mapId;
       player.x = savedPos.x;
       player.y = savedPos.y;
+      const z = InterestManager.zoneOf(player.x, player.y);
+      player.zoneX = z.zx;
+      player.zoneY = z.zy;
     }
 
     this.players.set(entityId, player);
     this.inputQueues.set(entityId, []);
     this.worldManager.addEntity(player.mapId, player.x, player.y, entityId);
 
-    // Join room
+    // Join map room (chat / map events) + AOI zone room (interest management)
     this.engine.events.emit("joinRoom", { socketId, room: player.mapId });
+    this.engine.events.emit("joinRoom", {
+      socketId,
+      room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+    });
 
     // Send full map state to the new player
     const mapPlayers: any = {};
@@ -293,13 +310,17 @@ export class PlayerManager {
     this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
     this.worldManager.leaveInstance(player.mapId, player.accountId);
 
-    // Leave socket room
+    // Leave socket rooms (map + AOI)
     this.engine.events.emit("networkBroadcast", {
       room: player.mapId,
       event: "player_left",
       data: player.socketId
     });
     this.engine.events.emit("leaveRoom", { socketId: player.socketId, room: player.mapId });
+    this.engine.events.emit("leaveRoom", {
+      socketId: player.socketId,
+      room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+    });
     
     // Teleport to SAINTS_VILLAGE coordinate X: 10, Y: 15
     const safeMapId = "SAINTS_VILLAGE";
@@ -308,6 +329,9 @@ export class PlayerManager {
     player.mapId = safeInstance.instanceId;
     player.x = 10;
     player.y = 15;
+    const safeZone = InterestManager.zoneOf(player.x, player.y);
+    player.zoneX = safeZone.zx;
+    player.zoneY = safeZone.zy;
     player.direction = "down";
     player.isMoving = false;
     this.dirtyEntities.add(player.entityId);
@@ -315,8 +339,12 @@ export class PlayerManager {
     // Add to new spatial grid
     this.worldManager.addEntity(player.mapId, player.x, player.y, player.entityId);
     
-    // Join new socket room
+    // Join new socket rooms
     this.engine.events.emit("joinRoom", { socketId: player.socketId, room: player.mapId });
+    this.engine.events.emit("joinRoom", {
+      socketId: player.socketId,
+      room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+    });
 
     // Tell the client they were defeated and give new position
     this.engine.events.emit("directMessage", {
@@ -404,6 +432,7 @@ export class PlayerManager {
             player.isMoving = true;
             player.lastMoveTime = now;
             this.dirtyEntities.add(entityId);
+            this.syncPlayerAoiRoom(player);
             
             this.engine.events.emit("directMessage", {
               socketId: player.socketId,
@@ -436,40 +465,52 @@ export class PlayerManager {
     }
   }
 
+  /** Keep socket subscribed to the AOI zone that contains the player. */
+  private syncPlayerAoiRoom(player: PlayerState) {
+    const { zx, zy } = InterestManager.zoneOf(player.x, player.y);
+    if (zx === player.zoneX && zy === player.zoneY) return;
+
+    this.engine.events.emit("leaveRoom", {
+      socketId: player.socketId,
+      room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+    });
+    player.zoneX = zx;
+    player.zoneY = zy;
+    this.engine.events.emit("joinRoom", {
+      socketId: player.socketId,
+      room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+    });
+  }
+
   private broadcastDeltas() {
     if (this.dirtyEntities.size === 0) return;
 
-    const mapDeltas = new Map<string, any[]>();
+    const useBinary = process.env.MMO_BINARY_MOVEMENT !== "0";
 
     for (const entityId of this.dirtyEntities) {
       const player = this.players.get(entityId);
-      if (player) {
-        if (!mapDeltas.has(player.mapId)) {
-          mapDeltas.set(player.mapId, []);
-        }
-        mapDeltas.get(player.mapId)!.push({
-          socketId: player.socketId, 
-          entityId: player.entityId,
-          x: player.x,
-          y: player.y,
-          direction: player.direction,
-          isMoving: player.isMoving,
-          hp: player.hp,
-          maxHp: player.maxHp,
-          name: player.name,
-          spriteId: player.spriteId
-        });
-      }
-    }
+      if (!player) continue;
 
-    for (const [mapId, deltas] of mapDeltas.entries()) {
-      for (const delta of deltas) {
-         this.engine.events.emit("networkBroadcast", {
-           room: mapId,
-           event: "player_moved",
-           data: delta
-         });
-      }
+      const delta = {
+        socketId: player.socketId,
+        entityId: player.entityId,
+        x: player.x,
+        y: player.y,
+        direction: player.direction,
+        isMoving: player.isMoving,
+        hp: player.hp,
+        maxHp: player.maxHp,
+        name: player.name,
+        spriteId: player.spriteId,
+      };
+
+      // Interest management: only nearby AOI zones (not the entire map shard)
+      const rooms = InterestManager.neighborRooms(player.mapId, player.zoneX, player.zoneY);
+      this.engine.events.emit("networkBroadcast", {
+        rooms,
+        event: "player_moved",
+        data: useBinary ? Buffer.from(encodePlayerMoved(delta)) : delta,
+      });
     }
 
     this.dirtyEntities.clear();
@@ -483,6 +524,10 @@ export class PlayerManager {
       
       this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
       this.worldManager.leaveInstance(player.mapId, accountId);
+      this.engine.events.emit("leaveRoom", {
+        socketId: player.socketId,
+        room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+      });
       this.players.delete(player.entityId);
       this.inputQueues.delete(player.entityId);
       this.engine.events.emit("networkBroadcast", {

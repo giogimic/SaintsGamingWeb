@@ -1,6 +1,8 @@
 import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { AIState, SpawnMode, BehavioralState, EntityType } from "./types";
+import { InterestManager } from "./net/InterestManager";
+import { encodeCreatureMoved } from "@/shared/net/movementCodec";
 
 export interface CreatureState {
   entityId: string;
@@ -264,36 +266,31 @@ export class CreatureManager {
   private broadcastDeltas() {
     if (this.dirtyEntities.size === 0) return;
 
-    const mapDeltas = new Map<string, any[]>();
+    const useBinary = process.env.MMO_BINARY_MOVEMENT !== "0";
 
     for (const entityId of this.dirtyEntities) {
       const creature = this.creatures.get(entityId);
-      if (creature) {
-        if (!mapDeltas.has(creature.mapId)) {
-          mapDeltas.set(creature.mapId, []);
-        }
-        mapDeltas.get(creature.mapId)!.push({
-          entityId: creature.entityId,
-          x: creature.x,
-          y: creature.y,
-          direction: creature.direction,
-          isMoving: creature.isMoving,
-          hp: creature.hp,
-          maxHp: creature.maxHp,
-          ownerId: creature.ownerId,
-          behavior: creature.behavior
-        });
-      }
-    }
+      if (!creature) continue;
 
-    for (const [mapId, deltas] of mapDeltas.entries()) {
-      for (const delta of deltas) {
-         this.engine.events.emit("networkBroadcast", {
-           room: mapId,
-           event: "creature_moved",
-           data: delta
-         });
-      }
+      const delta = {
+        entityId: creature.entityId,
+        x: creature.x,
+        y: creature.y,
+        direction: creature.direction,
+        isMoving: creature.isMoving,
+        hp: creature.hp,
+        maxHp: creature.maxHp,
+        ownerId: creature.ownerId ?? "",
+        behavior: creature.behavior ?? "",
+      };
+
+      // Broadcast only to AOI zones around the creature (players in those rooms)
+      const rooms = InterestManager.roomsForPosition(creature.mapId, creature.x, creature.y);
+      this.engine.events.emit("networkBroadcast", {
+        rooms,
+        event: "creature_moved",
+        data: useBinary ? Buffer.from(encodeCreatureMoved(delta)) : delta,
+      });
     }
 
     this.dirtyEntities.clear();

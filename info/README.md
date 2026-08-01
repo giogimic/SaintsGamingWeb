@@ -33,7 +33,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 ## Quick Reference
 
 ### Current Version
-`2.1.97` — Realtime Platform Milestones 1–3 live (includes coarse `game.player.online` / `offline`)
+`2.1.98` — Realtime M1–M3 + MMO Scaling M4 (AOI zones, binary movement, optional Redis adapter)
 
 ### Key Entry Points
 | File | Role |
