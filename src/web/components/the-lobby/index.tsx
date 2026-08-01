@@ -108,6 +108,16 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       });
       useGameStore.setState({ currentMapId: validMapId, gameMode: 'EXPLORING' });
 
+      // Notify socket server of loaded character specs
+      socketRef.current?.emit('join_map', {
+        accountId: charId,
+        mapId: validMapId,
+        x: validPosition.x,
+        y: validPosition.y,
+        name: res.data.name,
+        spriteId: res.data.spriteId || 'adventurer'
+      });
+
       setActiveCharacterId(charId);
       setShowCreator(false);
       setShowSelector(false);
@@ -256,6 +266,13 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         }
       } else {
         useGameStore.getState().updateOtherPlayer(data.socketId, data);
+      }
+    });
+
+    socket.on('player_left', (data: any) => {
+      const targetSocketId = typeof data === 'string' ? data : data?.socketId;
+      if (targetSocketId) {
+        useGameStore.getState().removeOtherPlayer(targetSocketId);
       }
     });
     

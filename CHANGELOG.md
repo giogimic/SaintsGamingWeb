@@ -1,3 +1,14 @@
+## [2.1.91] - 2026-08-01
+
+### Fixed
+- **In-Game Character Appearance & Sprite Alignment**:
+  - Corrected texture `vOffset` mapping and sprite sheet row directions in `BabylonEngine.ts` to match standard 96x128px Tuxemon/RPG Maker sprite sheet layouts (Row 0: Down, Row 1: Left, Row 2: Right, Row 3: Up).
+  - Eliminates vertical inverted row sampling in the 2.5D engine so player characters always display their exact chosen appearance and face the proper direction in-game.
+- **Multiplayer Player Visibility & Socket Sync**:
+  - Added immediate `join_map` socket re-emit in `index.tsx` as soon as character selection loads, ensuring the server registers the player's loaded character specs (`name`, `spriteId`) and broadcasts `player_joined` to other clients.
+  - Enriched movement delta packets in `PlayerManager.ts` (`player_moved` event) with `name` and `spriteId` properties.
+  - Added `player_left` socket listener in `index.tsx` and mesh cleanup tracking in `GameCanvasBabylon.tsx` to automatically dispose disconnected player avatars.
+
 ## [2.1.90] - 2026-08-01
 
 ### Fixed
