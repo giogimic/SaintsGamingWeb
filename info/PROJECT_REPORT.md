@@ -347,7 +347,7 @@ try {
 13. ~~FiveM server → `/api/internal/events` bridge for character events and game stats~~ **Done (v2.1.101)** — domain actions via `/api/fivem/events`; raw bus still `/api/internal/events`
 14. AI content recommendations, game event generation, chat moderation assist
 15. ~~Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model~~ **Done (v2.1.100)**
-16. ~~S3/CDN migration for uploaded files~~ **Done (v2.1.102)** — env-gated; optional ops migrate of legacy local files still open
+16. ~~S3/CDN migration for uploaded files~~ **Done (v2.1.102)** — legacy disk copy via `scripts/migrate-local-uploads-to-s3.ts` (v2.1.103)
 
 ---
 
@@ -355,7 +355,7 @@ try {
 
 ### Where Development Should Resume
 
-See `info/CONTINUE.md`. Next optional work: AOI soak test, `/info/database/` WorldMap docs, or legacy upload migrate script.
+See `info/CONTINUE.md`. Optional polish (AOI vitest soak, WorldMap ops docs, upload migrate script) shipped in v2.1.103 — pick a new feature from the long-term list or product priorities.
 
 ### Files That Matter Most (Priority Order)
 
