@@ -1,3 +1,8 @@
+## [2.1.108] - 2026-08-01
+
+### Added
+- **`info/frontend/ROUTES.md`**: App Router route map (main nav, forum, profile, admin, writer, UCP back-line).
+
 ## [2.1.107] - 2026-08-01
 
 ### Added

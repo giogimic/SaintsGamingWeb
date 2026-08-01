@@ -37,6 +37,8 @@ Prefer existing primitives over one-off styled divs.
 Auth pages: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/force-password-change`  
 Profile hub: `/profile/*` (inbox/feed, bookmarks, history, analytics, settings)
 
+Full route inventory: [`ROUTES.md`](./ROUTES.md).
+
 ---
 
 ## Client realtime
