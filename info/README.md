@@ -24,9 +24,9 @@ A new developer should be able to open this project, read `/info`, and understan
 | [frontend/](./frontend/) | 🟢 | Layouts, theming, routes (`OVERVIEW.md`) |
 | [backend/](./backend/) | 🟢 | `server.ts`, APIs, actions (`OVERVIEW.md`, `API_CATALOG.md`) |
 | [auth/](./auth/) | 🟢 | NextAuth, sessions, permissions (`OVERVIEW.md`) |
-| [social/](./social/) | 🟢 | Feed, messenger, friends (`OVERVIEW.md`) |
+| [social/](./social/) | 🟢 | Feed, messenger (`OVERVIEW.md`, `ACTIONS.md`) |
 | [admin/](./admin/) | 🟢 | Staff console (`OVERVIEW.md`, `PERMISSIONS.md`) |
-| [game/](./game/) | 🟢 | MMO lobby + engine notes (`OVERVIEW.md`) |
+| [game/](./game/) | 🟢 | MMO lobby (`OVERVIEW.md`, `SOCKETS.md`) |
 | [forum/](./forum/) | 🟢 | Boards + text enhance (`OVERVIEW.md`, `TEXT_ENHANCE.md`) |
 | [realtime/](./realtime/) | 🟢 | Bus architecture + event catalog |
 | [database/](./database/) | 🟢 | WorldMap ops (`WORLDMAP.md`) |
@@ -39,7 +39,7 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.106` — Deepened backend API catalog + admin permissions map
+`2.1.107` — Social actions map + MMO sockets/managers map
 
 ### Key Entry Points
 | File | Role |

@@ -9,20 +9,22 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Deepening `/info` for core backend + admin (v2.1.106).**  
-**Back-line (skip unless asked):** Discord, FiveM, S3/CDN, heavy AI / local models.
+**Deepening `/info` for social + game (v2.1.107).**  
+**Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
-### Done (recent)
+### Done (docs track)
 
-- System overviews (v2.1.105): frontend, backend, auth, social, admin, game, forum
-- **v2.1.106:** `info/backend/API_CATALOG.md`, `info/admin/PERMISSIONS.md`
-- Live platform track through v2.1.104 on PR #1
+| Version | What |
+| :--- | :--- |
+| 2.1.105 | System overviews (frontend → forum) |
+| 2.1.106 | Backend `API_CATALOG` + admin `PERMISSIONS` |
+| 2.1.107 | Social `ACTIONS` + game `SOCKETS` |
 
 ### Suggested next
 
-1. Deepen another area (social action map, game socket event list, frontend route map)
-2. Core code: split `social.ts` / canvas debt, or more vitest
-3. Staging smoke of PR #1 (forum, lobby, realtime) when ready to merge
+1. Deepen frontend route map (optional) or stop docs and do core code
+2. Core code: split `social.ts`, canvas debt, or more vitest
+3. Staging smoke / merge PR #1 when ready
 
 ---
 
@@ -31,6 +33,6 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 1. **This file**
 2. `info/DEVELOPMENT_RULES.md`
 3. `info/PROJECT_REPORT.md`
-4. Area docs under `info/{frontend,backend,auth,social,admin,game,forum}/`
-5. Realtime: `info/realtime/ARCHITECTURE.md` → `EVENTS.md` when touching live features
+4. Area docs under `info/{…}/`
+5. Realtime docs when touching live features
 6. `/logs/LOCAL_CHANGELOG.md`

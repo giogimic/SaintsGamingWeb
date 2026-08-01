@@ -19,9 +19,9 @@ Complete **all five steps** before writing code.
 | Frontend / routing / theme | `/info/frontend/OVERVIEW.md` |
 | API / actions / server.ts | `/info/backend/OVERVIEW.md` + `API_CATALOG.md` |
 | Auth, session, permissions | `/info/auth/OVERVIEW.md` + `src/web/lib/permissions.ts` |
-| Social / messenger | `/info/social/OVERVIEW.md` |
+| Social / messenger | `/info/social/OVERVIEW.md` + `ACTIONS.md` |
 | Admin panel | `/info/admin/OVERVIEW.md` + `PERMISSIONS.md` |
-| MMO / lobby | `/info/game/OVERVIEW.md` |
+| MMO / lobby | `/info/game/OVERVIEW.md` + `SOCKETS.md` |
 | Forum | `/info/forum/OVERVIEW.md` |
 | Database changes | `prisma/schema.prisma` (full file) + `/info/database/WORLDMAP.md` if maps |
 | Any API route | Check `app/api/` tree first — the route may already exist |

@@ -1,3 +1,9 @@
+## [2.1.107] - 2026-08-01
+
+### Added
+- **`info/social/ACTIONS.md`**: feed + messenger + folder action inventory and realtime hooks.
+- **`info/game/SOCKETS.md`**: server managers, inbound socket events, coarse website-bus rules.
+
 ## [2.1.106] - 2026-08-01
 
 ### Added

@@ -49,6 +49,10 @@ Catalog: [`../realtime/EVENTS.md`](../realtime/EVENTS.md).
 
 ---
 
+## Action inventory
+
+Full export map: [`ACTIONS.md`](./ACTIONS.md).
+
 ## Rules
 
 1. Prefer extending `social.ts` / `messenger.ts` over new parallel “feed” APIs.

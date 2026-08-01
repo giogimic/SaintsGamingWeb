@@ -62,6 +62,10 @@ High-frequency movement/combat stays on the game socket — **not** the website 
 
 ---
 
+## Sockets & managers
+
+Inbound events + manager map: [`SOCKETS.md`](./SOCKETS.md).
+
 ## Rules
 
 1. Do not add a second game loop / `setInterval` tick — extend `GameEngine`.
