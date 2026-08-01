@@ -1,3 +1,10 @@
+## [2.1.105] - 2026-08-01
+
+### Added
+- **`/info` system overviews**: `frontend`, `backend`, `auth`, `social`, `admin`, `game`, and `forum/OVERVIEW.md`.
+- Index updated; Discord/FiveM/S3/AI marked back-line in handoff docs.
+- `docs/TODO.md` now redirects readers to `/info/`.
+
 ## [2.1.104] - 2026-08-01
 
 ### Added

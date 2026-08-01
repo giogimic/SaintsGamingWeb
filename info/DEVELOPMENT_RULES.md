@@ -16,9 +16,14 @@ Complete **all five steps** before writing code.
 | :--- | :--- |
 | Anything realtime | `/info/realtime/ARCHITECTURE.md` then `/info/realtime/EVENTS.md` |
 | Any new feature | `/info/PROJECT_REPORT.md` → "Completed Systems" section |
-| Auth, session, permissions | `src/web/lib/permissions.ts`, `auth.ts`, `auth.config.ts` |
-| Database changes | `prisma/schema.prisma` (full file) |
-| Game engine changes | `README.md` + `src/server/SocketHandler.ts` + `src/server/GameEngine.ts` |
+| Frontend / routing / theme | `/info/frontend/OVERVIEW.md` |
+| API / actions / server.ts | `/info/backend/OVERVIEW.md` |
+| Auth, session, permissions | `/info/auth/OVERVIEW.md` + `src/web/lib/permissions.ts` |
+| Social / messenger | `/info/social/OVERVIEW.md` |
+| Admin panel | `/info/admin/OVERVIEW.md` |
+| MMO / lobby | `/info/game/OVERVIEW.md` |
+| Forum | `/info/forum/OVERVIEW.md` |
+| Database changes | `prisma/schema.prisma` (full file) + `/info/database/WORLDMAP.md` if maps |
 | Any API route | Check `app/api/` tree first — the route may already exist |
 
 ### 2. Inspect Existing Code
