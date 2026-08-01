@@ -99,6 +99,8 @@ export class BabylonEngine {
   private entityMeshes: Map<string, Mesh> = new Map();
   private shadowMeshes: Map<string, Mesh> = new Map();
   private isRunning: boolean = false;
+  public _renderedSockets: Set<string> = new Set();
+  public _renderedEntities: Set<string> = new Set();
   private defaultPlayerTexture?: DynamicTexture;
   private woodFloorTexture?: DynamicTexture;
   private indoorWallTexture?: DynamicTexture;

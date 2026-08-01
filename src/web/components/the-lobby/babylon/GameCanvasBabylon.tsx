@@ -473,7 +473,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (freshOtherPlayers) {
         const activeSockets = new Set(Object.keys(freshOtherPlayers));
         
+        // Cleanup stale multiplayer meshes
+        babylonEngine._renderedSockets.forEach((id: string) => {
+          if (!activeSockets.has(id)) {
+            babylonEngine.removeEntity(`multiplayer_${id}`);
+            babylonEngine._renderedSockets.delete(id);
+          }
+        });
+
         Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
+          babylonEngine._renderedSockets.add(socketId);
           const targetX = other.x || 6;
           const targetY = other.y || 2;
           
@@ -500,8 +509,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // Render dynamic map entities (NPCs / Animals) from the global store
       const mapEntities = useGameStore.getState().mapEntities;
       if (mapEntities) {
+        const activeEntities = new Set<string>();
+        
         mapEntities.forEach((ent) => {
           if (ent.mapId === currentMapId || !ent.mapId) {
+            activeEntities.add(ent.id);
             const ex = ent.position.x - mapWidth / 2;
             const ez = mapHeight / 2 - ent.position.y;
             babylonEngine.updateEntity({
@@ -515,6 +527,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             });
           }
         });
+
+        // Cleanup stale map entities
+        babylonEngine._renderedEntities.forEach((id: string) => {
+          if (!activeEntities.has(id)) {
+            babylonEngine.removeEntity(id);
+            babylonEngine._renderedEntities.delete(id);
+          }
+        });
+        activeEntities.forEach(id => babylonEngine._renderedEntities.add(id));
       }
     });
 
