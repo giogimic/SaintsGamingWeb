@@ -317,7 +317,7 @@ try {
 | Achievement unlocks not automated | **Medium** | Achievements exist but are never awarded by game or social events |
 | `docs/TODO.md` is stale at v2.1.62 | **Low** | Not updated since v2.1.62; `/info/PROJECT_REPORT.md` supersedes it |
 | `legacy/` and `scratch/` in repo | **Low** | Should be audited and removed or `.gitignore`d |
-| Upload system is local-only | **Medium** | `upload.ts` notes S3 swap; no CDN = file loss on server rebuild |
+| Upload durability without volume/CDN | **Low** | Optional S3/CDN in v2.1.102 (`info/uploads/STORAGE.md`); local still default |
 | Email from domain is a placeholder | **Low** | `FROM_EMAIL` in `email.ts` uses `saintsgaming.net` — must be verified with Resend |
 | Minimal automated test coverage | **High** | Only `combat.test.ts` and `store.test.ts` exist; no API or integration tests |
 
@@ -347,7 +347,7 @@ try {
 13. ~~FiveM server → `/api/internal/events` bridge for character events and game stats~~ **Done (v2.1.101)** — domain actions via `/api/fivem/events`; raw bus still `/api/internal/events`
 14. AI content recommendations, game event generation, chat moderation assist
 15. ~~Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model~~ **Done (v2.1.100)**
-16. S3/CDN migration for uploaded files
+16. ~~S3/CDN migration for uploaded files~~ **Done (v2.1.102)** — env-gated; optional ops migrate of legacy local files still open
 
 ---
 
@@ -355,7 +355,7 @@ try {
 
 ### Where Development Should Resume
 
-See `info/CONTINUE.md`. Next optional work: S3/CDN for uploads, then AOI soak / database docs.
+See `info/CONTINUE.md`. Next optional work: AOI soak test, `/info/database/` WorldMap docs, or legacy upload migrate script.
 
 ### Files That Matter Most (Priority Order)
 
