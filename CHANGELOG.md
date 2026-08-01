@@ -1,3 +1,12 @@
+## [2.1.98] - 2026-08-01
+
+### Added
+- **MMO Scaling Milestone 4**:
+  - **AOI interest management**: Players join `aoi:{map}:{zx}:{zy}` rooms; `player_moved` / `creature_moved` broadcast only to the 3×3 zone neighborhood (`InterestManager`, `MMO_AOI_ZONE_SIZE`).
+  - **Binary movement packing**: Compact ArrayBuffer codec in `src/shared/net/movementCodec.ts` (toggle with `MMO_BINARY_MOVEMENT=0` for JSON fallback). Client `player_moved` handler decodes binary with JSON fallback.
+  - **Optional Redis Socket.io adapter**: `attachRedisAdapter()` enables multi-instance fan-out when `REDIS_URL` or `REDIS_HOST` is set (`@socket.io/redis-adapter` + `redis`).
+  - Vitest coverage for movement codec round-trips.
+
 ## [2.1.97] - 2026-08-01
 
 ### Added

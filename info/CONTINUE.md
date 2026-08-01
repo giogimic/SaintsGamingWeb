@@ -9,22 +9,23 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Realtime Milestones 1–3 landed (v2.1.97). Next: MMO scaling / ecosystem bridges.**
+**Realtime M1–M3 + MMO Scaling M4 landed (v2.1.98). Next: ecosystem bridges.**
 
 ### Done
 
-- **M1**: Realtime bus, Zod registry, reconnect sync, notification infra
-- **M2 (v2.1.96)**: notification/presence/chat/forum wiring + admin realtime dashboard
-- **M3 (v2.1.97)**: `game.player.online` / `game.player.offline` coarse bridge + ServerStatusCard consumers
-- Smoke: `npx tsx server.ts` boots; `/api/game/server-status` online; registry validates both game events
+- **M1–M3**: Realtime bus + site wiring + coarse `game.player.online/offline`
+- **M4 (v2.1.98)**: AOI zone interest management, binary movement codec, optional Redis adapter
+  - `InterestManager` → `aoi:{map}:{zx}:{zy}` rooms, 3×3 neighbor broadcasts
+  - `src/shared/net/movementCodec.ts` + vitest round-trip
+  - `attachRedisAdapter(io)` when `REDIS_URL` / `REDIS_HOST` set
+  - Client `player_moved` accepts binary or JSON
 
 ### Next concrete steps (in order)
 
-1. Optional deeper smoke with two authenticated clients (join_map → live player count)
-2. **Milestone 4 — MMO scaling**: spatial partitioning (zone broadcast), binary packing for movement, Redis socket adapter for multi-instance
-3. Discord bot → `/api/internal/events` bridge
-4. Achievement unlock automation from game/social events
-5. Finish campaign map migration `campaign-maps.ts` → `WorldMap` DB
+1. Discord bot → `/api/internal/events` bridge (role sync / community events)
+2. Achievement unlock automation from game/social events
+3. Finish campaign map migration `campaign-maps.ts` → `WorldMap` DB
+4. Optional: deeper multi-client AOI soak test; S3/CDN for uploads
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "saints-web",
-  "version": "2.1.97",
+  "version": "2.1.98",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -11,7 +11,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -26,6 +27,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@sentry/nextjs": "^10.63.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "@tailwindcss/typography": "^0.5.20",
     "@types/sanitize-html": "^2.16.1",
     "@types/three": "^0.185.0",
@@ -56,6 +58,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
+    "redis": "^6.2.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "resend": "^6.16.0",
