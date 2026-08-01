@@ -39,6 +39,7 @@ import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
+import { MobileGameLauncher } from './MobileGameLauncher';
 
 export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
   const gameMode = useGameStore((state) => state.gameMode);
@@ -54,6 +55,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [isInitializing, setIsInitializing] = useState(true);
   const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
   const [uiScale, setUiScale] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+  const [hasEnteredMobile, setHasEnteredMobile] = useState(false);
   
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
@@ -182,6 +185,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     const handleResize = () => {
       const scale = Math.max(0.6, Math.min(1.5, window.innerWidth / 1280));
       setUiScale(scale);
+      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0));
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -514,6 +518,14 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     }
   };
 
+  const handleEnterMobileGame = () => {
+    setHasEnteredMobile(true);
+    toggleFullscreen();
+    if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
+      (screen.orientation as any).lock('landscape').catch(() => {});
+    }
+  };
+
   useEffect(() => {
     // Standard game hotkeys (I, K, P, D, B)
     const handleGlobalHotkeys = (e: KeyboardEvent) => {
@@ -565,6 +577,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       ref={containerRef}
       className="relative w-full h-full touch-none select-none bg-[#0a0a0f]"
     >
+      {/* Mobile Enter Game Launcher Overlay */}
+      {isMobile && !hasEnteredMobile && !isFullscreen && (
+        <MobileGameLauncher 
+          character={userCharacters.find(c => c.id === activeCharacterId) || userCharacters[0]}
+          onEnterGame={handleEnterMobileGame}
+          onSelectCharacter={() => { setShowSelector(true); setHasEnteredMobile(true); }}
+        />
+      )}
+
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={activeLayerIdx}
@@ -580,7 +601,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       >
         {/* Mobile Controls */}
         <div className="pointer-events-auto">
-          <DPad />
+          <DPad 
+            onToggleFullscreen={toggleFullscreen}
+            onToggleOptions={() => setIsOptionsOpen(true)}
+          />
         </div>
 
 

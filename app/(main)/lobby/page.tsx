@@ -10,7 +10,7 @@ export default async function LobbyPage(props: { searchParams: Promise<{ charact
   const params = await props.searchParams;
   
   return (
-    <div className="w-full bg-[#0a0a0f] overflow-hidden relative" style={{ height: 'calc(100vh - 7rem)' }}>
+    <div className="w-full bg-[#0a0a0f] overflow-hidden relative h-[100dvh] sm:h-[calc(100vh-7rem)]">
       <TheLobby characterId={params.characterId} forceCreate={params.create === 'true'} />
     </div>
   );
