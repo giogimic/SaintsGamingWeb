@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
     // Notification Logic
     if (thread.authorId !== session.user.id) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           userId: thread.authorId,
           type: "REPLY",
@@ -56,6 +56,23 @@ export async function POST(req: Request) {
           link: `/forum/thread/${thread.slug}#reply-${reply.id}`,
         }
       });
+
+      // Push instant notification via RealtimeService
+      try {
+        const { getRealtimeService } = await import("@/../../server");
+        const realtime = getRealtimeService();
+        if (realtime) {
+          await realtime.emitToUser(thread.authorId, "notification.created", {
+            notificationId: notification.id,
+            userId: thread.authorId,
+            type: "REPLY",
+            message: notification.message,
+            link: notification.link,
+          });
+        }
+      } catch {
+        // Non-fatal: notification is persisted in DB, will be shown on next load
+      }
     }
 
     // Parse Mentions

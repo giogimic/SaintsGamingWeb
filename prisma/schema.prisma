@@ -108,6 +108,7 @@ model User {
   newsArticles   NewsArticle[]
   streamProfiles StreamProfile[]
   notifications  Notification[]
+  realtimeEvents RealtimeEvent[]
   supportTickets SupportTicket[]
   ticketMessages TicketMessage[]
 
@@ -534,6 +535,25 @@ model Notification {
   link      String? // optional URL to redirect to when clicked
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+// ─── Realtime Event Log ─────────────────────────────────────────
+// Stores CRITICAL priority events for client reconnection catch-up.
+// EPHEMERAL events (typing, presence heartbeat, movement) are NEVER written here.
+// Rows older than 7 days should be purged via cleanup script.
+
+model RealtimeEvent {
+  id        String   @id @default(cuid())
+  eventType String   // e.g. "notification.created"
+  userId    String?  // nullable — some events are broadcast globally
+  payload   String   // JSON string of the event payload
+  priority  String   @default("CRITICAL") // always CRITICAL or NORMAL
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 // ─── FiveM Roleplay Server Models ───────────────────────────────

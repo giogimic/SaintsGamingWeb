@@ -1,0 +1,76 @@
+/**
+ * Saints Gaming Realtime Platform — Shared Event Types
+ *
+ * DO NOT import socket.io here. This file is shared between client and server.
+ * All realtime code must go through RealtimeService (server) or useRealtimeStore (client).
+ */
+
+// ─── Priority Tiers ──────────────────────────────────────────────────────────
+// CRITICAL → Persisted to DB (RealtimeEvent table); replayed on reconnect
+// NORMAL   → Stored in domain tables (Chat, Forum); fetched on demand
+// EPHEMERAL → Fire-and-forget; NEVER stored; never replayed
+export type EventPriority = "CRITICAL" | "NORMAL" | "EPHEMERAL";
+
+// ─── Event Sources ────────────────────────────────────────────────────────────
+export type EventSource = "web" | "mmo" | "discord" | "fivem" | "system";
+
+// ─── Standardized Envelope ────────────────────────────────────────────────────
+// Every event emitted through the platform MUST conform to this shape.
+export interface EventEnvelope<T = unknown> {
+  id: string;          // cuid() — used for client-side deduplication
+  type: string;        // e.g. "notification.created"
+  version: string;     // semver string, e.g. "1.0"
+  timestamp: number;   // Unix ms
+  source: EventSource;
+  priority: EventPriority;
+  payload: T;
+}
+
+// ─── Notification Event ───────────────────────────────────────────────────────
+export interface NotificationCreatedPayload {
+  notificationId: string;
+  userId: string;
+  type: string;         // e.g. "REPLY", "MENTION", "SYSTEM"
+  message: string;
+  link: string | null;
+}
+
+// ─── Chat Event ───────────────────────────────────────────────────────────────
+export interface ChatMessageCreatedPayload {
+  messageId: string;
+  fromUserId: string;
+  toUserId?: string;       // null = group or channel
+  groupId?: string;
+  content: string;
+}
+
+// ─── Presence Event ───────────────────────────────────────────────────────────
+export interface PresenceUpdatedPayload {
+  userId: string;
+  status: "online" | "offline" | "away" | "playing";
+  lastSeen: number; // Unix ms
+}
+
+// ─── Forum Events ─────────────────────────────────────────────────────────────
+export interface ForumReplyCreatedPayload {
+  replyId: string;
+  threadId: string;
+  authorId: string;
+  authorName: string;
+  excerpt: string; // First 120 chars of body
+}
+
+// ─── Game Events ─────────────────────────────────────────────────────────────
+// NOTE: High-frequency MMO ticks (movement, combat) stay inside the game engine.
+// Only coarse ecosystem events are published to the web realtime bus.
+export interface GamePlayerOnlinePayload {
+  userId: string;
+  characterName: string;
+  mapId: string;
+}
+
+export interface GameLevelUpPayload {
+  userId: string;
+  characterName: string;
+  newLevel: number;
+}

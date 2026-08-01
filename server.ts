@@ -16,12 +16,20 @@ import { InventoryManager } from "./src/server/InventoryManager";
 import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
 import { EconomyManager } from "./src/server/EconomyManager";
+import { RealtimeService } from "./src/server/realtime/RealtimeService";
+
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
+
+// Singleton — API routes import this to publish events via RealtimeService
+let _realtimeService: RealtimeService | null = null;
+export function getRealtimeService(): RealtimeService | null {
+  return _realtimeService;
+}
 
 app.prepare().then(async () => {
   // Initialize MMO Backbone
@@ -70,7 +78,10 @@ app.prepare().then(async () => {
     },
   });
 
-  const socketHandler = new SocketHandler(io, gameEngine);
+  // Initialize the Realtime Platform singleton
+  _realtimeService = new RealtimeService(io);
+
+  const socketHandler = new SocketHandler(io, gameEngine, _realtimeService);
   
   await worldManager.initialize();
   await dialogueManager.initialize();
@@ -86,5 +97,7 @@ app.prepare().then(async () => {
 
   server.listen(port, () => {
     console.log(`> Saints MMO Server ready on http://${hostname}:${port}`);
+    console.log(`> Saints Realtime Platform initialized`);
   });
 });
+

@@ -14,22 +14,19 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 import { Badge } from "@/shared/ui/badge";
-
-type Notification = {
-  id: string;
-  type: string;
-  message: string;
-  link: string | null;
-  isRead: boolean;
-  createdAt: string;
-};
+import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
 
 export function NotificationsMenu() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
 
+  // ─── Realtime store (replaces 30s polling) ───────────────────────────────
+  const { notifications, unreadCount, setNotifications, setUnreadCount, markNotificationRead, markAllRead } =
+    useRealtimeStore();
+
+  // ─── Initial fetch on mount ──────────────────────────────────────────────
+  // The store handles live updates going forward via RealtimeProvider.
+  // We only need one fetch on mount to hydrate existing notifications.
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -45,9 +42,7 @@ export function NotificationsMenu() {
     };
 
     fetchNotifications();
-    // Poll every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    // No polling interval — RealtimeProvider pushes new notifications instantly
   }, []);
 
   const markAsRead = async (id?: string) => {
@@ -60,20 +55,16 @@ export function NotificationsMenu() {
       });
 
       if (id) {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+        markNotificationRead(id);
       } else {
-        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-        setUnreadCount(0);
+        markAllRead();
       }
     } catch (err) {
       console.error("Failed to mark notification as read", err);
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: { id: string; isRead: boolean; link: string | null }) => {
     if (!notification.isRead) {
       markAsRead(notification.id);
     }
