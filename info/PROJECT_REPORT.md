@@ -70,8 +70,8 @@ A unified Socket.io event bus. Events are Zod-validated, CRITICAL ones persisted
 ### Social Feed (TikTok/YT-Style)
 - Posts: text (280 char), images, polls, voiceover/background track, chapter markers, captions
 - Subscriber-only gating, hashtag tracking, reactions, bookmarks, watch history, muted keywords, tips, reports
-- 969-line server action file (`social.ts`) covers the full feature set
-- **Key files**: `app/actions/social.ts`, `src/web/components/social/`
+- Social actions split by domain under `app/actions/social/` with stable barrel exports
+- **Key files**: `app/actions/social.ts` (barrel), `app/actions/social/*.ts`, `src/web/components/social/`
 
 ### E2EE Direct Messenger
 - End-to-end encrypted direct messages and group chats using `src/web/lib/crypto.ts`
@@ -311,7 +311,7 @@ try {
 | No binary message packing | **Medium** | JSON over WebSocket — Protocol Buffers or ArrayBuffer would cut bandwidth 80% |
 | No Redis socket adapter | **Low/Infra** | Single-node only; needed before multi-PM2 or multi-server scaling |
 | `GameCanvasBabylon.tsx` is 33KB | **Medium** | Monolithic renderer file — high cognitive load; candidate for modular split |
-| `social.ts` is 969 lines | **Medium** | Should be split by domain (posts, friends, reactions, subscriptions) |
+| ~~`social.ts` is 969 lines~~ | **Done (2.1.109)** | Split into domain modules + barrel; export names stable |
 | `StarterHeroEditorPanel.tsx` is 49KB | **Low** | Works well but huge; edit carefully |
 | Campaign map dump size | **Low** | Resolved in v2.1.100 — seed lives under `scripts/data/`; runtime loads `WorldMap` via `/api/maps` |
 | Achievement unlocks not automated | **Medium** | Achievements exist but are never awarded by game or social events |
