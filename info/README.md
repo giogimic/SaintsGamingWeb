@@ -22,6 +22,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 | :--- | :--- | :--- |
 | [realtime/](./realtime/) | 🟢 M1–M4 live | Architecture diagram, event catalog, connection map |
 | [discord/](./discord/) | 🟢 Bridge live | Bot ingestion contract (`BRIDGE.md`) |
+| [fivem/](./fivem/) | 🟢 Bridge live | Server character/stats contract (`BRIDGE.md`) |
 | frontend/ | 🔴 Planned | Component architecture, design tokens, routing guide |
 | backend/ | 🔴 Planned | API routes catalog, server actions, auth flows |
 | database/ | 🔴 Planned | Schema overview, model relationships, migration guide |
@@ -34,7 +35,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 ## Quick Reference
 
 ### Current Version
-`2.1.100` — Campaign maps migrated to WorldMap DB (on top of Discord bridge + realtime M1–M4)
+`2.1.101` — FiveM character/stats bridge (on top of WorldMap migration + Discord + realtime M1–M4)
 
 ### Key Entry Points
 | File | Role |

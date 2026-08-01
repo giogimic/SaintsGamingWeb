@@ -1,3 +1,18 @@
+## [2.1.101] - 2026-08-01
+
+### Added
+- **FiveM character/stats bridge**:
+  - `POST /api/fivem/events` with actions `player_joined`, `player_left`, `sync_character`, `bank_transaction`, `link_license`.
+  - Realtime events: `fivem.player.online`, `fivem.player.offline`, `fivem.character.updated`, `fivem.bank.updated`.
+  - Friend-fanout `presence.updated` (`playing` / `online`) on join/leave.
+  - UCP `RealtimeProvider` + `UcpLiveRefresh` for live dashboard/banking refresh.
+  - Contract docs: `info/fivem/BRIDGE.md`.
+  - Vitest coverage for license normalize, bank deltas, and payload schemas.
+
+### Changed
+- `/api/fivem/characters` emits `fivem.character.updated` after drugs/inventory sync (coords remain silent).
+- Auth accepts `Bearer` + legacy raw secret; prefers `FIVEM_API_KEY`.
+
 ## [2.1.100] - 2026-08-01
 
 ### Changed

@@ -74,3 +74,51 @@ export async function emitForumReplyCreated(payload: {
     // Non-fatal
   }
 }
+
+/** Fan presence to the user and accepted friends (same pattern as SocketHandler). */
+export async function emitPresenceUpdated(
+  userId: string,
+  status: "online" | "offline" | "away" | "playing",
+  options: { source?: "web" | "mmo" | "discord" | "fivem" | "system" } = {}
+): Promise<void> {
+  try {
+    const realtime = await getRealtime();
+    if (!realtime) return;
+
+    const { prisma } = await import("@/web/lib/prisma");
+    const payload = {
+      userId,
+      status,
+      lastSeen: Date.now(),
+    };
+
+    await realtime.publishEvent("presence.updated", payload, {
+      userId,
+      source: options.source ?? "web",
+    });
+
+    const friendships = await prisma.friendship.findMany({
+      where: {
+        status: "ACCEPTED",
+        OR: [{ userId }, { friendId: userId }],
+      },
+      select: { userId: true, friendId: true },
+    });
+
+    const friendIds = new Set<string>();
+    for (const f of friendships) {
+      friendIds.add(f.userId === userId ? f.friendId : f.userId);
+    }
+
+    await Promise.all(
+      Array.from(friendIds).map((friendId) =>
+        realtime.publishEvent("presence.updated", payload, {
+          userId: friendId,
+          source: options.source ?? "web",
+        })
+      )
+    );
+  } catch {
+    // Non-fatal
+  }
+}
