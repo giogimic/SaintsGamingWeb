@@ -38,54 +38,57 @@ export default function GameLogin() {
   };
 
   return (
-    <div className="absolute inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="relative w-full max-w-sm sg-glass border border-white/10 rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.3)] p-6">
+    <div 
+      className="absolute inset-0 z-[110] flex items-center justify-center animate-in fade-in duration-300"
+      style={{ backgroundColor: 'rgba(240, 248, 255, 0.85)', backdropFilter: 'blur(8px)' }}
+    >
+      <div className="relative w-full max-w-sm bg-white border-4 border-slate-200 rounded-[2rem] shadow-2xl p-8">
         
         {/* Close / Back button */}
         <button 
           onClick={() => setGameMode('TITLE_SCREEN')}
-          className="absolute -top-3 -right-3 w-8 h-8 flex items-center justify-center bg-red-900 border-2 border-red-500 rounded-full text-red-200 hover:bg-red-800 transition-colors shadow-lg"
+          className="absolute -top-4 -right-4 w-10 h-10 flex items-center justify-center bg-slate-100 border-4 border-slate-200 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-all shadow-md active:scale-95"
         >
-          <X size={16} />
+          <X size={20} strokeWidth={3} />
         </button>
 
         <button 
           onClick={() => setGameMode('TITLE_SCREEN')}
-          className="flex items-center gap-2 text-violet-300 hover:text-white mb-6 text-sm transition-colors"
+          className="flex items-center gap-2 text-slate-400 hover:text-slate-600 mb-6 text-sm font-bold transition-colors"
         >
-          <ArrowLeft size={16} /> Back to Title
+          <ArrowLeft size={16} strokeWidth={3} /> Back to Title
         </button>
 
-        <h2 className="text-2xl font-bold text-center sg-text-gradient mb-6 font-serif">
-          Authentication
+        <h2 className="text-3xl font-extrabold text-center text-slate-800 tracking-tight mb-8">
+          Sign In
         </h2>
 
         {error && (
-          <div className="bg-red-900/50 border border-red-500/50 text-red-200 p-3 rounded-lg text-sm mb-4 text-center">
+          <div className="bg-red-50 border-2 border-red-200 text-red-600 p-3 rounded-2xl text-sm font-bold mb-6 text-center shadow-sm">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
-            <label className="block text-xs font-bold text-violet-300 uppercase tracking-wider mb-1">Email or Username</label>
+            <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2 px-1">Email or Username</label>
             <input 
               type="text" 
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-violet-500 transition-colors focus:shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+              className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-slate-800 font-bold outline-none focus:border-blue-400 focus:bg-white transition-all shadow-inner placeholder:text-slate-300 placeholder:font-medium"
               placeholder="Enter your email"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-violet-300 uppercase tracking-wider mb-1">Password</label>
+            <label className="block text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2 px-1">Password</label>
             <input 
               type="password" 
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-violet-500 transition-colors focus:shadow-[0_0_15px_rgba(139,92,246,0.2)]"
+              className="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 text-slate-800 font-bold outline-none focus:border-blue-400 focus:bg-white transition-all shadow-inner placeholder:text-slate-300 placeholder:font-medium"
               placeholder="••••••••"
               required
             />
@@ -94,21 +97,21 @@ export default function GameLogin() {
           <button 
             type="submit" 
             disabled={loading}
-            className="mt-4 w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:opacity-50 text-white font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] flex items-center justify-center gap-2"
+            className="mt-4 w-full h-14 bg-blue-500 hover:bg-blue-400 active:scale-95 text-white font-extrabold text-lg rounded-2xl shadow-[0_4px_0_0_#2563eb] hover:shadow-[0_2px_0_0_#2563eb] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 uppercase tracking-wide"
           >
             {loading ? 'Authenticating...' : (
               <>
-                <LogIn size={18} />
-                Sign In
+                <LogIn size={20} strokeWidth={3} />
+                Let's Go!
               </>
             )}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-gray-400">
-          Don&apos;t have an account? <br/>
-          <a href="/register" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:text-fuchsia-400 hover:underline transition-colors mt-1 inline-block">
-            Register on the Website
+        <div className="mt-8 text-center text-sm font-bold text-slate-400">
+          Don't have an account? <br/>
+          <a href="/register" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 transition-colors mt-2 inline-block">
+            Create one on the Website
           </a>
         </div>
       </div>

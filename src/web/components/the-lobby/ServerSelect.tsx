@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from './store';
-import { Globe, Users, Server, Play } from 'lucide-react';
+import { Globe, Users, Server, Play, ArrowLeft } from 'lucide-react';
 
 interface ServerInfo {
   id: string;
@@ -47,50 +47,54 @@ export default function ServerSelect() {
   };
 
   return (
-    <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-500">
-      <div className="absolute inset-0 pointer-events-none opacity-30" 
-           style={{ backgroundImage: 'radial-gradient(circle at center, #4c1d95 0%, #000 100%)' }} />
-           
-      <div className="absolute top-10 left-10 text-violet-400/50 flex items-center gap-2 z-10">
-        <Globe size={24} />
-        <span className="font-serif tracking-widest text-xl uppercase">Server Select</span>
+    <div 
+      className="absolute inset-0 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500"
+      style={{ backgroundColor: 'rgba(240, 248, 255, 0.85)', backdropFilter: 'blur(8px)' }}
+    >
+      <div className="absolute top-8 left-8 text-slate-400 flex items-center gap-3 z-10">
+        <div className="p-3 bg-white rounded-2xl shadow-sm border-2 border-slate-200">
+          <Globe size={28} className="text-blue-400" />
+        </div>
+        <span className="font-extrabold tracking-widest text-2xl uppercase text-slate-700">Select Realm</span>
       </div>
 
-      <div className="w-full max-w-2xl sg-glass border border-white/10 rounded-xl shadow-[0_0_50px_rgba(139,92,246,0.3)] overflow-hidden flex flex-col relative z-10">
-        <div className="bg-black/40 p-4 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-xl font-bold sg-text-gradient">Available Realms</h2>
-          <span className="text-xs text-gray-400 font-mono">Select a region to play</span>
+      <div className="w-full max-w-2xl bg-white border-4 border-slate-200 rounded-[2rem] shadow-2xl flex flex-col relative z-10 overflow-hidden">
+        <div className="bg-slate-50 p-6 border-b-4 border-slate-200 flex items-center justify-between">
+          <h2 className="text-2xl font-extrabold text-slate-800">Available Realms</h2>
+          <span className="text-sm text-slate-500 font-bold uppercase tracking-wider bg-slate-200 px-3 py-1 rounded-full">Select a region</span>
         </div>
 
-        <div className="p-4 flex flex-col gap-3 max-h-[50vh] overflow-y-auto custom-scrollbar">
+        <div className="p-6 flex flex-col gap-4 max-h-[50vh] overflow-y-auto custom-scrollbar bg-slate-100">
           {servers.map(server => (
             <div 
               key={server.id}
               onClick={() => server.status === 'online' && setSelectedServer(server.id)}
-              className={`p-4 rounded-lg border transition-all flex items-center justify-between ${
+              className={`p-5 rounded-2xl border-4 transition-all flex items-center justify-between shadow-sm ${
                 server.status === 'offline' 
-                  ? 'bg-red-950/20 border-red-900/30 opacity-50 cursor-not-allowed'
+                  ? 'bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed'
                   : selectedServer === server.id
-                    ? 'bg-violet-900/40 border-violet-500 shadow-[0_0_20px_rgba(139,92,246,0.4)] cursor-pointer scale-[1.02]'
-                    : 'bg-black/30 border-white/10 hover:border-violet-500/50 cursor-pointer hover:bg-violet-950/20'
+                    ? 'bg-blue-50 border-blue-400 scale-[1.02] shadow-md'
+                    : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50 cursor-pointer hover:-translate-y-1'
               }`}
             >
-              <div className="flex items-center gap-4">
-                <Server size={24} className={server.status === 'online' ? 'text-emerald-400' : 'text-red-500'} />
+              <div className="flex items-center gap-5">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${server.status === 'online' ? 'bg-emerald-100 text-emerald-500' : 'bg-slate-200 text-slate-400'}`}>
+                  <Server size={28} strokeWidth={2.5} />
+                </div>
                 <div>
-                  <h3 className="font-bold text-white text-lg">{server.name}</h3>
-                  <div className="text-xs text-violet-300/70">{server.region}</div>
+                  <h3 className="font-extrabold text-slate-800 text-xl mb-1">{server.name}</h3>
+                  <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">{server.region}</div>
                 </div>
               </div>
 
               <div className="flex items-center gap-6">
                 <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-1 text-sm font-mono text-gray-300">
-                    <Users size={14} className="text-violet-400" />
+                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-500 bg-white px-3 py-1.5 rounded-xl border-2 border-slate-100 shadow-sm">
+                    <Users size={16} className="text-blue-400" />
                     {server.players} / {server.capacity}
                   </div>
-                  <div className={`text-[10px] uppercase font-bold tracking-wider mt-1 ${
-                    server.status === 'online' ? 'text-emerald-400' : 'text-red-500'
+                  <div className={`text-xs uppercase font-extrabold tracking-widest mt-2 px-2 py-0.5 rounded-md ${
+                    server.status === 'online' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
                   }`}>
                     {server.status}
                   </div>
@@ -100,19 +104,19 @@ export default function ServerSelect() {
           ))}
         </div>
 
-        <div className="bg-black/40 p-4 border-t border-white/10 flex justify-end gap-3">
+        <div className="bg-white p-6 border-t-4 border-slate-200 flex justify-between items-center">
           <button 
             onClick={() => setGameMode('TITLE_SCREEN')}
-            className="px-6 py-2 rounded-lg font-bold text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl font-extrabold text-slate-500 bg-slate-100 hover:bg-slate-200 hover:text-slate-700 transition-all active:scale-95 border-2 border-slate-200"
           >
-            Back
+            <ArrowLeft size={20} strokeWidth={3} /> Back
           </button>
           <button 
             disabled={!selectedServer}
             onClick={handleConnect}
-            className="px-8 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:from-gray-800 disabled:to-gray-900 disabled:text-gray-500 text-white font-bold rounded-lg transition-all shadow-[0_0_15px_rgba(139,92,246,0.4)] hover:shadow-[0_0_25px_rgba(139,92,246,0.6)] flex items-center gap-2"
+            className="px-8 py-3 bg-blue-500 hover:bg-blue-400 active:scale-95 disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none text-white font-extrabold text-lg rounded-2xl transition-all shadow-[0_4px_0_0_#2563eb] hover:shadow-[0_2px_0_0_#2563eb] hover:translate-y-[2px] disabled:translate-y-[4px] flex items-center gap-2 uppercase tracking-wide"
           >
-            <Play size={16} fill="currentColor" /> Connect
+            <Play size={20} fill="currentColor" strokeWidth={3} /> Connect
           </button>
         </div>
       </div>
