@@ -1,107 +1,157 @@
 # Saints Gaming — AI Development Rules
 
-**Version**: 1.0 | **Last Updated**: 2026-08-01
+**Version**: 2.0 | **Last Updated**: 2026-08-01 | **Supersedes**: v1.0
 
-These rules govern how AI assistants (Cursor, Claude, Gemini, GPT, Copilot, etc.) must behave when working on the Saints Gaming codebase. Failure to follow these rules is the primary cause of duplicate systems, broken integrations, and wasted sessions.
+These rules are mandatory for every AI assistant (Cursor, Claude, Gemini, GPT, Copilot) before touching a single file. The biggest source of breakage in this project is AI assistants that skip research and create duplicate systems.
 
 ---
 
 ## Before Modifying Anything — Mandatory Checklist
 
-Before writing a single line of code, complete all of the following:
+Complete **all five steps** before writing code.
 
-### 1. Read the Relevant Documentation
-- Check `/info/` for the system you are modifying.
-- If a `/info/` doc exists for your domain, **read it first**. It contains current status, boundaries, and known patterns.
-- Check `/docs/` for architectural overviews and game design references.
-- Check `.agents/AGENTS.md` for project-specific behavioral rules.
+### 1. Read Relevant Documentation
 
-### 2. Inspect Existing Code Before Writing New Code
-- Use `grep` or file search to check if a similar pattern, hook, API route, or component already exists.
-- Check `src/shared/events/registry.ts` before adding any realtime event.
-- Check `app/actions/` before creating a new server action.
-- Check `app/api/` before creating a new API route.
-- Check `src/server/` before adding new game server logic.
+| Task | Files to Read |
+| :--- | :--- |
+| Anything realtime | `/info/realtime/ARCHITECTURE.md` then `/info/realtime/EVENTS.md` |
+| Any new feature | `/info/PROJECT_REPORT.md` → "Completed Systems" section |
+| Auth, session, permissions | `src/web/lib/permissions.ts`, `auth.ts`, `auth.config.ts` |
+| Database changes | `prisma/schema.prisma` (full file) |
+| Game engine changes | `README.md` + `src/server/SocketHandler.ts` + `src/server/GameEngine.ts` |
+| Any API route | Check `app/api/` tree first — the route may already exist |
+
+### 2. Inspect Existing Code
+
+Before writing a new function, hook, or API route, search the codebase:
+
+```bash
+# Check if a server action already does this
+grep -r "functionName" app/actions/
+
+# Check if an API route already handles this
+grep -r "keyword" app/api/
+
+# Check if a component already exists
+grep -r "ComponentName" src/web/components/
+```
 
 ### 3. Identify Existing Solutions
-- If a service already handles the feature (e.g., `RealtimeService`, `MessengerProvider`, `social.ts`), **extend it**, do not create a parallel system.
-- If a Prisma model already captures the data, add fields to it, do not create a new model.
+
+These systems already exist. Do not rebuild them:
+
+| Need | Existing Solution |
+| :--- | :--- |
+| Send a realtime event | `RealtimeService.publishEvent()` in `src/server/realtime/RealtimeService.ts` |
+| Read realtime state on client | `useRealtimeStore` in `src/web/hooks/useRealtimeStore.ts` |
+| Authentication check | `const session = await auth()` from `@/auth` |
+| Permission check | `hasPermission(userLevel, PERMISSION_LEVELS.X)` from `src/web/lib/permissions.ts` |
+| File upload | `uploadAvatar()`, `uploadForumImage()`, `uploadSocialMedia()` in `src/web/lib/upload.ts` |
+| Award XP | `awardXP(userId, amount)` from `src/web/lib/xp.ts` |
+| Send email | `sendPasswordResetEmail()`, `sendVerificationEmail()` in `src/web/lib/email.ts` |
+| Discord webhook | `sendDiscordWebhook(url, payload)` from `src/web/lib/discord.ts` |
+| Discord OAuth token | `getValidDiscordToken(userId)` from `src/web/lib/discord.ts` |
+| Rate limit an endpoint | `rateLimit(key, limit, windowMs)` from `src/web/lib/rate-limit.ts` |
+| Mention parsing | `processMentions(body, authorId)` from `src/web/lib/mentions.ts` |
+| AI text generation | `POST /api/ai/enhance` using `gemini-2.5-flash` streaming |
+| Global site search | `GET /api/search?q=` (searches threads, articles, modpacks, users) |
 
 ### 4. Avoid Duplicate Systems
-The biggest source of technical debt in this project is parallel, disconnected implementations.
 
 > [!CAUTION]
-> **Never create**:
-> - A second notification system alongside `Notification` model + `notifications-menu.tsx`
-> - A second messaging system alongside `DirectMessage` + `messenger-provider.tsx`
-> - A second socket connection alongside the `RealtimeProvider` + `SocketHandler`
-> - A second auth flow alongside `next-auth` + `auth.ts`
-> - A second game loop alongside `GameEngine` + `SocketHandler`
+> **Never create a second version of:**
+> - Notification system (`Notification` model + `notifications-menu.tsx` + `useRealtimeStore`)
+> - Messaging system (`DirectMessage` model + `messenger-provider.tsx` + `messenger-popup.tsx`)
+> - Socket connection (`RealtimeProvider.tsx` is the single socket client)
+> - Auth system (`next-auth` v5 + `auth.ts` + `auth.config.ts`)
+> - Game loop (`GameEngine.ts` + `server.ts` tick — no second setInterval)
+> - File upload handler (`src/web/lib/upload.ts` covers all upload types)
+> - Permission check (always use `hasPermission()` from `permissions.ts`)
+> - XP/level system (`awardXP()` in `src/web/lib/xp.ts` — already auto-promotes tiers and rewards FiveM characters)
+> - AI text enhance (already exists at `/api/ai/enhance`)
 
 ### 5. Explain Architecture Impact Before Acting
-For any change that affects more than one file or touches a shared system (realtime, auth, game engine, database), write a brief summary of:
-- What existing systems are affected
-- What the migration path is (if replacing something)
+
+For any change touching a shared system, state in plain language:
+- Which existing systems are affected
 - Which files will be modified
+- Whether this is an extension (adding to an existing system) or a replacement (requires migration)
+
+If it is a replacement, **plan the migration explicitly** — do not delete working code first.
 
 ---
 
-## Realtime Platform Rules
+## System-Specific Rules
 
-> [!IMPORTANT]
-> These rules are non-negotiable. The Realtime Platform was carefully designed to be the single source of truth for live events.
+### Realtime Platform Rules
 
-- **Server**: All socket broadcasts must go through `RealtimeService.publishEvent()` in `src/server/realtime/RealtimeService.ts`. **Never** call `io.emit()` directly from API routes.
-- **Client**: All realtime state must be read from `useRealtimeStore` (`src/web/hooks/useRealtimeStore.ts`). **Never** call `socket.on()` directly from page components.
-- **New Events**: Must be registered in `src/shared/events/registry.ts` before being emitted.
-- **MMO Separation**: High-frequency game ticks (movement, combat) stay inside `SocketHandler` / `GameEngine`. They **must not** be routed through the website realtime bus.
+- **Server broadcast**: Always via `RealtimeService.publishEvent()`. **Never** `io.emit()` directly.
+- **Client state**: Always via `useRealtimeStore`. **Never** `socket.on()` in a component.
+- **New events**: Must be registered in `src/shared/events/registry.ts` first. Check `/info/realtime/EVENTS.md`.
+- **MMO data stays in the MMO**: Player position, combat ticks, collision — these live in `SocketHandler` and `GameEngine`. They must **never** enter the website realtime bus.
+- **Notification emitters**: When creating a `prisma.notification.create()`, always follow it with `realtime.emitToUser()`. See `app/api/forum/reply/route.ts` for the pattern.
 
----
+### Database Rules
 
-## Database Rules
+- **Prisma is the only ORM**. Never use raw SQL except inside `prisma.$queryRaw` calls.
+- **After any `schema.prisma` change**: Immediately run `npx prisma db push` (dev) or `npx prisma migrate dev` (prod).
+- **Live DB migration** (SQLite → MariaDB): The admin route `POST /api/admin/database` handles this safely. Never do it manually.
+- **Before adding a model**: Check schema.prisma for existing models that may already capture the data with a JSON field.
+- **Large data in DB**: Campaign maps (`WorldMap`), tile layers, NPC data, encounter pools — these are stored as JSON strings in the DB and migrated via `scripts/migrate-campaign-maps-to-db.ts`.
 
-- **Source of Truth**: The Prisma database (SQLite / MariaDB) is always the authoritative source. Realtime is a delivery mechanism, not a store.
-- **Schema Changes**: Any `schema.prisma` edit must be followed immediately by `npx prisma db push` (dev) or `npx prisma migrate dev` (production).
-- **New Models**: Before adding a new Prisma model, verify the data isn't already captured in an existing model or JSON field.
+### Permissions Rules
 
----
+- **Permission levels are numeric**: Lurker=0, User=20, Moderator=200, Admin=400, Developer=1000. See full table in `src/web/lib/permissions.ts`.
+- **Always use `hasPermission()`**: Never hardcode permission level numbers in page/component logic. Import from `permissions.ts`.
+- **Owner-only actions** require `permissionLevel >= 1000` (Developer). The admin DB migration route enforces this.
+- **XP auto-promotion**: `awardXP()` automatically promotes non-staff users through community tiers. Do not duplicate this logic.
 
-## Route & Page Architecture Rules
+### Route & Page Architecture Rules
 
-- **Route Groups**: Pages that belong to the main website UI **must** live under `app/(main)/`. Pages for the game client must live under `app/(main)/lobby/`. UCP pages live under `app/(ucp)/ucp/`.
-- **No Orphaned Routes**: Never create `app/[feature]/page.tsx` directly — it will conflict with the main layout group.
-- **Admin Pages**: Admin tools live under `app/(main)/admin/`. Always check if the admin panel section already exists before creating a new one.
+- **Main website pages**: `app/(main)/[feature]/page.tsx`
+- **UCP pages**: `app/(ucp)/ucp/[feature]/page.tsx`
+- **Admin pages**: `app/(main)/admin/[feature]/page.tsx`
+- **Game client**: `app/(main)/lobby/page.tsx` → `src/web/components/the-lobby/`
+- **API routes**: `app/api/[category]/[action]/route.ts`
+- **Never**: `app/[feature]/page.tsx` for a site page — this bypasses the layout group.
 
----
+### Game Engine Rules
 
-## Game Engine Rules
+- **Server authority is absolute**: Client sends input events; server decides movement, combat, encounter outcomes.
+- **No game state in React `useState`**: Player position, entity data, and game loop state must live in `useRef` or the `store.ts` Zustand store (`src/web/components/the-lobby/store.ts`).
+- **No `setInterval` for game loops**: The server tick loop is in `GameEngine.ts`. The client render loop uses `requestAnimationFrame` in `GameCanvasBabylon.tsx`.
+- **Babylon.js sprite atlas**: The 96x128px, 4-row sprite sheet layout is fixed. Row 0=Down, 1=Left, 2=Right, 3=Up. Do not change the vOffset/texture coordinate math without testing.
 
-- **Server Authority**: The client requests actions via `socket.emit()`. The server (`GameEngine`, `PlayerManager`, etc.) decides the outcome. The client **never** decides the result of movement, combat, trading, or encounters.
-- **No `setInterval` Game Loops**: The game loop runs via `requestAnimationFrame` on the client and `setInterval(tick, TICK_RATE)` on the server via `GameEngine.ts`. Do not create additional loops.
-- **No React State for Game Physics**: Player X/Y, velocity, and entity state must live in `useRef` or the `store.ts` Zustand store — never in React `useState`.
+### Upload Rules
+
+- **All uploads go through `src/web/lib/upload.ts`**. This file handles MIME validation, file size limits, directory creation, and crypto-random filename generation.
+- Local storage is the current target. The comment in `upload.ts` notes it should swap to S3 later. When that happens, change only `upload.ts`.
+- Social media uploads support images and video (`/api/upload/social`). Forum uploads are images only. Modpack uploads are archives only.
 
 ---
 
 ## After Major Changes — Required Follow-Up
 
-1. **Update `/info/` documentation** for the system you modified.
-2. **Update the Status** field (🟢 Complete, 🟡 In Progress, 🔴 Planned) in the relevant doc.
-3. **Bump the version** in `package.json`, `app/actions/settings.ts`, and `app/(main)/layout.tsx`.
-4. **Update `CHANGELOG.md`** with a concise, formatted summary.
-5. **Run** `npx tsc --noEmit` to verify zero TypeScript errors before committing.
-6. **Run** `git add . && git commit -m "..."` and `git push`.
+1. **Update `/info/PROJECT_REPORT.md`** — move the changed system from "Partial" to "Complete" or update its notes.
+2. **Update `/info/realtime/EVENTS.md`** if you added or changed a realtime event.
+3. **Update version** in `package.json`, `app/actions/settings.ts`, `app/(main)/layout.tsx`.
+4. **Add entry to `CHANGELOG.md`** with a concise summary of changes.
+5. **Run** `npx tsc --noEmit` — confirm zero TypeScript errors.
+6. **Run** `git add .` → `git commit -m "..."` → `git push`.
 
 ---
 
 ## Things That Must Never Happen
 
-| Action | Why |
+| Action | Consequence |
 | :--- | :--- |
-| `io.emit()` directly in an API route | Bypasses validation, auth, and circuit breaker |
-| Creating a new notifications API when `/api/notifications` exists | Duplicate system |
-| Storing game state (player XY) in React `useState` | Causes re-render storms |
-| Skipping `prisma db push` after schema changes | Runtime Prisma errors |
-| Replacing working UI with `// TODO: implement later` | Loss of existing business logic |
-| Creating `/app/[feature]/page.tsx` for a site page | Route group collision |
-| Calling `socket.on()` in a page component | Bypasses deduplication, causes memory leaks |
+| `io.emit()` directly in an API route | Bypasses validation, auth check, and circuit breaker |
+| `socket.on()` in a page or component | Memory leak, duplicated listeners, bypasses dedup |
+| New notification creation without realtime emit | Bell icon doesn't update live |
+| Skipping `prisma db push` after schema change | Prisma client/DB out of sync, runtime crashes |
 | Emitting an unregistered event type | Bypasses Zod validation, silent failures |
+| Duplicate permission level constants | Causes inconsistent auth — use `permissions.ts` |
+| Creating a new XP/level system | Already exists in `xp.ts`; it also auto-handles FiveM rewards |
+| Adding game physics state to `useState` | Re-render storm at 60fps |
+| Replacing the Babylon.js sprite atlas math | Breaks all character sprite directions |
+| Creating `app/[feature]/page.tsx` for a site page | Route group collision, broken navbar layout |
