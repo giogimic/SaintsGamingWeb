@@ -53,7 +53,7 @@ These systems already exist. Do not rebuild them:
 | Discord OAuth token | `getValidDiscordToken(userId)` from `src/web/lib/discord.ts` |
 | Rate limit an endpoint | `rateLimit(key, limit, windowMs)` from `src/web/lib/rate-limit.ts` |
 | Mention parsing | `processMentions(body, authorId)` from `src/web/lib/mentions.ts` |
-| AI text generation | `POST /api/ai/enhance` using `gemini-2.5-flash` streaming |
+| Text enhancement | `POST /api/ai/enhance` using `gemini-2.5-flash` streaming |
 | Global site search | `GET /api/search?q=` (searches threads, articles, modpacks, users) |
 
 ### 4. Avoid Duplicate Systems
@@ -68,7 +68,7 @@ These systems already exist. Do not rebuild them:
 > - File upload handler (`src/web/lib/upload.ts` covers all upload types)
 > - Permission check (always use `hasPermission()` from `permissions.ts`)
 > - XP/level system (`awardXP()` in `src/web/lib/xp.ts` — already auto-promotes tiers and rewards FiveM characters)
-> - AI text enhance (already exists at `/api/ai/enhance`)
+> - Text enhance (already exists at `/api/ai/enhance`)
 
 ### 5. Explain Architecture Impact Before Acting
 
