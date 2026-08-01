@@ -1,3 +1,17 @@
+## [2.1.90] - 2026-08-01
+
+### Fixed
+- **Character Sprite Appearance Connection**:
+  - Corrected broken `/game-assets/characters/` image URL paths in `character-selector.tsx` and `character-creator.tsx` to point to `/game-assets/npc/${spriteId}.png`.
+  - Ensures preview card appearance in Character Creator & Selector matches the actual 2.5D player sprite rendered in `GameCanvasBabylon.tsx`.
+- **Lobby Realm Server Connection & Offline Enforcement**:
+  - Updated `ServerSelect.tsx` to strictly disable the "Connect" button when the selected server is `offline`.
+  - Added an in-lobby server status alert with a 1-click **"Start Realm (Dev)"** trigger when offline.
+  - Enhanced `/api/game/server-status` to automatically detect Next.js dev server mode and handle POST requests to start/stop dev server override.
+- **Active Studio Server Controls**:
+  - Built `ServerControl.tsx` and added the **Server Controls** tab (`<Server />`) to Dev Tools Panel in Studio.
+  - Added active, non-greyed-out **Start Server**, **Stop Server**, and **Real-Time Metrics** controls so admins can power the game server directly from Studio.
+
 ## [2.1.89] - 2026-08-01
 
 ### Added

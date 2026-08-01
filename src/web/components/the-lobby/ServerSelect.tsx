@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from './store';
-import { Globe, Users, Server, Play, ArrowLeft, Wifi } from 'lucide-react';
+import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 
 interface ServerInfo {
   id: string;
@@ -32,29 +32,54 @@ export default function ServerSelect() {
     { id: 'main', name: 'Saints Realm', region: 'Global', players: 0, capacity: 500, status: 'offline' }
   ]);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isStartingServer, setIsStartingServer] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/game/server-status');
+      if (res.ok) {
+        const data = await res.json();
+        const isOnline = data.status === 'online';
+        setServers([
+          { id: 'main', name: 'Saints Realm', region: 'Global', players: data.players, capacity: data.capacity, status: data.status }
+        ]);
+        if (isOnline) {
+          setSelectedServer('main');
+        } else {
+          setSelectedServer(null);
+        }
+      }
+    } catch {
+      // Keep offline state
+      setSelectedServer(null);
+    }
+  };
 
   useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch('/api/game/server-status');
-        if (res.ok) {
-          const data = await res.json();
-          setServers([
-            { id: 'main', name: 'Saints Realm', region: 'Global', players: data.players, capacity: data.capacity, status: data.status }
-          ]);
-          setSelectedServer('main');
-        }
-      } catch {
-        // keep offline default
-      }
-    };
     fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
+    const interval = setInterval(fetchStatus, 4000);
     return () => clearInterval(interval);
   }, []);
 
+  const handleStartDevServer = async () => {
+    setIsStartingServer(true);
+    try {
+      await fetch('/api/game/server-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start' }),
+      });
+      await fetchStatus();
+    } catch {
+      // Ignore
+    } finally {
+      setIsStartingServer(false);
+    }
+  };
+
   const handleConnect = () => {
-    if (!selectedServer) return;
+    const s = servers.find(srv => srv.id === selectedServer);
+    if (!selectedServer || s?.status !== 'online') return;
     setIsConnecting(true);
     setTimeout(() => {
       setIsConnecting(false);
@@ -63,6 +88,7 @@ export default function ServerSelect() {
   };
 
   const server = servers[0];
+  const isServerOnline = server?.status === 'online';
   const fillPct = server ? Math.round((server.players / server.capacity) * 100) : 0;
   const fillColor =
     fillPct > 80 ? '#ef4444' :
@@ -145,6 +171,35 @@ export default function ServerSelect() {
           {/* Top accent */}
           <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
 
+          {/* Offline warning notification */}
+          {!isServerOnline && (
+            <div
+              className="px-6 py-3 flex items-center justify-between border-b"
+              style={{
+                background: 'rgba(239,68,68,0.1)',
+                borderColor: 'rgba(239,68,68,0.2)',
+              }}
+            >
+              <div className="flex items-center gap-2 text-red-300 text-xs font-mono">
+                <AlertTriangle size={14} className="text-red-400 shrink-0" />
+                <span>Realm is currently offline. Start server to enter.</span>
+              </div>
+              <button
+                onClick={handleStartDevServer}
+                disabled={isStartingServer}
+                className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shrink-0"
+                style={{
+                  background: 'rgba(16,185,129,0.2)',
+                  border: '1px solid rgba(16,185,129,0.4)',
+                  color: '#6ee7b7',
+                }}
+              >
+                <Power size={11} />
+                {isStartingServer ? 'Starting...' : 'Start Realm (Dev)'}
+              </button>
+            </div>
+          )}
+
           {/* Server list */}
           <div className="p-6 space-y-3">
             {servers.map(s => {
@@ -154,7 +209,7 @@ export default function ServerSelect() {
                 <div
                   key={s.id}
                   onClick={() => isOnline && setSelectedServer(s.id)}
-                  className="relative rounded-xl p-5 transition-all duration-200 cursor-pointer group"
+                  className="relative rounded-xl p-5 transition-all duration-200"
                   style={{
                     background: isSelected
                       ? 'rgba(139,92,246,0.12)'
@@ -165,7 +220,7 @@ export default function ServerSelect() {
                       ? '1px solid rgba(139,92,246,0.5)'
                       : '1px solid rgba(139,92,246,0.12)',
                     boxShadow: isSelected ? '0 0 20px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none',
-                    opacity: !isOnline ? 0.5 : 1,
+                    opacity: !isOnline ? 0.55 : 1,
                     cursor: !isOnline ? 'not-allowed' : 'pointer',
                   }}
                   onMouseEnter={e => {
@@ -248,12 +303,12 @@ export default function ServerSelect() {
             <div className="flex items-center gap-2">
               <Wifi size={14} className="text-violet-500/40" />
               <span className="text-[11px] font-mono text-violet-500/40">
-                Auto-refreshing every 5s
+                Auto-refreshing every 4s
               </span>
             </div>
 
             <button
-              disabled={!selectedServer || isConnecting}
+              disabled={!selectedServer || !isServerOnline || isConnecting}
               onClick={handleConnect}
               className="flex items-center gap-2 px-7 py-2.5 rounded-xl font-black text-sm tracking-wider uppercase transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none"
               style={{

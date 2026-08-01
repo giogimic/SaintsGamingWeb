@@ -154,7 +154,7 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
                         <div
                           className="pixelated bg-no-repeat"
                           style={{
-                            backgroundImage: `url('/game-assets/characters/${char.spriteId || 'adventurer'}.png')`,
+                            backgroundImage: `url('/game-assets/npc/${char.spriteId || 'adventurer'}.png')`,
                             backgroundPosition: '0px -64px',
                             backgroundSize: '96px 128px',
                             width: '32px',
