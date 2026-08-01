@@ -42,6 +42,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     setLastForumReply,
     setMmoPlayerOnline,
     setMmoPlayerOffline,
+    setLastFivemCharacterUpdate,
+    setLastFivemBankUpdate,
     watchedThreadId,
     processedEventIds,
     addProcessedEventId,
@@ -196,6 +198,42 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           });
           break;
         }
+        case "fivem.character.updated": {
+          const p = envelope.payload as {
+            userId: string;
+            characterId: string;
+          };
+          setLastFivemCharacterUpdate({
+            userId: p.userId,
+            characterId: p.characterId,
+            receivedAt: envelope.timestamp,
+          });
+          break;
+        }
+        case "fivem.bank.updated": {
+          const p = envelope.payload as {
+            userId: string;
+            characterId: string;
+            bank: number;
+          };
+          setLastFivemBankUpdate({
+            userId: p.userId,
+            characterId: p.characterId,
+            bank: p.bank,
+            receivedAt: envelope.timestamp,
+          });
+          break;
+        }
+        case "fivem.player.online": {
+          const p = envelope.payload as { userId: string };
+          setPresence(p.userId, "playing", envelope.timestamp);
+          break;
+        }
+        case "fivem.player.offline": {
+          const p = envelope.payload as { userId: string };
+          setPresence(p.userId, "online", envelope.timestamp);
+          break;
+        }
         default:
           break;
       }
@@ -221,6 +259,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     });
     nextSocket.on("discord.community.announce", (envelope: EventEnvelope) => {
       handleEvent("discord.community.announce", envelope);
+    });
+    nextSocket.on("fivem.character.updated", (envelope: EventEnvelope) => {
+      handleEvent("fivem.character.updated", envelope);
+    });
+    nextSocket.on("fivem.bank.updated", (envelope: EventEnvelope) => {
+      handleEvent("fivem.bank.updated", envelope);
+    });
+    nextSocket.on("fivem.player.online", (envelope: EventEnvelope) => {
+      handleEvent("fivem.player.online", envelope);
+    });
+    nextSocket.on("fivem.player.offline", (envelope: EventEnvelope) => {
+      handleEvent("fivem.player.offline", envelope);
     });
 
     return () => {

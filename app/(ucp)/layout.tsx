@@ -5,6 +5,8 @@ import { MessengerProvider } from "@/web/components/messenger/messenger-provider
 import { MessengerPopup } from "@/web/components/messenger/messenger-popup";
 import { AmbientBackground } from "@/shared/components/ambient-background";
 import { UcpNavigation } from "@/web/components/ucp/ucp-navigation";
+import { RealtimeProvider } from "@/web/components/realtime/RealtimeProvider";
+import { UcpLiveRefresh } from "./ucp/ucp-live-refresh";
 
 export default async function UcpLayout({
   children,
@@ -44,15 +46,18 @@ export default async function UcpLayout({
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden selection:bg-primary/30">
       <AmbientBackground />
-      <MessengerProvider>
-        <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
-      
-        <UcpNavigation />
+      <RealtimeProvider>
+        <MessengerProvider>
+          <UcpLiveRefresh />
+          <Navbar session={session} dbPermissionLevel={dbPermissionLevel} discordLink={discordLink} showUcpLink={showUcpInNav} />
 
-        <main className="flex-1 sg-page-enter bg-background/50">{children}</main>
-        <Footer discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
-        <MessengerPopup />
-      </MessengerProvider>
+          <UcpNavigation />
+
+          <main className="flex-1 sg-page-enter bg-background/50">{children}</main>
+          <Footer discordLink={discordLink} siteVersion={siteVersion} showUcpLink={showUcpInNav} />
+          <MessengerPopup />
+        </MessengerProvider>
+      </RealtimeProvider>
     </div>
   );
 }

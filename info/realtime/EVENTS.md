@@ -1,7 +1,7 @@
 # Saints Gaming Realtime Platform — Event Catalog
 
 ## Current Implementation Status
-**Status**: 🟢 Milestones 1–4 + Discord bridge live — includes AOI/binary net and Discord bot ingestion.
+**Status**: 🟢 Milestones 1–4 + Discord + FiveM bridges live — AOI/binary net, Discord bot, FiveM character/stats.
 
 ---
 
@@ -179,6 +179,43 @@ Every event follows this standard envelope:
 | Consumers | `RealtimeProvider` Sonner toast |
 
 See also: [`info/discord/BRIDGE.md`](../discord/BRIDGE.md)
+
+---
+
+### `fivem.player.online` / `fivem.player.offline` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `EPHEMERAL` |
+| Producer | `POST /api/fivem/events` (`player_joined` / `player_left`) |
+| Consumers | `RealtimeProvider` presence, FriendsList (`playing`), UCP |
+
+**Payload (online):** `{ userId, fivemLicense, characterId?, characterName?, playerCount? }`  
+**Payload (offline):** `{ userId, fivemLicense, playerCount? }`
+
+Also fans out `presence.updated` to the user + accepted friends.
+
+### `fivem.character.updated` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `sync_character`, bank tx, `/api/fivem/characters` (drugs/inventory — not coords) |
+| Consumers | `UcpLiveRefresh` → `router.refresh()` |
+
+**Payload:** `{ userId, characterId, characterName, cash, bank, health, armor, isDead }`
+
+### `fivem.bank.updated` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `bank_transaction` |
+| Consumers | UCP banking refresh, achievement checks |
+
+**Payload:** `{ userId, characterId, characterName, transactionType, amount, cash, bank }`
+
+See also: [`info/fivem/BRIDGE.md`](../fivem/BRIDGE.md)
 
 ---
 

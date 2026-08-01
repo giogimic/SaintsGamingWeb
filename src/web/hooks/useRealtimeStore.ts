@@ -77,6 +77,12 @@ interface RealtimeState {
   setMmoPlayerOnline: (userId: string, characterName: string, mapId: string, playerCount?: number) => void;
   setMmoPlayerOffline: (userId: string, playerCount?: number) => void;
 
+  // ─── FiveM coarse character/stats signals ────────────────────────
+  lastFivemCharacterUpdate: { characterId: string; userId: string; receivedAt: number } | null;
+  lastFivemBankUpdate: { characterId: string; userId: string; bank: number; receivedAt: number } | null;
+  setLastFivemCharacterUpdate: (signal: { characterId: string; userId: string; receivedAt: number } | null) => void;
+  setLastFivemBankUpdate: (signal: { characterId: string; userId: string; bank: number; receivedAt: number } | null) => void;
+
   // ─── Event Deduplication ────────────────────────────────────────
   processedEventIds: Set<string>;
   addProcessedEventId: (id: string) => void;
@@ -181,6 +187,12 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       };
     });
   },
+
+  // ─── FiveM coarse character/stats signals ─────────────────────────
+  lastFivemCharacterUpdate: null,
+  lastFivemBankUpdate: null,
+  setLastFivemCharacterUpdate: (signal) => set({ lastFivemCharacterUpdate: signal }),
+  setLastFivemBankUpdate: (signal) => set({ lastFivemBankUpdate: signal }),
 
   // ─── Event Deduplication ──────────────────────────────────────────
   processedEventIds: new Set<string>(),

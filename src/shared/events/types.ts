@@ -99,3 +99,40 @@ export interface DiscordCommunityAnnouncePayload {
   message: string;
   link: string | null;
 }
+
+// ─── FiveM Bridge Events ──────────────────────────────────────────────────────
+// Coarse character/stats only — never per-tick coords or inventory spam.
+export interface FivemPlayerOnlinePayload {
+  userId: string;
+  fivemLicense: string;
+  characterId?: string;
+  characterName?: string;
+  playerCount?: number;
+}
+
+export interface FivemPlayerOfflinePayload {
+  userId: string;
+  fivemLicense: string;
+  playerCount?: number;
+}
+
+export interface FivemCharacterUpdatedPayload {
+  userId: string;
+  characterId: string;
+  characterName: string;
+  cash: number;
+  bank: number;
+  health: number;
+  armor: number;
+  isDead: boolean;
+}
+
+export interface FivemBankUpdatedPayload {
+  userId: string;
+  characterId: string;
+  characterName: string;
+  transactionType: string;
+  amount: number;
+  cash: number;
+  bank: number;
+}

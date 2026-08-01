@@ -344,7 +344,7 @@ try {
 ### Long-Term — Ecosystem Expansion (Milestones 5–6)
 11. Discord bot → `/api/internal/events` bridge (role sync, event notifications, community webhooks)
 12. Achievement unlock automation from game events and social actions
-13. FiveM server → `/api/internal/events` bridge for character events and game stats
+13. ~~FiveM server → `/api/internal/events` bridge for character events and game stats~~ **Done (v2.1.101)** — domain actions via `/api/fivem/events`; raw bus still `/api/internal/events`
 14. AI content recommendations, game event generation, chat moderation assist
 15. ~~Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model~~ **Done (v2.1.100)**
 16. S3/CDN migration for uploaded files
@@ -355,7 +355,7 @@ try {
 
 ### Where Development Should Resume
 
-See `info/CONTINUE.md`. Next optional work: FiveM → `/api/internal/events` bridge, then S3/CDN for uploads.
+See `info/CONTINUE.md`. Next optional work: S3/CDN for uploads, then AOI soak / database docs.
 
 ### Files That Matter Most (Priority Order)
 
