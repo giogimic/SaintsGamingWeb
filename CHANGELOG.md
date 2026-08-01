@@ -1,3 +1,12 @@
+## [2.1.97] - 2026-08-01
+
+### Added
+- **Realtime Milestone 3 — coarse MMO → website bridge**:
+  - `PlayerManager` emits `ecosystemBroadcast` on join/leave; `SocketHandler` bridges to `RealtimeService.emitGlobal(..., { source: "mmo" })`.
+  - Registered `game.player.online` / `game.player.offline` (optional `playerCount`); never includes movement or combat ticks.
+  - Client roster in `useRealtimeStore`; live player counts in `ServerSelect`, Lobby admin, and new `ServerStatusCard`.
+  - Smoke-verified custom server boot + `/api/game/server-status` + event registry validation.
+
 ## [2.1.96] - 2026-08-01
 
 ### Added

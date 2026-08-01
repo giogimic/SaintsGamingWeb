@@ -239,6 +239,17 @@ export class PlayerManager {
         isMoving: player.isMoving
       }
     });
+
+    // Coarse website-bus event only — never include position/combat ticks
+    this.engine.events.emit("ecosystemBroadcast", {
+      type: "game.player.online",
+      payload: {
+        userId: accountId,
+        characterName: player.name,
+        mapId: data.mapId || "world",
+        playerCount: this.players.size,
+      },
+    });
   }
 
   private handleCreatureAoEAttack(data: { attackerId: string, mapId: string, x: number, y: number, radius: number, damage: number }) {
@@ -478,6 +489,15 @@ export class PlayerManager {
         room: player.mapId,
         event: "player_left",
         data: { socketId }
+      });
+
+      // Coarse website-bus leave — no coordinates or combat data
+      this.engine.events.emit("ecosystemBroadcast", {
+        type: "game.player.offline",
+        payload: {
+          userId: accountId,
+          playerCount: this.players.size,
+        },
       });
     }
   }

@@ -59,6 +59,12 @@ export const GamePlayerOnlineSchema = z.object({
   userId: z.string(),
   characterName: z.string(),
   mapId: z.string(),
+  playerCount: z.number().int().nonnegative().optional(),
+});
+
+export const GamePlayerOfflineSchema = z.object({
+  userId: z.string(),
+  playerCount: z.number().int().nonnegative().optional(),
 });
 
 // ─── Registry Entry ───────────────────────────────────────────────────────────
@@ -106,7 +112,14 @@ export const EVENT_REGISTRY: Record<string, RegistryEntry> = {
     priority: "EPHEMERAL",
     persistent: false,
     producer: ["mmo"],
-    consumers: ["ServerStatusCard", "Website presence badge"],
+    consumers: ["ServerStatusCard", "ServerSelect", "Lobby admin"],
+  },
+  "game.player.offline": {
+    schema: GamePlayerOfflineSchema,
+    priority: "EPHEMERAL",
+    persistent: false,
+    producer: ["mmo"],
+    consumers: ["ServerStatusCard", "ServerSelect", "Lobby admin"],
   },
 };
 

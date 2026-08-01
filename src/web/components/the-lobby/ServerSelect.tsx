@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from './store';
+import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 
 interface ServerInfo {
@@ -27,6 +28,7 @@ function PingDots({ status }: { status: 'online' | 'offline' }) {
 
 export default function ServerSelect() {
   const setGameMode = useGameStore((state) => state.setGameMode);
+  const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
   const [servers, setServers] = useState<ServerInfo[]>([
     { id: 'main', name: 'Saints Realm', region: 'Global', players: 0, capacity: 500, status: 'offline' }
@@ -41,7 +43,14 @@ export default function ServerSelect() {
         const data = await res.json();
         const isOnline = data.status === 'online';
         setServers([
-          { id: 'main', name: 'Saints Realm', region: 'Global', players: data.players, capacity: data.capacity, status: data.status }
+          {
+            id: 'main',
+            name: 'Saints Realm',
+            region: 'Global',
+            players: typeof data.players === 'number' ? data.players : 0,
+            capacity: data.capacity ?? 500,
+            status: data.status,
+          }
         ]);
         if (isOnline) {
           setSelectedServer('main');
@@ -60,6 +69,17 @@ export default function ServerSelect() {
     const interval = setInterval(fetchStatus, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  // Prefer live coarse bus count when available
+  useEffect(() => {
+    if (mmoPlayerCount <= 0) return;
+    setServers((prev) =>
+      prev.map((s) =>
+        s.id === 'main' ? { ...s, players: mmoPlayerCount, status: 'online' } : s
+      )
+    );
+    setSelectedServer('main');
+  }, [mmoPlayerCount]);
 
   const handleStartDevServer = async () => {
     setIsStartingServer(true);

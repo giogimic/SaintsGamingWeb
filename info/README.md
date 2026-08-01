@@ -33,7 +33,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 ## Quick Reference
 
 ### Current Version
-`2.1.96` — Realtime Platform Milestone 2 live (notifications, presence, chat, forum, admin dashboard)
+`2.1.97` — Realtime Platform Milestones 1–3 live (includes coarse `game.player.online` / `offline`)
 
 ### Key Entry Points
 | File | Role |

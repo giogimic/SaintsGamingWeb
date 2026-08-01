@@ -1,7 +1,7 @@
 # Saints Gaming Realtime Platform — Event Catalog
 
 ## Current Implementation Status
-**Status**: 🟢 Milestone 2 live — notifications, presence, chat push, forum live replies, and admin dashboard wired.
+**Status**: 🟢 Milestones 1–3 live — notifications, presence, chat, forum, admin dashboard, and coarse MMO online/offline bridge.
 
 ---
 
@@ -111,14 +111,14 @@ Every event follows this standard envelope:
 
 ---
 
-### `game.player.online` 🔴 Planned (Milestone 3)
+### `game.player.online` 🟢 Live (Milestone 3)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `EPHEMERAL` |
 | Persisted | No |
-| Producer | MMO GameEngine (via RealtimeService bridge) |
-| Consumers | `ServerStatusCard`, website presence indicators |
+| Producer | `PlayerManager` → `ecosystemBroadcast` → `SocketHandler` → `RealtimeService.emitGlobal` (`source: "mmo"`) |
+| Consumers | `ServerStatusCard`, `ServerSelect`, Lobby admin |
 
 > [!IMPORTANT]
 > This is a **coarse ecosystem event** only. Player position, combat data, and movement ticks are handled exclusively within the MMO engine network and MUST NOT be published to the website socket channel.
@@ -129,6 +129,26 @@ Every event follows this standard envelope:
   userId: string;
   characterName: string;
   mapId: string;
+  playerCount?: number;
+}
+```
+
+---
+
+### `game.player.offline` 🟢 Live (Milestone 3)
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `EPHEMERAL` |
+| Persisted | No |
+| Producer | `PlayerManager` disconnect → same ecosystem bridge |
+| Consumers | `ServerStatusCard`, `ServerSelect`, Lobby admin |
+
+**Payload:**
+```typescript
+{
+  userId: string;
+  playerCount?: number;
 }
 ```
 
