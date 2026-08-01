@@ -33,18 +33,22 @@ Never rely on nav hiding alone.
 
 ---
 
+## Detailed permission map
+
+Full nav gates + admin APIs + new-page checklist: [`PERMISSIONS.md`](./PERMISSIONS.md).
+
 ## Key files
 
 - Overlay: `admin-overlay-shell.tsx`
 - Site settings form: `admin/settings/page.tsx` + `updateSiteSettings`
 - Forum settings: `admin/forum/settings` → [`../forum/TEXT_ENHANCE.md`](../forum/TEXT_ENHANCE.md) (**back-line** for local models)
-- Admin APIs: `app/api/admin/**`
+- Admin APIs: `app/api/admin/**` — also listed in [`../backend/API_CATALOG.md`](../backend/API_CATALOG.md)
 - Realtime dashboard: `admin/realtime` → [`../realtime/ARCHITECTURE.md`](../realtime/ARCHITECTURE.md)
 
 ---
 
 ## Rules
 
-1. New admin pages must set nav visibility **and** server-side permission checks.
+1. New admin pages must set nav visibility **and** server-side permission checks (see checklist in `PERMISSIONS.md`).
 2. `SiteSetting` upserts are Developer-gated unless a dedicated action says otherwise.
 3. Prefer extending existing managers (users, categories, news) over new parallel CRUDs.
