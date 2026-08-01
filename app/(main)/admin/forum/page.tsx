@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { CategoryManager } from "@/web/components/admin/category-manager";
 import { redirect } from "next/navigation";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import Link from "next/link";
 
 export const metadata = {
   title: "Admin - Forum Management",
@@ -32,6 +33,21 @@ export default async function AdminForumPage() {
         <p className="text-muted-foreground mt-2">
           Create and organize forum categories and boards.
         </p>
+      </div>
+
+      <div className="flex gap-2 text-sm border-b border-border/40 pb-2">
+        <Link
+          href="/admin/forum"
+          className="px-3 py-1.5 rounded-md bg-primary/15 text-primary font-medium"
+        >
+          Categories
+        </Link>
+        <Link
+          href="/admin/forum/settings"
+          className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground"
+        >
+          Settings
+        </Link>
       </div>
 
       <div className="bg-card/50 border border-border/40 rounded-xl p-6">
