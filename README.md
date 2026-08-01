@@ -2,35 +2,39 @@
   <h1>✨ Saints Gaming Engine ✨</h1>
   <p><em>A modern, full-stack community management system and 2.5D MMO game engine.</em></p>
   <p>
-    <img src="https://img.shields.io/badge/Next.js-13+-black?style=flat-square&logo=next.js" alt="Next.js" />
+    <img src="https://img.shields.io/badge/Version-v2.1.94-purple?style=flat-square" alt="Version" />
+    <img src="https://img.shields.io/badge/Next.js-15+-black?style=flat-square&logo=next.js" alt="Next.js" />
     <img src="https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/Prisma-MariaDB-white?style=flat-square&logo=prisma" alt="Prisma" />
+    <img src="https://img.shields.io/badge/Babylon.js-2.5D-orange?style=flat-square&logo=babylonjs" alt="Babylon.js" />
+    <img src="https://img.shields.io/badge/Prisma-SQLite%2FMariaDB-white?style=flat-square&logo=prisma" alt="Prisma" />
   </p>
 </div>
 
 <br />
 
 ## What is Saints?
-Saints Gaming is an ambitious project combining a full web platform (forums, administration, social features) with an embedded, real-time multiplayer 2.5D MMO engine. The project is strictly server-authoritative and features a powerful in-game object/map editor.
+Saints Gaming is an ambitious web platform combining community management (forums, user control panel, support desk) with an embedded, real-time multiplayer 2.5D MMO engine. The game features strict server authority, dynamic sharding, creature turn-based encounters, a real-time overworld combat engine, and an integrated in-game Studio Map & Hero Editor.
 
 ## Core Features
-- **Authoritative MMO Server:** Secure, real-time socket communication utilizing dynamic sharding and instancing.
-- **2.5D WebGL Renderer:** Powered by Babylon.js with an orthographic camera and classic sprite projection.
-- **Dual Combat Engine:** Real-Time MMO combat in the overworld, seamlessly transitioning to Instanced Turn-Based Encounters for creature capturing.
-- **Integrated Tooling:** Live map editing and configuration without leaving the game client.
-- **Generic Entity Framework:** Extendable systems for creatures, items, and quests.
+- **Authoritative MMO Server:** Real-time socket communication via Socket.io with dynamic sharding, player reconciliation, line-of-sight calculation, and automatic pre-join entity cleanup.
+- **2.5D WebGL Renderer:** Custom Babylon.js orthographic renderer with standard 96x128px LPC/Tuxemon 4-directional sprite sheet projection, damage numbers, and floating health bars.
+- **Mobile Touch Game Mode & Fullscreen Launcher:** Dedicated `MobileGameLauncher.tsx` overlay triggering device `requestFullscreen()` with continuous D-Pad movement (bottom-left) and a multi-action Touch Pad (`[⚡ INTERACT]`, `[🎒 BAG]`, `[⚔️ SKILLS]`, `[💬 CHAT]`, `[⚙️ MENU]`, `[⛶ FULLSCREEN]`).
+- **Saints Studio Starter Hero Editor:** Live Studio dock panel for creating, previewing, generating archetypes, and managing starter hero configurations persisted directly to the database.
+- **Real-Time Local & Global Chat:** Multi-channel chat UI (Public, Global, Clan/Party, Friends) with server-side broadcasting and overhead chat bubbles.
+- **Active Studio Server Controls:** In-Studio dashboard tab for starting/stopping realm server processes and monitoring live player metrics.
+- **Dual Combat System:** Real-Time overworld combat with skill progression, seamlessly transitioning to Instanced Turn-Based Creature Encounters.
 
 ## Tech Stack
 - **Framework:** Next.js 15+ (App Router) & React 19
 - **Language:** TypeScript
-- **Styling:** Tailwind CSS & shadcn/ui
-- **Database:** Prisma ORM connected to MariaDB
-- **Game Engine:** Custom Babylon.js 2.5D wrapper
-- **Multiplayer:** Socket.io
+- **Styling:** Tailwind CSS & Vanilla CSS Design Tokens
+- **Database:** Prisma ORM (SQLite / MariaDB)
+- **Game Engine:** Custom Babylon.js 2.5D Wrapper (`BabylonEngine.ts`)
+- **Multiplayer:** Socket.io Engine (`GameEngine.ts`, `PlayerManager.ts`, `SocketHandler.ts`)
 
 ## Deployment & Setup
 
-**IMPORTANT**: To completely eliminate human error and manage the production server safely, **use the provided automation scripts**. They automatically handle Node.js environments, dependencies, database backups, and reverse proxies (Caddy) using Docker. Do not manually run `npm install` on your production server.
+**IMPORTANT**: To manage the production environment safely, **use the provided automation scripts**. They handle Node.js environments, dependencies, database backups, and reverse proxies (Caddy) using Docker. Do not manually run `npm install` on your production server.
 
 ### 1. Initial Setup
 Run the interactive setup script to configure credentials and launch the environment:
@@ -47,14 +51,14 @@ To pull the latest code, backup the database, rebuild containers, and restart gr
 *(For manual local development without Docker, refer to [Installation Guide](docs/developer-guide/installation.md)).*
 
 ## Documentation
-The `docs/` folder contains the ultimate source of truth for the engine's architecture:
-- **[Game Vision & GDD](docs/vision/game-idea.md)**
+The `docs/` folder contains detailed technical specifications:
 - **[Architectural Overview](docs/architecture/overview.md)**
 - **[Networking & Server Authority](docs/architecture/networking.md)**
 - **[Database & Hot/Cold State](docs/architecture/database.md)**
 - **[The Game Loop & Combat Engine](docs/architecture/game-loop.md)**
 - **[World Building & Map Editor](docs/developer-guide/world-building.md)**
 - **[Project Structure & Developer Guide](docs/developer-guide/project-structure.md)**
+- **[Changelog](CHANGELOG.md)**
 
 ## License
 - **Code:** Private / proprietary until stated otherwise.
