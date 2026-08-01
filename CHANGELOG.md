@@ -1,4 +1,4 @@
-## [2.1.91] - 2026-08-01
+## [2.1.92] - 2026-08-01
 
 ### Fixed
 - **In-Game Character Appearance & Sprite Alignment**:
