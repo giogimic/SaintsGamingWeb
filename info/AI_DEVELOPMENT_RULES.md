@@ -97,7 +97,7 @@ If it is a replacement, **plan the migration explicitly** — do not delete work
 - **After any `schema.prisma` change**: Immediately run `npx prisma db push` (dev) or `npx prisma migrate dev` (prod).
 - **Live DB migration** (SQLite → MariaDB): The admin route `POST /api/admin/database` handles this safely. Never do it manually.
 - **Before adding a model**: Check schema.prisma for existing models that may already capture the data with a JSON field.
-- **Large data in DB**: Campaign maps (`WorldMap`), tile layers, NPC data, encounter pools — these are stored as JSON strings in the DB and migrated via `scripts/migrate-campaign-maps-to-db.ts`.
+- **Large data in DB**: Campaign maps (`WorldMap`), tile layers, NPC data, encounter pools — stored as JSON strings in the DB. Seed dump: `scripts/data/campaign-maps.generated.ts`. Migrate with `npx tsx scripts/migrate-campaign-maps-to-db.ts`. Never import the seed dump from `app/` or `src/web/` (use `/api/maps` / `loadMap()`).
 
 ### Permissions Rules
 

@@ -9,25 +9,25 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Ecosystem bridges in progress — Discord + achievement automation landed (v2.1.99).**
+**Campaign map DB migration complete (v2.1.100).** Optional ecosystem bridges next.
 
 ### Done
 
 - **M1–M4**: Realtime platform + MMO AOI/binary/Redis scaling
 - **Discord bridge (v2.1.99)**: `POST /api/discord/events` + `info/discord/BRIDGE.md`
-  - Actions: `member_joined`, `role_sync`, `community_announce`, `link_account`
-  - Events: `discord.member.linked`, `discord.role.synced`, `discord.community.announce`
-  - OAuth syncs `User.discordId`
-- **Achievement automation (v2.1.99)**:
-  - New badges: `first_reply`, `social_starter`, `tipper`
-  - Auto-award + live notification on unlock
-  - Wired after forum replies, social posts, tips (threads/friends/login already existed)
+- **Achievement automation (v2.1.99)**: `first_reply`, `social_starter`, `tipper` + live notify
+- **Campaign maps → WorldMap (v2.1.100)**:
+  - Seed dump: `scripts/data/campaign-maps.generated.ts` (do **not** import from app/)
+  - App stub: `src/web/components/the-lobby/data/campaign-maps.ts`
+  - Migrate: `npx tsx scripts/migrate-campaign-maps-to-db.ts` → 235 `WorldMap` rows (`gameId=tuxemon`)
+  - Verify: `npx tsx scripts/verify-campaign-maps.ts`
+  - Loaders: `/api/maps`, `/api/maps/[slug]`, `loadMap()` / `listMaps()`, server `map-loader.js`
 
 ### Next concrete steps (in order)
 
-1. Finish campaign map migration `campaign-maps.ts` → `WorldMap` DB
-2. Optional: FiveM → `/api/internal/events` character/stats bridge
-3. Optional: S3/CDN for uploads; deeper multi-client AOI soak test
+1. Optional: FiveM → `/api/internal/events` character/stats bridge
+2. Optional: S3/CDN for uploads; deeper multi-client AOI soak test
+3. Optional: expand `/info/database/` docs for WorldMap ops
 
 ---
 
