@@ -30,7 +30,15 @@ UI: `app/(main)/profile/inbox/`, `src/web/components/messenger/`.
 | `getPostAnalytics` / `getCreatorTopPosts` | Creator analytics |
 | `reportSocialPost` / `appealSocialPost` | Moderation |
 
-Folders: `app/actions/social-folders.ts` (bookmark folder CRUD — open file for exact names).
+### Bookmark folders (`social-folders.ts`)
+
+| Action | Purpose |
+| :--- | :--- |
+| `createBookmarkFolder` / `deleteBookmarkFolder` / `renameBookmarkFolder` | Folder CRUD |
+| `getBookmarkFolders` | List folders |
+| `moveBookmarkToFolder` | Move bookmark |
+| `toggleBookmarkWithFolder` | Bookmark into optional folder |
+| `getBookmarksWithFolders` | List bookmarks (optional folder filter) |
 
 Media: `POST /api/upload/social` → [`../uploads/STORAGE.md`](../uploads/STORAGE.md).
 
