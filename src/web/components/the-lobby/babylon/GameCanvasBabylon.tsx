@@ -471,6 +471,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // Render connected multiplayer players
       const freshOtherPlayers = useGameStore.getState().otherPlayers;
       if (freshOtherPlayers) {
+        const activeSockets = new Set(Object.keys(freshOtherPlayers));
+        
         Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
           const targetX = other.x || 6;
           const targetY = other.y || 2;

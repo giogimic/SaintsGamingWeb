@@ -65,10 +65,10 @@ export const DEFAULT_SPRITE_CONFIG: SpriteSheetConfig = {
   walkCycle: [0, 1, 2, 1],
   walkSpeed: 6,
   directions: {
-    down: 3,
-    left: 2,
-    right: 1,
-    up: 0
+    down: 0,
+    left: 1,
+    right: 2,
+    up: 3
   }
 };
 
@@ -438,10 +438,10 @@ export class BabylonEngine {
           if (tex && (state.isNpc || state.isPlayer || state.spriteConfig || tex.name.includes('/npc/'))) {
             const config = state.spriteConfig || DEFAULT_SPRITE_CONFIG;
             
-            // Update row (direction)
+            // Update row (direction) - Map top-to-bottom row index (0=down, 1=left, 2=right, 3=up) to Babylon V offset
             const dir = state.direction || 'down';
             const rowIdx = config.directions[dir] ?? config.directions.down;
-            tex.vOffset = rowIdx * (1 / config.rows);
+            tex.vOffset = (config.rows - 1 - rowIdx) * (1 / config.rows);
 
             // Update column (animation frame)
             if (state.isMoving) {

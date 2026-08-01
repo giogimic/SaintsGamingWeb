@@ -432,7 +432,9 @@ export class PlayerManager {
           direction: player.direction,
           isMoving: player.isMoving,
           hp: player.hp,
-          maxHp: player.maxHp
+          maxHp: player.maxHp,
+          name: player.name,
+          spriteId: player.spriteId
         });
       }
     }
@@ -463,7 +465,7 @@ export class PlayerManager {
       this.engine.events.emit("networkBroadcast", {
         room: player.mapId,
         event: "player_left",
-        data: socketId
+        data: { socketId }
       });
     }
   }
