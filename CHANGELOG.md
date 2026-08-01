@@ -1,3 +1,19 @@
+## [2.1.88] - 2026-08-01
+
+### Changed
+- **Pre-Game Flow Restyle**: Completely rebuilt all 4 pre-game screens to match the dark Saints Gaming aesthetic (deep violet/runic palette, glass cards, glow effects) — replacing the mismatched bright white UI.
+  - `GameTitleScreen.tsx`: Animated canvas background with drifting runic particles, star field, scan-line effect, SAINTS logo with drop shadow glow, functional Credits modal, and Options button wired to `GameOptionsMenu`.
+  - `GameLogin.tsx`: Dark glass card with violet glow, password reveal toggle, styled focus states, and "Forgot password?" link.
+  - `ServerSelect.tsx`: Dark glass panel, animated ping dots (live/pulsing), color-coded population bar, auto-refresh indicator, connecting animation.
+  - `character-selector.tsx`: Per-class color palettes with glow cards, hover animations, sprite previews, and dark glass "New Hero" creation card.
+- **Character Creator Restyle**: Complete dark-aesthetic rewrite of `character-creator.tsx`:
+  - New **HERO_PICK** step: 6 curated starter hero archetypes (Warrior, Paladin, Mystic, Shadow, Ranger, Monk) with live sprite previews, flavor text, and difficulty tags. No new assets required — all sprites already in `GAME_SPRITES`.
+  - **NAME** step: Shows selected hero preview + compact class switcher.
+  - **APPEARANCE** step: Lazy-loads full sprite grid, dark-styled pagination.
+  - **GIFT** step: Color-coded perk cards with per-perk glow colors.
+  - **REVIEW/FINALIZE** step: Summary with large sprite, class/perk badges, and stat preview.
+- **Version**: Bumped all version fallback strings to `2.1.88`.
+
 ## [2.1.87] - 2026-07-31
 
 ### Changed

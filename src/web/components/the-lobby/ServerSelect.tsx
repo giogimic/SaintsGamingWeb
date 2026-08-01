@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from './store';
-import { Globe, Users, Server, Play, ArrowLeft } from 'lucide-react';
+import { Globe, Users, Server, Play, ArrowLeft, Wifi } from 'lucide-react';
 
 interface ServerInfo {
   id: string;
@@ -13,26 +13,39 @@ interface ServerInfo {
   status: 'online' | 'offline';
 }
 
+function PingDots({ status }: { status: 'online' | 'offline' }) {
+  if (status === 'offline') {
+    return <span className="w-2 h-2 rounded-full bg-red-500/70" />;
+  }
+  return (
+    <span className="relative flex h-2 w-2">
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+    </span>
+  );
+}
+
 export default function ServerSelect() {
   const setGameMode = useGameStore((state) => state.setGameMode);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
   const [servers, setServers] = useState<ServerInfo[]>([
     { id: 'main', name: 'Saints Realm', region: 'Global', players: 0, capacity: 500, status: 'offline' }
   ]);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/game/server-status`);
+        const res = await fetch('/api/game/server-status');
         if (res.ok) {
           const data = await res.json();
           setServers([
             { id: 'main', name: 'Saints Realm', region: 'Global', players: data.players, capacity: data.capacity, status: data.status }
           ]);
-          setSelectedServer('main'); // Auto-select since there's only one
+          setSelectedServer('main');
         }
-      } catch (err) {
-        console.error('Failed to fetch server status', err);
+      } catch {
+        // keep offline default
       }
     };
     fetchStatus();
@@ -41,85 +54,231 @@ export default function ServerSelect() {
   }, []);
 
   const handleConnect = () => {
-    if (selectedServer) {
+    if (!selectedServer) return;
+    setIsConnecting(true);
+    setTimeout(() => {
+      setIsConnecting(false);
       setGameMode('CHARACTER_SELECT');
-    }
+    }, 600);
   };
 
+  const server = servers[0];
+  const fillPct = server ? Math.round((server.players / server.capacity) * 100) : 0;
+  const fillColor =
+    fillPct > 80 ? '#ef4444' :
+    fillPct > 50 ? '#f59e0b' :
+    '#10b981';
+
   return (
-    <div 
+    <div
       className="absolute inset-0 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500"
-      style={{ backgroundColor: 'rgba(240, 248, 255, 0.85)', backdropFilter: 'blur(8px)' }}
+      style={{ background: 'rgba(5,0,15,0.94)', backdropFilter: 'blur(14px)' }}
     >
-      <div className="absolute top-8 left-8 text-slate-400 flex items-center gap-3 z-10">
-        <div className="p-3 bg-white rounded-2xl shadow-sm border-2 border-slate-200">
-          <Globe size={28} className="text-blue-400" />
+      {/* Background glow */}
+      <div
+        className="absolute w-[600px] h-[600px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)',
+          top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        }}
+      />
+
+      {/* Back button */}
+      <button
+        onClick={() => setGameMode('TITLE_SCREEN')}
+        className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm tracking-wider uppercase transition-all hover:scale-[1.02]"
+        style={{
+          background: 'rgba(20,8,48,0.8)',
+          border: '1px solid rgba(139,92,246,0.2)',
+          color: 'rgba(196,181,253,0.6)',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.5)';
+          (e.currentTarget as HTMLElement).style.color = 'rgba(221,214,254,0.9)';
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.2)';
+          (e.currentTarget as HTMLElement).style.color = 'rgba(196,181,253,0.6)';
+        }}
+      >
+        <ArrowLeft size={16} strokeWidth={2.5} />
+        Back
+      </button>
+
+      {/* Header */}
+      <div className="relative z-10 text-center mb-10">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <Globe size={18} className="text-violet-400/60" />
+          <h1
+            className="text-xs font-black tracking-[0.4em] uppercase font-mono"
+            style={{ color: 'rgba(139,92,246,0.6)' }}
+          >
+            Select Realm
+          </h1>
+          <Globe size={18} className="text-violet-400/60" />
         </div>
-        <span className="font-extrabold tracking-widest text-2xl uppercase text-slate-700">Select Realm</span>
+        <h2
+          className="text-3xl font-black tracking-wider"
+          style={{
+            fontFamily: 'serif',
+            background: 'linear-gradient(180deg, #e8d5ff 0%, #a855f7 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            filter: 'drop-shadow(0 0 15px rgba(139,92,246,0.4))',
+          }}
+        >
+          World Select
+        </h2>
       </div>
 
-      <div className="w-full max-w-2xl bg-white border-4 border-slate-200 rounded-[2rem] shadow-2xl flex flex-col relative z-10 overflow-hidden">
-        <div className="bg-slate-50 p-6 border-b-4 border-slate-200 flex items-center justify-between">
-          <h2 className="text-2xl font-extrabold text-slate-800">Available Realms</h2>
-          <span className="text-sm text-slate-500 font-bold uppercase tracking-wider bg-slate-200 px-3 py-1 rounded-full">Select a region</span>
-        </div>
+      {/* Server card */}
+      <div className="relative z-10 w-full max-w-lg mx-4 animate-in fade-in zoom-in-95 duration-300">
+        <div
+          className="rounded-2xl border overflow-hidden"
+          style={{
+            background: 'linear-gradient(160deg, rgba(20,8,48,0.98) 0%, rgba(12,4,30,0.98) 100%)',
+            border: '1px solid rgba(139,92,246,0.25)',
+            boxShadow: '0 0 50px rgba(139,92,246,0.15), 0 25px 50px rgba(0,0,0,0.5)',
+          }}
+        >
+          {/* Top accent */}
+          <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
 
-        <div className="p-6 flex flex-col gap-4 max-h-[50vh] overflow-y-auto custom-scrollbar bg-slate-100">
-          {servers.map(server => (
-            <div 
-              key={server.id}
-              onClick={() => server.status === 'online' && setSelectedServer(server.id)}
-              className={`p-5 rounded-2xl border-4 transition-all flex items-center justify-between shadow-sm ${
-                server.status === 'offline' 
-                  ? 'bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed'
-                  : selectedServer === server.id
-                    ? 'bg-blue-50 border-blue-400 scale-[1.02] shadow-md'
-                    : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50 cursor-pointer hover:-translate-y-1'
-              }`}
-            >
-              <div className="flex items-center gap-5">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${server.status === 'online' ? 'bg-emerald-100 text-emerald-500' : 'bg-slate-200 text-slate-400'}`}>
-                  <Server size={28} strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-xl mb-1">{server.name}</h3>
-                  <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">{server.region}</div>
-                </div>
-              </div>
+          {/* Server list */}
+          <div className="p-6 space-y-3">
+            {servers.map(s => {
+              const isSelected = selectedServer === s.id;
+              const isOnline = s.status === 'online';
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => isOnline && setSelectedServer(s.id)}
+                  className="relative rounded-xl p-5 transition-all duration-200 cursor-pointer group"
+                  style={{
+                    background: isSelected
+                      ? 'rgba(139,92,246,0.12)'
+                      : isOnline
+                        ? 'rgba(255,255,255,0.03)'
+                        : 'rgba(255,255,255,0.02)',
+                    border: isSelected
+                      ? '1px solid rgba(139,92,246,0.5)'
+                      : '1px solid rgba(139,92,246,0.12)',
+                    boxShadow: isSelected ? '0 0 20px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none',
+                    opacity: !isOnline ? 0.5 : 1,
+                    cursor: !isOnline ? 'not-allowed' : 'pointer',
+                  }}
+                  onMouseEnter={e => {
+                    if (isOnline && !isSelected) {
+                      (e.currentTarget as HTMLElement).style.border = '1px solid rgba(139,92,246,0.3)';
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.06)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isSelected) {
+                      (e.currentTarget as HTMLElement).style.border = '1px solid rgba(139,92,246,0.12)';
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Server icon */}
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: isOnline ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.05)',
+                        border: `1px solid ${isOnline ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                      }}
+                    >
+                      <Server size={22} className={isOnline ? 'text-violet-400' : 'text-slate-600'} />
+                    </div>
 
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col items-end">
-                  <div className="flex items-center gap-2 text-sm font-extrabold text-slate-500 bg-white px-3 py-1.5 rounded-xl border-2 border-slate-100 shadow-sm">
-                    <Users size={16} className="text-blue-400" />
-                    {server.players} / {server.capacity}
-                  </div>
-                  <div className={`text-xs uppercase font-extrabold tracking-widest mt-2 px-2 py-0.5 rounded-md ${
-                    server.status === 'online' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                  }`}>
-                    {server.status}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <PingDots status={s.status} />
+                        <h3 className="font-black text-violet-100 text-base">{s.name}</h3>
+                        <span className="text-[10px] font-mono text-violet-500/50 uppercase tracking-widest">
+                          {s.region}
+                        </span>
+                      </div>
+
+                      {/* Population bar */}
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex-1 h-1.5 rounded-full overflow-hidden"
+                          style={{ background: 'rgba(255,255,255,0.07)' }}
+                        >
+                          <div
+                            className="h-full rounded-full transition-all duration-1000"
+                            style={{ width: `${fillPct}%`, background: fillColor, boxShadow: `0 0 6px ${fillColor}` }}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Users size={11} className="text-violet-500/50" />
+                          <span className="text-[11px] font-mono text-violet-300/60">
+                            {s.players}<span className="text-violet-600/40">/{s.capacity}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status badge */}
+                    <div
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shrink-0"
+                      style={{
+                        background: isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                        border: `1px solid ${isOnline ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                        color: isOnline ? '#6ee7b7' : '#fca5a5',
+                      }}
+                    >
+                      {s.status}
+                    </div>
                   </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div
+            className="px-6 py-4 flex items-center justify-between"
+            style={{ borderTop: '1px solid rgba(139,92,246,0.12)' }}
+          >
+            <div className="flex items-center gap-2">
+              <Wifi size={14} className="text-violet-500/40" />
+              <span className="text-[11px] font-mono text-violet-500/40">
+                Auto-refreshing every 5s
+              </span>
             </div>
-          ))}
-        </div>
 
-        <div className="bg-white p-6 border-t-4 border-slate-200 flex justify-between items-center">
-          <button 
-            onClick={() => setGameMode('TITLE_SCREEN')}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl font-extrabold text-slate-500 bg-slate-100 hover:bg-slate-200 hover:text-slate-700 transition-all active:scale-95 border-2 border-slate-200"
-          >
-            <ArrowLeft size={20} strokeWidth={3} /> Back
-          </button>
-          <button 
-            disabled={!selectedServer}
-            onClick={handleConnect}
-            className="px-8 py-3 bg-blue-500 hover:bg-blue-400 active:scale-95 disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none text-white font-extrabold text-lg rounded-2xl transition-all shadow-[0_4px_0_0_#2563eb] hover:shadow-[0_2px_0_0_#2563eb] hover:translate-y-[2px] disabled:translate-y-[4px] flex items-center gap-2 uppercase tracking-wide"
-          >
-            <Play size={20} fill="currentColor" strokeWidth={3} /> Connect
-          </button>
+            <button
+              disabled={!selectedServer || isConnecting}
+              onClick={handleConnect}
+              className="flex items-center gap-2 px-7 py-2.5 rounded-xl font-black text-sm tracking-wider uppercase transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #9333ea 100%)',
+                boxShadow: '0 0 20px rgba(139,92,246,0.4), 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
+                color: 'white',
+              }}
+            >
+              {isConnecting ? (
+                <span className="font-mono animate-pulse">Connecting...</span>
+              ) : (
+                <>
+                  <Play size={16} fill="currentColor" />
+                  Connect
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Flavour text */}
+      <p className="relative z-10 mt-8 text-violet-600/30 text-[11px] font-mono tracking-widest">
+        ᚠ &nbsp; Saints Online &nbsp; ᚠ
+      </p>
     </div>
   );
 }
