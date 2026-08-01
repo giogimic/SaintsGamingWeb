@@ -1,3 +1,14 @@
+## [2.1.94] - 2026-08-01
+
+### Fixed
+- **Mobile Game Launcher & Fullscreen Device Mode**:
+  - Added `MobileGameLauncher.tsx` overlay for mobile screens presenting a prominent **"ENTER GAME (FULLSCREEN)"** trigger button instead of rendering a cramped inline canvas under site header bars.
+  - Automatically triggers device `requestFullscreen()` and landscape orientation lock when entering mobile game mode.
+  - Updated `app/(main)/lobby/page.tsx` height container to `h-[100dvh]` on mobile viewports.
+- **Mobile Touch Controls & Action Pad**:
+  - Positioned directional D-Pad on the **bottom-left** with continuous hold support for fluid character movement.
+  - Built a dedicated **Mobile Touch Action Pad** on the **bottom-right** featuring `[⚡ INTERACT]` (z-action for talking to NPCs, entering doors, harvesting), `[🎒 BAG]`, `[⚔️ SKILLS]`, `[💬 CHAT]`, `[⚙️ MENU]`, and `[⛶ FULLSCREEN]` buttons.
+
 ## [2.1.93] - 2026-08-01
 
 ### Fixed
