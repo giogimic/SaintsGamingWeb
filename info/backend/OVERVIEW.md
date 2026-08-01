@@ -46,7 +46,7 @@ Primary folder: `app/actions/`
 | File | Domain |
 | :--- | :--- |
 | `auth.ts` | Password / account helpers |
-| `social.ts` | Feed, reactions, tips, mute, subscribe |
+| `social.ts` + `social/*.ts` | Feed, reactions, tips, mute, subscribe (split by domain) |
 | `messenger.ts` | Friends + DMs + groups |
 | `game.ts` / `game-admin.ts` / `game-dev.ts` | Lobby / studio |
 | `settings.ts`, `users.ts`, … | Site/user ops |

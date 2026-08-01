@@ -1,3 +1,8 @@
+## [2.1.109] - 2026-08-01
+
+### Changed
+- **Social server actions split**: `app/actions/social.ts` is now a barrel; implementations live in `app/actions/social/{posts,feed,engagement,history,moderation,analytics}.ts`. Export names and `@/app/actions/social` import path unchanged.
+
 ## [2.1.108] - 2026-08-01
 
 ### Added

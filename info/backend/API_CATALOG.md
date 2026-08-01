@@ -131,7 +131,7 @@ UI gates: [`../admin/PERMISSIONS.md`](../admin/PERMISSIONS.md).
 | File | Domain |
 | :--- | :--- |
 | `auth.ts` | Password / account |
-| `social.ts` | Feed, reactions, tips, mute, subscribe (**large**) |
+| `social.ts` + `social/*.ts` | Feed, reactions, tips, mute, subscribe (barrel + domain modules) |
 | `social-folders.ts` | Bookmark folders |
 | `messenger.ts` | Friends, DMs, groups |
 | `profile.ts` | Profile updates |

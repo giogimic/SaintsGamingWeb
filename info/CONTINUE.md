@@ -9,23 +9,20 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Core `/info` deep docs landed (v2.1.108).**  
+**Social actions split landed (v2.1.109).**  
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
-### Docs track complete (for now)
+### Recently shipped
 
 | Version | What |
 | :--- | :--- |
-| 2.1.105 | System overviews |
-| 2.1.106 | Backend API catalog + admin permissions |
-| 2.1.107 | Social actions + game sockets |
-| 2.1.108 | Frontend routes map |
+| 2.1.105–108 | Core `/info` deep docs |
+| 2.1.109 | Split `app/actions/social.ts` → domain modules + barrel |
 
 ### Suggested next (code / ship)
 
-1. Split `app/actions/social.ts` by domain (keep export names stable)
-2. More vitest on permissions / forum / messenger helpers
-3. Staging smoke + merge PR #1 (forum, lobby, realtime)
+1. More vitest on permissions / forum / messenger helpers
+2. Staging smoke + merge PR #1 (forum, lobby, realtime)
 
 ---
 
