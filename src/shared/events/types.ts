@@ -80,3 +80,22 @@ export interface GameLevelUpPayload {
   characterName: string;
   newLevel: number;
 }
+
+// ─── Discord Bridge Events ────────────────────────────────────────────────────
+export interface DiscordMemberLinkedPayload {
+  userId: string;
+  discordUserId: string;
+  username: string;
+}
+
+export interface DiscordRoleSyncedPayload {
+  userId: string;
+  discordUserId: string;
+  permissionLevel: number;
+  sourceRoleIds: string[];
+}
+
+export interface DiscordCommunityAnnouncePayload {
+  message: string;
+  link: string | null;
+}

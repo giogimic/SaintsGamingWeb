@@ -67,6 +67,24 @@ export const GamePlayerOfflineSchema = z.object({
   playerCount: z.number().int().nonnegative().optional(),
 });
 
+export const DiscordMemberLinkedSchema = z.object({
+  userId: z.string(),
+  discordUserId: z.string(),
+  username: z.string(),
+});
+
+export const DiscordRoleSyncedSchema = z.object({
+  userId: z.string(),
+  discordUserId: z.string(),
+  permissionLevel: z.number().int(),
+  sourceRoleIds: z.array(z.string()),
+});
+
+export const DiscordCommunityAnnounceSchema = z.object({
+  message: z.string().max(500),
+  link: z.string().nullable(),
+});
+
 // ─── Registry Entry ───────────────────────────────────────────────────────────
 export interface RegistryEntry {
   schema: z.ZodSchema;
@@ -120,6 +138,27 @@ export const EVENT_REGISTRY: Record<string, RegistryEntry> = {
     persistent: false,
     producer: ["mmo"],
     consumers: ["ServerStatusCard", "ServerSelect", "Lobby admin"],
+  },
+  "discord.member.linked": {
+    schema: DiscordMemberLinkedSchema,
+    priority: "NORMAL",
+    persistent: false,
+    producer: ["discord"],
+    consumers: ["notifications-menu (via SYSTEM notification)", "Admin audit"],
+  },
+  "discord.role.synced": {
+    schema: DiscordRoleSyncedSchema,
+    priority: "NORMAL",
+    persistent: false,
+    producer: ["discord"],
+    consumers: ["notifications-menu (via SYSTEM notification)", "Admin audit"],
+  },
+  "discord.community.announce": {
+    schema: DiscordCommunityAnnounceSchema,
+    priority: "EPHEMERAL",
+    persistent: false,
+    producer: ["discord"],
+    consumers: ["RealtimeProvider toast / site banner"],
   },
 };
 

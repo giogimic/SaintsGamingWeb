@@ -20,7 +20,8 @@ A new developer or AI assistant should be able to open this project, read `/info
 
 | Directory | Status | Contents |
 | :--- | :--- | :--- |
-| [realtime/](./realtime/) | 🟡 Milestone 1 live | Architecture diagram, event catalog, connection map |
+| [realtime/](./realtime/) | 🟢 M1–M4 live | Architecture diagram, event catalog, connection map |
+| [discord/](./discord/) | 🟢 Bridge live | Bot ingestion contract (`BRIDGE.md`) |
 | frontend/ | 🔴 Planned | Component architecture, design tokens, routing guide |
 | backend/ | 🔴 Planned | API routes catalog, server actions, auth flows |
 | database/ | 🔴 Planned | Schema overview, model relationships, migration guide |
@@ -33,7 +34,7 @@ A new developer or AI assistant should be able to open this project, read `/info
 ## Quick Reference
 
 ### Current Version
-`2.1.98` — Realtime M1–M3 + MMO Scaling M4 (AOI zones, binary movement, optional Redis adapter)
+`2.1.99` — Discord bot bridge + achievement auto-award automation (on top of realtime M1–M4)
 
 ### Key Entry Points
 | File | Role |

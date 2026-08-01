@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
 import { processMentions } from "@/web/lib/mentions";
 import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 const replySchema = z.object({
   body: z.string().min(1).max(5000),
@@ -71,6 +72,8 @@ export async function POST(req: Request) {
 
     // Parse Mentions
     await processMentions(data.body, session.user.id, `/forum/thread/${thread.slug}#reply-${reply.id}`);
+
+    void checkAndAwardAchievements(session.user.id);
 
     return NextResponse.json(reply, { status: 201 });
   } catch (error) {

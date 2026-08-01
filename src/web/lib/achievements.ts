@@ -29,6 +29,33 @@ export const ACHIEVEMENTS: Record<string, AchievementDef> = {
     glowClass: "drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]",
     Icon: AchievementFirstBlood
   },
+  "first_reply": {
+    id: "first_reply",
+    title: "Conversation Starter",
+    description: "Posted your first reply on the forums.",
+    rarity: "Common",
+    colorClass: "text-sky-400",
+    glowClass: "drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]",
+    Icon: AchievementFirstBlood
+  },
+  "social_starter": {
+    id: "social_starter",
+    title: "On The Feed",
+    description: "Published your first social feed post.",
+    rarity: "Common",
+    colorClass: "text-cyan-400",
+    glowClass: "drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]",
+    Icon: AchievementSocialButterfly
+  },
+  "tipper": {
+    id: "tipper",
+    title: "Generous Saint",
+    description: "Sent your first tip on the social feed.",
+    rarity: "Rare",
+    colorClass: "text-emerald-400",
+    glowClass: "drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]",
+    Icon: AchievementRich
+  },
   "beta_tester": {
     id: "beta_tester",
     title: "Beta Tester",
@@ -78,23 +105,34 @@ export function getAllAchievements(): AchievementDef[] {
 // ─── Auto-Award Logic ────────────────────────────────────────────────────────
 
 import { prisma } from "./prisma";
+import { emitNotificationCreated } from "./realtime-emit";
 
 /**
  * Evaluates a user's stats and automatically awards any missing achievements.
  * Safe to call asynchronously after any major action (e.g. creating thread).
+ * Returns the list of newly awarded badge ids.
  */
-export async function checkAndAwardAchievements(userId: string) {
+export async function checkAndAwardAchievements(userId: string): Promise<string[]> {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
         achievements: { select: { badgeId: true } },
-        _count: { select: { threads: true, receivedFriendships: true, sentFriendships: true } },
+        _count: {
+          select: {
+            threads: true,
+            replies: true,
+            socialPosts: true,
+            tipsSent: true,
+            receivedFriendships: true,
+            sentFriendships: true,
+          },
+        },
         characters: { select: { bank: true } }
       }
     });
 
-    if (!user) return;
+    if (!user) return [];
 
     const ownedBadges = new Set(user.achievements.map(a => a.badgeId));
     const newAwards: string[] = [];
@@ -104,7 +142,22 @@ export async function checkAndAwardAchievements(userId: string) {
       newAwards.push("first_blood");
     }
 
-    // 2. Social Butterfly: Has at least 50 friends (Accepted friendships where user is sender or receiver)
+    // 2. First Reply
+    if (!ownedBadges.has("first_reply") && user._count.replies >= 1) {
+      newAwards.push("first_reply");
+    }
+
+    // 3. Social feed starter (top-level posts counted via socialPosts relation)
+    if (!ownedBadges.has("social_starter") && user._count.socialPosts >= 1) {
+      newAwards.push("social_starter");
+    }
+
+    // 4. Tipper
+    if (!ownedBadges.has("tipper") && user._count.tipsSent >= 1) {
+      newAwards.push("tipper");
+    }
+
+    // 5. Social Butterfly: Has at least 50 friends
     if (!ownedBadges.has("social_butterfly")) {
       const acceptedCount = await prisma.friendship.count({
         where: {
@@ -117,7 +170,7 @@ export async function checkAndAwardAchievements(userId: string) {
       }
     }
 
-    // 3. High Roller: Has at least one character with $100,000 in the bank
+    // 6. High Roller: Has at least one character with $100,000 in the bank
     if (!ownedBadges.has("rich")) {
       const isRich = user.characters.some(char => char.bank >= 100000);
       if (isRich) {
@@ -125,7 +178,7 @@ export async function checkAndAwardAchievements(userId: string) {
       }
     }
 
-    // 4. Saints Veteran: Account is older than 1 year
+    // 7. Saints Veteran: Account is older than 1 year
     if (!ownedBadges.has("veteran")) {
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -134,18 +187,33 @@ export async function checkAndAwardAchievements(userId: string) {
       }
     }
 
-    // Award any new achievements
+    // Award any new achievements + push live notifications
     for (const badgeId of newAwards) {
       await prisma.userAchievement.create({
         data: { userId, badgeId }
       });
+
+      const def = getAchievementDef(badgeId);
+      const notification = await prisma.notification.create({
+        data: {
+          userId,
+          type: "SYSTEM",
+          message: def
+            ? `Achievement unlocked: ${def.title} — ${def.description}`
+            : `Achievement unlocked: ${badgeId}`,
+          link: "/profile",
+        },
+      });
+      await emitNotificationCreated(notification);
     }
 
     if (newAwards.length > 0) {
       console.log(`[Achievements] Automatically awarded ${newAwards.join(", ")} to ${user.username}`);
     }
 
+    return newAwards;
   } catch (error) {
     console.error("[Achievements] Failed to check and award:", error);
+    return [];
   }
 }
