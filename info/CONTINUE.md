@@ -7,23 +7,23 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Q9 Leather Scoop + Gym door**
+**Game Foundation Systems (PR #4) — Q10 Leather Gym (Rook) + Shaft1**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- **Leather Scoop** film shop + **Q9** visit quest
-- Leather plaza ambient densify; **Gym** door + attendant (dialogue only)
-- Guide `node_leather_scoop`; tracker clear after Q9
-- Offline smoke: **212** checks
+- **Rook** Gym trainer: Rockitten → Aardorn + post-battle dialogue
+- **Q10** Leather Gym (TALK + BATTLE); Q9 auto-advances
+- **Shaft1** east of Leather Town (scout + tall grass)
+- Offline smoke: **231** checks
 
 ### Suggested next
 
-1. Human smoke Q1–Q9 (Leather Scoop buy + Center heal + Gym peek)
-2. Optional: Leather Gym trainer challenge / Shaft1 hook
-3. TMX ambient import for Leather when `TUXEMON_PATH` available
+1. Human smoke Q1–Q10 (Rook fight, Center heal rematch, shaft)
+2. Optional: Shaft2 link / second Gym foe roster expand
+3. TMX Leather ambient import when `TUXEMON_PATH` available
 
 ### Pipeline
 
