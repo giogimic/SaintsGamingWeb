@@ -177,18 +177,18 @@ export const CAMPAIGN_NPC_SEEDS: Record<
     {
       id: "npc_spyder_route_scout",
       name: "Spyder Scout",
-      x: 8,
-      y: 10,
+      x: 6,
+      y: 9,
       sprite: "ninja",
-      greeting: "This is Spyder Route 1. Capture practice starts here.",
+      greeting: "This is Spyder Route 1. Tall grass ahead — keep film ready.",
     },
   ],
   COTTON_TOWN: [
     {
       id: "npc_cotton_greeter",
       name: "Cotton Greeter",
-      x: 15,
-      y: 15,
+      x: 4,
+      y: 19,
       sprite: "florist",
       greeting:
         "Welcome to Cotton Town! You've walked Spyder's first road — rest, trade, then press on.",
