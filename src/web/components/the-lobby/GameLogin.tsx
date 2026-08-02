@@ -21,7 +21,8 @@ export default function GameLogin() {
     try {
       const res = await signIn('credentials', {
         redirect: false,
-        email,
+        // Auth credentials provider validates `identifier` (email or username).
+        identifier: email,
         password,
       });
 

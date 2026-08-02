@@ -704,7 +704,8 @@ export class BabylonEngine {
           let tex = this.tilesetTextureCache.get(imageSource);
           if (!tex) {
             const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const tilesetPath = `/game-assets/tilesets/${rawSource}`;
+            // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
+            const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
             tex = new Texture(tilesetPath, this.scene, true, false, 1);
             tex.hasAlpha = true;
             this.tilesetTextureCache.set(imageSource, tex);
