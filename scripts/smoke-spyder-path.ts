@@ -280,11 +280,18 @@ async function checkDialogueActions() {
     ok("Q10 nextQuest → quest_spyder_leather_shaft");
   }
 
+  const q11 = SPYDER_QUEST_CHAIN.find((q) => q.slug === "quest_spyder_leather_shaft");
+  if (!q11?.rewards.includes("quest_spyder_beyond_shaft")) {
+    fail("Q11 missing nextQuest → beyond_shaft");
+  } else {
+    ok("Q11 nextQuest → quest_spyder_beyond_shaft");
+  }
+
   const finalSlug = SPYDER_QUEST_CHAIN[SPYDER_QUEST_CHAIN.length - 1]?.slug;
-  if (finalSlug !== "quest_spyder_leather_shaft") {
+  if (finalSlug !== "quest_spyder_beyond_shaft") {
     fail(`chain final slug unexpected: ${finalSlug}`);
   } else {
-    ok("chain ends at quest_spyder_leather_shaft");
+    ok("chain ends at quest_spyder_beyond_shaft (Q12)");
   }
 }
 

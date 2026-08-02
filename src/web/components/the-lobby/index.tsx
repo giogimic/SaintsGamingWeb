@@ -844,10 +844,21 @@ export default function TheLobby({
   };
 
   useEffect(() => {
-    // Standard game hotkeys (I, K, P, D, B)
+    // Standard game hotkeys (I, K, P, D, B) + ESC for Options / exit Viewfinder
     const handleGlobalHotkeys = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        // Viewfinder edit mode: Escape exits without the Options modal
+        if (useGameStore.getState().isEditingInterface || useGameStore.getState().isUiEditMode) {
+          useGameStore.getState().setIsEditingInterface(false);
+          setIsOptionsOpen(false);
+          return;
+        }
+        setIsOptionsOpen((open) => !open);
         return;
       }
       const key = e.key.toLowerCase();

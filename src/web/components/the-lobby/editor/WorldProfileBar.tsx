@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Globe2, Plus } from 'lucide-react';
+import { Globe2, Plus, Copy } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import {
   ensureWorldProfiles,
   setActiveWorldProfile,
   createBlankWorldProfile,
+  cloneTrailWorldProfile,
 } from '@/app/actions/world-profiles';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
 
@@ -65,6 +66,25 @@ export function WorldProfileBar() {
     setMsg(`Created ${res.slug} · map ${res.starterMapId}`);
   };
 
+  const onCloneTrail = async () => {
+    const slug = window.prompt('Clone Saints Trail into profile id?', 'custom_2') || 'custom_2';
+    const name = window.prompt('Display name?', 'Custom 2 (Trail)') || undefined;
+    setBusy(true);
+    setMsg(null);
+    const res = await cloneTrailWorldProfile({ slug, name, force: true });
+    setBusy(false);
+    if (!res.success) {
+      setMsg(res.error || 'Clone failed');
+      return;
+    }
+    const { targetSlug, mapId, quests } = res;
+    setActiveGameId(targetSlug);
+    await setActiveWorldProfile(targetSlug);
+    const refreshed = await ensureWorldProfiles();
+    if (refreshed.success) setProfiles(refreshed.profiles);
+    setMsg(`Cloned Trail → ${targetSlug} · ${mapId} · ${quests} quests`);
+  };
+
   return (
     <div className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 z-[110]">
       <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border border-[#806f47]/40 bg-[#050b14]/92 shadow-2xl backdrop-blur-md">
@@ -95,6 +115,16 @@ export function WorldProfileBar() {
         >
           <Plus className="w-3.5 h-3.5" />
           New
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onCloneTrail()}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg border border-sky-800/40 text-sky-300/90 text-[10px] font-bold uppercase tracking-wider hover:bg-sky-900/30 disabled:opacity-40"
+          title="Clone Saints Trail template into a profile (namespaced)"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          Clone Trail
         </button>
         {msg && <span className="text-[9px] text-slate-500 font-mono max-w-[180px] truncate">{msg}</span>}
       </div>

@@ -16,6 +16,7 @@ export function classRowToData(row: {
   description: string;
   icon?: string | null;
   color: string;
+  profileId?: string | null;
   baseStats: string;
   statDeltas?: string | null;
   skillDeltas?: string | null;
@@ -36,6 +37,7 @@ export function classRowToData(row: {
     description: row.description || "",
     icon: row.icon,
     color: row.color,
+    profileId: row.profileId ?? null,
     statDeltas: parseJson(row.statDeltas, {}),
     skillDeltas: parseJson(row.skillDeltas, {}),
     growthRates: parseJson(row.growthRates, {}),
@@ -51,8 +53,13 @@ export function classRowToData(row: {
 
 export function classDataToDb(data: ClassDefData, gameId: string) {
   const resolved = resolveClassStats(data);
+  const profileId =
+    data.profileId === undefined || data.profileId === ''
+      ? null
+      : data.profileId;
   return {
     gameId,
+    profileId,
     slug: data.slug,
     classId: (data.classId || data.slug).toUpperCase(),
     name: data.name,

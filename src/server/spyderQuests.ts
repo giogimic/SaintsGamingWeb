@@ -263,6 +263,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 2 },
       ],
       gold: 120,
+      nextQuest: "quest_spyder_beyond_shaft",
     }),
     objectives: [
       {
@@ -278,6 +279,25 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_leather_shaft2_miner",
         requiredQty: 1,
         description: "Press east into Shaft 2 and speak with the miner",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_beyond_shaft",
+    title: "Spyder 12: Beyond the Shafts",
+    description:
+      "Talk to the pathfinder in Shaft 2 — stub hook for the next Spyder region (Studio-expandable).",
+    rewards: JSON.stringify({
+      items: [{ slug: "film_fine", qty: 1 }],
+      gold: 80,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_leather_shaft2_pathfinder",
+        requiredQty: 1,
+        description: "Find the pathfinder deeper in Shaft 2",
       },
     ],
   },
@@ -652,6 +672,16 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       sprite: "monk",
       greeting:
         "You've reached the second shaft. Ore veins and stubborn beasts share these walls — keep film ready and a clear path back west.",
+    },
+    {
+      id: "npc_leather_shaft2_pathfinder",
+      name: "Pathfinder",
+      x: 8,
+      y: 6,
+      sprite: "ninja",
+      greeting:
+        "The shafts end here for now — beyond lies Candy and the wider Spyder web. Rest, stock film, then return when the next tunnels open in Studio.",
+      questSlug: "quest_spyder_beyond_shaft",
     },
   ],
 };

@@ -17,15 +17,18 @@ import {
   SCOOP_NURSE_DIALOGUE_TREE,
   SPYDER_QUEST_CHAIN,
 } from "./spyderQuests";
+import { dialogueCache, invalidateDialogueCache } from "./dialogueCache";
+
+export { invalidateDialogueCache };
 
 const prisma = new PrismaClient();
 
-const dialogueCache: Record<string, any> = {};
-
-/** Built-in demo trees (always available even if DB empty). */
+/**
+ * Built-in fallback trees when DB has no row.
+ * Prefer DB first in getDialogueTree so Studio / Saints Trail seeds win.
+ * Vance is intentionally NOT here — Studio must own npc_warden_vance.
+ */
 const BUILTIN_TREES: Record<string, any> = {
-  npc_warden_vance: VANCE_TREE,
-  warden_vance: VANCE_TREE,
   [AZURE_GUIDE_NPC_ID]: AZURE_GUIDE_TREE,
   azure_guide: AZURE_GUIDE_TREE,
   npc_cotton_tunnel_carlos: CARLOS_DIALOGUE_TREE,
@@ -34,6 +37,12 @@ const BUILTIN_TREES: Record<string, any> = {
   npc_leather_center_nurse: LEATHER_NURSE_DIALOGUE_TREE,
   npc_leather_scoop_clerk: LEATHER_SCOOP_CLERK_DIALOGUE_TREE,
   npc_leather_gym_attendant: LEATHER_GYM_ATTENDANT_DIALOGUE_TREE,
+};
+
+/** Last-resort seed copy if DB empty (demo boot race). */
+const VANCE_FALLBACK_TREES: Record<string, any> = {
+  npc_warden_vance: VANCE_TREE,
+  warden_vance: VANCE_TREE,
 };
 
 const SPYDER_DEFAULT_STARTER = "budaye";
@@ -102,30 +111,38 @@ export class DialogueManager {
   private async getDialogueTree(npcId: string) {
     const key = this.normalizeNpcKey(npcId);
     const bare = key.replace(/^npc_/, "");
-    if (dialogueCache[key]) return dialogueCache[key];
-    if (dialogueCache[npcId]) return dialogueCache[npcId];
-    if (dialogueCache[bare]) return dialogueCache[bare];
 
-    for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
-      if (BUILTIN_TREES[candidate]) {
-        dialogueCache[key] = BUILTIN_TREES[candidate];
-        return BUILTIN_TREES[candidate];
-      }
-    }
-
+    // DB first — Studio / seed authority (cache keyed by updatedAt so edits apply)
     try {
       for (const candidate of [key, npcId, bare, `npc_${bare}`]) {
         const tree = await prisma.npcDialogueTree.findUnique({
           where: { npcId: candidate },
         });
         if (tree) {
+          const stamp = tree.updatedAt.toISOString();
+          const hit = dialogueCache[key];
+          if (hit && hit.updatedAt === stamp) return hit.tree;
           const parsed = JSON.parse(tree.data);
-          dialogueCache[key] = parsed;
+          dialogueCache[key] = { tree: parsed, updatedAt: stamp };
           return parsed;
         }
       }
     } catch (e) {
       console.error(`[DialogueManager] Failed to load dialogue for ${npcId}`, e);
+    }
+
+    for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
+      if (BUILTIN_TREES[candidate]) {
+        dialogueCache[key] = { tree: BUILTIN_TREES[candidate], updatedAt: "builtin" };
+        return BUILTIN_TREES[candidate];
+      }
+      if (VANCE_FALLBACK_TREES[candidate]) {
+        dialogueCache[key] = {
+          tree: VANCE_FALLBACK_TREES[candidate],
+          updatedAt: "builtin",
+        };
+        return VANCE_FALLBACK_TREES[candidate];
+      }
     }
 
     const fallback = {
@@ -134,7 +151,7 @@ export class DialogueManager {
         options: [{ label: "Goodbye.", nextNode: "exit" }],
       },
     };
-    dialogueCache[key] = fallback;
+    dialogueCache[key] = { tree: fallback, updatedAt: "fallback" };
     return fallback;
   }
 
@@ -162,8 +179,8 @@ export class DialogueManager {
     });
     if (!state) {
       return {
-        toast: "No active quest — take the Starter Toolbelt to begin Q1.",
-        text: "You're not on a marked job. Take the Starter Toolbelt and we'll put you on the road to Aethervale.",
+        toast: "No active quest — talk to the Trail Greeter to begin.",
+        text: "You're not on a marked job. Speak with the Trail Greeter in the plaza and accept Saints Trail. Tools from me come later — after you spar the Tutor.",
       };
     }
     const template = await prisma.questTemplate.findUnique({
@@ -290,7 +307,8 @@ export class DialogueManager {
   private async runAction(
     action: string | undefined,
     accountId: string,
-    socketId: string
+    socketId: string,
+    opts?: { questSlug?: string; npcId?: string }
   ) {
     if (!action) return;
 
@@ -358,35 +376,37 @@ export class DialogueManager {
     }
 
     if (action === "GRANT_DEMO_TOOLS") {
+      // Grant tools only — do NOT accept Q6 here. Trail Q5 nextQuest starts gather.
+      // Early acceptQuest broke the Q1–Q5 chain when players took the toolbelt first.
       await addItems(userId, [
         { slug: "axe_bronze", qty: 1 },
         { slug: "pickaxe_bronze", qty: 1 },
       ]);
       await this.syncInv(socketId, userId);
-      this.toast(socketId, "Received Rook Hatchet & Crude Pickaxe.");
-      this.engine.events.emit("acceptQuest", {
-        accountId,
-        questSlug: "quest_tools_of_trade",
+      this.toast(
         socketId,
-      });
+        "Received Rook Hatchet & Crude Pickaxe. Finish the Trail chain — gather unlocks after the spar."
+      );
+      void opts?.questSlug; // reserved for future gated accept
       return;
     }
 
     if (action === "DEMO_QUEST_REPORT") {
       const report = await this.buildQuestReport(userId);
       this.toast(socketId, report.toast);
+      const vanceId = opts?.npcId || "npc_warden_vance";
       // Progress TALK objectives for active demo quests (turn-in stages)
       this.engine.events.emit("dialogue_start", {
         accountId,
         socketId,
-        targetSlug: "npc_warden_vance",
+        targetSlug: vanceId,
       });
       // Override next dialogue line with state-aware copy when selecting report
       this.engine.events.emit("directMessage", {
         socketId,
         event: "dialogue_start",
         data: {
-          npcId: "npc_warden_vance",
+          npcId: vanceId,
           npcName: "Warden Vance",
           node: "node_report",
           text: report.text,
@@ -408,10 +428,8 @@ export class DialogueManager {
   }
 
   private normalizeNpcId(targetId: string): string {
-    const id = String(targetId || "");
-    if (id.includes("vance") || id.includes("warden")) return "npc_warden_vance";
-    // Strip spawn suffixes (npc_azure_guide_1712345678 → npc_azure_guide)
-    return this.normalizeNpcKey(id);
+    // Strip spawn suffixes only — do not collapse cloned Vance ids onto custom_1
+    return this.normalizeNpcKey(String(targetId || ""));
   }
 
   private async handleTrainerPostBattleDialogue({
@@ -507,7 +525,7 @@ export class DialogueManager {
     const npcId = this.normalizeNpcId(targetId);
 
     if (action) {
-      await this.runAction(action, accountId, socketId);
+      await this.runAction(action, accountId, socketId, { questSlug, npcId });
     }
 
     if (action === "ACCEPT_QUEST" && questSlug) {
@@ -542,12 +560,21 @@ export class DialogueManager {
           speciesSlugs: ["rockitten", "aardorn"],
           levels: [11, 12],
         },
+        npc_trail_tutor: {
+          name: "Spar Tutor",
+          speciesSlugs: ["rockitten"],
+          levels: [5],
+        },
       };
-      const cfg = trainers[npcId] || {
-        name: "Trainer",
-        speciesSlugs: ["rockitten"],
-        levels: [6],
-      };
+      const cfg =
+        trainers[npcId] ||
+        (npcId.endsWith("_trail_tutor") || npcId.includes("trail_tutor")
+          ? { name: "Spar Tutor", speciesSlugs: ["rockitten"], levels: [5] }
+          : {
+              name: "Trainer",
+              speciesSlugs: ["rockitten"],
+              levels: [6],
+            });
       this.engine.events.emit("startTrainerBattle", {
         accountId,
         socketId,
