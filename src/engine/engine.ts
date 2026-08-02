@@ -246,7 +246,7 @@ export class GameEngine {
         position.y < gate.y + gate.height
       ) {
         // Transition to new map
-        this.loadMap(gate.targetMap, gate.targetX, gate.targetY);
+        void this.loadMap(gate.targetMap, gate.targetX, gate.targetY);
         break;
       }
     }
@@ -313,39 +313,108 @@ export class GameEngine {
   }
 
   /**
-   * Load a new map
+   * Load a new map from /api/maps/[slug] (WorldMap / GameMap shape).
+   * Returns true on success so callers can leave the loading screen.
    */
-  async loadMap(slug: string, spawnX: number, spawnY: number) {
+  async loadMap(slug: string, spawnX: number, spawnY: number): Promise<boolean> {
     const store = useGameStore.getState();
-    
-    // Fetch map data from API
-    const response = await fetch(`/api/maps/${slug}`);
+
+    const response = await fetch(`/api/maps/${encodeURIComponent(slug)}`);
     if (!response.ok) {
       console.error(`Failed to load map: ${slug}`);
-      return;
+      return false;
     }
 
     const mapData = await response.json();
-    
-    // Convert to MapData format
-    const map: Parameters<typeof store.setCurrentMap>[0] = {
-      slug: mapData.slug,
-      name: mapData.name,
-      width: mapData.width,
-      height: mapData.height,
-      tileSize: mapData.tileSize,
-      tiles: JSON.parse(mapData.tilesetData),
-      collision: JSON.parse(mapData.collisionData),
-      npcs: JSON.parse(mapData.npcData),
-      gates: mapData.triggerData ? JSON.parse(mapData.triggerData) : [],
-      encounterZone: mapData.encounterZone || undefined,
-      music: mapData.music || undefined,
-      environment: mapData.environment || undefined,
-    };
+    const map = this.normalizeApiMap(slug, mapData);
+    if (!map) {
+      console.error(`Failed to parse map payload: ${slug}`);
+      return false;
+    }
 
     store.setCurrentMap(map);
     store.setPlayer({ position: { x: spawnX, y: spawnY } });
+    store.setPhase("overworld");
     this.camera.setMapSize(map.width, map.height);
+    return true;
+  }
+
+  /** Adapt WorldMap/GameMap (and legacy SaintsMap) JSON into engine MapData. */
+  private normalizeApiMap(
+    slug: string,
+    mapData: Record<string, unknown>
+  ): Parameters<ReturnType<typeof useGameStore.getState>["setCurrentMap"]>[0] | null {
+    const parseMaybeJson = <T,>(value: unknown, fallback: T): T => {
+      if (typeof value === "string") {
+        try {
+          return JSON.parse(value) as T;
+        } catch {
+          return fallback;
+        }
+      }
+      if (value == null) return fallback;
+      return value as T;
+    };
+
+    // Preferred: WorldMap / GameMap → grid + npcs arrays
+    let tiles = parseMaybeJson<number[][]>(mapData.grid ?? mapData.tilesetData, []);
+    if (!Array.isArray(tiles) || tiles.length === 0) {
+      // Legacy SaintsMap: tilesetData is the ground layer
+      tiles = parseMaybeJson<number[][]>(mapData.tilesetData, []);
+    }
+    if (!Array.isArray(tiles) || tiles.length === 0 || !Array.isArray(tiles[0])) {
+      return null;
+    }
+
+    const height = Number(mapData.height) || tiles.length;
+    const width = Number(mapData.width) || tiles[0].length;
+    const tileSize = Number(mapData.tileSize) || 16;
+
+    let collision = parseMaybeJson<boolean[][]>(mapData.collisionData, []);
+    if (!Array.isArray(collision) || collision.length === 0) {
+      // Logic tiles: 1 wall, 5 tree, 6 ore, 9 craft, 11 bramble are solid
+      const solid = new Set([1, 5, 6, 9, 11]);
+      collision = tiles.map((row) => row.map((t) => solid.has(Number(t))));
+    }
+
+    const rawNpcs = parseMaybeJson<any[]>(mapData.npcs ?? mapData.npcData, []);
+    const npcs = (Array.isArray(rawNpcs) ? rawNpcs : []).map((n) => ({
+      id: String(n.id || n.templateId || "npc"),
+      name: String(n.name || n.id || "NPC"),
+      x: Number(n.x) || 0,
+      y: Number(n.y) || 0,
+      sprite: String(n.sprite || "adventurer"),
+      direction: (String(n.direction || "down").toLowerCase() as
+        | "up"
+        | "down"
+        | "left"
+        | "right"),
+      dialogue: Array.isArray(n.dialogue) ? n.dialogue : undefined,
+      isTrainer: !!n.isTrainer,
+      party: n.party,
+    }));
+
+    const rawGates = parseMaybeJson<any>(mapData.gates ?? mapData.triggerData, []);
+    const gates = Array.isArray(rawGates)
+      ? rawGates
+      : Object.values(rawGates || {}).flatMap((g) => (Array.isArray(g) ? g : [g]));
+
+    return {
+      slug: String(mapData.slug || mapData.id || slug),
+      name: String(mapData.name || slug),
+      width,
+      height,
+      tileSize,
+      tiles,
+      collision,
+      npcs,
+      gates: gates as any[],
+      encounterZone:
+        typeof mapData.encounterZone === "string" ? mapData.encounterZone : undefined,
+      music: typeof mapData.music === "string" ? mapData.music : undefined,
+      environment:
+        typeof mapData.environment === "string" ? mapData.environment : undefined,
+    };
   }
 
   /**

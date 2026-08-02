@@ -1,148 +1,74 @@
 /**
- * Create a test map so the game has something to load on startup
+ * Ensure DEMO_SANDBOX (and a legacy test_map alias) exist as WorldMap/GameMap rows
+ * so /game and /lobby can both load a map.
+ *
+ * Prefer DemoBootstrap on server boot; this script is a one-shot repair for local DB.
  */
 import { PrismaClient } from "@prisma/client";
+import {
+  DEMO_ENCOUNTERS,
+  DEMO_MAP_H,
+  DEMO_MAP_ID,
+  DEMO_MAP_NPCS,
+  DEMO_MAP_W,
+  buildDemoSandboxGrid,
+} from "../src/server/demoMapSeed";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const width = 20;
-  const height = 15;
+async function upsertWorldAndGame(id: string, name: string) {
+  const grid = buildDemoSandboxGrid();
+  const gridJson = JSON.stringify(grid);
+  const npcsJson = JSON.stringify(DEMO_MAP_NPCS);
+  const encountersJson = JSON.stringify(DEMO_ENCOUNTERS);
 
-  // Create a simple test map with grass, paths, trees, water, and tall grass
-  const ground: number[][] = [];
-  const collision: boolean[][] = [];
-
-  for (let y = 0; y < height; y++) {
-    ground[y] = [];
-    collision[y] = [];
-    for (let x = 0; x < width; x++) {
-      // Default: grass
-      ground[y][x] = 1;
-      collision[y][x] = false;
-
-      // Border trees
-      if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
-        ground[y][x] = 9; // tree leaves
-        collision[y][x] = true;
-      }
-
-      // Path through middle
-      if (y === 7 && x > 0 && x < width - 1) {
-        ground[y][x] = 3; // dirt path
-      }
-      if (x === 10 && y > 0 && y < height - 1) {
-        ground[y][x] = 3; // dirt path
-      }
-
-      // Water pond
-      if (x >= 14 && x <= 17 && y >= 2 && y <= 4) {
-        ground[y][x] = 4; // water
-        collision[y][x] = true;
-      }
-
-      // Tall grass (encounter zone)
-      if (x >= 3 && x <= 7 && y >= 2 && y <= 5) {
-        ground[y][x] = 10; // tall grass
-      }
-
-      // Some scattered trees
-      if ((x === 5 && y === 9) || (x === 15 && y === 10) || (x === 3 && y === 12)) {
-        ground[y][x] = 8; // tree trunk
-        collision[y][x] = true;
-      }
-      if ((x === 5 && y === 8) || (x === 15 && y === 9) || (x === 3 && y === 11)) {
-        ground[y][x] = 9; // tree leaves
-        collision[y][x] = true;
-      }
-    }
-  }
-
-  // NPCs
-  const npcs = [
-    {
-      id: "npc_professor",
-      name: "Prof. Tux",
-      x: 10,
-      y: 6,
-      sprite: "npc_professor",
-      direction: "down",
-      dialogue: [
-        "Welcome to the world of Tuxemon!",
-        "These creatures live all around us.",
-        "Your journey begins now. Head into the tall grass to find your first Tuxemon!",
-        "Good luck, trainer!",
-      ],
-      isTrainer: false,
-    },
-    {
-      id: "npc_trainer_bob",
-      name: "Trainer Bob",
-      x: 12,
-      y: 7,
-      sprite: "npc_trainer",
-      direction: "left",
-      dialogue: [
-        "Hey! I'm Trainer Bob.",
-        "I've been catching Tuxemon all day!",
-        "The tall grass to the west is full of wild ones.",
-      ],
-      isTrainer: true,
-    },
-  ];
-
-  // Gates (transitions to other maps)
-  const gates = [
-    {
-      x: 10,
-      y: 0,
-      width: 1,
-      height: 1,
-      targetMap: "test_map_north",
-      targetX: 10,
-      targetY: 13,
-    },
-  ];
-
-  await prisma.tuxemonMap.upsert({
-    where: { slug: "test_map" },
-    update: {
-      name: "Saints Village",
-      width,
-      height,
-      tileSize: 16,
-      tilesetData: JSON.stringify(ground),
-      collisionData: JSON.stringify(collision),
-      npcData: JSON.stringify(npcs),
-      triggerData: JSON.stringify(gates),
-      encounterZone: "default_encounter",
-      music: "theme_town",
-      environment: "park",
-      isIndoors: false,
-      version: { increment: 1 },
-    },
+  await prisma.worldMap.upsert({
+    where: { id },
     create: {
-      slug: "test_map",
-      name: "Saints Village",
-      width,
-      height,
-      tileSize: 16,
-      tilesetData: JSON.stringify(ground),
-      collisionData: JSON.stringify(collision),
-      npcData: JSON.stringify(npcs),
-      triggerData: JSON.stringify(gates),
-      encounterZone: "default_encounter",
-      music: "theme_town",
-      environment: "park",
-      isIndoors: false,
+      id,
+      name,
+      gridData: gridJson,
+      gatesData: "{}",
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+    },
+    update: {
+      name,
+      gridData: gridJson,
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+      version: { increment: 1 },
     },
   });
 
-  console.log("✅ Test map 'Saints Village' created!");
-  console.log(`   Size: ${width}x${height}`);
-  console.log(`   NPCs: ${npcs.length}`);
-  console.log(`   Gates: ${gates.length}`);
-  console.log(`   Encounter zone: default_encounter`);
+  await prisma.gameMap.upsert({
+    where: { id },
+    create: {
+      id,
+      name,
+      width: DEMO_MAP_W,
+      height: DEMO_MAP_H,
+      tilesetData: gridJson,
+      npcs: npcsJson,
+      encounters: encountersJson,
+      gates: "{}",
+    },
+    update: {
+      name,
+      width: DEMO_MAP_W,
+      height: DEMO_MAP_H,
+      tilesetData: gridJson,
+      npcs: npcsJson,
+      encounters: encountersJson,
+    },
+  });
+}
+
+async function main() {
+  await upsertWorldAndGame(DEMO_MAP_ID, "Demo Sandbox");
+  // Alias for older /game clients that still request test_map
+  await upsertWorldAndGame("test_map", "Saints Village (legacy alias)");
+  console.log(`✅ Maps ready: ${DEMO_MAP_ID}, test_map`);
 }
 
 main()
