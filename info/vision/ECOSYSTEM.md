@@ -46,6 +46,8 @@ When making decisions, always consider the entire Saints Gaming ecosystem—not 
 
 ## Related
 
+- **Gameplay Bible (16 pages):** [`../gameplay-bible/README.md`](../gameplay-bible/README.md)
+- Alignment vs code: [`../gameplay-bible/ALIGNMENT.md`](../gameplay-bible/ALIGNMENT.md)
 - Game systems: [`../game/OVERVIEW.md`](../game/OVERVIEW.md)
 - Permissions: [`../admin/PERMISSIONS.md`](../admin/PERMISSIONS.md)
 - Public vision notes: `docs/vision/`

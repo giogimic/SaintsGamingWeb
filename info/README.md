@@ -13,6 +13,7 @@ A new developer should be able to open this project, read `/info`, and understan
 | :--- | :--- |
 | [CONTINUE.md](./CONTINUE.md) | **Current task pointer** — start every session here |
 | [vision/ECOSYSTEM.md](./vision/ECOSYSTEM.md) | **Product north star** — unified website + MMO + Studio |
+| [gameplay-bible/](./gameplay-bible/README.md) | **Gameplay Bible** — 16-page constitution + ALIGNMENT |
 | [PROJECT_REPORT.md](./PROJECT_REPORT.md) | Full project audit — what exists, gaps, debt |
 | [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) | Mandatory coding rules — existing solutions, prohibitions |
 

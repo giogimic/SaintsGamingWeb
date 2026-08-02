@@ -54,6 +54,7 @@ High-frequency movement/combat stays on the game socket — **not** the website 
 - In-game studio panels under `src/web/components/the-lobby/editor/`
 - Plan + verify: [`CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./CLIENT_SPLIT_MOBILE_MP_PLAN.md), [`LOBBY_VERIFY.md`](./LOBBY_VERIFY.md)
 - Ecosystem vision: [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
+- Gameplay Bible: [`../gameplay-bible/README.md`](../gameplay-bible/README.md) · [`ALIGNMENT.md`](../gameplay-bible/ALIGNMENT.md)
 
 ---
 
