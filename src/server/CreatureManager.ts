@@ -21,6 +21,9 @@ export interface CreatureState {
   isMoving: boolean;
   direction: "up" | "down" | "left" | "right";
   lastMoveTime: number;
+  /** Absolute or resolvable sprite path for join snapshots / client mapEntities. */
+  spriteKey?: string;
+  dialogueNpcId?: string;
 }
 
 export class CreatureManager {
@@ -118,6 +121,10 @@ export class CreatureManager {
       data.name ||
       (isNpc ? templateKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : `Wild ${templateKey}`);
 
+    const spriteKey = data.spriteKey || templateKey;
+    const dialogueNpcId =
+      data.dialogueNpcId || (isNpc ? `npc_${templateKey}` : undefined);
+
     const creature: CreatureState = {
       entityId,
       entityType,
@@ -135,7 +142,9 @@ export class CreatureManager {
       maxHp: isWildCreature ? 80 : 100,
       isMoving: false,
       direction: "down",
-      lastMoveTime: Date.now()
+      lastMoveTime: Date.now(),
+      spriteKey,
+      dialogueNpcId,
     };
 
     this.creatures.set(entityId, creature);
@@ -146,11 +155,7 @@ export class CreatureManager {
     this.engine.events.emit("networkBroadcast", {
       room: creature.mapId,
       event: "creature_spawned",
-      data: {
-        ...creature,
-        spriteKey: data.spriteKey || templateKey,
-        dialogueNpcId: data.dialogueNpcId || (isNpc ? `npc_${templateKey}` : undefined),
-      },
+      data: { ...creature },
     });
   }
 

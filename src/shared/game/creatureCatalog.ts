@@ -181,7 +181,14 @@ export function resolveEntitySpriteUrl(
   }
 
   // Missing legacy placeholders → visible fallback instead of Babylon pink checkers
-  if (key === "villager_1" || key === "villager_2" || key === "chicken" || key === "cow") {
+  if (
+    key === "villager_1" ||
+    key === "villager_2" ||
+    key === "chicken" ||
+    key === "cow" ||
+    key === "guide_1" ||
+    key === "npc_default"
+  ) {
     return fallback;
   }
 

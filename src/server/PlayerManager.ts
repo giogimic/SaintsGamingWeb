@@ -3,7 +3,9 @@ import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
 import { isSameBaseMap } from "@/shared/net/mapIds";
+import { resolveEntitySpriteUrl } from "@/shared/game/creatureCatalog";
 import { PrismaClient } from "@prisma/client";
+import { EntityType } from "./types";
 const prisma = new PrismaClient();
 export interface PlayerState {
   entityId: string;
@@ -254,12 +256,18 @@ export class PlayerManager {
       },
     });
     for (const creature of mapCreatures) {
+      const isNpc = creature.entityType === EntityType.NPC;
       this.engine.events.emit("directMessage", {
         socketId,
         event: "creature_spawned",
         data: {
           ...creature,
-          spriteKey: creature.templateId,
+          // Prefer stored absolute path; never fall back to bare templateId alone
+          // (that produced /game-assets/npc/guide_1.png 404s on join snapshots).
+          spriteKey: resolveEntitySpriteUrl(
+            creature.spriteKey || creature.templateId,
+            { kind: isNpc ? "npc" : "monster" }
+          ),
         },
       });
     }
