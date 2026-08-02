@@ -20,6 +20,7 @@ import {
   FALLBACK_CLASS_DEFS,
 } from '@/shared/game/classCatalog';
 import { COMBAT_SKILL_TYPINGS, skillSlugToLabel } from '@/shared/game/skillTypings';
+import { useEditorStore } from '../editor-store';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson,
   UserCheck, CheckCircle2, AlertCircle, Sparkles,
@@ -30,8 +31,9 @@ const inputCls =
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
 
 export function ClassEditorPanel() {
+  const activeGameId = useEditorStore((s) => s.activeGameId);
   const [list, setList] = useState<ClassDefData[]>([]);
-  const [form, setForm] = useState<ClassDefData>(emptyClassDef());
+  const [form, setForm] = useState<ClassDefData>({ ...emptyClassDef(), profileId: null });
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -41,15 +43,17 @@ export function ClassEditorPanel() {
 
   const load = useCallback(async () => {
     const [classesRes, shinyRes] = await Promise.all([
-      getAllCharacterClasses(),
+      getAllCharacterClasses(activeGameId),
       getGlobalShinyChance(),
     ]);
     if (classesRes.success) setList(classesRes.data);
     if (shinyRes.success) setGlobalShiny(shinyRes.percent);
-  }, []);
+  }, [activeGameId]);
 
   useEffect(() => {
     void load();
+    setForm({ ...emptyClassDef(), profileId: null });
+    setIsNew(false);
   }, [load]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
@@ -80,7 +84,12 @@ export function ClassEditorPanel() {
   };
 
   const handleNew = () => {
-    setForm({ ...emptyClassDef(), sortOrder: list.length + 1, slug: `class_${list.length + 1}` });
+    setForm({
+      ...emptyClassDef(),
+      profileId: activeGameId,
+      sortOrder: list.length + 1,
+      slug: `class_${list.length + 1}`,
+    });
     setIsNew(true);
   };
 
@@ -90,7 +99,11 @@ export function ClassEditorPanel() {
       return;
     }
     setLoading(true);
-    const res = await upsertCharacterClass(form);
+    const res = await upsertCharacterClass({
+      ...form,
+      // Empty string = shared; undefined falls back to active world profile
+      profileId: form.profileId === undefined ? activeGameId : form.profileId || null,
+    });
     setLoading(false);
     if (res.success) {
       showStatus('success', `${form.name} saved.`);
@@ -238,7 +251,10 @@ export function ClassEditorPanel() {
                   {c.isPlayable ? <Eye size={11} className="text-emerald-400" /> : <EyeOff size={11} className="text-slate-500" />}
                 </button>
               </div>
-              <div className="text-[9px] text-slate-500">{c.classId}</div>
+              <div className="text-[9px] text-slate-500">
+                {c.classId}
+                <span className="text-slate-600"> · {c.profileId || 'shared'}</span>
+              </div>
             </button>
           ))}
           {list.length === 0 && (
@@ -250,6 +266,15 @@ export function ClassEditorPanel() {
           {(isNew || form.slug) && (
             <>
               <div className="grid grid-cols-2 gap-2">
+                <div className="col-span-2">
+                  <label className={labelCls}>Profile (empty = shared)</label>
+                  <input
+                    className={inputCls}
+                    value={form.profileId ?? ''}
+                    onChange={(e) => f('profileId', e.target.value || null)}
+                    placeholder="tuxemon / custom_1 / empty=shared"
+                  />
+                </div>
                 <div>
                   <label className={labelCls}>Slug</label>
                   <input className={inputCls} value={form.slug} disabled={!isNew} onChange={(e) => f('slug', e.target.value)} />

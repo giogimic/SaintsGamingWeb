@@ -841,6 +841,9 @@ model CharacterClass {
   id            String    @id @default(cuid())
   gameId        String
   game          GameConfig @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  /// World profile id (tuxemon / custom_1 / custom_2). null/empty = shared across profiles.
+  /// Distinct from gameId, which is the GameConfig FK (slug "saints").
+  profileId     String?
   slug          String
   name          String
   description   String    @default("")
@@ -878,6 +881,7 @@ model CharacterClass {
 
   @@unique([gameId, slug])
   @@index([gameId])
+  @@index([profileId])
   @@index([classId])
 }
 

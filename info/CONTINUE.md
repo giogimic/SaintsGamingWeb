@@ -23,12 +23,13 @@ Spyder smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 - Clone Trail → Custom 2 (namespaced)
 - Playthrough fixes (tools ≠ Q6 accept; DB dialogue; real sprites)
 - Lobby World picker (localStorage) + dialogue cache freshness
+- Classes panel scoped by world **`profileId`** (null/empty = shared; GameConfig FK stays `saints`)
 
 ### Suggested next
 
 1. Human smoke Custom 1 Trail greeter → gather
-2. Optional: scope Classes panel by world profile (still shared under `saints`)
-3. Merge PR stack: visual-browser → world-profiles (#6) → phases 3–7 (#7)
+2. Merge PR stack: visual-browser (#5) → world-profiles (#6) → phases 3–7 (#7)
+3. Independent: Interface Editor UX (#8) — also needs GameLogin `identifier` fix if merged without #5
 
 ### Pipeline
 

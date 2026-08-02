@@ -48,6 +48,12 @@ export type ClassDefData = {
   description: string;
   icon?: string | null;
   color: string;
+  /**
+   * World profile id (tuxemon / custom_1 / custom_2).
+   * null/empty = shared across all Studio profiles.
+   * Not the GameConfig FK — that stays on the DB `gameId` column.
+   */
+  profileId?: string | null;
   /** Additive deltas on SHARED_BASE_STATS. */
   statDeltas: Partial<ClassStatBlock>;
   /** Additive deltas on combat skill starting levels (from 1). */
@@ -190,6 +196,7 @@ export function emptyClassDef(): ClassDefData {
     description: "",
     icon: null,
     color: "#cbb26a",
+    profileId: null,
     statDeltas: {},
     skillDeltas: {},
     growthRates: { hp: 1.3, atk: 1.2, def: 1.2, spd: 1.2, ratk: 1.2, rdef: 1.2 },

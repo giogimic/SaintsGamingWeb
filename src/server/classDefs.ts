@@ -51,16 +51,28 @@ export async function loadGlobalShinyChancePercent(): Promise<number> {
   return DEFAULT_GLOBAL_SHINY_CHANCE_PERCENT;
 }
 
-export async function loadClassDef(classIdOrSlug: string): Promise<ClassDefData | null> {
+/** Shared + matching world-profile rows (null/empty profileId = shared). */
+function classProfileScope(profileId?: string | null) {
+  if (!profileId) return {};
+  return {
+    OR: [{ profileId: null }, { profileId: "" }, { profileId }],
+  };
+}
+
+export async function loadClassDef(
+  classIdOrSlug: string,
+  profileId?: string | null
+): Promise<ClassDefData | null> {
   try {
     const { id: gameId } = await ensureDefaultGameConfig();
     const key = classIdOrSlug.toUpperCase();
+    const scope = classProfileScope(profileId);
     const row =
       (await prisma.characterClass.findFirst({
-        where: { gameId, classId: key, isPlayable: true },
+        where: { gameId, classId: key, isPlayable: true, ...scope },
       })) ||
       (await prisma.characterClass.findFirst({
-        where: { gameId, slug: classIdOrSlug.toLowerCase(), isPlayable: true },
+        where: { gameId, slug: classIdOrSlug.toLowerCase(), isPlayable: true, ...scope },
       }));
     if (row) return classRowToData(row);
   } catch {
@@ -70,11 +82,11 @@ export async function loadClassDef(classIdOrSlug: string): Promise<ClassDefData 
   return fb && fb.isPlayable ? fb : null;
 }
 
-export async function loadPlayableClasses(): Promise<ClassDefData[]> {
+export async function loadPlayableClasses(profileId?: string | null): Promise<ClassDefData[]> {
   try {
     const { id: gameId } = await ensureDefaultGameConfig();
     const rows = await prisma.characterClass.findMany({
-      where: { gameId, isPlayable: true },
+      where: { gameId, isPlayable: true, ...classProfileScope(profileId) },
       orderBy: { sortOrder: "asc" },
     });
     if (rows.length > 0) return rows.map(classRowToData);
