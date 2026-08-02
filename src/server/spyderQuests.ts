@@ -104,6 +104,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 1 },
       ],
       gold: 75,
+      nextQuest: "quest_spyder_cotton_tunnel",
     }),
     objectives: [
       {
@@ -119,6 +120,27 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_cotton_cafe_host",
         requiredQty: 1,
         description: "Enter the Café and speak with the host",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_cotton_tunnel",
+    title: "Spyder 6: Cotton Tunnel",
+    description: "Find the east tunnel mouth in Cotton Town and speak with Carlos inside.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_fine", qty: 2 },
+        { slug: "film_standard", qty: 5 },
+      ],
+      gold: 100,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_cotton_tunnel_carlos",
+        requiredQty: 1,
+        description: "Enter the Cotton Tunnel (east of town) and speak with Carlos",
       },
     ],
   },
@@ -220,7 +242,7 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 19,
       sprite: "florist",
       greeting:
-        "Welcome to Cotton Town! Step into Scoop (north door by the plaza) and the Café next door — the locals are waiting inside.",
+        "Welcome to Cotton Town! Scoop and the Café are north of the plaza; the tunnel mouth waits east when you're ready for Carlos.",
     },
   ],
   COTTON_SCOOP: [
@@ -242,7 +264,18 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 6,
       sprite: "barmaid",
       greeting:
-        "Pull up a chair. Cayden and the regulars trade battle stories after dark — you've earned a rest.",
+        "Pull up a chair. When you're ready for trouble, the east tunnel hides a rider named Carlos.",
+    },
+  ],
+  SPYDER_COTTON_TUNNEL: [
+    {
+      id: "npc_cotton_tunnel_carlos",
+      name: "Carlos",
+      x: 15,
+      y: 7,
+      sprite: "dragonrider",
+      greeting:
+        "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — watch your step, and your film.",
     },
   ],
 };

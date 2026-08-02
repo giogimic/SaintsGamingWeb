@@ -151,6 +151,8 @@ const PATH: Record<string, PathCfg> = {
       // Plaza doors into indoor shops (north of greeter lane)
       gate(8, 18, "COTTON_SCOOP", 6, 8),
       gate(12, 18, "COTTON_CAFE", 5, 10),
+      // East mouth → Cotton Tunnel
+      gate(37, 18, "SPYDER_COTTON_TUNNEL", 2, 15),
     ],
     open: [
       { x: 0, y: 20, tile: 3 },
@@ -162,14 +164,34 @@ const PATH: Record<string, PathCfg> = {
       { x: 8, y: 19, tile: 0 },
       { x: 12, y: 18, tile: 4 },
       { x: 12, y: 19, tile: 0 },
+      { x: 37, y: 18, tile: 4 },
+      { x: 36, y: 18, tile: 0 },
+      { x: 36, y: 17, tile: 0 },
     ],
-    // West gate → open lane on y=19 toward greeter + shop doors
+    // West gate → plaza shops → east tunnel mouth
     corridors: [
       { dir: "h", y: 20, x0: 1, x1: 6 },
       { dir: "v", x: 2, y0: 19, y1: 20 },
       { dir: "h", y: 19, x0: 2, x1: 18 },
-      { dir: "h", y: 18, x0: 6, x1: 14 },
+      { dir: "h", y: 18, x0: 6, x1: 37 },
+      { dir: "h", y: 17, x0: 30, x1: 37 },
       { dir: "v", x: 4, y0: 15, y1: 19 },
+    ],
+  },
+  SPYDER_COTTON_TUNNEL: {
+    gates: [gate(1, 15, "COTTON_TOWN", 36, 18)],
+    open: [
+      { x: 1, y: 15, tile: 3 },
+      { x: 2, y: 15, tile: 0 },
+      { x: 2, y: 14, tile: 0 },
+      { x: 15, y: 7, tile: 0 },
+      { x: 14, y: 7, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 15, x0: 1, x1: 20 },
+      { dir: "v", x: 15, y0: 7, y1: 15 },
+      { dir: "h", y: 7, x0: 10, x1: 22 },
+      { dir: "v", x: 2, y0: 12, y1: 15 },
     ],
   },
   COTTON_SCOOP: {
