@@ -92,8 +92,12 @@ export const AZURE_GUIDE_TREE = {
     text: "Past Carlos, the tunnel opens east onto Spyder Route 2. Meet the scout on the road — Scoop's nurse can heal you first if you need it.",
     options: [{ label: "Onto Route 2.", nextNode: "exit" }],
   },
+  node_leather: {
+    text: "Route 2 runs into Route 3, then Leather Town. Greet the gatekeeper — their Center will mend your party.",
+    options: [{ label: "Toward Leather.", nextNode: "exit" }],
+  },
   node_done: {
-    text: "Azure to Route 2 — you've cut a clean trail through Spyder's near web. Restock film at Scoop, heal at the nurse, and roam when you're ready for whatever comes next.",
+    text: "Azure to Leather — you've cut a clean trail through Spyder's near web. Restock film at Scoop, heal at either Center, and roam when you're ready for whatever comes next.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Farewell.", nextNode: "exit" },
@@ -142,8 +146,16 @@ export function resolveAzureGuideStartNode(ctx: GuideContext): string {
     return "node_route2";
   }
 
-  if (completedSlugs.has("quest_spyder_route2")) {
+  if (active?.slug === "quest_spyder_leather_arrive") {
+    return "node_leather";
+  }
+
+  if (completedSlugs.has("quest_spyder_leather_arrive")) {
     return "node_done";
+  }
+
+  if (completedSlugs.has("quest_spyder_route2")) {
+    return "node_leather";
   }
 
   if (completedSlugs.has("quest_spyder_cotton_tunnel")) {

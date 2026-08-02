@@ -134,6 +134,9 @@ const AMBIENT_MAPS = [
   "COTTON_CAFE",
   "SPYDER_COTTON_TUNNEL",
   "SPYDER_ROUTE2",
+  "SPYDER_ROUTE3",
+  "SPYDER_LEATHER_TOWN",
+  "SPYDER_LEATHER_CENTER",
 ] as const;
 
 async function checkNpcs() {
@@ -192,13 +195,41 @@ async function checkDialogueActions() {
     ok("Scoop nurse HEAL_PARTY");
   }
 
+  const leatherNurse = await prisma.npcDialogueTree.findUnique({
+    where: { npcId: "npc_leather_center_nurse" },
+  });
+  if (!leatherNurse?.data?.includes("HEAL_PARTY")) {
+    fail("Leather nurse dialogue missing HEAL_PARTY");
+  } else {
+    ok("Leather nurse HEAL_PARTY");
+  }
+
   const guide = await prisma.npcDialogueTree.findUnique({
     where: { npcId: "npc_azure_guide" },
   });
-  if (!guide?.data?.includes("node_route2") || !guide?.data?.includes("node_done")) {
-    fail("Guide tree missing node_route2 / node_done");
+  if (
+    !guide?.data?.includes("node_route2") ||
+    !guide?.data?.includes("node_leather") ||
+    !guide?.data?.includes("node_done")
+  ) {
+    fail("Guide tree missing node_route2 / node_leather / node_done");
   } else {
-    ok("Guide has node_route2 + node_done");
+    ok("Guide has node_route2 + node_leather + node_done");
+  }
+}
+
+async function checkQuestGoldFields() {
+  for (const q of SPYDER_QUEST_CHAIN) {
+    let rewards: { gold?: number } = {};
+    try {
+      rewards = JSON.parse(q.rewards);
+    } catch {
+      fail(`quest ${q.slug}: bad rewards JSON`);
+      continue;
+    }
+    if (typeof rewards.gold === "number" && rewards.gold > 0) {
+      ok(`quest ${q.slug}: gold ${rewards.gold}`);
+    }
   }
 }
 
@@ -291,9 +322,22 @@ async function main() {
     path: [2, 15, 38, 7],
   });
   await checkMap("SPYDER_ROUTE2", {
-    gateTargets: ["SPYDER_COTTON_TUNNEL"],
+    gateTargets: ["SPYDER_COTTON_TUNNEL", "SPYDER_ROUTE3"],
     minGrass: 10,
-    path: [2, 10, 4, 10],
+    path: [2, 10, 39, 10],
+  });
+  await checkMap("SPYDER_ROUTE3", {
+    gateTargets: ["SPYDER_ROUTE2", "SPYDER_LEATHER_TOWN"],
+    minGrass: 10,
+    path: [2, 10, 39, 21],
+  });
+  await checkMap("SPYDER_LEATHER_TOWN", {
+    gateTargets: ["SPYDER_ROUTE3", "SPYDER_LEATHER_CENTER"],
+    path: [2, 21, 10, 18],
+  });
+  await checkMap("SPYDER_LEATHER_CENTER", {
+    gateTargets: ["SPYDER_LEATHER_TOWN"],
+    path: [6, 8, 6, 6],
   });
 
   console.log("\nNPCs");
@@ -307,6 +351,9 @@ async function main() {
 
   console.log("\nQuests");
   await checkQuests();
+
+  console.log("\nQuest reward gold fields");
+  await checkQuestGoldFields();
 
   console.log(`\n${oks.length} checks passed, ${fails.length} failed`);
   if (fails.length) {

@@ -164,6 +164,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 1 },
       ],
       gold: 80,
+      nextQuest: "quest_spyder_leather_arrive",
     }),
     objectives: [
       {
@@ -172,6 +173,28 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_spyder_route2_scout",
         requiredQty: 1,
         description: "Exit the tunnel east onto Route 2 and speak with the scout",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_leather_arrive",
+    title: "Spyder 8: Leather Town",
+    description:
+      "Follow Route 2 east through Route 3 into Leather Town and greet the gatekeeper.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_standard", qty: 5 },
+        { slug: "film_fine", qty: 2 },
+      ],
+      gold: 120,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_leather_greeter",
+        requiredQty: 1,
+        description: "Reach Leather Town via Route 3 and speak with the greeter",
       },
     ],
   },
@@ -243,7 +266,26 @@ export const SCOOP_NURSE_DIALOGUE_TREE = {
     ],
   },
   healed: {
-    text: "All set. Carlos won't wait forever — and Route 2 beyond the tunnel won't either.",
+    text: "All set. Carlos won't wait forever — and the road east toward Leather won't either.",
+    options: [{ label: "Thank you.", nextNode: "exit" }],
+  },
+} as const;
+
+/** Leather healing-center nurse — same HEAL_PARTY action as Scoop. */
+export const LEATHER_NURSE_DIALOGUE_TREE = {
+  node_start: {
+    text: "Leather Center. Sit tight — I'll restore every companion you travel with.",
+    options: [
+      {
+        label: "Please heal my party",
+        nextNode: "healed",
+        action: "HEAL_PARTY",
+      },
+      { label: "Just passing through.", nextNode: "exit" },
+    ],
+  },
+  healed: {
+    text: "Patched up. The road west runs back through Route 3 toward Cotton — east waits when you're ready.",
     options: [{ label: "Thank you.", nextNode: "exit" }],
   },
 } as const;
@@ -397,7 +439,40 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 10,
       sprite: "ninja",
       greeting:
-        "You made it through Carlos's tunnel. Spyder Route 2 stretches east — restock film at Scoop if the grass thins your stock.",
+        "You made it through Carlos's tunnel. Keep east on Route 2 into Route 3 — Leather Town waits beyond. Restock film at Scoop if grass thins your stock.",
+    },
+  ],
+  SPYDER_ROUTE3: [
+    {
+      id: "npc_spyder_route3_scout",
+      name: "Route 3 Scout",
+      x: 6,
+      y: 10,
+      sprite: "ninja",
+      greeting:
+        "Route 3 bends south-east toward Leather Town. Watch the tall grass — and the healing center inside the gates.",
+    },
+  ],
+  SPYDER_LEATHER_TOWN: [
+    {
+      id: "npc_leather_greeter",
+      name: "Leather Greeter",
+      x: 4,
+      y: 21,
+      sprite: "knight",
+      greeting:
+        "Welcome to Leather Town. The Center north of the gate can mend your party — rest, then explore.",
+    },
+  ],
+  SPYDER_LEATHER_CENTER: [
+    {
+      id: "npc_leather_center_nurse",
+      name: "Leather Nurse",
+      x: 6,
+      y: 6,
+      sprite: "monk",
+      greeting:
+        "Leather Center. Sit tight — I'll restore every companion you travel with.",
     },
   ],
 };
