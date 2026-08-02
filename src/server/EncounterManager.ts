@@ -4,7 +4,11 @@ import {
   computeCaptureChance,
   rollCaptureSuccess,
 } from "@/shared/game/combatAbilities";
-import { TEST_CREATURE } from "@/shared/game/testCreature";
+import {
+  loadCreatureDef,
+  loadWildSpawnDefs,
+  toPlayerCreatureStats,
+} from "./creatureDefs";
 
 const prisma = new PrismaClient();
 
@@ -75,7 +79,7 @@ export class EncounterManager {
     this.engine.events.emit("directMessage", { socketId, event, data });
   }
 
-  /** Persist the single MPV starter (Rockitten) as a real PlayerCreature. */
+  /** Persist a catalog starter as a real PlayerCreature (CreatureDef / fallback seed). */
   private async handleClaimStarter(data: {
     accountId: string;
     socketId: string;
@@ -87,10 +91,16 @@ export class EncounterManager {
       return;
     }
 
-    const slug = data.speciesSlug || TEST_CREATURE.slug;
-    if (slug !== TEST_CREATURE.slug) {
+    const slug = data.speciesSlug;
+    if (!slug) {
+      this.sendToPlayer(data.socketId, "show_toast", { message: "Pick a starter species." });
+      return;
+    }
+
+    const def = await loadCreatureDef(slug);
+    if (!def || !def.isStarter) {
       this.sendToPlayer(data.socketId, "show_toast", {
-        message: `MPV starter is ${TEST_CREATURE.name} only for now.`,
+        message: "That species is not an available starter.",
       });
       return;
     }
@@ -112,22 +122,32 @@ export class EncounterManager {
     const creature = await prisma.playerCreature.create({
       data: {
         userId,
-        speciesSlug: TEST_CREATURE.slug,
-        nickname: TEST_CREATURE.name,
-        level: TEST_CREATURE.level,
-        currentHp: TEST_CREATURE.maxHp,
-        maxHp: TEST_CREATURE.maxHp,
-        stats: JSON.stringify(TEST_CREATURE.stats),
-        abilities: JSON.stringify(TEST_CREATURE.abilities),
+        speciesSlug: def.slug,
+        nickname: def.name,
+        level: def.starterLevel,
+        currentHp: def.baseHp,
+        maxHp: def.baseHp,
+        stats: JSON.stringify(toPlayerCreatureStats(def)),
+        abilities: JSON.stringify(def.abilities),
         isParty: true,
         slotIndex: 0,
       },
     });
 
     this.sendToPlayer(data.socketId, "show_toast", {
-      message: `${TEST_CREATURE.name} joined your party!`,
+      message: `${def.name} joined your party!`,
     });
-    this.sendToPlayer(data.socketId, "starter_claimed", { creature, alreadyOwned: false });
+    this.sendToPlayer(data.socketId, "starter_claimed", {
+      creature,
+      def: {
+        slug: def.slug,
+        name: def.name,
+        typePrimary: def.typePrimary,
+        typeSecondary: def.typeSecondary,
+        spriteOverworld: def.spriteOverworld,
+      },
+      alreadyOwned: false,
+    });
   }
 
   private async handleEncounterTrigger(data: {
@@ -163,7 +183,7 @@ export class EncounterManager {
     // Real starter required — no fake party lead
     if (!activeCreature) {
       this.sendToPlayer(data.socketId, "show_toast", {
-        message: "Claim your Rockitten starter before battling wild creatures.",
+        message: "Claim a starter companion before battling wild creatures.",
       });
       return;
     }
@@ -174,17 +194,24 @@ export class EncounterManager {
       return;
     }
 
+    const playerDef = await loadCreatureDef(activeCreature.speciesSlug);
+    const wilds = await loadWildSpawnDefs();
+    const wildDef = wilds[Math.floor(Math.random() * Math.max(1, wilds.length))] || wilds[0];
+    if (!wildDef) {
+      this.sendToPlayer(data.socketId, "show_toast", { message: "No wild creatures configured." });
+      return;
+    }
+
     const battleId = `battle_${Date.now()}_${data.accountId}`;
     const playerCreatureData = {
       id: activeCreature.id,
-      name: activeCreature.nickname || activeCreature.speciesSlug,
+      name: activeCreature.nickname || playerDef?.name || activeCreature.speciesSlug,
       hp: activeCreature.currentHp,
       maxHp: activeCreature.maxHp,
       level: activeCreature.level,
-      spriteKey: TEST_CREATURE.overworldSprite,
+      spriteKey: playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data",
     };
 
-    // MPV: single wild species — Rockitten (same as RT combat)
     const battleState: BattleState = {
       id: battleId,
       accountId: data.accountId,
@@ -192,15 +219,15 @@ export class EncounterManager {
       mapId: data.mapId,
       phase: "WAITING_FOR_INPUT",
       wildCreature: {
-        templateId: TEST_CREATURE.slug,
-        name: TEST_CREATURE.name,
-        hp: TEST_CREATURE.maxHp,
-        maxHp: TEST_CREATURE.maxHp,
-        level: TEST_CREATURE.level,
-        spriteKey: TEST_CREATURE.overworldSprite,
+        templateId: wildDef.slug,
+        name: wildDef.name,
+        hp: wildDef.baseHp,
+        maxHp: wildDef.baseHp,
+        level: wildDef.starterLevel,
+        spriteKey: wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data",
       },
       playerCreature: playerCreatureData,
-      log: [`A wild ${TEST_CREATURE.name} appeared!`],
+      log: [`A wild ${wildDef.name} appeared!`],
     };
 
     this.activeBattles.set(battleId, battleState);
@@ -373,16 +400,29 @@ export class EncounterManager {
 
     if (result === "CAPTURE" && userId) {
       try {
+        const wildDef = await loadCreatureDef(battle.wildCreature.templateId);
         await prisma.playerCreature.create({
           data: {
             userId,
-            speciesSlug: battle.wildCreature.templateId || TEST_CREATURE.slug,
-            nickname: battle.wildCreature.name || TEST_CREATURE.name,
+            speciesSlug: battle.wildCreature.templateId,
+            nickname: battle.wildCreature.name,
             level: battle.wildCreature.level,
             currentHp: Math.max(1, battle.wildCreature.hp),
             maxHp: battle.wildCreature.maxHp,
-            stats: JSON.stringify(TEST_CREATURE.stats),
-            abilities: JSON.stringify(TEST_CREATURE.abilities),
+            stats: JSON.stringify(
+              wildDef
+                ? toPlayerCreatureStats(wildDef)
+                : {
+                    physicalPower: 10,
+                    physicalDefense: 10,
+                    abilityPower: 10,
+                    abilityDefense: 10,
+                    combatTempo: 100,
+                  }
+            ),
+            abilities: JSON.stringify(
+              wildDef?.abilities || [{ abilitySlug: "ram", currentCooldown: 0 }]
+            ),
             isParty: false,
           },
         });

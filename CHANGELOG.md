@@ -1,3 +1,10 @@
+## [2.1.116] - 2026-08-02
+
+### Added
+- **Creature Catalog** (`CreatureDef`) — Studio-editable like Starter Heroes: asset picker, type combo, full stats, default + potential passives, world skills.
+- Shared seed `FALLBACK_CREATURE_DEFS` (Agnite / Budaye / Dollfin starters + Rockitten wild).
+- Studio dock **Creatures** panel; Professor Lab loads catalog starters; claim/encounters resolve via catalog.
+
 ## [2.1.115] - 2026-08-02
 
 ### Added

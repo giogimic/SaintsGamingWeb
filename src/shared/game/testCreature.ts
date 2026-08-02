@@ -1,32 +1,38 @@
 /**
- * Single MPV test creature used for BOTH turn-based encounters and RT MMO combat.
- * Species: Tuxemon Rockitten (assets already in /game-assets).
+ * @deprecated Prefer creatureCatalog FALLBACK_CREATURE_DEFS / CreatureDef DB.
+ * Kept as thin re-exports so older imports keep working during migration.
  */
 
-export const TEST_CREATURE_SLUG = "rockitten";
+import {
+  getFallbackCreature,
+  creatureAssetUrl,
+  FALLBACK_CREATURE_DEFS,
+} from "./creatureCatalog";
+
+const rockitten = getFallbackCreature("rockitten")!;
+
+export const TEST_CREATURE_SLUG = rockitten.slug;
 
 export const TEST_CREATURE = {
-  slug: TEST_CREATURE_SLUG,
-  name: "Rockitten",
-  /** Overworld / TB portrait (single-frame NPC sheet). */
-  overworldSprite: "npc/rockitten",
-  /** Battle sheet path (for future frame animation). */
-  battleSheet: "monster/battle/rockitten-sheet",
-  level: 5,
-  maxHp: 100,
+  slug: rockitten.slug,
+  name: rockitten.name,
+  overworldSprite: rockitten.spriteOverworld,
+  battleSheet: rockitten.spriteBattle || rockitten.spriteOverworld,
+  level: rockitten.starterLevel,
+  maxHp: rockitten.baseHp,
   stats: {
-    physicalPower: 12,
-    physicalDefense: 14,
-    abilityPower: 8,
-    abilityDefense: 10,
-    combatTempo: 90,
+    physicalPower: rockitten.physicalPower,
+    physicalDefense: rockitten.physicalDefense,
+    abilityPower: rockitten.abilityPower,
+    abilityDefense: rockitten.abilityDefense,
+    combatTempo: rockitten.combatTempo,
   },
-  abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
-  description:
-    "A cute boulder-beast. Saints MPV uses Rockitten for capture battles and overworld RT fights.",
+  abilities: rockitten.abilities,
+  description: rockitten.flavor,
 } as const;
 
 export function testCreatureSpriteUrl(kind: "overworld" | "battle" = "overworld"): string {
-  const key = kind === "battle" ? TEST_CREATURE.battleSheet : TEST_CREATURE.overworldSprite;
-  return `/game-assets/${key}.png`;
+  return creatureAssetUrl(kind === "battle" ? TEST_CREATURE.battleSheet : TEST_CREATURE.overworldSprite);
 }
+
+export const ALL_TEST_CREATURES = FALLBACK_CREATURE_DEFS;

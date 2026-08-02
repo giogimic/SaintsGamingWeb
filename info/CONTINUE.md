@@ -9,26 +9,22 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**v2.1.115 — Shop/craft crystals + Rockitten starter for TB+RT**
+**v2.1.116 — Creature Catalog (hero-like editor)**
 
-- Buy/craft Binding Crystals at Village Merchant (server Prisma inventory)
-- Claim **Rockitten** starter (`claim_starter` / Party → Open Lab)
-- Wild Rockitten for tall-grass TB + roaming RT combat
-- No free gather tools / no free capture crystals
+- Studio → **Creatures** panel / Prisma `CreatureDef` / `creatureCatalog.ts` seed
+- Lab offers Solar/Bio/Hydro starters from catalog; wilds from `isWildSpawn`
+- Docs: `info/game/CREATURE_CATALOG.md`, Camera/Film + Aethervale drafts still pending code
 
-Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)  
-Alignment: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)
+Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
 ### Suggested next
 
-1. Starter + capture drafts ready:
-   - `info/game/STARTERS_BY_ELEMENT.md` — Agnite / Budaye / Dollfin
-   - `info/game/CAPTURE_CAMERA_FILM.md` — Soul Camera + Film tiers
-2. Confirm open questions (camera hard-gate, display names, Rockitten nest)
-3. Implement film slugs + 3-nest `claim_starter`, then **Quest 1** Vance tools
-4. ALIGNMENT slice **D** / **E** when tutorial path is stable
+1. Studio Seed creatures on real `DATABASE_URL` deploy
+2. Wire **Film** capture slugs (see `CAPTURE_CAMERA_FILM.md`)
+3. Quest 1 Vance tool grant
+4. Confirm Soul Camera hard-gate
 
 ### Smoke path (MPV)
 
