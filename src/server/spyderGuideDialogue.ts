@@ -104,8 +104,12 @@ export const AZURE_GUIDE_TREE = {
     text: "Leather Gym waits east of Scoop. Challenge Rook — Rockitten and Aardorn — then the east shaft opens for deeper digs.",
     options: [{ label: "To the Gym.", nextNode: "exit" }],
   },
+  node_leather_shaft: {
+    text: "East of Leather Town, Shaft 1 drops under the plaza. Talk to the scout, then press east into Shaft 2.",
+    options: [{ label: "Into the shafts.", nextNode: "exit" }],
+  },
   node_done: {
-    text: "Azure to Leather Gym — you've cut a clean trail through Spyder's near web. Heal at the Center, restock Scoop, explore the east shaft, and roam when you're ready for whatever comes next.",
+    text: "Azure through Leather's shafts — you've cut a clean trail through Spyder's near web. Heal at the Center, restock Scoop, rematch Rook, and roam when you're ready for whatever comes next.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Farewell.", nextNode: "exit" },
@@ -166,8 +170,16 @@ export function resolveAzureGuideStartNode(ctx: GuideContext): string {
     return "node_leather_gym";
   }
 
-  if (completedSlugs.has("quest_spyder_leather_gym")) {
+  if (active?.slug === "quest_spyder_leather_shaft") {
+    return "node_leather_shaft";
+  }
+
+  if (completedSlugs.has("quest_spyder_leather_shaft")) {
     return "node_done";
+  }
+
+  if (completedSlugs.has("quest_spyder_leather_gym")) {
+    return "node_leather_shaft";
   }
 
   if (completedSlugs.has("quest_spyder_leather_scoop")) {
