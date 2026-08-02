@@ -81,6 +81,9 @@ export interface BattleState {
   id: string;
   accountId: string;
   phase: "WAITING_FOR_INPUT" | "RESOLUTION" | "TURN_END";
+  isTrainer?: boolean;
+  trainerNpcId?: string;
+  trainerName?: string;
   wildCreature: BattleCreature;
   playerCreature: BattleCreature;
   log: string[];

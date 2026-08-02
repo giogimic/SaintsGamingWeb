@@ -7,21 +7,21 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Spyder Q6 Cotton Tunnel**
+**Game Foundation Systems (PR #4) — Carlos trainer battle**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- Q6 Cotton Tunnel: east door → `SPYDER_COTTON_TUNNEL` + Carlos talk
-- Guide tunnel node; café/greeter hints
-- `smoke:spyder` covers tunnel path
+- `START_TRAINER_BATTLE` → 1v1 TB (Carlos / Dragarbor)
+- No flee/capture in trainer battles; win → `trainerDefeated` / Q6 `BATTLE`
+- Q6: TALK then defeat Carlos
 
 ### Suggested next
 
-1. Human smoke Q1–Q6
-2. Optional NPC battle vs Carlos (trainer fight)
+1. Human smoke Q1–Q6 including Carlos fight
+2. Multi-monster trainer parties / post-battle dialogue branches
 3. TMX bulk NPC import when Tuxemon checkout available
 
 ### Pipeline

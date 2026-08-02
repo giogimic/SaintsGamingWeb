@@ -85,11 +85,11 @@ export const AZURE_GUIDE_TREE = {
     options: [{ label: "I'll find them.", nextNode: "exit" }],
   },
   node_cotton_tunnel: {
-    text: "East of Cotton Town, a tunnel mouth opens. Carlos waits inside — Spyder's web runs under the road.",
+    text: "East of Cotton Town, a tunnel mouth opens. Carlos waits inside — challenge him when your companion is ready.",
     options: [{ label: "Into the tunnel.", nextNode: "exit" }],
   },
   node_done: {
-    text: "You've walked Azure to Cotton and faced the tunnel. Rest, then press deeper into Spyder's web when you're ready.",
+    text: "You've walked Azure to Cotton and bested Carlos in the tunnel. Rest, then press deeper into Spyder's web when you're ready.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Farewell.", nextNode: "exit" },

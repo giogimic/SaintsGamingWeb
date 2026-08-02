@@ -2,12 +2,12 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (Q6 tunnel)
+**Updated:** 2026-08-02 (Carlos trainer battle)
 
 ## Done
 
-- Spyder on-ramp **Q1–Q6** (Azure → Route 1 → Cotton Scoop/Café → Tunnel/Carlos)
-- Warps, corridors, Guide state, Budaye+film, accountId sync
+- Spyder on-ramp **Q1–Q6** including **Carlos trainer 1v1** (Dragarbor)
+- Warps, corridors, Scoop/Café indoors, Guide state, Budaye+film
 - `npm run smoke:spyder`
 
 ## Pipeline

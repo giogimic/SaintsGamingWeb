@@ -17,10 +17,13 @@ export function TurnBattleOverlay() {
 
   if (!activeBattle) return null;
 
-  const { wildCreature, playerCreature, phase, log } = activeBattle;
+  const { wildCreature, playerCreature, phase, log, isTrainer, trainerName } = activeBattle;
   
   const wildHpPercent = Math.max(0, Math.min(100, (wildCreature.hp / wildCreature.maxHp) * 100));
   const playerHpPercent = Math.max(0, Math.min(100, (playerCreature.hp / playerCreature.maxHp) * 100));
+  const foeTitle = isTrainer
+    ? `${trainerName || "Trainer"}'s ${wildCreature.name}`
+    : wildCreature.name;
 
   const handleAction = (action: string, moveId?: string, itemId?: string) => {
     if (phase !== 'WAITING_FOR_INPUT') return;
@@ -46,7 +49,7 @@ export function TurnBattleOverlay() {
           <div className="flex-1 bg-black/60 border border-white/20 p-4 rounded-xl shadow-2xl backdrop-blur-md">
             <div className="flex justify-between items-center mb-2 gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <h3 className="text-xl font-bold text-white uppercase tracking-wider truncate">{wildCreature.name}</h3>
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider truncate">{foeTitle}</h3>
                 {(wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && (
                   <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-[#cbb26a]/60 bg-[#806f47]/30 text-[#e2d5b3]">
                     shiny
@@ -159,11 +162,12 @@ export function TurnBattleOverlay() {
           </button>
           
           <button 
-            disabled={phase !== 'WAITING_FOR_INPUT'}
+            disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
             onClick={() => handleAction('ITEM', undefined, 'film_standard')}
             className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isTrainer ? "Can't capture a trainer's creature" : undefined}
           >
-            EXPOSE FILM
+            {isTrainer ? "NO CAPTURE" : "EXPOSE FILM"}
           </button>
           
           <button 
@@ -175,11 +179,12 @@ export function TurnBattleOverlay() {
           </button>
           
           <button 
-            disabled={phase !== 'WAITING_FOR_INPUT'}
+            disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
             onClick={() => handleAction('FLEE')}
             className="sg-button-secondary text-xl text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed border-red-500/30 hover:border-red-500/50 hover:bg-red-500/10"
+            title={isTrainer ? "Can't run from a trainer battle" : undefined}
           >
-            RUN
+            {isTrainer ? "NO RUN" : "RUN"}
           </button>
         </div>
       </div>
