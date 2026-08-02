@@ -3,6 +3,7 @@ import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
 import { isSameBaseMap } from "@/shared/net/mapIds";
+import { grantsForDamageTaken } from "@/shared/game/combatSkillXp";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -317,6 +318,17 @@ export class PlayerManager {
     player.hp = Math.max(0, player.hp - data.damage);
     this.dirtyEntities.add(player.entityId);
     console.log(`[PlayerManager] ${player.name} took ${data.damage} damage! HP: ${player.hp}/${player.maxHp}`);
+
+    // Train defence / hitpoints on damage taken (combat skill typings)
+    if (data.damage > 0 && player.accountId) {
+      for (const g of grantsForDamageTaken(data.damage)) {
+        this.engine.events.emit("grantSkillXp", {
+          accountId: player.accountId,
+          skillSlug: g.skillSlug,
+          amount: g.amount,
+        });
+      }
+    }
 
     if (player.hp <= 0) {
       this.handlePlayerDefeated(player);

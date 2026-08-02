@@ -17,7 +17,8 @@
     "import:tuxemon": "tsx scripts/import-tuxemon-data.ts",
     "sync:creatures": "tsx scripts/sync-tuxemon-to-creature-defs.ts --wild",
     "migrate:campaign": "tsx scripts/migrate-campaign-maps-to-db.ts",
-    "ensure:campaign": "tsx scripts/ensure-campaign-playable.ts"
+    "ensure:campaign": "tsx scripts/ensure-campaign-playable.ts",
+    "seed:azure": "tsx scripts/seed-azure-campaign-guide.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

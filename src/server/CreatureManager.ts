@@ -95,18 +95,36 @@ export class CreatureManager {
     this.dirtyEntities.add(data.entityId);
   }
 
-  private spawnCreature(data: { templateId: string, entityType?: EntityType, mapId: string, x: number, y: number, spawnMode: SpawnMode, ownerId?: string }) {
+  private spawnCreature(data: {
+    templateId: string;
+    entityType?: EntityType;
+    mapId: string;
+    x: number;
+    y: number;
+    spawnMode: SpawnMode;
+    ownerId?: string;
+    name?: string;
+    spriteKey?: string;
+  }) {
     const isNpc = data.entityType === EntityType.NPC;
-    const entityId = `${isNpc ? 'npc' : 'creature'}_${data.templateId}_${Date.now()}`;
-    
+    const cleanTemplate = String(data.templateId || "villager").replace(/^npc_/, "");
+    const entityId = `${isNpc ? "npc" : "creature"}_${cleanTemplate}_${Date.now()}`;
+
     const entityType = data.entityType || EntityType.CREATURE;
     const isWildCreature = !isNpc && entityType === EntityType.CREATURE;
+    const spriteKey =
+      data.spriteKey ||
+      (isNpc
+        ? cleanTemplate.replace(/^warden_/, "").includes("vance")
+          ? "professor"
+          : cleanTemplate
+        : cleanTemplate);
 
     const creature: CreatureState = {
       entityId,
       entityType,
-      templateId: data.templateId,
-      name: isNpc ? data.templateId : "Wild " + data.templateId,
+      templateId: cleanTemplate,
+      name: data.name || (isNpc ? cleanTemplate : "Wild " + cleanTemplate),
       mapId: data.mapId,
       x: data.x,
       y: data.y,
@@ -119,20 +137,20 @@ export class CreatureManager {
       maxHp: isWildCreature ? 80 : 100,
       isMoving: false,
       direction: "down",
-      lastMoveTime: Date.now()
+      lastMoveTime: Date.now(),
     };
 
     this.creatures.set(entityId, creature);
     this.worldManager.addEntity(creature.mapId, creature.x, creature.y, entityId);
     this.dirtyEntities.add(entityId);
-    
+
     // Broadcast spawn to clients (include spriteKey for lobby mapEntities).
     this.engine.events.emit("networkBroadcast", {
       room: creature.mapId,
       event: "creature_spawned",
       data: {
         ...creature,
-        spriteKey: data.templateId,
+        spriteKey,
       },
     });
   }
