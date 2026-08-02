@@ -2,14 +2,14 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (Guide state + starter)
+**Updated:** 2026-08-02 (corridors + accountId)
 
-## Done (high level)
+## Done
 
 - Classes / shinies / Tuxemon import / campaign maps
-- Spyder on-ramp: NPCs, 4 quests, warps, tall grass, capture CLAIM, kill XP
-- Lobby allowlist + gate normalize
-- **State-aware Azure Guide** + **Budaye grant** on welcome accept
+- Spyder on-ramp: quests, Guide state, Budaye+film, warps, grass
+- **Walkable corridors** Route 1 + Cotton; NPC positions fixed
+- Lobby User.id account sync; Spyder tracker empty copy
 
 ## Pipeline
 
@@ -23,4 +23,4 @@ Smoke: [`SPYDER_SMOKE.md`](./SPYDER_SMOKE.md)
 ## Remaining
 
 - Human smoke
-- TMX densify / deeper Spyder graph
+- TMX densify / deeper Cotton beats
