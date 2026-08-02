@@ -8,6 +8,7 @@ import {
   DEFAULT_WORLD_PROFILE_ID,
   type WorldProfile,
 } from "@/shared/game/worldProfiles";
+import { cloneSaintsTrailToProfile } from "@/server/cloneSaintsTrail";
 
 /** GameConfig rows that are class/modpack hosts — not Studio world profiles. */
 const NON_WORLD_CONFIG_SLUGS = ["saints", "saints-gaming", "saints-gaming-qol"];
@@ -185,5 +186,32 @@ export async function createBlankWorldProfile(opts: {
   } catch (err) {
     console.error("[createBlankWorldProfile]", err);
     return { success: false, error: "Failed to create world" };
+  }
+}
+
+/** Clone Saints Trail template into a profile (namespaced quests/NPCs/map). */
+export async function cloneTrailWorldProfile(opts: {
+  slug: string;
+  name?: string;
+  force?: boolean;
+}) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  try {
+    const result = await cloneSaintsTrailToProfile(prisma, {
+      targetSlug: opts.slug,
+      name: opts.name,
+      force: opts.force,
+    });
+    revalidatePath("/studio");
+    revalidatePath("/lobby");
+    return { success: true, ...result };
+  } catch (err) {
+    console.error("[cloneTrailWorldProfile]", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Clone failed",
+    };
   }
 }

@@ -290,7 +290,8 @@ export class DialogueManager {
   private async runAction(
     action: string | undefined,
     accountId: string,
-    socketId: string
+    socketId: string,
+    opts?: { questSlug?: string; npcId?: string }
   ) {
     if (!action) return;
 
@@ -366,7 +367,7 @@ export class DialogueManager {
       this.toast(socketId, "Received Rook Hatchet & Crude Pickaxe.");
       this.engine.events.emit("acceptQuest", {
         accountId,
-        questSlug: "quest_tools_of_trade",
+        questSlug: opts?.questSlug || "quest_tools_of_trade",
         socketId,
       });
       return;
@@ -375,18 +376,19 @@ export class DialogueManager {
     if (action === "DEMO_QUEST_REPORT") {
       const report = await this.buildQuestReport(userId);
       this.toast(socketId, report.toast);
+      const vanceId = opts?.npcId || "npc_warden_vance";
       // Progress TALK objectives for active demo quests (turn-in stages)
       this.engine.events.emit("dialogue_start", {
         accountId,
         socketId,
-        targetSlug: "npc_warden_vance",
+        targetSlug: vanceId,
       });
       // Override next dialogue line with state-aware copy when selecting report
       this.engine.events.emit("directMessage", {
         socketId,
         event: "dialogue_start",
         data: {
-          npcId: "npc_warden_vance",
+          npcId: vanceId,
           npcName: "Warden Vance",
           node: "node_report",
           text: report.text,
@@ -507,7 +509,7 @@ export class DialogueManager {
     const npcId = this.normalizeNpcId(targetId);
 
     if (action) {
-      await this.runAction(action, accountId, socketId);
+      await this.runAction(action, accountId, socketId, { questSlug, npcId });
     }
 
     if (action === "ACCEPT_QUEST" && questSlug) {
@@ -548,11 +550,15 @@ export class DialogueManager {
           levels: [5],
         },
       };
-      const cfg = trainers[npcId] || {
-        name: "Trainer",
-        speciesSlugs: ["rockitten"],
-        levels: [6],
-      };
+      const cfg =
+        trainers[npcId] ||
+        (npcId.endsWith("_trail_tutor") || npcId.includes("trail_tutor")
+          ? { name: "Spar Tutor", speciesSlugs: ["rockitten"], levels: [5] }
+          : {
+              name: "Trainer",
+              speciesSlugs: ["rockitten"],
+              levels: [6],
+            });
       this.engine.events.emit("startTrainerBattle", {
         accountId,
         socketId,
