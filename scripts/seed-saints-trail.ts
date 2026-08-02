@@ -6,6 +6,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { DEMO_MAP_NPCS } from "../src/server/demoMapSeed";
 import {
   SAINTS_TRAIL_DIALOGUES,
   SAINTS_TRAIL_GAME_ID,
@@ -32,7 +33,8 @@ async function mergeTrailNpcs() {
   }
 
   let added = 0;
-  for (const seed of SAINTS_TRAIL_NPCS) {
+  const seeds = [...SAINTS_TRAIL_NPCS, ...DEMO_MAP_NPCS];
+  for (const seed of seeds) {
     const idx = npcs.findIndex((n) => n.id === seed.id);
     if (idx >= 0) {
       if (force) {

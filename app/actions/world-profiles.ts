@@ -194,7 +194,17 @@ export async function cloneTrailWorldProfile(opts: {
   slug: string;
   name?: string;
   force?: boolean;
-}) {
+}): Promise<
+  | {
+      success: true;
+      targetSlug: string;
+      mapId: string;
+      quests: number;
+      npcs: number;
+      dialogues: number;
+    }
+  | { success: false; error: string }
+> {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: "Unauthorized" };
 
@@ -206,11 +216,11 @@ export async function cloneTrailWorldProfile(opts: {
     });
     revalidatePath("/studio");
     revalidatePath("/lobby");
-    return { success: true as const, ...result };
+    return { success: true, ...result };
   } catch (err) {
     console.error("[cloneTrailWorldProfile]", err);
     return {
-      success: false as const,
+      success: false,
       error: err instanceof Error ? err.message : "Clone failed",
     };
   }

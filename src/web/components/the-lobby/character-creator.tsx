@@ -143,6 +143,32 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [classDefs, setClassDefs] = useState<ClassDefData[]>(FALLBACK_CLASS_DEFS);
   const [heroesLoading, setHeroesLoading] = useState(true);
   const [activeWorld, setActiveWorld] = useState<{ id: string; name: string } | null>(null);
+  const [worldOptions, setWorldOptions] = useState<Array<{ id: string; name: string }>>([]);
+
+  const loadForWorld = async (gameId?: string) => {
+    setHeroesLoading(true);
+    try {
+      const [heroesRes, classesRes, worldsRes] = await Promise.all([
+        getStarterHeroes(gameId),
+        getPlayableClasses(),
+        ensureWorldProfiles(),
+      ]);
+      if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
+      if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
+      if (worldsRes.success) {
+        setWorldOptions(worldsRes.profiles.map((p) => ({ id: p.id, name: p.name })));
+        const active =
+          worldsRes.profiles.find((p) => p.id === gameId) ||
+          worldsRes.profiles.find((p) => p.isActive) ||
+          worldsRes.profiles.find((p) => p.id === worldsRes.activeId);
+        if (active) setActiveWorld({ id: active.id, name: active.name });
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setHeroesLoading(false);
+    }
+  };
 
   useEffect(() => {
     const preferredGameId = (() => {
@@ -152,26 +178,16 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
         return undefined;
       }
     })();
-
-    Promise.all([
-      getStarterHeroes(preferredGameId),
-      getPlayableClasses(),
-      ensureWorldProfiles(),
-    ])
-      .then(([heroesRes, classesRes, worldsRes]) => {
-        if (heroesRes.success && heroesRes.data.length > 0) setDbHeroes(heroesRes.data as DbHero[]);
-        if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
-        if (worldsRes.success) {
-          const active =
-            worldsRes.profiles.find((p) => p.id === preferredGameId) ||
-            worldsRes.profiles.find((p) => p.isActive) ||
-            worldsRes.profiles.find((p) => p.id === worldsRes.activeId);
-          if (active) setActiveWorld({ id: active.id, name: active.name });
-        }
-        setHeroesLoading(false);
-      })
-      .catch(() => setHeroesLoading(false));
+    void loadForWorld(preferredGameId);
   }, []);
+
+  const onPickWorld = (id: string) => {
+    try {
+      window.localStorage.setItem('saints.activeGameId', id);
+    } catch { /* ignore */ }
+    setSelectedHeroSlug(null);
+    void loadForWorld(id);
+  };
 
   const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
   const CLASSES = classDefs.map(classVisual);
@@ -360,15 +376,29 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <StepHeader label="Choose Your Hero" onBack={onCancel ? () => onCancel() : undefined} />
 
-                {activeWorld && (
-                  <div className="flex items-center justify-center gap-2 mb-4">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#806f47]/35 bg-[#050b14]/70 text-[10px] font-mono uppercase tracking-[0.18em] text-[#cbb26a]/80">
-                      <Globe2 className="w-3 h-3" />
-                      World · {activeWorld.name}
-                      <span className="text-[#806f47]">({activeWorld.id})</span>
-                    </span>
-                  </div>
-                )}
+                <div className="flex flex-col items-center gap-2 mb-5">
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#806f47]/35 bg-[#050b14]/70 text-[10px] font-mono uppercase tracking-[0.18em] text-[#cbb26a]/90">
+                    <Globe2 className="w-3.5 h-3.5 shrink-0" />
+                    World
+                    <select
+                      value={activeWorld?.id || ''}
+                      onChange={(e) => onPickWorld(e.target.value)}
+                      className="bg-transparent border-none outline-none text-[#e2d5b3] font-mono text-[11px] uppercase tracking-wider cursor-pointer max-w-[160px]"
+                    >
+                      {worldOptions.map((w) => (
+                        <option key={w.id} value={w.id} className="bg-[#0b1320] text-[#e2d5b3]">
+                          {w.name}
+                        </option>
+                      ))}
+                      {activeWorld && !worldOptions.some((w) => w.id === activeWorld.id) && (
+                        <option value={activeWorld.id}>{activeWorld.name}</option>
+                      )}
+                    </select>
+                  </label>
+                  <p className="text-[9px] text-[#806f47]/70 font-mono tracking-wide">
+                    Local pick for heroes / start map · Studio World bar sets the server active realm
+                  </p>
+                </div>
 
                 <p className="text-[#cbb26a]/50 text-sm font-mono mb-8 text-center tracking-widest">
                   Pick a starting archetype — you can customise appearance in the next step

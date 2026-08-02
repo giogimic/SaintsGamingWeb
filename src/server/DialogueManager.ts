@@ -179,8 +179,8 @@ export class DialogueManager {
     });
     if (!state) {
       return {
-        toast: "No active quest — take the Starter Toolbelt to begin Q1.",
-        text: "You're not on a marked job. Take the Starter Toolbelt and we'll put you on the road to Aethervale.",
+        toast: "No active quest — talk to the Trail Greeter to begin.",
+        text: "You're not on a marked job. Speak with the Trail Greeter in the plaza and accept Saints Trail. Tools from me come later — after you spar the Tutor.",
       };
     }
     const template = await prisma.questTemplate.findUnique({
