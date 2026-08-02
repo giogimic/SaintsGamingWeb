@@ -88,18 +88,31 @@ export const SINGLE_FRAME_SPRITE_CONFIG: SpriteSheetConfig = {
   }
 };
 
+/** LimeWire custom NPCs are 1024² portraits — not classic 3×4 walk sheets. */
+const SINGLE_FRAME_NPC_SLUGS = [
+  "candrift_keeper",
+  "capturer_kian",
+  "elder_voss",
+  "ironwright_kael",
+  "scout_mira",
+  "soulwarden_aldric",
+] as const;
+
 /**
  * True when a sprite URL should render as one full frame (no 3×4 walk UV slicing).
- * Custom NPC walk sheets under /npc/ stay on DEFAULT_SPRITE_CONFIG (3×4).
- * Creature/monster battle sheets and *-ow crops are single-frame.
+ * Classic Tuxemon /npc/ walk sheets (e.g. adventurer 48×128) stay on DEFAULT_SPRITE_CONFIG.
+ * Custom portraits, creature/monster sheets, and *-ow crops are single-frame.
  */
 export function isSingleFrameSpriteUrl(url: string | null | undefined): boolean {
   if (!url) return false;
-  return (
+  if (
     url.includes("/creatures/") ||
     url.includes("/world-monsters/") ||
     /-ow\.png(?:$|\?)/.test(url)
-  );
+  ) {
+    return true;
+  }
+  return SINGLE_FRAME_NPC_SLUGS.some((slug) => url.includes(`/npc/${slug}.png`));
 }
 
 export interface BabylonEntityData {
