@@ -87,13 +87,17 @@ export const SINGLE_FRAME_SPRITE_CONFIG: SpriteSheetConfig = {
   }
 };
 
-/** True when a sprite URL should render as one full frame (custom Saints sheets). */
+/**
+ * True when a sprite URL should render as one full frame (no 3×4 walk UV slicing).
+ * Custom NPC walk sheets under /npc/ stay on DEFAULT_SPRITE_CONFIG (3×4).
+ * Creature/monster battle sheets and *-ow crops are single-frame.
+ */
 export function isSingleFrameSpriteUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   return (
     url.includes("/creatures/") ||
     url.includes("/world-monsters/") ||
-    /\/npc\/(candrift_keeper|capturer_kian|elder_voss|ironwright_kael|scout_mira|soulwarden_aldric)\.png/.test(url)
+    /-ow\.png(?:$|\?)/.test(url)
   );
 }
 
