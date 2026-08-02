@@ -167,7 +167,7 @@ export class PlayerManager {
 
     if (!instanceId) {
       // Use dynamic sharding to get an instance
-      const instance = this.worldManager.joinMap(data.mapId, accountId, isPrivate);
+      const instance = await this.worldManager.joinMap(data.mapId, accountId, isPrivate);
       instanceId = instance.instanceId;
     }
 
@@ -261,7 +261,8 @@ export class PlayerManager {
         event: "creature_spawned",
         data: {
           ...creature,
-          spriteKey: creature.templateId,
+          // Prefer persisted overworld sprite (e.g. professor), not templateId (azure_guide).
+          spriteKey: creature.spriteKey || creature.templateId,
         },
       });
     }
@@ -367,7 +368,7 @@ export class PlayerManager {
     }
   }
 
-  private handlePlayerDefeated(player: PlayerState) {
+  private async handlePlayerDefeated(player: PlayerState) {
     console.log(`[PlayerManager] ${player.name} was defeated! Teleporting to Safe Zone.`);
     
     // Restore HP
@@ -391,7 +392,7 @@ export class PlayerManager {
     
     // Teleport to SAINTS_VILLAGE coordinate X: 10, Y: 15
     const safeMapId = "SAINTS_VILLAGE";
-    const safeInstance = this.worldManager.joinMap(safeMapId, player.accountId, false);
+    const safeInstance = await this.worldManager.joinMap(safeMapId, player.accountId, false);
     
     player.mapId = safeInstance.instanceId;
     player.x = 10;

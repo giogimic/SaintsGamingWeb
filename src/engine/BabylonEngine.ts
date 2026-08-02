@@ -915,7 +915,10 @@ export class BabylonEngine {
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,
           isNpc: true,
-          spriteUrl: npc.sprite ? `/assets/sprites/${npc.sprite}.png` : '/assets/sprites/villager_1.png'
+          // Overworld NPC sheets live under /game-assets/npc/ (not /assets/sprites/).
+          spriteUrl: npc.sprite
+            ? (String(npc.sprite).startsWith("/") ? npc.sprite : `/game-assets/npc/${npc.sprite}.png`)
+            : "/game-assets/npc/professor.png"
         });
       });
     }
