@@ -19,6 +19,7 @@ const MAP_IDS = [
   "COTTON_SCOOP",
   "COTTON_CAFE",
   "SPYDER_COTTON_TUNNEL",
+  "SPYDER_ROUTE2",
 ] as const;
 
 const CURATED = new Set(

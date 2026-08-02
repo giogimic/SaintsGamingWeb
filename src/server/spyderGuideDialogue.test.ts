@@ -58,7 +58,7 @@ describe("resolveAzureGuideStartNode", () => {
     ).toBe("node_need_starter");
   });
 
-  it("points to Cotton locals, then tunnel, then done", () => {
+  it("points to Cotton locals, tunnel, Route 2, then done", () => {
     expect(
       resolveAzureGuideStartNode({
         hasPartyCreature: true,
@@ -89,6 +89,21 @@ describe("resolveAzureGuideStartNode", () => {
     expect(
       resolveAzureGuideStartNode({
         hasPartyCreature: true,
+        active: { slug: "quest_spyder_route2", status: "ACTIVE", currentStage: 1 },
+        completedSlugs: new Set([
+          "quest_azure_welcome",
+          "quest_azure_townsfolk",
+          "quest_spyder_first_capture",
+          "quest_spyder_cotton_arrive",
+          "quest_spyder_cotton_locals",
+          "quest_spyder_cotton_tunnel",
+        ]),
+      })
+    ).toBe("node_route2");
+
+    expect(
+      resolveAzureGuideStartNode({
+        hasPartyCreature: true,
         active: null,
         completedSlugs: new Set([
           "quest_azure_welcome",
@@ -97,6 +112,22 @@ describe("resolveAzureGuideStartNode", () => {
           "quest_spyder_cotton_arrive",
           "quest_spyder_cotton_locals",
           "quest_spyder_cotton_tunnel",
+        ]),
+      })
+    ).toBe("node_route2");
+
+    expect(
+      resolveAzureGuideStartNode({
+        hasPartyCreature: true,
+        active: null,
+        completedSlugs: new Set([
+          "quest_azure_welcome",
+          "quest_azure_townsfolk",
+          "quest_spyder_first_capture",
+          "quest_spyder_cotton_arrive",
+          "quest_spyder_cotton_locals",
+          "quest_spyder_cotton_tunnel",
+          "quest_spyder_route2",
         ]),
       })
     ).toBe("node_done");

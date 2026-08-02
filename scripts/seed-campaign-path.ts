@@ -179,19 +179,48 @@ const PATH: Record<string, PathCfg> = {
     ],
   },
   SPYDER_COTTON_TUNNEL: {
-    gates: [gate(1, 15, "COTTON_TOWN", 36, 18)],
+    gates: [
+      gate(1, 15, "COTTON_TOWN", 36, 18),
+      // East mouth → Spyder Route 2 (Q7)
+      gate(38, 7, "SPYDER_ROUTE2", 2, 10),
+    ],
     open: [
       { x: 1, y: 15, tile: 3 },
       { x: 2, y: 15, tile: 0 },
       { x: 2, y: 14, tile: 0 },
       { x: 15, y: 7, tile: 0 },
       { x: 14, y: 7, tile: 0 },
+      { x: 38, y: 7, tile: 4 },
+      { x: 37, y: 7, tile: 0 },
+      { x: 36, y: 7, tile: 0 },
     ],
     corridors: [
       { dir: "h", y: 15, x0: 1, x1: 20 },
       { dir: "v", x: 15, y0: 7, y1: 15 },
-      { dir: "h", y: 7, x0: 10, x1: 22 },
+      { dir: "h", y: 7, x0: 10, x1: 38 },
       { dir: "v", x: 2, y0: 12, y1: 15 },
+    ],
+  },
+  SPYDER_ROUTE2: {
+    gates: [gate(0, 10, "SPYDER_COTTON_TUNNEL", 36, 7)],
+    open: [
+      { x: 0, y: 10, tile: 3 },
+      { x: 1, y: 10, tile: 0 },
+      { x: 2, y: 10, tile: 0 },
+      { x: 2, y: 9, tile: 0 },
+      { x: 2, y: 11, tile: 0 },
+      { x: 4, y: 10, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 9, x0: 1, x1: 20 },
+      { dir: "h", y: 10, x0: 1, x1: 20 },
+      { dir: "h", y: 11, x0: 1, x1: 20 },
+    ],
+    grass: { x0: 8, y0: 8, x1: 18, y1: 12 },
+    encounters: [
+      { slug: "pairagrin", weight: 30, minLevel: 4, maxLevel: 6 },
+      { slug: "aardorn", weight: 35, minLevel: 4, maxLevel: 6 },
+      { slug: "cataspike", weight: 35, minLevel: 3, maxLevel: 5 },
     ],
   },
   COTTON_SCOOP: {

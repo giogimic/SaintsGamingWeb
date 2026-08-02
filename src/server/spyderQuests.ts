@@ -134,6 +134,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_standard", qty: 5 },
       ],
       gold: 100,
+      nextQuest: "quest_spyder_route2",
     }),
     objectives: [
       {
@@ -149,6 +150,28 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_cotton_tunnel_carlos",
         requiredQty: 1,
         description: "Defeat Carlos's Dragarbor and Pairagrin",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_route2",
+    title: "Spyder 7: Beyond the Tunnel",
+    description:
+      "Pass east through the Cotton Tunnel onto Spyder Route 2 and meet the road scout.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_standard", qty: 5 },
+        { slug: "film_fine", qty: 1 },
+      ],
+      gold: 80,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_spyder_route2_scout",
+        requiredQty: 1,
+        description: "Exit the tunnel east onto Route 2 and speak with the scout",
       },
     ],
   },
@@ -168,7 +191,7 @@ export const CARLOS_DIALOGUE_TREE = {
     ],
   },
   node_post_win: {
-    text: "Hah! Both of them down — Dragarbor and Pairagrin rarely fall that cleanly. You've earned the tunnel's respect — Spyder's web opens wider for you.",
+    text: "Hah! Both of them down — Dragarbor and Pairagrin rarely fall that cleanly. East of here the tunnel opens onto Route 2 — a scout waits on the road.",
     options: [
       {
         label: "Rematch",
@@ -179,15 +202,49 @@ export const CARLOS_DIALOGUE_TREE = {
     ],
   },
   node_post_lose: {
-    text: "Dust yourself off. Heal your companion, then come back when you're ready for Dragarbor and Pairagrin again.",
+    text: "Dust yourself off. Scoop's nurse in Cotton Town will patch your party — then come back for Dragarbor and Pairagrin.",
     options: [
       {
         label: "Try again",
         nextNode: "exit",
         action: "START_TRAINER_BATTLE",
       },
-      { label: "I'll be back.", nextNode: "exit" },
+      { label: "I'll heal up.", nextNode: "exit" },
     ],
+  },
+} as const;
+
+/** Cotton Scoop clerk — film merchant. */
+export const SCOOP_CLERK_DIALOGUE_TREE = {
+  node_start: {
+    text: "Scoop's open — film for the road, treats for tamers. Need stock before the tall grass?",
+    options: [
+      {
+        label: "Browse the shop",
+        nextNode: "exit",
+        action: "OPEN_SHOP",
+      },
+      { label: "Just looking around.", nextNode: "exit" },
+    ],
+  },
+} as const;
+
+/** Cotton Scoop nurse — full party heal for rematch UX. */
+export const SCOOP_NURSE_DIALOGUE_TREE = {
+  node_start: {
+    text: "Rough fight? Rest a moment — I'll tend every companion in your party.",
+    options: [
+      {
+        label: "Please heal my party",
+        nextNode: "healed",
+        action: "HEAL_PARTY",
+      },
+      { label: "We're fine.", nextNode: "exit" },
+    ],
+  },
+  healed: {
+    text: "All set. Carlos won't wait forever — and Route 2 beyond the tunnel won't either.",
+    options: [{ label: "Thank you.", nextNode: "exit" }],
   },
 } as const;
 
@@ -298,7 +355,16 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 5,
       sprite: "shopassistant",
       greeting:
-        "Scoop's open — treats for tamers, rumors for the road. Cotton's quieter than Azure, if you listen.",
+        "Scoop's open — film for the road, treats for tamers. Need stock before the tall grass?",
+    },
+    {
+      id: "npc_cotton_scoop_nurse",
+      name: "Scoop Nurse",
+      x: 9,
+      y: 5,
+      sprite: "monk",
+      greeting:
+        "Rough fight? Rest a moment — I'll tend every companion in your party.",
     },
   ],
   COTTON_CAFE: [
@@ -321,6 +387,17 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       sprite: "dragonrider",
       greeting:
         "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — care to prove yourself?",
+    },
+  ],
+  SPYDER_ROUTE2: [
+    {
+      id: "npc_spyder_route2_scout",
+      name: "Route 2 Scout",
+      x: 4,
+      y: 10,
+      sprite: "ninja",
+      greeting:
+        "You made it through Carlos's tunnel. Spyder Route 2 stretches east — restock film at Scoop if the grass thins your stock.",
     },
   ],
 };

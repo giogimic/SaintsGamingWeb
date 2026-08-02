@@ -678,6 +678,16 @@ export class EncounterManager {
           where: { id: battle.playerCreature.id },
           data: { currentHp: hpToSave },
         });
+        // Keep client party HP in sync (soft-heal / post-fight)
+        this.sendToPlayer(battle.socketId, "party_creatures_hp", {
+          creatures: [
+            {
+              id: battle.playerCreature.id,
+              currentHp: hpToSave,
+              maxHp: battle.playerCreature.maxHp,
+            },
+          ],
+        });
       } catch (err) {
         console.error("[EncounterManager] Failed to persist creature HP:", err);
       }

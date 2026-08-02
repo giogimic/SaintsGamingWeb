@@ -127,6 +127,7 @@ export default function TheLobby({
         'SPYDER_COTTON_SCOOP',
         'SPYDER_COTTON_CAFE',
         'SPYDER_COTTON_TUNNEL',
+        'SPYDER_ROUTE2',
         'COTTON_UNDERGROUND',
         'PLAYER_HOUSE_BEDROOM',
         'PLAYER_HOUSE_DOWNSTAIRS',
@@ -570,6 +571,28 @@ export default function TheLobby({
     socket.on('demo_open_lab', () => {
       useGameStore.getState().setActiveDialog(null);
       useGameStore.getState().setGameMode('PROFESSOR_LAB');
+    });
+
+    socket.on('demo_open_shop', () => {
+      useGameStore.getState().setActiveDialog(null);
+      useGameStore.getState().setGameMode('SHOP');
+    });
+
+    socket.on('party_creatures_hp', (data) => {
+      const list = data?.creatures;
+      if (!Array.isArray(list)) return;
+      useGameStore.setState((state) => {
+        for (const row of list) {
+          if (!row?.id || typeof row.currentHp !== 'number') continue;
+          const creature = state.player.creatureParty.find((c) => c.id === row.id);
+          if (creature) {
+            creature.currentHp = Math.max(0, Math.min(creature.maxHp, row.currentHp));
+            if (typeof row.maxHp === 'number' && row.maxHp > 0) {
+              creature.maxHp = row.maxHp;
+            }
+          }
+        }
+      });
     });
 
     // --- PHASE 7: Skills & Toast ---

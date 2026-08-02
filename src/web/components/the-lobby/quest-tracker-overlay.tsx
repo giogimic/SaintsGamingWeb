@@ -34,6 +34,7 @@ export default function QuestTrackerOverlay() {
     currentMapId === "COTTON_SCOOP" ||
     currentMapId === "COTTON_CAFE" ||
     currentMapId === "SPYDER_COTTON_TUNNEL" ||
+    currentMapId === "SPYDER_ROUTE2" ||
     currentMapId === "COTTON_UNDERGROUND";
 
   const fetchQuests = async () => {
@@ -59,8 +60,8 @@ export default function QuestTrackerOverlay() {
     const spyderEmpty =
       isSpyderMap && spyderCampaignComplete ? (
         <>
-          Cotton Tunnel cleared. Rematch <span className="text-[#cbb26a]">Carlos</span>{" "}
-          anytime, or explore the plaza and Route 1 — more of Spyder&apos;s web awaits.
+          Route 2 scout met. Rematch <span className="text-[#cbb26a]">Carlos</span>,
+          restock film at Scoop, or roam Route 2 — more of Spyder&apos;s web awaits.
         </>
       ) : isSpyderMap ? (
         <>
