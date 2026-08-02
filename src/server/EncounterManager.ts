@@ -10,6 +10,7 @@ import {
   loadWildSpawnDefs,
   toPlayerCreatureStats,
 } from "./creatureDefs";
+import { creatureAssetUrl } from "@/shared/game/creatureCatalog";
 
 const prisma = new PrismaClient();
 
@@ -219,7 +220,7 @@ export class EncounterManager {
       hp: activeCreature.currentHp,
       maxHp: activeCreature.maxHp,
       level: activeCreature.level,
-      spriteKey: playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data",
+      spriteKey: creatureAssetUrl(playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data"),
     };
 
     const battleState: BattleState = {
@@ -234,7 +235,7 @@ export class EncounterManager {
         hp: wildDef.baseHp,
         maxHp: wildDef.baseHp,
         level: wildDef.starterLevel,
-        spriteKey: wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data",
+        spriteKey: creatureAssetUrl(wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data"),
       },
       playerCreature: playerCreatureData,
       log: [`A wild ${wildDef.name} appeared!`],

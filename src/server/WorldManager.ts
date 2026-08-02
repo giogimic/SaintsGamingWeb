@@ -1,7 +1,7 @@
 import { GameEngine } from "./GameEngine";
 import { toBaseMapId } from "@/shared/net/mapIds";
-import { creatureAssetUrl, getFallbackCreature } from "@/shared/game/creatureCatalog";
-import { DEMO_VANCE_SPAWN, DEMO_WILD_SPAWNS } from "./demoMapSeed";
+import { creatureAssetUrl, getFallbackCreature, resolveEntitySpriteUrl } from "@/shared/game/creatureCatalog";
+import { DEMO_MAP_ID, DEMO_VANCE_SPAWN, DEMO_WILD_SPAWNS } from "./demoMapSeed";
 
 // Using require for legacy JS modules (they can be converted to TS later)
 const mapLoader = require("../engine/map-loader.js");
@@ -102,43 +102,43 @@ export class WorldManager {
           y: npc.y,
           spawnMode: "STATIC",
           name: npc.name || templateId,
-          spriteKey: npc.sprite || templateId,
+          spriteKey: resolveEntitySpriteUrl(npc.sprite || templateId, { kind: "npc" }),
           dialogueNpcId,
         });
       }
     }
 
-    // Demo NPC: Warden Vance on plaza path (entityId → npc_warden_vance_*)
-    this.engine.events.emit("spawnCreature", {
-      templateId: "warden_vance",
-      entityType: "NPC",
-      mapId: instanceId,
-      x: DEMO_VANCE_SPAWN.x,
-      y: DEMO_VANCE_SPAWN.y,
-      spawnMode: "STATIC",
-      name: "Warden Vance",
-      spriteKey: "adventurer",
-      dialogueNpcId: "npc_warden_vance",
-    });
-
-    // Roaming wilds for RT combat (custom world-monsters + rockitten)
-    for (const spot of DEMO_WILD_SPAWNS) {
-      const def = getFallbackCreature(spot.slug);
-      const spriteKey = def
-        ? creatureAssetUrl(def.spriteOverworld)
-        : spot.slug === "rockitten"
-          ? "rockitten"
-          : creatureAssetUrl(`world-monsters/${spot.slug}-sheet`);
+    const baseMapId = toBaseMapId(mapId);
+    // Demo-only extras (Vance + roaming wilds) — do not clutter other maps
+    if (baseMapId === DEMO_MAP_ID) {
       this.engine.events.emit("spawnCreature", {
-        templateId: spot.slug,
-        entityType: "CREATURE",
+        templateId: "warden_vance",
+        entityType: "NPC",
         mapId: instanceId,
-        x: spot.x,
-        y: spot.y,
-        spawnMode: "ROAMING",
-        name: def ? `Wild ${def.name}` : `Wild ${spot.slug}`,
-        spriteKey,
+        x: DEMO_VANCE_SPAWN.x,
+        y: DEMO_VANCE_SPAWN.y,
+        spawnMode: "STATIC",
+        name: "Warden Vance",
+        spriteKey: resolveEntitySpriteUrl("adventurer", { kind: "npc" }),
+        dialogueNpcId: "npc_warden_vance",
       });
+
+      for (const spot of DEMO_WILD_SPAWNS) {
+        const def = getFallbackCreature(spot.slug);
+        const spriteKey = def
+          ? creatureAssetUrl(def.spriteOverworld)
+          : resolveEntitySpriteUrl(spot.slug, { kind: "monster" });
+        this.engine.events.emit("spawnCreature", {
+          templateId: spot.slug,
+          entityType: "CREATURE",
+          mapId: instanceId,
+          x: spot.x,
+          y: spot.y,
+          spawnMode: "ROAMING",
+          name: def ? `Wild ${def.name}` : `Wild ${spot.slug}`,
+          spriteKey,
+        });
+      }
     }
 
     return instance;

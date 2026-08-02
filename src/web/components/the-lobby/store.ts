@@ -336,16 +336,11 @@ export const useGameStore = create<GameState>()(
       combatTarget: null,
       cooldowns: {},
       pathQueue: [],
-      currentMapId: 'SAINTS_VILLAGE',
-      instanceId: 'SAINTS_VILLAGE',
+      // Default to the seeded demo map; entities come from the socket (creature_spawned).
+      currentMapId: 'DEMO_SANDBOX',
+      instanceId: 'DEMO_SANDBOX',
       activeMapData: null,
-      mapEntities: [
-        { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
-        { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
-        { id: 'npc-guard', type: 'NPC', spriteKey: 'villager_1', position: { x: 4, y: 2 }, isMoving: false, facing: 'DOWN', mapId: 'VERDANT_OUTPOST' },
-        { id: 'anim-1', type: 'ANIMAL', spriteKey: 'chicken', position: { x: 14, y: 18 }, isMoving: false, facing: 'LEFT', mapId: 'SAINTS_VILLAGE' },
-        { id: 'anim-2', type: 'ANIMAL', spriteKey: 'cow', position: { x: 8, y: 14 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' }
-      ],
+      mapEntities: [],
       toast: null,
       activeDialog: null,
       moveSequence: 0,

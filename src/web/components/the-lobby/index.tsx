@@ -114,8 +114,10 @@ export default function TheLobby({
       // Studio keeps saved map for editor work.
       const DEMO_MAP = 'DEMO_SANDBOX';
       const DEMO_SPAWN = { x: 14, y: 15 };
-      const knownPlayable = new Set(['DEMO_SANDBOX', 'SAINTS_VILLAGE']);
-      const savedMap = String(parsedState.currentMapId || '');
+      // SAINTS_VILLAGE was a broken sandbox (no walkable tiles / missing villager sprites).
+      // Lobby explore always lands on DEMO_SANDBOX unless already there.
+      const knownPlayable = new Set(['DEMO_SANDBOX']);
+      const savedMap = String(parsedState.currentMapId || '').replace(/_ch\d+$/, '');
       let validMapId = savedMap;
       let validPosition = parsedState.position || { ...DEMO_SPAWN };
 
@@ -124,7 +126,7 @@ export default function TheLobby({
           validMapId = DEMO_MAP;
           validPosition = { ...DEMO_SPAWN };
         }
-      } else if (!savedMap) {
+      } else if (!savedMap || savedMap === 'SAINTS_VILLAGE') {
         validMapId = DEMO_MAP;
         validPosition = { ...DEMO_SPAWN };
       }
@@ -150,7 +152,12 @@ export default function TheLobby({
         spriteId: res.data.spriteId || 'adventurer',
         position: validPosition
       });
-      useGameStore.setState({ currentMapId: validMapId, gameMode: 'EXPLORING' });
+      useGameStore.setState({
+        currentMapId: validMapId,
+        instanceId: validMapId,
+        gameMode: 'EXPLORING',
+        mapEntities: [], // clear stale placeholders; socket will repopulate
+      });
 
       // Notify socket server of loaded character specs
       socketRef.current?.emit('join_map', {
@@ -687,10 +694,10 @@ export default function TheLobby({
         const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
         const templateId = String(data.templateId || '');
         const rawSprite = data.spriteKey || templateId || (isNpc ? 'adventurer' : 'rockitten');
-        // Vance keeps classic walk-sheet adventurer; others use server spriteKey (may be absolute URL).
+        // Vance keeps classic walk-sheet adventurer; store absolute /game-assets URLs when possible.
         const spriteKey =
           isNpc && templateId.includes('vance')
-            ? 'adventurer'
+            ? '/game-assets/npc/adventurer.png'
             : rawSprite;
         const dialogueKey =
           data.dialogueNpcId ||

@@ -15,6 +15,7 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap } from '@/shared/net/mapIds';
+import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -510,7 +511,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       });
     };
 
-    // Load actual map grid and NPCs with fully resolved async data
+    // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
+    // duplicate meshes + broken /assets/sprites/ paths inside loadTilemap).
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
@@ -519,7 +521,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tiles: activeMap.grid,
       tileLayers: activeMap.tileLayers,
       tilesets: activeMap.tilesets,
-      npcs: activeMap.npcs
+      npcs: [],
     });
 
     // Snap camera to player's starting position immediately (no lerp on first frame)
@@ -544,10 +546,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          // Fix: /assets/sprites/ does not exist. Sprites are in /assets/npcs/ or full path from Creature
-          spriteUrl: freshPlayer.spriteId
-            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/game-assets/npc/${freshPlayer.spriteId}.png`)
-            : undefined,
+          spriteUrl: resolveEntitySpriteUrl(freshPlayer.spriteId, {
+            kind: 'player',
+            fallback: '/game-assets/npc/adventurer.png',
+          }),
           isPlayer: true,
           direction: freshPlayer.direction,
           isMoving: freshPlayer.isMoving,
@@ -590,9 +592,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             name: other.name || 'Tamer',
             x: ox,
             y: oz,
-            spriteUrl: other.spriteId
-              ? (other.spriteId.startsWith('/') ? other.spriteId : `/game-assets/npc/${other.spriteId}.png`)
-              : undefined,
+            spriteUrl: resolveEntitySpriteUrl(other.spriteId, {
+              kind: 'player',
+              fallback: '/game-assets/npc/adventurer.png',
+            }),
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,
@@ -612,18 +615,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             activeEntities.add(ent.id);
             const ex = ent.position.x - mapWidth / 2;
             const ez = mapHeight / 2 - ent.position.y;
+            const kind =
+              ent.type === 'NPC'
+                ? 'npc'
+                : ent.type === 'ANIMAL'
+                  ? 'animal'
+                  : 'monster';
             babylonEngine.updateEntity({
               id: ent.id,
               name: ent.name || '',
               x: ex,
               y: ez,
-              spriteUrl: ent.spriteKey
-                ? ent.spriteKey.startsWith('/') || ent.spriteKey.startsWith('http')
-                  ? ent.spriteKey
-                  : ent.spriteKey.includes('/')
-                    ? `/game-assets/${ent.spriteKey.replace(/\.png$/, '')}.png`
-                    : `/game-assets/npc/${ent.spriteKey}.png`
-                : undefined,
+              spriteUrl: resolveEntitySpriteUrl(ent.spriteKey, { kind }),
               isPlayer: false,
               isNpc: ent.type === 'NPC',
               isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',

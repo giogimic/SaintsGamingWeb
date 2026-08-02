@@ -120,6 +120,78 @@ export function creatureAssetUrl(key: string | null | undefined): string {
   return `/game-assets/${key}.png`;
 }
 
+const WILD_OVERWORLD_SLUGS = new Set([
+  "ashwhirl",
+  "grimvast",
+  "hollowmirth",
+  "rootwail",
+  "siltmourne",
+  "tanglewrath",
+]);
+
+const STARTER_OVERWORLD_SLUGS = new Set([
+  "lumkit",
+  "lumveil",
+  "mosswhim",
+  "solarcrown",
+  "stonethrum",
+  "terravault",
+]);
+
+/**
+ * Resolve any lobby entity sprite key (bare slug, relative path, or absolute URL)
+ * to a real `/game-assets/...` URL. Bare wild/creature slugs must not fall through
+ * to `/game-assets/npc/<slug>.png` (that was causing pink missing-texture boxes).
+ */
+export function resolveEntitySpriteUrl(
+  spriteKey: string | null | undefined,
+  opts?: { kind?: "npc" | "creature" | "animal" | "monster" | "player"; fallback?: string }
+): string {
+  const fallback = opts?.fallback || "/game-assets/npc/adventurer.png";
+  if (!spriteKey) return fallback;
+
+  const raw = String(spriteKey).trim();
+  if (!raw) return fallback;
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("/")) {
+    // Legacy broken prefix used by BabylonEngine loadTilemap
+    if (raw.startsWith("/assets/sprites/")) {
+      const bare = raw.replace(/^\/assets\/sprites\//, "").replace(/\.png$/i, "");
+      return resolveEntitySpriteUrl(bare, opts);
+    }
+    return raw;
+  }
+
+  const key = raw.replace(/\.png$/i, "");
+  if (key.includes("/")) {
+    return creatureAssetUrl(key);
+  }
+
+  const def = getFallbackCreature(key);
+  if (def?.spriteOverworld) {
+    return creatureAssetUrl(def.spriteOverworld);
+  }
+  if (WILD_OVERWORLD_SLUGS.has(key)) {
+    return creatureAssetUrl(`world-monsters/${key}-ow`);
+  }
+  if (STARTER_OVERWORLD_SLUGS.has(key)) {
+    return creatureAssetUrl(`creatures/${key}-ow`);
+  }
+  if (key === "rockitten" || key === "conileaf") {
+    return creatureAssetUrl(`npc/${key}`);
+  }
+
+  // Missing legacy placeholders → visible fallback instead of Babylon pink checkers
+  if (key === "villager_1" || key === "villager_2" || key === "chicken" || key === "cow") {
+    return fallback;
+  }
+
+  if (opts?.kind === "creature" || opts?.kind === "monster" || opts?.kind === "animal") {
+    return creatureAssetUrl(`world-monsters/${key}-ow`);
+  }
+
+  return creatureAssetUrl(`npc/${key}`);
+}
+
 export function defaultPassive(def: CreatureDefData): CreaturePassive | null {
   return def.passives.find((p) => p.isDefault) || def.passives[0] || null;
 }

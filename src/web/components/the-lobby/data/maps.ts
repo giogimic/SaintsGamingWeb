@@ -54,7 +54,28 @@ const mapCache: Record<string, GameMapData> = {};
 /**
  * Asynchronously load map from database API with local caching
  */
+function isValidMapId(mapId: unknown): mapId is string {
+  if (typeof mapId !== 'string' || !mapId) return false;
+  // Proxy / React internals sometimes hit GAME_MAPS['$$typeof'] etc.
+  if (mapId.startsWith('$$') || mapId === 'then' || mapId === 'toJSON' || mapId === 'constructor') {
+    return false;
+  }
+  return true;
+}
+
 export async function loadMap(mapId: string): Promise<GameMapData> {
+  if (!isValidMapId(mapId)) {
+    const fallback: GameMapData = {
+      id: 'INVALID',
+      name: 'INVALID',
+      grid: Array(20).fill(0).map(() => Array(20).fill(0)),
+      gates: {},
+      npcs: [],
+      encounterPool: [],
+    };
+    return fallback;
+  }
+
   if (mapCache[mapId]) {
     return mapCache[mapId];
   }
@@ -141,7 +162,10 @@ export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
  * Proxy object for backwards compatibility with synchronous GAME_MAPS[id] lookups
  */
 export const GAME_MAPS = new Proxy(mapCache, {
-  get(target, prop: string) {
+  get(target, prop: string | symbol) {
+    if (typeof prop !== 'string' || !isValidMapId(prop)) {
+      return Reflect.get(target, prop);
+    }
     if (prop in target) {
       return target[prop];
     }

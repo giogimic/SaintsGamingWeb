@@ -20,6 +20,7 @@ import {
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
+import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -934,7 +935,7 @@ export class BabylonEngine {
       }
     }
 
-    // Render Map NPCs
+    // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
     if (npcs) {
       npcs.forEach((npc) => {
         this.updateEntity({
@@ -943,7 +944,10 @@ export class BabylonEngine {
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,
           isNpc: true,
-          spriteUrl: npc.sprite ? `/assets/sprites/${npc.sprite}.png` : '/assets/sprites/villager_1.png'
+          spriteUrl: resolveEntitySpriteUrl(npc.sprite, {
+            kind: "npc",
+            fallback: "/game-assets/npc/adventurer.png",
+          }),
         });
       });
     }
@@ -1281,7 +1285,21 @@ export class BabylonEngine {
 
       if (entity.spriteUrl) {
         // Use nearest neighbor (1) sampling mode for crisp pixel art
-        const tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
+        const tex = new Texture(
+          entity.spriteUrl,
+          this.scene,
+          true,
+          true,
+          1,
+          undefined,
+          () => {
+            // Missing textures render as pink/black checkers — swap to default hero silhouette.
+            if (this.defaultPlayerTexture && mat) {
+              mat.diffuseTexture = this.defaultPlayerTexture;
+              mat.diffuseTexture.hasAlpha = true;
+            }
+          }
+        );
         tex.hasAlpha = true;
 
         if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || isSingleFrameSpriteUrl(entity.spriteUrl)) {
@@ -1337,7 +1355,20 @@ export class BabylonEngine {
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
           // Use nearest neighbor (1) sampling mode
-          const newTex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
+          const newTex = new Texture(
+            entity.spriteUrl,
+            this.scene,
+            true,
+            true,
+            1,
+            undefined,
+            () => {
+              if (this.defaultPlayerTexture) {
+                mat.diffuseTexture = this.defaultPlayerTexture;
+                mat.diffuseTexture.hasAlpha = true;
+              }
+            }
+          );
           newTex.hasAlpha = true;
           
           if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || isSingleFrameSpriteUrl(entity.spriteUrl)) {

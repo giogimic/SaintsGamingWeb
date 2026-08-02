@@ -196,6 +196,53 @@ async function seedDemoMap() {
     mapLoader.invalidateMap(DEMO_MAP_ID);
   }
   console.log("[DemoBootstrap] DEMO_SANDBOX map rewritten");
+
+  // Repair legacy SAINTS_VILLAGE sandbox (solid walls + missing villager sprites).
+  // Keep the id for old saves but mirror DEMO layout/NPCs so it is playable.
+  const saintsId = "SAINTS_VILLAGE";
+  await prisma.worldMap.upsert({
+    where: { id: saintsId },
+    create: {
+      id: saintsId,
+      name: "Saints Village",
+      gridData: gridJson,
+      gatesData: "{}",
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+    },
+    update: {
+      name: "Saints Village",
+      gridData: gridJson,
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+      version: { increment: 1 },
+    },
+  });
+  await prisma.gameMap.upsert({
+    where: { id: saintsId },
+    create: {
+      id: saintsId,
+      name: "Saints Village",
+      width: DEMO_MAP_W,
+      height: DEMO_MAP_H,
+      tilesetData: gridJson,
+      npcs: npcsJson,
+      encounters: encountersJson,
+      gates: "{}",
+    },
+    update: {
+      name: "Saints Village",
+      width: DEMO_MAP_W,
+      height: DEMO_MAP_H,
+      tilesetData: gridJson,
+      npcs: npcsJson,
+      encounters: encountersJson,
+    },
+  });
+  if (typeof mapLoader.invalidateMap === "function") {
+    mapLoader.invalidateMap(saintsId);
+  }
+  console.log("[DemoBootstrap] SAINTS_VILLAGE repaired from DEMO layout");
 }
 
 async function seedDemoQuests() {
