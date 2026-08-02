@@ -407,13 +407,26 @@ export default function TheLobby({
     });
     
     socket.on('battle_started', (data) => {
-      useGameStore.getState().setActiveBattle(data);
-      useGameStore.getState().setGameMode('BATTLE');
+      const state = useGameStore.getState();
+      // Safety: ignore battles for other accounts if a map broadcast ever leaks through
+      if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
+        return;
+      }
+      state.setActiveBattle(data);
+      state.setGameMode('BATTLE');
     });
 
     socket.on('battle_update', (data) => {
-      useGameStore.getState().setActiveBattle({
-        ...useGameStore.getState().activeBattle!,
+      const state = useGameStore.getState();
+      if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
+        return;
+      }
+      if (!state.activeBattle && data?.id) {
+        state.setActiveBattle(data);
+        return;
+      }
+      state.setActiveBattle({
+        ...state.activeBattle!,
         ...data
       });
     });
@@ -421,15 +434,28 @@ export default function TheLobby({
     socket.on('battle_ended', (data) => {
       const state = useGameStore.getState();
       const myId = socketRef.current?.id;
-      if (data.winner === myId) {
+      const myAccount = state.player?.accountId;
+
+      // Turn-based encounter results (bible 11)
+      if (data?.result) {
+        if (data.accountId && myAccount && data.accountId !== myAccount) return;
+        const messages: Record<string, string> = {
+          CAPTURE: 'Creature captured! Check your Creature Box.',
+          WIN: 'Victory! The wild creature fainted.',
+          LOSE: 'Your creature fainted. Heal before the next battle.',
+          FLEE: 'Got away safely.',
+        };
+        state.showToast(messages[data.result] || 'Battle ended.');
+      } else if (data?.winner === myId) {
         state.showToast('You won the battle!');
-      } else {
+      } else if (data?.winner) {
         state.showToast('You lost the battle...');
       }
+
       setTimeout(() => {
         state.setActiveBattle(null);
         state.setGameMode('EXPLORING');
-      }, 3000);
+      }, data?.result === 'FLEE' ? 800 : 2500);
     });
 
     // --- PHASE 3: MMO Real-Time Combat ---

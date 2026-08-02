@@ -30,8 +30,8 @@
 
 | Rule (bible) | Risk in code today | Action |
 | :--- | :--- | :--- |
-| **Capture = turn-based only** (07, 11) | Ensure no capture ability on RT hotbar; TB path owns Binding Crystal | Audit Hotbar + CombatManager; keep capture only in TB flow |
-| **RT combat = monsters; TB = encounters** (07) | Naming overlap (creatures vs monsters) | Document + enforce interaction model in encounter vs combat managers |
+| **Capture = turn-based only** (07, 11) | **Done (2.1.114):** Hotbar EXPLORING-only; `isForbiddenRtCaptureAbility`; CombatManager rejects capture; TB Binding Crystal only | Keep regression tests green |
+| **RT combat = monsters; TB = encounters** (07) | **Done (2.1.114):** EncounterManager directMessage + movement lock; RT casts blocked while `isLocked` | Naming cleanup can continue; behavior enforced |
 | **Editor hides engine concepts** (16) | Studio still exposes brush/tile/layer language | Migrate UX toward tags/components; keep logic layer under the hood |
 | **Everything is an object** (05, 08) | Mix of tile paint + entity lists | Dual Legacy/Object path; don’t delete Tuxemon/legacy maps |
 | **27-skill matrix** (09, 14) | Partial skill map in store / SkillManager | Expand toward full matrix without renaming existing XP hooks |
@@ -44,8 +44,8 @@
 | :--- | :---: |
 | Multiplayer lobby (see/move/chat) | Partial → improved (shard/base-map fix) — needs human 2-browser smoke |
 | Tuxemon-based adventure zone | Partial (maps + tuxemon data present) |
-| Encounters + TB capture loop end-to-end | Partial (UI/managers; full math/DB capture needs hardening) |
-| RT combat vs monsters (server math, loot) | Partial |
+| Encounters + TB capture loop end-to-end | Improved (2.1.114) — directMessage, capture math, PlayerCreature insert; needs human smoke |
+| RT combat vs monsters (server math, loot) | Improved (2.1.114) — range/LoS/miss/crit + loot despawn; needs human smoke |
 | Inventory | Partial |
 | Skills framework | Partial (not full 27) |
 | Base plot place/save/visit | Partial foundation (`BASE`, overlays) |
@@ -57,22 +57,22 @@
 
 Aligned with bible + Golden Rule + “improve don’t replace”:
 
-### Slice A — Constitution hardening (small, high leverage)
+### Slice A — Constitution hardening — **DONE 2.1.114**
 1. Capture-only-in-TB audit + tests  
-2. Encounter vs monster interaction copy/UX consistency  
-3. Persist bible cross-links in CONTINUE / game OVERVIEW  
+2. Encounter vs monster interaction isolation (hotbar / lock / messaging)  
+3. Persist bible cross-links in CONTINUE / ALIGNMENT  
 
-### Slice B — Vertical slice combat (12 Phase 3 leftovers)
+### Slice B — Vertical slice combat — **DONE 2.1.114** (smoke remaining)
 1. Server combat math (range, LoS, miss/crit) as authority  
-2. Loot bag entity lifecycle  
-3. HP bars / projectiles already started — finish server→client event path  
+2. Loot bag entity lifecycle (drop + 60s despawn + pickup)  
+3. `combat_update` → canvas projectile / damage text path  
 
-### Slice C — Turn-based creature loop (12 Phase 4)
-1. Encounter → BATTLE lock/unlock reliability  
-2. Capture math + `PlayerCreature` insert  
+### Slice C — Turn-based creature loop — **DONE 2.1.114** (smoke remaining)
+1. Encounter → BATTLE lock/unlock via directMessage  
+2. Capture math + `PlayerCreature` insert + crystal consume  
 3. Victory/defeat/flee return to overworld  
 
-### Slice D — Studio creator UX (16, toward MPV editor)
+### Slice D — Studio creator UX (16, toward MPV editor) — **NEXT**
 1. Contextual modes (Build / NPC / Quest / Creature / Test)  
 2. Permission-gated floating docks (extend current shell)  
 3. Tag/component placement UX over raw logic paint  
@@ -95,4 +95,5 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 
 ## Immediate next decision for product owner
 
-Pick **one** slice (A–E) to implement next. Default recommendation: **A then B then C** (prove MPV quote from `06-mpv.md`).
+Slices **A–C implemented in 2.1.114**. Next product pick: **D** (Studio creator UX) or **E** (website ↔ game).  
+Human smoke recommended before expanding content (encounter capture + RT loot).

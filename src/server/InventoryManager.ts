@@ -164,6 +164,18 @@ export class InventoryManager {
       event: "loot_dropped",
       data: { id: lootId, x: data.x, y: data.y, items }
     });
+
+    // Despawn unclaimed bags after 60s (loot lifecycle)
+    setTimeout(() => {
+      if (!this.activeLootBags.has(lootId)) return;
+      const loot = this.activeLootBags.get(lootId)!;
+      this.activeLootBags.delete(lootId);
+      this.engine.events.emit("networkBroadcast", {
+        room: loot.mapId,
+        event: "loot_despawned",
+        data: { id: lootId },
+      });
+    }, 60_000);
   }
 
   private handlePickupLootRequest(data: { accountId: string, socketId: string, mapId: string, x: number, y: number }) {

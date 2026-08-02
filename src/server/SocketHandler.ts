@@ -125,12 +125,12 @@ export class SocketHandler {
 
       // --- PHASE 3: MMO Real-Time Combat Listeners ---
       socket.on("combat_action", (data) => {
-        // data: { battleId, targetId, move: { name, power, category } }
+        // data: { targetId, abilityId } or legacy { move }
         this.engine.events.emit("combatRequestAction", {
-          battleId: data.battleId,
-          entityId: `player_${accountId}`, // In a real app we'd map account to entityId perfectly
+          accountId,
           targetId: data.targetId,
-          move: data.move
+          abilityId: data.abilityId || data.move?.name,
+          move: data.move,
         });
       });
 
@@ -334,11 +334,12 @@ export class SocketHandler {
       });
 
       socket.on("combat_cast", (data) => {
-        // data contains { targetId, move: { name, type, power, ... } }
+        // Hotbar sends { abilityId, targetId }. Capture tools are rejected server-side.
         this.engine.events.emit("combatRequestAction", {
-          entityId: `player_${accountId}`,
+          accountId,
           targetId: data.targetId,
-          move: data.move
+          abilityId: data.abilityId || data.move?.name,
+          move: data.move,
         });
       });
 

@@ -1,3 +1,21 @@
+## [2.1.114] - 2026-08-02
+
+### Added
+- Shared RT ability catalog + capture math helpers (`src/shared/game/combatAbilities.ts`) with tests.
+- Server-authoritative RT combat: ability catalog, capture rejection, cooldowns, range, LoS, miss/crit (`CombatManager`).
+- Loot bag auto-despawn after 60s.
+
+### Fixed
+- Hotbar is **EXPLORING-only** (hidden in turn-based battles); capture abilities forbidden on RT path.
+- Encounter battles use **directMessage** (no longer force every player on the shard into BATTLE).
+- Capture uses bible 11 math; persists `PlayerCreature` with resolved `userId`; consumes Binding Crystal.
+- `battle_ended` client handles CAPTURE / WIN / LOSE / FLEE (not only PvP winner socket id).
+- Turn-battle sprites load from `/game-assets/` (legacy `/assets/sprites/` paths removed).
+- `combat_cast` / `combat_action` pass `abilityId` correctly to the combat manager.
+
+### Changed
+- ALIGNMENT slices A→B→C marked implemented for combat/capture constitution path.
+
 ## [2.1.113] - 2026-08-02
 
 ### Added

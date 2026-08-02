@@ -9,15 +9,14 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Gameplay Bible ingested (16 pages).**  
-Index: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)  
-Honest gaps: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)  
+**v2.1.114 — ALIGNMENT slices A→B→C landed** (capture TB-only, RT combat authority, TB encounter→capture loop).
+
+Bible index: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)  
+Alignment status: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)  
 Vision: [`info/vision/ECOSYSTEM.md`](./vision/ECOSYSTEM.md)
 
-**Lobby client split shipped (v2.1.113)** — `/lobby` player, `/studio` Dev, Staff FAB Mod/Admin.  
+**Lobby client split (v2.1.113)** — `/lobby` player, `/studio` Dev, Staff FAB Mod/Admin.  
 Verify: [`info/game/LOBBY_VERIFY.md`](./game/LOBBY_VERIFY.md)
-
-**Blocked on product pick:** next implementation slice A–E in ALIGNMENT (default A → B → C).
 
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
@@ -25,14 +24,16 @@ Verify: [`info/game/LOBBY_VERIFY.md`](./game/LOBBY_VERIFY.md)
 
 | Version | What |
 | :--- | :--- |
+| 2.1.114 | Capture TB-only hardening; RT combat math/LoS/loot despawn; TB encounter directMessage + PlayerCreature capture |
 | 2.1.112–113 | Lobby/studio split, mobile controls, MP shard fix, vision doc |
 | docs | Full Gameplay Bible `info/gameplay-bible/01`–`16` + ALIGNMENT |
 
 ### Suggested next
 
-1. Human two-browser smoke (`LOBBY_VERIFY.md`)
-2. Choose ALIGNMENT slice **A** (constitution: capture TB-only audit) or **B** (RT combat math/loot)
-3. Avoid Discord/FiveM/S3/AI unless asked
+1. Human smoke: tall-grass encounter → weaken → Binding Crystal → Creature Box; RT monster kill → loot pickup
+2. Two-browser lobby smoke (`LOBBY_VERIFY.md`)
+3. ALIGNMENT slice **D** (Studio creator UX) or **E** (website ↔ game bridge) — product pick
+4. Ask product only when bible does not cover a decision
 
 ---
 
