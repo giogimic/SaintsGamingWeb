@@ -30,7 +30,7 @@ export const StudioEditorShell: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+E to toggle Creation Mode
+      // Ctrl+E to toggle Creation Mode — shell is only mounted on /studio
       if (e.ctrlKey && e.key.toLowerCase() === 'e') {
         e.preventDefault();
         toggleCreationMode();
@@ -39,6 +39,8 @@ export const StudioEditorShell: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleCreationMode]);
+
+  // Studio shell is never mounted on the player client (/lobby).
 
   if (!isCreationMode) return null;
 

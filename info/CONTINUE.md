@@ -9,9 +9,9 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Planning:** Game/Studio client split + mobile controls + multiplayer visibility.  
-Plan: [`info/game/CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./game/CLIENT_SPLIT_MOBILE_MP_PLAN.md) (mirror also in gitignored `/logs/`).  
-**Blocked on** user answers to open questions in that plan (route, Studio entry tier, touch style, MP test method).
+**Shipped v2.1.112:** Game/Studio client split + mobile controls + multiplayer join fix.  
+Plan: [`info/game/CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./game/CLIENT_SPLIT_MOBILE_MP_PLAN.md)  
+Manual verify: two browser accounts same map (see each other + chat); mobile one pad + fullscreen; `/studio` Dev-only; Staff menu Mod+.
 
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
@@ -22,10 +22,11 @@ Plan: [`info/game/CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./game/CLIENT_SPLIT_MOBILE_MP
 | 2.1.109 | Social actions domain split |
 | 2.1.110 | Helper vitest suite |
 | 2.1.111 | Production build fixes + `scripts/smoke-staging.sh` |
+| 2.1.112 | Lobby player/studio split, mobile controls, MP join fix, staff menu |
 
 ### Suggested next
 
-1. Confirm plan open questions, then implement Phase 1 (mobile) → Phase 2 (MP) → Phase 3 (client split)
+1. Human two-browser MP smoke on same map after deploy
 2. Avoid Discord/FiveM/S3/AI unless asked
 
 ---

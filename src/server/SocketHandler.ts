@@ -4,6 +4,7 @@ import { PlayerInput } from "./types";
 import { getToken } from "next-auth/jwt";
 import { RealtimeService } from "./realtime/RealtimeService";
 import { prisma } from "@/web/lib/prisma";
+import { hasPermission, PERMISSION_LEVELS } from "@/web/lib/permissions";
 
 export class SocketHandler {
   constructor(
@@ -273,6 +274,63 @@ export class SocketHandler {
             });
           }
         });
+      });
+
+      // Staff announce to current map (Moderator+)
+      socket.on("staff_announce", async (message: string) => {
+        if (!message || typeof message !== "string") return;
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: accountId },
+            select: { permissionLevel: true, username: true },
+          });
+          if (!user || !hasPermission(user.permissionLevel, PERMISSION_LEVELS.MODERATOR)) return;
+
+          this.engine.events.emit("requestPlayersInMap", {
+            mapId: undefined,
+            callback: (players: any[]) => {
+              const player = players.find(
+                (p) => p.socketId === socket.id || p.accountId === accountId
+              );
+              const room = player?.mapId;
+              if (!room) return;
+              this.engine.events.emit("networkBroadcast", {
+                room,
+                event: "player_chat",
+                data: {
+                  socketId: "STAFF",
+                  sender: `[STAFF] ${user.username || player?.name || "Staff"}`,
+                  message: message.slice(0, 280),
+                },
+              });
+            },
+          });
+        } catch (err) {
+          console.warn("[Socket] staff_announce failed:", err);
+        }
+      });
+
+      // Staff soft-kick from map (Admin+)
+      socket.on("staff_kick", async (targetSocketId: string) => {
+        if (!targetSocketId || typeof targetSocketId !== "string") return;
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: accountId },
+            select: { permissionLevel: true },
+          });
+          if (!user || !hasPermission(user.permissionLevel, PERMISSION_LEVELS.ADMIN)) return;
+
+          const target = this.io.sockets.sockets.get(targetSocketId);
+          if (!target) return;
+          target.emit("force_disconnect", { reason: "Removed from the map by staff." });
+          this.engine.events.emit("playerDisconnected", {
+            accountId: (target as any).userId,
+            socketId: target.id,
+          });
+          target.disconnect(true);
+        } catch (err) {
+          console.warn("[Socket] staff_kick failed:", err);
+        }
       });
 
       socket.on("combat_cast", (data) => {

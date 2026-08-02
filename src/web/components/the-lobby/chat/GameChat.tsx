@@ -5,6 +5,7 @@ import { useGameStore } from '../store';
 import { FriendsList } from '@/web/components/messenger/friends-list';
 import { ChatWindow } from '@/web/components/messenger/chat-window';
 import { useMessenger } from '@/web/components/messenger/messenger-provider';
+import { useAuth } from '@/shared/hooks/use-auth';
 
 type TabType = 'LOCAL' | 'GLOBAL' | 'PARTY' | 'FRIENDS';
 
@@ -34,6 +35,7 @@ export function GameChat() {
 
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const player = useGameStore((state) => state.player);
+  const { isModerator } = useAuth();
 
   useEffect(() => {
     // Listen for custom window events dispatched when socket messages arrive
@@ -65,6 +67,12 @@ export function GameChat() {
     }
     if (text === '/p leave') {
       emitSocketEvent?.('party_leave', {});
+      setChatInput('');
+      return;
+    }
+    if (isModerator && text.startsWith('/announce ')) {
+      const msg = text.replace('/announce ', '').trim();
+      if (msg) emitSocketEvent?.('staff_announce', msg);
       setChatInput('');
       return;
     }
@@ -114,7 +122,10 @@ export function GameChat() {
   };
 
   const filteredMessages = messages.filter(
-    (m) => activeTab === 'LOCAL' ? m.type === 'LOCAL' : m.type === activeTab
+    (m) =>
+      activeTab === 'LOCAL'
+        ? m.type === 'LOCAL' || m.type === 'SYSTEM'
+        : m.type === activeTab
   );
 
   return (

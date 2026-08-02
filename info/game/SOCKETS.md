@@ -56,6 +56,8 @@ MMO gameplay (non-exhaustive — see handler for payloads):
 | `gtc_create_listing` / `gtc_purchase_listing` | Trading |
 | `party_chat` / `party_invite` / `party_join` / `party_leave` | Parties |
 | `global_chat` / `chat_message` | Chat channels |
+| `staff_announce` | Moderator+ map-wide staff chat |
+| `staff_kick` | Admin+ remove target socket from map |
 | `craft_item` | Crafting |
 | `admin_save_map` | Studio map save |
 

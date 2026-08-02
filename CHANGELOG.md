@@ -1,3 +1,17 @@
+## [2.1.112] - 2026-08-02
+
+### Added
+- **`/studio`**: Developer-only Studio client (server-gated); `/lobby` is the player client.
+- **Staff floating menu** on lobby for Moderator+ (map announce, nearby players, admin link; Admin+ map kick; Dev open Studio).
+- **Mobile controls**: single surface with floating joystick (default) or static D-Pad via Options → Controls.
+- Socket events `staff_announce` / `staff_kick`; chat `/announce` for staff.
+
+### Fixed
+- Multiplayer room desync: join no longer overwrites live instance id with a stale saved base map id.
+- Map warps re-emit `join_map` so peers/chat stay on the same shard.
+- Duplicate touch pads removed; left pad path-queue was never drained — movement now uses the canvas input pipeline.
+- NPC sprite path `/assets/sprites/` → `/game-assets/npc/`.
+
 ## [2.1.111] - 2026-08-02
 
 ### Fixed

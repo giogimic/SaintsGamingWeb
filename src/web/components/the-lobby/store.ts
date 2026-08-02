@@ -18,6 +18,10 @@ export interface MapLogicTile {
 
 export type Point = { x: number; y: number };
 
+export type MobileControlMode = 'floating' | 'dpad';
+
+const MOBILE_CONTROL_STORAGE_KEY = 'saints-mobile-control-mode';
+
 export interface MapEntity {
   id: string;
   type: 'NPC' | 'ANIMAL' | 'MONSTER';
@@ -214,6 +218,10 @@ export interface GameState {
   uiSettings: Record<string, { x: number; y: number; scale: number }>;
   updateUiSetting: (id: string, setting: Partial<{ x: number; y: number; scale: number }>) => void;
   loadUiPreset: (presetData: Record<string, { x: number; y: number; scale: number }>) => void;
+  /** Mobile touch movement style — persisted separately from panel uiSettings */
+  mobileControlMode: MobileControlMode;
+  setMobileControlMode: (mode: MobileControlMode) => void;
+  hydrateMobileControlMode: () => void;
   
   // Game Data
   fetchLogicTiles: () => Promise<void>;
@@ -339,6 +347,21 @@ export const useGameStore = create<GameState>()(
       pendingMoves: [],
       isUiEditMode: false,
       uiSettings: {},
+      mobileControlMode: 'floating' as MobileControlMode,
+
+      setMobileControlMode: (mode) => set((state) => {
+        state.mobileControlMode = mode;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(MOBILE_CONTROL_STORAGE_KEY, mode);
+        }
+      }),
+      hydrateMobileControlMode: () => {
+        if (typeof window === 'undefined') return;
+        const stored = localStorage.getItem(MOBILE_CONTROL_STORAGE_KEY);
+        if (stored === 'floating' || stored === 'dpad') {
+          set((state) => { state.mobileControlMode = stored; });
+        }
+      },
 
       // Server Reconciliation (Phase 2)
       incrementMoveSeq: () => {

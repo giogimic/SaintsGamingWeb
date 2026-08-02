@@ -1,10 +1,17 @@
 # Plan: Game/Studio Client Split, Mobile Controls, Multiplayer Visibility
 
 **Date:** 2026-08-02  
-**Status:** Planning — awaiting user decisions on open questions  
+**Status:** Implemented in v2.1.112 (verify with two browser accounts)  
 **Branch:** `giogimic/lobby-client-mobile-mp-plan-862a`  
 **Source:** User prompt + Gemini draft, validated against current codebase  
 **Local mirror:** `/logs/2026-08-02-lobby-client-mobile-mp-plan.md` (gitignored)
+
+### Locked decisions (2026-08-02)
+
+1. **Studio route:** dedicated `/studio` (Developer-only). `/lobby` is always the player client.
+2. **Roles:** Developers get Studio. Moderators/Admins get a **Staff floating menu** (commands / quick actions) on `/lobby` — not the world-builder Studio.
+3. **Touch controls:** Options toggle between Floating Joystick (default) and Static D-Pad.
+4. **MP testing:** two real browser accounts (no local bots this pass).
 
 ---
 

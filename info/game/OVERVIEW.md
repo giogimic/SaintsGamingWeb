@@ -11,8 +11,9 @@ Two game surfaces exist — do not confuse them:
 
 | Layer | Path |
 | :--- | :--- |
-| Page | `app/(main)/lobby/page.tsx` |
-| Client root | `src/web/components/the-lobby/index.tsx` |
+| Page (players) | `app/(main)/lobby/page.tsx` → `PlayerClient` |
+| Page (devs) | `app/(main)/studio/page.tsx` → `StudioClient` (Developer+) |
+| Client root | `src/web/components/the-lobby/index.tsx` (`mode: player \| studio`) |
 | Dynamic load | `src/web/components/the-lobby/dynamic.tsx` |
 | Client store | `src/web/components/the-lobby/store.ts` |
 | Babylon canvas | `src/web/components/the-lobby/babylon/GameCanvasBabylon.tsx` |
