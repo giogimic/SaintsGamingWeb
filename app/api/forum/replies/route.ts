@@ -2,17 +2,17 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canAccessRestrictedBoard } from "@/web/lib/forum-access";
 import { processMentions } from "@/web/lib/mentions";
-
+import { awardXP, XP_VALUES } from "@/web/lib/xp";
+import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 const createReplySchema = z.object({
   body: z.string().min(1, "Reply cannot be empty"),
   threadId: z.string(),
   forumPin: z.string().optional(),
 });
-
-import { awardXP, XP_VALUES } from "@/web/lib/xp";
 
 export async function POST(req: Request) {
   try {
@@ -60,19 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "This thread or its parent board is locked" }, { status: 403 });
     }
 
-    const sub = thread.subcategory;
-    const isRestricted = sub.reqWriter || sub.reqVIP || sub.reqFounder || sub.reqTrusted;
-    let hasAccess = !isRestricted;
-    
-    if (isRestricted) {
-      if (user.permissionLevel >= PERMISSION_LEVELS.HEAD_MODERATOR) hasAccess = true;
-      else if (sub.reqWriter && user.isWriter) hasAccess = true;
-      else if (sub.reqVIP && user.isVIP) hasAccess = true;
-      else if (sub.reqFounder && user.isFounder) hasAccess = true;
-      else if (sub.reqTrusted && user.isTrusted) hasAccess = true;
-    }
-
-    if (!hasAccess) {
+    if (!canAccessRestrictedBoard(thread.subcategory, user)) {
       return NextResponse.json({ message: "You do not have permission to reply in this board." }, { status: 403 });
     }
 
@@ -93,9 +81,18 @@ export async function POST(req: Request) {
     // Award XP
     await awardXP(session.user.id, XP_VALUES.REPLY_CREATE);
 
+    // Live thread stream for viewers currently on this thread
+    await emitForumReplyCreated({
+      replyId: reply.id,
+      threadId: thread.id,
+      authorId: session.user.id,
+      authorName: session.user.name || "Someone",
+      excerpt: data.body.slice(0, 200),
+    });
+
     // Trigger Notification for the thread author
     if (thread.authorId !== session.user.id) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
           userId: thread.authorId,
           type: "REPLY",
@@ -103,6 +100,7 @@ export async function POST(req: Request) {
           link: `/forum/t/${thread.slug}#reply-${reply.id}`,
         }
       });
+      await emitNotificationCreated(notification);
     }
 
     // Trigger Notifications for subscribed users
@@ -112,7 +110,7 @@ export async function POST(req: Request) {
 
     for (const sub of subscriptions) {
       if (sub.userId !== session.user.id && sub.userId !== thread.authorId) {
-        await prisma.notification.create({
+        const notification = await prisma.notification.create({
           data: {
             userId: sub.userId,
             type: "SYSTEM",
@@ -120,11 +118,15 @@ export async function POST(req: Request) {
             link: `/forum/t/${thread.slug}#reply-${reply.id}`,
           }
         });
+        await emitNotificationCreated(notification);
       }
     }
 
     // Parse Mentions
     await processMentions(data.body, session.user.id, `/forum/${thread.subcategory.category.slug}/${thread.slug}#reply-${reply.id}`);
+
+    // Auto-award first_reply / related badges
+    void checkAndAwardAchievements(session.user.id);
 
     return NextResponse.json(reply, { status: 201 });
   } catch (error) {

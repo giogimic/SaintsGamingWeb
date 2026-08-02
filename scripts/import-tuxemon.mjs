@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const MAPS_DIR = 'C:\\Users\\Matth\\OneDrive\\Desktop\\Tuxemon-0.5-rc1\\mods\\tuxemon\\maps';
-const CAMPAIGN_MAPS_PATH = path.join(process.cwd(), 'components/the-lobby/data/campaign-maps.ts');
+const CAMPAIGN_MAPS_PATH = path.join(process.cwd(), 'scripts/data/campaign-maps.generated.ts');
 
 async function run() {
   console.log('Reading campaign-maps.ts...');
@@ -97,9 +97,14 @@ async function run() {
 
   console.log(`Total NPCs extracted and merged: ${totalNpcsFound}`);
   
-  const newContent = `// Generated Campaign Maps Data\nimport { GameMapData } from './maps';\n\nexport const TUXEMON_CAMPAIGN_MAPS: Record<string, GameMapData> = ${JSON.stringify(maps, null, 2)};\n`;
+  const newContent = `// Generated Campaign Maps Data (seed source — do not import from app runtime)
+// After regenerating, run: npx tsx scripts/migrate-campaign-maps-to-db.ts
+
+export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = ${JSON.stringify(maps, null, 2)};
+export const creature_CAMPAIGN_MAPS = TUXEMON_CAMPAIGN_MAPS;
+`;
   fs.writeFileSync(CAMPAIGN_MAPS_PATH, newContent, 'utf8');
-  console.log('Successfully updated campaign-maps.ts');
+  console.log('Successfully updated scripts/data/campaign-maps.generated.ts');
 }
 
 run().catch(console.error);

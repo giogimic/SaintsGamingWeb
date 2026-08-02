@@ -67,7 +67,12 @@ export async function POST(req: NextRequest) {
   await realtime.publishEvent(
     envelope.type,
     envelope.payload as Record<string, unknown>,
-    { userId }
+    {
+      userId,
+      source: envelope.source,
+      // Broadcast globally when no specific user target (community events)
+      ...(userId ? {} : { global: true }),
+    }
   );
 
   console.log(`[Internal Events] Published "${envelope.type}" from service: ${serviceName}`);

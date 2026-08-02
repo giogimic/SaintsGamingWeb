@@ -59,6 +59,7 @@ export class RealtimeService {
       userId?: string;
       room?: string;
       global?: boolean;
+      source?: EventEnvelope["source"];
     } = {}
   ): Promise<void> {
     // 1. Validate against registry
@@ -83,7 +84,7 @@ export class RealtimeService {
       type,
       version: "1.0",
       timestamp: Date.now(),
-      source: "web",
+      source: options.source ?? "web",
       priority: entry.priority,
       payload,
     };
@@ -134,8 +135,12 @@ export class RealtimeService {
     return this.publishEvent(type, payload, { room });
   }
 
-  public async emitGlobal(type: string, payload: Record<string, unknown>) {
-    return this.publishEvent(type, payload, { global: true });
+  public async emitGlobal(
+    type: string,
+    payload: Record<string, unknown>,
+    options: { source?: EventEnvelope["source"] } = {}
+  ) {
+    return this.publishEvent(type, payload, { global: true, source: options.source });
   }
 
   // ─── Room Authorization Helper ────────────────────────────────────────────

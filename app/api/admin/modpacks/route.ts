@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { generateSlug } from "@/web/lib/slug";
 import { z } from "zod";
 
 const modpackSchema = z.object({
@@ -15,10 +16,6 @@ const modpackSchema = z.object({
   installNotes: z.string().optional(),
   changelog: z.string().optional(),
 });
-
-function generateSlug(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-}
 
 export async function POST(req: Request) {
   try {

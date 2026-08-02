@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/web/lib/prisma"; // Assuming a db instance in lib
+import { prisma } from "@/web/lib/prisma";
+import { emitCharacterUpdated } from "@/web/lib/fivem-bridge";
 
-// This is a simple API for the FiveM server to interact with the database.
-// In a real scenario, protect this with an API key/secret in the headers.
+function authorize(req: Request): boolean {
+  const apiKey = req.headers.get("Authorization");
+  const secret =
+    process.env.FIVEM_API_KEY ||
+    process.env.SAINTS_INTERNAL_SECRET ||
+    process.env.AUTH_SECRET;
+  if (!secret || !apiKey) return false;
+  return apiKey === `Bearer ${secret}` || apiKey === secret;
+}
+
+// Legacy FiveM sync API (coords / drugs / inventory). Prefer /api/fivem/events for
+// coarse character/stats and presence. Coords stay here — never on the realtime bus.
 
 export async function GET(req: Request) {
-  const apiKey = req.headers.get("Authorization");
-  if (apiKey !== (process.env.FIVEM_API_KEY || process.env.AUTH_SECRET)) {
+  if (!authorize(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -18,8 +28,14 @@ export async function GET(req: Request) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { fivemLicense: license },
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { fivemLicense: license },
+          { fivemLicense: license.replace(/^license:/i, "").toLowerCase() },
+          { fivemLicense: `license:${license.replace(/^license:/i, "").toLowerCase()}` },
+        ],
+      },
       include: {
         characters: {
           include: {
@@ -29,7 +45,7 @@ export async function GET(req: Request) {
             gang: true,
             businesses: true,
             inventory: true,
-          }
+          },
         },
       },
     });
@@ -46,8 +62,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const apiKey = req.headers.get("Authorization");
-  if (apiKey !== (process.env.FIVEM_API_KEY || process.env.AUTH_SECRET)) {
+  if (!authorize(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,50 +75,60 @@ export async function POST(req: Request) {
     }
 
     if (action === "updateCoords") {
-      if (!data.coords || typeof data.coords !== 'object') {
+      if (!data?.coords || typeof data.coords !== "object") {
         return NextResponse.json({ error: "Invalid coords payload" }, { status: 400 });
       }
       const updated = await prisma.character.update({
         where: { id: characterId },
-        data: { lastCoords: JSON.stringify(data.coords) }
+        data: { lastCoords: JSON.stringify(data.coords) },
       });
+      // Intentionally no realtime emit — high-frequency tick path.
       return NextResponse.json({ success: true, character: updated });
     }
 
     if (action === "updateDrugs") {
-       if (!data.drugStats || typeof data.drugStats !== 'object') {
-         return NextResponse.json({ error: "Invalid drugStats payload" }, { status: 400 });
-       }
-       const updated = await prisma.character.update({
-         where: { id: characterId },
-         data: { drugStats: JSON.stringify(data.drugStats) }
-       });
-       return NextResponse.json({ success: true, character: updated });
+      if (!data?.drugStats || typeof data.drugStats !== "object") {
+        return NextResponse.json({ error: "Invalid drugStats payload" }, { status: 400 });
+      }
+      const updated = await prisma.character.update({
+        where: { id: characterId },
+        data: { drugStats: JSON.stringify(data.drugStats) },
+      });
+      await emitCharacterUpdated(updated);
+      return NextResponse.json({ success: true, character: updated });
     }
 
     if (action === "updateInventory") {
-      // Basic implementation for syncing an inventory item
-      const { itemKey, quantity, metadata } = data;
-      
-      if (metadata && typeof metadata !== 'object') {
+      const { itemKey, quantity, metadata } = data || {};
+
+      if (!itemKey || typeof quantity !== "number") {
+        return NextResponse.json({ error: "Invalid inventory payload" }, { status: 400 });
+      }
+      if (metadata && typeof metadata !== "object") {
         return NextResponse.json({ error: "Invalid metadata payload" }, { status: 400 });
       }
-      
+
       const inventoryItem = await prisma.inventoryItem.upsert({
         where: {
           characterId_itemKey: {
             characterId: characterId,
-            itemKey: itemKey
-          }
+            itemKey: itemKey,
+          },
         },
         update: { quantity: quantity, metadata: metadata ? JSON.stringify(metadata) : null },
         create: {
           characterId: characterId,
           itemKey: itemKey,
           quantity: quantity,
-          metadata: metadata ? JSON.stringify(metadata) : null
-        }
+          metadata: metadata ? JSON.stringify(metadata) : null,
+        },
       });
+
+      const character = await prisma.character.findUnique({ where: { id: characterId } });
+      if (character) {
+        await emitCharacterUpdated(character);
+      }
+
       return NextResponse.json({ success: true, inventoryItem });
     }
 

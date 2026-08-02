@@ -1,13 +1,21 @@
 /**
  * Saints Gaming — File Upload Utilities
  *
- * Handles image uploads with security validation.
- * Stores locally initially; swap to S3-compatible storage later.
+ * Handles image/archive uploads with security validation.
+ * Default: local disk under public/uploads.
+ * Optional: S3-compatible storage when S3_BUCKET + credentials + CDN_BASE_URL are set.
+ * All upload API routes and server actions must go through this module.
  */
 
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import {
+  deleteUploadObject,
+  isS3Enabled,
+  putUploadObject,
+} from "@/web/lib/s3-storage";
+import { localPathFromUploadUrl } from "@/web/lib/s3-storage-utils";
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -47,6 +55,7 @@ export interface UploadResult {
   mimeType?: string;
   sizeBytes?: number;
   error?: string;
+  storage?: "local" | "s3";
 }
 
 /** Sanitize a filename — strip path traversal, special chars */
@@ -65,9 +74,52 @@ function generateUniqueFilename(originalName: string): string {
   return `${timestamp}-${hash}${ext}`;
 }
 
+async function persistUpload(input: {
+  uniqueName: string;
+  buffer: Buffer;
+  contentType: string;
+  sanitizedName: string;
+  sizeBytes: number;
+}): Promise<UploadResult> {
+  if (isS3Enabled()) {
+    try {
+      const stored = await putUploadObject({
+        uniqueName: input.uniqueName,
+        body: input.buffer,
+        contentType: input.contentType,
+      });
+      if (stored) {
+        return {
+          success: true,
+          url: stored.url,
+          filename: input.sanitizedName,
+          mimeType: input.contentType,
+          sizeBytes: input.sizeBytes,
+          storage: "s3",
+        };
+      }
+    } catch (err) {
+      console.error("[upload] S3 put failed, falling back to local:", err);
+    }
+  }
+
+  const uploadPath = path.join(/*turbopackIgnore: true*/ process.cwd(), UPLOAD_DIR);
+  await mkdir(uploadPath, { recursive: true });
+  const filePath = path.join(uploadPath, input.uniqueName);
+  await writeFile(filePath, input.buffer);
+
+  return {
+    success: true,
+    url: `/uploads/${input.uniqueName}`,
+    filename: input.sanitizedName,
+    mimeType: input.contentType,
+    sizeBytes: input.sizeBytes,
+    storage: "local",
+  };
+}
+
 /** Upload a file from a FormData File object */
 export async function uploadFile(file: File): Promise<UploadResult> {
-  // Validate MIME type
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return {
       success: false,
@@ -75,7 +127,6 @@ export async function uploadFile(file: File): Promise<UploadResult> {
     };
   }
 
-  // Validate file size
   if (file.size > MAX_FILE_SIZE) {
     return {
       success: false,
@@ -83,19 +134,10 @@ export async function uploadFile(file: File): Promise<UploadResult> {
     };
   }
 
-  // Validate the original filename
   const sanitized = sanitizeFilename(file.name);
   const uniqueName = generateUniqueFilename(sanitized);
-
-  // Ensure the upload directory exists
-  const uploadPath = path.join(/*turbopackIgnore: true*/ process.cwd(), UPLOAD_DIR);
-  await mkdir(uploadPath, { recursive: true });
-
-  // Write the file
-  const filePath = path.join(uploadPath, uniqueName);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Double-check: validate magic bytes match the claimed MIME type
   if (!validateMagicBytes(buffer, file.type)) {
     return {
       success: false,
@@ -103,23 +145,17 @@ export async function uploadFile(file: File): Promise<UploadResult> {
     };
   }
 
-  await writeFile(filePath, buffer);
-
-  // Return the public URL path (relative to /public)
-  const url = `/uploads/${uniqueName}`;
-
-  return {
-    success: true,
-    url,
-    filename: sanitized,
-    mimeType: file.type,
+  return persistUpload({
+    uniqueName,
+    buffer,
+    contentType: file.type,
+    sanitizedName: sanitized,
     sizeBytes: file.size,
-  };
+  });
 }
 
-/** Upload a social media file (allows video/mp4, video/webm and up to 10MB) */
+/** Upload a social media file (archives up to 250MB) */
 export async function uploadSocialMedia(file: File): Promise<UploadResult> {
-  // Validate MIME type
   if (!ALLOWED_SOCIAL_MIME_TYPES.includes(file.type)) {
     return {
       success: false,
@@ -127,7 +163,6 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
     };
   }
 
-  // Validate file size
   if (file.size > MAX_SOCIAL_FILE_SIZE) {
     return {
       success: false,
@@ -135,19 +170,10 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
     };
   }
 
-  // Validate the original filename
   const sanitized = sanitizeFilename(file.name);
   const uniqueName = generateUniqueFilename(sanitized);
-
-  // Ensure the upload directory exists
-  const uploadPath = path.join(/*turbopackIgnore: true*/ process.cwd(), UPLOAD_DIR);
-  await mkdir(uploadPath, { recursive: true });
-
-  // Write the file
-  const filePath = path.join(uploadPath, uniqueName);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  // Double-check: validate magic bytes match the claimed MIME type
   if (!validateMagicBytes(buffer, file.type)) {
     return {
       success: false,
@@ -155,18 +181,13 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
     };
   }
 
-  await writeFile(filePath, buffer);
-
-  // Return the public URL path (relative to /public)
-  const url = `/uploads/${uniqueName}`;
-
-  return {
-    success: true,
-    url,
-    filename: sanitized,
-    mimeType: file.type,
+  return persistUpload({
+    uniqueName,
+    buffer,
+    contentType: file.type,
+    sanitizedName: sanitized,
     sizeBytes: file.size,
-  };
+  });
 }
 
 /** Validate file magic bytes match the MIME type (basic check) */
@@ -180,7 +201,6 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
   }
 
   if (mimeType === "video/mp4") {
-    // Check for "ftyp" at offset 4
     if (buffer.length < 8) return false;
     return buffer[4] === 0x66 && buffer[5] === 0x74 && buffer[6] === 0x79 && buffer[7] === 0x70; // "ftyp"
   }
@@ -189,7 +209,6 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     return buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3; // EBML Header
   }
 
-  // Archive checks
   if (ALLOWED_ARCHIVE_MIME_TYPES.includes(mimeType)) {
     if (mimeType === "application/zip" || mimeType === "application/x-zip-compressed") {
       return buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04;
@@ -210,7 +229,7 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
       if (buffer.length >= 262) {
         return buffer[257] === 0x75 && buffer[258] === 0x73 && buffer[259] === 0x74 && buffer[260] === 0x61 && buffer[261] === 0x72;
       }
-      return true; // Weak fallback if smaller
+      return true;
     }
     return false;
   }
@@ -219,26 +238,52 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     "image/jpeg": [[0xff, 0xd8, 0xff]],
     "image/png": [[0x89, 0x50, 0x4e, 0x47]],
     "image/gif": [
-      [0x47, 0x49, 0x46, 0x38], // GIF8
+      [0x47, 0x49, 0x46, 0x38],
     ],
   };
 
   const sigs = signatures[mimeType];
-  if (!sigs) return false; // Fail secure: unknown MIME type signature fails
+  if (!sigs) return false;
 
   return sigs.some((sig) =>
     sig.every((byte, i) => buffer[i] === byte)
   );
 }
 
-/** Delete an uploaded file (for cleanup) */
+/** Delete an uploaded file (local and/or S3). */
 export async function deleteUploadedFile(url: string): Promise<boolean> {
-  try {
-    const { unlink } = await import("fs/promises");
-    const filePath = path.join(/*turbopackIgnore: true*/ process.cwd(), "public", url);
-    await unlink(filePath);
-    return true;
-  } catch {
-    return false;
+  let deleted = false;
+
+  if (isS3Enabled()) {
+    try {
+      deleted = (await deleteUploadObject(url)) || deleted;
+    } catch (err) {
+      console.error("[upload] S3 delete failed:", err);
+    }
   }
+
+  const localPath = localPathFromUploadUrl(url);
+  if (localPath) {
+    try {
+      await unlink(localPath);
+      deleted = true;
+    } catch {
+      /* missing local file is fine (CDN-only object) */
+    }
+  } else if (!isS3Enabled()) {
+    // Legacy fallback for odd relative paths
+    try {
+      const filePath = path.join(
+        /*turbopackIgnore: true*/ process.cwd(),
+        "public",
+        url.replace(/^\/+/, "")
+      );
+      await unlink(filePath);
+      deleted = true;
+    } catch {
+      return deleted;
+    }
+  }
+
+  return deleted;
 }

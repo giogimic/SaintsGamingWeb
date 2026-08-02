@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Server, Users, Activity, Play, StopCircle, RefreshCw } from "lucide-react";
+import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { ServerStatusCard } from "@/web/components/realtime/ServerStatusCard";
 
 interface ServerStatus {
   players: number;
@@ -10,6 +12,7 @@ interface ServerStatus {
 }
 
 export default function LobbyManagementPage() {
+  const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
   const [status, setStatus] = useState<ServerStatus>({ players: 0, capacity: 500, status: 'offline' });
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -35,6 +38,16 @@ export default function LobbyManagementPage() {
     const interval = setInterval(fetchStatus, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (mmoPlayerCount < 0) return;
+    setStatus((prev) => ({
+      ...prev,
+      players: mmoPlayerCount > 0 ? mmoPlayerCount : prev.players,
+      status: mmoPlayerCount > 0 ? "online" : prev.status,
+    }));
+    setLastUpdated(new Date());
+  }, [mmoPlayerCount]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -96,6 +109,8 @@ export default function LobbyManagementPage() {
         </div>
       </div>
       
+      <ServerStatusCard />
+
       <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
         <h3 className="font-bold mb-4">Standalone Map Editor Removed</h3>
         <p className="text-sm text-muted-foreground">

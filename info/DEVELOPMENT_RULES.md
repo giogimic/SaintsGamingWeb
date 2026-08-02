@@ -1,8 +1,8 @@
-# Saints Gaming — AI Development Rules
+# Saints Gaming — Development Rules
 
 **Version**: 2.0 | **Last Updated**: 2026-08-01 | **Supersedes**: v1.0
 
-These rules are mandatory for every AI assistant (Cursor, Claude, Gemini, GPT, Copilot) before touching a single file. The biggest source of breakage in this project is AI assistants that skip research and create duplicate systems.
+These rules are mandatory before modifying the codebase. The biggest source of breakage is skipping research and creating duplicate systems.
 
 ---
 
@@ -16,9 +16,14 @@ Complete **all five steps** before writing code.
 | :--- | :--- |
 | Anything realtime | `/info/realtime/ARCHITECTURE.md` then `/info/realtime/EVENTS.md` |
 | Any new feature | `/info/PROJECT_REPORT.md` → "Completed Systems" section |
-| Auth, session, permissions | `src/web/lib/permissions.ts`, `auth.ts`, `auth.config.ts` |
-| Database changes | `prisma/schema.prisma` (full file) |
-| Game engine changes | `README.md` + `src/server/SocketHandler.ts` + `src/server/GameEngine.ts` |
+| Frontend / routing / theme | `/info/frontend/OVERVIEW.md` + `ROUTES.md` |
+| API / actions / server.ts | `/info/backend/OVERVIEW.md` + `API_CATALOG.md` |
+| Auth, session, permissions | `/info/auth/OVERVIEW.md` + `src/web/lib/permissions.ts` |
+| Social / messenger | `/info/social/OVERVIEW.md` + `ACTIONS.md` |
+| Admin panel | `/info/admin/OVERVIEW.md` + `PERMISSIONS.md` |
+| MMO / lobby | `/info/game/OVERVIEW.md` + `SOCKETS.md` |
+| Forum | `/info/forum/OVERVIEW.md` |
+| Database changes | `prisma/schema.prisma` (full file) + `/info/database/WORLDMAP.md` if maps |
 | Any API route | Check `app/api/` tree first — the route may already exist |
 
 ### 2. Inspect Existing Code
@@ -46,14 +51,14 @@ These systems already exist. Do not rebuild them:
 | Read realtime state on client | `useRealtimeStore` in `src/web/hooks/useRealtimeStore.ts` |
 | Authentication check | `const session = await auth()` from `@/auth` |
 | Permission check | `hasPermission(userLevel, PERMISSION_LEVELS.X)` from `src/web/lib/permissions.ts` |
-| File upload | `uploadAvatar()`, `uploadForumImage()`, `uploadSocialMedia()` in `src/web/lib/upload.ts` |
+| File upload | `uploadFile()`, `uploadSocialMedia()`, `deleteUploadedFile()` in `src/web/lib/upload.ts` |
 | Award XP | `awardXP(userId, amount)` from `src/web/lib/xp.ts` |
 | Send email | `sendPasswordResetEmail()`, `sendVerificationEmail()` in `src/web/lib/email.ts` |
 | Discord webhook | `sendDiscordWebhook(url, payload)` from `src/web/lib/discord.ts` |
 | Discord OAuth token | `getValidDiscordToken(userId)` from `src/web/lib/discord.ts` |
 | Rate limit an endpoint | `rateLimit(key, limit, windowMs)` from `src/web/lib/rate-limit.ts` |
 | Mention parsing | `processMentions(body, authorId)` from `src/web/lib/mentions.ts` |
-| AI text generation | `POST /api/ai/enhance` using `gemini-2.5-flash` streaming |
+| Text enhancement | `POST /api/ai/enhance` using `gemini-2.5-flash` streaming |
 | Global site search | `GET /api/search?q=` (searches threads, articles, modpacks, users) |
 
 ### 4. Avoid Duplicate Systems
@@ -68,7 +73,7 @@ These systems already exist. Do not rebuild them:
 > - File upload handler (`src/web/lib/upload.ts` covers all upload types)
 > - Permission check (always use `hasPermission()` from `permissions.ts`)
 > - XP/level system (`awardXP()` in `src/web/lib/xp.ts` — already auto-promotes tiers and rewards FiveM characters)
-> - AI text enhance (already exists at `/api/ai/enhance`)
+> - Text enhance (already exists at `/api/ai/enhance`)
 
 ### 5. Explain Architecture Impact Before Acting
 
@@ -97,7 +102,7 @@ If it is a replacement, **plan the migration explicitly** — do not delete work
 - **After any `schema.prisma` change**: Immediately run `npx prisma db push` (dev) or `npx prisma migrate dev` (prod).
 - **Live DB migration** (SQLite → MariaDB): The admin route `POST /api/admin/database` handles this safely. Never do it manually.
 - **Before adding a model**: Check schema.prisma for existing models that may already capture the data with a JSON field.
-- **Large data in DB**: Campaign maps (`WorldMap`), tile layers, NPC data, encounter pools — these are stored as JSON strings in the DB and migrated via `scripts/migrate-campaign-maps-to-db.ts`.
+- **Large data in DB**: Campaign maps (`WorldMap`), tile layers, NPC data, encounter pools — stored as JSON strings in the DB. Seed dump: `scripts/data/campaign-maps.generated.ts`. Migrate with `npx tsx scripts/migrate-campaign-maps-to-db.ts`. Never import the seed dump from `app/` or `src/web/` (use `/api/maps` / `loadMap()`).
 
 ### Permissions Rules
 
@@ -124,9 +129,9 @@ If it is a replacement, **plan the migration explicitly** — do not delete work
 
 ### Upload Rules
 
-- **All uploads go through `src/web/lib/upload.ts`**. This file handles MIME validation, file size limits, directory creation, and crypto-random filename generation.
-- Local storage is the current target. The comment in `upload.ts` notes it should swap to S3 later. When that happens, change only `upload.ts`.
-- Social media uploads support images and video (`/api/upload/social`). Forum uploads are images only. Modpack uploads are archives only.
+- **All uploads go through `src/web/lib/upload.ts`**. MIME validation, size limits, magic bytes, local disk, and optional S3 live here (plus `s3-storage.ts`). Never write uploads from routes directly.
+- **Default = local** (`public/uploads`). **Optional S3/CDN** when `S3_BUCKET` + credentials + `CDN_BASE_URL` are set — see `info/uploads/STORAGE.md`. On S3 failure, fall back to local.
+- Forum uploads are images only (`uploadFile`). Social/modpack archives use `uploadSocialMedia` via `/api/upload/social`.
 
 ---
 

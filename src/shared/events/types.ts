@@ -67,10 +67,72 @@ export interface GamePlayerOnlinePayload {
   userId: string;
   characterName: string;
   mapId: string;
+  playerCount?: number;
+}
+
+export interface GamePlayerOfflinePayload {
+  userId: string;
+  playerCount?: number;
 }
 
 export interface GameLevelUpPayload {
   userId: string;
   characterName: string;
   newLevel: number;
+}
+
+// ─── Discord Bridge Events ────────────────────────────────────────────────────
+export interface DiscordMemberLinkedPayload {
+  userId: string;
+  discordUserId: string;
+  username: string;
+}
+
+export interface DiscordRoleSyncedPayload {
+  userId: string;
+  discordUserId: string;
+  permissionLevel: number;
+  sourceRoleIds: string[];
+}
+
+export interface DiscordCommunityAnnouncePayload {
+  message: string;
+  link: string | null;
+}
+
+// ─── FiveM Bridge Events ──────────────────────────────────────────────────────
+// Coarse character/stats only — never per-tick coords or inventory spam.
+export interface FivemPlayerOnlinePayload {
+  userId: string;
+  fivemLicense: string;
+  characterId?: string;
+  characterName?: string;
+  playerCount?: number;
+}
+
+export interface FivemPlayerOfflinePayload {
+  userId: string;
+  fivemLicense: string;
+  playerCount?: number;
+}
+
+export interface FivemCharacterUpdatedPayload {
+  userId: string;
+  characterId: string;
+  characterName: string;
+  cash: number;
+  bank: number;
+  health: number;
+  armor: number;
+  isDead: boolean;
+}
+
+export interface FivemBankUpdatedPayload {
+  userId: string;
+  characterId: string;
+  characterName: string;
+  transactionType: string;
+  amount: number;
+  cash: number;
+  bank: number;
 }

@@ -1,9 +1,30 @@
 import type { NextConfig } from "next";
 
+function cdnRemotePattern():
+  | { protocol: "http" | "https"; hostname: string; pathname: string }
+  | null {
+  const raw = (process.env.CDN_BASE_URL || process.env.NEXT_PUBLIC_CDN_BASE_URL || "").trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return {
+      protocol: url.protocol.replace(":", "") as "http" | "https",
+      hostname: url.hostname,
+      pathname: "/uploads/**",
+    };
+  } catch {
+    return null;
+  }
+}
+
+const cdnPattern = cdnRemotePattern();
 
 const nextConfig: NextConfig = {
   // Exclude scripts directory from build
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'].filter(ext => ext),
+  // Keep Node redis / socket stack out of the browser compiler
+  serverExternalPackages: ["redis", "@redis/client", "socket.io", "socket.io-adapter"],
   webpack: (config) => {
     config.module.rules.push({
       test: /\.tsx?$/,
@@ -18,6 +39,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
       { protocol: 'https', hostname: 'static-cdn.jtvnw.net' }, // Twitch
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      ...(cdnPattern ? [cdnPattern] : []),
     ],
   },
   poweredByHeader: false,

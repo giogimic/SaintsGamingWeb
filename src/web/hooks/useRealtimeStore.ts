@@ -22,6 +22,31 @@ export interface ClientNotification {
   createdAt: string;
 }
 
+export type PresenceStatus = "online" | "offline" | "away" | "playing";
+
+export interface PresenceEntry {
+  status: PresenceStatus;
+  lastSeen: number;
+}
+
+export interface ChatMessageSignal {
+  messageId: string;
+  fromUserId: string;
+  toUserId?: string;
+  groupId?: string;
+  content: string;
+  receivedAt: number;
+}
+
+export interface ForumReplySignal {
+  replyId: string;
+  threadId: string;
+  authorId: string;
+  authorName: string;
+  excerpt: string;
+  receivedAt: number;
+}
+
 interface RealtimeState {
   // ─── Notifications ──────────────────────────────────────────────
   notifications: ClientNotification[];
@@ -31,6 +56,32 @@ interface RealtimeState {
   setUnreadCount: (count: number) => void;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
+
+  // ─── Presence ───────────────────────────────────────────────────
+  presenceByUserId: Record<string, PresenceEntry>;
+  setPresence: (userId: string, status: PresenceStatus, lastSeen: number) => void;
+
+  // ─── Chat delivery signals ──────────────────────────────────────
+  lastChatMessage: ChatMessageSignal | null;
+  setLastChatMessage: (msg: ChatMessageSignal) => void;
+
+  // ─── Forum live thread ──────────────────────────────────────────
+  watchedThreadId: string | null;
+  setWatchedThreadId: (threadId: string | null) => void;
+  lastForumReply: ForumReplySignal | null;
+  setLastForumReply: (reply: ForumReplySignal | null) => void;
+
+  // ─── MMO coarse online roster (Milestone 3) ──────────────────────
+  mmoPlayerCount: number;
+  mmoOnlineByUserId: Record<string, { characterName: string; mapId: string }>;
+  setMmoPlayerOnline: (userId: string, characterName: string, mapId: string, playerCount?: number) => void;
+  setMmoPlayerOffline: (userId: string, playerCount?: number) => void;
+
+  // ─── FiveM coarse character/stats signals ────────────────────────
+  lastFivemCharacterUpdate: { characterId: string; userId: string; receivedAt: number } | null;
+  lastFivemBankUpdate: { characterId: string; userId: string; bank: number; receivedAt: number } | null;
+  setLastFivemCharacterUpdate: (signal: { characterId: string; userId: string; receivedAt: number } | null) => void;
+  setLastFivemBankUpdate: (signal: { characterId: string; userId: string; bank: number; receivedAt: number } | null) => void;
 
   // ─── Event Deduplication ────────────────────────────────────────
   processedEventIds: Set<string>;
@@ -43,7 +94,7 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
   unreadCount: 0,
 
   addNotification: (n: ClientNotification) => {
-    const { notifications, processedEventIds } = get();
+    const { notifications } = get();
 
     // Skip if already in store (double safety besides provider dedup)
     if (notifications.some((existing) => existing.id === n.id)) return;
@@ -85,6 +136,63 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
       unreadCount: 0,
     }));
   },
+
+  // ─── Presence ─────────────────────────────────────────────────────
+  presenceByUserId: {},
+
+  setPresence: (userId, status, lastSeen) => {
+    set((state) => ({
+      presenceByUserId: {
+        ...state.presenceByUserId,
+        [userId]: { status, lastSeen },
+      },
+    }));
+  },
+
+  // ─── Chat delivery signals ────────────────────────────────────────
+  lastChatMessage: null,
+
+  setLastChatMessage: (msg) => set({ lastChatMessage: msg }),
+
+  // ─── Forum live thread ────────────────────────────────────────────
+  watchedThreadId: null,
+  setWatchedThreadId: (threadId) => set({ watchedThreadId: threadId }),
+  lastForumReply: null,
+  setLastForumReply: (reply) => set({ lastForumReply: reply }),
+
+  // ─── MMO coarse online roster ─────────────────────────────────────
+  mmoPlayerCount: 0,
+  mmoOnlineByUserId: {},
+
+  setMmoPlayerOnline: (userId, characterName, mapId, playerCount) => {
+    set((state) => {
+      const next = {
+        ...state.mmoOnlineByUserId,
+        [userId]: { characterName, mapId },
+      };
+      return {
+        mmoOnlineByUserId: next,
+        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(next).length,
+      };
+    });
+  },
+
+  setMmoPlayerOffline: (userId, playerCount) => {
+    set((state) => {
+      const next = { ...state.mmoOnlineByUserId };
+      delete next[userId];
+      return {
+        mmoOnlineByUserId: next,
+        mmoPlayerCount: typeof playerCount === "number" ? playerCount : Object.keys(next).length,
+      };
+    });
+  },
+
+  // ─── FiveM coarse character/stats signals ─────────────────────────
+  lastFivemCharacterUpdate: null,
+  lastFivemBankUpdate: null,
+  setLastFivemCharacterUpdate: (signal) => set({ lastFivemCharacterUpdate: signal }),
+  setLastFivemBankUpdate: (signal) => set({ lastFivemBankUpdate: signal }),
 
   // ─── Event Deduplication ──────────────────────────────────────────
   processedEventIds: new Set<string>(),
