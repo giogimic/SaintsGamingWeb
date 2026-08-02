@@ -140,6 +140,7 @@ const AMBIENT_MAPS = [
   "SPYDER_LEATHER_SCOOP",
   "SPYDER_LEATHER_GYM",
   "SPYDER_LEATHER_SHAFT1",
+  "SPYDER_LEATHER_SHAFT2",
 ] as const;
 
 async function checkNpcs() {
@@ -250,11 +251,12 @@ async function checkDialogueActions() {
     !guide?.data?.includes("node_leather") ||
     !guide?.data?.includes("node_leather_scoop") ||
     !guide?.data?.includes("node_leather_gym") ||
+    !guide?.data?.includes("node_leather_shaft") ||
     !guide?.data?.includes("node_done")
   ) {
-    fail("Guide tree missing route2 / leather / scoop / gym / done");
+    fail("Guide tree missing leather path through shafts / done");
   } else {
-    ok("Guide has leather path nodes through gym");
+    ok("Guide has leather path nodes through shafts");
   }
 
   const q8 = SPYDER_QUEST_CHAIN.find((q) => q.slug === "quest_spyder_leather_arrive");
@@ -269,6 +271,20 @@ async function checkDialogueActions() {
     fail("Q9 missing nextQuest → leather_gym");
   } else {
     ok("Q9 nextQuest → quest_spyder_leather_gym");
+  }
+
+  const q10 = SPYDER_QUEST_CHAIN.find((q) => q.slug === "quest_spyder_leather_gym");
+  if (!q10?.rewards.includes("quest_spyder_leather_shaft")) {
+    fail("Q10 missing nextQuest → leather_shaft");
+  } else {
+    ok("Q10 nextQuest → quest_spyder_leather_shaft");
+  }
+
+  const finalSlug = SPYDER_QUEST_CHAIN[SPYDER_QUEST_CHAIN.length - 1]?.slug;
+  if (finalSlug !== "quest_spyder_leather_shaft") {
+    fail(`chain final slug unexpected: ${finalSlug}`);
+  } else {
+    ok("chain ends at quest_spyder_leather_shaft");
   }
 }
 
@@ -408,9 +424,14 @@ async function main() {
     path: [12, 8, 5, 6],
   });
   await checkMap("SPYDER_LEATHER_SHAFT1", {
-    gateTargets: ["SPYDER_LEATHER_TOWN"],
+    gateTargets: ["SPYDER_LEATHER_TOWN", "SPYDER_LEATHER_SHAFT2"],
     minGrass: 4,
-    path: [1, 7, 3, 7],
+    path: [1, 7, 14, 7],
+  });
+  await checkMap("SPYDER_LEATHER_SHAFT2", {
+    gateTargets: ["SPYDER_LEATHER_SHAFT1"],
+    minGrass: 4,
+    path: [1, 7, 4, 5],
   });
 
   console.log("\nNPCs");

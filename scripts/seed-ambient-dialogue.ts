@@ -26,6 +26,7 @@ const MAP_IDS = [
   "SPYDER_LEATHER_SCOOP",
   "SPYDER_LEATHER_GYM",
   "SPYDER_LEATHER_SHAFT1",
+  "SPYDER_LEATHER_SHAFT2",
 ] as const;
 
 const CURATED = new Set(

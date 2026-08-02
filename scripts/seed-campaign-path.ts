@@ -349,7 +349,11 @@ const PATH: Record<string, PathCfg> = {
     ],
   },
   SPYDER_LEATHER_SHAFT1: {
-    gates: [gate(0, 7, "SPYDER_LEATHER_TOWN", 37, 21)],
+    gates: [
+      gate(0, 7, "SPYDER_LEATHER_TOWN", 37, 21),
+      // East mouth → Shaft 2
+      gate(14, 7, "SPYDER_LEATHER_SHAFT2", 1, 7),
+    ],
     open: [
       { x: 0, y: 7, tile: 3 },
       { x: 1, y: 7, tile: 0 },
@@ -357,17 +361,46 @@ const PATH: Record<string, PathCfg> = {
       { x: 3, y: 7, tile: 0 },
       { x: 1, y: 6, tile: 0 },
       { x: 1, y: 8, tile: 0 },
+      { x: 13, y: 7, tile: 0 },
+      { x: 14, y: 7, tile: 4 },
+      { x: 13, y: 6, tile: 0 },
+      { x: 13, y: 8, tile: 0 },
     ],
     corridors: [
-      { dir: "h", y: 7, x0: 1, x1: 8 },
-      { dir: "h", y: 8, x0: 1, x1: 8 },
+      { dir: "h", y: 7, x0: 1, x1: 13 },
+      { dir: "h", y: 8, x0: 1, x1: 13 },
       { dir: "v", x: 3, y0: 6, y1: 10 },
+      { dir: "v", x: 11, y0: 7, y1: 12 },
     ],
     grass: { x0: 4, y0: 8, x1: 8, y1: 10 },
     encounters: [
       { slug: "aardorn", weight: 40, minLevel: 6, maxLevel: 8 },
       { slug: "cataspike", weight: 35, minLevel: 5, maxLevel: 7 },
       { slug: "rockitten", weight: 25, minLevel: 5, maxLevel: 7 },
+    ],
+  },
+  SPYDER_LEATHER_SHAFT2: {
+    gates: [gate(0, 7, "SPYDER_LEATHER_SHAFT1", 12, 7)],
+    open: [
+      { x: 0, y: 7, tile: 3 },
+      { x: 1, y: 7, tile: 0 },
+      { x: 2, y: 7, tile: 0 },
+      { x: 1, y: 6, tile: 0 },
+      { x: 1, y: 8, tile: 0 },
+      { x: 4, y: 5, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 7, x0: 1, x1: 8 },
+      { dir: "h", y: 5, x0: 1, x1: 7 },
+      { dir: "h", y: 8, x0: 1, x1: 8 },
+      { dir: "v", x: 4, y0: 4, y1: 8 },
+      { dir: "v", x: 1, y0: 1, y1: 7 },
+    ],
+    grass: { x0: 3, y0: 5, x1: 7, y1: 8 },
+    encounters: [
+      { slug: "aardorn", weight: 35, minLevel: 7, maxLevel: 9 },
+      { slug: "cataspike", weight: 35, minLevel: 6, maxLevel: 8 },
+      { slug: "rockitten", weight: 30, minLevel: 6, maxLevel: 8 },
     ],
   },
   COTTON_SCOOP: {

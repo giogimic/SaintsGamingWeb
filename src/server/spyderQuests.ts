@@ -233,6 +233,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_standard", qty: 5 },
       ],
       gold: 150,
+      nextQuest: "quest_spyder_leather_shaft",
     }),
     objectives: [
       {
@@ -248,6 +249,35 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_leather_gym_attendant",
         requiredQty: 1,
         description: "Defeat Rook's Rockitten and Aardorn",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_leather_shaft",
+    title: "Spyder 11: Leather Shafts",
+    description:
+      "Enter the east shaft from Leather Town, speak with the shaft scout, then press deeper into Shaft 2.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_standard", qty: 6 },
+        { slug: "film_fine", qty: 2 },
+      ],
+      gold: 120,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_leather_shaft_scout",
+        requiredQty: 1,
+        description: "Enter Shaft 1 east of Leather Town and speak with the scout",
+      },
+      {
+        stage: 2,
+        type: "TALK",
+        targetSlug: "npc_leather_shaft2_miner",
+        requiredQty: 1,
+        description: "Press east into Shaft 2 and speak with the miner",
       },
     ],
   },
@@ -610,7 +640,18 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 7,
       sprite: "ninja",
       greeting:
-        "First shaft under Leather. Watch your footing — wilds nest in the dark. Heal at the Center before you dig deep.",
+        "First shaft under Leather. East tunnel leads to Shaft 2 — wilds nest deeper. Heal at the Center before you dig in.",
+    },
+  ],
+  SPYDER_LEATHER_SHAFT2: [
+    {
+      id: "npc_leather_shaft2_miner",
+      name: "Deep Miner",
+      x: 4,
+      y: 5,
+      sprite: "monk",
+      greeting:
+        "You've reached the second shaft. Ore veins and stubborn beasts share these walls — keep film ready and a clear path back west.",
     },
   ],
 };
