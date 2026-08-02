@@ -7,22 +7,22 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Cotton indoor Scoop/Café**
+**Game Foundation Systems (PR #4) — Spyder Q6 Cotton Tunnel**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- Plaza doors → `COTTON_SCOOP` / `COTTON_CAFE` with return warps
-- Q5 NPCs moved indoors; greeter points to doors
-- Lobby allowlist + `smoke:spyder` cover indoor maps
+- Q6 Cotton Tunnel: east door → `SPYDER_COTTON_TUNNEL` + Carlos talk
+- Guide tunnel node; café/greeter hints
+- `smoke:spyder` covers tunnel path
 
 ### Suggested next
 
-1. Human smoke through Scoop + Café (Q5)
-2. TMX bulk NPC import when Tuxemon checkout available
-3. Optional: Cotton tunnel / next story beat
+1. Human smoke Q1–Q6
+2. Optional NPC battle vs Carlos (trainer fight)
+3. TMX bulk NPC import when Tuxemon checkout available
 
 ### Pipeline
 

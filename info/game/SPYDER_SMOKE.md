@@ -26,7 +26,8 @@ npm run dev
 | 9 | Route 1 **east** → Cotton west gate | Warp → greeter at `(4,19)` (reachable corridor) |
 | 10 | Talk greeter | Q4 complete → Q5 Cotton Locals |
 | 11 | Step north door `(8,18)` → Scoop | Warp indoors; talk **Scoop Clerk** |
-| 12 | Exit Scoop → door `(12,18)` → Café | Talk **Café Host**; Q5 completes |
+| 12 | Exit Scoop → door `(12,18)` → Café | Talk **Café Host**; Q5 → Q6 Tunnel |
+| 13 | Walk **east** plaza to `(37,18)` | Warp → `SPYDER_COTTON_TUNNEL`; talk **Carlos** |
 
 ## Automated check
 

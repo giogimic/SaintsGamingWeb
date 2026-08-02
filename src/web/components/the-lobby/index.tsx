@@ -126,6 +126,8 @@ export default function TheLobby({
         'COTTON_CAFE',
         'SPYDER_COTTON_SCOOP',
         'SPYDER_COTTON_CAFE',
+        'SPYDER_COTTON_TUNNEL',
+        'COTTON_UNDERGROUND',
         'PLAYER_HOUSE_BEDROOM',
         'PLAYER_HOUSE_DOWNSTAIRS',
       ]);
