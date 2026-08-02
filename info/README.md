@@ -12,6 +12,7 @@ A new developer should be able to open this project, read `/info`, and understan
 | Document | Purpose |
 | :--- | :--- |
 | [CONTINUE.md](./CONTINUE.md) | **Current task pointer** — start every session here |
+| [vision/ECOSYSTEM.md](./vision/ECOSYSTEM.md) | **Product north star** — unified website + MMO + Studio |
 | [PROJECT_REPORT.md](./PROJECT_REPORT.md) | Full project audit — what exists, gaps, debt |
 | [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) | Mandatory coding rules — existing solutions, prohibitions |
 
@@ -40,14 +41,15 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.111` — Staging smoke script + production build fixes (social barrel, achievements split)
+`2.1.113` — Lobby player/studio split, mobile controls, multiplayer shard fix
 
 ### Key Entry Points
 | File | Role |
 | :--- | :--- |
 | `server.ts` | Node.js server: game engine + socket.io + Next.js |
 | `app/(main)/layout.tsx` | Main web layout (Auth + Realtime + Messenger) |
-| `app/(main)/lobby/page.tsx` | MMO game client entry |
+| `app/(main)/lobby/page.tsx` | MMO player client entry |
+| `app/(main)/studio/page.tsx` | Developer Studio client entry |
 | `prisma/schema.prisma` | Database schema — read before model changes |
 | `src/server/realtime/RealtimeService.ts` | All realtime broadcasts |
 | `src/shared/events/registry.ts` | Zod event registry — check before new events |

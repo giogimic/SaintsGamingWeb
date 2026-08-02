@@ -1,3 +1,17 @@
+## [2.1.113] - 2026-08-02
+
+### Added
+- **Ecosystem vision** doc: `info/vision/ECOSYSTEM.md` (unified website + MMO + Studio north star).
+- Shared `toBaseMapId` / `isSameBaseMap` (`src/shared/net/mapIds.ts`) + tests.
+- Lobby manual verify checklist: `info/game/LOBBY_VERIFY.md`.
+
+### Fixed
+- Persist **base map** ids (strip `_chN` shards) so reloads don’t reintroduce multiplayer room splits.
+- Mobile enter launcher restyled to Saints gold atmosphere (single fullscreen CTA).
+
+### Changed
+- Staff/system chat lines styled distinctly in GameChat.
+
 ## [2.1.112] - 2026-08-02
 
 ### Added

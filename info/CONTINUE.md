@@ -9,9 +9,9 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Shipped v2.1.112:** Game/Studio client split + mobile controls + multiplayer join fix.  
-Plan: [`info/game/CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./game/CLIENT_SPLIT_MOBILE_MP_PLAN.md)  
-Manual verify: two browser accounts same map (see each other + chat); mobile one pad + fullscreen; `/studio` Dev-only; Staff menu Mod+.
+**Complete: Lobby player/studio split + mobile + MP (v2.1.113).**  
+Vision: [`info/vision/ECOSYSTEM.md`](./vision/ECOSYSTEM.md)  
+Verify: [`info/game/LOBBY_VERIFY.md`](./game/LOBBY_VERIFY.md)
 
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
@@ -19,23 +19,24 @@ Manual verify: two browser accounts same map (see each other + chat); mobile one
 
 | Version | What |
 | :--- | :--- |
-| 2.1.109 | Social actions domain split |
-| 2.1.110 | Helper vitest suite |
 | 2.1.111 | Production build fixes + `scripts/smoke-staging.sh` |
 | 2.1.112 | Lobby player/studio split, mobile controls, MP join fix, staff menu |
+| 2.1.113 | Base-map persistence, vision doc, mobile launcher polish, verify checklist |
 
 ### Suggested next
 
-1. Human two-browser MP smoke on same map after deploy
-2. Avoid Discord/FiveM/S3/AI unless asked
+1. Human two-browser smoke using `info/game/LOBBY_VERIFY.md`
+2. Next product work should strengthen ecosystem integration (website ↔ game), not parallel systems
+3. Avoid Discord/FiveM/S3/AI unless asked
 
 ---
 
 ## Mandatory Read Order (before coding)
 
 1. **This file**
-2. `info/DEVELOPMENT_RULES.md`
-3. `info/PROJECT_REPORT.md`
-4. Area docs under `info/{…}/`
-5. Realtime docs when touching live features
-6. `/logs/LOCAL_CHANGELOG.md`
+2. `info/vision/ECOSYSTEM.md`
+3. `info/DEVELOPMENT_RULES.md`
+4. `info/PROJECT_REPORT.md`
+5. Area docs under `info/{…}/`
+6. Realtime docs when touching live features
+7. `/logs/LOCAL_CHANGELOG.md`

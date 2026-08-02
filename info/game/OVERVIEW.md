@@ -52,7 +52,8 @@ High-frequency movement/combat stays on the game socket — **not** the website 
 - Actions: `app/actions/game.ts`, `game-admin.ts`, `game-dev.ts`
 - Admin: `/admin/game`, `/admin/game-dev/*`, `/admin/dev/lobby`
 - In-game studio panels under `src/web/components/the-lobby/editor/`
-- Active plan (client split / mobile / MP): [`CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./CLIENT_SPLIT_MOBILE_MP_PLAN.md)
+- Plan + verify: [`CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./CLIENT_SPLIT_MOBILE_MP_PLAN.md), [`LOBBY_VERIFY.md`](./LOBBY_VERIFY.md)
+- Ecosystem vision: [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
 
 ---
 

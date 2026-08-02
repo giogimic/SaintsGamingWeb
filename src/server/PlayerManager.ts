@@ -2,6 +2,7 @@ import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
+import { isSameBaseMap } from "@/shared/net/mapIds";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -193,12 +194,10 @@ export class PlayerManager {
 
     // Phase 5: DB Hydration — restore coords only when the saved base map
     // matches this join. Never overwrite the live instanceId with a stale
-    // base map id (that put players in different rooms and hid multiplayer).
+    // map id (that put players in different rooms and hid multiplayer).
     const savedPos = await this.persistence.loadPlayerPosition(accountId);
     if (savedPos) {
-      const savedBase = String(savedPos.mapId || "").split("#")[0];
-      const requestBase = String(data.mapId || "").split("#")[0];
-      if (savedBase && savedBase === requestBase) {
+      if (isSameBaseMap(String(savedPos.mapId || ""), String(data.mapId || ""))) {
         player.x = savedPos.x;
         player.y = savedPos.y;
         const z = InterestManager.zoneOf(player.x, player.y);

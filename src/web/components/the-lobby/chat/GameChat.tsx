@@ -156,15 +156,18 @@ export function GameChat() {
                 
                 if (msg.type === 'PARTY') {
                   prefix = '[Clan] ';
-                  textStyle = { color: '#7e22ce', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' }; // Purple
+                  textStyle = { color: '#7e22ce', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
                   senderStyle = { color: '#000000' };
                 } else if (msg.type === 'GLOBAL') {
                   prefix = '[Global] ';
-                  textStyle = { color: '#0284c7', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' }; // Cyan/blue
+                  textStyle = { color: '#0284c7', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
                   senderStyle = { color: '#000000' };
+                } else if (msg.type === 'SYSTEM') {
+                  prefix = '';
+                  textStyle = { color: '#9a3412', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
+                  senderStyle = { color: '#9a3412' };
                 } else {
-                  // LOCAL chat
-                  textStyle = { color: '#0000ff', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' }; // RS blue chat
+                  textStyle = { color: '#0000ff', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
                   senderStyle = { color: '#000000' };
                 }
 

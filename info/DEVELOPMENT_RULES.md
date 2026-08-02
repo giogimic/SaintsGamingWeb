@@ -116,7 +116,8 @@ If it is a replacement, **plan the migration explicitly** — do not delete work
 - **Main website pages**: `app/(main)/[feature]/page.tsx`
 - **UCP pages**: `app/(ucp)/ucp/[feature]/page.tsx`
 - **Admin pages**: `app/(main)/admin/[feature]/page.tsx`
-- **Game client**: `app/(main)/lobby/page.tsx` → `src/web/components/the-lobby/`
+- **Game client (players)**: `app/(main)/lobby/page.tsx` → `PlayerClient`
+- **Studio client (devs)**: `app/(main)/studio/page.tsx` → `StudioClient` (Developer+); shared world in `src/web/components/the-lobby/`
 - **API routes**: `app/api/[category]/[action]/route.ts`
 - **Never**: `app/[feature]/page.tsx` for a site page — this bypasses the layout group.
 
