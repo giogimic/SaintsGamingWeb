@@ -478,23 +478,32 @@ export class BabylonEngine {
         if (mesh.material) {
           const mat = mesh.material as StandardMaterial;
           const tex = mat.diffuseTexture as Texture;
-          if (tex && (state.isNpc || state.isPlayer || state.spriteConfig || tex.name.includes('/npc/'))) {
+          if (tex && (state.isNpc || state.isPlayer || state.spriteConfig || tex.name?.includes('/npc/'))) {
             const config = state.spriteConfig || DEFAULT_SPRITE_CONFIG;
-            
-            // Update row (direction) - Map top-to-bottom row index (0=down, 1=left, 2=right, 3=up) to Babylon V offset
-            const dir = state.direction || 'down';
-            const rowIdx = config.directions[dir] ?? config.directions.down;
-            tex.vOffset = (config.rows - 1 - rowIdx) * (1 / config.rows);
 
-            // Update column (animation frame)
-            if (state.isMoving) {
-              state.animTime += deltaTime * config.walkSpeed;
-              const frameSeq = config.walkCycle;
-              const f = frameSeq[Math.floor(state.animTime) % frameSeq.length];
-              tex.uOffset = f * (1 / config.columns);
+            // Single-frame OW/portrait billboards — never apply 3×4 walk UV offsets
+            // (that was cropping *-ow sprites into empty/wrong strips).
+            if (config.columns <= 1 && config.rows <= 1) {
+              tex.uOffset = 0;
+              tex.vOffset = 0;
+              tex.uScale = 1;
+              tex.vScale = 1;
             } else {
-              state.animTime = 0;
-              tex.uOffset = config.idleFrame * (1 / config.columns);
+              // Update row (direction) - Map top-to-bottom row index to Babylon V offset
+              const dir = state.direction || 'down';
+              const rowIdx = config.directions[dir] ?? config.directions.down;
+              tex.vOffset = (config.rows - 1 - rowIdx) * (1 / config.rows);
+
+              // Update column (animation frame)
+              if (state.isMoving) {
+                state.animTime += deltaTime * config.walkSpeed;
+                const frameSeq = config.walkCycle;
+                const f = frameSeq[Math.floor(state.animTime) % frameSeq.length];
+                tex.uOffset = f * (1 / config.columns);
+              } else {
+                state.animTime = 0;
+                tex.uOffset = config.idleFrame * (1 / config.columns);
+              }
             }
           }
         }
@@ -1269,6 +1278,11 @@ export class BabylonEngine {
       );
 
       // Initialize Metadata for Animation & Movement
+      const initialConfig =
+        entity.spriteConfig ||
+        (isSingleFrameSpriteUrl(entity.spriteUrl)
+          ? SINGLE_FRAME_SPRITE_CONFIG
+          : DEFAULT_SPRITE_CONFIG);
       spriteMesh.metadata = {
         targetPos: targetPos,
         isMoving: entity.isMoving || false,
@@ -1277,7 +1291,7 @@ export class BabylonEngine {
         isNpc: entity.isNpc || false,
         isPlayer: entity.isPlayer || false,
         isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
-        spriteConfig: entity.spriteConfig || DEFAULT_SPRITE_CONFIG
+        spriteConfig: initialConfig,
       };
       
       // Initial position snap
