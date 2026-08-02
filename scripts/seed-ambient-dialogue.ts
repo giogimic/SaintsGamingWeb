@@ -23,6 +23,8 @@ const MAP_IDS = [
   "SPYDER_ROUTE3",
   "SPYDER_LEATHER_TOWN",
   "SPYDER_LEATHER_CENTER",
+  "SPYDER_LEATHER_SCOOP",
+  "SPYDER_LEATHER_GYM",
 ] as const;
 
 const CURATED = new Set(
@@ -83,8 +85,27 @@ const AZURE_PLAZA_AMBIENT: Array<{
   { id: "npc_azure_child", name: "Curious Child", x: 26, y: 27, sprite: "childactor" },
 ];
 
-async function densifyAzurePlaza(): Promise<number> {
-  const map = await prisma.worldMap.findUnique({ where: { id: "AZURE_TOWN" } });
+/** Hand-placed Leather plaza folk (sparse upstream create_npc). */
+const LEATHER_PLAZA_AMBIENT: Array<{
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  sprite: string;
+}> = [
+  { id: "npc_leather_eula", name: "Eula", x: 8, y: 21, sprite: "heroine" },
+  { id: "npc_leather_filbur", name: "Filbur", x: 12, y: 20, sprite: "monk" },
+  { id: "npc_leather_miner", name: "Shaft Miner", x: 18, y: 21, sprite: "ninja" },
+  { id: "npc_leather_kid", name: "Town Kid", x: 16, y: 22, sprite: "childactor" },
+  { id: "npc_leather_guard", name: "Plaza Guard", x: 22, y: 21, sprite: "knight" },
+];
+
+async function densifyPlaza(
+  mapId: string,
+  seeds: Array<{ id: string; name: string; x: number; y: number; sprite: string }>,
+  label: string
+): Promise<number> {
+  const map = await prisma.worldMap.findUnique({ where: { id: mapId } });
   if (!map) return 0;
   let grid: number[][] = [];
   let npcs: any[] = [];
@@ -96,11 +117,11 @@ async function densifyAzurePlaza(): Promise<number> {
   }
   const byId = new Map(npcs.map((n: any) => [n.id, n]));
   let added = 0;
-  for (const seed of AZURE_PLAZA_AMBIENT) {
+  for (const seed of seeds) {
     const tile = grid[seed.y]?.[seed.x];
     if (tile === undefined || tile === 1) {
       console.warn(
-        `[ambient] skip Azure ${seed.id} — tile ${tile} at (${seed.x},${seed.y})`
+        `[ambient] skip ${label} ${seed.id} — tile ${tile} at (${seed.x},${seed.y})`
       );
       continue;
     }
@@ -117,13 +138,13 @@ async function densifyAzurePlaza(): Promise<number> {
   }
   const next = Array.from(byId.values());
   await prisma.worldMap.update({
-    where: { id: "AZURE_TOWN" },
+    where: { id: mapId },
     data: { npcsData: JSON.stringify(next), version: { increment: 1 } },
   });
   await prisma.gameMap
-    .update({ where: { id: "AZURE_TOWN" }, data: { npcs: JSON.stringify(next) } })
+    .update({ where: { id: mapId }, data: { npcs: JSON.stringify(next) } })
     .catch(() => undefined);
-  if (added) console.log(`[ambient] Azure plaza densify +${added}`);
+  if (added) console.log(`[ambient] ${label} densify +${added}`);
   return added;
 }
 
@@ -136,7 +157,8 @@ export async function seedAmbientDialogue(): Promise<{
   let stubbed = 0;
   let kept = 0;
 
-  await densifyAzurePlaza();
+  await densifyPlaza("AZURE_TOWN", AZURE_PLAZA_AMBIENT, "Azure plaza");
+  await densifyPlaza("SPYDER_LEATHER_TOWN", LEATHER_PLAZA_AMBIENT, "Leather plaza");
 
   for (const mapId of MAP_IDS) {
     const map = await prisma.worldMap.findUnique({ where: { id: mapId } });

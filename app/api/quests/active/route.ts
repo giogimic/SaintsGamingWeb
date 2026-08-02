@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { SPYDER_QUEST_CHAIN } from "@/server/spyderQuests";
 
-const SPYDER_FINAL_SLUG = "quest_spyder_leather_arrive";
+const SPYDER_FINAL_SLUG = "quest_spyder_leather_scoop";
 const SPYDER_SLUGS = SPYDER_QUEST_CHAIN.map((q) => q.slug);
 
 export async function GET() {

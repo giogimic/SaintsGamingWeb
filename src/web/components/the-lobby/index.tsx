@@ -131,6 +131,8 @@ export default function TheLobby({
         'SPYDER_ROUTE3',
         'SPYDER_LEATHER_TOWN',
         'SPYDER_LEATHER_CENTER',
+        'SPYDER_LEATHER_SCOOP',
+        'SPYDER_LEATHER_GYM',
         'COTTON_UNDERGROUND',
         'PLAYER_HOUSE_BEDROOM',
         'PLAYER_HOUSE_DOWNSTAIRS',

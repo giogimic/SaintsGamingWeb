@@ -187,6 +187,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 2 },
       ],
       gold: 120,
+      nextQuest: "quest_spyder_leather_scoop",
     }),
     objectives: [
       {
@@ -195,6 +196,28 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_leather_greeter",
         requiredQty: 1,
         description: "Reach Leather Town via Route 3 and speak with the greeter",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_leather_scoop",
+    title: "Spyder 9: Leather Scoop",
+    description:
+      "Visit Leather Scoop east of the Center and speak with the clerk — restock film for the road ahead.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_standard", qty: 8 },
+        { slug: "film_fine", qty: 2 },
+      ],
+      gold: 100,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_leather_scoop_clerk",
+        requiredQty: 1,
+        description: "Enter Leather Scoop and speak with the clerk",
       },
     ],
   },
@@ -237,7 +260,7 @@ export const CARLOS_DIALOGUE_TREE = {
   },
 } as const;
 
-/** Cotton Scoop clerk — film merchant. */
+/** Scoop clerk — film merchant (Cotton + Leather). */
 export const SCOOP_CLERK_DIALOGUE_TREE = {
   node_start: {
     text: "Scoop's open — film for the road, treats for tamers. Need stock before the tall grass?",
@@ -249,6 +272,29 @@ export const SCOOP_CLERK_DIALOGUE_TREE = {
       },
       { label: "Just looking around.", nextNode: "exit" },
     ],
+  },
+} as const;
+
+/** Leather Scoop clerk — same shop action, Leather-flavored copy. */
+export const LEATHER_SCOOP_CLERK_DIALOGUE_TREE = {
+  node_start: {
+    text: "Leather Scoop — tougher stock for tougher roads. Film, salves, and rumors from the shafts.",
+    options: [
+      {
+        label: "Browse the shop",
+        nextNode: "exit",
+        action: "OPEN_SHOP",
+      },
+      { label: "Just looking around.", nextNode: "exit" },
+    ],
+  },
+} as const;
+
+/** Leather Gym attendant — door hook only (no gym battle yet). */
+export const LEATHER_GYM_ATTENDANT_DIALOGUE_TREE = {
+  node_start: {
+    text: "Leather Gym. Challenges aren't open yet — polish your party at the Center, restock at Scoop, then come back when the doors are ready.",
+    options: [{ label: "Understood.", nextNode: "exit" }],
   },
 } as const;
 
@@ -461,7 +507,7 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 21,
       sprite: "knight",
       greeting:
-        "Welcome to Leather Town. The Center north of the gate can mend your party — rest, then explore.",
+        "Welcome to Leather Town. Center heals north of the gate; Scoop stocks film next door; the Gym waits farther east when you're ready.",
     },
   ],
   SPYDER_LEATHER_CENTER: [
@@ -473,6 +519,28 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       sprite: "monk",
       greeting:
         "Leather Center. Sit tight — I'll restore every companion you travel with.",
+    },
+  ],
+  SPYDER_LEATHER_SCOOP: [
+    {
+      id: "npc_leather_scoop_clerk",
+      name: "Leather Scoop Clerk",
+      x: 6,
+      y: 5,
+      sprite: "shopassistant",
+      greeting:
+        "Leather Scoop — tougher stock for tougher roads. Film, salves, and rumors from the shafts.",
+    },
+  ],
+  SPYDER_LEATHER_GYM: [
+    {
+      id: "npc_leather_gym_attendant",
+      name: "Gym Attendant",
+      x: 5,
+      y: 6,
+      sprite: "knight",
+      greeting:
+        "Leather Gym. Challenges aren't open yet — polish your party at the Center, restock at Scoop, then come back when the doors are ready.",
     },
   ],
 };

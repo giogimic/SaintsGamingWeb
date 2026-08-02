@@ -96,8 +96,12 @@ export const AZURE_GUIDE_TREE = {
     text: "Route 2 runs into Route 3, then Leather Town. Greet the gatekeeper — their Center will mend your party.",
     options: [{ label: "Toward Leather.", nextNode: "exit" }],
   },
+  node_leather_scoop: {
+    text: "In Leather Town, Scoop sits east of the Center. Talk to the clerk — restock film before the shafts call.",
+    options: [{ label: "To Scoop.", nextNode: "exit" }],
+  },
   node_done: {
-    text: "Azure to Leather — you've cut a clean trail through Spyder's near web. Restock film at Scoop, heal at either Center, and roam when you're ready for whatever comes next.",
+    text: "Azure to Leather Scoop — you've cut a clean trail through Spyder's near web. Heal at the Center, browse Scoop or the Gym door, and roam when you're ready for whatever comes next.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Farewell.", nextNode: "exit" },
@@ -150,8 +154,16 @@ export function resolveAzureGuideStartNode(ctx: GuideContext): string {
     return "node_leather";
   }
 
-  if (completedSlugs.has("quest_spyder_leather_arrive")) {
+  if (active?.slug === "quest_spyder_leather_scoop") {
+    return "node_leather_scoop";
+  }
+
+  if (completedSlugs.has("quest_spyder_leather_scoop")) {
     return "node_done";
+  }
+
+  if (completedSlugs.has("quest_spyder_leather_arrive")) {
+    return "node_leather_scoop";
   }
 
   if (completedSlugs.has("quest_spyder_route2")) {
