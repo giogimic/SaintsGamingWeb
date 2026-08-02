@@ -534,6 +534,15 @@ export class EncounterManager {
             tags,
           },
         });
+        // Quest CLAIM objectives (e.g. capture_any)
+        this.engine.events.emit("creatureCaptured", {
+          accountId: battle.accountId,
+          socketId: battle.socketId,
+          targetSlug: "capture_any",
+          amount: 1,
+          speciesSlug: battle.wildCreature.templateId,
+          isShiny,
+        });
       } catch (err) {
         console.error(`[EncounterManager] Failed to save captured creature:`, err);
       }

@@ -2,7 +2,7 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (continue pass)
+**Updated:** 2026-08-02 (Spyder NPC path + kill XP)
 
 ## Choices
 
@@ -21,26 +21,26 @@
 - [x] Sync → CreatureDef; 235 campaign maps
 - [x] Spyder Tamer → AZURE_TOWN
 
-### Continue pass
-- [x] Combat XP grants into typings (RT hit/utility + damage taken + TB summoning)
-- [x] Weighted encounter selection helper
-- [x] NPC Studio persist (`placeMapNpc`)
-- [x] Azure Guide + `quest_azure_welcome` seed script
+### Continue / Spyder path
+- [x] Combat XP (RT + damage taken + TB + **kill blow**)
+- [x] Weighted encounter selection
+- [x] NPC Studio persist
 - [x] Demo Vance/wilds only on DEMO_SANDBOX
-- [x] Tests: 21 passing (combatSkillXp, encounterWeights, shiny, skillTypings)
+- [x] Campaign NPC seeds + Spyder quest chain (welcome → townsfolk → first capture)
+- [x] Quest wiring: TALK on NPC interact, CLAIM on capture
+- [x] TMX import script (optional external maps)
 
 ## Pipeline
 
 ```bash
 npm run import:tuxemon && npm run sync:creatures
 npm run migrate:campaign && npm run ensure:campaign
-npm run seed:azure
+npm run seed:campaign-npcs
 npm run dev
 ```
 
 ## Remaining
 
-- Kill-bonus XP (entityDeath + attackerId)
-- Bulk TMX NPC placement import for campaign
-- Deeper Spyder mission step graph → QuestTemplate
-- Human smoke DEMO_SMOKE + Azure Guide talk
+- Human smoke DEMO + Azure Guide path
+- Deeper Spyder mission graph
+- TMX bulk NPC import when checkout available

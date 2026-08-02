@@ -15,6 +15,8 @@ export const COMBAT_DAMAGE_TAKEN_XP = 4;
 export const TB_VICTORY_SUMMONING_XP = 25;
 export const TB_CAPTURE_SUMMONING_XP = 40;
 export const TB_VICTORY_HITPOINTS_XP = 10;
+/** Bonus when a player lands the killing blow on a world creature. */
+export const COMBAT_KILL_BASE_XP = 12;
 
 const ABILITY_SKILL_MAP: Record<string, SkillXpGrant[]> = {
   strike: [
@@ -105,4 +107,13 @@ export function grantsForTurnBattle(result: "WIN" | "CAPTURE" | "LOSE" | "FLEE" 
     ];
   }
   return [];
+}
+
+/** Kill-blow bonus for real-time world combat. */
+export function grantsForKill(): SkillXpGrant[] {
+  return [
+    { skillSlug: "attack", amount: COMBAT_KILL_BASE_XP },
+    { skillSlug: "strength", amount: Math.floor(COMBAT_KILL_BASE_XP * 0.5) },
+    { skillSlug: "hitpoints", amount: Math.floor(COMBAT_KILL_BASE_XP * 0.4) },
+  ];
 }

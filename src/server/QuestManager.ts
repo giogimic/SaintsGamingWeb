@@ -24,6 +24,7 @@ export class QuestManager {
     this.engine.events.on("dialogue_start", (data) => this.handleEvent("TALK", data));
     this.engine.events.on("itemCrafted", (data) => this.handleEvent("CRAFT", data));
     this.engine.events.on("starterClaimed", (data) => this.handleEvent("CLAIM", data));
+    this.engine.events.on("creatureCaptured", (data) => this.handleEvent("CLAIM", data));
     this.engine.events.on("brambleCleared", (data) => this.handleEvent("CLEAR", data));
     this.engine.events.on("acceptQuest", (data) => this.acceptQuest(data));
   }

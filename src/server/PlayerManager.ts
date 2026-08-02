@@ -3,7 +3,7 @@ import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
 import { isSameBaseMap } from "@/shared/net/mapIds";
-import { grantsForDamageTaken } from "@/shared/game/combatSkillXp";
+import { grantsForDamageTaken, grantsForKill } from "@/shared/game/combatSkillXp";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -49,6 +49,7 @@ export class PlayerManager {
     this.engine.events.on("playerDisconnected", (data) => this.handleDisconnect(data));
     this.engine.events.on("playerDamaged", (data) => this.handlePlayerDamaged(data));
     this.engine.events.on("creatureAoEAttack", (data) => this.handleCreatureAoEAttack(data));
+    this.engine.events.on("entityDeath", (data) => this.handleEntityDeathKillBonus(data));
     this.engine.events.on("processInputs", () => this.processInputs());
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
@@ -290,6 +291,37 @@ export class PlayerManager {
         mapId: data.mapId || "world",
         playerCount: this.players.size,
       },
+    });
+  }
+
+  private handleEntityDeathKillBonus(data: {
+    entityId: string;
+    mapId: string;
+    x: number;
+    y: number;
+    attackerId?: string;
+    templateId?: string;
+  }) {
+    if (!data.attackerId) return;
+    const killer = this.getPlayer(data.attackerId);
+    if (!killer?.accountId) return;
+
+    for (const g of grantsForKill()) {
+      this.engine.events.emit("grantSkillXp", {
+        accountId: killer.accountId,
+        skillSlug: g.skillSlug,
+        amount: g.amount,
+      });
+    }
+
+    const targetSlug = data.templateId || "creature";
+    this.engine.events.emit("monsterKilled", {
+      accountId: killer.accountId,
+      socketId: killer.socketId,
+      targetSlug,
+      amount: 1,
+      entityId: data.entityId,
+      mapId: data.mapId,
     });
   }
 

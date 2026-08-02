@@ -67,11 +67,13 @@ export class CreatureManager {
     });
 
     if (hpPercent <= 0) {
-      this.engine.events.emit("entityDeath", { 
-        entityId: data.entityId, 
-        mapId: creature.mapId, 
-        x: creature.x, 
-        y: creature.y 
+      this.engine.events.emit("entityDeath", {
+        entityId: data.entityId,
+        mapId: creature.mapId,
+        x: creature.x,
+        y: creature.y,
+        attackerId: data.attackerId,
+        templateId: creature.templateId,
       });
       this.worldManager.removeEntity(creature.mapId, creature.x, creature.y, data.entityId);
       this.creatures.delete(data.entityId);

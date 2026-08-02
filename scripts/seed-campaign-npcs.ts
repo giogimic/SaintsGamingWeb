@@ -1,0 +1,190 @@
+/**
+ * Seed curated Spyder campaign NPCs + quest chain into WorldMap / dialogue / QuestTemplate.
+ * Does not require Tuxemon TMX (use import-map-npcs-from-tmx.ts when TUXEMON_PATH is set).
+ *
+ * Usage: npx tsx scripts/seed-campaign-npcs.ts
+ * Alias: npm run seed:campaign-npcs  |  npm run seed:azure
+ */
+
+import { PrismaClient } from "@prisma/client";
+import { CAMPAIGN_NPC_SEEDS, SPYDER_QUEST_CHAIN } from "../src/server/spyderQuests";
+
+const prisma = new PrismaClient();
+
+function dialogueTreeFor(npc: {
+  id: string;
+  name: string;
+  greeting: string;
+  questSlug?: string;
+}) {
+  if (npc.questSlug) {
+    return {
+      node_start: {
+        text: npc.greeting,
+        options: [
+          {
+            label: "I'm ready.",
+            nextNode: "accepted",
+            action: "ACCEPT_QUEST",
+            questSlug: npc.questSlug,
+          },
+          { label: "Just looking around.", nextNode: "exit" },
+        ],
+      },
+      accepted: {
+        text: "Good. Speak with the townsfolk around the plaza, then return when you've greeted them.",
+        options: [{ label: "Understood.", nextNode: "exit" }],
+      },
+    };
+  }
+  return {
+    node_start: {
+      text: npc.greeting,
+      options: [{ label: "Farewell.", nextNode: "exit" }],
+    },
+  };
+}
+
+async function upsertMapNpcs(
+  mapId: string,
+  seeds: Array<{
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+    sprite: string;
+    greeting: string;
+    questSlug?: string;
+  }>
+) {
+  const map = await prisma.worldMap.findUnique({ where: { id: mapId } });
+  if (!map) {
+    console.log(`  skip ${mapId} (WorldMap missing — run migrate:campaign)`);
+    return 0;
+  }
+
+  let npcs: any[] = [];
+  try {
+    npcs = JSON.parse(map.npcsData || "[]");
+  } catch {
+    npcs = [];
+  }
+
+  for (const seed of seeds) {
+    const entry = {
+      id: seed.id,
+      name: seed.name,
+      x: seed.x,
+      y: seed.y,
+      sprite: seed.sprite,
+      direction: "down",
+      dialogue: [seed.greeting],
+    };
+    const idx = npcs.findIndex((n) => n.id === seed.id);
+    if (idx >= 0) npcs[idx] = { ...npcs[idx], ...entry };
+    else npcs.push(entry);
+
+    await prisma.npcDialogueTree.upsert({
+      where: { npcId: seed.id },
+      create: {
+        npcId: seed.id,
+        name: seed.name,
+        data: JSON.stringify(dialogueTreeFor(seed)),
+      },
+      update: {
+        name: seed.name,
+        data: JSON.stringify(dialogueTreeFor(seed)),
+      },
+    });
+  }
+
+  await prisma.worldMap.update({
+    where: { id: mapId },
+    data: { npcsData: JSON.stringify(npcs), version: { increment: 1 } },
+  });
+
+  await prisma.gameMap.upsert({
+    where: { id: mapId },
+    create: {
+      id: mapId,
+      name: map.name,
+      width: 50,
+      height: 50,
+      tilesetData: map.gridData,
+      gates: map.gatesData,
+      npcs: JSON.stringify(npcs),
+      encounters: map.encountersData,
+    },
+    update: { npcs: JSON.stringify(npcs) },
+  });
+
+  console.log(`  ${mapId}: ${seeds.length} seeded (${npcs.length} NPCs total)`);
+  return seeds.length;
+}
+
+async function upsertQuestChain() {
+  for (const q of SPYDER_QUEST_CHAIN) {
+    const existing = await prisma.questTemplate.findUnique({
+      where: { slug: q.slug },
+    });
+
+    let questId: string;
+    if (existing) {
+      await prisma.questObjective.deleteMany({ where: { questId: existing.id } });
+      await prisma.questTemplate.update({
+        where: { id: existing.id },
+        data: {
+          title: q.title,
+          description: q.description,
+          rewards: q.rewards,
+        },
+      });
+      questId = existing.id;
+      console.log(`  quest upsert ${q.slug}`);
+    } else {
+      const created = await prisma.questTemplate.create({
+        data: {
+          slug: q.slug,
+          title: q.title,
+          description: q.description,
+          rewards: q.rewards,
+        },
+      });
+      questId = created.id;
+      console.log(`  quest create ${q.slug}`);
+    }
+
+    for (const obj of q.objectives) {
+      await prisma.questObjective.create({
+        data: {
+          questId,
+          stage: obj.stage,
+          type: obj.type,
+          targetSlug: obj.targetSlug,
+          requiredQty: obj.requiredQty,
+          description: obj.description,
+        },
+      });
+    }
+  }
+}
+
+async function main() {
+  console.log("Seeding campaign NPCs…");
+  let total = 0;
+  for (const [mapId, seeds] of Object.entries(CAMPAIGN_NPC_SEEDS)) {
+    total += await upsertMapNpcs(mapId, [...seeds]);
+  }
+
+  console.log("Upserting Spyder quest chain…");
+  await upsertQuestChain();
+
+  console.log(`Done. ${total} NPC placements across ${Object.keys(CAMPAIGN_NPC_SEEDS).length} maps.`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());

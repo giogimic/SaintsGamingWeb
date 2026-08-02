@@ -252,7 +252,8 @@ export class DialogueManager {
   private normalizeNpcId(targetId: string): string {
     const id = String(targetId || "");
     if (id.includes("vance") || id.includes("warden")) return "npc_warden_vance";
-    return id;
+    // Strip spawn suffixes (npc_azure_guide_1712345678 → npc_azure_guide)
+    return this.normalizeNpcKey(id);
   }
 
   private async handleNpcInteract({ accountId, socketId, mapId, targetId }: any) {
@@ -260,6 +261,15 @@ export class DialogueManager {
     const tree = await this.getDialogueTree(npcId);
     const startNode = tree["node_start"];
     if (!startNode) return;
+
+    // Quest engine listens on engine `dialogue_start` (not the socket event).
+    this.engine.events.emit("dialogue_start", {
+      accountId,
+      socketId,
+      mapId,
+      targetSlug: npcId,
+      npcId,
+    });
 
     this.engine.events.emit("directMessage", {
       socketId,

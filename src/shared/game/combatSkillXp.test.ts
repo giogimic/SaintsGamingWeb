@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   grantsForAbilityCast,
   grantsForDamageTaken,
+  grantsForKill,
   grantsForTurnBattle,
 } from "./combatSkillXp";
 
@@ -36,5 +37,13 @@ describe("combatSkillXp", () => {
     expect(grantsForTurnBattle("WIN").some((g) => g.skillSlug === "summoning")).toBe(true);
     expect(grantsForTurnBattle("CAPTURE").some((g) => g.skillSlug === "summoning")).toBe(true);
     expect(grantsForTurnBattle("FLEE")).toEqual([]);
+  });
+
+  it("grants attack/strength/hitpoints on kill blow", () => {
+    const grants = grantsForKill();
+    expect(grants.map((g) => g.skillSlug)).toEqual(
+      expect.arrayContaining(["attack", "strength", "hitpoints"])
+    );
+    expect(grants.every((g) => g.amount > 0)).toBe(true);
   });
 });
