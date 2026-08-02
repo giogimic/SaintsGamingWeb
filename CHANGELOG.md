@@ -1,3 +1,12 @@
+## [2.1.110] - 2026-08-02
+
+### Added
+- **Vitest coverage** for permissions matrix, forum restricted-board access, shared slug helper, forum Zod validators / hashtags / mentions, and messenger E2EE crypto round-trip.
+- Shared helpers: `src/web/lib/forum-access.ts`, `src/web/lib/slug.ts` (wired into forum/news/modpack create paths).
+
+### Fixed
+- Lobby store unit test now expects default `TITLE_SCREEN` game mode.
+
 ## [2.1.109] - 2026-08-01
 
 ### Changed

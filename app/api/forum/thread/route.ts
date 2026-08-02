@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
 import sanitizeHtml from "sanitize-html";
+import { generateSlug } from "@/web/lib/slug";
 
 const threadSchema = z.object({
   title: z.string().min(3).max(100),
@@ -12,10 +13,6 @@ const threadSchema = z.object({
   pollQuestion: z.string().optional(),
   pollOptions: z.array(z.string()).optional(),
 });
-
-function generateSlug(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-}
 
 export async function POST(req: Request) {
   try {

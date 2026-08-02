@@ -7,14 +7,11 @@ import { awardXP, XP_VALUES } from "@/web/lib/xp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import crypto from "crypto";
+import { generateSlug as baseSlug } from "@/web/lib/slug";
 
 function generateSlug(title: string): string {
-  const base = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
   const hash = crypto.randomBytes(3).toString("hex");
-  return `${base}-${hash}`;
+  return `${baseSlug(title)}-${hash}`;
 }
 
 export async function saveNewsArticle(formData: FormData) {

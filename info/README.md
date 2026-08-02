@@ -39,7 +39,7 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.109` — Social actions split into domain modules + barrel
+`2.1.110` — Vitest coverage for permissions, forum helpers, messenger crypto
 
 ### Key Entry Points
 | File | Role |

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { generateSlug } from "@/web/lib/slug";
 import { z } from "zod";
 
 const categorySchema = z.object({
@@ -27,10 +28,6 @@ const updateCategorySchema = z.object({
   reqFounder: z.boolean().optional(),
   reqTrusted: z.boolean().optional(),
 });
-
-function generateSlug(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-}
 
 export async function GET() {
   try {
