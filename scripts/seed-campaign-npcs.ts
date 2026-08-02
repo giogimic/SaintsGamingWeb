@@ -166,28 +166,46 @@ async function upsertMapNpcs(
 }
 
 async function upsertQuestChain() {
+  // Default: create missing quests only (Studio edits win).
+  // FORCE_QUEST_SEED=1 overwrites title/rewards/objectives from code.
+  const force = process.env.FORCE_QUEST_SEED === "1";
+
   for (const q of SPYDER_QUEST_CHAIN) {
     const existing = await prisma.questTemplate.findUnique({
       where: { slug: q.slug },
+      include: { objectives: true },
     });
 
     let questId: string;
     if (existing) {
+      if (!force) {
+        // Still stamp world profile if missing/wrong
+        if ((existing as { gameId?: string }).gameId !== "tuxemon") {
+          await prisma.questTemplate.update({
+            where: { id: existing.id },
+            data: { gameId: "tuxemon" },
+          });
+        }
+        console.log(`  quest keep ${q.slug} (Studio authority; FORCE_QUEST_SEED=1 to overwrite)`);
+        continue;
+      }
       await prisma.questObjective.deleteMany({ where: { questId: existing.id } });
       await prisma.questTemplate.update({
         where: { id: existing.id },
         data: {
+          gameId: "tuxemon",
           title: q.title,
           description: q.description,
           rewards: q.rewards,
         },
       });
       questId = existing.id;
-      console.log(`  quest upsert ${q.slug}`);
+      console.log(`  quest force-upsert ${q.slug}`);
     } else {
       const created = await prisma.questTemplate.create({
         data: {
           slug: q.slug,
+          gameId: "tuxemon",
           title: q.title,
           description: q.description,
           rewards: q.rewards,

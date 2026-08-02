@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { DEFAULT_WORLD_PROFILE_ID } from '@/shared/game/worldProfiles';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'creature' | 'dev' | 'characters' | 'classes';
 
@@ -18,6 +19,8 @@ export interface FloatingPanelState {
 
 interface EditorState {
   isCreationMode: boolean;
+  /** Active Studio world profile (WorldMap.gameId / QuestTemplate.gameId). */
+  activeGameId: string;
   panels: Record<PanelId, FloatingPanelState>;
   activePanel: PanelId | null;
   highestZIndex: number;
@@ -28,6 +31,7 @@ interface EditorState {
   clickedTile: { r: number; c: number } | null;
   
   // Actions
+  setActiveGameId: (id: string) => void;
   toggleCreationMode: () => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
@@ -47,7 +51,7 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   properties: { id: 'properties', title: 'Properties', isOpen: false, isCollapsed: false, x: 1550, y: 20, width: 340, height: 700, zIndex: 10 },
   assets: { id: 'assets', title: 'Asset Manager', isOpen: false, isCollapsed: false, x: 360, y: 20, width: 800, height: 500, zIndex: 10 },
   npc: { id: 'npc', title: 'NPC Editor', isOpen: false, isCollapsed: false, x: 100, y: 100, width: 400, height: 500, zIndex: 10 },
-  quest: { id: 'quest', title: 'Quest Editor', isOpen: false, isCollapsed: false, x: 150, y: 150, width: 500, height: 400, zIndex: 10 },
+  quest: { id: 'quest', title: 'Quest Editor', isOpen: false, isCollapsed: false, x: 150, y: 150, width: 720, height: 560, zIndex: 10 },
   creature: { id: 'creature', title: 'Creature Catalog', isOpen: false, isCollapsed: false, x: 480, y: 60, width: 780, height: 680, zIndex: 10 },
   dev: { id: 'dev', title: 'Dev Tools', isOpen: false, isCollapsed: false, x: 20, y: 640, width: 600, height: 300, zIndex: 10 },
   characters: { id: 'characters', title: 'Starter Heroes', isOpen: false, isCollapsed: false, x: 560, y: 80, width: 720, height: 640, zIndex: 10 },
@@ -58,12 +62,20 @@ export const useEditorStore = create<EditorState>()(
   subscribeWithSelector(
     immer((set, get) => ({
       isCreationMode: false,
+      activeGameId: DEFAULT_WORLD_PROFILE_ID,
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,
       activeBrushTileId: 1,
       activeLayerIdx: 0,
       clickedTile: null,
+
+      setActiveGameId: (id) => set((state) => {
+        state.activeGameId = id;
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('saints.activeGameId', id);
+        }
+      }),
 
       toggleCreationMode: () => set((state) => {
         state.isCreationMode = !state.isCreationMode;

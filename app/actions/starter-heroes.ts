@@ -21,13 +21,35 @@ export type StarterHeroData = {
   startingInventory: string;
 };
 
-/** Public: fetch active heroes for character creator */
-export async function getStarterHeroes() {
+/** Public: fetch active heroes for character creator (scoped to active world profile by default). */
+export async function getStarterHeroes(gameId?: string) {
   try {
+    let gid = gameId;
+    if (!gid) {
+      const active = await prisma.gameConfig.findFirst({
+        where: {
+          isActive: true,
+          slug: { notIn: ['saints', 'saints-gaming', 'saints-gaming-qol'] },
+        },
+        select: { slug: true },
+      });
+      gid = active?.slug;
+    }
     const heroes = await prisma.starterHero.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(gid ? { gameId: gid } : {}),
+      },
       orderBy: { sortOrder: 'asc' },
     });
+    // Fallback: if profile has no heroes yet, show all active
+    if (heroes.length === 0 && gid) {
+      const all = await prisma.starterHero.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+      return { success: true, data: all };
+    }
     return { success: true, data: heroes };
   } catch (err) {
     console.error('[getStarterHeroes]', err);

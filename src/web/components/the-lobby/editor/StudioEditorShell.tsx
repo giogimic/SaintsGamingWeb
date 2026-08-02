@@ -12,6 +12,7 @@ import {
   Sword,
   PawPrint,
   UserCheck,
+  ScrollText,
 } from 'lucide-react';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
@@ -22,6 +23,8 @@ import { DevToolsPanel } from './panels/DevToolsPanel';
 import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
 import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
 import { ClassEditorPanel } from './panels/ClassEditorPanel';
+import { QuestEditorPanel } from './panels/QuestEditorPanel';
+import { WorldProfileBar } from './WorldProfileBar';
 
 export const StudioEditorShell: React.FC = () => {
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
@@ -52,6 +55,8 @@ export const StudioEditorShell: React.FC = () => {
         The individual panels and bottom dock will have pointer-events-auto.
       */}
 
+      <WorldProfileBar />
+
       {/* Render Active Floating Panels */}
       <div className="pointer-events-auto">
         <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />}>
@@ -68,6 +73,10 @@ export const StudioEditorShell: React.FC = () => {
 
         <DraggablePanel id="npc" icon={<Users className="w-4 h-4" />}>
           <NpcEditorPanel />
+        </DraggablePanel>
+
+        <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />}>
+          <QuestEditorPanel />
         </DraggablePanel>
 
         <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />}>
@@ -94,6 +103,7 @@ export const StudioEditorShell: React.FC = () => {
           <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} label="Props" />
           <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} label="Assets" />
           <DockButton id="npc" icon={<Users className="w-5 h-5" />} label="NPCs" />
+          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} label="Quests" />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
           <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" />
           <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" />
