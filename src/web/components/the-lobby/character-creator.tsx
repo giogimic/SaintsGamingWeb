@@ -3,9 +3,17 @@
 import { useState, useEffect } from "react";
 import { createGameCharacter } from "@/app/actions/game";
 import { getStarterHeroes } from "@/app/actions/starter-heroes";
-import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, ChevronRight, Loader2 } from "lucide-react";
+import { getPlayableClasses } from "@/app/actions/character-classes";
+import { ensureWorldProfiles } from "@/app/actions/world-profiles";
+import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, Heart, ChevronRight, Loader2, Crosshair, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import { INITIAL_SKILLS, useGameStore } from "./store";
+import {
+  ClassDefData,
+  FALLBACK_CLASS_DEFS,
+  resolveClassStats,
+  resolveStartingSkills,
+} from "@/shared/game/classCatalog";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -13,45 +21,57 @@ const PERKS = [
   { id: "SWIFT_TRAVELER", name: "Swift Traveler", desc: "+25% Movement Speed across all maps.", icon: Zap, color: '#fbbf24' },
   { id: "ACROBAT", name: "Acrobat", desc: "Perform 2-tile Double Jumps over obstacles.", icon: Feather, color: '#34d399' },
   { id: "PACK_MULE", name: "Pack Mule", desc: "+50% Inventory Carry Weight Capacity.", icon: Shield, color: '#60a5fa' },
-  { id: "MASTER_TAMER", name: "Master Tamer", desc: "+15% Catch Rate boost for wild Beasts.", icon: User, color: '#f472b6' },
-  { id: "STAMINA_SURGE", name: "Stamina Surge", desc: "+30 Max Health & accelerated health regen.", icon: Sparkles, color: '#a78bfa' },
+  { id: "MASTER_TAMER", name: "Master Tamer", desc: "+15% Catch Rate boost for wild Beasts.", icon: User, color: '#cbb26a' },
+  { id: "STAMINA_SURGE", name: "Stamina Surge", desc: "+30 Max Health & accelerated health regen.", icon: Sparkles, color: '#e2d5b3' },
 ];
 
-const CLASSES = [
-  {
-    id: "WARRIOR", name: "Warrior",
-    desc: "A frontline fighter with high health and physical power.",
-    bonuses: { Attack: 15, Strength: 10, Constitution: 5 },
-    icon: Swords,
-    accent: '#f87171', glow: 'rgba(239,68,68,0.3)', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.35)',
-  },
-  {
-    id: "MAGE", name: "Mage",
-    desc: "An arcane spellcaster specializing in elemental magic.",
-    bonuses: { Magic: 15, Defence: 5 },
-    icon: Wand2,
-    accent: '#a78bfa', glow: 'rgba(139,92,246,0.35)', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.4)',
-  },
-  {
-    id: "THIEF", name: "Ranger",
-    desc: "A swift scout who excels at agility and ranged attacks.",
-    bonuses: { Ranged: 15, Agility: 10 },
-    icon: Feather,
-    accent: '#34d399', glow: 'rgba(16,185,129,0.3)', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.35)',
-  },
-];
+const CLASS_ICONS: Record<string, typeof Swords> = {
+  WARRIOR: Swords,
+  MAGE: Wand2,
+  THIEF: Feather,
+  RANGER: Crosshair,
+  PRIEST: Heart,
+};
+
+function classVisual(def: ClassDefData) {
+  const accent = def.color || '#cbb26a';
+  return {
+    id: def.classId,
+    name: def.name,
+    desc: def.description,
+    accent,
+    glow: `${accent}55`,
+    bg: `${accent}14`,
+    border: `${accent}59`,
+    icon: CLASS_ICONS[def.classId] || Swords,
+    def,
+  };
+}
 
 // Fallback starter heroes (shown if DB is empty or unreachable)
 const FALLBACK_HEROES = [
-  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399' },
-  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa' },
-  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician', flavor: 'Master of arcane arts. High burst, low defense.', tag: 'Advanced', tagColor: '#a78bfa' },
-  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue', flavor: "Swift and lethal. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#f472b6' },
-  { slug: 'ranger', name: 'Ranger', classId: 'THIEF', spriteKey: 'ninja', flavor: 'Agile hunter. Precision strikes from distance.', tag: 'Mobile', tagColor: '#fbbf24' },
-  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength fighter. Balanced offense and utility.', tag: 'Balanced', tagColor: '#fb923c' },
+  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician', flavor: 'Master of arcane arts. High burst, low defense.', tag: 'Advanced', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue', flavor: "Swift and lethal. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja', flavor: 'Agile hunter. Precision strikes from distance.', tag: 'Mobile', tagColor: '#fbbf24', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength fighter. Balanced offense and utility.', tag: 'Balanced', tagColor: '#fb923c', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Tuxemon Spyder campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
 ];
 
-type DbHero = { slug: string; name: string; classId: string; spriteKey: string; flavor: string; tag: string; tagColor: string };
+type DbHero = {
+  slug: string;
+  name: string;
+  classId: string;
+  spriteKey: string;
+  flavor: string;
+  tag: string;
+  tagColor: string;
+  startingMap?: string;
+  startingX?: number;
+  startingY?: number;
+};
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
@@ -67,17 +87,9 @@ function StepHeader({
           onClick={onBack}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-sm transition-all"
           style={{
-            background: 'rgba(139,92,246,0.08)',
-            border: '1px solid rgba(139,92,246,0.2)',
-            color: 'rgba(196,181,253,0.6)',
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.color = 'rgba(221,214,254,0.9)';
-            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.4)';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLElement).style.color = 'rgba(196,181,253,0.6)';
-            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.2)';
+            background: 'rgba(128,111,71,0.12)',
+            border: '1px solid rgba(128,111,71,0.35)',
+            color: 'rgba(226,213,179,0.75)',
           }}
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={2.5} />
@@ -87,8 +99,8 @@ function StepHeader({
       <h2
         className="text-3xl font-black tracking-wider"
         style={{
-          fontFamily: 'serif',
-          background: 'linear-gradient(180deg, #e8d5ff 0%, #a855f7 100%)',
+          fontFamily: 'Georgia, serif',
+          background: 'linear-gradient(180deg, #e2d5b3 0%, #cbb26a 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text',
@@ -109,9 +121,9 @@ function NextButton({ label, onClick, disabled }: { label: string; onClick: () =
         onClick={onClick}
         className="flex items-center gap-3 px-8 py-3.5 rounded-xl font-black text-base tracking-wider uppercase transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none"
         style={{
-          background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #9333ea 100%)',
-          boxShadow: '0 0 25px rgba(139,92,246,0.4), 0 4px 15px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
-          color: 'white',
+          background: 'linear-gradient(135deg, #806f47 0%, #cbb26a 50%, #a8924e 100%)',
+          boxShadow: '0 0 20px rgba(203,178,106,0.25), 0 4px 15px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
+          color: '#050b14',
         }}
       >
         {label}
@@ -128,17 +140,59 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [name, setName] = useState('');
   const [spriteId, setSpriteId] = useState('warrior');
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
+  const [classDefs, setClassDefs] = useState<ClassDefData[]>(FALLBACK_CLASS_DEFS);
   const [heroesLoading, setHeroesLoading] = useState(true);
+  const [activeWorld, setActiveWorld] = useState<{ id: string; name: string } | null>(null);
+  const [worldOptions, setWorldOptions] = useState<Array<{ id: string; name: string }>>([]);
+
+  const loadForWorld = async (gameId?: string) => {
+    setHeroesLoading(true);
+    try {
+      const [heroesRes, classesRes, worldsRes] = await Promise.all([
+        getStarterHeroes(gameId),
+        getPlayableClasses(),
+        ensureWorldProfiles(),
+      ]);
+      if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
+      if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
+      if (worldsRes.success) {
+        setWorldOptions(worldsRes.profiles.map((p) => ({ id: p.id, name: p.name })));
+        const active =
+          worldsRes.profiles.find((p) => p.id === gameId) ||
+          worldsRes.profiles.find((p) => p.isActive) ||
+          worldsRes.profiles.find((p) => p.id === worldsRes.activeId);
+        if (active) setActiveWorld({ id: active.id, name: active.name });
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setHeroesLoading(false);
+    }
+  };
 
   useEffect(() => {
-    getStarterHeroes().then(res => {
-      if (res.success && res.data.length > 0) setDbHeroes(res.data as DbHero[]);
-      setHeroesLoading(false);
-    }).catch(() => setHeroesLoading(false));
+    const preferredGameId = (() => {
+      try {
+        return window.localStorage.getItem('saints.activeGameId') || undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    void loadForWorld(preferredGameId);
   }, []);
 
+  const onPickWorld = (id: string) => {
+    try {
+      window.localStorage.setItem('saints.activeGameId', id);
+    } catch { /* ignore */ }
+    setSelectedHeroSlug(null);
+    void loadForWorld(id);
+  };
+
   const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
+  const CLASSES = classDefs.map(classVisual);
   const [classId, setClassId] = useState('WARRIOR');
+  const [selectedHeroSlug, setSelectedHeroSlug] = useState<string | null>(null);
   const [perkId, setPerkId] = useState(PERKS[0].id);
   const [loading, setLoading] = useState(false);
   const [spritePage, setSpritePage] = useState(0);
@@ -165,6 +219,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const handleHeroPick = (hero: DbHero) => {
     setSpriteId(hero.spriteKey);
     setClassId(hero.classId);
+    setSelectedHeroSlug(hero.slug);
     setStep('NAME');
   };
 
@@ -175,24 +230,38 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     }
     setLoading(true);
 
-    const selectedClass = CLASSES.find(c => c.id === classId);
-    const initialSkills = JSON.parse(JSON.stringify(INITIAL_SKILLS));
-    if (selectedClass) {
-      Object.entries(selectedClass.bonuses).forEach(([skill, level]) => {
-        if (initialSkills[skill]) initialSkills[skill].level = level;
-      });
-    }
+    const selectedDef =
+      classDefs.find((c) => c.classId === classId) ||
+      FALLBACK_CLASS_DEFS.find((c) => c.classId === classId) ||
+      FALLBACK_CLASS_DEFS[0];
+    const initialSkills = selectedDef
+      ? resolveStartingSkills(selectedDef)
+      : JSON.parse(JSON.stringify(INITIAL_SKILLS));
+    const sheet = selectedDef ? resolveClassStats(selectedDef) : { hp: 100 };
+    const hpBase = sheet.hp + (perkId === 'STAMINA_SURGE' ? 30 : 0);
+    const hpFromSkills = (initialSkills['Hitpoints']?.level || 1) * 5;
 
+    const hero =
+      starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
+      starterHeroes.find((h) => h.classId === classId && h.spriteKey === spriteId);
+    const startMap = hero?.startingMap || 'DEMO_SANDBOX';
+    const startX = hero?.startingX ?? 14;
+    const startY = hero?.startingY ?? 15;
+
+    const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {
-      currentMapId: 'DEMO_SANDBOX',
-      position: { x: 14, y: 15 },
+      currentMapId: startMap,
+      position: { x: startX, y: startY },
       level: 1, xp: 0,
-      hp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
-      maxHp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
+      hp: hpBase + hpFromSkills,
+      maxHp: hpBase + hpFromSkills,
       credits: 1000,
-      // Capture items come from NPC shop / craft (server Prisma inventory) — not free grants
-      inventory: { 'patch_kit': 5 },
+      // Server capture uses Prisma inventory (Guide grant on quest accept). Client bag hint only.
+      inventory: isSpyder
+        ? { patch_kit: 5, film_standard: 5, soul_camera: 1 }
+        : { patch_kit: 5 },
       skills: initialSkills,
+      classStats: sheet,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
       customization: { skinTone: '#fcd34d', hairColor: '#3b82f6', shirtColor: '#10b981', pantsColor: '#18181b' },
       combatStyle: classId,
@@ -223,17 +292,17 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   // Input style helper
   const inputStyle = {
     background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(139,92,246,0.25)',
+    border: '1px solid rgba(128,111,71,0.35)',
     color: '#e9d5ff',
-    caretColor: '#a855f7',
+    caretColor: '#cbb26a',
   };
   const inputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.border = '1px solid rgba(139,92,246,0.6)';
-    e.currentTarget.style.background = 'rgba(139,92,246,0.08)';
-    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(139,92,246,0.1)';
+    e.currentTarget.style.border = '1px solid rgba(203,178,106,0.55)';
+    e.currentTarget.style.background = 'rgba(128,111,71,0.12)';
+    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128,111,71,0.2)';
   };
   const inputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.border = '1px solid rgba(139,92,246,0.25)';
+    e.currentTarget.style.border = '1px solid rgba(128,111,71,0.35)';
     e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
     e.currentTarget.style.boxShadow = 'none';
   };
@@ -248,7 +317,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       <div
         className="fixed w-[700px] h-[700px] rounded-full pointer-events-none"
         style={{
-          background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(128,111,71,0.2) 0%, transparent 70%)',
           top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         }}
       />
@@ -267,13 +336,13 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
               <div key={s} className="flex items-center gap-1">
                 <span
                   style={{
-                    color: active ? '#a855f7' : done ? 'rgba(139,92,246,0.5)' : 'rgba(139,92,246,0.2)',
+                    color: active ? '#cbb26a' : done ? 'rgba(203,178,106,0.45)' : 'rgba(203,178,106,0.25)',
                     fontWeight: active ? 900 : 700,
                   }}
                 >
                   {i + 1}. {labels[s]}
                 </span>
-                {i < 4 && <ChevronRight size={10} style={{ color: 'rgba(139,92,246,0.2)' }} />}
+                {i < 4 && <ChevronRight size={10} style={{ color: 'rgba(203,178,106,0.25)' }} />}
               </div>
             );
           })}
@@ -284,8 +353,8 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
           className="w-full max-w-4xl rounded-2xl overflow-hidden"
           style={{
             background: 'linear-gradient(160deg, rgba(18,6,45,0.99) 0%, rgba(10,3,28,0.99) 100%)',
-            border: '1px solid rgba(139,92,246,0.25)',
-            boxShadow: '0 0 60px rgba(139,92,246,0.12), 0 25px 50px rgba(0,0,0,0.6)',
+            border: '1px solid rgba(128,111,71,0.35)',
+            boxShadow: '0 0 60px rgba(128,111,71,0.25), 0 25px 50px rgba(0,0,0,0.6)',
           }}
         >
           {/* Progress bar */}
@@ -294,8 +363,8 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
               className="h-full transition-all duration-500"
               style={{
                 width: `${progressPct}%`,
-                background: 'linear-gradient(90deg, #7c3aed, #a855f7)',
-                boxShadow: '0 0 10px rgba(139,92,246,0.6)',
+                background: 'linear-gradient(90deg, #806f47, #cbb26a)',
+                boxShadow: '0 0 10px rgba(203,178,106,0.55)',
               }}
             />
           </div>
@@ -307,14 +376,38 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <StepHeader label="Choose Your Hero" onBack={onCancel ? () => onCancel() : undefined} />
 
-                <p className="text-violet-400/40 text-sm font-mono mb-8 text-center tracking-widest">
+                <div className="flex flex-col items-center gap-2 mb-5">
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#806f47]/35 bg-[#050b14]/70 text-[10px] font-mono uppercase tracking-[0.18em] text-[#cbb26a]/90">
+                    <Globe2 className="w-3.5 h-3.5 shrink-0" />
+                    World
+                    <select
+                      value={activeWorld?.id || ''}
+                      onChange={(e) => onPickWorld(e.target.value)}
+                      className="bg-transparent border-none outline-none text-[#e2d5b3] font-mono text-[11px] uppercase tracking-wider cursor-pointer max-w-[160px]"
+                    >
+                      {worldOptions.map((w) => (
+                        <option key={w.id} value={w.id} className="bg-[#0b1320] text-[#e2d5b3]">
+                          {w.name}
+                        </option>
+                      ))}
+                      {activeWorld && !worldOptions.some((w) => w.id === activeWorld.id) && (
+                        <option value={activeWorld.id}>{activeWorld.name}</option>
+                      )}
+                    </select>
+                  </label>
+                  <p className="text-[9px] text-[#806f47]/70 font-mono tracking-wide">
+                    Local pick for heroes / start map · Studio World bar sets the server active realm
+                  </p>
+                </div>
+
+                <p className="text-[#cbb26a]/50 text-sm font-mono mb-8 text-center tracking-widest">
                   Pick a starting archetype — you can customise appearance in the next step
                 </p>
 
                 {heroesLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Loader2 className="w-8 h-8 text-violet-500/50 animate-spin" />
-                    <p className="text-violet-600/30 text-xs font-mono">Loading heroes...</p>
+                    <Loader2 className="w-8 h-8 text-[#806f47]/70 animate-spin" />
+                    <p className="text-[#806f47]/70 text-xs font-mono">Loading heroes...</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -323,11 +416,11 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                       return (
                         <div
                           key={hero.slug}
-                          onClick={() => { setSpriteId(hero.spriteKey); setClassId(hero.classId); setStep('NAME'); }}
+                          onClick={() => handleHeroPick(hero)}
                           className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group"
                           style={{
                             background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(139,92,246,0.15)',
+                            border: '1px solid rgba(128,111,71,0.18)',
                           }}
                           onMouseEnter={e => {
                             const el = e.currentTarget as HTMLElement;
@@ -339,7 +432,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                           onMouseLeave={e => {
                             const el = e.currentTarget as HTMLElement;
                             el.style.background = 'rgba(255,255,255,0.03)';
-                            el.style.border = '1px solid rgba(139,92,246,0.15)';
+                            el.style.border = '1px solid rgba(128,111,71,0.18)';
                             el.style.boxShadow = 'none';
                             el.style.transform = 'none';
                           }}
@@ -400,7 +493,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                   </div>
                 )}
 
-                <p className="text-center text-violet-600/25 text-xs font-mono mt-6">
+                <p className="text-center text-[#806f47]/40 text-xs font-mono mt-6">
                   {heroesLoading ? '' : `${starterHeroes.length} heroes available · Manage in Studio → Heroes`}
                 </p>
               </div>
@@ -415,13 +508,13 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                 <div
                   className="flex items-center gap-4 rounded-2xl p-4 mb-8"
                   style={{
-                    background: 'rgba(139,92,246,0.08)',
-                    border: '1px solid rgba(139,92,246,0.2)',
+                    background: 'rgba(128,111,71,0.12)',
+                    border: '1px solid rgba(203,178,106,0.25)',
                   }}
                 >
                   <div
                     className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(139,92,246,0.2)' }}
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(203,178,106,0.25)' }}
                   >
                     <div
                       className="pixelated bg-no-repeat"
@@ -435,14 +528,14 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     />
                   </div>
                   <div>
-                    <p className="text-violet-200 font-black text-base">{spriteId.charAt(0).toUpperCase() + spriteId.slice(1)}</p>
-                    <p className="text-violet-500/50 text-xs font-mono uppercase tracking-widest">{classId}</p>
+                    <p className="text-[#e2d5b3] font-black text-base">{spriteId.charAt(0).toUpperCase() + spriteId.slice(1)}</p>
+                    <p className="text-[#806f47]/70 text-xs font-mono uppercase tracking-widest">{classId}</p>
                   </div>
                 </div>
 
                 {/* Name field */}
                 <div className="mb-3">
-                  <label className="block text-[10px] font-black text-violet-400/50 uppercase tracking-[0.2em] mb-2 px-1">
+                  <label className="block text-[10px] font-black text-[#cbb26a]/70 uppercase tracking-[0.2em] mb-2 px-1">
                     Character Name
                   </label>
                   <input
@@ -456,17 +549,17 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     maxLength={16}
                     autoFocus
                   />
-                  <p className="text-violet-600/30 text-[11px] font-mono mt-2 px-1">
+                  <p className="text-[#806f47]/70 text-[11px] font-mono mt-2 px-1">
                     {name.length}/16 characters · min 3
                   </p>
                 </div>
 
                 {/* Also let them switch class here */}
                 <div className="mt-6">
-                  <label className="block text-[10px] font-black text-violet-400/50 uppercase tracking-[0.2em] mb-3 px-1">
+                  <label className="block text-[10px] font-black text-[#cbb26a]/70 uppercase tracking-[0.2em] mb-3 px-1">
                     Class
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     {CLASSES.map(c => {
                       const Icon = c.icon;
                       const isActive = classId === c.id;
@@ -477,14 +570,14 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                           className="flex flex-col items-center gap-2 p-3 rounded-xl cursor-pointer transition-all"
                           style={{
                             background: isActive ? c.bg : 'rgba(255,255,255,0.03)',
-                            border: isActive ? `1px solid ${c.border}` : '1px solid rgba(139,92,246,0.12)',
+                            border: isActive ? `1px solid ${c.border}` : '1px solid rgba(128,111,71,0.25)',
                             boxShadow: isActive ? `0 0 15px ${c.glow}` : 'none',
                           }}
                         >
-                          <Icon className="w-5 h-5" style={{ color: isActive ? c.accent : 'rgba(139,92,246,0.4)' }} />
+                          <Icon className="w-5 h-5" style={{ color: isActive ? c.accent : 'rgba(128,111,71,0.45)' }} />
                           <span
                             className="text-[11px] font-black uppercase tracking-widest font-mono"
-                            style={{ color: isActive ? c.accent : 'rgba(139,92,246,0.35)' }}
+                            style={{ color: isActive ? c.accent : 'rgba(128,111,71,0.4)' }}
                           >
                             {c.name}
                           </span>
@@ -504,7 +597,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                 <StepHeader label="Appearance" onBack={() => setStep('NAME')} />
 
                 {currentSprites.length === 0 ? (
-                  <div className="text-center py-20 text-violet-500/40 font-mono">Loading sprites...</div>
+                  <div className="text-center py-20 text-[#806f47]/60 font-mono">Loading sprites...</div>
                 ) : (
                   <>
                     <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mb-6">
@@ -516,20 +609,20 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                             onClick={() => setSpriteId(sprite)}
                             className="aspect-square rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-center relative overflow-hidden"
                             style={{
-                              background: isActive ? 'rgba(139,92,246,0.15)' : 'rgba(255,255,255,0.03)',
-                              border: isActive ? '1px solid rgba(139,92,246,0.6)' : '1px solid rgba(139,92,246,0.1)',
-                              boxShadow: isActive ? '0 0 15px rgba(139,92,246,0.3)' : 'none',
+                              background: isActive ? 'rgba(128,111,71,0.18)' : 'rgba(255,255,255,0.03)',
+                              border: isActive ? '1px solid rgba(203,178,106,0.55)' : '1px solid rgba(128,111,71,0.2)',
+                              boxShadow: isActive ? '0 0 15px rgba(203,178,106,0.35)' : 'none',
                               transform: isActive ? 'scale(1.08)' : 'scale(1)',
                             }}
                             onMouseEnter={e => {
                               if (!isActive) {
-                                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(139,92,246,0.3)';
-                                (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.07)';
+                                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(203,178,106,0.35)';
+                                (e.currentTarget as HTMLElement).style.background = 'rgba(128,111,71,0.1)';
                               }
                             }}
                             onMouseLeave={e => {
                               if (!isActive) {
-                                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(139,92,246,0.1)';
+                                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(128,111,71,0.2)';
                                 (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
                               }
                             }}
@@ -552,20 +645,20 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     {/* Pagination */}
                     <div
                       className="flex items-center justify-between rounded-xl p-3 mb-6"
-                      style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)' }}
+                      style={{ background: 'rgba(128,111,71,0.1)', border: '1px solid rgba(128,111,71,0.25)' }}
                     >
                       <button
                         disabled={spritePage === 0}
                         onClick={() => setSpritePage(p => p - 1)}
                         className="px-5 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-30"
                         style={{
-                          background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)',
+                          background: 'rgba(128,111,71,0.25)', border: '1px solid rgba(203,178,106,0.25)',
                           color: 'rgba(196,181,253,0.7)',
                         }}
                       >
                         ← Prev
                       </button>
-                      <span className="text-violet-400/50 font-mono text-xs uppercase tracking-widest">
+                      <span className="text-[#cbb26a]/70 font-mono text-xs uppercase tracking-widest">
                         Page {spritePage + 1} of {totalPages}
                       </span>
                       <button
@@ -573,7 +666,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                         onClick={() => setSpritePage(p => p + 1)}
                         className="px-5 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-30"
                         style={{
-                          background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)',
+                          background: 'rgba(128,111,71,0.25)', border: '1px solid rgba(203,178,106,0.25)',
                           color: 'rgba(196,181,253,0.7)',
                         }}
                       >
@@ -592,7 +685,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <StepHeader label="Starting Gift" onBack={() => setStep('APPEARANCE')} />
 
-                <p className="text-violet-400/40 text-sm font-mono mb-8 text-center tracking-wider">
+                <p className="text-[#cbb26a]/50 text-sm font-mono mb-8 text-center tracking-wider">
                   Choose one innate perk that defines your playstyle
                 </p>
 
@@ -607,7 +700,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                         className="flex items-start gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-200"
                         style={{
                           background: isActive ? `${p.color}12` : 'rgba(255,255,255,0.03)',
-                          border: isActive ? `1px solid ${p.color}50` : '1px solid rgba(139,92,246,0.12)',
+                          border: isActive ? `1px solid ${p.color}50` : '1px solid rgba(128,111,71,0.25)',
                           boxShadow: isActive ? `0 0 20px ${p.color}25` : 'none',
                           transform: isActive ? 'scale(1.02)' : 'scale(1)',
                         }}
@@ -620,7 +713,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                         onMouseLeave={e => {
                           if (!isActive) {
                             (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.12)';
+                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(128,111,71,0.25)';
                           }
                         }}
                       >
@@ -633,7 +726,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                         >
                           <Icon
                             className="w-5 h-5"
-                            style={{ color: isActive ? p.color : 'rgba(139,92,246,0.4)' }}
+                            style={{ color: isActive ? p.color : 'rgba(128,111,71,0.45)' }}
                             strokeWidth={2.5}
                           />
                         </div>
@@ -666,18 +759,18 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                 <div
                   className="rounded-2xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center gap-8"
                   style={{
-                    background: 'rgba(139,92,246,0.06)',
-                    border: '1px solid rgba(139,92,246,0.2)',
-                    boxShadow: '0 0 30px rgba(139,92,246,0.08)',
+                    background: 'rgba(128,111,71,0.1)',
+                    border: '1px solid rgba(203,178,106,0.25)',
+                    boxShadow: '0 0 30px rgba(128,111,71,0.12)',
                   }}
                 >
                   {/* Sprite */}
                   <div
                     className="w-28 h-28 rounded-2xl flex items-center justify-center shrink-0"
                     style={{
-                      background: 'rgba(139,92,246,0.1)',
-                      border: '1px solid rgba(139,92,246,0.3)',
-                      boxShadow: '0 0 30px rgba(139,92,246,0.2)',
+                      background: 'rgba(128,111,71,0.2)',
+                      border: '1px solid rgba(203,178,106,0.35)',
+                      boxShadow: '0 0 30px rgba(203,178,106,0.25)',
                     }}
                   >
                     <div
@@ -697,7 +790,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     <h3
                       className="text-4xl font-black mb-3 tracking-wide"
                       style={{
-                        background: 'linear-gradient(180deg, #e8d5ff 0%, #a855f7 100%)',
+                        background: 'linear-gradient(180deg, #e2d5b3 0%, #cbb26a 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',
@@ -742,22 +835,22 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                         style={{
                           background: 'rgba(255,255,255,0.05)',
                           border: '1px solid rgba(255,255,255,0.08)',
-                          color: 'rgba(196,181,253,0.5)',
+                          color: 'rgba(226,213,179,0.55)',
                         }}
                       >
                         {spriteId}
                       </span>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                       {[
                         { label: 'Level', value: '1' },
                         { label: 'HP', value: perkId === 'STAMINA_SURGE' ? '165' : '110' },
                         { label: 'Credits', value: '1,000' },
                       ].map(stat => (
                         <div key={stat.label} className="text-center">
-                          <div className="text-violet-300 font-black text-lg">{stat.value}</div>
-                          <div className="text-violet-500/40 text-[10px] font-mono uppercase tracking-widest">{stat.label}</div>
+                          <div className="text-[#e2d5b3] font-black text-lg">{stat.value}</div>
+                          <div className="text-[#806f47]/60 text-[10px] font-mono uppercase tracking-widest">{stat.label}</div>
                         </div>
                       ))}
                     </div>
@@ -792,7 +885,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
           </div>
         </div>
 
-        <p className="mt-8 text-violet-700/25 text-[10px] font-mono tracking-widest">
+        <p className="mt-8 text-[#806f47]/35 text-[10px] font-mono tracking-widest">
           ᚠ &nbsp; Saints Online &nbsp; ᚠ
         </p>
       </div>

@@ -3,15 +3,19 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
-import { UserPlus, Save } from 'lucide-react';
+import { placeMapNpc } from '@/app/actions/map-npcs';
+import { UserPlus, Save, Loader2 } from 'lucide-react';
 
 export const NpcEditorPanel: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
-  
+  const currentMapId = useGameStore((state) => state.currentMapId);
+
   const [npcName, setNpcName] = useState('Keeper Alex');
-  const [npcSprite, setNpcSprite] = useState('/game-assets/npc/heroine.png');
+  const [npcSprite, setNpcSprite] = useState('heroine');
   const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Tamer!');
-  
+  const [questSlug, setQuestSlug] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const clickedTile = useEditorStore((state) => state.clickedTile);
   const [spawnX, setSpawnX] = useState(10);
   const [spawnY, setSpawnY] = useState(10);
@@ -23,36 +27,99 @@ export const NpcEditorPanel: React.FC = () => {
     }
   }, [clickedTile]);
 
-  const handleAddNpc = () => {
-    // In a real implementation this would emit to the server, but for now we'll just show a toast
-    showToast(`Placed ${npcName} at (${spawnX}, ${spawnY})`);
+  const handleAddNpc = async () => {
+    const mapId = (currentMapId || '').split('#')[0];
+    if (!mapId) {
+      showToast('No active map — enter a world first.');
+      return;
+    }
+    setSaving(true);
+    const res = await placeMapNpc({
+      mapId,
+      name: npcName,
+      sprite: npcSprite,
+      x: spawnX,
+      y: spawnY,
+      greeting: npcDialogue,
+      questSlug: questSlug.trim() || undefined,
+    });
+    setSaving(false);
+    if (res.success) {
+      showToast(`Saved ${npcName} on ${mapId} (${res.count} NPCs). Rejoin map to spawn.`);
+    } else {
+      showToast(res.error || 'Failed to save NPC');
+    }
   };
 
   return (
     <div className="space-y-4 text-xs font-mono">
+      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded p-2 text-[#e2d5b3]/90 text-[10px] leading-relaxed">
+        Persists to <code className="text-[#cbb26a]">WorldMap.npcsData</code> + dialogue tree.
+        Rejoin the map (or restart shard) to see the spawn. Map:{' '}
+        <span className="text-[#cbb26a]">{currentMapId || '—'}</span>
+      </div>
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
           <UserPlus className="w-3.5 h-3.5" /> Place NPC
         </div>
-        
+
         <div className="space-y-2">
-          <input type="text" value={npcName} onChange={(e) => setNpcName(e.target.value)} placeholder="NPC Name" className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1" />
-          <input type="text" value={npcSprite} onChange={(e) => setNpcSprite(e.target.value)} placeholder="Sprite URL" className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1" />
-          <textarea value={npcDialogue} onChange={(e) => setNpcDialogue(e.target.value)} placeholder="Dialogue ID or Text" className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 h-20 resize-none custom-scrollbar" />
-          
+          <input
+            type="text"
+            value={npcName}
+            onChange={(e) => setNpcName(e.target.value)}
+            placeholder="NPC Name"
+            className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
+          />
+          <input
+            type="text"
+            value={npcSprite}
+            onChange={(e) => setNpcSprite(e.target.value)}
+            placeholder="Sprite key (e.g. heroine, professor)"
+            className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
+          />
+          <textarea
+            value={npcDialogue}
+            onChange={(e) => setNpcDialogue(e.target.value)}
+            placeholder="Greeting line"
+            className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 h-20 resize-none custom-scrollbar"
+          />
+          <input
+            type="text"
+            value={questSlug}
+            onChange={(e) => setQuestSlug(e.target.value)}
+            placeholder="Optional questSlug (ACCEPT_QUEST)"
+            className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
+          />
+
           <div className="flex gap-2">
-            <div>
+            <div className="flex-1">
               <label className="block text-[10px] text-slate-400">X</label>
-              <input type="number" value={spawnX} onChange={(e) => setSpawnX(parseInt(e.target.value))} className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1" />
+              <input
+                type="number"
+                value={spawnX}
+                onChange={(e) => setSpawnX(parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
+              />
             </div>
-            <div>
+            <div className="flex-1">
               <label className="block text-[10px] text-slate-400">Y</label>
-              <input type="number" value={spawnY} onChange={(e) => setSpawnY(parseInt(e.target.value))} className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1" />
+              <input
+                type="number"
+                value={spawnY}
+                onChange={(e) => setSpawnY(parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
+              />
             </div>
           </div>
-          
-          <button onClick={handleAddNpc} className="w-full py-1.5 bg-[#806f47]/80 hover:bg-[#806f47] text-white rounded font-bold flex items-center justify-center gap-1">
-            <Save className="w-3.5 h-3.5" /> Drop NPC in World
+
+          <button
+            onClick={() => void handleAddNpc()}
+            disabled={saving}
+            className="w-full py-1.5 bg-[#806f47]/80 hover:bg-[#806f47] text-[#050b14] rounded font-bold flex items-center justify-center gap-1 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            Save NPC to Map
           </button>
         </div>
       </div>

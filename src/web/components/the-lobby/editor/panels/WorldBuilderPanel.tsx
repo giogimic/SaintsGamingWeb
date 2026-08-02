@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '../../store';
-import { searchMapIndex, registerNewMap } from '../../data/map-index';
-import { GAME_MAPS } from '../../data/maps';
+import { registerNewMap } from '../../data/map-index';
+import { GAME_MAPS, listMaps, invalidateMapCache, type MapIndexEntry } from '../../data/maps';
 import { Compass, Plus, Search, Layers, Grid } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
@@ -11,20 +11,43 @@ import TilesetPicker from '../TilesetPicker';
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
   const showToast = useGameStore((state) => state.showToast);
+  const activeGameId = useEditorStore((state) => state.activeGameId);
 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
+  const [profileMaps, setProfileMaps] = useState<MapIndexEntry[]>([]);
   const [isCreatingNewMap, setIsCreatingNewMap] = useState(false);
   const [newMapSlug, setNewMapSlug] = useState('');
   const [newMapName, setNewMapName] = useState('');
   const [newMapWidth, setNewMapWidth] = useState(24);
   const [newMapHeight, setNewMapHeight] = useState(24);
+  const [creating, setCreating] = useState(false);
   
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
   const brushTileId = useEditorStore((state) => state.activeBrushTileId);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
 
-  const mapIndex = searchMapIndex(mapSearchQuery);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const maps = await listMaps(activeGameId);
+        if (!cancelled) setProfileMaps(maps);
+      } catch {
+        if (!cancelled) setProfileMaps([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeGameId]);
+
+  const mapIndex = useMemo(() => {
+    const q = mapSearchQuery.trim().toLowerCase();
+    if (!q) return profileMaps.slice(0, 40);
+    return profileMaps.filter(
+      (m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
+    ).slice(0, 40);
+  }, [profileMaps, mapSearchQuery]);
+
   const currentMapData = GAME_MAPS[currentMapId] || {
     id: currentMapId,
     name: currentMapId,
@@ -42,7 +65,7 @@ export const WorldBuilderPanel: React.FC = () => {
     showToast(`Warped to map: ${targetMapId}`);
   };
 
-  const handleCreateNewMapSubmit = () => {
+  const handleCreateNewMapSubmit = async () => {
     if (!newMapSlug) {
       showToast('Please enter a valid Map ID slug!');
       return;
@@ -58,6 +81,7 @@ export const WorldBuilderPanel: React.FC = () => {
     const newMapData = {
       id: cleanSlug,
       name: newMapName || cleanSlug,
+      gameId: activeGameId,
       grid: newGrid,
       gates: {},
       npcs: [],
@@ -72,10 +96,31 @@ export const WorldBuilderPanel: React.FC = () => {
       ]
     };
 
-    registerNewMap(newMapData);
-    useGameStore.setState({ currentMapId: cleanSlug });
-    setIsCreatingNewMap(false);
-    showToast(`Created & Warped to new map: ${cleanSlug}`);
+    setCreating(true);
+    try {
+      const res = await fetch(`/api/maps/${encodeURIComponent(cleanSlug)}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(newMapData),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      invalidateMapCache(cleanSlug);
+      registerNewMap(newMapData);
+      useGameStore.setState({ currentMapId: cleanSlug });
+      setIsCreatingNewMap(false);
+      setProfileMaps((prev) => [
+        { id: cleanSlug, name: newMapData.name, gameId: activeGameId, version: 1 },
+        ...prev.filter((m) => m.id !== cleanSlug),
+      ]);
+      showToast(`Saved map ${cleanSlug} → ${activeGameId}`);
+    } catch (err) {
+      showToast(`Create failed: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleBrushSelect = (tileId: number) => {
@@ -87,9 +132,10 @@ export const WorldBuilderPanel: React.FC = () => {
       {/* MAP SELECTOR */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center justify-between text-[#cbb26a]">
-          <span className="flex items-center gap-1.5 font-bold"><Compass className="w-3.5 h-3.5" /> World:</span>
+          <span className="flex items-center gap-1.5 font-bold"><Compass className="w-3.5 h-3.5" /> Map:</span>
           <span className="text-white px-2 py-0.5 rounded border border-[#806f47]/30 bg-[#050b14]">{currentMapId}</span>
         </div>
+        <div className="text-[9px] text-slate-500">Profile: <span className="text-[#cbb26a]">{activeGameId}</span> · {profileMaps.length} maps</div>
 
         <div className="relative">
           <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-slate-400" />
@@ -102,7 +148,7 @@ export const WorldBuilderPanel: React.FC = () => {
           />
         </div>
 
-        {mapSearchQuery && (
+        {(mapSearchQuery || profileMaps.length > 0) && (
           <div className="max-h-32 overflow-y-auto bg-[#050b14] border border-slate-700 rounded divide-y divide-slate-800 custom-scrollbar">
             {mapIndex.map((m) => (
               <div
@@ -111,9 +157,12 @@ export const WorldBuilderPanel: React.FC = () => {
                 className="px-2 py-1 hover:bg-white/10 cursor-pointer flex justify-between items-center"
               >
                 <span>{m.name}</span>
-                <span className="text-[9px] text-[#cbb26a]">{m.category}</span>
+                <span className="text-[9px] text-[#cbb26a]">{m.id}</span>
               </div>
             ))}
+            {mapIndex.length === 0 && (
+              <div className="px-2 py-2 text-slate-500 text-[10px]">No maps in this profile</div>
+            )}
           </div>
         )}
 
@@ -141,10 +190,11 @@ export const WorldBuilderPanel: React.FC = () => {
               className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
             />
             <button
-              onClick={handleCreateNewMapSubmit}
-              className="w-full py-1 bg-green-600/80 hover:bg-green-500 text-white rounded font-bold"
+              disabled={creating}
+              onClick={() => void handleCreateNewMapSubmit()}
+              className="w-full py-1 bg-green-600/80 hover:bg-green-500 text-white rounded font-bold disabled:opacity-50"
             >
-              Generate
+              {creating ? 'Saving…' : `Save to ${activeGameId}`}
             </button>
           </div>
         )}

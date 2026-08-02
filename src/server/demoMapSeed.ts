@@ -63,11 +63,13 @@ export const DEMO_MAP_NPCS = [
   {
     id: "npc_guide_1",
     name: "Guide",
-    x: 15,
-    y: 15,
+    x: 18,
+    y: 16,
     sprite: "adventurer",
     direction: "down",
-    dialogue: ["Talk to Warden Vance near the north path for your toolbelt."],
+    dialogue: [
+      "Start with the Trail Greeter in the plaza — accept Saints Trail. Vance's toolbelt comes after you spar the Tutor.",
+    ],
   },
 ];
 

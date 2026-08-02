@@ -1,5 +1,6 @@
 import { Point } from '../store';
 import { ElementType } from './saints-dex';
+import { listGateTargets } from '@/shared/game/mapGates';
 
 export interface MapGate {
   targetMapId: string;
@@ -130,20 +131,29 @@ export async function listMaps(gameId?: string): Promise<MapIndexEntry[]> {
 export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
   const current = mapCache[currentMapId];
   if (!current?.gates) return;
-  for (const gate of Object.values(current.gates)) {
-    if (gate.targetMapId && !mapCache[gate.targetMapId]) {
-      loadMap(gate.targetMapId).catch(() => {});
+  for (const targetMapId of listGateTargets(current.gates)) {
+    if (targetMapId && !mapCache[targetMapId]) {
+      loadMap(targetMapId).catch(() => {});
     }
   }
 }
+
+const MAP_ID_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 
 /**
  * Proxy object for backwards compatibility with synchronous GAME_MAPS[id] lookups
  */
 export const GAME_MAPS = new Proxy(mapCache, {
-  get(target, prop: string) {
+  get(target, prop) {
+    if (typeof prop !== "string") {
+      return Reflect.get(target, prop as symbol);
+    }
     if (prop in target) {
       return target[prop];
+    }
+    // Ignore React/internal keys (e.g. $$typeof) — do not fetch /api/maps/$$typeof
+    if (!MAP_ID_RE.test(prop) || prop.startsWith("$$")) {
+      return undefined;
     }
     // Return default empty map on synchronous access miss while triggering async load
     loadMap(prop).catch(() => {});

@@ -1,16 +1,51 @@
 import { GameEngine } from "./GameEngine";
 import { PrismaClient } from "@prisma/client";
 import { VANCE_TREE } from "./DemoBootstrap";
+import { loadCreatureDef, toPlayerCreatureStats } from "./creatureDefs";
+import {
+  AZURE_GUIDE_NPC_ID,
+  AZURE_GUIDE_TREE,
+  resolveAzureGuideStartNode,
+  type GuideContext,
+} from "./spyderGuideDialogue";
+import {
+  CARLOS_DIALOGUE_TREE,
+  LEATHER_GYM_ATTENDANT_DIALOGUE_TREE,
+  LEATHER_NURSE_DIALOGUE_TREE,
+  LEATHER_SCOOP_CLERK_DIALOGUE_TREE,
+  SCOOP_CLERK_DIALOGUE_TREE,
+  SCOOP_NURSE_DIALOGUE_TREE,
+  SPYDER_QUEST_CHAIN,
+} from "./spyderQuests";
+import { dialogueCache, invalidateDialogueCache } from "./dialogueCache";
+
+export { invalidateDialogueCache };
 
 const prisma = new PrismaClient();
 
-const dialogueCache: Record<string, any> = {};
-
-/** Built-in demo trees (always available even if DB empty). */
+/**
+ * Built-in fallback trees when DB has no row.
+ * Prefer DB first in getDialogueTree so Studio / Saints Trail seeds win.
+ * Vance is intentionally NOT here — Studio must own npc_warden_vance.
+ */
 const BUILTIN_TREES: Record<string, any> = {
+  [AZURE_GUIDE_NPC_ID]: AZURE_GUIDE_TREE,
+  azure_guide: AZURE_GUIDE_TREE,
+  npc_cotton_tunnel_carlos: CARLOS_DIALOGUE_TREE,
+  npc_cotton_scoop_clerk: SCOOP_CLERK_DIALOGUE_TREE,
+  npc_cotton_scoop_nurse: SCOOP_NURSE_DIALOGUE_TREE,
+  npc_leather_center_nurse: LEATHER_NURSE_DIALOGUE_TREE,
+  npc_leather_scoop_clerk: LEATHER_SCOOP_CLERK_DIALOGUE_TREE,
+  npc_leather_gym_attendant: LEATHER_GYM_ATTENDANT_DIALOGUE_TREE,
+};
+
+/** Last-resort seed copy if DB empty (demo boot race). */
+const VANCE_FALLBACK_TREES: Record<string, any> = {
   npc_warden_vance: VANCE_TREE,
   warden_vance: VANCE_TREE,
 };
+
+const SPYDER_DEFAULT_STARTER = "budaye";
 
 async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
@@ -57,43 +92,57 @@ export class DialogueManager {
   constructor(private engine: GameEngine) {
     this.engine.events.on("npcInteractRequest", (data) => this.handleNpcInteract(data));
     this.engine.events.on("dialogueSelectAction", (data) => this.handleDialogueSelect(data));
+    this.engine.events.on("showTrainerPostBattleDialogue", (data) =>
+      this.handleTrainerPostBattleDialogue(data)
+    );
   }
 
   public async initialize() {
     console.log("[DialogueManager] Initialized (demo trees + DB)");
   }
 
+  private normalizeNpcKey(npcId: string): string {
+    // npc_azure_guide_1712345678 → npc_azure_guide
+    let id = String(npcId || "").replace(/_\d{10,}$/, "");
+    if (!id.startsWith("npc_")) id = `npc_${id.replace(/^npc_/, "")}`;
+    return id;
+  }
+
   private async getDialogueTree(npcId: string) {
-    const key = npcId.startsWith("npc_") ? npcId : `npc_${npcId}`;
-    if (dialogueCache[key]) return dialogueCache[key];
-    if (dialogueCache[npcId]) return dialogueCache[npcId];
+    const key = this.normalizeNpcKey(npcId);
+    const bare = key.replace(/^npc_/, "");
 
-    if (BUILTIN_TREES[npcId]) {
-      dialogueCache[npcId] = BUILTIN_TREES[npcId];
-      return BUILTIN_TREES[npcId];
-    }
-    if (BUILTIN_TREES[key]) {
-      dialogueCache[key] = BUILTIN_TREES[key];
-      return BUILTIN_TREES[key];
-    }
-
+    // DB first — Studio / seed authority (cache keyed by updatedAt so edits apply)
     try {
-      const tree = await prisma.npcDialogueTree.findUnique({
-        where: { npcId: key },
-      });
-      if (tree) {
-        const parsed = JSON.parse(tree.data);
-        dialogueCache[key] = parsed;
-        return parsed;
-      }
-      const tree2 = await prisma.npcDialogueTree.findUnique({ where: { npcId } });
-      if (tree2) {
-        const parsed = JSON.parse(tree2.data);
-        dialogueCache[npcId] = parsed;
-        return parsed;
+      for (const candidate of [key, npcId, bare, `npc_${bare}`]) {
+        const tree = await prisma.npcDialogueTree.findUnique({
+          where: { npcId: candidate },
+        });
+        if (tree) {
+          const stamp = tree.updatedAt.toISOString();
+          const hit = dialogueCache[key];
+          if (hit && hit.updatedAt === stamp) return hit.tree;
+          const parsed = JSON.parse(tree.data);
+          dialogueCache[key] = { tree: parsed, updatedAt: stamp };
+          return parsed;
+        }
       }
     } catch (e) {
       console.error(`[DialogueManager] Failed to load dialogue for ${npcId}`, e);
+    }
+
+    for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
+      if (BUILTIN_TREES[candidate]) {
+        dialogueCache[key] = { tree: BUILTIN_TREES[candidate], updatedAt: "builtin" };
+        return BUILTIN_TREES[candidate];
+      }
+      if (VANCE_FALLBACK_TREES[candidate]) {
+        dialogueCache[key] = {
+          tree: VANCE_FALLBACK_TREES[candidate],
+          updatedAt: "builtin",
+        };
+        return VANCE_FALLBACK_TREES[candidate];
+      }
     }
 
     const fallback = {
@@ -102,7 +151,7 @@ export class DialogueManager {
         options: [{ label: "Goodbye.", nextNode: "exit" }],
       },
     };
-    dialogueCache[npcId] = fallback;
+    dialogueCache[key] = { tree: fallback, updatedAt: "fallback" };
     return fallback;
   }
 
@@ -130,8 +179,8 @@ export class DialogueManager {
     });
     if (!state) {
       return {
-        toast: "No active quest — take the Starter Toolbelt to begin Q1.",
-        text: "You're not on a marked job. Take the Starter Toolbelt and we'll put you on the road to Aethervale.",
+        toast: "No active quest — talk to the Trail Greeter to begin.",
+        text: "You're not on a marked job. Speak with the Trail Greeter in the plaza and accept Saints Trail. Tools from me come later — after you spar the Tutor.",
       };
     }
     const template = await prisma.questTemplate.findUnique({
@@ -169,10 +218,97 @@ export class DialogueManager {
     };
   }
 
+  private async buildGuideContext(userId: string): Promise<GuideContext> {
+    const party = await prisma.playerCreature.findFirst({
+      where: { userId, isParty: true },
+      select: { id: true },
+    });
+    const states = await prisma.playerQuestState.findMany({
+      where: {
+        userId,
+        questSlug: {
+          in: SPYDER_QUEST_CHAIN.map((q) => q.slug),
+        },
+      },
+    });
+    const activeRow = states.find((s) => s.status === "ACTIVE") || null;
+    const completedSlugs = new Set(
+      states.filter((s) => s.status === "COMPLETED").map((s) => s.questSlug)
+    );
+    return {
+      hasPartyCreature: !!party,
+      active: activeRow
+        ? {
+            slug: activeRow.questSlug,
+            status: activeRow.status,
+            currentStage: activeRow.currentStage,
+          }
+        : null,
+      completedSlugs,
+    };
+  }
+
+  private async grantSpyderStarter(userId: string, socketId: string): Promise<boolean> {
+    const existing = await prisma.playerCreature.findFirst({
+      where: { userId, isParty: true },
+    });
+    if (existing) {
+      this.toast(socketId, `${existing.nickname || existing.speciesSlug} is already in your party.`);
+      return false;
+    }
+
+    const def = await loadCreatureDef(SPYDER_DEFAULT_STARTER);
+    if (!def) {
+      this.toast(socketId, "Starter companion unavailable — try the Lab.");
+      return false;
+    }
+
+    await prisma.playerCreature.create({
+      data: {
+        userId,
+        speciesSlug: def.slug,
+        nickname: def.name,
+        level: def.starterLevel,
+        currentHp: def.baseHp,
+        maxHp: def.baseHp,
+        stats: JSON.stringify(toPlayerCreatureStats(def)),
+        abilities: JSON.stringify(def.abilities),
+        isParty: true,
+        slotIndex: 0,
+      },
+    });
+
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "starter_claimed",
+      data: {
+        creature: { speciesSlug: def.slug, nickname: def.name },
+        def: {
+          slug: def.slug,
+          name: def.name,
+          typePrimary: def.typePrimary,
+          typeSecondary: def.typeSecondary,
+          spriteOverworld: def.spriteOverworld,
+        },
+        alreadyOwned: false,
+      },
+    });
+    this.toast(socketId, `${def.name} joined your party!`);
+    this.engine.events.emit("starterClaimed", {
+      accountId: userId,
+      socketId,
+      targetSlug: "starter",
+      amount: 1,
+      speciesSlug: def.slug,
+    });
+    return true;
+  }
+
   private async runAction(
     action: string | undefined,
     accountId: string,
-    socketId: string
+    socketId: string,
+    opts?: { questSlug?: string; npcId?: string }
   ) {
     if (!action) return;
 
@@ -180,6 +316,15 @@ export class DialogueManager {
       this.engine.events.emit("directMessage", {
         socketId,
         event: "demo_open_lab",
+        data: {},
+      });
+      return;
+    }
+
+    if (action === "OPEN_SHOP") {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "demo_open_shop",
         data: {},
       });
       return;
@@ -196,36 +341,72 @@ export class DialogueManager {
       return;
     }
 
+    if (action === "GRANT_SPYDER_STARTER") {
+      await this.grantSpyderStarter(userId, socketId);
+      return;
+    }
+
+    if (action === "HEAL_PARTY") {
+      const party = await prisma.playerCreature.findMany({
+        where: { userId, isParty: true },
+      });
+      for (const c of party) {
+        if (c.currentHp >= c.maxHp) continue;
+        await prisma.playerCreature.update({
+          where: { id: c.id },
+          data: { currentHp: c.maxHp },
+        });
+      }
+      const sync = await prisma.playerCreature.findMany({
+        where: { userId, isParty: true },
+        select: { id: true, currentHp: true, maxHp: true },
+      });
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "party_creatures_hp",
+        data: { creatures: sync },
+      });
+      this.toast(socketId, "Your party was fully healed.");
+      return;
+    }
+
+    if (action === "START_TRAINER_BATTLE") {
+      // Handled in handleDialogueSelect with npc context
+      return;
+    }
+
     if (action === "GRANT_DEMO_TOOLS") {
+      // Grant tools only — do NOT accept Q6 here. Trail Q5 nextQuest starts gather.
+      // Early acceptQuest broke the Q1–Q5 chain when players took the toolbelt first.
       await addItems(userId, [
         { slug: "axe_bronze", qty: 1 },
         { slug: "pickaxe_bronze", qty: 1 },
       ]);
       await this.syncInv(socketId, userId);
-      this.toast(socketId, "Received Rook Hatchet & Crude Pickaxe.");
-      this.engine.events.emit("acceptQuest", {
-        accountId,
-        questSlug: "quest_tools_of_trade",
+      this.toast(
         socketId,
-      });
+        "Received Rook Hatchet & Crude Pickaxe. Finish the Trail chain — gather unlocks after the spar."
+      );
+      void opts?.questSlug; // reserved for future gated accept
       return;
     }
 
     if (action === "DEMO_QUEST_REPORT") {
       const report = await this.buildQuestReport(userId);
       this.toast(socketId, report.toast);
+      const vanceId = opts?.npcId || "npc_warden_vance";
       // Progress TALK objectives for active demo quests (turn-in stages)
       this.engine.events.emit("dialogue_start", {
         accountId,
         socketId,
-        targetSlug: "npc_warden_vance",
+        targetSlug: vanceId,
       });
       // Override next dialogue line with state-aware copy when selecting report
       this.engine.events.emit("directMessage", {
         socketId,
         event: "dialogue_start",
         data: {
-          npcId: "npc_warden_vance",
+          npcId: vanceId,
           npcName: "Warden Vance",
           node: "node_report",
           text: report.text,
@@ -247,24 +428,85 @@ export class DialogueManager {
   }
 
   private normalizeNpcId(targetId: string): string {
-    const id = String(targetId || "");
-    if (id.includes("vance") || id.includes("warden")) return "npc_warden_vance";
-    return id;
+    // Strip spawn suffixes only — do not collapse cloned Vance ids onto custom_1
+    return this.normalizeNpcKey(String(targetId || ""));
+  }
+
+  private async handleTrainerPostBattleDialogue({
+    socketId,
+    npcId,
+    trainerName,
+    node,
+  }: {
+    socketId: string;
+    npcId: string;
+    trainerName?: string;
+    node: string;
+    result?: string;
+  }) {
+    const id = this.normalizeNpcId(npcId);
+    const tree = await this.getDialogueTree(id);
+    const nodeData = tree[node];
+    if (!nodeData) return;
+
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "dialogue_start",
+      data: {
+        npcId: id,
+        npcName:
+          trainerName ||
+          (id === "npc_cotton_tunnel_carlos"
+            ? "Carlos"
+            : id === "npc_leather_gym_attendant"
+              ? "Rook"
+              : undefined),
+        node,
+        text: nodeData.text,
+        options: nodeData.options,
+      },
+    });
   }
 
   private async handleNpcInteract({ accountId, socketId, mapId, targetId }: any) {
     const npcId = this.normalizeNpcId(targetId);
     const tree = await this.getDialogueTree(npcId);
-    const startNode = tree["node_start"];
+
+    let startKey = "node_start";
+    if (npcId === AZURE_GUIDE_NPC_ID) {
+      const userId = await resolveUserId(accountId);
+      if (userId) {
+        const ctx = await this.buildGuideContext(userId);
+        startKey = resolveAzureGuideStartNode(ctx);
+      }
+    }
+
+    const startNode = tree[startKey] || tree["node_start"];
     if (!startNode) return;
+
+    // Quest engine listens on engine `dialogue_start` (not the socket event).
+    this.engine.events.emit("dialogue_start", {
+      accountId,
+      socketId,
+      mapId,
+      targetSlug: npcId,
+      npcId,
+    });
+
+    const npcName =
+      npcId.includes("vance")
+        ? "Warden Vance"
+        : npcId === AZURE_GUIDE_NPC_ID
+          ? "Azure Guide"
+          : undefined;
 
     this.engine.events.emit("directMessage", {
       socketId,
       event: "dialogue_start",
       data: {
         npcId,
-        npcName: npcId.includes("vance") ? "Warden Vance" : undefined,
-        node: "node_start",
+        npcName,
+        node: startKey,
         text: startNode.text,
         options: startNode.options,
       },
@@ -283,11 +525,73 @@ export class DialogueManager {
     const npcId = this.normalizeNpcId(targetId);
 
     if (action) {
-      await this.runAction(action, accountId, socketId);
+      await this.runAction(action, accountId, socketId, { questSlug, npcId });
     }
 
     if (action === "ACCEPT_QUEST" && questSlug) {
       this.engine.events.emit("acceptQuest", { accountId, questSlug, socketId });
+      // Spyder on-ramp: film + party companion so Route 1 TB is immediately playable
+      if (questSlug === "quest_azure_welcome") {
+        const userId = await resolveUserId(accountId);
+        if (userId) {
+          await addItems(userId, [
+            { slug: "soul_camera", qty: 1 },
+            { slug: "film_standard", qty: 5 },
+          ]);
+          await this.syncInv(socketId, userId);
+          this.toast(socketId, "Received Soul Camera + 5× Standard Film.");
+          await this.grantSpyderStarter(userId, socketId);
+        }
+      }
+    }
+
+    if (action === "START_TRAINER_BATTLE") {
+      const trainers: Record<
+        string,
+        { name: string; speciesSlugs: string[]; levels: number[] }
+      > = {
+        npc_cotton_tunnel_carlos: {
+          name: "Carlos",
+          speciesSlugs: ["dragarbor", "pairagrin"],
+          levels: [10, 9],
+        },
+        npc_leather_gym_attendant: {
+          name: "Rook",
+          speciesSlugs: ["rockitten", "aardorn"],
+          levels: [11, 12],
+        },
+        npc_trail_tutor: {
+          name: "Spar Tutor",
+          speciesSlugs: ["rockitten"],
+          levels: [5],
+        },
+      };
+      const cfg =
+        trainers[npcId] ||
+        (npcId.endsWith("_trail_tutor") || npcId.includes("trail_tutor")
+          ? { name: "Spar Tutor", speciesSlugs: ["rockitten"], levels: [5] }
+          : {
+              name: "Trainer",
+              speciesSlugs: ["rockitten"],
+              levels: [6],
+            });
+      this.engine.events.emit("startTrainerBattle", {
+        accountId,
+        socketId,
+        mapId,
+        trainerNpcId: npcId,
+        trainerName: cfg.name,
+        speciesSlug: cfg.speciesSlugs[0],
+        speciesSlugs: cfg.speciesSlugs,
+        level: cfg.levels[0],
+        levels: cfg.levels,
+      });
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "dialogue_end",
+        data: { npcId },
+      });
+      return;
     }
 
     // DEMO_QUEST_REPORT already sent its own dialogue_start payload
