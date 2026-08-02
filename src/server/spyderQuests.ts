@@ -126,7 +126,7 @@ export const SPYDER_QUEST_CHAIN = [
   {
     slug: "quest_spyder_cotton_tunnel",
     title: "Spyder 6: Cotton Tunnel",
-    description: "Find the east tunnel mouth in Cotton Town and speak with Carlos inside.",
+    description: "Find Carlos in the Cotton Tunnel, then defeat him in a trainer battle.",
     rewards: JSON.stringify({
       items: [
         { slug: "film_fine", qty: 2 },
@@ -142,9 +142,31 @@ export const SPYDER_QUEST_CHAIN = [
         requiredQty: 1,
         description: "Enter the Cotton Tunnel (east of town) and speak with Carlos",
       },
+      {
+        stage: 2,
+        type: "BATTLE",
+        targetSlug: "npc_cotton_tunnel_carlos",
+        requiredQty: 1,
+        description: "Challenge Carlos and win the trainer battle",
+      },
     ],
   },
 ] as const;
+
+/** Carlos dialogue — challenge starts a 1v1 trainer TB (Dragarbor). */
+export const CARLOS_DIALOGUE_TREE = {
+  node_start: {
+    text: "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — care to prove yourself?",
+    options: [
+      {
+        label: "Challenge Carlos",
+        nextNode: "exit",
+        action: "START_TRAINER_BATTLE",
+      },
+      { label: "Just passing through.", nextNode: "exit" },
+    ],
+  },
+} as const;
 
 export const CAMPAIGN_NPC_SEEDS: Record<
   string,
@@ -275,7 +297,7 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 7,
       sprite: "dragonrider",
       greeting:
-        "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — watch your step, and your film.",
+        "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — care to prove yourself?",
     },
   ],
 };

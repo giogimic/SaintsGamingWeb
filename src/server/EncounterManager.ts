@@ -33,6 +33,10 @@ export interface BattleState {
   socketId?: string;
   mapId?: string;
   phase: "WAITING_FOR_INPUT" | "RESOLUTION" | "TURN_END";
+  /** Trainer duel — no capture / flee; win emits trainerDefeated */
+  isTrainer?: boolean;
+  trainerNpcId?: string;
+  trainerName?: string;
   wildCreature: {
     templateId: string;
     hp: number;
@@ -78,6 +82,7 @@ export class EncounterManager {
     this.engine.events.on("triggerEncounter", (data) => this.handleEncounterTrigger(data));
     this.engine.events.on("battleSubmitAction", (data) => this.handleBattleAction(data));
     this.engine.events.on("claimStarter", (data) => this.handleClaimStarter(data));
+    this.engine.events.on("startTrainerBattle", (data) => this.handleStartTrainerBattle(data));
   }
 
   private sendToPlayer(socketId: string | undefined, event: string, data: unknown) {
@@ -338,12 +343,24 @@ export class EncounterManager {
     battle.phase = "RESOLUTION";
 
     if (data.action === "FLEE") {
+      if (battle.isTrainer) {
+        battle.log.push("There's no running from a trainer battle!");
+        battle.phase = "WAITING_FOR_INPUT";
+        this.broadcastUpdate(battle);
+        return;
+      }
       battle.log.push("You fled successfully!");
       await this.endBattle(data.battleId, mapId, "FLEE");
       return;
     }
 
     if (data.action === "ITEM" && data.itemId) {
+      if (battle.isTrainer) {
+        battle.log.push("You can't capture a trainer's creature!");
+        battle.phase = "WAITING_FOR_INPUT";
+        this.broadcastUpdate(battle);
+        return;
+      }
       const itemId = data.itemId;
       const itemMod = getCaptureItemModifier(itemId);
       if (itemMod === undefined) {
@@ -418,13 +435,105 @@ export class EncounterManager {
       );
 
       if (battle.wildCreature.hp <= 0) {
-        battle.log.push(`Wild ${battle.wildCreature.name} fainted! You won!`);
+        const foe = battle.isTrainer
+          ? `${battle.trainerName || "Trainer"}'s ${battle.wildCreature.name}`
+          : `Wild ${battle.wildCreature.name}`;
+        battle.log.push(`${foe} fainted! You won!`);
         await this.endBattle(data.battleId, mapId, "WIN");
         return;
       }
 
       await this.enemyTurn(battle, mapId);
     }
+  }
+
+  /** Dialogue-driven 1v1 trainer duel (hardcoded single opponent for now). */
+  private async handleStartTrainerBattle(data: {
+    accountId: string;
+    socketId?: string;
+    mapId?: string;
+    trainerNpcId: string;
+    trainerName?: string;
+    speciesSlug?: string;
+    level?: number;
+  }) {
+    if (!data.accountId || !data.trainerNpcId) return;
+
+    for (const b of this.activeBattles.values()) {
+      if (b.accountId === data.accountId) {
+        this.sendToPlayer(data.socketId, "show_toast", {
+          message: "You're already in a battle.",
+        });
+        return;
+      }
+    }
+
+    const userId = await resolveUserId(data.accountId);
+    if (!userId) return;
+
+    const activeCreature = await prisma.playerCreature.findFirst({
+      where: { userId, isParty: true },
+      orderBy: { slotIndex: "asc" },
+    });
+    if (!activeCreature) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: "You need a party companion to challenge a trainer.",
+      });
+      return;
+    }
+    if (activeCreature.currentHp <= 0) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: "Your lead creature is fainted. Heal it first.",
+      });
+      return;
+    }
+
+    const speciesSlug = data.speciesSlug || "dragarbor";
+    const foeDef = await loadCreatureDef(speciesSlug);
+    if (!foeDef) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: "Trainer team unavailable.",
+      });
+      return;
+    }
+
+    const playerDef = await loadCreatureDef(activeCreature.speciesSlug);
+    const level = data.level || Math.max(foeDef.starterLevel, 8);
+    const trainerName = data.trainerName || "Trainer";
+    const foeHp = Math.max(20, Math.floor(foeDef.baseHp * (0.9 + level * 0.05)));
+
+    const battleId = `trainer_${Date.now()}_${data.accountId}`;
+    const battleState: BattleState = {
+      id: battleId,
+      accountId: data.accountId,
+      socketId: data.socketId,
+      mapId: data.mapId,
+      phase: "WAITING_FOR_INPUT",
+      isTrainer: true,
+      trainerNpcId: data.trainerNpcId,
+      trainerName,
+      wildCreature: {
+        templateId: foeDef.slug,
+        name: foeDef.name,
+        hp: foeHp,
+        maxHp: foeHp,
+        level,
+        spriteKey: foeDef.spriteBattle || foeDef.spriteOverworld || "daemon_data",
+      },
+      playerCreature: {
+        id: activeCreature.id,
+        name: activeCreature.nickname || playerDef?.name || activeCreature.speciesSlug,
+        hp: activeCreature.currentHp,
+        maxHp: activeCreature.maxHp,
+        level: activeCreature.level,
+        spriteKey: playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data",
+      },
+      log: [`${trainerName} wants to battle!`, `${trainerName} sent out ${foeDef.name}!`],
+    };
+
+    this.activeBattles.set(battleId, battleState);
+    this.engine.events.emit("lockPlayerMovement", data.accountId);
+    this.sendToPlayer(data.socketId, "battle_started", battleState);
   }
 
   private async enemyTurn(battle: BattleState, mapId?: string) {
@@ -435,7 +544,10 @@ export class EncounterManager {
     const enemyDamage = Math.floor(rawDamage * (0.85 + Math.random() * 0.15));
 
     battle.playerCreature.hp = Math.max(0, battle.playerCreature.hp - enemyDamage);
-    battle.log.push(`Wild ${battle.wildCreature.name} attacks! Deals ${enemyDamage} damage.`);
+    const foeLabel = battle.isTrainer
+      ? `${battle.trainerName || "Trainer"}'s ${battle.wildCreature.name}`
+      : `Wild ${battle.wildCreature.name}`;
+    battle.log.push(`${foeLabel} attacks! Deals ${enemyDamage} damage.`);
 
     if (battle.playerCreature.hp <= 0) {
       battle.log.push(`${battle.playerCreature.name} fainted! You whited out!`);
@@ -548,8 +660,21 @@ export class EncounterManager {
       }
     }
 
-    // Victory: generic loot into inventory (bible 11)
-    if (result === "WIN" && userId) {
+    if (result === "WIN" && battle.isTrainer && battle.trainerNpcId) {
+      this.engine.events.emit("trainerDefeated", {
+        accountId: battle.accountId,
+        socketId: battle.socketId,
+        targetSlug: battle.trainerNpcId,
+        amount: 1,
+        trainerName: battle.trainerName,
+      });
+      this.sendToPlayer(battle.socketId, "show_toast", {
+        message: `${battle.trainerName || "Trainer"} was defeated!`,
+      });
+    }
+
+    // Victory: generic loot into inventory (bible 11) — wild only
+    if (result === "WIN" && userId && !battle.isTrainer) {
       try {
         const lootSlug = "monster_fang";
         const existing = await prisma.playerInventoryItem.findFirst({

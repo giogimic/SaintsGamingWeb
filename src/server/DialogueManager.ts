@@ -8,6 +8,7 @@ import {
   resolveAzureGuideStartNode,
   type GuideContext,
 } from "./spyderGuideDialogue";
+import { CARLOS_DIALOGUE_TREE } from "./spyderQuests";
 
 const prisma = new PrismaClient();
 
@@ -19,6 +20,7 @@ const BUILTIN_TREES: Record<string, any> = {
   warden_vance: VANCE_TREE,
   [AZURE_GUIDE_NPC_ID]: AZURE_GUIDE_TREE,
   azure_guide: AZURE_GUIDE_TREE,
+  npc_cotton_tunnel_carlos: CARLOS_DIALOGUE_TREE,
 };
 
 const SPYDER_DEFAULT_STARTER = "budaye";
@@ -308,6 +310,11 @@ export class DialogueManager {
       return;
     }
 
+    if (action === "START_TRAINER_BATTLE") {
+      // Handled in handleDialogueSelect with npc context
+      return;
+    }
+
     if (action === "GRANT_DEMO_TOOLS") {
       await addItems(userId, [
         { slug: "axe_bronze", qty: 1 },
@@ -440,6 +447,28 @@ export class DialogueManager {
           await this.grantSpyderStarter(userId, socketId);
         }
       }
+    }
+
+    if (action === "START_TRAINER_BATTLE") {
+      const trainerName =
+        npcId === "npc_cotton_tunnel_carlos" ? "Carlos" : "Trainer";
+      const speciesSlug =
+        npcId === "npc_cotton_tunnel_carlos" ? "dragarbor" : "rockitten";
+      this.engine.events.emit("startTrainerBattle", {
+        accountId,
+        socketId,
+        mapId,
+        trainerNpcId: npcId,
+        trainerName,
+        speciesSlug,
+        level: npcId === "npc_cotton_tunnel_carlos" ? 10 : 6,
+      });
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "dialogue_end",
+        data: { npcId },
+      });
+      return;
     }
 
     // DEMO_QUEST_REPORT already sent its own dialogue_start payload
