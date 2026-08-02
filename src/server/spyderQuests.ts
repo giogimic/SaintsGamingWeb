@@ -166,6 +166,28 @@ export const CARLOS_DIALOGUE_TREE = {
       { label: "Just passing through.", nextNode: "exit" },
     ],
   },
+  node_post_win: {
+    text: "Hah! Dragarbor rarely falls that cleanly. You've earned the tunnel's respect — Spyder's web opens wider for you.",
+    options: [
+      {
+        label: "Rematch",
+        nextNode: "exit",
+        action: "START_TRAINER_BATTLE",
+      },
+      { label: "Thanks, Carlos.", nextNode: "exit" },
+    ],
+  },
+  node_post_lose: {
+    text: "Dust yourself off. Heal your companion, then come back when you're ready to challenge Dragarbor again.",
+    options: [
+      {
+        label: "Try again",
+        nextNode: "exit",
+        action: "START_TRAINER_BATTLE",
+      },
+      { label: "I'll be back.", nextNode: "exit" },
+    ],
+  },
 } as const;
 
 export const CAMPAIGN_NPC_SEEDS: Record<

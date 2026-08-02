@@ -70,6 +70,9 @@ export class DialogueManager {
   constructor(private engine: GameEngine) {
     this.engine.events.on("npcInteractRequest", (data) => this.handleNpcInteract(data));
     this.engine.events.on("dialogueSelectAction", (data) => this.handleDialogueSelect(data));
+    this.engine.events.on("showTrainerPostBattleDialogue", (data) =>
+      this.handleTrainerPostBattleDialogue(data)
+    );
   }
 
   public async initialize() {
@@ -370,6 +373,36 @@ export class DialogueManager {
     if (id.includes("vance") || id.includes("warden")) return "npc_warden_vance";
     // Strip spawn suffixes (npc_azure_guide_1712345678 → npc_azure_guide)
     return this.normalizeNpcKey(id);
+  }
+
+  private async handleTrainerPostBattleDialogue({
+    socketId,
+    npcId,
+    trainerName,
+    node,
+  }: {
+    socketId: string;
+    npcId: string;
+    trainerName?: string;
+    node: string;
+    result?: string;
+  }) {
+    const id = this.normalizeNpcId(npcId);
+    const tree = await this.getDialogueTree(id);
+    const nodeData = tree[node];
+    if (!nodeData) return;
+
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "dialogue_start",
+      data: {
+        npcId: id,
+        npcName: trainerName || (id === "npc_cotton_tunnel_carlos" ? "Carlos" : undefined),
+        node,
+        text: nodeData.text,
+        options: nodeData.options,
+      },
+    });
   }
 
   private async handleNpcInteract({ accountId, socketId, mapId, targetId }: any) {

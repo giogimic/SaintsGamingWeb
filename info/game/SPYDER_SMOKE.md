@@ -29,6 +29,7 @@ npm run dev
 | 12 | Exit Scoop → door `(12,18)` → Café | Talk **Café Host**; Q5 → Q6 Tunnel |
 | 13 | Walk **east** plaza to `(37,18)` | Warp → tunnel; talk **Carlos** (Q6 stage 1) |
 | 14 | Carlos → **Challenge Carlos** | Trainer TB vs Dragarbor; no flee/capture; win → Q6 complete |
+| 15 | After battle UI closes | Carlos post-win / post-lose dialogue (rematch available) |
 
 ## Automated check
 
@@ -43,4 +44,6 @@ Verifies gates, walkable corridors, NPC tiles, dialogue trees, and quest stages 
 
 - Capture consumes Prisma `film_standard` (Guide grant / quest rewards).
 - Demo Vance path stays on `DEMO_SANDBOX` only.
-- TMX NPC densify (optional): `TUXEMON_PATH=… npm run import:map-npcs`
+- TMX densify (optional): sparse-clone Tuxemon maps, then  
+  `TUXEMON_PATH=/tmp/Tuxemon npm run import:map-npcs -- --map cotton`  
+  and re-run `seed:campaign-npcs` so curated quest NPCs stay authoritative.
