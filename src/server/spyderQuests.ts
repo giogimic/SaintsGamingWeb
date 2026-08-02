@@ -56,6 +56,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 1 },
         { slug: "film_standard", qty: 5 },
       ],
+      nextQuest: "quest_spyder_cotton_arrive",
     }),
     objectives: [
       {
@@ -63,7 +64,7 @@ export const SPYDER_QUEST_CHAIN = [
         type: "CLAIM",
         targetSlug: "capture_any",
         requiredQty: 1,
-        description: "Capture any wild creature (tall grass)",
+        description: "Capture any wild creature (tall grass on Route 1)",
       },
       {
         stage: 2,
@@ -71,6 +72,24 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_azure_guide",
         requiredQty: 1,
         description: "Report your capture to the Azure Guide",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_cotton_arrive",
+    title: "Spyder 4: Cotton Town",
+    description: "Follow Route 1 east to Cotton Town and greet the greeter.",
+    rewards: JSON.stringify({
+      items: [{ slug: "film_standard", qty: 3 }],
+      gold: 50,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_cotton_greeter",
+        requiredQty: 1,
+        description: "Speak with the Cotton Greeter",
       },
     ],
   },
@@ -171,7 +190,8 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       x: 15,
       y: 15,
       sprite: "florist",
-      greeting: "Welcome to Cotton Town! Rest, trade, then back to the road.",
+      greeting:
+        "Welcome to Cotton Town! You've walked Spyder's first road — rest, trade, then press on.",
     },
   ],
 };

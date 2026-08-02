@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { GAME_MAPS, listMaps, loadMap, type MapIndexEntry } from './data/maps';
+import { listGateTargets } from '@/shared/game/mapGates';
 
 interface WorldMapNavigatorProps {
   currentMapId: string;
@@ -33,7 +34,7 @@ export default function WorldMapNavigator({
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'CAMPAIGN' | 'CUSTOM'>('ALL');
   const [mapIndex, setMapIndex] = useState<MapIndexEntry[]>([]);
   const [indexError, setIndexError] = useState<string | null>(null);
-  const [currentMapMeta, setCurrentMapMeta] = useState<{ name: string; gates: Record<string, { targetMapId: string }> } | null>(null);
+  const [currentMapMeta, setCurrentMapMeta] = useState<{ name: string; adjacentTargets: string[] } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +62,7 @@ export default function WorldMapNavigator({
         if (!cancelled) {
           setCurrentMapMeta({
             name: map.name,
-            gates: (map.gates || {}) as Record<string, { targetMapId: string }>,
+            adjacentTargets: listGateTargets(map.gates),
           });
         }
       })
@@ -70,7 +71,7 @@ export default function WorldMapNavigator({
           const cached = GAME_MAPS[currentMapId];
           setCurrentMapMeta({
             name: cached?.name || currentMapId,
-            gates: (cached?.gates || {}) as Record<string, { targetMapId: string }>,
+            adjacentTargets: listGateTargets(cached?.gates),
           });
         }
       });
@@ -88,7 +89,7 @@ export default function WorldMapNavigator({
     return matchesSearch;
   });
 
-  const adjacentTargetIds = Object.values(currentMapMeta?.gates || {}).map((g) => g.targetMapId);
+  const adjacentTargetIds = currentMapMeta?.adjacentTargets || [];
   const nameById = new Map(mapIndex.map((m) => [m.id, m.name]));
 
   return (

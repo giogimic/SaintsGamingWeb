@@ -151,7 +151,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      const spawn = gate.targetSpawn || { x: 6, y: 2 };
+      const spawn = gate.targetSpawn || gate.spawnPoint || { x: 6, y: 2 };
       const finishWarp = () => {
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(spawn);

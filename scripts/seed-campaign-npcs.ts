@@ -32,7 +32,7 @@ function dialogueTreeFor(npc: {
         ],
       },
       accepted: {
-        text: "Good. Speak with the townsfolk around the plaza, then return when you've greeted them.",
+        text: "Good. Speak with the townsfolk around the plaza. When you're ready for wilds, take the east road out of town to Route 1 — tall grass waits there.",
         options: [{ label: "Understood.", nextNode: "exit" }],
       },
     };

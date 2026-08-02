@@ -1,5 +1,6 @@
 import { Point } from '@/web/components/the-lobby/store';
 import { isSameBaseMap } from '@/shared/net/mapIds';
+import { normalizeGatesToArray } from '@/shared/game/mapGates';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -72,12 +73,11 @@ export class WorldSimulation {
       return { type: 'BLOCKED', direction: dir, reason: 'NPC' };
     }
 
-    // Warp Gate Check
-    if (Array.isArray(state.gates)) {
-      const gate = state.gates.find((g: any) => g.position?.x === targetX && g.position?.y === targetY);
-      if (gate && gate.targetMapId) {
-        return { type: 'WARP', gate };
-      }
+    // Warp Gate Check (array or legacy record shapes)
+    const gates = normalizeGatesToArray(state.gates);
+    const gate = gates.find((g) => g.position.x === targetX && g.position.y === targetY);
+    if (gate?.targetMapId) {
+      return { type: 'WARP', gate };
     }
 
     // Valid Move
