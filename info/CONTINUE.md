@@ -23,10 +23,12 @@ Alignment: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)
 
 ### Suggested next
 
-1. **Demo tutorial draft ingested:** `info/game/DEMO_TUTORIAL_AETHERVALE.md` + adaptation map
-2. Product answers on starter count / capsule naming / map scope (see adaptation Conflicts)
-3. Implement **Quest 1** (Vance → tool grant → gather) once answers land
-4. ALIGNMENT slice **D** (Studio) or **E** (website bridge)
+1. Starter + capture drafts ready:
+   - `info/game/STARTERS_BY_ELEMENT.md` — Agnite / Budaye / Dollfin
+   - `info/game/CAPTURE_CAMERA_FILM.md` — Soul Camera + Film tiers
+2. Confirm open questions (camera hard-gate, display names, Rockitten nest)
+3. Implement film slugs + 3-nest `claim_starter`, then **Quest 1** Vance tools
+4. ALIGNMENT slice **D** / **E** when tutorial path is stable
 
 ### Smoke path (MPV)
 
