@@ -120,14 +120,14 @@ export class WorldManager {
         : false;
       if (!hasVance) {
         this.engine.events.emit("spawnCreature", {
-          templateId: "warden_vance",
+          templateId: "npc_warden_vance",
           entityType: "NPC",
           mapId: instanceId,
           x: DEMO_VANCE_SPAWN.x,
           y: DEMO_VANCE_SPAWN.y,
           spawnMode: "STATIC",
           name: "Warden Vance",
-          spriteKey: "warden_vance",
+          spriteKey: "professor",
         });
       }
 

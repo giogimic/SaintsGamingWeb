@@ -206,11 +206,11 @@ export async function cloneTrailWorldProfile(opts: {
     });
     revalidatePath("/studio");
     revalidatePath("/lobby");
-    return { success: true, ...result };
+    return { success: true as const, ...result };
   } catch (err) {
     console.error("[cloneTrailWorldProfile]", err);
     return {
-      success: false,
+      success: false as const,
       error: err instanceof Error ? err.message : "Clone failed",
     };
   }

@@ -22,10 +22,12 @@ const prisma = new PrismaClient();
 
 const dialogueCache: Record<string, any> = {};
 
-/** Built-in demo trees (always available even if DB empty). */
+/**
+ * Built-in fallback trees when DB has no row.
+ * Prefer DB first in getDialogueTree so Studio / Saints Trail seeds win.
+ * Vance is intentionally NOT here — Studio must own npc_warden_vance.
+ */
 const BUILTIN_TREES: Record<string, any> = {
-  npc_warden_vance: VANCE_TREE,
-  warden_vance: VANCE_TREE,
   [AZURE_GUIDE_NPC_ID]: AZURE_GUIDE_TREE,
   azure_guide: AZURE_GUIDE_TREE,
   npc_cotton_tunnel_carlos: CARLOS_DIALOGUE_TREE,
@@ -34,6 +36,12 @@ const BUILTIN_TREES: Record<string, any> = {
   npc_leather_center_nurse: LEATHER_NURSE_DIALOGUE_TREE,
   npc_leather_scoop_clerk: LEATHER_SCOOP_CLERK_DIALOGUE_TREE,
   npc_leather_gym_attendant: LEATHER_GYM_ATTENDANT_DIALOGUE_TREE,
+};
+
+/** Last-resort seed copy if DB empty (demo boot race). */
+const VANCE_FALLBACK_TREES: Record<string, any> = {
+  npc_warden_vance: VANCE_TREE,
+  warden_vance: VANCE_TREE,
 };
 
 const SPYDER_DEFAULT_STARTER = "budaye";
@@ -106,13 +114,7 @@ export class DialogueManager {
     if (dialogueCache[npcId]) return dialogueCache[npcId];
     if (dialogueCache[bare]) return dialogueCache[bare];
 
-    for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
-      if (BUILTIN_TREES[candidate]) {
-        dialogueCache[key] = BUILTIN_TREES[candidate];
-        return BUILTIN_TREES[candidate];
-      }
-    }
-
+    // DB first — Studio / seed authority
     try {
       for (const candidate of [key, npcId, bare, `npc_${bare}`]) {
         const tree = await prisma.npcDialogueTree.findUnique({
@@ -126,6 +128,17 @@ export class DialogueManager {
       }
     } catch (e) {
       console.error(`[DialogueManager] Failed to load dialogue for ${npcId}`, e);
+    }
+
+    for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
+      if (BUILTIN_TREES[candidate]) {
+        dialogueCache[key] = BUILTIN_TREES[candidate];
+        return BUILTIN_TREES[candidate];
+      }
+      if (VANCE_FALLBACK_TREES[candidate]) {
+        dialogueCache[key] = VANCE_FALLBACK_TREES[candidate];
+        return VANCE_FALLBACK_TREES[candidate];
+      }
     }
 
     const fallback = {
@@ -359,17 +372,18 @@ export class DialogueManager {
     }
 
     if (action === "GRANT_DEMO_TOOLS") {
+      // Grant tools only — do NOT accept Q6 here. Trail Q5 nextQuest starts gather.
+      // Early acceptQuest broke the Q1–Q5 chain when players took the toolbelt first.
       await addItems(userId, [
         { slug: "axe_bronze", qty: 1 },
         { slug: "pickaxe_bronze", qty: 1 },
       ]);
       await this.syncInv(socketId, userId);
-      this.toast(socketId, "Received Rook Hatchet & Crude Pickaxe.");
-      this.engine.events.emit("acceptQuest", {
-        accountId,
-        questSlug: opts?.questSlug || "quest_tools_of_trade",
+      this.toast(
         socketId,
-      });
+        "Received Rook Hatchet & Crude Pickaxe. Finish the Trail chain — gather unlocks after the spar."
+      );
+      void opts?.questSlug; // reserved for future gated accept
       return;
     }
 
@@ -410,10 +424,8 @@ export class DialogueManager {
   }
 
   private normalizeNpcId(targetId: string): string {
-    const id = String(targetId || "");
-    if (id.includes("vance") || id.includes("warden")) return "npc_warden_vance";
-    // Strip spawn suffixes (npc_azure_guide_1712345678 → npc_azure_guide)
-    return this.normalizeNpcKey(id);
+    // Strip spawn suffixes only — do not collapse cloned Vance ids onto custom_1
+    return this.normalizeNpcKey(String(targetId || ""));
   }
 
   private async handleTrainerPostBattleDialogue({

@@ -6,6 +6,8 @@
  *   SMOKE_CLONE_SLUG=custom_2 npm run smoke:saints-trail
  */
 
+import fs from "fs";
+import path from "path";
 import { PrismaClient } from "@prisma/client";
 import {
   SAINTS_TRAIL_GAME_ID,

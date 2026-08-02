@@ -25,7 +25,7 @@ const VANCE_TREE = {
     text: "Out here, nature yields only to those with the right edge. Take this kit — chop, dig, craft film, bond a companion, then clear the north bramble for Aethervale.",
     options: [
       {
-        label: "Take the Starter Toolbelt (start Q1)",
+        label: "Take the Starter Toolbelt",
         nextNode: "node_tools_done",
         action: "GRANT_DEMO_TOOLS",
       },
@@ -47,7 +47,7 @@ const VANCE_TREE = {
     ],
   },
   node_tools_done: {
-    text: "Rook Hatchet and Crude Pickaxe are yours — Q1 is live. Southeast: chop THREE Wood Logs first, then mine THREE Copper Ore. Come back and choose Report progress when both are done.",
+    text: "Rook Hatchet and Crude Pickaxe are yours. Finish the plaza Trail first — after you spar the Tutor, gather unlocks southeast (THREE Wood Logs, then THREE Copper Ore). Report progress here when both are done.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Thanks, Warden.", nextNode: "exit" },

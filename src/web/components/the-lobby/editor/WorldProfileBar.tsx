@@ -77,11 +77,12 @@ export function WorldProfileBar() {
       setMsg(res.error || 'Clone failed');
       return;
     }
-    setActiveGameId(res.targetSlug!);
-    await setActiveWorldProfile(res.targetSlug!);
+    const { targetSlug, mapId, quests } = res;
+    setActiveGameId(targetSlug);
+    await setActiveWorldProfile(targetSlug);
     const refreshed = await ensureWorldProfiles();
     if (refreshed.success) setProfiles(refreshed.profiles);
-    setMsg(`Cloned Trail → ${res.targetSlug} · ${res.mapId} · ${res.quests} quests`);
+    setMsg(`Cloned Trail → ${targetSlug} · ${mapId} · ${quests} quests`);
   };
 
   return (
