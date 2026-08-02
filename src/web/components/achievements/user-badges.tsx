@@ -1,6 +1,6 @@
 "use client";
 
-import { ACHIEVEMENTS } from "@/web/lib/achievements";
+import { ACHIEVEMENTS } from "@/web/lib/achievements-catalog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/ui/tooltip";
 import { Trophy } from "lucide-react";
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { grantAchievement, revokeAchievement } from "@/app/actions/achievements";
-import { ACHIEVEMENTS, getAchievementDef } from "@/web/lib/achievements";
+import { ACHIEVEMENTS, getAchievementDef } from "@/web/lib/achievements-catalog";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";

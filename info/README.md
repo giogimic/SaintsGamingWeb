@@ -31,6 +31,7 @@ A new developer should be able to open this project, read `/info`, and understan
 | [realtime/](./realtime/) | 🟢 | Bus architecture + event catalog |
 | [database/](./database/) | 🟢 | WorldMap ops (`WORLDMAP.md`) |
 | [uploads/](./uploads/) | 🟢 | Local (+ optional S3 later) (`STORAGE.md`) |
+| [ops/](./ops/) | 🟢 | Staging smoke checklist (`STAGING_SMOKE.md`) |
 | [discord/](./discord/) | 🟡 Back-line | Bot bridge (`BRIDGE.md`) |
 | [fivem/](./fivem/) | 🟡 Back-line | Character/stats bridge (`BRIDGE.md`) |
 
@@ -39,7 +40,7 @@ A new developer should be able to open this project, read `/info`, and understan
 ## Quick Reference
 
 ### Current Version
-`2.1.110` — Vitest coverage for permissions, forum helpers, messenger crypto
+`2.1.111` — Staging smoke script + production build fixes (social barrel, achievements split)
 
 ### Key Entry Points
 | File | Role |

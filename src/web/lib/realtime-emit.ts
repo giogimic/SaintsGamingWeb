@@ -4,7 +4,11 @@
  *
  * getRealtimeService() is null when Next.js runs without server.ts
  * (e.g. `next start` without the custom server) — that is non-fatal.
+ *
+ * Server-only: do not import from Client Components (pulls custom server / redis).
  */
+
+import "server-only";
 
 type NotificationRow = {
   id: string;

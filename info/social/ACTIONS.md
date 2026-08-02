@@ -4,7 +4,8 @@ Companion to [`OVERVIEW.md`](./OVERVIEW.md).
 Primary files: `app/actions/social.ts` (barrel), `app/actions/social/*.ts`, `social-folders.ts`, `messenger.ts`.  
 UI: `app/(main)/profile/inbox/`, `src/web/components/messenger/`.
 
-**Import path:** always `@/app/actions/social` (barrel). Domain modules are implementation detail.
+**Import path:** always `@/app/actions/social` (barrel). Domain modules are implementation detail.  
+Barrel has **no** `"use server"` (Next rejects re-export lists); each `social/*.ts` module is `"use server"`.
 
 ---
 

@@ -9,21 +9,23 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Helper vitest coverage landed (v2.1.110).**  
+**Staging smoke + build fixes landed (v2.1.111).**  
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
 ### Recently shipped
 
 | Version | What |
 | :--- | :--- |
-| 2.1.105–108 | Core `/info` deep docs |
-| 2.1.109 | Split `app/actions/social.ts` → domain modules + barrel |
-| 2.1.110 | Vitest: permissions, forum access/slug/validators/mentions, messenger crypto |
+| 2.1.109 | Social actions domain split |
+| 2.1.110 | Helper vitest suite |
+| 2.1.111 | Production build fixes + `scripts/smoke-staging.sh` |
 
-### Suggested next (code / ship)
+### Suggested next
 
-1. Staging smoke + merge PR #1 (forum, lobby, realtime)
-2. More product work as requested (avoid Discord/FiveM/S3/AI unless asked)
+1. **Human merge** of PR #1 after reviewing smoke notes (`info/ops/STAGING_SMOKE.md`)
+2. Product work as requested (avoid Discord/FiveM/S3/AI unless asked)
+
+Merge is intentional/human — agents cannot merge this PR from the cloud tooling.
 
 ---
 
