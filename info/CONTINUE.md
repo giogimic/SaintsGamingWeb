@@ -7,30 +7,45 @@
 
 ## Current Focus
 
-**v2.1.119 — Demo bones hardened for local/dev smoke**
+**Game Foundation Systems (PR #4) — classes / skills / shinies / Tuxemon bridge**
 
-Smoke checklist: [`info/game/DEMO_SMOKE.md`](./game/DEMO_SMOKE.md)
+Progress log: [`logs/GAME_FOUNDATION_SYSTEMS.md`](../logs/GAME_FOUNDATION_SYSTEMS.md)  
+Design notes: [`info/game/CLASS_SKILLS_SHINY.md`](./game/CLASS_SKILLS_SHINY.md)
 
-**On your running dev server:** pull this branch, restart `npm run dev` (bootstrap must re-seed map/tiles), then walk `DEMO_SMOKE.md`.
+### Shipped on branch `giogimic/game-foundation-systems-fae4`
 
-Shipped:
-- Walkable `DEMO_SANDBOX` + Q1–Q4 + Vance + film + lab + bramble
-- Client tile sync / creature_moved / lobby demo entry / lab party hydrate
-- Shop + bramble visible props
+- Five playable classes (shared base + deltas); Studio Classes dock persists to DB
+- Combat skill typings (Attack…Intelligence) + gathering matrix retained
+- Creature shinies (global + per-species, optional sprites, capture persist)
+- Tuxemon import fixed → 411 `CreatureTemplate`; sync → `CreatureDef`
+- 235 campaign maps in `WorldMap` (`gameId: tuxemon`); Spyder Tamer hero → `AZURE_TOWN`
+
+### Suggested next
+
+1. Human smoke: Studio Seed Classes/Creatures → create each class → tall grass shiny (raise global %)
+2. Pick Spyder Tamer hero → walk AZURE_TOWN; file gaps in NPC/mission fidelity
+3. Wire mission/dialogue packs from `tuxemon-db/mission` + `npc` (Npc editor still stub)
+4. Combat XP grants into combat typings; weighted encounter polish
+
+### Pipeline
+
+```bash
+npm run import:tuxemon
+npm run sync:creatures
+npm run migrate:campaign
+npm run ensure:campaign
+npm run dev
+```
+
+Smoke checklist (demo): [`info/game/DEMO_SMOKE.md`](./game/DEMO_SMOKE.md)
 
 Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
-
-### Suggested next (after human smoke)
-
-1. File gaps from `DEMO_SMOKE.md` run
-2. Per-character bramble flags if shards fight over shared grid
-3. ALIGNMENT D / E
 
 ---
 
 ## Mandatory Read Order
 
 1. **This file**
-2. `info/game/DEMO_SMOKE.md`
-3. `info/gameplay-bible/ALIGNMENT.md`
-4. `/logs/LOCAL_CHANGELOG.md`
+2. `logs/GAME_FOUNDATION_SYSTEMS.md`
+3. `info/game/CLASS_SKILLS_SHINY.md`
+4. `info/gameplay-bible/ALIGNMENT.md`
