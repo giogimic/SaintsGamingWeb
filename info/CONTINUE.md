@@ -9,7 +9,7 @@
 
 **Game Foundation Systems (PR #4) — classes / skills / shinies / Tuxemon bridge**
 
-Progress log: [`logs/GAME_FOUNDATION_SYSTEMS.md`](../logs/GAME_FOUNDATION_SYSTEMS.md)  
+Progress log: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md) (local mirror also under `/logs/`)  
 Design notes: [`info/game/CLASS_SKILLS_SHINY.md`](./game/CLASS_SKILLS_SHINY.md)
 
 ### Shipped on branch `giogimic/game-foundation-systems-fae4`
@@ -46,6 +46,6 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 ## Mandatory Read Order
 
 1. **This file**
-2. `logs/GAME_FOUNDATION_SYSTEMS.md`
+2. `info/game/GAME_FOUNDATION_SYSTEMS.md`
 3. `info/game/CLASS_SKILLS_SHINY.md`
 4. `info/gameplay-bible/ALIGNMENT.md`
