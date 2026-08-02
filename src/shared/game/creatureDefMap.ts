@@ -10,6 +10,7 @@ import type {
 
 export type CreatureDefRowLike = {
   slug: string;
+  gameId?: string | null;
   name: string;
   dexNumber: number;
   typePrimary: string;
@@ -60,6 +61,7 @@ export function creatureRowToData(row: CreatureDefRowLike): CreatureDefData {
   }
   return {
     slug: row.slug,
+    gameId: row.gameId ?? null,
     name: row.name,
     dexNumber: row.dexNumber,
     typePrimary: row.typePrimary,
@@ -99,6 +101,7 @@ export function creatureRowToData(row: CreatureDefRowLike): CreatureDefData {
 export function creatureDataToDb(data: CreatureDefData) {
   return {
     slug: data.slug,
+    gameId: data.gameId || null,
     name: data.name,
     dexNumber: data.dexNumber,
     typePrimary: data.typePrimary,

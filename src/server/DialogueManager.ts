@@ -542,6 +542,11 @@ export class DialogueManager {
           speciesSlugs: ["rockitten", "aardorn"],
           levels: [11, 12],
         },
+        npc_trail_tutor: {
+          name: "Spar Tutor",
+          speciesSlugs: ["rockitten"],
+          levels: [5],
+        },
       };
       const cfg = trainers[npcId] || {
         name: "Trainer",

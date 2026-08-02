@@ -26,6 +26,7 @@
     "reimport:spyder-layers": "tsx scripts/reimport-spyder-rich-layers.ts",
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
+    "seed:saints-trail": "tsx scripts/seed-saints-trail.ts",
     "visual:browser-to-game": "node scripts/visual-browser-to-game.mjs",
     "import:map-npcs": "tsx scripts/import-map-npcs-from-tmx.ts"
   },

@@ -21,14 +21,16 @@ import {
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, PawPrint, CheckCircle2, AlertCircle,
 } from 'lucide-react';
+import { useEditorStore } from '../editor-store';
 
 const inputCls =
   'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-emerald-700 transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
 
 export function CreatureDefEditorPanel() {
+  const activeGameId = useEditorStore((s) => s.activeGameId);
   const [list, setList] = useState<CreatureDefData[]>([]);
-  const [form, setForm] = useState<CreatureDefData>(emptyCreatureDef());
+  const [form, setForm] = useState<CreatureDefData>({ ...emptyCreatureDef(), gameId: activeGameId });
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -37,13 +39,15 @@ export function CreatureDefEditorPanel() {
   const [assetFilter, setAssetFilter] = useState('');
 
   const load = useCallback(async () => {
-    const res = await getAllCreatureDefs();
+    const res = await getAllCreatureDefs(activeGameId);
     if (res.success) setList(res.data);
-  }, []);
+  }, [activeGameId]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    setForm({ ...emptyCreatureDef(), gameId: activeGameId });
+    setIsNew(false);
+  }, [load, activeGameId]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -59,7 +63,7 @@ export function CreatureDefEditorPanel() {
   };
 
   const handleNew = () => {
-    setForm({ ...emptyCreatureDef(), sortOrder: list.length + 1 });
+    setForm({ ...emptyCreatureDef(), gameId: activeGameId, sortOrder: list.length + 1 });
     setIsNew(true);
   };
 
@@ -69,7 +73,7 @@ export function CreatureDefEditorPanel() {
       return;
     }
     setLoading(true);
-    const res = await upsertCreatureDef(form);
+    const res = await upsertCreatureDef({ ...form, gameId: form.gameId ?? activeGameId });
     setLoading(false);
     if (res.success) {
       showStatus('success', `${form.name} saved.`);
@@ -247,6 +251,13 @@ export function CreatureDefEditorPanel() {
             <>
               <div className="grid grid-cols-2 gap-2">
                 <div>
+                  <label className={labelCls}>Profile (gameId)</label>
+                  <input
+                    className={inputCls + ' mb-2'}
+                    value={form.gameId ?? ''}
+                    onChange={(e) => f('gameId', e.target.value || null)}
+                    placeholder="tuxemon / custom_1 / empty=shared"
+                  />
                   <label className={labelCls}>Slug</label>
                   <input className={inputCls} value={form.slug} disabled={!isNew} onChange={(e) => f('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} />
                 </div>

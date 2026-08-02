@@ -112,14 +112,24 @@ export class WorldManager {
     // Demo-only spawns (do not pollute Spyder campaign maps)
     const baseMap = String(mapId || "").split("#")[0].toUpperCase();
     if (baseMap === "DEMO_SANDBOX") {
-      this.engine.events.emit("spawnCreature", {
-        templateId: "warden_vance",
-        entityType: "NPC",
-        mapId: instanceId,
-        x: DEMO_VANCE_SPAWN.x,
-        y: DEMO_VANCE_SPAWN.y,
-        spawnMode: "STATIC",
-      });
+      const hasVance = Array.isArray(mapData?.npcs)
+        ? mapData.npcs.some(
+            (n: { id?: string }) =>
+              n.id === "npc_warden_vance" || n.id === "warden_vance"
+          )
+        : false;
+      if (!hasVance) {
+        this.engine.events.emit("spawnCreature", {
+          templateId: "warden_vance",
+          entityType: "NPC",
+          mapId: instanceId,
+          x: DEMO_VANCE_SPAWN.x,
+          y: DEMO_VANCE_SPAWN.y,
+          spawnMode: "STATIC",
+          name: "Warden Vance",
+          spriteKey: "warden_vance",
+        });
+      }
 
       for (const spot of DEMO_WILD_SPOTS) {
         this.engine.events.emit("spawnCreature", {

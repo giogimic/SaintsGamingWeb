@@ -42,6 +42,8 @@ export type CreatureStatBlock = {
 /** Full editable creature definition (shared by seed, Studio, gameplay). */
 export type CreatureDefData = {
   slug: string;
+  /** World profile id; null/empty = shared across Studio profiles */
+  gameId?: string | null;
   name: string;
   dexNumber: number;
   typePrimary: CreatureElementType | string;
@@ -314,6 +316,7 @@ export function listFallbackStarters(): CreatureDefData[] {
 export function emptyCreatureDef(): CreatureDefData {
   return {
     slug: "",
+    gameId: "tuxemon",
     name: "",
     dexNumber: 0,
     typePrimary: "Solar",

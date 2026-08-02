@@ -1631,6 +1631,8 @@ model StarterHero {
 model CreatureDef {
   id                    String   @id @default(cuid())
   slug                  String   @unique // e.g. "agnite", "rockitten"
+  /// World profile id; null/empty = shared across all Studio profiles
+  gameId                String?  @default("tuxemon")
   name                  String            // Display name
   dexNumber             Int      @default(0)
   // Types (Saints elements). Secondary may be "None".
@@ -1678,5 +1680,6 @@ model CreatureDef {
   @@index([isStarter, isActive])
   @@index([typePrimary])
   @@index([isWildSpawn, isActive])
+  @@index([gameId])
 }
 
