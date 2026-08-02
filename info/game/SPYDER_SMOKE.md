@@ -7,6 +7,7 @@ Playable on-ramp for human testing (PR #4).
 ```bash
 npm run migrate:campaign   # once
 npm run ensure:campaign    # encounters + gates/grass
+npm run ensure:starter-heroes  # Spyder Tamer in creator list
 npm run seed:campaign-npcs # NPCs + quest chain
 # Optional but recommended for real tile art (needs Tuxemon checkout):
 TUXEMON_PATH=/tmp/Tuxemon npm run reimport:spyder-layers
