@@ -16,8 +16,10 @@ import {
 
 const CLASS_OPTIONS = [
   { id: 'WARRIOR', label: 'Warrior', icon: Swords, color: '#f87171' },
-  { id: 'MAGE', label: 'Mage', icon: Wand2, color: '#a78bfa' },
-  { id: 'THIEF', label: 'Ranger/Thief', icon: Feather, color: '#34d399' },
+  { id: 'MAGE', label: 'Mage', icon: Wand2, color: '#60a5fa' },
+  { id: 'THIEF', label: 'Thief', icon: Feather, color: '#34d399' },
+  { id: 'RANGER', label: 'Ranger', icon: Feather, color: '#fbbf24' },
+  { id: 'PRIEST', label: 'Priest', icon: Sparkles, color: '#e2d5b3' },
 ];
 
 const TAG_PRESETS = [

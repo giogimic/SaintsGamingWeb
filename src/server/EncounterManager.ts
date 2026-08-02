@@ -10,6 +10,13 @@ import {
   loadWildSpawnDefs,
   toPlayerCreatureStats,
 } from "./creatureDefs";
+import { loadGlobalShinyChancePercent } from "./classDefs";
+import {
+  resolveCreatureSprites,
+  rollShiny,
+  shinyInstanceTags,
+  SHINY_TAG,
+} from "@/shared/game/shiny";
 
 const prisma = new PrismaClient();
 
@@ -31,6 +38,8 @@ export interface BattleState {
     level: number;
     spriteKey: string;
     name: string;
+    isShiny?: boolean;
+    tags?: string[];
   };
   playerCreature: {
     id: string;
@@ -212,6 +221,12 @@ export class EncounterManager {
       return;
     }
 
+    const globalShiny = await loadGlobalShinyChancePercent();
+    const isShiny = rollShiny(wildDef, globalShiny);
+    const shinySprites = resolveCreatureSprites(wildDef, isShiny);
+    const wildTags = shinyInstanceTags(isShiny);
+    const wildName = isShiny ? `Shiny ${wildDef.name}` : wildDef.name;
+
     const battleId = `battle_${Date.now()}_${data.accountId}`;
     const playerCreatureData = {
       id: activeCreature.id,
@@ -230,14 +245,20 @@ export class EncounterManager {
       phase: "WAITING_FOR_INPUT",
       wildCreature: {
         templateId: wildDef.slug,
-        name: wildDef.name,
+        name: wildName,
         hp: wildDef.baseHp,
         maxHp: wildDef.baseHp,
         level: wildDef.starterLevel,
-        spriteKey: wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data",
+        spriteKey: shinySprites.spriteBattle || shinySprites.spriteOverworld || "daemon_data",
+        isShiny,
+        tags: wildTags,
       },
       playerCreature: playerCreatureData,
-      log: [`A wild ${wildDef.name} appeared!`],
+      log: [
+        isShiny
+          ? `A shimmering wild ${wildDef.name} appeared! (${SHINY_TAG})`
+          : `A wild ${wildDef.name} appeared!`,
+      ],
     };
 
     this.activeBattles.set(battleId, battleState);
@@ -410,6 +431,10 @@ export class EncounterManager {
     if (result === "CAPTURE" && userId) {
       try {
         const wildDef = await loadCreatureDef(battle.wildCreature.templateId);
+        const isShiny = !!battle.wildCreature.isShiny;
+        const tags = battle.wildCreature.tags?.length
+          ? battle.wildCreature.tags
+          : shinyInstanceTags(isShiny);
         await prisma.playerCreature.create({
           data: {
             userId,
@@ -433,10 +458,12 @@ export class EncounterManager {
               wildDef?.abilities || [{ abilitySlug: "ram", currentCooldown: 0 }]
             ),
             isParty: false,
+            isShiny,
+            tagsJson: JSON.stringify(tags),
           },
         });
         console.log(
-          `[EncounterManager] Captured ${battle.wildCreature.templateId} for user ${userId}`
+          `[EncounterManager] Captured ${isShiny ? "SHINY " : ""}${battle.wildCreature.templateId} for user ${userId}`
         );
         this.engine.events.emit("ecosystemBroadcast", {
           type: "creature.captured",
@@ -444,6 +471,8 @@ export class EncounterManager {
             userId,
             speciesSlug: battle.wildCreature.templateId,
             level: battle.wildCreature.level,
+            isShiny,
+            tags,
           },
         });
       } catch (err) {

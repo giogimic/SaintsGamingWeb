@@ -44,9 +44,16 @@ export function TurnBattleOverlay() {
         {/* Wild Creature (Top Right) */}
         <div className="self-end flex items-end gap-4 z-10 w-full max-w-md animate-in slide-in-from-right duration-700">
           <div className="flex-1 bg-black/60 border border-white/20 p-4 rounded-xl shadow-2xl backdrop-blur-md">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-bold text-white uppercase tracking-wider">{wildCreature.name}</h3>
-              <span className="text-emerald-400 font-bold">Lv {wildCreature.level}</span>
+            <div className="flex justify-between items-center mb-2 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider truncate">{wildCreature.name}</h3>
+                {(wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && (
+                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-[#cbb26a]/60 bg-[#806f47]/30 text-[#e2d5b3]">
+                    shiny
+                  </span>
+                )}
+              </div>
+              <span className="text-emerald-400 font-bold shrink-0">Lv {wildCreature.level}</span>
             </div>
             
             <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-white/10">
@@ -60,7 +67,10 @@ export function TurnBattleOverlay() {
             </div>
           </div>
           
-          <div className="w-48 h-48 relative flex items-center justify-center filter drop-shadow-2xl">
+          <div className={cn(
+            "w-48 h-48 relative flex items-center justify-center filter drop-shadow-2xl",
+            (wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && "ring-2 ring-[#cbb26a]/50 rounded-xl"
+          )}>
             <img 
               src={
                 wildCreature.spriteKey.startsWith('/')
@@ -68,7 +78,10 @@ export function TurnBattleOverlay() {
                   : `/game-assets/${wildCreature.spriteKey}.png`
               }
               alt={wildCreature.name}
-              className="max-w-full max-h-full object-contain pixelated"
+              className={cn(
+                "max-w-full max-h-full object-contain pixelated",
+                (wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && "hue-rotate-30 saturate-150"
+              )}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/game-assets/daemon_data.png';
               }}
