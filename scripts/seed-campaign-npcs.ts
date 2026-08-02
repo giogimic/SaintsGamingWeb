@@ -8,6 +8,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { CAMPAIGN_NPC_SEEDS, SPYDER_QUEST_CHAIN } from "../src/server/spyderQuests";
+import { AZURE_GUIDE_NPC_ID, AZURE_GUIDE_TREE } from "../src/server/spyderGuideDialogue";
 
 const prisma = new PrismaClient();
 
@@ -17,6 +18,9 @@ function dialogueTreeFor(npc: {
   greeting: string;
   questSlug?: string;
 }) {
+  if (npc.id === AZURE_GUIDE_NPC_ID) {
+    return AZURE_GUIDE_TREE;
+  }
   if (npc.questSlug) {
     return {
       node_start: {

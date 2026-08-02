@@ -1,0 +1,135 @@
+/**
+ * State-aware Azure Guide dialogue nodes for the Spyder on-ramp.
+ * Pure helpers — DialogueManager picks a start node from quest/party state.
+ */
+
+export const AZURE_GUIDE_NPC_ID = "npc_azure_guide";
+
+export type GuideQuestSnapshot = {
+  slug: string;
+  status: string;
+  currentStage: number;
+};
+
+export type GuideContext = {
+  hasPartyCreature: boolean;
+  active: GuideQuestSnapshot | null;
+  completedSlugs: Set<string>;
+};
+
+/** Full branching tree stored on NpcDialogueTree for the Guide. */
+export const AZURE_GUIDE_TREE = {
+  node_start: {
+    text: "Welcome to Azure Town, tamer. Spyder's trail begins here. Will you take your first charge?",
+    options: [
+      {
+        label: "I'm ready.",
+        nextNode: "accepted",
+        action: "ACCEPT_QUEST",
+        questSlug: "quest_azure_welcome",
+      },
+      { label: "Just looking around.", nextNode: "exit" },
+    ],
+  },
+  accepted: {
+    text: "Good. I've packed you a Soul Camera, film, and a companion egg — Budaye hatches at your side. Greet the townsfolk, then take the east road to Route 1.",
+    options: [
+      { label: "Open the Lab instead", nextNode: "exit", action: "OPEN_LAB" },
+      { label: "Understood.", nextNode: "exit" },
+    ],
+  },
+  node_need_starter: {
+    text: "You'll need a companion before the tall grass. Take Budaye, or visit the Lab to choose.",
+    options: [
+      {
+        label: "Take Budaye",
+        nextNode: "starter_granted",
+        action: "GRANT_SPYDER_STARTER",
+      },
+      { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
+      { label: "Later.", nextNode: "exit" },
+    ],
+  },
+  starter_granted: {
+    text: "Budaye is with you. East road — Route 1 — when you're ready to capture.",
+    options: [{ label: "Thanks!", nextNode: "exit" }],
+  },
+  node_welcome_active: {
+    text: "Still settling in? Speak with me again when you've accepted your charge — or if you already have, consider this our second chat.",
+    options: [
+      { label: "I'll look around.", nextNode: "exit" },
+      { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
+    ],
+  },
+  node_townsfolk: {
+    text: "The Enforcer and Knight keep the plaza. Greet them both, then return when the road calls.",
+    options: [{ label: "On my way.", nextNode: "exit" }],
+  },
+  node_capture_go: {
+    text: "East gate leads to Spyder Route 1. Walk the tall grass, expose film, bring a wild one home.",
+    options: [
+      { label: "Need a companion", nextNode: "node_need_starter" },
+      { label: "Heading out.", nextNode: "exit" },
+    ],
+  },
+  node_capture_report: {
+    text: "You smell of tall grass and film emulsion. Well done — Spyder's road opens east toward Cotton Town.",
+    options: [{ label: "I'll keep going.", nextNode: "exit" }],
+  },
+  node_cotton: {
+    text: "Cotton Town lies east along Route 1. The greeter there will mark your arrival.",
+    options: [{ label: "Eastward.", nextNode: "exit" }],
+  },
+  node_done: {
+    text: "You've walked the first Spyder road. Rest in Cotton, then press deeper when you're ready.",
+    options: [
+      { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
+      { label: "Farewell.", nextNode: "exit" },
+    ],
+  },
+} as const;
+
+/**
+ * Pick which dialogue node to open for the Azure Guide.
+ * Prefer starter gate when they have no party and are past welcome accept.
+ */
+export function resolveAzureGuideStartNode(ctx: GuideContext): string {
+  const { hasPartyCreature, active, completedSlugs } = ctx;
+
+  if (!active && !completedSlugs.has("quest_azure_welcome")) {
+    return "node_start";
+  }
+
+  if (active?.slug === "quest_azure_welcome") {
+    return "node_welcome_active";
+  }
+
+  if (active?.slug === "quest_azure_townsfolk") {
+    return "node_townsfolk";
+  }
+
+  if (active?.slug === "quest_spyder_first_capture") {
+    if (!hasPartyCreature) return "node_need_starter";
+    if (active.currentStage >= 2) return "node_capture_report";
+    return "node_capture_go";
+  }
+
+  if (active?.slug === "quest_spyder_cotton_arrive") {
+    return "node_cotton";
+  }
+
+  if (completedSlugs.has("quest_spyder_cotton_arrive")) {
+    return "node_done";
+  }
+
+  if (completedSlugs.has("quest_spyder_first_capture")) {
+    return "node_cotton";
+  }
+
+  if (!hasPartyCreature) {
+    return "node_need_starter";
+  }
+
+  // Welcome completed but somehow no active follow-up
+  return "node_townsfolk";
+}
