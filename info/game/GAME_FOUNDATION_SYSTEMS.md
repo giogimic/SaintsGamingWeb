@@ -2,7 +2,7 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (Spyder NPC path + kill XP)
+**Updated:** 2026-08-02 (path continuity)
 
 ## Choices
 
@@ -11,29 +11,20 @@
 
 ## Done
 
-### Phase 1
-- [x] Schema + shared catalogs (classes, skill typings, shiny)
-- [x] Studio Classes dock, creature shiny, creator 5 classes
-- [x] Encounter shiny roll + capture persist + battle tag
+### Phase 1–2
+- [x] Classes, shinies, Tuxemon import, campaign maps, Spyder Tamer → AZURE_TOWN
 
-### Phase 2
-- [x] Tuxemon import → CreatureTemplate (411)
-- [x] Sync → CreatureDef; 235 campaign maps
-- [x] Spyder Tamer → AZURE_TOWN
-
-### Continue / Spyder path
-- [x] Combat XP (RT + damage taken + TB + **kill blow**)
-- [x] Weighted encounter selection
-- [x] NPC Studio persist
-- [x] Demo Vance/wilds only on DEMO_SANDBOX
-- [x] Campaign NPC seeds + Spyder quest chain (welcome → townsfolk → first capture)
-- [x] Quest wiring: TALK on NPC interact, CLAIM on capture
-- [x] TMX import script (optional external maps)
+### Spyder on-ramp
+- [x] NPCs + 4-quest chain (welcome → townsfolk → capture → Cotton)
+- [x] TALK / CLAIM / kill XP wiring
+- [x] **Gates Azure ↔ Spyder Route 1 ↔ Cotton** + tall grass + yaml-ish encounters
+- [x] Gate normalize (`mapGates.ts`) + lobby campaign allowlist
+- [x] Film grant on Guide accept
+- [x] Smoke: `info/game/SPYDER_SMOKE.md`
 
 ## Pipeline
 
 ```bash
-npm run import:tuxemon && npm run sync:creatures
 npm run migrate:campaign && npm run ensure:campaign
 npm run seed:campaign-npcs
 npm run dev
@@ -41,6 +32,6 @@ npm run dev
 
 ## Remaining
 
-- Human smoke DEMO + Azure Guide path
-- Deeper Spyder mission graph
-- TMX bulk NPC import when checkout available
+- Human smoke of full path
+- State-aware Guide dialogue
+- Deeper Spyder mission graph / TMX NPC densify

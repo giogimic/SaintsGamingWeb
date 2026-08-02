@@ -211,6 +211,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     const startX = hero?.startingX ?? 14;
     const startY = hero?.startingY ?? 15;
 
+    const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {
       currentMapId: startMap,
       position: { x: startX, y: startY },
@@ -218,8 +219,10 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       hp: hpBase + hpFromSkills,
       maxHp: hpBase + hpFromSkills,
       credits: 1000,
-      // Capture items come from NPC shop / craft (server Prisma inventory) — not free grants
-      inventory: { 'patch_kit': 5 },
+      // Server capture uses Prisma inventory (Guide grant on quest accept). Client bag hint only.
+      inventory: isSpyder
+        ? { patch_kit: 5, film_standard: 5, soul_camera: 1 }
+        : { patch_kit: 5 },
       skills: initialSkills,
       classStats: sheet,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },

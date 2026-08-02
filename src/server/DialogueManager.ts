@@ -301,6 +301,18 @@ export class DialogueManager {
 
     if (action === "ACCEPT_QUEST" && questSlug) {
       this.engine.events.emit("acceptQuest", { accountId, questSlug, socketId });
+      // Spyder on-ramp: starter film so Route 1 capture isn't blocked before Q2 rewards
+      if (questSlug === "quest_azure_welcome") {
+        const userId = await resolveUserId(accountId);
+        if (userId) {
+          await addItems(userId, [
+            { slug: "soul_camera", qty: 1 },
+            { slug: "film_standard", qty: 5 },
+          ]);
+          await this.syncInv(socketId, userId);
+          this.toast(socketId, "Received Soul Camera + 5× Standard Film.");
+        }
+      }
     }
 
     // DEMO_QUEST_REPORT already sent its own dialogue_start payload

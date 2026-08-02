@@ -19,6 +19,7 @@
     "migrate:campaign": "tsx scripts/migrate-campaign-maps-to-db.ts",
     "ensure:campaign": "tsx scripts/ensure-campaign-playable.ts",
     "seed:campaign-npcs": "tsx scripts/seed-campaign-npcs.ts",
+    "seed:campaign-path": "tsx scripts/seed-campaign-path.ts",
     "seed:azure": "tsx scripts/seed-campaign-npcs.ts",
     "import:map-npcs": "tsx scripts/import-map-npcs-from-tmx.ts"
   },

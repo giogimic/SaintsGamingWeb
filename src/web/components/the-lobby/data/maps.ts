@@ -1,5 +1,6 @@
 import { Point } from '../store';
 import { ElementType } from './saints-dex';
+import { listGateTargets } from '@/shared/game/mapGates';
 
 export interface MapGate {
   targetMapId: string;
@@ -130,9 +131,9 @@ export async function listMaps(gameId?: string): Promise<MapIndexEntry[]> {
 export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
   const current = mapCache[currentMapId];
   if (!current?.gates) return;
-  for (const gate of Object.values(current.gates)) {
-    if (gate.targetMapId && !mapCache[gate.targetMapId]) {
-      loadMap(gate.targetMapId).catch(() => {});
+  for (const targetMapId of listGateTargets(current.gates)) {
+    if (targetMapId && !mapCache[targetMapId]) {
+      loadMap(targetMapId).catch(() => {});
     }
   }
 }
