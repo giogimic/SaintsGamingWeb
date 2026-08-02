@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'creature' | 'dev' | 'characters';
+export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'creature' | 'dev' | 'characters' | 'classes';
 
 export interface FloatingPanelState {
   id: PanelId;
@@ -51,6 +51,7 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   creature: { id: 'creature', title: 'Creature Catalog', isOpen: false, isCollapsed: false, x: 480, y: 60, width: 780, height: 680, zIndex: 10 },
   dev: { id: 'dev', title: 'Dev Tools', isOpen: false, isCollapsed: false, x: 20, y: 640, width: 600, height: 300, zIndex: 10 },
   characters: { id: 'characters', title: 'Starter Heroes', isOpen: false, isCollapsed: false, x: 560, y: 80, width: 720, height: 640, zIndex: 10 },
+  classes: { id: 'classes', title: 'Classes & Skills', isOpen: false, isCollapsed: false, x: 200, y: 40, width: 820, height: 700, zIndex: 10 },
 };
 
 export const useEditorStore = create<EditorState>()(

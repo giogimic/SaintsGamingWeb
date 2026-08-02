@@ -30,6 +30,9 @@ export const NpcEditorPanel: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs font-mono">
+      <div className="bg-amber-950/40 border border-amber-700/40 rounded p-2 text-amber-100/90 text-[10px] leading-relaxed">
+        Stub — placement preview only. NPCs are not persisted yet (Phase 2 campaign wiring). Do not rely on Place for live story content.
+      </div>
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
           <UserPlus className="w-3.5 h-3.5" /> Place NPC

@@ -211,16 +211,23 @@ export async function seedDefaultStarterHeroes() {
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'ranger', name: 'Ranger', classId: 'THIEF', spriteKey: 'ninja',
+      slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja',
       flavor: 'Agile hunter. Precision strikes from distance.',
       tag: 'Mobile', tagColor: '#fbbf24', sortOrder: 5, isActive: true,
       startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
+      slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple',
+      flavor: 'Devoted healer. Wisdom and vitality over raw attack.',
+      tag: 'Support', tagColor: '#e2d5b3', sortOrder: 6, isActive: true,
+      startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
+      startingInventory: '{"capture_script":10,"patch_kit":5}',
+    },
+    {
       slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk',
       flavor: 'Inner strength fighter. Balanced offense and utility.',
-      tag: 'Balanced', tagColor: '#fb923c', sortOrder: 6, isActive: true,
+      tag: 'Balanced', tagColor: '#fb923c', sortOrder: 7, isActive: true,
       startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
@@ -297,12 +304,16 @@ export async function seedDefaultStarterHeroes() {
     },
   ];
 
+  // Core classId remaps (e.g. ranger THIEF → RANGER) always sync; flavor/custom stay.
+  const syncClassIds = new Set(['warrior', 'paladin', 'mystic', 'shadow', 'ranger', 'priest', 'monk']);
   const results = await Promise.allSettled(
     defaults.map(h =>
       prisma.starterHero.upsert({
         where: { slug: h.slug },
         create: h,
-        update: {}, // Don't overwrite existing customizations
+        update: syncClassIds.has(h.slug)
+          ? { classId: h.classId, name: h.name, flavor: h.flavor, tag: h.tag, tagColor: h.tagColor, sortOrder: h.sortOrder }
+          : {},
       })
     )
   );

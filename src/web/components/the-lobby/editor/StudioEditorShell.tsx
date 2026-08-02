@@ -8,14 +8,12 @@ import {
   Settings2, 
   Image as ImageIcon, 
   Users, 
-  Map, 
-  Skull, 
   TerminalSquare,
   Sword,
-  PawPrint
+  PawPrint,
+  UserCheck,
 } from 'lucide-react';
 
-// We will create these panel components next
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { AssetBrowserPanel } from './panels/AssetBrowserPanel';
@@ -23,6 +21,7 @@ import { NpcEditorPanel } from './panels/NpcEditorPanel';
 import { DevToolsPanel } from './panels/DevToolsPanel';
 import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
 import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
+import { ClassEditorPanel } from './panels/ClassEditorPanel';
 
 export const StudioEditorShell: React.FC = () => {
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
@@ -82,6 +81,10 @@ export const StudioEditorShell: React.FC = () => {
         <DraggablePanel id="creature" icon={<PawPrint className="w-4 h-4" />}>
           <CreatureDefEditorPanel />
         </DraggablePanel>
+
+        <DraggablePanel id="classes" icon={<UserCheck className="w-4 h-4" />}>
+          <ClassEditorPanel />
+        </DraggablePanel>
       </div>
 
       {/* Bottom Dock (Toolbar) */}
@@ -95,6 +98,7 @@ export const StudioEditorShell: React.FC = () => {
           <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" />
           <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" />
           <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} label="Creatures" />
+          <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} label="Classes" />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
           <button 
             onClick={toggleCreationMode}
