@@ -122,6 +122,10 @@ export default function TheLobby({
         'ROUTE1',
         'COTTON_TOWN',
         'SPYDER_COTTON_TOWN',
+        'COTTON_SCOOP',
+        'COTTON_CAFE',
+        'SPYDER_COTTON_SCOOP',
+        'SPYDER_COTTON_CAFE',
         'PLAYER_HOUSE_BEDROOM',
         'PLAYER_HOUSE_DOWNSTAIRS',
       ]);

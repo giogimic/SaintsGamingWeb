@@ -81,7 +81,7 @@ export const AZURE_GUIDE_TREE = {
     options: [{ label: "Eastward.", nextNode: "exit" }],
   },
   node_cotton_locals: {
-    text: "In Cotton, greet Scoop's clerk and the café host on the plaza — they keep the town's pulse.",
+    text: "In Cotton, step through the plaza doors into Scoop and the Café — the clerk and host keep the town's pulse.",
     options: [{ label: "I'll find them.", nextNode: "exit" }],
   },
   node_done: {

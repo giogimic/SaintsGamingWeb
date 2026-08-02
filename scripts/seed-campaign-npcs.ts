@@ -74,6 +74,17 @@ async function upsertMapNpcs(
     npcs = [];
   }
 
+  // Drop campaign NPCs that now live on a different map (e.g. Scoop clerk moved indoors)
+  const idsOnThisMap = new Set(seeds.map((s) => s.id));
+  const campaignIdsElsewhere = new Set<string>();
+  for (const [otherMap, otherSeeds] of Object.entries(CAMPAIGN_NPC_SEEDS)) {
+    if (otherMap === mapId) continue;
+    for (const s of otherSeeds) campaignIdsElsewhere.add(s.id);
+  }
+  npcs = npcs.filter(
+    (n) => !campaignIdsElsewhere.has(n.id) || idsOnThisMap.has(n.id)
+  );
+
   for (const seed of seeds) {
     const entry = {
       id: seed.id,

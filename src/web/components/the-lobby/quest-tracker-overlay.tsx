@@ -29,7 +29,9 @@ export default function QuestTrackerOverlay() {
     currentMapId === "AZURE_TOWN" ||
     currentMapId?.includes("SPYDER") ||
     currentMapId === "ROUTE1" ||
-    currentMapId === "COTTON_TOWN";
+    currentMapId === "COTTON_TOWN" ||
+    currentMapId === "COTTON_SCOOP" ||
+    currentMapId === "COTTON_CAFE";
 
   const fetchQuests = async () => {
     try {

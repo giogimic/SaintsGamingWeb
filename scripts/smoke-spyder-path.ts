@@ -201,8 +201,16 @@ async function main() {
     path: [2, 10, 39, 10],
   });
   await checkMap("COTTON_TOWN", {
-    gateTargets: ["SPYDER_ROUTE1"],
-    path: [2, 20, 12, 19],
+    gateTargets: ["SPYDER_ROUTE1", "COTTON_SCOOP", "COTTON_CAFE"],
+    path: [2, 20, 12, 18],
+  });
+  await checkMap("COTTON_SCOOP", {
+    gateTargets: ["COTTON_TOWN"],
+    path: [6, 8, 6, 5],
+  });
+  await checkMap("COTTON_CAFE", {
+    gateTargets: ["COTTON_TOWN"],
+    path: [5, 10, 7, 6],
   });
 
   console.log("\nNPCs");
