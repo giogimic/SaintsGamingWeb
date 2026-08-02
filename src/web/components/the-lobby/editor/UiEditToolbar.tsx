@@ -1,156 +1,129 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { useGameStore } from "../store";
-import { X, Save, Share2, Trash2, Download } from "lucide-react";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
-import { ScrollArea } from "@/shared/ui/scroll-area";
+import { Check, Link2, RotateCcw } from "lucide-react";
 import { createSocialPost } from "@/app/actions/social";
 
-type Preset = {
-  id: string;
-  name: string;
-  data: string;
-  createdAt: string;
-};
-
+/**
+ * Compact floating Viewfinder toolbar — always visible in Edit Interface mode.
+ * Reset · Share · Save & Exit (no blocking modal).
+ */
 export function UiEditToolbar() {
-  const isUiEditMode = useGameStore((state) => state.isUiEditMode);
-  const setIsUiEditMode = useGameStore((state) => state.setIsUiEditMode);
-  const uiSettings = useGameStore((state) => state.uiSettings);
-  const loadUiPreset = useGameStore((state) => state.loadUiPreset);
-  const showToast = useGameStore((state) => state.showToast);
+  const isEditing = useGameStore(
+    (s) => s.isEditingInterface || s.isUiEditMode
+  );
+  const setIsEditingInterface = useGameStore((s) => s.setIsEditingInterface);
+  const uiSettings = useGameStore((s) => s.uiSettings);
+  const resetUiLayout = useGameStore((s) => s.resetUiLayout);
+  const showToast = useGameStore((s) => s.showToast);
+  const [busy, setBusy] = useState(false);
 
-  const [presets, setPresets] = useState<Preset[]>([]);
-  const [newPresetName, setNewPresetName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const handleReset = useCallback(() => {
+    if (!confirm("Reset HUD layout to defaults?")) return;
+    resetUiLayout();
+    showToast("Layout reset to default.");
+  }, [resetUiLayout, showToast]);
 
-  useEffect(() => {
-    if (isUiEditMode) {
-      fetchPresets();
+  const persistPreset = useCallback(async (name: string) => {
+    const res = await fetch("/api/ui-presets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        data: uiSettings,
+        isPublic: true,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.preset) {
+      throw new Error(json.error || "Save failed");
     }
-  }, [isUiEditMode]);
+    return json.preset as { id: string; name: string };
+  }, [uiSettings]);
 
-  const fetchPresets = async () => {
+  const handleShare = useCallback(async () => {
+    setBusy(true);
     try {
-      const res = await fetch("/api/ui-presets");
-      const json = await res.json();
-      if (json.presets) {
-        setPresets(json.presets);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleSavePreset = async () => {
-    if (!newPresetName.trim()) return;
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/ui-presets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newPresetName,
-          data: uiSettings,
-          isPublic: true,
-        }),
-      });
-      const json = await res.json();
-      if (json.preset) {
-        setPresets([json.preset, ...presets]);
-        setNewPresetName("");
-        showToast("Preset saved successfully!");
-      }
-    } catch (e) {
-      showToast("Failed to save preset.");
+      const preset = await persistPreset(
+        `Layout ${new Date().toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      );
+      await createSocialPost(
+        `Check out my new UI Layout! [ui-preset:${preset.id}]`
+      );
+      showToast("Layout shared to Social Feed.");
+    } catch {
+      showToast("Failed to share layout.");
     } finally {
-      setIsLoading(false);
+      setBusy(false);
     }
-  };
+  }, [persistPreset, showToast]);
 
-  const handleDeletePreset = async (id: string) => {
+  const handleSaveAndExit = useCallback(async () => {
+    setBusy(true);
     try {
-      await fetch(`/api/ui-presets/${id}`, { method: "DELETE" });
-      setPresets(presets.filter((p) => p.id !== id));
-      showToast("Preset deleted.");
-    } catch (e) {
-      showToast("Failed to delete preset.");
+      // Local positions already persist via DraggablePanel → localStorage.
+      // Also snapshot a named preset so Share / social embeds stay in sync.
+      await persistPreset("Autosave");
+      showToast("Layout saved.");
+    } catch {
+      showToast("Layout kept locally — cloud snapshot skipped.");
+    } finally {
+      setIsEditingInterface(false);
+      setBusy(false);
     }
-  };
+  }, [persistPreset, setIsEditingInterface, showToast]);
 
-  const handleLoadPreset = (dataString: string) => {
-    try {
-      const data = JSON.parse(dataString);
-      loadUiPreset(data);
-      showToast("Preset loaded!");
-    } catch (e) {
-      showToast("Failed to load preset data.");
-    }
-  };
-
-  const handleSharePreset = async (id: string) => {
-    try {
-      await createSocialPost(`Check out my new UI Layout! 🎨 [ui-preset:${id}]`);
-      showToast("Shared to Social Feed!");
-    } catch (e) {
-      showToast("Failed to share.");
-    }
-  };
-
-  if (!isUiEditMode) return null;
+  if (!isEditing) return null;
 
   return (
-    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] pointer-events-auto bg-black/80 backdrop-blur-md border border-white/20 p-4 rounded-xl shadow-2xl w-[400px]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold sg-text-gradient">UI Layout Editor</h3>
-        <Button variant="ghost" size="icon" onClick={() => setIsUiEditMode(false)}>
-          <X className="w-5 h-5 text-white" />
-        </Button>
+    <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[9999] flex justify-center px-4">
+      <div
+        className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-white/15 bg-[#0A0B10]/90 px-2 py-2 shadow-2xl backdrop-blur-xl"
+        style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(16,185,129,0.25)" }}
+      >
+        <span className="hidden sm:inline px-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+          Viewfinder
+        </span>
+
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleReset}
+          title="Reset to Default"
+          className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1C24]/80 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white/85 transition hover:border-white/25 hover:bg-[#1A1C24] disabled:opacity-40"
+        >
+          <RotateCcw className="h-3.5 w-3.5 text-[#10B981]" />
+          <span className="hidden sm:inline">Reset</span>
+        </button>
+
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void handleShare()}
+          title="Share Layout"
+          className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#1A1C24]/80 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white/85 transition hover:border-white/25 hover:bg-[#1A1C24] disabled:opacity-40"
+        >
+          <Link2 className="h-3.5 w-3.5 text-[#8B5CF6]" />
+          <span className="hidden sm:inline">Share</span>
+        </button>
+
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void handleSaveAndExit()}
+          title="Save & Exit"
+          className="flex items-center gap-1.5 rounded-full bg-[#8B5CF6] px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white shadow-[0_4px_0_0_#6D28D9] transition hover:brightness-110 active:translate-y-[2px] active:shadow-none disabled:opacity-40"
+        >
+          <Check className="h-4 w-4" />
+          Save & Exit
+        </button>
       </div>
-
-      <p className="text-sm text-zinc-300 mb-4">
-        Drag and scale UI panels to your liking. Save your layout below or load an existing preset.
-      </p>
-
-      <div className="flex gap-2 mb-4">
-        <Input
-          placeholder="New Preset Name"
-          value={newPresetName}
-          onChange={(e) => setNewPresetName(e.target.value)}
-          className="bg-black/50 border-white/10"
-        />
-        <Button onClick={handleSavePreset} disabled={isLoading || !newPresetName.trim()} variant="default" className="bg-sg-primary text-white hover:bg-sg-primary/80">
-          <Save className="w-4 h-4 mr-2" /> Save
-        </Button>
-      </div>
-
-      <div className="text-sm font-semibold text-zinc-400 mb-2">Saved Presets</div>
-      <ScrollArea className="h-48 border border-white/10 rounded-md bg-black/40 p-2">
-        {presets.length === 0 ? (
-          <div className="text-xs text-zinc-500 text-center mt-4">No presets saved yet.</div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {presets.map((preset) => (
-              <div key={preset.id} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10 group">
-                <span className="text-sm font-medium truncate flex-1">{preset.name}</span>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleLoadPreset(preset.data)} title="Load Layout">
-                    <Download className="w-3 h-3" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSharePreset(preset.id)} title="Share to Feed">
-                    <Share2 className="w-3 h-3 text-blue-400" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeletePreset(preset.id)} title="Delete">
-                    <Trash2 className="w-3 h-3 text-red-400" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </ScrollArea>
     </div>
   );
 }
