@@ -58,7 +58,20 @@ describe("resolveAzureGuideStartNode", () => {
     ).toBe("node_need_starter");
   });
 
-  it("shows done after Cotton quest completed", () => {
+  it("points to Cotton locals after arrive, done after locals", () => {
+    expect(
+      resolveAzureGuideStartNode({
+        hasPartyCreature: true,
+        active: { slug: "quest_spyder_cotton_locals", status: "ACTIVE", currentStage: 1 },
+        completedSlugs: new Set([
+          "quest_azure_welcome",
+          "quest_azure_townsfolk",
+          "quest_spyder_first_capture",
+          "quest_spyder_cotton_arrive",
+        ]),
+      })
+    ).toBe("node_cotton_locals");
+
     expect(
       resolveAzureGuideStartNode({
         hasPartyCreature: true,
@@ -68,6 +81,7 @@ describe("resolveAzureGuideStartNode", () => {
           "quest_azure_townsfolk",
           "quest_spyder_first_capture",
           "quest_spyder_cotton_arrive",
+          "quest_spyder_cotton_locals",
         ]),
       })
     ).toBe("node_done");

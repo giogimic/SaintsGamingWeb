@@ -197,6 +197,7 @@ export class DialogueManager {
             "quest_azure_townsfolk",
             "quest_spyder_first_capture",
             "quest_spyder_cotton_arrive",
+            "quest_spyder_cotton_locals",
           ],
         },
       },
