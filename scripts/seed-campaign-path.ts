@@ -268,6 +268,8 @@ const PATH: Record<string, PathCfg> = {
       gate(14, 18, "SPYDER_LEATHER_SCOOP", 6, 8),
       // Gym (farther east plaza)
       gate(24, 20, "SPYDER_LEATHER_GYM", 12, 8),
+      // East mouth → Leather Shaft 1
+      gate(39, 21, "SPYDER_LEATHER_SHAFT1", 1, 7),
     ],
     open: [
       { x: 0, y: 21, tile: 3 },
@@ -286,10 +288,15 @@ const PATH: Record<string, PathCfg> = {
       { x: 24, y: 20, tile: 4 },
       { x: 23, y: 20, tile: 0 },
       { x: 24, y: 21, tile: 0 },
+      { x: 38, y: 21, tile: 0 },
+      { x: 39, y: 21, tile: 4 },
+      { x: 38, y: 20, tile: 0 },
+      { x: 38, y: 22, tile: 0 },
     ],
     corridors: [
-      { dir: "h", y: 21, x0: 1, x1: 26 },
-      { dir: "h", y: 20, x0: 2, x1: 26 },
+      { dir: "h", y: 21, x0: 1, x1: 38 },
+      { dir: "h", y: 20, x0: 2, x1: 38 },
+      { dir: "h", y: 22, x0: 2, x1: 38 },
       { dir: "v", x: 10, y0: 18, y1: 21 },
       { dir: "v", x: 14, y0: 18, y1: 21 },
       { dir: "h", y: 18, x0: 10, x1: 14 },
@@ -339,6 +346,28 @@ const PATH: Record<string, PathCfg> = {
       { dir: "h", y: 6, x0: 1, x1: 18 },
       { dir: "v", x: 12, y0: 6, y1: 9 },
       { dir: "v", x: 5, y0: 5, y1: 8 },
+    ],
+  },
+  SPYDER_LEATHER_SHAFT1: {
+    gates: [gate(0, 7, "SPYDER_LEATHER_TOWN", 37, 21)],
+    open: [
+      { x: 0, y: 7, tile: 3 },
+      { x: 1, y: 7, tile: 0 },
+      { x: 2, y: 7, tile: 0 },
+      { x: 3, y: 7, tile: 0 },
+      { x: 1, y: 6, tile: 0 },
+      { x: 1, y: 8, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 7, x0: 1, x1: 8 },
+      { dir: "h", y: 8, x0: 1, x1: 8 },
+      { dir: "v", x: 3, y0: 6, y1: 10 },
+    ],
+    grass: { x0: 4, y0: 8, x1: 8, y1: 10 },
+    encounters: [
+      { slug: "aardorn", weight: 40, minLevel: 6, maxLevel: 8 },
+      { slug: "cataspike", weight: 35, minLevel: 5, maxLevel: 7 },
+      { slug: "rockitten", weight: 25, minLevel: 5, maxLevel: 7 },
     ],
   },
   COTTON_SCOOP: {

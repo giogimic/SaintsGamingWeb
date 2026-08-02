@@ -210,6 +210,7 @@ export const SPYDER_QUEST_CHAIN = [
         { slug: "film_fine", qty: 2 },
       ],
       gold: 100,
+      nextQuest: "quest_spyder_leather_gym",
     }),
     objectives: [
       {
@@ -218,6 +219,35 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_leather_scoop_clerk",
         requiredQty: 1,
         description: "Enter Leather Scoop and speak with the clerk",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_leather_gym",
+    title: "Spyder 10: Leather Gym",
+    description:
+      "Challenge Rook in the Leather Gym — defeat Rockitten and Aardorn, then the east shaft opens for exploration.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_fine", qty: 3 },
+        { slug: "film_standard", qty: 5 },
+      ],
+      gold: 150,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_leather_gym_attendant",
+        requiredQty: 1,
+        description: "Enter the Leather Gym and speak with Rook",
+      },
+      {
+        stage: 2,
+        type: "BATTLE",
+        targetSlug: "npc_leather_gym_attendant",
+        requiredQty: 1,
+        description: "Defeat Rook's Rockitten and Aardorn",
       },
     ],
   },
@@ -290,11 +320,40 @@ export const LEATHER_SCOOP_CLERK_DIALOGUE_TREE = {
   },
 } as const;
 
-/** Leather Gym attendant — door hook only (no gym battle yet). */
+/** Leather Gym leader Rook — 2-foe trainer TB (Rockitten → Aardorn). */
 export const LEATHER_GYM_ATTENDANT_DIALOGUE_TREE = {
   node_start: {
-    text: "Leather Gym. Challenges aren't open yet — polish your party at the Center, restock at Scoop, then come back when the doors are ready.",
-    options: [{ label: "Understood.", nextNode: "exit" }],
+    text: "Leather Gym. I'm Rook — Rockitten and Aardorn hold this floor. Challenge me when your party's ready.",
+    options: [
+      {
+        label: "Challenge Rook",
+        nextNode: "exit",
+        action: "START_TRAINER_BATTLE",
+      },
+      { label: "Not yet.", nextNode: "exit" },
+    ],
+  },
+  node_post_win: {
+    text: "Solid work. The east shaft beyond town is yours to explore — heal at the Center if you need it, then dig in.",
+    options: [
+      {
+        label: "Rematch",
+        nextNode: "exit",
+        action: "START_TRAINER_BATTLE",
+      },
+      { label: "Thanks, Rook.", nextNode: "exit" },
+    ],
+  },
+  node_post_lose: {
+    text: "The Center nurse will patch you up. Come back when Rockitten and Aardorn look less intimidating.",
+    options: [
+      {
+        label: "Try again",
+        nextNode: "exit",
+        action: "START_TRAINER_BATTLE",
+      },
+      { label: "I'll heal first.", nextNode: "exit" },
+    ],
   },
 } as const;
 
@@ -535,12 +594,23 @@ export const CAMPAIGN_NPC_SEEDS: Record<
   SPYDER_LEATHER_GYM: [
     {
       id: "npc_leather_gym_attendant",
-      name: "Gym Attendant",
+      name: "Rook",
       x: 5,
       y: 6,
       sprite: "knight",
       greeting:
-        "Leather Gym. Challenges aren't open yet — polish your party at the Center, restock at Scoop, then come back when the doors are ready.",
+        "Leather Gym. I'm Rook — Rockitten and Aardorn hold this floor. Challenge me when your party's ready.",
+    },
+  ],
+  SPYDER_LEATHER_SHAFT1: [
+    {
+      id: "npc_leather_shaft_scout",
+      name: "Shaft Scout",
+      x: 3,
+      y: 7,
+      sprite: "ninja",
+      greeting:
+        "First shaft under Leather. Watch your footing — wilds nest in the dark. Heal at the Center before you dig deep.",
     },
   ],
 };

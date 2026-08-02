@@ -139,7 +139,7 @@ describe("resolveAzureGuideStartNode", () => {
     expect(
       resolveAzureGuideStartNode({
         hasPartyCreature: true,
-        active: null,
+        active: { slug: "quest_spyder_leather_gym", status: "ACTIVE", currentStage: 1 },
         completedSlugs: new Set([
           "quest_azure_welcome",
           "quest_azure_townsfolk",
@@ -149,9 +149,10 @@ describe("resolveAzureGuideStartNode", () => {
           "quest_spyder_cotton_tunnel",
           "quest_spyder_route2",
           "quest_spyder_leather_arrive",
+          "quest_spyder_leather_scoop",
         ]),
       })
-    ).toBe("node_leather_scoop");
+    ).toBe("node_leather_gym");
 
     expect(
       resolveAzureGuideStartNode({
@@ -167,6 +168,25 @@ describe("resolveAzureGuideStartNode", () => {
           "quest_spyder_route2",
           "quest_spyder_leather_arrive",
           "quest_spyder_leather_scoop",
+        ]),
+      })
+    ).toBe("node_leather_gym");
+
+    expect(
+      resolveAzureGuideStartNode({
+        hasPartyCreature: true,
+        active: null,
+        completedSlugs: new Set([
+          "quest_azure_welcome",
+          "quest_azure_townsfolk",
+          "quest_spyder_first_capture",
+          "quest_spyder_cotton_arrive",
+          "quest_spyder_cotton_locals",
+          "quest_spyder_cotton_tunnel",
+          "quest_spyder_route2",
+          "quest_spyder_leather_arrive",
+          "quest_spyder_leather_scoop",
+          "quest_spyder_leather_gym",
         ]),
       })
     ).toBe("node_done");

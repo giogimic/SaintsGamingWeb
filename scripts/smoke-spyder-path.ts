@@ -139,6 +139,7 @@ const AMBIENT_MAPS = [
   "SPYDER_LEATHER_CENTER",
   "SPYDER_LEATHER_SCOOP",
   "SPYDER_LEATHER_GYM",
+  "SPYDER_LEATHER_SHAFT1",
 ] as const;
 
 async function checkNpcs() {
@@ -215,6 +216,32 @@ async function checkDialogueActions() {
     ok("Leather Scoop clerk OPEN_SHOP");
   }
 
+  for (const [npcId, label] of [
+    ["npc_cotton_tunnel_carlos", "Carlos"],
+    ["npc_leather_gym_attendant", "Rook"],
+  ] as const) {
+    const tree = await prisma.npcDialogueTree.findUnique({ where: { npcId } });
+    const data = tree?.data || "";
+    if (
+      !data.includes("START_TRAINER_BATTLE") ||
+      !data.includes("node_post_win") ||
+      !data.includes("node_post_lose")
+    ) {
+      fail(`${label} trainer dialogue incomplete`);
+    } else {
+      ok(`${label} START_TRAINER_BATTLE + post-battle nodes`);
+    }
+  }
+
+  for (const slug of ["dragarbor", "pairagrin", "rockitten", "aardorn"]) {
+    const def = await prisma.creatureDef.findUnique({
+      where: { slug },
+      select: { slug: true },
+    });
+    if (!def) fail(`CreatureDef missing for trainer foe: ${slug}`);
+    else ok(`CreatureDef ${slug}`);
+  }
+
   const guide = await prisma.npcDialogueTree.findUnique({
     where: { npcId: "npc_azure_guide" },
   });
@@ -222,11 +249,12 @@ async function checkDialogueActions() {
     !guide?.data?.includes("node_route2") ||
     !guide?.data?.includes("node_leather") ||
     !guide?.data?.includes("node_leather_scoop") ||
+    !guide?.data?.includes("node_leather_gym") ||
     !guide?.data?.includes("node_done")
   ) {
-    fail("Guide tree missing route2 / leather / leather_scoop / done");
+    fail("Guide tree missing route2 / leather / scoop / gym / done");
   } else {
-    ok("Guide has node_route2 + leather + leather_scoop + done");
+    ok("Guide has leather path nodes through gym");
   }
 
   const q8 = SPYDER_QUEST_CHAIN.find((q) => q.slug === "quest_spyder_leather_arrive");
@@ -234,6 +262,13 @@ async function checkDialogueActions() {
     fail("Q8 missing nextQuest → leather_scoop");
   } else {
     ok("Q8 nextQuest → quest_spyder_leather_scoop");
+  }
+
+  const q9 = SPYDER_QUEST_CHAIN.find((q) => q.slug === "quest_spyder_leather_scoop");
+  if (!q9?.rewards.includes("quest_spyder_leather_gym")) {
+    fail("Q9 missing nextQuest → leather_gym");
+  } else {
+    ok("Q9 nextQuest → quest_spyder_leather_gym");
   }
 }
 
@@ -356,8 +391,9 @@ async function main() {
       "SPYDER_LEATHER_CENTER",
       "SPYDER_LEATHER_SCOOP",
       "SPYDER_LEATHER_GYM",
+      "SPYDER_LEATHER_SHAFT1",
     ],
-    path: [2, 21, 24, 20],
+    path: [2, 21, 39, 21],
   });
   await checkMap("SPYDER_LEATHER_CENTER", {
     gateTargets: ["SPYDER_LEATHER_TOWN"],
@@ -370,6 +406,11 @@ async function main() {
   await checkMap("SPYDER_LEATHER_GYM", {
     gateTargets: ["SPYDER_LEATHER_TOWN"],
     path: [12, 8, 5, 6],
+  });
+  await checkMap("SPYDER_LEATHER_SHAFT1", {
+    gateTargets: ["SPYDER_LEATHER_TOWN"],
+    minGrass: 4,
+    path: [1, 7, 3, 7],
   });
 
   console.log("\nNPCs");

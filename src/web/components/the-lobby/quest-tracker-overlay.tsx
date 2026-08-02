@@ -40,6 +40,7 @@ export default function QuestTrackerOverlay() {
     currentMapId === "SPYDER_LEATHER_CENTER" ||
     currentMapId === "SPYDER_LEATHER_SCOOP" ||
     currentMapId === "SPYDER_LEATHER_GYM" ||
+    currentMapId === "SPYDER_LEATHER_SHAFT1" ||
     currentMapId === "COTTON_UNDERGROUND";
 
   const fetchQuests = async () => {
@@ -65,9 +66,9 @@ export default function QuestTrackerOverlay() {
     const spyderEmpty =
       isSpyderMap && spyderCampaignComplete ? (
         <>
-          Leather Scoop cleared. Rematch <span className="text-[#cbb26a]">Carlos</span>,
-          heal at the Center, peek at the Gym, or roam Route 2–3 — more of Spyder&apos;s
-          web awaits.
+          Leather Gym cleared. Rematch <span className="text-[#cbb26a]">Rook</span> or{" "}
+          <span className="text-[#cbb26a]">Carlos</span>, dig the east shaft, or roam —
+          more of Spyder&apos;s web awaits.
         </>
       ) : isSpyderMap ? (
         <>

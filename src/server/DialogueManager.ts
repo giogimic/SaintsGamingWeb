@@ -436,7 +436,13 @@ export class DialogueManager {
       event: "dialogue_start",
       data: {
         npcId: id,
-        npcName: trainerName || (id === "npc_cotton_tunnel_carlos" ? "Carlos" : undefined),
+        npcName:
+          trainerName ||
+          (id === "npc_cotton_tunnel_carlos"
+            ? "Carlos"
+            : id === "npc_leather_gym_attendant"
+              ? "Rook"
+              : undefined),
         node,
         text: nodeData.text,
         options: nodeData.options,
@@ -522,23 +528,36 @@ export class DialogueManager {
     }
 
     if (action === "START_TRAINER_BATTLE") {
-      const isCarlos = npcId === "npc_cotton_tunnel_carlos";
-      const trainerName = isCarlos ? "Carlos" : "Trainer";
-      // Carlos: Dragarbor → Pairagrin (sequential multi-foe)
-      const speciesSlugs = isCarlos
-        ? ["dragarbor", "pairagrin"]
-        : ["rockitten"];
-      const levels = isCarlos ? [10, 9] : [6];
+      const trainers: Record<
+        string,
+        { name: string; speciesSlugs: string[]; levels: number[] }
+      > = {
+        npc_cotton_tunnel_carlos: {
+          name: "Carlos",
+          speciesSlugs: ["dragarbor", "pairagrin"],
+          levels: [10, 9],
+        },
+        npc_leather_gym_attendant: {
+          name: "Rook",
+          speciesSlugs: ["rockitten", "aardorn"],
+          levels: [11, 12],
+        },
+      };
+      const cfg = trainers[npcId] || {
+        name: "Trainer",
+        speciesSlugs: ["rockitten"],
+        levels: [6],
+      };
       this.engine.events.emit("startTrainerBattle", {
         accountId,
         socketId,
         mapId,
         trainerNpcId: npcId,
-        trainerName,
-        speciesSlug: speciesSlugs[0],
-        speciesSlugs,
-        level: levels[0],
-        levels,
+        trainerName: cfg.name,
+        speciesSlug: cfg.speciesSlugs[0],
+        speciesSlugs: cfg.speciesSlugs,
+        level: cfg.levels[0],
+        levels: cfg.levels,
       });
       this.engine.events.emit("directMessage", {
         socketId,

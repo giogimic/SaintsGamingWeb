@@ -133,6 +133,7 @@ export default function TheLobby({
         'SPYDER_LEATHER_CENTER',
         'SPYDER_LEATHER_SCOOP',
         'SPYDER_LEATHER_GYM',
+        'SPYDER_LEATHER_SHAFT1',
         'COTTON_UNDERGROUND',
         'PLAYER_HOUSE_BEDROOM',
         'PLAYER_HOUSE_DOWNSTAIRS',
