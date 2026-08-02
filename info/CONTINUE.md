@@ -9,23 +9,26 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Staging smoke + build fixes landed (v2.1.111).**  
-**Back-line:** Discord, FiveM, S3/CDN, heavy AI.
+**PR #1 merged to `main` (through v2.1.111).**  
+Core site + MMO lobby are the active product surface.
 
-### Recently shipped
+### Back-line (do not prioritize)
 
-| Version | What |
+| Area | Why |
 | :--- | :--- |
-| 2.1.109 | Social actions domain split |
-| 2.1.110 | Helper vitest suite |
-| 2.1.111 | Production build fixes + `scripts/smoke-staging.sh` |
+| **UCP** (`/ucp/*`) | Uncertain if we ship it; needs a planned FiveM plugin first — likely much later |
+| Discord bot bridge | Ecosystem nice-to-have |
+| FiveM bridges / UCP depth | Same lane as UCP — wait for plugin design |
+| S3/CDN as default | Optional path exists; local uploads fine |
+| Heavy AI | Forum enhance exists; don’t expand |
 
-### Suggested next
+### Suggested next (core site)
 
-1. **Human merge** of PR #1 after reviewing smoke notes (`info/ops/STAGING_SMOKE.md`)
-2. Product work as requested (avoid Discord/FiveM/S3/AI unless asked)
-
-Merge is intentional/human — agents cannot merge this PR from the cloud tooling.
+1. Support ticket live updates (if still missing emits)
+2. Logged-in forum / messenger / notification smoke
+3. Email (Resend / `FROM_EMAIL` verification)
+4. More tests on forum/messenger/API helpers
+5. Product work as requested
 
 ---
 

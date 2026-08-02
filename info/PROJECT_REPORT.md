@@ -333,7 +333,7 @@ try {
 5. Build Admin Realtime Dashboard at `app/(main)/admin/realtime/page.tsx`
 
 ### Near-Term — /info Documentation (Milestone 3)
-6. ~~Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin~~ **Done (v2.1.105)** — overviews landed; deepen as needed (UCP still light)
+6. ~~Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin~~ **Done (v2.1.105)** — overviews landed; UCP docs intentionally deferred (back-burner)
 7. Retire `docs/TODO.md` (point it to `/info/`) — still open
 
 ### Medium-Term — MMO Scaling (Milestone 4)
