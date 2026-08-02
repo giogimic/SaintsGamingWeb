@@ -27,9 +27,13 @@ Spyder smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Suggested next
 
-1. Merge PR stack: visual-browser (#5) → world-profiles (#6) → phases 3–7 (#7)
-2. Optional human walk of Custom 1 (UI/feel) — headless playthrough covered by `npm run smoke:saints-trail:play`
-3. Independent: Interface Editor UX (#8)
+1. Merge PR stack: visual-browser (#5) → world-profiles (#6) → phases 3–7 (#7)  
+   (dry-run: stack merges clean onto `main`; #8 also clean alone)
+2. Independent: Interface Editor UX (#8)
+
+### Verified
+- `npm run smoke:saints-trail:play` — 21/21 greeter→gather
+- `npm run visual:saints-trail` — Custom 1 → Demo Sandbox + Trail Greeter tracker
 
 ### Pipeline
 
@@ -39,6 +43,8 @@ npm run ensure:world-profiles && npm run ensure:starter-heroes
 FORCE_TRAIL_SEED=1 npm run seed:saints-trail
 FORCE_QUEST_SEED=1 npm run seed:campaign-npcs
 SMOKE_CLONE_SLUG=custom_2 npm run smoke:saints-trail
+npm run smoke:saints-trail:play
+npm run visual:saints-trail   # needs npm run dev
 npm run smoke:spyder
 npm run dev
 ```

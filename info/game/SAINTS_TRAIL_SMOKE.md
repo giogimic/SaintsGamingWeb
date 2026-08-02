@@ -37,3 +37,6 @@ With `SMOKE_CLONE_SLUG=custom_2` also verifies the clone.
 
 `npm run smoke:saints-trail:play` — headless greeter → gather playthrough
 (accept Q1, tools≠Q6, Q2–Q5 chain, wood×3→ore×3→Vance, assert Q7 unlocks).
+
+`npm run visual:saints-trail` — browser Custom 1 entry (world pick → DEMO_SANDBOX
++ Trail Greeter tracker). Artifacts: `/opt/cursor/artifacts/saints-trail-visual/`.
