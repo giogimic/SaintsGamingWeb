@@ -208,9 +208,11 @@ async function processFile(srcRel, { extractOverworld = false } = {}) {
   );
 
   if (extractOverworld) {
-    // Prefer left/upper content — battle sheets pack front + back + icons.
-    const leftW = Math.floor(info.width * 0.55);
-    const topH = Math.floor(info.height * 0.78);
+    // Battle sheets pack front + back + icons — prefer left/upper content.
+    // Full NPC portraits: use the whole keyed frame's opaque bbox.
+    const isSheet = /-sheet\.png$/i.test(src);
+    const leftW = isSheet ? Math.floor(info.width * 0.55) : info.width;
+    const topH = isSheet ? Math.floor(info.height * 0.78) : info.height;
     const sub = Buffer.alloc(leftW * topH * 4);
     for (let y = 0; y < topH; y++) {
       for (let x = 0; x < leftW; x++) {
@@ -224,9 +226,15 @@ async function processFile(srcRel, { extractOverworld = false } = {}) {
     }
     const crop = largestOpaqueBBox(sub, leftW, topH);
     const dir = path.dirname(src);
-    const base = path.basename(src).replace(/-sheet\.png$/i, "");
+    const base = path
+      .basename(src)
+      .replace(/-sheet\.png$/i, "")
+      .replace(/\.png$/i, "");
     const owFile = path.join(dir, `${base}-ow.png`);
 
+    // Lobby billboards are ~1 tile tall — keep OW art small so they don't look
+    // like giant battle portraits walking the map.
+    const maxH = 96;
     await sharp(keyed, {
       raw: { width: info.width, height: info.height, channels: 4 },
     })
@@ -236,10 +244,18 @@ async function processFile(srcRel, { extractOverworld = false } = {}) {
         width: Math.max(8, crop.width),
         height: Math.max(8, crop.height),
       })
+      .resize({
+        height: maxH,
+        fit: "inside",
+        withoutEnlargement: false,
+      })
       .png({ compressionLevel: 9 })
       .toFile(owFile);
 
-    console.log(`  ↳ overworld crop ${path.relative(ROOT, owFile)}  ${crop.width}x${crop.height}`);
+    const owMeta = await sharp(owFile).metadata();
+    console.log(
+      `  ↳ overworld ${path.relative(ROOT, owFile)}  ${owMeta.width}x${owMeta.height}`
+    );
     return path.relative(ROOT, owFile);
   }
   return srcRel;
@@ -269,7 +285,8 @@ async function main() {
     await processFile(f, { extractOverworld: true });
   }
   for (const f of npcFiles) {
-    await processFile(f, { extractOverworld: false });
+    // Keep full portrait for UI; also write small *-ow for lobby billboards.
+    await processFile(f, { extractOverworld: true });
   }
   for (const f of conceptSheets) {
     await processFile(f, { extractOverworld: false });

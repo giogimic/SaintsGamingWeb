@@ -74,7 +74,8 @@ export const DEMO_MAP_NPCS = [
     name: "Soulwarden Aldric",
     x: 13,
     y: 13,
-    sprite: "soulwarden_aldric",
+    // Use overworld crops (npc/*-ow), not full 1024² battle portraits
+    sprite: "soulwarden_aldric-ow",
     direction: "down",
     dialogue: [],
   },
@@ -83,7 +84,7 @@ export const DEMO_MAP_NPCS = [
     name: "Elder Voss",
     x: 16,
     y: 13,
-    sprite: "elder_voss",
+    sprite: "elder_voss-ow",
     direction: "down",
     dialogue: [],
   },
@@ -92,7 +93,7 @@ export const DEMO_MAP_NPCS = [
     name: "Scout Mira",
     x: 18,
     y: 12,
-    sprite: "scout_mira",
+    sprite: "scout_mira-ow",
     direction: "left",
     dialogue: [],
   },
@@ -101,7 +102,7 @@ export const DEMO_MAP_NPCS = [
     name: "Capturer Kian",
     x: 17,
     y: 15,
-    sprite: "capturer_kian",
+    sprite: "capturer_kian-ow",
     direction: "up",
     dialogue: [],
   },
@@ -110,7 +111,7 @@ export const DEMO_MAP_NPCS = [
     name: "Ironwright Kael",
     x: 12,
     y: 15,
-    sprite: "ironwright_kael",
+    sprite: "ironwright_kael-ow",
     direction: "right",
     dialogue: [],
   },
@@ -119,7 +120,7 @@ export const DEMO_MAP_NPCS = [
     name: "Candrift Keeper",
     x: 14,
     y: 16,
-    sprite: "candrift_keeper",
+    sprite: "candrift_keeper-ow",
     direction: "up",
     dialogue: [],
   },
@@ -128,14 +129,12 @@ export const DEMO_MAP_NPCS = [
 /** Vance stands on the clear path north of spawn plaza. */
 export const DEMO_VANCE_SPAWN = { x: 14, y: 12 };
 
-/** Roaming wild spots — slug maps to CreatureDef + sprite sheet. */
+/**
+ * Roaming overworld wilds — ONLY creatures with real walk-sheet sprites.
+ * Custom LimeWire battle portraits must NOT roam here (they look like battle icons).
+ * Tall-grass TB encounters still use DEMO_ENCOUNTERS (battle sheets).
+ */
 export const DEMO_WILD_SPAWNS: { slug: string; x: number; y: number }[] = [
-  { slug: "ashwhirl", x: 17, y: 16 },
-  { slug: "grimvast", x: 22, y: 16 },
-  { slug: "hollowmirth", x: 12, y: 18 },
-  { slug: "rootwail", x: 18, y: 17 },
-  { slug: "siltmourne", x: 21, y: 14 },
-  { slug: "tanglewrath", x: 13, y: 17 },
   { slug: "rockitten", x: 16, y: 18 },
 ];
 

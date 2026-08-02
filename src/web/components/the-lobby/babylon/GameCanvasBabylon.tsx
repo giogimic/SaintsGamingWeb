@@ -16,6 +16,7 @@ import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -621,16 +622,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 : ent.type === 'ANIMAL'
                   ? 'animal'
                   : 'monster';
+            const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
             babylonEngine.updateEntity({
               id: ent.id,
               name: ent.name || '',
               x: ex,
               y: ez,
-              spriteUrl: resolveEntitySpriteUrl(ent.spriteKey, { kind }),
+              spriteUrl,
               isPlayer: false,
               isNpc: ent.type === 'NPC',
               isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
-              spriteConfig: ent.spriteConfig
+              spriteConfig:
+                ent.spriteConfig ||
+                (isSingleFrameSpriteUrl(spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : undefined),
             });
           }
         });
@@ -697,7 +701,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: 'Loot',
           x: data.x - (activeMap?.width || 0) / 2,
           y: (activeMap?.height || 0) / 2 - data.y,
-          spriteUrl: '/assets/sprites/16x16-rpg-items.png',
+          spriteUrl: '/game-assets/npc/adventurer.png',
           isPlayer: false,
           spriteConfig: {
             columns: 1,

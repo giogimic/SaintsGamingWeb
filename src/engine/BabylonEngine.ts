@@ -105,14 +105,12 @@ const SINGLE_FRAME_NPC_SLUGS = [
  */
 export function isSingleFrameSpriteUrl(url: string | null | undefined): boolean {
   if (!url) return false;
-  if (
-    url.includes("/creatures/") ||
-    url.includes("/world-monsters/") ||
-    /-ow\.png(?:$|\?)/.test(url)
-  ) {
-    return true;
-  }
-  return SINGLE_FRAME_NPC_SLUGS.some((slug) => url.includes(`/npc/${slug}.png`));
+  // Any *-ow crop is a single billboard frame (NPCs + monsters + creatures).
+  if (/-ow\.png(?:$|\?)/.test(url)) return true;
+  if (url.includes("/creatures/") || url.includes("/world-monsters/")) return true;
+  return SINGLE_FRAME_NPC_SLUGS.some(
+    (slug) => url.includes(`/npc/${slug}.png`) || url.includes(`/npc/${slug}-ow.png`)
+  );
 }
 
 export interface BabylonEntityData {
@@ -1297,16 +1295,18 @@ export class BabylonEngine {
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
-        // Use nearest neighbor (1) sampling mode for crisp pixel art
+        const single = isSingleFrameSpriteUrl(entity.spriteUrl);
+        // Walk sheets keep invertY=true (existing UV anim). Single-frame OW/portraits
+        // need invertY=false or they render as empty/wrong strips.
         const tex = new Texture(
           entity.spriteUrl,
           this.scene,
           true,
-          true,
+          !single,
           1,
           undefined,
           () => {
-            // Missing textures render as pink/black checkers — swap to default hero silhouette.
+            console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
             if (this.defaultPlayerTexture && mat) {
               mat.diffuseTexture = this.defaultPlayerTexture;
               mat.diffuseTexture.hasAlpha = true;
@@ -1315,12 +1315,14 @@ export class BabylonEngine {
         );
         tex.hasAlpha = true;
 
-        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || isSingleFrameSpriteUrl(entity.spriteUrl)) {
+        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || single) {
           const config =
             entity.spriteConfig ||
-            (isSingleFrameSpriteUrl(entity.spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
+            (single ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
           tex.uScale = 1 / config.columns;
           tex.vScale = 1 / config.rows;
+          tex.uOffset = 0;
+          tex.vOffset = 0;
           spriteMesh.metadata.spriteConfig = config;
         }
 
@@ -1367,15 +1369,16 @@ export class BabylonEngine {
       if (mat) {
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
-          // Use nearest neighbor (1) sampling mode
+          const single = isSingleFrameSpriteUrl(entity.spriteUrl);
           const newTex = new Texture(
             entity.spriteUrl,
             this.scene,
             true,
-            true,
+            !single,
             1,
             undefined,
             () => {
+              console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
               if (this.defaultPlayerTexture) {
                 mat.diffuseTexture = this.defaultPlayerTexture;
                 mat.diffuseTexture.hasAlpha = true;
@@ -1384,12 +1387,14 @@ export class BabylonEngine {
           );
           newTex.hasAlpha = true;
           
-          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || isSingleFrameSpriteUrl(entity.spriteUrl)) {
+          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || single) {
             const config =
               entity.spriteConfig ||
-              (isSingleFrameSpriteUrl(entity.spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
+              (single ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
             newTex.uScale = 1 / config.columns;
             newTex.vScale = 1 / config.rows;
+            newTex.uOffset = 0;
+            newTex.vOffset = 0;
             if (spriteMesh.metadata) spriteMesh.metadata.spriteConfig = config;
           }
           mat.diffuseTexture = newTex;

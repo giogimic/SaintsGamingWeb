@@ -40,6 +40,7 @@ import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { toBaseMapId } from '@/shared/net/mapIds';
+import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { MobileGameLauncher } from './MobileGameLauncher';
@@ -694,11 +695,14 @@ export default function TheLobby({
         const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
         const templateId = String(data.templateId || '');
         const rawSprite = data.spriteKey || templateId || (isNpc ? 'adventurer' : 'rockitten');
-        // Vance keeps classic walk-sheet adventurer; store absolute /game-assets URLs when possible.
+        // Vance keeps classic walk-sheet adventurer; always store resolvable /game-assets URLs.
+        // (Prevent bare slugs / battle-sheet keys from rendering as wrong in-world icons.)
         const spriteKey =
           isNpc && templateId.includes('vance')
             ? '/game-assets/npc/adventurer.png'
-            : rawSprite;
+            : resolveEntitySpriteUrl(rawSprite, {
+                kind: isNpc ? 'npc' : 'monster',
+              });
         const dialogueKey =
           data.dialogueNpcId ||
           (isNpc

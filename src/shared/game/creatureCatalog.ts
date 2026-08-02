@@ -180,6 +180,20 @@ export function resolveEntitySpriteUrl(
     return creatureAssetUrl(`npc/${key}`);
   }
 
+  // Custom LimeWire NPCs — prefer small overworld crops, never full 1024² portraits in-world
+  const customNpcBase = key.replace(/-ow$/, "");
+  const CUSTOM_NPCS = [
+    "candrift_keeper",
+    "capturer_kian",
+    "elder_voss",
+    "ironwright_kael",
+    "scout_mira",
+    "soulwarden_aldric",
+  ];
+  if (CUSTOM_NPCS.includes(customNpcBase)) {
+    return creatureAssetUrl(`npc/${customNpcBase}-ow`);
+  }
+
   // Missing legacy placeholders → visible fallback instead of Babylon pink checkers
   if (
     key === "villager_1" ||
