@@ -135,8 +135,9 @@ export class CreatureManager {
       y: data.y,
       spawnMode: data.spawnMode,
       aiState: AIState.IDLE,
-      // Wild MPV creatures are hostile so RT combat can be tested
-      behavior: isWildCreature ? BehavioralState.HOSTILE : BehavioralState.CALM,
+      // Demo wilds stay CALM so they don't stunlock/kill players on join.
+      // Players can still click-target them for RT combat when ready.
+      behavior: BehavioralState.CALM,
       ownerId: data.ownerId,
       hp: isWildCreature ? 80 : 100,
       maxHp: isWildCreature ? 80 : 100,

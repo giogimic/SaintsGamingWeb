@@ -1270,22 +1270,46 @@ export class BabylonEngine {
   }
 
   private resolveSpriteConfig(entity: BabylonEntityData): SpriteSheetConfig {
-    if (entity.spriteConfig) return entity.spriteConfig;
-    return isSingleFrameSpriteUrl(entity.spriteUrl)
-      ? SINGLE_FRAME_SPRITE_CONFIG
-      : DEFAULT_SPRITE_CONFIG;
+    // URL is source of truth — never let a stale SINGLE_FRAME client override
+    // wipe 3×4 walk sheets (that rendered rockitten as a full grid).
+    if (isSingleFrameSpriteUrl(entity.spriteUrl)) {
+      return SINGLE_FRAME_SPRITE_CONFIG;
+    }
+    if (
+      entity.spriteConfig &&
+      entity.spriteConfig.columns > 1 &&
+      entity.spriteConfig.rows > 1
+    ) {
+      return entity.spriteConfig;
+    }
+    return DEFAULT_SPRITE_CONFIG;
+  }
+
+  private applySpriteSheetUv(tex: Texture, config: SpriteSheetConfig) {
+    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
+    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+    tex.uScale = 1 / config.columns;
+    tex.vScale = 1 / config.rows;
+    if (config.columns <= 1 && config.rows <= 1) {
+      tex.uOffset = 0;
+      tex.vOffset = 0;
+    }
   }
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
     const targetPos = new Vector3(entity.x, 0.85, entity.y);
     const resolvedConfig = this.resolveSpriteConfig(entity);
+    const singleFrame = resolvedConfig.columns <= 1 && resolvedConfig.rows <= 1;
 
     if (!spriteMesh) {
-      // Create 2.5D Billboard Sprite Plane
+      // Create 2.5D Billboard Sprite Plane — OW portraits use a slightly shorter plane
       spriteMesh = MeshBuilder.CreatePlane(
         `entity_${entity.id}`,
-        { width: this.currentTileSize * 1.1, height: this.currentTileSize * 1.5 },
+        {
+          width: this.currentTileSize * (singleFrame ? 0.9 : 1.1),
+          height: this.currentTileSize * (singleFrame ? 1.15 : 1.5),
+        },
         this.scene
       );
 
@@ -1318,16 +1342,17 @@ export class BabylonEngine {
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
-        const single = isSingleFrameSpriteUrl(entity.spriteUrl);
-        // Always invertY=true (Babylon default) — invertY=false on OW crops made
-        // billboards blank/upside-down. UV slicing is skipped separately via SINGLE_FRAME.
+        // Always invertY=true (Babylon default). Re-apply UV in onLoad — Babylon can
+        // reset transforms when the image bytes arrive, which showed full 3×4 sheets.
         const tex = new Texture(
           entity.spriteUrl,
           this.scene,
           true,
           true,
-          1,
-          undefined,
+          Texture.NEAREST_SAMPLINGMODE,
+          () => {
+            this.applySpriteSheetUv(tex, resolvedConfig);
+          },
           () => {
             console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
             if (this.defaultPlayerTexture && mat) {
@@ -1337,11 +1362,7 @@ export class BabylonEngine {
           }
         );
         tex.hasAlpha = true;
-
-        tex.uScale = 1 / resolvedConfig.columns;
-        tex.vScale = 1 / resolvedConfig.rows;
-        tex.uOffset = 0;
-        tex.vOffset = 0;
+        this.applySpriteSheetUv(tex, resolvedConfig);
         spriteMesh.metadata.spriteConfig = resolvedConfig;
 
         mat.diffuseTexture = tex;
@@ -1394,8 +1415,10 @@ export class BabylonEngine {
             this.scene,
             true,
             true,
-            1,
-            undefined,
+            Texture.NEAREST_SAMPLINGMODE,
+            () => {
+              this.applySpriteSheetUv(newTex, resolvedConfig);
+            },
             () => {
               console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
               if (this.defaultPlayerTexture) {
@@ -1405,10 +1428,7 @@ export class BabylonEngine {
             }
           );
           newTex.hasAlpha = true;
-          newTex.uScale = 1 / resolvedConfig.columns;
-          newTex.vScale = 1 / resolvedConfig.rows;
-          newTex.uOffset = 0;
-          newTex.vOffset = 0;
+          this.applySpriteSheetUv(newTex, resolvedConfig);
           if (spriteMesh.metadata) {
             spriteMesh.metadata.spriteConfig = resolvedConfig;
             spriteMesh.metadata.spriteUrl = entity.spriteUrl;
@@ -1417,9 +1437,7 @@ export class BabylonEngine {
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
           mat.diffuseTexture = this.defaultPlayerTexture;
         } else if (entity.spriteUrl && tex && tex.name !== 'defaultPlayerTex') {
-          // Keep UV scales in sync even when URL is unchanged
-          tex.uScale = 1 / resolvedConfig.columns;
-          tex.vScale = 1 / resolvedConfig.rows;
+          this.applySpriteSheetUv(tex, resolvedConfig);
         }
       }
     }
