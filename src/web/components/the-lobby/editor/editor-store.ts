@@ -3,7 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { DEFAULT_WORLD_PROFILE_ID } from '@/shared/game/worldProfiles';
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'creature' | 'dev' | 'characters' | 'classes';
+export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'dev' | 'characters' | 'classes';
 
 export interface FloatingPanelState {
   id: PanelId;
@@ -52,6 +52,7 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   assets: { id: 'assets', title: 'Asset Manager', isOpen: false, isCollapsed: false, x: 360, y: 20, width: 800, height: 500, zIndex: 10 },
   npc: { id: 'npc', title: 'NPC Editor', isOpen: false, isCollapsed: false, x: 100, y: 100, width: 400, height: 500, zIndex: 10 },
   quest: { id: 'quest', title: 'Quest Editor', isOpen: false, isCollapsed: false, x: 150, y: 150, width: 720, height: 560, zIndex: 10 },
+  dialogue: { id: 'dialogue', title: 'Dialogue Editor', isOpen: false, isCollapsed: false, x: 180, y: 80, width: 860, height: 620, zIndex: 10 },
   creature: { id: 'creature', title: 'Creature Catalog', isOpen: false, isCollapsed: false, x: 480, y: 60, width: 780, height: 680, zIndex: 10 },
   dev: { id: 'dev', title: 'Dev Tools', isOpen: false, isCollapsed: false, x: 20, y: 640, width: 600, height: 300, zIndex: 10 },
   characters: { id: 'characters', title: 'Starter Heroes', isOpen: false, isCollapsed: false, x: 560, y: 80, width: 720, height: 640, zIndex: 10 },

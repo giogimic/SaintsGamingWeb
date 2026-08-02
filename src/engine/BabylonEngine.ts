@@ -909,8 +909,10 @@ export class BabylonEngine {
     // Render Map NPCs
     if (npcs) {
       npcs.forEach((npc) => {
+        const rawId = String(npc.id || "villager");
+        const entityId = rawId.startsWith("npc_") ? rawId : `npc_${rawId}`;
         this.updateEntity({
-          id: `npc_${npc.id}`,
+          id: entityId,
           name: npc.name || npc.id,
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,

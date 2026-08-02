@@ -284,12 +284,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (result.type === 'NPC_DIALOGUE') {
       const rawId = String(result.npcId || '');
       const stripped = rawId.replace(/_\d{10,}$/, '');
-      const dialogueNpcId =
-        stripped.includes('vance') || stripped.includes('warden')
-          ? 'npc_warden_vance'
-          : stripped.startsWith('npc_')
-            ? stripped
-            : `npc_${stripped.replace(/^npc_/, '')}`;
+      const dialogueNpcId = stripped.startsWith('npc_')
+        ? stripped
+        : `npc_${stripped.replace(/^npc_/, '')}`;
       // Server-authoritative dialogue (Vance grants / quest report)
       store.emitSocketEvent?.('npc_interact', {
         mapId: currentMapId,
@@ -469,15 +466,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         if (entityId.startsWith('npc_')) {
         const stripped = entityId.replace(/_\d{10,}$/, '');
-        const trueId = stripped.replace(/^npc_/, '');
-        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === stripped || n.id === entityId);
-        targetName = npc?.name || (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
-        const dialogueNpcId =
-          trueId.includes('vance') || trueId.includes('warden')
-            ? 'npc_warden_vance'
-            : stripped.startsWith('npc_')
-              ? stripped
-              : `npc_${trueId}`;
+        // Avoid npc_npc_* when map NPC ids already include the prefix
+        const dialogueNpcId = stripped.startsWith('npc_')
+          ? stripped
+          : `npc_${stripped}`;
+        const npc = activeMap.npcs?.find(
+          (n: any) => n.id === dialogueNpcId || n.id === stripped || `npc_${n.id}` === dialogueNpcId
+        );
+        targetName =
+          npc?.name ||
+          (dialogueNpcId.includes('vance') ? 'Warden Vance' : `NPC ${dialogueNpcId}`);
         state.emitSocketEvent?.('npc_interact', {
           mapId: state.currentMapId || state.instanceId,
           targetId: dialogueNpcId,

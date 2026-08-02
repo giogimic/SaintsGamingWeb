@@ -14,9 +14,16 @@ interface CharacterSelectorProps {
 }
 
 const CLASS_ICONS: Record<string, any> = {
-  BRAWLER: Shield, INVOKER: Sparkles, RANGER: Zap, ARTISAN: Wrench,
-  CYBER: Sparkles, SURVIVOR: Shield, WARRIOR: Shield, MAGE: Sparkles,
-  THIEF: Zap, RANGER: Zap, PRIEST: Sparkles,
+  BRAWLER: Shield,
+  INVOKER: Sparkles,
+  ARTISAN: Wrench,
+  CYBER: Sparkles,
+  SURVIVOR: Shield,
+  WARRIOR: Shield,
+  MAGE: Sparkles,
+  THIEF: Zap,
+  RANGER: Zap,
+  PRIEST: Sparkles,
 };
 
 const CLASS_COLORS: Record<string, { glow: string; accent: string; label: string }> = {
@@ -25,7 +32,6 @@ const CLASS_COLORS: Record<string, { glow: string; accent: string; label: string
   THIEF:    { glow: 'rgba(16,185,129,0.3)',   accent: '#34d399', label: '#6ee7b7' },
   RANGER:   { glow: 'rgba(251,191,36,0.3)',  accent: '#fbbf24', label: '#fde68a' },
   PRIEST:   { glow: 'rgba(226,213,179,0.3)', accent: '#e2d5b3', label: '#f5f0e1' },
-  RANGER:   { glow: 'rgba(245,158,11,0.3)',   accent: '#fbbf24', label: '#fde68a' },
   INVOKER:  { glow: 'rgba(139,92,246,0.35)',  accent: '#a78bfa', label: '#c4b5fd' },
   ARTISAN:  { glow: 'rgba(251,146,60,0.3)',   accent: '#fb923c', label: '#fdba74' },
   BRAWLER:  { glow: 'rgba(239,68,68,0.3)',    accent: '#f87171', label: '#fca5a5' },

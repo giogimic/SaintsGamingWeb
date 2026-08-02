@@ -30,12 +30,20 @@ async function ensureDefaultGameConfig() {
   return config;
 }
 
+/** Shared + profile-scoped classes for a world profile (null profileId = shared). */
+function classScopeWhere(profileId?: string | null) {
+  if (!profileId) return {};
+  return {
+    OR: [{ profileId: null }, { profileId: '' }, { profileId }],
+  };
+}
+
 /** Public: playable classes for character creator. */
-export async function getPlayableClasses() {
+export async function getPlayableClasses(profileId?: string) {
   try {
     const config = await ensureDefaultGameConfig();
     const rows = await prisma.characterClass.findMany({
-      where: { gameId: config.id, isPlayable: true },
+      where: { gameId: config.id, isPlayable: true, ...classScopeWhere(profileId) },
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
@@ -52,14 +60,14 @@ export async function getPlayableClasses() {
   }
 }
 
-export async function getAllCharacterClasses() {
+export async function getAllCharacterClasses(profileId?: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized', data: [] as ClassDefData[] };
 
   try {
     const config = await ensureDefaultGameConfig();
     const rows = await prisma.characterClass.findMany({
-      where: { gameId: config.id },
+      where: { gameId: config.id, ...classScopeWhere(profileId) },
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {

@@ -13,6 +13,7 @@ import {
   PawPrint,
   UserCheck,
   ScrollText,
+  MessageSquare,
 } from 'lucide-react';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
@@ -24,6 +25,7 @@ import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
 import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
 import { ClassEditorPanel } from './panels/ClassEditorPanel';
 import { QuestEditorPanel } from './panels/QuestEditorPanel';
+import { DialogueEditorPanel } from './panels/DialogueEditorPanel';
 import { WorldProfileBar } from './WorldProfileBar';
 
 export const StudioEditorShell: React.FC = () => {
@@ -79,6 +81,10 @@ export const StudioEditorShell: React.FC = () => {
           <QuestEditorPanel />
         </DraggablePanel>
 
+        <DraggablePanel id="dialogue" icon={<MessageSquare className="w-4 h-4" />}>
+          <DialogueEditorPanel />
+        </DraggablePanel>
+
         <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />}>
           <DevToolsPanel />
         </DraggablePanel>
@@ -104,6 +110,7 @@ export const StudioEditorShell: React.FC = () => {
           <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} label="Assets" />
           <DockButton id="npc" icon={<Users className="w-5 h-5" />} label="NPCs" />
           <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} label="Quests" />
+          <DockButton id="dialogue" icon={<MessageSquare className="w-5 h-5" />} label="Talk" />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
           <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" />
           <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" />

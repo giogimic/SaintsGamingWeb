@@ -7,6 +7,7 @@ import { checkAdminPermission } from './game-admin';
 export type StarterHeroData = {
   id?: string;
   slug: string;
+  gameId?: string;
   name: string;
   classId: string;
   spriteKey: string;
@@ -57,13 +58,14 @@ export async function getStarterHeroes(gameId?: string) {
   }
 }
 
-/** Admin: fetch ALL heroes (including inactive) */
-export async function getAllStarterHeroes() {
+/** Admin: fetch heroes (including inactive), optionally scoped to a world profile. */
+export async function getAllStarterHeroes(gameId?: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized', data: [] };
 
   try {
     const heroes = await prisma.starterHero.findMany({
+      where: gameId ? { gameId } : undefined,
       orderBy: { sortOrder: 'asc' },
     });
     return { success: true, data: heroes };
@@ -79,10 +81,12 @@ export async function upsertStarterHero(data: StarterHeroData) {
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
 
   try {
+    const gameId = data.gameId || 'tuxemon';
     const hero = await prisma.starterHero.upsert({
       where: { slug: data.slug },
       create: {
         slug: data.slug,
+        gameId,
         name: data.name,
         classId: data.classId,
         spriteKey: data.spriteKey,
@@ -97,6 +101,7 @@ export async function upsertStarterHero(data: StarterHeroData) {
         startingInventory: data.startingInventory,
       },
       update: {
+        gameId,
         name: data.name,
         classId: data.classId,
         spriteKey: data.spriteKey,

@@ -11,11 +11,19 @@ import { creatureDataToDb, creatureRowToData } from '@/shared/game/creatureDefMa
 
 export type CreatureDefRow = CreatureDefData & { id?: string };
 
+/** Shared + profile-scoped creatures for a world profile (null gameId = shared). */
+function creatureScopeWhere(gameId?: string | null) {
+  if (!gameId) return {};
+  return {
+    OR: [{ gameId: null }, { gameId: '' }, { gameId }],
+  };
+}
+
 /** Public: active creatures (lab / dex / gameplay). Falls back to seed catalog. */
-export async function getActiveCreatureDefs() {
+export async function getActiveCreatureDefs(gameId?: string) {
   try {
     const rows = await prisma.creatureDef.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...creatureScopeWhere(gameId) },
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
@@ -40,13 +48,16 @@ export async function getActiveStarterCreatures() {
   };
 }
 
-/** Admin: all rows */
-export async function getAllCreatureDefs() {
+/** Admin: all rows (optional world-profile scope: shared + matching gameId). */
+export async function getAllCreatureDefs(gameId?: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized', data: [] as CreatureDefData[] };
 
   try {
-    const rows = await prisma.creatureDef.findMany({ orderBy: { sortOrder: 'asc' } });
+    const rows = await prisma.creatureDef.findMany({
+      where: creatureScopeWhere(gameId),
+      orderBy: { sortOrder: 'asc' },
+    });
     if (rows.length === 0) {
       return { success: true, data: FALLBACK_CREATURE_DEFS };
     }

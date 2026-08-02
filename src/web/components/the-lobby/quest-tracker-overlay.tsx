@@ -78,8 +78,8 @@ export default function QuestTrackerOverlay() {
         </>
       ) : (
         <>
-          Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
-          (click or press E). Take the toolbelt to start Q1.
+          Talk to the <span className="text-[#cbb26a]">Trail Greeter</span> by the plaza
+          (click or press E). Accept to begin Saints Trail.
         </>
       );
 
@@ -93,7 +93,7 @@ export default function QuestTrackerOverlay() {
                 ? spyderCampaignComplete
                   ? "Spyder Trail Clear"
                   : "Spyder Trail"
-                : "Road to Aethervale"}
+                : "Saints Trail"}
             </h4>
           </div>
           <p className="text-xs text-slate-200 leading-tight mt-2">{spyderEmpty}</p>
