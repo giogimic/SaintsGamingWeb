@@ -27,9 +27,9 @@ Spyder smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Suggested next
 
-1. Human smoke Custom 1 Trail greeter → gather
-2. Merge PR stack: visual-browser (#5) → world-profiles (#6) → phases 3–7 (#7)
-3. Independent: Interface Editor UX (#8) — also needs GameLogin `identifier` fix if merged without #5
+1. Merge PR stack: visual-browser (#5) → world-profiles (#6) → phases 3–7 (#7)
+2. Optional human walk of Custom 1 (UI/feel) — headless playthrough covered by `npm run smoke:saints-trail:play`
+3. Independent: Interface Editor UX (#8)
 
 ### Pipeline
 

@@ -34,3 +34,6 @@ npm run dev
 
 `npm run smoke:saints-trail` — sprites, NPCs, dialogues, quests, gather stages.
 With `SMOKE_CLONE_SLUG=custom_2` also verifies the clone.
+
+`npm run smoke:saints-trail:play` — headless greeter → gather playthrough
+(accept Q1, tools≠Q6, Q2–Q5 chain, wood×3→ore×3→Vance, assert Q7 unlocks).
