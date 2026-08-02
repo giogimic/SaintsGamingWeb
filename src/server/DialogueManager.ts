@@ -483,18 +483,23 @@ export class DialogueManager {
     }
 
     if (action === "START_TRAINER_BATTLE") {
-      const trainerName =
-        npcId === "npc_cotton_tunnel_carlos" ? "Carlos" : "Trainer";
-      const speciesSlug =
-        npcId === "npc_cotton_tunnel_carlos" ? "dragarbor" : "rockitten";
+      const isCarlos = npcId === "npc_cotton_tunnel_carlos";
+      const trainerName = isCarlos ? "Carlos" : "Trainer";
+      // Carlos: Dragarbor → Pairagrin (sequential multi-foe)
+      const speciesSlugs = isCarlos
+        ? ["dragarbor", "pairagrin"]
+        : ["rockitten"];
+      const levels = isCarlos ? [10, 9] : [6];
       this.engine.events.emit("startTrainerBattle", {
         accountId,
         socketId,
         mapId,
         trainerNpcId: npcId,
         trainerName,
-        speciesSlug,
-        level: npcId === "npc_cotton_tunnel_carlos" ? 10 : 6,
+        speciesSlug: speciesSlugs[0],
+        speciesSlugs,
+        level: levels[0],
+        levels,
       });
       this.engine.events.emit("directMessage", {
         socketId,

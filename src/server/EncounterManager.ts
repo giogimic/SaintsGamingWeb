@@ -27,6 +27,11 @@ export interface EncounterProvider {
   trigger(accountId: string, mapId: string, x: number, y: number): void;
 }
 
+export interface TrainerFoeSlot {
+  templateId: string;
+  level: number;
+}
+
 export interface BattleState {
   id: string;
   accountId: string;
@@ -37,6 +42,8 @@ export interface BattleState {
   isTrainer?: boolean;
   trainerNpcId?: string;
   trainerName?: string;
+  /** Remaining foes after the active wildCreature (trainer parties). */
+  foeQueue?: TrainerFoeSlot[];
   wildCreature: {
     templateId: string;
     hp: number;
@@ -438,7 +445,17 @@ export class EncounterManager {
         const foe = battle.isTrainer
           ? `${battle.trainerName || "Trainer"}'s ${battle.wildCreature.name}`
           : `Wild ${battle.wildCreature.name}`;
-        battle.log.push(`${foe} fainted! You won!`);
+        battle.log.push(`${foe} fainted!`);
+
+        if (battle.isTrainer && (battle.foeQueue?.length ?? 0) > 0) {
+          const advanced = await this.advanceTrainerFoe(battle);
+          if (advanced) {
+            this.broadcastUpdate(battle);
+            return;
+          }
+        }
+
+        battle.log.push("You won!");
         await this.endBattle(data.battleId, mapId, "WIN");
         return;
       }
@@ -447,7 +464,37 @@ export class EncounterManager {
     }
   }
 
-  /** Dialogue-driven 1v1 trainer duel (hardcoded single opponent for now). */
+  /** Send out the next queued trainer foe; returns false if none available. */
+  private async advanceTrainerFoe(battle: BattleState): Promise<boolean> {
+    const next = battle.foeQueue?.shift();
+    if (!next) return false;
+
+    const foeDef = await loadCreatureDef(next.templateId);
+    if (!foeDef) {
+      battle.log.push(
+        `${battle.trainerName || "Trainer"} has no more creatures ready…`
+      );
+      return false;
+    }
+
+    const level = next.level || Math.max(foeDef.starterLevel, 8);
+    const foeHp = Math.max(20, Math.floor(foeDef.baseHp * (0.9 + level * 0.05)));
+    battle.wildCreature = {
+      templateId: foeDef.slug,
+      name: foeDef.name,
+      hp: foeHp,
+      maxHp: foeHp,
+      level,
+      spriteKey: foeDef.spriteBattle || foeDef.spriteOverworld || "daemon_data",
+    };
+    battle.log.push(
+      `${battle.trainerName || "Trainer"} sent out ${foeDef.name}!`
+    );
+    battle.phase = "WAITING_FOR_INPUT";
+    return true;
+  }
+
+  /** Dialogue-driven trainer duel (supports multi-foe queue). */
   private async handleStartTrainerBattle(data: {
     accountId: string;
     socketId?: string;
@@ -455,7 +502,10 @@ export class EncounterManager {
     trainerNpcId: string;
     trainerName?: string;
     speciesSlug?: string;
+    /** Full party order; first is active, rest queued. */
+    speciesSlugs?: string[];
     level?: number;
+    levels?: number[];
   }) {
     if (!data.accountId || !data.trainerNpcId) return;
 
@@ -488,8 +538,12 @@ export class EncounterManager {
       return;
     }
 
-    const speciesSlug = data.speciesSlug || "dragarbor";
-    const foeDef = await loadCreatureDef(speciesSlug);
+    const partySlugs =
+      data.speciesSlugs && data.speciesSlugs.length > 0
+        ? data.speciesSlugs
+        : [data.speciesSlug || "dragarbor"];
+    const leadSlug = partySlugs[0]!;
+    const foeDef = await loadCreatureDef(leadSlug);
     if (!foeDef) {
       this.sendToPlayer(data.socketId, "show_toast", {
         message: "Trainer team unavailable.",
@@ -498,9 +552,27 @@ export class EncounterManager {
     }
 
     const playerDef = await loadCreatureDef(activeCreature.speciesSlug);
-    const level = data.level || Math.max(foeDef.starterLevel, 8);
+    const leadLevel =
+      data.levels?.[0] ?? data.level ?? Math.max(foeDef.starterLevel, 8);
     const trainerName = data.trainerName || "Trainer";
-    const foeHp = Math.max(20, Math.floor(foeDef.baseHp * (0.9 + level * 0.05)));
+    const foeHp = Math.max(
+      20,
+      Math.floor(foeDef.baseHp * (0.9 + leadLevel * 0.05))
+    );
+
+    const foeQueue: TrainerFoeSlot[] = [];
+    for (let i = 1; i < partySlugs.length; i++) {
+      const slug = partySlugs[i]!;
+      const def = await loadCreatureDef(slug);
+      if (!def) continue;
+      foeQueue.push({
+        templateId: def.slug,
+        level:
+          data.levels?.[i] ??
+          data.level ??
+          Math.max(def.starterLevel, leadLevel - 1),
+      });
+    }
 
     const battleId = `trainer_${Date.now()}_${data.accountId}`;
     const battleState: BattleState = {
@@ -512,12 +584,13 @@ export class EncounterManager {
       isTrainer: true,
       trainerNpcId: data.trainerNpcId,
       trainerName,
+      foeQueue,
       wildCreature: {
         templateId: foeDef.slug,
         name: foeDef.name,
         hp: foeHp,
         maxHp: foeHp,
-        level,
+        level: leadLevel,
         spriteKey: foeDef.spriteBattle || foeDef.spriteOverworld || "daemon_data",
       },
       playerCreature: {
@@ -528,7 +601,13 @@ export class EncounterManager {
         level: activeCreature.level,
         spriteKey: playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data",
       },
-      log: [`${trainerName} wants to battle!`, `${trainerName} sent out ${foeDef.name}!`],
+      log: [
+        `${trainerName} wants to battle!`,
+        `${trainerName} sent out ${foeDef.name}!`,
+        ...(foeQueue.length
+          ? [`(${foeQueue.length} more waiting in the wings…)`]
+          : []),
+      ],
     };
 
     this.activeBattles.set(battleId, battleState);

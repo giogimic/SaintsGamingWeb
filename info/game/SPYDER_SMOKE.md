@@ -28,8 +28,9 @@ npm run dev
 | 11 | Step north door `(8,18)` → Scoop | Warp indoors; talk **Scoop Clerk** |
 | 12 | Exit Scoop → door `(12,18)` → Café | Talk **Café Host**; Q5 → Q6 Tunnel |
 | 13 | Walk **east** plaza to `(37,18)` | Warp → tunnel; talk **Carlos** (Q6 stage 1) |
-| 14 | Carlos → **Challenge Carlos** | Trainer TB vs Dragarbor; no flee/capture; win → Q6 complete |
+| 14 | Carlos → **Challenge Carlos** | Trainer TB: **Dragarbor → Pairagrin**; no flee/capture; both down → Q6 complete |
 | 15 | After battle UI closes | Carlos post-win / post-lose dialogue (rematch available) |
+| 16 | Tracker with no active quests | “Spyder Trail Clear” if Q6 completed; else Guide prompt |
 
 ## Automated check
 

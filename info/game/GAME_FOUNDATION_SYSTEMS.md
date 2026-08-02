@@ -2,13 +2,15 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (post-battle + TMX)
+**Updated:** 2026-08-02 (ambient + multi-foe + tracker)
 
 ## Done
 
-- Spyder **Q1–Q6** with Carlos trainer 1v1 + **post-battle dialogue**
-- Cotton Scoop/Café/Tunnel warps; TMX ambient NPC densify on Cotton
-- `npm run smoke:spyder` + optional `import:map-npcs`
+- Spyder **Q1–Q6** with Carlos trainer **2-foe** (Dragarbor → Pairagrin) + post-battle dialogue
+- Cotton Scoop/Café/Tunnel warps; TMX ambient densify + wall prune + dialogue stubs
+- Azure plaza hand densify (florist, scout, child)
+- Post-Q6 quest tracker empty-state (“Spyder Trail Clear”)
+- `npm run smoke:spyder` (127 checks) + `seed:ambient` / `seed:campaign-npcs`
 
 ## Pipeline
 

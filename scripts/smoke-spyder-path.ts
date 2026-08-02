@@ -126,6 +126,15 @@ async function checkMap(
   }
 }
 
+const AMBIENT_MAPS = [
+  "AZURE_TOWN",
+  "SPYDER_ROUTE1",
+  "COTTON_TOWN",
+  "COTTON_SCOOP",
+  "COTTON_CAFE",
+  "SPYDER_COTTON_TUNNEL",
+] as const;
+
 async function checkNpcs() {
   for (const [mapId, seeds] of Object.entries(CAMPAIGN_NPC_SEEDS)) {
     const map = await prisma.worldMap.findUnique({ where: { id: mapId } });
@@ -159,6 +168,41 @@ async function checkNpcs() {
       const tree = await prisma.npcDialogueTree.findUnique({ where: { npcId: seed.id } });
       if (!tree) fail(`dialogue missing: ${seed.id}`);
       else ok(`dialogue: ${seed.id}`);
+    }
+  }
+}
+
+/** Every NPC on Spyder maps: off walls + usable dialogue tree. */
+async function checkAmbientNpcs() {
+  for (const mapId of AMBIENT_MAPS) {
+    const map = await prisma.worldMap.findUnique({ where: { id: mapId } });
+    if (!map) continue;
+    let npcs: any[] = [];
+    let grid: number[][] = [];
+    try {
+      npcs = JSON.parse(map.npcsData || "[]");
+      grid = JSON.parse(map.gridData || "[]");
+    } catch {
+      fail(`${mapId}: bad ambient JSON`);
+      continue;
+    }
+    for (const npc of npcs) {
+      const tile = grid[npc.y]?.[npc.x];
+      if (tile === 1) fail(`${mapId}: ambient ${npc.id} on wall (${npc.x},${npc.y})`);
+      else ok(`${mapId}: ambient ${npc.id} walkable`);
+
+      const tree = await prisma.npcDialogueTree.findUnique({ where: { npcId: npc.id } });
+      let usable = false;
+      if (tree?.data) {
+        try {
+          const parsed = JSON.parse(tree.data);
+          usable = Boolean(parsed?.node_start?.text);
+        } catch {
+          usable = false;
+        }
+      }
+      if (!usable) fail(`${mapId}: ambient dialogue missing/broken: ${npc.id}`);
+      else ok(`${mapId}: ambient dialogue ${npc.id}`);
     }
   }
 }
@@ -219,6 +263,9 @@ async function main() {
 
   console.log("\nNPCs");
   await checkNpcs();
+
+  console.log("\nAmbient NPCs (walls + dialogue)");
+  await checkAmbientNpcs();
 
   console.log("\nQuests");
   await checkQuests();
