@@ -380,13 +380,49 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
 
+    const handleTileChanged = (e: Event) => {
+      const data = (e as CustomEvent).detail || {};
+      const x = data.x;
+      const y = data.y;
+      const tileId = typeof data.tileId === 'number' ? data.tileId : 0;
+      if (typeof x !== 'number' || typeof y !== 'number') return;
+
+      setMapData((prev) => {
+        if (!prev?.grid?.[y]) return prev;
+        const nextGrid = prev.grid.map((row, rowIdx) =>
+          rowIdx === y ? row.map((cell, colIdx) => (colIdx === x ? tileId : cell)) : row
+        );
+        return { ...prev, grid: nextGrid };
+      });
+
+      if (engineRef.current?.setLogicTile) {
+        engineRef.current.setLogicTile(y, x, tileId);
+      } else if (engineRef.current) {
+        engineRef.current.clearTileProps?.(y, x);
+        engineRef.current.updateSingleTile(y, x, tileId, -1);
+      }
+    };
+
+    const handleNodeDepletedFallback = (e: Event) => {
+      const data = (e as CustomEvent).detail || {};
+      const { x, y } = data;
+      // DEMO_SANDBOX has no rich tile layers — hide prop meshes on deplete
+      if (typeof x === 'number' && typeof y === 'number' && engineRef.current?.clearTileProps) {
+        engineRef.current.clearTileProps(y, x);
+      }
+    };
+
     window.addEventListener('combat_update_event', handleCombatUpdate);
     window.addEventListener('node_depleted_event', handleNodeDepleted);
+    window.addEventListener('node_depleted_event', handleNodeDepletedFallback);
     window.addEventListener('node_respawned_event', handleNodeRespawned);
+    window.addEventListener('lobby_tile_changed', handleTileChanged);
     return () => {
       window.removeEventListener('combat_update_event', handleCombatUpdate);
       window.removeEventListener('node_depleted_event', handleNodeDepleted);
+      window.removeEventListener('node_depleted_event', handleNodeDepletedFallback);
       window.removeEventListener('node_respawned_event', handleNodeRespawned);
+      window.removeEventListener('lobby_tile_changed', handleTileChanged);
     };
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
 

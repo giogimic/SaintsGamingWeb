@@ -7,28 +7,24 @@
 
 ## Current Focus
 
-**v2.1.118 — Demo vertical slice playable**
+**v2.1.119 — Demo bones hardened for local/dev smoke**
 
 Smoke checklist: [`info/game/DEMO_SMOKE.md`](./game/DEMO_SMOKE.md)
 
-Shipped for demo:
-- Walkable `DEMO_SANDBOX` seeded on boot (logic tiles 0/2/5/6/7/9/11)
-- Gather wood/ore on tiles 5/6; shop/craft tiles; CLEAR_BRAMBLE (Q4)
-- Warden Vance (E or click) → tools + film + lab + quest report
-- Formal Q1–Q4 QuestTemplate chain with tracker HUD
-- Soul **Film** capture (TB EXPOSE FILM); shop buy/craft film
-- RT Rockitten spawns for hotbar combat
-- Creature Catalog (Studio) + 3 elemental starters + Rockitten wild
+**On your running dev server:** pull this branch, restart `npm run dev` (bootstrap must re-seed map/tiles), then walk `DEMO_SMOKE.md`.
+
+Shipped:
+- Walkable `DEMO_SANDBOX` + Q1–Q4 + Vance + film + lab + bramble
+- Client tile sync / creature_moved / lobby demo entry / lab party hydrate
+- Shop + bramble visible props
 
 Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
-**Back-line:** Discord, FiveM, S3/CDN, heavy AI.
+### Suggested next (after human smoke)
 
-### Suggested next
-
-1. Human run `DEMO_SMOKE.md` and file gaps
-2. Persist bramble-cleared as PlayerWorldFlag (per-character) if multi-shard needs it
-3. ALIGNMENT D (Studio UX) / E (website bridge)
+1. File gaps from `DEMO_SMOKE.md` run
+2. Per-character bramble flags if shards fight over shared grid
+3. ALIGNMENT D / E
 
 ---
 

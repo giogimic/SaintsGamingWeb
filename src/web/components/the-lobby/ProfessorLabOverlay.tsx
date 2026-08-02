@@ -16,6 +16,7 @@ export default function ProfessorLabOverlay({ onClose }: { onClose: () => void }
   const [confirming, setConfirming] = useState(false);
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const showToast = useGameStore((state) => state.showToast);
+  const gameMode = useGameStore((state) => state.gameMode);
 
   useEffect(() => {
     void getActiveStarterCreatures().then((res) => {
@@ -23,12 +24,28 @@ export default function ProfessorLabOverlay({ onClose }: { onClose: () => void }
     });
   }, []);
 
+  // Close when server confirms claim (index.tsx sets EXPLORING on starter_claimed)
+  useEffect(() => {
+    if (confirming && gameMode !== 'PROFESSOR_LAB') {
+      onClose();
+    }
+  }, [confirming, gameMode, onClose]);
+
+  // Safety timeout if socket never answers
+  useEffect(() => {
+    if (!confirming) return;
+    const t = setTimeout(() => {
+      setConfirming(false);
+      showToast('Claim timed out — try again or check connection.');
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [confirming, showToast]);
+
   const handleClaim = () => {
     if (!selected || confirming) return;
     setConfirming(true);
     emitSocketEvent?.('claim_starter', { speciesSlug: selected.slug });
     showToast(`Requesting ${selected.name}...`);
-    setTimeout(() => onClose(), 1200);
   };
 
   return (

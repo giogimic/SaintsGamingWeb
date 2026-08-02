@@ -16,9 +16,10 @@ export interface ItemSchema {
 export const ITEM_DB: Record<string, ItemSchema> = {
   // Materials
   'wood_logs': { id: 'wood_logs', name: 'Wood Logs', description: 'Basic logs chopped from a tree.', type: 'MATERIAL', value: 2 },
-  'wood_log': { id: 'wood_log', name: 'Wood Log', description: 'Basic timber. Craft ingredient for Binding Crystals.', type: 'MATERIAL', value: 5 },
-  'crystal_dust': { id: 'crystal_dust', name: 'Crystal Dust', description: 'Raw dust used to craft Binding Crystals.', type: 'MATERIAL', value: 25 },
-  'copper_ore': { id: 'copper_ore', name: 'Copper Ore', description: 'Raw copper ore. Can be smelted.', type: 'MATERIAL', value: 5 },
+  'wood_log': { id: 'wood_log', name: 'Wood Log', description: 'Basic timber. Craft ingredient for Standard Film.', type: 'MATERIAL', value: 5 },
+  'crystal_dust': { id: 'crystal_dust', name: 'Crystal Dust', description: 'Raw dust used to craft Standard Film.', type: 'MATERIAL', value: 25 },
+  'ore_copper': { id: 'ore_copper', name: 'Copper Ore', description: 'Raw copper ore from SE rocks (Q1).', type: 'MATERIAL', value: 5 },
+  'copper_ore': { id: 'copper_ore', name: 'Copper Ore (legacy)', description: 'Legacy slug — prefer ore_copper.', type: 'MATERIAL', value: 5 },
   'tin_ore': { id: 'tin_ore', name: 'Tin Ore', description: 'Raw tin ore. Combine with copper for bronze.', type: 'MATERIAL', value: 5 },
   
   // Consumables

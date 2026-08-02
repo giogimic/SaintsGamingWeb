@@ -42,7 +42,7 @@ const VANCE_TREE = {
     ],
   },
   node_tools_done: {
-    text: "Rook Hatchet and Crude Pickaxe are yours — Q1 is live. Chop three logs and mine three ore southeast, then talk to me again.",
+    text: "Rook Hatchet and Crude Pickaxe are yours — Q1 is live. Southeast: chop THREE Wood Logs first, then mine THREE Copper Ore. Come back and choose Report progress when both are done.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Thanks, Warden.", nextNode: "exit" },

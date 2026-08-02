@@ -70,10 +70,20 @@ export class QuestManager {
             });
             this.notifyClient(
               accountId,
-              `Quest Progress: ${newProgress}/${currentObjective.requiredQty}`,
+              `${template.title}: ${newProgress}/${currentObjective.requiredQty} — ${currentObjective.description}`,
               socketId
             );
           }
+        } else if (
+          eventType === "GATHER" &&
+          currentObjective.type === "GATHER" &&
+          currentObjective.targetSlug !== targetSlug
+        ) {
+          this.notifyClient(
+            accountId,
+            `Q tracker wants ${currentObjective.targetSlug.replace(/_/g, " ")} first (${state.progress}/${currentObjective.requiredQty}).`,
+            socketId
+          );
         }
       }
     } catch (e) {

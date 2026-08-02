@@ -1,3 +1,15 @@
+## [2.1.119] - 2026-08-02
+
+### Fixed
+- **tile_changed** updates map cache, canvas grid, and Babylon props (Q4 bramble clear walks/looks clear).
+- **creature_moved** client listener so Rockitten RT positions stay in sync.
+- Lobby character load forces **DEMO_SANDBOX** when saved map is not playable; awaits `loadMap` before join.
+- Duplicate Professor Lab overlay removed; claim hydrates `creatureParty` and waits for `starter_claimed`.
+- Vance **Report progress** is state-aware; Q1 gather order hints when mining before wood.
+
+### Added
+- Visible shop stall + bramble thicket meshes; logic-tile ground color for tile 11.
+
 ## [2.1.118] - 2026-08-02
 
 ### Added

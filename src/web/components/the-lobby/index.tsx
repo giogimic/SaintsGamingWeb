@@ -32,13 +32,14 @@ import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/game-dev';
-import { GAME_MAPS, loadMap } from './data/maps';
+import { GAME_MAPS, loadMap, patchCachedMapTile } from './data/maps';
 import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
-import { decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
+import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
+import { toBaseMapId } from '@/shared/net/mapIds';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { MobileGameLauncher } from './MobileGameLauncher';
@@ -108,27 +109,43 @@ export default function TheLobby({
     const res = await loadGameCharacter(charId);
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
-      
-      // Map state sanitizer: ensure player boots into a valid Creature campaign map
-      const validMapId = (parsedState.currentMapId && GAME_MAPS[parsedState.currentMapId]) 
-        ? parsedState.currentMapId 
-        : 'PLAYER_HOUSE_BEDROOM';
 
-      const mapDef = GAME_MAPS[validMapId];
-      let validPosition = parsedState.position || { x: 6, y: 2 };
-      
-      if (mapDef) {
-        // Clamp position to ensure they don't spawn out of bounds (e.g. from a previous session on a larger map)
-        const mw = (mapDef as any).width || (mapDef as any).grid?.[0]?.length || 24;
-        const mh = (mapDef as any).height || (mapDef as any).grid?.length || 24;
-        validPosition.x = Math.max(0, Math.min(mw - 1, validPosition.x));
-        validPosition.y = Math.max(0, Math.min(mh - 1, validPosition.y));
-      } else {
-        validPosition = { x: 14, y: 15 };
+      // Player lobby demo: land on DEMO_SANDBOX unless already on a known playable map.
+      // Studio keeps saved map for editor work.
+      const DEMO_MAP = 'DEMO_SANDBOX';
+      const DEMO_SPAWN = { x: 14, y: 15 };
+      const knownPlayable = new Set(['DEMO_SANDBOX', 'SAINTS_VILLAGE']);
+      const savedMap = String(parsedState.currentMapId || '');
+      let validMapId = savedMap;
+      let validPosition = parsedState.position || { ...DEMO_SPAWN };
+
+      if (!enableStudio) {
+        if (!knownPlayable.has(savedMap)) {
+          validMapId = DEMO_MAP;
+          validPosition = { ...DEMO_SPAWN };
+        }
+      } else if (!savedMap) {
+        validMapId = DEMO_MAP;
+        validPosition = { ...DEMO_SPAWN };
+      }
+
+      try {
+        const loaded = await loadMap(validMapId);
+        const mw = loaded.grid?.[0]?.length || 30;
+        const mh = loaded.grid?.length || 30;
+        validPosition = {
+          x: Math.max(1, Math.min(mw - 2, validPosition.x ?? DEMO_SPAWN.x)),
+          y: Math.max(1, Math.min(mh - 2, validPosition.y ?? DEMO_SPAWN.y)),
+        };
+        useGameStore.getState().setActiveMapData(loaded);
+      } catch {
+        validMapId = DEMO_MAP;
+        validPosition = { ...DEMO_SPAWN };
       }
 
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
+        currentMapId: validMapId,
         name: res.data.name,
         spriteId: res.data.spriteId || 'adventurer',
         position: validPosition
@@ -566,25 +583,101 @@ export default function TheLobby({
     socket.on('tile_changed', (data) => {
       if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
       const store = useGameStore.getState();
-      const map = store.activeMapData;
-      if (!map?.grid?.[data.y]) return;
+      const tileId = typeof data.tileId === 'number' ? data.tileId : 0;
+      const mapId = data.mapId || store.currentMapId;
+      const baseId = toBaseMapId(String(mapId || ''));
+      patchCachedMapTile(baseId, data.x, data.y, tileId);
+      patchCachedMapTile(String(mapId || ''), data.x, data.y, tileId);
+
       useGameStore.setState((state) => {
-        if (!state.activeMapData?.grid?.[data.y]) return;
-        state.activeMapData.grid[data.y][data.x] = data.tileId ?? 0;
+        if (!state.activeMapData) {
+          const cached = GAME_MAPS[baseId] || GAME_MAPS[state.currentMapId];
+          if (cached?.grid) {
+            state.activeMapData = {
+              ...cached,
+              grid: cached.grid.map((row: number[]) => [...row]),
+            };
+          }
+        }
+        if (state.activeMapData?.grid?.[data.y]) {
+          state.activeMapData.grid[data.y][data.x] = tileId;
+        }
+      });
+
+      window.dispatchEvent(new CustomEvent('lobby_tile_changed', { detail: { ...data, tileId, mapId: baseId } }));
+    });
+
+    socket.on('creature_moved', (raw) => {
+      let data = raw as any;
+      const bin = normalizeBinaryPayload(raw);
+      if (bin) {
+        const decoded = decodeCreatureMoved(bin);
+        if (decoded) data = decoded;
+        else if (!raw || typeof raw !== 'object' || ArrayBuffer.isView(raw) || raw instanceof ArrayBuffer) {
+          return;
+        }
+      }
+      if (!data?.entityId) return;
+      useGameStore.setState((state) => {
+        const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
+        if (idx < 0) return;
+        const ent = state.mapEntities[idx];
+        state.mapEntities[idx] = {
+          ...ent,
+          position: { x: data.x, y: data.y },
+          isMoving: !!data.isMoving,
+          facing: (String(data.direction || ent.facing || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
+        };
       });
     });
 
     socket.on('starter_claimed', (data) => {
-      const slug = data?.creature?.speciesSlug;
+      const creature = data?.creature;
+      const slug = creature?.speciesSlug;
       if (slug) {
         useGameStore.getState().catchDaemon(slug);
         useGameStore.setState((state) => {
           state.player.activeDaemonId = slug;
         });
       }
+      if (creature?.id) {
+        let stats = {
+          physicalPower: 10,
+          physicalDefense: 10,
+          abilityPower: 10,
+          abilityDefense: 10,
+          combatTempo: 10,
+        };
+        let abilities: any[] = [];
+        try {
+          if (typeof creature.stats === 'string') stats = { ...stats, ...JSON.parse(creature.stats) };
+          else if (creature.stats) stats = { ...stats, ...creature.stats };
+        } catch { /* keep defaults */ }
+        try {
+          if (typeof creature.abilities === 'string') abilities = JSON.parse(creature.abilities);
+          else if (Array.isArray(creature.abilities)) abilities = creature.abilities;
+        } catch { /* keep defaults */ }
+
+        const already = useGameStore.getState().player.creatureParty.some((m) => m.id === creature.id);
+        if (!already) {
+          useGameStore.getState().addCreatureToParty({
+            id: creature.id,
+            speciesSlug: creature.speciesSlug,
+            nickname: creature.nickname || data?.def?.name || creature.speciesSlug,
+            level: creature.level || 5,
+            xp: creature.xp || 0,
+            currentHp: creature.currentHp ?? creature.maxHp ?? 40,
+            maxHp: creature.maxHp ?? 40,
+            stats,
+            abilities,
+            status: null,
+          });
+        }
+      }
       if (useGameStore.getState().gameMode === 'PROFESSOR_LAB') {
         useGameStore.getState().setGameMode('EXPLORING');
       }
+      useGameStore.getState().triggerQuestRefresh();
     });
 
     socket.on('creature_spawned', (data) => {
@@ -877,16 +970,12 @@ export default function TheLobby({
       
       {gameMode === 'SHOP' && <ShopOverlay />}
       {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
-      {activeDialog && <DialogOverlay />}
+      {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
       
       {/* Cinematic Map Transition Overlay */}
       <div 
         className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
       />
-      
-      {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-      {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
-      {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
 
       {gameMode === 'EXPLORING' && !isCreationMode && (
         <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>

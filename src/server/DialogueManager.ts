@@ -123,6 +123,52 @@ export class DialogueManager {
     });
   }
 
+  private async buildQuestReport(userId: string): Promise<{ toast: string; text: string }> {
+    const state = await prisma.playerQuestState.findFirst({
+      where: { userId, status: "ACTIVE" },
+      orderBy: { acceptedAt: "desc" },
+    });
+    if (!state) {
+      return {
+        toast: "No active quest — take the Starter Toolbelt to begin Q1.",
+        text: "You're not on a marked job. Take the Starter Toolbelt and we'll put you on the road to Aethervale.",
+      };
+    }
+    const template = await prisma.questTemplate.findUnique({
+      where: { slug: state.questSlug },
+      include: { objectives: { where: { stage: state.currentStage } } },
+    });
+    const obj = template?.objectives?.[0];
+    if (!obj) {
+      return {
+        toast: `${template?.title || state.questSlug}: check the tracker.`,
+        text: "Keep at it. Your tracker on the right shows the next mark.",
+      };
+    }
+    if (obj.type === "TALK") {
+      return {
+        toast: `Turning in: ${template?.title}`,
+        text: `Good work on ${template?.title}. I'll mark that complete — watch the tracker for what opens next.`,
+      };
+    }
+    return {
+      toast: `${template?.title}: ${state.progress}/${obj.requiredQty} — ${obj.description}`,
+      text: `Still on ${template?.title}. Next: ${obj.description} (${state.progress}/${obj.requiredQty}). ${
+        obj.type === "GATHER" && obj.targetSlug === "wood_log"
+          ? "Chop Wood Logs first in the southeast trees, then mine Copper Ore."
+          : obj.type === "GATHER"
+            ? "Southeast rocks after the logs."
+            : obj.type === "CRAFT"
+              ? "Shop tile west of plaza, or the craft table beside it."
+              : obj.type === "CLAIM"
+                ? "Open the Lab from my dialogue or Party menu."
+                : obj.type === "CLEAR"
+                  ? "Face the dark thicket on the north path — E with hatchet and your companion."
+                  : "Check the quest tracker."
+      }`,
+    };
+  }
+
   private async runAction(
     action: string | undefined,
     accountId: string,
@@ -166,11 +212,25 @@ export class DialogueManager {
     }
 
     if (action === "DEMO_QUEST_REPORT") {
-      // Progress TALK objectives for active demo quests
+      const report = await this.buildQuestReport(userId);
+      this.toast(socketId, report.toast);
+      // Progress TALK objectives for active demo quests (turn-in stages)
       this.engine.events.emit("dialogue_start", {
         accountId,
         socketId,
         targetSlug: "npc_warden_vance",
+      });
+      // Override next dialogue line with state-aware copy when selecting report
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "dialogue_start",
+        data: {
+          npcId: "npc_warden_vance",
+          npcName: "Warden Vance",
+          node: "node_report",
+          text: report.text,
+          options: [{ label: "Understood.", nextNode: "exit" }],
+        },
       });
       return;
     }
@@ -228,6 +288,11 @@ export class DialogueManager {
 
     if (action === "ACCEPT_QUEST" && questSlug) {
       this.engine.events.emit("acceptQuest", { accountId, questSlug, socketId });
+    }
+
+    // DEMO_QUEST_REPORT already sent its own dialogue_start payload
+    if (action === "DEMO_QUEST_REPORT") {
+      return;
     }
 
     if (nextNode === "exit") {

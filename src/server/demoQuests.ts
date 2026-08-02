@@ -10,9 +10,9 @@ export const DEMO_QUEST_CHAIN = [
       nextQuest: "quest_forging_vessel",
     }),
     objectives: [
-      { stage: 1, type: "GATHER", targetSlug: "wood_log", requiredQty: 3, description: "Chop 3 Wood Logs (SE trees)" },
-      { stage: 2, type: "GATHER", targetSlug: "ore_copper", requiredQty: 3, description: "Mine 3 Copper Ore (SE rocks)" },
-      { stage: 3, type: "TALK", targetSlug: "npc_warden_vance", requiredQty: 1, description: "Report back to Warden Vance" },
+      { stage: 1, type: "GATHER", targetSlug: "wood_log", requiredQty: 3, description: "Chop 3 Wood Logs first (SE trees)" },
+      { stage: 2, type: "GATHER", targetSlug: "ore_copper", requiredQty: 3, description: "Then mine 3 Copper Ore (SE rocks)" },
+      { stage: 3, type: "TALK", targetSlug: "npc_warden_vance", requiredQty: 1, description: "Vance → Report progress / turn in" },
     ],
   },
   {

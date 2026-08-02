@@ -1,4 +1,4 @@
-# Demo Smoke Path — Road to Aethervale (v2.1.118)
+# Demo Smoke Path — Road to Aethervale (v2.1.119)
 
 Playable vertical slice for human testing.
 
