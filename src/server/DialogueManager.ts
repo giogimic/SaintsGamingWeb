@@ -10,7 +10,9 @@ import {
 } from "./spyderGuideDialogue";
 import {
   CARLOS_DIALOGUE_TREE,
+  LEATHER_GYM_ATTENDANT_DIALOGUE_TREE,
   LEATHER_NURSE_DIALOGUE_TREE,
+  LEATHER_SCOOP_CLERK_DIALOGUE_TREE,
   SCOOP_CLERK_DIALOGUE_TREE,
   SCOOP_NURSE_DIALOGUE_TREE,
   SPYDER_QUEST_CHAIN,
@@ -30,6 +32,8 @@ const BUILTIN_TREES: Record<string, any> = {
   npc_cotton_scoop_clerk: SCOOP_CLERK_DIALOGUE_TREE,
   npc_cotton_scoop_nurse: SCOOP_NURSE_DIALOGUE_TREE,
   npc_leather_center_nurse: LEATHER_NURSE_DIALOGUE_TREE,
+  npc_leather_scoop_clerk: LEATHER_SCOOP_CLERK_DIALOGUE_TREE,
+  npc_leather_gym_attendant: LEATHER_GYM_ATTENDANT_DIALOGUE_TREE,
 };
 
 const SPYDER_DEFAULT_STARTER = "budaye";

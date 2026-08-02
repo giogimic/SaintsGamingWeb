@@ -137,6 +137,8 @@ const AMBIENT_MAPS = [
   "SPYDER_ROUTE3",
   "SPYDER_LEATHER_TOWN",
   "SPYDER_LEATHER_CENTER",
+  "SPYDER_LEATHER_SCOOP",
+  "SPYDER_LEATHER_GYM",
 ] as const;
 
 async function checkNpcs() {
@@ -204,17 +206,34 @@ async function checkDialogueActions() {
     ok("Leather nurse HEAL_PARTY");
   }
 
+  const leatherClerk = await prisma.npcDialogueTree.findUnique({
+    where: { npcId: "npc_leather_scoop_clerk" },
+  });
+  if (!leatherClerk?.data?.includes("OPEN_SHOP")) {
+    fail("Leather Scoop clerk dialogue missing OPEN_SHOP");
+  } else {
+    ok("Leather Scoop clerk OPEN_SHOP");
+  }
+
   const guide = await prisma.npcDialogueTree.findUnique({
     where: { npcId: "npc_azure_guide" },
   });
   if (
     !guide?.data?.includes("node_route2") ||
     !guide?.data?.includes("node_leather") ||
+    !guide?.data?.includes("node_leather_scoop") ||
     !guide?.data?.includes("node_done")
   ) {
-    fail("Guide tree missing node_route2 / node_leather / node_done");
+    fail("Guide tree missing route2 / leather / leather_scoop / done");
   } else {
-    ok("Guide has node_route2 + node_leather + node_done");
+    ok("Guide has node_route2 + leather + leather_scoop + done");
+  }
+
+  const q8 = SPYDER_QUEST_CHAIN.find((q) => q.slug === "quest_spyder_leather_arrive");
+  if (!q8?.rewards.includes("quest_spyder_leather_scoop")) {
+    fail("Q8 missing nextQuest → leather_scoop");
+  } else {
+    ok("Q8 nextQuest → quest_spyder_leather_scoop");
   }
 }
 
@@ -332,12 +351,25 @@ async function main() {
     path: [2, 10, 39, 21],
   });
   await checkMap("SPYDER_LEATHER_TOWN", {
-    gateTargets: ["SPYDER_ROUTE3", "SPYDER_LEATHER_CENTER"],
-    path: [2, 21, 10, 18],
+    gateTargets: [
+      "SPYDER_ROUTE3",
+      "SPYDER_LEATHER_CENTER",
+      "SPYDER_LEATHER_SCOOP",
+      "SPYDER_LEATHER_GYM",
+    ],
+    path: [2, 21, 24, 20],
   });
   await checkMap("SPYDER_LEATHER_CENTER", {
     gateTargets: ["SPYDER_LEATHER_TOWN"],
     path: [6, 8, 6, 6],
+  });
+  await checkMap("SPYDER_LEATHER_SCOOP", {
+    gateTargets: ["SPYDER_LEATHER_TOWN"],
+    path: [6, 8, 6, 5],
+  });
+  await checkMap("SPYDER_LEATHER_GYM", {
+    gateTargets: ["SPYDER_LEATHER_TOWN"],
+    path: [12, 8, 5, 6],
   });
 
   console.log("\nNPCs");

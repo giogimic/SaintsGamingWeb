@@ -264,6 +264,10 @@ const PATH: Record<string, PathCfg> = {
       gate(0, 21, "SPYDER_ROUTE3", 37, 21),
       // Healing center door (plaza)
       gate(10, 18, "SPYDER_LEATHER_CENTER", 6, 8),
+      // Scoop (east of Center)
+      gate(14, 18, "SPYDER_LEATHER_SCOOP", 6, 8),
+      // Gym (farther east plaza)
+      gate(24, 20, "SPYDER_LEATHER_GYM", 12, 8),
     ],
     open: [
       { x: 0, y: 21, tile: 3 },
@@ -275,11 +279,20 @@ const PATH: Record<string, PathCfg> = {
       { x: 10, y: 19, tile: 0 },
       { x: 10, y: 20, tile: 0 },
       { x: 10, y: 21, tile: 0 },
+      { x: 14, y: 18, tile: 4 },
+      { x: 14, y: 19, tile: 0 },
+      { x: 14, y: 20, tile: 0 },
+      { x: 14, y: 21, tile: 0 },
+      { x: 24, y: 20, tile: 4 },
+      { x: 23, y: 20, tile: 0 },
+      { x: 24, y: 21, tile: 0 },
     ],
     corridors: [
-      { dir: "h", y: 21, x0: 1, x1: 18 },
-      { dir: "h", y: 20, x0: 2, x1: 18 },
+      { dir: "h", y: 21, x0: 1, x1: 26 },
+      { dir: "h", y: 20, x0: 2, x1: 26 },
       { dir: "v", x: 10, y0: 18, y1: 21 },
+      { dir: "v", x: 14, y0: 18, y1: 21 },
+      { dir: "h", y: 18, x0: 10, x1: 14 },
     ],
   },
   SPYDER_LEATHER_CENTER: {
@@ -295,6 +308,37 @@ const PATH: Record<string, PathCfg> = {
       { dir: "v", x: 6, y0: 4, y1: 9 },
       { dir: "h", y: 8, x0: 2, x1: 9 },
       { dir: "h", y: 6, x0: 2, x1: 10 },
+    ],
+  },
+  SPYDER_LEATHER_SCOOP: {
+    gates: [gate(6, 9, "SPYDER_LEATHER_TOWN", 14, 19)],
+    open: [
+      { x: 6, y: 9, tile: 3 },
+      { x: 6, y: 8, tile: 0 },
+      { x: 5, y: 8, tile: 0 },
+      { x: 7, y: 8, tile: 0 },
+      { x: 6, y: 5, tile: 0 },
+    ],
+    corridors: [
+      { dir: "v", x: 6, y0: 4, y1: 9 },
+      { dir: "h", y: 8, x0: 3, x1: 9 },
+      { dir: "h", y: 5, x0: 3, x1: 10 },
+    ],
+  },
+  SPYDER_LEATHER_GYM: {
+    gates: [gate(12, 9, "SPYDER_LEATHER_TOWN", 24, 21)],
+    open: [
+      { x: 12, y: 9, tile: 3 },
+      { x: 12, y: 8, tile: 0 },
+      { x: 11, y: 8, tile: 0 },
+      { x: 13, y: 8, tile: 0 },
+      { x: 5, y: 6, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 8, x0: 3, x1: 18 },
+      { dir: "h", y: 6, x0: 1, x1: 18 },
+      { dir: "v", x: 12, y0: 6, y1: 9 },
+      { dir: "v", x: 5, y0: 5, y1: 8 },
     ],
   },
   COTTON_SCOOP: {
