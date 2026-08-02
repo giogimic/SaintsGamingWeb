@@ -3,12 +3,30 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+async function resolveUserId(accountOrUserId: string): Promise<string | null> {
+  if (!accountOrUserId) return null;
+  const asAccount = await prisma.account.findFirst({
+    where: { id: accountOrUserId },
+    select: { userId: true },
+  });
+  if (asAccount?.userId) return asAccount.userId;
+  const asUser = await prisma.user.findFirst({
+    where: { id: accountOrUserId },
+    select: { id: true },
+  });
+  return asUser?.id ?? null;
+}
+
 export class QuestManager {
   constructor(private engine: GameEngine) {
-    // Listen to global gameplay events
     this.engine.events.on("monsterKilled", (data) => this.handleEvent("KILL", data));
     this.engine.events.on("itemGathered", (data) => this.handleEvent("GATHER", data));
     this.engine.events.on("dialogue_start", (data) => this.handleEvent("TALK", data));
+    this.engine.events.on("itemCrafted", (data) => this.handleEvent("CRAFT", data));
+    this.engine.events.on("starterClaimed", (data) => this.handleEvent("CLAIM", data));
+    this.engine.events.on("creatureCaptured", (data) => this.handleEvent("CLAIM", data));
+    this.engine.events.on("trainerDefeated", (data) => this.handleEvent("BATTLE", data));
+    this.engine.events.on("brambleCleared", (data) => this.handleEvent("CLEAR", data));
     this.engine.events.on("acceptQuest", (data) => this.acceptQuest(data));
   }
 
@@ -17,60 +35,57 @@ export class QuestManager {
   }
 
   private async handleEvent(eventType: string, data: any) {
-    // data must include accountId and targetSlug (e.g. "goblin", "iron_ore", "npc_blacksmith")
-    const { accountId, targetSlug } = data;
+    const { accountId, targetSlug, socketId } = data;
     if (!accountId || !targetSlug) return;
 
     try {
-      // 1. Get the underlying userId for this connection
-      const dbUser = await prisma.account.findFirst({
-        where: { id: accountId },
-        select: { userId: true }
-      });
-      if (!dbUser) return;
-      
-      const userId = dbUser.userId;
+      const userId = await resolveUserId(accountId);
+      if (!userId) return;
 
-      // 2. Find all active quests for this player
       const activeStates = await prisma.playerQuestState.findMany({
-        where: { userId, status: "ACTIVE" }
+        where: { userId, status: "ACTIVE" },
       });
 
       if (activeStates.length === 0) return;
 
-      // 3. For each active quest, check if the current objective matches the event
       for (const state of activeStates) {
-        const objective = await prisma.questObjective.findFirst({
-          where: { questSlug: state.questSlug, stage: state.currentStage } as any 
-          // Note: The schema links by questId, but in the fast-loop we'll query by slug if we denormalize,
-          // or we fetch the template first. Let's fetch template to be safe.
-        });
-
-        // Let's do it properly via relations
         const template = await prisma.questTemplate.findUnique({
           where: { slug: state.questSlug },
-          include: { objectives: { where: { stage: state.currentStage } } }
+          include: { objectives: { where: { stage: state.currentStage } } },
         });
 
         if (!template || template.objectives.length === 0) continue;
         const currentObjective = template.objectives[0];
 
-        // 4. Evaluate match
-        if (currentObjective.type === eventType && currentObjective.targetSlug === targetSlug) {
-          // Increment progress
+        if (
+          currentObjective.type === eventType &&
+          currentObjective.targetSlug === targetSlug
+        ) {
           const newProgress = state.progress + (data.amount || 1);
-          
+
           if (newProgress >= currentObjective.requiredQty) {
-            // Objective complete! Advance stage
-            await this.advanceQuestStage(userId, accountId, state, template);
+            await this.advanceQuestStage(userId, accountId, state, template, socketId);
           } else {
-            // Just update progress
             await prisma.playerQuestState.update({
               where: { id: state.id },
-              data: { progress: newProgress }
+              data: { progress: newProgress },
             });
-            this.notifyClient(accountId, `Quest Progress: ${newProgress}/${currentObjective.requiredQty}`);
+            this.notifyClient(
+              accountId,
+              `${template.title}: ${newProgress}/${currentObjective.requiredQty} — ${currentObjective.description}`,
+              socketId
+            );
           }
+        } else if (
+          eventType === "GATHER" &&
+          currentObjective.type === "GATHER" &&
+          currentObjective.targetSlug !== targetSlug
+        ) {
+          this.notifyClient(
+            accountId,
+            `Q tracker wants ${currentObjective.targetSlug.replace(/_/g, " ")} first (${state.progress}/${currentObjective.requiredQty}).`,
+            socketId
+          );
         }
       }
     } catch (e) {
@@ -78,57 +93,75 @@ export class QuestManager {
     }
   }
 
-  private async advanceQuestStage(userId: string, accountId: string, state: any, template: any) {
+  private async advanceQuestStage(
+    userId: string,
+    accountId: string,
+    state: any,
+    template: any,
+    socketId?: string
+  ) {
     const nextStage = state.currentStage + 1;
-    
-    // Check if next stage exists
+
     const hasNextStage = await prisma.questObjective.findFirst({
-      where: { questId: template.id, stage: nextStage }
+      where: { questId: template.id, stage: nextStage },
     });
 
     if (hasNextStage) {
-      // Advance to next stage
       await prisma.playerQuestState.update({
         where: { id: state.id },
-        data: { currentStage: nextStage, progress: 0 }
+        data: { currentStage: nextStage, progress: 0 },
       });
-      this.notifyClient(accountId, `Quest Updated: ${template.title}`);
+      this.notifyClient(accountId, `Quest Updated: ${template.title}`, socketId);
     } else {
-      // Quest Complete!
       await prisma.playerQuestState.update({
         where: { id: state.id },
-        data: { status: "COMPLETED", completedAt: new Date() }
+        data: { status: "COMPLETED", completedAt: new Date() },
       });
-      
-      this.notifyClient(accountId, `Quest Completed: ${template.title}!`);
-      
-      // Apply rewards
+
+      this.notifyClient(accountId, `Quest Completed: ${template.title}!`, socketId);
+
       if (template.rewards) {
-        const rewards = JSON.parse(template.rewards);
-        // Dispatch to inventory/economy managers
-        // (For now, we emit to the event bus for the PlayerManager to handle)
-        this.engine.events.emit("grantRewards", { accountId, rewards });
+        try {
+          const rewards = JSON.parse(template.rewards);
+          this.engine.events.emit("grantRewards", { accountId, socketId, rewards });
+          if (rewards.nextQuest) {
+            await this.acceptQuest({
+              accountId,
+              questSlug: rewards.nextQuest,
+              socketId,
+            });
+          }
+        } catch (e) {
+          console.warn("[QuestManager] Bad rewards JSON", e);
+        }
       }
     }
   }
 
-  public async acceptQuest({ accountId, questSlug }: { accountId: string, questSlug: string }) {
+  public async acceptQuest({
+    accountId,
+    questSlug,
+    socketId,
+  }: {
+    accountId: string;
+    questSlug: string;
+    socketId?: string;
+  }) {
     try {
-      const dbUser = await prisma.account.findFirst({
-        where: { id: accountId },
-        select: { userId: true }
-      });
-      if (!dbUser) return;
-      
-      const userId = dbUser.userId;
+      const userId = await resolveUserId(accountId);
+      if (!userId) return;
 
-      // Check if already active or completed
       const existing = await prisma.playerQuestState.findFirst({
-        where: { userId, questSlug }
+        where: { userId, questSlug },
       });
 
       if (existing) {
-        console.log(`[QuestManager] Quest ${questSlug} already exists for ${userId}`);
+        if (existing.status === "COMPLETED") {
+          console.log(`[QuestManager] Quest ${questSlug} already completed for ${userId}`);
+          return;
+        }
+        console.log(`[QuestManager] Quest ${questSlug} already active for ${userId}`);
+        this.notifyClient(accountId, "Quest already in progress.", socketId);
         return;
       }
 
@@ -138,32 +171,41 @@ export class QuestManager {
           questSlug,
           status: "ACTIVE",
           currentStage: 1,
-          progress: 0
-        }
+          progress: 0,
+        },
       });
 
-      const template = await prisma.questTemplate.findUnique({ where: { slug: questSlug }});
+      const template = await prisma.questTemplate.findUnique({ where: { slug: questSlug } });
       if (template) {
-        this.notifyClient(accountId, `Quest Accepted: ${template.title}`);
+        this.notifyClient(accountId, `Quest Accepted: ${template.title}`, socketId);
       }
     } catch (e) {
       console.error("[QuestManager] Error accepting quest:", e);
     }
   }
 
-  private notifyClient(accountId: string, message: string) {
-    // Need to find socketId for this accountId.
-    // In a real system, the GameEngine keeps an Account->Socket mapping.
-    // We will broadcast globally for now as a hack, or we can use the directMessage structure
+  private notifyClient(accountId: string, message: string, socketId?: string) {
+    if (socketId) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "show_toast",
+        data: { message },
+      });
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "quest_sync",
+        data: { accountId },
+      });
+      return;
+    }
+
     this.engine.events.emit("networkBroadcast", {
       event: "show_toast",
-      data: { message }
+      data: { message },
     });
-    
-    // Also broadcast quest_sync to force clients to refetch quests
     this.engine.events.emit("networkBroadcast", {
       event: "quest_sync",
-      data: { accountId }
+      data: { accountId },
     });
   }
 }

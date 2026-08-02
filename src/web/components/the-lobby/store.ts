@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { buildInitialSkills } from '../../../shared/game/skillTypings';
 
 export type GameMode = 'TITLE_SCREEN' | 'LOGIN' | 'SERVER_SELECT' | 'CHARACTER_SELECT' | 'CHARACTER_CREATOR' | 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
 
@@ -17,6 +18,10 @@ export interface MapLogicTile {
 }
 
 export type Point = { x: number; y: number };
+
+export type MobileControlMode = 'floating' | 'dpad';
+
+const MOBILE_CONTROL_STORAGE_KEY = 'saints-mobile-control-mode';
 
 export interface MapEntity {
   id: string;
@@ -68,12 +73,17 @@ export interface BattleCreature {
   level: number;
   spriteKey: string;
   name: string;
+  isShiny?: boolean;
+  tags?: string[];
 }
 
 export interface BattleState {
   id: string;
   accountId: string;
   phase: "WAITING_FOR_INPUT" | "RESOLUTION" | "TURN_END";
+  isTrainer?: boolean;
+  trainerNpcId?: string;
+  trainerName?: string;
   wildCreature: BattleCreature;
   playerCreature: BattleCreature;
   log: string[];
@@ -208,12 +218,22 @@ export interface GameState {
   clearPendingMovesUpTo: (seq: number, serverX?: number, serverY?: number) => void;
   applyServerCorrection: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => void;
   
-  // UI Customization
+  // UI Customization — Viewfinder Edit Mode
+  /** @deprecated Prefer isEditingInterface — kept for existing subscribers */
   isUiEditMode: boolean;
+  /** Viewfinder Edit Mode: HUD unlocked for drag/scale */
+  isEditingInterface: boolean;
   setIsUiEditMode: (isEditMode: boolean) => void;
+  setIsEditingInterface: (isEditing: boolean) => void;
   uiSettings: Record<string, { x: number; y: number; scale: number }>;
+  uiLayoutEpoch: number;
   updateUiSetting: (id: string, setting: Partial<{ x: number; y: number; scale: number }>) => void;
   loadUiPreset: (presetData: Record<string, { x: number; y: number; scale: number }>) => void;
+  resetUiLayout: () => void;
+  /** Mobile touch movement style — persisted separately from panel uiSettings */
+  mobileControlMode: MobileControlMode;
+  setMobileControlMode: (mode: MobileControlMode) => void;
+  hydrateMobileControlMode: () => void;
   
   // Game Data
   fetchLogicTiles: () => Promise<void>;
@@ -266,21 +286,8 @@ export interface GameState {
   clearParty: () => void;
 }
 
-export const INITIAL_SKILLS: Record<string, SkillData> = {
-  // Combat
-  Attack: { level: 1, xp: 0 }, Constitution: { level: 1, xp: 0 }, Defence: { level: 1, xp: 0 },
-  Magic: { level: 1, xp: 0 }, Necromancy: { level: 1, xp: 0 }, Prayer: { level: 1, xp: 0 },
-  Ranged: { level: 1, xp: 0 }, Strength: { level: 1, xp: 0 }, Summoning: { level: 1, xp: 0 },
-  // Gathering
-  Farming: { level: 1, xp: 0 }, Fishing: { level: 1, xp: 0 }, Hunter: { level: 1, xp: 0 },
-  Mining: { level: 1, xp: 0 }, Woodcutting: { level: 1, xp: 0 },
-  // Artisan
-  Construction: { level: 1, xp: 0 }, Cooking: { level: 1, xp: 0 }, Crafting: { level: 1, xp: 0 },
-  Firemaking: { level: 1, xp: 0 }, Fletching: { level: 1, xp: 0 }, Herblore: { level: 1, xp: 0 },
-  Runecrafting: { level: 1, xp: 0 }, Smithing: { level: 1, xp: 0 },
-  // Support
-  Agility: { level: 1, xp: 0 }, Thieving: { level: 1, xp: 0 }
-};
+/** Combat typings + gathering/artisan matrix (Title Case UI keys). */
+export const INITIAL_SKILLS: Record<string, SkillData> = buildInitialSkills();
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector(
@@ -289,7 +296,7 @@ export const useGameStore = create<GameState>()(
       gameMode: 'TITLE_SCREEN',
       player: {
         spriteId: 'adventurer',
-        position: { x: 6, y: 2 },
+        position: { x: 14, y: 15 },
         level: 1,
         xp: 0,
         hp: 100,
@@ -338,7 +345,24 @@ export const useGameStore = create<GameState>()(
       moveSequence: 0,
       pendingMoves: [],
       isUiEditMode: false,
+      isEditingInterface: false,
       uiSettings: {},
+      uiLayoutEpoch: 0,
+      mobileControlMode: 'floating' as MobileControlMode,
+
+      setMobileControlMode: (mode) => set((state) => {
+        state.mobileControlMode = mode;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(MOBILE_CONTROL_STORAGE_KEY, mode);
+        }
+      }),
+      hydrateMobileControlMode: () => {
+        if (typeof window === 'undefined') return;
+        const stored = localStorage.getItem(MOBILE_CONTROL_STORAGE_KEY);
+        if (stored === 'floating' || stored === 'dpad') {
+          set((state) => { state.mobileControlMode = stored; });
+        }
+      },
 
       // Server Reconciliation (Phase 2)
       incrementMoveSeq: () => {
@@ -386,7 +410,14 @@ export const useGameStore = create<GameState>()(
         state.combatTarget = target;
       }),
 
-      setIsUiEditMode: (isEditMode) => set((state) => { state.isUiEditMode = isEditMode; }),
+      setIsUiEditMode: (isEditMode) => set((state) => {
+        state.isUiEditMode = isEditMode;
+        state.isEditingInterface = isEditMode;
+      }),
+      setIsEditingInterface: (isEditing) => set((state) => {
+        state.isEditingInterface = isEditing;
+        state.isUiEditMode = isEditing;
+      }),
       updateUiSetting: (id, setting) => set((state) => {
         if (!state.uiSettings[id]) {
           state.uiSettings[id] = { x: 0, y: 0, scale: 1 };
@@ -395,10 +426,23 @@ export const useGameStore = create<GameState>()(
       }),
       loadUiPreset: (presetData) => set((state) => {
         state.uiSettings = presetData;
+        state.uiLayoutEpoch += 1;
         if (typeof window !== 'undefined') {
           Object.keys(presetData).forEach(key => {
             localStorage.setItem(`saints-ui-${key}`, JSON.stringify(presetData[key]));
           });
+        }
+      }),
+      resetUiLayout: () => set((state) => {
+        state.uiSettings = {};
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          const keys: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('saints-ui-')) keys.push(k);
+          }
+          keys.forEach((k) => localStorage.removeItem(k));
         }
       }),
 
@@ -420,9 +464,17 @@ export const useGameStore = create<GameState>()(
         try {
           const res = await fetch('/api/world/logic-tiles');
           const json = await res.json();
-          if (json.success) {
-            set((state) => { state.logicTiles = json.data; });
+          const rows = Array.isArray(json) ? json : (json?.success ? json.data : null);
+          if (!rows) return;
+          const keyed: Record<number, any> = {};
+          if (Array.isArray(rows)) {
+            for (const tile of rows) {
+              if (tile && typeof tile.id === 'number') keyed[tile.id] = tile;
+            }
+          } else if (rows && typeof rows === 'object') {
+            Object.assign(keyed, rows);
           }
+          set((state) => { state.logicTiles = keyed; });
         } catch (e) {
           console.error('Failed to fetch logic tiles', e);
         }

@@ -8,6 +8,8 @@ export interface CreatureState {
   entityId: string;
   entityType: EntityType;
   templateId: string;
+  /** Overworld sheet key under /game-assets/npc/ (may differ from templateId). */
+  spriteKey: string;
   name: string;
   mapId: string;
   x: number;
@@ -36,10 +38,21 @@ export class CreatureManager {
     this.engine.events.on("requestCreatureState", (entityId, callback) => {
       callback(this.creatures.get(entityId));
     });
+    this.engine.events.on("requestCreaturesInMap", (data: { mapId: string; callback: (c: CreatureState[]) => void }) => {
+      data.callback(this.getCreaturesInMap(data.mapId));
+    });
   }
 
   public getCreature(entityId: string): CreatureState | undefined {
     return this.creatures.get(entityId);
+  }
+
+  public getCreaturesInMap(mapId: string): CreatureState[] {
+    const out: CreatureState[] = [];
+    for (const c of this.creatures.values()) {
+      if (c.mapId === mapId) out.push(c);
+    }
+    return out;
   }
 
   private handleCreatureDamaged(data: { entityId: string, attackerId: string, damage: number }) {
@@ -56,11 +69,13 @@ export class CreatureManager {
     });
 
     if (hpPercent <= 0) {
-      this.engine.events.emit("entityDeath", { 
-        entityId: data.entityId, 
-        mapId: creature.mapId, 
-        x: creature.x, 
-        y: creature.y 
+      this.engine.events.emit("entityDeath", {
+        entityId: data.entityId,
+        mapId: creature.mapId,
+        x: creature.x,
+        y: creature.y,
+        attackerId: data.attackerId,
+        templateId: creature.templateId,
       });
       this.worldManager.removeEntity(creature.mapId, creature.x, creature.y, data.entityId);
       this.creatures.delete(data.entityId);
@@ -84,41 +99,64 @@ export class CreatureManager {
     this.dirtyEntities.add(data.entityId);
   }
 
-  private spawnCreature(data: { templateId: string, entityType?: EntityType, mapId: string, x: number, y: number, spawnMode: SpawnMode, ownerId?: string }) {
+  private spawnCreature(data: {
+    templateId: string;
+    entityType?: EntityType;
+    mapId: string;
+    x: number;
+    y: number;
+    spawnMode: SpawnMode;
+    ownerId?: string;
+    name?: string;
+    spriteKey?: string;
+  }) {
     const isNpc = data.entityType === EntityType.NPC;
-    const entityId = `${isNpc ? 'npc' : 'creature'}_${data.templateId}_${Date.now()}`;
-    
+    const cleanTemplate = String(data.templateId || "villager").replace(/^npc_/, "");
+    const entityId = `${isNpc ? "npc" : "creature"}_${cleanTemplate}_${Date.now()}`;
+
+    const entityType = data.entityType || EntityType.CREATURE;
+    const isWildCreature = !isNpc && entityType === EntityType.CREATURE;
+    const spriteKey =
+      data.spriteKey ||
+      (isNpc
+        ? cleanTemplate.replace(/^warden_/, "").includes("vance")
+          ? "professor"
+          : cleanTemplate
+        : cleanTemplate);
+
     const creature: CreatureState = {
       entityId,
-      entityType: data.entityType || EntityType.CREATURE,
-      templateId: data.templateId,
-      name: isNpc ? data.templateId : "Wild " + data.templateId,
+      entityType,
+      templateId: cleanTemplate,
+      spriteKey,
+      name: data.name || (isNpc ? cleanTemplate : "Wild " + cleanTemplate),
       mapId: data.mapId,
       x: data.x,
       y: data.y,
       spawnMode: data.spawnMode,
       aiState: AIState.IDLE,
-      behavior: BehavioralState.CALM,
+      // Wild MPV creatures are hostile so RT combat can be tested
+      behavior: isWildCreature ? BehavioralState.HOSTILE : BehavioralState.CALM,
       ownerId: data.ownerId,
-      hp: 100,
-      maxHp: 100,
+      hp: isWildCreature ? 80 : 100,
+      maxHp: isWildCreature ? 80 : 100,
       isMoving: false,
       direction: "down",
-      lastMoveTime: Date.now()
+      lastMoveTime: Date.now(),
     };
 
     this.creatures.set(entityId, creature);
     this.worldManager.addEntity(creature.mapId, creature.x, creature.y, entityId);
     this.dirtyEntities.add(entityId);
-    
-    // Broadcast spawn to clients. 
-    // Private spawns need special handling, but for now we tag them with ownerId
-    // so the client can ignore rendering if it's not theirs. A more robust server
-    // implementation would filter the broadcast list.
+
+    // Broadcast spawn to clients (include spriteKey for lobby mapEntities).
     this.engine.events.emit("networkBroadcast", {
       room: creature.mapId,
       event: "creature_spawned",
-      data: creature
+      data: {
+        ...creature,
+        spriteKey,
+      },
     });
   }
 

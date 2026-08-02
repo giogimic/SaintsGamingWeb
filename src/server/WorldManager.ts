@@ -1,4 +1,6 @@
 import { GameEngine } from "./GameEngine";
+import { toBaseMapId } from "@/shared/net/mapIds";
+import { DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
 // Using require for legacy JS modules (they can be converted to TS later)
 const mapLoader = require("../engine/map-loader.js");
@@ -88,13 +90,55 @@ export class WorldManager {
     const mapData = mapLoader.getCachedMap(mapId);
     if (mapData && mapData.npcs) {
       for (const npc of mapData.npcs) {
+        const rawId = String(npc.id || npc.templateId || "villager");
+        const sprite =
+          npc.sprite ||
+          npc.spriteKey ||
+          npc.spriteId ||
+          rawId.replace(/^npc_/, "");
         this.engine.events.emit("spawnCreature", {
-          templateId: npc.id || npc.templateId || "Villager",
+          templateId: rawId.replace(/^npc_/, ""),
           entityType: "NPC",
-          mapId: instanceId, // Spawning specifically into this shard/instance
+          mapId: instanceId,
           x: npc.x,
           y: npc.y,
-          spawnMode: "STATIC"
+          spawnMode: "STATIC",
+          name: npc.name || rawId,
+          spriteKey: String(sprite).replace(/^\/game-assets\/npc\//, "").replace(/\.png$/, ""),
+        });
+      }
+    }
+
+    // Demo-only spawns (do not pollute Spyder campaign maps)
+    const baseMap = String(mapId || "").split("#")[0].toUpperCase();
+    if (baseMap === "DEMO_SANDBOX") {
+      const hasVance = Array.isArray(mapData?.npcs)
+        ? mapData.npcs.some(
+            (n: { id?: string }) =>
+              n.id === "npc_warden_vance" || n.id === "warden_vance"
+          )
+        : false;
+      if (!hasVance) {
+        this.engine.events.emit("spawnCreature", {
+          templateId: "npc_warden_vance",
+          entityType: "NPC",
+          mapId: instanceId,
+          x: DEMO_VANCE_SPAWN.x,
+          y: DEMO_VANCE_SPAWN.y,
+          spawnMode: "STATIC",
+          name: "Warden Vance",
+          spriteKey: "professor",
+        });
+      }
+
+      for (const spot of DEMO_WILD_SPOTS) {
+        this.engine.events.emit("spawnCreature", {
+          templateId: "rockitten",
+          entityType: "CREATURE",
+          mapId: instanceId,
+          x: spot.x,
+          y: spot.y,
+          spawnMode: "ROAMING",
         });
       }
     }
@@ -106,6 +150,37 @@ export class WorldManager {
     return this.instances.get(instanceId);
   }
 
+  /** Resolve by instanceId or base mapId (client often sends DEMO_SANDBOX). */
+  public resolveInstance(mapOrInstanceId: string): MapInstance | undefined {
+    if (!mapOrInstanceId) return undefined;
+    const direct = this.instances.get(mapOrInstanceId);
+    if (direct) return direct;
+    const base = toBaseMapId(mapOrInstanceId);
+    for (const inst of this.instances.values()) {
+      if (inst.instanceId === mapOrInstanceId) return inst;
+      if (inst.mapId === base || inst.mapId === mapOrInstanceId) return inst;
+    }
+    return undefined;
+  }
+
+  /** Clear bramble tile in live cache + persist DEMO map grid when applicable. */
+  public clearBrambleAt(baseMapId: string, x: number, y: number): boolean {
+    const ok = mapLoader.setCachedTile(baseMapId, x, y, 0);
+    if (!ok) return false;
+    const map = mapLoader.getCachedMap(baseMapId);
+    if (map?.grid) {
+      const gridJson = JSON.stringify(map.grid);
+      // Persist without invalidateMap so live players keep the cleared tile
+      const { PrismaClient } = require("@prisma/client");
+      const prisma = new PrismaClient({ log: ["error"] });
+      void Promise.all([
+        prisma.worldMap.update({ where: { id: baseMapId }, data: { gridData: gridJson } }).catch(() => null),
+        prisma.gameMap.update({ where: { id: baseMapId }, data: { tilesetData: gridJson } }).catch(() => null),
+      ]).finally(() => prisma.$disconnect().catch(() => null));
+    }
+    return true;
+  }
+
   public forceJoinInstance(instanceId: string, accountId: string): MapInstance | undefined {
     const instance = this.instances.get(instanceId);
     if (instance) {
@@ -115,7 +190,10 @@ export class WorldManager {
     return undefined;
   }
 
-  public joinMap(mapId: string, accountId: string, isPrivate: boolean = false): MapInstance {
+  public async joinMap(mapId: string, accountId: string, isPrivate: boolean = false): Promise<MapInstance> {
+    // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
+    await mapLoader.loadMapData(mapId);
+
     if (isPrivate) {
       // Private instances (e.g. player bases) are isolated per account
       const instanceId = `${mapId}_${accountId}`;

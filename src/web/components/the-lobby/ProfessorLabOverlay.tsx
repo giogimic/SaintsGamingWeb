@@ -1,138 +1,133 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameStore } from './store';
-import { Flame, Droplet, Leaf, Sparkles, CheckCircle2 } from 'lucide-react';
-
-interface StarterOption {
-  id: string;
-  name: string;
-  type: 'Fire' | 'Water' | 'Wood';
-  desc: string;
-  stats: { HP: number; Atk: number; Def: number; Spd: number };
-  color: string;
-  icon: any;
-}
-
-const STARTERS: StarterOption[] = [
-  {
-    id: 'ignisaur',
-    name: 'Ignisaur',
-    type: 'Fire',
-    desc: 'A fiery reptile beast with intense thermal energy attacks.',
-    stats: { HP: 45, Atk: 65, Def: 40, Spd: 60 },
-    color: '#ef4444',
-    icon: Flame
-  },
-  {
-    id: 'aquaspout',
-    name: 'Aquaspout',
-    type: 'Water',
-    desc: 'An agile aquatic companion capable of high-pressure water surges.',
-    stats: { HP: 50, Atk: 50, Def: 60, Spd: 55 },
-    color: '#3b82f6',
-    icon: Droplet
-  },
-  {
-    id: 'verdantail',
-    name: 'Verdantail',
-    type: 'Wood',
-    desc: 'A forest guardian beast skilled in defense and vine entrapment.',
-    stats: { HP: 60, Atk: 45, Def: 65, Spd: 40 },
-    color: '#22c55e',
-    icon: Leaf
-  }
-];
+import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { getActiveStarterCreatures } from '@/app/actions/creature-defs';
+import {
+  CreatureDefData,
+  creatureAssetUrl,
+  listFallbackStarters,
+} from '@/shared/game/creatureCatalog';
 
 export default function ProfessorLabOverlay({ onClose }: { onClose: () => void }) {
-  const [selectedStarter, setSelectedStarter] = useState<StarterOption | null>(null);
-  const catchDaemon = useGameStore(state => state.catchDaemon);
-  const showToast = useGameStore(state => state.showToast);
+  const [starters, setStarters] = useState<CreatureDefData[]>(listFallbackStarters());
+  const [selected, setSelected] = useState<CreatureDefData | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
+  const showToast = useGameStore((state) => state.showToast);
+  const gameMode = useGameStore((state) => state.gameMode);
 
-  const handleClaimStarter = (starter: StarterOption) => {
-    catchDaemon(starter.id);
-    useGameStore.setState(state => ({
-      player: { ...state.player, activeDaemonId: starter.id }
-    }));
-    showToast(`Claimed ${starter.name} as your starter beast!`);
-    onClose();
+  useEffect(() => {
+    void getActiveStarterCreatures().then((res) => {
+      if (res.success && res.data.length > 0) setStarters(res.data);
+    });
+  }, []);
+
+  // Close when server confirms claim (index.tsx sets EXPLORING on starter_claimed)
+  useEffect(() => {
+    if (confirming && gameMode !== 'PROFESSOR_LAB') {
+      onClose();
+    }
+  }, [confirming, gameMode, onClose]);
+
+  // Safety timeout if socket never answers
+  useEffect(() => {
+    if (!confirming) return;
+    const t = setTimeout(() => {
+      setConfirming(false);
+      showToast('Claim timed out — try again or check connection.');
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [confirming, showToast]);
+
+  const handleClaim = () => {
+    if (!selected || confirming) return;
+    setConfirming(true);
+    emitSocketEvent?.('claim_starter', { speciesSlug: selected.slug });
+    showToast(`Requesting ${selected.name}...`);
   };
 
   return (
     <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-md font-mono select-none">
-      <div className="w-full max-w-3xl bg-slate-900 border-2 border-emerald-500/50 rounded-2xl p-6 shadow-2xl space-y-6">
-        
-        {/* Header */}
+      <div className="w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/50 rounded-2xl p-6 shadow-2xl space-y-6">
         <div className="text-center space-y-2 border-b border-slate-800 pb-4">
           <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm uppercase tracking-widest font-bold">
             <Sparkles className="w-5 h-5" /> PROFESSOR OAKWOOD&apos;S RESEARCH LAB
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-white">CHOOSE YOUR STARTER COMPANION</h2>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white">CHOOSE YOUR STARTER</h2>
           <p className="text-xs text-slate-400 max-w-xl mx-auto">
-            &quot;Welcome Tamer! Select one of three rare elemental beasts to begin your journey across the campaign region.&quot;
+            One companion per journey. Catalog-driven — add more in Studio → Creatures.
           </p>
         </div>
 
-        {/* Starter Pedestals */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {STARTERS.map(starter => {
-            const Icon = starter.icon;
-            const isSelected = selectedStarter?.id === starter.id;
-
+          {starters.map((c) => {
+            const isSelected = selected?.slug === c.slug;
+            const defaultPassive = c.passives.find((p) => p.isDefault) || c.passives[0];
             return (
-              <div
-                key={starter.id}
-                onClick={() => setSelectedStarter(starter)}
-                className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+              <button
+                key={c.slug}
+                type="button"
+                onClick={() => setSelected(c)}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
                   isSelected
-                    ? 'bg-slate-800 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-105'
-                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                    ? 'bg-slate-800 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)] scale-[1.02]'
+                    : 'bg-slate-900/60 border-slate-800 hover:border-slate-600'
                 }`}
               >
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded uppercase" style={{ backgroundColor: `${starter.color}20`, color: starter.color }}>
-                      {starter.type}
-                    </span>
-                    <Icon className="w-5 h-5" style={{ color: starter.color }} />
-                  </div>
-
-                  <div className="w-20 h-20 bg-black/80 rounded-xl mx-auto flex items-center justify-center border border-slate-800">
-                    <Icon className="w-10 h-10 animate-bounce" style={{ color: starter.color }} />
-                  </div>
-
-                  <h3 className="font-bold text-center text-white text-base">{starter.name}</h3>
-                  <p className="text-[11px] text-slate-400 text-center leading-relaxed">{starter.desc}</p>
+                <div className="flex justify-between items-center mb-2">
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded uppercase"
+                    style={{ backgroundColor: `${c.tagColor}33`, color: c.tagColor }}
+                  >
+                    {c.typePrimary}
+                    {c.typeSecondary !== 'None' ? ` / ${c.typeSecondary}` : ''}
+                  </span>
                 </div>
-
-                {/* Stats Summary */}
-                <div className="mt-4 pt-3 border-t border-slate-800/80 text-[10px] space-y-1 text-slate-300">
-                  <div className="flex justify-between"><span>HP</span><strong>{starter.stats.HP}</strong></div>
-                  <div className="flex justify-between"><span>Attack</span><strong>{starter.stats.Atk}</strong></div>
-                  <div className="flex justify-between"><span>Defense</span><strong>{starter.stats.Def}</strong></div>
-                  <div className="flex justify-between"><span>Speed</span><strong>{starter.stats.Spd}</strong></div>
+                <div className="w-24 h-24 bg-black/80 rounded-xl mx-auto flex items-center justify-center border border-slate-800 mb-3 overflow-hidden">
+                  <img
+                    src={creatureAssetUrl(c.spriteOverworld || c.spriteBattle)}
+                    alt={c.name}
+                    className="max-w-full max-h-full object-contain pixelated"
+                  />
                 </div>
-              </div>
+                <h3 className="font-bold text-center text-white">{c.name}</h3>
+                <p className="text-[10px] text-slate-400 text-center mt-1 leading-relaxed">{c.flavor}</p>
+                <div className="mt-3 pt-2 border-t border-slate-800 text-[10px] text-slate-300 space-y-0.5">
+                  <div className="flex justify-between"><span>HP</span><strong>{c.baseHp}</strong></div>
+                  <div className="flex justify-between"><span>Power</span><strong>{c.physicalPower}</strong></div>
+                  <div className="flex justify-between"><span>Defense</span><strong>{c.physicalDefense}</strong></div>
+                  <div className="flex justify-between"><span>Tempo</span><strong>{c.combatTempo}</strong></div>
+                  {defaultPassive && (
+                    <p className="text-emerald-400/90 pt-1">
+                      <strong>{defaultPassive.name}:</strong> {defaultPassive.description}
+                    </p>
+                  )}
+                  {c.worldSkillName && (
+                    <p className="text-sky-400/90">
+                      World: {c.worldSkillName}
+                    </p>
+                  )}
+                </div>
+              </button>
             );
           })}
         </div>
 
-        {/* Footer Actions */}
         <div className="flex justify-between items-center border-t border-slate-800 pt-4">
           <button onClick={onClose} className="text-xs text-slate-400 hover:text-white font-bold">
             CANCEL
           </button>
-          
           <button
-            onClick={() => selectedStarter && handleClaimStarter(selectedStarter)}
-            disabled={!selectedStarter}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 transition-all uppercase tracking-wider"
+            onClick={handleClaim}
+            disabled={!selected || confirming}
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 uppercase tracking-wider"
           >
             <CheckCircle2 className="w-4 h-4" />
-            {selectedStarter ? `CLAIM ${selectedStarter.name.toUpperCase()}` : 'SELECT A STARTER'}
+            {confirming ? 'CLAIMING…' : selected ? `CLAIM ${selected.name.toUpperCase()}` : 'SELECT A STARTER'}
           </button>
         </div>
-
       </div>
     </div>
   );

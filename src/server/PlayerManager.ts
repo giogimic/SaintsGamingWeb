@@ -2,6 +2,8 @@ import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
+import { isSameBaseMap } from "@/shared/net/mapIds";
+import { grantsForDamageTaken, grantsForKill } from "@/shared/game/combatSkillXp";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -47,6 +49,7 @@ export class PlayerManager {
     this.engine.events.on("playerDisconnected", (data) => this.handleDisconnect(data));
     this.engine.events.on("playerDamaged", (data) => this.handlePlayerDamaged(data));
     this.engine.events.on("creatureAoEAttack", (data) => this.handleCreatureAoEAttack(data));
+    this.engine.events.on("entityDeath", (data) => this.handleEntityDeathKillBonus(data));
     this.engine.events.on("processInputs", () => this.processInputs());
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
@@ -164,12 +167,12 @@ export class PlayerManager {
 
     if (!instanceId) {
       // Use dynamic sharding to get an instance
-      const instance = this.worldManager.joinMap(data.mapId, accountId, isPrivate);
+      const instance = await this.worldManager.joinMap(data.mapId, accountId, isPrivate);
       instanceId = instance.instanceId;
     }
 
-    const startX = data.x || 6;
-    const startY = data.y || 2;
+    const startX = typeof data.x === "number" ? data.x : 14;
+    const startY = typeof data.y === "number" ? data.y : 15;
     const startZone = InterestManager.zoneOf(startX, startY);
 
     const player: PlayerState = {
@@ -191,15 +194,18 @@ export class PlayerManager {
       isLocked: false
     };
 
-    // Phase 5: DB Hydration (Cold to Hot State)
+    // Phase 5: DB Hydration — restore coords only when the saved base map
+    // matches this join. Never overwrite the live instanceId with a stale
+    // map id (that put players in different rooms and hid multiplayer).
     const savedPos = await this.persistence.loadPlayerPosition(accountId);
     if (savedPos) {
-      player.mapId = savedPos.mapId;
-      player.x = savedPos.x;
-      player.y = savedPos.y;
-      const z = InterestManager.zoneOf(player.x, player.y);
-      player.zoneX = z.zx;
-      player.zoneY = z.zy;
+      if (isSameBaseMap(String(savedPos.mapId || ""), String(data.mapId || ""))) {
+        player.x = savedPos.x;
+        player.y = savedPos.y;
+        const z = InterestManager.zoneOf(player.x, player.y);
+        player.zoneX = z.zx;
+        player.zoneY = z.zy;
+      }
     }
 
     this.players.set(entityId, player);
@@ -241,6 +247,26 @@ export class PlayerManager {
       }
     });
 
+    // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
+    let mapCreatures: any[] = [];
+    this.engine.events.emit("requestCreaturesInMap", {
+      mapId: player.mapId,
+      callback: (list: any[]) => {
+        mapCreatures = list || [];
+      },
+    });
+    for (const creature of mapCreatures) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "creature_spawned",
+        data: {
+          ...creature,
+          // Prefer persisted overworld sprite (e.g. professor), not templateId (azure_guide).
+          spriteKey: creature.spriteKey || creature.templateId,
+        },
+      });
+    }
+
     // Broadcast join to others
     this.engine.events.emit("networkBroadcast", {
       room: player.mapId,
@@ -266,6 +292,37 @@ export class PlayerManager {
         mapId: data.mapId || "world",
         playerCount: this.players.size,
       },
+    });
+  }
+
+  private handleEntityDeathKillBonus(data: {
+    entityId: string;
+    mapId: string;
+    x: number;
+    y: number;
+    attackerId?: string;
+    templateId?: string;
+  }) {
+    if (!data.attackerId) return;
+    const killer = this.getPlayer(data.attackerId);
+    if (!killer?.accountId) return;
+
+    for (const g of grantsForKill()) {
+      this.engine.events.emit("grantSkillXp", {
+        accountId: killer.accountId,
+        skillSlug: g.skillSlug,
+        amount: g.amount,
+      });
+    }
+
+    const targetSlug = data.templateId || "creature";
+    this.engine.events.emit("monsterKilled", {
+      accountId: killer.accountId,
+      socketId: killer.socketId,
+      targetSlug,
+      amount: 1,
+      entityId: data.entityId,
+      mapId: data.mapId,
     });
   }
 
@@ -295,12 +352,23 @@ export class PlayerManager {
     this.dirtyEntities.add(player.entityId);
     console.log(`[PlayerManager] ${player.name} took ${data.damage} damage! HP: ${player.hp}/${player.maxHp}`);
 
+    // Train defence / hitpoints on damage taken (combat skill typings)
+    if (data.damage > 0 && player.accountId) {
+      for (const g of grantsForDamageTaken(data.damage)) {
+        this.engine.events.emit("grantSkillXp", {
+          accountId: player.accountId,
+          skillSlug: g.skillSlug,
+          amount: g.amount,
+        });
+      }
+    }
+
     if (player.hp <= 0) {
       this.handlePlayerDefeated(player);
     }
   }
 
-  private handlePlayerDefeated(player: PlayerState) {
+  private async handlePlayerDefeated(player: PlayerState) {
     console.log(`[PlayerManager] ${player.name} was defeated! Teleporting to Safe Zone.`);
     
     // Restore HP
@@ -324,7 +392,7 @@ export class PlayerManager {
     
     // Teleport to SAINTS_VILLAGE coordinate X: 10, Y: 15
     const safeMapId = "SAINTS_VILLAGE";
-    const safeInstance = this.worldManager.joinMap(safeMapId, player.accountId, false);
+    const safeInstance = await this.worldManager.joinMap(safeMapId, player.accountId, false);
     
     player.mapId = safeInstance.instanceId;
     player.x = 10;

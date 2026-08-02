@@ -17,10 +17,13 @@ export function TurnBattleOverlay() {
 
   if (!activeBattle) return null;
 
-  const { wildCreature, playerCreature, phase, log } = activeBattle;
+  const { wildCreature, playerCreature, phase, log, isTrainer, trainerName } = activeBattle;
   
   const wildHpPercent = Math.max(0, Math.min(100, (wildCreature.hp / wildCreature.maxHp) * 100));
   const playerHpPercent = Math.max(0, Math.min(100, (playerCreature.hp / playerCreature.maxHp) * 100));
+  const foeTitle = isTrainer
+    ? `${trainerName || "Trainer"}'s ${wildCreature.name}`
+    : wildCreature.name;
 
   const handleAction = (action: string, moveId?: string, itemId?: string) => {
     if (phase !== 'WAITING_FOR_INPUT') return;
@@ -44,9 +47,16 @@ export function TurnBattleOverlay() {
         {/* Wild Creature (Top Right) */}
         <div className="self-end flex items-end gap-4 z-10 w-full max-w-md animate-in slide-in-from-right duration-700">
           <div className="flex-1 bg-black/60 border border-white/20 p-4 rounded-xl shadow-2xl backdrop-blur-md">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-xl font-bold text-white uppercase tracking-wider">{wildCreature.name}</h3>
-              <span className="text-emerald-400 font-bold">Lv {wildCreature.level}</span>
+            <div className="flex justify-between items-center mb-2 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-xl font-bold text-white uppercase tracking-wider truncate">{foeTitle}</h3>
+                {(wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && (
+                  <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-[#cbb26a]/60 bg-[#806f47]/30 text-[#e2d5b3]">
+                    shiny
+                  </span>
+                )}
+              </div>
+              <span className="text-emerald-400 font-bold shrink-0">Lv {wildCreature.level}</span>
             </div>
             
             <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-white/10">
@@ -60,15 +70,23 @@ export function TurnBattleOverlay() {
             </div>
           </div>
           
-          <div className="w-48 h-48 relative flex items-center justify-center filter drop-shadow-2xl">
-            {/* MVP Placeholder for sprite, ideally an img tag using wildCreature.spriteKey */}
+          <div className={cn(
+            "w-48 h-48 relative flex items-center justify-center filter drop-shadow-2xl",
+            (wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && "ring-2 ring-[#cbb26a]/50 rounded-xl"
+          )}>
             <img 
-              src={`/assets/sprites/${wildCreature.spriteKey}.png`} 
+              src={
+                wildCreature.spriteKey.startsWith('/')
+                  ? wildCreature.spriteKey
+                  : `/game-assets/${wildCreature.spriteKey}.png`
+              }
               alt={wildCreature.name}
-              className="max-w-full max-h-full object-contain pixelated"
+              className={cn(
+                "max-w-full max-h-full object-contain pixelated",
+                (wildCreature.isShiny || wildCreature.tags?.includes('shiny')) && "hue-rotate-30 saturate-150"
+              )}
               onError={(e) => {
-                // Fallback to a placeholder if sprite doesn't exist yet
-                (e.target as HTMLImageElement).src = '/assets/sprites/16x16-rpg-monsters.png';
+                (e.target as HTMLImageElement).src = '/game-assets/daemon_data.png';
               }}
             />
           </div>
@@ -78,11 +96,15 @@ export function TurnBattleOverlay() {
         <div className="self-start flex items-end gap-4 z-10 w-full max-w-md mt-16 animate-in slide-in-from-left duration-700 delay-300">
           <div className="w-64 h-64 relative flex items-center justify-center filter drop-shadow-2xl">
              <img 
-              src={`/assets/sprites/${playerCreature.spriteKey}.png`} 
+              src={
+                playerCreature.spriteKey.startsWith('/')
+                  ? playerCreature.spriteKey
+                  : `/game-assets/${playerCreature.spriteKey}.png`
+              }
               alt={playerCreature.name}
-              className="max-w-full max-h-full object-contain pixelated scale-x-[-1]" // Flip so it faces right
+              className="max-w-full max-h-full object-contain pixelated scale-x-[-1]"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/assets/sprites/16x16-rpg-characters.png';
+                (e.target as HTMLImageElement).src = '/game-assets/daemon_vaccine.png';
               }}
             />
           </div>
@@ -140,11 +162,12 @@ export function TurnBattleOverlay() {
           </button>
           
           <button 
-            disabled={phase !== 'WAITING_FOR_INPUT'}
-            onClick={() => handleAction('ITEM', undefined, 'binding_crystal')}
+            disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
+            onClick={() => handleAction('ITEM', undefined, 'film_standard')}
             className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isTrainer ? "Can't capture a trainer's creature" : undefined}
           >
-            BAG (Crystal)
+            {isTrainer ? "NO CAPTURE" : "EXPOSE FILM"}
           </button>
           
           <button 
@@ -156,11 +179,12 @@ export function TurnBattleOverlay() {
           </button>
           
           <button 
-            disabled={phase !== 'WAITING_FOR_INPUT'}
+            disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
             onClick={() => handleAction('FLEE')}
             className="sg-button-secondary text-xl text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed border-red-500/30 hover:border-red-500/50 hover:bg-red-500/10"
+            title={isTrainer ? "Can't run from a trainer battle" : undefined}
           >
-            RUN
+            {isTrainer ? "NO RUN" : "RUN"}
           </button>
         </div>
       </div>

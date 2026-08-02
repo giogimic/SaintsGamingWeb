@@ -16,6 +16,8 @@ import { InventoryManager } from "./src/server/InventoryManager";
 import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
 import { EconomyManager } from "./src/server/EconomyManager";
+import { ShopManager } from "./src/server/ShopManager";
+import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
 import { attachRedisAdapter } from "./src/server/net/redisAdapter";
 
@@ -40,13 +42,15 @@ app.prepare().then(async () => {
   const playerManager = new PlayerManager(gameEngine, worldManager, partyManager);
   const creatureManager = new CreatureManager(gameEngine, worldManager);
   const encounterManager = new EncounterManager(gameEngine);
-  const combatManager = new CombatManager(gameEngine, playerManager, creatureManager);
+  const combatManager = new CombatManager(gameEngine, playerManager, creatureManager, worldManager);
   const dialogueManager = new DialogueManager(gameEngine);
   const questManager = new QuestManager(gameEngine);
   const skillManager = new SkillManager(gameEngine);
-  const inventoryManager = new InventoryManager(gameEngine, worldManager);
+  const inventoryManager = new InventoryManager(gameEngine, worldManager, playerManager);
   const craftingManager = new CraftingManager(gameEngine, playerManager);
   const economyManager = new EconomyManager(gameEngine, playerManager);
+  const shopManager = new ShopManager(gameEngine);
+  void shopManager;
   
   const server = createServer(async (req, res) => {
     try {
@@ -87,6 +91,8 @@ app.prepare().then(async () => {
 
   const socketHandler = new SocketHandler(io, gameEngine, _realtimeService);
   
+  // Seed demo map/logic tiles BEFORE map-loader cache warms
+  await bootstrapDemoContent();
   await worldManager.initialize();
   await dialogueManager.initialize();
   await questManager.initialize();

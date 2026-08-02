@@ -810,6 +810,8 @@ model GameConfig {
   skillFormula  String   @default("runescape-style")
   xpCurve       String   @default("exponential")
   xpCurveData   String?  // JSON: custom XP table
+  /// Global shiny spawn chance percent (0–100). Creatures can sync or override.
+  globalShinyChancePercent Float @default(0.5)
 
   // Asset pack references
   spritePackIds  String   @default("[]") // JSON: ["tuxemon-npcs", "tuxemon-monsters"]
@@ -839,6 +841,9 @@ model CharacterClass {
   id            String    @id @default(cuid())
   gameId        String
   game          GameConfig @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  /// World profile id (tuxemon / custom_1 / custom_2). null/empty = shared across profiles.
+  /// Distinct from gameId, which is the GameConfig FK (slug "saints").
+  profileId     String?
   slug          String
   name          String
   description   String    @default("")
@@ -846,7 +851,13 @@ model CharacterClass {
   color         String    @default("#6366f1")
   iconAssetId   String?
 
-  baseStats     String    @default("{}") // JSON: {hp: 100, atk: 50, ...}
+  baseStats     String    @default("{}") // JSON: resolved combat sheet OR { shared+deltas encoded as final }
+  /// Additive deltas on SHARED_BASE_STATS: { hp, atk, def, spd, ratk, rdef }
+  statDeltas    String    @default("{}")
+  /// Additive starting combat skill level deltas: { attack: 14, wisdom: 9, ... }
+  skillDeltas   String    @default("{}")
+  /// Canonical class id for creator / heroes: WARRIOR | MAGE | THIEF | RANGER | PRIEST
+  classId       String    @default("")
   growthRates   String    @default("{}") // JSON: {hp: 1.5, atk: 1.2, ...}
 
   allowedSpriteTags String @default("[]") // JSON: ["hero", "player", "male"]
@@ -870,6 +881,8 @@ model CharacterClass {
 
   @@unique([gameId, slug])
   @@index([gameId])
+  @@index([profileId])
+  @@index([classId])
 }
 
 model LootTable {
@@ -1351,10 +1364,15 @@ model PlayerCreature {
   status      String?
   isParty     Boolean  @default(false)
   slotIndex   Int?
+  /// Shiny variant rolled at encounter / capture
+  isShiny     Boolean  @default(false)
+  /// Instance tags e.g. ["shiny"] for display/filter
+  tagsJson    String   @default("[]")
   capturedAt  DateTime @default(now())
 
   @@index([userId])
   @@index([speciesSlug])
+  @@index([isShiny])
 }
 
 model PlayerInventoryItem {
@@ -1500,6 +1518,8 @@ model NpcDialogueTree {
 model QuestTemplate {
   id             String           @id @default(cuid())
   slug           String           @unique
+  /// World profile id (matches WorldMap.gameId / Studio active profile)
+  gameId         String           @default("tuxemon")
   title          String
   description    String
   levelReq       Int              @default(1)
@@ -1508,6 +1528,8 @@ model QuestTemplate {
   rewards        String           // JSON: { xp: 100, gold: 50, items: [{slug: "iron_sword", qty: 1}] }
   objectives     QuestObjective[]
   createdAt      DateTime         @default(now())
+
+  @@index([gameId])
 }
 
 model QuestObjective {
@@ -1588,6 +1610,8 @@ model GameMap {
 model StarterHero {
   id          String   @id @default(cuid())
   slug        String   @unique          // e.g. "warrior", "mystic" — used as stable key
+  /// World profile id (Studio active profile / WorldMap.gameId)
+  gameId      String   @default("tuxemon")
   name        String                    // Display name on card
   classId     String                    // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
   spriteKey   String                    // Key in GAME_SPRITES (no extension), e.g. "warrior"
@@ -1602,5 +1626,64 @@ model StarterHero {
   startingInventory String @default("{\"capture_script\":10,\"patch_kit\":5}") // JSON
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+// Studio-editable creature catalog (mirrors StarterHero ease-of-edit).
+// Add rows via Studio Creatures panel — no code change required for new species.
+model CreatureDef {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique // e.g. "agnite", "rockitten"
+  /// World profile id; null/empty = shared across all Studio profiles
+  gameId                String?  @default("tuxemon")
+  name                  String            // Display name
+  dexNumber             Int      @default(0)
+  // Types (Saints elements). Secondary may be "None".
+  typePrimary           String            // Solar | Hydro | Bio | Volt | Geo | Cryo | Aero | Cyber
+  typeSecondary         String   @default("None")
+  // Image assets (paths under /game-assets/ or relative keys)
+  spriteOverworld       String            // e.g. "npc/rockitten" or "monster/battle/agnite-sheet"
+  spriteBattle          String?           // front / battle sheet
+  spriteBack            String?
+  // Shiny variant (easy Studio edit). Empty shiny sprites → use default look.
+  shinyEnabled          Boolean  @default(true)
+  shinyUseGlobalChance  Boolean  @default(true)
+  shinyChancePercent    Float    @default(0.5) // used when shinyUseGlobalChance = false
+  shinySpriteOverworld  String?
+  shinySpriteBattle     String?
+  shinySpriteBack       String?
+  // Base combat stats (full block)
+  baseHp                Int      @default(100)
+  physicalPower         Int      @default(10)
+  physicalDefense       Int      @default(10)
+  abilityPower          Int      @default(10)
+  abilityDefense        Int      @default(10)
+  combatTempo           Int      @default(100)
+  catchRate             Float    @default(1)
+  starterLevel          Int      @default(5)
+  // Passives: default + potential pool (JSON array)
+  // [{ "id", "name", "description", "isDefault": bool }]
+  passivesJson          String   @default("[]")
+  // World / overworld synergy skill
+  worldSkillName        String   @default("")
+  worldSkillDescription String   @default("")
+  // Starting TB abilities JSON: [{ "abilitySlug", "currentCooldown" }]
+  abilitiesJson         String   @default("[{\"abilitySlug\":\"ram\",\"currentCooldown\":0}]")
+  flavor                String   @default("")
+  tag                   String   @default("Standard")
+  tagColor              String   @default("#34d399")
+  stage                 String   @default("basic")
+  isStarter             Boolean  @default(false)
+  isWildSpawn           Boolean  @default(false)
+  isActive              Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([isStarter, isActive])
+  @@index([typePrimary])
+  @@index([isWildSpawn, isActive])
+  @@index([gameId])
 }
 

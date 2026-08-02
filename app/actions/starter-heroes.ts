@@ -7,6 +7,7 @@ import { checkAdminPermission } from './game-admin';
 export type StarterHeroData = {
   id?: string;
   slug: string;
+  gameId?: string;
   name: string;
   classId: string;
   spriteKey: string;
@@ -21,13 +22,35 @@ export type StarterHeroData = {
   startingInventory: string;
 };
 
-/** Public: fetch active heroes for character creator */
-export async function getStarterHeroes() {
+/** Public: fetch active heroes for character creator (scoped to active world profile by default). */
+export async function getStarterHeroes(gameId?: string) {
   try {
+    let gid = gameId;
+    if (!gid) {
+      const active = await prisma.gameConfig.findFirst({
+        where: {
+          isActive: true,
+          slug: { notIn: ['saints', 'saints-gaming', 'saints-gaming-qol'] },
+        },
+        select: { slug: true },
+      });
+      gid = active?.slug;
+    }
     const heroes = await prisma.starterHero.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(gid ? { gameId: gid } : {}),
+      },
       orderBy: { sortOrder: 'asc' },
     });
+    // Fallback: if profile has no heroes yet, show all active
+    if (heroes.length === 0 && gid) {
+      const all = await prisma.starterHero.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+      return { success: true, data: all };
+    }
     return { success: true, data: heroes };
   } catch (err) {
     console.error('[getStarterHeroes]', err);
@@ -35,13 +58,14 @@ export async function getStarterHeroes() {
   }
 }
 
-/** Admin: fetch ALL heroes (including inactive) */
-export async function getAllStarterHeroes() {
+/** Admin: fetch heroes (including inactive), optionally scoped to a world profile. */
+export async function getAllStarterHeroes(gameId?: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized', data: [] };
 
   try {
     const heroes = await prisma.starterHero.findMany({
+      where: gameId ? { gameId } : undefined,
       orderBy: { sortOrder: 'asc' },
     });
     return { success: true, data: heroes };
@@ -57,10 +81,12 @@ export async function upsertStarterHero(data: StarterHeroData) {
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
 
   try {
+    const gameId = data.gameId || 'tuxemon';
     const hero = await prisma.starterHero.upsert({
       where: { slug: data.slug },
       create: {
         slug: data.slug,
+        gameId,
         name: data.name,
         classId: data.classId,
         spriteKey: data.spriteKey,
@@ -75,6 +101,7 @@ export async function upsertStarterHero(data: StarterHeroData) {
         startingInventory: data.startingInventory,
       },
       update: {
+        gameId,
         name: data.name,
         classId: data.classId,
         spriteKey: data.spriteKey,
@@ -211,16 +238,23 @@ export async function seedDefaultStarterHeroes() {
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'ranger', name: 'Ranger', classId: 'THIEF', spriteKey: 'ninja',
+      slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja',
       flavor: 'Agile hunter. Precision strikes from distance.',
       tag: 'Mobile', tagColor: '#fbbf24', sortOrder: 5, isActive: true,
       startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
+      slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple',
+      flavor: 'Devoted healer. Wisdom and vitality over raw attack.',
+      tag: 'Support', tagColor: '#e2d5b3', sortOrder: 6, isActive: true,
+      startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
+      startingInventory: '{"capture_script":10,"patch_kit":5}',
+    },
+    {
       slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk',
       flavor: 'Inner strength fighter. Balanced offense and utility.',
-      tag: 'Balanced', tagColor: '#fb923c', sortOrder: 6, isActive: true,
+      tag: 'Balanced', tagColor: '#fb923c', sortOrder: 7, isActive: true,
       startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
@@ -295,14 +329,25 @@ export async function seedDefaultStarterHeroes() {
       startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":8}',
     },
+    {
+      slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl',
+      flavor: 'Starts in Azure Town — Tuxemon Spyder campaign playtest bed.',
+      tag: 'Campaign', tagColor: '#cbb26a', sortOrder: 17, isActive: true,
+      startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25,
+      startingInventory: '{"capture_script":20,"patch_kit":10}',
+    },
   ];
 
+  // Core classId remaps (e.g. ranger THIEF → RANGER) always sync; flavor/custom stay.
+  const syncClassIds = new Set(['warrior', 'paladin', 'mystic', 'shadow', 'ranger', 'priest', 'monk']);
   const results = await Promise.allSettled(
     defaults.map(h =>
       prisma.starterHero.upsert({
         where: { slug: h.slug },
         create: h,
-        update: {}, // Don't overwrite existing customizations
+        update: syncClassIds.has(h.slug)
+          ? { classId: h.classId, name: h.name, flavor: h.flavor, tag: h.tag, tagColor: h.tagColor, sortOrder: h.sortOrder }
+          : {},
       })
     )
   );

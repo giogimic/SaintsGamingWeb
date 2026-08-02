@@ -1,4 +1,6 @@
 import { Point } from '@/web/components/the-lobby/store';
+import { isSameBaseMap } from '@/shared/net/mapIds';
+import { normalizeGatesToArray } from '@/shared/game/mapGates';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -64,19 +66,18 @@ export class WorldSimulation {
     const isDynamicNpc = (dynamicEntities || []).some((e) => 
       Math.round(e.position.x) === targetX && 
       Math.round(e.position.y) === targetY && 
-      (e.mapId === currentMapId || !e.mapId)
+      (!e.mapId || e.mapId === currentMapId || isSameBaseMap(e.mapId, currentMapId))
     );
     
     if (isStaticNpc || isDynamicNpc) {
       return { type: 'BLOCKED', direction: dir, reason: 'NPC' };
     }
 
-    // Warp Gate Check
-    if (Array.isArray(state.gates)) {
-      const gate = state.gates.find((g: any) => g.position?.x === targetX && g.position?.y === targetY);
-      if (gate && gate.targetMapId) {
-        return { type: 'WARP', gate };
-      }
+    // Warp Gate Check (array or legacy record shapes)
+    const gates = normalizeGatesToArray(state.gates);
+    const gate = gates.find((g) => g.position.x === targetX && g.position.y === targetY);
+    if (gate?.targetMapId) {
+      return { type: 'WARP', gate };
     }
 
     // Valid Move
@@ -133,7 +134,8 @@ export class WorldSimulation {
       const ent = (dynamicEntities || []).find((e) => 
         Math.round(e.position.x) === faceX && 
         Math.round(e.position.y) === faceY && 
-        (e.mapId === currentMapId || !e.mapId)
+        (e.type === 'NPC' || String(e.id || '').includes('npc') || String(e.id || '').includes('vance')) &&
+        (!e.mapId || e.mapId === currentMapId || isSameBaseMap(e.mapId, currentMapId))
       );
       if (ent) {
         nearbyNpc = {
