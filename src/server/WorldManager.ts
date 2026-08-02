@@ -1,6 +1,7 @@
 import { GameEngine } from "./GameEngine";
 import { toBaseMapId } from "@/shared/net/mapIds";
-import { DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
+import { creatureAssetUrl, getFallbackCreature } from "@/shared/game/creatureCatalog";
+import { DEMO_VANCE_SPAWN, DEMO_WILD_SPAWNS } from "./demoMapSeed";
 
 // Using require for legacy JS modules (they can be converted to TS later)
 const mapLoader = require("../engine/map-loader.js");
@@ -90,13 +91,19 @@ export class WorldManager {
     const mapData = mapLoader.getCachedMap(mapId);
     if (mapData && mapData.npcs) {
       for (const npc of mapData.npcs) {
+        const rawId = String(npc.id || npc.templateId || "villager");
+        const templateId = rawId.replace(/^npc_/, "");
+        const dialogueNpcId = rawId.startsWith("npc_") ? rawId : `npc_${templateId}`;
         this.engine.events.emit("spawnCreature", {
-          templateId: npc.id || npc.templateId || "Villager",
+          templateId,
           entityType: "NPC",
           mapId: instanceId, // Spawning specifically into this shard/instance
           x: npc.x,
           y: npc.y,
-          spawnMode: "STATIC"
+          spawnMode: "STATIC",
+          name: npc.name || templateId,
+          spriteKey: npc.sprite || templateId,
+          dialogueNpcId,
         });
       }
     }
@@ -109,17 +116,28 @@ export class WorldManager {
       x: DEMO_VANCE_SPAWN.x,
       y: DEMO_VANCE_SPAWN.y,
       spawnMode: "STATIC",
+      name: "Warden Vance",
+      spriteKey: "adventurer",
+      dialogueNpcId: "npc_warden_vance",
     });
 
-    // MPV: spawn a few roaming Rockitten for RT combat testing (same species as TB)
-    for (const spot of DEMO_WILD_SPOTS) {
+    // Roaming wilds for RT combat (custom world-monsters + rockitten)
+    for (const spot of DEMO_WILD_SPAWNS) {
+      const def = getFallbackCreature(spot.slug);
+      const spriteKey = def
+        ? creatureAssetUrl(def.spriteOverworld)
+        : spot.slug === "rockitten"
+          ? "rockitten"
+          : creatureAssetUrl(`world-monsters/${spot.slug}-sheet`);
       this.engine.events.emit("spawnCreature", {
-        templateId: "rockitten",
+        templateId: spot.slug,
         entityType: "CREATURE",
         mapId: instanceId,
         x: spot.x,
         y: spot.y,
         spawnMode: "ROAMING",
+        name: def ? `Wild ${def.name}` : `Wild ${spot.slug}`,
+        spriteKey,
       });
     }
 

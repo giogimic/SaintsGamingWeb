@@ -95,18 +95,34 @@ export class CreatureManager {
     this.dirtyEntities.add(data.entityId);
   }
 
-  private spawnCreature(data: { templateId: string, entityType?: EntityType, mapId: string, x: number, y: number, spawnMode: SpawnMode, ownerId?: string }) {
+  private spawnCreature(data: {
+    templateId: string;
+    entityType?: EntityType;
+    mapId: string;
+    x: number;
+    y: number;
+    spawnMode: SpawnMode;
+    ownerId?: string;
+    name?: string;
+    spriteKey?: string;
+    dialogueNpcId?: string;
+  }) {
     const isNpc = data.entityType === EntityType.NPC;
-    const entityId = `${isNpc ? 'npc' : 'creature'}_${data.templateId}_${Date.now()}`;
+    // Stable template segment (no nested npc_ prefix) so dialogue ids stay parseable.
+    const templateKey = String(data.templateId || "unknown").replace(/^npc_/, "");
+    const entityId = `${isNpc ? "npc" : "creature"}_${templateKey}_${Date.now()}`;
     
     const entityType = data.entityType || EntityType.CREATURE;
     const isWildCreature = !isNpc && entityType === EntityType.CREATURE;
+    const displayName =
+      data.name ||
+      (isNpc ? templateKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : `Wild ${templateKey}`);
 
     const creature: CreatureState = {
       entityId,
       entityType,
-      templateId: data.templateId,
-      name: isNpc ? data.templateId : "Wild " + data.templateId,
+      templateId: templateKey,
+      name: displayName,
       mapId: data.mapId,
       x: data.x,
       y: data.y,
@@ -126,13 +142,14 @@ export class CreatureManager {
     this.worldManager.addEntity(creature.mapId, creature.x, creature.y, entityId);
     this.dirtyEntities.add(entityId);
     
-    // Broadcast spawn to clients (include spriteKey for lobby mapEntities).
+    // Broadcast spawn to clients (include spriteKey + dialogue id for lobby mapEntities).
     this.engine.events.emit("networkBroadcast", {
       room: creature.mapId,
       event: "creature_spawned",
       data: {
         ...creature,
-        spriteKey: data.templateId,
+        spriteKey: data.spriteKey || templateKey,
+        dialogueNpcId: data.dialogueNpcId || (isNpc ? `npc_${templateKey}` : undefined),
       },
     });
   }

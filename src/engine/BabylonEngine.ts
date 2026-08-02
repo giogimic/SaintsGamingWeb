@@ -72,6 +72,31 @@ export const DEFAULT_SPRITE_CONFIG: SpriteSheetConfig = {
   }
 };
 
+/** Full-frame portraits / single-image sheets (no 3×4 walk UV slicing). */
+export const SINGLE_FRAME_SPRITE_CONFIG: SpriteSheetConfig = {
+  columns: 1,
+  rows: 1,
+  idleFrame: 0,
+  walkCycle: [0],
+  walkSpeed: 0,
+  directions: {
+    down: 0,
+    left: 0,
+    right: 0,
+    up: 0
+  }
+};
+
+/** True when a sprite URL should render as one full frame (custom Saints sheets). */
+export function isSingleFrameSpriteUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return (
+    url.includes("/creatures/") ||
+    url.includes("/world-monsters/") ||
+    /\/npc\/(candrift_keeper|capturer_kian|elder_voss|ironwright_kael|scout_mira|soulwarden_aldric)\.png/.test(url)
+  );
+}
+
 export interface BabylonEntityData {
   id: string;
   name: string;
@@ -1255,10 +1280,13 @@ export class BabylonEngine {
         const tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
         tex.hasAlpha = true;
 
-        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/')) {
-          const config = entity.spriteConfig || DEFAULT_SPRITE_CONFIG;
+        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || isSingleFrameSpriteUrl(entity.spriteUrl)) {
+          const config =
+            entity.spriteConfig ||
+            (isSingleFrameSpriteUrl(entity.spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
           tex.uScale = 1 / config.columns;
           tex.vScale = 1 / config.rows;
+          spriteMesh.metadata.spriteConfig = config;
         }
 
         mat.diffuseTexture = tex;
@@ -1308,10 +1336,13 @@ export class BabylonEngine {
           const newTex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
           newTex.hasAlpha = true;
           
-          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/')) {
-            const config = entity.spriteConfig || DEFAULT_SPRITE_CONFIG;
+          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || isSingleFrameSpriteUrl(entity.spriteUrl)) {
+            const config =
+              entity.spriteConfig ||
+              (isSingleFrameSpriteUrl(entity.spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
             newTex.uScale = 1 / config.columns;
             newTex.vScale = 1 / config.rows;
+            if (spriteMesh.metadata) spriteMesh.metadata.spriteConfig = config;
           }
           mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {

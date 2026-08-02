@@ -465,21 +465,30 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const trueId = entityId.replace(/^npc_/, '');
-        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === entityId);
-        targetName = npc?.name || (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
-        // Demo / dialogue path — talk to NPCs (Vance grants tools & film)
-        const dialogueNpcId = trueId.startsWith('warden') || trueId.includes('vance')
-          ? (trueId.startsWith('npc_') ? trueId : `npc_${trueId}`)
-          : (entityId.includes('warden') || entityId.includes('vance') ? 'npc_warden_vance' : entityId);
+        const mapEnt = state.mapEntities.find((e) => e.id === entityId);
+        const trueId = entityId.replace(/^npc_/, '').replace(/_\d{10,}$/, '');
+        const npc = activeMap.npcs?.find(
+          (n: any) => n.id === trueId || n.id === `npc_${trueId}` || n.id === entityId
+        );
+        targetName =
+          mapEnt?.name ||
+          npc?.name ||
+          (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
+        // Prefer server-provided dialogueKey; fall back to stable npc_<template> id.
+        const dialogueNpcId =
+          mapEnt?.dialogueKey ||
+          (trueId.includes('vance') || entityId.includes('vance')
+            ? 'npc_warden_vance'
+            : `npc_${trueId}`);
         state.emitSocketEvent?.('npc_interact', {
           mapId: state.currentMapId || state.instanceId,
-          targetId: dialogueNpcId.includes('vance') ? 'npc_warden_vance' : dialogueNpcId,
+          targetId: dialogueNpcId,
         });
         state.setGameMode('DIALOG');
         return;
       } else if (entityId.startsWith('creature_')) {
-        targetName = 'Wild Creature';
+        const mapEnt = state.mapEntities.find((e) => e.id === entityId);
+        targetName = mapEnt?.name || 'Wild Creature';
         state.setCombatTarget({
           entityId,
           name: targetName,
@@ -608,8 +617,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               name: ent.name || '',
               x: ex,
               y: ez,
-              spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/game-assets/npc/${ent.spriteKey}.png`) : undefined,
+              spriteUrl: ent.spriteKey
+                ? ent.spriteKey.startsWith('/') || ent.spriteKey.startsWith('http')
+                  ? ent.spriteKey
+                  : ent.spriteKey.includes('/')
+                    ? `/game-assets/${ent.spriteKey.replace(/\.png$/, '')}.png`
+                    : `/game-assets/npc/${ent.spriteKey}.png`
+                : undefined,
               isPlayer: false,
+              isNpc: ent.type === 'NPC',
+              isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
               spriteConfig: ent.spriteConfig
             });
           }

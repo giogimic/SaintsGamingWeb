@@ -7,6 +7,7 @@ import {
   DEMO_MAP_ID,
   DEMO_MAP_NPCS,
   DEMO_MAP_W,
+  DEMO_NPC_DIALOGUES,
   buildDemoSandboxGrid,
 } from "./demoMapSeed";
 import { DEMO_QUEST_CHAIN } from "./demoQuests";
@@ -286,7 +287,23 @@ export async function bootstrapDemoContent() {
         data: JSON.stringify(VANCE_TREE),
       },
     });
-    console.log("[DemoBootstrap] Warden Vance dialogue ready");
+    for (const [npcId, entry] of Object.entries(DEMO_NPC_DIALOGUES)) {
+      await prisma.npcDialogueTree.upsert({
+        where: { npcId },
+        create: {
+          npcId,
+          name: entry.name,
+          data: JSON.stringify(entry.tree),
+        },
+        update: {
+          name: entry.name,
+          data: JSON.stringify(entry.tree),
+        },
+      });
+    }
+    console.log(
+      `[DemoBootstrap] Dialogue trees ready (Vance + ${Object.keys(DEMO_NPC_DIALOGUES).length} custom NPCs)`
+    );
   } catch (e) {
     console.warn("[DemoBootstrap] Dialogue seed skipped:", (e as Error).message);
   }

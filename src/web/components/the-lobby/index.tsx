@@ -685,9 +685,20 @@ export default function TheLobby({
       const isNpc = data.entityType === 'NPC';
       useGameStore.setState((state) => {
         const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
-        const spriteKey = isNpc
-          ? (String(data.templateId || '').includes('vance') ? 'adventurer' : (data.spriteKey || 'adventurer'))
-          : (data.spriteKey || data.templateId || 'rockitten');
+        const templateId = String(data.templateId || '');
+        const rawSprite = data.spriteKey || templateId || (isNpc ? 'adventurer' : 'rockitten');
+        // Vance keeps classic walk-sheet adventurer; others use server spriteKey (may be absolute URL).
+        const spriteKey =
+          isNpc && templateId.includes('vance')
+            ? 'adventurer'
+            : rawSprite;
+        const dialogueKey =
+          data.dialogueNpcId ||
+          (isNpc
+            ? templateId.includes('vance')
+              ? 'npc_warden_vance'
+              : `npc_${templateId.replace(/^npc_/, '')}`
+            : undefined);
         const ent = {
           id: data.entityId,
           type: (isNpc ? 'NPC' : 'MONSTER') as 'NPC' | 'MONSTER',
@@ -696,9 +707,11 @@ export default function TheLobby({
           isMoving: !!data.isMoving,
           facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
           mapId: data.mapId,
-          name: isNpc && String(data.templateId || '').includes('vance')
-            ? 'Warden Vance'
-            : (data.name || data.templateId),
+          name:
+            isNpc && templateId.includes('vance')
+              ? 'Warden Vance'
+              : (data.name || templateId),
+          dialogueKey,
         };
         if (idx >= 0) state.mapEntities[idx] = ent;
         else state.mapEntities.push(ent);
