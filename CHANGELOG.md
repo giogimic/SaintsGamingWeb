@@ -1,5 +1,8 @@
 ## [2.1.114] - 2026-08-02
 
+### Fixed
+- Binding Crystal capture requires a **real inventory stack** (no demo grant); missing item keeps the turn open.
+
 ### Added
 - Shared RT ability catalog + capture math helpers (`src/shared/game/combatAbilities.ts`) with tests.
 - Server-authoritative RT combat: ability catalog, capture rejection, cooldowns, range, LoS, miss/crit (`CombatManager`).
