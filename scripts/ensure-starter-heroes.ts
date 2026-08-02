@@ -10,6 +10,7 @@ const defaults = [
   {
     slug: "warrior",
     name: "Warrior",
+    gameId: "custom_1",
     classId: "WARRIOR",
     spriteKey: "warrior",
     flavor: "Frontline champion. High HP, unstoppable in melee.",
@@ -25,6 +26,7 @@ const defaults = [
   {
     slug: "paladin",
     name: "Paladin",
+    gameId: "custom_1",
     classId: "WARRIOR",
     spriteKey: "knight",
     flavor: "Holy guardian. Superior defense, supports allies.",
@@ -40,6 +42,7 @@ const defaults = [
   {
     slug: "mystic",
     name: "Mystic",
+    gameId: "custom_1",
     classId: "MAGE",
     spriteKey: "magician",
     flavor: "Master of arcane arts. High burst, low defense.",
@@ -131,10 +134,17 @@ const defaults = [
 
 async function main() {
   for (const h of defaults) {
+    const gameId =
+      (h as { gameId?: string }).gameId ||
+      (h.slug === "spyder_tamer" || h.startingMap === "AZURE_TOWN"
+        ? "tuxemon"
+        : "custom_1");
+    const row = { ...h, gameId };
     await prisma.starterHero.upsert({
       where: { slug: h.slug },
-      create: h,
+      create: row,
       update: {
+        gameId,
         name: h.name,
         classId: h.classId,
         spriteKey: h.spriteKey,
@@ -149,7 +159,7 @@ async function main() {
         startingInventory: h.startingInventory,
       },
     });
-    console.log(`[ok] ${h.slug}`);
+    console.log(`[ok] ${h.slug} → ${gameId}`);
   }
   await prisma.$disconnect();
   console.log(`[done] ${defaults.length} starter heroes`);
