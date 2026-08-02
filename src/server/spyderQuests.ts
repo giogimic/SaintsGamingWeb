@@ -126,7 +126,8 @@ export const SPYDER_QUEST_CHAIN = [
   {
     slug: "quest_spyder_cotton_tunnel",
     title: "Spyder 6: Cotton Tunnel",
-    description: "Find Carlos in the Cotton Tunnel, then defeat him in a trainer battle.",
+    description:
+      "Find Carlos in the Cotton Tunnel, then defeat his Dragarbor and Pairagrin in a trainer battle.",
     rewards: JSON.stringify({
       items: [
         { slug: "film_fine", qty: 2 },
@@ -147,16 +148,16 @@ export const SPYDER_QUEST_CHAIN = [
         type: "BATTLE",
         targetSlug: "npc_cotton_tunnel_carlos",
         requiredQty: 1,
-        description: "Challenge Carlos and win the trainer battle",
+        description: "Defeat Carlos's Dragarbor and Pairagrin",
       },
     ],
   },
 ] as const;
 
-/** Carlos dialogue — challenge starts a 1v1 trainer TB (Dragarbor). */
+/** Carlos dialogue — challenge starts a 2-foe trainer TB (Dragarbor → Pairagrin). */
 export const CARLOS_DIALOGUE_TREE = {
   node_start: {
-    text: "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — care to prove yourself?",
+    text: "So another tamer found the tunnel. Spyder's web runs deeper than Azure's plaza — Dragarbor and Pairagrin are ready. Care to prove yourself?",
     options: [
       {
         label: "Challenge Carlos",
@@ -167,7 +168,7 @@ export const CARLOS_DIALOGUE_TREE = {
     ],
   },
   node_post_win: {
-    text: "Hah! Dragarbor rarely falls that cleanly. You've earned the tunnel's respect — Spyder's web opens wider for you.",
+    text: "Hah! Both of them down — Dragarbor and Pairagrin rarely fall that cleanly. You've earned the tunnel's respect — Spyder's web opens wider for you.",
     options: [
       {
         label: "Rematch",
@@ -178,7 +179,7 @@ export const CARLOS_DIALOGUE_TREE = {
     ],
   },
   node_post_lose: {
-    text: "Dust yourself off. Heal your companion, then come back when you're ready to challenge Dragarbor again.",
+    text: "Dust yourself off. Heal your companion, then come back when you're ready for Dragarbor and Pairagrin again.",
     options: [
       {
         label: "Try again",

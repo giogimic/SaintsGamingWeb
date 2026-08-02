@@ -24,6 +24,7 @@ interface ActiveQuest {
 
 export default function QuestTrackerOverlay() {
   const [quests, setQuests] = useState<ActiveQuest[]>([]);
+  const [spyderCampaignComplete, setSpyderCampaignComplete] = useState(false);
   const { refreshQuestsCounter, gameMode, currentMapId } = useGameStore();
   const isSpyderMap =
     currentMapId === "AZURE_TOWN" ||
@@ -41,6 +42,7 @@ export default function QuestTrackerOverlay() {
       if (res.ok) {
         const data = await res.json();
         setQuests(data.quests || []);
+        setSpyderCampaignComplete(!!data.spyderCampaignComplete);
       }
     } catch (e) {
       console.error("Failed to fetch quests:", e);
@@ -54,28 +56,38 @@ export default function QuestTrackerOverlay() {
   if (gameMode !== "EXPLORING" && gameMode !== "DIALOG") return null;
 
   if (quests.length === 0) {
+    const spyderEmpty =
+      isSpyderMap && spyderCampaignComplete ? (
+        <>
+          Cotton Tunnel cleared. Rematch <span className="text-[#cbb26a]">Carlos</span>{" "}
+          anytime, or explore the plaza and Route 1 — more of Spyder&apos;s web awaits.
+        </>
+      ) : isSpyderMap ? (
+        <>
+          Talk to the <span className="text-[#cbb26a]">Azure Guide</span> in the plaza
+          (click or press E). Accept your charge to begin.
+        </>
+      ) : (
+        <>
+          Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
+          (click or press E). Take the toolbelt to start Q1.
+        </>
+      );
+
     return (
       <div className="absolute right-4 top-24 w-64 pointer-events-none z-40">
         <div className="bg-[#0b1320]/80 border border-[#806f47]/30 backdrop-blur-md rounded-md p-3 shadow-lg">
           <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
             <Compass className="w-4 h-4 text-[#cbb26a]" />
             <h4 className="text-sm font-bold text-[#e2d5b3] uppercase tracking-wide">
-              {isSpyderMap ? "Spyder Trail" : "Road to Aethervale"}
+              {isSpyderMap
+                ? spyderCampaignComplete
+                  ? "Spyder Trail Clear"
+                  : "Spyder Trail"
+                : "Road to Aethervale"}
             </h4>
           </div>
-          <p className="text-xs text-slate-200 leading-tight mt-2">
-            {isSpyderMap ? (
-              <>
-                Talk to the <span className="text-[#cbb26a]">Azure Guide</span> in the plaza
-                (click or press E). Accept your charge to begin.
-              </>
-            ) : (
-              <>
-                Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
-                (click or press E). Take the toolbelt to start Q1.
-              </>
-            )}
-          </p>
+          <p className="text-xs text-slate-200 leading-tight mt-2">{spyderEmpty}</p>
         </div>
       </div>
     );

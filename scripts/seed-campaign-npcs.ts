@@ -13,6 +13,7 @@ import {
   SPYDER_QUEST_CHAIN,
 } from "../src/server/spyderQuests";
 import { AZURE_GUIDE_NPC_ID, AZURE_GUIDE_TREE } from "../src/server/spyderGuideDialogue";
+import { seedAmbientDialogue } from "./seed-ambient-dialogue";
 
 const prisma = new PrismaClient();
 
@@ -200,6 +201,9 @@ async function main() {
 
   console.log("Upserting Spyder quest chain…");
   await upsertQuestChain();
+
+  console.log("Ambient dialogue + wall prune…");
+  await seedAmbientDialogue();
 
   console.log(`Done. ${total} NPC placements across ${Object.keys(CAMPAIGN_NPC_SEEDS).length} maps.`);
 }
