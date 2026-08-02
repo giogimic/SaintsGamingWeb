@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { buildInitialSkills } from '../../../shared/game/skillTypings';
 
 export type GameMode = 'TITLE_SCREEN' | 'LOGIN' | 'SERVER_SELECT' | 'CHARACTER_SELECT' | 'CHARACTER_CREATOR' | 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
 
@@ -72,12 +73,17 @@ export interface BattleCreature {
   level: number;
   spriteKey: string;
   name: string;
+  isShiny?: boolean;
+  tags?: string[];
 }
 
 export interface BattleState {
   id: string;
   accountId: string;
   phase: "WAITING_FOR_INPUT" | "RESOLUTION" | "TURN_END";
+  isTrainer?: boolean;
+  trainerNpcId?: string;
+  trainerName?: string;
   wildCreature: BattleCreature;
   playerCreature: BattleCreature;
   log: string[];
@@ -280,21 +286,8 @@ export interface GameState {
   clearParty: () => void;
 }
 
-export const INITIAL_SKILLS: Record<string, SkillData> = {
-  // Combat
-  Attack: { level: 1, xp: 0 }, Constitution: { level: 1, xp: 0 }, Defence: { level: 1, xp: 0 },
-  Magic: { level: 1, xp: 0 }, Necromancy: { level: 1, xp: 0 }, Prayer: { level: 1, xp: 0 },
-  Ranged: { level: 1, xp: 0 }, Strength: { level: 1, xp: 0 }, Summoning: { level: 1, xp: 0 },
-  // Gathering
-  Farming: { level: 1, xp: 0 }, Fishing: { level: 1, xp: 0 }, Hunter: { level: 1, xp: 0 },
-  Mining: { level: 1, xp: 0 }, Woodcutting: { level: 1, xp: 0 },
-  // Artisan
-  Construction: { level: 1, xp: 0 }, Cooking: { level: 1, xp: 0 }, Crafting: { level: 1, xp: 0 },
-  Firemaking: { level: 1, xp: 0 }, Fletching: { level: 1, xp: 0 }, Herblore: { level: 1, xp: 0 },
-  Runecrafting: { level: 1, xp: 0 }, Smithing: { level: 1, xp: 0 },
-  // Support
-  Agility: { level: 1, xp: 0 }, Thieving: { level: 1, xp: 0 }
-};
+/** Combat typings + gathering/artisan matrix (Title Case UI keys). */
+export const INITIAL_SKILLS: Record<string, SkillData> = buildInitialSkills();
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector(

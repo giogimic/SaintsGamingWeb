@@ -9,7 +9,12 @@ import {
   DEMO_MAP_W,
   buildDemoSandboxGrid,
 } from "./demoMapSeed";
-import { DEMO_QUEST_CHAIN } from "./demoQuests";
+import {
+  SAINTS_TRAIL_GAME_ID,
+  SAINTS_TRAIL_NPCS,
+  SAINTS_TRAIL_QUEST_CHAIN,
+  SAINTS_TRAIL_DIALOGUES,
+} from "./saintsTrailQuests";
 
 const prisma = new PrismaClient();
 
@@ -20,7 +25,7 @@ const VANCE_TREE = {
     text: "Out here, nature yields only to those with the right edge. Take this kit — chop, dig, craft film, bond a companion, then clear the north bramble for Aethervale.",
     options: [
       {
-        label: "Take the Starter Toolbelt (start Q1)",
+        label: "Take the Starter Toolbelt",
         nextNode: "node_tools_done",
         action: "GRANT_DEMO_TOOLS",
       },
@@ -42,7 +47,7 @@ const VANCE_TREE = {
     ],
   },
   node_tools_done: {
-    text: "Rook Hatchet and Crude Pickaxe are yours — Q1 is live. Southeast: chop THREE Wood Logs first, then mine THREE Copper Ore. Come back and choose Report progress when both are done.",
+    text: "Rook Hatchet and Crude Pickaxe are yours. Finish the plaza Trail first — after you spar the Tutor, gather unlocks southeast (THREE Wood Logs, then THREE Copper Ore). Report progress here when both are done.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Thanks, Warden.", nextNode: "exit" },
@@ -79,6 +84,8 @@ const VANCE_TREE = {
 function creatureToDb(def: (typeof FALLBACK_CREATURE_DEFS)[0]) {
   return {
     slug: def.slug,
+    // Shared across world profiles until Studio scopes a species
+    gameId: null as string | null,
     name: def.name,
     dexNumber: def.dexNumber,
     typePrimary: def.typePrimary,
@@ -143,37 +150,68 @@ async function seedLogicTiles() {
 }
 
 async function seedDemoMap() {
+  const forceMap = process.env.FORCE_DEMO_MAP === "1";
   const grid = buildDemoSandboxGrid();
-  const npcs = DEMO_MAP_NPCS;
   const encounters = DEMO_ENCOUNTERS;
   const gridJson = JSON.stringify(grid);
-  const npcsJson = JSON.stringify(npcs);
   const encountersJson = JSON.stringify(encounters);
+  const existing = await prisma.worldMap.findUnique({ where: { id: DEMO_MAP_ID } });
 
-  await prisma.worldMap.upsert({
-    where: { id: DEMO_MAP_ID },
-    create: {
-      id: DEMO_MAP_ID,
-      name: "Demo Sandbox",
-      gridData: gridJson,
-      gatesData: "{}",
-      npcsData: npcsJson,
-      encountersData: encountersJson,
-    },
-    update: {
-      name: "Demo Sandbox",
-      gridData: gridJson,
-      npcsData: npcsJson,
-      encountersData: encountersJson,
-      version: { increment: 1 },
-    },
-  });
+  // Merge Trail NPCs into npcsData (create-missing); preserve Studio placements.
+  let npcs: Array<Record<string, unknown>> = [];
+  if (existing?.npcsData && !forceMap) {
+    try {
+      npcs = JSON.parse(existing.npcsData || "[]");
+    } catch {
+      npcs = [];
+    }
+  }
+  const seeds = [...SAINTS_TRAIL_NPCS, ...DEMO_MAP_NPCS];
+  for (const seed of seeds) {
+    if (!npcs.some((n) => n.id === seed.id)) npcs.push({ ...seed });
+  }
+  const npcsJson = JSON.stringify(npcs);
+
+  if (!existing) {
+    await prisma.worldMap.create({
+      data: {
+        id: DEMO_MAP_ID,
+        gameId: SAINTS_TRAIL_GAME_ID,
+        name: "Saints Trail Sandbox",
+        gridData: gridJson,
+        gatesData: "{}",
+        npcsData: npcsJson,
+        encountersData: encountersJson,
+      },
+    });
+  } else if (forceMap) {
+    await prisma.worldMap.update({
+      where: { id: DEMO_MAP_ID },
+      data: {
+        gameId: SAINTS_TRAIL_GAME_ID,
+        name: "Saints Trail Sandbox",
+        gridData: gridJson,
+        npcsData: npcsJson,
+        encountersData: encountersJson,
+        version: { increment: 1 },
+      },
+    });
+  } else {
+    await prisma.worldMap.update({
+      where: { id: DEMO_MAP_ID },
+      data: {
+        gameId: SAINTS_TRAIL_GAME_ID,
+        npcsData: npcsJson,
+        version: { increment: 1 },
+      },
+    });
+  }
 
   await prisma.gameMap.upsert({
     where: { id: DEMO_MAP_ID },
     create: {
       id: DEMO_MAP_ID,
-      name: "Demo Sandbox",
+      name: "Saints Trail Sandbox",
       width: DEMO_MAP_W,
       height: DEMO_MAP_H,
       tilesetData: gridJson,
@@ -181,51 +219,69 @@ async function seedDemoMap() {
       encounters: encountersJson,
       gates: "{}",
     },
-    update: {
-      name: "Demo Sandbox",
-      width: DEMO_MAP_W,
-      height: DEMO_MAP_H,
-      tilesetData: gridJson,
-      npcs: npcsJson,
-      encounters: encountersJson,
-    },
+    update: forceMap
+      ? {
+          name: "Saints Trail Sandbox",
+          width: DEMO_MAP_W,
+          height: DEMO_MAP_H,
+          tilesetData: gridJson,
+          npcs: npcsJson,
+          encounters: encountersJson,
+        }
+      : { npcs: npcsJson },
   });
 
   if (typeof mapLoader.invalidateMap === "function") {
     mapLoader.invalidateMap(DEMO_MAP_ID);
   }
-  console.log("[DemoBootstrap] DEMO_SANDBOX map rewritten");
+  console.log(
+    `[DemoBootstrap] DEMO_SANDBOX ready (gameId=${SAINTS_TRAIL_GAME_ID}, forceMap=${forceMap})`
+  );
 }
 
 async function seedDemoQuests() {
-  for (const q of DEMO_QUEST_CHAIN) {
+  const force = process.env.FORCE_TRAIL_SEED === "1" || process.env.FORCE_QUEST_SEED === "1";
+  let created = 0;
+  for (const q of SAINTS_TRAIL_QUEST_CHAIN) {
     const existing = await prisma.questTemplate.findUnique({
       where: { slug: q.slug },
-      include: { objectives: true },
     });
+
+    if (existing && !force) {
+      if ((existing as { gameId?: string }).gameId !== SAINTS_TRAIL_GAME_ID) {
+        await prisma.questTemplate.update({
+          where: { id: existing.id },
+          data: { gameId: SAINTS_TRAIL_GAME_ID },
+        });
+      }
+      continue;
+    }
 
     let questId: string;
     if (existing) {
+      await prisma.questObjective.deleteMany({ where: { questId: existing.id } });
       await prisma.questTemplate.update({
         where: { id: existing.id },
         data: {
+          gameId: SAINTS_TRAIL_GAME_ID,
           title: q.title,
           description: q.description,
           rewards: q.rewards,
         },
       });
-      await prisma.questObjective.deleteMany({ where: { questId: existing.id } });
       questId = existing.id;
     } else {
-      const created = await prisma.questTemplate.create({
+      const row = await prisma.questTemplate.create({
         data: {
           slug: q.slug,
+          gameId: SAINTS_TRAIL_GAME_ID,
           title: q.title,
           description: q.description,
           rewards: q.rewards,
         },
       });
-      questId = created.id;
+      questId = row.id;
+      created++;
     }
 
     for (const obj of q.objectives) {
@@ -241,7 +297,9 @@ async function seedDemoQuests() {
       });
     }
   }
-  console.log(`[DemoBootstrap] Demo quests × ${DEMO_QUEST_CHAIN.length}`);
+  console.log(
+    `[DemoBootstrap] Saints Trail quests × ${SAINTS_TRAIL_QUEST_CHAIN.length} (new=${created}, force=${force})`
+  );
 }
 
 /** Idempotent demo seed — safe to run on every server boot. */
@@ -262,10 +320,13 @@ export async function bootstrapDemoContent() {
 
   try {
     for (const def of FALLBACK_CREATURE_DEFS) {
+      const payload = creatureToDb(def);
+      const { gameId: _gid, ...updatePayload } = payload;
       await prisma.creatureDef.upsert({
         where: { slug: def.slug },
-        create: creatureToDb(def),
-        update: creatureToDb(def),
+        create: payload,
+        // Don't clobber Studio gameId scoping on every boot
+        update: updatePayload,
       });
     }
     console.log(`[DemoBootstrap] CreatureDef × ${FALLBACK_CREATURE_DEFS.length}`);
@@ -274,19 +335,37 @@ export async function bootstrapDemoContent() {
   }
 
   try {
-    await prisma.npcDialogueTree.upsert({
+    const forceDialogue = process.env.FORCE_TRAIL_SEED === "1";
+    for (const [npcId, def] of Object.entries(SAINTS_TRAIL_DIALOGUES)) {
+      const existing = await prisma.npcDialogueTree.findUnique({ where: { npcId } });
+      if (existing && !forceDialogue) continue;
+      await prisma.npcDialogueTree.upsert({
+        where: { npcId },
+        create: {
+          npcId,
+          name: def.name,
+          data: JSON.stringify(def.tree),
+        },
+        update: {
+          name: def.name,
+          data: JSON.stringify(def.tree),
+        },
+      });
+    }
+    // Keep legacy VANCE_TREE export in sync if trail entry missing
+    const vance = await prisma.npcDialogueTree.findUnique({
       where: { npcId: "npc_warden_vance" },
-      create: {
-        npcId: "npc_warden_vance",
-        name: "Warden Vance",
-        data: JSON.stringify(VANCE_TREE),
-      },
-      update: {
-        name: "Warden Vance",
-        data: JSON.stringify(VANCE_TREE),
-      },
     });
-    console.log("[DemoBootstrap] Warden Vance dialogue ready");
+    if (!vance) {
+      await prisma.npcDialogueTree.create({
+        data: {
+          npcId: "npc_warden_vance",
+          name: "Warden Vance",
+          data: JSON.stringify(VANCE_TREE),
+        },
+      });
+    }
+    console.log("[DemoBootstrap] Saints Trail dialogues ready");
   } catch (e) {
     console.warn("[DemoBootstrap] Dialogue seed skipped:", (e as Error).message);
   }

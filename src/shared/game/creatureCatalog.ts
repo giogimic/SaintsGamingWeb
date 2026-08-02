@@ -42,6 +42,8 @@ export type CreatureStatBlock = {
 /** Full editable creature definition (shared by seed, Studio, gameplay). */
 export type CreatureDefData = {
   slug: string;
+  /** World profile id; null/empty = shared across Studio profiles */
+  gameId?: string | null;
   name: string;
   dexNumber: number;
   typePrimary: CreatureElementType | string;
@@ -49,6 +51,15 @@ export type CreatureDefData = {
   spriteOverworld: string;
   spriteBattle?: string | null;
   spriteBack?: string | null;
+  /** Can this species roll shiny on wild spawn? */
+  shinyEnabled: boolean;
+  /** If true, use GameConfig.globalShinyChancePercent; else shinyChancePercent. */
+  shinyUseGlobalChance: boolean;
+  /** Per-species shiny chance percent (0–100) when not syncing global. */
+  shinyChancePercent: number;
+  shinySpriteOverworld?: string | null;
+  shinySpriteBattle?: string | null;
+  shinySpriteBack?: string | null;
   baseHp: number;
   physicalPower: number;
   physicalDefense: number;
@@ -69,6 +80,15 @@ export type CreatureDefData = {
   isWildSpawn: boolean;
   isActive: boolean;
   sortOrder: number;
+};
+
+const DEFAULT_SHINY_FIELDS = {
+  shinyEnabled: true,
+  shinyUseGlobalChance: true,
+  shinyChancePercent: 0.5,
+  shinySpriteOverworld: null as string | null,
+  shinySpriteBattle: null as string | null,
+  shinySpriteBack: null as string | null,
 };
 
 /** Curated asset keys for Studio picker (battle sheets + overworld). */
@@ -120,6 +140,7 @@ export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
     spriteOverworld: "monster/battle/agnite-sheet",
     spriteBattle: "monster/battle/agnite-sheet",
     spriteBack: null,
+    ...DEFAULT_SHINY_FIELDS,
     baseHp: 100,
     physicalPower: 16,
     physicalDefense: 10,
@@ -163,6 +184,7 @@ export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
     spriteOverworld: "monster/battle/budaye-sheet",
     spriteBattle: "monster/battle/budaye-sheet",
     spriteBack: null,
+    ...DEFAULT_SHINY_FIELDS,
     baseHp: 110,
     physicalPower: 10,
     physicalDefense: 16,
@@ -206,6 +228,7 @@ export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
     spriteOverworld: "monster/battle/dollfin-sheet",
     spriteBattle: "monster/battle/dollfin-sheet",
     spriteBack: null,
+    ...DEFAULT_SHINY_FIELDS,
     baseHp: 95,
     physicalPower: 11,
     physicalDefense: 10,
@@ -249,6 +272,7 @@ export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
     spriteOverworld: "npc/rockitten",
     spriteBattle: "monster/battle/rockitten-sheet",
     spriteBack: null,
+    ...DEFAULT_SHINY_FIELDS,
     baseHp: 100,
     physicalPower: 12,
     physicalDefense: 14,
@@ -292,6 +316,7 @@ export function listFallbackStarters(): CreatureDefData[] {
 export function emptyCreatureDef(): CreatureDefData {
   return {
     slug: "",
+    gameId: "tuxemon",
     name: "",
     dexNumber: 0,
     typePrimary: "Solar",
@@ -299,6 +324,7 @@ export function emptyCreatureDef(): CreatureDefData {
     spriteOverworld: "daemon_data",
     spriteBattle: "daemon_data",
     spriteBack: null,
+    ...DEFAULT_SHINY_FIELDS,
     baseHp: 100,
     physicalPower: 10,
     physicalDefense: 10,

@@ -111,17 +111,41 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Player lobby demo: land on DEMO_SANDBOX unless already on a known playable map.
+      // Lobby: keep demo + Spyder campaign maps; unknown/empty → DEMO_SANDBOX.
       // Studio keeps saved map for editor work.
       const DEMO_MAP = 'DEMO_SANDBOX';
       const DEMO_SPAWN = { x: 14, y: 15 };
-      const knownPlayable = new Set(['DEMO_SANDBOX', 'SAINTS_VILLAGE']);
+      const knownPlayable = new Set([
+        'DEMO_SANDBOX',
+        'SAINTS_VILLAGE',
+        'AZURE_TOWN',
+        'SPYDER_ROUTE1',
+        'ROUTE1',
+        'COTTON_TOWN',
+        'SPYDER_COTTON_TOWN',
+        'COTTON_SCOOP',
+        'COTTON_CAFE',
+        'SPYDER_COTTON_SCOOP',
+        'SPYDER_COTTON_CAFE',
+        'SPYDER_COTTON_TUNNEL',
+        'SPYDER_ROUTE2',
+        'SPYDER_ROUTE3',
+        'SPYDER_LEATHER_TOWN',
+        'SPYDER_LEATHER_CENTER',
+        'SPYDER_LEATHER_SCOOP',
+        'SPYDER_LEATHER_GYM',
+        'SPYDER_LEATHER_SHAFT1',
+        'SPYDER_LEATHER_SHAFT2',
+        'COTTON_UNDERGROUND',
+        'PLAYER_HOUSE_BEDROOM',
+        'PLAYER_HOUSE_DOWNSTAIRS',
+      ]);
       const savedMap = String(parsedState.currentMapId || '');
       let validMapId = savedMap;
       let validPosition = parsedState.position || { ...DEMO_SPAWN };
 
       if (!enableStudio) {
-        if (!knownPlayable.has(savedMap)) {
+        if (!savedMap || !knownPlayable.has(savedMap)) {
           validMapId = DEMO_MAP;
           validPosition = { ...DEMO_SPAWN };
         }
@@ -144,8 +168,11 @@ export default function TheLobby({
         validPosition = { ...DEMO_SPAWN };
       }
 
+      // Socket auth + battle payloads use User.id — keep client accountId aligned
+      const socketAccountId = session?.user?.id || charId;
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
+        accountId: socketAccountId,
         currentMapId: validMapId,
         name: res.data.name,
         spriteId: res.data.spriteId || 'adventurer',
@@ -155,7 +182,7 @@ export default function TheLobby({
 
       // Notify socket server of loaded character specs
       socketRef.current?.emit('join_map', {
-        accountId: charId,
+        accountId: socketAccountId,
         mapId: validMapId,
         x: validPosition.x,
         y: validPosition.y,
@@ -276,8 +303,11 @@ export default function TheLobby({
         socket.emit(event, data);
       });
 
-      const effectiveAccountId = activeCharacterId || state.player.accountId;
+      const effectiveAccountId = session.user.id || state.player.accountId;
       if (effectiveAccountId) {
+        if (!state.player.accountId || state.player.accountId !== session.user.id) {
+          useGameStore.getState().hydratePlayer({ accountId: session.user.id });
+        }
         socket.emit('join_map', {
           accountId: effectiveAccountId,
           mapId: state.currentMapId,
@@ -457,10 +487,15 @@ export default function TheLobby({
       // Turn-based encounter results (bible 11)
       if (data?.result) {
         if (data.accountId && myAccount && data.accountId !== myAccount) return;
+        const isTrainer = !!state.activeBattle?.isTrainer;
         const messages: Record<string, string> = {
           CAPTURE: 'Creature captured! Check your Creature Box.',
-          WIN: 'Victory! The wild creature fainted.',
-          LOSE: 'Your creature fainted. Heal before the next battle.',
+          WIN: isTrainer
+            ? 'Trainer defeated!'
+            : 'Victory! The wild creature fainted.',
+          LOSE: isTrainer
+            ? 'You lost the trainer battle. Your companion was patched up — rematch when ready.'
+            : 'Your creature fainted. Heal before the next battle.',
           FLEE: 'Got away safely.',
         };
         state.showToast(messages[data.result] || 'Battle ended.');
@@ -544,6 +579,28 @@ export default function TheLobby({
     socket.on('demo_open_lab', () => {
       useGameStore.getState().setActiveDialog(null);
       useGameStore.getState().setGameMode('PROFESSOR_LAB');
+    });
+
+    socket.on('demo_open_shop', () => {
+      useGameStore.getState().setActiveDialog(null);
+      useGameStore.getState().setGameMode('SHOP');
+    });
+
+    socket.on('party_creatures_hp', (data) => {
+      const list = data?.creatures;
+      if (!Array.isArray(list)) return;
+      useGameStore.setState((state) => {
+        for (const row of list) {
+          if (!row?.id || typeof row.currentHp !== 'number') continue;
+          const creature = state.player.creatureParty.find((c) => c.id === row.id);
+          if (creature) {
+            creature.currentHp = Math.max(0, Math.min(creature.maxHp, row.currentHp));
+            if (typeof row.maxHp === 'number' && row.maxHp > 0) {
+              creature.maxHp = row.maxHp;
+            }
+          }
+        }
+      });
     });
 
     // --- PHASE 7: Skills & Toast ---

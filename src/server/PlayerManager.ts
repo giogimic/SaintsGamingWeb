@@ -3,6 +3,7 @@ import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
 import { isSameBaseMap } from "@/shared/net/mapIds";
+import { grantsForDamageTaken, grantsForKill } from "@/shared/game/combatSkillXp";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -48,6 +49,7 @@ export class PlayerManager {
     this.engine.events.on("playerDisconnected", (data) => this.handleDisconnect(data));
     this.engine.events.on("playerDamaged", (data) => this.handlePlayerDamaged(data));
     this.engine.events.on("creatureAoEAttack", (data) => this.handleCreatureAoEAttack(data));
+    this.engine.events.on("entityDeath", (data) => this.handleEntityDeathKillBonus(data));
     this.engine.events.on("processInputs", () => this.processInputs());
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
@@ -165,7 +167,7 @@ export class PlayerManager {
 
     if (!instanceId) {
       // Use dynamic sharding to get an instance
-      const instance = this.worldManager.joinMap(data.mapId, accountId, isPrivate);
+      const instance = await this.worldManager.joinMap(data.mapId, accountId, isPrivate);
       instanceId = instance.instanceId;
     }
 
@@ -259,7 +261,8 @@ export class PlayerManager {
         event: "creature_spawned",
         data: {
           ...creature,
-          spriteKey: creature.templateId,
+          // Prefer persisted overworld sprite (e.g. professor), not templateId (azure_guide).
+          spriteKey: creature.spriteKey || creature.templateId,
         },
       });
     }
@@ -292,6 +295,37 @@ export class PlayerManager {
     });
   }
 
+  private handleEntityDeathKillBonus(data: {
+    entityId: string;
+    mapId: string;
+    x: number;
+    y: number;
+    attackerId?: string;
+    templateId?: string;
+  }) {
+    if (!data.attackerId) return;
+    const killer = this.getPlayer(data.attackerId);
+    if (!killer?.accountId) return;
+
+    for (const g of grantsForKill()) {
+      this.engine.events.emit("grantSkillXp", {
+        accountId: killer.accountId,
+        skillSlug: g.skillSlug,
+        amount: g.amount,
+      });
+    }
+
+    const targetSlug = data.templateId || "creature";
+    this.engine.events.emit("monsterKilled", {
+      accountId: killer.accountId,
+      socketId: killer.socketId,
+      targetSlug,
+      amount: 1,
+      entityId: data.entityId,
+      mapId: data.mapId,
+    });
+  }
+
   private handleCreatureAoEAttack(data: { attackerId: string, mapId: string, x: number, y: number, radius: number, damage: number }) {
     for (const player of this.players.values()) {
       if (player.mapId === data.mapId) {
@@ -318,12 +352,23 @@ export class PlayerManager {
     this.dirtyEntities.add(player.entityId);
     console.log(`[PlayerManager] ${player.name} took ${data.damage} damage! HP: ${player.hp}/${player.maxHp}`);
 
+    // Train defence / hitpoints on damage taken (combat skill typings)
+    if (data.damage > 0 && player.accountId) {
+      for (const g of grantsForDamageTaken(data.damage)) {
+        this.engine.events.emit("grantSkillXp", {
+          accountId: player.accountId,
+          skillSlug: g.skillSlug,
+          amount: g.amount,
+        });
+      }
+    }
+
     if (player.hp <= 0) {
       this.handlePlayerDefeated(player);
     }
   }
 
-  private handlePlayerDefeated(player: PlayerState) {
+  private async handlePlayerDefeated(player: PlayerState) {
     console.log(`[PlayerManager] ${player.name} was defeated! Teleporting to Safe Zone.`);
     
     // Restore HP
@@ -347,7 +392,7 @@ export class PlayerManager {
     
     // Teleport to SAINTS_VILLAGE coordinate X: 10, Y: 15
     const safeMapId = "SAINTS_VILLAGE";
-    const safeInstance = this.worldManager.joinMap(safeMapId, player.accountId, false);
+    const safeInstance = await this.worldManager.joinMap(safeMapId, player.accountId, false);
     
     player.mapId = safeInstance.instanceId;
     player.x = 10;
