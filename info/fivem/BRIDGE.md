@@ -91,6 +91,13 @@ Players can also link a license from UCP Settings (`fivemLicense` field).
 
 ---
 
+## UCP status (back-burner)
+
+`/ucp/*` stays in the repo but is **not active product work**.  
+Shipping a real UCP depends on a dedicated FiveM plugin design (characters, banking, garage, etc.) — treat as future / maybe much later. Do not deepen UCP docs or features unless explicitly requested.
+
+---
+
 ## Realtime events
 
 | Event | Priority | When |

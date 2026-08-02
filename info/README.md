@@ -35,7 +35,7 @@ A new developer should be able to open this project, read `/info`, and understan
 | [uploads/](./uploads/) | 🟢 | Local (+ optional S3 later) (`STORAGE.md`) |
 | [ops/](./ops/) | 🟢 | Staging smoke checklist (`STAGING_SMOKE.md`) |
 | [discord/](./discord/) | 🟡 Back-line | Bot bridge (`BRIDGE.md`) |
-| [fivem/](./fivem/) | 🟡 Back-line | Character/stats bridge (`BRIDGE.md`) |
+| [fivem/](./fivem/) | 🟡 Back-burner | Bridge exists; UCP + plugin work deferred |
 
 ---
 
