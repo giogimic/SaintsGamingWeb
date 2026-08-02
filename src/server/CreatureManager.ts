@@ -8,6 +8,8 @@ export interface CreatureState {
   entityId: string;
   entityType: EntityType;
   templateId: string;
+  /** Overworld sheet key under /game-assets/npc/ (may differ from templateId). */
+  spriteKey: string;
   name: string;
   mapId: string;
   x: number;
@@ -126,6 +128,7 @@ export class CreatureManager {
       entityId,
       entityType,
       templateId: cleanTemplate,
+      spriteKey,
       name: data.name || (isNpc ? cleanTemplate : "Wild " + cleanTemplate),
       mapId: data.mapId,
       x: data.x,

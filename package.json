@@ -24,6 +24,7 @@
     "seed:azure": "tsx scripts/seed-campaign-npcs.ts",
     "smoke:spyder": "tsx scripts/smoke-spyder-path.ts",
     "reimport:spyder-layers": "tsx scripts/reimport-spyder-rich-layers.ts",
+    "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "visual:browser-to-game": "node scripts/visual-browser-to-game.mjs",
     "import:map-npcs": "tsx scripts/import-map-npcs-from-tmx.ts"
   },

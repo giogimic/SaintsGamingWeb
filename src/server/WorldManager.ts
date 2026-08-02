@@ -180,7 +180,10 @@ export class WorldManager {
     return undefined;
   }
 
-  public joinMap(mapId: string, accountId: string, isPrivate: boolean = false): MapInstance {
+  public async joinMap(mapId: string, accountId: string, isPrivate: boolean = false): Promise<MapInstance> {
+    // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
+    await mapLoader.loadMapData(mapId);
+
     if (isPrivate) {
       // Private instances (e.g. player bases) are isolated per account
       const instanceId = `${mapId}_${accountId}`;

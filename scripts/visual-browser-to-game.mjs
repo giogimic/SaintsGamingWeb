@@ -113,14 +113,25 @@ async function main() {
     }
 
     await page.getByText(/Choose Your Hero/i).waitFor({ timeout: 30000 });
-    await page.waitForTimeout(800);
+    // Wait out "Loading heroes..." (server actions can be slow on cold compile)
+    await page
+      .getByText(/Loading heroes/i)
+      .waitFor({ state: 'hidden', timeout: 90000 })
+      .catch(() => {});
+    await page.waitForTimeout(500);
     await shot(page, 'hero-pick');
 
-    // Prefer Spyder Tamer card
-    const spyder = page.getByText('Spyder Tamer', { exact: false });
+    // Prefer Spyder Tamer card (may need scroll in long DB hero lists)
+    let spyder = page.getByText('Spyder Tamer', { exact: false });
+    for (let i = 0; i < 8 && !(await spyder.count()); i++) {
+      await page.mouse.wheel(0, 600);
+      await page.waitForTimeout(200);
+      spyder = page.getByText('Spyder Tamer', { exact: false });
+    }
     if (!(await spyder.count())) {
       throw new Error('Spyder Tamer hero not listed');
     }
+    await spyder.first().scrollIntoViewIfNeeded();
     await spyder.first().click();
 
     // Name step
