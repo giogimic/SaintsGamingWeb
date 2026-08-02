@@ -111,6 +111,14 @@ export class EncounterManager {
         creature: existingParty,
         alreadyOwned: true,
       });
+      this.engine.events.emit("starterClaimed", {
+        accountId: data.accountId,
+        socketId: data.socketId,
+        targetSlug: "starter",
+        amount: 1,
+        speciesSlug: existingParty.speciesSlug,
+        alreadyOwned: true,
+      });
       return;
     }
 
@@ -142,6 +150,13 @@ export class EncounterManager {
         spriteOverworld: def.spriteOverworld,
       },
       alreadyOwned: false,
+    });
+    this.engine.events.emit("starterClaimed", {
+      accountId: data.accountId,
+      socketId: data.socketId,
+      targetSlug: "starter",
+      amount: 1,
+      speciesSlug: def.slug,
     });
   }
 

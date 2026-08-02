@@ -46,7 +46,7 @@ app.prepare().then(async () => {
   const dialogueManager = new DialogueManager(gameEngine);
   const questManager = new QuestManager(gameEngine);
   const skillManager = new SkillManager(gameEngine);
-  const inventoryManager = new InventoryManager(gameEngine, worldManager);
+  const inventoryManager = new InventoryManager(gameEngine, worldManager, playerManager);
   const craftingManager = new CraftingManager(gameEngine, playerManager);
   const economyManager = new EconomyManager(gameEngine, playerManager);
   const shopManager = new ShopManager(gameEngine);
@@ -91,8 +91,9 @@ app.prepare().then(async () => {
 
   const socketHandler = new SocketHandler(io, gameEngine, _realtimeService);
   
-  await worldManager.initialize();
+  // Seed demo map/logic tiles BEFORE map-loader cache warms
   await bootstrapDemoContent();
+  await worldManager.initialize();
   await dialogueManager.initialize();
   await questManager.initialize();
   await skillManager.initialize();

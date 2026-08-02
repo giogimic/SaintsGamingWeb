@@ -1,20 +1,37 @@
 import { PrismaClient } from "@prisma/client";
 import { FALLBACK_CREATURE_DEFS } from "@/shared/game/creatureCatalog";
+import {
+  DEMO_ENCOUNTERS,
+  DEMO_LOGIC_TILES,
+  DEMO_MAP_H,
+  DEMO_MAP_ID,
+  DEMO_MAP_NPCS,
+  DEMO_MAP_W,
+  buildDemoSandboxGrid,
+} from "./demoMapSeed";
+import { DEMO_QUEST_CHAIN } from "./demoQuests";
 
 const prisma = new PrismaClient();
 
+const mapLoader = require("../engine/map-loader.js");
+
 const VANCE_TREE = {
   node_start: {
-    text: "Out here, nature yields only to those with the right edge. Take this kit — you'll need to chop and dig if you want to craft anything worth carrying. Then claim a companion at the Lab.",
+    text: "Out here, nature yields only to those with the right edge. Take this kit — chop, dig, craft film, bond a companion, then clear the north bramble for Aethervale.",
     options: [
       {
-        label: "Take the Starter Toolbelt",
+        label: "Take the Starter Toolbelt (start Q1)",
         nextNode: "node_tools_done",
         action: "GRANT_DEMO_TOOLS",
       },
       {
         label: "Where do I get film to capture souls?",
         nextNode: "node_film",
+      },
+      {
+        label: "Report progress / turn in",
+        nextNode: "node_report",
+        action: "DEMO_QUEST_REPORT",
       },
       {
         label: "Open the Professor's Lab",
@@ -25,14 +42,14 @@ const VANCE_TREE = {
     ],
   },
   node_tools_done: {
-    text: "Rook Hatchet and Crude Pickaxe are yours. Chop pine, mine copper, then visit the merchant for Standard Film — or craft it. When you're ready, bond a starter in the Lab.",
+    text: "Rook Hatchet and Crude Pickaxe are yours — Q1 is live. Chop three logs and mine three ore southeast, then talk to me again.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Thanks, Warden.", nextNode: "exit" },
     ],
   },
   node_film: {
-    text: "We don't bottle beasts in crystals anymore. You expose Standard Film with a Soul Camera — buy film at the merchant, or craft it from Crystal Dust and Wood Logs. Better stock, cleaner soul bind.",
+    text: "We don't bottle beasts in crystals anymore. You expose Standard Film with a Soul Camera — buy film at the merchant, or craft it from Crystal Dust and Wood Logs.",
     options: [
       {
         label: "Grant me a starter film pack",
@@ -44,6 +61,10 @@ const VANCE_TREE = {
   },
   node_film_done: {
     text: "Soul Camera and Standard Film — don't waste the exposures. Weaken the wildling first.",
+    options: [{ label: "Understood.", nextNode: "exit" }],
+  },
+  node_report: {
+    text: "Good. Keep gathering, crafting, bonding, and clearing that bramble when you're ready.",
     options: [{ label: "Understood.", nextNode: "exit" }],
   },
   node_lab: {
@@ -88,9 +109,156 @@ function creatureToDb(def: (typeof FALLBACK_CREATURE_DEFS)[0]) {
   };
 }
 
+async function seedLogicTiles() {
+  for (const tile of DEMO_LOGIC_TILES) {
+    await prisma.mapLogicTile.upsert({
+      where: { id: tile.id },
+      create: {
+        id: tile.id,
+        name: tile.name,
+        color: tile.color,
+        isSolid: tile.isSolid,
+        interactable: tile.interactable,
+        onInteractAction: tile.onInteractAction,
+        onInteractPayload: tile.onInteractPayload,
+        onStepAction: tile.onStepAction,
+        onStepPayload: tile.onStepPayload,
+      },
+      update: {
+        name: tile.name,
+        color: tile.color,
+        isSolid: tile.isSolid,
+        interactable: tile.interactable,
+        onInteractAction: tile.onInteractAction,
+        onInteractPayload: tile.onInteractPayload,
+        onStepAction: tile.onStepAction,
+        onStepPayload: tile.onStepPayload,
+      },
+    });
+  }
+  if (typeof mapLoader.invalidateLogicTiles === "function") {
+    mapLoader.invalidateLogicTiles();
+  }
+  console.log(`[DemoBootstrap] MapLogicTile × ${DEMO_LOGIC_TILES.length}`);
+}
+
+async function seedDemoMap() {
+  const grid = buildDemoSandboxGrid();
+  const npcs = DEMO_MAP_NPCS;
+  const encounters = DEMO_ENCOUNTERS;
+  const gridJson = JSON.stringify(grid);
+  const npcsJson = JSON.stringify(npcs);
+  const encountersJson = JSON.stringify(encounters);
+
+  await prisma.worldMap.upsert({
+    where: { id: DEMO_MAP_ID },
+    create: {
+      id: DEMO_MAP_ID,
+      name: "Demo Sandbox",
+      gridData: gridJson,
+      gatesData: "{}",
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+    },
+    update: {
+      name: "Demo Sandbox",
+      gridData: gridJson,
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+      version: { increment: 1 },
+    },
+  });
+
+  await prisma.gameMap.upsert({
+    where: { id: DEMO_MAP_ID },
+    create: {
+      id: DEMO_MAP_ID,
+      name: "Demo Sandbox",
+      width: DEMO_MAP_W,
+      height: DEMO_MAP_H,
+      tilesetData: gridJson,
+      npcs: npcsJson,
+      encounters: encountersJson,
+      gates: "{}",
+    },
+    update: {
+      name: "Demo Sandbox",
+      width: DEMO_MAP_W,
+      height: DEMO_MAP_H,
+      tilesetData: gridJson,
+      npcs: npcsJson,
+      encounters: encountersJson,
+    },
+  });
+
+  if (typeof mapLoader.invalidateMap === "function") {
+    mapLoader.invalidateMap(DEMO_MAP_ID);
+  }
+  console.log("[DemoBootstrap] DEMO_SANDBOX map rewritten");
+}
+
+async function seedDemoQuests() {
+  for (const q of DEMO_QUEST_CHAIN) {
+    const existing = await prisma.questTemplate.findUnique({
+      where: { slug: q.slug },
+      include: { objectives: true },
+    });
+
+    let questId: string;
+    if (existing) {
+      await prisma.questTemplate.update({
+        where: { id: existing.id },
+        data: {
+          title: q.title,
+          description: q.description,
+          rewards: q.rewards,
+        },
+      });
+      await prisma.questObjective.deleteMany({ where: { questId: existing.id } });
+      questId = existing.id;
+    } else {
+      const created = await prisma.questTemplate.create({
+        data: {
+          slug: q.slug,
+          title: q.title,
+          description: q.description,
+          rewards: q.rewards,
+        },
+      });
+      questId = created.id;
+    }
+
+    for (const obj of q.objectives) {
+      await prisma.questObjective.create({
+        data: {
+          questId,
+          stage: obj.stage,
+          type: obj.type,
+          targetSlug: obj.targetSlug,
+          requiredQty: obj.requiredQty,
+          description: obj.description,
+        },
+      });
+    }
+  }
+  console.log(`[DemoBootstrap] Demo quests × ${DEMO_QUEST_CHAIN.length}`);
+}
+
 /** Idempotent demo seed — safe to run on every server boot. */
 export async function bootstrapDemoContent() {
   console.log("[DemoBootstrap] Seeding demo content…");
+
+  try {
+    await seedLogicTiles();
+  } catch (e) {
+    console.warn("[DemoBootstrap] Logic tiles seed skipped:", (e as Error).message);
+  }
+
+  try {
+    await seedDemoMap();
+  } catch (e) {
+    console.warn("[DemoBootstrap] DEMO_SANDBOX seed skipped:", (e as Error).message);
+  }
 
   try {
     for (const def of FALLBACK_CREATURE_DEFS) {
@@ -130,12 +298,13 @@ export async function bootstrapDemoContent() {
       { slug: "soul_camera", name: "Soul Camera", category: "TOOL", stackable: false },
       { slug: "crystal_dust", name: "Crystal Dust", category: "RESOURCE" },
       { slug: "wood_log", name: "Wood Log", category: "RESOURCE" },
+      { slug: "ore_copper", name: "Copper Ore", category: "RESOURCE" },
       { slug: "axe_bronze", name: "Rook Hatchet", category: "TOOL", stackable: false },
       { slug: "pickaxe_bronze", name: "Crude Pickaxe", category: "TOOL", stackable: false },
     ]) {
       await prisma.itemTemplate.upsert({
         where: { slug: item.slug },
-        update: {},
+        update: { name: item.name, category: item.category },
         create: {
           slug: item.slug,
           name: item.name,
@@ -162,7 +331,6 @@ export async function bootstrapDemoContent() {
         timeMs: 2000,
       },
     });
-    // Keep legacy recipe slug working
     await prisma.craftingRecipe.upsert({
       where: { slug: "craft_binding_crystal" },
       update: { outputItemSlug: "film_standard" },
@@ -183,6 +351,12 @@ export async function bootstrapDemoContent() {
     console.log("[DemoBootstrap] Film items + craft recipes ready");
   } catch (e) {
     console.warn("[DemoBootstrap] Item/recipe seed skipped:", (e as Error).message);
+  }
+
+  try {
+    await seedDemoQuests();
+  } catch (e) {
+    console.warn("[DemoBootstrap] Quest seed skipped:", (e as Error).message);
   }
 
   console.log("[DemoBootstrap] Done");

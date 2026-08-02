@@ -238,6 +238,12 @@ export class CraftingManager {
           xp: newXp,
         },
       });
+      this.engine.events.emit("itemCrafted", {
+        accountId,
+        socketId,
+        targetSlug: recipe.outputItemSlug,
+        amount: recipe.outputQuantity || 1,
+      });
     } catch (e) {
       console.error("Error crafting item:", e);
       this.engine.events.emit("directMessage", {

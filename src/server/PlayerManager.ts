@@ -169,8 +169,8 @@ export class PlayerManager {
       instanceId = instance.instanceId;
     }
 
-    const startX = data.x || 6;
-    const startY = data.y || 2;
+    const startX = typeof data.x === "number" ? data.x : 14;
+    const startY = typeof data.y === "number" ? data.y : 15;
     const startZone = InterestManager.zoneOf(startX, startY);
 
     const player: PlayerState = {
@@ -244,6 +244,25 @@ export class PlayerManager {
         mapId: data.mapId
       }
     });
+
+    // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
+    let mapCreatures: any[] = [];
+    this.engine.events.emit("requestCreaturesInMap", {
+      mapId: player.mapId,
+      callback: (list: any[]) => {
+        mapCreatures = list || [];
+      },
+    });
+    for (const creature of mapCreatures) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "creature_spawned",
+        data: {
+          ...creature,
+          spriteKey: creature.templateId,
+        },
+      });
+    }
 
     // Broadcast join to others
     this.engine.events.emit("networkBroadcast", {

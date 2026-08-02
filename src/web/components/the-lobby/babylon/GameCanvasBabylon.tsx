@@ -14,6 +14,7 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 
 import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
+import { isSameBaseMap } from '@/shared/net/mapIds';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -281,13 +282,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
 
     if (result.type === 'NPC_DIALOGUE') {
-      useGameStore.setState({
-        activeDialog: {
-          npcId: result.npcId,
-          npcName: result.npcName,
-          text: result.text
-        },
-        gameMode: 'DIALOG'
+      const rawId = String(result.npcId || '');
+      const dialogueNpcId =
+        rawId.includes('vance') || rawId.includes('warden')
+          ? 'npc_warden_vance'
+          : rawId;
+      // Server-authoritative dialogue (Vance grants / quest report)
+      store.emitSocketEvent?.('npc_interact', {
+        mapId: currentMapId,
+        targetId: dialogueNpcId,
       });
       return;
     }
@@ -560,7 +563,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const activeEntities = new Set<string>();
         
         mapEntities.forEach((ent) => {
-          if (ent.mapId === currentMapId || !ent.mapId) {
+          if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
             activeEntities.add(ent.id);
             const ex = ent.position.x - mapWidth / 2;
             const ez = mapHeight / 2 - ent.position.y;
@@ -843,7 +846,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
       
-      {/* Quest Tracker */}
+      {/* Quest Tracker (single instance) */}
       {!isDevEditorOpen && <QuestTrackerOverlay />}
 
       {/* Crafting Menu */}
@@ -854,8 +857,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       )}
       
       <CanvasHudBadge activeMapName={activeMap?.name} currentMapId={currentMapId} />
-      
-      <QuestTrackerOverlay />
     </div>
   );
 };

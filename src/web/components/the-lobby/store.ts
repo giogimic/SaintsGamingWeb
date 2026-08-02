@@ -297,7 +297,7 @@ export const useGameStore = create<GameState>()(
       gameMode: 'TITLE_SCREEN',
       player: {
         spriteId: 'adventurer',
-        position: { x: 6, y: 2 },
+        position: { x: 14, y: 15 },
         level: 1,
         xp: 0,
         hp: 100,
@@ -443,9 +443,17 @@ export const useGameStore = create<GameState>()(
         try {
           const res = await fetch('/api/world/logic-tiles');
           const json = await res.json();
-          if (json.success) {
-            set((state) => { state.logicTiles = json.data; });
+          const rows = Array.isArray(json) ? json : (json?.success ? json.data : null);
+          if (!rows) return;
+          const keyed: Record<number, any> = {};
+          if (Array.isArray(rows)) {
+            for (const tile of rows) {
+              if (tile && typeof tile.id === 'number') keyed[tile.id] = tile;
+            }
+          } else if (rows && typeof rows === 'object') {
+            Object.assign(keyed, rows);
           }
+          set((state) => { state.logicTiles = keyed; });
         } catch (e) {
           console.error('Failed to fetch logic tiles', e);
         }

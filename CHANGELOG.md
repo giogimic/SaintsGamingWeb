@@ -1,3 +1,17 @@
+## [2.1.118] - 2026-08-02
+
+### Added
+- **DEMO_SANDBOX canonical seed** on boot (`demoMapSeed`): walkable plaza, tall grass (2), trees/ore (5/6), shop (7), craft (9), bramble (11).
+- Formal **Q1–Q4** QuestTemplates (`demoQuests`) with event hooks: GATHER / CRAFT / CLAIM / CLEAR / TALK.
+- **CLEAR_BRAMBLE** interact (axe + party companion); live tile clear + `tile_changed`.
+- Quest tracker empty-state guide (“Talk to Warden Vance”); creature snapshot on `map_joined`.
+
+### Fixed
+- Logic-tile API/store contract (keyed `data`); map-loader DEMO fallback no longer paints solid walls as ground.
+- Gather: `RESOURCE_NODE_MAP` 5/6, `getMapDataSync`, instance resolve via player shard / base mapId.
+- QuestManager User.id resolution; E-key NPC → `npc_interact`; Vance/entity `mapId` base-map match.
+- Bootstrap runs before map-loader init so seeded tiles/maps are cached correctly.
+
 ## [2.1.117] - 2026-08-02
 
 ### Added

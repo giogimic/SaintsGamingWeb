@@ -36,10 +36,21 @@ export class CreatureManager {
     this.engine.events.on("requestCreatureState", (entityId, callback) => {
       callback(this.creatures.get(entityId));
     });
+    this.engine.events.on("requestCreaturesInMap", (data: { mapId: string; callback: (c: CreatureState[]) => void }) => {
+      data.callback(this.getCreaturesInMap(data.mapId));
+    });
   }
 
   public getCreature(entityId: string): CreatureState | undefined {
     return this.creatures.get(entityId);
+  }
+
+  public getCreaturesInMap(mapId: string): CreatureState[] {
+    const out: CreatureState[] = [];
+    for (const c of this.creatures.values()) {
+      if (c.mapId === mapId) out.push(c);
+    }
+    return out;
   }
 
   private handleCreatureDamaged(data: { entityId: string, attackerId: string, damage: number }) {

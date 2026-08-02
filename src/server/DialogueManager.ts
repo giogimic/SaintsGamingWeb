@@ -157,8 +157,19 @@ export class DialogueManager {
       ]);
       await this.syncInv(socketId, userId);
       this.toast(socketId, "Received Rook Hatchet & Crude Pickaxe.");
+      this.engine.events.emit("acceptQuest", {
+        accountId,
+        questSlug: "quest_tools_of_trade",
+        socketId,
+      });
+      return;
+    }
+
+    if (action === "DEMO_QUEST_REPORT") {
+      // Progress TALK objectives for active demo quests
       this.engine.events.emit("dialogue_start", {
         accountId,
+        socketId,
         targetSlug: "npc_warden_vance",
       });
       return;
@@ -175,8 +186,15 @@ export class DialogueManager {
     }
   }
 
+  private normalizeNpcId(targetId: string): string {
+    const id = String(targetId || "");
+    if (id.includes("vance") || id.includes("warden")) return "npc_warden_vance";
+    return id;
+  }
+
   private async handleNpcInteract({ accountId, socketId, mapId, targetId }: any) {
-    const tree = await this.getDialogueTree(targetId);
+    const npcId = this.normalizeNpcId(targetId);
+    const tree = await this.getDialogueTree(npcId);
     const startNode = tree["node_start"];
     if (!startNode) return;
 
@@ -184,8 +202,8 @@ export class DialogueManager {
       socketId,
       event: "dialogue_start",
       data: {
-        npcId: targetId,
-        npcName: targetId.includes("vance") ? "Warden Vance" : undefined,
+        npcId,
+        npcName: npcId.includes("vance") ? "Warden Vance" : undefined,
         node: "node_start",
         text: startNode.text,
         options: startNode.options,
@@ -202,31 +220,33 @@ export class DialogueManager {
     action,
     questSlug,
   }: any) {
+    const npcId = this.normalizeNpcId(targetId);
+
     if (action) {
       await this.runAction(action, accountId, socketId);
     }
 
     if (action === "ACCEPT_QUEST" && questSlug) {
-      this.engine.events.emit("acceptQuest", { accountId, questSlug });
+      this.engine.events.emit("acceptQuest", { accountId, questSlug, socketId });
     }
 
     if (nextNode === "exit") {
       this.engine.events.emit("directMessage", {
         socketId,
         event: "dialogue_end",
-        data: { npcId: targetId },
+        data: { npcId },
       });
       return;
     }
 
-    const tree = await this.getDialogueTree(targetId);
+    const tree = await this.getDialogueTree(npcId);
     const nodeData = tree[nextNode];
 
     if (!nodeData) {
       this.engine.events.emit("directMessage", {
         socketId,
         event: "dialogue_end",
-        data: { npcId: targetId },
+        data: { npcId },
       });
       return;
     }
@@ -235,8 +255,8 @@ export class DialogueManager {
       socketId,
       event: "dialogue_start",
       data: {
-        npcId: targetId,
-        npcName: targetId.includes("vance") ? "Warden Vance" : undefined,
+        npcId,
+        npcName: npcId.includes("vance") ? "Warden Vance" : undefined,
         node: nextNode,
         text: nodeData.text,
         options: nodeData.options,

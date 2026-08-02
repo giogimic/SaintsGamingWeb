@@ -124,7 +124,7 @@ export default function TheLobby({
         validPosition.x = Math.max(0, Math.min(mw - 1, validPosition.x));
         validPosition.y = Math.max(0, Math.min(mh - 1, validPosition.y));
       } else {
-        validPosition = { x: 6, y: 2 };
+        validPosition = { x: 14, y: 15 };
       }
 
       useGameStore.getState().hydratePlayer({ 
@@ -557,6 +557,21 @@ export default function TheLobby({
           state.player.inventory = data.inventory;
         });
       }
+    });
+
+    socket.on('quest_sync', () => {
+      useGameStore.getState().triggerQuestRefresh();
+    });
+
+    socket.on('tile_changed', (data) => {
+      if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
+      const store = useGameStore.getState();
+      const map = store.activeMapData;
+      if (!map?.grid?.[data.y]) return;
+      useGameStore.setState((state) => {
+        if (!state.activeMapData?.grid?.[data.y]) return;
+        state.activeMapData.grid[data.y][data.x] = data.tileId ?? 0;
+      });
     });
 
     socket.on('starter_claimed', (data) => {

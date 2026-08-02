@@ -40,20 +40,19 @@
 
 ---
 
-## Implement order (proposed)
+## Implement order (status @ v2.1.118)
 
-1. Film slugs + modifiers (alias `binding_crystal` → 1×)  
-2. Lab UI: three nests → `claim_starter` for agnite/budaye/dollfin  
-3. Q1 Vance tool grant + gather counters  
-4. Q2 craft/grant `film_standard` (+ camera)  
-5. Q3 choose starter → TB capture with film  
-6. Q4 bramble synergy later  
+1. Film slugs + modifiers — **done**  
+2. Lab UI: three nests → `claim_starter` — **done**  
+3. Q1 Vance tool grant + gather counters — **done** (`quest_tools_of_trade`)  
+4. Q2 craft/grant `film_standard` (+ camera) — **done** (`quest_forging_vessel`)  
+5. Q3 choose starter — **done** (`quest_first_bond`); TB capture with film in smoke  
+6. Q4 bramble clear — **done** (`quest_wilderness_clearance` / CLEAR_BRAMBLE)
 
 ---
 
 ## Still open
 
-1. Soul Camera hard-required to throw film?  
+1. Soul Camera hard-required to throw film? (demo: film alone OK)  
 2. UI names: Saints (Pyre Drake…) vs Tuxemon (Agnite…)?  
-3. Rockitten as 4th Geo nest or wild-only?  
-4. Q1-only code next vs film+starters first?
+3. Rockitten as 4th Geo nest or wild-only? (demo: wild-only)
