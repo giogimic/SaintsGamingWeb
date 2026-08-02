@@ -2,13 +2,13 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (Carlos trainer battle)
+**Updated:** 2026-08-02 (post-battle + TMX)
 
 ## Done
 
-- Spyder on-ramp **Q1–Q6** including **Carlos trainer 1v1** (Dragarbor)
-- Warps, corridors, Scoop/Café indoors, Guide state, Budaye+film
-- `npm run smoke:spyder`
+- Spyder **Q1–Q6** with Carlos trainer 1v1 + **post-battle dialogue**
+- Cotton Scoop/Café/Tunnel warps; TMX ambient NPC densify on Cotton
+- `npm run smoke:spyder` + optional `import:map-npcs`
 
 ## Pipeline
 

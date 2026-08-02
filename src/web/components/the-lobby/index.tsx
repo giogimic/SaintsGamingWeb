@@ -478,10 +478,15 @@ export default function TheLobby({
       // Turn-based encounter results (bible 11)
       if (data?.result) {
         if (data.accountId && myAccount && data.accountId !== myAccount) return;
+        const isTrainer = !!state.activeBattle?.isTrainer;
         const messages: Record<string, string> = {
           CAPTURE: 'Creature captured! Check your Creature Box.',
-          WIN: 'Victory! The wild creature fainted.',
-          LOSE: 'Your creature fainted. Heal before the next battle.',
+          WIN: isTrainer
+            ? 'Trainer defeated!'
+            : 'Victory! The wild creature fainted.',
+          LOSE: isTrainer
+            ? 'You lost the trainer battle. Your companion was patched up — rematch when ready.'
+            : 'Your creature fainted. Heal before the next battle.',
           FLEE: 'Got away safely.',
         };
         state.showToast(messages[data.result] || 'Battle ended.');

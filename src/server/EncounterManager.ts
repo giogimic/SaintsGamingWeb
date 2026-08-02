@@ -587,12 +587,17 @@ export class EncounterManager {
       });
     }
 
-    // Persist party creature HP after the fight (bible 11)
+    // Persist party creature HP after the fight (bible 11).
+    // Trainer losses soft-heal so rematch is possible without a clinic.
     if (userId && battle.playerCreature.id !== "pc_1") {
       try {
+        let hpToSave = Math.max(0, battle.playerCreature.hp);
+        if (battle.isTrainer && result === "LOSE") {
+          hpToSave = Math.max(1, Math.floor(battle.playerCreature.maxHp * 0.5));
+        }
         await prisma.playerCreature.update({
           where: { id: battle.playerCreature.id },
-          data: { currentHp: Math.max(0, battle.playerCreature.hp) },
+          data: { currentHp: hpToSave },
         });
       } catch (err) {
         console.error("[EncounterManager] Failed to persist creature HP:", err);
@@ -673,6 +678,10 @@ export class EncounterManager {
       });
     }
 
+    if (battle.isTrainer && (result === "WIN" || result === "LOSE")) {
+      this.scheduleTrainerPostBattleDialogue(battle, result);
+    }
+
     // Victory: generic loot into inventory (bible 11) — wild only
     if (result === "WIN" && userId && !battle.isTrainer) {
       try {
@@ -699,5 +708,30 @@ export class EncounterManager {
     }
 
     this.activeBattles.delete(battleId);
+  }
+
+  /**
+   * After the client battle overlay closes (~2.5s), open trainer post-battle dialogue.
+   * Trees use node_post_win / node_post_lose (see CARLOS_DIALOGUE_TREE).
+   */
+  private scheduleTrainerPostBattleDialogue(
+    battle: BattleState,
+    result: string
+  ) {
+    if (!battle.socketId || !battle.trainerNpcId) return;
+    const node = result === "WIN" ? "node_post_win" : "node_post_lose";
+    const npcId = battle.trainerNpcId;
+    const trainerName = battle.trainerName || "Trainer";
+    const socketId = battle.socketId;
+
+    setTimeout(() => {
+      this.engine.events.emit("showTrainerPostBattleDialogue", {
+        socketId,
+        npcId,
+        trainerName,
+        node,
+        result,
+      });
+    }, 2800);
   }
 }
