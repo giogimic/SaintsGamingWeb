@@ -243,52 +243,6 @@ async function seedDemoMap() {
     mapLoader.invalidateMap(saintsId);
   }
   console.log("[DemoBootstrap] SAINTS_VILLAGE repaired from DEMO layout");
-
-  // Legacy /game clients requested test_map — keep an alias so old bookmarks work.
-  const legacyId = "test_map";
-  await prisma.worldMap.upsert({
-    where: { id: legacyId },
-    create: {
-      id: legacyId,
-      name: "Saints Village (legacy alias)",
-      gridData: gridJson,
-      gatesData: "{}",
-      npcsData: npcsJson,
-      encountersData: encountersJson,
-    },
-    update: {
-      name: "Saints Village (legacy alias)",
-      gridData: gridJson,
-      npcsData: npcsJson,
-      encountersData: encountersJson,
-      version: { increment: 1 },
-    },
-  });
-  await prisma.gameMap.upsert({
-    where: { id: legacyId },
-    create: {
-      id: legacyId,
-      name: "Saints Village (legacy alias)",
-      width: DEMO_MAP_W,
-      height: DEMO_MAP_H,
-      tilesetData: gridJson,
-      npcs: npcsJson,
-      encounters: encountersJson,
-      gates: "{}",
-    },
-    update: {
-      name: "Saints Village (legacy alias)",
-      width: DEMO_MAP_W,
-      height: DEMO_MAP_H,
-      tilesetData: gridJson,
-      npcs: npcsJson,
-      encounters: encountersJson,
-    },
-  });
-  if (typeof mapLoader.invalidateMap === "function") {
-    mapLoader.invalidateMap(legacyId);
-  }
-  console.log("[DemoBootstrap] test_map legacy alias ready");
 }
 
 async function seedDemoQuests() {

@@ -1,8 +1,6 @@
 /**
- * Ensure DEMO_SANDBOX (and a legacy test_map alias) exist as WorldMap/GameMap rows
- * so /game and /lobby can both load a map.
- *
- * Prefer DemoBootstrap on server boot; this script is a one-shot repair for local DB.
+ * Ensure DEMO_SANDBOX exists as WorldMap/GameMap for /lobby.
+ * (One-shot repair; DemoBootstrap also rewrites this on server boot.)
  */
 import { PrismaClient } from "@prisma/client";
 import {
@@ -16,24 +14,24 @@ import {
 
 const prisma = new PrismaClient();
 
-async function upsertWorldAndGame(id: string, name: string) {
+async function main() {
   const grid = buildDemoSandboxGrid();
   const gridJson = JSON.stringify(grid);
   const npcsJson = JSON.stringify(DEMO_MAP_NPCS);
   const encountersJson = JSON.stringify(DEMO_ENCOUNTERS);
 
   await prisma.worldMap.upsert({
-    where: { id },
+    where: { id: DEMO_MAP_ID },
     create: {
-      id,
-      name,
+      id: DEMO_MAP_ID,
+      name: "Demo Sandbox",
       gridData: gridJson,
       gatesData: "{}",
       npcsData: npcsJson,
       encountersData: encountersJson,
     },
     update: {
-      name,
+      name: "Demo Sandbox",
       gridData: gridJson,
       npcsData: npcsJson,
       encountersData: encountersJson,
@@ -42,10 +40,10 @@ async function upsertWorldAndGame(id: string, name: string) {
   });
 
   await prisma.gameMap.upsert({
-    where: { id },
+    where: { id: DEMO_MAP_ID },
     create: {
-      id,
-      name,
+      id: DEMO_MAP_ID,
+      name: "Demo Sandbox",
       width: DEMO_MAP_W,
       height: DEMO_MAP_H,
       tilesetData: gridJson,
@@ -54,7 +52,7 @@ async function upsertWorldAndGame(id: string, name: string) {
       gates: "{}",
     },
     update: {
-      name,
+      name: "Demo Sandbox",
       width: DEMO_MAP_W,
       height: DEMO_MAP_H,
       tilesetData: gridJson,
@@ -62,13 +60,8 @@ async function upsertWorldAndGame(id: string, name: string) {
       encounters: encountersJson,
     },
   });
-}
 
-async function main() {
-  await upsertWorldAndGame(DEMO_MAP_ID, "Demo Sandbox");
-  // Alias for older /game clients that still request test_map
-  await upsertWorldAndGame("test_map", "Saints Village (legacy alias)");
-  console.log(`✅ Maps ready: ${DEMO_MAP_ID}, test_map`);
+  console.log(`✅ Map ready: ${DEMO_MAP_ID}`);
 }
 
 main()

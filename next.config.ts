@@ -43,6 +43,13 @@ const nextConfig: NextConfig = {
     ],
   },
   poweredByHeader: false,
+  // Classic flat-canvas /game stub is gone — always send people to the real lobby.
+  async redirects() {
+    return [
+      { source: "/game", destination: "/lobby", permanent: true },
+      { source: "/game/:path*", destination: "/lobby", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {
