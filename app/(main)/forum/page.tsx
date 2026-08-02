@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MessageSquare, Lock, Folder } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canAccessRestrictedBoard } from "@/web/lib/forum-access";
 
 export const metadata = {
   title: "Forums | Saints Gaming",
@@ -53,31 +53,23 @@ export default async function ForumIndexPage() {
     });
   }
 
-  const userPermissionLevel = dbUser?.permissionLevel || 0;
-  
-  // Helper to check if a user has access to a category or subcategory
-  const hasAccess = (item: { reqWriter: boolean; reqVIP: boolean; reqFounder: boolean; reqTrusted: boolean }) => {
-    const isRestricted = item.reqWriter || item.reqVIP || item.reqFounder || item.reqTrusted;
-    if (!isRestricted) return true;
-    
-    // Staff bypass
-    if (userPermissionLevel >= PERMISSION_LEVELS.HEAD_MODERATOR) return true;
-    if (!dbUser) return false;
-    
-    // Tick checks
-    if (item.reqWriter && dbUser.isWriter) return true;
-    if (item.reqVIP && dbUser.isVIP) return true;
-    if (item.reqFounder && dbUser.isFounder) return true;
-    if (item.reqTrusted && dbUser.isTrusted) return true;
-    
-    return false;
-  };
+  const boardUser = dbUser
+    ? {
+        permissionLevel: dbUser.permissionLevel || 0,
+        isWriter: dbUser.isWriter,
+        isVIP: dbUser.isVIP,
+        isFounder: dbUser.isFounder,
+        isTrusted: dbUser.isTrusted,
+      }
+    : null;
 
   const visibleCategories = categories
-    .filter(hasAccess)
-    .map(cat => ({
+    .filter((item) => canAccessRestrictedBoard(item, boardUser))
+    .map((cat) => ({
       ...cat,
-      subcategories: cat.subcategories.filter(hasAccess)
+      subcategories: cat.subcategories.filter((item) =>
+        canAccessRestrictedBoard(item, boardUser)
+      ),
     }));
 
   return (

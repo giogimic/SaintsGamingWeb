@@ -68,7 +68,7 @@ Media: `POST /api/upload/social` → [`../uploads/STORAGE.md`](../uploads/STORAG
 | `createGroupChat` / `getGroupChats` / `leaveGroupChat` | Groups |
 | `sendGroupMessage` / `getGroupMessages` | Group chat (plaintext today) |
 
-Crypto helpers: `src/web/lib/crypto.ts`.
+Crypto helpers: `src/web/lib/crypto.ts` (ECDH + AES-GCM; covered by `crypto.test.ts`).
 
 ---
 

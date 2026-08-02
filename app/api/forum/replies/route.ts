@@ -2,19 +2,17 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canAccessRestrictedBoard } from "@/web/lib/forum-access";
 import { processMentions } from "@/web/lib/mentions";
-
+import { awardXP, XP_VALUES } from "@/web/lib/xp";
+import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 const createReplySchema = z.object({
   body: z.string().min(1, "Reply cannot be empty"),
   threadId: z.string(),
   forumPin: z.string().optional(),
 });
-
-import { awardXP, XP_VALUES } from "@/web/lib/xp";
-import { emitForumReplyCreated, emitNotificationCreated } from "@/web/lib/realtime-emit";
-import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export async function POST(req: Request) {
   try {
@@ -62,19 +60,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "This thread or its parent board is locked" }, { status: 403 });
     }
 
-    const sub = thread.subcategory;
-    const isRestricted = sub.reqWriter || sub.reqVIP || sub.reqFounder || sub.reqTrusted;
-    let hasAccess = !isRestricted;
-    
-    if (isRestricted) {
-      if (user.permissionLevel >= PERMISSION_LEVELS.HEAD_MODERATOR) hasAccess = true;
-      else if (sub.reqWriter && user.isWriter) hasAccess = true;
-      else if (sub.reqVIP && user.isVIP) hasAccess = true;
-      else if (sub.reqFounder && user.isFounder) hasAccess = true;
-      else if (sub.reqTrusted && user.isTrusted) hasAccess = true;
-    }
-
-    if (!hasAccess) {
+    if (!canAccessRestrictedBoard(thread.subcategory, user)) {
       return NextResponse.json({ message: "You do not have permission to reply in this board." }, { status: 403 });
     }
 

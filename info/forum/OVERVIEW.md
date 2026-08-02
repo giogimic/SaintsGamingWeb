@@ -18,10 +18,12 @@ Community boards: categories → subcategories → threads → replies. Markdown
 ## APIs & posting
 
 - Threads / replies: `app/api/forum/**`
-- Subcategory flags: `reqWriter`, VIP, etc. — enforced with `canPostToForum` + permissions
-- Mentions: `src/web/lib/mentions.ts`
+- Subcategory flags: `reqWriter`, VIP, etc. — via `canAccessRestrictedBoard` in `src/web/lib/forum-access.ts` (+ `canPostToForum`)
+- Slugs: shared `generateSlug` in `src/web/lib/slug.ts`
+- Mentions: `src/web/lib/mentions.ts` (`extractMentions` is pure; `processMentions` writes notifications)
 - Markdown editor: `src/web/components/forum/markdown-editor.tsx`  
   Grammar/Polish buttons appear only when Forum Settings enable enhancement.
+- Zod schemas: `src/shared/lib/validators.ts`
 
 ---
 

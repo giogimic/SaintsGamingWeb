@@ -2,8 +2,13 @@ import { expect, test } from 'vitest';
 import { useGameStore } from './store';
 
 test('store reads and writes without React context', () => {
+  // Reset mutable fields so this suite stays order-independent.
+  useGameStore.getState().setGameMode('TITLE_SCREEN');
+  useGameStore.getState().setPlayerPosition({ x: 0, y: 0 });
+  useGameStore.setState({ pathQueue: [] });
+
   const store = useGameStore.getState();
-  expect(store.gameMode).toBe('EXPLORING');
+  expect(store.gameMode).toBe('TITLE_SCREEN');
   expect(store.player.position).toEqual({ x: 0, y: 0 });
 
   useGameStore.getState().setGameMode('PAUSED');

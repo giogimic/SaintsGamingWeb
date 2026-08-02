@@ -19,8 +19,20 @@
 const ALGO_KEY_EXCHANGE = { name: "ECDH", namedCurve: "P-256" };
 const ALGO_ENCRYPTION = { name: "AES-GCM", length: 256 };
 
+/** Web Crypto in browser or Node (vitest / SSR-safe). */
+function webCrypto(): Crypto {
+  const c =
+    (typeof globalThis !== "undefined" && globalThis.crypto) ||
+    (typeof window !== "undefined" && window.crypto) ||
+    null;
+  if (!c?.subtle) {
+    throw new Error("Web Crypto API is not available in this environment");
+  }
+  return c;
+}
+
 export async function generateKeyPair() {
-  const keyPair = await window.crypto.subtle.generateKey(
+  const keyPair = await webCrypto().subtle.generateKey(
     ALGO_KEY_EXCHANGE,
     true, // extractable
     ["deriveKey", "deriveBits"]
@@ -29,18 +41,18 @@ export async function generateKeyPair() {
 }
 
 export async function exportPublicKey(key: CryptoKey): Promise<string> {
-  const exported = await window.crypto.subtle.exportKey("spki", key);
+  const exported = await webCrypto().subtle.exportKey("spki", key);
   return Buffer.from(exported).toString("base64");
 }
 
 export async function exportPrivateKey(key: CryptoKey): Promise<string> {
-  const exported = await window.crypto.subtle.exportKey("pkcs8", key);
+  const exported = await webCrypto().subtle.exportKey("pkcs8", key);
   return Buffer.from(exported).toString("base64");
 }
 
 export async function importPublicKey(base64: string): Promise<CryptoKey> {
   const binaryDer = Buffer.from(base64, "base64");
-  return await window.crypto.subtle.importKey(
+  return await webCrypto().subtle.importKey(
     "spki",
     binaryDer,
     ALGO_KEY_EXCHANGE,
@@ -51,7 +63,7 @@ export async function importPublicKey(base64: string): Promise<CryptoKey> {
 
 export async function importPrivateKey(base64: string): Promise<CryptoKey> {
   const binaryDer = Buffer.from(base64, "base64");
-  return await window.crypto.subtle.importKey(
+  return await webCrypto().subtle.importKey(
     "pkcs8",
     binaryDer,
     ALGO_KEY_EXCHANGE,
@@ -62,7 +74,7 @@ export async function importPrivateKey(base64: string): Promise<CryptoKey> {
 
 // Derive a shared AES-GCM key from our private key and their public key
 export async function deriveSharedKey(privateKey: CryptoKey, publicKey: CryptoKey): Promise<CryptoKey> {
-  return await window.crypto.subtle.deriveKey(
+  return await webCrypto().subtle.deriveKey(
     {
       name: "ECDH",
       public: publicKey
@@ -77,9 +89,9 @@ export async function deriveSharedKey(privateKey: CryptoKey, publicKey: CryptoKe
 export async function encryptMessage(sharedKey: CryptoKey, text: string): Promise<{ ciphertext: string, iv: string }> {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const iv = webCrypto().getRandomValues(new Uint8Array(12));
 
-  const encrypted = await window.crypto.subtle.encrypt(
+  const encrypted = await webCrypto().subtle.encrypt(
     {
       name: "AES-GCM",
       iv: iv
@@ -98,7 +110,7 @@ export async function decryptMessage(sharedKey: CryptoKey, ciphertextBase64: str
   const encrypted = Buffer.from(ciphertextBase64, "base64");
   const iv = Buffer.from(ivBase64, "base64");
 
-  const decrypted = await window.crypto.subtle.decrypt(
+  const decrypted = await webCrypto().subtle.decrypt(
     {
       name: "AES-GCM",
       iv: iv

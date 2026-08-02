@@ -1,9 +1,10 @@
 # Admin Permissions & Navigation Map
 
 Companion to [`OVERVIEW.md`](./OVERVIEW.md).  
-**Source of truth for levels:** `src/web/lib/permissions.ts` (`PERMISSION_LEVELS`, `hasPermission`).  
+**Source of truth for levels:** `src/web/lib/permissions.ts` (`PERMISSION_LEVELS`, `hasPermission`, mute/ban/purge helpers).  
 **Nav visibility:** `app/(main)/admin/admin-overlay-shell.tsx`.  
-**Shell entry:** `app/(main)/admin/layout.tsx` — requires **Moderator (200)** or `isWriter`.
+**Shell entry:** `app/(main)/admin/layout.tsx` — requires **Moderator (200)** or `isWriter`.  
+**Unit tests:** `src/web/lib/permissions.test.ts`.
 
 Always re-check permissions in the page / API — nav hiding is not security.
 
