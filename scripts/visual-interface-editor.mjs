@@ -104,17 +104,40 @@ async function main() {
   });
   await signIn(context);
 
+  // Pre-dismiss cookie consent so it never blocks lobby CTAs
+  await context.addInitScript(() => {
+    localStorage.setItem('cookie-consent', 'true');
+    document.cookie = 'cookie-consent=true; path=/; max-age=31536000; SameSite=Lax';
+  });
+
   const page = await context.newPage();
   page.setDefaultTimeout(45000);
+
+  async function dismissChrome() {
+    const accept = page.getByRole('button', { name: /Accept All/i });
+    if (await accept.isVisible().catch(() => false)) {
+      await accept.click().catch(() => {});
+      await page.waitForTimeout(200);
+    }
+    // Next.js issue badge / toast close
+    await page.evaluate(() => {
+      const issue = [...document.querySelectorAll('button')].find((b) =>
+        /Issue/i.test(b.textContent || '')
+      );
+      const x = issue?.querySelector('[aria-label="Close"], button, svg')?.closest('button');
+      (x || issue)?.click?.();
+    });
+  }
 
   try {
     // ── Title ──────────────────────────────────────────────────────────
     await page.goto(`${BASE}/lobby`, { waitUntil: 'domcontentloaded', timeout: 120000 });
     await page.waitForTimeout(2500);
+    await dismissChrome();
     await shot(page, '01-title', 'lobby-title');
 
     // Title-screen Options path (partial — menu open before entering world)
-    const titleOptions = page.getByRole('button', { name: /Options/i }).first();
+    const titleOptions = page.getByRole('button', { name: /^Options$/i }).first();
     if (await titleOptions.isVisible().catch(() => false)) {
       await titleOptions.click();
       await page.waitForTimeout(400);
@@ -122,20 +145,11 @@ async function main() {
       await clickButton(page, 'Interface');
       await page.waitForTimeout(300);
       await shot(page, '03-title-interface-tab', 'title-interface-tab');
-      // Close without entering edit yet — full edit verified in-world
-      await page.keyboard.press('Escape').catch(() => {});
-      const closeX = page.locator('button').filter({ has: page.locator('svg') }).first();
-      // Click the Settings modal close if still open
-      const settingsHeading = page.getByText('Settings', { exact: true });
-      if (await settingsHeading.isVisible().catch(() => false)) {
-        await page.locator('button').filter({ has: page.locator('.lucide-x, svg') }).first().click().catch(() => {});
-        // Fallback: click Leave Game area's sibling close — use the X near top-right of modal
-        await page.evaluate(() => {
-          const buttons = [...document.querySelectorAll('button')];
-          const xBtn = buttons.find((b) => b.querySelector('svg') && b.className.includes('absolute'));
-          xBtn?.click();
-        });
-      }
+      await page.evaluate(() => {
+        const buttons = [...document.querySelectorAll('button')];
+        const xBtn = buttons.find((b) => b.className.includes('absolute') && b.querySelector('svg'));
+        xBtn?.click();
+      });
       await page.waitForTimeout(300);
     }
 
@@ -192,7 +206,19 @@ async function main() {
       await clickButton(page, 'Review');
       await page.waitForTimeout(600);
       await shot(page, '10-review', 'review');
-      await clickButton(page, 'Start Adventure');
+      await dismissChrome();
+      // Cookie / overlays often sit over the CTA — force the create click
+      const startAdv = page.getByRole('button', { name: /Start Adventure/i });
+      await startAdv.waitFor({ state: 'visible', timeout: 20000 });
+      await startAdv.click({ force: true });
+      // Wait for create round-trip
+      await page
+        .getByText(/Creating\.\.\.|Character Created|Entering The World|Failed to create/i)
+        .first()
+        .waitFor({ state: 'visible', timeout: 30000 })
+        .catch(() => {});
+      await page.waitForTimeout(2000);
+      await shot(page, '10b-after-create-click', 'after-create-click');
     } else if (await playBtn.isVisible().catch(() => false)) {
       await playBtn.click();
     } else {
@@ -201,7 +227,13 @@ async function main() {
 
     // Wait for EXPLORING HUD
     const optionsBtn = page.getByRole('button', { name: /OPTIONS \(ESC\)/i });
-    await optionsBtn.waitFor({ state: 'visible', timeout: 90000 });
+    try {
+      await optionsBtn.waitFor({ state: 'visible', timeout: 90000 });
+    } catch (e) {
+      const snippet = await page.evaluate(() => document.body?.innerText?.slice(0, 1200) || '');
+      fail('in-world-wait', snippet);
+      throw e;
+    }
     await page.waitForTimeout(2000);
     await shot(page, '11-in-world', 'in-world');
 
@@ -246,22 +278,26 @@ async function main() {
       log('[ok] viewfinder-toolbar');
     }
 
-    // Green dashed outlines on editable panels (border style probe)
+    // Green dashed outlines (Tailwind outline-dashed + #10B981)
     const outlineProbe = await page.evaluate(() => {
       const nodes = [...document.querySelectorAll('*')];
-      let dashedGreen = 0;
+      let dashedOutline = 0;
+      let classHit = 0;
       for (const el of nodes) {
+        const cls = typeof el.className === 'string' ? el.className : '';
+        if (cls.includes('outline-dashed') && cls.includes('10B981')) classHit += 1;
         const s = getComputedStyle(el);
-        if (s.borderStyle.includes('dashed') && (s.borderColor.includes('16, 185, 129') || s.borderColor.includes('10, 185, 129') || s.outlineStyle === 'dashed')) {
-          dashedGreen += 1;
-        }
-        // also check inline style / outline
-        if (el.style?.outline?.includes('dashed') && el.style.outline.includes('10B981')) dashedGreen += 1;
-        if (el.style?.border?.includes('dashed') && (el.style.border.includes('10B981') || el.style.border.includes('16, 185, 129'))) dashedGreen += 1;
+        if (s.outlineStyle === 'dashed') dashedOutline += 1;
       }
-      return { dashedGreen, cursorGrab: nodes.some((el) => getComputedStyle(el).cursor === 'grab') };
+      return {
+        dashedOutline,
+        classHit,
+        cursorGrab: nodes.some((el) => getComputedStyle(el).cursor === 'grab'),
+      };
     });
-    findings.push({ step: 'hud-edit-chrome', ok: outlineProbe.dashedGreen > 0 || outlineProbe.cursorGrab, ...outlineProbe });
+    const chromeOk =
+      outlineProbe.dashedOutline > 0 || outlineProbe.classHit > 0 || outlineProbe.cursorGrab;
+    findings.push({ step: 'hud-edit-chrome', ok: chromeOk, ...outlineProbe });
     log('[probe] hud-edit-chrome', outlineProbe);
 
     await shot(page, '14-viewfinder-edit', 'viewfinder-edit');
@@ -283,14 +319,22 @@ async function main() {
       findings.push({ step: 'drag-panel', ok: false, detail: 'no grab target found (non-blocking)' });
     }
 
-    // Save & Exit
+    // Save & Exit (cloud preset POST can take a few seconds)
     await saveExit.click();
-    await page.waitForTimeout(1500);
-    const toolbarGone = !(await saveExit.isVisible().catch(() => false));
-    if (!toolbarGone) fail('save-exit', 'toolbar still visible');
-    else {
+    try {
+      await saveExit.waitFor({ state: 'hidden', timeout: 20000 });
       findings.push({ step: 'save-exit', ok: true });
       log('[ok] save-exit');
+    } catch {
+      // Fallback: wait for toast then re-check
+      await page.getByText(/Layout saved|Layout kept locally/i).first().waitFor({ timeout: 10000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      const still = await saveExit.isVisible().catch(() => false);
+      if (still) fail('save-exit', 'toolbar still visible after save');
+      else {
+        findings.push({ step: 'save-exit', ok: true });
+        log('[ok] save-exit (after toast)');
+      }
     }
     await shot(page, '16-after-save-exit', 'after-save-exit');
 
@@ -307,9 +351,14 @@ async function main() {
     findings.push({ step: 'reset', ok: true });
     log('[ok] reset');
 
-    await page.getByRole('button', { name: /Save & Exit/i }).click();
-    await page.waitForTimeout(1000);
+    const saveExit2 = page.getByRole('button', { name: /Save & Exit/i });
+    await saveExit2.click();
+    await saveExit2.waitFor({ state: 'hidden', timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(500);
     await shot(page, '18-final', 'final');
+    const exited = !(await saveExit2.isVisible().catch(() => false));
+    findings.push({ step: 'final-exit', ok: exited });
+    log(exited ? '[ok] final-exit' : '[FAIL] final-exit');
   } catch (err) {
     fail('uncaught', String(err?.stack || err));
     try {
