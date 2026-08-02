@@ -90,13 +90,18 @@ export default function OverworldCanvas() {
     return () => cancelAnimationFrame(animFrameId);
   }, [currentMap, player]);
 
+  // Show canvas whenever a map is loaded (don't stay blank if phase lags behind).
+  const showCanvas =
+    !!currentMap &&
+    (phase === "overworld" || phase === "dialogue" || phase === "loading");
+
   return (
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full"
       style={{
         imageRendering: "pixelated",
-        display: phase === "overworld" || phase === "dialogue" ? "block" : "none",
+        display: showCanvas ? "block" : "none",
       }}
     />
   );
@@ -124,20 +129,12 @@ function drawTileMap(
       const screenX = col * TILE_SIZE - camX;
       const screenY = row * TILE_SIZE - camY;
 
-      if (tileId === 0) {
-        // Empty/void tile — draw dark
-        ctx.fillStyle = "#1a1a2e";
-        ctx.fillRect(screenX * SCALE, screenY * SCALE, SCALED_TILE, SCALED_TILE);
-      } else {
-        // Colored tile based on ID (placeholder — real implementation uses tileset image)
-        const color = getTileColor(tileId);
-        ctx.fillStyle = color;
-        ctx.fillRect(screenX * SCALE, screenY * SCALE, SCALED_TILE, SCALED_TILE);
-
-        // Grid lines for clarity
-        ctx.strokeStyle = "rgba(0,0,0,0.1)";
-        ctx.strokeRect(screenX * SCALE, screenY * SCALE, SCALED_TILE, SCALED_TILE);
-      }
+      // DEMO_SANDBOX / WorldMap logic tiles: 0 = walkable grass (not void)
+      const color = getTileColor(tileId);
+      ctx.fillStyle = color;
+      ctx.fillRect(screenX * SCALE, screenY * SCALE, SCALED_TILE, SCALED_TILE);
+      ctx.strokeStyle = "rgba(0,0,0,0.1)";
+      ctx.strokeRect(screenX * SCALE, screenY * SCALE, SCALED_TILE, SCALED_TILE);
 
       // Draw collision overlay (debug)
       if (map.collision[row]?.[col]) {
@@ -207,22 +204,21 @@ function drawPlayer(
 }
 
 function getTileColor(tileId: number): string {
-  // Placeholder tile colors — will be replaced with actual tileset rendering
+  // WorldMap logic-tile palette (aligned with DEMO_SANDBOX / MapLogicTile ids)
   const colors: Record<number, string> = {
-    1: "#4a7c59",  // grass
-    2: "#2d5a3f",  // dark grass
-    3: "#8b7355",  // dirt
-    4: "#6b8cce",  // water
-    5: "#c4a882",  // sand
-    6: "#555",     // stone
-    7: "#333",     // wall
-    8: "#654321",  // tree trunk
-    9: "#228b22",  // tree leaves
-    10: "#ff6b6b", // tall grass (encounter zone)
-    11: "#8b4513", // wooden floor
-    12: "#d4a574", // light floor
-    13: "#4a4a4a", // dark floor
-    14: "#7cb342", // garden
+    0: "#3d8b4f",  // walkable grass
+    1: "#3a3f45",  // solid wall
+    2: "#1f7a32",  // tall grass (encounter)
+    3: "#d4a017",  // gate A
+    4: "#b8860b",  // gate B
+    5: "#6b4423",  // tree
+    6: "#8d6e63",  // ore
+    7: "#e6c35c",  // shop
+    8: "#5dade2",  // clinic
+    9: "#7f8c8d",  // crafting
+    10: "#2980b9", // fishing
+    11: "#556b2f", // bramble
+    12: "#4a4a8a", // base hub
   };
   return colors[tileId] || "#333";
 }
