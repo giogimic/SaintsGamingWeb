@@ -2,25 +2,21 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (corridors + accountId)
+**Updated:** 2026-08-02 (Q5 + smoke:spyder)
 
 ## Done
 
 - Classes / shinies / Tuxemon import / campaign maps
-- Spyder on-ramp: quests, Guide state, Budaye+film, warps, grass
-- **Walkable corridors** Route 1 + Cotton; NPC positions fixed
-- Lobby User.id account sync; Spyder tracker empty copy
+- Spyder on-ramp Q1–**Q5** (welcome → townsfolk → capture → Cotton arrive → locals)
+- Warps, corridors, Guide state, Budaye+film, accountId sync
+- Offline smoke: `npm run smoke:spyder`
 
 ## Pipeline
 
 ```bash
 npm run ensure:campaign && npm run seed:campaign-npcs
+npm run smoke:spyder
 npm run dev
 ```
 
 Smoke: [`SPYDER_SMOKE.md`](./SPYDER_SMOKE.md)
-
-## Remaining
-
-- Human smoke
-- TMX densify / deeper Cotton beats

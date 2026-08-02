@@ -24,6 +24,17 @@ npm run dev
 | 7 | Walk tall grass mid-route | TB encounter (needs party); **EXPOSE FILM** to capture |
 | 8 | Return west → Guide | Report copy; Q3 completes → Q4 Cotton Town |
 | 9 | Route 1 **east** → Cotton west gate | Warp → greeter at `(4,19)` (reachable corridor) |
+| 10 | Talk greeter | Q4 complete → Q5 Cotton Locals |
+| 11 | Talk **Scoop Clerk** `(8,19)` then **Café Host** `(12,19)` | Q5 completes; film/gold rewards |
+
+## Automated check
+
+```bash
+npm run ensure:campaign && npm run seed:campaign-npcs
+npm run smoke:spyder
+```
+
+Verifies gates, walkable corridors, NPC tiles, dialogue trees, and quest stages (no server required).
 
 ## Notes
 

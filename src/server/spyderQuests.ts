@@ -82,6 +82,7 @@ export const SPYDER_QUEST_CHAIN = [
     rewards: JSON.stringify({
       items: [{ slug: "film_standard", qty: 3 }],
       gold: 50,
+      nextQuest: "quest_spyder_cotton_locals",
     }),
     objectives: [
       {
@@ -90,6 +91,34 @@ export const SPYDER_QUEST_CHAIN = [
         targetSlug: "npc_cotton_greeter",
         requiredQty: 1,
         description: "Speak with the Cotton Greeter",
+      },
+    ],
+  },
+  {
+    slug: "quest_spyder_cotton_locals",
+    title: "Spyder 5: Cotton Locals",
+    description: "Meet Scoop's clerk and a café regular on the Cotton plaza.",
+    rewards: JSON.stringify({
+      items: [
+        { slug: "film_standard", qty: 3 },
+        { slug: "film_fine", qty: 1 },
+      ],
+      gold: 75,
+    }),
+    objectives: [
+      {
+        stage: 1,
+        type: "TALK",
+        targetSlug: "npc_cotton_scoop_clerk",
+        requiredQty: 1,
+        description: "Speak with the Scoop Clerk on the plaza",
+      },
+      {
+        stage: 2,
+        type: "TALK",
+        targetSlug: "npc_cotton_cafe_host",
+        requiredQty: 1,
+        description: "Speak with the Café Host on the plaza",
       },
     ],
   },
@@ -157,8 +186,8 @@ export const CAMPAIGN_NPC_SEEDS: Record<
     {
       id: "npc_town_guide",
       name: "House Guest",
-      x: 6,
-      y: 5,
+      x: 4,
+      y: 3,
       sprite: "monk",
       greeting: "Heading to Azure Town? Follow the road east.",
     },
@@ -167,8 +196,8 @@ export const CAMPAIGN_NPC_SEEDS: Record<
     {
       id: "npc_route1_scout",
       name: "Route Scout",
-      x: 10,
-      y: 12,
+      x: 12,
+      y: 19,
       sprite: "ninja",
       greeting: "Tall grass ahead. Keep film ready — and watch for shinies.",
     },
@@ -191,7 +220,25 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 19,
       sprite: "florist",
       greeting:
-        "Welcome to Cotton Town! You've walked Spyder's first road — rest, trade, then press on.",
+        "Welcome to Cotton Town! Scoop's clerk and the café host are along the plaza — say hello.",
+    },
+    {
+      id: "npc_cotton_scoop_clerk",
+      name: "Scoop Clerk",
+      x: 8,
+      y: 19,
+      sprite: "shopassistant",
+      greeting:
+        "Scoop's open — treats for tamers, rumors for the road. Cotton's quieter than Azure, if you listen.",
+    },
+    {
+      id: "npc_cotton_cafe_host",
+      name: "Café Host",
+      x: 12,
+      y: 19,
+      sprite: "barmaid",
+      greeting:
+        "Pull up a chair. Cayden and the regulars trade battle stories after dark — you've earned a rest.",
     },
   ],
 };

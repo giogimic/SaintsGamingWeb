@@ -80,8 +80,12 @@ export const AZURE_GUIDE_TREE = {
     text: "Cotton Town lies east along Route 1. The greeter there will mark your arrival.",
     options: [{ label: "Eastward.", nextNode: "exit" }],
   },
+  node_cotton_locals: {
+    text: "In Cotton, greet Scoop's clerk and the café host on the plaza — they keep the town's pulse.",
+    options: [{ label: "I'll find them.", nextNode: "exit" }],
+  },
   node_done: {
-    text: "You've walked the first Spyder road. Rest in Cotton, then press deeper when you're ready.",
+    text: "You've walked the first Spyder road and met Cotton's locals. Rest there, then press deeper when you're ready.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Farewell.", nextNode: "exit" },
@@ -118,8 +122,16 @@ export function resolveAzureGuideStartNode(ctx: GuideContext): string {
     return "node_cotton";
   }
 
-  if (completedSlugs.has("quest_spyder_cotton_arrive")) {
+  if (active?.slug === "quest_spyder_cotton_locals") {
+    return "node_cotton_locals";
+  }
+
+  if (completedSlugs.has("quest_spyder_cotton_locals")) {
     return "node_done";
+  }
+
+  if (completedSlugs.has("quest_spyder_cotton_arrive")) {
+    return "node_cotton_locals";
   }
 
   if (completedSlugs.has("quest_spyder_first_capture")) {

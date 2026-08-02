@@ -21,6 +21,7 @@
     "seed:campaign-npcs": "tsx scripts/seed-campaign-npcs.ts",
     "seed:campaign-path": "tsx scripts/seed-campaign-path.ts",
     "seed:azure": "tsx scripts/seed-campaign-npcs.ts",
+    "smoke:spyder": "tsx scripts/smoke-spyder-path.ts",
     "import:map-npcs": "tsx scripts/import-map-npcs-from-tmx.ts"
   },
   "dependencies": {

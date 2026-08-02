@@ -7,29 +7,29 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Spyder path corridors + client sync**
+**Game Foundation Systems (PR #4) — Spyder Q5 + path smoke**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- Carved walkable corridors on SPYDER_ROUTE1 / Cotton / ROUTE1 (spawn→grass→gates)
-- Moved scout + Cotton greeter onto walkable tiles
-- Lobby `accountId` = session User.id (battle toast/CAPTURE filters)
-- Spyder-aware empty quest tracker copy
+- Q5 Cotton Locals (Scoop Clerk + Café Host on plaza)
+- Guide nodes for cotton locals / done
+- `npm run smoke:spyder` — offline path integrity (gates, corridors, NPCs, quests)
 
 ### Suggested next
 
 1. Human smoke per `SPYDER_SMOKE.md`
-2. TMX bulk NPC import when Tuxemon checkout available
-3. Deeper Spyder graph (Cotton scoop/café / tunnel)
+2. Indoor Cotton warps (Scoop / Café maps) if desired
+3. TMX bulk NPC import when Tuxemon checkout available
 
 ### Pipeline
 
 ```bash
 npm run ensure:campaign
 npm run seed:campaign-npcs
+npm run smoke:spyder
 npm run dev
 ```
 
