@@ -3,7 +3,8 @@
 **Date:** 2026-08-02  
 **Status:** Planning — awaiting user decisions on open questions  
 **Branch:** `giogimic/lobby-client-mobile-mp-plan-862a`  
-**Source:** User prompt + Gemini draft, validated against current codebase
+**Source:** User prompt + Gemini draft, validated against current codebase  
+**Local mirror:** `/logs/2026-08-02-lobby-client-mobile-mp-plan.md` (gitignored)
 
 ---
 
