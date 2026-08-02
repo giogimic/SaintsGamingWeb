@@ -111,25 +111,18 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Player lobby demo: land on DEMO_SANDBOX unless already on a known playable map.
-      // Studio keeps saved map for editor work.
+      // Player lobby always starts on DEMO_SANDBOX (avoid stale SAINTS_VILLAGE saves / HMR store).
+      // Studio may keep a saved map for editor work.
       const DEMO_MAP = 'DEMO_SANDBOX';
       const DEMO_SPAWN = { x: 14, y: 15 };
-      // SAINTS_VILLAGE was a broken sandbox (no walkable tiles / missing villager sprites).
-      // Lobby explore always lands on DEMO_SANDBOX unless already there.
-      const knownPlayable = new Set(['DEMO_SANDBOX']);
-      const savedMap = String(parsedState.currentMapId || '').replace(/_ch\d+$/, '');
-      let validMapId = savedMap;
-      let validPosition = parsedState.position || { ...DEMO_SPAWN };
+      const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
+        .replace(/_ch\d+$/, '');
+      let validMapId = DEMO_MAP;
+      let validPosition = { ...DEMO_SPAWN };
 
-      if (!enableStudio) {
-        if (!knownPlayable.has(savedMap)) {
-          validMapId = DEMO_MAP;
-          validPosition = { ...DEMO_SPAWN };
-        }
-      } else if (!savedMap || savedMap === 'SAINTS_VILLAGE') {
-        validMapId = DEMO_MAP;
-        validPosition = { ...DEMO_SPAWN };
+      if (enableStudio && savedMap && savedMap !== 'SAINTS_VILLAGE') {
+        validMapId = savedMap;
+        validPosition = parsedState.position || { ...DEMO_SPAWN };
       }
 
       try {

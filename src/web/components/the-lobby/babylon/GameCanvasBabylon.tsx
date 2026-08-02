@@ -606,48 +606,61 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         });
       }
 
-      // Render dynamic map entities (NPCs / Animals) from the global store
-      const mapEntities = useGameStore.getState().mapEntities;
-      if (mapEntities) {
-        const activeEntities = new Set<string>();
-        
-        mapEntities.forEach((ent) => {
-          if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
-            activeEntities.add(ent.id);
-            const ex = ent.position.x - mapWidth / 2;
-            const ez = mapHeight / 2 - ent.position.y;
-            const kind =
-              ent.type === 'NPC'
-                ? 'npc'
-                : ent.type === 'ANIMAL'
-                  ? 'animal'
-                  : 'monster';
-            const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
-            babylonEngine.updateEntity({
-              id: ent.id,
-              name: ent.name || '',
-              x: ex,
-              y: ez,
-              spriteUrl,
-              isPlayer: false,
-              isNpc: ent.type === 'NPC',
-              isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
-              spriteConfig:
-                ent.spriteConfig ||
-                (isSingleFrameSpriteUrl(spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : undefined),
-            });
-          }
-        });
+      // Render map entities: socket mapEntities + static map NPCs as fallback
+      // (socket snapshot can miss if join races; map JSON still has placements).
+      const mapEntities = useGameStore.getState().mapEntities || [];
+      const staticNpcs = (activeMap?.npcs || []).map((npc: any) => ({
+        id: `mapnpc_${npc.id}`,
+        type: 'NPC' as const,
+        spriteKey: npc.sprite || 'adventurer',
+        position: { x: npc.x, y: npc.y },
+        mapId: currentMapId,
+        name: npc.name || npc.id,
+      }));
+      // Prefer socket entities when present; always include static NPCs not already covered by name+tile
+      const socketIds = new Set(mapEntities.map((e) => e.id));
+      const merged = [
+        ...mapEntities,
+        ...staticNpcs.filter((n) => !socketIds.has(n.id)),
+      ];
 
-        // Cleanup stale map entities
-        babylonEngine._renderedEntities.forEach((id: string) => {
-          if (!activeEntities.has(id)) {
-            babylonEngine.removeEntity(id);
-            babylonEngine._renderedEntities.delete(id);
-          }
-        });
-        activeEntities.forEach(id => babylonEngine._renderedEntities.add(id));
-      }
+      const activeEntities = new Set<string>();
+      merged.forEach((ent) => {
+        if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
+          activeEntities.add(ent.id);
+          const ex = ent.position.x - mapWidth / 2;
+          const ez = mapHeight / 2 - ent.position.y;
+          const kind =
+            ent.type === 'NPC'
+              ? 'npc'
+              : ent.type === 'ANIMAL'
+                ? 'animal'
+                : 'monster';
+          const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
+          babylonEngine.updateEntity({
+            id: ent.id,
+            name: ent.name || '',
+            x: ex,
+            y: ez,
+            spriteUrl,
+            isPlayer: false,
+            isNpc: ent.type === 'NPC',
+            isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
+            spriteConfig:
+              (ent as any).spriteConfig ||
+              (isSingleFrameSpriteUrl(spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : undefined),
+          });
+        }
+      });
+
+      // Cleanup stale map entities
+      babylonEngine._renderedEntities.forEach((id: string) => {
+        if (!activeEntities.has(id)) {
+          babylonEngine.removeEntity(id);
+          babylonEngine._renderedEntities.delete(id);
+        }
+      });
+      activeEntities.forEach((id) => babylonEngine._renderedEntities.add(id));
     });
 
     return () => {
