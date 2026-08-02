@@ -19,15 +19,15 @@ import { isSameBaseMap } from '@/shared/net/mapIds';
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
   return (
-    <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
-      <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
-      <span className="text-slate-400">Map:</span>
-      <strong className="text-white">{activeMapName || currentMapId}</strong>
-      <span className="text-slate-600">|</span>
-      <span className="text-slate-400">Pos:</span>
-      <strong className="text-amber-300">({playerPos?.x ?? 0}, {playerPos?.y ?? 0})</strong>
-      <span className="text-slate-600">|</span>
-      <span className="text-slate-500 hidden sm:inline">BGD / Click to Move</span>
+    <div className="lobby-panel absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-mono text-xs text-lobby-mist">
+      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-lobby-soul shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
+      <span className="text-lobby-ash">Map:</span>
+      <strong className="text-lobby-mist">{activeMapName || currentMapId}</strong>
+      <span className="text-lobby-ash/60">|</span>
+      <span className="text-lobby-ash">Pos:</span>
+      <strong className="text-lobby-film">({playerPos?.x ?? 0}, {playerPos?.y ?? 0})</strong>
+      <span className="text-lobby-ash/60">|</span>
+      <span className="hidden text-lobby-fog sm:inline">BGD / Click to Move</span>
     </div>
   );
 };
@@ -887,8 +887,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       {/* Loading screen while async map data is fetching */}
       {!mapData && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">
-          <div className="w-12 h-12 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin mb-4" />
-          <p className="text-violet-300 font-mono text-sm animate-pulse">Loading {currentMapId.replace(/_/g, ' ')}...</p>
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-2 border-lobby-soul/30 border-t-lobby-film" />
+          <p className="animate-pulse font-mono text-sm text-lobby-fog">
+            Loading {currentMapId.replace(/_/g, ' ')}...
+          </p>
         </div>
       )}
 

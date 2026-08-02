@@ -189,6 +189,8 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       level: 1, xp: 0,
       hp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
       maxHp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
+      mp: 100 + (initialSkills['Magic']?.level || 1) * 5,
+      maxMp: 100 + (initialSkills['Magic']?.level || 1) * 5,
       credits: 1000,
       // Capture items come from NPC shop / craft (server Prisma inventory) — not free grants
       inventory: { 'patch_kit': 5 },

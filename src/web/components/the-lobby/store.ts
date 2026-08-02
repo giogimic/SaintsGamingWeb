@@ -119,6 +119,9 @@ export interface PlayerState {
   xp: number;
   hp: number;
   maxHp: number;
+  /** Soul essence (MP) — spent on magic / camera rites */
+  mp: number;
+  maxMp: number;
   credits: number;
   currency: {
     copper: number;
@@ -302,6 +305,8 @@ export const useGameStore = create<GameState>()(
         xp: 0,
         hp: 100,
         maxHp: 100,
+        mp: 100,
+        maxMp: 100,
         credits: 500,
         currency: { copper: 50000, silver: 0, gold: 0, platinum: 0 },
         activeQuests: {},
@@ -550,6 +555,11 @@ export const useGameStore = create<GameState>()(
           if (data.xp !== undefined) state.player.xp = data.xp;
           if (data.hp !== undefined) state.player.hp = data.hp;
           if (data.maxHp !== undefined) state.player.maxHp = data.maxHp;
+          if (data.mp !== undefined) state.player.mp = data.mp;
+          if (data.maxMp !== undefined) state.player.maxMp = data.maxMp;
+          // Backfill soul essence for older character saves
+          if (state.player.maxMp == null || Number.isNaN(state.player.maxMp)) state.player.maxMp = 100;
+          if (state.player.mp == null || Number.isNaN(state.player.mp)) state.player.mp = state.player.maxMp;
           if (data.credits !== undefined) state.player.credits = data.credits;
           if (data.inventory) state.player.inventory = data.inventory;
           if (data.skills) state.player.skills = data.skills;

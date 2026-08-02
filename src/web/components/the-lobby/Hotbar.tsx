@@ -122,30 +122,29 @@ export default function Hotbar() {
   const gcdPercent = gcdActive ? Math.max(0, (globalCooldown - now) / 1500 * 100) : 0;
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30 pointer-events-auto sg-glass p-2 rounded-xl shadow-2xl border border-white/10">
+    <div className="lobby-panel pointer-events-auto absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2 rounded-xl p-2">
       {slots.map((slot, i) => (
-        <div 
+        <div
           key={i}
           onClick={() => handleCast(slot)}
-          className="relative w-12 h-12 bg-black/50 border border-white/10 rounded-lg flex flex-col justify-center items-center group cursor-pointer hover:border-violet-500/50 hover:bg-violet-900/20 transition-all overflow-hidden"
+          className="group relative flex h-12 w-12 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-lobby-border bg-black/45 transition-all hover:border-lobby-soul/55 hover:bg-lobby-soul/15"
         >
-          {/* Keybind Hint */}
-          <span className="absolute top-1 left-1.5 text-[10px] font-mono font-bold text-white/50 group-hover:text-violet-300 transition-colors z-10">{slot.key}</span>
-          
-          {/* Item Content */}
+          <span className="absolute top-1 left-1.5 z-10 font-mono text-[10px] font-bold text-lobby-ash transition-colors group-hover:text-lobby-soul">
+            {slot.key}
+          </span>
+
           {slot.ability ? (
             <>
-              <span className="text-2xl drop-shadow-md z-10">{slot.ability.icon}</span>
-              {/* Cooldown Sweep Overlay */}
+              <span className="z-10 text-2xl drop-shadow-md">{slot.ability.icon}</span>
               {gcdActive && (
-                <div 
-                  className="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm z-20"
+                <div
+                  className="absolute bottom-0 left-0 z-20 w-full bg-black/70 backdrop-blur-sm"
                   style={{ height: `${gcdPercent}%` }}
                 />
               )}
             </>
           ) : (
-            <span className="text-white/10 text-xl font-bold">+</span>
+            <span className="text-xl font-bold text-lobby-ash/30">+</span>
           )}
         </div>
       ))}
