@@ -151,7 +151,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      const spawn = gate.targetSpawn || { x: 6, y: 2 };
+      const spawn = gate.targetSpawn || gate.spawnPoint || { x: 6, y: 2 };
       const finishWarp = () => {
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(spawn);
@@ -283,10 +283,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'NPC_DIALOGUE') {
       const rawId = String(result.npcId || '');
-      const dialogueNpcId =
-        rawId.includes('vance') || rawId.includes('warden')
-          ? 'npc_warden_vance'
-          : rawId;
+      const stripped = rawId.replace(/_\d{10,}$/, '');
+      const dialogueNpcId = stripped.startsWith('npc_')
+        ? stripped
+        : `npc_${stripped.replace(/^npc_/, '')}`;
       // Server-authoritative dialogue (Vance grants / quest report)
       store.emitSocketEvent?.('npc_interact', {
         mapId: currentMapId,
@@ -465,16 +465,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const trueId = entityId.replace(/^npc_/, '');
-        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === entityId);
-        targetName = npc?.name || (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
-        // Demo / dialogue path — talk to NPCs (Vance grants tools & film)
-        const dialogueNpcId = trueId.startsWith('warden') || trueId.includes('vance')
-          ? (trueId.startsWith('npc_') ? trueId : `npc_${trueId}`)
-          : (entityId.includes('warden') || entityId.includes('vance') ? 'npc_warden_vance' : entityId);
+        const stripped = entityId.replace(/_\d{10,}$/, '');
+        // Avoid npc_npc_* when map NPC ids already include the prefix
+        const dialogueNpcId = stripped.startsWith('npc_')
+          ? stripped
+          : `npc_${stripped}`;
+        const npc = activeMap.npcs?.find(
+          (n: any) => n.id === dialogueNpcId || n.id === stripped || `npc_${n.id}` === dialogueNpcId
+        );
+        targetName =
+          npc?.name ||
+          (dialogueNpcId.includes('vance') ? 'Warden Vance' : `NPC ${dialogueNpcId}`);
         state.emitSocketEvent?.('npc_interact', {
           mapId: state.currentMapId || state.instanceId,
-          targetId: dialogueNpcId.includes('vance') ? 'npc_warden_vance' : dialogueNpcId,
+          targetId: dialogueNpcId,
         });
         state.setGameMode('DIALOG');
         return;

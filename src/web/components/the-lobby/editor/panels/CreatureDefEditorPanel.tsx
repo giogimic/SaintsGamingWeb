@@ -21,14 +21,16 @@ import {
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, PawPrint, CheckCircle2, AlertCircle,
 } from 'lucide-react';
+import { useEditorStore } from '../editor-store';
 
 const inputCls =
   'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-emerald-700 transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
 
 export function CreatureDefEditorPanel() {
+  const activeGameId = useEditorStore((s) => s.activeGameId);
   const [list, setList] = useState<CreatureDefData[]>([]);
-  const [form, setForm] = useState<CreatureDefData>(emptyCreatureDef());
+  const [form, setForm] = useState<CreatureDefData>({ ...emptyCreatureDef(), gameId: activeGameId });
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -37,13 +39,15 @@ export function CreatureDefEditorPanel() {
   const [assetFilter, setAssetFilter] = useState('');
 
   const load = useCallback(async () => {
-    const res = await getAllCreatureDefs();
+    const res = await getAllCreatureDefs(activeGameId);
     if (res.success) setList(res.data);
-  }, []);
+  }, [activeGameId]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    setForm({ ...emptyCreatureDef(), gameId: activeGameId });
+    setIsNew(false);
+  }, [load, activeGameId]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -59,7 +63,7 @@ export function CreatureDefEditorPanel() {
   };
 
   const handleNew = () => {
-    setForm({ ...emptyCreatureDef(), sortOrder: list.length + 1 });
+    setForm({ ...emptyCreatureDef(), gameId: activeGameId, sortOrder: list.length + 1 });
     setIsNew(true);
   };
 
@@ -69,7 +73,7 @@ export function CreatureDefEditorPanel() {
       return;
     }
     setLoading(true);
-    const res = await upsertCreatureDef(form);
+    const res = await upsertCreatureDef({ ...form, gameId: form.gameId ?? activeGameId });
     setLoading(false);
     if (res.success) {
       showStatus('success', `${form.name} saved.`);
@@ -247,6 +251,13 @@ export function CreatureDefEditorPanel() {
             <>
               <div className="grid grid-cols-2 gap-2">
                 <div>
+                  <label className={labelCls}>Profile (gameId)</label>
+                  <input
+                    className={inputCls + ' mb-2'}
+                    value={form.gameId ?? ''}
+                    onChange={(e) => f('gameId', e.target.value || null)}
+                    placeholder="tuxemon / custom_1 / empty=shared"
+                  />
                   <label className={labelCls}>Slug</label>
                   <input className={inputCls} value={form.slug} disabled={!isNew} onChange={(e) => f('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} />
                 </div>
@@ -377,6 +388,74 @@ export function CreatureDefEditorPanel() {
                 </div>
               </div>
 
+              <div className="p-2 rounded border border-[#806f47]/30 bg-[#050b14]/60 space-y-2">
+                <div className="text-[10px] font-bold text-[#cbb26a] uppercase tracking-wider">Shiny variant</div>
+                <div className="flex flex-wrap gap-3 items-center">
+                  <label className="flex items-center gap-1 text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={form.shinyEnabled !== false}
+                      onChange={(e) => f('shinyEnabled', e.target.checked)}
+                    />{' '}
+                    Shinies enabled
+                  </label>
+                  <label className="flex items-center gap-1 text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={form.shinyUseGlobalChance !== false}
+                      onChange={(e) => f('shinyUseGlobalChance', e.target.checked)}
+                    />{' '}
+                    Sync global chance
+                  </label>
+                </div>
+                {form.shinyUseGlobalChance === false && (
+                  <div>
+                    <label className={labelCls}>Own shiny chance %</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      max={100}
+                      className={inputCls}
+                      value={form.shinyChancePercent ?? 0.5}
+                      onChange={(e) => f('shinyChancePercent', parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-500">
+                  Optional shiny images — leave empty to use the default look. Tag <code className="text-[#cbb26a]">shiny</code> is applied on roll.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  <div>
+                    <label className={labelCls}>Shiny overworld (optional)</label>
+                    <input
+                      className={inputCls}
+                      value={form.shinySpriteOverworld || ''}
+                      onChange={(e) => f('shinySpriteOverworld', e.target.value || null)}
+                      placeholder="defaults to overworld sprite"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Shiny battle (optional)</label>
+                    <input
+                      className={inputCls}
+                      value={form.shinySpriteBattle || ''}
+                      onChange={(e) => f('shinySpriteBattle', e.target.value || null)}
+                      placeholder="defaults to battle sprite"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Shiny back (optional)</label>
+                    <input
+                      className={inputCls}
+                      value={form.shinySpriteBack || ''}
+                      onChange={(e) => f('shinySpriteBack', e.target.value || null)}
+                      placeholder="defaults to back sprite"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-wrap gap-3 items-center">
                 <label className="flex items-center gap-1 text-slate-300">
                   <input type="checkbox" checked={form.isStarter} onChange={(e) => f('isStarter', e.target.checked)} /> Starter
@@ -391,7 +470,7 @@ export function CreatureDefEditorPanel() {
                 <button
                   disabled={loading}
                   onClick={() => void handleSave()}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded flex items-center gap-1"
+                  className="px-4 py-2 bg-[#806f47]/50 hover:bg-[#806f47]/70 text-[#e2d5b3] font-bold rounded flex items-center gap-1"
                 >
                   <Save size={12} /> {loading ? 'Saving…' : 'Save Creature'}
                 </button>

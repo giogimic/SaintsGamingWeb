@@ -704,7 +704,8 @@ export class BabylonEngine {
           let tex = this.tilesetTextureCache.get(imageSource);
           if (!tex) {
             const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const tilesetPath = `/game-assets/tilesets/${rawSource}`;
+            // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
+            const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
             tex = new Texture(tilesetPath, this.scene, true, false, 1);
             tex.hasAlpha = true;
             this.tilesetTextureCache.set(imageSource, tex);
@@ -908,13 +909,18 @@ export class BabylonEngine {
     // Render Map NPCs
     if (npcs) {
       npcs.forEach((npc) => {
+        const rawId = String(npc.id || "villager");
+        const entityId = rawId.startsWith("npc_") ? rawId : `npc_${rawId}`;
         this.updateEntity({
-          id: `npc_${npc.id}`,
+          id: entityId,
           name: npc.name || npc.id,
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,
           isNpc: true,
-          spriteUrl: npc.sprite ? `/assets/sprites/${npc.sprite}.png` : '/assets/sprites/villager_1.png'
+          // Overworld NPC sheets live under /game-assets/npc/ (not /assets/sprites/).
+          spriteUrl: npc.sprite
+            ? (String(npc.sprite).startsWith("/") ? npc.sprite : `/game-assets/npc/${npc.sprite}.png`)
+            : "/game-assets/npc/professor.png"
         });
       });
     }

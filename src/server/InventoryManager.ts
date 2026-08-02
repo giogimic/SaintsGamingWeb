@@ -72,8 +72,14 @@ export class InventoryManager {
     rewards: { items?: { slug: string; qty: number }[]; gold?: number };
   }) {
     const userId = await resolveUserId(data.accountId);
-    if (!userId || !data.rewards?.items?.length) return;
-    for (const item of data.rewards.items) {
+    if (!userId || !data.rewards) return;
+
+    const items = data.rewards.items || [];
+    const gold = Math.max(0, Math.floor(Number(data.rewards.gold) || 0));
+    if (!items.length && gold <= 0) return;
+
+    for (const item of items) {
+      if (!item?.slug || !item.qty) continue;
       const existing = await prisma.playerInventoryItem.findFirst({
         where: { userId, itemSlug: item.slug },
       });
@@ -88,12 +94,43 @@ export class InventoryManager {
         });
       }
     }
+
+    // Quest JSON uses `gold`; shop wallet is GameCharacter.stateData.credits
+    let credits: number | null = null;
+    if (gold > 0) {
+      const char = await prisma.gameCharacter.findFirst({ where: { userId } });
+      if (char) {
+        const state = JSON.parse(char.stateData || "{}") as Record<string, unknown>;
+        credits = Number(state.credits || 0) + gold;
+        state.credits = credits;
+        await prisma.gameCharacter.update({
+          where: { id: char.id },
+          data: { stateData: JSON.stringify(state) },
+        });
+      }
+    }
+
     if (data.socketId) {
-      await this.syncInventory(data.socketId, userId);
+      if (items.length) await this.syncInventory(data.socketId, userId);
+      if (credits != null) {
+        this.engine.events.emit("directMessage", {
+          socketId: data.socketId,
+          event: "sync_credits",
+          data: { credits },
+        });
+      }
+      const parts: string[] = [];
+      if (items.length) parts.push("items");
+      if (gold > 0) parts.push(`${gold} G`);
       this.engine.events.emit("directMessage", {
         socketId: data.socketId,
         event: "show_toast",
-        data: { message: "Quest rewards received." },
+        data: {
+          message:
+            parts.length > 0
+              ? `Quest rewards: ${parts.join(" + ")}.`
+              : "Quest rewards received.",
+        },
       });
     }
   }

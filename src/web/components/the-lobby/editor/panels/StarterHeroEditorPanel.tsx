@@ -6,6 +6,7 @@ import {
   toggleStarterHeroActive, seedDefaultStarterHeroes, importStarterHeroesJson, StarterHeroData
 } from '@/app/actions/starter-heroes';
 import { GAME_SPRITES } from '@/web/components/the-lobby/data/sprites';
+import { useEditorStore } from '../editor-store';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Swords, Wand2, Feather,
   ChevronDown, ChevronUp, Database, AlertCircle, CheckCircle2, Users,
@@ -16,8 +17,10 @@ import {
 
 const CLASS_OPTIONS = [
   { id: 'WARRIOR', label: 'Warrior', icon: Swords, color: '#f87171' },
-  { id: 'MAGE', label: 'Mage', icon: Wand2, color: '#a78bfa' },
-  { id: 'THIEF', label: 'Ranger/Thief', icon: Feather, color: '#34d399' },
+  { id: 'MAGE', label: 'Mage', icon: Wand2, color: '#60a5fa' },
+  { id: 'THIEF', label: 'Thief', icon: Feather, color: '#34d399' },
+  { id: 'RANGER', label: 'Ranger', icon: Feather, color: '#fbbf24' },
+  { id: 'PRIEST', label: 'Priest', icon: Sparkles, color: '#e2d5b3' },
 ];
 
 const TAG_PRESETS = [
@@ -156,6 +159,7 @@ const ARCHETYPE_PRESETS: { name: string; icon: string; data: StarterHeroData }[]
 
 const EMPTY_HERO: StarterHeroData = {
   slug: '',
+  gameId: 'custom_1',
   name: '',
   classId: 'WARRIOR',
   spriteKey: 'warrior',
@@ -278,9 +282,10 @@ function HeroListItem({
 // ─── Main Panel ────────────────────────────────────────────────────────────────
 
 export function StarterHeroEditorPanel() {
+  const activeGameId = useEditorStore((s) => s.activeGameId);
   const [heroes, setHeroes] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
-  const [form, setForm] = useState<StarterHeroData>(EMPTY_HERO);
+  const [form, setForm] = useState<StarterHeroData>({ ...EMPTY_HERO, gameId: activeGameId });
   const [isNew, setIsNew] = useState(false);
   const [spriteFilter, setSpriteFilter] = useState('');
   const [spritePage, setSpritePage] = useState(0);
@@ -298,11 +303,16 @@ export function StarterHeroEditorPanel() {
   const pageSprites = filteredSprites.slice(spritePage * spritesPerPage, (spritePage + 1) * spritesPerPage);
 
   const load = useCallback(async () => {
-    const res = await getAllStarterHeroes();
+    const res = await getAllStarterHeroes(activeGameId);
     if (res.success) setHeroes(res.data);
-  }, []);
+  }, [activeGameId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    void load();
+    setForm({ ...EMPTY_HERO, gameId: activeGameId });
+    setIsNew(false);
+    setSelected(null);
+  }, [load, activeGameId]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -312,7 +322,7 @@ export function StarterHeroEditorPanel() {
   const handleSelectHero = (hero: any) => {
     setSelected(hero);
     setForm({
-      slug: hero.slug, name: hero.name, classId: hero.classId,
+      slug: hero.slug, gameId: hero.gameId || activeGameId, name: hero.name, classId: hero.classId,
       spriteKey: hero.spriteKey, flavor: hero.flavor, tag: hero.tag,
       tagColor: hero.tagColor, sortOrder: hero.sortOrder, isActive: hero.isActive,
       startingMap: hero.startingMap, startingX: hero.startingX, startingY: hero.startingY,
@@ -323,7 +333,7 @@ export function StarterHeroEditorPanel() {
 
   const handleNew = () => {
     setSelected(null);
-    setForm({ ...EMPTY_HERO, sortOrder: heroes.length + 1 });
+    setForm({ ...EMPTY_HERO, gameId: activeGameId, sortOrder: heroes.length + 1 });
     setIsNew(true);
   };
 
@@ -371,7 +381,7 @@ export function StarterHeroEditorPanel() {
       return;
     }
     setLoading(true);
-    const res = await upsertStarterHero(form);
+    const res = await upsertStarterHero({ ...form, gameId: form.gameId || activeGameId });
     setLoading(false);
     if (res.success) {
       showStatus('success', `${form.name} saved successfully!`);

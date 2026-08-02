@@ -90,37 +90,57 @@ export class WorldManager {
     const mapData = mapLoader.getCachedMap(mapId);
     if (mapData && mapData.npcs) {
       for (const npc of mapData.npcs) {
+        const rawId = String(npc.id || npc.templateId || "villager");
+        const sprite =
+          npc.sprite ||
+          npc.spriteKey ||
+          npc.spriteId ||
+          rawId.replace(/^npc_/, "");
         this.engine.events.emit("spawnCreature", {
-          templateId: npc.id || npc.templateId || "Villager",
+          templateId: rawId.replace(/^npc_/, ""),
           entityType: "NPC",
-          mapId: instanceId, // Spawning specifically into this shard/instance
+          mapId: instanceId,
           x: npc.x,
           y: npc.y,
-          spawnMode: "STATIC"
+          spawnMode: "STATIC",
+          name: npc.name || rawId,
+          spriteKey: String(sprite).replace(/^\/game-assets\/npc\//, "").replace(/\.png$/, ""),
         });
       }
     }
 
-    // Demo NPC: Warden Vance on plaza path (entityId → npc_warden_vance_*)
-    this.engine.events.emit("spawnCreature", {
-      templateId: "warden_vance",
-      entityType: "NPC",
-      mapId: instanceId,
-      x: DEMO_VANCE_SPAWN.x,
-      y: DEMO_VANCE_SPAWN.y,
-      spawnMode: "STATIC",
-    });
+    // Demo-only spawns (do not pollute Spyder campaign maps)
+    const baseMap = String(mapId || "").split("#")[0].toUpperCase();
+    if (baseMap === "DEMO_SANDBOX") {
+      const hasVance = Array.isArray(mapData?.npcs)
+        ? mapData.npcs.some(
+            (n: { id?: string }) =>
+              n.id === "npc_warden_vance" || n.id === "warden_vance"
+          )
+        : false;
+      if (!hasVance) {
+        this.engine.events.emit("spawnCreature", {
+          templateId: "npc_warden_vance",
+          entityType: "NPC",
+          mapId: instanceId,
+          x: DEMO_VANCE_SPAWN.x,
+          y: DEMO_VANCE_SPAWN.y,
+          spawnMode: "STATIC",
+          name: "Warden Vance",
+          spriteKey: "professor",
+        });
+      }
 
-    // MPV: spawn a few roaming Rockitten for RT combat testing (same species as TB)
-    for (const spot of DEMO_WILD_SPOTS) {
-      this.engine.events.emit("spawnCreature", {
-        templateId: "rockitten",
-        entityType: "CREATURE",
-        mapId: instanceId,
-        x: spot.x,
-        y: spot.y,
-        spawnMode: "ROAMING",
-      });
+      for (const spot of DEMO_WILD_SPOTS) {
+        this.engine.events.emit("spawnCreature", {
+          templateId: "rockitten",
+          entityType: "CREATURE",
+          mapId: instanceId,
+          x: spot.x,
+          y: spot.y,
+          spawnMode: "ROAMING",
+        });
+      }
     }
 
     return instance;
@@ -170,7 +190,10 @@ export class WorldManager {
     return undefined;
   }
 
-  public joinMap(mapId: string, accountId: string, isPrivate: boolean = false): MapInstance {
+  public async joinMap(mapId: string, accountId: string, isPrivate: boolean = false): Promise<MapInstance> {
+    // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
+    await mapLoader.loadMapData(mapId);
+
     if (isPrivate) {
       // Private instances (e.g. player bases) are isolated per account
       const instanceId = `${mapId}_${accountId}`;
