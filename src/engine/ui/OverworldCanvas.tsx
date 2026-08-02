@@ -49,7 +49,7 @@ export default function OverworldCanvas() {
     }
   }, [currentMap]);
 
-  // Main render loop
+  // Main render loop — depends only on currentMap identity, not per-tick player writes
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -57,12 +57,16 @@ export default function OverworldCanvas() {
     if (!ctx) return;
 
     let animFrameId: number;
+    let alive = true;
 
     const render = () => {
+      if (!alive) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (!currentMap) {
-        // Loading screen
+      const map = useGameStore.getState().currentMap;
+      const player = useGameStore.getState().player;
+
+      if (!map) {
         ctx.fillStyle = "#111";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = "#fff";
@@ -75,21 +79,19 @@ export default function OverworldCanvas() {
 
       const cam = gameEngine.camera;
 
-      // Draw tiles
-      drawTileMap(ctx, currentMap, cam.x, cam.y, canvas.width, canvas.height);
-
-      // Draw NPCs
-      drawNPCs(ctx, currentMap, cam.x, cam.y);
-
-      // Draw player
+      drawTileMap(ctx, map, cam.x, cam.y, canvas.width, canvas.height);
+      drawNPCs(ctx, map, cam.x, cam.y);
       drawPlayer(ctx, player.position, player.direction, player.moving, cam.x, cam.y);
 
       animFrameId = requestAnimationFrame(render);
     };
 
     animFrameId = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(animFrameId);
-  }, [currentMap, player]);
+    return () => {
+      alive = false;
+      cancelAnimationFrame(animFrameId);
+    };
+  }, [currentMap]);
 
   // Show canvas whenever a map is loaded (don't stay blank if phase lags behind).
   const showCanvas =
