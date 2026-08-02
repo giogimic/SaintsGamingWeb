@@ -1,3 +1,12 @@
+## [2.1.111] - 2026-08-02
+
+### Fixed
+- **Social actions barrel**: removed file-level `"use server"` so Next.js accepts re-exports (domain modules remain `"use server"`).
+- **Client/server split for achievements**: catalog lives in `achievements-catalog.ts`; award + realtime emit stay server-only (`server-only` + `serverExternalPackages` for redis/socket.io).
+
+### Added
+- **Staging smoke**: `scripts/smoke-staging.sh` (`npm run smoke`) + `info/ops/STAGING_SMOKE.md` for forum/lobby/realtime readiness.
+
 ## [2.1.110] - 2026-08-02
 
 ### Added

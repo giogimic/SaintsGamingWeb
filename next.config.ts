@@ -23,6 +23,8 @@ const cdnPattern = cdnRemotePattern();
 const nextConfig: NextConfig = {
   // Exclude scripts directory from build
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'].filter(ext => ext),
+  // Keep Node redis / socket stack out of the browser compiler
+  serverExternalPackages: ["redis", "@redis/client", "socket.io", "socket.io-adapter"],
   webpack: (config) => {
     config.module.rules.push({
       test: /\.tsx?$/,

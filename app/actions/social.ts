@@ -1,8 +1,10 @@
-"use server";
-
 /**
  * Social actions barrel — stable import path for call sites.
  * Implementation split by domain under ./social/*.
+ *
+ * Do NOT add `"use server"` here: Next.js only allows exporting async
+ * functions from `"use server"` files (re-export lists are rejected).
+ * Each domain module is marked `"use server"`; re-exports stay actions.
  */
 
 export {
