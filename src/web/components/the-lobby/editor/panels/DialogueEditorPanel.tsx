@@ -6,10 +6,10 @@ import {
   getNpcDialogueTree,
   upsertNpcDialogueTree,
   deleteNpcDialogueTree,
-  KNOWN_ACTIONS,
   type DialogueNodeInput,
   type DialogueOptionInput,
 } from '@/app/actions/npc-dialogue';
+import { KNOWN_ACTIONS } from '@/shared/game/dialogueActions';
 import {
   Plus, Trash2, Save, RefreshCw, MessageSquare, CheckCircle2, AlertCircle,
 } from 'lucide-react';

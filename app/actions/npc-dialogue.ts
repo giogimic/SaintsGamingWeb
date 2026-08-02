@@ -18,20 +18,6 @@ export type DialogueNodeInput = {
   options: DialogueOptionInput[];
 };
 
-const KNOWN_ACTIONS = [
-  "",
-  "ACCEPT_QUEST",
-  "OPEN_SHOP",
-  "HEAL_PARTY",
-  "START_TRAINER_BATTLE",
-  "GRANT_DEMO_TOOLS",
-  "GRANT_DEMO_FILM",
-  "OPEN_LAB",
-  "DEMO_QUEST_REPORT",
-] as const;
-
-export { KNOWN_ACTIONS };
-
 /** List dialogue trees (optionally filter by npcId substring). */
 export async function listNpcDialogueTrees(q?: string) {
   try {
