@@ -283,10 +283,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'NPC_DIALOGUE') {
       const rawId = String(result.npcId || '');
+      const stripped = rawId.replace(/_\d{10,}$/, '');
       const dialogueNpcId =
-        rawId.includes('vance') || rawId.includes('warden')
+        stripped.includes('vance') || stripped.includes('warden')
           ? 'npc_warden_vance'
-          : rawId;
+          : stripped.startsWith('npc_')
+            ? stripped
+            : `npc_${stripped.replace(/^npc_/, '')}`;
       // Server-authoritative dialogue (Vance grants / quest report)
       store.emitSocketEvent?.('npc_interact', {
         mapId: currentMapId,
@@ -465,16 +468,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const trueId = entityId.replace(/^npc_/, '');
-        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === entityId);
+        const stripped = entityId.replace(/_\d{10,}$/, '');
+        const trueId = stripped.replace(/^npc_/, '');
+        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === stripped || n.id === entityId);
         targetName = npc?.name || (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
-        // Demo / dialogue path — talk to NPCs (Vance grants tools & film)
-        const dialogueNpcId = trueId.startsWith('warden') || trueId.includes('vance')
-          ? (trueId.startsWith('npc_') ? trueId : `npc_${trueId}`)
-          : (entityId.includes('warden') || entityId.includes('vance') ? 'npc_warden_vance' : entityId);
+        const dialogueNpcId =
+          trueId.includes('vance') || trueId.includes('warden')
+            ? 'npc_warden_vance'
+            : stripped.startsWith('npc_')
+              ? stripped
+              : `npc_${trueId}`;
         state.emitSocketEvent?.('npc_interact', {
           mapId: state.currentMapId || state.instanceId,
-          targetId: dialogueNpcId.includes('vance') ? 'npc_warden_vance' : dialogueNpcId,
+          targetId: dialogueNpcId,
         });
         state.setGameMode('DIALOG');
         return;

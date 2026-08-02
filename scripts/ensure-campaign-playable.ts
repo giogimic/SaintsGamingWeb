@@ -66,7 +66,7 @@ async function main() {
   console.log("  3. Claim starter in lab → tall grass for shinies");
   const azure = maps.find((m) => m.id === "AZURE_TOWN");
   if (azure) {
-    console.log(`  4. Campaign entry: AZURE_TOWN — set StarterHero.startingMap or seed hero "spyder_tamer".`);
+    console.log(`  4. Campaign entry: AZURE_TOWN — Spyder Tamer hero, then npm run seed:azure for the Guide NPC.`);
   } else if (maps[0]) {
     console.log(`  4. Campaign entry map candidate: ${maps[0].id} (${maps[0].name})`);
   }

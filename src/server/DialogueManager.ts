@@ -63,34 +63,37 @@ export class DialogueManager {
     console.log("[DialogueManager] Initialized (demo trees + DB)");
   }
 
+  private normalizeNpcKey(npcId: string): string {
+    // npc_azure_guide_1712345678 → npc_azure_guide
+    let id = String(npcId || "").replace(/_\d{10,}$/, "");
+    if (!id.startsWith("npc_")) id = `npc_${id.replace(/^npc_/, "")}`;
+    return id;
+  }
+
   private async getDialogueTree(npcId: string) {
-    const key = npcId.startsWith("npc_") ? npcId : `npc_${npcId}`;
+    const key = this.normalizeNpcKey(npcId);
+    const bare = key.replace(/^npc_/, "");
     if (dialogueCache[key]) return dialogueCache[key];
     if (dialogueCache[npcId]) return dialogueCache[npcId];
+    if (dialogueCache[bare]) return dialogueCache[bare];
 
-    if (BUILTIN_TREES[npcId]) {
-      dialogueCache[npcId] = BUILTIN_TREES[npcId];
-      return BUILTIN_TREES[npcId];
-    }
-    if (BUILTIN_TREES[key]) {
-      dialogueCache[key] = BUILTIN_TREES[key];
-      return BUILTIN_TREES[key];
+    for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
+      if (BUILTIN_TREES[candidate]) {
+        dialogueCache[key] = BUILTIN_TREES[candidate];
+        return BUILTIN_TREES[candidate];
+      }
     }
 
     try {
-      const tree = await prisma.npcDialogueTree.findUnique({
-        where: { npcId: key },
-      });
-      if (tree) {
-        const parsed = JSON.parse(tree.data);
-        dialogueCache[key] = parsed;
-        return parsed;
-      }
-      const tree2 = await prisma.npcDialogueTree.findUnique({ where: { npcId } });
-      if (tree2) {
-        const parsed = JSON.parse(tree2.data);
-        dialogueCache[npcId] = parsed;
-        return parsed;
+      for (const candidate of [key, npcId, bare, `npc_${bare}`]) {
+        const tree = await prisma.npcDialogueTree.findUnique({
+          where: { npcId: candidate },
+        });
+        if (tree) {
+          const parsed = JSON.parse(tree.data);
+          dialogueCache[key] = parsed;
+          return parsed;
+        }
       }
     } catch (e) {
       console.error(`[DialogueManager] Failed to load dialogue for ${npcId}`, e);
@@ -102,7 +105,7 @@ export class DialogueManager {
         options: [{ label: "Goodbye.", nextNode: "exit" }],
       },
     };
-    dialogueCache[npcId] = fallback;
+    dialogueCache[key] = fallback;
     return fallback;
   }
 

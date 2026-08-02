@@ -7,6 +7,7 @@ import {
   isForbiddenRtCaptureAbility,
   type CombatAbility,
 } from "@/shared/game/combatAbilities";
+import { grantsForAbilityCast } from "@/shared/game/combatSkillXp";
 
 type CombatRequest = {
   accountId?: string;
@@ -226,8 +227,9 @@ export class CombatManager {
     cdMap.set(ability.id, finalCooldownMs);
     this.cooldowns.set(attacker.entityId, cdMap);
 
-    // Non-damaging utility/buff/heal — acknowledge only for now
+    // Non-damaging utility/buff/heal — still trains support combat typings
     if (ability.power <= 0 || ability.category === "utility" || ability.category === "buff" || ability.category === "heal") {
+      this.grantCombatXp(attacker.accountId, ability, { isUtilityOnly: true });
       this.emitResult(attackerStats.mapId, {
         attackerId: attacker.entityId,
         targetId: data.targetId,
@@ -278,6 +280,8 @@ export class CombatManager {
       });
     }
 
+    this.grantCombatXp(attacker.accountId, ability, { isCrit });
+
     this.emitResult(attackerStats.mapId, {
       attackerId: attacker.entityId,
       targetId: data.targetId,
@@ -287,5 +291,21 @@ export class CombatManager {
       isMiss: false,
       cooldownMs: Math.floor(finalCooldownMs),
     });
+  }
+
+  private grantCombatXp(
+    accountId: string | undefined,
+    ability: CombatAbility,
+    opts: { isCrit?: boolean; isMiss?: boolean; isUtilityOnly?: boolean }
+  ) {
+    if (!accountId) return;
+    const grants = grantsForAbilityCast(ability, opts);
+    for (const g of grants) {
+      this.engine.events.emit("grantSkillXp", {
+        accountId,
+        skillSlug: g.skillSlug,
+        amount: g.amount,
+      });
+    }
   }
 }

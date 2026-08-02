@@ -17,6 +17,8 @@ import {
   shinyInstanceTags,
   SHINY_TAG,
 } from "@/shared/game/shiny";
+import { normalizeEncounterEntries, pickWeightedSlug } from "@/shared/game/encounterWeights";
+import { grantsForTurnBattle } from "@/shared/game/combatSkillXp";
 
 const prisma = new PrismaClient();
 
@@ -94,62 +96,27 @@ export class EncounterManager {
         select: { encountersData: true, name: true },
       });
       if (map?.encountersData) {
-        let entries: Array<{ slug?: string; speciesSlug?: string; weight?: number }> = [];
+        let raw: unknown = [];
         try {
-          entries = JSON.parse(map.encountersData || "[]");
+          raw = JSON.parse(map.encountersData || "[]");
         } catch {
-          entries = [];
+          raw = [];
         }
-        if (Array.isArray(entries) && entries.length > 0) {
-          const weighted = entries
-            .map((e) => ({
-              slug: e.slug || e.speciesSlug || "",
-              weight: Math.max(1, e.weight || 1),
-            }))
-            .filter((e) => e.slug);
-          if (weighted.length > 0) {
-            const total = weighted.reduce((s, e) => s + e.weight, 0);
-            let roll = Math.random() * total;
-            let picked = weighted[0].slug;
-            for (const e of weighted) {
-              roll -= e.weight;
-              if (roll <= 0) {
-                picked = e.slug;
-                break;
-              }
-            }
-            const def = await loadCreatureDef(picked);
-            if (def) return def;
-          }
+        const picked = pickWeightedSlug(normalizeEncounterEntries(raw));
+        if (picked) {
+          const def = await loadCreatureDef(picked);
+          if (def) return def;
         }
       }
 
-      // EncounterTable by map id / name
       const table =
         (await prisma.encounterTable.findFirst({ where: { mapName: mapId } })) ||
         (await prisma.encounterTable.findFirst({ where: { slug: mapId } }));
       if (table?.data) {
         try {
           const raw = JSON.parse(table.data);
-          const monsters: Array<{ monster?: string; slug?: string; encounter_rate?: number }> =
-            raw?.monsters || raw?.encounters || (Array.isArray(raw) ? raw : []);
-          const pool = monsters
-            .map((m) => ({
-              slug: m.monster || m.slug || "",
-              weight: Math.max(1, Math.round((m.encounter_rate || 0.1) * 100)),
-            }))
-            .filter((m) => m.slug);
-          if (pool.length > 0) {
-            const total = pool.reduce((s, e) => s + e.weight, 0);
-            let roll = Math.random() * total;
-            let picked = pool[0].slug;
-            for (const e of pool) {
-              roll -= e.weight;
-              if (roll <= 0) {
-                picked = e.slug;
-                break;
-              }
-            }
+          const picked = pickWeightedSlug(normalizeEncounterEntries(raw));
+          if (picked) {
             const def = await loadCreatureDef(picked);
             if (def) return def;
           }
@@ -162,7 +129,9 @@ export class EncounterManager {
     }
 
     const wilds = await loadWildSpawnDefs();
-    return wilds[Math.floor(Math.random() * Math.max(1, wilds.length))] || wilds[0] || null;
+    if (!wilds.length) return null;
+    // Uniform among catalog wilds (weights can be added later on CreatureDef)
+    return wilds[Math.floor(Math.random() * wilds.length)] || wilds[0] || null;
   }
 
   /** Persist a catalog starter as a real PlayerCreature (CreatureDef / fallback seed). */
@@ -496,6 +465,15 @@ export class EncounterManager {
     });
 
     const userId = await resolveUserId(battle.accountId);
+
+    // Combat / summoning XP for TB outcomes
+    for (const g of grantsForTurnBattle(result || "")) {
+      this.engine.events.emit("grantSkillXp", {
+        accountId: battle.accountId,
+        skillSlug: g.skillSlug,
+        amount: g.amount,
+      });
+    }
 
     // Persist party creature HP after the fight (bible 11)
     if (userId && battle.playerCreature.id !== "pc_1") {
