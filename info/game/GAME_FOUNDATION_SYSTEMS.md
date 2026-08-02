@@ -2,36 +2,25 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (path continuity)
+**Updated:** 2026-08-02 (Guide state + starter)
 
-## Choices
+## Done (high level)
 
-- Combat skill typings level independently; gathering/artisan stay
-- Phase 1 editors/classes/shinies first; Tuxemon story as playtest bed
-
-## Done
-
-### Phase 1–2
-- [x] Classes, shinies, Tuxemon import, campaign maps, Spyder Tamer → AZURE_TOWN
-
-### Spyder on-ramp
-- [x] NPCs + 4-quest chain (welcome → townsfolk → capture → Cotton)
-- [x] TALK / CLAIM / kill XP wiring
-- [x] **Gates Azure ↔ Spyder Route 1 ↔ Cotton** + tall grass + yaml-ish encounters
-- [x] Gate normalize (`mapGates.ts`) + lobby campaign allowlist
-- [x] Film grant on Guide accept
-- [x] Smoke: `info/game/SPYDER_SMOKE.md`
+- Classes / shinies / Tuxemon import / campaign maps
+- Spyder on-ramp: NPCs, 4 quests, warps, tall grass, capture CLAIM, kill XP
+- Lobby allowlist + gate normalize
+- **State-aware Azure Guide** + **Budaye grant** on welcome accept
 
 ## Pipeline
 
 ```bash
-npm run migrate:campaign && npm run ensure:campaign
-npm run seed:campaign-npcs
+npm run ensure:campaign && npm run seed:campaign-npcs
 npm run dev
 ```
 
+Smoke: [`SPYDER_SMOKE.md`](./SPYDER_SMOKE.md)
+
 ## Remaining
 
-- Human smoke of full path
-- State-aware Guide dialogue
-- Deeper Spyder mission graph / TMX NPC densify
+- Human smoke
+- TMX densify / deeper Spyder graph

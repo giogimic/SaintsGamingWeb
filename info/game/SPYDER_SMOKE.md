@@ -16,13 +16,14 @@ npm run dev
 | Step | Action | Expect |
 | ---: | :--- | :--- |
 | 1 | Create **Spyder Tamer** | Spawn `AZURE_TOWN` ≈ `(25,25)` (not forced to DEMO) |
-| 2 | Talk **Azure Guide** → **I'm ready.** | Quest accepted; Soul Camera + 5× film; toast |
-| 3 | Talk Guide again | Q1 completes → Q2 Meet the Townsfolk |
+| 2 | Talk **Azure Guide** → **I'm ready.** | Quest accepted; film + **Budaye** in party; toast |
+| 3 | Talk Guide again | Q1 completes → Q2; Guide copy shifts to townsfolk hint |
 | 4 | Talk **Enforcer** then **Knight** | Q2 stages tick; film reward; Q3 First Capture |
-| 5 | Walk **east** to edge tile `(49,25)` | Warp → `SPYDER_ROUTE1` near scout |
-| 6 | Walk tall grass (green patch mid-route) | TB encounter; **EXPOSE FILM** to capture |
-| 7 | Return west → Guide | Q3 stage 2 completes → Q4 Cotton Town |
-| 8 | Route 1 **east** edge → Cotton | Warp → `COTTON_TOWN`; talk **Cotton Greeter** |
+| 5 | Talk Guide | State-aware: “east gate / tall grass” (or starter gate if no party) |
+| 6 | Walk **east** to edge tile `(49,25)` | Warp → `SPYDER_ROUTE1` near scout |
+| 7 | Walk tall grass (green patch mid-route) | TB encounter (needs party); **EXPOSE FILM** to capture |
+| 8 | Return west → Guide | Report copy; Q3 completes → Q4 Cotton Town |
+| 9 | Route 1 **east** edge → Cotton | Warp → `COTTON_TOWN`; talk **Cotton Greeter** |
 
 ## Notes
 

@@ -1,6 +1,13 @@
 import { GameEngine } from "./GameEngine";
 import { PrismaClient } from "@prisma/client";
 import { VANCE_TREE } from "./DemoBootstrap";
+import { loadCreatureDef, toPlayerCreatureStats } from "./creatureDefs";
+import {
+  AZURE_GUIDE_NPC_ID,
+  AZURE_GUIDE_TREE,
+  resolveAzureGuideStartNode,
+  type GuideContext,
+} from "./spyderGuideDialogue";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +17,11 @@ const dialogueCache: Record<string, any> = {};
 const BUILTIN_TREES: Record<string, any> = {
   npc_warden_vance: VANCE_TREE,
   warden_vance: VANCE_TREE,
+  [AZURE_GUIDE_NPC_ID]: AZURE_GUIDE_TREE,
+  azure_guide: AZURE_GUIDE_TREE,
 };
+
+const SPYDER_DEFAULT_STARTER = "budaye";
 
 async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
@@ -172,6 +183,97 @@ export class DialogueManager {
     };
   }
 
+  private async buildGuideContext(userId: string): Promise<GuideContext> {
+    const party = await prisma.playerCreature.findFirst({
+      where: { userId, isParty: true },
+      select: { id: true },
+    });
+    const states = await prisma.playerQuestState.findMany({
+      where: {
+        userId,
+        questSlug: {
+          in: [
+            "quest_azure_welcome",
+            "quest_azure_townsfolk",
+            "quest_spyder_first_capture",
+            "quest_spyder_cotton_arrive",
+          ],
+        },
+      },
+    });
+    const activeRow = states.find((s) => s.status === "ACTIVE") || null;
+    const completedSlugs = new Set(
+      states.filter((s) => s.status === "COMPLETED").map((s) => s.questSlug)
+    );
+    return {
+      hasPartyCreature: !!party,
+      active: activeRow
+        ? {
+            slug: activeRow.questSlug,
+            status: activeRow.status,
+            currentStage: activeRow.currentStage,
+          }
+        : null,
+      completedSlugs,
+    };
+  }
+
+  private async grantSpyderStarter(userId: string, socketId: string): Promise<boolean> {
+    const existing = await prisma.playerCreature.findFirst({
+      where: { userId, isParty: true },
+    });
+    if (existing) {
+      this.toast(socketId, `${existing.nickname || existing.speciesSlug} is already in your party.`);
+      return false;
+    }
+
+    const def = await loadCreatureDef(SPYDER_DEFAULT_STARTER);
+    if (!def) {
+      this.toast(socketId, "Starter companion unavailable — try the Lab.");
+      return false;
+    }
+
+    await prisma.playerCreature.create({
+      data: {
+        userId,
+        speciesSlug: def.slug,
+        nickname: def.name,
+        level: def.starterLevel,
+        currentHp: def.baseHp,
+        maxHp: def.baseHp,
+        stats: JSON.stringify(toPlayerCreatureStats(def)),
+        abilities: JSON.stringify(def.abilities),
+        isParty: true,
+        slotIndex: 0,
+      },
+    });
+
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "starter_claimed",
+      data: {
+        creature: { speciesSlug: def.slug, nickname: def.name },
+        def: {
+          slug: def.slug,
+          name: def.name,
+          typePrimary: def.typePrimary,
+          typeSecondary: def.typeSecondary,
+          spriteOverworld: def.spriteOverworld,
+        },
+        alreadyOwned: false,
+      },
+    });
+    this.toast(socketId, `${def.name} joined your party!`);
+    this.engine.events.emit("starterClaimed", {
+      accountId: userId,
+      socketId,
+      targetSlug: "starter",
+      amount: 1,
+      speciesSlug: def.slug,
+    });
+    return true;
+  }
+
   private async runAction(
     action: string | undefined,
     accountId: string,
@@ -196,6 +298,11 @@ export class DialogueManager {
     const userId = await resolveUserId(accountId);
     if (!userId) {
       this.toast(socketId, "No character found for grants.");
+      return;
+    }
+
+    if (action === "GRANT_SPYDER_STARTER") {
+      await this.grantSpyderStarter(userId, socketId);
       return;
     }
 
@@ -259,7 +366,17 @@ export class DialogueManager {
   private async handleNpcInteract({ accountId, socketId, mapId, targetId }: any) {
     const npcId = this.normalizeNpcId(targetId);
     const tree = await this.getDialogueTree(npcId);
-    const startNode = tree["node_start"];
+
+    let startKey = "node_start";
+    if (npcId === AZURE_GUIDE_NPC_ID) {
+      const userId = await resolveUserId(accountId);
+      if (userId) {
+        const ctx = await this.buildGuideContext(userId);
+        startKey = resolveAzureGuideStartNode(ctx);
+      }
+    }
+
+    const startNode = tree[startKey] || tree["node_start"];
     if (!startNode) return;
 
     // Quest engine listens on engine `dialogue_start` (not the socket event).
@@ -271,13 +388,20 @@ export class DialogueManager {
       npcId,
     });
 
+    const npcName =
+      npcId.includes("vance")
+        ? "Warden Vance"
+        : npcId === AZURE_GUIDE_NPC_ID
+          ? "Azure Guide"
+          : undefined;
+
     this.engine.events.emit("directMessage", {
       socketId,
       event: "dialogue_start",
       data: {
         npcId,
-        npcName: npcId.includes("vance") ? "Warden Vance" : undefined,
-        node: "node_start",
+        npcName,
+        node: startKey,
         text: startNode.text,
         options: startNode.options,
       },
@@ -301,7 +425,7 @@ export class DialogueManager {
 
     if (action === "ACCEPT_QUEST" && questSlug) {
       this.engine.events.emit("acceptQuest", { accountId, questSlug, socketId });
-      // Spyder on-ramp: starter film so Route 1 capture isn't blocked before Q2 rewards
+      // Spyder on-ramp: film + party companion so Route 1 TB is immediately playable
       if (questSlug === "quest_azure_welcome") {
         const userId = await resolveUserId(accountId);
         if (userId) {
@@ -311,6 +435,7 @@ export class DialogueManager {
           ]);
           await this.syncInv(socketId, userId);
           this.toast(socketId, "Received Soul Camera + 5× Standard Film.");
+          await this.grantSpyderStarter(userId, socketId);
         }
       }
     }

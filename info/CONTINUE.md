@@ -12,20 +12,19 @@
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
-### Just shipped (path continuity)
+### Just shipped (Guide continuity)
 
-- Campaign warps + tall grass + route encounters (`seed:campaign-path` / `ensure:campaign`)
-- Gate normalize (array + spawn aliases) for client warps
-- Lobby allowlist includes Spyder maps (Spyder Tamer no longer forced to DEMO)
-- Q4 Cotton arrive; film grant on Guide accept
-- Spyder smoke doc
+- State-aware Azure Guide dialogue (`spyderGuideDialogue.ts`)
+- Guide accept grants film **+ Budaye** party starter (Route TB unblocked)
+- `GRANT_SPYDER_STARTER` / Lab options on Guide tree
+- Path warps/grass + smoke doc from prior pass
 
 ### Suggested next
 
 1. Human smoke per `SPYDER_SMOKE.md`
-2. State-aware Guide dialogue (accept vs report vs done)
-3. TMX bulk NPC import when Tuxemon checkout available
-4. Deeper Spyder graph (gyms / story flags)
+2. TMX bulk NPC import when Tuxemon checkout available
+3. Deeper Spyder graph (gyms / story flags)
+4. Optional: quest tracker UI polish for multi-stage Spyder chain
 
 ### Pipeline
 
