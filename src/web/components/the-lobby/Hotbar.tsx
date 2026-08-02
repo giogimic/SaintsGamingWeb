@@ -2,6 +2,15 @@
 
 import { useGameStore } from './store';
 import { useEffect, useState } from 'react';
+import { isForbiddenRtCaptureAbility } from '@/shared/game/combatAbilities';
+
+type HotbarAbility = {
+  id: string;
+  name: string;
+  icon: string;
+  cooldownMs: number;
+  type?: string;
+};
 
 export default function Hotbar() {
   const { player, gameMode, combatTarget, emitSocketEvent } = useGameStore();
@@ -19,30 +28,32 @@ export default function Hotbar() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Default MMO abilities mock for now based on combat style
-  const getAbilities = () => {
+  // RT MMO abilities only — capture tools are turn-based (bible 07 / 11)
+  const getAbilities = (): HotbarAbility[] => {
+    let list: HotbarAbility[];
     if (player.combatStyle === 'MELEE') {
-      return [
+      list = [
         { id: 'strike', name: 'Strike', icon: '⚔️', cooldownMs: 1500, type: 'damage' },
         { id: 'cleave', name: 'Cleave', icon: '🌪️', cooldownMs: 4000, type: 'damage' },
         { id: 'dash', name: 'Dash', icon: '💨', cooldownMs: 8000, type: 'utility' },
         { id: 'shout', name: 'War Cry', icon: '🗣️', cooldownMs: 12000, type: 'buff' },
       ];
     } else if (player.combatStyle === 'MAGIC') {
-      return [
+      list = [
         { id: 'fireball', name: 'Fireball', icon: '🔥', cooldownMs: 2000, type: 'damage' },
         { id: 'frost', name: 'Frost Nova', icon: '❄️', cooldownMs: 6000, type: 'damage' },
         { id: 'blink', name: 'Blink', icon: '✨', cooldownMs: 8000, type: 'utility' },
         { id: 'shield', name: 'Mana Shield', icon: '🛡️', cooldownMs: 15000, type: 'buff' },
       ];
     } else {
-      return [
+      list = [
         { id: 'shoot', name: 'Shoot', icon: '🏹', cooldownMs: 1200, type: 'damage' },
         { id: 'multishot', name: 'Volley', icon: '🌧️', cooldownMs: 5000, type: 'damage' },
         { id: 'trap', name: 'Snare', icon: '🕸️', cooldownMs: 10000, type: 'utility' },
         { id: 'heal', name: 'Bandage', icon: '🩹', cooldownMs: 20000, type: 'heal' },
       ];
     }
+    return list.filter((a) => !isForbiddenRtCaptureAbility(a.id));
   };
 
   const abilities = getAbilities();
@@ -52,24 +63,29 @@ export default function Hotbar() {
     { key: '2', action: 'ability', ability: abilities[1] },
     { key: '3', action: 'ability', ability: abilities[2] },
     { key: '4', action: 'ability', ability: abilities[3] },
-    { key: '5', action: 'item', ability: { id: 'potion', name: 'Health Potion', icon: '❤️', cooldownMs: 1000 } },
-    { key: '6', action: 'none', ability: null },
-    { key: '7', action: 'none', ability: null },
-    { key: '8', action: 'none', ability: null },
-    { key: '9', action: 'none', ability: null },
+    { key: '5', action: 'item', ability: { id: 'potion', name: 'Health Potion', icon: '❤️', cooldownMs: 1000 } as HotbarAbility },
+    { key: '6', action: 'none', ability: null as HotbarAbility | null },
+    { key: '7', action: 'none', ability: null as HotbarAbility | null },
+    { key: '8', action: 'none', ability: null as HotbarAbility | null },
+    { key: '9', action: 'none', ability: null as HotbarAbility | null },
   ];
 
-  if (gameMode !== 'EXPLORING' && gameMode !== 'BATTLE') {
+  // Hotbar is RT-only — hidden during turn-based creature battles
+  if (gameMode !== 'EXPLORING') {
     return null;
   }
 
-  const handleCast = (slot: any) => {
+  const handleCast = (slot: (typeof slots)[number]) => {
     const timeNow = Date.now();
     if (timeNow < globalCooldown) return; // GCD active
     
     if (slot.action === 'none' || !slot.ability) return;
 
     if (slot.action === 'ability') {
+      if (isForbiddenRtCaptureAbility(slot.ability.id)) {
+        useGameStore.getState().showToast('Capture tools only work in creature battles.');
+        return;
+      }
       if (!combatTarget && slot.ability.type === 'damage') {
         useGameStore.getState().showToast('You need a target to cast that!');
         return;

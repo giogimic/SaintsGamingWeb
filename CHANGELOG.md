@@ -1,3 +1,109 @@
+## [2.1.119] - 2026-08-02
+
+### Fixed
+- **tile_changed** updates map cache, canvas grid, and Babylon props (Q4 bramble clear walks/looks clear).
+- **creature_moved** client listener so Rockitten RT positions stay in sync.
+- Lobby character load forces **DEMO_SANDBOX** when saved map is not playable; awaits `loadMap` before join.
+- Duplicate Professor Lab overlay removed; claim hydrates `creatureParty` and waits for `starter_claimed`.
+- Vance **Report progress** is state-aware; Q1 gather order hints when mining before wood.
+
+### Added
+- Visible shop stall + bramble thicket meshes; logic-tile ground color for tile 11.
+
+## [2.1.118] - 2026-08-02
+
+### Added
+- **DEMO_SANDBOX canonical seed** on boot (`demoMapSeed`): walkable plaza, tall grass (2), trees/ore (5/6), shop (7), craft (9), bramble (11).
+- Formal **Q1–Q4** QuestTemplates (`demoQuests`) with event hooks: GATHER / CRAFT / CLAIM / CLEAR / TALK.
+- **CLEAR_BRAMBLE** interact (axe + party companion); live tile clear + `tile_changed`.
+- Quest tracker empty-state guide (“Talk to Warden Vance”); creature snapshot on `map_joined`.
+
+### Fixed
+- Logic-tile API/store contract (keyed `data`); map-loader DEMO fallback no longer paints solid walls as ground.
+- Gather: `RESOURCE_NODE_MAP` 5/6, `getMapDataSync`, instance resolve via player shard / base mapId.
+- QuestManager User.id resolution; E-key NPC → `npc_interact`; Vance/entity `mapId` base-map match.
+- Bootstrap runs before map-loader init so seeded tiles/maps are cached correctly.
+
+## [2.1.117] - 2026-08-02
+
+### Added
+- **Demo bootstrap** on server start: CreatureDefs, Warden Vance dialogue, film craft recipes.
+- **Warden Vance** spawn + dialogue grants (tools, film pack, open Lab).
+- **Soul Film** capture path (`film_standard` / fine / soul); TB button **EXPOSE FILM**; shop sells/crafts film.
+- Demo smoke checklist: `info/game/DEMO_SMOKE.md`.
+
+### Fixed
+- Clicking NPCs starts dialogue (`npc_interact`); wild creatures targetable for RT combat.
+- Gather syncs inventory + emits `itemGathered` for quest hooks.
+
+## [2.1.116] - 2026-08-02
+
+### Added
+- **Creature Catalog** (`CreatureDef`) — Studio-editable like Starter Heroes: asset picker, type combo, full stats, default + potential passives, world skills.
+- Shared seed `FALLBACK_CREATURE_DEFS` (Agnite / Budaye / Dollfin starters + Rockitten wild).
+- Studio dock **Creatures** panel; Professor Lab loads catalog starters; claim/encounters resolve via catalog.
+
+## [2.1.115] - 2026-08-02
+
+### Added
+- **NPC shop** server authority (`ShopManager`): buy/sell Binding Crystal materials; **CRAFT** tab for Binding Crystals.
+- Shared shop catalog + `craft_binding_crystal` recipe (`shopCatalog.ts`); seed script updated.
+- **Rockitten** as the single MPV test creature for TB encounters + RT overworld spawns (`testCreature.ts`).
+- `claim_starter` → real `PlayerCreature` (Rockitten); Party/Lab UI to claim.
+- Client sync for `sync_credits`, `inventory_sync`, `creature_spawned` / despawn / HP.
+
+### Fixed
+- Gathering no longer demo-grants tools — require real inventory (quest/shop/craft later).
+- Encounters require a real party creature (no fake Starter).
+- Crafting resolves player by accountId; Binding Crystal craft works with in-code recipe fallback.
+
+## [2.1.114] - 2026-08-02
+
+### Added
+- Shared RT ability catalog + capture math helpers (`src/shared/game/combatAbilities.ts`) with tests.
+- Server-authoritative RT combat: ability catalog, capture rejection, cooldowns, range, LoS, miss/crit (`CombatManager`).
+- Loot bag auto-despawn after 60s.
+
+### Fixed
+- Binding Crystal capture requires a **real inventory stack** (no demo grant); missing item keeps the turn open.
+- Hotbar is **EXPLORING-only** (hidden in turn-based battles); capture abilities forbidden on RT path.
+- Encounter battles use **directMessage** (no longer force every player on the shard into BATTLE).
+- Capture uses bible 11 math; persists `PlayerCreature` with resolved `userId`; consumes Binding Crystal.
+- `battle_ended` client handles CAPTURE / WIN / LOSE / FLEE (not only PvP winner socket id).
+- Turn-battle sprites load from `/game-assets/` (legacy `/assets/sprites/` paths removed).
+- `combat_cast` / `combat_action` pass `abilityId` correctly to the combat manager.
+
+### Changed
+- ALIGNMENT slices A→B→C marked implemented for combat/capture constitution path.
+
+## [2.1.113] - 2026-08-02
+
+### Added
+- **Ecosystem vision** doc: `info/vision/ECOSYSTEM.md` (unified website + MMO + Studio north star).
+- Shared `toBaseMapId` / `isSameBaseMap` (`src/shared/net/mapIds.ts`) + tests.
+- Lobby manual verify checklist: `info/game/LOBBY_VERIFY.md`.
+
+### Fixed
+- Persist **base map** ids (strip `_chN` shards) so reloads don’t reintroduce multiplayer room splits.
+- Mobile enter launcher restyled to Saints gold atmosphere (single fullscreen CTA).
+
+### Changed
+- Staff/system chat lines styled distinctly in GameChat.
+
+## [2.1.112] - 2026-08-02
+
+### Added
+- **`/studio`**: Developer-only Studio client (server-gated); `/lobby` is the player client.
+- **Staff floating menu** on lobby for Moderator+ (map announce, nearby players, admin link; Admin+ map kick; Dev open Studio).
+- **Mobile controls**: single surface with floating joystick (default) or static D-Pad via Options → Controls.
+- Socket events `staff_announce` / `staff_kick`; chat `/announce` for staff.
+
+### Fixed
+- Multiplayer room desync: join no longer overwrites live instance id with a stale saved base map id.
+- Map warps re-emit `join_map` so peers/chat stay on the same shard.
+- Duplicate touch pads removed; left pad path-queue was never drained — movement now uses the canvas input pipeline.
+- NPC sprite path `/assets/sprites/` → `/game-assets/npc/`.
+
 ## [2.1.111] - 2026-08-02
 
 ### Fixed

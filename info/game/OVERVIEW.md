@@ -11,8 +11,9 @@ Two game surfaces exist — do not confuse them:
 
 | Layer | Path |
 | :--- | :--- |
-| Page | `app/(main)/lobby/page.tsx` |
-| Client root | `src/web/components/the-lobby/index.tsx` |
+| Page (players) | `app/(main)/lobby/page.tsx` → `PlayerClient` |
+| Page (devs) | `app/(main)/studio/page.tsx` → `StudioClient` (Developer+) |
+| Client root | `src/web/components/the-lobby/index.tsx` (`mode: player \| studio`) |
 | Dynamic load | `src/web/components/the-lobby/dynamic.tsx` |
 | Client store | `src/web/components/the-lobby/store.ts` |
 | Babylon canvas | `src/web/components/the-lobby/babylon/GameCanvasBabylon.tsx` |
@@ -51,6 +52,9 @@ High-frequency movement/combat stays on the game socket — **not** the website 
 - Actions: `app/actions/game.ts`, `game-admin.ts`, `game-dev.ts`
 - Admin: `/admin/game`, `/admin/game-dev/*`, `/admin/dev/lobby`
 - In-game studio panels under `src/web/components/the-lobby/editor/`
+- Plan + verify: [`CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./CLIENT_SPLIT_MOBILE_MP_PLAN.md), [`LOBBY_VERIFY.md`](./LOBBY_VERIFY.md)
+- Ecosystem vision: [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
+- Gameplay Bible: [`../gameplay-bible/README.md`](../gameplay-bible/README.md) · [`ALIGNMENT.md`](../gameplay-bible/ALIGNMENT.md)
 
 ---
 

@@ -26,6 +26,19 @@ export default function CraftingOverlay() {
     if (gameMode === 'CRAFTING') {
       setRecipes([
         {
+          slug: "craft_film_standard",
+          outputItemSlug: "film_standard",
+          outputQuantity: 1,
+          skillSlug: "crafting",
+          levelReq: 1,
+          xpReward: 20,
+          ingredients: [
+            { itemSlug: "crystal_dust", qty: 2 },
+            { itemSlug: "wood_log", qty: 1 },
+          ],
+          timeMs: 2000,
+        },
+        {
           slug: "craft_iron_sword",
           outputItemSlug: "iron_sword",
           outputQuantity: 1,

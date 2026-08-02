@@ -87,6 +87,27 @@ export function getCachedMap(mapId: string): GameMapData | null {
   return mapCache[mapId] || null;
 }
 
+/** Mutate a cached map tile (e.g. CLEAR_BRAMBLE). Returns false if map/coords missing. */
+export function patchCachedMapTile(
+  mapId: string,
+  x: number,
+  y: number,
+  tileId: number
+): boolean {
+  const map = mapCache[mapId];
+  if (!map?.grid?.[y] || map.grid[y][x] === undefined) return false;
+  map.grid[y][x] = tileId;
+  return true;
+}
+
+export function invalidateMapCache(mapId?: string) {
+  if (!mapId) {
+    for (const key of Object.keys(mapCache)) delete mapCache[key];
+    return;
+  }
+  delete mapCache[mapId];
+}
+
 export interface MapIndexEntry {
   id: string;
   name: string;

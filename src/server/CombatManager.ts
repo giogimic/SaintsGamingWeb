@@ -1,30 +1,50 @@
 import { GameEngine } from "./GameEngine";
-import { PlayerInput, BehavioralState } from "./types";
 import { PlayerManager } from "./PlayerManager";
 import { CreatureManager } from "./CreatureManager";
+import { WorldManager } from "./WorldManager";
+import {
+  getCombatAbility,
+  isForbiddenRtCaptureAbility,
+  type CombatAbility,
+} from "@/shared/game/combatAbilities";
+
+type CombatRequest = {
+  accountId?: string;
+  entityId?: string;
+  targetId: string;
+  abilityId?: string;
+  move?: { name?: string; power?: number; category?: string; cooldownMs?: number };
+};
 
 export class CombatManager {
   private engine: GameEngine;
   private playerManager: PlayerManager;
   private creatureManager: CreatureManager;
-  
+  private worldManager: WorldManager;
+
   // entityId -> (abilityId -> remainingMs)
   private cooldowns: Map<string, Map<string, number>> = new Map();
 
-  constructor(engine: GameEngine, playerManager: PlayerManager, creatureManager: CreatureManager) {
+  constructor(
+    engine: GameEngine,
+    playerManager: PlayerManager,
+    creatureManager: CreatureManager,
+    worldManager: WorldManager
+  ) {
     this.engine = engine;
     this.playerManager = playerManager;
     this.creatureManager = creatureManager;
+    this.worldManager = worldManager;
 
     this.engine.events.on("updateEntities", (deltaTime: number) => {
       this.tickCooldowns(deltaTime);
     });
 
-    this.engine.events.on("combatRequestAction", (data) => this.handleCombatAction(data));
+    this.engine.events.on("combatRequestAction", (data: CombatRequest) => this.handleCombatAction(data));
   }
 
   private tickCooldowns(deltaTime: number) {
-    for (const [entityId, entityCooldowns] of this.cooldowns.entries()) {
+    for (const [, entityCooldowns] of this.cooldowns.entries()) {
       for (const [abilityId, remaining] of entityCooldowns.entries()) {
         if (remaining > 0) {
           entityCooldowns.set(abilityId, Math.max(0, remaining - deltaTime));
@@ -33,136 +53,239 @@ export class CombatManager {
     }
   }
 
-  private getStats(entityId: string) {
-    // Attempt to get player first
-    const player = this.playerManager.getPlayer(entityId);
+  private resolveAttacker(data: CombatRequest) {
+    if (data.accountId) {
+      const byAccount = this.playerManager.getPlayerByAccountId(data.accountId);
+      if (byAccount) return { kind: "player" as const, player: byAccount };
+    }
+    if (data.entityId) {
+      const player = this.playerManager.getPlayer(data.entityId);
+      if (player) return { kind: "player" as const, player };
+      // entityId may be player_<accountId> without timestamp — fall back
+      if (data.entityId.startsWith("player_")) {
+        const accountHint = data.entityId.replace(/^player_/, "").replace(/_\d+$/, "");
+        const byHint = this.playerManager.getPlayerByAccountId(accountHint);
+        if (byHint) return { kind: "player" as const, player: byHint };
+      }
+      const creature = this.creatureManager.getCreature(data.entityId);
+      if (creature) return { kind: "creature" as const, creature };
+    }
+    return null;
+  }
+
+  private getStats(entityId: string, accountId?: string) {
+    const player =
+      this.playerManager.getPlayer(entityId) ||
+      (accountId ? this.playerManager.getPlayerByAccountId(accountId) : undefined);
     if (player) {
-      // In a full DB implementation, we'd calculate this based on equipped gear.
-      // For now, use basic level-scaled stats for the demo.
       return {
+        entityId: player.entityId,
         mapId: player.mapId,
-        physicalPower: 10 + player.hp * 0.5,
-        abilityPower: 10 + player.hp * 0.5,
+        x: player.x,
+        y: player.y,
+        physicalPower: 10 + Math.max(1, player.hp) * 0.05,
+        abilityPower: 10 + Math.max(1, player.hp) * 0.05,
         combatTempo: 100,
         physicalResistance: 20,
         magicResistance: 20,
         accuracy: 95,
-        evasion: 10
+        evasion: 10,
+        isLocked: player.isLocked,
       };
     }
 
     const creature = this.creatureManager.getCreature(entityId);
     if (creature) {
       return {
+        entityId: creature.entityId,
         mapId: creature.mapId,
+        x: creature.x,
+        y: creature.y,
         physicalPower: 25,
         abilityPower: 20,
         combatTempo: 90,
         physicalResistance: 15,
         magicResistance: 15,
         accuracy: 90,
-        evasion: 5
+        evasion: 5,
+        isLocked: false,
       };
     }
 
-    // Fallback if entity not found
-    return {
-      mapId: "SAINTS_VILLAGE",
-      physicalPower: 10,
-      abilityPower: 10,
-      combatTempo: 100,
-      physicalResistance: 10,
-      magicResistance: 10,
-      accuracy: 80,
-      evasion: 0
-    };
+    return null;
   }
 
-  private handleCombatAction(data: { entityId: string, targetId: string, move: any }) {
-    console.log(`[CombatManager] ${data.entityId} used ${data.move.name} on ${data.targetId}`);
-    
-    const attackerStats = this.getStats(data.entityId);
-    const targetStats = this.getStats(data.targetId);
-    
-    // Move properties
-    const isMagic = data.move.category === 'special';
-    const moveBaseDamage = data.move.power || 40;
-    const moveBaseCooldown = data.move.cooldownMs || 3000;
-    
-    // 1. Hit / Miss Calculation
-    // Base hit chance modified by accuracy vs evasion
-    const hitChance = Math.max(0.1, Math.min(1.0, (attackerStats.accuracy - targetStats.evasion) / 100));
-    const isHit = Math.random() <= hitChance;
+  private resolveAbility(data: CombatRequest): CombatAbility | null {
+    const abilityId = data.abilityId || data.move?.name;
+    if (!abilityId) return null;
+    if (isForbiddenRtCaptureAbility(abilityId)) return null;
 
-    // Combat Tempo (Speed) Rule: Affects ability cooldown recovery, not movement speed.
-    const tempoMultiplier = Math.max(0.2, 100 / Math.max(1, attackerStats.combatTempo));
-    const finalCooldownMs = moveBaseCooldown * tempoMultiplier;
+    const catalog = getCombatAbility(abilityId);
+    if (catalog) return catalog;
 
-    if (!isHit) {
-      // Missed
-      this.engine.events.emit("networkBroadcast", {
-        room: attackerStats.mapId || "SAINTS_VILLAGE",
-        event: "combat_update",
-        data: {
-          type: "ATTACK_RESULT",
-          attackerId: data.entityId,
-          targetId: data.targetId,
-          abilityId: data.move.name,
-          damage: 0,
-          isCrit: false,
-          isMiss: true,
-          cooldownMs: Math.floor(finalCooldownMs)
-        }
+    // Legacy move payload from older clients
+    if (data.move?.name && !isForbiddenRtCaptureAbility(data.move.name)) {
+      return {
+        id: data.move.name,
+        name: data.move.name,
+        power: data.move.power || 40,
+        category: data.move.category === "special" ? "special" : "physical",
+        cooldownMs: data.move.cooldownMs || 3000,
+        rangeTiles: 1,
+      };
+    }
+    return null;
+  }
+
+  private emitResult(
+    mapId: string,
+    payload: Record<string, unknown>
+  ) {
+    this.engine.events.emit("networkBroadcast", {
+      room: mapId,
+      event: "combat_update",
+      data: { type: "ATTACK_RESULT", ...payload },
+    });
+  }
+
+  private handleCombatAction(data: CombatRequest) {
+    const ability = this.resolveAbility(data);
+    if (!ability) {
+      console.warn(`[CombatManager] Rejected combat action (missing/forbidden ability)`, data.abilityId || data.move?.name);
+      return;
+    }
+
+    const attackerRef = this.resolveAttacker(data);
+    if (!attackerRef || attackerRef.kind !== "player") {
+      console.warn(`[CombatManager] Attacker not found`);
+      return;
+    }
+    const attacker = attackerRef.player;
+
+    // Bible 11: while locked in turn-based battle, no RT casts
+    if (attacker.isLocked) {
+      this.engine.events.emit("directMessage", {
+        socketId: attacker.socketId,
+        event: "show_toast",
+        data: { message: "You cannot use MMO abilities during a creature battle." },
       });
       return;
     }
-    
-    // 2. Damage Calculation
-    let damage = 0;
-    if (isMagic) {
-      damage = (moveBaseDamage * attackerStats.abilityPower) / Math.max(1, targetStats.magicResistance);
-    } else {
-      damage = (moveBaseDamage * attackerStats.physicalPower) / Math.max(1, targetStats.physicalResistance);
+
+    const attackerStats = this.getStats(attacker.entityId, attacker.accountId);
+    const targetStats = this.getStats(data.targetId);
+    if (!attackerStats || !targetStats) return;
+    if (attackerStats.mapId !== targetStats.mapId) return;
+
+    // Cooldown check
+    const cdMap = this.cooldowns.get(attacker.entityId) || new Map<string, number>();
+    const remaining = cdMap.get(ability.id) || 0;
+    if (remaining > 0) {
+      this.engine.events.emit("directMessage", {
+        socketId: attacker.socketId,
+        event: "show_toast",
+        data: { message: `${ability.name} is on cooldown.` },
+      });
+      return;
     }
-    
-    // 3. Critical Hit RNG (5% base chance, 1.5x damage)
+
+    // Range check (Manhattan)
+    if (ability.rangeTiles > 0) {
+      const dist = Math.abs(attackerStats.x - targetStats.x) + Math.abs(attackerStats.y - targetStats.y);
+      if (dist > ability.rangeTiles) {
+        this.engine.events.emit("directMessage", {
+          socketId: attacker.socketId,
+          event: "show_toast",
+          data: { message: "Out of range." },
+        });
+        return;
+      }
+    }
+
+    // Line of sight for damaging abilities
+    if (ability.power > 0) {
+      const hasLoS = this.worldManager.hasLineOfSight(
+        attackerStats.mapId,
+        attackerStats.x,
+        attackerStats.y,
+        targetStats.x,
+        targetStats.y
+      );
+      if (!hasLoS) {
+        this.engine.events.emit("directMessage", {
+          socketId: attacker.socketId,
+          event: "show_toast",
+          data: { message: "No line of sight." },
+        });
+        return;
+      }
+    }
+
+    const tempoMultiplier = Math.max(0.2, 100 / Math.max(1, attackerStats.combatTempo));
+    const finalCooldownMs = ability.cooldownMs * tempoMultiplier;
+    cdMap.set(ability.id, finalCooldownMs);
+    this.cooldowns.set(attacker.entityId, cdMap);
+
+    // Non-damaging utility/buff/heal — acknowledge only for now
+    if (ability.power <= 0 || ability.category === "utility" || ability.category === "buff" || ability.category === "heal") {
+      this.emitResult(attackerStats.mapId, {
+        attackerId: attacker.entityId,
+        targetId: data.targetId,
+        abilityId: ability.id,
+        damage: 0,
+        isCrit: false,
+        isMiss: false,
+        cooldownMs: Math.floor(finalCooldownMs),
+      });
+      return;
+    }
+
+    const hitChance = Math.max(0.1, Math.min(1.0, (attackerStats.accuracy - targetStats.evasion) / 100));
+    const isHit = Math.random() <= hitChance;
+    if (!isHit) {
+      this.emitResult(attackerStats.mapId, {
+        attackerId: attacker.entityId,
+        targetId: data.targetId,
+        abilityId: ability.id,
+        damage: 0,
+        isCrit: false,
+        isMiss: true,
+        cooldownMs: Math.floor(finalCooldownMs),
+      });
+      return;
+    }
+
+    const isMagic = ability.category === "special";
+    let damage = isMagic
+      ? (ability.power * attackerStats.abilityPower) / Math.max(1, targetStats.magicResistance)
+      : (ability.power * attackerStats.physicalPower) / Math.max(1, targetStats.physicalResistance);
+
     const isCrit = Math.random() < 0.05;
-    if (isCrit) {
-      damage *= 1.5;
-    }
-    
-    // Apply damage to creature (or player)
-    const finalDamage = Math.floor(damage);
-    
-    // Dispatch to correct manager
-    if (data.targetId.startsWith("player_")) {
+    if (isCrit) damage *= 1.5;
+    const finalDamage = Math.max(1, Math.floor(damage));
+
+    if (data.targetId.startsWith("player_") || this.playerManager.getPlayer(data.targetId)) {
       this.engine.events.emit("playerDamaged", {
-        entityId: data.targetId,
-        attackerId: data.entityId,
-        damage: finalDamage
+        entityId: targetStats.entityId,
+        attackerId: attacker.entityId,
+        damage: finalDamage,
       });
     } else {
       this.engine.events.emit("creatureDamaged", {
         entityId: data.targetId,
-        attackerId: data.entityId,
-        damage: finalDamage
+        attackerId: attacker.entityId,
+        damage: finalDamage,
       });
     }
 
-    // Execute ability visually
-    this.engine.events.emit("networkBroadcast", {
-      room: attackerStats.mapId || "SAINTS_VILLAGE",
-      event: "combat_update",
-      data: {
-        type: "ATTACK_RESULT",
-        attackerId: data.entityId,
-        targetId: data.targetId,
-        abilityId: data.move.name,
-        damage: finalDamage,
-        isCrit,
-        isMiss: false,
-        cooldownMs: Math.floor(finalCooldownMs)
-      }
+    this.emitResult(attackerStats.mapId, {
+      attackerId: attacker.entityId,
+      targetId: data.targetId,
+      abilityId: ability.id,
+      damage: finalDamage,
+      isCrit,
+      isMiss: false,
+      cooldownMs: Math.floor(finalCooldownMs),
     });
   }
 }

@@ -61,6 +61,37 @@ async function main() {
     }
   });
 
+  // Binding Crystal craft path (NPC shop materials → craft)
+  for (const item of [
+    { slug: 'crystal_dust', name: 'Crystal Dust', category: 'RESOURCE' },
+    { slug: 'wood_log', name: 'Wood Log', category: 'RESOURCE' },
+    { slug: 'binding_crystal', name: 'Binding Crystal', category: 'CONSUMABLE' },
+  ]) {
+    await prisma.itemTemplate.upsert({
+      where: { slug: item.slug },
+      update: {},
+      create: { slug: item.slug, name: item.name, category: item.category, stackable: true },
+    });
+  }
+
+  await prisma.craftingRecipe.upsert({
+    where: { slug: 'craft_binding_crystal' },
+    update: {},
+    create: {
+      slug: 'craft_binding_crystal',
+      outputItemSlug: 'binding_crystal',
+      outputQuantity: 1,
+      skillSlug: 'crafting',
+      levelReq: 1,
+      xpReward: 20,
+      ingredients: JSON.stringify([
+        { itemSlug: 'crystal_dust', qty: 2 },
+        { itemSlug: 'wood_log', qty: 1 },
+      ]),
+      timeMs: 2000,
+    },
+  });
+
   console.log("Done seeding items & recipes.");
 }
 

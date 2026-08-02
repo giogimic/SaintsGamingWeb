@@ -190,7 +190,8 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       hp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
       maxHp: (perkId === 'STAMINA_SURGE' ? 130 : 100) + (initialSkills['Constitution']?.level || 1) * 10,
       credits: 1000,
-      inventory: { 'capture_script': 10, 'patch_kit': 5 },
+      // Capture items come from NPC shop / craft (server Prisma inventory) — not free grants
+      inventory: { 'patch_kit': 5 },
       skills: initialSkills,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
       customization: { skinTone: '#fcd34d', hairColor: '#3b82f6', shirtColor: '#10b981', pantsColor: '#18181b' },

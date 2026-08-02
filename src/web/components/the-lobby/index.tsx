@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import GameCanvasBabylon from './babylon/GameCanvasBabylon';
-import { StudioEditorShell } from './editor/StudioEditorShell';
+import dynamic from 'next/dynamic';
 import { useEditorStore } from './editor/editor-store';
 import SaintsDexOverlay from './SaintsDexOverlay';
 import TargetFrame from './target-frame';
@@ -15,10 +15,9 @@ import ProfessorLabOverlay from './ProfessorLabOverlay';
 import LeaderboardOverlay from './leaderboard-overlay';
 import AchievementsOverlay from './achievements-overlay';
 import MiniMapRadar from './MiniMapRadar';
-import DPad from './dpad';
+import MobileControls from './MobileControls';
 import SaintsHudOrbs from './hud/SaintsHudOrbs';
 import ClassicPanel from './ClassicPanel';
-import { UiEditToolbar } from './editor/UiEditToolbar';
 import Hotbar from './Hotbar';
 import DraggablePanel from './DraggablePanel';
 import GameTitleScreen from './GameTitleScreen';
@@ -27,22 +26,45 @@ import ServerSelect from './ServerSelect';
 import BattleOverlay from './BattleOverlay';
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
+import { StaffFloatingMenu } from './StaffFloatingMenu';
+import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/game-dev';
-import { GAME_MAPS, loadMap } from './data/maps';
+import { GAME_MAPS, loadMap, patchCachedMapTile } from './data/maps';
 import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
-import { decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
+import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
+import { toBaseMapId } from '@/shared/net/mapIds';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { MobileGameLauncher } from './MobileGameLauncher';
 
-export default function TheLobby({ characterId: initialCharacterId, forceCreate }: { characterId?: string, forceCreate?: boolean }) {
+const StudioEditorShell = dynamic(
+  () => import('./editor/StudioEditorShell').then((m) => m.StudioEditorShell),
+  { ssr: false }
+);
+const UiEditToolbar = dynamic(
+  () => import('./editor/UiEditToolbar').then((m) => m.UiEditToolbar),
+  { ssr: false }
+);
+
+export type LobbyClientMode = 'player' | 'studio';
+
+export default function TheLobby({
+  characterId: initialCharacterId,
+  forceCreate,
+  mode = 'player',
+}: {
+  characterId?: string;
+  forceCreate?: boolean;
+  mode?: LobbyClientMode;
+}) {
+  const enableStudio = mode === 'studio';
   const gameMode = useGameStore((state) => state.gameMode);
   const toast = useGameStore((state) => state.toast);
   const activeDialog = useGameStore((state) => state.activeDialog);
@@ -68,8 +90,10 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
   const [showSelector, setShowSelector] = useState(false);
   const [showCreator, setShowCreator] = useState(forceCreate || false);
-  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [permissionLevel, setPermissionLevel] = useState(0);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const isStaff = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
+  const isDeveloper = hasPermission(permissionLevel, PERMISSION_LEVELS.DEVELOPER);
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -85,27 +109,43 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     const res = await loadGameCharacter(charId);
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
-      
-      // Map state sanitizer: ensure player boots into a valid Creature campaign map
-      const validMapId = (parsedState.currentMapId && GAME_MAPS[parsedState.currentMapId]) 
-        ? parsedState.currentMapId 
-        : 'PLAYER_HOUSE_BEDROOM';
 
-      const mapDef = GAME_MAPS[validMapId];
-      let validPosition = parsedState.position || { x: 6, y: 2 };
-      
-      if (mapDef) {
-        // Clamp position to ensure they don't spawn out of bounds (e.g. from a previous session on a larger map)
-        const mw = (mapDef as any).width || (mapDef as any).grid?.[0]?.length || 24;
-        const mh = (mapDef as any).height || (mapDef as any).grid?.length || 24;
-        validPosition.x = Math.max(0, Math.min(mw - 1, validPosition.x));
-        validPosition.y = Math.max(0, Math.min(mh - 1, validPosition.y));
-      } else {
-        validPosition = { x: 6, y: 2 };
+      // Player lobby demo: land on DEMO_SANDBOX unless already on a known playable map.
+      // Studio keeps saved map for editor work.
+      const DEMO_MAP = 'DEMO_SANDBOX';
+      const DEMO_SPAWN = { x: 14, y: 15 };
+      const knownPlayable = new Set(['DEMO_SANDBOX', 'SAINTS_VILLAGE']);
+      const savedMap = String(parsedState.currentMapId || '');
+      let validMapId = savedMap;
+      let validPosition = parsedState.position || { ...DEMO_SPAWN };
+
+      if (!enableStudio) {
+        if (!knownPlayable.has(savedMap)) {
+          validMapId = DEMO_MAP;
+          validPosition = { ...DEMO_SPAWN };
+        }
+      } else if (!savedMap) {
+        validMapId = DEMO_MAP;
+        validPosition = { ...DEMO_SPAWN };
+      }
+
+      try {
+        const loaded = await loadMap(validMapId);
+        const mw = loaded.grid?.[0]?.length || 30;
+        const mh = loaded.grid?.length || 30;
+        validPosition = {
+          x: Math.max(1, Math.min(mw - 2, validPosition.x ?? DEMO_SPAWN.x)),
+          y: Math.max(1, Math.min(mh - 2, validPosition.y ?? DEMO_SPAWN.y)),
+        };
+        useGameStore.getState().setActiveMapData(loaded);
+      } catch {
+        validMapId = DEMO_MAP;
+        validPosition = { ...DEMO_SPAWN };
       }
 
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
+        currentMapId: validMapId,
         name: res.data.name,
         spriteId: res.data.spriteId || 'adventurer',
         position: validPosition
@@ -127,7 +167,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       setShowSelector(false);
       
       if (typeof window !== 'undefined') {
-        window.history.pushState({}, '', `/lobby?characterId=${charId}`);
+        const base = enableStudio ? '/studio' : '/lobby';
+        window.history.pushState({}, '', `${base}?characterId=${charId}`);
       }
     } else {
       useGameStore.getState().setGameMode('CHARACTER_SELECT');
@@ -138,21 +179,16 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
   useEffect(() => {
     async function initData() {
-      // Check admin status for Map Editor access
-      const { checkAdminPermission } = await import('@/app/actions/game-admin');
-      const adminPermission = await checkAdminPermission();
-      setIsAdminUser(adminPermission);
-      
-      // Fetch logic tiles from DB
+      useGameStore.getState().hydrateMobileControlMode();
       await useGameStore.getState().fetchLogicTiles();
 
-      // Fetch custom maps list for the dev editor dropdown
-      const mapsRes = await fetchAllMaps();
-      if (mapsRes.success && mapsRes.data) {
-        setDevMapList(mapsRes.data);
+      if (enableStudio) {
+        const mapsRes = await fetchAllMaps();
+        if (mapsRes.success && mapsRes.data) {
+          setDevMapList(mapsRes.data);
+        }
       }
 
-      // Hydrate custom quests from DB
       const questsRes = await fetchAllGameQuests();
       if (questsRes.success && questsRes.data) {
         questsRes.data.forEach((q: any) => {
@@ -192,11 +228,12 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     window.addEventListener('resize', handleResize);
     initData();
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [enableStudio]);
 
   // Auth-dependent initialization
   useEffect(() => {
     if (status === 'authenticated') {
+      setPermissionLevel(session?.user?.permissionLevel ?? 0);
       loadCharactersList().then(() => {
         if (initialCharacterId && isInitializing) {
           selectAndLoadCharacter(initialCharacterId);
@@ -205,11 +242,12 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         }
       });
     } else if (status === 'unauthenticated') {
+      setPermissionLevel(0);
       if (isInitializing) {
         setIsInitializing(false);
       }
     }
-  }, [status, initialCharacterId, isInitializing]);
+  }, [status, initialCharacterId, isInitializing, session?.user?.permissionLevel]);
 
   // Handle fallback events like unauthorized creation
   useEffect(() => {
@@ -272,9 +310,15 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       const bin = normalizeBinaryPayload(raw);
       if (bin) {
         const decoded = decodePlayerMoved(bin);
-        if (!decoded) return;
-        data = decoded;
+        if (decoded) {
+          data = decoded;
+        } else if (!raw || typeof raw !== 'object' || ArrayBuffer.isView(raw) || raw instanceof ArrayBuffer) {
+          // Binary that failed to decode — drop; don't treat as JSON
+          return;
+        }
       }
+
+      if (!data?.socketId) return;
 
       if (data.socketId === socket.id) {
         // Phase 2: Client Prediction enabled. We ignore movement deltas for ourselves
@@ -299,23 +343,11 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     });
     
     socket.on('player_chat', (data) => {
-      if (data.socketId !== socket.id) {
-        useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
-        
-        // Dispatch custom event for the GameChat Log UI
-        const state = useGameStore.getState();
-        const op = state.otherPlayers[data.socketId];
-        const msgEvent = new CustomEvent('game_chat_msg', {
-          detail: {
-            id: Date.now().toString() + Math.random(),
-            sender: data.sender || op?.name || 'Tamer',
-            text: data.message,
-            timestamp: Date.now(),
-            type: 'LOCAL'
-          }
-        });
-        window.dispatchEvent(msgEvent);
+      if (data.socketId === socket.id) return;
 
+      const isStaffMsg = data.socketId === 'STAFF' || String(data.sender || '').startsWith('[STAFF]');
+      if (!isStaffMsg && data.socketId) {
+        useGameStore.getState().updateOtherPlayer(data.socketId, { chatMessage: data.message });
         setTimeout(() => {
           const store = useGameStore.getState();
           const currentOp = store.otherPlayers[data.socketId];
@@ -324,6 +356,22 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
           }
         }, 7000);
       }
+
+      const state = useGameStore.getState();
+      const op = data.socketId ? state.otherPlayers[data.socketId] : undefined;
+      window.dispatchEvent(new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: data.sender || op?.name || 'Tamer',
+          text: data.message,
+          timestamp: Date.now(),
+          type: isStaffMsg ? 'SYSTEM' : 'LOCAL'
+        }
+      }));
+    });
+
+    socket.on('force_disconnect', (data: { reason?: string }) => {
+      useGameStore.getState().showToast(data?.reason || 'Disconnected by staff.');
     });
 
     socket.on('global_chat_msg', (data) => {
@@ -376,13 +424,26 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     });
     
     socket.on('battle_started', (data) => {
-      useGameStore.getState().setActiveBattle(data);
-      useGameStore.getState().setGameMode('BATTLE');
+      const state = useGameStore.getState();
+      // Safety: ignore battles for other accounts if a map broadcast ever leaks through
+      if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
+        return;
+      }
+      state.setActiveBattle(data);
+      state.setGameMode('BATTLE');
     });
 
     socket.on('battle_update', (data) => {
-      useGameStore.getState().setActiveBattle({
-        ...useGameStore.getState().activeBattle!,
+      const state = useGameStore.getState();
+      if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
+        return;
+      }
+      if (!state.activeBattle && data?.id) {
+        state.setActiveBattle(data);
+        return;
+      }
+      state.setActiveBattle({
+        ...state.activeBattle!,
         ...data
       });
     });
@@ -390,15 +451,28 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     socket.on('battle_ended', (data) => {
       const state = useGameStore.getState();
       const myId = socketRef.current?.id;
-      if (data.winner === myId) {
+      const myAccount = state.player?.accountId;
+
+      // Turn-based encounter results (bible 11)
+      if (data?.result) {
+        if (data.accountId && myAccount && data.accountId !== myAccount) return;
+        const messages: Record<string, string> = {
+          CAPTURE: 'Creature captured! Check your Creature Box.',
+          WIN: 'Victory! The wild creature fainted.',
+          LOSE: 'Your creature fainted. Heal before the next battle.',
+          FLEE: 'Got away safely.',
+        };
+        state.showToast(messages[data.result] || 'Battle ended.');
+      } else if (data?.winner === myId) {
         state.showToast('You won the battle!');
-      } else {
+      } else if (data?.winner) {
         state.showToast('You lost the battle...');
       }
+
       setTimeout(() => {
         state.setActiveBattle(null);
         state.setGameMode('EXPLORING');
-      }, 3000);
+      }, data?.result === 'FLEE' ? 800 : 2500);
     });
 
     // --- PHASE 3: MMO Real-Time Combat ---
@@ -466,6 +540,11 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       useGameStore.getState().setGameMode('EXPLORING');
     });
 
+    socket.on('demo_open_lab', () => {
+      useGameStore.getState().setActiveDialog(null);
+      useGameStore.getState().setGameMode('PROFESSOR_LAB');
+    });
+
     // --- PHASE 7: Skills & Toast ---
     socket.on('skill_xp_gained', (data) => {
       useGameStore.setState((state) => {
@@ -479,6 +558,177 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
 
     socket.on('show_toast', (data) => {
       useGameStore.getState().showToast(data.message);
+    });
+
+    socket.on('sync_credits', (data) => {
+      if (typeof data?.credits === 'number') {
+        useGameStore.setState((state) => {
+          state.player.credits = data.credits;
+        });
+      }
+    });
+
+    socket.on('inventory_sync', (data) => {
+      if (data?.inventory && typeof data.inventory === 'object') {
+        useGameStore.setState((state) => {
+          state.player.inventory = data.inventory;
+        });
+      }
+    });
+
+    socket.on('quest_sync', () => {
+      useGameStore.getState().triggerQuestRefresh();
+    });
+
+    socket.on('tile_changed', (data) => {
+      if (!data || typeof data.x !== 'number' || typeof data.y !== 'number') return;
+      const store = useGameStore.getState();
+      const tileId = typeof data.tileId === 'number' ? data.tileId : 0;
+      const mapId = data.mapId || store.currentMapId;
+      const baseId = toBaseMapId(String(mapId || ''));
+      patchCachedMapTile(baseId, data.x, data.y, tileId);
+      patchCachedMapTile(String(mapId || ''), data.x, data.y, tileId);
+
+      useGameStore.setState((state) => {
+        if (!state.activeMapData) {
+          const cached = GAME_MAPS[baseId] || GAME_MAPS[state.currentMapId];
+          if (cached?.grid) {
+            state.activeMapData = {
+              ...cached,
+              grid: cached.grid.map((row: number[]) => [...row]),
+            };
+          }
+        }
+        if (state.activeMapData?.grid?.[data.y]) {
+          state.activeMapData.grid[data.y][data.x] = tileId;
+        }
+      });
+
+      window.dispatchEvent(new CustomEvent('lobby_tile_changed', { detail: { ...data, tileId, mapId: baseId } }));
+    });
+
+    socket.on('creature_moved', (raw) => {
+      let data = raw as any;
+      const bin = normalizeBinaryPayload(raw);
+      if (bin) {
+        const decoded = decodeCreatureMoved(bin);
+        if (decoded) data = decoded;
+        else if (!raw || typeof raw !== 'object' || ArrayBuffer.isView(raw) || raw instanceof ArrayBuffer) {
+          return;
+        }
+      }
+      if (!data?.entityId) return;
+      useGameStore.setState((state) => {
+        const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
+        if (idx < 0) return;
+        const ent = state.mapEntities[idx];
+        state.mapEntities[idx] = {
+          ...ent,
+          position: { x: data.x, y: data.y },
+          isMoving: !!data.isMoving,
+          facing: (String(data.direction || ent.facing || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
+        };
+      });
+    });
+
+    socket.on('starter_claimed', (data) => {
+      const creature = data?.creature;
+      const slug = creature?.speciesSlug;
+      if (slug) {
+        useGameStore.getState().catchDaemon(slug);
+        useGameStore.setState((state) => {
+          state.player.activeDaemonId = slug;
+        });
+      }
+      if (creature?.id) {
+        let stats = {
+          physicalPower: 10,
+          physicalDefense: 10,
+          abilityPower: 10,
+          abilityDefense: 10,
+          combatTempo: 10,
+        };
+        let abilities: any[] = [];
+        try {
+          if (typeof creature.stats === 'string') stats = { ...stats, ...JSON.parse(creature.stats) };
+          else if (creature.stats) stats = { ...stats, ...creature.stats };
+        } catch { /* keep defaults */ }
+        try {
+          if (typeof creature.abilities === 'string') abilities = JSON.parse(creature.abilities);
+          else if (Array.isArray(creature.abilities)) abilities = creature.abilities;
+        } catch { /* keep defaults */ }
+
+        const already = useGameStore.getState().player.creatureParty.some((m) => m.id === creature.id);
+        if (!already) {
+          useGameStore.getState().addCreatureToParty({
+            id: creature.id,
+            speciesSlug: creature.speciesSlug,
+            nickname: creature.nickname || data?.def?.name || creature.speciesSlug,
+            level: creature.level || 5,
+            xp: creature.xp || 0,
+            currentHp: creature.currentHp ?? creature.maxHp ?? 40,
+            maxHp: creature.maxHp ?? 40,
+            stats,
+            abilities,
+            status: null,
+          });
+        }
+      }
+      if (useGameStore.getState().gameMode === 'PROFESSOR_LAB') {
+        useGameStore.getState().setGameMode('EXPLORING');
+      }
+      useGameStore.getState().triggerQuestRefresh();
+    });
+
+    socket.on('creature_spawned', (data) => {
+      if (!data?.entityId) return;
+      const isNpc = data.entityType === 'NPC';
+      useGameStore.setState((state) => {
+        const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
+        const spriteKey = isNpc
+          ? (String(data.templateId || '').includes('vance') ? 'adventurer' : (data.spriteKey || 'adventurer'))
+          : (data.spriteKey || data.templateId || 'rockitten');
+        const ent = {
+          id: data.entityId,
+          type: (isNpc ? 'NPC' : 'MONSTER') as 'NPC' | 'MONSTER',
+          spriteKey,
+          position: { x: data.x, y: data.y },
+          isMoving: !!data.isMoving,
+          facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
+          mapId: data.mapId,
+          name: isNpc && String(data.templateId || '').includes('vance')
+            ? 'Warden Vance'
+            : (data.name || data.templateId),
+        };
+        if (idx >= 0) state.mapEntities[idx] = ent;
+        else state.mapEntities.push(ent);
+      });
+    });
+
+    socket.on('creature_despawned', (data) => {
+      if (!data?.entityId) return;
+      useGameStore.setState((state) => {
+        state.mapEntities = state.mapEntities.filter((e) => e.id !== data.entityId);
+        if (state.combatTarget?.entityId === data.entityId) {
+          state.combatTarget = null;
+        }
+      });
+    });
+
+    socket.on('creature_hp_update', (data) => {
+      if (!data?.entityId) return;
+      const target = useGameStore.getState().combatTarget;
+      if (target && target.entityId === data.entityId && typeof data.hpPercent === 'number') {
+        useGameStore.getState().setCombatTarget({
+          entityId: target.entityId,
+          name: target.name,
+          maxHp: target.maxHp,
+          isCasting: target.isCasting,
+          castName: target.castName,
+          behavior: target.behavior,
+          hp: Math.max(0, Math.round(target.maxHp * data.hpPercent)),
+        });
+      }
     });
 
     return () => {
@@ -545,7 +795,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       }
       const key = e.key.toLowerCase();
       if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
-      else if (key === 'e' && isAdminUser) {
+      else if (key === 'e' && enableStudio && isDeveloper) {
         useEditorStore.getState().toggleCreationMode();
       }
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
@@ -556,7 +806,7 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
-  }, [isAdminUser]);
+  }, [enableStudio, isDeveloper]);
 
   if (isInitializing) {
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
@@ -609,22 +859,26 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       <div 
         className="absolute inset-0 pointer-events-none" 
       >
-        {/* Mobile Controls */}
+        {/* Mobile Controls — single surface (floating joystick default / D-Pad toggle) */}
         <div className="pointer-events-auto">
-          <DPad 
+          <MobileControls
             onToggleFullscreen={toggleFullscreen}
             onToggleOptions={() => setIsOptionsOpen(true)}
           />
         </div>
-
-
-      {/* Integrated Dev Editor Overlay — must be OUTSIDE the pointer-events-none container */}
       </div>
 
       {/* Turn-Based Battle Overlay */}
       {gameMode === 'BATTLE' && <TurnBattleOverlay />}
 
-      <StudioEditorShell />
+      {enableStudio && <StudioEditorShell />}
+
+      {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
+        <StaffFloatingMenu
+          permissionLevel={permissionLevel}
+          isStudioRoute={enableStudio}
+        />
+      )}
 
       {/* Toast Notification */}
       {toast && (
@@ -638,8 +892,8 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       )}
 
       {gameMode !== 'BATTLE' && (
-        <div className="absolute top-3 right-3 z-40 pointer-events-none">
-          {isAdminUser && (
+        <div className="absolute top-3 right-3 z-40 pointer-events-none flex items-center gap-2">
+          {enableStudio && isDeveloper && (
             <button
               onClick={() => useEditorStore.getState().toggleCreationMode()}
               className={`pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-2
@@ -652,9 +906,18 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
               <span>STUDIO (Ctrl+E)</span>
             </button>
           )}
+          {!enableStudio && isDeveloper && (
+            <a
+              href="/studio"
+              className="pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a] flex items-center gap-2"
+            >
+              <span className="text-sm leading-none">🔨</span>
+              <span>OPEN STUDIO</span>
+            </a>
+          )}
           <button
             onClick={() => setIsOptionsOpen(true)}
-            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2 ml-2"
+            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
           >
             <span className="text-sm leading-none">⚙️</span>
             <span>OPTIONS (ESC)</span>
@@ -667,17 +930,18 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
         onClose={() => setIsOptionsOpen(false)}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
-        isAdminUser={isAdminUser}
+        isAdminUser={enableStudio && isDeveloper}
         isCreationMode={isCreationMode}
         onToggleDevEditor={() => {
+          if (!enableStudio || !isDeveloper) return;
           if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
           useEditorStore.getState().toggleCreationMode(); 
           setIsOptionsOpen(false);
         }}
       />
 
-      {/* UI Edit Toolbar (Only visible in edit mode) */}
-      <UiEditToolbar />
+      {/* UI Edit Toolbar (Studio only) */}
+      {enableStudio && <UiEditToolbar />}
 
       {/* --- UI Overlays (Higher Z-Index) --- */}
       {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
@@ -706,16 +970,12 @@ export default function TheLobby({ characterId: initialCharacterId, forceCreate 
       
       {gameMode === 'SHOP' && <ShopOverlay />}
       {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
-      {activeDialog && <DialogOverlay />}
+      {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
       
       {/* Cinematic Map Transition Overlay */}
       <div 
         className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
       />
-      
-      {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-      {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
-      {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
 
       {gameMode === 'EXPLORING' && !isCreationMode && (
         <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>

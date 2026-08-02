@@ -4,7 +4,12 @@ import { prisma } from "@/web/lib/prisma";
 export async function GET() {
   try {
     const tiles = await prisma.mapLogicTile.findMany();
-    return NextResponse.json(tiles);
+    const keyed: Record<number, (typeof tiles)[number]> = {};
+    for (const tile of tiles) {
+      keyed[tile.id] = tile;
+    }
+    // Dual shape: array (legacy) + { success, data } for lobby store
+    return NextResponse.json({ success: true, data: keyed, tiles });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch logic tiles" }, { status: 500 });
   }

@@ -28,6 +28,8 @@ export default function GameOptionsMenu({
   const [activeTab, setActiveTab] = useState<TabType>('GAME');
   const isUiEditMode = useGameStore((state) => state.isUiEditMode);
   const setIsUiEditMode = useGameStore((state) => state.setIsUiEditMode);
+  const mobileControlMode = useGameStore((state) => state.mobileControlMode);
+  const setMobileControlMode = useGameStore((state) => state.setMobileControlMode);
 
   if (!isOpen) return null;
 
@@ -151,8 +153,44 @@ export default function GameOptionsMenu({
               </div>
             )}
 
+            {activeTab === 'CONTROLS' && (
+              <div className="space-y-6">
+                <div className="bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl">
+                  <h4 className="text-sm font-extrabold text-slate-400 mb-4 uppercase tracking-widest">
+                    Mobile Touch
+                  </h4>
+                  <div className="text-slate-800 font-extrabold text-lg mb-1">Movement Style</div>
+                  <div className="text-slate-500 text-sm mb-5 font-medium">
+                    Default is a floating joystick that appears where you touch. Switch to a fixed D-Pad anytime.
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setMobileControlMode('floating')}
+                      className={`px-4 py-4 rounded-2xl font-extrabold text-sm border-2 transition-all ${
+                        mobileControlMode === 'floating'
+                          ? 'bg-blue-500 text-white border-blue-600 shadow-md'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      Floating Joystick
+                    </button>
+                    <button
+                      onClick={() => setMobileControlMode('dpad')}
+                      className={`px-4 py-4 rounded-2xl font-extrabold text-sm border-2 transition-all ${
+                        mobileControlMode === 'dpad'
+                          ? 'bg-blue-500 text-white border-blue-600 shadow-md'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      Static D-Pad
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Placeholders for other tabs */}
-            {(activeTab === 'GRAPHICS' || activeTab === 'AUDIO' || activeTab === 'CONTROLS' || activeTab === 'GAMEPLAY') && (
+            {(activeTab === 'GRAPHICS' || activeTab === 'AUDIO' || activeTab === 'GAMEPLAY') && (
               <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                 <Settings2 className="w-16 h-16 mb-4 opacity-20" />
                 <p className="font-extrabold text-lg">Coming Soon</p>

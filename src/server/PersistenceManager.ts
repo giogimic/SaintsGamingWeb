@@ -1,4 +1,6 @@
 import { MultiTierCurrency } from "./types";
+import { toBaseMapId } from "@/shared/net/mapIds";
+import { PrismaClient } from "@prisma/client";
 
 export interface PersistenceManager {
   savePlayerPosition(accountId: string, mapId: string, x: number, y: number): Promise<void>;
@@ -10,9 +12,6 @@ export interface PersistenceManager {
   transferCreature(fromAccountId: string, toAccountId: string, creatureInstanceId: string): Promise<boolean>;
 }
 
-// Placeholder implementation for v1 (interfaces only)
-// No fake saving - database schema and storage to be implemented later.
-import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export class DatabasePersistenceManager implements PersistenceManager {
   public async savePlayerPosition(accountId: string, mapId: string, x: number, y: number): Promise<void> {
@@ -32,7 +31,8 @@ export class DatabasePersistenceManager implements PersistenceManager {
 
       if (character) {
         const stateData = JSON.parse(character.stateData || "{}");
-        stateData.mapId = mapId;
+        // Persist the map definition, never a live shard id (…_ch1)
+        stateData.mapId = toBaseMapId(mapId);
         stateData.x = x;
         stateData.y = y;
 

@@ -1,4 +1,5 @@
 import { Point } from '@/web/components/the-lobby/store';
+import { isSameBaseMap } from '@/shared/net/mapIds';
 
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -64,7 +65,7 @@ export class WorldSimulation {
     const isDynamicNpc = (dynamicEntities || []).some((e) => 
       Math.round(e.position.x) === targetX && 
       Math.round(e.position.y) === targetY && 
-      (e.mapId === currentMapId || !e.mapId)
+      (!e.mapId || e.mapId === currentMapId || isSameBaseMap(e.mapId, currentMapId))
     );
     
     if (isStaticNpc || isDynamicNpc) {
@@ -133,7 +134,8 @@ export class WorldSimulation {
       const ent = (dynamicEntities || []).find((e) => 
         Math.round(e.position.x) === faceX && 
         Math.round(e.position.y) === faceY && 
-        (e.mapId === currentMapId || !e.mapId)
+        (e.type === 'NPC' || String(e.id || '').includes('npc') || String(e.id || '').includes('vance')) &&
+        (!e.mapId || e.mapId === currentMapId || isSameBaseMap(e.mapId, currentMapId))
       );
       if (ent) {
         nearbyNpc = {

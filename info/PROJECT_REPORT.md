@@ -1,6 +1,7 @@
 # Saints Gaming Web — Complete Project Report
 
-**Version**: 2.1.95 | **Audit Date**: 2026-08-01 | **Status**: Active Development
+**Version**: 2.1.113 | **Audit Date**: 2026-08-02 | **Status**: Active Development  
+**North star**: [`vision/ECOSYSTEM.md`](./vision/ECOSYSTEM.md)
 
 > This is the primary onboarding document. Any new developer or contractor should read this in full before touching the codebase. It is the single source of truth for what exists, what is missing, and where to continue.
 
@@ -14,7 +15,7 @@ Saints Gaming Web is a **full-stack community + game ecosystem** built on Next.j
 A full community management system: forums, user profiles, TikTok-style social feed, news, support tickets, leaderboards, modpacks, game server status, stream hub, and a subscriber/tip economy.
 
 ### Layer 2 — Embedded 2.5D MMO Engine
-A full multiplayer game client running at `/lobby`. Babylon.js renders a top-down orthographic world with 96x128px Tuxemon/LPC sprite sheets. The server (`server.ts`) runs an authoritative Node.js game loop with 14 domain managers: PlayerManager, WorldManager, CombatManager, CreatureManager, EncounterManager, CraftingManager, EconomyManager, QuestManager, SkillManager, InventoryManager, PartyManager, DialogueManager, PersistenceManager, EntityManager.
+Player client at `/lobby`; Developer Studio at `/studio`. Babylon.js renders a top-down orthographic world with 96x128px Tuxemon/LPC sprite sheets. The server (`server.ts`) runs an authoritative Node.js game loop with 14 domain managers: PlayerManager, WorldManager, CombatManager, CreatureManager, EncounterManager, CraftingManager, EconomyManager, QuestManager, SkillManager, InventoryManager, PartyManager, DialogueManager, PersistenceManager, EntityManager. Staff moderation commands use an in-game floating menu (Moderator+); world-building tools stay on `/studio` (Developer+).
 
 ### Layer 3 — Saints Realtime Platform *(Milestone 1 live)*
 A unified Socket.io event bus. Events are Zod-validated, CRITICAL ones persisted, and clients receive missed events via a reconnect catch-up endpoint. All external producers (FiveM, Discord, launcher) post via `/api/internal/events`.

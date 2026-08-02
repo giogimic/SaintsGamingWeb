@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ScrollText, Target, CheckCircle2 } from "lucide-react";
+import { ScrollText, Target, CheckCircle2, Compass } from "lucide-react";
 import { useGameStore } from "@/web/components/the-lobby/store";
 
 interface QuestObjective {
@@ -24,7 +24,7 @@ interface ActiveQuest {
 
 export default function QuestTrackerOverlay() {
   const [quests, setQuests] = useState<ActiveQuest[]>([]);
-  const { refreshQuestsCounter } = useGameStore();
+  const { refreshQuestsCounter, gameMode } = useGameStore();
 
   const fetchQuests = async () => {
     try {
@@ -40,11 +40,28 @@ export default function QuestTrackerOverlay() {
 
   useEffect(() => {
     fetchQuests();
-
-    fetchQuests();
   }, [refreshQuestsCounter]);
 
-  if (quests.length === 0) return null;
+  if (gameMode !== "EXPLORING" && gameMode !== "DIALOG") return null;
+
+  if (quests.length === 0) {
+    return (
+      <div className="absolute right-4 top-24 w-64 pointer-events-none z-40">
+        <div className="bg-[#0b1320]/80 border border-[#806f47]/30 backdrop-blur-md rounded-md p-3 shadow-lg">
+          <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
+            <Compass className="w-4 h-4 text-[#cbb26a]" />
+            <h4 className="text-sm font-bold text-[#e2d5b3] uppercase tracking-wide">
+              Road to Aethervale
+            </h4>
+          </div>
+          <p className="text-xs text-slate-200 leading-tight mt-2">
+            Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
+            (click or press E). Take the toolbelt to start Q1.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="absolute right-4 top-24 w-64 pointer-events-none z-40 space-y-3">
@@ -53,8 +70,8 @@ export default function QuestTrackerOverlay() {
         const isComplete = obj && quest.progress >= obj.requiredQty;
 
         return (
-          <div 
-            key={quest.id} 
+          <div
+            key={quest.id}
             className="bg-[#0b1320]/80 border border-[#806f47]/30 backdrop-blur-md rounded-md p-3 shadow-lg pointer-events-auto"
           >
             <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
@@ -63,7 +80,7 @@ export default function QuestTrackerOverlay() {
                 {quest.title}
               </h4>
             </div>
-            
+
             {obj ? (
               <div className="flex items-start gap-2 mt-2">
                 {isComplete ? (
@@ -71,21 +88,25 @@ export default function QuestTrackerOverlay() {
                 ) : (
                   <Target className="w-4 h-4 text-[#806f47] mt-0.5 shrink-0" />
                 )}
-                
+
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${isComplete ? 'text-slate-400 line-through' : 'text-slate-200'} leading-tight`}>
+                  <p
+                    className={`text-xs ${isComplete ? "text-slate-400 line-through" : "text-slate-200"} leading-tight`}
+                  >
                     {obj.description}
                   </p>
-                  
+
                   {!isComplete && obj.requiredQty > 1 && (
                     <div className="mt-1.5 w-full bg-[#162238] rounded-full h-1.5 border border-[#050b14]">
-                      <div 
+                      <div
                         className="bg-[#cbb26a] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.max(0, (quest.progress / obj.requiredQty) * 100))}%` }}
+                        style={{
+                          width: `${Math.min(100, Math.max(0, (quest.progress / obj.requiredQty) * 100))}%`,
+                        }}
                       />
                     </div>
                   )}
-                  
+
                   {!isComplete && obj.requiredQty > 1 && (
                     <p className="text-[10px] text-right text-slate-400 mt-0.5 font-mono">
                       {quest.progress} / {obj.requiredQty}
