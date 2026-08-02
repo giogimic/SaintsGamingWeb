@@ -478,8 +478,8 @@ export class BabylonEngine {
         if (mesh.material) {
           const mat = mesh.material as StandardMaterial;
           const tex = mat.diffuseTexture as Texture;
-          if (tex && (state.isNpc || state.isPlayer || state.spriteConfig || tex.name?.includes('/npc/'))) {
-            const config = state.spriteConfig || DEFAULT_SPRITE_CONFIG;
+          if (tex && state.spriteConfig) {
+            const config = state.spriteConfig as SpriteSheetConfig;
 
             // Single-frame OW/portrait billboards — never apply 3×4 walk UV offsets
             // (that was cropping *-ow sprites into empty/wrong strips).
@@ -489,6 +489,10 @@ export class BabylonEngine {
               tex.uScale = 1;
               tex.vScale = 1;
             } else {
+              // Keep sheet scale locked (metadata may flip between single/walk)
+              tex.uScale = 1 / config.columns;
+              tex.vScale = 1 / config.rows;
+
               // Update row (direction) - Map top-to-bottom row index to Babylon V offset
               const dir = state.direction || 'down';
               const rowIdx = config.directions[dir] ?? config.directions.down;
@@ -1265,9 +1269,17 @@ export class BabylonEngine {
     return this.entityMeshes.get(entityId);
   }
 
+  private resolveSpriteConfig(entity: BabylonEntityData): SpriteSheetConfig {
+    if (entity.spriteConfig) return entity.spriteConfig;
+    return isSingleFrameSpriteUrl(entity.spriteUrl)
+      ? SINGLE_FRAME_SPRITE_CONFIG
+      : DEFAULT_SPRITE_CONFIG;
+  }
+
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
     const targetPos = new Vector3(entity.x, 0.85, entity.y);
+    const resolvedConfig = this.resolveSpriteConfig(entity);
 
     if (!spriteMesh) {
       // Create 2.5D Billboard Sprite Plane
@@ -1278,11 +1290,6 @@ export class BabylonEngine {
       );
 
       // Initialize Metadata for Animation & Movement
-      const initialConfig =
-        entity.spriteConfig ||
-        (isSingleFrameSpriteUrl(entity.spriteUrl)
-          ? SINGLE_FRAME_SPRITE_CONFIG
-          : DEFAULT_SPRITE_CONFIG);
       spriteMesh.metadata = {
         targetPos: targetPos,
         isMoving: entity.isMoving || false,
@@ -1290,8 +1297,10 @@ export class BabylonEngine {
         direction: entity.direction || 'down',
         isNpc: entity.isNpc || false,
         isPlayer: entity.isPlayer || false,
+        isCreature: entity.isCreature || false,
         isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
-        spriteConfig: initialConfig,
+        spriteConfig: resolvedConfig,
+        spriteUrl: entity.spriteUrl || null,
       };
       
       // Initial position snap
@@ -1329,16 +1338,11 @@ export class BabylonEngine {
         );
         tex.hasAlpha = true;
 
-        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || single) {
-          const config =
-            entity.spriteConfig ||
-            (single ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
-          tex.uScale = 1 / config.columns;
-          tex.vScale = 1 / config.rows;
-          tex.uOffset = 0;
-          tex.vOffset = 0;
-          spriteMesh.metadata.spriteConfig = config;
-        }
+        tex.uScale = 1 / resolvedConfig.columns;
+        tex.vScale = 1 / resolvedConfig.rows;
+        tex.uOffset = 0;
+        tex.vOffset = 0;
+        spriteMesh.metadata.spriteConfig = resolvedConfig;
 
         mat.diffuseTexture = tex;
       } else if (this.defaultPlayerTexture) {
@@ -1364,26 +1368,27 @@ export class BabylonEngine {
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Update Metadata
+      // Update Metadata — always refresh spriteConfig from current URL so a
+      // prior SINGLE_FRAME assign can't keep resetting walk-sheet UVs every tick.
       if (spriteMesh.metadata) {
         spriteMesh.metadata.targetPos = targetPos;
         spriteMesh.metadata.isMoving = entity.isMoving || false;
         spriteMesh.metadata.direction = entity.direction || spriteMesh.metadata.direction;
         spriteMesh.metadata.isEditor = !!this.scene.onPointerDown;
-        if (entity.spriteConfig) {
-          spriteMesh.metadata.spriteConfig = entity.spriteConfig;
-        }
+        spriteMesh.metadata.isNpc = entity.isNpc || false;
+        spriteMesh.metadata.isPlayer = entity.isPlayer || false;
+        spriteMesh.metadata.isCreature = entity.isCreature || false;
+        spriteMesh.metadata.spriteConfig = resolvedConfig;
       }
 
       // Check if sprite URL changed
       const mat = spriteMesh.material as StandardMaterial;
       const tex = mat?.diffuseTexture as Texture;
-      const currentUrl = tex?.name;
+      const currentUrl = (spriteMesh.metadata?.spriteUrl as string | undefined) || tex?.name;
       
       if (mat) {
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
-          const single = isSingleFrameSpriteUrl(entity.spriteUrl);
           const newTex = new Texture(
             entity.spriteUrl,
             this.scene,
@@ -1400,20 +1405,21 @@ export class BabylonEngine {
             }
           );
           newTex.hasAlpha = true;
-          
-          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/') || single) {
-            const config =
-              entity.spriteConfig ||
-              (single ? SINGLE_FRAME_SPRITE_CONFIG : DEFAULT_SPRITE_CONFIG);
-            newTex.uScale = 1 / config.columns;
-            newTex.vScale = 1 / config.rows;
-            newTex.uOffset = 0;
-            newTex.vOffset = 0;
-            if (spriteMesh.metadata) spriteMesh.metadata.spriteConfig = config;
+          newTex.uScale = 1 / resolvedConfig.columns;
+          newTex.vScale = 1 / resolvedConfig.rows;
+          newTex.uOffset = 0;
+          newTex.vOffset = 0;
+          if (spriteMesh.metadata) {
+            spriteMesh.metadata.spriteConfig = resolvedConfig;
+            spriteMesh.metadata.spriteUrl = entity.spriteUrl;
           }
           mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
           mat.diffuseTexture = this.defaultPlayerTexture;
+        } else if (entity.spriteUrl && tex && tex.name !== 'defaultPlayerTex') {
+          // Keep UV scales in sync even when URL is unchanged
+          tex.uScale = 1 / resolvedConfig.columns;
+          tex.vScale = 1 / resolvedConfig.rows;
         }
       }
     }
