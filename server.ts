@@ -17,6 +17,7 @@ import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
 import { EconomyManager } from "./src/server/EconomyManager";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
+import { attachRedisAdapter } from "./src/server/net/redisAdapter";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
@@ -77,6 +78,9 @@ app.prepare().then(async () => {
       methods: ["GET", "POST"],
     },
   });
+
+  // Optional multi-instance fan-out (REDIS_URL / REDIS_HOST)
+  await attachRedisAdapter(io);
 
   // Initialize the Realtime Platform singleton
   _realtimeService = new RealtimeService(io);

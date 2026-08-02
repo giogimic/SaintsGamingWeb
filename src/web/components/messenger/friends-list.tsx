@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getFriendsList, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend } from "@/app/actions/messenger";
 import { useMessenger } from "./messenger-provider";
+import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { ScrollArea } from "@/shared/ui/scroll-area";
@@ -11,6 +12,7 @@ import Image from "next/image";
 
 export function FriendsList() {
   const { setActiveChat } = useMessenger();
+  const presenceByUserId = useRealtimeStore((s) => s.presenceByUserId);
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,7 +156,10 @@ export function FriendsList() {
             <div className="space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase">Friends</h4>
               {friends.length > 0 ? (
-                friends.map(f => (
+                friends.map(f => {
+                  const presence = presenceByUserId[f.user.id];
+                  const isOnline = presence?.status === "online" || presence?.status === "playing";
+                  return (
                   <div 
                     key={f.friendshipId} 
                     className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer transition-colors"
@@ -163,8 +168,19 @@ export function FriendsList() {
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center overflow-hidden relative">
                         {f.user.image ? <Image src={f.user.image} alt={f.user.username} fill className="object-cover"/> : <UserIcon className="h-4 w-4" />}
+                        <span
+                          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border border-background ${
+                            isOnline ? "bg-emerald-500" : "bg-muted-foreground/40"
+                          }`}
+                          title={presence?.status ?? "offline"}
+                        />
                       </div>
-                      <span className="text-sm font-medium">{f.user.username}</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">{f.user.username}</span>
+                        <span className="text-[10px] text-muted-foreground capitalize">
+                          {presence?.status === "playing" ? "In game" : isOnline ? "Online" : "Offline"}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -183,7 +199,8 @@ export function FriendsList() {
                       </Button>
                     </div>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <p className="text-xs text-muted-foreground text-center py-4">You have no friends yet. Search to add some!</p>
               )}

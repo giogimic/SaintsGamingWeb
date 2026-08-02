@@ -1,6 +1,6 @@
 "use client";
 
-import { getAchievementDef } from "@/web/lib/achievements";
+import { getAchievementDef } from "@/web/lib/achievements-catalog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/ui/tooltip";
 
 interface UserAchievementData {

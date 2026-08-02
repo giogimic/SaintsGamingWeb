@@ -59,6 +59,65 @@ export const GamePlayerOnlineSchema = z.object({
   userId: z.string(),
   characterName: z.string(),
   mapId: z.string(),
+  playerCount: z.number().int().nonnegative().optional(),
+});
+
+export const GamePlayerOfflineSchema = z.object({
+  userId: z.string(),
+  playerCount: z.number().int().nonnegative().optional(),
+});
+
+export const DiscordMemberLinkedSchema = z.object({
+  userId: z.string(),
+  discordUserId: z.string(),
+  username: z.string(),
+});
+
+export const DiscordRoleSyncedSchema = z.object({
+  userId: z.string(),
+  discordUserId: z.string(),
+  permissionLevel: z.number().int(),
+  sourceRoleIds: z.array(z.string()),
+});
+
+export const DiscordCommunityAnnounceSchema = z.object({
+  message: z.string().max(500),
+  link: z.string().nullable(),
+});
+
+export const FivemPlayerOnlineSchema = z.object({
+  userId: z.string(),
+  fivemLicense: z.string(),
+  characterId: z.string().optional(),
+  characterName: z.string().optional(),
+  playerCount: z.number().int().nonnegative().optional(),
+});
+
+export const FivemPlayerOfflineSchema = z.object({
+  userId: z.string(),
+  fivemLicense: z.string(),
+  playerCount: z.number().int().nonnegative().optional(),
+});
+
+export const FivemCharacterUpdatedSchema = z.object({
+  userId: z.string(),
+  characterId: z.string(),
+  characterName: z.string(),
+  cash: z.number().int(),
+  bank: z.number().int(),
+  health: z.number().int(),
+  armor: z.number().int(),
+  isDead: z.boolean(),
+});
+
+export const FivemBankUpdatedSchema = z.object({
+  userId: z.string(),
+  characterId: z.string(),
+  characterName: z.string(),
+  transactionType: z.string(),
+  amount: z.number().int(),
+  cash: z.number().int(),
+  bank: z.number().int(),
 });
 
 // ─── Registry Entry ───────────────────────────────────────────────────────────
@@ -91,7 +150,7 @@ export const EVENT_REGISTRY: Record<string, RegistryEntry> = {
     schema: PresenceUpdatedSchema,
     priority: "EPHEMERAL",
     persistent: false,
-    producer: ["web", "mmo"],
+    producer: ["web", "mmo", "fivem"],
     consumers: ["UserAvatarBadge", "FriendList"],
   },
   "forum.reply.created": {
@@ -106,7 +165,63 @@ export const EVENT_REGISTRY: Record<string, RegistryEntry> = {
     priority: "EPHEMERAL",
     persistent: false,
     producer: ["mmo"],
-    consumers: ["ServerStatusCard", "Website presence badge"],
+    consumers: ["ServerStatusCard", "ServerSelect", "Lobby admin"],
+  },
+  "game.player.offline": {
+    schema: GamePlayerOfflineSchema,
+    priority: "EPHEMERAL",
+    persistent: false,
+    producer: ["mmo"],
+    consumers: ["ServerStatusCard", "ServerSelect", "Lobby admin"],
+  },
+  "discord.member.linked": {
+    schema: DiscordMemberLinkedSchema,
+    priority: "NORMAL",
+    persistent: false,
+    producer: ["discord"],
+    consumers: ["notifications-menu (via SYSTEM notification)", "Admin audit"],
+  },
+  "discord.role.synced": {
+    schema: DiscordRoleSyncedSchema,
+    priority: "NORMAL",
+    persistent: false,
+    producer: ["discord"],
+    consumers: ["notifications-menu (via SYSTEM notification)", "Admin audit"],
+  },
+  "discord.community.announce": {
+    schema: DiscordCommunityAnnounceSchema,
+    priority: "EPHEMERAL",
+    persistent: false,
+    producer: ["discord"],
+    consumers: ["RealtimeProvider toast / site banner"],
+  },
+  "fivem.player.online": {
+    schema: FivemPlayerOnlineSchema,
+    priority: "EPHEMERAL",
+    persistent: false,
+    producer: ["fivem"],
+    consumers: ["UCP live refresh", "FriendsList presence (playing)", "Admin audit"],
+  },
+  "fivem.player.offline": {
+    schema: FivemPlayerOfflineSchema,
+    priority: "EPHEMERAL",
+    persistent: false,
+    producer: ["fivem"],
+    consumers: ["UCP live refresh", "FriendsList presence", "Admin audit"],
+  },
+  "fivem.character.updated": {
+    schema: FivemCharacterUpdatedSchema,
+    priority: "NORMAL",
+    persistent: false,
+    producer: ["fivem", "web"],
+    consumers: ["UCP dashboard refresh", "profile/character panels"],
+  },
+  "fivem.bank.updated": {
+    schema: FivemBankUpdatedSchema,
+    priority: "NORMAL",
+    persistent: false,
+    producer: ["fivem"],
+    consumers: ["UCP banking refresh", "achievement checks (high_roller)"],
   },
 };
 

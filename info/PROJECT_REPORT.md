@@ -2,7 +2,7 @@
 
 **Version**: 2.1.95 | **Audit Date**: 2026-08-01 | **Status**: Active Development
 
-> This is the primary onboarding document. Any new developer, contractor, or AI assistant should read this in full before touching the codebase. It is the single source of truth for what exists, what is missing, and where to continue.
+> This is the primary onboarding document. Any new developer or contractor should read this in full before touching the codebase. It is the single source of truth for what exists, what is missing, and where to continue.
 
 ---
 
@@ -70,8 +70,8 @@ A unified Socket.io event bus. Events are Zod-validated, CRITICAL ones persisted
 ### Social Feed (TikTok/YT-Style)
 - Posts: text (280 char), images, polls, voiceover/background track, chapter markers, captions
 - Subscriber-only gating, hashtag tracking, reactions, bookmarks, watch history, muted keywords, tips, reports
-- 969-line server action file (`social.ts`) covers the full feature set
-- **Key files**: `app/actions/social.ts`, `src/web/components/social/`
+- Social actions split by domain under `app/actions/social/` with stable barrel exports
+- **Key files**: `app/actions/social.ts` (barrel), `app/actions/social/*.ts`, `src/web/components/social/`
 
 ### E2EE Direct Messenger
 - End-to-end encrypted direct messages and group chats using `src/web/lib/crypto.ts`
@@ -168,9 +168,10 @@ A unified Socket.io event bus. Events are Zod-validated, CRITICAL ones persisted
 ### Game Asset Pipeline
 - `GameAsset` Prisma model with full metadata (type, source, tags, categories, atlas mapping)
 - Tuxemon batch import scripts in `scripts/` (14 import/export/migration scripts)
-- `campaign-maps.ts` — 11.8MB Tuxemon campaign map data file
+- Campaign map seed dump: `scripts/data/campaign-maps.generated.ts` (~12MB, scripts only — not app-bundled)
+- App stub: `src/web/components/the-lobby/data/campaign-maps.ts` (empty exports)
 - `WorldMap` DB model — maps stored as JSON strings (grid, gates, npcs, encounters, tile layers, tilesets)
-- Migration script: `scripts/migrate-campaign-maps-to-db.ts`
+- Migration script: `scripts/migrate-campaign-maps-to-db.ts` (upserts WorldMap + GameMap mirror)
 - **Key directory**: `scripts/`, `src/web/components/the-lobby/data/`
 
 ### Saints Studio (In-Game Editor)
@@ -309,14 +310,14 @@ try {
 | No spatial partitioning in MMO | **High** | Server broadcasts all entities to all clients — doesn't scale past ~30 simultaneous players |
 | No binary message packing | **Medium** | JSON over WebSocket — Protocol Buffers or ArrayBuffer would cut bandwidth 80% |
 | No Redis socket adapter | **Low/Infra** | Single-node only; needed before multi-PM2 or multi-server scaling |
-| `GameCanvasBabylon.tsx` is 33KB | **Medium** | Monolithic renderer file — high cognitive load for AI; candidate for modular split |
-| `social.ts` is 969 lines | **Medium** | Should be split by domain (posts, friends, reactions, subscriptions) |
-| `StarterHeroEditorPanel.tsx` is 49KB | **Low** | Works well but huge; hardest file for AI to work in safely |
-| `campaign-maps.ts` is 11.8MB | **Low** | Already being migrated to DB via `WorldMap` model — finish migration |
+| `GameCanvasBabylon.tsx` is 33KB | **Medium** | Monolithic renderer file — high cognitive load; candidate for modular split |
+| ~~`social.ts` is 969 lines~~ | **Done (2.1.109)** | Split into domain modules + barrel; export names stable |
+| `StarterHeroEditorPanel.tsx` is 49KB | **Low** | Works well but huge; edit carefully |
+| Campaign map dump size | **Low** | Resolved in v2.1.100 — seed lives under `scripts/data/`; runtime loads `WorldMap` via `/api/maps` |
 | Achievement unlocks not automated | **Medium** | Achievements exist but are never awarded by game or social events |
 | `docs/TODO.md` is stale at v2.1.62 | **Low** | Not updated since v2.1.62; `/info/PROJECT_REPORT.md` supersedes it |
 | `legacy/` and `scratch/` in repo | **Low** | Should be audited and removed or `.gitignore`d |
-| Upload system is local-only | **Medium** | `upload.ts` notes S3 swap; no CDN = file loss on server rebuild |
+| Upload durability without volume/CDN | **Low** | Optional S3/CDN in v2.1.102 (`info/uploads/STORAGE.md`); local still default |
 | Email from domain is a placeholder | **Low** | `FROM_EMAIL` in `email.ts` uses `saintsgaming.net` — must be verified with Resend |
 | Minimal automated test coverage | **High** | Only `combat.test.ts` and `store.test.ts` exist; no API or integration tests |
 
@@ -332,8 +333,8 @@ try {
 5. Build Admin Realtime Dashboard at `app/(main)/admin/realtime/page.tsx`
 
 ### Near-Term — /info Documentation (Milestone 3)
-6. Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin, ucp
-7. Retire `docs/TODO.md` (point it to `/info/`)
+6. ~~Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin~~ **Done (v2.1.105)** — overviews landed; deepen as needed (UCP still light)
+7. Retire `docs/TODO.md` (point it to `/info/`) — still open
 
 ### Medium-Term — MMO Scaling (Milestone 4)
 8. Spatial partitioning — zone-based entity broadcasting (only send players who are in the same map zone)
@@ -343,18 +344,18 @@ try {
 ### Long-Term — Ecosystem Expansion (Milestones 5–6)
 11. Discord bot → `/api/internal/events` bridge (role sync, event notifications, community webhooks)
 12. Achievement unlock automation from game events and social actions
-13. FiveM server → `/api/internal/events` bridge for character events and game stats
+13. ~~FiveM server → `/api/internal/events` bridge for character events and game stats~~ **Done (v2.1.101)** — domain actions via `/api/fivem/events`; raw bus still `/api/internal/events`
 14. AI content recommendations, game event generation, chat moderation assist
-15. Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model
-16. S3/CDN migration for uploaded files
+15. ~~Finish campaign map migration from `campaign-maps.ts` → `WorldMap` DB model~~ **Done (v2.1.100)**
+16. ~~S3/CDN migration for uploaded files~~ **Done (v2.1.102)** — legacy disk copy via `scripts/migrate-local-uploads-to-s3.ts` (v2.1.103)
 
 ---
 
-## Cursor / AI Migration Notes
+## Migration Notes
 
 ### Where Development Should Resume
 
-Start with **Realtime Milestone 2 — notification wiring**. This is 3 files, each requiring the same 10-line pattern already implemented in `app/api/forum/reply/route.ts`. No new infrastructure needed.
+See `info/CONTINUE.md`. System `/info` overviews shipped in v2.1.105. Prioritize core site work; Discord / FiveM / S3 / heavy AI are back-line.
 
 ### Files That Matter Most (Priority Order)
 
@@ -388,10 +389,10 @@ Start with **Realtime Milestone 2 — notification wiring**. This is 3 files, ea
 | `prisma/schema.prisma` | 🟠 High | Field removal breaks existing queries. Always migrate, never delete and recreate. |
 | `src/shared/events/registry.ts` | 🟡 Medium | New unregistered events bypass Zod validation. Always add here first. |
 
-### What Context an AI Needs Before Starting
+### What to Read Before Starting
 
 **Read these files in order before any session:**
-1. `info/AI_DEVELOPMENT_RULES.md` — constraints and existing solutions table
+1. `info/DEVELOPMENT_RULES.md` — constraints and existing solutions table
 2. `info/PROJECT_REPORT.md` (this file) — what exists and what is missing
 3. `info/realtime/ARCHITECTURE.md` — if touching anything socket/realtime
 4. `info/realtime/EVENTS.md` — if adding a new realtime event

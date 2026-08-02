@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { GoogleGenAI } from "@google/genai";
+import {
+  buildEnhancePrompt,
+  getForumAiConfig,
+} from "@/web/lib/forum-ai-settings";
 
 export async function POST(req: Request) {
   try {
@@ -10,26 +14,45 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { text, intent, isNews: _isNews } = body;
+    const { text, intent } = body as {
+      text?: string;
+      intent?: "grammar" | "polish";
+    };
 
-    if (!text) {
+    if (!text?.trim()) {
       return NextResponse.json({ message: "No text provided" }, { status: 400 });
     }
 
+    const safeIntent = intent === "polish" ? "polish" : "grammar";
+    const config = await getForumAiConfig();
+
+    if (!config.enabled || config.provider === "off") {
+      return NextResponse.json(
+        { message: "Text enhancement is disabled in Forum Settings" },
+        { status: 403 }
+      );
+    }
+
+    const prompt = buildEnhancePrompt(text, safeIntent);
+
+    if (config.provider === "ollama") {
+      return streamOllama({
+        baseUrl: config.ollamaUrl,
+        model: config.ollamaModel,
+        prompt,
+      });
+    }
+
+    // Default: Gemini cloud
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ message: "AI API key not configured" }, { status: 500 });
+      return NextResponse.json(
+        { message: "Gemini API key not configured (GEMINI_API_KEY)" },
+        { status: 500 }
+      );
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    
-    let prompt = "";
-    if (intent === "grammar") {
-      prompt = `Please fix the grammar and spelling in the following markdown text. Return ONLY the corrected markdown text without any conversational filler or explanation:\n\n${text}`;
-    } else {
-      prompt = `Please polish the following markdown text to improve flow, vocabulary, and readability. Keep the core meaning but make it sound professional and engaging. Return ONLY the polished markdown text without any conversational filler or explanation:\n\n${text}`;
-    }
-
     const responseStream = await ai.models.generateContentStream({
       model: "gemini-2.5-flash",
       contents: prompt,
@@ -45,19 +68,97 @@ export async function POST(req: Request) {
             }
           }
         } catch (err) {
-          console.error("Stream error:", err);
+          console.error("Gemini stream error:", err);
           controller.error(err);
         } finally {
           controller.close();
         }
-      }
+      },
     });
 
     return new Response(stream, {
-      headers: { "Content-Type": "text/plain; charset=utf-8" }
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (error) {
-    console.error("AI Enhance Error:", error);
+    console.error("Enhance Error:", error);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
+}
+
+async function streamOllama(input: {
+  baseUrl: string;
+  model: string;
+  prompt: string;
+}) {
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${input.baseUrl}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: input.model,
+        prompt: input.prompt,
+        stream: true,
+      }),
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        message:
+          "Cannot reach Ollama. Install from https://ollama.com and ensure the service is running.",
+      },
+      { status: 502 }
+    );
+  }
+
+  if (!upstream.ok || !upstream.body) {
+    const detail = await upstream.text().catch(() => "");
+    return NextResponse.json(
+      {
+        message: `Ollama error (${upstream.status}). Is model "${input.model}" installed?`,
+        detail: detail.slice(0, 300),
+      },
+      { status: 502 }
+    );
+  }
+
+  const encoder = new TextEncoder();
+  const reader = upstream.body.getReader();
+  const decoder = new TextDecoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      let buffer = "";
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            try {
+              const json = JSON.parse(trimmed) as { response?: string };
+              if (json.response) {
+                controller.enqueue(encoder.encode(json.response));
+              }
+            } catch {
+              /* ignore partial JSON */
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Ollama stream error:", err);
+        controller.error(err);
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
 }

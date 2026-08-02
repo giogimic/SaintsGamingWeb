@@ -1,9 +1,9 @@
 # Saints Gaming — /info/ Knowledge Base
 
 This directory is the authoritative internal knowledge base for Saints Gaming Web.
-A new developer or AI assistant should be able to open this project, read `/info`, and understand everything needed to continue development safely.
+A new developer should be able to open this project, read `/info`, and understand everything needed to continue development safely.
 
-**Read order: PROJECT_REPORT → AI_DEVELOPMENT_RULES → system-specific docs**
+**Read order: PROJECT_REPORT → DEVELOPMENT_RULES → system-specific docs**
 
 ---
 
@@ -11,8 +11,9 @@ A new developer or AI assistant should be able to open this project, read `/info
 
 | Document | Purpose |
 | :--- | :--- |
-| [PROJECT_REPORT.md](./PROJECT_REPORT.md) | **Full project audit** — what exists, what is missing, broken connections, tech debt, and dev order |
-| [AI_DEVELOPMENT_RULES.md](./AI_DEVELOPMENT_RULES.md) | **Mandatory AI rules** — existing solutions table, prohibited actions, per-system constraints |
+| [CONTINUE.md](./CONTINUE.md) | **Current task pointer** — start every session here |
+| [PROJECT_REPORT.md](./PROJECT_REPORT.md) | Full project audit — what exists, gaps, debt |
+| [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) | Mandatory coding rules — existing solutions, prohibitions |
 
 ---
 
@@ -20,39 +21,45 @@ A new developer or AI assistant should be able to open this project, read `/info
 
 | Directory | Status | Contents |
 | :--- | :--- | :--- |
-| [realtime/](./realtime/) | 🟡 Milestone 1 live | Architecture diagram, event catalog, connection map |
-| frontend/ | 🔴 Planned | Component architecture, design tokens, routing guide |
-| backend/ | 🔴 Planned | API routes catalog, server actions, auth flows |
-| database/ | 🔴 Planned | Schema overview, model relationships, migration guide |
-| game/ | 🔴 Planned | MMO engine, game loop, Babylon.js client architecture |
-| social/ | 🔴 Planned | Social feed, messenger, friends, subscriptions, XP |
-| admin/ | 🔴 Planned | Admin panel features, access control, dev tools |
+| [frontend/](./frontend/) | 🟢 | Layouts, theming, routes (`OVERVIEW.md`, `ROUTES.md`) |
+| [backend/](./backend/) | 🟢 | `server.ts`, APIs, actions (`OVERVIEW.md`, `API_CATALOG.md`) |
+| [auth/](./auth/) | 🟢 | NextAuth, sessions, permissions (`OVERVIEW.md`) |
+| [social/](./social/) | 🟢 | Feed, messenger (`OVERVIEW.md`, `ACTIONS.md`) |
+| [admin/](./admin/) | 🟢 | Staff console (`OVERVIEW.md`, `PERMISSIONS.md`) |
+| [game/](./game/) | 🟢 | MMO lobby (`OVERVIEW.md`, `SOCKETS.md`) |
+| [forum/](./forum/) | 🟢 | Boards + text enhance (`OVERVIEW.md`, `TEXT_ENHANCE.md`) |
+| [realtime/](./realtime/) | 🟢 | Bus architecture + event catalog |
+| [database/](./database/) | 🟢 | WorldMap ops (`WORLDMAP.md`) |
+| [uploads/](./uploads/) | 🟢 | Local (+ optional S3 later) (`STORAGE.md`) |
+| [ops/](./ops/) | 🟢 | Staging smoke checklist (`STAGING_SMOKE.md`) |
+| [discord/](./discord/) | 🟡 Back-line | Bot bridge (`BRIDGE.md`) |
+| [fivem/](./fivem/) | 🟡 Back-line | Character/stats bridge (`BRIDGE.md`) |
 
 ---
 
 ## Quick Reference
 
 ### Current Version
-`2.1.95` — Realtime Platform Milestone 1 live
+`2.1.111` — Staging smoke script + production build fixes (social barrel, achievements split)
 
 ### Key Entry Points
 | File | Role |
 | :--- | :--- |
 | `server.ts` | Node.js server: game engine + socket.io + Next.js |
-| `app/(main)/layout.tsx` | Main web layout (wraps Auth + Realtime + Messenger) |
-| `app/(main)/lobby/page.tsx` | MMO game client entry point |
+| `app/(main)/layout.tsx` | Main web layout (Auth + Realtime + Messenger) |
+| `app/(main)/lobby/page.tsx` | MMO game client entry |
 | `prisma/schema.prisma` | Database schema — read before model changes |
-| `src/server/realtime/RealtimeService.ts` | All realtime broadcasts route through here |
+| `src/server/realtime/RealtimeService.ts` | All realtime broadcasts |
 | `src/shared/events/registry.ts` | Zod event registry — check before new events |
-| `src/web/lib/permissions.ts` | Permission constants — always import from here |
-| `src/web/lib/xp.ts` | XP + leveling + FiveM reward system |
-| `src/web/lib/upload.ts` | All file upload logic (avatar, forum, social, modpacks) |
+| `src/web/lib/permissions.ts` | Permission constants |
+| `src/web/lib/xp.ts` | XP + leveling |
+| `src/web/lib/upload.ts` | All file upload logic |
 
-### What NOT to Rebuild (Already Exists)
-See the full table in [AI_DEVELOPMENT_RULES.md § Identify Existing Solutions](./AI_DEVELOPMENT_RULES.md).
+### What NOT to Rebuild
+See [DEVELOPMENT_RULES.md § Identify Existing Solutions](./DEVELOPMENT_RULES.md).
 
 ### Realtime Events
 See [realtime/EVENTS.md](./realtime/EVENTS.md) — **always check before adding a new event**.
 
 ### Before Making Changes
-Read [AI_DEVELOPMENT_RULES.md](./AI_DEVELOPMENT_RULES.md).
+Read [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md).

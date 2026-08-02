@@ -87,6 +87,25 @@ export function getCachedMap(mapId: string): GameMapData | null {
   return mapCache[mapId] || null;
 }
 
+export interface MapIndexEntry {
+  id: string;
+  name: string;
+  gameId: string | null;
+  version: number;
+  updatedAt?: string;
+}
+
+/** List WorldMap index rows from the DB (no grid payload). */
+export async function listMaps(gameId?: string): Promise<MapIndexEntry[]> {
+  const qs = gameId ? `?gameId=${encodeURIComponent(gameId)}` : "";
+  const res = await fetch(`/api/maps${qs}`);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}: Failed to list maps`);
+  }
+  const data = (await res.json()) as { maps?: MapIndexEntry[] };
+  return data.maps || [];
+}
+
 export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
   const current = mapCache[currentMapId];
   if (!current?.gates) return;

@@ -2,9 +2,9 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
-// import { pusherServer } from "@/web/lib/pusher"; // TODO: Re-enable when real-time push is implemented
 import { revalidatePath } from "next/cache";
 import { checkAndAwardAchievements } from "@/web/lib/achievements";
+import { emitChatMessageCreated } from "@/web/lib/realtime-emit";
 
 export async function uploadPublicKey(publicKey: string) {
   const session = await auth();
@@ -188,7 +188,7 @@ export async function sendMessage(receiverId: string, ciphertext: string, iv: st
 
   if (!isFriends) throw new Error("You can only message friends.");
 
-  await prisma.directMessage.create({
+  const message = await prisma.directMessage.create({
     data: {
       senderId: session.user.id,
       receiverId,
@@ -197,6 +197,14 @@ export async function sendMessage(receiverId: string, ciphertext: string, iv: st
       senderCiphertext,
       senderIv
     }
+  });
+
+  // Instant DM delivery signal (content is E2EE ciphertext for the recipient)
+  await emitChatMessageCreated({
+    messageId: message.id,
+    fromUserId: session.user.id,
+    toUserId: receiverId,
+    content: ciphertext,
   });
 
   return true;
@@ -360,13 +368,30 @@ export async function sendGroupMessage(groupChatId: string, body: string) {
 
   if (!membership) throw new Error("Not a member of this group chat.");
 
-  await prisma.groupMessage.create({
+  const message = await prisma.groupMessage.create({
     data: {
       groupChatId,
       senderId: session.user.id,
       body
     }
   });
+
+  // Fan-out to other group members via their private user rooms
+  const members = await prisma.groupChatMember.findMany({
+    where: { groupChatId, userId: { not: session.user.id } },
+    select: { userId: true },
+  });
+  await Promise.all(
+    members.map((m) =>
+      emitChatMessageCreated({
+        messageId: message.id,
+        fromUserId: session.user.id,
+        toUserId: m.userId,
+        groupId: groupChatId,
+        content: body.slice(0, 4000),
+      })
+    )
+  );
 
   return true;
 }

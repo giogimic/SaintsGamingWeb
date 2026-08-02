@@ -10,10 +10,11 @@
  *    useRealtimeStore.ts. All event subscriptions go through the store.
  */
 
-import { createContext, useContext, useEffect, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
-import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { toast } from "sonner";
+import { useRealtimeStore, PresenceStatus } from "@/web/hooks/useRealtimeStore";
 import { EventEnvelope } from "@/shared/events/types";
 
 interface RealtimeContextValue {
@@ -28,6 +29,7 @@ export function useRealtime() {
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
+  const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   // Timestamp of the last event we received — used for sync on reconnect
@@ -35,7 +37,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
   const {
     addNotification,
-    setUnreadCount,
+    setPresence,
+    setLastChatMessage,
+    setLastForumReply,
+    setMmoPlayerOnline,
+    setMmoPlayerOffline,
+    setLastFivemCharacterUpdate,
+    setLastFivemBankUpdate,
+    watchedThreadId,
     processedEventIds,
     addProcessedEventId,
   } = useRealtimeStore();
@@ -45,17 +54,24 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
     if (status !== "authenticated" || !session?.user?.id) return;
 
     // Create singleton connection
-    const socket: Socket = io({
+    const nextSocket: Socket = io({
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: Infinity,
     });
 
-    socketRef.current = socket;
+    socketRef.current = nextSocket;
+    setSocket(nextSocket);
 
     // ─── Reconnection sync ──────────────────────────────────────────────────
-    socket.on("connect", async () => {
-      console.log("[Realtime] Connected:", socket.id);
+    nextSocket.on("connect", async () => {
+      console.log("[Realtime] Connected:", nextSocket.id);
+
+      // Re-join watched thread room after reconnect
+      const threadId = useRealtimeStore.getState().watchedThreadId;
+      if (threadId) {
+        nextSocket.emit("join_room", `thread:${threadId}`);
+      }
 
       // On reconnect, fetch any CRITICAL events we missed while offline
       try {
@@ -67,7 +83,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 
           for (const event of missed) {
             if (!processedEventIds.has(event.id)) {
-              handleEvent(event.eventType, { ...event.payload, id: event.id, timestamp: event.createdAt } as unknown as EventEnvelope);
+              handleEvent(event.eventType, {
+                id: event.id,
+                type: event.eventType,
+                version: "1.0",
+                timestamp: event.createdAt,
+                source: "system",
+                priority: "CRITICAL",
+                payload: event.payload,
+              });
             }
           }
         }
@@ -76,14 +100,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    socket.on("disconnect", (reason) => {
+    nextSocket.on("disconnect", (reason) => {
       console.log("[Realtime] Disconnected:", reason);
     });
 
     // ─── Event Handlers ─────────────────────────────────────────────────────
     function handleEvent(type: string, envelope: EventEnvelope) {
       // Deduplicate by event id
-      if (processedEventIds.has(envelope.id)) return;
+      if (useRealtimeStore.getState().processedEventIds.has(envelope.id)) return;
       addProcessedEventId(envelope.id);
 
       lastEventTimestampRef.current = envelope.timestamp;
@@ -107,23 +131,170 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
           });
           break;
         }
+        case "presence.updated": {
+          const p = envelope.payload as {
+            userId: string;
+            status: PresenceStatus;
+            lastSeen: number;
+          };
+          setPresence(p.userId, p.status, p.lastSeen);
+          break;
+        }
+        case "chat.message.created": {
+          const p = envelope.payload as {
+            messageId: string;
+            fromUserId: string;
+            toUserId?: string;
+            groupId?: string;
+            content: string;
+          };
+          setLastChatMessage({
+            ...p,
+            receivedAt: envelope.timestamp,
+          });
+          break;
+        }
+        case "forum.reply.created": {
+          const p = envelope.payload as {
+            replyId: string;
+            threadId: string;
+            authorId: string;
+            authorName: string;
+            excerpt: string;
+          };
+          setLastForumReply({
+            ...p,
+            receivedAt: envelope.timestamp,
+          });
+          break;
+        }
+        case "game.player.online": {
+          const p = envelope.payload as {
+            userId: string;
+            characterName: string;
+            mapId: string;
+            playerCount?: number;
+          };
+          setMmoPlayerOnline(p.userId, p.characterName, p.mapId, p.playerCount);
+          break;
+        }
+        case "game.player.offline": {
+          const p = envelope.payload as {
+            userId: string;
+            playerCount?: number;
+          };
+          setMmoPlayerOffline(p.userId, p.playerCount);
+          break;
+        }
+        case "discord.community.announce": {
+          const p = envelope.payload as {
+            message: string;
+            link: string | null;
+          };
+          toast(p.message, {
+            action: p.link
+              ? { label: "Open", onClick: () => { window.location.href = p.link!; } }
+              : undefined,
+          });
+          break;
+        }
+        case "fivem.character.updated": {
+          const p = envelope.payload as {
+            userId: string;
+            characterId: string;
+          };
+          setLastFivemCharacterUpdate({
+            userId: p.userId,
+            characterId: p.characterId,
+            receivedAt: envelope.timestamp,
+          });
+          break;
+        }
+        case "fivem.bank.updated": {
+          const p = envelope.payload as {
+            userId: string;
+            characterId: string;
+            bank: number;
+          };
+          setLastFivemBankUpdate({
+            userId: p.userId,
+            characterId: p.characterId,
+            bank: p.bank,
+            receivedAt: envelope.timestamp,
+          });
+          break;
+        }
+        case "fivem.player.online": {
+          const p = envelope.payload as { userId: string };
+          setPresence(p.userId, "playing", envelope.timestamp);
+          break;
+        }
+        case "fivem.player.offline": {
+          const p = envelope.payload as { userId: string };
+          setPresence(p.userId, "online", envelope.timestamp);
+          break;
+        }
         default:
           break;
       }
     }
 
-    socket.on("notification.created", (envelope: EventEnvelope) => {
+    nextSocket.on("notification.created", (envelope: EventEnvelope) => {
       handleEvent("notification.created", envelope);
+    });
+    nextSocket.on("presence.updated", (envelope: EventEnvelope) => {
+      handleEvent("presence.updated", envelope);
+    });
+    nextSocket.on("chat.message.created", (envelope: EventEnvelope) => {
+      handleEvent("chat.message.created", envelope);
+    });
+    nextSocket.on("forum.reply.created", (envelope: EventEnvelope) => {
+      handleEvent("forum.reply.created", envelope);
+    });
+    nextSocket.on("game.player.online", (envelope: EventEnvelope) => {
+      handleEvent("game.player.online", envelope);
+    });
+    nextSocket.on("game.player.offline", (envelope: EventEnvelope) => {
+      handleEvent("game.player.offline", envelope);
+    });
+    nextSocket.on("discord.community.announce", (envelope: EventEnvelope) => {
+      handleEvent("discord.community.announce", envelope);
+    });
+    nextSocket.on("fivem.character.updated", (envelope: EventEnvelope) => {
+      handleEvent("fivem.character.updated", envelope);
+    });
+    nextSocket.on("fivem.bank.updated", (envelope: EventEnvelope) => {
+      handleEvent("fivem.bank.updated", envelope);
+    });
+    nextSocket.on("fivem.player.online", (envelope: EventEnvelope) => {
+      handleEvent("fivem.player.online", envelope);
+    });
+    nextSocket.on("fivem.player.offline", (envelope: EventEnvelope) => {
+      handleEvent("fivem.player.offline", envelope);
     });
 
     return () => {
-      socket.disconnect();
+      nextSocket.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, [status, session?.user?.id]);
 
+  // Join / leave thread rooms when a thread page registers interest
+  useEffect(() => {
+    const active = socketRef.current;
+    if (!active?.connected) return;
+
+    if (watchedThreadId) {
+      active.emit("join_room", `thread:${watchedThreadId}`);
+      return () => {
+        active.emit("leave_room", `thread:${watchedThreadId}`);
+      };
+    }
+  }, [watchedThreadId, socket]);
+
   return (
-    <RealtimeContext.Provider value={{ socket: socketRef.current }}>
+    <RealtimeContext.Provider value={{ socket }}>
       {children}
     </RealtimeContext.Provider>
   );

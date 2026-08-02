@@ -1,7 +1,7 @@
 # Saints Gaming Realtime Platform — Event Catalog
 
 ## Current Implementation Status
-**Status**: 🟡 Milestone 1 In Progress — Notifications live, others planned.
+**Status**: 🟢 Milestones 1–4 + Discord + FiveM bridges live — AOI/binary net, Discord bot, FiveM character/stats.
 
 ---
 
@@ -31,15 +31,15 @@ Every event follows this standard envelope:
 | :--- | :--- |
 | Priority | `CRITICAL` |
 | Persisted | Yes (`RealtimeEvent` table) |
-| Producer | Forum API, Social Actions, Support System |
-| Consumers | `notifications-menu.tsx` (bell badge + Sonner toast) |
+| Producer | Forum API, Social Actions, Support System, Mentions (`emitNotificationCreated`) |
+| Consumers | `notifications-menu.tsx` (bell badge + Sonner toast) via `RealtimeProvider` |
 
 **Payload:**
 ```typescript
 {
   notificationId: string;
   userId: string;
-  type: string;       // "REPLY" | "MENTION" | "SYSTEM"
+  type: string;       // "REPLY" | "MENTION" | "SYSTEM" | "LIKE" | "TIP"
   message: string;
   link: string | null;
 }
@@ -47,14 +47,14 @@ Every event follows this standard envelope:
 
 ---
 
-### `chat.message.created` 🔴 Planned (Milestone 2)
+### `chat.message.created` 🟢 Live (Milestone 2)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `NORMAL` |
-| Persisted | No (stored in `DirectMessage` table) |
-| Producer | Messenger API (`social.ts`) |
-| Consumers | `MessengerPopup`, `ChatWindow` |
+| Persisted | No (stored in `DirectMessage` / `GroupMessage` tables) |
+| Producer | `app/actions/messenger.ts` (`sendMessage`, `sendGroupMessage`) |
+| Consumers | `ChatWindow` (instant refetch via `useRealtimeStore.lastChatMessage`) |
 
 **Payload:**
 ```typescript
@@ -63,20 +63,20 @@ Every event follows this standard envelope:
   fromUserId: string;
   toUserId?: string;
   groupId?: string;
-  content: string;
+  content: string; // E2EE ciphertext for DMs; plaintext for groups
 }
 ```
 
 ---
 
-### `presence.updated` 🔴 Planned (Milestone 2)
+### `presence.updated` 🟢 Live (Milestone 2)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `EPHEMERAL` |
 | Persisted | No |
-| Producer | `SocketHandler` (connect/disconnect), MMO GameEngine |
-| Consumers | `UserAvatarBadge`, Friend List |
+| Producer | `SocketHandler` connect/disconnect (friend fan-out) |
+| Consumers | `FriendsList` online indicators via `useRealtimeStore.presenceByUserId` |
 
 **Payload:**
 ```typescript
@@ -89,14 +89,14 @@ Every event follows this standard envelope:
 
 ---
 
-### `forum.reply.created` 🔴 Planned (Milestone 2)
+### `forum.reply.created` 🟢 Live (Milestone 2)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `NORMAL` |
 | Persisted | No (stored in `Reply` table) |
-| Producer | Forum replies API |
-| Consumers | `ThreadView` (live reply stream for active viewers) |
+| Producer | `app/api/forum/replies/route.ts`, `app/api/forum/reply/route.ts` → room `thread:{id}` |
+| Consumers | `LiveThreadReplies` (toast + `router.refresh`) |
 
 **Payload:**
 ```typescript
@@ -111,14 +111,14 @@ Every event follows this standard envelope:
 
 ---
 
-### `game.player.online` 🔴 Planned (Milestone 3)
+### `game.player.online` 🟢 Live (Milestone 3)
 
 | Field | Value |
 | :--- | :--- |
 | Priority | `EPHEMERAL` |
 | Persisted | No |
-| Producer | MMO GameEngine (via RealtimeService bridge) |
-| Consumers | `ServerStatusCard`, website presence indicators |
+| Producer | `PlayerManager` → `ecosystemBroadcast` → `SocketHandler` → `RealtimeService.emitGlobal` (`source: "mmo"`) |
+| Consumers | `ServerStatusCard`, `ServerSelect`, Lobby admin |
 
 > [!IMPORTANT]
 > This is a **coarse ecosystem event** only. Player position, combat data, and movement ticks are handled exclusively within the MMO engine network and MUST NOT be published to the website socket channel.
@@ -129,8 +129,93 @@ Every event follows this standard envelope:
   userId: string;
   characterName: string;
   mapId: string;
+  playerCount?: number;
 }
 ```
+
+---
+
+### `game.player.offline` 🟢 Live (Milestone 3)
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `EPHEMERAL` |
+| Persisted | No |
+| Producer | `PlayerManager` disconnect → same ecosystem bridge |
+| Consumers | `ServerStatusCard`, `ServerSelect`, Lobby admin |
+
+**Payload:**
+```typescript
+{
+  userId: string;
+  playerCount?: number;
+}
+```
+
+---
+
+### `discord.member.linked` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `POST /api/discord/events` (`member_joined`, `link_account`) |
+| Consumers | SYSTEM notification + optional audit |
+
+### `discord.role.synced` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `POST /api/discord/events` (`role_sync`) via `DISCORD_ROLE_MAP` |
+| Consumers | SYSTEM notification |
+
+### `discord.community.announce` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `EPHEMERAL` |
+| Producer | `POST /api/discord/events` (`community_announce` without target) |
+| Consumers | `RealtimeProvider` Sonner toast |
+
+See also: [`info/discord/BRIDGE.md`](../discord/BRIDGE.md)
+
+---
+
+### `fivem.player.online` / `fivem.player.offline` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `EPHEMERAL` |
+| Producer | `POST /api/fivem/events` (`player_joined` / `player_left`) |
+| Consumers | `RealtimeProvider` presence, FriendsList (`playing`), UCP |
+
+**Payload (online):** `{ userId, fivemLicense, characterId?, characterName?, playerCount? }`  
+**Payload (offline):** `{ userId, fivemLicense, playerCount? }`
+
+Also fans out `presence.updated` to the user + accepted friends.
+
+### `fivem.character.updated` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `sync_character`, bank tx, `/api/fivem/characters` (drugs/inventory — not coords) |
+| Consumers | `UcpLiveRefresh` → `router.refresh()` |
+
+**Payload:** `{ userId, characterId, characterName, cash, bank, health, armor, isDead }`
+
+### `fivem.bank.updated` 🟢 Live
+
+| Field | Value |
+| :--- | :--- |
+| Priority | `NORMAL` |
+| Producer | `bank_transaction` |
+| Consumers | UCP banking refresh, achievement checks |
+
+**Payload:** `{ userId, characterId, characterName, transactionType, amount, cash, bank }`
+
+See also: [`info/fivem/BRIDGE.md`](../fivem/BRIDGE.md)
 
 ---
 
@@ -139,4 +224,5 @@ Every event follows this standard envelope:
 1. Add payload interface to `src/shared/events/types.ts`
 2. Add Zod schema + `RegistryEntry` to `src/shared/events/registry.ts`
 3. Emit via `RealtimeService.publishEvent()` (server) or read from `useRealtimeStore` (client)
-4. Add catalog entry to this file
+4. Prefer `src/web/lib/realtime-emit.ts` from API routes / server actions
+5. Add catalog entry to this file

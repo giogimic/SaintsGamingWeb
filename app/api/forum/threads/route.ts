@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { z } from "zod";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
-
+import { canAccessRestrictedBoard } from "@/web/lib/forum-access";
+import { generateSlug } from "@/web/lib/slug";
+import { awardXP, XP_VALUES } from "@/web/lib/xp";
+import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 const createThreadSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
@@ -11,13 +13,6 @@ const createThreadSchema = z.object({
   subcategorySlug: z.string(),
   forumPin: z.string().optional(),
 });
-
-function generateSlug(title: string) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-}
-
-import { awardXP, XP_VALUES } from "@/web/lib/xp";
-import { checkAndAwardAchievements } from "@/web/lib/achievements";
 
 export async function POST(req: Request) {
   try {
@@ -64,18 +59,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "This board is locked" }, { status: 403 });
     }
 
-    const isRestricted = subcategory.reqWriter || subcategory.reqVIP || subcategory.reqFounder || subcategory.reqTrusted;
-    let hasAccess = !isRestricted;
-    
-    if (isRestricted) {
-      if (user.permissionLevel >= PERMISSION_LEVELS.HEAD_MODERATOR) hasAccess = true;
-      else if (subcategory.reqWriter && user.isWriter) hasAccess = true;
-      else if (subcategory.reqVIP && user.isVIP) hasAccess = true;
-      else if (subcategory.reqFounder && user.isFounder) hasAccess = true;
-      else if (subcategory.reqTrusted && user.isTrusted) hasAccess = true;
-    }
-
-    if (!hasAccess) {
+    if (!canAccessRestrictedBoard(subcategory, user)) {
       return NextResponse.json({ message: "You do not have permission to post in this board." }, { status: 403 });
     }
 

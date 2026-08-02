@@ -20,9 +20,11 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
   const [mounted, setMounted] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [enhanceEnabled, setEnhanceEnabled] = useState(false);
+  const [enhanceProvider, setEnhanceProvider] = useState<string>("off");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load draft on mount
+  // Load draft on mount + enhance availability
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
     if (draftKey && !value) {
@@ -31,6 +33,17 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
         onChange(saved);
       }
     }
+    fetch("/api/ai/config")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.enabled) {
+          setEnhanceEnabled(true);
+          setEnhanceProvider(data.provider || "gemini");
+        } else {
+          setEnhanceEnabled(false);
+        }
+      })
+      .catch(() => setEnhanceEnabled(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]); // only run once on mount for the given key
 
@@ -63,7 +76,16 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: value, intent, isNews })
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        let msg = "Failed to enhance text.";
+        try {
+          const data = await res.json();
+          if (data?.message) msg = data.message;
+        } catch {
+          /* ignore */
+        }
+        throw new Error(msg);
+      }
       const reader = res.body?.getReader();
       if (!reader) return;
       const decoder = new TextDecoder();
@@ -76,7 +98,7 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to enhance text.");
+      alert(err instanceof Error ? err.message : "Failed to enhance text.");
     } finally {
       setIsEnhancing(false);
     }
@@ -146,28 +168,42 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
           <Film className="h-4 w-4" />
         </Button>
         <div className="flex-1" />
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          className="h-8 px-2 text-xs border-primary/20 text-primary hover:bg-primary/10 gap-1" 
-          onClick={() => handleEnhance('grammar')}
-          disabled={isEnhancing || !value.trim()}
-          title="Fix Grammar & Spelling"
-        >
-          {isEnhancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Grammar Check
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm" 
-          className="h-8 px-2 text-xs border-primary/20 text-primary hover:bg-primary/10 gap-1" 
-          onClick={() => handleEnhance('polish')}
-          disabled={isEnhancing || !value.trim()}
-          title="Improve Flow & Vocabulary"
-        >
-          {isEnhancing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />} AI Polish
-        </Button>
+        {enhanceEnabled && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs border-primary/20 text-primary hover:bg-primary/10 gap-1"
+              onClick={() => handleEnhance("grammar")}
+              disabled={isEnhancing || !value.trim()}
+              title={`Fix grammar & spelling (${enhanceProvider})`}
+            >
+              {isEnhancing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Sparkles className="h-3 w-3" />
+              )}{" "}
+              Grammar Check
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs border-primary/20 text-primary hover:bg-primary/10 gap-1"
+              onClick={() => handleEnhance("polish")}
+              disabled={isEnhancing || !value.trim()}
+              title={`Improve flow & vocabulary (${enhanceProvider})`}
+            >
+              {isEnhancing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Wand2 className="h-3 w-3" />
+              )}{" "}
+              Polish
+            </Button>
+          </>
+        )}
       </div>
       
       <Tabs defaultValue="write" className="w-full">

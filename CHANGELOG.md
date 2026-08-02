@@ -1,3 +1,153 @@
+## [2.1.111] - 2026-08-02
+
+### Fixed
+- **Social actions barrel**: removed file-level `"use server"` so Next.js accepts re-exports (domain modules remain `"use server"`).
+- **Client/server split for achievements**: catalog lives in `achievements-catalog.ts`; award + realtime emit stay server-only (`server-only` + `serverExternalPackages` for redis/socket.io).
+
+### Added
+- **Staging smoke**: `scripts/smoke-staging.sh` (`npm run smoke`) + `info/ops/STAGING_SMOKE.md` for forum/lobby/realtime readiness.
+
+## [2.1.110] - 2026-08-02
+
+### Added
+- **Vitest coverage** for permissions matrix, forum restricted-board access, shared slug helper, forum Zod validators / hashtags / mentions, and messenger E2EE crypto round-trip.
+- Shared helpers: `src/web/lib/forum-access.ts`, `src/web/lib/slug.ts` (wired into forum/news/modpack create paths).
+
+### Fixed
+- Lobby store unit test now expects default `TITLE_SCREEN` game mode.
+
+## [2.1.109] - 2026-08-01
+
+### Changed
+- **Social server actions split**: `app/actions/social.ts` is now a barrel; implementations live in `app/actions/social/{posts,feed,engagement,history,moderation,analytics}.ts`. Export names and `@/app/actions/social` import path unchanged.
+
+## [2.1.108] - 2026-08-01
+
+### Added
+- **`info/frontend/ROUTES.md`**: App Router route map (main nav, forum, profile, admin, writer, UCP back-line).
+
+## [2.1.107] - 2026-08-01
+
+### Added
+- **`info/social/ACTIONS.md`**: feed + messenger + folder action inventory and realtime hooks.
+- **`info/game/SOCKETS.md`**: server managers, inbound socket events, coarse website-bus rules.
+
+## [2.1.106] - 2026-08-01
+
+### Added
+- **`info/backend/API_CATALOG.md`**: route + server-actions inventory with live-emit checklist.
+- **`info/admin/PERMISSIONS.md`**: nav gates by level, admin APIs, new-page checklist.
+
+## [2.1.105] - 2026-08-01
+
+### Added
+- **`/info` system overviews**: `frontend`, `backend`, `auth`, `social`, `admin`, `game`, and `forum/OVERVIEW.md`.
+- Index updated; Discord/FiveM/S3/AI marked back-line in handoff docs.
+- `docs/TODO.md` now redirects readers to `/info/`.
+
+## [2.1.104] - 2026-08-01
+
+### Added
+- **Forum Settings** (`/admin/forum/settings`): text-enhance provider menu (Gemini cloud / Ollama local / off).
+- Curated Ollama model catalog with estimated RAM + download size; download/pull from admin UI.
+- `GET /api/ai/config`, `GET|POST /api/ai/local`; enhance route respects SiteSetting provider.
+- Markdown editor hides Grammar/Polish when enhancement is disabled.
+- Docs: `info/forum/TEXT_ENHANCE.md`.
+
+## [2.1.103] - 2026-08-01
+
+### Added
+- **AOI InterestManager vitest soak**: zone math, neighborhood keys, synthetic multi-entity fanout (far entities isolated; fanout ≪ full-map broadcast).
+- **WorldMap ops docs**: `info/database/WORLDMAP.md` (migrate/verify, loaders, GameMap mirror rules).
+- **Legacy uploads migrate script**: `scripts/migrate-local-uploads-to-s3.ts` (`--dry-run`, `--skip-existing`).
+
+## [2.1.102] - 2026-08-01
+
+### Added
+- **Optional S3/CDN uploads**:
+  - Env-gated PutObject/DeleteObject via `@aws-sdk/client-s3` (`s3-storage.ts`).
+  - Requires `S3_BUCKET` + credentials + `CDN_BASE_URL`; otherwise local `public/uploads` unchanged.
+  - MinIO/R2 via `S3_ENDPOINT` / `S3_FORCE_PATH_STYLE`.
+  - `next.config.ts` adds CDN host to `images.remotePatterns` when configured.
+  - Docs: `info/uploads/STORAGE.md`; env vars in `.env.example`.
+  - Vitest coverage for S3 enablement + URL/key helpers.
+
+### Fixed
+- `deleteUploadedFile` no longer breaks on `/uploads/...` paths (`path.join` absolute-segment bug).
+
+## [2.1.101] - 2026-08-01
+
+### Added
+- **FiveM character/stats bridge**:
+  - `POST /api/fivem/events` with actions `player_joined`, `player_left`, `sync_character`, `bank_transaction`, `link_license`.
+  - Realtime events: `fivem.player.online`, `fivem.player.offline`, `fivem.character.updated`, `fivem.bank.updated`.
+  - Friend-fanout `presence.updated` (`playing` / `online`) on join/leave.
+  - UCP `RealtimeProvider` + `UcpLiveRefresh` for live dashboard/banking refresh.
+  - Contract docs: `info/fivem/BRIDGE.md`.
+  - Vitest coverage for license normalize, bank deltas, and payload schemas.
+
+### Changed
+- `/api/fivem/characters` emits `fivem.character.updated` after drugs/inventory sync (coords remain silent).
+- Auth accepts `Bearer` + legacy raw secret; prefers `FIVEM_API_KEY`.
+
+## [2.1.100] - 2026-08-01
+
+### Changed
+- **Campaign maps → WorldMap DB (complete)**:
+  - Moved the ~12MB dump out of the app bundle to `scripts/data/campaign-maps.generated.ts` (seed source only).
+  - Stubbed `src/web/components/the-lobby/data/campaign-maps.ts` so accidental imports cannot pull map payloads.
+  - Fixed `scripts/migrate-campaign-maps-to-db.ts` to upsert `WorldMap` + `GameMap` collision mirror (235 maps, `gameId=tuxemon`).
+  - `/api/maps` and `/api/maps/[slug]` are DB-only; POST requires Developer permission.
+  - Server `map-loader.js` prefers `WorldMap`, then `GameMap`.
+  - `WorldMapNavigator` + `listMaps()` load the map index from `/api/maps`.
+  - Regenerators (`import-full-tuxemon-campaign`, `reimport-rich-tuxemon-maps`, `import-tuxemon.mjs`) write to `scripts/data/`.
+
+## [2.1.99] - 2026-08-01
+
+### Added
+- **Discord Bot Bridge**:
+  - `POST /api/discord/events` with actions `member_joined`, `role_sync`, `community_announce`, `link_account`.
+  - Role sync via `DISCORD_ROLE_MAP` (never auto-demotes staff unless `forceDemote`).
+  - Realtime events: `discord.member.linked`, `discord.role.synced`, `discord.community.announce`.
+  - Discord OAuth `signIn` / `linkAccount` writes `User.discordId`.
+  - Bot contract documented in `info/discord/BRIDGE.md`.
+- **Achievement unlock automation**:
+  - New badges: `first_reply`, `social_starter`, `tipper`.
+  - `checkAndAwardAchievements` now creates SYSTEM notifications + realtime push on unlock.
+  - Wired after forum replies, social posts, and tips (threads/friends/login already covered).
+
+### Changed
+- `/api/internal/events` forwards envelope `source` and broadcasts globally when no `userId` target.
+
+## [2.1.98] - 2026-08-01
+
+### Added
+- **MMO Scaling Milestone 4**:
+  - **AOI interest management**: Players join `aoi:{map}:{zx}:{zy}` rooms; `player_moved` / `creature_moved` broadcast only to the 3×3 zone neighborhood (`InterestManager`, `MMO_AOI_ZONE_SIZE`).
+  - **Binary movement packing**: Compact ArrayBuffer codec in `src/shared/net/movementCodec.ts` (toggle with `MMO_BINARY_MOVEMENT=0` for JSON fallback). Client `player_moved` handler decodes binary with JSON fallback.
+  - **Optional Redis Socket.io adapter**: `attachRedisAdapter()` enables multi-instance fan-out when `REDIS_URL` or `REDIS_HOST` is set (`@socket.io/redis-adapter` + `redis`).
+  - Vitest coverage for movement codec round-trips.
+
+## [2.1.97] - 2026-08-01
+
+### Added
+- **Realtime Milestone 3 — coarse MMO → website bridge**:
+  - `PlayerManager` emits `ecosystemBroadcast` on join/leave; `SocketHandler` bridges to `RealtimeService.emitGlobal(..., { source: "mmo" })`.
+  - Registered `game.player.online` / `game.player.offline` (optional `playerCount`); never includes movement or combat ticks.
+  - Client roster in `useRealtimeStore`; live player counts in `ServerSelect`, Lobby admin, and new `ServerStatusCard`.
+  - Smoke-verified custom server boot + `/api/game/server-status` + event registry validation.
+
+## [2.1.96] - 2026-08-01
+
+### Added
+- **Realtime Milestone 2 — live site ↔ game wiring**:
+  - Shared emit helpers in `src/web/lib/realtime-emit.ts` for server actions and API routes.
+  - Instant `notification.created` push for social likes/replies/tips, forum reply + subscriber notifications, reply likes, support ticket replies, and @mentions.
+  - `presence.updated` friend fan-out on socket connect/disconnect with online indicators in Friends List.
+  - `chat.message.created` delivery for DMs and group chats; Chat Window refetches immediately on signal.
+  - Admin Realtime Dashboard at `/admin/realtime` with live metrics, circuit breaker controls, force-disconnect, and recent CRITICAL event list.
+  - Live forum thread updates via `forum.reply.created` room broadcasts (`thread:{id}`) and `LiveThreadReplies` auto-refresh.
+
 ## [2.1.94] - 2026-08-01
 
 ### Fixed
