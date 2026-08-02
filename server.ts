@@ -16,6 +16,7 @@ import { InventoryManager } from "./src/server/InventoryManager";
 import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
 import { EconomyManager } from "./src/server/EconomyManager";
+import { ShopManager } from "./src/server/ShopManager";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
 import { attachRedisAdapter } from "./src/server/net/redisAdapter";
 
@@ -47,6 +48,8 @@ app.prepare().then(async () => {
   const inventoryManager = new InventoryManager(gameEngine, worldManager);
   const craftingManager = new CraftingManager(gameEngine, playerManager);
   const economyManager = new EconomyManager(gameEngine, playerManager);
+  const shopManager = new ShopManager(gameEngine);
+  void shopManager;
   
   const server = createServer(async (req, res) => {
     try {

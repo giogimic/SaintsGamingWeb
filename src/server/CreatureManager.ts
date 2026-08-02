@@ -88,9 +88,12 @@ export class CreatureManager {
     const isNpc = data.entityType === EntityType.NPC;
     const entityId = `${isNpc ? 'npc' : 'creature'}_${data.templateId}_${Date.now()}`;
     
+    const entityType = data.entityType || EntityType.CREATURE;
+    const isWildCreature = !isNpc && entityType === EntityType.CREATURE;
+
     const creature: CreatureState = {
       entityId,
-      entityType: data.entityType || EntityType.CREATURE,
+      entityType,
       templateId: data.templateId,
       name: isNpc ? data.templateId : "Wild " + data.templateId,
       mapId: data.mapId,
@@ -98,10 +101,11 @@ export class CreatureManager {
       y: data.y,
       spawnMode: data.spawnMode,
       aiState: AIState.IDLE,
-      behavior: BehavioralState.CALM,
+      // Wild MPV creatures are hostile so RT combat can be tested
+      behavior: isWildCreature ? BehavioralState.HOSTILE : BehavioralState.CALM,
       ownerId: data.ownerId,
-      hp: 100,
-      maxHp: 100,
+      hp: isWildCreature ? 80 : 100,
+      maxHp: isWildCreature ? 80 : 100,
       isMoving: false,
       direction: "down",
       lastMoveTime: Date.now()
@@ -111,14 +115,14 @@ export class CreatureManager {
     this.worldManager.addEntity(creature.mapId, creature.x, creature.y, entityId);
     this.dirtyEntities.add(entityId);
     
-    // Broadcast spawn to clients. 
-    // Private spawns need special handling, but for now we tag them with ownerId
-    // so the client can ignore rendering if it's not theirs. A more robust server
-    // implementation would filter the broadcast list.
+    // Broadcast spawn to clients (include spriteKey for lobby mapEntities).
     this.engine.events.emit("networkBroadcast", {
       room: creature.mapId,
       event: "creature_spawned",
-      data: creature
+      data: {
+        ...creature,
+        spriteKey: data.templateId,
+      },
     });
   }
 

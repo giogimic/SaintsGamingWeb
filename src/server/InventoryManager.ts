@@ -74,30 +74,35 @@ export class InventoryManager {
 
     const { resourceSlug, skillSlug, xpAmount, respawnTimeMs } = nodeConfig;
     
-    // Check DB for player
-    const dbUser = await prisma.account.findFirst({
+    // Socket auth id is User.id; Account.id fallback for legacy rows
+    let userId: string | null = null;
+    const asAccount = await prisma.account.findFirst({
       where: { id: accountId },
-      select: { userId: true }
+      select: { userId: true },
     });
-    if (!dbUser) return;
-    const userId = dbUser.userId;
+    if (asAccount?.userId) userId = asAccount.userId;
+    else {
+      const asUser = await prisma.user.findFirst({
+        where: { id: accountId },
+        select: { id: true },
+      });
+      userId = asUser?.id ?? null;
+    }
+    if (!userId) return;
 
-    // 2. Do they have the right tool equipped?
+    // 2. Require real tool in inventory — no demo grants (quest/shop/craft only)
     const requiredToolSlug = skillSlug === "mining" ? "pickaxe_bronze" : "axe_bronze";
-    let tool = await prisma.playerInventoryItem.findFirst({
+    const tool = await prisma.playerInventoryItem.findFirst({
       where: { userId, itemSlug: requiredToolSlug }
     });
     
     if (!tool) {
-      // Demo logic: Give them a free tool to test Gathering
-      tool = await prisma.playerInventoryItem.create({
-        data: { userId, itemSlug: requiredToolSlug, quantity: 1 }
-      });
       this.engine.events.emit("directMessage", {
         socketId,
         event: "show_toast",
-        data: { message: `Demo: Granted free ${requiredToolSlug} to gather!` }
+        data: { message: `You need a ${requiredToolSlug.replace("_", " ")} to gather here.` }
       });
+      return;
     }
 
     // 3. Grant Resource

@@ -15,6 +15,7 @@ export default function PartyOverlay() {
   const party = useGameStore(state => state.player.party) || [];
   const setGameMode = useGameStore(state => state.setGameMode);
   const showToast = useGameStore(state => state.showToast);
+  const emitSocketEvent = useGameStore(state => state.emitSocketEvent);
 
   const handleSendInvite = () => {
     if (!inviteInput.trim()) return;
@@ -56,8 +57,28 @@ export default function PartyOverlay() {
         {activeTab === 'BEASTS' && (
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
             {caughtDaemons.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-slate-400 font-mono italic text-center p-4">
-                You have not bound any Beasts yet.<br/>Walk into tall grass to find some!
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 font-mono text-center p-4 gap-3">
+                <p className="italic">
+                  No party creature yet. Claim your Rockitten starter first,<br/>
+                  then battle wild Rockitten in tall grass.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setGameMode('PROFESSOR_LAB')}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded"
+                  >
+                    Open Lab
+                  </button>
+                  <button
+                    onClick={() => {
+                      emitSocketEvent?.('claim_starter', { speciesSlug: 'rockitten' });
+                      showToast('Claiming Rockitten starter...');
+                    }}
+                    className="px-4 py-2 bg-[#ca8a04] hover:bg-[#a16207] text-white font-bold rounded"
+                  >
+                    Claim Rockitten
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-3">

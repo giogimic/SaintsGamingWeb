@@ -351,6 +351,36 @@ export class SocketHandler {
         });
       });
 
+      socket.on("shop_buy", (data) => {
+        this.engine.events.emit("shopBuy", {
+          accountId,
+          socketId: socket.id,
+          itemSlug: data?.itemSlug,
+          quantity: data?.quantity,
+        });
+      });
+
+      socket.on("shop_sell", (data) => {
+        this.engine.events.emit("shopSell", {
+          accountId,
+          socketId: socket.id,
+          itemSlug: data?.itemSlug,
+          quantity: data?.quantity,
+        });
+      });
+
+      socket.on("shop_catalog", () => {
+        this.engine.events.emit("shopCatalogRequest", { socketId: socket.id });
+      });
+
+      socket.on("claim_starter", (data) => {
+        this.engine.events.emit("claimStarter", {
+          accountId,
+          socketId: socket.id,
+          speciesSlug: data?.speciesSlug,
+        });
+      });
+
       socket.on("disconnect", () => {
         console.log(`[Socket] Client disconnected: ${socket.id} (Account: ${accountId})`);
         this.engine.events.emit("playerDisconnected", { accountId, socketId: socket.id });

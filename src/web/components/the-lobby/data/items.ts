@@ -16,13 +16,17 @@ export interface ItemSchema {
 export const ITEM_DB: Record<string, ItemSchema> = {
   // Materials
   'wood_logs': { id: 'wood_logs', name: 'Wood Logs', description: 'Basic logs chopped from a tree.', type: 'MATERIAL', value: 2 },
+  'wood_log': { id: 'wood_log', name: 'Wood Log', description: 'Basic timber. Craft ingredient for Binding Crystals.', type: 'MATERIAL', value: 5 },
+  'crystal_dust': { id: 'crystal_dust', name: 'Crystal Dust', description: 'Raw dust used to craft Binding Crystals.', type: 'MATERIAL', value: 25 },
   'copper_ore': { id: 'copper_ore', name: 'Copper Ore', description: 'Raw copper ore. Can be smelted.', type: 'MATERIAL', value: 5 },
   'tin_ore': { id: 'tin_ore', name: 'Tin Ore', description: 'Raw tin ore. Combine with copper for bronze.', type: 'MATERIAL', value: 5 },
   
   // Consumables
   'raw_fish': { id: 'raw_fish', name: 'Raw Fish', description: 'Needs to be cooked.', type: 'FOOD', value: 3 },
   'cooked_fish': { id: 'cooked_fish', name: 'Cooked Fish', description: 'Heals 20 HP.', type: 'FOOD', value: 10, stats: { hp: 20 } },
-  'capture_script': { id: 'capture_script', name: 'Binding Crystal', description: 'Used to capture wild Beasts.', type: 'CONSUMABLE', value: 100 },
+  'binding_crystal': { id: 'binding_crystal', name: 'Binding Crystal', description: 'Used to capture wild creatures in turn-based battles.', type: 'CONSUMABLE', value: 100 },
+  // Legacy alias — do not use for new grants; server capture expects binding_crystal
+  'capture_script': { id: 'capture_script', name: 'Binding Crystal (legacy)', description: 'Legacy slug. Prefer binding_crystal.', type: 'CONSUMABLE', value: 100 },
   'patch_kit': { id: 'patch_kit', name: 'Healing Salve', description: 'Heals 50 HP.', type: 'CONSUMABLE', value: 50, stats: { hp: 50 } },
 
   // Equipment - Weapons

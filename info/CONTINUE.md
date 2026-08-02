@@ -9,31 +9,30 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**v2.1.114 — ALIGNMENT slices A→B→C landed** (capture TB-only, RT combat authority, TB encounter→capture loop).
+**v2.1.115 — Shop/craft crystals + Rockitten starter for TB+RT**
 
-Bible index: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)  
-Alignment status: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)  
-Vision: [`info/vision/ECOSYSTEM.md`](./vision/ECOSYSTEM.md)
+- Buy/craft Binding Crystals at Village Merchant (server Prisma inventory)
+- Claim **Rockitten** starter (`claim_starter` / Party → Open Lab)
+- Wild Rockitten for tall-grass TB + roaming RT combat
+- No free gather tools / no free capture crystals
 
-**Lobby client split (v2.1.113)** — `/lobby` player, `/studio` Dev, Staff FAB Mod/Admin.  
-Verify: [`info/game/LOBBY_VERIFY.md`](./game/LOBBY_VERIFY.md)
+Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)  
+Alignment: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)
 
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
-### Recently shipped
-
-| Version | What |
-| :--- | :--- |
-| 2.1.114 | Capture TB-only hardening; RT combat math/LoS/loot despawn; TB encounter directMessage + PlayerCreature capture |
-| 2.1.112–113 | Lobby/studio split, mobile controls, MP shard fix, vision doc |
-| docs | Full Gameplay Bible `info/gameplay-bible/01`–`16` + ALIGNMENT |
-
 ### Suggested next
 
-1. Human smoke: tall-grass encounter → weaken → Binding Crystal → Creature Box; RT monster kill → loot pickup
-2. Two-browser lobby smoke (`LOBBY_VERIFY.md`)
-3. ALIGNMENT slice **D** (Studio creator UX) or **E** (website ↔ game bridge) — product pick
-4. Ask product only when bible does not cover a decision
+1. Human smoke: claim Rockitten → shop buy dust/log or crystal → craft → tall grass capture; target wild Rockitten with hotbar
+2. Quest path that grants axe/pick (gather tools)
+3. ALIGNMENT slice **D** (Studio) or **E** (website bridge)
+
+### Smoke path (MPV)
+
+1. Party panel → Claim Rockitten / Open Lab  
+2. Step on shop tile → BUY Binding Crystal **or** BUY dust+log → CRAFT  
+3. Tall grass → TB battle → weaken → BAG Crystal  
+4. Target overworld Rockitten → hotbar Strike  
 
 ---
 
@@ -41,8 +40,7 @@ Verify: [`info/game/LOBBY_VERIFY.md`](./game/LOBBY_VERIFY.md)
 
 1. **This file**
 2. `info/vision/ECOSYSTEM.md`
-3. `info/gameplay-bible/README.md` + relevant bible pages (`07` constitution always)
+3. `info/gameplay-bible/README.md` + `07` constitution
 4. `info/gameplay-bible/ALIGNMENT.md`
 5. `info/DEVELOPMENT_RULES.md`
-6. Area docs under `info/{…}/`
-7. `/logs/LOCAL_CHANGELOG.md`
+6. `/logs/LOCAL_CHANGELOG.md`

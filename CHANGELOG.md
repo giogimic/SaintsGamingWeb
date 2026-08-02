@@ -1,7 +1,18 @@
-## [2.1.114] - 2026-08-02
+## [2.1.115] - 2026-08-02
+
+### Added
+- **NPC shop** server authority (`ShopManager`): buy/sell Binding Crystal materials; **CRAFT** tab for Binding Crystals.
+- Shared shop catalog + `craft_binding_crystal` recipe (`shopCatalog.ts`); seed script updated.
+- **Rockitten** as the single MPV test creature for TB encounters + RT overworld spawns (`testCreature.ts`).
+- `claim_starter` → real `PlayerCreature` (Rockitten); Party/Lab UI to claim.
+- Client sync for `sync_credits`, `inventory_sync`, `creature_spawned` / despawn / HP.
 
 ### Fixed
-- Binding Crystal capture requires a **real inventory stack** (no demo grant); missing item keeps the turn open.
+- Gathering no longer demo-grants tools — require real inventory (quest/shop/craft later).
+- Encounters require a real party creature (no fake Starter).
+- Crafting resolves player by accountId; Binding Crystal craft works with in-code recipe fallback.
+
+## [2.1.114] - 2026-08-02
 
 ### Added
 - Shared RT ability catalog + capture math helpers (`src/shared/game/combatAbilities.ts`) with tests.
@@ -9,6 +20,7 @@
 - Loot bag auto-despawn after 60s.
 
 ### Fixed
+- Binding Crystal capture requires a **real inventory stack** (no demo grant); missing item keeps the turn open.
 - Hotbar is **EXPLORING-only** (hidden in turn-based battles); capture abilities forbidden on RT path.
 - Encounter battles use **directMessage** (no longer force every player on the shard into BATTLE).
 - Capture uses bible 11 math; persists `PlayerCreature` with resolved `userId`; consumes Binding Crystal.

@@ -99,6 +99,23 @@ export class WorldManager {
       }
     }
 
+    // MPV: spawn a few roaming Rockitten for RT combat testing (same species as TB)
+    const wildSpots = [
+      { x: 10, y: 10 },
+      { x: 16, y: 14 },
+      { x: 8, y: 20 },
+    ];
+    for (const spot of wildSpots) {
+      this.engine.events.emit("spawnCreature", {
+        templateId: "rockitten",
+        entityType: "CREATURE",
+        mapId: instanceId,
+        x: spot.x,
+        y: spot.y,
+        spawnMode: "ROAMING",
+      });
+    }
+
     return instance;
   }
 

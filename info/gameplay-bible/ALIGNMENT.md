@@ -95,5 +95,6 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 
 ## Immediate next decision for product owner
 
-Slices **A–C implemented in 2.1.114**. Next product pick: **D** (Studio creator UX) or **E** (website ↔ game).  
-Human smoke recommended before expanding content (encounter capture + RT loot).
+Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
+Next product pick: **D** (Studio creator UX) or **E** (website ↔ game), or quest grants for gather tools.  
+Human smoke: claim Rockitten → shop/craft crystal → TB capture; RT hotbar vs wild Rockitten.

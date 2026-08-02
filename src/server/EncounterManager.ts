@@ -4,6 +4,7 @@ import {
   computeCaptureChance,
   rollCaptureSuccess,
 } from "@/shared/game/combatAbilities";
+import { TEST_CREATURE } from "@/shared/game/testCreature";
 
 const prisma = new PrismaClient();
 
@@ -66,11 +67,67 @@ export class EncounterManager {
   constructor(private engine: GameEngine) {
     this.engine.events.on("triggerEncounter", (data) => this.handleEncounterTrigger(data));
     this.engine.events.on("battleSubmitAction", (data) => this.handleBattleAction(data));
+    this.engine.events.on("claimStarter", (data) => this.handleClaimStarter(data));
   }
 
   private sendToPlayer(socketId: string | undefined, event: string, data: unknown) {
     if (!socketId) return;
     this.engine.events.emit("directMessage", { socketId, event, data });
+  }
+
+  /** Persist the single MPV starter (Rockitten) as a real PlayerCreature. */
+  private async handleClaimStarter(data: {
+    accountId: string;
+    socketId: string;
+    speciesSlug?: string;
+  }) {
+    const userId = await resolveUserId(data.accountId);
+    if (!userId) {
+      this.sendToPlayer(data.socketId, "show_toast", { message: "Cannot claim starter." });
+      return;
+    }
+
+    const slug = data.speciesSlug || TEST_CREATURE.slug;
+    if (slug !== TEST_CREATURE.slug) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: `MPV starter is ${TEST_CREATURE.name} only for now.`,
+      });
+      return;
+    }
+
+    const existingParty = await prisma.playerCreature.findFirst({
+      where: { userId, isParty: true },
+    });
+    if (existingParty) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: "You already have a starter in your party.",
+      });
+      this.sendToPlayer(data.socketId, "starter_claimed", {
+        creature: existingParty,
+        alreadyOwned: true,
+      });
+      return;
+    }
+
+    const creature = await prisma.playerCreature.create({
+      data: {
+        userId,
+        speciesSlug: TEST_CREATURE.slug,
+        nickname: TEST_CREATURE.name,
+        level: TEST_CREATURE.level,
+        currentHp: TEST_CREATURE.maxHp,
+        maxHp: TEST_CREATURE.maxHp,
+        stats: JSON.stringify(TEST_CREATURE.stats),
+        abilities: JSON.stringify(TEST_CREATURE.abilities),
+        isParty: true,
+        slotIndex: 0,
+      },
+    });
+
+    this.sendToPlayer(data.socketId, "show_toast", {
+      message: `${TEST_CREATURE.name} joined your party!`,
+    });
+    this.sendToPlayer(data.socketId, "starter_claimed", { creature, alreadyOwned: false });
   }
 
   private async handleEncounterTrigger(data: {
@@ -89,54 +146,45 @@ export class EncounterManager {
       if (b.accountId === data.accountId) return;
     }
 
-    const templates = [
-      { id: "Pebblad", spriteKey: "daemon_data", name: "Pebblad" },
-      { id: "Vulcan", spriteKey: "daemon_virus", name: "Vulcan" },
-      { id: "Aquan", spriteKey: "daemon_vaccine", name: "Aquan" },
-    ];
-    const template = templates[Math.floor(Math.random() * templates.length)];
-
-    const battleId = `battle_${Date.now()}_${data.accountId}`;
-
-    let playerCreatureData = {
-      id: "pc_1",
-      name: "Starter",
-      hp: 120,
-      maxHp: 120,
-      level: 6,
-      spriteKey: "daemon_vaccine",
-    };
-
     const userId = await resolveUserId(data.accountId);
-    if (userId) {
-      try {
-        const activeCreature = await prisma.playerCreature.findFirst({
-          where: { userId, isParty: true },
-          orderBy: { slotIndex: "asc" },
-        });
+    if (!userId) return;
 
-        if (activeCreature) {
-          // Fainted party lead cannot start a new encounter (bible 11 defeat)
-          if (activeCreature.currentHp <= 0) {
-            this.sendToPlayer(data.socketId, "show_toast", {
-              message: "Your lead creature is fainted. Heal it before battling.",
-            });
-            return;
-          }
-          playerCreatureData = {
-            id: activeCreature.id,
-            name: activeCreature.nickname || activeCreature.speciesSlug,
-            hp: activeCreature.currentHp,
-            maxHp: activeCreature.maxHp,
-            level: activeCreature.level,
-            spriteKey: "daemon_data",
-          };
-        }
-      } catch (e) {
-        console.error("[EncounterManager] Failed to fetch player creature", e);
-      }
+    let activeCreature;
+    try {
+      activeCreature = await prisma.playerCreature.findFirst({
+        where: { userId, isParty: true },
+        orderBy: { slotIndex: "asc" },
+      });
+    } catch (e) {
+      console.error("[EncounterManager] Failed to fetch player creature", e);
+      return;
     }
 
+    // Real starter required — no fake party lead
+    if (!activeCreature) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: "Claim your Rockitten starter before battling wild creatures.",
+      });
+      return;
+    }
+    if (activeCreature.currentHp <= 0) {
+      this.sendToPlayer(data.socketId, "show_toast", {
+        message: "Your lead creature is fainted. Heal it before battling.",
+      });
+      return;
+    }
+
+    const battleId = `battle_${Date.now()}_${data.accountId}`;
+    const playerCreatureData = {
+      id: activeCreature.id,
+      name: activeCreature.nickname || activeCreature.speciesSlug,
+      hp: activeCreature.currentHp,
+      maxHp: activeCreature.maxHp,
+      level: activeCreature.level,
+      spriteKey: TEST_CREATURE.overworldSprite,
+    };
+
+    // MPV: single wild species — Rockitten (same as RT combat)
     const battleState: BattleState = {
       id: battleId,
       accountId: data.accountId,
@@ -144,15 +192,15 @@ export class EncounterManager {
       mapId: data.mapId,
       phase: "WAITING_FOR_INPUT",
       wildCreature: {
-        templateId: template.id,
-        name: template.name,
-        hp: 100,
-        maxHp: 100,
-        level: 5,
-        spriteKey: template.spriteKey,
+        templateId: TEST_CREATURE.slug,
+        name: TEST_CREATURE.name,
+        hp: TEST_CREATURE.maxHp,
+        maxHp: TEST_CREATURE.maxHp,
+        level: TEST_CREATURE.level,
+        spriteKey: TEST_CREATURE.overworldSprite,
       },
       playerCreature: playerCreatureData,
-      log: [`A wild ${template.name} appeared!`],
+      log: [`A wild ${TEST_CREATURE.name} appeared!`],
     };
 
     this.activeBattles.set(battleId, battleState);
@@ -328,18 +376,14 @@ export class EncounterManager {
         await prisma.playerCreature.create({
           data: {
             userId,
-            speciesSlug: battle.wildCreature.templateId,
+            speciesSlug: battle.wildCreature.templateId || TEST_CREATURE.slug,
+            nickname: battle.wildCreature.name || TEST_CREATURE.name,
             level: battle.wildCreature.level,
             currentHp: Math.max(1, battle.wildCreature.hp),
             maxHp: battle.wildCreature.maxHp,
-            stats: JSON.stringify({
-              physicalPower: 10,
-              physicalDefense: 10,
-              abilityPower: 10,
-              abilityDefense: 10,
-              combatTempo: 100,
-            }),
-            abilities: JSON.stringify([{ abilitySlug: "tackle", currentCooldown: 0 }]),
+            stats: JSON.stringify(TEST_CREATURE.stats),
+            abilities: JSON.stringify(TEST_CREATURE.abilities),
+            isParty: false,
           },
         });
         console.log(

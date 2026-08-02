@@ -538,6 +538,80 @@ export default function TheLobby({
       useGameStore.getState().showToast(data.message);
     });
 
+    socket.on('sync_credits', (data) => {
+      if (typeof data?.credits === 'number') {
+        useGameStore.setState((state) => {
+          state.player.credits = data.credits;
+        });
+      }
+    });
+
+    socket.on('inventory_sync', (data) => {
+      if (data?.inventory && typeof data.inventory === 'object') {
+        useGameStore.setState((state) => {
+          state.player.inventory = data.inventory;
+        });
+      }
+    });
+
+    socket.on('starter_claimed', (data) => {
+      const slug = data?.creature?.speciesSlug;
+      if (slug) {
+        useGameStore.getState().catchDaemon(slug);
+        useGameStore.setState((state) => {
+          state.player.activeDaemonId = slug;
+        });
+      }
+      if (useGameStore.getState().gameMode === 'PROFESSOR_LAB') {
+        useGameStore.getState().setGameMode('EXPLORING');
+      }
+    });
+
+    socket.on('creature_spawned', (data) => {
+      if (!data?.entityId || data.entityType === 'NPC') return;
+      useGameStore.setState((state) => {
+        const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
+        const ent = {
+          id: data.entityId,
+          type: 'MONSTER' as const,
+          spriteKey: data.spriteKey || data.templateId || 'rockitten',
+          position: { x: data.x, y: data.y },
+          isMoving: !!data.isMoving,
+          facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
+          mapId: data.mapId,
+          name: data.name || data.templateId,
+        };
+        if (idx >= 0) state.mapEntities[idx] = ent;
+        else state.mapEntities.push(ent);
+      });
+    });
+
+    socket.on('creature_despawned', (data) => {
+      if (!data?.entityId) return;
+      useGameStore.setState((state) => {
+        state.mapEntities = state.mapEntities.filter((e) => e.id !== data.entityId);
+        if (state.combatTarget?.entityId === data.entityId) {
+          state.combatTarget = null;
+        }
+      });
+    });
+
+    socket.on('creature_hp_update', (data) => {
+      if (!data?.entityId) return;
+      const target = useGameStore.getState().combatTarget;
+      if (target && target.entityId === data.entityId && typeof data.hpPercent === 'number') {
+        useGameStore.getState().setCombatTarget({
+          entityId: target.entityId,
+          name: target.name,
+          maxHp: target.maxHp,
+          isCasting: target.isCasting,
+          castName: target.castName,
+          behavior: target.behavior,
+          hp: Math.max(0, Math.round(target.maxHp * data.hpPercent)),
+        });
+      }
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
