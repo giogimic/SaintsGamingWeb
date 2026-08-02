@@ -61,14 +61,16 @@ export function TurnBattleOverlay() {
           </div>
           
           <div className="w-48 h-48 relative flex items-center justify-center filter drop-shadow-2xl">
-            {/* MVP Placeholder for sprite, ideally an img tag using wildCreature.spriteKey */}
             <img 
-              src={`/assets/sprites/${wildCreature.spriteKey}.png`} 
+              src={
+                wildCreature.spriteKey.startsWith('/')
+                  ? wildCreature.spriteKey
+                  : `/game-assets/${wildCreature.spriteKey}.png`
+              }
               alt={wildCreature.name}
               className="max-w-full max-h-full object-contain pixelated"
               onError={(e) => {
-                // Fallback to a placeholder if sprite doesn't exist yet
-                (e.target as HTMLImageElement).src = '/assets/sprites/16x16-rpg-monsters.png';
+                (e.target as HTMLImageElement).src = '/game-assets/daemon_data.png';
               }}
             />
           </div>
@@ -78,11 +80,15 @@ export function TurnBattleOverlay() {
         <div className="self-start flex items-end gap-4 z-10 w-full max-w-md mt-16 animate-in slide-in-from-left duration-700 delay-300">
           <div className="w-64 h-64 relative flex items-center justify-center filter drop-shadow-2xl">
              <img 
-              src={`/assets/sprites/${playerCreature.spriteKey}.png`} 
+              src={
+                playerCreature.spriteKey.startsWith('/')
+                  ? playerCreature.spriteKey
+                  : `/game-assets/${playerCreature.spriteKey}.png`
+              }
               alt={playerCreature.name}
-              className="max-w-full max-h-full object-contain pixelated scale-x-[-1]" // Flip so it faces right
+              className="max-w-full max-h-full object-contain pixelated scale-x-[-1]"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/assets/sprites/16x16-rpg-characters.png';
+                (e.target as HTMLImageElement).src = '/game-assets/daemon_vaccine.png';
               }}
             />
           </div>
@@ -141,10 +147,10 @@ export function TurnBattleOverlay() {
           
           <button 
             disabled={phase !== 'WAITING_FOR_INPUT'}
-            onClick={() => handleAction('ITEM', undefined, 'binding_crystal')}
+            onClick={() => handleAction('ITEM', undefined, 'film_standard')}
             className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            BAG (Crystal)
+            EXPOSE FILM
           </button>
           
           <button 

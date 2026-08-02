@@ -758,7 +758,7 @@ export class BabylonEngine {
           }
 
           // 3D Objects Instancing
-          if (tileId === 1 || tileId === 2 || tileId === 3 || tileId === 5 || tileId === 6 || tileId === 9 || tileId === 10 || tileId === 12) {
+          if (tileId === 1 || tileId === 2 || tileId === 3 || tileId === 5 || tileId === 6 || tileId === 7 || tileId === 9 || tileId === 10 || tileId === 11 || tileId === 12) {
             let objs = baseObjects[tileId];
             if (!objs) {
               objs = [];
@@ -812,6 +812,14 @@ export class BabylonEngine {
                 buoyMat.emissiveColor = new Color3(0.15, 0.03, 0.01);
                 buoy.material = buoyMat;
                 objs.push(buoy);
+              } else if (tileId === 7) {
+                const stall = MeshBuilder.CreateBox(`base_shop`, { width: tileSize * 0.7, height: tileSize * 0.55, depth: tileSize * 0.55 }, this.scene);
+                const stallMat = new StandardMaterial(`baseShopMat`, this.scene);
+                stallMat.diffuseColor = new Color3(0.72, 0.55, 0.18);
+                stallMat.emissiveColor = new Color3(0.1, 0.07, 0.02);
+                stall.material = stallMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(stall);
+                objs.push(stall);
               } else if (tileId === 9) {
                 const anvil = MeshBuilder.CreateBox(`base_anvil`, { width: tileSize * 0.5, height: tileSize * 0.35, depth: tileSize * 0.4 }, this.scene);
                 const anvilMat = new StandardMaterial(`baseAnvilMat`, this.scene);
@@ -821,6 +829,14 @@ export class BabylonEngine {
                 anvil.material = anvilMat;
                 if (this.shadowGen) this.shadowGen.addShadowCaster(anvil);
                 objs.push(anvil);
+              } else if (tileId === 11) {
+                const thicket = MeshBuilder.CreateBox(`base_bramble`, { width: tileSize * 0.95, height: tileSize * 0.85, depth: tileSize * 0.95 }, this.scene);
+                const brambleMat = new StandardMaterial(`baseBrambleMat`, this.scene);
+                brambleMat.diffuseColor = new Color3(0.22, 0.38, 0.12);
+                brambleMat.emissiveColor = new Color3(0.04, 0.08, 0.02);
+                thicket.material = brambleMat;
+                if (this.shadowGen) this.shadowGen.addShadowCaster(thicket);
+                objs.push(thicket);
               } else if (tileId === 12) {
                 const pillar = MeshBuilder.CreateBox(`base_terminal`, { width: tileSize * 0.35, height: tileSize * 1.0, depth: tileSize * 0.35 }, this.scene);
                 const pillarMat = new StandardMaterial(`baseTerminalMat`, this.scene);
@@ -867,10 +883,18 @@ export class BabylonEngine {
               const buoyInst = objs[0].createInstance(`buoy_${r}_${c}`);
               buoyInst.position = new Vector3(posX + 0.2, 0.25, posZ - 0.1);
               buoyInst.parent = this.rootNode;
+            } else if (tileId === 7) {
+              const shopInst = objs[0].createInstance(`shop_${r}_${c}`);
+              shopInst.position = new Vector3(posX, tileSize * 0.28, posZ);
+              shopInst.parent = this.rootNode;
             } else if (tileId === 9) {
               const anvilInst = objs[0].createInstance(`anvil_${r}_${c}`);
               anvilInst.position = new Vector3(posX, tileSize * 0.18, posZ);
               anvilInst.parent = this.rootNode;
+            } else if (tileId === 11) {
+              const brambleInst = objs[0].createInstance(`bramble_${r}_${c}`);
+              brambleInst.position = new Vector3(posX, tileSize * 0.42, posZ);
+              brambleInst.parent = this.rootNode;
             } else if (tileId === 12) {
               const pillarInst = objs[0].createInstance(`terminal_${r}_${c}`);
               pillarInst.position = new Vector3(posX, tileSize * 0.5, posZ);
@@ -979,6 +1003,11 @@ export class BabylonEngine {
         mat.specularColor = new Color3(0.3, 0.3, 0.35);
         mat.specularPower = 40;
         break;
+      // Bramble barrier (Q4)
+      case 11:
+        mat.diffuseColor = new Color3(0.18 + tone, 0.32 + tone, 0.1 + tone);
+        mat.emissiveColor = new Color3(0.03, 0.06, 0.01);
+        break;
       // Base terminal
       case 12:
         mat.diffuseColor = new Color3(0.08 + tone, 0.1 + tone, 0.22 + tone);
@@ -986,6 +1015,33 @@ export class BabylonEngine {
         break;
       default: mat.diffuseColor = new Color3(0.18 + tone, 0.44 + tone, 0.20 + tone); break;
     }
+  }
+
+  /** Remove decorative prop instances for a cell (bramble/tree/ore after harvest/clear). */
+  public clearTileProps(r: number, c: number) {
+    if (!this.scene) return;
+    const prefixes = [
+      `wall_${r}_${c}`,
+      `tuft_${r}_${c}`,
+      `trunk_${r}_${c}`,
+      `tree_${r}_${c}`,
+      `ore_${r}_${c}`,
+      `buoy_${r}_${c}`,
+      `shop_${r}_${c}`,
+      `anvil_${r}_${c}`,
+      `bramble_${r}_${c}`,
+      `terminal_${r}_${c}`,
+    ];
+    for (const mesh of [...this.scene.meshes]) {
+      if (prefixes.some((p) => mesh.name === p || mesh.name.startsWith(`${p}_`))) {
+        mesh.dispose();
+      }
+    }
+  }
+
+  public setLogicTile(r: number, c: number, tileId: number) {
+    this.clearTileProps(r, c);
+    this.updateSingleTile(r, c, tileId, -1);
   }
 
   public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>) {

@@ -1,4 +1,6 @@
 import { GameEngine } from "./GameEngine";
+import { toBaseMapId } from "@/shared/net/mapIds";
+import { DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
 // Using require for legacy JS modules (they can be converted to TS later)
 const mapLoader = require("../engine/map-loader.js");
@@ -99,11 +101,64 @@ export class WorldManager {
       }
     }
 
+    // Demo NPC: Warden Vance on plaza path (entityId → npc_warden_vance_*)
+    this.engine.events.emit("spawnCreature", {
+      templateId: "warden_vance",
+      entityType: "NPC",
+      mapId: instanceId,
+      x: DEMO_VANCE_SPAWN.x,
+      y: DEMO_VANCE_SPAWN.y,
+      spawnMode: "STATIC",
+    });
+
+    // MPV: spawn a few roaming Rockitten for RT combat testing (same species as TB)
+    for (const spot of DEMO_WILD_SPOTS) {
+      this.engine.events.emit("spawnCreature", {
+        templateId: "rockitten",
+        entityType: "CREATURE",
+        mapId: instanceId,
+        x: spot.x,
+        y: spot.y,
+        spawnMode: "ROAMING",
+      });
+    }
+
     return instance;
   }
 
   public getInstance(instanceId: string): MapInstance | undefined {
     return this.instances.get(instanceId);
+  }
+
+  /** Resolve by instanceId or base mapId (client often sends DEMO_SANDBOX). */
+  public resolveInstance(mapOrInstanceId: string): MapInstance | undefined {
+    if (!mapOrInstanceId) return undefined;
+    const direct = this.instances.get(mapOrInstanceId);
+    if (direct) return direct;
+    const base = toBaseMapId(mapOrInstanceId);
+    for (const inst of this.instances.values()) {
+      if (inst.instanceId === mapOrInstanceId) return inst;
+      if (inst.mapId === base || inst.mapId === mapOrInstanceId) return inst;
+    }
+    return undefined;
+  }
+
+  /** Clear bramble tile in live cache + persist DEMO map grid when applicable. */
+  public clearBrambleAt(baseMapId: string, x: number, y: number): boolean {
+    const ok = mapLoader.setCachedTile(baseMapId, x, y, 0);
+    if (!ok) return false;
+    const map = mapLoader.getCachedMap(baseMapId);
+    if (map?.grid) {
+      const gridJson = JSON.stringify(map.grid);
+      // Persist without invalidateMap so live players keep the cleared tile
+      const { PrismaClient } = require("@prisma/client");
+      const prisma = new PrismaClient({ log: ["error"] });
+      void Promise.all([
+        prisma.worldMap.update({ where: { id: baseMapId }, data: { gridData: gridJson } }).catch(() => null),
+        prisma.gameMap.update({ where: { id: baseMapId }, data: { tilesetData: gridJson } }).catch(() => null),
+      ]).finally(() => prisma.$disconnect().catch(() => null));
+    }
+    return true;
   }
 
   public forceJoinInstance(instanceId: string, accountId: string): MapInstance | undefined {

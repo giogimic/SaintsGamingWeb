@@ -7,13 +7,14 @@ import { useGameStore } from '../store';
 import { loadMap } from '../data/maps';
 import type { GameMapData } from '../data/maps';
 import { soundSynth } from '@/engine/sound-synth';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand } from 'lucide-react';
 import { findPath } from '@/engine/pathfinding';
 import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
+import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileControls';
 
 import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
+import { isSameBaseMap } from '@/shared/net/mapIds';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -60,12 +61,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
   const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isEngineReady, setIsEngineReady] = useState(false);
-
-  useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
+  const tryMoveDirectionRef = useRef<(dx: number, dy: number) => void>(() => {});
+  const handleInteractRef = useRef<() => void>(() => {});
 
   // Async map state — engine only mounts AFTER map data is ready
   const [mapData, setMapData] = useState<GameMapData | null>(null);
@@ -153,19 +151,31 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      if (isDevEditorOpen) {
+      const spawn = gate.targetSpawn || { x: 6, y: 2 };
+      const finishWarp = () => {
         useGameStore.setState({ currentMapId: gate.targetMapId });
-        setPlayerPosition(gate.targetSpawn || { x: 6, y: 2 });
+        setPlayerPosition(spawn);
+        // Re-join server map room so other players / chat stay in sync after warps
+        const p = useGameStore.getState().player;
+        emitSocketEvent?.('join_map', {
+          accountId: p.accountId,
+          mapId: gate.targetMapId,
+          x: spawn.x,
+          y: spawn.y,
+          name: p.name || 'Player',
+          spriteId: p.spriteId || 'adventurer',
+        });
         showToast(`Warped to ${gate.targetMapId}`);
+      };
+      if (isDevEditorOpen) {
+        finishWarp();
       } else {
         if (store.isMapTransitioning) return;
         store.setIsMapTransitioning(true);
         setTimeout(() => {
-          useGameStore.setState({ currentMapId: gate.targetMapId });
-          setPlayerPosition(gate.targetSpawn || { x: 6, y: 2 });
+          finishWarp();
           setTimeout(() => {
             useGameStore.getState().setIsMapTransitioning(false);
-            showToast(`Warped to ${gate.targetMapId}`);
           }, 100);
         }, 300);
       }
@@ -225,6 +235,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const curY = currentPlayer.position?.y ?? 2;
     tryMovePlayerTo(curX + dx, curY + dy);
   };
+  tryMoveDirectionRef.current = tryMoveDirection;
 
   // Interact / Talk Handler
   const handleInteract = () => {
@@ -271,13 +282,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
 
     if (result.type === 'NPC_DIALOGUE') {
-      useGameStore.setState({
-        activeDialog: {
-          npcId: result.npcId,
-          npcName: result.npcName,
-          text: result.text
-        },
-        gameMode: 'DIALOG'
+      const rawId = String(result.npcId || '');
+      const dialogueNpcId =
+        rawId.includes('vance') || rawId.includes('warden')
+          ? 'npc_warden_vance'
+          : rawId;
+      // Server-authoritative dialogue (Vance grants / quest report)
+      store.emitSocketEvent?.('npc_interact', {
+        mapId: currentMapId,
+        targetId: dialogueNpcId,
       });
       return;
     }
@@ -286,6 +299,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       showToast('Nothing to interact with here.');
     }
   };
+  handleInteractRef.current = handleInteract;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -296,6 +310,23 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [clearAutoWalk]);
+
+  // MobileControls → same movement / interact pipeline as keyboard
+  useEffect(() => {
+    const onMove = (e: Event) => {
+      const { dx, dy } = (e as CustomEvent<{ dx: number; dy: number }>).detail || {};
+      if (typeof dx === 'number' && typeof dy === 'number') {
+        tryMoveDirectionRef.current(dx, dy);
+      }
+    };
+    const onInteract = () => handleInteractRef.current();
+    window.addEventListener(LOBBY_TOUCH_MOVE_EVENT, onMove);
+    window.addEventListener(LOBBY_TOUCH_INTERACT_EVENT, onInteract);
+    return () => {
+      window.removeEventListener(LOBBY_TOUCH_MOVE_EVENT, onMove);
+      window.removeEventListener(LOBBY_TOUCH_INTERACT_EVENT, onInteract);
+    };
+  }, []);
 
   useEffect(() => {
     const handleCombatUpdate = (e: Event) => {
@@ -349,13 +380,49 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
 
+    const handleTileChanged = (e: Event) => {
+      const data = (e as CustomEvent).detail || {};
+      const x = data.x;
+      const y = data.y;
+      const tileId = typeof data.tileId === 'number' ? data.tileId : 0;
+      if (typeof x !== 'number' || typeof y !== 'number') return;
+
+      setMapData((prev) => {
+        if (!prev?.grid?.[y]) return prev;
+        const nextGrid = prev.grid.map((row, rowIdx) =>
+          rowIdx === y ? row.map((cell, colIdx) => (colIdx === x ? tileId : cell)) : row
+        );
+        return { ...prev, grid: nextGrid };
+      });
+
+      if (engineRef.current?.setLogicTile) {
+        engineRef.current.setLogicTile(y, x, tileId);
+      } else if (engineRef.current) {
+        engineRef.current.clearTileProps?.(y, x);
+        engineRef.current.updateSingleTile(y, x, tileId, -1);
+      }
+    };
+
+    const handleNodeDepletedFallback = (e: Event) => {
+      const data = (e as CustomEvent).detail || {};
+      const { x, y } = data;
+      // DEMO_SANDBOX has no rich tile layers — hide prop meshes on deplete
+      if (typeof x === 'number' && typeof y === 'number' && engineRef.current?.clearTileProps) {
+        engineRef.current.clearTileProps(y, x);
+      }
+    };
+
     window.addEventListener('combat_update_event', handleCombatUpdate);
     window.addEventListener('node_depleted_event', handleNodeDepleted);
+    window.addEventListener('node_depleted_event', handleNodeDepletedFallback);
     window.addEventListener('node_respawned_event', handleNodeRespawned);
+    window.addEventListener('lobby_tile_changed', handleTileChanged);
     return () => {
       window.removeEventListener('combat_update_event', handleCombatUpdate);
       window.removeEventListener('node_depleted_event', handleNodeDepleted);
+      window.removeEventListener('node_depleted_event', handleNodeDepletedFallback);
       window.removeEventListener('node_respawned_event', handleNodeRespawned);
+      window.removeEventListener('lobby_tile_changed', handleTileChanged);
     };
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
 
@@ -398,9 +465,29 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const trueId = entityId.replace('npc_', '');
-        const npc = activeMap.npcs?.find((n: any) => n.id === trueId);
-        targetName = npc?.name || `NPC ${trueId}`;
+        const trueId = entityId.replace(/^npc_/, '');
+        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === entityId);
+        targetName = npc?.name || (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
+        // Demo / dialogue path — talk to NPCs (Vance grants tools & film)
+        const dialogueNpcId = trueId.startsWith('warden') || trueId.includes('vance')
+          ? (trueId.startsWith('npc_') ? trueId : `npc_${trueId}`)
+          : (entityId.includes('warden') || entityId.includes('vance') ? 'npc_warden_vance' : entityId);
+        state.emitSocketEvent?.('npc_interact', {
+          mapId: state.currentMapId || state.instanceId,
+          targetId: dialogueNpcId.includes('vance') ? 'npc_warden_vance' : dialogueNpcId,
+        });
+        state.setGameMode('DIALOG');
+        return;
+      } else if (entityId.startsWith('creature_')) {
+        targetName = 'Wild Creature';
+        state.setCombatTarget({
+          entityId,
+          name: targetName,
+          hp: 80,
+          maxHp: 80,
+          behavior: 'HOSTILE',
+        });
+        return;
       } else if (state.otherPlayers?.[entityId]) {
         targetName = state.otherPlayers[entityId].name;
       }
@@ -512,7 +599,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const activeEntities = new Set<string>();
         
         mapEntities.forEach((ent) => {
-          if (ent.mapId === currentMapId || !ent.mapId) {
+          if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
             activeEntities.add(ent.id);
             const ex = ent.position.x - mapWidth / 2;
             const ez = mapHeight / 2 - ent.position.y;
@@ -521,7 +608,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               name: ent.name || '',
               x: ex,
               y: ez,
-              spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/assets/sprites/${ent.spriteKey}.png`) : undefined,
+              spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/game-assets/npc/${ent.spriteKey}.png`) : undefined,
               isPlayer: false,
               spriteConfig: ent.spriteConfig
             });
@@ -795,7 +882,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
       
-      {/* Quest Tracker */}
+      {/* Quest Tracker (single instance) */}
       {!isDevEditorOpen && <QuestTrackerOverlay />}
 
       {/* Crafting Menu */}
@@ -806,56 +893,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       )}
       
       <CanvasHudBadge activeMapName={activeMap?.name} currentMapId={currentMapId} />
-      
-      <QuestTrackerOverlay />
-
-      {/* On-Screen Touch / Mouse Control D-Pad & Talk Action Button */}
-      {isTouchDevice && (
-        <div className="absolute bottom-6 right-6 z-20 flex flex-col items-center gap-2 pointer-events-auto">
-          <button
-          onClick={handleInteract}
-          className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-full shadow-xl border border-amber-400/50 flex items-center gap-1.5 active:scale-95 transition-all font-mono"
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>TALK / INTERACT (E)</span>
-        </button>
-
-        <div className="relative w-32 h-32 bg-black/60 backdrop-blur rounded-full border border-white/10 p-2 flex items-center justify-center shadow-2xl">
-          {/* D-Pad Buttons */}
-          <button
-            onClick={() => tryMoveDirection(0, -1)}
-            className="absolute top-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-t-lg active:scale-90 transition-transform"
-            title="Move Up (W)"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => tryMoveDirection(-1, 0)}
-            className="absolute left-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-l-lg active:scale-90 transition-transform"
-            title="Move Left (A)"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => tryMoveDirection(1, 0)}
-            className="absolute right-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-r-lg active:scale-90 transition-transform"
-            title="Move Right (D)"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => tryMoveDirection(0, 1)}
-            className="absolute bottom-1 p-2.5 bg-cyan-950/80 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/40 rounded-b-lg active:scale-90 transition-transform"
-            title="Move Down (S)"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          <div className="w-6 h-6 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
-            <Hand className="w-3 h-3 text-cyan-400" />
-          </div>
-        </div>
-        </div>
-      )}
     </div>
   );
 };

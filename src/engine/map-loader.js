@@ -17,6 +17,29 @@ const mapCache = {};
 // Logic tiles cache: tileId -> { isSolid, interactable, ... }
 let logicTilesCache = null;
 
+/** Canonical DEMO_SANDBOX layout (keep in sync with src/server/demoMapSeed.ts). */
+function buildDemoSandboxGridFallback() {
+  const w = 30;
+  const h = 30;
+  const grid = [];
+  for (let y = 0; y < h; y++) {
+    const row = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 0;
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) tile = 1;
+      else if (x === 11 && y === 14) tile = 7;
+      else if (x === 11 && y === 15) tile = 9;
+      else if (x >= 16 && x <= 18 && y >= 12 && y <= 14) tile = 2;
+      else if (x >= 10 && x <= 20 && y >= 2 && y <= 8) tile = 2;
+      else if (y === 10 && x >= 12 && x <= 16) tile = 11;
+      else if (x >= 20 && y >= 18 && x <= 27 && y <= 27) tile = (x + y) % 2 === 0 ? 5 : 6;
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
 /**
  * Load a map's collision data from the database.
  * Uses the unified SaintsMap table.
@@ -86,41 +109,45 @@ async function loadMapData(mapId) {
     let width = 20;
     let height = 20;
 
-    // Auto-Seed SAINTS_VILLAGE as a sandbox map if missing
+    // Auto-seed walkable DEMO_SANDBOX / SAINTS_VILLAGE if missing from DB
     if (mapId === 'SAINTS_VILLAGE' || mapId === 'DEMO_SANDBOX') {
       width = 30;
       height = 30;
-      grid = [];
-      for (let y = 0; y < height; y++) {
-        const row = [];
-        for (let x = 0; x < width; x++) {
-          let tile = 1;
-          if (x < 10 && y < 10) tile = 3;
-          else if (x > 20 && y < 10) tile = 10;
-          else if (x > 20 && y > 20) tile = (x + y) % 2 === 0 ? 5 : 6;
-          else if (x >= 12 && x <= 16 && y >= 12 && y <= 16) tile = 18;
-          row.push(tile);
-        }
-        grid.push(row);
-      }
-      npcs = [{ id: "npc_guide_1", templateId: "Villager", name: "Guide", x: 14, y: 14, sprite: "npc_default", direction: "down" }];
-      
-      // Attempt to save this auto-seeded map back to the database asynchronously
+      grid = buildDemoSandboxGridFallback();
+      npcs = [{ id: "npc_guide_1", templateId: "Villager", name: "Guide", x: 15, y: 15, sprite: "npc_default", direction: "down" }];
+      const encounters = [{ speciesSlug: "rockitten", weight: 1, minLevel: 3, maxLevel: 5 }];
+
       prisma.gameMap.upsert({
-        where: { id: 'SAINTS_VILLAGE' },
-        update: {},
+        where: { id: mapId },
+        update: {
+          tilesetData: JSON.stringify(grid),
+          npcs: JSON.stringify(npcs),
+          encounters: JSON.stringify(encounters),
+          width,
+          height,
+        },
         create: {
-          id: 'SAINTS_VILLAGE',
-          name: "Saints Village Sandbox",
+          id: mapId,
+          name: mapId === 'DEMO_SANDBOX' ? 'Demo Sandbox' : 'Saints Village Sandbox',
           width,
           height,
           tilesetData: JSON.stringify(grid),
           npcs: JSON.stringify(npcs),
+          encounters: JSON.stringify(encounters),
         }
-      }).catch(err => console.error("[MapLoader] Failed to auto-seed SAINTS_VILLAGE:", err.message));
+      }).catch(err => console.error(`[MapLoader] Failed to auto-seed ${mapId}:`, err.message));
     }
 
-    mapCache[mapId] = { id: mapId, name: mapId === 'SAINTS_VILLAGE' ? 'Saints Village Sandbox' : 'Unknown', grid, gates: {}, npcs, width, height };
+    mapCache[mapId] = {
+      id: mapId,
+      name: mapId === 'DEMO_SANDBOX' ? 'Demo Sandbox' : (mapId === 'SAINTS_VILLAGE' ? 'Saints Village Sandbox' : 'Unknown'),
+      grid,
+      gates: {},
+      npcs,
+      encountersData: [{ speciesSlug: "rockitten", weight: 1, minLevel: 3, maxLevel: 5 }],
+      width,
+      height,
+    };
     return mapCache[mapId];
 
   } catch (err) {
@@ -257,6 +284,21 @@ function getCachedMap(mapId) {
   return mapCache[mapId] || null;
 }
 
+/** Alias used by InventoryManager / gather handlers. */
+function getMapDataSync(mapId) {
+  return getCachedMap(mapId);
+}
+
+/**
+ * Mutate a live cached tile (e.g. CLEAR_BRAMBLE). Returns false if map not cached.
+ */
+function setCachedTile(mapId, x, y, tileId) {
+  const map = mapCache[mapId];
+  if (!map || !map.grid || !map.grid[y] || map.grid[y][x] === undefined) return false;
+  map.grid[y][x] = tileId;
+  return true;
+}
+
 /**
  * Invalidate a cached map (e.g., after a dev editor save).
  * 
@@ -264,6 +306,10 @@ function getCachedMap(mapId) {
  */
 function invalidateMap(mapId) {
   delete mapCache[mapId];
+}
+
+function invalidateLogicTiles() {
+  logicTilesCache = null;
 }
 
 /**
@@ -330,7 +376,10 @@ module.exports = {
   isWalkableSync,
   getMapDimensions,
   getCachedMap,
+  getMapDataSync,
+  setCachedTile,
   invalidateMap,
+  invalidateLogicTiles,
   saveMapData,
   initialize,
   shutdown,

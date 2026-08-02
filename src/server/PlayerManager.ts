@@ -2,6 +2,7 @@ import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
+import { isSameBaseMap } from "@/shared/net/mapIds";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export interface PlayerState {
@@ -168,8 +169,8 @@ export class PlayerManager {
       instanceId = instance.instanceId;
     }
 
-    const startX = data.x || 6;
-    const startY = data.y || 2;
+    const startX = typeof data.x === "number" ? data.x : 14;
+    const startY = typeof data.y === "number" ? data.y : 15;
     const startZone = InterestManager.zoneOf(startX, startY);
 
     const player: PlayerState = {
@@ -191,15 +192,18 @@ export class PlayerManager {
       isLocked: false
     };
 
-    // Phase 5: DB Hydration (Cold to Hot State)
+    // Phase 5: DB Hydration — restore coords only when the saved base map
+    // matches this join. Never overwrite the live instanceId with a stale
+    // map id (that put players in different rooms and hid multiplayer).
     const savedPos = await this.persistence.loadPlayerPosition(accountId);
     if (savedPos) {
-      player.mapId = savedPos.mapId;
-      player.x = savedPos.x;
-      player.y = savedPos.y;
-      const z = InterestManager.zoneOf(player.x, player.y);
-      player.zoneX = z.zx;
-      player.zoneY = z.zy;
+      if (isSameBaseMap(String(savedPos.mapId || ""), String(data.mapId || ""))) {
+        player.x = savedPos.x;
+        player.y = savedPos.y;
+        const z = InterestManager.zoneOf(player.x, player.y);
+        player.zoneX = z.zx;
+        player.zoneY = z.zy;
+      }
     }
 
     this.players.set(entityId, player);
@@ -240,6 +244,25 @@ export class PlayerManager {
         mapId: data.mapId
       }
     });
+
+    // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
+    let mapCreatures: any[] = [];
+    this.engine.events.emit("requestCreaturesInMap", {
+      mapId: player.mapId,
+      callback: (list: any[]) => {
+        mapCreatures = list || [];
+      },
+    });
+    for (const creature of mapCreatures) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "creature_spawned",
+        data: {
+          ...creature,
+          spriteKey: creature.templateId,
+        },
+      });
+    }
 
     // Broadcast join to others
     this.engine.events.emit("networkBroadcast", {

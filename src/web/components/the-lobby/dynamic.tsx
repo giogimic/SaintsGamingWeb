@@ -2,15 +2,21 @@
 
 import dynamic from 'next/dynamic';
 
-export const TheLobby = dynamic(() => import('./index'), {
+const loading = (
+  <div className="w-full h-full min-h-[320px] bg-black border border-white/10 rounded-lg flex items-center justify-center font-mono text-[#cbb26a]">
+    Initializing The Lobby...
+  </div>
+);
+
+export const TheLobby = dynamic(() => import('./PlayerClient'), {
   ssr: false,
-  loading: () => (
-    <div className="w-[480px] h-[480px] bg-black border border-white/10 rounded-lg flex items-center justify-center font-mono text-green-500">
-      Initializing The Lobby...
-    </div>
-  ),
+  loading: () => loading,
+});
+
+export const StudioLobby = dynamic(() => import('./StudioClient'), {
+  ssr: false,
+  loading: () => loading,
 });
 
 // Backwards compatibility alias
 export const CyberTerminal = TheLobby;
-

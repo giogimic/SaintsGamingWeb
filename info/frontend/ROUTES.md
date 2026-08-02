@@ -43,7 +43,8 @@ Optional UCP link when `show_ucp_in_nav` SiteSetting is true.
 | `/forum/[slug]/new` | New thread |
 | `/forum/t/[slug]` | Thread view |
 | `/forum/t/[slug]/edit` | Edit thread |
-| `/lobby` | MMO client — [`../game/OVERVIEW.md`](../game/OVERVIEW.md) |
+| `/lobby` | MMO player client — [`../game/OVERVIEW.md`](../game/OVERVIEW.md) |
+| `/studio` | Developer Studio client (server-gated Developer+) |
 | `/user/[username]` | Public profile |
 | `/dashboard` | User dashboard (if used) |
 
