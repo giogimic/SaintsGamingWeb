@@ -22,6 +22,9 @@
 - **worldSkillName** / **worldSkillDescription**
 - **abilities[]** TB openers
 - **isStarter** / **isWildSpawn** / **isActive** / flavor / tag
+- **Shiny:** `shinyEnabled`, `shinyUseGlobalChance`, `shinyChancePercent`, optional `shinySpriteOverworld` / `shinySpriteBattle` / `shinySpriteBack` (empty = default look). Global % lives on GameConfig / Studio Classes panel.
+
+See also: [`CLASS_SKILLS_SHINY.md`](./CLASS_SKILLS_SHINY.md)
 
 ## Seed starters
 

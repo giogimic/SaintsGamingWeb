@@ -83,6 +83,88 @@ export class EncounterManager {
     this.engine.events.emit("directMessage", { socketId, event, data });
   }
 
+  /**
+   * Prefer WorldMap.encountersData / EncounterTable for the map;
+   * fall back to CreatureDef isWildSpawn catalog.
+   */
+  private async pickWildCreature(mapId: string) {
+    try {
+      const map = await prisma.worldMap.findUnique({
+        where: { id: mapId },
+        select: { encountersData: true, name: true },
+      });
+      if (map?.encountersData) {
+        let entries: Array<{ slug?: string; speciesSlug?: string; weight?: number }> = [];
+        try {
+          entries = JSON.parse(map.encountersData || "[]");
+        } catch {
+          entries = [];
+        }
+        if (Array.isArray(entries) && entries.length > 0) {
+          const weighted = entries
+            .map((e) => ({
+              slug: e.slug || e.speciesSlug || "",
+              weight: Math.max(1, e.weight || 1),
+            }))
+            .filter((e) => e.slug);
+          if (weighted.length > 0) {
+            const total = weighted.reduce((s, e) => s + e.weight, 0);
+            let roll = Math.random() * total;
+            let picked = weighted[0].slug;
+            for (const e of weighted) {
+              roll -= e.weight;
+              if (roll <= 0) {
+                picked = e.slug;
+                break;
+              }
+            }
+            const def = await loadCreatureDef(picked);
+            if (def) return def;
+          }
+        }
+      }
+
+      // EncounterTable by map id / name
+      const table =
+        (await prisma.encounterTable.findFirst({ where: { mapName: mapId } })) ||
+        (await prisma.encounterTable.findFirst({ where: { slug: mapId } }));
+      if (table?.data) {
+        try {
+          const raw = JSON.parse(table.data);
+          const monsters: Array<{ monster?: string; slug?: string; encounter_rate?: number }> =
+            raw?.monsters || raw?.encounters || (Array.isArray(raw) ? raw : []);
+          const pool = monsters
+            .map((m) => ({
+              slug: m.monster || m.slug || "",
+              weight: Math.max(1, Math.round((m.encounter_rate || 0.1) * 100)),
+            }))
+            .filter((m) => m.slug);
+          if (pool.length > 0) {
+            const total = pool.reduce((s, e) => s + e.weight, 0);
+            let roll = Math.random() * total;
+            let picked = pool[0].slug;
+            for (const e of pool) {
+              roll -= e.weight;
+              if (roll <= 0) {
+                picked = e.slug;
+                break;
+              }
+            }
+            const def = await loadCreatureDef(picked);
+            if (def) return def;
+          }
+        } catch {
+          /* fall through */
+        }
+      }
+    } catch (err) {
+      console.warn("[EncounterManager] map encounter lookup failed, using wild catalog", err);
+    }
+
+    const wilds = await loadWildSpawnDefs();
+    return wilds[Math.floor(Math.random() * Math.max(1, wilds.length))] || wilds[0] || null;
+  }
+
   /** Persist a catalog starter as a real PlayerCreature (CreatureDef / fallback seed). */
   private async handleClaimStarter(data: {
     accountId: string;
@@ -214,8 +296,7 @@ export class EncounterManager {
     }
 
     const playerDef = await loadCreatureDef(activeCreature.speciesSlug);
-    const wilds = await loadWildSpawnDefs();
-    const wildDef = wilds[Math.floor(Math.random() * Math.max(1, wilds.length))] || wilds[0];
+    const wildDef = await this.pickWildCreature(data.mapId);
     if (!wildDef) {
       this.sendToPlayer(data.socketId, "show_toast", { message: "No wild creatures configured." });
       return;

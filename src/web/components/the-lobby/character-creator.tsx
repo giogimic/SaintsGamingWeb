@@ -49,16 +49,28 @@ function classVisual(def: ClassDefData) {
 
 // Fallback starter heroes (shown if DB is empty or unreachable)
 const FALLBACK_HEROES = [
-  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399' },
-  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa' },
-  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician', flavor: 'Master of arcane arts. High burst, low defense.', tag: 'Advanced', tagColor: '#60a5fa' },
-  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue', flavor: "Swift and lethal. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#34d399' },
-  { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja', flavor: 'Agile hunter. Precision strikes from distance.', tag: 'Mobile', tagColor: '#fbbf24' },
-  { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3' },
-  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength fighter. Balanced offense and utility.', tag: 'Balanced', tagColor: '#fb923c' },
+  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician', flavor: 'Master of arcane arts. High burst, low defense.', tag: 'Advanced', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue', flavor: "Swift and lethal. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja', flavor: 'Agile hunter. Precision strikes from distance.', tag: 'Mobile', tagColor: '#fbbf24', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength fighter. Balanced offense and utility.', tag: 'Balanced', tagColor: '#fb923c', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Tuxemon Spyder campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
 ];
 
-type DbHero = { slug: string; name: string; classId: string; spriteKey: string; flavor: string; tag: string; tagColor: string };
+type DbHero = {
+  slug: string;
+  name: string;
+  classId: string;
+  spriteKey: string;
+  flavor: string;
+  tag: string;
+  tagColor: string;
+  startingMap?: string;
+  startingX?: number;
+  startingY?: number;
+};
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
@@ -143,6 +155,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
   const CLASSES = classDefs.map(classVisual);
   const [classId, setClassId] = useState('WARRIOR');
+  const [selectedHeroSlug, setSelectedHeroSlug] = useState<string | null>(null);
   const [perkId, setPerkId] = useState(PERKS[0].id);
   const [loading, setLoading] = useState(false);
   const [spritePage, setSpritePage] = useState(0);
@@ -169,6 +182,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const handleHeroPick = (hero: DbHero) => {
     setSpriteId(hero.spriteKey);
     setClassId(hero.classId);
+    setSelectedHeroSlug(hero.slug);
     setStep('NAME');
   };
 
@@ -190,9 +204,16 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     const hpBase = sheet.hp + (perkId === 'STAMINA_SURGE' ? 30 : 0);
     const hpFromSkills = (initialSkills['Hitpoints']?.level || 1) * 5;
 
+    const hero =
+      starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
+      starterHeroes.find((h) => h.classId === classId && h.spriteKey === spriteId);
+    const startMap = hero?.startingMap || 'DEMO_SANDBOX';
+    const startX = hero?.startingX ?? 14;
+    const startY = hero?.startingY ?? 15;
+
     const initialState = {
-      currentMapId: 'DEMO_SANDBOX',
-      position: { x: 14, y: 15 },
+      currentMapId: startMap,
+      position: { x: startX, y: startY },
       level: 1, xp: 0,
       hp: hpBase + hpFromSkills,
       maxHp: hpBase + hpFromSkills,

@@ -302,6 +302,13 @@ export async function seedDefaultStarterHeroes() {
       startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":8}',
     },
+    {
+      slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl',
+      flavor: 'Starts in Azure Town — Tuxemon Spyder campaign playtest bed.',
+      tag: 'Campaign', tagColor: '#cbb26a', sortOrder: 17, isActive: true,
+      startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25,
+      startingInventory: '{"capture_script":20,"patch_kit":10}',
+    },
   ];
 
   // Core classId remaps (e.g. ranger THIEF → RANGER) always sync; flavor/custom stay.
