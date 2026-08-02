@@ -114,6 +114,7 @@ async function main() {
   }
 
   console.log(`Done. Upserted ${upserted} CreatureDef rows.`);
+  console.log("Tip: run `npx tsx scripts/restore-curated-creatures.ts` if curated starters were overwritten.");
   await prisma.$disconnect();
 }
 
