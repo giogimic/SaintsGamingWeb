@@ -34,9 +34,11 @@ npm run dev
 | 17 | Tunnel **east** `(38,7)` → Route 2 | Warp → scout `(4,10)`; talk scout → Q7 complete → **Q8** |
 | 18 | Route 2 **east** `(39,10)` → Route 3 → Leather west | Corridors open; greeter `(4,21)`; talk → Q8 complete → **Q9** |
 | 19 | Leather door `(10,18)` → Center | Nurse **heal party**; exit south back to town |
-| 20 | Scoop door `(14,18)` → talk clerk | Film shop (`OPEN_SHOP`); Q9 complete |
-| 21 | Optional: Gym door `(24,20)` | Attendant explains challenges not open yet |
-| 22 | Tracker with no active quests | “Spyder Trail Clear” if Q9 completed; else Guide / Scoop prompt |
+| 20 | Scoop door `(14,18)` → talk clerk | Film shop (`OPEN_SHOP`); Q9 complete → **Q10** |
+| 21 | Gym door `(24,20)` → **Challenge Rook** | Trainer TB: **Rockitten → Aardorn**; win → Q10 complete |
+| 22 | After battle UI | Rook post-win (hints east shaft) / post-lose (Center nurse); rematch OK |
+| 23 | Town east `(39,21)` → Shaft1 | Scout + tall grass encounters |
+| 24 | Tracker with no active quests | “Spyder Trail Clear” if Q10 completed; else Guide / Gym prompt |
 
 ## Economy note
 

@@ -2,14 +2,14 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (Q9 Leather Scoop + Gym door)
+**Updated:** 2026-08-02 (Q10 Rook Gym + Shaft1)
 
 ## Done
 
-- Spyder **Q1–Q9**: Azure → Route 1 → Cotton → Tunnel → Route 2–3 → Leather (Center / Scoop / Gym door)
-- Scoop film shops (Cotton + Leather) + nurses; quest gold → credits
-- Leather plaza ambient densify; Gym attendant placeholder
-- `npm run smoke:spyder` (**212** checks)
+- Spyder **Q1–Q10**: Azure → Cotton → Route 2–3 → Leather (Center / Scoop / **Gym Rook** / Shaft1)
+- Trainers: Carlos (Dragarbor→Pairagrin), Rook (Rockitten→Aardorn)
+- Scoop shops + nurses; quest gold → credits
+- `npm run smoke:spyder` (**231** checks)
 
 ## Pipeline
 
