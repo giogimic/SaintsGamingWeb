@@ -9,7 +9,10 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ## Current Focus
 
-**Staging smoke + build fixes landed (v2.1.111).**  
+**Planning:** Game/Studio client split + mobile controls + multiplayer visibility.  
+Plan: [`info/game/CLIENT_SPLIT_MOBILE_MP_PLAN.md`](./game/CLIENT_SPLIT_MOBILE_MP_PLAN.md) (mirror also in gitignored `/logs/`).  
+**Blocked on** user answers to open questions in that plan (route, Studio entry tier, touch style, MP test method).
+
 **Back-line:** Discord, FiveM, S3/CDN, heavy AI.
 
 ### Recently shipped
@@ -22,10 +25,8 @@ This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are
 
 ### Suggested next
 
-1. **Human merge** of PR #1 after reviewing smoke notes (`info/ops/STAGING_SMOKE.md`)
-2. Product work as requested (avoid Discord/FiveM/S3/AI unless asked)
-
-Merge is intentional/human — agents cannot merge this PR from the cloud tooling.
+1. Confirm plan open questions, then implement Phase 1 (mobile) → Phase 2 (MP) → Phase 3 (client split)
+2. Avoid Discord/FiveM/S3/AI unless asked
 
 ---
 
