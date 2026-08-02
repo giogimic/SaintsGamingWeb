@@ -153,8 +153,11 @@ export default function TheLobby({
         validPosition = { ...DEMO_SPAWN };
       }
 
+      // Socket auth + battle payloads use User.id — keep client accountId aligned
+      const socketAccountId = session?.user?.id || charId;
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
+        accountId: socketAccountId,
         currentMapId: validMapId,
         name: res.data.name,
         spriteId: res.data.spriteId || 'adventurer',
@@ -164,7 +167,7 @@ export default function TheLobby({
 
       // Notify socket server of loaded character specs
       socketRef.current?.emit('join_map', {
-        accountId: charId,
+        accountId: socketAccountId,
         mapId: validMapId,
         x: validPosition.x,
         y: validPosition.y,
@@ -285,8 +288,11 @@ export default function TheLobby({
         socket.emit(event, data);
       });
 
-      const effectiveAccountId = activeCharacterId || state.player.accountId;
+      const effectiveAccountId = session.user.id || state.player.accountId;
       if (effectiveAccountId) {
+        if (!state.player.accountId || state.player.accountId !== session.user.id) {
+          useGameStore.getState().hydratePlayer({ accountId: session.user.id });
+        }
         socket.emit('join_map', {
           accountId: effectiveAccountId,
           mapId: state.currentMapId,

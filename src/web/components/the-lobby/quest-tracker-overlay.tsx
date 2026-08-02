@@ -24,7 +24,12 @@ interface ActiveQuest {
 
 export default function QuestTrackerOverlay() {
   const [quests, setQuests] = useState<ActiveQuest[]>([]);
-  const { refreshQuestsCounter, gameMode } = useGameStore();
+  const { refreshQuestsCounter, gameMode, currentMapId } = useGameStore();
+  const isSpyderMap =
+    currentMapId === "AZURE_TOWN" ||
+    currentMapId?.includes("SPYDER") ||
+    currentMapId === "ROUTE1" ||
+    currentMapId === "COTTON_TOWN";
 
   const fetchQuests = async () => {
     try {
@@ -51,12 +56,21 @@ export default function QuestTrackerOverlay() {
           <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
             <Compass className="w-4 h-4 text-[#cbb26a]" />
             <h4 className="text-sm font-bold text-[#e2d5b3] uppercase tracking-wide">
-              Road to Aethervale
+              {isSpyderMap ? "Spyder Trail" : "Road to Aethervale"}
             </h4>
           </div>
           <p className="text-xs text-slate-200 leading-tight mt-2">
-            Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
-            (click or press E). Take the toolbelt to start Q1.
+            {isSpyderMap ? (
+              <>
+                Talk to the <span className="text-[#cbb26a]">Azure Guide</span> in the plaza
+                (click or press E). Accept your charge to begin.
+              </>
+            ) : (
+              <>
+                Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
+                (click or press E). Take the toolbelt to start Q1.
+              </>
+            )}
           </p>
         </div>
       </div>
