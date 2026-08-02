@@ -7,26 +7,24 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — combat XP + Spyder NPC path**
+**Game Foundation Systems (PR #4) — Spyder on-ramp playable**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Design: [`info/game/CLASS_SKILLS_SHINY.md`](./game/CLASS_SKILLS_SHINY.md)
 
-### Just shipped (continue pass)
+### Just shipped (Spyder path)
 
-- RT combat → combat skill typing XP (`combatSkillXp.ts` + CombatManager / damage-taken)
-- TB win/capture → summoning (+ hitpoints / perception)
-- Weighted encounter helper used by EncounterManager
-- Studio NPC panel **persists** to `WorldMap.npcsData` + dialogue tree
-- Vance/Rockitten demo spawns gated to `DEMO_SANDBOX` only
-- `npm run seed:azure` → Azure Guide NPC + `quest_azure_welcome` on AZURE_TOWN
+- Curated campaign NPCs + 3-quest Spyder chain (`spyderQuests.ts`, `seed:campaign-npcs`)
+- Dialogue → quest TALK via engine `dialogue_start` + stable NPC ids
+- Capture → CLAIM `capture_any` via `creatureCaptured`
+- Kill-blow combat XP + `monsterKilled` for KILL objectives
+- TMX NPC import script (`import:map-npcs`) when `TUXEMON_PATH` is set
 
 ### Suggested next
 
-1. Human smoke: Spyder Tamer → talk to Azure Guide → accept quest; RT fight Rockitten on DEMO for skill XP
-2. Import more TMX `create_npc` placements into campaign maps
-3. Flatten more Spyder mission steps into QuestTemplate stages
-4. Combat kill bonus XP (enrich `entityDeath` with attackerId)
+1. Human smoke: Spyder Tamer → Azure Guide accept → townsfolk → Route 1 capture → report
+2. Expand Spyder chain past quest 3 (Cotton Town / gyms)
+3. Run TMX import against a local Tuxemon checkout for denser NPC placements
 
 ### Pipeline
 
@@ -35,7 +33,7 @@ npm run import:tuxemon
 npm run sync:creatures
 npm run migrate:campaign
 npm run ensure:campaign
-npm run seed:azure
+npm run seed:campaign-npcs
 npm run dev
 ```
 
