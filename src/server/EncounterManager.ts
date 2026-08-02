@@ -198,28 +198,35 @@ export class EncounterManager {
       }
 
       const userId = await resolveUserId(battle.accountId);
-      if (userId) {
-        let inv = await prisma.playerInventoryItem.findFirst({
-          where: { userId, itemSlug: itemId },
+      if (!userId) {
+        battle.log.push("You cannot use items right now.");
+        battle.phase = "WAITING_FOR_INPUT";
+        this.broadcastUpdate(battle);
+        return;
+      }
+
+      const inv = await prisma.playerInventoryItem.findFirst({
+        where: { userId, itemSlug: itemId },
+      });
+      if (!inv || inv.quantity < 1) {
+        // Real inventory only — no demo grants (product rule)
+        battle.log.push("You don't have a Binding Crystal.");
+        this.sendToPlayer(battle.socketId, "show_toast", {
+          message: "You need a Binding Crystal in your inventory.",
         });
-        if (!inv || inv.quantity < 1) {
-          // Demo grant so MPV capture loop is testable (same pattern as gather tools)
-          inv = await prisma.playerInventoryItem.create({
-            data: { userId, itemSlug: itemId, quantity: 3 },
-          });
-          this.sendToPlayer(battle.socketId, "show_toast", {
-            message: `Demo: Granted Binding Crystals for capture testing.`,
-          });
-        }
-        // Consume one crystal for this throw (server-authoritative)
-        if (inv.quantity <= 1) {
-          await prisma.playerInventoryItem.delete({ where: { id: inv.id } });
-        } else {
-          await prisma.playerInventoryItem.update({
-            where: { id: inv.id },
-            data: { quantity: inv.quantity - 1 },
-          });
-        }
+        battle.phase = "WAITING_FOR_INPUT";
+        this.broadcastUpdate(battle);
+        return;
+      }
+
+      // Consume one crystal for this throw (server-authoritative)
+      if (inv.quantity <= 1) {
+        await prisma.playerInventoryItem.delete({ where: { id: inv.id } });
+      } else {
+        await prisma.playerInventoryItem.update({
+          where: { id: inv.id },
+          data: { quantity: inv.quantity - 1 },
+        });
       }
 
       battle.log.push(`You threw a Binding Crystal!`);
