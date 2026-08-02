@@ -7,24 +7,23 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Q7 Route 2 + Scoop support**
+**Game Foundation Systems (PR #4) — Q8 Leather Town + quest gold→credits**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- **Q7** Beyond the Tunnel: Cotton Tunnel east → `SPYDER_ROUTE2` scout
-- Scoop **film shop** (`OPEN_SHOP`) + **nurse** (`HEAL_PARTY`)
-- Trainer soft-heal + nurse heal sync via `party_creatures_hp`
-- Tracker “Spyder Trail Clear” after Q7; Guide `node_route2` / `node_done`
-- Offline smoke: **145** checks
+- Quest reward **`gold` → character credits** (shop wallet)
+- Route 2 east → **Route 3** → **Leather Town** + Center nurse
+- **Q8** Leather arrive (greeter); Guide `node_leather`; tracker clear after Q8
+- Offline smoke: **180** checks
 
 ### Suggested next
 
-1. Human smoke Q1–Q7 (Carlos rematch via Scoop nurse, Route 2 scout)
-2. Optional: extend Route 2 east / Leather Town hook
-3. Confirm shop purchases grant film in live session
+1. Human smoke Q1–Q8 (film buy after quest gold, Leather Center heal)
+2. Optional: Leather Scoop / Gym / Shaft hook
+3. Densify Leather ambient NPCs from TMX if desired
 
 ### Pipeline
 

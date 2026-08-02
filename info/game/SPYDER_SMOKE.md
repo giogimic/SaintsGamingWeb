@@ -31,8 +31,14 @@ npm run dev
 | 14 | Carlos → **Challenge Carlos** | Trainer TB: **Dragarbor → Pairagrin**; no flee/capture; both down → Q6 complete → **Q7** |
 | 15 | After battle UI closes | Carlos post-win (hints Route 2 east) / post-lose (points to Scoop nurse); rematch available |
 | 16 | Optional: Scoop **Browse shop** / **nurse heal** | Film merchant opens; party HP full; soft-heal also syncs after lose |
-| 17 | Tunnel **east** `(38,7)` → Route 2 | Warp → scout `(4,10)`; talk scout → Q7 complete |
-| 18 | Tracker with no active quests | “Spyder Trail Clear” if Q7 completed; else Guide / Route 2 prompt |
+| 17 | Tunnel **east** `(38,7)` → Route 2 | Warp → scout `(4,10)`; talk scout → Q7 complete → **Q8** |
+| 18 | Route 2 **east** `(39,10)` → Route 3 → Leather west | Corridors open; greeter `(4,21)`; talk → Q8 complete |
+| 19 | Leather door `(10,18)` → Center | Nurse **heal party**; exit south back to town |
+| 20 | Tracker with no active quests | “Spyder Trail Clear” if Q8 completed; else Guide / Leather prompt |
+
+## Economy note
+
+Quest rewards with `gold` add to character **credits** (shop wallet). Spyder Tamer starts with 1000 G; Cotton/Leather quest gold tops up film purchases.
 
 ## Automated check
 
