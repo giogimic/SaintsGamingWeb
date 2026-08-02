@@ -20,10 +20,10 @@ npm run dev
 | 3 | Talk Guide again | Q1 completes → Q2; Guide copy shifts to townsfolk hint |
 | 4 | Talk **Enforcer** then **Knight** | Q2 stages tick; film reward; Q3 First Capture |
 | 5 | Talk Guide | State-aware: “east gate / tall grass” (or starter gate if no party) |
-| 6 | Walk **east** to edge tile `(49,25)` | Warp → `SPYDER_ROUTE1` near scout |
-| 7 | Walk tall grass (green patch mid-route) | TB encounter (needs party); **EXPOSE FILM** to capture |
+| 6 | Walk **east** to edge tile `(49,25)` | Warp → `SPYDER_ROUTE1` near scout (road is carved open) |
+| 7 | Walk tall grass mid-route | TB encounter (needs party); **EXPOSE FILM** to capture |
 | 8 | Return west → Guide | Report copy; Q3 completes → Q4 Cotton Town |
-| 9 | Route 1 **east** edge → Cotton | Warp → `COTTON_TOWN`; talk **Cotton Greeter** |
+| 9 | Route 1 **east** → Cotton west gate | Warp → greeter at `(4,19)` (reachable corridor) |
 
 ## Notes
 
