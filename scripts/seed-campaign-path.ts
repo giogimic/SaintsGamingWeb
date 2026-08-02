@@ -146,20 +146,60 @@ const PATH: Record<string, PathCfg> = {
     ],
   },
   COTTON_TOWN: {
-    gates: [gate(0, 20, "SPYDER_ROUTE1", 37, 10)],
+    gates: [
+      gate(0, 20, "SPYDER_ROUTE1", 37, 10),
+      // Plaza doors into indoor shops (north of greeter lane)
+      gate(8, 18, "COTTON_SCOOP", 6, 8),
+      gate(12, 18, "COTTON_CAFE", 5, 10),
+    ],
     open: [
       { x: 0, y: 20, tile: 3 },
       { x: 1, y: 20, tile: 0 },
       { x: 2, y: 20, tile: 0 },
       { x: 4, y: 19, tile: 0 },
       { x: 5, y: 19, tile: 0 },
+      { x: 8, y: 18, tile: 3 },
+      { x: 8, y: 19, tile: 0 },
+      { x: 12, y: 18, tile: 4 },
+      { x: 12, y: 19, tile: 0 },
     ],
-    // West gate → open lane on y=19 toward greeter
+    // West gate → open lane on y=19 toward greeter + shop doors
     corridors: [
       { dir: "h", y: 20, x0: 1, x1: 6 },
       { dir: "v", x: 2, y0: 19, y1: 20 },
       { dir: "h", y: 19, x0: 2, x1: 18 },
+      { dir: "h", y: 18, x0: 6, x1: 14 },
       { dir: "v", x: 4, y0: 15, y1: 19 },
+    ],
+  },
+  COTTON_SCOOP: {
+    gates: [gate(6, 9, "COTTON_TOWN", 8, 19)],
+    open: [
+      { x: 6, y: 9, tile: 3 },
+      { x: 6, y: 8, tile: 0 },
+      { x: 5, y: 8, tile: 0 },
+      { x: 7, y: 8, tile: 0 },
+      { x: 6, y: 5, tile: 0 },
+    ],
+    corridors: [
+      { dir: "v", x: 6, y0: 4, y1: 9 },
+      { dir: "h", y: 8, x0: 3, x1: 9 },
+      { dir: "h", y: 5, x0: 3, x1: 10 },
+    ],
+  },
+  COTTON_CAFE: {
+    gates: [gate(5, 10, "COTTON_TOWN", 12, 19)],
+    open: [
+      { x: 5, y: 10, tile: 3 },
+      { x: 5, y: 9, tile: 0 },
+      { x: 4, y: 10, tile: 0 },
+      { x: 6, y: 10, tile: 0 },
+      { x: 7, y: 6, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 10, x0: 1, x1: 10 },
+      { dir: "v", x: 5, y0: 6, y1: 10 },
+      { dir: "h", y: 6, x0: 1, x1: 8 },
     ],
   },
   ROUTE1: {
@@ -216,10 +256,10 @@ async function upsertMap(mapId: string, cfg: PathCfg) {
   }
   // Gates / spawn pockets last so they win over grass
   patchGrid(grid, cfg.open);
-  for (const g of cfg.gates) {
-    const tile = g === cfg.gates[0] ? 3 : 4;
+  cfg.gates.forEach((g, i) => {
+    const tile = i === 0 ? 3 : 4;
     patchGrid(grid, [{ x: g.position.x, y: g.position.y, tile }]);
-  }
+  });
 
   const gatesJson = JSON.stringify(cfg.gates);
   const gridJson = JSON.stringify(grid);

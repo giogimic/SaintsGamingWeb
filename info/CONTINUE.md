@@ -7,22 +7,22 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Spyder Q5 + path smoke**
+**Game Foundation Systems (PR #4) — Cotton indoor Scoop/Café**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- Q5 Cotton Locals (Scoop Clerk + Café Host on plaza)
-- Guide nodes for cotton locals / done
-- `npm run smoke:spyder` — offline path integrity (gates, corridors, NPCs, quests)
+- Plaza doors → `COTTON_SCOOP` / `COTTON_CAFE` with return warps
+- Q5 NPCs moved indoors; greeter points to doors
+- Lobby allowlist + `smoke:spyder` cover indoor maps
 
 ### Suggested next
 
-1. Human smoke per `SPYDER_SMOKE.md`
-2. Indoor Cotton warps (Scoop / Café maps) if desired
-3. TMX bulk NPC import when Tuxemon checkout available
+1. Human smoke through Scoop + Café (Q5)
+2. TMX bulk NPC import when Tuxemon checkout available
+3. Optional: Cotton tunnel / next story beat
 
 ### Pipeline
 

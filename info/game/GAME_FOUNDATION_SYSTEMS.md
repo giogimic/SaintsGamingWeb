@@ -2,14 +2,13 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (Q5 + smoke:spyder)
+**Updated:** 2026-08-02 (Cotton indoors)
 
 ## Done
 
-- Classes / shinies / Tuxemon import / campaign maps
-- Spyder on-ramp Q1–**Q5** (welcome → townsfolk → capture → Cotton arrive → locals)
-- Warps, corridors, Guide state, Budaye+film, accountId sync
-- Offline smoke: `npm run smoke:spyder`
+- Spyder on-ramp Q1–Q5 with **indoor Scoop + Café** warps
+- Corridors, Guide state, Budaye+film, accountId sync
+- `npm run smoke:spyder` (includes indoor path checks)
 
 ## Pipeline
 

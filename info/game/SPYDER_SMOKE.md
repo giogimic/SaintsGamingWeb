@@ -25,7 +25,8 @@ npm run dev
 | 8 | Return west → Guide | Report copy; Q3 completes → Q4 Cotton Town |
 | 9 | Route 1 **east** → Cotton west gate | Warp → greeter at `(4,19)` (reachable corridor) |
 | 10 | Talk greeter | Q4 complete → Q5 Cotton Locals |
-| 11 | Talk **Scoop Clerk** `(8,19)` then **Café Host** `(12,19)` | Q5 completes; film/gold rewards |
+| 11 | Step north door `(8,18)` → Scoop | Warp indoors; talk **Scoop Clerk** |
+| 12 | Exit Scoop → door `(12,18)` → Café | Talk **Café Host**; Q5 completes |
 
 ## Automated check
 

@@ -97,7 +97,7 @@ export const SPYDER_QUEST_CHAIN = [
   {
     slug: "quest_spyder_cotton_locals",
     title: "Spyder 5: Cotton Locals",
-    description: "Meet Scoop's clerk and a café regular on the Cotton plaza.",
+    description: "Enter Scoop and the Café in Cotton Town and meet the locals inside.",
     rewards: JSON.stringify({
       items: [
         { slug: "film_standard", qty: 3 },
@@ -111,14 +111,14 @@ export const SPYDER_QUEST_CHAIN = [
         type: "TALK",
         targetSlug: "npc_cotton_scoop_clerk",
         requiredQty: 1,
-        description: "Speak with the Scoop Clerk on the plaza",
+        description: "Enter Scoop and speak with the clerk",
       },
       {
         stage: 2,
         type: "TALK",
         targetSlug: "npc_cotton_cafe_host",
         requiredQty: 1,
-        description: "Speak with the Café Host on the plaza",
+        description: "Enter the Café and speak with the host",
       },
     ],
   },
@@ -220,22 +220,26 @@ export const CAMPAIGN_NPC_SEEDS: Record<
       y: 19,
       sprite: "florist",
       greeting:
-        "Welcome to Cotton Town! Scoop's clerk and the café host are along the plaza — say hello.",
+        "Welcome to Cotton Town! Step into Scoop (north door by the plaza) and the Café next door — the locals are waiting inside.",
     },
+  ],
+  COTTON_SCOOP: [
     {
       id: "npc_cotton_scoop_clerk",
       name: "Scoop Clerk",
-      x: 8,
-      y: 19,
+      x: 6,
+      y: 5,
       sprite: "shopassistant",
       greeting:
         "Scoop's open — treats for tamers, rumors for the road. Cotton's quieter than Azure, if you listen.",
     },
+  ],
+  COTTON_CAFE: [
     {
       id: "npc_cotton_cafe_host",
       name: "Café Host",
-      x: 12,
-      y: 19,
+      x: 7,
+      y: 6,
       sprite: "barmaid",
       greeting:
         "Pull up a chair. Cayden and the regulars trade battle stories after dark — you've earned a rest.",
