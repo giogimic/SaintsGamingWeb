@@ -23,9 +23,10 @@ Alignment: [`info/gameplay-bible/ALIGNMENT.md`](./gameplay-bible/ALIGNMENT.md)
 
 ### Suggested next
 
-1. Human smoke: claim Rockitten → shop buy dust/log or crystal → craft → tall grass capture; target wild Rockitten with hotbar
-2. Quest path that grants axe/pick (gather tools)
-3. ALIGNMENT slice **D** (Studio) or **E** (website bridge)
+1. **Demo tutorial draft ingested:** `info/game/DEMO_TUTORIAL_AETHERVALE.md` + adaptation map
+2. Product answers on starter count / capsule naming / map scope (see adaptation Conflicts)
+3. Implement **Quest 1** (Vance → tool grant → gather) once answers land
+4. ALIGNMENT slice **D** (Studio) or **E** (website bridge)
 
 ### Smoke path (MPV)
 
