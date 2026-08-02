@@ -10,6 +10,7 @@ import { PrismaClient } from "@prisma/client";
 import {
   CAMPAIGN_NPC_SEEDS,
   CARLOS_DIALOGUE_TREE,
+  LEATHER_NURSE_DIALOGUE_TREE,
   SCOOP_CLERK_DIALOGUE_TREE,
   SCOOP_NURSE_DIALOGUE_TREE,
   SPYDER_QUEST_CHAIN,
@@ -36,6 +37,9 @@ function dialogueTreeFor(npc: {
   }
   if (npc.id === "npc_cotton_scoop_nurse") {
     return SCOOP_NURSE_DIALOGUE_TREE;
+  }
+  if (npc.id === "npc_leather_center_nurse") {
+    return LEATHER_NURSE_DIALOGUE_TREE;
   }
   if (npc.questSlug) {
     return {

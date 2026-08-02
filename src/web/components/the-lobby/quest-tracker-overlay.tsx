@@ -35,6 +35,9 @@ export default function QuestTrackerOverlay() {
     currentMapId === "COTTON_CAFE" ||
     currentMapId === "SPYDER_COTTON_TUNNEL" ||
     currentMapId === "SPYDER_ROUTE2" ||
+    currentMapId === "SPYDER_ROUTE3" ||
+    currentMapId === "SPYDER_LEATHER_TOWN" ||
+    currentMapId === "SPYDER_LEATHER_CENTER" ||
     currentMapId === "COTTON_UNDERGROUND";
 
   const fetchQuests = async () => {
@@ -60,8 +63,8 @@ export default function QuestTrackerOverlay() {
     const spyderEmpty =
       isSpyderMap && spyderCampaignComplete ? (
         <>
-          Route 2 scout met. Rematch <span className="text-[#cbb26a]">Carlos</span>,
-          restock film at Scoop, or roam Route 2 — more of Spyder&apos;s web awaits.
+          Leather Town reached. Rematch <span className="text-[#cbb26a]">Carlos</span>,
+          heal at either Center, or roam Route 2–3 — more of Spyder&apos;s web awaits.
         </>
       ) : isSpyderMap ? (
         <>

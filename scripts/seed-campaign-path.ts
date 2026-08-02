@@ -202,7 +202,10 @@ const PATH: Record<string, PathCfg> = {
     ],
   },
   SPYDER_ROUTE2: {
-    gates: [gate(0, 10, "SPYDER_COTTON_TUNNEL", 36, 7)],
+    gates: [
+      gate(0, 10, "SPYDER_COTTON_TUNNEL", 36, 7),
+      gate(39, 10, "SPYDER_ROUTE3", 2, 10),
+    ],
     open: [
       { x: 0, y: 10, tile: 3 },
       { x: 1, y: 10, tile: 0 },
@@ -210,17 +213,88 @@ const PATH: Record<string, PathCfg> = {
       { x: 2, y: 9, tile: 0 },
       { x: 2, y: 11, tile: 0 },
       { x: 4, y: 10, tile: 0 },
+      { x: 38, y: 10, tile: 0 },
+      { x: 39, y: 10, tile: 4 },
     ],
     corridors: [
-      { dir: "h", y: 9, x0: 1, x1: 20 },
-      { dir: "h", y: 10, x0: 1, x1: 20 },
-      { dir: "h", y: 11, x0: 1, x1: 20 },
+      { dir: "h", y: 9, x0: 1, x1: 38 },
+      { dir: "h", y: 10, x0: 1, x1: 38 },
+      { dir: "h", y: 11, x0: 1, x1: 38 },
     ],
     grass: { x0: 8, y0: 8, x1: 18, y1: 12 },
     encounters: [
       { slug: "pairagrin", weight: 30, minLevel: 4, maxLevel: 6 },
       { slug: "aardorn", weight: 35, minLevel: 4, maxLevel: 6 },
       { slug: "cataspike", weight: 35, minLevel: 3, maxLevel: 5 },
+    ],
+  },
+  SPYDER_ROUTE3: {
+    gates: [
+      gate(0, 10, "SPYDER_ROUTE2", 37, 10),
+      gate(39, 21, "SPYDER_LEATHER_TOWN", 2, 21),
+    ],
+    open: [
+      { x: 0, y: 10, tile: 3 },
+      { x: 1, y: 10, tile: 0 },
+      { x: 2, y: 10, tile: 0 },
+      { x: 2, y: 9, tile: 0 },
+      { x: 2, y: 11, tile: 0 },
+      { x: 39, y: 21, tile: 4 },
+      { x: 38, y: 21, tile: 0 },
+      { x: 37, y: 21, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 9, x0: 1, x1: 20 },
+      { dir: "h", y: 10, x0: 1, x1: 20 },
+      { dir: "h", y: 11, x0: 1, x1: 20 },
+      { dir: "v", x: 18, y0: 10, y1: 21 },
+      { dir: "h", y: 20, x0: 18, x1: 38 },
+      { dir: "h", y: 21, x0: 18, x1: 38 },
+      { dir: "h", y: 22, x0: 18, x1: 38 },
+    ],
+    grass: { x0: 8, y0: 8, x1: 16, y1: 12 },
+    encounters: [
+      { slug: "aardorn", weight: 40, minLevel: 5, maxLevel: 7 },
+      { slug: "cataspike", weight: 30, minLevel: 4, maxLevel: 6 },
+      { slug: "pairagrin", weight: 30, minLevel: 5, maxLevel: 7 },
+    ],
+  },
+  SPYDER_LEATHER_TOWN: {
+    gates: [
+      gate(0, 21, "SPYDER_ROUTE3", 37, 21),
+      // Healing center door (plaza)
+      gate(10, 18, "SPYDER_LEATHER_CENTER", 6, 8),
+    ],
+    open: [
+      { x: 0, y: 21, tile: 3 },
+      { x: 1, y: 21, tile: 0 },
+      { x: 2, y: 21, tile: 0 },
+      { x: 3, y: 21, tile: 0 },
+      { x: 4, y: 20, tile: 0 },
+      { x: 10, y: 18, tile: 4 },
+      { x: 10, y: 19, tile: 0 },
+      { x: 10, y: 20, tile: 0 },
+      { x: 10, y: 21, tile: 0 },
+    ],
+    corridors: [
+      { dir: "h", y: 21, x0: 1, x1: 18 },
+      { dir: "h", y: 20, x0: 2, x1: 18 },
+      { dir: "v", x: 10, y0: 18, y1: 21 },
+    ],
+  },
+  SPYDER_LEATHER_CENTER: {
+    gates: [gate(6, 9, "SPYDER_LEATHER_TOWN", 10, 19)],
+    open: [
+      { x: 6, y: 9, tile: 3 },
+      { x: 6, y: 8, tile: 0 },
+      { x: 5, y: 8, tile: 0 },
+      { x: 7, y: 8, tile: 0 },
+      { x: 6, y: 6, tile: 0 },
+    ],
+    corridors: [
+      { dir: "v", x: 6, y0: 4, y1: 9 },
+      { dir: "h", y: 8, x0: 2, x1: 9 },
+      { dir: "h", y: 6, x0: 2, x1: 10 },
     ],
   },
   COTTON_SCOOP: {
