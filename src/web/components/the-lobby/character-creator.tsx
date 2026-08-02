@@ -355,7 +355,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                       return (
                         <div
                           key={hero.slug}
-                          onClick={() => { setSpriteId(hero.spriteKey); setClassId(hero.classId); setStep('NAME'); }}
+                          onClick={() => handleHeroPick(hero)}
                           className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group"
                           style={{
                             background: 'rgba(255,255,255,0.03)',

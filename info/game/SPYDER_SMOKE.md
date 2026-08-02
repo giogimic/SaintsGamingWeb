@@ -8,8 +8,20 @@ Playable on-ramp for human testing (PR #4).
 npm run migrate:campaign   # once
 npm run ensure:campaign    # encounters + gates/grass
 npm run seed:campaign-npcs # NPCs + quest chain
+# Optional but recommended for real tile art (needs Tuxemon checkout):
+TUXEMON_PATH=/tmp/Tuxemon npm run reimport:spyder-layers
 npm run dev
 ```
+
+## Visual browser check
+
+With `npm run dev` already up:
+
+```bash
+npm run visual:browser-to-game
+```
+
+Walks home → `/lobby` → register/login → Spyder Tamer → Azure Town. Screenshots land in `/opt/cursor/artifacts/visual-check/` (or `OUT_DIR`).
 
 ## Path
 
