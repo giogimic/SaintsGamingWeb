@@ -213,7 +213,11 @@ export class GameEngine {
         }
       }
     } else {
-      store.setPlayer({ moving: false });
+      // Only write when needed — setPlayer every idle frame retriggers React
+      // effects (OverworldCanvas) and cancels the canvas rAF before it paints.
+      if (player.moving) {
+        store.setPlayer({ moving: false });
+      }
       this.moveTimer = 0;
     }
 

@@ -23,8 +23,9 @@ const DIR_OFFSETS: Record<Direction, { x: number; y: number }> = {
 export default function OverworldCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const currentMap = useGameStore((s) => s.currentMap);
-  const player = useGameStore((s) => s.player);
   const phase = useGameStore((s) => s.phase);
+  // Read player from the store inside rAF — do not put `player` in effect deps
+  // (engine setPlayer each tick would cancel the canvas loop before it paints).
 
   // Resize canvas to fill viewport
   const resizeCanvas = useCallback(() => {
