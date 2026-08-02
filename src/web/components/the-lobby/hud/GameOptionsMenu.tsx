@@ -26,10 +26,15 @@ export default function GameOptionsMenu({
   onToggleDevEditor,
 }: GameOptionsMenuProps) {
   const [activeTab, setActiveTab] = useState<TabType>('GAME');
-  const isUiEditMode = useGameStore((state) => state.isUiEditMode);
-  const setIsUiEditMode = useGameStore((state) => state.setIsUiEditMode);
+  const isEditingInterface = useGameStore((state) => state.isEditingInterface);
+  const setIsEditingInterface = useGameStore((state) => state.setIsEditingInterface);
   const mobileControlMode = useGameStore((state) => state.mobileControlMode);
   const setMobileControlMode = useGameStore((state) => state.setMobileControlMode);
+
+  const enterViewfinderEdit = () => {
+    setIsEditingInterface(true);
+    onClose(); // Auto-close options so the HUD is immediately editable
+  };
 
   if (!isOpen) return null;
 
@@ -132,20 +137,20 @@ export default function GameOptionsMenu({
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2 gap-4">
                     <div>
-                      <div className="text-slate-800 font-extrabold text-lg">Edit UI Layout</div>
-                      <div className="text-slate-500 text-sm mt-1 font-medium">Unlock and drag HUD elements to reposition them.</div>
+                      <div className="text-slate-800 font-extrabold text-lg">Edit Interface</div>
+                      <div className="text-slate-500 text-sm mt-1 font-medium">
+                        Opens Viewfinder Edit Mode — this menu closes so you can drag the HUD.
+                      </div>
                     </div>
                     <button
-                      onClick={() => setIsUiEditMode(!isUiEditMode)}
-                      className={`px-6 py-3 rounded-xl font-extrabold transition-all active:scale-95 ${
-                        isUiEditMode 
-                          ? 'bg-amber-400 text-amber-900 shadow-[0_4px_0_0_#d97706]' 
-                          : 'bg-slate-200 hover:bg-slate-300 text-slate-700 shadow-[0_4px_0_0_#cbd5e1]'
-                      } hover:translate-y-[2px]`}
+                      type="button"
+                      onClick={enterViewfinderEdit}
+                      disabled={isEditingInterface}
+                      className="px-6 py-3 rounded-xl font-extrabold transition-all active:scale-95 bg-[#10B981] text-white shadow-[0_4px_0_0_#059669] hover:translate-y-[2px] disabled:opacity-60"
                     >
-                      {isUiEditMode ? 'Editing...' : 'Edit Layout'}
+                      Edit Interface
                     </button>
                   </div>
                   

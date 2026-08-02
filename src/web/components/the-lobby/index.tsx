@@ -940,8 +940,9 @@ export default function TheLobby({
         }}
       />
 
-      {/* UI Edit Toolbar (Studio only) */}
-      {enableStudio && <UiEditToolbar />}
+      {/* Viewfinder Edit Mode — player + studio */}
+      <ViewfinderOverlay />
+      <UiEditToolbar />
 
       {/* --- UI Overlays (Higher Z-Index) --- */}
       {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}

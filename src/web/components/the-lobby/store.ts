@@ -212,12 +212,18 @@ export interface GameState {
   clearPendingMovesUpTo: (seq: number, serverX?: number, serverY?: number) => void;
   applyServerCorrection: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => void;
   
-  // UI Customization
+  // UI Customization — Viewfinder Edit Mode
+  /** @deprecated Prefer isEditingInterface — kept for existing subscribers */
   isUiEditMode: boolean;
+  /** Viewfinder Edit Mode: HUD unlocked for drag/scale */
+  isEditingInterface: boolean;
   setIsUiEditMode: (isEditMode: boolean) => void;
+  setIsEditingInterface: (isEditing: boolean) => void;
   uiSettings: Record<string, { x: number; y: number; scale: number }>;
+  uiLayoutEpoch: number;
   updateUiSetting: (id: string, setting: Partial<{ x: number; y: number; scale: number }>) => void;
   loadUiPreset: (presetData: Record<string, { x: number; y: number; scale: number }>) => void;
+  resetUiLayout: () => void;
   /** Mobile touch movement style — persisted separately from panel uiSettings */
   mobileControlMode: MobileControlMode;
   setMobileControlMode: (mode: MobileControlMode) => void;
@@ -346,7 +352,9 @@ export const useGameStore = create<GameState>()(
       moveSequence: 0,
       pendingMoves: [],
       isUiEditMode: false,
+      isEditingInterface: false,
       uiSettings: {},
+      uiLayoutEpoch: 0,
       mobileControlMode: 'floating' as MobileControlMode,
 
       setMobileControlMode: (mode) => set((state) => {
@@ -409,7 +417,14 @@ export const useGameStore = create<GameState>()(
         state.combatTarget = target;
       }),
 
-      setIsUiEditMode: (isEditMode) => set((state) => { state.isUiEditMode = isEditMode; }),
+      setIsUiEditMode: (isEditMode) => set((state) => {
+        state.isUiEditMode = isEditMode;
+        state.isEditingInterface = isEditMode;
+      }),
+      setIsEditingInterface: (isEditing) => set((state) => {
+        state.isEditingInterface = isEditing;
+        state.isUiEditMode = isEditing;
+      }),
       updateUiSetting: (id, setting) => set((state) => {
         if (!state.uiSettings[id]) {
           state.uiSettings[id] = { x: 0, y: 0, scale: 1 };
@@ -418,10 +433,23 @@ export const useGameStore = create<GameState>()(
       }),
       loadUiPreset: (presetData) => set((state) => {
         state.uiSettings = presetData;
+        state.uiLayoutEpoch += 1;
         if (typeof window !== 'undefined') {
           Object.keys(presetData).forEach(key => {
             localStorage.setItem(`saints-ui-${key}`, JSON.stringify(presetData[key]));
           });
+        }
+      }),
+      resetUiLayout: () => set((state) => {
+        state.uiSettings = {};
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          const keys: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('saints-ui-')) keys.push(k);
+          }
+          keys.forEach((k) => localStorage.removeItem(k));
         }
       }),
 
