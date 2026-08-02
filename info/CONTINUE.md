@@ -7,11 +7,12 @@
 
 ## Current Focus
 
-**Studio world profiles + Saints Trail (PR #6 / #7)**
+**Studio world profiles + Saints Trail + Viewfinder UI (on `main`)**
 
 - Profiles: Tuxemon / Custom 1 / Custom 2 (+ blank / Clone Trail)
 - Custom 1 = Saints Trail on `DEMO_SANDBOX` (editable quests + dialogue)
 - Spyder showcase remains on **Tuxemon** (Q1–Q12)
+- Interface Editor Viewfinder Edit Mode shipped (#8)
 
 Progress log: `logs/STUDIO_PHASES_3_7.md` (local)  
 Trail smoke: [`info/game/SAINTS_TRAIL_SMOKE.md`](./game/SAINTS_TRAIL_SMOKE.md)  
@@ -24,16 +25,13 @@ Spyder smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 - Playthrough fixes (tools ≠ Q6 accept; DB dialogue; real sprites)
 - Lobby World picker (localStorage) + dialogue cache freshness
 - Classes panel scoped by world **`profileId`** (null/empty = shared; GameConfig FK stays `saints`)
-
-### Suggested next
-
-1. Merge PR stack: visual-browser (#5) → world-profiles (#6) → phases 3–7 (#7)  
-   (dry-run: stack merges clean onto `main`; #8 also clean alone)
-2. Independent: Interface Editor UX (#8)
+- Viewfinder Interface Editor (auto-close Options, floating toolbar, Escape)
 
 ### Verified
 - `npm run smoke:saints-trail:play` — 21/21 greeter→gather
 - `npm run visual:saints-trail` — Custom 1 → Demo Sandbox + Trail Greeter tracker
+- `npm run smoke:spyder` — Spyder path incl. Q12
+- `node scripts/visual-interface-editor.mjs` — Viewfinder UX
 
 ### Pipeline
 
@@ -48,6 +46,16 @@ npm run visual:saints-trail   # needs npm run dev
 npm run smoke:spyder
 npm run dev
 ```
+
+### Back-line (do not prioritize)
+
+| Area | Why |
+| :--- | :--- |
+| **UCP** (`/ucp/*`) | Uncertain if we ship it; needs a planned FiveM plugin first — likely much later |
+| Discord bot bridge | Ecosystem nice-to-have |
+| FiveM bridges / UCP depth | Same lane as UCP — wait for plugin design |
+| S3/CDN as default | Optional path exists; local uploads fine |
+| Heavy AI | Forum enhance exists; don’t expand |
 
 ---
 

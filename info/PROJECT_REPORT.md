@@ -182,12 +182,12 @@ A unified Socket.io event bus. Events are Zod-validated, CRITICAL ones persisted
 - `ServerControl.tsx` — start/stop dev MMO server from Studio with live player metrics
 - **Key directory**: `src/web/components/the-lobby/editor/`
 
-### FiveM / UCP Integration
+### FiveM / UCP Integration (**back-burner**)
 - Complete FiveM character schema: Characters, Vehicles, Properties, Inventory, BankTransactions, Factions, Gangs
-- UCP pages: Dashboard, Characters, Banking, Analytics, Garage, Social, Settings, Register
+- UCP pages exist (Dashboard, Characters, Banking, etc.) but are **not prioritized** — product may not ship UCP until a FiveM plugin is planned (likely much later)
 - FiveM status API: `/api/fivem/status/`, `/api/fivem/characters/`
 - XP level-up silently deposits bank rewards to all linked FiveM characters
-- **Key directory**: `app/(ucp)/`, `app/api/fivem/`
+- **Key directory**: `app/(ucp)/`, `app/api/fivem/` — touch only when explicitly requested
 
 ### Realtime Platform — Milestone 1
 - `RealtimeService.ts` — Zod-validated event bus, CRITICAL persistence, circuit breaker, admin force-disconnect, metrics
@@ -334,7 +334,7 @@ try {
 5. Build Admin Realtime Dashboard at `app/(main)/admin/realtime/page.tsx`
 
 ### Near-Term — /info Documentation (Milestone 3)
-6. ~~Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin~~ **Done (v2.1.105)** — overviews landed; deepen as needed (UCP still light)
+6. ~~Write `info/` docs for: frontend, backend, database, auth, forum, social, game, admin~~ **Done (v2.1.105)** — overviews landed; UCP docs intentionally deferred (back-burner)
 7. Retire `docs/TODO.md` (point it to `/info/`) — still open
 
 ### Medium-Term — MMO Scaling (Milestone 4)

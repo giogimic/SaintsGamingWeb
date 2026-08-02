@@ -89,7 +89,7 @@ FiveM `server-manager` is **back-line**.
 | :--- | :--- |
 | `/game` | Single-player / engine prototype (not MMO lobby) |
 | `/standalone-3d` | Standalone 3D experiment |
-| `/ucp/*` | FiveM UCP — **back-line** (`(ucp)` layout) |
+| `/ucp/*` | FiveM UCP — **back-burner** (uncertain ship; needs FiveM plugin plan first) |
 
 ---
 
