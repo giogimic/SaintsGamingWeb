@@ -50,6 +50,13 @@ const nextConfig: NextConfig = {
       { source: "/game/:path*", destination: "/lobby", permanent: true },
     ];
   },
+  // Legacy broken sprite prefix → real NPC walk sheets (no client URL change)
+  async rewrites() {
+    return [
+      { source: "/assets/sprites/:path*", destination: "/game-assets/npc/:path*" },
+      { source: "/game-assets/sprites/:path*", destination: "/game-assets/npc/:path*" },
+    ];
+  },
   async headers() {
     return [
       {

@@ -1310,13 +1310,13 @@ export class BabylonEngine {
 
       if (entity.spriteUrl) {
         const single = isSingleFrameSpriteUrl(entity.spriteUrl);
-        // Walk sheets keep invertY=true (existing UV anim). Single-frame OW/portraits
-        // need invertY=false or they render as empty/wrong strips.
+        // Always invertY=true (Babylon default) — invertY=false on OW crops made
+        // billboards blank/upside-down. UV slicing is skipped separately via SINGLE_FRAME.
         const tex = new Texture(
           entity.spriteUrl,
           this.scene,
           true,
-          !single,
+          true,
           1,
           undefined,
           () => {
@@ -1388,7 +1388,7 @@ export class BabylonEngine {
             entity.spriteUrl,
             this.scene,
             true,
-            !single,
+            true,
             1,
             undefined,
             () => {

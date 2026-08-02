@@ -617,11 +617,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         mapId: currentMapId,
         name: npc.name || npc.id,
       }));
-      // Prefer socket entities when present; always include static NPCs not already covered by name+tile
-      const socketIds = new Set(mapEntities.map((e) => e.id));
+      // Prefer socket entities. Skip static NPCs already covered by socket at same tile
+      // (socket ids are npc_<template>_<ts>; static ids are mapnpc_<id>).
+      const socketTiles = new Set(
+        mapEntities
+          .filter((e) => e.type === 'NPC')
+          .map((e) => `${Math.round(e.position.x)},${Math.round(e.position.y)}`)
+      );
       const merged = [
         ...mapEntities,
-        ...staticNpcs.filter((n) => !socketIds.has(n.id)),
+        ...staticNpcs.filter(
+          (n) => !socketTiles.has(`${Math.round(n.position.x)},${Math.round(n.position.y)}`)
+        ),
       ];
 
       const activeEntities = new Set<string>();

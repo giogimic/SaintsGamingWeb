@@ -290,7 +290,15 @@ export default function TheLobby({
     });
     
     socket.on('map_joined', (data) => {
-      useGameStore.getState().setInstanceId(data.instanceId);
+      const state = useGameStore.getState();
+      state.setInstanceId(data.instanceId);
+      // Server may remap retired maps (SAINTS_VILLAGE → DEMO_SANDBOX)
+      if (data.mapId && data.mapId !== state.currentMapId) {
+        state.setCurrentMapId(data.mapId);
+      }
+      if (typeof data.x === 'number' && typeof data.y === 'number') {
+        state.setPlayerPosition({ x: data.x, y: data.y }, state.player.direction || 'down', false);
+      }
     });
 
     socket.on('map_players', (players) => {
