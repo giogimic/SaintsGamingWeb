@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { createGameCharacter } from "@/app/actions/game";
 import { getStarterHeroes } from "@/app/actions/starter-heroes";
 import { getPlayableClasses } from "@/app/actions/character-classes";
-import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, Heart, ChevronRight, Loader2, Crosshair } from "lucide-react";
+import { ensureWorldProfiles } from "@/app/actions/world-profiles";
+import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, Heart, ChevronRight, Loader2, Crosshair, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import { INITIAL_SKILLS, useGameStore } from "./store";
 import {
@@ -141,12 +142,32 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
   const [classDefs, setClassDefs] = useState<ClassDefData[]>(FALLBACK_CLASS_DEFS);
   const [heroesLoading, setHeroesLoading] = useState(true);
+  const [activeWorld, setActiveWorld] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    Promise.all([getStarterHeroes(), getPlayableClasses()])
-      .then(([heroesRes, classesRes]) => {
+    const preferredGameId = (() => {
+      try {
+        return window.localStorage.getItem('saints.activeGameId') || undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+
+    Promise.all([
+      getStarterHeroes(preferredGameId),
+      getPlayableClasses(),
+      ensureWorldProfiles(),
+    ])
+      .then(([heroesRes, classesRes, worldsRes]) => {
         if (heroesRes.success && heroesRes.data.length > 0) setDbHeroes(heroesRes.data as DbHero[]);
         if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
+        if (worldsRes.success) {
+          const active =
+            worldsRes.profiles.find((p) => p.id === preferredGameId) ||
+            worldsRes.profiles.find((p) => p.isActive) ||
+            worldsRes.profiles.find((p) => p.id === worldsRes.activeId);
+          if (active) setActiveWorld({ id: active.id, name: active.name });
+        }
         setHeroesLoading(false);
       })
       .catch(() => setHeroesLoading(false));
@@ -338,6 +359,16 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
             {step === 'HERO_PICK' && (
               <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                 <StepHeader label="Choose Your Hero" onBack={onCancel ? () => onCancel() : undefined} />
+
+                {activeWorld && (
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#806f47]/35 bg-[#050b14]/70 text-[10px] font-mono uppercase tracking-[0.18em] text-[#cbb26a]/80">
+                      <Globe2 className="w-3 h-3" />
+                      World · {activeWorld.name}
+                      <span className="text-[#806f47]">({activeWorld.id})</span>
+                    </span>
+                  </div>
+                )}
 
                 <p className="text-[#cbb26a]/50 text-sm font-mono mb-8 text-center tracking-widest">
                   Pick a starting archetype — you can customise appearance in the next step

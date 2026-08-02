@@ -89,8 +89,19 @@ async function checkProfile(gameId: string, mapId: string, namespaced: boolean) 
   else fail(`gather quest ${gather} missing GATHER objectives`);
 }
 
+async function checkSprites() {
+  console.log("\n[sprites]");
+  const root = path.join(process.cwd(), "public/game-assets/npc");
+  for (const n of SAINTS_TRAIL_NPCS) {
+    const file = path.join(root, `${n.sprite}.png`);
+    if (fs.existsSync(file)) ok(`sprite ${n.sprite}.png`);
+    else fail(`sprite missing ${n.sprite}.png`);
+  }
+}
+
 async function main() {
   console.log("Saints Trail smoke…");
+  await checkSprites();
   await checkProfile(SAINTS_TRAIL_GAME_ID, SAINTS_TRAIL_MAP_ID, false);
 
   const cloneSlug = process.env.SMOKE_CLONE_SLUG;

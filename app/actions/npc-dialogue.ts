@@ -3,6 +3,7 @@
 import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "./game-admin";
+import { invalidateDialogueCache } from "@/server/dialogueCache";
 
 export type DialogueOptionInput = {
   label: string;
@@ -136,6 +137,7 @@ export async function upsertNpcDialogueTree(input: {
       },
     });
 
+    invalidateDialogueCache(npcId);
     revalidatePath("/studio");
     revalidatePath("/lobby");
     return { success: true };
@@ -150,6 +152,7 @@ export async function deleteNpcDialogueTree(npcId: string) {
   if (!isAdmin) return { success: false, error: "Unauthorized" };
   try {
     await prisma.npcDialogueTree.delete({ where: { npcId } });
+    invalidateDialogueCache(npcId);
     revalidatePath("/studio");
     return { success: true };
   } catch (err) {

@@ -17,10 +17,11 @@ import {
   SCOOP_NURSE_DIALOGUE_TREE,
   SPYDER_QUEST_CHAIN,
 } from "./spyderQuests";
+import { dialogueCache, invalidateDialogueCache } from "./dialogueCache";
+
+export { invalidateDialogueCache };
 
 const prisma = new PrismaClient();
-
-const dialogueCache: Record<string, any> = {};
 
 /**
  * Built-in fallback trees when DB has no row.
@@ -110,19 +111,19 @@ export class DialogueManager {
   private async getDialogueTree(npcId: string) {
     const key = this.normalizeNpcKey(npcId);
     const bare = key.replace(/^npc_/, "");
-    if (dialogueCache[key]) return dialogueCache[key];
-    if (dialogueCache[npcId]) return dialogueCache[npcId];
-    if (dialogueCache[bare]) return dialogueCache[bare];
 
-    // DB first — Studio / seed authority
+    // DB first — Studio / seed authority (cache keyed by updatedAt so edits apply)
     try {
       for (const candidate of [key, npcId, bare, `npc_${bare}`]) {
         const tree = await prisma.npcDialogueTree.findUnique({
           where: { npcId: candidate },
         });
         if (tree) {
+          const stamp = tree.updatedAt.toISOString();
+          const hit = dialogueCache[key];
+          if (hit && hit.updatedAt === stamp) return hit.tree;
           const parsed = JSON.parse(tree.data);
-          dialogueCache[key] = parsed;
+          dialogueCache[key] = { tree: parsed, updatedAt: stamp };
           return parsed;
         }
       }
@@ -132,11 +133,14 @@ export class DialogueManager {
 
     for (const candidate of [key, bare, npcId, `npc_${bare}`]) {
       if (BUILTIN_TREES[candidate]) {
-        dialogueCache[key] = BUILTIN_TREES[candidate];
+        dialogueCache[key] = { tree: BUILTIN_TREES[candidate], updatedAt: "builtin" };
         return BUILTIN_TREES[candidate];
       }
       if (VANCE_FALLBACK_TREES[candidate]) {
-        dialogueCache[key] = VANCE_FALLBACK_TREES[candidate];
+        dialogueCache[key] = {
+          tree: VANCE_FALLBACK_TREES[candidate],
+          updatedAt: "builtin",
+        };
         return VANCE_FALLBACK_TREES[candidate];
       }
     }
@@ -147,7 +151,7 @@ export class DialogueManager {
         options: [{ label: "Goodbye.", nextNode: "exit" }],
       },
     };
-    dialogueCache[key] = fallback;
+    dialogueCache[key] = { tree: fallback, updatedAt: "fallback" };
     return fallback;
   }
 
