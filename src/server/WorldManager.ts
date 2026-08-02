@@ -99,6 +99,16 @@ export class WorldManager {
       }
     }
 
+    // Demo NPC: Warden Vance near typical spawn (entityId → npc_warden_vance_*)
+    this.engine.events.emit("spawnCreature", {
+      templateId: "warden_vance",
+      entityType: "NPC",
+      mapId: instanceId,
+      x: 7,
+      y: 4,
+      spawnMode: "STATIC",
+    });
+
     // MPV: spawn a few roaming Rockitten for RT combat testing (same species as TB)
     const wildSpots = [
       { x: 10, y: 10 },

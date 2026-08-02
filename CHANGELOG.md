@@ -1,3 +1,15 @@
+## [2.1.117] - 2026-08-02
+
+### Added
+- **Demo bootstrap** on server start: CreatureDefs, Warden Vance dialogue, film craft recipes.
+- **Warden Vance** spawn + dialogue grants (tools, film pack, open Lab).
+- **Soul Film** capture path (`film_standard` / fine / soul); TB button **EXPOSE FILM**; shop sells/crafts film.
+- Demo smoke checklist: `info/game/DEMO_SMOKE.md`.
+
+### Fixed
+- Clicking NPCs starts dialogue (`npc_interact`); wild creatures targetable for RT combat.
+- Gather syncs inventory + emits `itemGathered` for quest hooks.
+
 ## [2.1.116] - 2026-08-02
 
 ### Added

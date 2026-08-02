@@ -523,6 +523,11 @@ export default function TheLobby({
       useGameStore.getState().setGameMode('EXPLORING');
     });
 
+    socket.on('demo_open_lab', () => {
+      useGameStore.getState().setActiveDialog(null);
+      useGameStore.getState().setGameMode('PROFESSOR_LAB');
+    });
+
     // --- PHASE 7: Skills & Toast ---
     socket.on('skill_xp_gained', (data) => {
       useGameStore.setState((state) => {
@@ -568,18 +573,24 @@ export default function TheLobby({
     });
 
     socket.on('creature_spawned', (data) => {
-      if (!data?.entityId || data.entityType === 'NPC') return;
+      if (!data?.entityId) return;
+      const isNpc = data.entityType === 'NPC';
       useGameStore.setState((state) => {
         const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
+        const spriteKey = isNpc
+          ? (String(data.templateId || '').includes('vance') ? 'adventurer' : (data.spriteKey || 'adventurer'))
+          : (data.spriteKey || data.templateId || 'rockitten');
         const ent = {
           id: data.entityId,
-          type: 'MONSTER' as const,
-          spriteKey: data.spriteKey || data.templateId || 'rockitten',
+          type: (isNpc ? 'NPC' : 'MONSTER') as 'NPC' | 'MONSTER',
+          spriteKey,
           position: { x: data.x, y: data.y },
           isMoving: !!data.isMoving,
           facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
           mapId: data.mapId,
-          name: data.name || data.templateId,
+          name: isNpc && String(data.templateId || '').includes('vance')
+            ? 'Warden Vance'
+            : (data.name || data.templateId),
         };
         if (idx >= 0) state.mapEntities[idx] = ent;
         else state.mapEntities.push(ent);

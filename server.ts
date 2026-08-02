@@ -17,6 +17,7 @@ import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
 import { EconomyManager } from "./src/server/EconomyManager";
 import { ShopManager } from "./src/server/ShopManager";
+import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
 import { attachRedisAdapter } from "./src/server/net/redisAdapter";
 
@@ -91,6 +92,7 @@ app.prepare().then(async () => {
   const socketHandler = new SocketHandler(io, gameEngine, _realtimeService);
   
   await worldManager.initialize();
+  await bootstrapDemoContent();
   await dialogueManager.initialize();
   await questManager.initialize();
   await skillManager.initialize();

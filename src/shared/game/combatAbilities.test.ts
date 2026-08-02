@@ -9,6 +9,8 @@ import {
 describe("RT combat abilities", () => {
   it("forbids capture tools on the real-time hotbar path", () => {
     expect(isForbiddenRtCaptureAbility("binding_crystal")).toBe(true);
+    expect(isForbiddenRtCaptureAbility("film_standard")).toBe(true);
+    expect(isForbiddenRtCaptureAbility("soul_camera")).toBe(true);
     expect(isForbiddenRtCaptureAbility("capture_device")).toBe(true);
     expect(isForbiddenRtCaptureAbility("CAPTURE")).toBe(true);
     expect(isForbiddenRtCaptureAbility("strike")).toBe(false);
@@ -17,6 +19,7 @@ describe("RT combat abilities", () => {
   it("resolves known abilities and rejects capture ids", () => {
     expect(getCombatAbility("fireball")?.power).toBe(50);
     expect(getCombatAbility("binding_crystal")).toBeNull();
+    expect(getCombatAbility("film_standard")).toBeNull();
   });
 });
 

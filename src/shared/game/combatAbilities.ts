@@ -22,12 +22,23 @@ export const FORBIDDEN_RT_CAPTURE_ABILITIES = [
   "capture_script",
   "throw_ball",
   "pokeball",
+  "film_standard",
+  "film_fine",
+  "film_soul",
+  "soul_camera",
 ] as const;
 
 export function isForbiddenRtCaptureAbility(abilityId: string | undefined | null): boolean {
   if (!abilityId) return false;
   const id = abilityId.toLowerCase();
-  return FORBIDDEN_RT_CAPTURE_ABILITIES.some((f) => id === f || id.includes("capture") || id.includes("binding_crystal"));
+  return FORBIDDEN_RT_CAPTURE_ABILITIES.some(
+    (f) =>
+      id === f ||
+      id.includes("capture") ||
+      id.includes("binding_crystal") ||
+      id.includes("film_") ||
+      id.includes("soul_camera")
+  );
 }
 
 const ABILITIES: Record<string, CombatAbility> = {

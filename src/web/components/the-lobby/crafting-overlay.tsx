@@ -26,8 +26,8 @@ export default function CraftingOverlay() {
     if (gameMode === 'CRAFTING') {
       setRecipes([
         {
-          slug: "craft_binding_crystal",
-          outputItemSlug: "binding_crystal",
+          slug: "craft_film_standard",
+          outputItemSlug: "film_standard",
           outputQuantity: 1,
           skillSlug: "crafting",
           levelReq: 1,

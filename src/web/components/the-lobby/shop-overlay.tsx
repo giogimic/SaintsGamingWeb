@@ -96,11 +96,11 @@ export default function ShopOverlay() {
             <p className="text-sm text-[#a16207] font-mono mb-2">
               Buy Crystal Dust + Wood Log, then craft Binding Crystals here.
             </p>
-            {SHOP_CRAFT_RECIPES.map((recipe) => (
+            {SHOP_CRAFT_RECIPES.filter((r) => r.slug === 'craft_film_standard').map((recipe) => (
               <div key={recipe.slug} className="bg-[#fef08a] border-2 border-[#ca8a04] p-4 rounded-lg space-y-3">
                 <div>
                   <h3 className="font-bold text-[#854d0e] text-lg">
-                    Craft {recipe.outputQuantity}× Binding Crystal
+                    Craft {recipe.outputQuantity}× Standard Film
                   </h3>
                   <p className="text-[#a16207] text-sm font-mono mt-1">
                     Needs:{' '}

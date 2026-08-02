@@ -147,10 +147,10 @@ export function TurnBattleOverlay() {
           
           <button 
             disabled={phase !== 'WAITING_FOR_INPUT'}
-            onClick={() => handleAction('ITEM', undefined, 'binding_crystal')}
+            onClick={() => handleAction('ITEM', undefined, 'film_standard')}
             className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            BAG (Crystal)
+            EXPOSE FILM
           </button>
           
           <button 

@@ -426,9 +426,29 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const trueId = entityId.replace('npc_', '');
-        const npc = activeMap.npcs?.find((n: any) => n.id === trueId);
-        targetName = npc?.name || `NPC ${trueId}`;
+        const trueId = entityId.replace(/^npc_/, '');
+        const npc = activeMap.npcs?.find((n: any) => n.id === trueId || n.id === entityId);
+        targetName = npc?.name || (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
+        // Demo / dialogue path — talk to NPCs (Vance grants tools & film)
+        const dialogueNpcId = trueId.startsWith('warden') || trueId.includes('vance')
+          ? (trueId.startsWith('npc_') ? trueId : `npc_${trueId}`)
+          : (entityId.includes('warden') || entityId.includes('vance') ? 'npc_warden_vance' : entityId);
+        state.emitSocketEvent?.('npc_interact', {
+          mapId: state.currentMapId || state.instanceId,
+          targetId: dialogueNpcId.includes('vance') ? 'npc_warden_vance' : dialogueNpcId,
+        });
+        state.setGameMode('DIALOG');
+        return;
+      } else if (entityId.startsWith('creature_')) {
+        targetName = 'Wild Creature';
+        state.setCombatTarget({
+          entityId,
+          name: targetName,
+          hp: 80,
+          maxHp: 80,
+          behavior: 'HOSTILE',
+        });
+        return;
       } else if (state.otherPlayers?.[entityId]) {
         targetName = state.otherPlayers[entityId].name;
       }

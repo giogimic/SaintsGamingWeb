@@ -124,6 +124,26 @@ export class InventoryManager {
     // 4. Grant XP
     this.engine.events.emit("grantSkillXp", { accountId, skillSlug, amount: xpAmount });
 
+    // Quest hook (bible 15 event-driven)
+    this.engine.events.emit("itemGathered", {
+      accountId,
+      targetSlug: resourceSlug,
+      amount: 1,
+      socketId,
+    });
+
+    // Sync inventory to client
+    const invRows = await prisma.playerInventoryItem.findMany({ where: { userId } });
+    const inventory: Record<string, number> = {};
+    for (const row of invRows) {
+      inventory[row.itemSlug] = (inventory[row.itemSlug] || 0) + row.quantity;
+    }
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "inventory_sync",
+      data: { inventory },
+    });
+
     // 5. Notify Client
     this.engine.events.emit("directMessage", {
       socketId,

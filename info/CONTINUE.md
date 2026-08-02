@@ -3,17 +3,20 @@
 **Last updated:** 2026-08-02  
 **Point every new session at this file first.**
 
-This folder (`/info/`) and `/logs/` are internal knowledge. Public repo docs are: `README.md`, `CHANGELOG.md`, `docs/TUXEMON_ATTRIBUTION.md`.
-
 ---
 
 ## Current Focus
 
-**v2.1.116 — Creature Catalog (hero-like editor)**
+**v2.1.117 — Demo-ready vertical slice**
 
-- Studio → **Creatures** panel / Prisma `CreatureDef` / `creatureCatalog.ts` seed
-- Lab offers Solar/Bio/Hydro starters from catalog; wilds from `isWildSpawn`
-- Docs: `info/game/CREATURE_CATALOG.md`, Camera/Film + Aethervale drafts still pending code
+Smoke checklist: [`info/game/DEMO_SMOKE.md`](./game/DEMO_SMOKE.md)
+
+Shipped for demo:
+- Creature Catalog (Studio) + 3 elemental starters + Rockitten wild
+- Warden Vance at spawn (tools + film grants + open lab)
+- Soul **Film** capture (TB EXPOSE FILM); shop buy/craft film
+- Gather requires real tools (Vance grant)
+- RT Rockitten spawns for hotbar combat
 
 Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
@@ -21,25 +24,16 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
 ### Suggested next
 
-1. Studio Seed creatures on real `DATABASE_URL` deploy
-2. Wire **Film** capture slugs (see `CAPTURE_CAMERA_FILM.md`)
-3. Quest 1 Vance tool grant
-4. Confirm Soul Camera hard-gate
-
-### Smoke path (MPV)
-
-1. Party panel → Claim Rockitten / Open Lab  
-2. Step on shop tile → BUY Binding Crystal **or** BUY dust+log → CRAFT  
-3. Tall grass → TB battle → weaken → BAG Crystal  
-4. Target overworld Rockitten → hotbar Strike  
+1. Human run `DEMO_SMOKE.md` and file gaps
+2. Quest stages for gather counts (Q1 formalize in QuestTemplate)
+3. Q2–Q4 Aethervale (smelt/bramble) when systems ready
+4. ALIGNMENT D (Studio UX) / E (website bridge)
 
 ---
 
-## Mandatory Read Order (before coding)
+## Mandatory Read Order
 
 1. **This file**
-2. `info/vision/ECOSYSTEM.md`
-3. `info/gameplay-bible/README.md` + `07` constitution
-4. `info/gameplay-bible/ALIGNMENT.md`
-5. `info/DEVELOPMENT_RULES.md`
-6. `/logs/LOCAL_CHANGELOG.md`
+2. `info/game/DEMO_SMOKE.md`
+3. `info/gameplay-bible/ALIGNMENT.md`
+4. `/logs/LOCAL_CHANGELOG.md`

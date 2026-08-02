@@ -4,6 +4,7 @@ import {
   computeCaptureChance,
   rollCaptureSuccess,
 } from "@/shared/game/combatAbilities";
+import { getCaptureItemModifier } from "@/shared/game/captureItems";
 import {
   loadCreatureDef,
   loadWildSpawnDefs,
@@ -58,12 +59,6 @@ async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   });
   return asUser?.id ?? null;
 }
-
-const ITEM_MODIFIERS: Record<string, number> = {
-  binding_crystal: 1,
-  advanced_crystal: 2,
-  perfect_crystal: 255,
-};
 
 export class EncounterManager {
   private activeBattles: Map<string, BattleState> = new Map();
@@ -264,9 +259,9 @@ export class EncounterManager {
 
     if (data.action === "ITEM" && data.itemId) {
       const itemId = data.itemId;
-      const itemMod = ITEM_MODIFIERS[itemId];
+      const itemMod = getCaptureItemModifier(itemId);
       if (itemMod === undefined) {
-        battle.log.push("That item cannot be used here.");
+        battle.log.push("That won't capture a soul. Use Standard Film.");
         battle.phase = "WAITING_FOR_INPUT";
         this.broadcastUpdate(battle);
         return;
@@ -284,17 +279,16 @@ export class EncounterManager {
         where: { userId, itemSlug: itemId },
       });
       if (!inv || inv.quantity < 1) {
-        // Real inventory only — no demo grants (product rule)
-        battle.log.push("You don't have a Binding Crystal.");
+        battle.log.push("You don't have any capture film.");
         this.sendToPlayer(battle.socketId, "show_toast", {
-          message: "You need a Binding Crystal in your inventory.",
+          message: "You need Standard Film (buy/craft at the merchant, or ask Vance).",
         });
         battle.phase = "WAITING_FOR_INPUT";
         this.broadcastUpdate(battle);
         return;
       }
 
-      // Consume one crystal for this throw (server-authoritative)
+      // Consume one film exposure (server-authoritative)
       if (inv.quantity <= 1) {
         await prisma.playerInventoryItem.delete({ where: { id: inv.id } });
       } else {
@@ -304,7 +298,7 @@ export class EncounterManager {
         });
       }
 
-      battle.log.push(`You threw a Binding Crystal!`);
+      battle.log.push(`You exposed a frame of film!`);
 
       const captureChance = computeCaptureChance({
         maxHp: battle.wildCreature.maxHp,
