@@ -42,6 +42,7 @@ import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
+import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
 import { MobileGameLauncher } from './MobileGameLauncher';
 
 const StudioEditorShell = dynamic(
