@@ -7,24 +7,24 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — ambient NPCs + Carlos 2-foe + tracker clear**
+**Game Foundation Systems (PR #4) — Q7 Route 2 + Scoop support**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- Ambient dialogue seed + wall prune (`npm run seed:ambient`, also via `seed:campaign-npcs`)
-- Azure plaza densify (3 hand-placed ambient NPCs)
-- Carlos trainer party: **Dragarbor → Pairagrin**
-- Post-Q6 Spyder tracker copy when campaign complete
-- Offline smoke: **127** checks (incl. ambient walls/dialogue)
+- **Q7** Beyond the Tunnel: Cotton Tunnel east → `SPYDER_ROUTE2` scout
+- Scoop **film shop** (`OPEN_SHOP`) + **nurse** (`HEAL_PARTY`)
+- Trainer soft-heal + nurse heal sync via `party_creatures_hp`
+- Tracker “Spyder Trail Clear” after Q7; Guide `node_route2` / `node_done`
+- Offline smoke: **145** checks
 
 ### Suggested next
 
-1. Human smoke Q1–Q6 (note 2-foe Carlos + rematch)
-2. Confirm tracker shows “Spyder Trail Clear” after Q6
-3. Optional: more Azure ambient flavor / next Spyder chapter hook
+1. Human smoke Q1–Q7 (Carlos rematch via Scoop nurse, Route 2 scout)
+2. Optional: extend Route 2 east / Leather Town hook
+3. Confirm shop purchases grant film in live session
 
 ### Pipeline
 

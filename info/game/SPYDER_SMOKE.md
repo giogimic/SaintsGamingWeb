@@ -28,9 +28,11 @@ npm run dev
 | 11 | Step north door `(8,18)` → Scoop | Warp indoors; talk **Scoop Clerk** |
 | 12 | Exit Scoop → door `(12,18)` → Café | Talk **Café Host**; Q5 → Q6 Tunnel |
 | 13 | Walk **east** plaza to `(37,18)` | Warp → tunnel; talk **Carlos** (Q6 stage 1) |
-| 14 | Carlos → **Challenge Carlos** | Trainer TB: **Dragarbor → Pairagrin**; no flee/capture; both down → Q6 complete |
-| 15 | After battle UI closes | Carlos post-win / post-lose dialogue (rematch available) |
-| 16 | Tracker with no active quests | “Spyder Trail Clear” if Q6 completed; else Guide prompt |
+| 14 | Carlos → **Challenge Carlos** | Trainer TB: **Dragarbor → Pairagrin**; no flee/capture; both down → Q6 complete → **Q7** |
+| 15 | After battle UI closes | Carlos post-win (hints Route 2 east) / post-lose (points to Scoop nurse); rematch available |
+| 16 | Optional: Scoop **Browse shop** / **nurse heal** | Film merchant opens; party HP full; soft-heal also syncs after lose |
+| 17 | Tunnel **east** `(38,7)` → Route 2 | Warp → scout `(4,10)`; talk scout → Q7 complete |
+| 18 | Tracker with no active quests | “Spyder Trail Clear” if Q7 completed; else Guide / Route 2 prompt |
 
 ## Automated check
 

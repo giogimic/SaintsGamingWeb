@@ -2,15 +2,15 @@
 
 **Branch:** `giogimic/game-foundation-systems-fae4`  
 **PR:** https://github.com/giogimic/SaintsGamingWeb/pull/4  
-**Updated:** 2026-08-02 (ambient + multi-foe + tracker)
+**Updated:** 2026-08-02 (Q7 + Scoop shop/nurse)
 
 ## Done
 
-- Spyder **Q1–Q6** with Carlos trainer **2-foe** (Dragarbor → Pairagrin) + post-battle dialogue
-- Cotton Scoop/Café/Tunnel warps; TMX ambient densify + wall prune + dialogue stubs
-- Azure plaza hand densify (florist, scout, child)
-- Post-Q6 quest tracker empty-state (“Spyder Trail Clear”)
-- `npm run smoke:spyder` (127 checks) + `seed:ambient` / `seed:campaign-npcs`
+- Spyder **Q1–Q7**: Azure → Route 1 → Cotton → Tunnel (Carlos 2-foe) → Route 2 scout
+- Scoop film merchant + nurse full-party heal; soft-heal client sync
+- Ambient NPC densify / wall prune / dialogue stubs
+- Post-Q7 tracker empty-state; Guide state-aware through Route 2
+- `npm run smoke:spyder` (**145** checks)
 
 ## Pipeline
 

@@ -10,6 +10,8 @@ import { PrismaClient } from "@prisma/client";
 import {
   CAMPAIGN_NPC_SEEDS,
   CARLOS_DIALOGUE_TREE,
+  SCOOP_CLERK_DIALOGUE_TREE,
+  SCOOP_NURSE_DIALOGUE_TREE,
   SPYDER_QUEST_CHAIN,
 } from "../src/server/spyderQuests";
 import { AZURE_GUIDE_NPC_ID, AZURE_GUIDE_TREE } from "../src/server/spyderGuideDialogue";
@@ -28,6 +30,12 @@ function dialogueTreeFor(npc: {
   }
   if (npc.id === "npc_cotton_tunnel_carlos") {
     return CARLOS_DIALOGUE_TREE;
+  }
+  if (npc.id === "npc_cotton_scoop_clerk") {
+    return SCOOP_CLERK_DIALOGUE_TREE;
+  }
+  if (npc.id === "npc_cotton_scoop_nurse") {
+    return SCOOP_NURSE_DIALOGUE_TREE;
   }
   if (npc.questSlug) {
     return {

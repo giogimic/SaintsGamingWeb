@@ -8,7 +8,12 @@ import {
   resolveAzureGuideStartNode,
   type GuideContext,
 } from "./spyderGuideDialogue";
-import { CARLOS_DIALOGUE_TREE } from "./spyderQuests";
+import {
+  CARLOS_DIALOGUE_TREE,
+  SCOOP_CLERK_DIALOGUE_TREE,
+  SCOOP_NURSE_DIALOGUE_TREE,
+  SPYDER_QUEST_CHAIN,
+} from "./spyderQuests";
 
 const prisma = new PrismaClient();
 
@@ -21,6 +26,8 @@ const BUILTIN_TREES: Record<string, any> = {
   [AZURE_GUIDE_NPC_ID]: AZURE_GUIDE_TREE,
   azure_guide: AZURE_GUIDE_TREE,
   npc_cotton_tunnel_carlos: CARLOS_DIALOGUE_TREE,
+  npc_cotton_scoop_clerk: SCOOP_CLERK_DIALOGUE_TREE,
+  npc_cotton_scoop_nurse: SCOOP_NURSE_DIALOGUE_TREE,
 };
 
 const SPYDER_DEFAULT_STARTER = "budaye";
@@ -197,14 +204,7 @@ export class DialogueManager {
       where: {
         userId,
         questSlug: {
-          in: [
-            "quest_azure_welcome",
-            "quest_azure_townsfolk",
-            "quest_spyder_first_capture",
-            "quest_spyder_cotton_arrive",
-            "quest_spyder_cotton_locals",
-            "quest_spyder_cotton_tunnel",
-          ],
+          in: SPYDER_QUEST_CHAIN.map((q) => q.slug),
         },
       },
     });
@@ -297,6 +297,15 @@ export class DialogueManager {
       return;
     }
 
+    if (action === "OPEN_SHOP") {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "demo_open_shop",
+        data: {},
+      });
+      return;
+    }
+
     if (action === "ACCEPT_QUEST") {
       // Handled separately with questSlug
       return;
@@ -310,6 +319,30 @@ export class DialogueManager {
 
     if (action === "GRANT_SPYDER_STARTER") {
       await this.grantSpyderStarter(userId, socketId);
+      return;
+    }
+
+    if (action === "HEAL_PARTY") {
+      const party = await prisma.playerCreature.findMany({
+        where: { userId, isParty: true },
+      });
+      for (const c of party) {
+        if (c.currentHp >= c.maxHp) continue;
+        await prisma.playerCreature.update({
+          where: { id: c.id },
+          data: { currentHp: c.maxHp },
+        });
+      }
+      const sync = await prisma.playerCreature.findMany({
+        where: { userId, isParty: true },
+        select: { id: true, currentHp: true, maxHp: true },
+      });
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "party_creatures_hp",
+        data: { creatures: sync },
+      });
+      this.toast(socketId, "Your party was fully healed.");
       return;
     }
 

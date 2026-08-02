@@ -133,6 +133,7 @@ const AMBIENT_MAPS = [
   "COTTON_SCOOP",
   "COTTON_CAFE",
   "SPYDER_COTTON_TUNNEL",
+  "SPYDER_ROUTE2",
 ] as const;
 
 async function checkNpcs() {
@@ -169,6 +170,35 @@ async function checkNpcs() {
       if (!tree) fail(`dialogue missing: ${seed.id}`);
       else ok(`dialogue: ${seed.id}`);
     }
+  }
+}
+
+async function checkDialogueActions() {
+  const clerk = await prisma.npcDialogueTree.findUnique({
+    where: { npcId: "npc_cotton_scoop_clerk" },
+  });
+  if (!clerk?.data?.includes("OPEN_SHOP")) {
+    fail("Scoop clerk dialogue missing OPEN_SHOP");
+  } else {
+    ok("Scoop clerk OPEN_SHOP");
+  }
+
+  const nurse = await prisma.npcDialogueTree.findUnique({
+    where: { npcId: "npc_cotton_scoop_nurse" },
+  });
+  if (!nurse?.data?.includes("HEAL_PARTY")) {
+    fail("Scoop nurse dialogue missing HEAL_PARTY");
+  } else {
+    ok("Scoop nurse HEAL_PARTY");
+  }
+
+  const guide = await prisma.npcDialogueTree.findUnique({
+    where: { npcId: "npc_azure_guide" },
+  });
+  if (!guide?.data?.includes("node_route2") || !guide?.data?.includes("node_done")) {
+    fail("Guide tree missing node_route2 / node_done");
+  } else {
+    ok("Guide has node_route2 + node_done");
   }
 }
 
@@ -257,8 +287,13 @@ async function main() {
     path: [5, 10, 7, 6],
   });
   await checkMap("SPYDER_COTTON_TUNNEL", {
-    gateTargets: ["COTTON_TOWN"],
-    path: [2, 15, 15, 7],
+    gateTargets: ["COTTON_TOWN", "SPYDER_ROUTE2"],
+    path: [2, 15, 38, 7],
+  });
+  await checkMap("SPYDER_ROUTE2", {
+    gateTargets: ["SPYDER_COTTON_TUNNEL"],
+    minGrass: 10,
+    path: [2, 10, 4, 10],
   });
 
   console.log("\nNPCs");
@@ -266,6 +301,9 @@ async function main() {
 
   console.log("\nAmbient NPCs (walls + dialogue)");
   await checkAmbientNpcs();
+
+  console.log("\nDialogue actions");
+  await checkDialogueActions();
 
   console.log("\nQuests");
   await checkQuests();

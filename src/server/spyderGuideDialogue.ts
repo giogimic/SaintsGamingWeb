@@ -88,8 +88,12 @@ export const AZURE_GUIDE_TREE = {
     text: "East of Cotton Town, a tunnel mouth opens. Carlos waits inside — challenge him when your companion is ready.",
     options: [{ label: "Into the tunnel.", nextNode: "exit" }],
   },
+  node_route2: {
+    text: "Past Carlos, the tunnel opens east onto Spyder Route 2. Meet the scout on the road — Scoop's nurse can heal you first if you need it.",
+    options: [{ label: "Onto Route 2.", nextNode: "exit" }],
+  },
   node_done: {
-    text: "You've walked Azure to Cotton and bested Carlos in the tunnel. Rest, then press deeper into Spyder's web when you're ready.",
+    text: "Azure to Route 2 — you've cut a clean trail through Spyder's near web. Restock film at Scoop, heal at the nurse, and roam when you're ready for whatever comes next.",
     options: [
       { label: "Open the Lab", nextNode: "exit", action: "OPEN_LAB" },
       { label: "Farewell.", nextNode: "exit" },
@@ -134,8 +138,16 @@ export function resolveAzureGuideStartNode(ctx: GuideContext): string {
     return "node_cotton_tunnel";
   }
 
-  if (completedSlugs.has("quest_spyder_cotton_tunnel")) {
+  if (active?.slug === "quest_spyder_route2") {
+    return "node_route2";
+  }
+
+  if (completedSlugs.has("quest_spyder_route2")) {
     return "node_done";
+  }
+
+  if (completedSlugs.has("quest_spyder_cotton_tunnel")) {
+    return "node_route2";
   }
 
   if (completedSlugs.has("quest_spyder_cotton_locals")) {
