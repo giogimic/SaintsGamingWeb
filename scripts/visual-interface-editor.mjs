@@ -237,6 +237,22 @@ async function main() {
     await page.waitForTimeout(2000);
     await shot(page, '11-in-world', 'in-world');
 
+    // ── ESC toggles Options (label: OPTIONS (ESC)) ─────────────────────
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    const escOpened = await page.getByText('Settings', { exact: true }).isVisible().catch(() => false);
+    if (escOpened) {
+      findings.push({ step: 'esc-opens-options', ok: true });
+      log('[ok] esc-opens-options');
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
+      const escClosed = !(await page.getByText('Settings', { exact: true }).isVisible().catch(() => false));
+      findings.push({ step: 'esc-closes-options', ok: escClosed });
+      log(escClosed ? '[ok] esc-closes-options' : '[FAIL] esc-closes-options');
+    } else {
+      fail('esc-opens-options', 'Settings not visible after Escape');
+    }
+
     // ── Interface Editor ───────────────────────────────────────────────
     await optionsBtn.click();
     await page.waitForTimeout(500);
