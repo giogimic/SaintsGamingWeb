@@ -7,22 +7,22 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — Q10 Leather Gym (Rook) + Shaft1**
+**Game Foundation Systems (PR #4) — Q11 Leather Shafts (Shaft1→2)**
 
 Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
 Smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
 ### Just shipped
 
-- **Rook** Gym trainer: Rockitten → Aardorn + post-battle dialogue
-- **Q10** Leather Gym (TALK + BATTLE); Q9 auto-advances
-- **Shaft1** east of Leather Town (scout + tall grass)
-- Offline smoke: **231** checks
+- **Shaft2** linked east of Shaft1 (miner + tall grass)
+- **Q11** Leather Shafts (scout → Deep Miner); Q10 auto-advances
+- Guide `node_leather_shaft`; tracker clear after Q11
+- Offline smoke: **245** checks
 
 ### Suggested next
 
-1. Human smoke Q1–Q10 (Rook fight, Center heal rematch, shaft)
-2. Optional: Shaft2 link / second Gym foe roster expand
+1. Human smoke Q1–Q11 (Rook → shafts → Shaft2 miner)
+2. Optional: Shaft2 trainer / next Spyder region hook
 3. TMX Leather ambient import when `TUXEMON_PATH` available
 
 ### Pipeline
