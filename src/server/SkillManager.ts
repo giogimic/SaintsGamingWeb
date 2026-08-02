@@ -1,16 +1,19 @@
 import { GameEngine } from "./GameEngine";
 import { PrismaClient } from "@prisma/client";
+import {
+  calculateCombatLevelFromXp,
+  isCombatSkillTyping,
+  normalizeSkillSlug,
+} from "@/shared/game/skillTypings";
 
 const prisma = new PrismaClient();
 
-// The universal Saints XP curve formula
-// For example, level 2 requires 100 XP, scaling non-linearly to 99.
-export function calculateLevelFromXp(xp: number): number {
+/** Gathering / artisan OSRS-style curve (legacy, max 99). */
+export function calculateGatheringLevelFromXp(xp: number): number {
   let level = 1;
   let requiredXp = 0;
-  
+
   for (let i = 1; i < 99; i++) {
-    // A standard curve similar to OSRS: L(x) = L(x-1) + floor(x + 300 * 2^(x/7)) / 4
     requiredXp += Math.floor(i + 300 * Math.pow(2, i / 7)) / 4;
     if (xp >= requiredXp) {
       level = i + 1;
@@ -19,6 +22,19 @@ export function calculateLevelFromXp(xp: number): number {
     }
   }
   return Math.min(level, 99);
+}
+
+/** @deprecated use calculateGatheringLevelFromXp or calculateCombatLevelFromXp */
+export function calculateLevelFromXp(xp: number): number {
+  return calculateGatheringLevelFromXp(xp);
+}
+
+export function calculateLevelForSkill(skillSlug: string, xp: number): number {
+  const slug = normalizeSkillSlug(skillSlug);
+  if (isCombatSkillTyping(slug)) {
+    return calculateCombatLevelFromXp(xp);
+  }
+  return calculateGatheringLevelFromXp(xp);
 }
 
 export class SkillManager {
@@ -30,59 +46,62 @@ export class SkillManager {
     console.log("[SkillManager] Initialized Progression Engine");
   }
 
-  private async handleGrantXp({ accountId, skillSlug, amount }: { accountId: string, skillSlug: string, amount: number }) {
+  private async handleGrantXp({
+    accountId,
+    skillSlug,
+    amount,
+  }: {
+    accountId: string;
+    skillSlug: string;
+    amount: number;
+  }) {
     if (!accountId || !skillSlug || amount <= 0) return;
+
+    const slug = normalizeSkillSlug(skillSlug);
 
     try {
       const dbUser = await prisma.account.findFirst({
         where: { id: accountId },
-        select: { userId: true }
+        select: { userId: true },
       });
       if (!dbUser) return;
       const userId = dbUser.userId;
 
-      // 1. Fetch current skill state
       let skill = await prisma.playerSkill.findUnique({
-        where: { userId_skillSlug: { userId, skillSlug } }
+        where: { userId_skillSlug: { userId, skillSlug: slug } },
       });
 
-      // 2. Initialize if not exists
       if (!skill) {
         skill = await prisma.playerSkill.create({
-          data: { userId, skillSlug, xp: 0, level: 1 }
+          data: { userId, skillSlug: slug, xp: 0, level: 1 },
         });
       }
 
-      // 3. Calculate new XP and Level
       const newXp = skill.xp + amount;
-      const newLevel = calculateLevelFromXp(newXp);
+      const newLevel = calculateLevelForSkill(slug, newXp);
       const levelUp = newLevel > skill.level;
 
-      // 4. Save to DB
       await prisma.playerSkill.update({
         where: { id: skill.id },
-        data: { xp: newXp, level: newLevel }
+        data: { xp: newXp, level: newLevel },
       });
 
-      // 5. Notify Client
       const socketId = this.engine.getSocketIdForAccount(accountId);
-      
+
       this.engine.events.emit("directMessage", {
         socketId,
         event: "skill_xp_gained",
-        data: { skillSlug, xpGained: amount, totalXp: newXp, level: newLevel, levelUp }
+        data: { skillSlug: slug, xpGained: amount, totalXp: newXp, level: newLevel, levelUp },
       });
 
       if (levelUp) {
-        // Send a toast specifically to this player
         this.engine.events.emit("directMessage", {
           socketId,
           event: "show_toast",
-          data: { message: `Congratulations! Your ${skillSlug} level is now ${newLevel}!` }
+          data: { message: `Congratulations! Your ${slug} level is now ${newLevel}!` },
         });
-        console.log(`[SkillManager] ${accountId} leveled up ${skillSlug} to ${newLevel}`);
+        console.log(`[SkillManager] ${accountId} leveled up ${slug} to ${newLevel}`);
       }
-
     } catch (e) {
       console.error("[SkillManager] Failed to grant XP:", e);
     }
