@@ -60,12 +60,21 @@ export class SkillManager {
     const slug = normalizeSkillSlug(skillSlug);
 
     try {
-      const dbUser = await prisma.account.findFirst({
+      // Socket auth may pass Account.id or User.id depending on join path
+      let userId: string | null = null;
+      const asAccount = await prisma.account.findFirst({
         where: { id: accountId },
         select: { userId: true },
       });
-      if (!dbUser) return;
-      const userId = dbUser.userId;
+      if (asAccount?.userId) userId = asAccount.userId;
+      else {
+        const asUser = await prisma.user.findFirst({
+          where: { id: accountId },
+          select: { id: true },
+        });
+        userId = asUser?.id ?? null;
+      }
+      if (!userId) return;
 
       let skill = await prisma.playerSkill.findUnique({
         where: { userId_skillSlug: { userId, skillSlug: slug } },
