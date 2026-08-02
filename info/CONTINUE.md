@@ -7,25 +7,26 @@
 
 ## Current Focus
 
-**Game Foundation Systems (PR #4) — classes / skills / shinies / Tuxemon bridge**
+**Game Foundation Systems (PR #4) — combat XP + Spyder NPC path**
 
-Progress log: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
-Design notes: [`info/game/CLASS_SKILLS_SHINY.md`](./game/CLASS_SKILLS_SHINY.md)
+Progress: [`info/game/GAME_FOUNDATION_SYSTEMS.md`](./game/GAME_FOUNDATION_SYSTEMS.md)  
+Design: [`info/game/CLASS_SKILLS_SHINY.md`](./game/CLASS_SKILLS_SHINY.md)
 
-### Shipped on branch `giogimic/game-foundation-systems-fae4`
+### Just shipped (continue pass)
 
-- Five playable classes (shared base + deltas); Studio Classes dock persists to DB
-- Combat skill typings (Attack…Intelligence) + gathering matrix retained
-- Creature shinies (global + per-species, optional sprites, capture persist)
-- Tuxemon import fixed → 411 `CreatureTemplate`; sync → `CreatureDef`
-- 235 campaign maps in `WorldMap` (`gameId: tuxemon`); Spyder Tamer hero → `AZURE_TOWN`
+- RT combat → combat skill typing XP (`combatSkillXp.ts` + CombatManager / damage-taken)
+- TB win/capture → summoning (+ hitpoints / perception)
+- Weighted encounter helper used by EncounterManager
+- Studio NPC panel **persists** to `WorldMap.npcsData` + dialogue tree
+- Vance/Rockitten demo spawns gated to `DEMO_SANDBOX` only
+- `npm run seed:azure` → Azure Guide NPC + `quest_azure_welcome` on AZURE_TOWN
 
 ### Suggested next
 
-1. Human smoke: Studio Seed Classes/Creatures → create each class → tall grass shiny (raise global %)
-2. Pick Spyder Tamer hero → walk AZURE_TOWN; file gaps in NPC/mission fidelity
-3. Wire mission/dialogue packs from `tuxemon-db/mission` + `npc` (Npc editor still stub)
-4. Combat XP grants into combat typings; weighted encounter polish
+1. Human smoke: Spyder Tamer → talk to Azure Guide → accept quest; RT fight Rockitten on DEMO for skill XP
+2. Import more TMX `create_npc` placements into campaign maps
+3. Flatten more Spyder mission steps into QuestTemplate stages
+4. Combat kill bonus XP (enrich `entityDeath` with attackerId)
 
 ### Pipeline
 
@@ -34,12 +35,9 @@ npm run import:tuxemon
 npm run sync:creatures
 npm run migrate:campaign
 npm run ensure:campaign
+npm run seed:azure
 npm run dev
 ```
-
-Smoke checklist (demo): [`info/game/DEMO_SMOKE.md`](./game/DEMO_SMOKE.md)
-
-Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
 ---
 
