@@ -32,9 +32,11 @@ npm run dev
 | 15 | After battle UI closes | Carlos post-win (hints Route 2 east) / post-lose (points to Scoop nurse); rematch available |
 | 16 | Optional: Scoop **Browse shop** / **nurse heal** | Film merchant opens; party HP full; soft-heal also syncs after lose |
 | 17 | Tunnel **east** `(38,7)` → Route 2 | Warp → scout `(4,10)`; talk scout → Q7 complete → **Q8** |
-| 18 | Route 2 **east** `(39,10)` → Route 3 → Leather west | Corridors open; greeter `(4,21)`; talk → Q8 complete |
+| 18 | Route 2 **east** `(39,10)` → Route 3 → Leather west | Corridors open; greeter `(4,21)`; talk → Q8 complete → **Q9** |
 | 19 | Leather door `(10,18)` → Center | Nurse **heal party**; exit south back to town |
-| 20 | Tracker with no active quests | “Spyder Trail Clear” if Q8 completed; else Guide / Leather prompt |
+| 20 | Scoop door `(14,18)` → talk clerk | Film shop (`OPEN_SHOP`); Q9 complete |
+| 21 | Optional: Gym door `(24,20)` | Attendant explains challenges not open yet |
+| 22 | Tracker with no active quests | “Spyder Trail Clear” if Q9 completed; else Guide / Scoop prompt |
 
 ## Economy note
 
