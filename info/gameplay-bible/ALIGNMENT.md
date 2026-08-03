@@ -82,7 +82,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 7. **Done:** Quest dock lists `QuestTemplate` via `/api/quests/templates`; assign merges `ACCEPT_QUEST` onto `NpcDialogueTree` (existing DialogueManager path) 
 
 ### Slice E — Website ↔ game (10, ecosystem)
-1. Profile pinned creature  
+1. Profile pinned creature — **Done 2026-08-03:** `User.pinnedBeastId` → owned `PlayerCreature`; profile shows pixel sprite (`getPublicProfile.pinnedCreature`)  
 2. Marketplace / inventory async bridge  
 3. Social feed hooks for rare captures  
 
