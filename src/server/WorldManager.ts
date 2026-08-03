@@ -260,7 +260,9 @@ export class WorldManager {
 
   public async joinMap(mapId: string, accountId: string, isPrivate: boolean = false): Promise<MapInstance> {
     // Always shard against the base definition id — never DEMO_SANDBOX_ch1_ch1.
-    const baseMapId = toBaseMapId(String(mapId || DEMO_MAP_ID)) || DEMO_MAP_ID;
+    // Retired sandboxes (SAINTS_VILLAGE) remap to the live demo map.
+    let baseMapId = toBaseMapId(String(mapId || DEMO_MAP_ID)) || DEMO_MAP_ID;
+    if (baseMapId === "SAINTS_VILLAGE") baseMapId = DEMO_MAP_ID;
     // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
     await mapLoader.loadMapData(baseMapId);
 
