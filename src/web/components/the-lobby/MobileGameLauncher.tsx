@@ -11,10 +11,17 @@ interface MobileGameLauncherProps {
     spriteId?: string;
   } | null;
   onEnterGame: () => void;
+  /** Optional: enter without requesting fullscreen (better on iOS Safari). */
+  onEnterWithoutFullscreen?: () => void;
   onSelectCharacter?: () => void;
 }
 
-export function MobileGameLauncher({ character, onEnterGame, onSelectCharacter }: MobileGameLauncherProps) {
+export function MobileGameLauncher({
+  character,
+  onEnterGame,
+  onEnterWithoutFullscreen,
+  onSelectCharacter,
+}: MobileGameLauncherProps) {
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4 overflow-y-auto select-none bg-[#050b14]">
       {/* Full-bleed atmosphere */}
@@ -103,21 +110,28 @@ export function MobileGameLauncher({ character, onEnterGame, onSelectCharacter }
         )}
 
         <button
-          onClick={onEnterGame}
+          onClick={onEnterWithoutFullscreen || onEnterGame}
           className="w-full py-4 px-6 rounded-2xl font-black text-base tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-[#0a0a0f] relative overflow-hidden group border border-[#e8d5a3]/50 shadow-[0_0_35px_rgba(203,178,106,0.35)]"
           style={{
             background: 'linear-gradient(135deg, #e8d5a3 0%, #cbb26a 45%, #806f47 100%)',
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-          <Maximize2 className="w-5 h-5 relative z-10" />
-          <span className="relative z-10">Enter Fullscreen</span>
-          <Play className="w-4 h-4 fill-current relative z-10" />
+          <Play className="w-5 h-5 fill-current relative z-10" />
+          <span className="relative z-10">Enter World</span>
+        </button>
+
+        <button
+          onClick={onEnterGame}
+          className="mt-3 w-full py-3 px-6 rounded-2xl font-bold text-sm tracking-wider uppercase transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-[#e8d5a3] border border-[#cbb26a]/35 bg-[#0c1220]/70 hover:bg-[#cbb26a]/10"
+        >
+          <Maximize2 className="w-4 h-4" />
+          <span>Enter Fullscreen</span>
         </button>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-[#cbb26a]/45 text-[11px] font-mono">
           <RotateCcw className="w-3.5 h-3.5" />
-          <span>Landscape recommended for controls</span>
+          <span>Landscape recommended · safe for iOS without fullscreen</span>
         </div>
       </div>
     </div>

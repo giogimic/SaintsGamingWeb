@@ -803,11 +803,14 @@ export default function TheLobby({
     }
   };
 
-  const handleEnterMobileGame = () => {
+  const handleEnterMobileGame = (opts?: { fullscreen?: boolean }) => {
     setHasEnteredMobile(true);
-    toggleFullscreen();
-    if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
-      (screen.orientation as any).lock('landscape').catch(() => {});
+    const wantFs = opts?.fullscreen !== false;
+    if (wantFs) {
+      toggleFullscreen();
+      if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
+        (screen.orientation as any).lock('landscape').catch(() => {});
+      }
     }
   };
 
@@ -866,7 +869,8 @@ export default function TheLobby({
       {isMobile && !hasEnteredMobile && !isFullscreen && (
         <MobileGameLauncher 
           character={userCharacters.find(c => c.id === activeCharacterId) || userCharacters[0]}
-          onEnterGame={handleEnterMobileGame}
+          onEnterGame={() => handleEnterMobileGame({ fullscreen: true })}
+          onEnterWithoutFullscreen={() => handleEnterMobileGame({ fullscreen: false })}
           onSelectCharacter={() => { setShowSelector(true); setHasEnteredMobile(true); }}
         />
       )}
@@ -917,32 +921,39 @@ export default function TheLobby({
       )}
 
       {gameMode !== 'BATTLE' && (
-        <div className="absolute top-3 right-3 z-40 pointer-events-none flex items-center gap-2">
+        <div
+          className="absolute z-40 pointer-events-none flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
+          style={{
+            top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
+            right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+          }}
+        >
           {enableStudio && isDeveloper && (
             <button
               onClick={() => useEditorStore.getState().toggleCreationMode()}
-              className={`pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-2
+              className={`pointer-events-auto px-2.5 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-1.5 md:px-3 md:gap-2
                 ${isCreationMode 
                   ? 'bg-[#cbb26a] text-black border-[#806f47] hover:bg-amber-500 shadow-[0_0_15px_rgba(203,178,106,0.3)]' 
                   : 'bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a]'
                 }`}
             >
               <span className="text-sm leading-none">🔨</span>
-              <span>STUDIO (Ctrl+E)</span>
+              <span className="hidden sm:inline">STUDIO (Ctrl+E)</span>
             </button>
           )}
           {!enableStudio && isDeveloper && (
             <a
               href="/studio"
-              className="pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a] flex items-center gap-2"
+              className="pointer-events-auto px-2.5 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a] flex items-center gap-1.5 md:px-3 md:gap-2"
             >
               <span className="text-sm leading-none">🔨</span>
-              <span>OPEN STUDIO</span>
+              <span className="hidden sm:inline">OPEN STUDIO</span>
             </a>
           )}
+          {/* ActionCluster already has Options on touch — keep a compact desktop/top affordance */}
           <button
             onClick={() => setIsOptionsOpen(true)}
-            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
+            className="pointer-events-auto px-2.5 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-1.5 md:px-3 md:gap-2 max-md:hidden"
           >
             <span className="text-sm leading-none">⚙️</span>
             <span>OPTIONS (ESC)</span>
@@ -973,8 +984,8 @@ export default function TheLobby({
       {gameMode === 'LOGIN' && <GameLogin />}
       {gameMode === 'SERVER_SELECT' && <ServerSelect />}
 
-      {/* Classic RPG Interface Panel */}
-      <DraggablePanel id="classic-panel" className="absolute bottom-4 right-4 pointer-events-none">
+      {/* Classic RPG Interface Panel — on mobile this becomes a sheet when open */}
+      <DraggablePanel id="classic-panel" className="absolute bottom-4 right-4 pointer-events-none max-md:static max-md:inset-auto">
         <ClassicPanel />
       </DraggablePanel>
 

@@ -43,34 +43,41 @@ export default function GameOptionsMenu({
   ];
 
   return (
-    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto p-4">
-      <div className="w-full max-w-4xl h-[600px] bg-white border-4 border-slate-200 rounded-[2rem] shadow-2xl flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm pointer-events-auto p-2 sm:p-4">
+      <div className="flex h-[min(600px,92dvh)] w-full max-w-4xl flex-col overflow-hidden rounded-[1.5rem] border-4 border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 sm:rounded-[2rem] md:h-[600px] md:flex-row">
         
-        {/* Sidebar */}
-        <div className="w-64 bg-slate-50 border-r-2 border-slate-100 flex flex-col">
-          <div className="p-6 border-b-2 border-slate-100">
-            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Settings</h2>
+        {/* Sidebar — horizontal scroll tabs on phones */}
+        <div className="flex shrink-0 flex-col border-b-2 border-slate-100 bg-slate-50 md:w-64 md:border-b-0 md:border-r-2">
+          <div className="flex items-center justify-between px-4 py-3 md:block md:border-b-2 md:border-slate-100 md:p-6">
+            <h2 className="text-xl font-extrabold tracking-tight text-slate-800 md:text-2xl">Settings</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-full transition-all md:hidden"
+              aria-label="Close settings"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex gap-1 overflow-x-auto px-2 pb-2 md:flex-1 md:flex-col md:space-y-2 md:overflow-y-auto md:p-4 md:pb-4">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all ${
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all md:w-full md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-sm ${
                   activeTab === tab.id
                     ? 'bg-blue-500 text-white shadow-md'
                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 {tab.icon}
-                {tab.label}
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
           
           {/* Bottom Actions */}
-          <div className="p-4 border-t-2 border-slate-100">
+          <div className="hidden border-t-2 border-slate-100 p-4 md:block">
             <button
               onClick={() => window.location.href = '/'}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-extrabold transition-all active:scale-95 border-2 border-rose-100"
@@ -82,31 +89,31 @@ export default function GameOptionsMenu({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 flex flex-col relative bg-white">
+        <div className="relative flex min-h-0 flex-1 flex-col bg-white">
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all z-10"
+            className="absolute top-4 right-4 z-10 hidden p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 rounded-full md:top-6 md:right-6 md:block"
           >
             <X className="w-6 h-6" />
           </button>
           
-          <div className="flex-1 p-10 overflow-y-auto">
-            <h3 className="text-3xl font-extrabold text-slate-800 mb-8 border-b-2 border-slate-100 pb-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-10">
+            <h3 className="mb-4 border-b-2 border-slate-100 pb-3 text-2xl font-extrabold text-slate-800 sm:mb-6 md:mb-8 md:pb-4 md:text-3xl">
               {tabs.find(t => t.id === activeTab)?.label}
             </h3>
             
             {activeTab === 'GAME' && (
               <div className="space-y-6">
-                <div className="bg-slate-50 border-2 border-slate-100 p-6 rounded-3xl">
-                  <h4 className="text-sm font-extrabold text-slate-400 mb-4 uppercase tracking-widest">Display</h4>
-                  <div className="flex items-center justify-between">
+                <div className="rounded-3xl border-2 border-slate-100 bg-slate-50 p-4 sm:p-6">
+                  <h4 className="mb-4 text-sm font-extrabold uppercase tracking-widest text-slate-400">Display</h4>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <div className="text-slate-800 font-extrabold text-lg">Fullscreen Mode</div>
-                      <div className="text-slate-500 text-sm mt-1 font-medium">Play the game in full screen for the best experience.</div>
+                      <div className="text-lg font-extrabold text-slate-800">Fullscreen Mode</div>
+                      <div className="mt-1 text-sm font-medium text-slate-500">Best on phones when the browser allows it (iOS may block).</div>
                     </div>
                     <button
                       onClick={onToggleFullscreen}
-                      className="px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white rounded-xl font-extrabold transition-all active:scale-95 shadow-[0_4px_0_0_#2563eb] hover:shadow-[0_2px_0_0_#2563eb] hover:translate-y-[2px]"
+                      className="shrink-0 rounded-xl bg-blue-500 px-5 py-3 font-extrabold text-white shadow-[0_4px_0_0_#2563eb] transition-all hover:bg-blue-400 hover:translate-y-[2px] hover:shadow-[0_2px_0_0_#2563eb] active:scale-95"
                     >
                       {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
                     </button>
@@ -197,6 +204,16 @@ export default function GameOptionsMenu({
               </div>
             )}
             
+          </div>
+
+          <div className="border-t-2 border-slate-100 p-3 md:hidden">
+            <button
+              onClick={() => window.location.href = '/'}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-rose-100 bg-rose-50 px-4 py-3 font-extrabold text-rose-600 transition-all active:scale-95"
+            >
+              <LogOut className="w-5 h-5" />
+              Leave Game
+            </button>
           </div>
         </div>
       </div>

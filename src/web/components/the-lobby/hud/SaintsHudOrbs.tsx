@@ -67,29 +67,36 @@ export const SaintsHudOrbs: React.FC = () => {
   const xpProgress = Math.min(100, Math.max(0, Math.floor((xpIntoLevel / xpSpan) * 100)));
 
   return (
-    <div className="pointer-events-none absolute top-5 left-5 z-30 flex w-[240px] select-none flex-col gap-3">
+    <div
+      className="pointer-events-none absolute z-30 flex w-[min(240px,46vw)] select-none flex-col gap-2 max-md:w-[min(168px,42vw)] max-md:gap-1.5 md:left-5 md:top-5 md:w-[240px] md:gap-3"
+      style={{
+        top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
+        left: 'max(0.5rem, env(safe-area-inset-left, 0px))',
+      }}
+    >
       {/* Identity — soul-camera plate */}
-      <div className="lobby-panel pointer-events-auto rounded-lg px-3 py-2.5">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-lobby-border-strong bg-lobby-panel-soft shadow-[inset_0_0_12px_rgba(167,139,250,0.25)]">
-            <Camera className="h-5 w-5 text-lobby-soul" strokeWidth={1.75} />
-            <span className="absolute -right-1 -bottom-1 h-2.5 w-2.5 rounded-full bg-lobby-film shadow-[0_0_8px_rgba(110,231,183,0.8)]" />
+      <div className="lobby-panel pointer-events-auto rounded-lg px-2.5 py-2 md:px-3 md:py-2.5">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-lobby-border-strong bg-lobby-panel-soft shadow-[inset_0_0_12px_rgba(167,139,250,0.25)] md:h-11 md:w-11">
+            <Camera className="h-4 w-4 text-lobby-soul md:h-5 md:w-5" strokeWidth={1.75} />
+            <span className="absolute -right-1 -bottom-1 h-2 w-2 rounded-full bg-lobby-film shadow-[0_0_8px_rgba(110,231,183,0.8)] md:h-2.5 md:w-2.5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-semibold tracking-wide text-lobby-mist">
+            <h2 className="truncate text-xs font-semibold tracking-wide text-lobby-mist md:text-sm">
               {player.name || 'Tamer'}
             </h2>
-            <div className="mt-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-lobby-fog">
+            <div className="mt-0.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-lobby-fog md:gap-2 md:text-[10px] md:tracking-[0.2em]">
               <span className="text-lobby-film">Lv {level}</span>
               <span className="text-lobby-ash">·</span>
-              <span className="text-lobby-soul">Soul Film</span>
+              <span className="hidden text-lobby-soul xs:inline sm:inline">Soul Film</span>
+              <span className="text-lobby-soul sm:hidden">Film</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Separate HP / MP / EXP */}
-      <div className="lobby-panel pointer-events-auto flex flex-col gap-3 rounded-lg px-3 py-3">
+      <div className="lobby-panel pointer-events-auto flex flex-col gap-2 rounded-lg px-2.5 py-2 md:gap-3 md:px-3 md:py-3">
         <StatBar
           label="HP"
           value={hp}

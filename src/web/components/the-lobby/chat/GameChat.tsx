@@ -45,6 +45,8 @@ export function GameChat() {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showEmotes, setShowEmotes] = useState(false);
+  /** Collapsed by default on narrow viewports so touch controls stay clear. */
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
@@ -153,15 +155,48 @@ export function GameChat() {
     { id: 'FRIENDS', label: 'Friends' },
   ];
 
+  const latest = messages[messages.length - 1];
+
   return (
-    <div className="lobby-panel pointer-events-auto z-50 flex h-[210px] w-[480px] flex-col overflow-hidden rounded-lg">
-      <div className="lobby-panel-header flex items-center justify-between px-3 py-1.5">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-lobby-fog">
-          <Radio className="h-3.5 w-3.5 text-lobby-soul" />
-          <span>Soul Channel</span>
+    <div
+      className={`lobby-panel pointer-events-auto z-50 flex flex-col overflow-hidden rounded-lg max-md:fixed max-md:left-2 max-md:right-auto md:relative md:h-[210px] md:w-[480px] ${
+        mobileExpanded
+          ? 'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom))] max-md:h-[38vh] max-md:w-[min(92vw,22rem)]'
+          : 'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom))] max-md:h-auto max-md:w-[min(70vw,14rem)]'
+      }`}
+      style={{
+        // Desktop DraggablePanel positions this; mobile uses fixed + safe area above.
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setMobileExpanded((v) => !v)}
+        className="lobby-panel-header flex w-full items-center justify-between px-2.5 py-1.5 text-left md:pointer-events-none md:cursor-default md:px-3"
+      >
+        <div className="flex min-w-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-lobby-fog">
+          <Radio className="h-3.5 w-3.5 shrink-0 text-lobby-soul" />
+          <span className="truncate">Soul Channel</span>
         </div>
-        <div className="h-px flex-1 mx-3 lobby-hairline opacity-70" />
-      </div>
+        <div className="mx-2 hidden h-px flex-1 lobby-hairline opacity-70 md:block" />
+        <span className="shrink-0 text-[10px] font-mono text-lobby-film md:hidden">
+          {mobileExpanded ? 'Hide' : 'Open'}
+        </span>
+      </button>
+
+      {!mobileExpanded && (
+        <div className="truncate px-2.5 pb-1.5 text-[11px] text-lobby-ash md:hidden">
+          {latest ? (
+            <span>
+              <span className="font-semibold text-lobby-mist/80">{latest.sender}: </span>
+              {latest.text}
+            </span>
+          ) : (
+            <span className="italic">Tap to open chat</span>
+          )}
+        </div>
+      )}
+
+      <div className={`${mobileExpanded ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col md:flex`}>
 
       <div className="relative m-1.5 flex-1 overflow-hidden rounded-md border border-lobby-border bg-black/35">
         {activeTab === 'FRIENDS' ? (
@@ -257,6 +292,7 @@ export function GameChat() {
             </button>
           );
         })}
+      </div>
       </div>
     </div>
   );

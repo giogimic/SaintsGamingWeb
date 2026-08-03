@@ -31,8 +31,54 @@ export default function ClassicPanel() {
     ${mode !== 'GTC' ? 'border-r border-r-lobby-border/60' : ''}
   `;
 
+  // Closed tab strip fights mobile ActionCluster — hide until a panel is open on phones.
+  if (!isOpen) {
+    return (
+      <div className="lobby-panel pointer-events-auto z-40 hidden w-[95vw] max-w-full flex-col overflow-hidden rounded-xl md:flex sm:w-[600px] lg:w-[800px]">
+        <div className="lobby-hairline h-px w-full opacity-70" />
+        <div className="flex overflow-hidden border-b border-lobby-border bg-black/30">
+          <div
+            className={tabClass('INVENTORY')}
+            onClick={() => setGameMode('INVENTORY')}
+            title="Inventory [I]"
+          >
+            <Backpack className="h-5 w-5" />
+          </div>
+          <div
+            className={tabClass('SKILLS')}
+            onClick={() => setGameMode('SKILLS')}
+            title="Skills [K]"
+          >
+            <Sword className="h-5 w-5" />
+          </div>
+          <div
+            className={tabClass('EQUIPMENT')}
+            onClick={() => setGameMode('EQUIPMENT')}
+            title="Equipment"
+          >
+            <Shield className="h-5 w-5" />
+          </div>
+          <div
+            className={tabClass('QUESTS')}
+            onClick={() => setGameMode('QUESTS')}
+            title="Quests"
+          >
+            <ScrollText className="h-5 w-5" />
+          </div>
+          <div
+            className={tabClass('GTC')}
+            onClick={() => setGameMode('GTC')}
+            title="Global Trade Center"
+          >
+            <Store className="h-5 w-5" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="lobby-panel pointer-events-auto z-40 flex w-[95vw] max-w-full flex-col overflow-hidden rounded-xl sm:w-[600px] lg:w-[800px]">
+    <div className="lobby-panel pointer-events-auto z-40 flex w-[min(95vw,100%)] max-w-full flex-col overflow-hidden rounded-xl max-md:fixed max-md:inset-x-2 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:top-14 max-md:z-[60] sm:w-[600px] lg:w-[800px]">
       <div className="lobby-hairline h-px w-full opacity-70" />
 
       <div className="flex overflow-hidden border-b border-lobby-border bg-black/30">
@@ -74,7 +120,7 @@ export default function ClassicPanel() {
       </div>
 
       {isOpen && (
-        <div className="relative m-1.5 h-[60vh] min-h-[450px] max-h-[750px] overflow-hidden rounded-lg border border-lobby-border bg-black/25">
+        <div className="relative m-1.5 h-[60vh] min-h-[280px] max-h-[750px] flex-1 overflow-hidden rounded-lg border border-lobby-border bg-black/25 max-md:min-h-0 max-md:h-auto">
           {gameMode === 'INVENTORY' && (
             <div className="scale-wrapper absolute inset-0 overflow-auto">
               <InventoryOverlay />

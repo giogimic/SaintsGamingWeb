@@ -121,21 +121,26 @@ export default function Hotbar() {
   const gcdActive = now < globalCooldown;
   const gcdPercent = gcdActive ? Math.max(0, (globalCooldown - now) / 1500 * 100) : 0;
 
+  // Phones: keep 5 combat slots above the touch controls; hide empty + slots.
+  const visibleSlots = slots.filter((s, i) => i < 5 || s.ability);
+
   return (
-    <div className="lobby-panel pointer-events-auto absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2 rounded-xl p-2">
-      {slots.map((slot, i) => (
+    <div
+      className="lobby-panel pointer-events-auto absolute left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-xl p-1.5 bottom-[max(1.25rem,calc(6.75rem+env(safe-area-inset-bottom,0px)))] max-md:gap-1 max-md:p-1 md:bottom-6 md:gap-2 md:p-2"
+    >
+      {visibleSlots.map((slot, i) => (
         <div
-          key={i}
+          key={slot.key || i}
           onClick={() => handleCast(slot)}
-          className="group relative flex h-12 w-12 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-lobby-border bg-black/45 transition-all hover:border-lobby-soul/55 hover:bg-lobby-soul/15"
+          className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-lobby-border bg-black/45 transition-all hover:border-lobby-soul/55 hover:bg-lobby-soul/15 max-md:h-10 max-md:w-10 md:h-12 md:w-12"
         >
-          <span className="absolute top-1 left-1.5 z-10 font-mono text-[10px] font-bold text-lobby-ash transition-colors group-hover:text-lobby-soul">
+          <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-lobby-ash transition-colors group-hover:text-lobby-soul md:top-1 md:left-1.5 md:text-[10px]">
             {slot.key}
           </span>
 
           {slot.ability ? (
             <>
-              <span className="z-10 text-2xl drop-shadow-md">{slot.ability.icon}</span>
+              <span className="z-10 text-xl drop-shadow-md md:text-2xl">{slot.ability.icon}</span>
               {gcdActive && (
                 <div
                   className="absolute bottom-0 left-0 z-20 w-full bg-black/70 backdrop-blur-sm"
@@ -144,7 +149,7 @@ export default function Hotbar() {
               )}
             </>
           ) : (
-            <span className="text-xl font-bold text-lobby-ash/30">+</span>
+            <span className="text-lg font-bold text-lobby-ash/30 md:text-xl">+</span>
           )}
         </div>
       ))}
