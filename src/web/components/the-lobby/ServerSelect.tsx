@@ -117,7 +117,7 @@ export default function ServerSelect() {
 
   return (
     <div
-      className="absolute inset-0 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500"
+      className="pointer-events-auto absolute inset-0 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500"
       style={{ background: 'rgba(5,0,15,0.94)', backdropFilter: 'blur(14px)' }}
     >
       {/* Background glow */}

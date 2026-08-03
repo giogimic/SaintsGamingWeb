@@ -310,7 +310,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div
-      className="fixed inset-0 w-full h-full overflow-y-auto z-[100]"
+      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100]"
       style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(14px)' }}
     >
       {/* Ambient glow */}
