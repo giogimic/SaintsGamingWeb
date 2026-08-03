@@ -37,7 +37,7 @@ function formatAsset(raw: {
 
 /**
  * GET /api/assets — list GameAsset rows for Studio browsers (client-safe; no Prisma in browser).
- * Query: type, query, gameId, page, limit, tags (comma), categories (comma)
+ * Query: type, query, gameId, page, limit, tags (comma), categories (comma), sortBy, sortOrder
  */
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +55,10 @@ export async function GET(request: NextRequest) {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+    const sortByRaw = searchParams.get("sortBy") || "createdAt";
+    const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
+    const allowedSort = new Set(["source", "createdAt", "fileSize", "usageCount"]);
+    const sortBy = allowedSort.has(sortByRaw) ? sortByRaw : "createdAt";
 
     const where: Record<string, unknown> = { isActive: true };
     if (type) where.type = type;
@@ -75,11 +79,10 @@ export async function GET(request: NextRequest) {
         where,
         skip: page * limit,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: { [sortBy]: sortOrder },
       }),
       prisma.gameAsset.count({ where }),
     ]);
-
     const items = rawItems.map(formatAsset);
 
     return NextResponse.json({

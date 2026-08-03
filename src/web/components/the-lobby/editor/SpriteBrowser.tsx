@@ -34,6 +34,10 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
 }) => {
   const [sprites, setSprites] = useState<GameAssetItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeClassFilter, setActiveClassFilter] = useState<boolean>(!!classDef);
@@ -42,43 +46,61 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   const [previewAsset, setPreviewAsset] = useState<GameAssetItem | null>(null);
 
   useEffect(() => {
-    fetchSprites();
+    setPage(0);
+    void fetchSprites(0, false);
   }, [searchQuery, selectedTag, activeClassFilter, classDef]);
 
-  const fetchSprites = async () => {
-    setLoading(true);
+  const fetchSprites = async (pageNum: number, append: boolean) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
       let result: GameAssetItem[] = [];
+      let more = false;
+      let count = 0;
       const manager = AssetManager.getInstance();
 
       if (activeClassFilter && classDef) {
         const classSystem = CharacterClassSystem.getInstance();
         result = await classSystem.getSpritesForClass(classDef);
+        more = false;
+        count = result.length;
       } else {
-        const res = await manager.searchAssets({
-          type: filterType,
-          query: searchQuery || undefined,
-          tags: selectedTag ? [selectedTag] : filterTags.length > 0 ? filterTags : undefined,
-        });
+        const res = await manager.searchAssets(
+          {
+            type: filterType,
+            query: searchQuery || undefined,
+            tags: selectedTag ? [selectedTag] : filterTags.length > 0 ? filterTags : undefined,
+            sortBy: 'source',
+            sortOrder: 'asc',
+          },
+          pageNum,
+          50
+        );
         result = res.items;
+        more = res.hasMore;
+        count = res.total;
       }
 
-      // Filter locally if searchQuery provided when class filtering active
       if (activeClassFilter && searchQuery) {
         const q = searchQuery.toLowerCase();
         result = result.filter(
           (s) => s.source.toLowerCase().includes(q) || (s.tags || []).some((t) => t.toLowerCase().includes(q))
         );
+        count = result.length;
       }
 
-      setSprites(result);
-      if (result.length > 0 && !previewAsset) {
+      setSprites((prev) => (append ? [...prev, ...result] : result));
+      setHasMore(more);
+      setTotal(count);
+      setPage(pageNum);
+      if (!append && result.length > 0) {
         setPreviewAsset(result[0]);
       }
     } catch (err) {
       console.error('Failed to fetch sprites in SpriteBrowser:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -171,6 +193,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
               )}
             </div>
           ) : (
+            <>
             <div
               className={`grid gap-2 ${
                 gridSize === 'small'
@@ -199,6 +222,23 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
                 );
               })}
             </div>
+            <div className="mt-3 flex flex-col items-center gap-1">
+              <span className="text-[10px] text-slate-500 font-mono">
+                Showing {sprites.length}
+                {total ? ` / ${total}` : ''}
+              </span>
+              {hasMore && (
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={() => void fetchSprites(page + 1, true)}
+                  className="px-3 py-1.5 rounded-lg border border-[#806f47]/50 text-[10px] font-mono text-[#cbb26a] hover:bg-[#806f47]/20 disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              )}
+            </div>
+            </>
           )}
         </div>
 

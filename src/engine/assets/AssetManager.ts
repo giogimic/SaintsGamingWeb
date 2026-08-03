@@ -69,12 +69,12 @@ export class AssetManager {
       return this.cache.get(id)!;
     }
 
-    const res = await fetch(`/api/assets?query=${encodeURIComponent(id)}&limit=50`);
+    const res = await fetch(`/api/assets/${encodeURIComponent(id)}`);
+    if (res.status === 404) return null;
     if (!res.ok) return null;
     const data = await res.json();
-    const match = (data.items || []).find((a: any) => a.id === id);
-    if (!match) return null;
-    const formatted = this.hydrate(match);
+    if (!data.asset) return null;
+    const formatted = this.hydrate(data.asset);
     this.cache.set(id, formatted);
     return formatted;
   }
@@ -88,6 +88,8 @@ export class AssetManager {
     if (filters.query) params.set('query', filters.query);
     if (filters.tags?.length) params.set('tags', filters.tags.join(','));
     if (filters.categories?.length) params.set('categories', filters.categories.join(','));
+    if (filters.sortBy) params.set('sortBy', filters.sortBy);
+    if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
 
     const res = await fetch(`/api/assets?${params.toString()}`);
     if (!res.ok) {

@@ -21,6 +21,10 @@ export interface AssetEditorProps {
 export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorProps) {
   const [assets, setAssets] = useState<GameAssetItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('SPRITE');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -35,26 +39,38 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   const [newTagInput, setNewTagInput] = useState('');
 
   useEffect(() => {
-    fetchAssets();
+    setPage(0);
+    void fetchAssets(0, false);
   }, [typeFilter, searchQuery, selectedTag]);
 
-  const fetchAssets = async () => {
-    setLoading(true);
+  const fetchAssets = async (pageNum: number, append: boolean) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
       const manager = AssetManager.getInstance();
-      const res = await manager.searchAssets({
-        type: typeFilter === 'ALL' ? undefined : typeFilter,
-        query: searchQuery || undefined,
-        tags: selectedTag ? [selectedTag] : undefined,
-      });
-      setAssets(res.items);
-      if (res.items.length > 0 && !activeAsset) {
+      const res = await manager.searchAssets(
+        {
+          type: typeFilter === 'ALL' ? undefined : typeFilter,
+          query: searchQuery || undefined,
+          tags: selectedTag ? [selectedTag] : undefined,
+          sortBy: 'source',
+          sortOrder: 'asc',
+        },
+        pageNum,
+        50
+      );
+      setAssets((prev) => (append ? [...prev, ...res.items] : res.items));
+      setHasMore(res.hasMore);
+      setTotal(res.total);
+      setPage(pageNum);
+      if (!append && res.items.length > 0) {
         setActiveAsset(res.items[0]);
       }
     } catch (err) {
       console.error('Failed to load assets:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -82,7 +98,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
       const manager = AssetManager.getInstance();
       await manager.addTag(activeAsset.id, newTagInput.trim().toLowerCase());
       setNewTagInput('');
-      fetchAssets();
+      void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
     }
@@ -93,7 +109,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
     try {
       const manager = AssetManager.getInstance();
       await manager.removeTag(activeAsset.id, tagToRemove);
-      fetchAssets();
+      void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
     }
@@ -110,7 +126,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
         await manager.reclassifyAsset(id, reclassifyType, cats);
       }
       setReclassifyModalOpen(false);
-      fetchAssets();
+      void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
     }
@@ -296,6 +312,24 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
               ))}
             </div>
           )}
+          {!loading && assets.length > 0 && (
+            <div className="mt-3 flex flex-col items-center gap-1 pb-2">
+              <span className="text-[10px] text-slate-500">
+                Showing {assets.length}
+                {total ? ` / ${total}` : ''}
+              </span>
+              {hasMore && (
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={() => void fetchAssets(page + 1, true)}
+                  className="px-3 py-1.5 rounded-lg border border-[#806f47]/50 text-[10px] text-[#cbb26a] hover:bg-[#806f47]/20 disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Asset Preview & Inspector Pane */}
@@ -325,6 +359,26 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Categories</span>
                 <span className="text-slate-200">{activeAsset.categories.join(', ')}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800">
+                <span className="text-slate-400">Frames</span>
+                <span className="text-slate-200">
+                  {Array.isArray(activeAsset.metadata?.frames)
+                    ? activeAsset.metadata.frames.length
+                    : 0}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800 gap-2">
+                <span className="text-slate-400 shrink-0">Gameplay</span>
+                <span className="text-[10px] text-slate-300 text-right">
+                  {[
+                    activeAsset.metadata?.solid ? 'solid' : null,
+                    activeAsset.metadata?.interactable ? 'interactable' : null,
+                    activeAsset.metadata?.decorative ? 'decorative' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || '—'}
+                </span>
               </div>
             </div>
 
