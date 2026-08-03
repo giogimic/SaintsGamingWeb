@@ -73,7 +73,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 3. Victory/defeat/flee return to overworld  
 
 ### Slice D — Studio creator UX (16, toward MPV editor) — **IN PROGRESS**
-1. Contextual modes (Build / NPC / Quest / Creature / Test) — deferred until place→save works  
+1. Contextual modes (Build / NPC / Quest / Creature / Test) — **Done 2026-08-03:** mode strip + panel presets; Quest disabled until panel exists  
 2. Permission-gated floating docks (extend current shell)  
 3. Tag/component placement UX over raw logic paint  
 4. **Done 2026-08-03:** World Builder **Save Map** → `POST /api/maps/[slug]` + `admin_reload_map` hot-reload; **Logic (−1)** layer target (was unreachable `-2`)  

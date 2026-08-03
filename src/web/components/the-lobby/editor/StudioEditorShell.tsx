@@ -8,7 +8,6 @@ import {
   Settings2, 
   Image as ImageIcon, 
   Users, 
-  Skull, 
   TerminalSquare,
   Sword,
   PawPrint,
