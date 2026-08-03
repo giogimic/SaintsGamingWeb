@@ -8,6 +8,7 @@ import { toBaseMapId } from '@/shared/net/mapIds';
 import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
+import { LogicTagPalette } from '../LogicTagPalette';
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -360,21 +361,26 @@ export const WorldBuilderPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* TILESET PICKER */}
+      {/* TILESET / LOGIC TAG PICKER */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-          <Grid className="w-3.5 h-3.5" /> Asset Picker
+          <Grid className="w-3.5 h-3.5" />
+          {activeLayerIdx === -1 ? 'Logic Tags' : 'Asset Picker'}
         </div>
         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-          <TilesetPicker
-            tilesets={currentMapData.tilesets || []}
-            activeBrushTileId={brushTileId}
-            onBrushSelect={handleBrushSelect}
-            activeLayerIdx={activeLayerIdx}
-            onLayerChange={setActiveLayerIdx}
-            tileLayers={currentMapData.tileLayers || []}
-            onAddLayer={handleAddLayer}
-          />
+          {activeLayerIdx === -1 ? (
+            <LogicTagPalette />
+          ) : (
+            <TilesetPicker
+              tilesets={currentMapData.tilesets || []}
+              activeBrushTileId={brushTileId}
+              onBrushSelect={handleBrushSelect}
+              activeLayerIdx={activeLayerIdx}
+              onLayerChange={setActiveLayerIdx}
+              tileLayers={currentMapData.tileLayers || []}
+              onAddLayer={handleAddLayer}
+            />
+          )}
         </div>
       </div>
     </div>

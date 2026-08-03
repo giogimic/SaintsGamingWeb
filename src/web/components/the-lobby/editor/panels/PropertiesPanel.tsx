@@ -1,14 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameStore } from '../../store';
-import { Settings, Trees, Plus, X } from 'lucide-react';
+import { useEditorStore } from '../editor-store';
+import { Settings, Trees, Plus, X, Paintbrush } from 'lucide-react';
 import { GAME_MAPS } from '../../data/maps';
 
 export const PropertiesPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
   const showToast = useGameStore((state) => state.showToast);
-  
+  const logicTiles = useGameStore((state) => state.logicTiles);
+  const fetchLogicTiles = useGameStore((state) => state.fetchLogicTiles);
+  const setBrush = useEditorStore((s) => s.setActiveBrushTileId);
+  const setLayer = useEditorStore((s) => s.setActiveLayerIdx);
+  const brushId = useEditorStore((s) => s.activeBrushTileId);
+
   const currentMapData = GAME_MAPS[currentMapId] || {
     id: currentMapId,
     encounterPool: []
@@ -35,6 +41,12 @@ export const PropertiesPanel: React.FC = () => {
   const [minLevel, setMinLevel] = useState(2);
   const [maxLevel, setMaxLevel] = useState(5);
 
+  useEffect(() => {
+    if (Object.keys(logicTiles).length === 0) {
+      void fetchLogicTiles();
+    }
+  }, [logicTiles, fetchLogicTiles]);
+
   const handleSaveLogicTile = async () => {
     try {
       const payload = {
@@ -44,15 +56,24 @@ export const PropertiesPanel: React.FC = () => {
       };
       const res = await fetch('/api/world/logic-tiles', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
         showToast('Component Saved!');
         await useGameStore.getState().fetchLogicTiles();
+      } else {
+        showToast('Failed to save component');
       }
     } catch (e) {
       showToast('Failed to save component');
     }
+  };
+
+  const handlePaintWith = (id: number, name: string) => {
+    setLayer(-1);
+    setBrush(id);
+    showToast(`Brush: ${name} (#${id}) on Logic (−1)`);
   };
 
   const handleAddEncounterSpecies = () => {
@@ -60,11 +81,41 @@ export const PropertiesPanel: React.FC = () => {
     showToast(`Added ${selectedSpecies} to map pool`);
   };
 
+  const registered = Object.values(logicTiles).sort((a, b) => a.id - b.id);
+
   return (
     <div className="space-y-4 text-xs font-mono">
-      {/* SELECTION PROPERTIES (Placeholder for future clicking on objects) */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-3 text-center text-slate-400 italic">
         Select a Game Object in the world to edit its Tags and Components.
+      </div>
+
+      {/* Registered tags — paint as brush */}
+      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
+        <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
+          <Paintbrush className="w-3.5 h-3.5" /> Place Tag on Logic (−1)
+        </div>
+        {registered.length === 0 ? (
+          <p className="text-[10px] text-slate-500">No tags loaded yet.</p>
+        ) : (
+          <div className="max-h-40 space-y-1 overflow-y-auto custom-scrollbar">
+            {registered.map((tile) => (
+              <button
+                key={tile.id}
+                type="button"
+                onClick={() => handlePaintWith(tile.id, tile.name)}
+                className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left ${
+                  brushId === tile.id
+                    ? 'border-[#cbb26a] bg-[#806f47]/20 text-white'
+                    : 'border-slate-800 bg-[#050b14] text-slate-300 hover:border-[#806f47]/40'
+                }`}
+              >
+                <span className={`h-3 w-3 shrink-0 rounded-sm ${tile.color || 'bg-slate-600'}`} />
+                <span className="min-w-0 flex-1 truncate font-bold">{tile.name}</span>
+                <span className="text-[9px] text-slate-500">#{tile.id}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ENCOUNTER POOL */}
