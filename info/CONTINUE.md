@@ -24,7 +24,7 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
 1. File gaps from `DEMO_SMOKE.md` run
 2. Per-character bramble flags if shards fight over shared grid
-3. ALIGNMENT D — Studio: tag/component placement UX; permission-gated docks; Quest panel when ready
+3. ALIGNMENT D — Studio: Quest panel when ready; optional per-dock permission matrix later
 4. ALIGNMENT E
 
 ---
