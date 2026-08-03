@@ -22,9 +22,25 @@ export class WorldManager {
   // Key: instanceId_x_y -> expirationTimestamp
   private depletedNodes = new Map<string, number>();
 
+  /**
+   * CONTINUE #2 — per-account bramble clears (do not mutate shared DEMO grid).
+   * Key: accountId/userId → Set of "x,y"
+   */
+  private clearedBrambleByAccount = new Map<string, Set<string>>();
+
+  /** Demo Q4 bramble gate cells (demoMapSeed: y=10, x=12..16). */
+  public static readonly DEMO_BRAMBLE_CELLS: ReadonlyArray<{ x: number; y: number }> = [
+    { x: 12, y: 10 },
+    { x: 13, y: 10 },
+    { x: 14, y: 10 },
+    { x: 15, y: 10 },
+    { x: 16, y: 10 },
+  ];
+
   constructor(private engine: GameEngine) {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
     this.engine.events.on("adminSaveMap", (data) => this.handleAdminSaveMap(data));
+    this.engine.events.on("adminReloadMap", (data) => this.handleAdminReloadMap(data));
   }
 
   private async handleAdminSaveMap(data: any) {
@@ -32,13 +48,23 @@ export class WorldManager {
     const success = await mapLoader.saveMapData(data.mapId, data);
     if (success) {
       console.log(`[WorldManager] Map ${data.mapId} saved to database and hot reloaded.`);
-      // Optionally broadcast to all players in map to reload
+      // Global broadcast — players live on shard rooms (`_chN`), not base mapId alone.
       this.engine.events.emit("networkBroadcast", {
-        room: data.mapId,
         event: "map_reloaded",
         data: { mapId: data.mapId }
       });
     }
+  }
+
+  /** REST already wrote WorldMap — just invalidate server cache and notify clients. */
+  private handleAdminReloadMap(data: { mapId?: string }) {
+    if (!data?.mapId) return;
+    mapLoader.invalidateMap(data.mapId);
+    console.log(`[WorldManager] Map ${data.mapId} cache invalidated; broadcasting map_reloaded.`);
+    this.engine.events.emit("networkBroadcast", {
+      event: "map_reloaded",
+      data: { mapId: data.mapId },
+    });
   }
 
   public async initialize() {
@@ -248,10 +274,20 @@ export class WorldManager {
   // COLLISION AUTHORITY: 
   // The server completely owns collision data. Clients handle visuals, but the server verifies 
   // every movement against the loaded Map Definition to prevent walking through walls.
-  public isWalkable(instanceId: string, x: number, y: number): boolean {
+  // Optional accountId: personal bramble clears (CONTINUE #2) do not alter shared grid.
+  public isWalkable(instanceId: string, x: number, y: number, accountId?: string): boolean {
     const instance = this.instances.get(instanceId);
     if (!instance) return false;
-    return mapLoader.isWalkableSync(instance.mapId, x, y);
+    if (mapLoader.isWalkableSync(instance.mapId, x, y)) return true;
+    if (accountId && this.hasAccountClearedBramble(accountId, x, y)) {
+      const map =
+        typeof mapLoader.getMapDataSync === "function"
+          ? mapLoader.getMapDataSync(instance.mapId)
+          : mapLoader.getCachedMap?.(instance.mapId);
+      // Cleared bramble stays tile 11 on shared grid — treat as walkable for this account
+      if (map?.grid?.[y]?.[x] === 11) return true;
+    }
+    return false;
   }
 
   public isOccupied(instanceId: string, x: number, y: number): boolean {

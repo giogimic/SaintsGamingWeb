@@ -664,6 +664,15 @@ export class EncounterManager {
         skillSlug: g.skillSlug,
         amount: g.amount,
       });
+      captureMeta = {
+        speciesSlug,
+        name: battle.wildCreature.name || wildDef?.name || speciesSlug,
+        tag,
+        stage,
+        catchRate,
+        isFirstOfSpecies,
+        isRemarkable,
+      };
     }
 
     // Persist party creature HP after the fight (bible 11).

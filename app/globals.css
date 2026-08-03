@@ -54,6 +54,23 @@
   --color-sg-purple: oklch(0.55 0.2 290);
   --color-sg-blue: oklch(0.6 0.15 250);
   --color-sg-glow: oklch(0.82 0.12 85 / 40%);
+
+  /* Lobby / in-game — soul-camera (white · green · purple · grey) */
+  --color-lobby-bg: #14161e;
+  --color-lobby-panel: #161822;
+  --color-lobby-panel-soft: #1e2130;
+  --color-lobby-mist: #f0f1f5;
+  --color-lobby-fog: #9ca3af;
+  --color-lobby-ash: #6b7280;
+  --color-lobby-soul: #a78bfa;
+  --color-lobby-soul-deep: #7c3aed;
+  --color-lobby-film: #6ee7b7;
+  --color-lobby-film-deep: #34d399;
+  --color-lobby-hp: #6ee7b7;
+  --color-lobby-mp: #a78bfa;
+  --color-lobby-exp: #e8e8ef;
+  --color-lobby-border: rgba(168, 174, 192, 0.28);
+  --color-lobby-border-strong: rgba(232, 232, 240, 0.38);
 }
 
 /* Light theme (default) */
@@ -204,6 +221,70 @@
 .sg-glass {
   @apply bg-card/70 backdrop-blur-xl border-b border-border/50 shadow-lg;
 }
+
+/* ── Lobby soul-camera UI chrome ─────────────────────────────── */
+.lobby-panel {
+  background: linear-gradient(
+    165deg,
+    rgba(36, 38, 52, 0.92) 0%,
+    rgba(20, 22, 30, 0.96) 55%,
+    rgba(14, 15, 22, 0.98) 100%
+  );
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--color-lobby-border);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(240, 241, 245, 0.08),
+    0 0 0 1px rgba(167, 139, 250, 0.08);
+  color: var(--color-lobby-mist);
+}
+
+.lobby-panel-header {
+  background: linear-gradient(
+    90deg,
+    rgba(167, 139, 250, 0.12) 0%,
+    rgba(110, 231, 183, 0.06) 50%,
+    transparent 100%
+  );
+  border-bottom: 1px solid var(--color-lobby-border);
+  color: var(--color-lobby-mist);
+}
+
+.lobby-hairline {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(167, 139, 250, 0.55),
+    rgba(110, 231, 183, 0.45),
+    transparent
+  );
+}
+
+.lobby-stat-track {
+  background: rgba(12, 13, 18, 0.72);
+  border: 1px solid var(--color-lobby-border);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.lobby-stat-fill-hp {
+  background: linear-gradient(90deg, #059669, var(--color-lobby-film));
+  box-shadow: 0 0 12px rgba(110, 231, 183, 0.35);
+}
+
+.lobby-stat-fill-mp {
+  background: linear-gradient(90deg, #6d28d9, var(--color-lobby-soul));
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.4);
+}
+
+.lobby-stat-fill-exp {
+  background: linear-gradient(90deg, #9ca3af, var(--color-lobby-exp));
+  box-shadow: 0 0 10px rgba(240, 241, 245, 0.25);
+}
+
+.lobby-chat-msg-local { color: #d1d5db; }
+.lobby-chat-msg-global { color: var(--color-lobby-film); }
+.lobby-chat-msg-party { color: var(--color-lobby-soul); }
+.lobby-chat-msg-system { color: #fbbf24; }
 
 /* 3D Hover Card */
 .sg-3d-card {

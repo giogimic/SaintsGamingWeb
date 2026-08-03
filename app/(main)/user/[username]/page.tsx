@@ -130,7 +130,12 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           {profile.gameCharacters && profile.gameCharacters.length > 0 ? (
             <div className="space-y-4">
               {profile.gameCharacters.map((char) => (
-                <ProfileCharacterDetails key={char.id} character={char as any} />
+                <ProfileCharacterDetails
+                  key={char.id}
+                  character={char as any}
+                  userId={profile.id}
+                  isSelf={isSelf}
+                />
               ))}
             </div>
           ) : (
@@ -140,20 +145,31 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
             </div>
           )}
 
-          {/* Pinned Beast Showcase */}
-          {profile.pinnedBeastId && (
-            <div className="mt-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-black/80 border border-cyan-500/40 flex items-center justify-center font-mono font-bold text-cyan-400">
-                  🐾
+          {/* Pinned Beast Showcase — ALIGNMENT E.1 (PlayerCreature + sprite) */}
+          {profile.pinnedCreature && (
+            <div className="mt-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-950/20 flex items-center justify-between shadow-lg gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative w-16 h-16 shrink-0 rounded-lg bg-black/80 border border-cyan-500/40 overflow-hidden flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={profile.pinnedCreature.spriteUrl}
+                    alt={profile.pinnedCreature.name}
+                    className="max-w-full max-h-full object-contain pixelated"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
                 </div>
-                <div>
-                  <h4 className="font-bold text-cyan-300 text-sm">PINNED SAINTS BEAST</h4>
-                  <p className="text-xs text-muted-foreground font-mono">{profile.pinnedBeastId}</p>
+                <div className="min-w-0">
+                  <h4 className="font-bold text-cyan-300 text-sm">PINNED COMPANION</h4>
+                  <p className="text-sm text-foreground font-semibold truncate">
+                    {profile.pinnedCreature.nickname || profile.pinnedCreature.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground font-mono truncate">
+                    {profile.pinnedCreature.speciesSlug} · Lv {profile.pinnedCreature.level}
+                  </p>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700 rounded font-mono font-bold uppercase">
-                ACTIVE COMPANION
+              <span className="shrink-0 text-[10px] px-2 py-1 bg-cyan-950 text-cyan-300 border border-cyan-700 rounded font-mono font-bold uppercase">
+                Showcase
               </span>
             </div>
           )}

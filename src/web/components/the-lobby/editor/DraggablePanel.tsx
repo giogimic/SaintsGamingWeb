@@ -15,12 +15,15 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
   const closePanel = useEditorStore((state) => state.closePanel);
   const toggleCollapse = useEditorStore((state) => state.toggleCollapse);
   const updatePanelPosition = useEditorStore((state) => state.updatePanelPosition);
+  const updatePanelSize = useEditorStore((state) => state.updatePanelSize);
   const bringToFront = useEditorStore((state) => state.bringToFront);
   const isActive = useEditorStore((state) => state.activePanel === id);
 
   const panelRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const resizeOrigin = useRef({ x: 0, y: 0, w: 0, h: 0 });
 
   if (!panelState?.isOpen) return null;
 
@@ -29,6 +32,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Only drag from the header
     if ((e.target as HTMLElement).closest('.panel-controls')) return;
+    if ((e.target as HTMLElement).closest('.panel-resize')) return;
     
     bringToFront(id);
     setIsDragging(true);
@@ -42,18 +46,35 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
     }
   };
 
+  const handleResizeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    bringToFront(id);
+    setIsResizing(true);
+    resizeOrigin.current = { x: e.clientX, y: e.clientY, w: width, h: height };
+    if (panelRef.current) {
+      panelRef.current.setPointerCapture(e.pointerId);
+    }
+  };
+
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isDragging) {
       // Clamp to screen bounds loosely
       const newX = Math.max(0, Math.min(window.innerWidth - 100, e.clientX - dragOffset.x));
       const newY = Math.max(0, Math.min(window.innerHeight - 50, e.clientY - dragOffset.y));
       updatePanelPosition(id, newX, newY);
+    } else if (isResizing) {
+      const dx = e.clientX - resizeOrigin.current.x;
+      const dy = e.clientY - resizeOrigin.current.y;
+      const newW = Math.max(220, Math.min(window.innerWidth - x - 8, resizeOrigin.current.w + dx));
+      const newH = Math.max(120, Math.min(window.innerHeight - y - 8, resizeOrigin.current.h + dy));
+      updatePanelSize(id, newW, newH);
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isDragging) {
+    if (isDragging || isResizing) {
       setIsDragging(false);
+      setIsResizing(false);
       if (panelRef.current) {
         panelRef.current.releasePointerCapture(e.pointerId);
       }
@@ -77,7 +98,7 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
         touchAction: 'none'
       }}
       className={`
-        sg-glass bg-[#050b14]/90 rounded-xl border flex flex-col overflow-hidden font-sans
+        sg-glass relative bg-[#050b14]/90 rounded-xl border flex flex-col overflow-hidden font-sans
         transition-colors duration-200 shadow-2xl
         ${isActive ? 'border-[#cbb26a]/60 shadow-[0_0_20px_rgba(203,178,106,0.1)]' : 'border-[#806f47]/30'}
       `}
@@ -119,6 +140,17 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto p-3 text-slate-300 relative custom-scrollbar">
           {children}
+        </div>
+      )}
+
+      {/* Corner resize — layout persisted via updatePanelSize */}
+      {!isCollapsed && (
+        <div
+          className="panel-resize absolute bottom-0 right-0 h-4 w-4 cursor-se-resize"
+          onPointerDown={handleResizeDown}
+          title="Resize panel"
+        >
+          <span className="pointer-events-none absolute bottom-1 right-1 h-2 w-2 border-b-2 border-r-2 border-[#806f47]/70" />
         </div>
       )}
     </div>

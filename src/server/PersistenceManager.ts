@@ -35,12 +35,13 @@ export class DatabasePersistenceManager implements PersistenceManager {
         stateData.mapId = toBaseMapId(mapId);
         stateData.x = x;
         stateData.y = y;
+        stateData.position = { x, y };
 
         await prisma.gameCharacter.update({
           where: { id: character.id },
           data: { stateData: JSON.stringify(stateData) }
         });
-        console.log(`[PersistenceManager] Saved position for ${userId} to ${mapId} (${x}, ${y})`);
+        console.log(`[PersistenceManager] Saved position for ${userId} to ${baseMap} (${x}, ${y})`);
       }
     } catch (err) {
       console.error("[PersistenceManager] Failed to save player position:", err);

@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { prisma } from '@/web/lib/prisma';
+import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
 // In-memory dev override toggle state (defaults to online in dev mode)
 let devServerStatusOverride: 'online' | 'offline' | null = null;
@@ -69,6 +72,18 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { permissionLevel: true },
+    });
+    if (!user || !canUseStudioServerControls(user.permissionLevel)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await req.json();
     if (body.action === 'start' || body.status === 'online') {
       devServerStatusOverride = 'online';

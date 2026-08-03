@@ -10,11 +10,20 @@ interface MobileGameLauncherProps {
     classId?: string;
     spriteId?: string;
   } | null;
+  /** Opens the scaled in-game lobby (no site chrome). */
   onEnterGame: () => void;
   onSelectCharacter?: () => void;
 }
 
-export function MobileGameLauncher({ character, onEnterGame, onSelectCharacter }: MobileGameLauncherProps) {
+/**
+ * Narrow-viewport gate: do not mount the game window — only a single Open Game CTA.
+ * Keeps phones out of the desktop HUD until the player explicitly enters.
+ */
+export function MobileGameLauncher({
+  character,
+  onEnterGame,
+  onSelectCharacter,
+}: MobileGameLauncherProps) {
   return (
     <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center p-4 overflow-y-auto select-none bg-[#050b14]">
       {/* Full-bleed atmosphere */}
@@ -62,7 +71,11 @@ export function MobileGameLauncher({ character, onEnterGame, onSelectCharacter }
               <div className="w-12 h-12 rounded-xl bg-black/40 border border-[#cbb26a]/30 flex items-center justify-center overflow-hidden">
                 {character.spriteId && (character.spriteId.startsWith('/') || character.spriteId.startsWith('http')) ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={character.spriteId} alt={character.name || 'Hero'} className="w-10 h-10 object-contain pixelated" />
+                  <img
+                    src={character.spriteId}
+                    alt=""
+                    className="h-9 w-9 object-contain pixelated"
+                  />
                 ) : (
                   <div
                     className="pixelated bg-no-repeat"
@@ -85,7 +98,6 @@ export function MobileGameLauncher({ character, onEnterGame, onSelectCharacter }
                 </div>
               </div>
             </div>
-
             {onSelectCharacter && (
               <button
                 onClick={onSelectCharacter}
@@ -103,6 +115,7 @@ export function MobileGameLauncher({ character, onEnterGame, onSelectCharacter }
         )}
 
         <button
+          type="button"
           onClick={onEnterGame}
           className="w-full py-4 px-6 rounded-2xl font-black text-base tracking-wider uppercase transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 text-[#0a0a0f] relative overflow-hidden group border border-[#e8d5a3]/50 shadow-[0_0_35px_rgba(203,178,106,0.35)]"
           style={{

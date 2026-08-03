@@ -23,6 +23,9 @@ export interface CreatureState {
   isMoving: boolean;
   direction: "up" | "down" | "left" | "right";
   lastMoveTime: number;
+  /** Absolute or resolvable sprite path for join snapshots / client mapEntities. */
+  spriteKey?: string;
+  dialogueNpcId?: string;
 }
 
 export class CreatureManager {

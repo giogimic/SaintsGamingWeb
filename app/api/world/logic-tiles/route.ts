@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
+import { auth } from "@/auth";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 
 export async function GET() {
   try {
@@ -17,8 +19,30 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { permissionLevel: true },
+    });
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const data = await req.json();
-    const { id, name, color, isSolid, interactable, onInteractAction, onInteractPayload, onStepAction, onStepPayload } = data;
+    const {
+      id,
+      name,
+      color,
+      isSolid,
+      interactable,
+      onInteractAction,
+      onInteractPayload,
+      onStepAction,
+      onStepPayload,
+    } = data;
 
     const tile = await prisma.mapLogicTile.upsert({
       where: { id: Number(id) },
@@ -30,7 +54,7 @@ export async function POST(req: Request) {
         onInteractAction: onInteractAction || null,
         onInteractPayload: onInteractPayload ? JSON.stringify(onInteractPayload) : null,
         onStepAction: onStepAction || null,
-        onStepPayload: onStepPayload ? JSON.stringify(onStepPayload) : null
+        onStepPayload: onStepPayload ? JSON.stringify(onStepPayload) : null,
       },
       create: {
         id: Number(id),
@@ -41,8 +65,8 @@ export async function POST(req: Request) {
         onInteractAction: onInteractAction || null,
         onInteractPayload: onInteractPayload ? JSON.stringify(onInteractPayload) : null,
         onStepAction: onStepAction || null,
-        onStepPayload: onStepPayload ? JSON.stringify(onStepPayload) : null
-      }
+        onStepPayload: onStepPayload ? JSON.stringify(onStepPayload) : null,
+      },
     });
 
     return NextResponse.json(tile);

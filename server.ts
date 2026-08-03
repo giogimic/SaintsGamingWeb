@@ -56,8 +56,8 @@ app.prepare().then(async () => {
     try {
       const parsedUrl = parse(req.url!, true);
       
-      // Intercept the server-status API to use our live integrated MMO engine
-      if (parsedUrl.pathname === '/api/game/server-status') {
+      // Live player count for status widgets (GET only). Mutations go through Next route + Admin+ auth.
+      if (parsedUrl.pathname === '/api/game/server-status' && (req.method === 'GET' || !req.method)) {
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ 
           players: playerManager.getPlayerCount(), 

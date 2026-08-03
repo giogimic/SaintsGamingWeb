@@ -88,6 +88,66 @@ async function inventorySnapshot(userId: string): Promise<Record<string, number>
   return inv;
 }
 
+/** Built-in demo trees (always available even if DB empty). */
+const BUILTIN_TREES: Record<string, any> = {
+  npc_warden_vance: VANCE_TREE,
+  warden_vance: VANCE_TREE,
+  ...Object.fromEntries(
+    Object.entries(DEMO_NPC_DIALOGUES).flatMap(([npcId, entry]) => [
+      [npcId, entry.tree],
+      [npcId.replace(/^npc_/, ""), entry.tree],
+    ])
+  ),
+};
+
+/** Strip spawn timestamp suffix: npc_foo_1712345678901 → npc_foo */
+function normalizeNpcId(npcId: string): string {
+  if (!npcId) return npcId;
+  const stripped = npcId.replace(/_\d{10,}$/, "");
+  return stripped.startsWith("npc_") ? stripped : `npc_${stripped.replace(/^npc_/, "")}`;
+}
+
+async function resolveUserId(accountOrUserId: string): Promise<string | null> {
+  if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
+  const asAccount = await prisma.account.findFirst({
+    where: { id: accountOrUserId },
+    select: { userId: true },
+  });
+  if (asAccount?.userId) return asAccount.userId;
+  const asUser = await prisma.user.findFirst({
+    where: { id: accountOrUserId },
+    select: { id: true },
+  });
+  return asUser?.id ?? null;
+}
+
+async function addItems(userId: string, items: { slug: string; qty: number }[]) {
+  for (const item of items) {
+    const existing = await prisma.playerInventoryItem.findFirst({
+      where: { userId, itemSlug: item.slug },
+    });
+    if (existing) {
+      await prisma.playerInventoryItem.update({
+        where: { id: existing.id },
+        data: { quantity: existing.quantity + item.qty },
+      });
+    } else {
+      await prisma.playerInventoryItem.create({
+        data: { userId, itemSlug: item.slug, quantity: item.qty },
+      });
+    }
+  }
+}
+
+async function inventorySnapshot(userId: string): Promise<Record<string, number>> {
+  const rows = await prisma.playerInventoryItem.findMany({ where: { userId } });
+  const inv: Record<string, number> = {};
+  for (const row of rows) {
+    inv[row.itemSlug] = (inv[row.itemSlug] || 0) + row.quantity;
+  }
+  return inv;
+}
+
 export class DialogueManager {
   constructor(private engine: GameEngine) {
     this.engine.events.on("npcInteractRequest", (data) => this.handleNpcInteract(data));
@@ -126,6 +186,12 @@ export class DialogueManager {
           dialogueCache[key] = { tree: parsed, updatedAt: stamp };
           return parsed;
         }
+      }
+      const tree3 = await prisma.npcDialogueTree.findUnique({ where: { npcId: bare } });
+      if (tree3) {
+        const parsed = JSON.parse(tree3.data);
+        dialogueCache[bare] = parsed;
+        return parsed;
       }
     } catch (e) {
       console.error(`[DialogueManager] Failed to load dialogue for ${npcId}`, e);

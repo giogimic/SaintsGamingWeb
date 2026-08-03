@@ -77,11 +77,22 @@ export default function TilesetPicker({
         <div className="bg-black/60 rounded border border-slate-700 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
            <img 
              ref={imgRef}
-             src={`/game-assets/tilesets/${ts.imageSource}`} 
-             alt="Tileset" 
+             src={
+               ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
+                 ? ts.imageSource
+                 : `/game-assets/tilesets/${ts.imageSource}`
+             }
+             alt={ts.imageSource}
              onClick={handleImageClick}
              className="cursor-crosshair w-full"
              style={{ imageRendering: 'pixelated', minWidth: `${ts.columns * ts.tilewidth}px` }}
+             onError={(e) => {
+               const el = e.currentTarget;
+               if (!el.dataset.fallback) {
+                 el.dataset.fallback = '1';
+                 el.src = `/game-assets/tilesets/Terrain_by_George.png`;
+               }
+             }}
            />
         </div>
       )}

@@ -51,6 +51,118 @@ export class InventoryManager {
 
   public async initialize() {
     console.log("[InventoryManager] Initialized ARPG Economy Engine");
+    // ALIGNMENT E.2 — push cold inventory on lobby join so web marketplace buys appear
+    this.engine.events.on(
+      "playerInventorySyncRequest",
+      async (data: { socketId: string; accountId: string }) => {
+        const userId = await resolveUserId(data.accountId);
+        if (!userId || !data.socketId) return;
+        await this.syncInventory(data.socketId, userId);
+      }
+    );
+    // CONTINUE #2 — restore personal bramble clears (and Q4-completed gate) on join
+    this.engine.events.on(
+      "playerBrambleHydrateRequest",
+      async (data: { socketId: string; accountId: string; mapId?: string }) => {
+        await this.hydratePersonalBramble(data);
+      }
+    );
+  }
+
+  private async hydratePersonalBramble(data: {
+    socketId: string;
+    accountId: string;
+    mapId?: string;
+  }) {
+    if (!this.worldManager || !data.socketId || !data.accountId) return;
+    const userId = await resolveUserId(data.accountId);
+    if (!userId) return;
+    const accountKeys = Array.from(new Set([data.accountId, userId]));
+    const baseMapId = toBaseMapId(data.mapId || "DEMO_SANDBOX");
+
+    // If Q4 already completed, re-open the full gate for this account
+    try {
+      const q4 = await prisma.playerQuestState.findFirst({
+        where: {
+          userId,
+          questSlug: "quest_wilderness_clearance",
+          status: "COMPLETED",
+        },
+      });
+      if (q4) {
+        this.worldManager.clearDemoBrambleGateForAccount(accountKeys);
+      }
+    } catch (e) {
+      console.warn("[InventoryManager] bramble hydrate quest lookup failed", e);
+    }
+
+    const cells = new Map<string, { x: number; y: number }>();
+    for (const key of accountKeys) {
+      for (const cell of this.worldManager.listClearedBramble(key)) {
+        cells.set(`${cell.x},${cell.y}`, cell);
+      }
+    }
+    for (const cell of cells.values()) {
+      this.engine.events.emit("directMessage", {
+        socketId: data.socketId,
+        event: "tile_changed",
+        data: { mapId: baseMapId, x: cell.x, y: cell.y, tileId: 0 },
+      });
+    }
+  }
+
+  private async syncInventory(socketId: string, userId: string) {
+    const invRows = await prisma.playerInventoryItem.findMany({ where: { userId } });
+    const inventory: Record<string, number> = {};
+    for (const row of invRows) {
+      inventory[row.itemSlug] = (inventory[row.itemSlug] || 0) + row.quantity;
+    }
+    this.engine.events.emit("directMessage", {
+      socketId,
+      event: "inventory_sync",
+      data: { inventory },
+    });
+  }
+
+  private async handleGrantRewards(data: {
+    accountId: string;
+    socketId?: string;
+    rewards: { items?: { slug: string; qty: number }[]; gold?: number };
+  }) {
+    const userId = await resolveUserId(data.accountId);
+    if (!userId || !data.rewards?.items?.length) return;
+    for (const item of data.rewards.items) {
+      const existing = await prisma.playerInventoryItem.findFirst({
+        where: { userId, itemSlug: item.slug },
+      });
+      if (existing) {
+        await prisma.playerInventoryItem.update({
+          where: { id: existing.id },
+          data: { quantity: existing.quantity + item.qty },
+        });
+      } else {
+        await prisma.playerInventoryItem.create({
+          data: { userId, itemSlug: item.slug, quantity: item.qty },
+        });
+      }
+    }
+    if (data.socketId) {
+      await this.syncInventory(data.socketId, userId);
+      this.engine.events.emit("directMessage", {
+        socketId: data.socketId,
+        event: "show_toast",
+        data: { message: "Quest rewards received." },
+      });
+    }
+  }
+
+  private resolveGatherInstance(accountId: string, mapId: string) {
+    const player = this.playerManager?.getPlayerByAccountId(accountId);
+    if (player?.mapId) {
+      const byPlayer = this.worldManager.getInstance(player.mapId);
+      if (byPlayer) return byPlayer;
+    }
+    return this.worldManager.resolveInstance(mapId);
   }
 
   private async syncInventory(socketId: string, userId: string) {

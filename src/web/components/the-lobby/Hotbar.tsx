@@ -121,31 +121,35 @@ export default function Hotbar() {
   const gcdActive = now < globalCooldown;
   const gcdPercent = gcdActive ? Math.max(0, (globalCooldown - now) / 1500 * 100) : 0;
 
+  // Phones: keep 5 combat slots above the touch controls; hide empty + slots.
+  const visibleSlots = slots.filter((s, i) => i < 5 || s.ability);
+
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30 pointer-events-auto sg-glass p-2 rounded-xl shadow-2xl border border-white/10">
-      {slots.map((slot, i) => (
-        <div 
-          key={i}
+    <div
+      className="lobby-panel pointer-events-auto absolute left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-xl p-1.5 bottom-[max(1.25rem,calc(6.75rem+env(safe-area-inset-bottom,0px)))] max-md:gap-1 max-md:p-1 md:bottom-6 md:gap-2 md:p-2"
+    >
+      {visibleSlots.map((slot, i) => (
+        <div
+          key={slot.key || i}
           onClick={() => handleCast(slot)}
-          className="relative w-12 h-12 bg-black/50 border border-white/10 rounded-lg flex flex-col justify-center items-center group cursor-pointer hover:border-violet-500/50 hover:bg-violet-900/20 transition-all overflow-hidden"
+          className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-lobby-border bg-black/45 transition-all hover:border-lobby-soul/55 hover:bg-lobby-soul/15 max-md:h-10 max-md:w-10 md:h-12 md:w-12"
         >
-          {/* Keybind Hint */}
-          <span className="absolute top-1 left-1.5 text-[10px] font-mono font-bold text-white/50 group-hover:text-violet-300 transition-colors z-10">{slot.key}</span>
-          
-          {/* Item Content */}
+          <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-lobby-ash transition-colors group-hover:text-lobby-soul md:top-1 md:left-1.5 md:text-[10px]">
+            {slot.key}
+          </span>
+
           {slot.ability ? (
             <>
-              <span className="text-2xl drop-shadow-md z-10">{slot.ability.icon}</span>
-              {/* Cooldown Sweep Overlay */}
+              <span className="z-10 text-xl drop-shadow-md md:text-2xl">{slot.ability.icon}</span>
               {gcdActive && (
-                <div 
-                  className="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm z-20"
+                <div
+                  className="absolute bottom-0 left-0 z-20 w-full bg-black/70 backdrop-blur-sm"
                   style={{ height: `${gcdPercent}%` }}
                 />
               )}
             </>
           ) : (
-            <span className="text-white/10 text-xl font-bold">+</span>
+            <span className="text-lg font-bold text-lobby-ash/30 md:text-xl">+</span>
           )}
         </div>
       ))}
