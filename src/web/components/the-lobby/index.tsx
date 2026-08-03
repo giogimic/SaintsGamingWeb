@@ -907,8 +907,18 @@ export default function TheLobby({
           if (isCreationMode) setClickedTile({r, c});
         }}
       />
+
+      {/* Touch controls stay full-size (do not scale — fingers need real targets). */}
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <div className="pointer-events-auto absolute inset-0">
+          <MobileControls
+            onToggleFullscreen={toggleFullscreen}
+            onToggleOptions={() => setIsOptionsOpen(true)}
+          />
+        </div>
+      </div>
       
-      {/* Scale the whole HUD on phones (canvas stays full-bleed). */}
+      {/* Scale the whole HUD on phones (canvas + touch stay full-bleed). */}
       <div
         className="pointer-events-none absolute inset-0 origin-top-left"
         style={
@@ -924,10 +934,7 @@ export default function TheLobby({
       >
         <div className="pointer-events-none absolute inset-0">
           <div className="pointer-events-auto absolute inset-0">
-            <MobileControls
-              onToggleFullscreen={toggleFullscreen}
-              onToggleOptions={() => setIsOptionsOpen(true)}
-            />
+            {/* placeholder so structure stays stable; controls live outside scale */}
           </div>
         </div>
 
