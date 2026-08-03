@@ -74,7 +74,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 
 ### Slice D — Studio creator UX (16, toward MPV editor) — **DONE 2026-08-03** (permission matrix deferred)
 1. Contextual modes (Build / NPC / Quest / Creature / Test) — **Done:** mode strip + panel presets  
-2. Permission-gated floating docks (extend current shell) — deferred (`/studio` already Developer+)  
+2. Permission-gated floating docks (extend current shell) — **Done 2026-08-03:** `studioPermissions` Admin+ entry/writes; Dev Tools server Admin+ / engine Developer+; Creator Claims deferred  
 3. Tag/component placement UX over raw logic paint — **Done:** Logic Tag Palette on layer −1 + Properties “Place Tag” brush  
 4. **Done:** World Builder **Save Map** → `POST /api/maps/[slug]` + `admin_reload_map` hot-reload; **Logic (−1)** layer target (was unreachable `-2`)  
 5. **Done:** NPC Drop mutates `activeMapData.npcs` (+ `/api/npc-dialogue`); Asset browsers use `/api/assets` (no Prisma-in-browser); seed from `public/game-assets`  

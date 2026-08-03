@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { validateMapSave } from "@/shared/game/mapSaveValidation";
 
 /**
@@ -73,7 +73,7 @@ export async function POST(
       where: { id: session.user.id },
       select: { permissionLevel: true },
     });
-    if (!user || user.permissionLevel < PERMISSION_LEVELS.DEVELOPER) {
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

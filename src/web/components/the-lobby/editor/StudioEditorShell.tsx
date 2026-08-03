@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useEditorStore, PanelId, StudioMode } from './editor-store';
 import { DraggablePanel } from './DraggablePanel';
 import { 
@@ -15,6 +16,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { useGameStore } from '../store';
+import { canUseStudioDock } from '@/shared/game/studioPermissions';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
 import { PropertiesPanel } from './panels/PropertiesPanel';
@@ -45,18 +47,32 @@ const MODE_BUTTONS: Array<{
 ];
 
 export const StudioEditorShell: React.FC = () => {
+  const { data: session } = useSession();
+  const permissionLevel = session?.user?.permissionLevel ?? 0;
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
   const enterWalkMode = useEditorStore((state) => state.enterWalkMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
+  const closePanel = useEditorStore((state) => state.closePanel);
   const showToast = useGameStore((state) => state.showToast);
+
+  const canDev = canUseStudioDock(permissionLevel, 'dev');
 
   useEffect(() => {
     // Doc 16 §4: restore dock geometry from localStorage, then Walk Mode (create tools opt-in).
     useEditorStore.getState().hydratePanelLayouts();
     enterWalkMode();
   }, [enterWalkMode]);
+
+  // Close docks the user cannot open (e.g. Dev without Admin+).
+  useEffect(() => {
+    (Object.keys(useEditorStore.getState().panels) as PanelId[]).forEach((id) => {
+      if (!canUseStudioDock(permissionLevel, id)) {
+        closePanel(id);
+      }
+    });
+  }, [permissionLevel, closePanel]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -91,37 +107,53 @@ export const StudioEditorShell: React.FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-[100]">
       <div className="pointer-events-auto">
-        <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />}>
-          <WorldBuilderPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'build') && (
+          <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />}>
+            <WorldBuilderPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="properties" icon={<Settings2 className="w-4 h-4" />}>
-          <PropertiesPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'properties') && (
+          <DraggablePanel id="properties" icon={<Settings2 className="w-4 h-4" />}>
+            <PropertiesPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="assets" icon={<ImageIcon className="w-4 h-4" />}>
-          <AssetBrowserPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'assets') && (
+          <DraggablePanel id="assets" icon={<ImageIcon className="w-4 h-4" />}>
+            <AssetBrowserPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="npc" icon={<Users className="w-4 h-4" />}>
-          <NpcEditorPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'npc') && (
+          <DraggablePanel id="npc" icon={<Users className="w-4 h-4" />}>
+            <NpcEditorPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />}>
-          <QuestEditorPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'quest') && (
+          <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />}>
+            <QuestEditorPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />}>
-          <DevToolsPanel />
-        </DraggablePanel>
+        {canDev && (
+          <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />}>
+            <DevToolsPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="characters" icon={<Sword className="w-4 h-4" />}>
-          <StarterHeroEditorPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'characters') && (
+          <DraggablePanel id="characters" icon={<Sword className="w-4 h-4" />}>
+            <StarterHeroEditorPanel />
+          </DraggablePanel>
+        )}
 
-        <DraggablePanel id="creature" icon={<PawPrint className="w-4 h-4" />}>
-          <CreatureDefEditorPanel />
-        </DraggablePanel>
+        {canUseStudioDock(permissionLevel, 'creature') && (
+          <DraggablePanel id="creature" icon={<PawPrint className="w-4 h-4" />}>
+            <CreatureDefEditorPanel />
+          </DraggablePanel>
+        )}
       </div>
 
       {/* Mode strip + dock */}
@@ -157,15 +189,17 @@ export const StudioEditorShell: React.FC = () => {
         </div>
 
         <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-4 py-2 flex items-center gap-3 shadow-2xl">
-          <DockButton id="build" icon={<Hammer className="w-5 h-5" />} label="Build" />
-          <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} label="Props" />
-          <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} label="Assets" />
-          <DockButton id="npc" icon={<Users className="w-5 h-5" />} label="NPCs" />
-          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} label="Quests" />
+          <DockButton id="build" icon={<Hammer className="w-5 h-5" />} label="Build" permissionLevel={permissionLevel} />
+          <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} label="Props" permissionLevel={permissionLevel} />
+          <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} label="Assets" permissionLevel={permissionLevel} />
+          <DockButton id="npc" icon={<Users className="w-5 h-5" />} label="NPCs" permissionLevel={permissionLevel} />
+          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} label="Quests" permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
-          <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" />
-          <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" />
-          <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} label="Creatures" />
+          {canDev && (
+            <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" permissionLevel={permissionLevel} />
+          )}
+          <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" permissionLevel={permissionLevel} />
+          <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} label="Creatures" permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
           <button 
             onClick={() => setStudioMode('test')}
@@ -180,13 +214,27 @@ export const StudioEditorShell: React.FC = () => {
   );
 };
 
-const DockButton: React.FC<{ id: PanelId; icon: React.ReactNode; label: string }> = ({ id, icon, label }) => {
+const DockButton: React.FC<{
+  id: PanelId;
+  icon: React.ReactNode;
+  label: string;
+  permissionLevel: number;
+}> = ({ id, icon, label, permissionLevel }) => {
   const isOpen = useEditorStore((state) => state.panels[id].isOpen);
   const togglePanel = useEditorStore((state) => state.togglePanel);
+  const showToast = useGameStore((state) => state.showToast);
+
+  if (!canUseStudioDock(permissionLevel, id)) return null;
 
   return (
     <button
-      onClick={() => togglePanel(id)}
+      onClick={() => {
+        if (!canUseStudioDock(permissionLevel, id)) {
+          showToast('Insufficient permission for this dock');
+          return;
+        }
+        togglePanel(id);
+      }}
       className={`
         flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[60px]
         ${isOpen ? 'bg-[#806f47]/20 text-[#cbb26a] shadow-[inset_0_0_10px_rgba(203,178,106,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 
 type DialogueOption = {
   label: string;
@@ -18,7 +18,7 @@ type DialogueNode = {
 type DialogueTree = Record<string, DialogueNode>;
 
 /**
- * POST /api/npc-dialogue — upsert NPC dialogue (Developer+).
+ * POST /api/npc-dialogue — upsert NPC dialogue (Admin+ / Studio content write).
  *
  * Body:
  * - npcId, name (required)
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       where: { id: session.user.id },
       select: { permissionLevel: true },
     });
-    if (!user || user.permissionLevel < PERMISSION_LEVELS.DEVELOPER) {
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

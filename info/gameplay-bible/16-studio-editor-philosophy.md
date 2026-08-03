@@ -160,7 +160,7 @@ Advanced Tier is hidden behind an explicit toggle. Default Studio stays fun-firs
 - [x] **Walk Mode** as the default entry — create tools are opt-in, not forced. (2026-08-03: `/studio` mounts Walk; Ctrl+E / mode strip opts into Build·NPC·Quest·Creature)
 - [ ] **Five Modes** switcher (Walk / Paint / Place / Populate / Script) with clear hotkeys.
 - [x] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev). (2026-08-03: `sg.studio.panelLayout.v1` localStorage geometry + collapse; `isOpen` stays mode-driven; corner resize)
-- [ ] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs.
+- [x] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs. (2026-08-03: Admin+ Studio entry + content writes; Dev Tools server = Admin+, engine config = Developer+; Creator Claims UGC deferred — no CREATOR level yet)
 - [x] **Tag & component** palette for harvest, warp, shop, dialogue, and quest giver. (2026-08-03: Properties component forms + Warp Gate on `map.gates`; dialogue/quest via NPC/Quest docks; LogicTagPalette quick tags)
 - [x] **Asset Manager** with visual + gameplay metadata and approved pack filters. (2026-08-03: pack=`tuxemon|lpc|studio` on `/api/assets`; editable solid/interactable/decorative in Asset Manager; seed writes `pack:*` tags)
 - [x] **Fun-first loop** verified: place → walk → interact → tweak → save under 60 seconds. (2026-08-03: component quick-paint + Walk chip + Save Map path; creator forms replace raw JSON default)

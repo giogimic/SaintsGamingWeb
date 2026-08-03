@@ -5,6 +5,7 @@ import { getToken } from "next-auth/jwt";
 import { RealtimeService } from "./realtime/RealtimeService";
 import { prisma } from "@/web/lib/prisma";
 import { hasPermission, PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 
 export class SocketHandler {
   constructor(
@@ -165,7 +166,7 @@ export class SocketHandler {
             where: { id: accountId },
             select: { permissionLevel: true },
           });
-          if (!user || !hasPermission(user.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) return;
+          if (!user || !canWriteStudioContent(user.permissionLevel)) return;
           this.engine.events.emit("adminSaveMap", data);
         } catch (err) {
           console.warn("[Socket] admin_save_map failed:", err);
@@ -180,7 +181,7 @@ export class SocketHandler {
             where: { id: accountId },
             select: { permissionLevel: true },
           });
-          if (!user || !hasPermission(user.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) return;
+          if (!user || !canWriteStudioContent(user.permissionLevel)) return;
           this.engine.events.emit("adminReloadMap", { mapId: data.mapId });
         } catch (err) {
           console.warn("[Socket] admin_reload_map failed:", err);

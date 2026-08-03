@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 interface StaffFloatingMenuProps {
   permissionLevel: number;
@@ -32,7 +33,7 @@ export function StaffFloatingMenu({
 
   const isMod = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
   const isAdmin = hasPermission(permissionLevel, PERMISSION_LEVELS.ADMIN);
-  const isDev = hasPermission(permissionLevel, PERMISSION_LEVELS.DEVELOPER);
+  const canStudio = canEnterStudio(permissionLevel);
 
   const nearby = useMemo(
     () =>
@@ -136,7 +137,7 @@ export function StaffFloatingMenu({
                 <ExternalLink className="w-3.5 h-3.5 text-[#cbb26a]" />
                 Open Admin Panel
               </a>
-              {isDev && !isStudioRoute && (
+              {canStudio && !isStudioRoute && (
                 <a
                   href="/studio"
                   className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#cbb26a]/15 border border-[#cbb26a]/40 text-[#e8d5a3] text-xs font-semibold hover:bg-[#cbb26a]/25"

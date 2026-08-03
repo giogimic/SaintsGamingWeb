@@ -27,6 +27,7 @@ import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -94,7 +95,7 @@ export default function TheLobby({
   const [permissionLevel, setPermissionLevel] = useState(0);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const isStaff = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
-  const isDeveloper = hasPermission(permissionLevel, PERMISSION_LEVELS.DEVELOPER);
+  const canStudio = canEnterStudio(permissionLevel);
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -901,7 +902,7 @@ export default function TheLobby({
       }
       const key = e.key.toLowerCase();
       if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
-      else if (key === 'e' && enableStudio && isDeveloper) {
+      else if (key === 'e' && enableStudio && canStudio) {
         useEditorStore.getState().toggleCreationMode();
       }
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
@@ -912,7 +913,7 @@ export default function TheLobby({
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
-  }, [enableStudio, isDeveloper]);
+  }, [enableStudio, canStudio]);
 
   if (isInitializing) {
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
@@ -1020,7 +1021,7 @@ export default function TheLobby({
               right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
             }}
           >
-            {enableStudio && isDeveloper && (
+            {enableStudio && canStudio && (
               <button
                 onClick={() => useEditorStore.getState().toggleCreationMode()}
                 className={`pointer-events-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] font-medium shadow-lg transition-all active:scale-95 md:gap-2 md:px-3
@@ -1033,7 +1034,7 @@ export default function TheLobby({
                 <span className="hidden sm:inline">STUDIO (Ctrl+E)</span>
               </button>
             )}
-            {!enableStudio && isDeveloper && (
+            {!enableStudio && canStudio && (
               <a
                 href="/studio"
                 className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[#806f47]/50 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-[#cbb26a] shadow-lg backdrop-blur-md transition-all hover:border-[#cbb26a] hover:bg-white/10 md:gap-2 md:px-3"
@@ -1057,10 +1058,10 @@ export default function TheLobby({
           onClose={() => setIsOptionsOpen(false)}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
-          isAdminUser={enableStudio && isDeveloper}
+          isAdminUser={enableStudio && canStudio}
           isCreationMode={isCreationMode}
           onToggleDevEditor={() => {
-            if (!enableStudio || !isDeveloper) return;
+            if (!enableStudio || !canStudio) return;
             if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
             useEditorStore.getState().toggleCreationMode(); 
             setIsOptionsOpen(false);
