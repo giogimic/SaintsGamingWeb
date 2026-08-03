@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
 import { Tag } from 'lucide-react';
+import { LOGIC_COMPONENT_PRESETS } from '@/shared/game/logicComponents';
 
 /**
  * Creator-facing logic tag palette (bible: tags/components over raw GIDs).
@@ -15,6 +16,7 @@ export function LogicTagPalette() {
   const brushId = useEditorStore((s) => s.activeBrushTileId);
   const setBrush = useEditorStore((s) => s.setActiveBrushTileId);
   const setLayer = useEditorStore((s) => s.setActiveLayerIdx);
+  const showToast = useGameStore((s) => s.showToast);
 
   useEffect(() => {
     if (Object.keys(logicTiles).length === 0) {
@@ -24,10 +26,15 @@ export function LogicTagPalette() {
 
   const tiles = Object.values(logicTiles).sort((a, b) => a.id - b.id);
 
+  const quickPresets = useMemo(
+    () => LOGIC_COMPONENT_PRESETS.filter((p) => p.paintTileId != null && logicTiles[p.paintTileId!]),
+    [logicTiles]
+  );
+
   if (tiles.length === 0) {
     return (
       <div className="rounded border border-slate-800 bg-[#050b14]/80 p-3 text-[11px] text-slate-400">
-        No logic tags loaded. Open Properties → Register Template, or wait for DemoBootstrap tiles.
+        No logic tags loaded. Open Properties → Register Component, or wait for DemoBootstrap tiles.
       </div>
     );
   }
@@ -35,8 +42,33 @@ export function LogicTagPalette() {
   return (
     <div className="space-y-2">
       <p className="text-[10px] leading-relaxed text-slate-400">
-        Pick a tag, then paint on the map. Brush stays on Logic (−1).
+        Fun-first: paint a tag → Walk Mode → interact → Save Map.
       </p>
+
+      {quickPresets.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {quickPresets.slice(0, 8).map((p) => (
+            <button
+              key={p.kind}
+              type="button"
+              onClick={() => {
+                setLayer(-1);
+                setBrush(p.paintTileId!);
+                showToast(`Brush: ${p.label}`);
+              }}
+              className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                brushId === p.paintTileId
+                  ? 'border-[#cbb26a] bg-[#806f47]/30 text-[#e2d5b3]'
+                  : 'border-slate-700 bg-[#050b14] text-slate-400 hover:border-[#806f47]/50'
+              }`}
+              title={p.description}
+            >
+              {p.tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-1 max-h-[280px] overflow-y-auto custom-scrollbar pr-0.5">
         {tiles.map((tile) => {
           const active = brushId === tile.id;

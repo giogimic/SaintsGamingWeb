@@ -17,6 +17,7 @@ import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
+import { normalizeGates } from '@/shared/game/logicComponents';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -132,7 +133,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       mapWidth,
       mapHeight,
       mapGrid: activeMap.grid,
-      gates: activeMap.gates || [],
+      gates: normalizeGates(activeMap.gates),
       staticNpcs: activeMap.npcs || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
@@ -252,7 +253,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       mapWidth,
       mapHeight,
       mapGrid: activeMap?.grid || [],
-      gates: activeMap?.gates || [],
+      gates: normalizeGates(activeMap?.gates),
       staticNpcs: activeMap?.npcs || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
