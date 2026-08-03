@@ -1686,4 +1686,3 @@ model CreatureDef {
   @@index([isWildSpawn, isActive])
   @@index([gameId])
 }
-

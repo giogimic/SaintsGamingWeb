@@ -9,13 +9,17 @@ import { Button } from "@/shared/ui/button";
 import { useSession } from "next-auth/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function MessengerPopup() {
   const { data: session } = useSession();
   const { isOpen, setIsOpen, activeChat, isCryptoReady } = useMessenger();
   const [activeTab, setActiveTab] = useState<"friends" | "feed">("friends");
+  const pathname = usePathname();
 
+  // Lobby/studio are full-viewport game shells — site chat FAB collides with touch controls.
   if (!session?.user) return null;
+  if (pathname?.startsWith("/lobby") || pathname?.startsWith("/studio")) return null;
 
   return (
     <>

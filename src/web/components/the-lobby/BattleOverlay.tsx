@@ -91,7 +91,11 @@ export default function BattleOverlay({ onAction }: { onAction?: (action: any) =
             {/* Enemy Sprite */}
             <div className="w-48 h-48 relative drop-shadow-[0_0_15px_rgba(255,100,100,0.5)]">
               <img 
-                src={`/assets/sprites/${activeBattle.wildCreature.spriteKey}.png`} 
+                src={
+                  activeBattle.wildCreature.spriteKey.startsWith('/')
+                    ? activeBattle.wildCreature.spriteKey
+                    : `/game-assets/${activeBattle.wildCreature.spriteKey}.png`
+                } 
                 alt={activeBattle.wildCreature.name}
                 className="w-full h-full object-contain"
                 style={{ imageRendering: 'pixelated' }}
@@ -111,7 +115,11 @@ export default function BattleOverlay({ onAction }: { onAction?: (action: any) =
             <div className="w-64 h-64 relative drop-shadow-[0_0_15px_rgba(100,100,255,0.5)]">
                {/* Note: In a real game, this would be the back sprite. We'll reuse the front for demo */}
               <img 
-                src={`/assets/sprites/${activeBattle.playerCreature.spriteKey}.png`} 
+                src={
+                  activeBattle.playerCreature.spriteKey.startsWith('/')
+                    ? activeBattle.playerCreature.spriteKey
+                    : `/game-assets/${activeBattle.playerCreature.spriteKey}.png`
+                } 
                 alt={activeBattle.playerCreature.name}
                 className="w-full h-full object-contain -scale-x-100"
                 style={{ imageRendering: 'pixelated' }}

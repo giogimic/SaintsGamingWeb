@@ -303,6 +303,135 @@ export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
   },
 ];
 
+const WILD_OVERWORLD_SLUGS = new Set([
+  "ashwhirl",
+  "grimvast",
+  "hollowmirth",
+  "rootwail",
+  "siltmourne",
+  "tanglewrath",
+]);
+
+const STARTER_OVERWORLD_SLUGS = new Set([
+  "lumkit",
+  "lumveil",
+  "mosswhim",
+  "solarcrown",
+  "stonethrum",
+  "terravault",
+]);
+
+const MISSING_NPC_PLACEHOLDERS = new Set([
+  "villager_1",
+  "villager_2",
+  "chicken",
+  "cow",
+  "guide_1",
+  "npc_default",
+]);
+
+const CUSTOM_NPC_SLUGS = [
+  "candrift_keeper",
+  "capturer_kian",
+  "elder_voss",
+  "ironwright_kael",
+  "scout_mira",
+  "soulwarden_aldric",
+] as const;
+
+/**
+ * Pull a bare slug from an absolute /game-assets path so we can re-resolve
+ * battle sheets / missing placeholders instead of returning broken URLs as-is.
+ */
+function slugFromAssetUrl(url: string): string | null {
+  const path = url.split("?")[0] || url;
+  const m = path.match(
+    /\/game-assets\/(?:npc|creatures|world-monsters|monster\/battle)\/([^/]+?)(?:-sheet|-ow)?\.png$/i
+  );
+  return m?.[1] ? m[1].replace(/-sheet$/i, "").replace(/-ow$/i, "") : null;
+}
+
+export function resolveEntitySpriteUrl(
+  spriteKey: string | null | undefined,
+  opts?: { kind?: "npc" | "creature" | "animal" | "monster" | "player"; fallback?: string }
+): string {
+  const fallback = opts?.fallback || "/game-assets/npc/adventurer.png";
+  if (!spriteKey) return fallback;
+
+  const raw = String(spriteKey).trim();
+  if (!raw) return fallback;
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("/")) {
+    // Legacy broken prefix used by BabylonEngine loadTilemap
+    if (raw.startsWith("/assets/sprites/") || raw.startsWith("/game-assets/sprites/")) {
+      const bare = raw
+        .replace(/^\/(?:assets|game-assets)\/sprites\//, "")
+        .replace(/\.png$/i, "");
+      return resolveEntitySpriteUrl(bare, opts);
+    }
+
+    // Battle sheets must not billboard in the overworld — remap to OW crop.
+    if (/-sheet\.png(?:$|\?)/i.test(raw) || raw.includes("/monster/battle/")) {
+      const bare = slugFromAssetUrl(raw);
+      if (bare) return resolveEntitySpriteUrl(bare, { ...opts, kind: opts?.kind || "monster" });
+    }
+
+    // Absolute paths to known-missing npc placeholders → fallback
+    const absNpc = raw.match(/\/game-assets\/npc\/([^/]+)\.png(?:$|\?)/i);
+    if (absNpc) {
+      const key = absNpc[1].replace(/-ow$/i, "");
+      if (MISSING_NPC_PLACEHOLDERS.has(key) || MISSING_NPC_PLACEHOLDERS.has(absNpc[1])) {
+        return fallback;
+      }
+      if ((CUSTOM_NPC_SLUGS as readonly string[]).includes(key) && !/-ow\.png(?:$|\?)/i.test(raw)) {
+        return creatureAssetUrl(`npc/${key}-ow`);
+      }
+    }
+
+    return raw;
+  }
+
+  const key = raw.replace(/\.png$/i, "");
+  if (key.includes("/")) {
+    // Relative catalog keys that point at battle sheets → prefer overworld when possible
+    if (key.endsWith("-sheet") || key.includes("monster/battle/")) {
+      const bare = key.split("/").pop()?.replace(/-sheet$/i, "") || key;
+      return resolveEntitySpriteUrl(bare, { ...opts, kind: opts?.kind || "monster" });
+    }
+    return creatureAssetUrl(key);
+  }
+
+  const def = getFallbackCreature(key);
+  if (def?.spriteOverworld) {
+    return creatureAssetUrl(def.spriteOverworld);
+  }
+  if (WILD_OVERWORLD_SLUGS.has(key)) {
+    return creatureAssetUrl(`world-monsters/${key}-ow`);
+  }
+  if (STARTER_OVERWORLD_SLUGS.has(key)) {
+    return creatureAssetUrl(`creatures/${key}-ow`);
+  }
+  if (key === "rockitten" || key === "conileaf") {
+    return creatureAssetUrl(`npc/${key}`);
+  }
+
+  // Custom LimeWire NPCs — prefer small overworld crops, never full 1024² portraits in-world
+  const customNpcBase = key.replace(/-ow$/, "");
+  if ((CUSTOM_NPC_SLUGS as readonly string[]).includes(customNpcBase)) {
+    return creatureAssetUrl(`npc/${customNpcBase}-ow`);
+  }
+
+  // Missing legacy placeholders → visible fallback instead of Babylon pink checkers
+  if (MISSING_NPC_PLACEHOLDERS.has(key)) {
+    return fallback;
+  }
+
+  if (opts?.kind === "creature" || opts?.kind === "monster" || opts?.kind === "animal") {
+    return creatureAssetUrl(`world-monsters/${key}-ow`);
+  }
+
+  return creatureAssetUrl(`npc/${key}`);
+}
+
 export function getFallbackCreature(slug: string): CreatureDefData | undefined {
   return FALLBACK_CREATURE_DEFS.find((c) => c.slug === slug);
 }
