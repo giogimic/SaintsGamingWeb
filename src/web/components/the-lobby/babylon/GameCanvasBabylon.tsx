@@ -430,7 +430,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   useEffect(() => {
     if (engineRef.current) {
-      if (activeLayerIdx === -2) {
+      if (activeLayerIdx === -1) {
         engineRef.current.enableLogicGridOverlay(activeMap?.grid || []);
       } else {
         engineRef.current.disableLogicGridOverlay();
@@ -772,8 +772,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c, clickedLayerIdx) => {
-        if (activeLayerIdx === -2) {
-          // Painting Logic directly on the activeMap.grid
+        if (activeLayerIdx === -1) {
+          // Painting Logic layer (collision / authority grid) — bible layer −1
           if (activeMap?.grid?.[r]) {
             activeMap.grid[r][c] = activeBrushTileId;
             engine.updateLogicTile(r, c, activeBrushTileId);
@@ -783,7 +783,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         if (onMapClick) onMapClick(r, c);
 
-        const targetLayerIdx = activeLayerIdx !== -1 ? activeLayerIdx : (clickedLayerIdx || -1);
+        const targetLayerIdx = activeLayerIdx >= 0 ? activeLayerIdx : (clickedLayerIdx || 0);
         
         // Always try to use the rich tileset array if present
         if (targetLayerIdx !== -1 && activeMap?.tileLayers?.[targetLayerIdx]) {

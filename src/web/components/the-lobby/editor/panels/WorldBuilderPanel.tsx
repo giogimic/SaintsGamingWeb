@@ -3,13 +3,16 @@
 import React, { useState } from 'react';
 import { useGameStore } from '../../store';
 import { searchMapIndex, registerNewMap } from '../../data/map-index';
-import { GAME_MAPS } from '../../data/maps';
-import { Compass, Plus, Search, Layers, Grid } from 'lucide-react';
+import { GAME_MAPS, invalidateMapCache } from '../../data/maps';
+import { toBaseMapId } from '@/shared/net/mapIds';
+import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
+  const activeMapData = useGameStore((state) => state.activeMapData);
+  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const showToast = useGameStore((state) => state.showToast);
 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
@@ -18,6 +21,7 @@ export const WorldBuilderPanel: React.FC = () => {
   const [newMapName, setNewMapName] = useState('');
   const [newMapWidth, setNewMapWidth] = useState(24);
   const [newMapHeight, setNewMapHeight] = useState(24);
+  const [isSaving, setIsSaving] = useState(false);
   
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
@@ -25,9 +29,10 @@ export const WorldBuilderPanel: React.FC = () => {
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
 
   const mapIndex = searchMapIndex(mapSearchQuery);
-  const currentMapData = GAME_MAPS[currentMapId] || {
-    id: currentMapId,
-    name: currentMapId,
+  const baseMapId = toBaseMapId(String(currentMapId || ''));
+  const currentMapData = activeMapData || GAME_MAPS[baseMapId] || {
+    id: baseMapId,
+    name: baseMapId,
     grid: Array(24).fill(0).map(() => Array(24).fill(0)),
     gates: {},
     tileLayers: [{ name: 'Ground', grid: Array(24).fill(0).map(() => Array(24).fill(0)) }],
@@ -40,6 +45,44 @@ export const WorldBuilderPanel: React.FC = () => {
     useGameStore.setState({ currentMapId: targetMapId });
     setMapSearchQuery('');
     showToast(`Warped to map: ${targetMapId}`);
+  };
+
+  const handleSaveMap = async () => {
+    if (!baseMapId) {
+      showToast('No map loaded to save.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const payload = {
+        name: currentMapData.name || baseMapId,
+        grid: currentMapData.grid,
+        gates: currentMapData.gates || {},
+        npcs: currentMapData.npcs || [],
+        encounterPool: currentMapData.encounterPool || [],
+        tileLayers: currentMapData.tileLayers || [],
+        tilesets: currentMapData.tilesets || [],
+      };
+      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err?.error || `Save failed (${res.status})`);
+        return;
+      }
+      invalidateMapCache(baseMapId);
+      // Notify server + peers to hot-reload from WorldMap (shard-safe global broadcast).
+      emitSocketEvent?.('admin_reload_map', { mapId: baseMapId });
+      showToast(`Saved map ${baseMapId}`);
+    } catch (e: any) {
+      console.error('[Studio] Save map failed', e);
+      showToast(e?.message || 'Save failed');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCreateNewMapSubmit = () => {
@@ -73,7 +116,7 @@ export const WorldBuilderPanel: React.FC = () => {
     };
 
     registerNewMap(newMapData);
-    useGameStore.setState({ currentMapId: cleanSlug });
+    useGameStore.setState({ currentMapId: cleanSlug, activeMapData: newMapData });
     setIsCreatingNewMap(false);
     showToast(`Created & Warped to new map: ${cleanSlug}`);
   };
@@ -88,8 +131,18 @@ export const WorldBuilderPanel: React.FC = () => {
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center justify-between text-[#cbb26a]">
           <span className="flex items-center gap-1.5 font-bold"><Compass className="w-3.5 h-3.5" /> World:</span>
-          <span className="text-white px-2 py-0.5 rounded border border-[#806f47]/30 bg-[#050b14]">{currentMapId}</span>
+          <span className="text-white px-2 py-0.5 rounded border border-[#806f47]/30 bg-[#050b14]">{baseMapId || currentMapId}</span>
         </div>
+
+        <button
+          type="button"
+          onClick={() => void handleSaveMap()}
+          disabled={isSaving}
+          className="w-full py-1.5 bg-[#cbb26a]/90 hover:bg-[#cbb26a] disabled:opacity-50 text-[#0a0a0f] rounded font-bold flex items-center justify-center gap-1.5"
+        >
+          <Save className="w-3.5 h-3.5" />
+          {isSaving ? 'Saving…' : 'Save Map'}
+        </button>
 
         <div className="relative">
           <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-slate-400" />
@@ -156,7 +209,19 @@ export const WorldBuilderPanel: React.FC = () => {
           <Layers className="w-3.5 h-3.5" /> Layer Targeting
         </div>
         <div className="flex gap-1 overflow-x-auto custom-scrollbar pb-1">
-          {currentMapData.tileLayers?.map((layer, idx) => (
+          <button
+            type="button"
+            onClick={() => setActiveLayerIdx(-1)}
+            className={`px-2 py-1 rounded border min-w-max transition-all flex items-center gap-1 ${
+              activeLayerIdx === -1
+                ? 'bg-rose-900/40 border-rose-400 text-rose-100'
+                : 'border-transparent text-slate-400 hover:bg-white/5'
+            }`}
+            title="Collision / authority grid (bible layer −1)"
+          >
+            <Shield className="w-3 h-3" /> Logic (−1)
+          </button>
+          {currentMapData.tileLayers?.map((layer: { name?: string }, idx: number) => (
             <button
               key={idx}
               onClick={() => setActiveLayerIdx(idx)}

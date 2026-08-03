@@ -159,9 +159,32 @@ export class SocketHandler {
         });
       });
 
-      socket.on("admin_save_map", (data) => {
-        // In a real app we'd verify admin role here
-        this.engine.events.emit("adminSaveMap", data);
+      socket.on("admin_save_map", async (data) => {
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: accountId },
+            select: { permissionLevel: true },
+          });
+          if (!user || !hasPermission(user.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) return;
+          this.engine.events.emit("adminSaveMap", data);
+        } catch (err) {
+          console.warn("[Socket] admin_save_map failed:", err);
+        }
+      });
+
+      // After REST WorldMap save: invalidate server cache + hot-reload all clients.
+      socket.on("admin_reload_map", async (data: { mapId?: string }) => {
+        if (!data?.mapId || typeof data.mapId !== "string") return;
+        try {
+          const user = await prisma.user.findUnique({
+            where: { id: accountId },
+            select: { permissionLevel: true },
+          });
+          if (!user || !hasPermission(user.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) return;
+          this.engine.events.emit("adminReloadMap", { mapId: data.mapId });
+        } catch (err) {
+          console.warn("[Socket] admin_reload_map failed:", err);
+        }
       });
 
       // --- PHASE 6: NPCs & Dialogue ---

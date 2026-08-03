@@ -26,6 +26,7 @@ export class WorldManager {
   constructor(private engine: GameEngine) {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
     this.engine.events.on("adminSaveMap", (data) => this.handleAdminSaveMap(data));
+    this.engine.events.on("adminReloadMap", (data) => this.handleAdminReloadMap(data));
   }
 
   private async handleAdminSaveMap(data: any) {
@@ -33,13 +34,23 @@ export class WorldManager {
     const success = await mapLoader.saveMapData(data.mapId, data);
     if (success) {
       console.log(`[WorldManager] Map ${data.mapId} saved to database and hot reloaded.`);
-      // Optionally broadcast to all players in map to reload
+      // Global broadcast — players live on shard rooms (`_chN`), not base mapId alone.
       this.engine.events.emit("networkBroadcast", {
-        room: data.mapId,
         event: "map_reloaded",
         data: { mapId: data.mapId }
       });
     }
+  }
+
+  /** REST already wrote WorldMap — just invalidate server cache and notify clients. */
+  private handleAdminReloadMap(data: { mapId?: string }) {
+    if (!data?.mapId) return;
+    mapLoader.invalidateMap(data.mapId);
+    console.log(`[WorldManager] Map ${data.mapId} cache invalidated; broadcasting map_reloaded.`);
+    this.engine.events.emit("networkBroadcast", {
+      event: "map_reloaded",
+      data: { mapId: data.mapId },
+    });
   }
 
   public async initialize() {
