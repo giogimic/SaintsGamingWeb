@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { SpriteSheetSlicer } from '../src/engine/assets/SpriteSheetSlicer';
+import { inferAssetPack, packTag } from '../src/shared/game/assetPacks';
 
 const prisma = new PrismaClient();
 const ROOT = path.join(process.cwd(), 'public', 'game-assets');
@@ -63,10 +64,13 @@ function classify(rel: string): {
   decorative: boolean;
 } {
   const lower = rel.toLowerCase();
+  const pack = inferAssetPack(rel);
+  const packTags = [packTag(pack)];
+
   if (lower.includes('/tilesets/') || lower.startsWith('tilesets/')) {
     return {
       type: 'TILESET',
-      tags: ['tileset'],
+      tags: ['tileset', ...packTags],
       categories: ['tilesets'],
       solid: true,
       interactable: false,
@@ -76,7 +80,7 @@ function classify(rel: string): {
   if (lower.includes('/npc/') || lower.startsWith('npc/')) {
     return {
       type: 'SPRITE',
-      tags: ['npc', 'overworld'],
+      tags: ['npc', 'overworld', ...packTags],
       categories: ['npcs'],
       solid: false,
       interactable: true,
@@ -86,7 +90,7 @@ function classify(rel: string): {
   if (lower.includes('/monster/') || lower.includes('/creatures/') || lower.includes('/world-monsters/')) {
     return {
       type: 'MONSTER',
-      tags: ['monster'],
+      tags: ['monster', ...packTags],
       categories: ['monsters'],
       solid: false,
       interactable: true,
@@ -96,7 +100,7 @@ function classify(rel: string): {
   if (lower.includes('/items/')) {
     return {
       type: 'ITEM_ICON',
-      tags: ['item'],
+      tags: ['item', ...packTags],
       categories: ['items'],
       solid: false,
       interactable: false,
@@ -106,7 +110,7 @@ function classify(rel: string): {
   if (lower.includes('/ui/')) {
     return {
       type: 'UI_ELEMENT',
-      tags: ['ui'],
+      tags: ['ui', ...packTags],
       categories: ['ui'],
       solid: false,
       interactable: false,
@@ -116,7 +120,7 @@ function classify(rel: string): {
   if (lower.includes('/atlases/')) {
     return {
       type: 'SPRITE',
-      tags: ['atlas'],
+      tags: ['atlas', ...packTags],
       categories: ['atlases'],
       solid: false,
       interactable: false,
@@ -125,7 +129,7 @@ function classify(rel: string): {
   }
   return {
     type: 'SPRITE',
-    tags: ['misc'],
+    tags: ['misc', ...packTags],
     categories: ['misc'],
     solid: false,
     interactable: false,

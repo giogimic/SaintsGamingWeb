@@ -25,6 +25,8 @@ export interface AssetFilters {
   categories?: string[];
   gameId?: string;
   query?: string;
+  /** Approved pack filter: tuxemon | lpc | studio (bible 16 §7). */
+  pack?: string;
   sortBy?: 'source' | 'createdAt' | 'fileSize' | 'usageCount';
   sortOrder?: 'asc' | 'desc';
 }
@@ -88,6 +90,7 @@ export class AssetManager {
     if (filters.query) params.set('query', filters.query);
     if (filters.tags?.length) params.set('tags', filters.tags.join(','));
     if (filters.categories?.length) params.set('categories', filters.categories.join(','));
+    if (filters.pack) params.set('pack', filters.pack);
     if (filters.sortBy) params.set('sortBy', filters.sortBy);
     if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
 
@@ -146,5 +149,24 @@ export class AssetManager {
     });
     if (!res.ok) throw new Error('Failed to reclassify asset');
     this.cache.delete(assetId);
+  }
+
+  /** Bible 16 §7 — declare solid / interactable / decorative on placeable assets. */
+  async updateGameplayFlags(
+    assetId: string,
+    flags: { solid?: boolean; interactable?: boolean; decorative?: boolean }
+  ): Promise<GameAssetItem> {
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata: flags }),
+    });
+    if (!res.ok) throw new Error('Failed to update gameplay flags');
+    const data = await res.json();
+    this.cache.delete(assetId);
+    if (!data.asset) throw new Error('Missing asset in response');
+    const formatted = this.hydrate(data.asset);
+    this.cache.set(assetId, formatted);
+    return formatted;
   }
 }

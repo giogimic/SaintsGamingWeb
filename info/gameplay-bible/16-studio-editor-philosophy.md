@@ -162,7 +162,7 @@ Advanced Tier is hidden behind an explicit toggle. Default Studio stays fun-firs
 - [x] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev). (2026-08-03: `sg.studio.panelLayout.v1` localStorage geometry + collapse; `isOpen` stays mode-driven; corner resize)
 - [ ] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs.
 - [ ] **Tag & component** palette for harvest, warp, shop, dialogue, and quest giver.
-- [ ] **Asset Manager** with visual + gameplay metadata and approved pack filters.
+- [x] **Asset Manager** with visual + gameplay metadata and approved pack filters. (2026-08-03: pack=`tuxemon|lpc|studio` on `/api/assets`; editable solid/interactable/decorative in Asset Manager; seed writes `pack:*` tags)
 - [ ] **Fun-first loop** verified: place → walk → interact → tweak → save under 60 seconds.
 - [x] **Server validation** on save (spawn safety, collision sanity, logic tile allowlists). (2026-08-03: `validateMapSave` on `POST /api/maps/[slug]`)
 - [ ] **Ollama authoring assist** for dialogue drafts (offline from production runtime).

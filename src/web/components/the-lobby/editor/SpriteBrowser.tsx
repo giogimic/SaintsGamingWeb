@@ -12,6 +12,7 @@ import {
   UserCheck,
   Sparkles,
 } from 'lucide-react';
+import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
 
 export interface SpriteBrowserProps {
   classDef?: CharacterClassDefinition;
@@ -40,6 +41,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
   const [activeClassFilter, setActiveClassFilter] = useState<boolean>(!!classDef);
   const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(selectedAssetIds));
@@ -48,7 +50,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   useEffect(() => {
     setPage(0);
     void fetchSprites(0, false);
-  }, [searchQuery, selectedTag, activeClassFilter, classDef]);
+  }, [searchQuery, selectedTag, activeClassFilter, classDef, packFilter]);
 
   const fetchSprites = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
@@ -70,6 +72,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             type: filterType,
             query: searchQuery || undefined,
             tags: selectedTag ? [selectedTag] : filterTags.length > 0 ? filterTags : undefined,
+            pack: packFilter === 'ALL' ? undefined : packFilter,
             sortBy: 'source',
             sortOrder: 'asc',
           },
@@ -138,6 +141,20 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             className="w-full bg-[#050b14] border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47] font-mono"
           />
         </div>
+
+        <select
+          value={packFilter}
+          onChange={(e) => setPackFilter(e.target.value as AssetPackId | 'ALL')}
+          title="Approved packs"
+          className="bg-[#050b14] border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-[#806f47]"
+        >
+          <option value="ALL">All packs</option>
+          {ASSET_PACKS.map((p) => (
+            <option key={p} value={p}>
+              {ASSET_PACK_LABELS[p]}
+            </option>
+          ))}
+        </select>
 
         {/* Class Filter Toggle */}
         {classDef && (

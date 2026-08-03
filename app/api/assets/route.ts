@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
+import { ASSET_PACKS, packSourceMatchers, packTag, type AssetPackId } from "@/shared/game/assetPacks";
 
 function formatAsset(raw: {
   id: string;
@@ -37,7 +38,7 @@ function formatAsset(raw: {
 
 /**
  * GET /api/assets — list GameAsset rows for Studio browsers (client-safe; no Prisma in browser).
- * Query: type, query, gameId, page, limit, tags (comma), categories (comma), sortBy, sortOrder
+ * Query: type, query, gameId, page, limit, tags (comma), categories (comma), pack, sortBy, sortOrder
  */
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +56,10 @@ export async function GET(request: NextRequest) {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+    const packRaw = (searchParams.get("pack") || "").toLowerCase();
+    const pack = (ASSET_PACKS as readonly string[]).includes(packRaw)
+      ? (packRaw as AssetPackId)
+      : undefined;
     const sortByRaw = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
     const allowedSort = new Set(["source", "createdAt", "fileSize", "usageCount"]);
@@ -72,6 +77,21 @@ export async function GET(request: NextRequest) {
     for (const c of categories) {
       and.push({ categories: { contains: `"${c}"` } });
     }
+
+    if (pack === "studio") {
+      for (const needle of ["/npc/", "/monster/", "/creatures/", "/world-monsters/", "/tilesets/"]) {
+        and.push({ NOT: { source: { contains: needle } } });
+      }
+    } else if (pack) {
+      const matchers = packSourceMatchers(pack);
+      and.push({
+        OR: [
+          { tags: { contains: `"${packTag(pack)}"` } },
+          ...matchers.map((m) => ({ source: { contains: m } })),
+        ],
+      });
+    }
+
     if (and.length) where.AND = and;
 
     const [rawItems, total] = await Promise.all([

@@ -69,7 +69,10 @@ export const AssetBrowserPanel: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
         {activeTab === 'manager' && (
           <AssetEditor
-            /* Build mode: prefer tilesets when browsing manager from Build */
+            onAssetSelect={(asset) => {
+              const key = spriteKeyFromAsset(asset);
+              showToast(`Asset selected: ${key || asset.source}`);
+            }}
           />
         )}
         {activeTab === 'sprites' && (
