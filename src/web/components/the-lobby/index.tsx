@@ -918,7 +918,7 @@ export default function TheLobby({
         </div>
       </div>
       
-      {/* Scale the whole HUD on phones (canvas + touch stay full-bleed). */}
+      {/* Scale desktop HUD chrome on phones (canvas + touch stay full-bleed). */}
       <div
         className="pointer-events-none absolute inset-0 origin-top-left"
         style={
@@ -932,12 +932,6 @@ export default function TheLobby({
             : undefined
         }
       >
-        <div className="pointer-events-none absolute inset-0">
-          <div className="pointer-events-auto absolute inset-0">
-            {/* placeholder so structure stays stable; controls live outside scale */}
-          </div>
-        </div>
-
         {gameMode === 'BATTLE' && <TurnBattleOverlay />}
 
         {enableStudio && <StudioEditorShell />}
