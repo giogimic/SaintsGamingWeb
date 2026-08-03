@@ -428,8 +428,8 @@ export class PlayerManager {
       room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
     });
     
-    // Teleport to SAINTS_VILLAGE coordinate X: 10, Y: 15
-    const safeMapId = "SAINTS_VILLAGE";
+    // Respawn on DEMO_SANDBOX plaza (SAINTS_VILLAGE is retired / broken for sprites)
+    const safeMapId = DEMO_MAP_ID;
     const safeInstance = await this.worldManager.joinMap(safeMapId, player.accountId, false);
     
     player.mapId = safeInstance.instanceId;
