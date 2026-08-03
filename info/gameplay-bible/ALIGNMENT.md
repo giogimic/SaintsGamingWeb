@@ -72,10 +72,11 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 2. Capture math + `PlayerCreature` insert + crystal consume  
 3. Victory/defeat/flee return to overworld  
 
-### Slice D — Studio creator UX (16, toward MPV editor) — **NEXT**
-1. Contextual modes (Build / NPC / Quest / Creature / Test)  
+### Slice D — Studio creator UX (16, toward MPV editor) — **IN PROGRESS**
+1. Contextual modes (Build / NPC / Quest / Creature / Test) — deferred until place→save works  
 2. Permission-gated floating docks (extend current shell)  
 3. Tag/component placement UX over raw logic paint  
+4. **Done 2026-08-03:** World Builder **Save Map** → `POST /api/maps/[slug]` + `admin_reload_map` hot-reload; **Logic (−1)** layer target (was unreachable `-2`)  
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
