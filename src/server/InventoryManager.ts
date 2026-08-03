@@ -51,6 +51,64 @@ export class InventoryManager {
 
   public async initialize() {
     console.log("[InventoryManager] Initialized ARPG Economy Engine");
+    // ALIGNMENT E.2 — push cold inventory on lobby join so web marketplace buys appear
+    this.engine.events.on(
+      "playerInventorySyncRequest",
+      async (data: { socketId: string; accountId: string }) => {
+        const userId = await resolveUserId(data.accountId);
+        if (!userId || !data.socketId) return;
+        await this.syncInventory(data.socketId, userId);
+      }
+    );
+    // CONTINUE #2 — restore personal bramble clears (and Q4-completed gate) on join
+    this.engine.events.on(
+      "playerBrambleHydrateRequest",
+      async (data: { socketId: string; accountId: string; mapId?: string }) => {
+        await this.hydratePersonalBramble(data);
+      }
+    );
+  }
+
+  private async hydratePersonalBramble(data: {
+    socketId: string;
+    accountId: string;
+    mapId?: string;
+  }) {
+    if (!this.worldManager || !data.socketId || !data.accountId) return;
+    const userId = await resolveUserId(data.accountId);
+    if (!userId) return;
+    const accountKeys = Array.from(new Set([data.accountId, userId]));
+    const baseMapId = toBaseMapId(data.mapId || "DEMO_SANDBOX");
+
+    // If Q4 already completed, re-open the full gate for this account
+    try {
+      const q4 = await prisma.playerQuestState.findFirst({
+        where: {
+          userId,
+          questSlug: "quest_wilderness_clearance",
+          status: "COMPLETED",
+        },
+      });
+      if (q4) {
+        this.worldManager.clearDemoBrambleGateForAccount(accountKeys);
+      }
+    } catch (e) {
+      console.warn("[InventoryManager] bramble hydrate quest lookup failed", e);
+    }
+
+    const cells = new Map<string, { x: number; y: number }>();
+    for (const key of accountKeys) {
+      for (const cell of this.worldManager.listClearedBramble(key)) {
+        cells.set(`${cell.x},${cell.y}`, cell);
+      }
+    }
+    for (const cell of cells.values()) {
+      this.engine.events.emit("directMessage", {
+        socketId: data.socketId,
+        event: "tile_changed",
+        data: { mapId: baseMapId, x: cell.x, y: cell.y, tileId: 0 },
+      });
+    }
   }
 
   private async syncInventory(socketId: string, userId: string) {
@@ -141,6 +199,19 @@ export class InventoryManager {
 
     // Q4: Clear bramble (axe + party companion)
     if (tileId === 11) {
+      const userIdEarly = await resolveUserId(accountId);
+      if (
+        userIdEarly &&
+        (this.worldManager.hasAccountClearedBramble(accountId, x, y) ||
+          this.worldManager.hasAccountClearedBramble(userIdEarly, x, y))
+      ) {
+        this.engine.events.emit("directMessage", {
+          socketId,
+          event: "show_toast",
+          data: { message: "You already cleared this bramble." },
+        });
+        return;
+      }
       await this.handleClearBramble({ accountId, socketId, instance, x, y });
       return;
     }
@@ -268,7 +339,16 @@ export class InventoryManager {
       return;
     }
 
-    const cleared = this.worldManager.clearBrambleAt(instance.mapId, x, y);
+    const accountKeys = Array.from(new Set([accountId, userId].filter(Boolean)));
+    const baseMapId = toBaseMapId(instance.mapId);
+
+    // CONTINUE #2 — personal clear; shared DEMO grid stays bramble for other accounts/shards
+    const cleared = this.worldManager.clearBrambleForAccount(
+      accountKeys,
+      baseMapId,
+      x,
+      y
+    );
     if (!cleared) {
       this.engine.events.emit("directMessage", {
         socketId,
@@ -278,11 +358,15 @@ export class InventoryManager {
       return;
     }
 
-    this.engine.events.emit("networkBroadcast", {
-      room: instance.instanceId,
-      event: "tile_changed",
-      data: { mapId: toBaseMapId(instance.mapId), x, y, tileId: 0 },
-    });
+    // Open the full demo gate for this account so north grass is reachable
+    const gateCells = this.worldManager.clearDemoBrambleGateForAccount(accountKeys);
+    for (const cell of gateCells) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "tile_changed",
+        data: { mapId: baseMapId, x: cell.x, y: cell.y, tileId: 0 },
+      });
+    }
 
     this.engine.events.emit("brambleCleared", {
       accountId,

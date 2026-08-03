@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/web/lib/prisma';
-import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 export const metadata: Metadata = {
   title: 'Studio | Saints Gaming',
@@ -21,7 +21,8 @@ export default async function StudioLayout({
     select: { permissionLevel: true },
   });
 
-  if (!dbUser || !hasPermission(dbUser.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) {
+  // Bible 16 §5: Admin+ (Developers included). Creator Claims sandbox deferred.
+  if (!dbUser || !canEnterStudio(dbUser.permissionLevel)) {
     redirect('/lobby');
   }
 

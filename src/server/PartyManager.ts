@@ -11,30 +11,25 @@ export class PartyManager {
       this.leaveParty(accountId);
     });
     this.engine.events.on("partyChat", ({ accountId, message }) => {
-      // Find the player's name (ideally passed from PlayerManager, but we'll just pass accountId for now)
-      this.broadcastPartyMessage(accountId, "Party Member", message);
+      let senderName = "Party Member";
+      this.engine.events.emit("requestPlayersInMap", {
+        mapId: undefined,
+        callback: (players: any[]) => {
+          const p = players.find((x) => x.accountId === accountId);
+          if (p?.name) senderName = p.name;
+        },
+      });
+      this.broadcastPartyMessage(accountId, senderName, message);
     });
     this.engine.events.on("partyInvite", ({ accountId, targetName }) => {
       // We need a way to look up targetName to accountId...
       // For now, we will just emit a system message back.
-      this.emitToAccount(accountId, "chat_message", {
-        channel: "SYSTEM",
-        senderId: "SERVER",
-        senderName: "Server",
-        message: `Party invites to ${targetName} are WIP!`,
-        timestamp: Date.now()
-      });
+      this.emitSystemToAccount(accountId, `Party invites to ${targetName} are WIP!`);
     });
     this.engine.events.on("partyJoin", ({ accountId, leaderName }) => {
       // For testing Phase 8, if they type `/p join [leaderId]`, we will parse leaderName as the leader's accountId!
       this.createOrJoinParty(leaderName, accountId);
-      this.emitToAccount(accountId, "chat_message", {
-        channel: "SYSTEM",
-        senderId: "SERVER",
-        senderName: "Server",
-        message: `Joined party of ${leaderName}!`,
-        timestamp: Date.now()
-      });
+      this.emitSystemToAccount(accountId, `Joined party of ${leaderName}!`);
     });
     this.engine.events.on("partyLeave", ({ accountId }) => {
       this.leaveParty(accountId);
@@ -115,14 +110,23 @@ export class PartyManager {
     if (!party) return;
 
     for (const member of party) {
-      this.emitToAccount(member, "chat_message", {
-        channel: "PARTY",
-        senderId,
-        senderName,
+      // Client Soul Channel listens for party_chat_msg (not chat_message).
+      this.emitToAccount(member, "party_chat_msg", {
+        sender: senderName,
         message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
+  }
+
+  private emitSystemToAccount(accountId: string, message: string) {
+    this.emitToAccount(accountId, "chat_message", {
+      channel: "SYSTEM",
+      senderId: "SERVER",
+      senderName: "Server",
+      message,
+      timestamp: Date.now(),
+    });
   }
 
   private emitToAccount(accountId: string, event: string, data: any) {

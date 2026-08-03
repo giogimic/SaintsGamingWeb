@@ -119,6 +119,9 @@ export interface PlayerState {
   xp: number;
   hp: number;
   maxHp: number;
+  /** Soul essence (MP) — spent on magic / camera rites */
+  mp: number;
+  maxMp: number;
   credits: number;
   currency: {
     copper: number;
@@ -302,6 +305,8 @@ export const useGameStore = create<GameState>()(
         xp: 0,
         hp: 100,
         maxHp: 100,
+        mp: 100,
+        maxMp: 100,
         credits: 500,
         currency: { copper: 50000, silver: 0, gold: 0, platinum: 0 },
         activeQuests: {},
@@ -331,16 +336,11 @@ export const useGameStore = create<GameState>()(
       combatTarget: null,
       cooldowns: {},
       pathQueue: [],
-      currentMapId: 'SAINTS_VILLAGE',
-      instanceId: 'SAINTS_VILLAGE',
+      // Default to the seeded demo map; entities come from the socket (creature_spawned).
+      currentMapId: 'DEMO_SANDBOX',
+      instanceId: 'DEMO_SANDBOX',
       activeMapData: null,
-      mapEntities: [
-        { id: 'npc-1', type: 'NPC', spriteKey: 'villager_1', position: { x: 12, y: 13 }, isMoving: false, facing: 'DOWN', mapId: 'SAINTS_VILLAGE' },
-        { id: 'npc-2', type: 'NPC', spriteKey: 'villager_2', position: { x: 8, y: 26 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' },
-        { id: 'npc-guard', type: 'NPC', spriteKey: 'villager_1', position: { x: 4, y: 2 }, isMoving: false, facing: 'DOWN', mapId: 'VERDANT_OUTPOST' },
-        { id: 'anim-1', type: 'ANIMAL', spriteKey: 'chicken', position: { x: 14, y: 18 }, isMoving: false, facing: 'LEFT', mapId: 'SAINTS_VILLAGE' },
-        { id: 'anim-2', type: 'ANIMAL', spriteKey: 'cow', position: { x: 8, y: 14 }, isMoving: false, facing: 'RIGHT', mapId: 'SAINTS_VILLAGE' }
-      ],
+      mapEntities: [],
       toast: null,
       activeDialog: null,
       moveSequence: 0,
@@ -550,6 +550,11 @@ export const useGameStore = create<GameState>()(
           if (data.xp !== undefined) state.player.xp = data.xp;
           if (data.hp !== undefined) state.player.hp = data.hp;
           if (data.maxHp !== undefined) state.player.maxHp = data.maxHp;
+          if (data.mp !== undefined) state.player.mp = data.mp;
+          if (data.maxMp !== undefined) state.player.maxMp = data.maxMp;
+          // Backfill soul essence for older character saves
+          if (state.player.maxMp == null || Number.isNaN(state.player.maxMp)) state.player.maxMp = 100;
+          if (state.player.mp == null || Number.isNaN(state.player.mp)) state.player.mp = state.player.maxMp;
           if (data.credits !== undefined) state.player.credits = data.credits;
           if (data.inventory) state.player.inventory = data.inventory;
           if (data.skills) state.player.skills = data.skills;

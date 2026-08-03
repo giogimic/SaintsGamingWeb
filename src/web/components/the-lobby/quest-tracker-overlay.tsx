@@ -46,16 +46,16 @@ export default function QuestTrackerOverlay() {
 
   if (quests.length === 0) {
     return (
-      <div className="absolute right-4 top-24 w-64 pointer-events-none z-40">
-        <div className="bg-[#0b1320]/80 border border-[#806f47]/30 backdrop-blur-md rounded-md p-3 shadow-lg">
-          <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
-            <Compass className="w-4 h-4 text-[#cbb26a]" />
-            <h4 className="text-sm font-bold text-[#e2d5b3] uppercase tracking-wide">
+      <div className="pointer-events-none absolute top-24 right-4 z-40 w-64">
+        <div className="lobby-panel rounded-lg p-3">
+          <div className="mb-1.5 flex items-center gap-2 border-b border-lobby-border pb-1.5">
+            <Compass className="h-4 w-4 text-lobby-film" />
+            <h4 className="text-sm font-bold tracking-wide text-lobby-mist uppercase">
               Road to Aethervale
             </h4>
           </div>
-          <p className="text-xs text-slate-200 leading-tight mt-2">
-            Talk to <span className="text-[#cbb26a]">Warden Vance</span> on the north path
+          <p className="mt-2 text-xs leading-tight text-lobby-fog">
+            Talk to <span className="text-lobby-soul">Warden Vance</span> on the north path
             (click or press E). Take the toolbelt to start Q1.
           </p>
         </div>
@@ -64,58 +64,56 @@ export default function QuestTrackerOverlay() {
   }
 
   return (
-    <div className="absolute right-4 top-24 w-64 pointer-events-none z-40 space-y-3">
+    <div className="pointer-events-none absolute top-24 right-4 z-40 w-64 space-y-3">
       {quests.map((quest) => {
         const obj = quest.objective;
         const isComplete = obj && quest.progress >= obj.requiredQty;
 
         return (
-          <div
-            key={quest.id}
-            className="bg-[#0b1320]/80 border border-[#806f47]/30 backdrop-blur-md rounded-md p-3 shadow-lg pointer-events-auto"
-          >
-            <div className="flex items-center gap-2 mb-1.5 border-b border-[#806f47]/20 pb-1.5">
-              <ScrollText className="w-4 h-4 text-[#cbb26a]" />
-              <h4 className="text-sm font-bold text-[#e2d5b3] drop-shadow-sm uppercase tracking-wide">
+          <div key={quest.id} className="lobby-panel pointer-events-auto rounded-lg p-3">
+            <div className="mb-1.5 flex items-center gap-2 border-b border-lobby-border pb-1.5">
+              <ScrollText className="h-4 w-4 text-lobby-soul" />
+              <h4 className="text-sm font-bold tracking-wide text-lobby-mist uppercase drop-shadow-sm">
                 {quest.title}
               </h4>
             </div>
 
             {obj ? (
-              <div className="flex items-start gap-2 mt-2">
+              <div className="mt-2 flex items-start gap-2">
                 {isComplete ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-lobby-film" />
                 ) : (
-                  <Target className="w-4 h-4 text-[#806f47] mt-0.5 shrink-0" />
+                  <Target className="mt-0.5 h-4 w-4 shrink-0 text-lobby-ash" />
                 )}
 
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <p
-                    className={`text-xs ${isComplete ? "text-slate-400 line-through" : "text-slate-200"} leading-tight`}
+                    className={`text-xs leading-tight ${isComplete ? "text-lobby-ash line-through" : "text-lobby-fog"}`}
                   >
                     {obj.description}
                   </p>
 
                   {!isComplete && obj.requiredQty > 1 && (
-                    <div className="mt-1.5 w-full bg-[#162238] rounded-full h-1.5 border border-[#050b14]">
+                    <div className="lobby-stat-track mt-1.5 h-1.5 w-full overflow-hidden rounded-sm">
                       <div
-                        className="bg-[#cbb26a] h-full rounded-full transition-all duration-500"
+                        className="lobby-stat-fill-film h-full transition-all duration-500"
                         style={{
                           width: `${Math.min(100, Math.max(0, (quest.progress / obj.requiredQty) * 100))}%`,
+                          background: "linear-gradient(90deg, #6d28d9, #6ee7b7)",
                         }}
                       />
                     </div>
                   )}
 
                   {!isComplete && obj.requiredQty > 1 && (
-                    <p className="text-[10px] text-right text-slate-400 mt-0.5 font-mono">
+                    <p className="mt-0.5 text-right font-mono text-[10px] text-lobby-ash">
                       {quest.progress} / {obj.requiredQty}
                     </p>
                   )}
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-400 mt-1 italic">No active objectives.</p>
+              <p className="mt-1 text-xs text-lobby-ash italic">No active objectives.</p>
             )}
           </div>
         );

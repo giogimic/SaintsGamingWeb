@@ -1,6 +1,7 @@
 import { GameEngine } from "./GameEngine";
 import { PrismaClient } from "@prisma/client";
 import { VANCE_TREE } from "./DemoBootstrap";
+import { DEMO_NPC_DIALOGUES } from "./demoMapSeed";
 
 const prisma = new PrismaClient();
 
@@ -10,7 +11,20 @@ const dialogueCache: Record<string, any> = {};
 const BUILTIN_TREES: Record<string, any> = {
   npc_warden_vance: VANCE_TREE,
   warden_vance: VANCE_TREE,
+  ...Object.fromEntries(
+    Object.entries(DEMO_NPC_DIALOGUES).flatMap(([npcId, entry]) => [
+      [npcId, entry.tree],
+      [npcId.replace(/^npc_/, ""), entry.tree],
+    ])
+  ),
 };
+
+/** Strip spawn timestamp suffix: npc_foo_1712345678901 → npc_foo */
+function normalizeNpcId(npcId: string): string {
+  if (!npcId) return npcId;
+  const stripped = npcId.replace(/_\d{10,}$/, "");
+  return stripped.startsWith("npc_") ? stripped : `npc_${stripped.replace(/^npc_/, "")}`;
+}
 
 async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
@@ -64,7 +78,8 @@ export class DialogueManager {
   }
 
   private async getDialogueTree(npcId: string) {
-    const key = npcId.startsWith("npc_") ? npcId : `npc_${npcId}`;
+    const key = normalizeNpcId(npcId);
+    const bare = key.replace(/^npc_/, "");
     if (dialogueCache[key]) return dialogueCache[key];
     if (dialogueCache[npcId]) return dialogueCache[npcId];
 
@@ -75,6 +90,10 @@ export class DialogueManager {
     if (BUILTIN_TREES[key]) {
       dialogueCache[key] = BUILTIN_TREES[key];
       return BUILTIN_TREES[key];
+    }
+    if (BUILTIN_TREES[bare]) {
+      dialogueCache[bare] = BUILTIN_TREES[bare];
+      return BUILTIN_TREES[bare];
     }
 
     try {
@@ -90,6 +109,12 @@ export class DialogueManager {
       if (tree2) {
         const parsed = JSON.parse(tree2.data);
         dialogueCache[npcId] = parsed;
+        return parsed;
+      }
+      const tree3 = await prisma.npcDialogueTree.findUnique({ where: { npcId: bare } });
+      if (tree3) {
+        const parsed = JSON.parse(tree3.data);
+        dialogueCache[bare] = parsed;
         return parsed;
       }
     } catch (e) {

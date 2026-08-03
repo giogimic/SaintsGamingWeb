@@ -45,12 +45,16 @@ function StaticDPad() {
   useEffect(() => () => stopContinuousMove(), []);
 
   const btn =
-    'w-14 h-14 bg-[#0c1220]/85 border border-[#cbb26a]/35 rounded-2xl flex items-center justify-center text-[#e8d5a3] hover:bg-[#cbb26a]/15 active:bg-[#cbb26a]/30 active:scale-95 transition-all backdrop-blur-md';
+    'w-12 h-12 md:w-14 md:h-14 bg-[#0c1220]/85 border border-[#cbb26a]/35 rounded-2xl flex items-center justify-center text-[#e8d5a3] hover:bg-[#cbb26a]/15 active:bg-[#cbb26a]/30 active:scale-95 transition-all backdrop-blur-md';
 
   return (
     <div
-      className="fixed bottom-6 left-6 z-50 flex flex-col items-center gap-1.5 pointer-events-auto select-none touch-none"
-      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+      className="fixed z-50 flex flex-col items-center gap-1 pointer-events-auto select-none touch-none md:bottom-6 md:left-6 md:gap-1.5"
+      style={{
+        filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))',
+        bottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
+        left: 'max(0.75rem, env(safe-area-inset-left, 0px))',
+      }}
     >
       <button
         className={btn}
@@ -77,8 +81,8 @@ function StaticDPad() {
         >
           <ArrowLeft className="w-7 h-7" />
         </button>
-        <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md border border-[#cbb26a]/20 flex items-center justify-center shadow-inner">
-          <div className="w-4 h-4 rounded-full bg-[#cbb26a]/35" />
+        <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-black/40 backdrop-blur-md border border-[#cbb26a]/20 flex items-center justify-center shadow-inner">
+          <div className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-[#cbb26a]/35" />
         </div>
         <button
           className={btn}
@@ -170,13 +174,17 @@ function FloatingJoystick() {
   return (
     <div
       ref={zoneRef}
-      className="fixed inset-0 z-40 pointer-events-auto touch-none select-none md:hidden"
+      className="fixed z-40 pointer-events-auto touch-none select-none md:hidden"
       style={{
-        // Leave right action cluster + top UI clickable: only left 55% captures joystick
-        clipPath: 'inset(0 45% 0 0)',
+        // Lower-left quadrant only — keep top HUD, chat preview, and action cluster free.
+        left: 0,
+        right: '42%',
+        top: '28%',
+        bottom: 0,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
       }}
       onPointerDown={(e) => {
-        // Ignore if interacting with a button (actions live outside clip on the right)
         if ((e.target as HTMLElement).closest('button')) return;
         e.preventDefault();
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -192,20 +200,23 @@ function FloatingJoystick() {
     >
       {active && (
         <div
-          className="absolute w-32 h-32 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#cbb26a]/40 bg-black/45 backdrop-blur-md shadow-[0_0_30px_rgba(203,178,106,0.2)] pointer-events-none"
+          className="fixed w-28 h-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#cbb26a]/40 bg-black/45 backdrop-blur-md shadow-[0_0_30px_rgba(203,178,106,0.2)] pointer-events-none"
           style={{ left: origin.x, top: origin.y }}
         >
           <div className="absolute inset-3 rounded-full border border-white/10" />
           <div
-            className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#e8d5a3] to-[#806f47] border border-white/30 shadow-lg"
+            className="absolute w-11 h-11 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#e8d5a3] to-[#806f47] border border-white/30 shadow-lg"
             style={{ left: `calc(50% + ${knob.x}px)`, top: `calc(50% + ${knob.y}px)` }}
           />
         </div>
       )}
 
       {!active && (
-        <div className="fixed bottom-8 left-8 w-20 h-20 rounded-full border border-[#cbb26a]/25 bg-black/30 backdrop-blur-sm flex items-center justify-center pointer-events-none opacity-70">
-          <div className="w-8 h-8 rounded-full bg-[#cbb26a]/25 border border-[#cbb26a]/40" />
+        <div
+          className="absolute left-3 w-16 h-16 rounded-full border border-[#cbb26a]/25 bg-black/30 backdrop-blur-sm flex items-center justify-center pointer-events-none opacity-65"
+          style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+        >
+          <div className="w-7 h-7 rounded-full bg-[#cbb26a]/25 border border-[#cbb26a]/40" />
         </div>
       )}
     </div>
@@ -231,46 +242,50 @@ function ActionCluster({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 flex items-end gap-3 pointer-events-auto select-none"
-      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+      className="fixed z-50 flex items-end gap-2 pointer-events-auto select-none md:gap-3 md:bottom-6 md:right-6"
+      style={{
+        filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))',
+        bottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
+        right: 'max(0.75rem, env(safe-area-inset-right, 0px))',
+      }}
     >
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5 md:gap-2">
         <button
           onClick={toggleInventory}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-amber-500/40 rounded-xl flex flex-col items-center justify-center text-amber-300 active:bg-amber-600 active:text-white transition-all backdrop-blur-md"
+          className="w-10 h-10 md:w-11 md:h-11 bg-[#0c1220]/85 border border-amber-500/40 rounded-xl flex flex-col items-center justify-center text-amber-300 active:bg-amber-600 active:text-white transition-all backdrop-blur-md"
           title="Inventory"
         >
-          <Backpack className="w-5 h-5" />
+          <Backpack className="w-4 h-4 md:w-5 md:h-5" />
         </button>
         <button
           onClick={toggleSkills}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-emerald-300 active:bg-emerald-600 active:text-white transition-all backdrop-blur-md"
+          className="w-10 h-10 md:w-11 md:h-11 bg-[#0c1220]/85 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-emerald-300 active:bg-emerald-600 active:text-white transition-all backdrop-blur-md"
           title="Skills"
         >
-          <Sword className="w-5 h-5" />
+          <Sword className="w-4 h-4 md:w-5 md:h-5" />
         </button>
         <button
           onClick={() => onToggleOptions?.()}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-slate-500/40 rounded-xl flex flex-col items-center justify-center text-slate-300 active:bg-slate-700 active:text-white transition-all backdrop-blur-md"
+          className="w-10 h-10 md:w-11 md:h-11 bg-[#0c1220]/85 border border-slate-500/40 rounded-xl flex flex-col items-center justify-center text-slate-300 active:bg-slate-700 active:text-white transition-all backdrop-blur-md"
           title="Options"
         >
-          <Settings className="w-5 h-5" />
+          <Settings className="w-4 h-4 md:w-5 md:h-5" />
         </button>
         <button
           onClick={() => onToggleFullscreen?.()}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-[#cbb26a]/40 rounded-xl flex flex-col items-center justify-center text-[#e8d5a3] active:bg-[#cbb26a]/40 active:text-white transition-all backdrop-blur-md"
+          className="w-10 h-10 md:w-11 md:h-11 bg-[#0c1220]/85 border border-[#cbb26a]/40 rounded-xl flex flex-col items-center justify-center text-[#e8d5a3] active:bg-[#cbb26a]/40 active:text-white transition-all backdrop-blur-md"
           title="Fullscreen"
         >
-          <Maximize2 className="w-5 h-5" />
+          <Maximize2 className="w-4 h-4 md:w-5 md:h-5" />
         </button>
       </div>
 
       <button
         onClick={emitInteract}
-        className="w-20 h-20 bg-gradient-to-br from-[#806f47] to-[#3d3420] border-2 border-[#cbb26a]/70 rounded-3xl flex flex-col items-center justify-center text-white active:scale-95 shadow-[0_0_20px_rgba(203,178,106,0.35)] transition-all font-bold text-xs"
+        className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-[#806f47] to-[#3d3420] border-2 border-[#cbb26a]/70 rounded-3xl flex flex-col items-center justify-center text-white active:scale-95 shadow-[0_0_20px_rgba(203,178,106,0.35)] transition-all font-bold text-xs"
       >
-        <Zap className="w-8 h-8 text-amber-300 fill-amber-300 mb-0.5" />
-        <span className="text-[10px] tracking-wider uppercase font-mono">Action</span>
+        <Zap className="w-7 h-7 md:w-8 md:h-8 text-amber-300 fill-amber-300 mb-0.5" />
+        <span className="text-[9px] md:text-[10px] tracking-wider uppercase font-mono">Action</span>
       </button>
     </div>
   );

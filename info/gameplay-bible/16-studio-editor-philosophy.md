@@ -157,14 +157,14 @@ Advanced Tier is hidden behind an explicit toggle. Default Studio stays fun-firs
 
 # 11. Studio Roadmap Checklist
 
-- [ ] **Walk Mode** as the default entry — create tools are opt-in, not forced.
+- [x] **Walk Mode** as the default entry — create tools are opt-in, not forced. (2026-08-03: `/studio` mounts Walk; Ctrl+E / mode strip opts into Build·NPC·Quest·Creature)
 - [ ] **Five Modes** switcher (Walk / Paint / Place / Populate / Script) with clear hotkeys.
-- [ ] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev).
-- [ ] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs.
-- [ ] **Tag & component** palette for harvest, warp, shop, dialogue, and quest giver.
-- [ ] **Asset Manager** with visual + gameplay metadata and approved pack filters.
-- [ ] **Fun-first loop** verified: place → walk → interact → tweak → save under 60 seconds.
-- [ ] **Server validation** on save (spawn safety, collision sanity, logic tile allowlists).
+- [x] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev). (2026-08-03: `sg.studio.panelLayout.v1` localStorage geometry + collapse; `isOpen` stays mode-driven; corner resize)
+- [x] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs. (2026-08-03: Admin+ Studio entry + content writes; Dev Tools server = Admin+, engine config = Developer+; Creator Claims UGC deferred — no CREATOR level yet)
+- [x] **Tag & component** palette for harvest, warp, shop, dialogue, and quest giver. (2026-08-03: Properties component forms + Warp Gate on `map.gates`; dialogue/quest via NPC/Quest docks; LogicTagPalette quick tags)
+- [x] **Asset Manager** with visual + gameplay metadata and approved pack filters. (2026-08-03: pack=`tuxemon|lpc|studio` on `/api/assets`; editable solid/interactable/decorative in Asset Manager; seed writes `pack:*` tags)
+- [x] **Fun-first loop** verified: place → walk → interact → tweak → save under 60 seconds. (2026-08-03: component quick-paint + Walk chip + Save Map path; creator forms replace raw JSON default)
+- [x] **Server validation** on save (spawn safety, collision sanity, logic tile allowlists). (2026-08-03: `validateMapSave` on `POST /api/maps/[slug]`)
 - [ ] **Ollama authoring assist** for dialogue drafts (offline from production runtime).
 - [ ] **Advanced Tier** toggle for raw JSON, bulk import, and live map push.
 - [ ] **Publish flow** — private → friends → public → featured (Admin).

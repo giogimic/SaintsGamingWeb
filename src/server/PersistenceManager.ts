@@ -32,15 +32,22 @@ export class DatabasePersistenceManager implements PersistenceManager {
       if (character) {
         const stateData = JSON.parse(character.stateData || "{}");
         // Persist the map definition, never a live shard id (…_ch1)
-        stateData.mapId = toBaseMapId(mapId);
+        let baseMap = toBaseMapId(mapId);
+        // Retired sandbox — do not keep writing SAINTS_VILLAGE into character saves
+        if (baseMap === "SAINTS_VILLAGE") {
+          baseMap = "DEMO_SANDBOX";
+        }
+        stateData.mapId = baseMap;
+        stateData.currentMapId = baseMap;
         stateData.x = x;
         stateData.y = y;
+        stateData.position = { x, y };
 
         await prisma.gameCharacter.update({
           where: { id: character.id },
           data: { stateData: JSON.stringify(stateData) }
         });
-        console.log(`[PersistenceManager] Saved position for ${userId} to ${mapId} (${x}, ${y})`);
+        console.log(`[PersistenceManager] Saved position for ${userId} to ${baseMap} (${x}, ${y})`);
       }
     } catch (err) {
       console.error("[PersistenceManager] Failed to save player position:", err);

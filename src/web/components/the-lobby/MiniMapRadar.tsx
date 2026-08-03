@@ -151,32 +151,38 @@ export default function MiniMapRadar() {
   }
 
   return (
-    <div className="absolute top-16 right-4 z-20 pointer-events-none flex flex-col items-end gap-1 font-mono select-none">
-      {/* Map Canvas */}
-      <div className="relative w-32 h-32 rounded-xl overflow-hidden shadow-[0_0_25px_rgba(16,185,129,0.3)] border border-emerald-500/40 bg-[#050a10]">
-        <canvas ref={canvasRef} width={128} height={128} className="absolute inset-0 w-full h-full" />
-        {/* Corner brackets */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-emerald-400/80" />
-        <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-emerald-400/80" />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-emerald-400/80" />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-emerald-400/80" />
-        {/* MAP label */}
-        <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-bold text-emerald-400/60 tracking-widest">MAP</div>
+    <div
+      className="pointer-events-none absolute z-20 flex select-none flex-col items-end gap-1 font-mono md:top-16 md:right-4"
+      style={{
+        top: 'max(2.75rem, calc(env(safe-area-inset-top, 0px) + 2.5rem))',
+        right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+      }}
+    >
+      <div className="lobby-panel relative h-20 w-20 overflow-hidden rounded-lg shadow-[0_0_24px_rgba(167,139,250,0.22)] md:h-32 md:w-32 md:rounded-xl">
+        <canvas ref={canvasRef} width={128} height={128} className="absolute inset-0 h-full w-full" />
+        <div className="absolute top-0 left-0 h-2.5 w-2.5 border-t-2 border-l-2 border-lobby-film/70 md:h-3 md:w-3" />
+        <div className="absolute top-0 right-0 h-2.5 w-2.5 border-t-2 border-r-2 border-lobby-film/70 md:h-3 md:w-3" />
+        <div className="absolute bottom-0 left-0 h-2.5 w-2.5 border-b-2 border-l-2 border-lobby-soul/70 md:h-3 md:w-3" />
+        <div className="absolute bottom-0 right-0 h-2.5 w-2.5 border-b-2 border-r-2 border-lobby-soul/70 md:h-3 md:w-3" />
+        <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7px] font-bold tracking-widest text-lobby-fog/80 md:top-1 md:text-[8px]">
+          MAP
+        </div>
       </div>
 
-      {/* Map Name Tag */}
-      <div className="bg-black/85 px-2 py-0.5 rounded border border-emerald-500/30 text-[10px] text-emerald-300 flex items-center gap-1.5 shadow-lg backdrop-blur-sm max-w-[10rem] overflow-hidden">
-        <Map className="w-3 h-3 text-emerald-400 shrink-0" />
-        <span className="truncate">{mapName}{channelText}</span>
+      <div className="lobby-panel flex max-w-[7.5rem] items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 text-[9px] text-lobby-mist md:max-w-[10rem] md:gap-1.5 md:px-2 md:text-[10px]">
+        <Map className="h-2.5 w-2.5 shrink-0 text-lobby-film md:h-3 md:w-3" />
+        <span className="truncate">
+          {mapName}
+          {channelText}
+        </span>
       </div>
 
-      {/* Coordinates */}
-      <div className="bg-black/80 px-2 py-0.5 rounded border border-emerald-500/20 text-[9px] text-slate-400 flex items-center gap-1 font-mono">
-        <Compass className="w-2.5 h-2.5 text-emerald-500" />
-        <span className="text-emerald-500">X</span>
-        <span className="text-white">{playerPos.x}</span>
-        <span className="text-emerald-500 ml-0.5">Y</span>
-        <span className="text-white">{playerPos.y}</span>
+      <div className="lobby-panel hidden items-center gap-1 rounded px-2 py-0.5 font-mono text-[9px] text-lobby-fog md:flex">
+        <Compass className="h-2.5 w-2.5 text-lobby-soul" />
+        <span className="text-lobby-film">X</span>
+        <span className="text-lobby-mist">{playerPos.x}</span>
+        <span className="ml-0.5 text-lobby-film">Y</span>
+        <span className="text-lobby-mist">{playerPos.y}</span>
       </div>
     </div>
   );

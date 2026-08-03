@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Saints custom asset preview</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; background: #1a1a1e; color: #eee; margin: 24px; }
+    h1 { font-size: 1.25rem; }
+    h2 { font-size: 1rem; margin-top: 1.5rem; color: #a3e635; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    figure {
+      margin: 0; padding: 10px; background: #111;
+      border: 1px solid #333; border-radius: 8px; text-align: center;
+    }
+    .checker {
+      width: 128px; height: 128px; margin: 0 auto 8px;
+      background-image:
+        linear-gradient(45deg, #333 25%, transparent 25%),
+        linear-gradient(-45deg, #333 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #333 75%),
+        linear-gradient(-45deg, transparent 75%, #333 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      display: grid; place-items: center;
+    }
+    img { max-width: 120px; max-height: 120px; image-rendering: pixelated; }
+    figcaption { font-size: 11px; word-break: break-all; color: #bbb; }
+    .err { color: #f87171; }
+  </style>
+</head>
+<body>
+  <h1>Custom Saints assets</h1>
+  <p>If these show on the checkerboard (not broken-image icons), PNG + alpha + nosniff are healthy.</p>
+  <div id="root"></div>
+  <script>
+    const groups = {
+      'Creatures (overworld crops)': [
+        'creatures/lumkit-ow.png','creatures/lumveil-ow.png','creatures/mosswhim-ow.png',
+        'creatures/solarcrown-ow.png','creatures/stonethrum-ow.png','creatures/terravault-ow.png',
+      ],
+      'Creatures (battle sheets)': [
+        'creatures/lumkit-sheet.png','creatures/lumveil-sheet.png','creatures/mosswhim-sheet.png',
+        'creatures/solarcrown-sheet.png','creatures/stonethrum-sheet.png','creatures/terravault-sheet.png',
+      ],
+      'World monsters (overworld)': [
+        'world-monsters/ashwhirl-ow.png','world-monsters/grimvast-ow.png','world-monsters/hollowmirth-ow.png',
+        'world-monsters/rootwail-ow.png','world-monsters/siltmourne-ow.png','world-monsters/tanglewrath-ow.png',
+      ],
+      'NPCs (3×4 walk sheets)': [
+        'npc/candrift_keeper.png','npc/capturer_kian.png','npc/elder_voss.png',
+        'npc/ironwright_kael.png','npc/scout_mira.png','npc/soulwarden_aldric.png',
+      ],
+    };
+    const root = document.getElementById('root');
+    for (const [title, files] of Object.entries(groups)) {
+      const h = document.createElement('h2'); h.textContent = title; root.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'grid';
+      for (const f of files) {
+        const fig = document.createElement('figure');
+        const box = document.createElement('div'); box.className = 'checker';
+        const img = document.createElement('img');
+        img.src = '/game-assets/' + f;
+        img.alt = f;
+        img.onerror = () => { box.innerHTML = '<span class="err">FAILED</span>'; };
+        box.appendChild(img);
+        const cap = document.createElement('figcaption'); cap.textContent = f;
+        fig.appendChild(box); fig.appendChild(cap); grid.appendChild(fig);
+      }
+      root.appendChild(grid);
+    }
+  </script>
+</body>
+</html>

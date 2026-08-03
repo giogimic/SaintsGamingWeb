@@ -10,6 +10,8 @@ import {
   loadWildSpawnDefs,
   toPlayerCreatureStats,
 } from "./creatureDefs";
+import { creatureAssetUrl } from "@/shared/game/creatureCatalog";
+import { isRemarkableCapture } from "@/shared/game/remarkableCapture";
 
 const prisma = new PrismaClient();
 
@@ -219,7 +221,7 @@ export class EncounterManager {
       hp: activeCreature.currentHp,
       maxHp: activeCreature.maxHp,
       level: activeCreature.level,
-      spriteKey: playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data",
+      spriteKey: creatureAssetUrl(playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data"),
     };
 
     const battleState: BattleState = {
@@ -234,7 +236,7 @@ export class EncounterManager {
         hp: wildDef.baseHp,
         maxHp: wildDef.baseHp,
         level: wildDef.starterLevel,
-        spriteKey: wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data",
+        spriteKey: creatureAssetUrl(wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data"),
       },
       playerCreature: playerCreatureData,
       log: [`A wild ${wildDef.name} appeared!`],
@@ -386,14 +388,56 @@ export class EncounterManager {
 
     this.engine.events.emit("unlockPlayerMovement", battle.accountId);
 
+    const userId = await resolveUserId(battle.accountId);
+    const wildDef = await loadCreatureDef(battle.wildCreature.templateId);
+    let captureMeta:
+      | {
+          speciesSlug: string;
+          name: string;
+          tag: string;
+          stage: string;
+          catchRate: number;
+          isFirstOfSpecies: boolean;
+          isRemarkable: boolean;
+        }
+      | undefined;
+
+    if (result === "CAPTURE") {
+      const speciesSlug = battle.wildCreature.templateId;
+      const priorCount = userId
+        ? await prisma.playerCreature.count({
+            where: { userId, speciesSlug },
+          })
+        : 0;
+      const isFirstOfSpecies = priorCount === 0;
+      const tag = wildDef?.tag || "";
+      const stage = wildDef?.stage || "basic";
+      const catchRate =
+        typeof wildDef?.catchRate === "number" ? wildDef.catchRate : 1;
+      const isRemarkable = isRemarkableCapture({
+        tag,
+        stage,
+        catchRate,
+        isFirstOfSpecies,
+      });
+      captureMeta = {
+        speciesSlug,
+        name: battle.wildCreature.name || wildDef?.name || speciesSlug,
+        tag,
+        stage,
+        catchRate,
+        isFirstOfSpecies,
+        isRemarkable,
+      };
+    }
+
     this.sendToPlayer(battle.socketId, "battle_ended", {
       battleId,
       accountId: battle.accountId,
       result,
       log: battle.log,
+      capture: captureMeta,
     });
-
-    const userId = await resolveUserId(battle.accountId);
 
     // Persist party creature HP after the fight (bible 11)
     if (userId && battle.playerCreature.id !== "pc_1") {
@@ -409,7 +453,6 @@ export class EncounterManager {
 
     if (result === "CAPTURE" && userId) {
       try {
-        const wildDef = await loadCreatureDef(battle.wildCreature.templateId);
         await prisma.playerCreature.create({
           data: {
             userId,
@@ -444,6 +487,10 @@ export class EncounterManager {
             userId,
             speciesSlug: battle.wildCreature.templateId,
             level: battle.wildCreature.level,
+            isRemarkable: captureMeta?.isRemarkable ?? false,
+            isFirstOfSpecies: captureMeta?.isFirstOfSpecies ?? false,
+            name: captureMeta?.name,
+            tag: captureMeta?.tag,
           },
         });
       } catch (err) {

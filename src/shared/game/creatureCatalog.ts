@@ -83,6 +83,31 @@ export const CREATURE_ASSET_OPTIONS: { key: string; label: string; kind: "overwo
   { key: "monster/battle/ignibus-sheet", label: "Ignibus battle sheet", kind: "battle" },
   { key: "monster/battle/lambert-sheet", label: "Lambert battle sheet", kind: "battle" },
   { key: "monster/battle/cardiling-sheet", label: "Cardiling battle sheet", kind: "battle" },
+  // Custom Saints sheets
+  { key: "creatures/lumkit-sheet", label: "Lumkit", kind: "battle" },
+  { key: "creatures/lumkit-ow", label: "Lumkit (overworld)", kind: "overworld" },
+  { key: "creatures/lumveil-ow", label: "Lumveil (overworld)", kind: "overworld" },
+  { key: "creatures/mosswhim-ow", label: "Mosswhim (overworld)", kind: "overworld" },
+  { key: "creatures/solarcrown-ow", label: "Solarcrown (overworld)", kind: "overworld" },
+  { key: "creatures/stonethrum-ow", label: "Stonethrum (overworld)", kind: "overworld" },
+  { key: "creatures/terravault-ow", label: "Terravault (overworld)", kind: "overworld" },
+  { key: "world-monsters/ashwhirl-ow", label: "Ashwhirl (overworld)", kind: "overworld" },
+  { key: "world-monsters/grimvast-ow", label: "Grimvast (overworld)", kind: "overworld" },
+  { key: "world-monsters/hollowmirth-ow", label: "Hollowmirth (overworld)", kind: "overworld" },
+  { key: "world-monsters/rootwail-ow", label: "Rootwail (overworld)", kind: "overworld" },
+  { key: "world-monsters/siltmourne-ow", label: "Siltmourne (overworld)", kind: "overworld" },
+  { key: "world-monsters/tanglewrath-ow", label: "Tanglewrath (overworld)", kind: "overworld" },
+  { key: "creatures/lumveil-sheet", label: "Lumveil", kind: "battle" },
+  { key: "creatures/mosswhim-sheet", label: "Mosswhim", kind: "battle" },
+  { key: "creatures/solarcrown-sheet", label: "Solarcrown", kind: "battle" },
+  { key: "creatures/stonethrum-sheet", label: "Stonethrum", kind: "battle" },
+  { key: "creatures/terravault-sheet", label: "Terravault", kind: "battle" },
+  { key: "world-monsters/ashwhirl-sheet", label: "Ashwhirl (wild)", kind: "battle" },
+  { key: "world-monsters/grimvast-sheet", label: "Grimvast (wild)", kind: "battle" },
+  { key: "world-monsters/hollowmirth-sheet", label: "Hollowmirth (wild)", kind: "battle" },
+  { key: "world-monsters/rootwail-sheet", label: "Rootwail (wild)", kind: "battle" },
+  { key: "world-monsters/siltmourne-sheet", label: "Siltmourne (wild)", kind: "battle" },
+  { key: "world-monsters/tanglewrath-sheet", label: "Tanglewrath (wild)", kind: "battle" },
   { key: "daemon_data", label: "Daemon Data placeholder", kind: "battle" },
   { key: "daemon_vaccine", label: "Daemon Vaccine placeholder", kind: "battle" },
   { key: "daemon_virus", label: "Daemon Virus placeholder", kind: "battle" },
@@ -93,6 +118,140 @@ export function creatureAssetUrl(key: string | null | undefined): string {
   if (key.startsWith("/")) return key;
   if (key.startsWith("http")) return key;
   return `/game-assets/${key}.png`;
+}
+
+const WILD_OVERWORLD_SLUGS = new Set([
+  "ashwhirl",
+  "grimvast",
+  "hollowmirth",
+  "rootwail",
+  "siltmourne",
+  "tanglewrath",
+]);
+
+const STARTER_OVERWORLD_SLUGS = new Set([
+  "lumkit",
+  "lumveil",
+  "mosswhim",
+  "solarcrown",
+  "stonethrum",
+  "terravault",
+]);
+
+/**
+ * Resolve any lobby entity sprite key (bare slug, relative path, or absolute URL)
+ * to a real `/game-assets/...` URL. Bare wild/creature slugs must not fall through
+ * to `/game-assets/npc/<slug>.png` (that was causing pink missing-texture boxes).
+ */
+const MISSING_NPC_PLACEHOLDERS = new Set([
+  "villager_1",
+  "villager_2",
+  "chicken",
+  "cow",
+  "guide_1",
+  "npc_default",
+]);
+
+const CUSTOM_NPC_SLUGS = [
+  "candrift_keeper",
+  "capturer_kian",
+  "elder_voss",
+  "ironwright_kael",
+  "scout_mira",
+  "soulwarden_aldric",
+] as const;
+
+/**
+ * Pull a bare slug from an absolute /game-assets path so we can re-resolve
+ * battle sheets / missing placeholders instead of returning broken URLs as-is.
+ */
+function slugFromAssetUrl(url: string): string | null {
+  const path = url.split("?")[0] || url;
+  const m = path.match(
+    /\/game-assets\/(?:npc|creatures|world-monsters|monster\/battle)\/([^/]+?)(?:-sheet|-ow)?\.png$/i
+  );
+  return m?.[1] ? m[1].replace(/-sheet$/i, "").replace(/-ow$/i, "") : null;
+}
+
+export function resolveEntitySpriteUrl(
+  spriteKey: string | null | undefined,
+  opts?: { kind?: "npc" | "creature" | "animal" | "monster" | "player"; fallback?: string }
+): string {
+  const fallback = opts?.fallback || "/game-assets/npc/adventurer.png";
+  if (!spriteKey) return fallback;
+
+  const raw = String(spriteKey).trim();
+  if (!raw) return fallback;
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("/")) {
+    // Legacy broken prefix used by BabylonEngine loadTilemap
+    if (raw.startsWith("/assets/sprites/") || raw.startsWith("/game-assets/sprites/")) {
+      const bare = raw
+        .replace(/^\/(?:assets|game-assets)\/sprites\//, "")
+        .replace(/\.png$/i, "");
+      return resolveEntitySpriteUrl(bare, opts);
+    }
+
+    // Battle sheets must not billboard in the overworld — remap to OW crop.
+    if (/-sheet\.png(?:$|\?)/i.test(raw) || raw.includes("/monster/battle/")) {
+      const bare = slugFromAssetUrl(raw);
+      if (bare) return resolveEntitySpriteUrl(bare, { ...opts, kind: opts?.kind || "monster" });
+    }
+
+    // Absolute paths to known-missing npc placeholders → fallback
+    const absNpc = raw.match(/\/game-assets\/npc\/([^/]+)\.png(?:$|\?)/i);
+    if (absNpc) {
+      const key = absNpc[1].replace(/-ow$/i, "");
+      if (MISSING_NPC_PLACEHOLDERS.has(key) || MISSING_NPC_PLACEHOLDERS.has(absNpc[1])) {
+        return fallback;
+      }
+      if ((CUSTOM_NPC_SLUGS as readonly string[]).includes(key) && !/-ow\.png(?:$|\?)/i.test(raw)) {
+        return creatureAssetUrl(`npc/${key}-ow`);
+      }
+    }
+
+    return raw;
+  }
+
+  const key = raw.replace(/\.png$/i, "");
+  if (key.includes("/")) {
+    // Relative catalog keys that point at battle sheets → prefer overworld when possible
+    if (key.endsWith("-sheet") || key.includes("monster/battle/")) {
+      const bare = key.split("/").pop()?.replace(/-sheet$/i, "") || key;
+      return resolveEntitySpriteUrl(bare, { ...opts, kind: opts?.kind || "monster" });
+    }
+    return creatureAssetUrl(key);
+  }
+
+  const def = getFallbackCreature(key);
+  if (def?.spriteOverworld) {
+    return creatureAssetUrl(def.spriteOverworld);
+  }
+  if (WILD_OVERWORLD_SLUGS.has(key)) {
+    return creatureAssetUrl(`world-monsters/${key}-ow`);
+  }
+  if (STARTER_OVERWORLD_SLUGS.has(key)) {
+    return creatureAssetUrl(`creatures/${key}-ow`);
+  }
+  if (key === "rockitten" || key === "conileaf") {
+    return creatureAssetUrl(`npc/${key}`);
+  }
+
+  // Custom LimeWire NPCs — prefer small overworld crops, never full 1024² portraits in-world
+  const customNpcBase = key.replace(/-ow$/, "");
+  if ((CUSTOM_NPC_SLUGS as readonly string[]).includes(customNpcBase)) {
+    return creatureAssetUrl(`npc/${customNpcBase}-ow`);
+  }
+
+  // Missing legacy placeholders → visible fallback instead of Babylon pink checkers
+  if (MISSING_NPC_PLACEHOLDERS.has(key)) {
+    return fallback;
+  }
+
+  if (opts?.kind === "creature" || opts?.kind === "monster" || opts?.kind === "animal") {
+    return creatureAssetUrl(`world-monsters/${key}-ow`);
+  }
+
+  return creatureAssetUrl(`npc/${key}`);
 }
 
 export function defaultPassive(def: CreatureDefData): CreaturePassive | null {
@@ -276,6 +435,452 @@ export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
     isWildSpawn: true,
     isActive: true,
     sortOrder: 4,
+  },
+  // ── Custom Saints companions (public/game-assets/creatures/) ──
+  {
+    slug: "lumkit",
+    name: "Lumkit",
+    dexNumber: 5,
+    typePrimary: "Aero",
+    typeSecondary: "None",
+    spriteOverworld: "creatures/lumkit-ow",
+    spriteBattle: "creatures/lumkit-sheet",
+    spriteBack: null,
+    baseHp: 96,
+    physicalPower: 11,
+    physicalDefense: 9,
+    abilityPower: 14,
+    abilityDefense: 11,
+    combatTempo: 115,
+    catchRate: 1,
+    starterLevel: 5,
+    passives: [
+      {
+        id: "glow_whisker",
+        name: "Glow Whisker",
+        description: "Slight accuracy bonus when opening the first turn.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Lantern Leap",
+    worldSkillDescription: "Lights dim paths and startles roosting pests.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A lantern-furred kit that hums with soft windlight.",
+    tag: "Starter · Aero",
+    tagColor: "#7dd3fc",
+    stage: "basic",
+    isStarter: true,
+    isWildSpawn: false,
+    isActive: true,
+    sortOrder: 5,
+  },
+  {
+    slug: "lumveil",
+    name: "Lumveil",
+    dexNumber: 6,
+    typePrimary: "Aero",
+    typeSecondary: "Solar",
+    spriteOverworld: "creatures/lumveil-ow",
+    spriteBattle: "creatures/lumveil-sheet",
+    spriteBack: null,
+    baseHp: 102,
+    physicalPower: 10,
+    physicalDefense: 11,
+    abilityPower: 15,
+    abilityDefense: 13,
+    combatTempo: 105,
+    catchRate: 1,
+    starterLevel: 5,
+    passives: [
+      {
+        id: "veil_drift",
+        name: "Veil Drift",
+        description: "Small evasion bonus while HP is above half.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Soft Eclipse",
+    worldSkillDescription: "Dims hostile aggro range for a short pulse.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A veiled sky-spirit trailing ribbons of dawn.",
+    tag: "Starter · Aero",
+    tagColor: "#c4b5fd",
+    stage: "basic",
+    isStarter: true,
+    isWildSpawn: false,
+    isActive: true,
+    sortOrder: 6,
+  },
+  {
+    slug: "mosswhim",
+    name: "Mosswhim",
+    dexNumber: 7,
+    typePrimary: "Bio",
+    typeSecondary: "None",
+    spriteOverworld: "creatures/mosswhim-ow",
+    spriteBattle: "creatures/mosswhim-sheet",
+    spriteBack: null,
+    baseHp: 112,
+    physicalPower: 9,
+    physicalDefense: 15,
+    abilityPower: 12,
+    abilityDefense: 14,
+    combatTempo: 80,
+    catchRate: 1,
+    starterLevel: 5,
+    passives: [
+      {
+        id: "moss_cushion",
+        name: "Moss Cushion",
+        description: "Takes reduced damage from the first hit each battle.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Sprout Soften",
+    worldSkillDescription: "Softens bramble and boosts woodcutting synergy.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A mossy whim-beast that nests in fallen trunks.",
+    tag: "Starter · Bio",
+    tagColor: "#4ade80",
+    stage: "basic",
+    isStarter: true,
+    isWildSpawn: false,
+    isActive: true,
+    sortOrder: 7,
+  },
+  {
+    slug: "solarcrown",
+    name: "Solarcrown",
+    dexNumber: 8,
+    typePrimary: "Solar",
+    typeSecondary: "None",
+    spriteOverworld: "creatures/solarcrown-ow",
+    spriteBattle: "creatures/solarcrown-sheet",
+    spriteBack: null,
+    baseHp: 104,
+    physicalPower: 15,
+    physicalDefense: 11,
+    abilityPower: 13,
+    abilityDefense: 10,
+    combatTempo: 100,
+    catchRate: 1,
+    starterLevel: 5,
+    passives: [
+      {
+        id: "helioray",
+        name: "Helioray",
+        description: "Physical attackers take slight burn chip when striking this creature.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Crownflare",
+    worldSkillDescription: "Burns bramble barriers and kindles campfires.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A crowned ember-beast that rules sunlit clearings.",
+    tag: "Starter · Solar",
+    tagColor: "#fb923c",
+    stage: "basic",
+    isStarter: true,
+    isWildSpawn: false,
+    isActive: true,
+    sortOrder: 8,
+  },
+  {
+    slug: "stonethrum",
+    name: "Stonethrum",
+    dexNumber: 9,
+    typePrimary: "Geo",
+    typeSecondary: "None",
+    spriteOverworld: "creatures/stonethrum-ow",
+    spriteBattle: "creatures/stonethrum-sheet",
+    spriteBack: null,
+    baseHp: 118,
+    physicalPower: 14,
+    physicalDefense: 16,
+    abilityPower: 8,
+    abilityDefense: 12,
+    combatTempo: 75,
+    catchRate: 1,
+    starterLevel: 5,
+    passives: [
+      {
+        id: "faultline",
+        name: "Faultline",
+        description: "Slightly reduced physical damage taken.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Thrum Pulse",
+    worldSkillDescription: "Can weight pressure plates and clear small rockfall.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A living drum of packed stone that thrums underfoot.",
+    tag: "Starter · Geo",
+    tagColor: "#a8a29e",
+    stage: "basic",
+    isStarter: true,
+    isWildSpawn: false,
+    isActive: true,
+    sortOrder: 9,
+  },
+  {
+    slug: "terravault",
+    name: "Terravault",
+    dexNumber: 10,
+    typePrimary: "Geo",
+    typeSecondary: "Bio",
+    spriteOverworld: "creatures/terravault-ow",
+    spriteBattle: "creatures/terravault-sheet",
+    spriteBack: null,
+    baseHp: 120,
+    physicalPower: 13,
+    physicalDefense: 17,
+    abilityPower: 9,
+    abilityDefense: 13,
+    combatTempo: 70,
+    catchRate: 1,
+    starterLevel: 5,
+    passives: [
+      {
+        id: "vault_shell",
+        name: "Vault Shell",
+        description: "Takes reduced damage from the first hit each battle.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Earthen Lock",
+    worldSkillDescription: "Seals unstable ground and props collapsed ledges.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A shelled earth-guardian that stores seed and stone alike.",
+    tag: "Starter · Geo",
+    tagColor: "#86efac",
+    stage: "basic",
+    isStarter: true,
+    isWildSpawn: false,
+    isActive: true,
+    sortOrder: 10,
+  },
+  // ── Custom wilds (public/game-assets/world-monsters/) ──
+  {
+    slug: "ashwhirl",
+    name: "Ashwhirl",
+    dexNumber: 11,
+    typePrimary: "Solar",
+    typeSecondary: "Aero",
+    spriteOverworld: "world-monsters/ashwhirl-ow",
+    spriteBattle: "world-monsters/ashwhirl-sheet",
+    spriteBack: null,
+    baseHp: 90,
+    physicalPower: 13,
+    physicalDefense: 9,
+    abilityPower: 12,
+    abilityDefense: 9,
+    combatTempo: 120,
+    catchRate: 1,
+    starterLevel: 4,
+    passives: [
+      {
+        id: "cinder_spin",
+        name: "Cinder Spin",
+        description: "Slight Tempo edge when HP is below half.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Ash Gust",
+    worldSkillDescription: "Kicks up ash that briefly blinds nearby pests.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A spinning cinder spirit born from campfire leftovers.",
+    tag: "Wild · Solar",
+    tagColor: "#f97316",
+    stage: "basic",
+    isStarter: false,
+    isWildSpawn: true,
+    isActive: true,
+    sortOrder: 11,
+  },
+  {
+    slug: "grimvast",
+    name: "Grimvast",
+    dexNumber: 12,
+    typePrimary: "Geo",
+    typeSecondary: "None",
+    spriteOverworld: "world-monsters/grimvast-ow",
+    spriteBattle: "world-monsters/grimvast-sheet",
+    spriteBack: null,
+    baseHp: 115,
+    physicalPower: 15,
+    physicalDefense: 15,
+    abilityPower: 7,
+    abilityDefense: 11,
+    combatTempo: 70,
+    catchRate: 1,
+    starterLevel: 4,
+    passives: [
+      {
+        id: "vast_weight",
+        name: "Vast Weight",
+        description: "Slightly reduced physical damage taken.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Grim Quake",
+    worldSkillDescription: "Shakes loose ore nodules from cliff faces.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A grim slab-beast that patrols the basin rim.",
+    tag: "Wild · Geo",
+    tagColor: "#78716c",
+    stage: "basic",
+    isStarter: false,
+    isWildSpawn: true,
+    isActive: true,
+    sortOrder: 12,
+  },
+  {
+    slug: "hollowmirth",
+    name: "Hollowmirth",
+    dexNumber: 13,
+    typePrimary: "Cryo",
+    typeSecondary: "Aero",
+    spriteOverworld: "world-monsters/hollowmirth-ow",
+    spriteBattle: "world-monsters/hollowmirth-sheet",
+    spriteBack: null,
+    baseHp: 88,
+    physicalPower: 9,
+    physicalDefense: 10,
+    abilityPower: 16,
+    abilityDefense: 12,
+    combatTempo: 110,
+    catchRate: 1,
+    starterLevel: 4,
+    passives: [
+      {
+        id: "hollow_laugh",
+        name: "Hollow Laugh",
+        description: "Small evasion bonus on the first turn of battle.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Echo Chill",
+    worldSkillDescription: "Cools fevered wildlife and frosts shallow puddles.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A grinning hollow that laughs like winter wind.",
+    tag: "Wild · Cryo",
+    tagColor: "#67e8f9",
+    stage: "basic",
+    isStarter: false,
+    isWildSpawn: true,
+    isActive: true,
+    sortOrder: 13,
+  },
+  {
+    slug: "rootwail",
+    name: "Rootwail",
+    dexNumber: 14,
+    typePrimary: "Bio",
+    typeSecondary: "None",
+    spriteOverworld: "world-monsters/rootwail-ow",
+    spriteBattle: "world-monsters/rootwail-sheet",
+    spriteBack: null,
+    baseHp: 108,
+    physicalPower: 12,
+    physicalDefense: 13,
+    abilityPower: 11,
+    abilityDefense: 12,
+    combatTempo: 85,
+    catchRate: 1,
+    starterLevel: 4,
+    passives: [
+      {
+        id: "wailing_root",
+        name: "Wailing Root",
+        description: "Slowly regenerates a sliver of HP between turns (future).",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Root Snare",
+    worldSkillDescription: "Tangles bramble and marks harvest nodes.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A keening root-beast that mourns cut timber.",
+    tag: "Wild · Bio",
+    tagColor: "#22c55e",
+    stage: "basic",
+    isStarter: false,
+    isWildSpawn: true,
+    isActive: true,
+    sortOrder: 14,
+  },
+  {
+    slug: "siltmourne",
+    name: "Siltmourne",
+    dexNumber: 15,
+    typePrimary: "Hydro",
+    typeSecondary: "Geo",
+    spriteOverworld: "world-monsters/siltmourne-ow",
+    spriteBattle: "world-monsters/siltmourne-sheet",
+    spriteBack: null,
+    baseHp: 100,
+    physicalPower: 12,
+    physicalDefense: 12,
+    abilityPower: 12,
+    abilityDefense: 12,
+    combatTempo: 90,
+    catchRate: 1,
+    starterLevel: 4,
+    passives: [
+      {
+        id: "silt_shroud",
+        name: "Silt Shroud",
+        description: "Small evasion bonus when opening on damp ground (future).",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Mire Pull",
+    worldSkillDescription: "Drags loose silt to reveal buried film crystals.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A mourning silt-wader from the basin shallows.",
+    tag: "Wild · Hydro",
+    tagColor: "#38bdf8",
+    stage: "basic",
+    isStarter: false,
+    isWildSpawn: true,
+    isActive: true,
+    sortOrder: 15,
+  },
+  {
+    slug: "tanglewrath",
+    name: "Tanglewrath",
+    dexNumber: 16,
+    typePrimary: "Bio",
+    typeSecondary: "Volt",
+    spriteOverworld: "world-monsters/tanglewrath-ow",
+    spriteBattle: "world-monsters/tanglewrath-sheet",
+    spriteBack: null,
+    baseHp: 95,
+    physicalPower: 14,
+    physicalDefense: 10,
+    abilityPower: 13,
+    abilityDefense: 10,
+    combatTempo: 100,
+    catchRate: 1,
+    starterLevel: 4,
+    passives: [
+      {
+        id: "wrath_vines",
+        name: "Wrath Vines",
+        description: "Physical attackers take slight chip when striking this creature.",
+        isDefault: true,
+      },
+    ],
+    worldSkillName: "Thornlash",
+    worldSkillDescription: "Whips bramble aside and shocks invasive pests.",
+    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
+    flavor: "A furious tangle that crackles when brushed.",
+    tag: "Wild · Bio",
+    tagColor: "#a3e635",
+    stage: "basic",
+    isStarter: false,
+    isWildSpawn: true,
+    isActive: true,
+    sortOrder: 16,
   },
 ];
 

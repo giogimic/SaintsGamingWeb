@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
-import { PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
+import { validateMapSave } from "@/shared/game/mapSaveValidation";
 
 /**
  * GET /api/maps/[slug] — Load a map from WorldMap (primary) or GameMap (fallback).
@@ -72,7 +73,7 @@ export async function POST(
       where: { id: session.user.id },
       select: { permissionLevel: true },
     });
-    if (!user || user.permissionLevel < PERMISSION_LEVELS.DEVELOPER) {
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -81,6 +82,23 @@ export async function POST(
     const grid = body.grid || [];
     const height = Array.isArray(grid) ? grid.length || body.height || 24 : body.height || 24;
     const width = Array.isArray(grid?.[0]) ? grid[0].length : body.width || 24;
+
+    // Bible 08/16: reject trapped spawns, unknown logic ids, bad NPC placement when grid is sent.
+    if (Array.isArray(body.grid)) {
+      const logicTiles = await prisma.mapLogicTile.findMany({
+        select: { id: true, isSolid: true },
+      });
+      const check = validateMapSave(
+        { grid: body.grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
+        logicTiles
+      );
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: check.error, details: check.details },
+          { status: 400 }
+        );
+      }
+    }
 
     const worldMap = await prisma.worldMap.upsert({
       where: { id: slug },

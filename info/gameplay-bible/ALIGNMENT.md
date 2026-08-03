@@ -42,14 +42,14 @@
 
 | MPV proof | Status |
 | :--- | :---: |
-| Multiplayer lobby (see/move/chat) | Partial → improved (shard/base-map fix) — needs human 2-browser smoke |
+| Multiplayer lobby (see/move/chat) | **Improved 2026-08-03:** same-shard see/move/local-chat + soft reconnect; **bramble clears are per-account** (shared grid stays seeded) |
 | Tuxemon-based adventure zone | Partial (maps + tuxemon data present) |
 | Encounters + TB capture loop end-to-end | Improved (2.1.114) — directMessage, capture math, PlayerCreature insert; needs human smoke |
 | RT combat vs monsters (server math, loot) | Improved (2.1.114) — range/LoS/miss/crit + loot despawn; needs human smoke |
 | Inventory | Partial |
 | Skills framework | Partial (not full 27) |
 | Base plot place/save/visit | Partial foundation (`BASE`, overlays) |
-| Editor load/place/save | Partial (`/studio`) |
+| Editor load/place/save | **Improved 2026-08-03:** Save/NPC/Quest docks; Asset packs + gameplay flags; Walk Mode; `validateMapSave`; dock persist; **component forms** + Warp Gate (`logicComponents`) |
 
 ---
 
@@ -72,15 +72,19 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 2. Capture math + `PlayerCreature` insert + crystal consume  
 3. Victory/defeat/flee return to overworld  
 
-### Slice D — Studio creator UX (16, toward MPV editor) — **NEXT**
-1. Contextual modes (Build / NPC / Quest / Creature / Test)  
-2. Permission-gated floating docks (extend current shell)  
-3. Tag/component placement UX over raw logic paint  
+### Slice D — Studio creator UX (16, toward MPV editor) — **DONE 2026-08-03** (permission matrix deferred)
+1. Contextual modes (Build / NPC / Quest / Creature / Test) — **Done:** mode strip + panel presets  
+2. Permission-gated floating docks (extend current shell) — **Done 2026-08-03:** `studioPermissions` Admin+ entry/writes; Dev Tools server Admin+ / engine Developer+; Creator Claims deferred  
+3. Tag/component placement UX over raw logic paint — **Done:** Logic Tag Palette on layer −1 + Properties “Place Tag” brush  
+4. **Done:** World Builder **Save Map** → `POST /api/maps/[slug]` + `admin_reload_map` hot-reload; **Logic (−1)** layer target (was unreachable `-2`)  
+5. **Done:** NPC Drop mutates `activeMapData.npcs` (+ `/api/npc-dialogue`); Asset browsers use `/api/assets` (no Prisma-in-browser); seed from `public/game-assets`  
+6. **Done:** Create New Map persists via `POST /api/maps`; +Layer works; map search hydrates from `/api/maps`; tileset img path fallback  
+7. **Done:** Quest dock lists `QuestTemplate` via `/api/quests/templates`; assign merges `ACCEPT_QUEST` onto `NpcDialogueTree` (existing DialogueManager path) 
 
 ### Slice E — Website ↔ game (10, ecosystem)
-1. Profile pinned creature  
-2. Marketplace / inventory async bridge  
-3. Social feed hooks for rare captures  
+1. Profile pinned creature — **Done 2026-08-03:** `User.pinnedBeastId` → owned `PlayerCreature`; profile shows pixel sprite (`getPublicProfile.pinnedCreature`)  
+2. Marketplace / inventory async bridge — **Done 2026-08-03:** web `purchaseGtcListing` / `createGtcListing` + profile inventory from `PlayerInventoryItem`; lobby `inventory_sync` on join  
+3. Social feed hooks for rare captures — **Done 2026-08-03:** TB `CAPTURE` → `battle_ended.capture.isRemarkable` → client `createSocialPost` (reuse existing social action; no new feed stack) 
 
 ---
 

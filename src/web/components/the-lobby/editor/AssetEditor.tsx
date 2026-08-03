@@ -12,6 +12,7 @@ import {
   Square,
 } from 'lucide-react';
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
+import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
 
 export interface AssetEditorProps {
   onAssetSelect?: (asset: GameAssetItem) => void;
@@ -21,12 +22,18 @@ export interface AssetEditorProps {
 export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorProps) {
   const [assets, setAssets] = useState<GameAssetItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('SPRITE');
+  const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(new Set());
   const [activeAsset, setActiveAsset] = useState<GameAssetItem | null>(null);
+  const [savingFlags, setSavingFlags] = useState(false);
 
   // Reclassify Modal State
   const [reclassifyModalOpen, setReclassifyModalOpen] = useState(false);
@@ -35,26 +42,39 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   const [newTagInput, setNewTagInput] = useState('');
 
   useEffect(() => {
-    fetchAssets();
-  }, [typeFilter, searchQuery, selectedTag]);
+    setPage(0);
+    void fetchAssets(0, false);
+  }, [typeFilter, searchQuery, selectedTag, packFilter]);
 
-  const fetchAssets = async () => {
-    setLoading(true);
+  const fetchAssets = async (pageNum: number, append: boolean) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
     try {
       const manager = AssetManager.getInstance();
-      const res = await manager.searchAssets({
-        type: typeFilter === 'ALL' ? undefined : typeFilter,
-        query: searchQuery || undefined,
-        tags: selectedTag ? [selectedTag] : undefined,
-      });
-      setAssets(res.items);
-      if (res.items.length > 0 && !activeAsset) {
+      const res = await manager.searchAssets(
+        {
+          type: typeFilter === 'ALL' ? undefined : typeFilter,
+          query: searchQuery || undefined,
+          tags: selectedTag ? [selectedTag] : undefined,
+          pack: packFilter === 'ALL' ? undefined : packFilter,
+          sortBy: 'source',
+          sortOrder: 'asc',
+        },
+        pageNum,
+        50
+      );
+      setAssets((prev) => (append ? [...prev, ...res.items] : res.items));
+      setHasMore(res.hasMore);
+      setTotal(res.total);
+      setPage(pageNum);
+      if (!append && res.items.length > 0) {
         setActiveAsset(res.items[0]);
       }
     } catch (err) {
       console.error('Failed to load assets:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -82,7 +102,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
       const manager = AssetManager.getInstance();
       await manager.addTag(activeAsset.id, newTagInput.trim().toLowerCase());
       setNewTagInput('');
-      fetchAssets();
+      void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
     }
@@ -93,7 +113,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
     try {
       const manager = AssetManager.getInstance();
       await manager.removeTag(activeAsset.id, tagToRemove);
-      fetchAssets();
+      void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
     }
@@ -110,9 +130,25 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
         await manager.reclassifyAsset(id, reclassifyType, cats);
       }
       setReclassifyModalOpen(false);
-      fetchAssets();
+      void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleGameplayFlag = async (flag: 'solid' | 'interactable' | 'decorative', value: boolean) => {
+    if (!activeAsset) return;
+    setSavingFlags(true);
+    try {
+      const manager = AssetManager.getInstance();
+      const updated = await manager.updateGameplayFlags(activeAsset.id, { [flag]: value });
+      setActiveAsset(updated);
+      setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      onAssetEdit?.(updated);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingFlags(false);
     }
   };
 
@@ -144,6 +180,20 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
             <option value="MONSTER">Monsters</option>
             <option value="AUDIO">Audio</option>
             <option value="UI_ELEMENT">UI Elements</option>
+          </select>
+
+          <select
+            value={packFilter}
+            onChange={(e) => setPackFilter(e.target.value as AssetPackId | 'ALL')}
+            title="Approved packs (bible 16 §7)"
+            className="bg-black/60 border border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
+          >
+            <option value="ALL">All packs</option>
+            {ASSET_PACKS.map((p) => (
+              <option key={p} value={p}>
+                {ASSET_PACK_LABELS[p]}
+              </option>
+            ))}
           </select>
 
           {selectedTag && (
@@ -296,6 +346,24 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
               ))}
             </div>
           )}
+          {!loading && assets.length > 0 && (
+            <div className="mt-3 flex flex-col items-center gap-1 pb-2">
+              <span className="text-[10px] text-slate-500">
+                Showing {assets.length}
+                {total ? ` / ${total}` : ''}
+              </span>
+              {hasMore && (
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={() => void fetchAssets(page + 1, true)}
+                  className="px-3 py-1.5 rounded-lg border border-[#806f47]/50 text-[10px] text-[#cbb26a] hover:bg-[#806f47]/20 disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Asset Preview & Inspector Pane */}
@@ -325,6 +393,37 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Categories</span>
                 <span className="text-slate-200">{activeAsset.categories.join(', ')}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800">
+                <span className="text-slate-400">Frames</span>
+                <span className="text-slate-200">
+                  {Array.isArray(activeAsset.metadata?.frames)
+                    ? activeAsset.metadata.frames.length
+                    : 0}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2 py-1 border-b border-slate-800">
+                <span className="text-slate-400 text-[11px] font-bold tracking-wider">GAMEPLAY FLAGS</span>
+                <div className="flex flex-col gap-1.5">
+                  {(
+                    [
+                      ['solid', 'Solid (blocks walk)'],
+                      ['interactable', 'Interactable'],
+                      ['decorative', 'Decorative'],
+                    ] as const
+                  ).map(([flag, label]) => (
+                    <label key={flag} className="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        disabled={savingFlags}
+                        checked={!!activeAsset.metadata?.[flag]}
+                        onChange={(e) => void handleGameplayFlag(flag, e.target.checked)}
+                        className="accent-[#cbb26a]"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -371,12 +470,12 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Reclassify Asset
               </button>
-              {onAssetEdit && (
+              {onAssetSelect && (
                 <button
-                  onClick={() => onAssetEdit(activeAsset)}
+                  onClick={() => onAssetSelect(activeAsset)}
                   className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs font-bold transition-colors flex items-center justify-center gap-1"
                 >
-                  <Edit2 className="w-3.5 h-3.5" /> Edit Metadata
+                  <Edit2 className="w-3.5 h-3.5" /> Use Selected Asset
                 </button>
               )}
             </div>

@@ -20,6 +20,7 @@ import {
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
+import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -71,6 +72,46 @@ export const DEFAULT_SPRITE_CONFIG: SpriteSheetConfig = {
     up: 3
   }
 };
+
+/** Full-frame portraits / single-image sheets (no 3×4 walk UV slicing). */
+export const SINGLE_FRAME_SPRITE_CONFIG: SpriteSheetConfig = {
+  columns: 1,
+  rows: 1,
+  idleFrame: 0,
+  walkCycle: [0],
+  walkSpeed: 0,
+  directions: {
+    down: 0,
+    left: 0,
+    right: 0,
+    up: 0
+  }
+};
+
+/** LimeWire custom NPCs are 1024² portraits — not classic 3×4 walk sheets. */
+const SINGLE_FRAME_NPC_SLUGS = [
+  "candrift_keeper",
+  "capturer_kian",
+  "elder_voss",
+  "ironwright_kael",
+  "scout_mira",
+  "soulwarden_aldric",
+] as const;
+
+/**
+ * True when a sprite URL should render as one full frame (no 3×4 walk UV slicing).
+ * Classic Tuxemon /npc/ walk sheets (e.g. adventurer 48×128) stay on DEFAULT_SPRITE_CONFIG.
+ * Custom portraits, creature/monster sheets, and *-ow crops are single-frame.
+ */
+export function isSingleFrameSpriteUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  // Any *-ow crop is a single billboard frame (NPCs + monsters + creatures).
+  if (/-ow\.png(?:$|\?)/.test(url)) return true;
+  if (url.includes("/creatures/") || url.includes("/world-monsters/")) return true;
+  return SINGLE_FRAME_NPC_SLUGS.some(
+    (slug) => url.includes(`/npc/${slug}.png`) || url.includes(`/npc/${slug}-ow.png`)
+  );
+}
 
 export interface BabylonEntityData {
   id: string;
@@ -433,27 +474,37 @@ export class BabylonEngine {
           }
         }
 
-        // 2. UV Frame Cycling (Animation)
-        if (mesh.material) {
-          const mat = mesh.material as StandardMaterial;
-          const tex = mat.diffuseTexture as Texture;
-          if (tex && (state.isNpc || state.isPlayer || state.spriteConfig || tex.name.includes('/npc/'))) {
-            const config = state.spriteConfig || DEFAULT_SPRITE_CONFIG;
-            
-            // Update row (direction) - Map top-to-bottom row index (0=down, 1=left, 2=right, 3=up) to Babylon V offset
+        // 2. UV Frame Cycling (per-mesh vertex UVs — not shared Texture.uScale)
+        if (state.spriteConfig) {
+          const config = state.spriteConfig as SpriteSheetConfig;
+          if (config.columns <= 1 && config.rows <= 1) {
+            if (!state.uvFullFrame) {
+              this.setSpriteCellUVs(mesh, 0, 0, 1, 1);
+              state.uvFullFrame = true;
+            }
+          } else {
+            state.uvFullFrame = false;
             const dir = state.direction || 'down';
             const rowIdx = config.directions[dir] ?? config.directions.down;
-            tex.vOffset = (config.rows - 1 - rowIdx) * (1 / config.rows);
-
-            // Update column (animation frame)
+            let col = config.idleFrame;
             if (state.isMoving) {
               state.animTime += deltaTime * config.walkSpeed;
               const frameSeq = config.walkCycle;
-              const f = frameSeq[Math.floor(state.animTime) % frameSeq.length];
-              tex.uOffset = f * (1 / config.columns);
+              col = frameSeq[Math.floor(state.animTime) % frameSeq.length];
             } else {
               state.animTime = 0;
-              tex.uOffset = config.idleFrame * (1 / config.columns);
+            }
+            if (
+              state.uvCol !== col ||
+              state.uvRow !== rowIdx ||
+              state.uvCols !== config.columns ||
+              state.uvRows !== config.rows
+            ) {
+              this.setSpriteCellUVs(mesh, col, rowIdx, config.columns, config.rows);
+              state.uvCol = col;
+              state.uvRow = rowIdx;
+              state.uvCols = config.columns;
+              state.uvRows = config.rows;
             }
           }
         }
@@ -905,7 +956,7 @@ export class BabylonEngine {
       }
     }
 
-    // Render Map NPCs
+    // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
     if (npcs) {
       npcs.forEach((npc) => {
         this.updateEntity({
@@ -914,7 +965,10 @@ export class BabylonEngine {
           x: (npc.x - width / 2) * tileSize,
           y: (height / 2 - npc.y) * tileSize,
           isNpc: true,
-          spriteUrl: npc.sprite ? `/assets/sprites/${npc.sprite}.png` : '/assets/sprites/villager_1.png'
+          spriteUrl: resolveEntitySpriteUrl(npc.sprite, {
+            kind: "npc",
+            fallback: "/game-assets/npc/adventurer.png",
+          }),
         });
       });
     }
@@ -1212,15 +1266,81 @@ export class BabylonEngine {
     return this.entityMeshes.get(entityId);
   }
 
+  private resolveSpriteConfig(entity: BabylonEntityData): SpriteSheetConfig {
+    // URL is source of truth — never let a stale SINGLE_FRAME client override
+    // wipe 3×4 walk sheets (that rendered rockitten as a full grid).
+    if (isSingleFrameSpriteUrl(entity.spriteUrl)) {
+      return SINGLE_FRAME_SPRITE_CONFIG;
+    }
+    if (
+      entity.spriteConfig &&
+      entity.spriteConfig.columns > 1 &&
+      entity.spriteConfig.rows > 1
+    ) {
+      return entity.spriteConfig;
+    }
+    return DEFAULT_SPRITE_CONFIG;
+  }
+
+  /**
+   * Crop a walk-sheet cell onto the mesh's own UV vertices.
+   * Prefer this over Texture.uScale — Babylon caches textures by URL, so
+   * shared uScale/vOffset fought between meshes and left full 3×4 sheets visible.
+   */
+  private setSpriteCellUVs(
+    mesh: Mesh,
+    col: number,
+    row: number,
+    columns: number,
+    rows: number
+  ) {
+    // Non-updatable planes ignore UV writes — force the buffer updatable first.
+    try {
+      mesh.markVerticesDataAsUpdatable(VertexBuffer.UVKind, true);
+    } catch {
+      /* older buffers */
+    }
+    if (columns <= 1 && rows <= 1) {
+      mesh.setVerticesData(VertexBuffer.UVKind, [0, 0, 1, 0, 1, 1, 0, 1], true);
+      return;
+    }
+    const u0 = col / columns;
+    const u1 = (col + 1) / columns;
+    // row 0 = top of sheet; with invertY textures, high V is the image top.
+    const v1 = 1 - row / rows;
+    const v0 = 1 - (row + 1) / rows;
+    // CreatePlane vertex order: BL, BR, TR, TL
+    mesh.setVerticesData(VertexBuffer.UVKind, [u0, v0, u1, v0, u1, v1, u0, v1], true);
+  }
+
+  private applySpriteSheetUv(tex: Texture, config: SpriteSheetConfig) {
+    // Dual approach: mesh UVs (preferred) + texture scale (fallback if UV buffer
+    // isn't updatable yet). Both target the same cell.
+    tex.wrapU = Texture.CLAMP_ADDRESSMODE;
+    tex.wrapV = Texture.CLAMP_ADDRESSMODE;
+    tex.uScale = 1 / config.columns;
+    tex.vScale = 1 / config.rows;
+    tex.uOffset = 0;
+    tex.vOffset = 0;
+  }
+
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
     const targetPos = new Vector3(entity.x, 0.85, entity.y);
+    const resolvedConfig = this.resolveSpriteConfig(entity);
+    const singleFrame = resolvedConfig.columns <= 1 && resolvedConfig.rows <= 1;
 
     if (!spriteMesh) {
-      // Create 2.5D Billboard Sprite Plane
+      // Create 2.5D Billboard Sprite Plane — OW portraits use a slightly shorter plane
       spriteMesh = MeshBuilder.CreatePlane(
         `entity_${entity.id}`,
-        { width: this.currentTileSize * 1.1, height: this.currentTileSize * 1.5 },
+        {
+          // OW portrait crops read huge on the old 1.5-tall plane — keep them compact.
+          width: this.currentTileSize * (singleFrame ? 0.7 : 1.0),
+          height: this.currentTileSize * (singleFrame ? 0.95 : 1.4),
+          // Required so setSpriteCellUVs can rewrite vertex UVs each anim frame.
+          updatable: true,
+        },
         this.scene
       );
 
@@ -1232,8 +1352,10 @@ export class BabylonEngine {
         direction: entity.direction || 'down',
         isNpc: entity.isNpc || false,
         isPlayer: entity.isPlayer || false,
+        isCreature: entity.isCreature || false,
         isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
-        spriteConfig: entity.spriteConfig || DEFAULT_SPRITE_CONFIG
+        spriteConfig: resolvedConfig,
+        spriteUrl: entity.spriteUrl || null,
       };
       
       // Initial position snap
@@ -1251,14 +1373,47 @@ export class BabylonEngine {
       mat.backFaceCulling = false;
 
       if (entity.spriteUrl) {
-        // Use nearest neighbor (1) sampling mode for crisp pixel art
-        const tex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
+        // Always invertY=true (Babylon default). Re-apply UV in onLoad — Babylon can
+        // reset transforms when the image bytes arrive, which showed full 3×4 sheets.
+        // Unique URL per mesh so Babylon's texture cache can't share UV state.
+        const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
+        const tex = new Texture(
+          texUrl,
+          this.scene,
+          true,
+          true,
+          Texture.NEAREST_SAMPLINGMODE,
+          () => {
+            this.applySpriteSheetUv(tex, resolvedConfig);
+          },
+          () => {
+            console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
+            if (this.defaultPlayerTexture && mat) {
+              mat.diffuseTexture = this.defaultPlayerTexture;
+              mat.diffuseTexture.hasAlpha = true;
+            }
+          }
+        );
         tex.hasAlpha = true;
-
-        if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/')) {
-          const config = entity.spriteConfig || DEFAULT_SPRITE_CONFIG;
-          tex.uScale = 1 / config.columns;
-          tex.vScale = 1 / config.rows;
+        this.applySpriteSheetUv(tex, resolvedConfig);
+        spriteMesh.metadata.spriteConfig = resolvedConfig;
+        // Initial cell crop on the mesh itself
+        if (singleFrame) {
+          this.setSpriteCellUVs(spriteMesh, 0, 0, 1, 1);
+          spriteMesh.metadata.uvFullFrame = true;
+        } else {
+          const rowIdx = resolvedConfig.directions.down;
+          this.setSpriteCellUVs(
+            spriteMesh,
+            resolvedConfig.idleFrame,
+            rowIdx,
+            resolvedConfig.columns,
+            resolvedConfig.rows
+          );
+          spriteMesh.metadata.uvCol = resolvedConfig.idleFrame;
+          spriteMesh.metadata.uvRow = rowIdx;
+          spriteMesh.metadata.uvCols = resolvedConfig.columns;
+          spriteMesh.metadata.uvRows = resolvedConfig.rows;
         }
 
         mat.diffuseTexture = tex;
@@ -1285,33 +1440,54 @@ export class BabylonEngine {
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Update Metadata
+      // Update Metadata — always refresh spriteConfig from current URL so a
+      // prior SINGLE_FRAME assign can't keep resetting walk-sheet UVs every tick.
       if (spriteMesh.metadata) {
         spriteMesh.metadata.targetPos = targetPos;
         spriteMesh.metadata.isMoving = entity.isMoving || false;
         spriteMesh.metadata.direction = entity.direction || spriteMesh.metadata.direction;
         spriteMesh.metadata.isEditor = !!this.scene.onPointerDown;
-        if (entity.spriteConfig) {
-          spriteMesh.metadata.spriteConfig = entity.spriteConfig;
-        }
+        spriteMesh.metadata.isNpc = entity.isNpc || false;
+        spriteMesh.metadata.isPlayer = entity.isPlayer || false;
+        spriteMesh.metadata.isCreature = entity.isCreature || false;
+        spriteMesh.metadata.spriteConfig = resolvedConfig;
       }
 
       // Check if sprite URL changed
       const mat = spriteMesh.material as StandardMaterial;
       const tex = mat?.diffuseTexture as Texture;
-      const currentUrl = tex?.name;
+      const currentUrl = (spriteMesh.metadata?.spriteUrl as string | undefined) || tex?.name;
       
       if (mat) {
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
-          // Use nearest neighbor (1) sampling mode
-          const newTex = new Texture(entity.spriteUrl, this.scene, true, true, 1);
+          const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
+          const newTex = new Texture(
+            texUrl,
+            this.scene,
+            true,
+            true,
+            Texture.NEAREST_SAMPLINGMODE,
+            () => {
+              this.applySpriteSheetUv(newTex, resolvedConfig);
+            },
+            () => {
+              console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
+              if (this.defaultPlayerTexture) {
+                mat.diffuseTexture = this.defaultPlayerTexture;
+                mat.diffuseTexture.hasAlpha = true;
+              }
+            }
+          );
           newTex.hasAlpha = true;
-          
-          if (entity.isNpc || entity.isPlayer || entity.spriteConfig || entity.spriteUrl.includes('/npc/')) {
-            const config = entity.spriteConfig || DEFAULT_SPRITE_CONFIG;
-            newTex.uScale = 1 / config.columns;
-            newTex.vScale = 1 / config.rows;
+          this.applySpriteSheetUv(newTex, resolvedConfig);
+          if (spriteMesh.metadata) {
+            spriteMesh.metadata.spriteConfig = resolvedConfig;
+            spriteMesh.metadata.spriteUrl = entity.spriteUrl;
+            // Force UV cell recompute next anim tick
+            spriteMesh.metadata.uvCol = undefined;
+            spriteMesh.metadata.uvRow = undefined;
+            spriteMesh.metadata.uvFullFrame = false;
           }
           mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {

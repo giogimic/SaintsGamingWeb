@@ -21,6 +21,9 @@ export interface CreatureState {
   isMoving: boolean;
   direction: "up" | "down" | "left" | "right";
   lastMoveTime: number;
+  /** Absolute or resolvable sprite path for join snapshots / client mapEntities. */
+  spriteKey?: string;
+  dialogueNpcId?: string;
 }
 
 export class CreatureManager {
@@ -95,45 +98,65 @@ export class CreatureManager {
     this.dirtyEntities.add(data.entityId);
   }
 
-  private spawnCreature(data: { templateId: string, entityType?: EntityType, mapId: string, x: number, y: number, spawnMode: SpawnMode, ownerId?: string }) {
+  private spawnCreature(data: {
+    templateId: string;
+    entityType?: EntityType;
+    mapId: string;
+    x: number;
+    y: number;
+    spawnMode: SpawnMode;
+    ownerId?: string;
+    name?: string;
+    spriteKey?: string;
+    dialogueNpcId?: string;
+  }) {
     const isNpc = data.entityType === EntityType.NPC;
-    const entityId = `${isNpc ? 'npc' : 'creature'}_${data.templateId}_${Date.now()}`;
+    // Stable template segment (no nested npc_ prefix) so dialogue ids stay parseable.
+    const templateKey = String(data.templateId || "unknown").replace(/^npc_/, "");
+    const entityId = `${isNpc ? "npc" : "creature"}_${templateKey}_${Date.now()}`;
     
     const entityType = data.entityType || EntityType.CREATURE;
     const isWildCreature = !isNpc && entityType === EntityType.CREATURE;
+    const displayName =
+      data.name ||
+      (isNpc ? templateKey.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : `Wild ${templateKey}`);
+
+    const spriteKey = data.spriteKey || templateKey;
+    const dialogueNpcId =
+      data.dialogueNpcId || (isNpc ? `npc_${templateKey}` : undefined);
 
     const creature: CreatureState = {
       entityId,
       entityType,
-      templateId: data.templateId,
-      name: isNpc ? data.templateId : "Wild " + data.templateId,
+      templateId: templateKey,
+      name: displayName,
       mapId: data.mapId,
       x: data.x,
       y: data.y,
       spawnMode: data.spawnMode,
       aiState: AIState.IDLE,
-      // Wild MPV creatures are hostile so RT combat can be tested
-      behavior: isWildCreature ? BehavioralState.HOSTILE : BehavioralState.CALM,
+      // Demo wilds stay CALM so they don't stunlock/kill players on join.
+      // Players can still click-target them for RT combat when ready.
+      behavior: BehavioralState.CALM,
       ownerId: data.ownerId,
       hp: isWildCreature ? 80 : 100,
       maxHp: isWildCreature ? 80 : 100,
       isMoving: false,
       direction: "down",
-      lastMoveTime: Date.now()
+      lastMoveTime: Date.now(),
+      spriteKey,
+      dialogueNpcId,
     };
 
     this.creatures.set(entityId, creature);
     this.worldManager.addEntity(creature.mapId, creature.x, creature.y, entityId);
     this.dirtyEntities.add(entityId);
     
-    // Broadcast spawn to clients (include spriteKey for lobby mapEntities).
+    // Broadcast spawn to clients (include spriteKey + dialogue id for lobby mapEntities).
     this.engine.events.emit("networkBroadcast", {
       room: creature.mapId,
       event: "creature_spawned",
-      data: {
-        ...creature,
-        spriteKey: data.templateId,
-      },
+      data: { ...creature },
     });
   }
 
