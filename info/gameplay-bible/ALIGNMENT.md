@@ -49,7 +49,7 @@
 | Inventory | Partial |
 | Skills framework | Partial (not full 27) |
 | Base plot place/save/visit | Partial foundation (`BASE`, overlays) |
-| Editor load/place/save | Partial (`/studio`) |
+| Editor load/place/save | **Improved 2026-08-03:** Save Map + Logic (−1); NPC place → `activeMapData.npcs` + optional dialogue upsert; Asset Manager via `/api/assets` (seed `scripts/seed-game-assets-from-public.ts`) |
 
 ---
 
@@ -77,6 +77,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 2. Permission-gated floating docks (extend current shell)  
 3. Tag/component placement UX over raw logic paint  
 4. **Done 2026-08-03:** World Builder **Save Map** → `POST /api/maps/[slug]` + `admin_reload_map` hot-reload; **Logic (−1)** layer target (was unreachable `-2`)  
+5. **Done 2026-08-03:** NPC Drop mutates `activeMapData.npcs` (+ `/api/npc-dialogue`); Asset browsers use `/api/assets` (no Prisma-in-browser); seed from `public/game-assets`  
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  

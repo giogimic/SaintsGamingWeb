@@ -1,6 +1,4 @@
-import { prisma } from '@/web/lib/prisma';
-import type { SpriteFrame } from './SpriteSheetSlicer';
-export type { SpriteFrame };
+export type { SpriteFrame } from './SpriteSheetSlicer';
 
 export interface GameAssetItem {
   id: string;
@@ -39,6 +37,9 @@ export interface PaginatedResult<T> {
   hasMore: boolean;
 }
 
+/**
+ * Client-safe AssetManager — talks to /api/assets (no Prisma in the browser).
+ */
 export class AssetManager {
   private static instance: AssetManager;
   private cache: Map<string, GameAssetItem> = new Map();
@@ -50,103 +51,98 @@ export class AssetManager {
     return AssetManager.instance;
   }
 
+  private hydrate(raw: any): GameAssetItem {
+    return {
+      ...raw,
+      createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
+      updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+      atlasFrame: raw.atlasFrame || null,
+      tags: raw.tags || [],
+      categories: raw.categories || [],
+      metadata: raw.metadata || {},
+      customLabels: raw.customLabels || null,
+    };
+  }
+
   async getAsset(id: string): Promise<GameAssetItem | null> {
     if (this.cache.has(id)) {
       return this.cache.get(id)!;
     }
 
-    const asset = await prisma.gameAsset.findUnique({ where: { id } });
-    if (!asset) return null;
-
-    const formatted = this.formatAsset(asset);
+    const res = await fetch(`/api/assets?query=${encodeURIComponent(id)}&limit=50`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const match = (data.items || []).find((a: any) => a.id === id);
+    if (!match) return null;
+    const formatted = this.hydrate(match);
     this.cache.set(id, formatted);
     return formatted;
   }
 
   async searchAssets(filters: AssetFilters, page = 0, limit = 50): Promise<PaginatedResult<GameAssetItem>> {
-    const where: any = { isActive: true };
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(limit));
+    if (filters.type) params.set('type', filters.type);
+    if (filters.gameId) params.set('gameId', filters.gameId);
+    if (filters.query) params.set('query', filters.query);
+    if (filters.tags?.length) params.set('tags', filters.tags.join(','));
+    if (filters.categories?.length) params.set('categories', filters.categories.join(','));
 
-    if (filters.type) {
-      where.type = filters.type;
+    const res = await fetch(`/api/assets?${params.toString()}`);
+    if (!res.ok) {
+      console.error('[AssetManager] search failed', res.status);
+      return { items: [], total: 0, page, limit, hasMore: false };
     }
-    if (filters.gameId) {
-      where.gameId = filters.gameId;
-    }
-    if (filters.query) {
-      where.source = { contains: filters.query };
-    }
-
-    const [rawItems, total] = await Promise.all([
-      prisma.gameAsset.findMany({
-        where,
-        skip: page * limit,
-        take: limit,
-        orderBy: filters.sortBy ? { [filters.sortBy]: filters.sortOrder || 'asc' } : { createdAt: 'desc' },
-      }),
-      prisma.gameAsset.count({ where }),
-    ]);
-
-    let items = rawItems.map((item) => this.formatAsset(item));
-
-    if (filters.tags && filters.tags.length > 0) {
-      items = items.filter((item) => filters.tags!.every((t) => item.tags.includes(t)));
-    }
-    if (filters.categories && filters.categories.length > 0) {
-      items = items.filter((item) => filters.categories!.some((c) => item.categories.includes(c)));
-    }
+    const data = await res.json();
+    const items = (data.items || []).map((item: any) => {
+      const formatted = this.hydrate(item);
+      this.cache.set(formatted.id, formatted);
+      return formatted;
+    });
 
     return {
       items,
-      total: filters.tags || filters.categories ? items.length : total,
-      page,
-      limit,
-      hasMore: (page + 1) * limit < total,
+      total: data.total ?? items.length,
+      page: data.page ?? page,
+      limit: data.limit ?? limit,
+      hasMore: Boolean(data.hasMore),
     };
   }
 
   async addTag(assetId: string, tag: string): Promise<void> {
     const asset = await this.getAsset(assetId);
     if (!asset) throw new Error('Asset not found');
-
     const updatedTags = Array.from(new Set([...asset.tags, tag]));
-    await prisma.gameAsset.update({
-      where: { id: assetId },
-      data: { tags: JSON.stringify(updatedTags) },
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: updatedTags }),
     });
+    if (!res.ok) throw new Error('Failed to add tag');
     this.cache.delete(assetId);
   }
 
   async removeTag(assetId: string, tag: string): Promise<void> {
     const asset = await this.getAsset(assetId);
     if (!asset) throw new Error('Asset not found');
-
     const updatedTags = asset.tags.filter((t) => t !== tag);
-    await prisma.gameAsset.update({
-      where: { id: assetId },
-      data: { tags: JSON.stringify(updatedTags) },
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: updatedTags }),
     });
+    if (!res.ok) throw new Error('Failed to remove tag');
     this.cache.delete(assetId);
   }
 
   async reclassifyAsset(assetId: string, newType: string, newCategories: string[]): Promise<void> {
-    await prisma.gameAsset.update({
-      where: { id: assetId },
-      data: {
-        type: newType,
-        categories: JSON.stringify(newCategories),
-      },
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: newType, categories: newCategories }),
     });
+    if (!res.ok) throw new Error('Failed to reclassify asset');
     this.cache.delete(assetId);
-  }
-
-  private formatAsset(raw: any): GameAssetItem {
-    return {
-      ...raw,
-      atlasFrame: raw.atlasFrame ? JSON.parse(raw.atlasFrame) : null,
-      tags: typeof raw.tags === 'string' ? JSON.parse(raw.tags) : raw.tags || [],
-      categories: typeof raw.categories === 'string' ? JSON.parse(raw.categories) : raw.categories || [],
-      metadata: typeof raw.metadata === 'string' ? JSON.parse(raw.metadata) : raw.metadata || {},
-      customLabels: typeof raw.customLabels === 'string' ? JSON.parse(raw.customLabels) : raw.customLabels || null,
-    };
   }
 }
