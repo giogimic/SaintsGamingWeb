@@ -27,6 +27,7 @@ import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -39,6 +40,7 @@ import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { toBaseMapId } from '@/shared/net/mapIds';
+import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
@@ -70,7 +72,6 @@ export default function TheLobby({
   const activeDialog = useGameStore((state) => state.activeDialog);
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
   const currentMapId = useGameStore((state) => state.currentMapId);
-  const isUiEditMode = useGameStore((state) => state.isUiEditMode);
   const { data: session, status } = useSession();
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -94,7 +95,7 @@ export default function TheLobby({
   const [permissionLevel, setPermissionLevel] = useState(0);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const isStaff = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
-  const isDeveloper = hasPermission(permissionLevel, PERMISSION_LEVELS.DEVELOPER);
+  const canStudio = canEnterStudio(permissionLevel);
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -111,47 +112,18 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Lobby: keep demo + Spyder campaign maps; unknown/empty → DEMO_SANDBOX.
-      // Studio keeps saved map for editor work.
+      // Player lobby always starts on DEMO_SANDBOX (avoid stale SAINTS_VILLAGE saves / HMR store).
+      // Studio may keep a saved map for editor work.
       const DEMO_MAP = 'DEMO_SANDBOX';
       const DEMO_SPAWN = { x: 14, y: 15 };
-      const knownPlayable = new Set([
-        'DEMO_SANDBOX',
-        'SAINTS_VILLAGE',
-        'AZURE_TOWN',
-        'SPYDER_ROUTE1',
-        'ROUTE1',
-        'COTTON_TOWN',
-        'SPYDER_COTTON_TOWN',
-        'COTTON_SCOOP',
-        'COTTON_CAFE',
-        'SPYDER_COTTON_SCOOP',
-        'SPYDER_COTTON_CAFE',
-        'SPYDER_COTTON_TUNNEL',
-        'SPYDER_ROUTE2',
-        'SPYDER_ROUTE3',
-        'SPYDER_LEATHER_TOWN',
-        'SPYDER_LEATHER_CENTER',
-        'SPYDER_LEATHER_SCOOP',
-        'SPYDER_LEATHER_GYM',
-        'SPYDER_LEATHER_SHAFT1',
-        'SPYDER_LEATHER_SHAFT2',
-        'COTTON_UNDERGROUND',
-        'PLAYER_HOUSE_BEDROOM',
-        'PLAYER_HOUSE_DOWNSTAIRS',
-      ]);
-      const savedMap = String(parsedState.currentMapId || '');
-      let validMapId = savedMap;
-      let validPosition = parsedState.position || { ...DEMO_SPAWN };
+      const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
+        .replace(/_ch\d+$/, '');
+      let validMapId = DEMO_MAP;
+      let validPosition = { ...DEMO_SPAWN };
 
-      if (!enableStudio) {
-        if (!savedMap || !knownPlayable.has(savedMap)) {
-          validMapId = DEMO_MAP;
-          validPosition = { ...DEMO_SPAWN };
-        }
-      } else if (!savedMap) {
-        validMapId = DEMO_MAP;
-        validPosition = { ...DEMO_SPAWN };
+      if (enableStudio && savedMap && savedMap !== 'SAINTS_VILLAGE') {
+        validMapId = savedMap;
+        validPosition = parsedState.position || { ...DEMO_SPAWN };
       }
 
       try {
@@ -168,11 +140,8 @@ export default function TheLobby({
         validPosition = { ...DEMO_SPAWN };
       }
 
-      // Socket auth + battle payloads use User.id — keep client accountId aligned
-      const socketAccountId = session?.user?.id || charId;
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
-        accountId: socketAccountId,
         currentMapId: validMapId,
         name: res.data.name,
         spriteId: res.data.spriteId || 'adventurer',
@@ -187,7 +156,7 @@ export default function TheLobby({
 
       // Notify socket server of loaded character specs
       socketRef.current?.emit('join_map', {
-        accountId: socketAccountId,
+        accountId: charId,
         mapId: validMapId,
         x: validPosition.x,
         y: validPosition.y,
@@ -216,6 +185,8 @@ export default function TheLobby({
       await useGameStore.getState().fetchLogicTiles();
 
       if (enableStudio) {
+        // Doc 16: Walk Mode is the default Studio entry — create tools are opt-in.
+        useEditorStore.getState().enterWalkMode();
         const mapsRes = await fetchAllMaps();
         if (mapsRes.success && mapsRes.data) {
           setDevMapList(mapsRes.data);
@@ -315,6 +286,11 @@ export default function TheLobby({
       state.setEmitSocketEvent((event, data) => {
         socket.emit(event, data);
       });
+
+      if (hadLobbyDisconnect) {
+        state.showToast('Reconnected to lobby.');
+        hadLobbyDisconnect = false;
+      }
 
       const effectiveAccountId = session.user.id || state.player.accountId;
       if (effectiveAccountId) {
@@ -436,6 +412,9 @@ export default function TheLobby({
 
     socket.on('force_disconnect', (data: { reason?: string }) => {
       useGameStore.getState().showToast(data?.reason || 'Disconnected by staff.');
+      // Staff kick: do not soft-reconnect back onto the map.
+      socket.io.reconnection(false);
+      socket.disconnect();
     });
 
     socket.on('global_chat_msg', (data) => {
@@ -534,18 +513,32 @@ export default function TheLobby({
       // Turn-based encounter results (bible 11)
       if (data?.result) {
         if (data.accountId && myAccount && data.accountId !== myAccount) return;
-        const isTrainer = !!state.activeBattle?.isTrainer;
         const messages: Record<string, string> = {
           CAPTURE: 'Creature captured! Check your Creature Box.',
-          WIN: isTrainer
-            ? 'Trainer defeated!'
-            : 'Victory! The wild creature fainted.',
-          LOSE: isTrainer
-            ? 'You lost the trainer battle. Your companion was patched up — rematch when ready.'
-            : 'Your creature fainted. Heal before the next battle.',
+          WIN: 'Victory! The wild creature fainted.',
+          LOSE: 'Your creature fainted. Heal before the next battle.',
           FLEE: 'Got away safely.',
         };
         state.showToast(messages[data.result] || 'Battle ended.');
+
+        // ALIGNMENT E.3 — remarkable captures → SocialPost (reuse createSocialPost)
+        if (data.result === 'CAPTURE' && data.capture?.isRemarkable) {
+          const name = data.capture.name || data.capture.speciesSlug || 'a creature';
+          const slug = data.capture.speciesSlug || 'unknown';
+          const first = data.capture.isFirstOfSpecies ? ' (first of species!)' : '';
+          void import('@/app/actions/social')
+            .then(({ createSocialPost }) =>
+              createSocialPost(
+                `Just captured ${name}${first} in The Lobby! 🐾 #SaintsTamer #Capture #${String(slug).replace(/[^a-zA-Z0-9_]/g, '')}`
+              )
+            )
+            .then(() => {
+              state.showToast('Shared capture to Community Feed!');
+            })
+            .catch((err) => {
+              console.warn('[lobby] capture feed post failed', err);
+            });
+        }
       } else if (data?.winner === myId) {
         state.showToast('You won the battle!');
       } else if (data?.winner) {
@@ -626,28 +619,6 @@ export default function TheLobby({
     socket.on('demo_open_lab', () => {
       useGameStore.getState().setActiveDialog(null);
       useGameStore.getState().setGameMode('PROFESSOR_LAB');
-    });
-
-    socket.on('demo_open_shop', () => {
-      useGameStore.getState().setActiveDialog(null);
-      useGameStore.getState().setGameMode('SHOP');
-    });
-
-    socket.on('party_creatures_hp', (data) => {
-      const list = data?.creatures;
-      if (!Array.isArray(list)) return;
-      useGameStore.setState((state) => {
-        for (const row of list) {
-          if (!row?.id || typeof row.currentHp !== 'number') continue;
-          const creature = state.player.creatureParty.find((c) => c.id === row.id);
-          if (creature) {
-            creature.currentHp = Math.max(0, Math.min(creature.maxHp, row.currentHp));
-            if (typeof row.maxHp === 'number' && row.maxHp > 0) {
-              creature.maxHp = row.maxHp;
-            }
-          }
-        }
-      });
     });
 
     // --- PHASE 7: Skills & Toast ---
@@ -790,9 +761,23 @@ export default function TheLobby({
       const isNpc = data.entityType === 'NPC';
       useGameStore.setState((state) => {
         const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
-        const spriteKey = isNpc
-          ? (String(data.templateId || '').includes('vance') ? 'adventurer' : (data.spriteKey || 'adventurer'))
-          : (data.spriteKey || data.templateId || 'rockitten');
+        const templateId = String(data.templateId || '');
+        const rawSprite = data.spriteKey || templateId || (isNpc ? 'adventurer' : 'rockitten');
+        // Vance keeps classic walk-sheet adventurer; always store resolvable /game-assets URLs.
+        // (Prevent bare slugs / battle-sheet keys from rendering as wrong in-world icons.)
+        const spriteKey =
+          isNpc && templateId.includes('vance')
+            ? '/game-assets/npc/adventurer.png'
+            : resolveEntitySpriteUrl(rawSprite, {
+                kind: isNpc ? 'npc' : 'monster',
+              });
+        const dialogueKey =
+          data.dialogueNpcId ||
+          (isNpc
+            ? templateId.includes('vance')
+              ? 'npc_warden_vance'
+              : `npc_${templateId.replace(/^npc_/, '')}`
+            : undefined);
         const ent = {
           id: data.entityId,
           type: (isNpc ? 'NPC' : 'MONSTER') as 'NPC' | 'MONSTER',
@@ -801,9 +786,11 @@ export default function TheLobby({
           isMoving: !!data.isMoving,
           facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
           mapId: data.mapId,
-          name: isNpc && String(data.templateId || '').includes('vance')
-            ? 'Warden Vance'
-            : (data.name || data.templateId),
+          name:
+            isNpc && templateId.includes('vance')
+              ? 'Warden Vance'
+              : (data.name || templateId),
+          dialogueKey,
         };
         if (idx >= 0) state.mapEntities[idx] = ent;
         else state.mapEntities.push(ent);
@@ -929,7 +916,7 @@ export default function TheLobby({
       }
       const key = e.key.toLowerCase();
       if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
-      else if (key === 'e' && enableStudio && isDeveloper) {
+      else if (key === 'e' && enableStudio && canStudio) {
         useEditorStore.getState().toggleCreationMode();
       }
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
@@ -940,7 +927,7 @@ export default function TheLobby({
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
-  }, [enableStudio, isDeveloper]);
+  }, [enableStudio, canStudio]);
 
   if (isInitializing) {
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
@@ -994,109 +981,30 @@ export default function TheLobby({
           if (isCreationMode) setClickedTile({r, c});
         }}
       />
-      
-      {/* SCALED UI CONTAINER */}
-      <div 
-        className="absolute inset-0 pointer-events-none" 
-      >
-        {/* Mobile Controls — single surface (floating joystick default / D-Pad toggle) */}
-        <div className="pointer-events-auto">
+
+      {/* Touch controls stay full-size (do not scale — fingers need real targets). */}
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <div className="pointer-events-auto absolute inset-0">
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
             onToggleOptions={() => setIsOptionsOpen(true)}
           />
         </div>
       </div>
-
-      {/* Turn-Based Battle Overlay */}
-      {gameMode === 'BATTLE' && <TurnBattleOverlay />}
-
-      {enableStudio && <StudioEditorShell />}
-
-      {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
-        <StaffFloatingMenu
-          permissionLevel={permissionLevel}
-          isStudioRoute={enableStudio}
-        />
-      )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
-          <div className="relative px-5 py-2.5 bg-black/80 backdrop-blur-xl border border-emerald-500/30 rounded-xl font-bold text-sm whitespace-nowrap shadow-[0_0_25px_rgba(16,185,129,0.2)]">
-            <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-            <span className="text-emerald-400 font-mono text-xs mr-2">▶</span>
-            <span className="text-emerald-200 font-mono text-xs">{toast.message}</span>
-          </div>
-        </div>
-      )}
-
-      {gameMode !== 'BATTLE' && (
-        <div className="absolute top-3 right-3 z-40 pointer-events-none flex items-center gap-2">
-          {enableStudio && isDeveloper && (
-            <button
-              onClick={() => useEditorStore.getState().toggleCreationMode()}
-              className={`pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-2
-                ${isCreationMode 
-                  ? 'bg-[#cbb26a] text-black border-[#806f47] hover:bg-amber-500 shadow-[0_0_15px_rgba(203,178,106,0.3)]' 
-                  : 'bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a]'
-                }`}
-            >
-              <span className="text-sm leading-none">🔨</span>
-              <span>STUDIO (Ctrl+E)</span>
-            </button>
-          )}
-          {!enableStudio && isDeveloper && (
-            <a
-              href="/studio"
-              className="pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a] flex items-center gap-2"
-            >
-              <span className="text-sm leading-none">🔨</span>
-              <span>OPEN STUDIO</span>
-            </a>
-          )}
-          <button
-            onClick={() => setIsOptionsOpen(true)}
-            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
-          >
-            <span className="text-sm leading-none">⚙️</span>
-            <span>OPTIONS (ESC)</span>
-          </button>
-        </div>
-      )}
-
-      <GameOptionsMenu 
-        isOpen={isOptionsOpen}
-        onClose={() => setIsOptionsOpen(false)}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-        isAdminUser={enableStudio && isDeveloper}
-        isCreationMode={isCreationMode}
-        onToggleDevEditor={() => {
-          if (!enableStudio || !isDeveloper) return;
-          if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
-          useEditorStore.getState().toggleCreationMode(); 
-          setIsOptionsOpen(false);
-        }}
-      />
-
-      {/* Viewfinder Edit Mode — player + studio */}
-      <ViewfinderOverlay />
-      <UiEditToolbar />
-
-      {/* --- UI Overlays (Higher Z-Index) --- */}
-      {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
-      {gameMode === 'LOGIN' && <GameLogin />}
-      {gameMode === 'SERVER_SELECT' && <ServerSelect />}
-
-      {/* Classic RPG Interface Panel */}
-      <DraggablePanel id="classic-panel" className="absolute bottom-4 right-4 pointer-events-none">
-        <ClassicPanel />
-      </DraggablePanel>
-
-      {/* Overlays that aren't part of ClassicPanel */}
-      <div 
-        className="absolute inset-0 pointer-events-none flex items-center justify-center" 
+      
+      {/* Scale desktop HUD chrome on phones (canvas + touch stay full-bleed). */}
+      <div
+        className="pointer-events-none absolute inset-0 origin-top-left"
+        style={
+          isMobile
+            ? {
+                transform: `scale(${uiScale})`,
+                transformOrigin: "top left",
+                width: `${100 / Math.max(uiScale, 0.5)}%`,
+                height: `${100 / Math.max(uiScale, 0.5)}%`,
+              }
+            : undefined
+        }
       >
         {gameMode === 'BATTLE' && <TurnBattleOverlay />}
 
@@ -1174,7 +1082,9 @@ export default function TheLobby({
           }}
         />
 
-        {enableStudio && <UiEditToolbar />}
+        {/* Viewfinder Edit Mode — player + studio */}
+        <ViewfinderOverlay />
+        <UiEditToolbar />
 
         {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
         {gameMode === 'LOGIN' && <GameLogin />}
@@ -1225,38 +1135,6 @@ export default function TheLobby({
           </>
         )}
       </div>
-      
-      {gameMode === 'SHOP' && <ShopOverlay />}
-      {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
-      {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
-      
-      {/* Cinematic Map Transition Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
-      />
-
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
-          <MiniMapRadar />
-        </DraggablePanel>
-      )}
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
-          <SaintsHudOrbs />
-        </DraggablePanel>
-      )}
-
-      {/* Unified Game Chat UI & Hotbar */}
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <>
-          <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
-            <Hotbar />
-          </DraggablePanel>
-          <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
-            <GameChat />
-          </DraggablePanel>
-        </>
-      )}
     </div>
   );
 }

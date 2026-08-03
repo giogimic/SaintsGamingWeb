@@ -6,6 +6,7 @@ import { FriendsList } from '@/web/components/messenger/friends-list';
 import { ChatWindow } from '@/web/components/messenger/chat-window';
 import { useMessenger } from '@/web/components/messenger/messenger-provider';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { Radio } from 'lucide-react';
 
 type TabType = 'LOCAL' | 'GLOBAL' | 'PARTY' | 'FRIENDS';
 

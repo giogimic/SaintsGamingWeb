@@ -130,60 +130,6 @@ export class InventoryManager {
     rewards: { items?: { slug: string; qty: number }[]; gold?: number };
   }) {
     const userId = await resolveUserId(data.accountId);
-    if (!userId || !data.rewards?.items?.length) return;
-    for (const item of data.rewards.items) {
-      const existing = await prisma.playerInventoryItem.findFirst({
-        where: { userId, itemSlug: item.slug },
-      });
-      if (existing) {
-        await prisma.playerInventoryItem.update({
-          where: { id: existing.id },
-          data: { quantity: existing.quantity + item.qty },
-        });
-      } else {
-        await prisma.playerInventoryItem.create({
-          data: { userId, itemSlug: item.slug, quantity: item.qty },
-        });
-      }
-    }
-    if (data.socketId) {
-      await this.syncInventory(data.socketId, userId);
-      this.engine.events.emit("directMessage", {
-        socketId: data.socketId,
-        event: "show_toast",
-        data: { message: "Quest rewards received." },
-      });
-    }
-  }
-
-  private resolveGatherInstance(accountId: string, mapId: string) {
-    const player = this.playerManager?.getPlayerByAccountId(accountId);
-    if (player?.mapId) {
-      const byPlayer = this.worldManager.getInstance(player.mapId);
-      if (byPlayer) return byPlayer;
-    }
-    return this.worldManager.resolveInstance(mapId);
-  }
-
-  private async syncInventory(socketId: string, userId: string) {
-    const invRows = await prisma.playerInventoryItem.findMany({ where: { userId } });
-    const inventory: Record<string, number> = {};
-    for (const row of invRows) {
-      inventory[row.itemSlug] = (inventory[row.itemSlug] || 0) + row.quantity;
-    }
-    this.engine.events.emit("directMessage", {
-      socketId,
-      event: "inventory_sync",
-      data: { inventory },
-    });
-  }
-
-  private async handleGrantRewards(data: {
-    accountId: string;
-    socketId?: string;
-    rewards: { items?: { slug: string; qty: number }[]; gold?: number };
-  }) {
-    const userId = await resolveUserId(data.accountId);
     if (!userId || !data.rewards) return;
 
     const items = data.rewards.items || [];
@@ -290,6 +236,19 @@ export class InventoryManager {
 
     // Q4: Clear bramble (axe + party companion)
     if (tileId === 11) {
+      const userIdEarly = await resolveUserId(accountId);
+      if (
+        userIdEarly &&
+        (this.worldManager.hasAccountClearedBramble(accountId, x, y) ||
+          this.worldManager.hasAccountClearedBramble(userIdEarly, x, y))
+      ) {
+        this.engine.events.emit("directMessage", {
+          socketId,
+          event: "show_toast",
+          data: { message: "You already cleared this bramble." },
+        });
+        return;
+      }
       await this.handleClearBramble({ accountId, socketId, instance, x, y });
       return;
     }
@@ -417,7 +376,16 @@ export class InventoryManager {
       return;
     }
 
-    const cleared = this.worldManager.clearBrambleAt(instance.mapId, x, y);
+    const accountKeys = Array.from(new Set([accountId, userId].filter(Boolean)));
+    const baseMapId = toBaseMapId(instance.mapId);
+
+    // CONTINUE #2 — personal clear; shared DEMO grid stays bramble for other accounts/shards
+    const cleared = this.worldManager.clearBrambleForAccount(
+      accountKeys,
+      baseMapId,
+      x,
+      y
+    );
     if (!cleared) {
       this.engine.events.emit("directMessage", {
         socketId,
@@ -427,11 +395,15 @@ export class InventoryManager {
       return;
     }
 
-    this.engine.events.emit("networkBroadcast", {
-      room: instance.instanceId,
-      event: "tile_changed",
-      data: { mapId: toBaseMapId(instance.mapId), x, y, tileId: 0 },
-    });
+    // Open the full demo gate for this account so north grass is reachable
+    const gateCells = this.worldManager.clearDemoBrambleGateForAccount(accountKeys);
+    for (const cell of gateCells) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "tile_changed",
+        data: { mapId: baseMapId, x: cell.x, y: cell.y, tileId: 0 },
+      });
+    }
 
     this.engine.events.emit("brambleCleared", {
       accountId,

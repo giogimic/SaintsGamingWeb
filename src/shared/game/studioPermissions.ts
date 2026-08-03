@@ -16,9 +16,11 @@ export type StudioDockId =
   | "assets"
   | "npc"
   | "quest"
+  | "dialogue"
   | "creature"
   | "dev"
-  | "characters";
+  | "characters"
+  | "classes";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -39,8 +41,10 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   assets: STUDIO_ENTRY_LEVEL,
   npc: STUDIO_ENTRY_LEVEL,
   quest: STUDIO_ENTRY_LEVEL,
+  dialogue: STUDIO_ENTRY_LEVEL,
   creature: STUDIO_ENTRY_LEVEL,
   characters: STUDIO_ENTRY_LEVEL,
+  classes: STUDIO_ENTRY_LEVEL,
   dev: STUDIO_SERVER_CONTROLS_LEVEL,
 };
 

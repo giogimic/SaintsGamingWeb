@@ -15,6 +15,9 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap } from '@/shared/net/mapIds';
+import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
+import { normalizeGates } from '@/shared/game/logicComponents';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -151,7 +154,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      const spawn = gate.targetSpawn || gate.spawnPoint || { x: 6, y: 2 };
+      const spawn = gate.targetSpawn || { x: 6, y: 2 };
       const finishWarp = () => {
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(spawn);
@@ -283,10 +286,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'NPC_DIALOGUE') {
       const rawId = String(result.npcId || '');
-      const stripped = rawId.replace(/_\d{10,}$/, '');
-      const dialogueNpcId = stripped.startsWith('npc_')
-        ? stripped
-        : `npc_${stripped.replace(/^npc_/, '')}`;
+      const dialogueNpcId =
+        rawId.includes('vance') || rawId.includes('warden')
+          ? 'npc_warden_vance'
+          : rawId;
       // Server-authoritative dialogue (Vance grants / quest report)
       store.emitSocketEvent?.('npc_interact', {
         mapId: currentMapId,
@@ -465,17 +468,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const stripped = entityId.replace(/_\d{10,}$/, '');
-        // Avoid npc_npc_* when map NPC ids already include the prefix
-        const dialogueNpcId = stripped.startsWith('npc_')
-          ? stripped
-          : `npc_${stripped}`;
+        const mapEnt = state.mapEntities.find((e) => e.id === entityId);
+        const trueId = entityId.replace(/^npc_/, '').replace(/_\d{10,}$/, '');
         const npc = activeMap.npcs?.find(
-          (n: any) => n.id === dialogueNpcId || n.id === stripped || `npc_${n.id}` === dialogueNpcId
+          (n: any) => n.id === trueId || n.id === `npc_${trueId}` || n.id === entityId
         );
         targetName =
+          mapEnt?.name ||
           npc?.name ||
-          (dialogueNpcId.includes('vance') ? 'Warden Vance' : `NPC ${dialogueNpcId}`);
+          (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
+        // Prefer server-provided dialogueKey; fall back to stable npc_<template> id.
+        const dialogueNpcId =
+          mapEnt?.dialogueKey ||
+          (trueId.includes('vance') || entityId.includes('vance')
+            ? 'npc_warden_vance'
+            : `npc_${trueId}`);
         state.emitSocketEvent?.('npc_interact', {
           mapId: state.currentMapId || state.instanceId,
           targetId: dialogueNpcId,
@@ -483,7 +490,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         state.setGameMode('DIALOG');
         return;
       } else if (entityId.startsWith('creature_')) {
-        targetName = 'Wild Creature';
+        const mapEnt = state.mapEntities.find((e) => e.id === entityId);
+        targetName = mapEnt?.name || 'Wild Creature';
         state.setCombatTarget({
           entityId,
           name: targetName,
@@ -599,27 +607,37 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         });
       }
 
-      // Render dynamic map entities (NPCs / Animals) from the global store
-      const mapEntities = useGameStore.getState().mapEntities;
-      if (mapEntities) {
-        const activeEntities = new Set<string>();
-        
-        mapEntities.forEach((ent) => {
-          if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
-            activeEntities.add(ent.id);
-            const ex = ent.position.x - mapWidth / 2;
-            const ez = mapHeight / 2 - ent.position.y;
-            babylonEngine.updateEntity({
-              id: ent.id,
-              name: ent.name || '',
-              x: ex,
-              y: ez,
-              spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/game-assets/npc/${ent.spriteKey}.png`) : undefined,
-              isPlayer: false,
-              spriteConfig: ent.spriteConfig
-            });
-          }
-        });
+      // Render map entities: socket mapEntities + static map NPCs as fallback
+      // (socket snapshot can miss if join races; map JSON still has placements).
+      const mapEntities = useGameStore.getState().mapEntities || [];
+      const staticNpcs = (activeMap?.npcs || []).map((npc: any) => ({
+        id: `mapnpc_${npc.id}`,
+        type: 'NPC' as const,
+        spriteKey: npc.sprite || 'adventurer',
+        position: { x: npc.x, y: npc.y },
+        mapId: currentMapId,
+        name: npc.name || npc.id,
+      }));
+      // Prefer socket entities. Skip static NPCs already covered by socket at same
+      // tile OR same display name (socket ids are npc_<template>_<ts>).
+      const socketTiles = new Set(
+        mapEntities
+          .filter((e) => e.type === 'NPC')
+          .map((e) => `${Math.round(e.position.x)},${Math.round(e.position.y)}`)
+      );
+      const socketNames = new Set(
+        mapEntities
+          .filter((e) => e.type === 'NPC' && e.name)
+          .map((e) => String(e.name).toLowerCase())
+      );
+      const merged = [
+        ...mapEntities,
+        ...staticNpcs.filter((n: { position: { x: number; y: number }; name?: string }) => {
+          const tile = `${Math.round(n.position.x)},${Math.round(n.position.y)}`;
+          const name = String(n.name || '').toLowerCase();
+          return !socketTiles.has(tile) && !(name && socketNames.has(name));
+        }),
+      ];
 
       const activeEntities = new Set<string>();
       merged.forEach((ent) => {

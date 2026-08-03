@@ -5,6 +5,7 @@ import { getToken } from "next-auth/jwt";
 import { RealtimeService } from "./realtime/RealtimeService";
 import { prisma } from "@/web/lib/prisma";
 import { hasPermission, PERMISSION_LEVELS } from "@/web/lib/permissions";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 
 export class SocketHandler {
   constructor(

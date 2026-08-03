@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store';
-import { registerNewMap } from '../../data/map-index';
-import { GAME_MAPS, listMaps, invalidateMapCache, type MapIndexEntry } from '../../data/maps';
-import { Compass, Plus, Search, Layers, Grid } from 'lucide-react';
+import { searchMapIndex, registerNewMap } from '../../data/map-index';
+import { GAME_MAPS, listMaps, invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
+import { toBaseMapId } from '@/shared/net/mapIds';
+import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
@@ -17,13 +18,14 @@ export const WorldBuilderPanel: React.FC = () => {
   const activeGameId = useEditorStore((state) => state.activeGameId);
 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
-  const [profileMaps, setProfileMaps] = useState<MapIndexEntry[]>([]);
   const [isCreatingNewMap, setIsCreatingNewMap] = useState(false);
   const [newMapSlug, setNewMapSlug] = useState('');
   const [newMapName, setNewMapName] = useState('');
   const [newMapWidth, setNewMapWidth] = useState(24);
   const [newMapHeight, setNewMapHeight] = useState(24);
-  const [creating, setCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
   
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
@@ -32,28 +34,45 @@ export const WorldBuilderPanel: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
+    (async () => {
       try {
-        const maps = await listMaps(activeGameId);
-        if (!cancelled) setProfileMaps(maps);
+        const res = await fetch('/api/maps');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const entries: MapIndexEntry[] = (data.maps || []).map((m: any) => ({
+          id: m.id,
+          name: m.name || m.id,
+          category: 'Special' as const,
+          recommendedLevel: 1,
+          width: 24,
+          height: 24,
+          npcCount: 0,
+          gateCount: 0,
+          hasEncounters: false,
+        }));
+        setRemoteMaps(entries);
       } catch {
-        if (!cancelled) setProfileMaps([]);
+        /* ignore — local index still works */
       }
     })();
     return () => { cancelled = true; };
-  }, [activeGameId]);
+  }, [isCreating, isSaving]);
 
-  const mapIndex = useMemo(() => {
-    const q = mapSearchQuery.trim().toLowerCase();
-    if (!q) return profileMaps.slice(0, 40);
-    return profileMaps.filter(
-      (m) => m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
-    ).slice(0, 40);
-  }, [profileMaps, mapSearchQuery]);
-
-  const currentMapData = GAME_MAPS[currentMapId] || {
-    id: currentMapId,
-    name: currentMapId,
+  const localIndex = searchMapIndex(mapSearchQuery);
+  const q = mapSearchQuery.trim().toLowerCase();
+  const remoteFiltered = remoteMaps.filter((m) =>
+    !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
+  );
+  const seen = new Set(localIndex.map((m) => m.id));
+  const mapIndex = [
+    ...localIndex,
+    ...remoteFiltered.filter((m) => !seen.has(m.id)),
+  ];
+  const baseMapId = toBaseMapId(String(currentMapId || ''));
+  const currentMapData = activeMapData || GAME_MAPS[baseMapId] || {
+    id: baseMapId,
+    name: baseMapId,
     grid: Array(24).fill(0).map(() => Array(24).fill(0)),
     gates: {},
     tileLayers: [{ name: 'Ground', grid: Array(24).fill(0).map(() => Array(24).fill(0)) }],
@@ -80,6 +99,44 @@ export const WorldBuilderPanel: React.FC = () => {
       useGameStore.setState({ currentMapId: targetMapId });
       setMapSearchQuery('');
       showToast(`Warped to map: ${targetMapId} (loading…)`);
+    }
+  };
+
+  const handleSaveMap = async () => {
+    if (!baseMapId) {
+      showToast('No map loaded to save.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const payload = {
+        name: currentMapData.name || baseMapId,
+        grid: currentMapData.grid,
+        gates: currentMapData.gates || {},
+        npcs: currentMapData.npcs || [],
+        encounterPool: currentMapData.encounterPool || [],
+        tileLayers: currentMapData.tileLayers || [],
+        tilesets: currentMapData.tilesets || [],
+      };
+      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err?.error || `Save failed (${res.status})`);
+        return;
+      }
+      invalidateMapCache(baseMapId);
+      // Notify server + peers to hot-reload from WorldMap (shard-safe global broadcast).
+      emitSocketEvent?.('admin_reload_map', { mapId: baseMapId });
+      showToast(`Saved map ${baseMapId}`);
+    } catch (e: any) {
+      console.error('[Studio] Save map failed', e);
+      showToast(e?.message || 'Save failed');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -110,31 +167,59 @@ export const WorldBuilderPanel: React.FC = () => {
       tilesets: defaultTilesets,
     };
 
-    setCreating(true);
+    setIsCreating(true);
     try {
       const res = await fetch(`/api/maps/${encodeURIComponent(cleanSlug)}`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(newMapData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newMapData.name,
+          grid: newMapData.grid,
+          gates: newMapData.gates,
+          npcs: newMapData.npcs,
+          encounterPool: newMapData.encounterPool,
+          tileLayers: newMapData.tileLayers,
+          tilesets: newMapData.tilesets,
+        }),
       });
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `HTTP ${res.status}`);
+        const err = await res.json().catch(() => ({}));
+        showToast(err?.error || `Create failed (${res.status})`);
+        return;
       }
+
       invalidateMapCache(cleanSlug);
       registerNewMap(newMapData);
-      useGameStore.setState({ currentMapId: cleanSlug });
+      useGameStore.setState({ currentMapId: cleanSlug, activeMapData: newMapData });
+      emitSocketEvent?.('admin_reload_map', { mapId: cleanSlug });
       setIsCreatingNewMap(false);
-      setProfileMaps((prev) => [
-        { id: cleanSlug, name: newMapData.name, gameId: activeGameId, version: 1 },
-        ...prev.filter((m) => m.id !== cleanSlug),
-      ]);
-      showToast(`Saved map ${cleanSlug} → ${activeGameId}`);
-    } catch (err) {
-      showToast(`Create failed: ${err instanceof Error ? err.message : String(err)}`);
+      setNewMapSlug('');
+      setNewMapName('');
+      showToast(`Created & saved map: ${cleanSlug}`);
+    } catch (e: any) {
+      console.error('[Studio] Create map failed', e);
+      showToast(e?.message || 'Create failed');
     } finally {
-      setCreating(false);
+      setIsCreating(false);
     }
+  };
+
+  const handleAddLayer = () => {
+    if (!activeMapData && !currentMapData) {
+      showToast('Load a map before adding layers.');
+      return;
+    }
+    const base = activeMapData || currentMapData;
+    const h = base.grid?.length || 24;
+    const w = base.grid?.[0]?.length || 24;
+    const empty = Array(h).fill(0).map(() => Array(w).fill(0));
+    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
+    const nextIdx = layers.length;
+    layers.push({ name: `Layer ${nextIdx}`, grid: empty });
+    const next = { ...base, tileLayers: layers };
+    useGameStore.getState().setActiveMapData(next);
+    setActiveLayerIdx(nextIdx);
+    showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
   };
 
   const handleBrushSelect = (tileId: number) => {
@@ -146,10 +231,9 @@ export const WorldBuilderPanel: React.FC = () => {
       {/* MAP SELECTOR */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center justify-between text-[#cbb26a]">
-          <span className="flex items-center gap-1.5 font-bold"><Compass className="w-3.5 h-3.5" /> Map:</span>
-          <span className="text-white px-2 py-0.5 rounded border border-[#806f47]/30 bg-[#050b14]">{currentMapId}</span>
+          <span className="flex items-center gap-1.5 font-bold"><Compass className="w-3.5 h-3.5" /> World:</span>
+          <span className="text-white px-2 py-0.5 rounded border border-[#806f47]/30 bg-[#050b14]">{baseMapId || currentMapId}</span>
         </div>
-        <div className="text-[9px] text-slate-500">Profile: <span className="text-[#cbb26a]">{activeGameId}</span> · {profileMaps.length} maps</div>
 
         <button
           type="button"
@@ -172,7 +256,7 @@ export const WorldBuilderPanel: React.FC = () => {
           />
         </div>
 
-        {(mapSearchQuery || profileMaps.length > 0) && (
+        {mapSearchQuery && (
           <div className="max-h-32 overflow-y-auto bg-[#050b14] border border-slate-700 rounded divide-y divide-slate-800 custom-scrollbar">
             {mapIndex.map((m) => (
               <div
@@ -181,12 +265,9 @@ export const WorldBuilderPanel: React.FC = () => {
                 className="px-2 py-1 hover:bg-white/10 cursor-pointer flex justify-between items-center"
               >
                 <span>{m.name}</span>
-                <span className="text-[9px] text-[#cbb26a]">{m.id}</span>
+                <span className="text-[9px] text-[#cbb26a]">{"category" in m && m.category ? String(m.category) : (m.id || "")}</span>
               </div>
             ))}
-            {mapIndex.length === 0 && (
-              <div className="px-2 py-2 text-slate-500 text-[10px]">No maps in this profile</div>
-            )}
           </div>
         )}
 
@@ -238,11 +319,11 @@ export const WorldBuilderPanel: React.FC = () => {
               </div>
             </div>
             <button
-              disabled={creating}
               onClick={() => void handleCreateNewMapSubmit()}
-              className="w-full py-1 bg-green-600/80 hover:bg-green-500 text-white rounded font-bold disabled:opacity-50"
+              disabled={isCreating}
+              className="w-full py-1 bg-green-600/80 hover:bg-green-500 disabled:opacity-50 text-white rounded font-bold"
             >
-              {creating ? 'Saving…' : `Save to ${activeGameId}`}
+              {isCreating ? 'Creating…' : 'Generate'}
             </button>
           </div>
         )}

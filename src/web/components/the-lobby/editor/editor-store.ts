@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { DEFAULT_WORLD_PROFILE_ID } from '@/shared/game/worldProfiles';
+import {
+  extractPanelLayouts,
+  loadPanelLayoutsFromStorage,
+  mergePanelLayouts,
+  savePanelLayoutsToStorage,
+} from '@/shared/game/studioPanelLayout';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'dev' | 'characters' | 'classes';
 
@@ -33,6 +39,7 @@ interface EditorState {
   isCreationMode: boolean;
   /** Active Studio world profile (WorldMap.gameId / QuestTemplate.gameId). */
   activeGameId: string;
+  studioMode: StudioMode;
   panels: Record<PanelId, FloatingPanelState>;
   activePanel: PanelId | null;
   highestZIndex: number;
@@ -113,6 +120,7 @@ export const useEditorStore = create<EditorState>()(
     immer((set, get) => ({
       isCreationMode: false,
       activeGameId: DEFAULT_WORLD_PROFILE_ID,
+      studioMode: 'test',
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,

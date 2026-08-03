@@ -41,7 +41,7 @@ export class DatabasePersistenceManager implements PersistenceManager {
           where: { id: character.id },
           data: { stateData: JSON.stringify(stateData) }
         });
-        console.log(`[PersistenceManager] Saved position for ${userId} to ${baseMap} (${x}, ${y})`);
+        console.log(`[PersistenceManager] Saved position for ${userId} to ${stateData.mapId} (${x}, ${y})`);
       }
     } catch (err) {
       console.error("[PersistenceManager] Failed to save player position:", err);
