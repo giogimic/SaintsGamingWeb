@@ -27,7 +27,11 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 3. ALIGNMENT D — Studio Quest dock **done 2026-08-03** (templates list + ACCEPT_QUEST assign); optional per-dock permission matrix later
 4. ALIGNMENT E — **E.1–E.3 done**; Studio asset client load improved; **CONTINUE #2 per-account bramble done 2026-08-03**
 5. Studio polish (2026-08-03): dual TB UI fixed (TurnBattle only); **Walk Mode** default on `/studio`; **map save validation** (`validateMapSave`)
-6. **Next:** human `DEMO_SMOKE.md` walk; then remaining doc-16 checklist items that already have foundations (fun-first loop verify, floating-dock persist) — do **not** invent Five Modes / Advanced Tier / publish flow without product ask
+6. **Next after dock persist:** human `DEMO_SMOKE.md`; then fun-first loop verify / Asset Manager pack filters + editable gameplay flags — do **not** invent Five Modes / Advanced Tier / publish flow without product ask
+
+### Studio polish (2026-08-03 cont.)
+- Dual TB UI fixed; Walk Mode default; map save validation
+- **Floating dock layout persistence** (`studioPanelLayout` → `localStorage`)
 
 ---
 

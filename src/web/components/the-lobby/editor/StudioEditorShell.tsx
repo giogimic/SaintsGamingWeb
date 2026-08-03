@@ -53,7 +53,8 @@ export const StudioEditorShell: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
 
   useEffect(() => {
-    // Ensure every Studio mount starts in Walk Mode (create tools opt-in).
+    // Doc 16 §4: restore dock geometry from localStorage, then Walk Mode (create tools opt-in).
+    useEditorStore.getState().hydratePanelLayouts();
     enterWalkMode();
   }, [enterWalkMode]);
 

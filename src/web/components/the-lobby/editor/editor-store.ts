@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import {
+  extractPanelLayouts,
+  loadPanelLayoutsFromStorage,
+  mergePanelLayouts,
+  savePanelLayoutsToStorage,
+} from '@/shared/game/studioPanelLayout';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'creature' | 'dev' | 'characters';
 
@@ -34,6 +40,8 @@ interface EditorState {
   panels: Record<PanelId, FloatingPanelState>;
   activePanel: PanelId | null;
   highestZIndex: number;
+  /** True after localStorage layout hydrate (client-only). */
+  panelLayoutsHydrated: boolean;
   
   // Editor Tools State
   activeBrushTileId: number;
@@ -52,6 +60,8 @@ interface EditorState {
   updatePanelPosition: (id: PanelId, x: number, y: number) => void;
   updatePanelSize: (id: PanelId, width: number, height: number) => void;
   bringToFront: (id: PanelId) => void;
+  /** Load persisted dock geometry (x/y/w/h/collapse). Does not restore isOpen. */
+  hydratePanelLayouts: () => void;
   
   setActiveBrushTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
@@ -60,7 +70,8 @@ interface EditorState {
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   build: { id: 'build', title: 'World Builder', isOpen: false, isCollapsed: false, x: 20, y: 20, width: 320, height: 600, zIndex: 10 },
-  properties: { id: 'properties', title: 'Properties', isOpen: false, isCollapsed: false, x: 1550, y: 20, width: 340, height: 700, zIndex: 10 },
+  // Default x kept modest so first open isn’t off-screen on laptop widths (hydrate also clamps).
+  properties: { id: 'properties', title: 'Properties', isOpen: false, isCollapsed: false, x: 900, y: 20, width: 340, height: 700, zIndex: 10 },
   assets: { id: 'assets', title: 'Asset Manager', isOpen: false, isCollapsed: false, x: 360, y: 20, width: 800, height: 500, zIndex: 10 },
   npc: { id: 'npc', title: 'NPC Editor', isOpen: false, isCollapsed: false, x: 100, y: 100, width: 400, height: 500, zIndex: 10 },
   quest: { id: 'quest', title: 'Quest Editor', isOpen: false, isCollapsed: false, x: 150, y: 150, width: 500, height: 400, zIndex: 10 },
@@ -94,6 +105,10 @@ function openModePanels(
   }
 }
 
+function persistLayouts(get: () => EditorState) {
+  savePanelLayoutsToStorage(get().panels);
+}
+
 export const useEditorStore = create<EditorState>()(
   subscribeWithSelector(
     immer((set, get) => ({
@@ -102,6 +117,7 @@ export const useEditorStore = create<EditorState>()(
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,
+      panelLayoutsHydrated: false,
       activeBrushTileId: 1,
       activeLayerIdx: 0,
       clickedTile: null,
@@ -159,19 +175,28 @@ export const useEditorStore = create<EditorState>()(
         }
       }),
 
-      toggleCollapse: (id) => set((state) => {
-        state.panels[id].isCollapsed = !state.panels[id].isCollapsed;
-      }),
+      toggleCollapse: (id) => {
+        set((state) => {
+          state.panels[id].isCollapsed = !state.panels[id].isCollapsed;
+        });
+        persistLayouts(get);
+      },
 
-      updatePanelPosition: (id, x, y) => set((state) => {
-        state.panels[id].x = x;
-        state.panels[id].y = y;
-      }),
+      updatePanelPosition: (id, x, y) => {
+        set((state) => {
+          state.panels[id].x = x;
+          state.panels[id].y = y;
+        });
+        persistLayouts(get);
+      },
 
-      updatePanelSize: (id, width, height) => set((state) => {
-        state.panels[id].width = width;
-        state.panels[id].height = height;
-      }),
+      updatePanelSize: (id, width, height) => {
+        set((state) => {
+          state.panels[id].width = width;
+          state.panels[id].height = height;
+        });
+        persistLayouts(get);
+      },
 
       bringToFront: (id) => set((state) => {
         if (state.panels[id].zIndex !== state.highestZIndex) {
@@ -179,6 +204,26 @@ export const useEditorStore = create<EditorState>()(
           state.panels[id].zIndex = state.highestZIndex;
           state.activePanel = id;
         }
+      }),
+
+      hydratePanelLayouts: () => set((state) => {
+        if (typeof window === 'undefined') return;
+        const saved = loadPanelLayoutsFromStorage();
+        // Always clamp through merge so first-visit defaults aren’t off-screen.
+        const merged = mergePanelLayouts(
+          state.panels,
+          saved ?? extractPanelLayouts(state.panels),
+          window.innerWidth,
+          window.innerHeight
+        );
+        (Object.keys(merged) as PanelId[]).forEach((id) => {
+          state.panels[id].x = merged[id].x;
+          state.panels[id].y = merged[id].y;
+          state.panels[id].width = merged[id].width;
+          state.panels[id].height = merged[id].height;
+          state.panels[id].isCollapsed = merged[id].isCollapsed;
+        });
+        state.panelLayoutsHydrated = true;
       }),
 
       setActiveBrushTileId: (id) => set((state) => { state.activeBrushTileId = id; }),

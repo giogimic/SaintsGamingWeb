@@ -159,7 +159,7 @@ Advanced Tier is hidden behind an explicit toggle. Default Studio stays fun-firs
 
 - [x] **Walk Mode** as the default entry — create tools are opt-in, not forced. (2026-08-03: `/studio` mounts Walk; Ctrl+E / mode strip opts into Build·NPC·Quest·Creature)
 - [ ] **Five Modes** switcher (Walk / Paint / Place / Populate / Script) with clear hotkeys.
-- [ ] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev).
+- [x] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev). (2026-08-03: `sg.studio.panelLayout.v1` localStorage geometry + collapse; `isOpen` stays mode-driven; corner resize)
 - [ ] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs.
 - [ ] **Tag & component** palette for harvest, warp, shop, dialogue, and quest giver.
 - [ ] **Asset Manager** with visual + gameplay metadata and approved pack filters.
