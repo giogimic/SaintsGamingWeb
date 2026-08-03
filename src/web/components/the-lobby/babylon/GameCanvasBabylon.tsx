@@ -15,19 +15,22 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap } from '@/shared/net/mapIds';
+import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
+import { normalizeGates } from '@/shared/game/logicComponents';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
   return (
-    <div className="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-violet-500/40 text-xs font-mono text-violet-200 flex items-center gap-2.5 shadow-[0_0_15px_rgba(139,92,246,0.25)]">
-      <span className="w-2.5 h-2.5 rounded-full bg-violet-400 animate-pulse shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
-      <span className="text-slate-400">Map:</span>
-      <strong className="text-white">{activeMapName || currentMapId}</strong>
-      <span className="text-slate-600">|</span>
-      <span className="text-slate-400">Pos:</span>
-      <strong className="text-amber-300">({playerPos?.x ?? 0}, {playerPos?.y ?? 0})</strong>
-      <span className="text-slate-600">|</span>
-      <span className="text-slate-500 hidden sm:inline">BGD / Click to Move</span>
+    <div className="lobby-panel absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-mono text-xs text-lobby-mist">
+      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-lobby-soul shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
+      <span className="text-lobby-ash">Map:</span>
+      <strong className="text-lobby-mist">{activeMapName || currentMapId}</strong>
+      <span className="text-lobby-ash/60">|</span>
+      <span className="text-lobby-ash">Pos:</span>
+      <strong className="text-lobby-film">({playerPos?.x ?? 0}, {playerPos?.y ?? 0})</strong>
+      <span className="text-lobby-ash/60">|</span>
+      <span className="hidden text-lobby-fog sm:inline">BGD / Click to Move</span>
     </div>
   );
 };
@@ -130,7 +133,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       mapWidth,
       mapHeight,
       mapGrid: activeMap.grid,
-      gates: activeMap.gates || [],
+      gates: normalizeGates(activeMap.gates),
       staticNpcs: activeMap.npcs || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
@@ -151,7 +154,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      const spawn = gate.targetSpawn || gate.spawnPoint || { x: 6, y: 2 };
+      const spawn = gate.targetSpawn || { x: 6, y: 2 };
       const finishWarp = () => {
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(spawn);
@@ -250,7 +253,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       mapWidth,
       mapHeight,
       mapGrid: activeMap?.grid || [],
-      gates: activeMap?.gates || [],
+      gates: normalizeGates(activeMap?.gates),
       staticNpcs: activeMap?.npcs || [],
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
@@ -283,10 +286,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'NPC_DIALOGUE') {
       const rawId = String(result.npcId || '');
-      const stripped = rawId.replace(/_\d{10,}$/, '');
-      const dialogueNpcId = stripped.startsWith('npc_')
-        ? stripped
-        : `npc_${stripped.replace(/^npc_/, '')}`;
+      const dialogueNpcId =
+        rawId.includes('vance') || rawId.includes('warden')
+          ? 'npc_warden_vance'
+          : rawId;
       // Server-authoritative dialogue (Vance grants / quest report)
       store.emitSocketEvent?.('npc_interact', {
         mapId: currentMapId,
@@ -428,7 +431,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   useEffect(() => {
     if (engineRef.current) {
-      if (activeLayerIdx === -2) {
+      if (activeLayerIdx === -1) {
         engineRef.current.enableLogicGridOverlay(activeMap?.grid || []);
       } else {
         engineRef.current.disableLogicGridOverlay();
@@ -465,17 +468,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
 
         if (entityId.startsWith('npc_')) {
-        const stripped = entityId.replace(/_\d{10,}$/, '');
-        // Avoid npc_npc_* when map NPC ids already include the prefix
-        const dialogueNpcId = stripped.startsWith('npc_')
-          ? stripped
-          : `npc_${stripped}`;
+        const mapEnt = state.mapEntities.find((e) => e.id === entityId);
+        const trueId = entityId.replace(/^npc_/, '').replace(/_\d{10,}$/, '');
         const npc = activeMap.npcs?.find(
-          (n: any) => n.id === dialogueNpcId || n.id === stripped || `npc_${n.id}` === dialogueNpcId
+          (n: any) => n.id === trueId || n.id === `npc_${trueId}` || n.id === entityId
         );
         targetName =
+          mapEnt?.name ||
           npc?.name ||
-          (dialogueNpcId.includes('vance') ? 'Warden Vance' : `NPC ${dialogueNpcId}`);
+          (trueId.includes('vance') ? 'Warden Vance' : `NPC ${trueId}`);
+        // Prefer server-provided dialogueKey; fall back to stable npc_<template> id.
+        const dialogueNpcId =
+          mapEnt?.dialogueKey ||
+          (trueId.includes('vance') || entityId.includes('vance')
+            ? 'npc_warden_vance'
+            : `npc_${trueId}`);
         state.emitSocketEvent?.('npc_interact', {
           mapId: state.currentMapId || state.instanceId,
           targetId: dialogueNpcId,
@@ -483,7 +490,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         state.setGameMode('DIALOG');
         return;
       } else if (entityId.startsWith('creature_')) {
-        targetName = 'Wild Creature';
+        const mapEnt = state.mapEntities.find((e) => e.id === entityId);
+        targetName = mapEnt?.name || 'Wild Creature';
         state.setCombatTarget({
           entityId,
           name: targetName,
@@ -505,7 +513,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       });
     };
 
-    // Load actual map grid and NPCs with fully resolved async data
+    // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
+    // duplicate meshes + broken /assets/sprites/ paths inside loadTilemap).
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
@@ -514,7 +523,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tiles: activeMap.grid,
       tileLayers: activeMap.tileLayers,
       tilesets: activeMap.tilesets,
-      npcs: activeMap.npcs
+      npcs: [],
     });
 
     // Snap camera to player's starting position immediately (no lerp on first frame)
@@ -539,10 +548,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          // Fix: /assets/sprites/ does not exist. Sprites are in /assets/npcs/ or full path from Creature
-          spriteUrl: freshPlayer.spriteId
-            ? (freshPlayer.spriteId.startsWith('/') ? freshPlayer.spriteId : `/game-assets/npc/${freshPlayer.spriteId}.png`)
-            : undefined,
+          spriteUrl: resolveEntitySpriteUrl(freshPlayer.spriteId, {
+            kind: 'player',
+            fallback: '/game-assets/npc/adventurer.png',
+          }),
           isPlayer: true,
           direction: freshPlayer.direction,
           isMoving: freshPlayer.isMoving,
@@ -585,9 +594,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             name: other.name || 'Tamer',
             x: ox,
             y: oz,
-            spriteUrl: other.spriteId
-              ? (other.spriteId.startsWith('/') ? other.spriteId : `/game-assets/npc/${other.spriteId}.png`)
-              : undefined,
+            spriteUrl: resolveEntitySpriteUrl(other.spriteId, {
+              kind: 'player',
+              fallback: '/game-assets/npc/adventurer.png',
+            }),
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,
@@ -597,37 +607,75 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         });
       }
 
-      // Render dynamic map entities (NPCs / Animals) from the global store
-      const mapEntities = useGameStore.getState().mapEntities;
-      if (mapEntities) {
-        const activeEntities = new Set<string>();
-        
-        mapEntities.forEach((ent) => {
-          if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
-            activeEntities.add(ent.id);
-            const ex = ent.position.x - mapWidth / 2;
-            const ez = mapHeight / 2 - ent.position.y;
-            babylonEngine.updateEntity({
-              id: ent.id,
-              name: ent.name || '',
-              x: ex,
-              y: ez,
-              spriteUrl: ent.spriteKey ? (ent.spriteKey.includes('/') ? ent.spriteKey : `/game-assets/npc/${ent.spriteKey}.png`) : undefined,
-              isPlayer: false,
-              spriteConfig: ent.spriteConfig
-            });
-          }
-        });
+      // Render map entities: socket mapEntities + static map NPCs as fallback
+      // (socket snapshot can miss if join races; map JSON still has placements).
+      const mapEntities = useGameStore.getState().mapEntities || [];
+      const staticNpcs = (activeMap?.npcs || []).map((npc: any) => ({
+        id: `mapnpc_${npc.id}`,
+        type: 'NPC' as const,
+        spriteKey: npc.sprite || 'adventurer',
+        position: { x: npc.x, y: npc.y },
+        mapId: currentMapId,
+        name: npc.name || npc.id,
+      }));
+      // Prefer socket entities. Skip static NPCs already covered by socket at same
+      // tile OR same display name (socket ids are npc_<template>_<ts>).
+      const socketTiles = new Set(
+        mapEntities
+          .filter((e) => e.type === 'NPC')
+          .map((e) => `${Math.round(e.position.x)},${Math.round(e.position.y)}`)
+      );
+      const socketNames = new Set(
+        mapEntities
+          .filter((e) => e.type === 'NPC' && e.name)
+          .map((e) => String(e.name).toLowerCase())
+      );
+      const merged = [
+        ...mapEntities,
+        ...staticNpcs.filter((n: { position: { x: number; y: number }; name?: string }) => {
+          const tile = `${Math.round(n.position.x)},${Math.round(n.position.y)}`;
+          const name = String(n.name || '').toLowerCase();
+          return !socketTiles.has(tile) && !(name && socketNames.has(name));
+        }),
+      ];
 
-        // Cleanup stale map entities
-        babylonEngine._renderedEntities.forEach((id: string) => {
-          if (!activeEntities.has(id)) {
-            babylonEngine.removeEntity(id);
-            babylonEngine._renderedEntities.delete(id);
-          }
-        });
-        activeEntities.forEach(id => babylonEngine._renderedEntities.add(id));
-      }
+      const activeEntities = new Set<string>();
+      merged.forEach((ent) => {
+        if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
+          activeEntities.add(ent.id);
+          const ex = ent.position.x - mapWidth / 2;
+          const ez = mapHeight / 2 - ent.position.y;
+          const kind =
+            ent.type === 'NPC'
+              ? 'npc'
+              : ent.type === 'ANIMAL'
+                ? 'animal'
+                : 'monster';
+          const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
+          babylonEngine.updateEntity({
+            id: ent.id,
+            name: ent.name || '',
+            x: ex,
+            y: ez,
+            spriteUrl,
+            isPlayer: false,
+            isNpc: ent.type === 'NPC',
+            isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
+            spriteConfig:
+              (ent as any).spriteConfig ||
+              (isSingleFrameSpriteUrl(spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : undefined),
+          });
+        }
+      });
+
+      // Cleanup stale map entities
+      babylonEngine._renderedEntities.forEach((id: string) => {
+        if (!activeEntities.has(id)) {
+          babylonEngine.removeEntity(id);
+          babylonEngine._renderedEntities.delete(id);
+        }
+      });
+      activeEntities.forEach((id) => babylonEngine._renderedEntities.add(id));
     });
 
     return () => {
@@ -681,7 +729,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: 'Loot',
           x: data.x - (activeMap?.width || 0) / 2,
           y: (activeMap?.height || 0) / 2 - data.y,
-          spriteUrl: '/assets/sprites/16x16-rpg-items.png',
+          spriteUrl: '/game-assets/npc/adventurer.png',
           isPlayer: false,
           spriteConfig: {
             columns: 1,
@@ -725,8 +773,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c, clickedLayerIdx) => {
-        if (activeLayerIdx === -2) {
-          // Painting Logic directly on the activeMap.grid
+        if (activeLayerIdx === -1) {
+          // Painting Logic layer (collision / authority grid) — bible layer −1
           if (activeMap?.grid?.[r]) {
             activeMap.grid[r][c] = activeBrushTileId;
             engine.updateLogicTile(r, c, activeBrushTileId);
@@ -736,7 +784,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         if (onMapClick) onMapClick(r, c);
 
-        const targetLayerIdx = activeLayerIdx !== -1 ? activeLayerIdx : (clickedLayerIdx || -1);
+        const targetLayerIdx = activeLayerIdx >= 0 ? activeLayerIdx : (clickedLayerIdx || 0);
         
         // Always try to use the rich tileset array if present
         if (targetLayerIdx !== -1 && activeMap?.tileLayers?.[targetLayerIdx]) {
@@ -874,8 +922,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       {/* Loading screen while async map data is fetching */}
       {!mapData && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">
-          <div className="w-12 h-12 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin mb-4" />
-          <p className="text-violet-300 font-mono text-sm animate-pulse">Loading {currentMapId.replace(/_/g, ' ')}...</p>
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-2 border-lobby-soul/30 border-t-lobby-film" />
+          <p className="animate-pulse font-mono text-sm text-lobby-fog">
+            Loading {currentMapId.replace(/_/g, ' ')}...
+          </p>
         </div>
       )}
 

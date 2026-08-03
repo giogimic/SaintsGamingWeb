@@ -103,7 +103,7 @@ export default function QuestTrackerOverlay() {
   }
 
   return (
-    <div className="absolute right-4 top-24 w-64 pointer-events-none z-40 space-y-3">
+    <div className="pointer-events-none absolute top-24 right-4 z-40 w-64 space-y-3">
       {quests.map((quest) => {
         const obj = quest.objective;
         const isComplete = obj && quest.progress >= obj.requiredQty;
@@ -121,11 +121,11 @@ export default function QuestTrackerOverlay() {
             </div>
 
             {obj ? (
-              <div className="flex items-start gap-2 mt-2">
+              <div className="mt-2 flex items-start gap-2">
                 {isComplete ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-lobby-film" />
                 ) : (
-                  <Target className="w-4 h-4 text-[#806f47] mt-0.5 shrink-0" />
+                  <Target className="mt-0.5 h-4 w-4 shrink-0 text-lobby-ash" />
                 )}
 
                 <div className="flex-1 min-w-0">
@@ -147,14 +147,14 @@ export default function QuestTrackerOverlay() {
                   )}
 
                   {!isComplete && obj.requiredQty > 1 && (
-                    <p className="text-[10px] text-right text-slate-400 mt-0.5 font-mono">
+                    <p className="mt-0.5 text-right font-mono text-[10px] text-lobby-ash">
                       {quest.progress} / {obj.requiredQty}
                     </p>
                   )}
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-slate-400 mt-1 italic">No active objectives.</p>
+              <p className="mt-1 text-xs text-lobby-ash italic">No active objectives.</p>
             )}
           </div>
         );

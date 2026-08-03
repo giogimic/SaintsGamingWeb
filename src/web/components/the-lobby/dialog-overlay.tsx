@@ -5,22 +5,26 @@ import { useGameStore } from './store';
 import { MessageSquare, XCircle, ChevronRight } from 'lucide-react';
 
 export default function DialogOverlay() {
-  const activeDialog = useGameStore(state => state.activeDialog);
-  const setGameMode = useGameStore(state => state.setGameMode);
-  const setActiveDialog = useGameStore(state => state.setActiveDialog);
-  const emitSocketEvent = useGameStore(state => state.emitSocketEvent);
-  const currentMapId = useGameStore(state => state.currentMapId);
+  const activeDialog = useGameStore((state) => state.activeDialog);
+  const setGameMode = useGameStore((state) => state.setGameMode);
+  const setActiveDialog = useGameStore((state) => state.setActiveDialog);
+  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
+  const currentMapId = useGameStore((state) => state.currentMapId);
 
-  // Typewriter state
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
 
-  const npcDisplayName = activeDialog?.npcName
-    || (activeDialog?.npcId ? activeDialog.npcId.replace(/^npc[_-]?/i, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Stranger');
+  const npcDisplayName =
+    activeDialog?.npcName ||
+    (activeDialog?.npcId
+      ? activeDialog.npcId
+          .replace(/^npc[_-]?/i, '')
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (l) => l.toUpperCase())
+      : 'Stranger');
 
   const currentText = activeDialog?.text || '';
 
-  // Typewriter effect
   useEffect(() => {
     if (!currentText) return;
     setDisplayedText('');
@@ -53,80 +57,83 @@ export default function DialogOverlay() {
 
   const handleOptionClick = (opt: any) => {
     if (!emitSocketEvent) {
-      console.warn("No socket connection!");
+      console.warn('No socket connection!');
       return;
     }
 
-    // Clear typing and show loading state
     setDisplayedText('');
     setIsTyping(true);
-    
+
     emitSocketEvent('dialogue_select', {
       mapId: currentMapId,
       targetId: activeDialog.npcId,
       nextNode: opt.nextNode,
       action: opt.action,
-      questSlug: opt.questSlug
+      questSlug: opt.questSlug,
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none pb-8 sm:pb-12 px-4 sm:px-8">
-      <div 
-        className="relative w-full max-w-4xl pointer-events-auto shadow-2xl overflow-hidden rounded-xl border border-[#cbb26a]/30 animate-in slide-in-from-bottom-8 fade-in duration-300"
-        style={{
-          background: 'linear-gradient(180deg, rgba(5,11,20,0.95) 0%, rgba(11,19,32,0.98) 100%)',
-          backdropFilter: 'blur(12px)',
-        }}
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 pb-8 sm:px-8 sm:pb-12">
+      <div
+        className="lobby-panel pointer-events-auto relative w-full max-w-4xl animate-in slide-in-from-bottom-8 fade-in overflow-hidden rounded-xl duration-300"
         onClick={skipTypewriter}
       >
-        {/* Header Ribbon */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#cbb26a] to-transparent opacity-50" />
-        
-        <div className="flex p-4 sm:p-6 gap-4 sm:gap-6">
-          {/* NPC Portrait */}
-          <div className="hidden sm:flex flex-col items-center gap-2 w-24 shrink-0">
-            <div className="w-20 h-20 rounded-full bg-[#162238] border-2 border-[#806f47] p-1.5 shadow-inner overflow-hidden">
-              <div className="w-full h-full bg-slate-800 rounded-full flex items-center justify-center relative">
-                <MessageSquare className="w-6 h-6 text-slate-500 opacity-70" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#050b14]/50" />
+        <div className="lobby-hairline absolute top-0 right-0 left-0 h-px opacity-90" />
+
+        <div className="flex gap-4 p-4 sm:gap-6 sm:p-6">
+          <div className="hidden w-24 shrink-0 flex-col items-center gap-2 sm:flex">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-lobby-border-strong bg-lobby-panel-soft p-1.5 shadow-[inset_0_0_16px_rgba(167,139,250,0.2)]">
+              <div className="relative flex h-full w-full items-center justify-center rounded-md bg-black/40">
+                <MessageSquare className="h-6 w-6 text-lobby-soul opacity-80" />
               </div>
             </div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-lobby-ash">
+              Exposure
+            </span>
           </div>
 
-          {/* Dialog Content */}
-          <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <div className="flex min-w-0 flex-1 flex-col justify-between">
             <div>
-              <div className="flex items-baseline gap-3 mb-1.5">
-                <h3 className="text-xl sm:text-2xl font-black text-[#e2d5b3] tracking-wider uppercase font-serif drop-shadow-md">
+              <div className="mb-1.5 flex items-baseline gap-3">
+                <h3 className="font-serif text-xl font-bold tracking-wide text-lobby-mist uppercase sm:text-2xl">
                   {npcDisplayName}
                 </h3>
+                <span className="hidden text-[10px] font-bold uppercase tracking-[0.2em] text-lobby-film sm:inline">
+                  Soul Dialog
+                </span>
               </div>
 
-              <div className="min-h-[72px] sm:min-h-[88px] relative">
-                <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-serif pr-8 whitespace-pre-wrap">
+              <div className="relative min-h-[72px] sm:min-h-[88px]">
+                <p className="pr-8 font-serif text-base leading-relaxed whitespace-pre-wrap text-lobby-fog sm:text-lg">
                   {displayedText}
-                  {isTyping && <span className="inline-block w-2 h-4 bg-[#cbb26a] ml-1 animate-pulse" />}
+                  {isTyping && (
+                    <span className="ml-1 inline-block h-4 w-2 animate-pulse bg-lobby-soul" />
+                  )}
                 </p>
                 {!isTyping && (!activeDialog.options || activeDialog.options.length === 0) && (
-                  <div className="absolute bottom-0 right-0 animate-bounce text-[#806f47]">
-                    <ChevronRight className="w-6 h-6" />
+                  <div className="absolute right-0 bottom-0 animate-bounce text-lobby-film">
+                    <ChevronRight className="h-6 w-6" />
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Options (Server-driven) */}
             {!isTyping && activeDialog.options && activeDialog.options.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-[#806f47]/20 flex flex-col gap-2">
+              <div className="mt-3 flex flex-col gap-2 border-t border-lobby-border pt-3">
                 {activeDialog.options.map((opt, i) => (
                   <button
                     key={i}
-                    onClick={(e) => { e.stopPropagation(); handleOptionClick(opt); }}
-                    className="px-4 py-2 bg-[#162238] hover:bg-[#cbb26a]/20 border border-[#806f47]/30 hover:border-[#cbb26a] text-slate-200 text-sm font-medium rounded transition-all duration-200 text-left relative group w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOptionClick(opt);
+                    }}
+                    className="group relative w-full rounded-md border border-lobby-border bg-black/30 px-4 py-2 text-left text-sm font-medium text-lobby-mist transition-all duration-200 hover:border-lobby-film/50 hover:bg-lobby-film/10"
                   >
-                    <span className="absolute left-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#cbb26a]">&gt;</span>
-                    <span className="group-hover:pl-4 transition-all">{opt.label}</span>
+                    <span className="absolute left-2 text-lobby-soul opacity-0 transition-opacity group-hover:opacity-100">
+                      &gt;
+                    </span>
+                    <span className="transition-all group-hover:pl-4">{opt.label}</span>
                   </button>
                 ))}
               </div>
@@ -134,12 +141,14 @@ export default function DialogOverlay() {
           </div>
         </div>
 
-        {/* Close Button */}
-        <button 
-          onClick={(e) => { e.stopPropagation(); handleClose(); }}
-          className="absolute top-4 right-4 text-slate-500 hover:text-red-400 transition-colors p-1"
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClose();
+          }}
+          className="absolute top-4 right-4 p-1 text-lobby-ash transition-colors hover:text-lobby-mist"
         >
-          <XCircle className="w-6 h-6" />
+          <XCircle className="h-6 w-6" />
         </button>
       </div>
     </div>

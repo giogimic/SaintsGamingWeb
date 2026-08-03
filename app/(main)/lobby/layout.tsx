@@ -14,7 +14,7 @@ export default function LobbyLayout({
   // We'll add a simple "Exit to Website" button inside the page itself if needed,
   // or they can use the browser back button.
   return (
-    <div className="fixed inset-0 z-[100] bg-[#0a0a0f] overflow-hidden">
+    <div className="fixed inset-0 z-[200] overflow-hidden bg-[#0a0a0f]">
       {children}
     </div>
   );

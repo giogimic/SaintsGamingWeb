@@ -23,6 +23,7 @@ export interface CreatureState {
   isMoving: boolean;
   direction: "up" | "down" | "left" | "right";
   lastMoveTime: number;
+  dialogueNpcId?: string;
 }
 
 export class CreatureManager {

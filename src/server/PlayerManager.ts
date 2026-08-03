@@ -2,9 +2,21 @@ import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
-import { isSameBaseMap } from "@/shared/net/mapIds";
+import { isSameBaseMap, toBaseMapId } from "@/shared/net/mapIds";
+import { DEMO_MAP_ID } from "./demoMapSeed";
 import { grantsForDamageTaken, grantsForKill } from "@/shared/game/combatSkillXp";
 import { PrismaClient } from "@prisma/client";
+import { EntityType } from "./types";
+
+/** Retired sandbox — always redirect joins/respawns to the live demo map. */
+const RETIRED_MAPS = new Set(["SAINTS_VILLAGE"]);
+const DEMO_SPAWN = { x: 14, y: 15 };
+
+function resolvePlayableMapId(mapId: string | undefined | null): string {
+  const base = toBaseMapId(String(mapId || DEMO_MAP_ID));
+  if (!base || RETIRED_MAPS.has(base)) return DEMO_MAP_ID;
+  return base;
+}
 const prisma = new PrismaClient();
 export interface PlayerState {
   entityId: string;
@@ -142,11 +154,15 @@ export class PlayerManager {
 
     // Generate entity ID
     const entityId = `player_${accountId}_${Date.now()}`;
+    // Never join retired sandboxes (SAINTS_VILLAGE) — that stranded players with broken sprites.
+    const rawBaseMap = toBaseMapId(String(data?.mapId || DEMO_MAP_ID));
+    const remappedFromRetired = RETIRED_MAPS.has(rawBaseMap);
+    const requestedMapId = resolvePlayableMapId(data?.mapId);
     // Ensure map definition is loaded
-    await this.worldManager.loadMap(data.mapId);
+    await this.worldManager.loadMap(requestedMapId);
     
     // Check if it's a private instance request
-    const isPrivate = data.mapId === 'BASE' || data.isPrivate === true;
+    const isPrivate = requestedMapId === 'BASE' || data.isPrivate === true;
     
     // Phase 8: Shard Syncing (Party Lock Rule)
     let instanceId: string | undefined;
@@ -157,7 +173,7 @@ export class PlayerManager {
         // Find if the leader is online and on the exact same base map
         // We need to iterate over this.players to find the leader
         const leader = Array.from(this.players.values()).find(p => p.accountId === leaderId);
-        if (leader && leader.mapId.startsWith(data.mapId)) {
+        if (leader && leader.mapId.startsWith(requestedMapId)) {
           // Force join the leader's exact instance!
           const joined = this.worldManager.forceJoinInstance(leader.mapId, accountId);
           if (joined) instanceId = leader.mapId;
@@ -237,13 +253,15 @@ export class PlayerManager {
       data: mapPlayers 
     });
 
-    // Notify the client what shard they are in
+    // Notify the client what shard they are in (always the playable base map id)
     this.engine.events.emit("directMessage", {
       socketId,
       event: "map_joined",
       data: {
         instanceId: player.mapId,
-        mapId: data.mapId
+        mapId: requestedMapId,
+        x: player.x,
+        y: player.y,
       }
     });
 
@@ -395,8 +413,8 @@ export class PlayerManager {
     const safeInstance = await this.worldManager.joinMap(safeMapId, player.accountId, false);
     
     player.mapId = safeInstance.instanceId;
-    player.x = 10;
-    player.y = 15;
+    player.x = DEMO_SPAWN.x;
+    player.y = DEMO_SPAWN.y;
     const safeZone = InterestManager.zoneOf(player.x, player.y);
     player.zoneX = safeZone.zx;
     player.zoneY = safeZone.zy;
@@ -489,7 +507,12 @@ export class PlayerManager {
           const targetX = player.x + delta.dx;
           const targetY = player.y + delta.dy;
 
-          const walkable = this.worldManager.isWalkable(player.mapId, targetX, targetY);
+          const walkable = this.worldManager.isWalkable(
+            player.mapId,
+            targetX,
+            targetY,
+            player.accountId
+          );
           const occupied = this.worldManager.isOccupied(player.mapId, targetX, targetY);
 
           if (walkable && !occupied) {

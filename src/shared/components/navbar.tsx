@@ -50,6 +50,12 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Lobby/studio are full-viewport game shells — site chrome must not paint over them
+  // (their fixed z-index is trapped under main's z-10 stacking context).
+  if (pathname?.startsWith("/lobby") || pathname?.startsWith("/studio")) {
+    return null;
+  }
+
   const user = session?.user;
   // Use DB level if provided, otherwise fallback to session
   const permissionLevel = dbPermissionLevel ?? ((user?.permissionLevel as number) || 0);
@@ -256,6 +262,11 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
 }
 
 export function Footer({ className, discordLink = "https://discord.saintsgaming.net", siteVersion = "2.1.83", showUcpLink = false }: { className?: string, discordLink?: string, siteVersion?: string, showUcpLink?: boolean }) {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/lobby") || pathname?.startsWith("/studio")) {
+    return null;
+  }
+
   const socialLinks = [
     {
       href: "https://youtube.com/@SaintsGaming",

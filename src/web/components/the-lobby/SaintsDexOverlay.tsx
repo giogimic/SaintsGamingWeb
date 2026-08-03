@@ -237,14 +237,28 @@ export default function SaintsDexOverlay() {
             <div className="flex gap-2">
               <button
                 onClick={async () => {
+                  const party = useGameStore.getState().player.creatureParty || [];
+                  const slug = selectedSpecies.slug || selectedSpecies.species;
+                  const owned =
+                    party.find((m) => m.speciesSlug === slug || m.speciesSlug === selectedSpecies.slug) ||
+                    party.find(
+                      (m) =>
+                        m.nickname?.toLowerCase() === selectedSpecies.species.toLowerCase() ||
+                        m.speciesSlug.toLowerCase() === selectedSpecies.species.toLowerCase().replace(/\s+/g, '_')
+                    );
                   const { pinBeastToProfile } = await import('@/app/actions/game');
-                  const res = await pinBeastToProfile(selectedSpecies.species);
+                  // Prefer owned PlayerCreature.id; server also accepts speciesSlug
+                  const res = await pinBeastToProfile(owned?.id || selectedSpecies.slug || selectedSpecies.species);
                   if (res.success) {
-                    useGameStore.getState().showToast(`Pinned ${selectedSpecies.species} to your profile!`);
+                    useGameStore.getState().showToast(
+                      `Pinned ${selectedSpecies.species} to your profile!`
+                    );
+                    setSelectedSpecies(null);
                   } else {
-                    useGameStore.getState().showToast(`Pinned ${selectedSpecies.species} locally!`);
+                    useGameStore.getState().showToast(
+                      res.error || 'Own this creature (starter/capture) before pinning.'
+                    );
                   }
-                  setSelectedSpecies(null);
                 }}
                 className="flex-1 py-2 bg-cyan-600 hover:bg-cyan-500 text-black font-extrabold rounded text-xs transition-colors"
               >

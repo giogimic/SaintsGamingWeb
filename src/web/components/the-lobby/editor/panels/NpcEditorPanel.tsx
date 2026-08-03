@@ -6,6 +6,24 @@ import { useEditorStore } from '../editor-store';
 import { placeMapNpc } from '@/app/actions/map-npcs';
 import { UserPlus, Save, Loader2 } from 'lucide-react';
 
+function slugifyNpcId(name: string): string {
+  const base = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '') || 'villager';
+  return base.startsWith('npc_') ? base : `npc_${base}`;
+}
+
+/** Prefer bare sprite keys (WorldManager + resolveEntitySpriteUrl). */
+function normalizeSpriteKey(input: string): string {
+  const raw = String(input || '').trim();
+  if (!raw) return 'adventurer';
+  const m = raw.match(/\/game-assets\/npc\/([^/]+?)(?:\.png)?(?:$|\?)/i);
+  if (m?.[1]) return m[1].replace(/-ow$/i, '');
+  return raw.replace(/^\/+/, '').replace(/\.png$/i, '').replace(/^game-assets\/npc\//i, '');
+}
+
 export const NpcEditorPanel: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
   const currentMapId = useGameStore((state) => state.currentMapId);

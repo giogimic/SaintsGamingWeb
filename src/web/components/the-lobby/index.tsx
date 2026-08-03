@@ -23,11 +23,11 @@ import DraggablePanel from './DraggablePanel';
 import GameTitleScreen from './GameTitleScreen';
 import GameLogin from './GameLogin';
 import ServerSelect from './ServerSelect';
-import BattleOverlay from './BattleOverlay';
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -40,6 +40,7 @@ import { io, Socket } from 'socket.io-client';
 import { useSession } from 'next-auth/react';
 import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { toBaseMapId } from '@/shared/net/mapIds';
+import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { GameChat } from './chat/GameChat';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
@@ -71,7 +72,6 @@ export default function TheLobby({
   const activeDialog = useGameStore((state) => state.activeDialog);
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
   const currentMapId = useGameStore((state) => state.currentMapId);
-  const isUiEditMode = useGameStore((state) => state.isUiEditMode);
   const { data: session, status } = useSession();
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -81,6 +81,7 @@ export default function TheLobby({
   const [uiScale, setUiScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [hasEnteredMobile, setHasEnteredMobile] = useState(false);
+  const [viewportReady, setViewportReady] = useState(false);
   
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
@@ -94,7 +95,7 @@ export default function TheLobby({
   const [permissionLevel, setPermissionLevel] = useState(0);
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const isStaff = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
-  const isDeveloper = hasPermission(permissionLevel, PERMISSION_LEVELS.DEVELOPER);
+  const canStudio = canEnterStudio(permissionLevel);
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -111,47 +112,18 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Lobby: keep demo + Spyder campaign maps; unknown/empty → DEMO_SANDBOX.
-      // Studio keeps saved map for editor work.
+      // Player lobby always starts on DEMO_SANDBOX (avoid stale SAINTS_VILLAGE saves / HMR store).
+      // Studio may keep a saved map for editor work.
       const DEMO_MAP = 'DEMO_SANDBOX';
       const DEMO_SPAWN = { x: 14, y: 15 };
-      const knownPlayable = new Set([
-        'DEMO_SANDBOX',
-        'SAINTS_VILLAGE',
-        'AZURE_TOWN',
-        'SPYDER_ROUTE1',
-        'ROUTE1',
-        'COTTON_TOWN',
-        'SPYDER_COTTON_TOWN',
-        'COTTON_SCOOP',
-        'COTTON_CAFE',
-        'SPYDER_COTTON_SCOOP',
-        'SPYDER_COTTON_CAFE',
-        'SPYDER_COTTON_TUNNEL',
-        'SPYDER_ROUTE2',
-        'SPYDER_ROUTE3',
-        'SPYDER_LEATHER_TOWN',
-        'SPYDER_LEATHER_CENTER',
-        'SPYDER_LEATHER_SCOOP',
-        'SPYDER_LEATHER_GYM',
-        'SPYDER_LEATHER_SHAFT1',
-        'SPYDER_LEATHER_SHAFT2',
-        'COTTON_UNDERGROUND',
-        'PLAYER_HOUSE_BEDROOM',
-        'PLAYER_HOUSE_DOWNSTAIRS',
-      ]);
-      const savedMap = String(parsedState.currentMapId || '');
-      let validMapId = savedMap;
-      let validPosition = parsedState.position || { ...DEMO_SPAWN };
+      const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
+        .replace(/_ch\d+$/, '');
+      let validMapId = DEMO_MAP;
+      let validPosition = { ...DEMO_SPAWN };
 
-      if (!enableStudio) {
-        if (!savedMap || !knownPlayable.has(savedMap)) {
-          validMapId = DEMO_MAP;
-          validPosition = { ...DEMO_SPAWN };
-        }
-      } else if (!savedMap) {
-        validMapId = DEMO_MAP;
-        validPosition = { ...DEMO_SPAWN };
+      if (enableStudio && savedMap && savedMap !== 'SAINTS_VILLAGE') {
+        validMapId = savedMap;
+        validPosition = parsedState.position || { ...DEMO_SPAWN };
       }
 
       try {
@@ -168,21 +140,23 @@ export default function TheLobby({
         validPosition = { ...DEMO_SPAWN };
       }
 
-      // Socket auth + battle payloads use User.id — keep client accountId aligned
-      const socketAccountId = session?.user?.id || charId;
       useGameStore.getState().hydratePlayer({ 
         ...parsedState,
-        accountId: socketAccountId,
         currentMapId: validMapId,
         name: res.data.name,
         spriteId: res.data.spriteId || 'adventurer',
         position: validPosition
       });
-      useGameStore.setState({ currentMapId: validMapId, gameMode: 'EXPLORING' });
+      useGameStore.setState({
+        currentMapId: validMapId,
+        instanceId: validMapId,
+        gameMode: 'EXPLORING',
+        mapEntities: [], // clear stale placeholders; socket will repopulate
+      });
 
       // Notify socket server of loaded character specs
       socketRef.current?.emit('join_map', {
-        accountId: socketAccountId,
+        accountId: charId,
         mapId: validMapId,
         x: validPosition.x,
         y: validPosition.y,
@@ -211,6 +185,8 @@ export default function TheLobby({
       await useGameStore.getState().fetchLogicTiles();
 
       if (enableStudio) {
+        // Doc 16: Walk Mode is the default Studio entry — create tools are opt-in.
+        useEditorStore.getState().enterWalkMode();
         const mapsRes = await fetchAllMaps();
         if (mapsRes.success && mapsRes.data) {
           setDevMapList(mapsRes.data);
@@ -248,9 +224,12 @@ export default function TheLobby({
     }
     
     const handleResize = () => {
-      const scale = Math.max(0.6, Math.min(1.5, window.innerWidth / 1280));
+      // Fit a ~1280px desktop HUD into the current viewport width.
+      const scale = Math.max(0.35, Math.min(1.25, window.innerWidth / 1280));
       setUiScale(scale);
-      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0));
+      // Gate + HUD scale on viewport width only (not every touch desktop).
+      setIsMobile(window.innerWidth < 768);
+      setViewportReady(true);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -291,9 +270,14 @@ export default function TheLobby({
     // Phase 10: Require active NextAuth session before connecting to the socket
     if (typeof window === 'undefined' || status !== 'authenticated' || !session?.user?.id) return;
 
-    // Connect to the unified Next.js MMO server with the session token
+    // Soft-reconnect stays in-world (does not dump to title/login menu).
+    let hadLobbyDisconnect = false;
     const socket = io({
-      auth: { token: session.user.id }
+      auth: { token: session.user.id },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 8000,
     });
     socketRef.current = socket;
     
@@ -302,6 +286,11 @@ export default function TheLobby({
       state.setEmitSocketEvent((event, data) => {
         socket.emit(event, data);
       });
+
+      if (hadLobbyDisconnect) {
+        state.showToast('Reconnected to lobby.');
+        hadLobbyDisconnect = false;
+      }
 
       const effectiveAccountId = session.user.id || state.player.accountId;
       if (effectiveAccountId) {
@@ -318,9 +307,29 @@ export default function TheLobby({
         });
       }
     });
+
+    socket.on('disconnect', (reason) => {
+      // Stay in EXPLORING — do not dump to menu. Peers get player_left server-side.
+      hadLobbyDisconnect = true;
+      useGameStore.getState().setOtherPlayers({});
+      if (reason === 'io server disconnect') {
+        // Server forced disconnect (kick); do not auto-reconnect.
+        useGameStore.getState().showToast('Disconnected from lobby.');
+        return;
+      }
+      useGameStore.getState().showToast('Connection lost — reconnecting…');
+    });
     
     socket.on('map_joined', (data) => {
-      useGameStore.getState().setInstanceId(data.instanceId);
+      const state = useGameStore.getState();
+      state.setInstanceId(data.instanceId);
+      // Server may remap retired maps (SAINTS_VILLAGE → DEMO_SANDBOX)
+      if (data.mapId && data.mapId !== state.currentMapId) {
+        state.setCurrentMapId(data.mapId);
+      }
+      if (typeof data.x === 'number' && typeof data.y === 'number') {
+        state.setPlayerPosition({ x: data.x, y: data.y }, state.player.direction || 'down', false);
+      }
     });
 
     socket.on('map_players', (players) => {
@@ -403,6 +412,9 @@ export default function TheLobby({
 
     socket.on('force_disconnect', (data: { reason?: string }) => {
       useGameStore.getState().showToast(data?.reason || 'Disconnected by staff.');
+      // Staff kick: do not soft-reconnect back onto the map.
+      socket.io.reconnection(false);
+      socket.disconnect();
     });
 
     socket.on('global_chat_msg', (data) => {
@@ -430,9 +442,23 @@ export default function TheLobby({
       });
       window.dispatchEvent(msgEvent);
     });
-    
-    socket.on('player_left', (socketId) => {
-      useGameStore.getState().removeOtherPlayer(socketId);
+
+    // Economy / party system lines arrive as chat_message (channel SYSTEM|PARTY).
+    socket.on('chat_message', (data: any) => {
+      const channel = String(data?.channel || 'SYSTEM').toUpperCase();
+      const type =
+        channel === 'PARTY' ? 'PARTY' :
+        channel === 'GLOBAL' ? 'GLOBAL' :
+        'SYSTEM';
+      window.dispatchEvent(new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: data?.senderName || data?.sender || 'Server',
+          text: data?.message || '',
+          timestamp: data?.timestamp || Date.now(),
+          type,
+        }
+      }));
     });
     
     // Phase 9: Real-Time Map Editor Synchronization
@@ -487,18 +513,32 @@ export default function TheLobby({
       // Turn-based encounter results (bible 11)
       if (data?.result) {
         if (data.accountId && myAccount && data.accountId !== myAccount) return;
-        const isTrainer = !!state.activeBattle?.isTrainer;
         const messages: Record<string, string> = {
           CAPTURE: 'Creature captured! Check your Creature Box.',
-          WIN: isTrainer
-            ? 'Trainer defeated!'
-            : 'Victory! The wild creature fainted.',
-          LOSE: isTrainer
-            ? 'You lost the trainer battle. Your companion was patched up — rematch when ready.'
-            : 'Your creature fainted. Heal before the next battle.',
+          WIN: 'Victory! The wild creature fainted.',
+          LOSE: 'Your creature fainted. Heal before the next battle.',
           FLEE: 'Got away safely.',
         };
         state.showToast(messages[data.result] || 'Battle ended.');
+
+        // ALIGNMENT E.3 — remarkable captures → SocialPost (reuse createSocialPost)
+        if (data.result === 'CAPTURE' && data.capture?.isRemarkable) {
+          const name = data.capture.name || data.capture.speciesSlug || 'a creature';
+          const slug = data.capture.speciesSlug || 'unknown';
+          const first = data.capture.isFirstOfSpecies ? ' (first of species!)' : '';
+          void import('@/app/actions/social')
+            .then(({ createSocialPost }) =>
+              createSocialPost(
+                `Just captured ${name}${first} in The Lobby! 🐾 #SaintsTamer #Capture #${String(slug).replace(/[^a-zA-Z0-9_]/g, '')}`
+              )
+            )
+            .then(() => {
+              state.showToast('Shared capture to Community Feed!');
+            })
+            .catch((err) => {
+              console.warn('[lobby] capture feed post failed', err);
+            });
+        }
       } else if (data?.winner === myId) {
         state.showToast('You won the battle!');
       } else if (data?.winner) {
@@ -579,28 +619,6 @@ export default function TheLobby({
     socket.on('demo_open_lab', () => {
       useGameStore.getState().setActiveDialog(null);
       useGameStore.getState().setGameMode('PROFESSOR_LAB');
-    });
-
-    socket.on('demo_open_shop', () => {
-      useGameStore.getState().setActiveDialog(null);
-      useGameStore.getState().setGameMode('SHOP');
-    });
-
-    socket.on('party_creatures_hp', (data) => {
-      const list = data?.creatures;
-      if (!Array.isArray(list)) return;
-      useGameStore.setState((state) => {
-        for (const row of list) {
-          if (!row?.id || typeof row.currentHp !== 'number') continue;
-          const creature = state.player.creatureParty.find((c) => c.id === row.id);
-          if (creature) {
-            creature.currentHp = Math.max(0, Math.min(creature.maxHp, row.currentHp));
-            if (typeof row.maxHp === 'number' && row.maxHp > 0) {
-              creature.maxHp = row.maxHp;
-            }
-          }
-        }
-      });
     });
 
     // --- PHASE 7: Skills & Toast ---
@@ -743,9 +761,23 @@ export default function TheLobby({
       const isNpc = data.entityType === 'NPC';
       useGameStore.setState((state) => {
         const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
-        const spriteKey = isNpc
-          ? (String(data.templateId || '').includes('vance') ? 'adventurer' : (data.spriteKey || 'adventurer'))
-          : (data.spriteKey || data.templateId || 'rockitten');
+        const templateId = String(data.templateId || '');
+        const rawSprite = data.spriteKey || templateId || (isNpc ? 'adventurer' : 'rockitten');
+        // Vance keeps classic walk-sheet adventurer; always store resolvable /game-assets URLs.
+        // (Prevent bare slugs / battle-sheet keys from rendering as wrong in-world icons.)
+        const spriteKey =
+          isNpc && templateId.includes('vance')
+            ? '/game-assets/npc/adventurer.png'
+            : resolveEntitySpriteUrl(rawSprite, {
+                kind: isNpc ? 'npc' : 'monster',
+              });
+        const dialogueKey =
+          data.dialogueNpcId ||
+          (isNpc
+            ? templateId.includes('vance')
+              ? 'npc_warden_vance'
+              : `npc_${templateId.replace(/^npc_/, '')}`
+            : undefined);
         const ent = {
           id: data.entityId,
           type: (isNpc ? 'NPC' : 'MONSTER') as 'NPC' | 'MONSTER',
@@ -754,9 +786,11 @@ export default function TheLobby({
           isMoving: !!data.isMoving,
           facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
           mapId: data.mapId,
-          name: isNpc && String(data.templateId || '').includes('vance')
-            ? 'Warden Vance'
-            : (data.name || data.templateId),
+          name:
+            isNpc && templateId.includes('vance')
+              ? 'Warden Vance'
+              : (data.name || templateId),
+          dialogueKey,
         };
         if (idx >= 0) state.mapEntities[idx] = ent;
         else state.mapEntities.push(ent);
@@ -836,13 +870,31 @@ export default function TheLobby({
     }
   };
 
+  const wantMobileFullscreen = useRef(false);
+
   const handleEnterMobileGame = () => {
+    wantMobileFullscreen.current = true;
     setHasEnteredMobile(true);
-    toggleFullscreen();
-    if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
-      (screen.orientation as any).lock('landscape').catch(() => {});
-    }
   };
+
+  // Desktop never uses the Open Game gate; keep play session if viewport shrinks mid-session.
+  useEffect(() => {
+    if (viewportReady && !isMobile) setHasEnteredMobile(true);
+  }, [viewportReady, isMobile]);
+
+  // After Open Game from the launcher, try fullscreen once the lobby shell mounts.
+  useEffect(() => {
+    if (!hasEnteredMobile || !isMobile || !viewportReady) return;
+    if (!wantMobileFullscreen.current) return;
+    wantMobileFullscreen.current = false;
+    const el = containerRef.current || document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    }
+    if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+      (screen.orientation as any).lock("landscape").catch(() => {});
+    }
+  }, [hasEnteredMobile, isMobile, viewportReady]);
 
   useEffect(() => {
     // Standard game hotkeys (I, K, P, D, B) + ESC for Options / exit Viewfinder
@@ -864,7 +916,7 @@ export default function TheLobby({
       }
       const key = e.key.toLowerCase();
       if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
-      else if (key === 'e' && enableStudio && isDeveloper) {
+      else if (key === 'e' && enableStudio && canStudio) {
         useEditorStore.getState().toggleCreationMode();
       }
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
@@ -875,10 +927,25 @@ export default function TheLobby({
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
-  }, [enableStudio, isDeveloper]);
+  }, [enableStudio, canStudio]);
 
   if (isInitializing) {
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
+  }
+
+  // Narrow screens: replace the game window with a single Open Game button.
+  // Do not mount Babylon / desktop HUD underneath — that was the crowded mess.
+  if (viewportReady && isMobile && !hasEnteredMobile) {
+    return (
+      <MobileGameLauncher
+        character={userCharacters.find((c) => c.id === activeCharacterId) || userCharacters[0]}
+        onEnterGame={handleEnterMobileGame}
+        onSelectCharacter={() => {
+          setShowSelector(true);
+          setHasEnteredMobile(true);
+        }}
+      />
+    );
   }
 
   if (gameMode === 'CHARACTER_CREATOR' || showCreator) {
@@ -904,17 +971,8 @@ export default function TheLobby({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full touch-none select-none bg-[#0a0a0f]"
+      className="relative w-full h-full touch-none select-none bg-[#0a0a0f] overflow-hidden"
     >
-      {/* Mobile Enter Game Launcher Overlay */}
-      {isMobile && !hasEnteredMobile && !isFullscreen && (
-        <MobileGameLauncher 
-          character={userCharacters.find(c => c.id === activeCharacterId) || userCharacters[0]}
-          onEnterGame={handleEnterMobileGame}
-          onSelectCharacter={() => { setShowSelector(true); setHasEnteredMobile(true); }}
-        />
-      )}
-
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={activeLayerIdx}
@@ -923,152 +981,160 @@ export default function TheLobby({
           if (isCreationMode) setClickedTile({r, c});
         }}
       />
-      
-      {/* SCALED UI CONTAINER */}
-      <div 
-        className="absolute inset-0 pointer-events-none" 
-      >
-        {/* Mobile Controls — single surface (floating joystick default / D-Pad toggle) */}
-        <div className="pointer-events-auto">
+
+      {/* Touch controls stay full-size (do not scale — fingers need real targets). */}
+      <div className="pointer-events-none absolute inset-0 z-30">
+        <div className="pointer-events-auto absolute inset-0">
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
             onToggleOptions={() => setIsOptionsOpen(true)}
           />
         </div>
       </div>
-
-      {/* Turn-Based Battle Overlay */}
-      {gameMode === 'BATTLE' && <TurnBattleOverlay />}
-
-      {enableStudio && <StudioEditorShell />}
-
-      {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
-        <StaffFloatingMenu
-          permissionLevel={permissionLevel}
-          isStudioRoute={enableStudio}
-        />
-      )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
-          <div className="relative px-5 py-2.5 bg-black/80 backdrop-blur-xl border border-emerald-500/30 rounded-xl font-bold text-sm whitespace-nowrap shadow-[0_0_25px_rgba(16,185,129,0.2)]">
-            <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-            <span className="text-emerald-400 font-mono text-xs mr-2">▶</span>
-            <span className="text-emerald-200 font-mono text-xs">{toast.message}</span>
-          </div>
-        </div>
-      )}
-
-      {gameMode !== 'BATTLE' && (
-        <div className="absolute top-3 right-3 z-40 pointer-events-none flex items-center gap-2">
-          {enableStudio && isDeveloper && (
-            <button
-              onClick={() => useEditorStore.getState().toggleCreationMode()}
-              className={`pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-2
-                ${isCreationMode 
-                  ? 'bg-[#cbb26a] text-black border-[#806f47] hover:bg-amber-500 shadow-[0_0_15px_rgba(203,178,106,0.3)]' 
-                  : 'bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a]'
-                }`}
-            >
-              <span className="text-sm leading-none">🔨</span>
-              <span>STUDIO (Ctrl+E)</span>
-            </button>
-          )}
-          {!enableStudio && isDeveloper && (
-            <a
-              href="/studio"
-              className="pointer-events-auto px-3 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a] flex items-center gap-2"
-            >
-              <span className="text-sm leading-none">🔨</span>
-              <span>OPEN STUDIO</span>
-            </a>
-          )}
-          <button
-            onClick={() => setIsOptionsOpen(true)}
-            className="pointer-events-auto px-3 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
-          >
-            <span className="text-sm leading-none">⚙️</span>
-            <span>OPTIONS (ESC)</span>
-          </button>
-        </div>
-      )}
-
-      <GameOptionsMenu 
-        isOpen={isOptionsOpen}
-        onClose={() => setIsOptionsOpen(false)}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-        isAdminUser={enableStudio && isDeveloper}
-        isCreationMode={isCreationMode}
-        onToggleDevEditor={() => {
-          if (!enableStudio || !isDeveloper) return;
-          if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
-          useEditorStore.getState().toggleCreationMode(); 
-          setIsOptionsOpen(false);
-        }}
-      />
-
-      {/* Viewfinder Edit Mode — player + studio */}
-      <ViewfinderOverlay />
-      <UiEditToolbar />
-
-      {/* --- UI Overlays (Higher Z-Index) --- */}
-      {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
-      {gameMode === 'LOGIN' && <GameLogin />}
-      {gameMode === 'SERVER_SELECT' && <ServerSelect />}
-
-      {/* Classic RPG Interface Panel */}
-      <DraggablePanel id="classic-panel" className="absolute bottom-4 right-4 pointer-events-none">
-        <ClassicPanel />
-      </DraggablePanel>
-
-      {/* Overlays that aren't part of ClassicPanel */}
-      <div 
-        className="absolute inset-0 pointer-events-none flex items-center justify-center" 
+      
+      {/* Scale desktop HUD chrome on phones (canvas + touch stay full-bleed). */}
+      <div
+        className="pointer-events-none absolute inset-0 origin-top-left"
+        style={
+          isMobile
+            ? {
+                transform: `scale(${uiScale})`,
+                transformOrigin: "top left",
+                width: `${100 / Math.max(uiScale, 0.5)}%`,
+                height: `${100 / Math.max(uiScale, 0.5)}%`,
+              }
+            : undefined
+        }
       >
-        {gameMode === 'CRAFTING' && <CraftingOverlay />}
-        {gameMode === 'BASE' && <BaseOverlay />}
-        {gameMode === 'DIALOG' && <DialogOverlay />}
-        {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
-        {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
-        {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-        {gameMode === 'BATTLE' && <BattleOverlay />}
-        {gameMode === 'PARTY' && <PartyOverlay />}
-        {gameMode === 'DEX' && <SaintsDexOverlay />}
+        {gameMode === 'BATTLE' && <TurnBattleOverlay />}
+
+        {enableStudio && <StudioEditorShell />}
+
+        {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
+          <StaffFloatingMenu
+            permissionLevel={permissionLevel}
+            isStudioRoute={enableStudio}
+          />
+        )}
+
+        {toast && (
+          <div className="absolute top-16 left-1/2 z-50 -translate-x-1/2 animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="relative whitespace-nowrap rounded-xl border border-emerald-500/30 bg-black/80 px-5 py-2.5 text-sm font-bold shadow-[0_0_25px_rgba(16,185,129,0.2)] backdrop-blur-xl">
+              <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+              <span className="mr-2 font-mono text-xs text-emerald-400">▶</span>
+              <span className="font-mono text-xs text-emerald-200">{toast.message}</span>
+            </div>
+          </div>
+        )}
+
+        {gameMode !== 'BATTLE' && (
+          <div
+            className="pointer-events-none absolute z-40 flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
+            style={{
+              top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
+              right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+            }}
+          >
+            {enableStudio && canStudio && (
+              <button
+                onClick={() => useEditorStore.getState().toggleCreationMode()}
+                className={`pointer-events-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] font-medium shadow-lg transition-all active:scale-95 md:gap-2 md:px-3
+                  ${isCreationMode 
+                    ? 'border-[#806f47] bg-[#cbb26a] text-black shadow-[0_0_15px_rgba(203,178,106,0.3)] hover:bg-amber-500' 
+                    : 'border-[#806f47]/50 bg-black/60 text-[#cbb26a] backdrop-blur-md hover:border-[#cbb26a] hover:bg-white/10'
+                  }`}
+              >
+                <span className="text-sm leading-none">🔨</span>
+                <span className="hidden sm:inline">STUDIO (Ctrl+E)</span>
+              </button>
+            )}
+            {!enableStudio && canStudio && (
+              <a
+                href="/studio"
+                className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[#806f47]/50 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-[#cbb26a] shadow-lg backdrop-blur-md transition-all hover:border-[#cbb26a] hover:bg-white/10 md:gap-2 md:px-3"
+              >
+                <span className="text-sm leading-none">🔨</span>
+                <span className="hidden sm:inline">OPEN STUDIO</span>
+              </a>
+            )}
+            <button
+              onClick={() => setIsOptionsOpen(true)}
+              className="pointer-events-auto hidden items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-slate-300 shadow-lg backdrop-blur-md transition-all hover:bg-white/10 hover:text-white active:scale-95 md:flex md:gap-2 md:px-3"
+            >
+              <span className="text-sm leading-none">⚙️</span>
+              <span>OPTIONS (ESC)</span>
+            </button>
+          </div>
+        )}
+
+        <GameOptionsMenu 
+          isOpen={isOptionsOpen}
+          onClose={() => setIsOptionsOpen(false)}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isAdminUser={enableStudio && canStudio}
+          isCreationMode={isCreationMode}
+          onToggleDevEditor={() => {
+            if (!enableStudio || !canStudio) return;
+            if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
+            useEditorStore.getState().toggleCreationMode(); 
+            setIsOptionsOpen(false);
+          }}
+        />
+
+        {/* Viewfinder Edit Mode — player + studio */}
+        <ViewfinderOverlay />
+        <UiEditToolbar />
+
+        {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
+        {gameMode === 'LOGIN' && <GameLogin />}
+        {gameMode === 'SERVER_SELECT' && <ServerSelect />}
+
+        <DraggablePanel id="classic-panel" className="pointer-events-none absolute bottom-4 right-4 max-md:static max-md:inset-auto">
+          <ClassicPanel />
+        </DraggablePanel>
+
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          {gameMode === 'CRAFTING' && <CraftingOverlay />}
+          {gameMode === 'BASE' && <BaseOverlay />}
+          {gameMode === 'DIALOG' && <DialogOverlay />}
+          {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
+          {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
+          {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
+          {/* TB UI: TurnBattleOverlay only (film_standard). Do not also mount legacy BattleOverlay — dual CRYSTAL+FILM bug. */}
+          {gameMode === 'PARTY' && <PartyOverlay />}
+          {gameMode === 'DEX' && <SaintsDexOverlay />}
+        </div>
+        
+        {gameMode === 'SHOP' && <ShopOverlay />}
+        {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
+        
+        <div 
+          className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
+        />
+
+        {gameMode === 'EXPLORING' && !isCreationMode && (
+          <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
+            <MiniMapRadar />
+          </DraggablePanel>
+        )}
+        {gameMode === 'EXPLORING' && !isCreationMode && (
+          <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
+            <SaintsHudOrbs />
+          </DraggablePanel>
+        )}
+
+        {gameMode === 'EXPLORING' && !isCreationMode && (
+          <>
+            <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
+              <Hotbar />
+            </DraggablePanel>
+            <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
+              <GameChat />
+            </DraggablePanel>
+          </>
+        )}
       </div>
-      
-      {gameMode === 'SHOP' && <ShopOverlay />}
-      {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
-      {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
-      
-      {/* Cinematic Map Transition Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
-      />
-
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
-          <MiniMapRadar />
-        </DraggablePanel>
-      )}
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
-          <SaintsHudOrbs />
-        </DraggablePanel>
-      )}
-
-      {/* Unified Game Chat UI & Hotbar */}
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <>
-          <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
-            <Hotbar />
-          </DraggablePanel>
-          <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
-            <GameChat />
-          </DraggablePanel>
-        </>
-      )}
     </div>
   );
 }

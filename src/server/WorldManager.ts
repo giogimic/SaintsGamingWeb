@@ -1,6 +1,6 @@
 import { GameEngine } from "./GameEngine";
 import { toBaseMapId } from "@/shared/net/mapIds";
-import { DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
+import { DEMO_MAP_ID, DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
 // Using require for legacy JS modules (they can be converted to TS later)
 const mapLoader = require("../engine/map-loader.js");
@@ -22,9 +22,25 @@ export class WorldManager {
   // Key: instanceId_x_y -> expirationTimestamp
   private depletedNodes = new Map<string, number>();
 
+  /**
+   * CONTINUE #2 — per-account bramble clears (do not mutate shared DEMO grid).
+   * Key: accountId/userId → Set of "x,y"
+   */
+  private clearedBrambleByAccount = new Map<string, Set<string>>();
+
+  /** Demo Q4 bramble gate cells (demoMapSeed: y=10, x=12..16). */
+  public static readonly DEMO_BRAMBLE_CELLS: ReadonlyArray<{ x: number; y: number }> = [
+    { x: 12, y: 10 },
+    { x: 13, y: 10 },
+    { x: 14, y: 10 },
+    { x: 15, y: 10 },
+    { x: 16, y: 10 },
+  ];
+
   constructor(private engine: GameEngine) {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
     this.engine.events.on("adminSaveMap", (data) => this.handleAdminSaveMap(data));
+    this.engine.events.on("adminReloadMap", (data) => this.handleAdminReloadMap(data));
   }
 
   private async handleAdminSaveMap(data: any) {
@@ -32,13 +48,23 @@ export class WorldManager {
     const success = await mapLoader.saveMapData(data.mapId, data);
     if (success) {
       console.log(`[WorldManager] Map ${data.mapId} saved to database and hot reloaded.`);
-      // Optionally broadcast to all players in map to reload
+      // Global broadcast — players live on shard rooms (`_chN`), not base mapId alone.
       this.engine.events.emit("networkBroadcast", {
-        room: data.mapId,
         event: "map_reloaded",
         data: { mapId: data.mapId }
       });
     }
+  }
+
+  /** REST already wrote WorldMap — just invalidate server cache and notify clients. */
+  private handleAdminReloadMap(data: { mapId?: string }) {
+    if (!data?.mapId) return;
+    mapLoader.invalidateMap(data.mapId);
+    console.log(`[WorldManager] Map ${data.mapId} cache invalidated; broadcasting map_reloaded.`);
+    this.engine.events.emit("networkBroadcast", {
+      event: "map_reloaded",
+      data: { mapId: data.mapId },
+    });
   }
 
   public async initialize() {
@@ -163,22 +189,64 @@ export class WorldManager {
     return undefined;
   }
 
-  /** Clear bramble tile in live cache + persist DEMO map grid when applicable. */
-  public clearBrambleAt(baseMapId: string, x: number, y: number): boolean {
-    const ok = mapLoader.setCachedTile(baseMapId, x, y, 0);
-    if (!ok) return false;
-    const map = mapLoader.getCachedMap(baseMapId);
-    if (map?.grid) {
-      const gridJson = JSON.stringify(map.grid);
-      // Persist without invalidateMap so live players keep the cleared tile
-      const { PrismaClient } = require("@prisma/client");
-      const prisma = new PrismaClient({ log: ["error"] });
-      void Promise.all([
-        prisma.worldMap.update({ where: { id: baseMapId }, data: { gridData: gridJson } }).catch(() => null),
-        prisma.gameMap.update({ where: { id: baseMapId }, data: { tilesetData: gridJson } }).catch(() => null),
-      ]).finally(() => prisma.$disconnect().catch(() => null));
+  /** Clear bramble for one account only — shared map grid/DB stay tile 11. */
+  public clearBrambleForAccount(
+    accountKeys: string[],
+    baseMapId: string,
+    x: number,
+    y: number
+  ): boolean {
+    const map =
+      typeof mapLoader.getMapDataSync === "function"
+        ? mapLoader.getMapDataSync(baseMapId)
+        : mapLoader.getCachedMap?.(baseMapId);
+    const tile = map?.grid?.[y]?.[x];
+    const already = accountKeys.some((k) => this.hasAccountClearedBramble(k, x, y));
+    if (tile !== 11 && !already) return false;
+    for (const key of accountKeys) {
+      if (!key) continue;
+      let set = this.clearedBrambleByAccount.get(key);
+      if (!set) {
+        set = new Set();
+        this.clearedBrambleByAccount.set(key, set);
+      }
+      set.add(`${x},${y}`);
     }
     return true;
+  }
+
+  public hasAccountClearedBramble(accountKey: string, x: number, y: number): boolean {
+    if (!accountKey) return false;
+    return this.clearedBrambleByAccount.get(accountKey)?.has(`${x},${y}`) ?? false;
+  }
+
+  public listClearedBramble(accountKey: string): Array<{ x: number; y: number }> {
+    const set = this.clearedBrambleByAccount.get(accountKey);
+    if (!set) return [];
+    const out: Array<{ x: number; y: number }> = [];
+    for (const cell of set) {
+      const [xs, ys] = cell.split(",");
+      out.push({ x: parseInt(xs, 10), y: parseInt(ys, 10) });
+    }
+    return out;
+  }
+
+  /** Open the full demo bramble gate for this account (personal overlay). */
+  public clearDemoBrambleGateForAccount(accountKeys: string[]): Array<{ x: number; y: number }> {
+    const cells = WorldManager.DEMO_BRAMBLE_CELLS;
+    for (const { x, y } of cells) {
+      this.clearBrambleForAccount(accountKeys, DEMO_MAP_ID, x, y);
+    }
+    return [...cells];
+  }
+
+  /** @deprecated Shared-grid clear — must not wipe the demo map for other accounts. */
+  public clearBrambleAt(baseMapId: string, x: number, y: number): boolean {
+    const map =
+      typeof mapLoader.getMapDataSync === "function"
+        ? mapLoader.getMapDataSync(baseMapId)
+        : mapLoader.getCachedMap?.(baseMapId);
+    return map?.grid?.[y]?.[x] === 11;
   }
 
   public forceJoinInstance(instanceId: string, accountId: string): MapInstance | undefined {
@@ -248,10 +316,20 @@ export class WorldManager {
   // COLLISION AUTHORITY: 
   // The server completely owns collision data. Clients handle visuals, but the server verifies 
   // every movement against the loaded Map Definition to prevent walking through walls.
-  public isWalkable(instanceId: string, x: number, y: number): boolean {
+  // Optional accountId: personal bramble clears (CONTINUE #2) do not alter shared grid.
+  public isWalkable(instanceId: string, x: number, y: number, accountId?: string): boolean {
     const instance = this.instances.get(instanceId);
     if (!instance) return false;
-    return mapLoader.isWalkableSync(instance.mapId, x, y);
+    if (mapLoader.isWalkableSync(instance.mapId, x, y)) return true;
+    if (accountId && this.hasAccountClearedBramble(accountId, x, y)) {
+      const map =
+        typeof mapLoader.getMapDataSync === "function"
+          ? mapLoader.getMapDataSync(instance.mapId)
+          : mapLoader.getCachedMap?.(instance.mapId);
+      // Cleared bramble stays tile 11 on shared grid — treat as walkable for this account
+      if (map?.grid?.[y]?.[x] === 11) return true;
+    }
+    return false;
   }
 
   public isOccupied(instanceId: string, x: number, y: number): boolean {

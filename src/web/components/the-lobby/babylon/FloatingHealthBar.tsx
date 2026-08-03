@@ -61,20 +61,24 @@ export const FloatingHealthBars: React.FC<FloatingHealthBarProps> = ({ engine })
         const pos = positions[entityId];
         if (!pos || !pos.isVisible) return null;
 
-        // Health bar color based on percentage
-        let color = 'bg-green-500';
-        if (hpPercent < 0.5) color = 'bg-[#eab308]'; // yellow
-        if (hpPercent < 0.2) color = 'bg-red-500';
+        // Soul-film HP tint by remaining essence
+        let fill =
+          'linear-gradient(90deg, #059669, #6ee7b7)';
+        if (hpPercent < 0.5) fill = 'linear-gradient(90deg, #a16207, #e8e8ef)';
+        if (hpPercent < 0.2) fill = 'linear-gradient(90deg, #7c3aed, #f0abfc)';
 
         return (
           <div
             key={entityId}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 w-12 h-[6px] bg-black/80 border border-[#806f47] rounded-[2px] shadow-[0_0_4px_rgba(0,0,0,0.8)]"
+            className="lobby-stat-track absolute h-[6px] w-12 -translate-x-1/2 -translate-y-1/2 transform overflow-hidden rounded-[2px]"
             style={{ left: pos.x, top: pos.y }}
           >
             <div
-              className={`h-full ${color} transition-all duration-200`}
-              style={{ width: `${Math.max(0, Math.min(100, hpPercent * 100))}%` }}
+              className="h-full transition-all duration-200"
+              style={{
+                width: `${Math.max(0, Math.min(100, hpPercent * 100))}%`,
+                background: fill,
+              }}
             />
           </div>
         );

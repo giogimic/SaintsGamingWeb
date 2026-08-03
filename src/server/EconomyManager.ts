@@ -149,6 +149,11 @@ export class EconomyManager {
       this.engine.events.emit("directMessage", { socketId: data.socketId, event: "sync_credits", data: { credits: result.buyerCredits } });
       this.engine.events.emit("directMessage", { socketId: data.socketId, event: "gtc_transaction_success", data: { type: "PURCHASE_COMPLETE" } });
       this.engine.events.emit("directMessage", { socketId: data.socketId, event: "chat_message", data: { channel: "SYSTEM", senderId: "SERVER", senderName: "System", message: `You purchased ${result.listing.title}!`, timestamp: Date.now() } });
+      // Push cold inventory so buyer HUD matches PlayerInventoryItem
+      this.engine.events.emit("playerInventorySyncRequest", {
+        socketId: data.socketId,
+        accountId: data.accountId,
+      });
 
     } catch (e: any) {
       console.error("[EconomyManager] Purchase error", e);

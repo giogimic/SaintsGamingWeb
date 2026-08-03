@@ -1,7 +1,8 @@
 export class AssetPathResolver {
   private static ROOTS = {
-    sprites: '/game-assets/sprites',
-    monsters: '/game-assets/monsters',
+    // Classic walk sheets live under /npc (there is no /game-assets/sprites tree).
+    sprites: '/game-assets/npc',
+    monsters: '/game-assets/monster',
     tilesets: '/game-assets/tilesets',
     items: '/game-assets/items',
     ui: '/game-assets/ui',

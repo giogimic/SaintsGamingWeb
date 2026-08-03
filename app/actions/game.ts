@@ -212,6 +212,12 @@ export async function unlockGameAchievement(badgeId: string) {
   }
 }
 
+/**
+ * Pin an owned PlayerCreature to the public web profile (ALIGNMENT E.1).
+ * `beastId` must be a PlayerCreature.id belonging to the caller.
+ * Also accepts a speciesSlug — pins the oldest owned instance of that species.
+ * Pass empty / "none" to unpin.
+ */
 export async function pinBeastToProfile(beastId: string) {
   try {
     const session = await auth();
@@ -219,13 +225,57 @@ export async function pinBeastToProfile(beastId: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
+    const userId = session.user.id;
+    const raw = String(beastId || '').trim();
+
+    if (!raw || raw.toLowerCase() === 'none') {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { pinnedBeastId: null },
+      });
+      const u = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true },
+      });
+      if (u?.username) revalidatePath(`/user/${u.username}`);
+      return { success: true, unpinned: true };
+    }
+
+    let owned = await prisma.playerCreature.findFirst({
+      where: { id: raw, userId },
+    });
+    if (!owned) {
+      owned = await prisma.playerCreature.findFirst({
+        where: { userId, speciesSlug: raw },
+        orderBy: { capturedAt: 'asc' },
+      });
+    }
+    if (!owned) {
+      // Dex may pass display name — try case-insensitive slug normalize
+      const slugGuess = raw.toLowerCase().replace(/\s+/g, '_');
+      owned = await prisma.playerCreature.findFirst({
+        where: { userId, speciesSlug: slugGuess },
+        orderBy: { capturedAt: 'asc' },
+      });
+    }
+    if (!owned) {
+      return {
+        success: false,
+        error: 'You must own that creature first (claim starter or capture).',
+      };
+    }
+
     await prisma.user.update({
-      where: { id: session.user.id },
-      data: { pinnedBeastId: beastId }
+      where: { id: userId },
+      data: { pinnedBeastId: owned.id },
     });
 
-    revalidatePath('/profile/[username]');
-    return { success: true };
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+    if (u?.username) revalidatePath(`/user/${u.username}`);
+    return { success: true, pinnedBeastId: owned.id, speciesSlug: owned.speciesSlug };
   } catch (error) {
     console.error('Failed to pin beast:', error);
     return { success: false, error: 'Failed to pin beast' };
