@@ -81,6 +81,7 @@ export default function TheLobby({
   const [uiScale, setUiScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [hasEnteredMobile, setHasEnteredMobile] = useState(false);
+  const [viewportReady, setViewportReady] = useState(false);
   
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
@@ -221,9 +222,12 @@ export default function TheLobby({
     }
     
     const handleResize = () => {
-      const scale = Math.max(0.6, Math.min(1.5, window.innerWidth / 1280));
+      // Fit a ~1280px desktop HUD into the current viewport width.
+      const scale = Math.max(0.35, Math.min(1.25, window.innerWidth / 1280));
       setUiScale(scale);
-      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0));
+      // Gate + HUD scale on viewport width only (not every touch desktop).
+      setIsMobile(window.innerWidth < 768);
+      setViewportReady(true);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -803,16 +807,31 @@ export default function TheLobby({
     }
   };
 
-  const handleEnterMobileGame = (opts?: { fullscreen?: boolean }) => {
+  const wantMobileFullscreen = useRef(false);
+
+  const handleEnterMobileGame = () => {
+    wantMobileFullscreen.current = true;
     setHasEnteredMobile(true);
-    const wantFs = opts?.fullscreen !== false;
-    if (wantFs) {
-      toggleFullscreen();
-      if (typeof screen !== 'undefined' && screen.orientation && (screen.orientation as any).lock) {
-        (screen.orientation as any).lock('landscape').catch(() => {});
-      }
-    }
   };
+
+  // Desktop never uses the Open Game gate; keep play session if viewport shrinks mid-session.
+  useEffect(() => {
+    if (viewportReady && !isMobile) setHasEnteredMobile(true);
+  }, [viewportReady, isMobile]);
+
+  // After Open Game from the launcher, try fullscreen once the lobby shell mounts.
+  useEffect(() => {
+    if (!hasEnteredMobile || !isMobile || !viewportReady) return;
+    if (!wantMobileFullscreen.current) return;
+    wantMobileFullscreen.current = false;
+    const el = containerRef.current || document.documentElement;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(() => {});
+    }
+    if (typeof screen !== "undefined" && screen.orientation && (screen.orientation as any).lock) {
+      (screen.orientation as any).lock("landscape").catch(() => {});
+    }
+  }, [hasEnteredMobile, isMobile, viewportReady]);
 
   useEffect(() => {
     // Standard game hotkeys (I, K, P, D, B)
@@ -840,6 +859,21 @@ export default function TheLobby({
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
   }
 
+  // Narrow screens: replace the game window with a single Open Game button.
+  // Do not mount Babylon / desktop HUD underneath — that was the crowded mess.
+  if (viewportReady && isMobile && !hasEnteredMobile) {
+    return (
+      <MobileGameLauncher
+        character={userCharacters.find((c) => c.id === activeCharacterId) || userCharacters[0]}
+        onEnterGame={handleEnterMobileGame}
+        onSelectCharacter={() => {
+          setShowSelector(true);
+          setHasEnteredMobile(true);
+        }}
+      />
+    );
+  }
+
   if (gameMode === 'CHARACTER_CREATOR' || showCreator) {
     return (
       <CharacterCreator 
@@ -863,18 +897,8 @@ export default function TheLobby({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full touch-none select-none bg-[#0a0a0f]"
+      className="relative w-full h-full touch-none select-none bg-[#0a0a0f] overflow-hidden"
     >
-      {/* Mobile Enter Game Launcher Overlay */}
-      {isMobile && !hasEnteredMobile && !isFullscreen && (
-        <MobileGameLauncher 
-          character={userCharacters.find(c => c.id === activeCharacterId) || userCharacters[0]}
-          onEnterGame={() => handleEnterMobileGame({ fullscreen: true })}
-          onEnterWithoutFullscreen={() => handleEnterMobileGame({ fullscreen: false })}
-          onSelectCharacter={() => { setShowSelector(true); setHasEnteredMobile(true); }}
-        />
-      )}
-
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={activeLayerIdx}
@@ -884,157 +908,156 @@ export default function TheLobby({
         }}
       />
       
-      {/* SCALED UI CONTAINER */}
-      <div 
-        className="absolute inset-0 pointer-events-none" 
+      {/* Scale the whole HUD on phones (canvas stays full-bleed). */}
+      <div
+        className="pointer-events-none absolute inset-0 origin-top-left"
+        style={
+          isMobile
+            ? {
+                transform: `scale(${uiScale})`,
+                transformOrigin: "top left",
+                width: `${100 / Math.max(uiScale, 0.5)}%`,
+                height: `${100 / Math.max(uiScale, 0.5)}%`,
+              }
+            : undefined
+        }
       >
-        {/* Mobile Controls — single surface (floating joystick default / D-Pad toggle) */}
-        <div className="pointer-events-auto">
-          <MobileControls
-            onToggleFullscreen={toggleFullscreen}
-            onToggleOptions={() => setIsOptionsOpen(true)}
-          />
-        </div>
-      </div>
-
-      {/* Turn-Based Battle Overlay */}
-      {gameMode === 'BATTLE' && <TurnBattleOverlay />}
-
-      {enableStudio && <StudioEditorShell />}
-
-      {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
-        <StaffFloatingMenu
-          permissionLevel={permissionLevel}
-          isStudioRoute={enableStudio}
-        />
-      )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 fade-in duration-300">
-          <div className="relative px-5 py-2.5 bg-black/80 backdrop-blur-xl border border-emerald-500/30 rounded-xl font-bold text-sm whitespace-nowrap shadow-[0_0_25px_rgba(16,185,129,0.2)]">
-            <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-            <span className="text-emerald-400 font-mono text-xs mr-2">▶</span>
-            <span className="text-emerald-200 font-mono text-xs">{toast.message}</span>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="pointer-events-auto absolute inset-0">
+            <MobileControls
+              onToggleFullscreen={toggleFullscreen}
+              onToggleOptions={() => setIsOptionsOpen(true)}
+            />
           </div>
         </div>
-      )}
 
-      {gameMode !== 'BATTLE' && (
-        <div
-          className="absolute z-40 pointer-events-none flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
-          style={{
-            top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
-            right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
-          }}
-        >
-          {enableStudio && isDeveloper && (
-            <button
-              onClick={() => useEditorStore.getState().toggleCreationMode()}
-              className={`pointer-events-auto px-2.5 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg active:scale-95 flex items-center gap-1.5 md:px-3 md:gap-2
-                ${isCreationMode 
-                  ? 'bg-[#cbb26a] text-black border-[#806f47] hover:bg-amber-500 shadow-[0_0_15px_rgba(203,178,106,0.3)]' 
-                  : 'bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a]'
-                }`}
-            >
-              <span className="text-sm leading-none">🔨</span>
-              <span className="hidden sm:inline">STUDIO (Ctrl+E)</span>
-            </button>
-          )}
-          {!enableStudio && isDeveloper && (
-            <a
-              href="/studio"
-              className="pointer-events-auto px-2.5 py-1.5 border rounded-lg text-[11px] font-mono font-medium transition-all shadow-lg bg-black/60 backdrop-blur-md text-[#cbb26a] border-[#806f47]/50 hover:bg-white/10 hover:border-[#cbb26a] flex items-center gap-1.5 md:px-3 md:gap-2"
-            >
-              <span className="text-sm leading-none">🔨</span>
-              <span className="hidden sm:inline">OPEN STUDIO</span>
-            </a>
-          )}
-          {/* ActionCluster already has Options on touch — keep a compact desktop/top affordance */}
-          <button
-            onClick={() => setIsOptionsOpen(true)}
-            className="pointer-events-auto px-2.5 py-1.5 bg-black/60 backdrop-blur-md text-slate-300 border border-white/10 rounded-lg text-[11px] font-mono font-medium hover:bg-white/10 hover:text-white transition-all shadow-lg active:scale-95 flex items-center gap-1.5 md:px-3 md:gap-2 max-md:hidden"
+        {gameMode === 'BATTLE' && <TurnBattleOverlay />}
+
+        {enableStudio && <StudioEditorShell />}
+
+        {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
+          <StaffFloatingMenu
+            permissionLevel={permissionLevel}
+            isStudioRoute={enableStudio}
+          />
+        )}
+
+        {toast && (
+          <div className="absolute top-16 left-1/2 z-50 -translate-x-1/2 animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="relative whitespace-nowrap rounded-xl border border-emerald-500/30 bg-black/80 px-5 py-2.5 text-sm font-bold shadow-[0_0_25px_rgba(16,185,129,0.2)] backdrop-blur-xl">
+              <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+              <span className="mr-2 font-mono text-xs text-emerald-400">▶</span>
+              <span className="font-mono text-xs text-emerald-200">{toast.message}</span>
+            </div>
+          </div>
+        )}
+
+        {gameMode !== 'BATTLE' && (
+          <div
+            className="pointer-events-none absolute z-40 flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
+            style={{
+              top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
+              right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
+            }}
           >
-            <span className="text-sm leading-none">⚙️</span>
-            <span>OPTIONS (ESC)</span>
-          </button>
+            {enableStudio && isDeveloper && (
+              <button
+                onClick={() => useEditorStore.getState().toggleCreationMode()}
+                className={`pointer-events-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] font-medium shadow-lg transition-all active:scale-95 md:gap-2 md:px-3
+                  ${isCreationMode 
+                    ? 'border-[#806f47] bg-[#cbb26a] text-black shadow-[0_0_15px_rgba(203,178,106,0.3)] hover:bg-amber-500' 
+                    : 'border-[#806f47]/50 bg-black/60 text-[#cbb26a] backdrop-blur-md hover:border-[#cbb26a] hover:bg-white/10'
+                  }`}
+              >
+                <span className="text-sm leading-none">🔨</span>
+                <span className="hidden sm:inline">STUDIO (Ctrl+E)</span>
+              </button>
+            )}
+            {!enableStudio && isDeveloper && (
+              <a
+                href="/studio"
+                className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[#806f47]/50 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-[#cbb26a] shadow-lg backdrop-blur-md transition-all hover:border-[#cbb26a] hover:bg-white/10 md:gap-2 md:px-3"
+              >
+                <span className="text-sm leading-none">🔨</span>
+                <span className="hidden sm:inline">OPEN STUDIO</span>
+              </a>
+            )}
+            <button
+              onClick={() => setIsOptionsOpen(true)}
+              className="pointer-events-auto hidden items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-slate-300 shadow-lg backdrop-blur-md transition-all hover:bg-white/10 hover:text-white active:scale-95 md:flex md:gap-2 md:px-3"
+            >
+              <span className="text-sm leading-none">⚙️</span>
+              <span>OPTIONS (ESC)</span>
+            </button>
+          </div>
+        )}
+
+        <GameOptionsMenu 
+          isOpen={isOptionsOpen}
+          onClose={() => setIsOptionsOpen(false)}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isAdminUser={enableStudio && isDeveloper}
+          isCreationMode={isCreationMode}
+          onToggleDevEditor={() => {
+            if (!enableStudio || !isDeveloper) return;
+            if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
+            useEditorStore.getState().toggleCreationMode(); 
+            setIsOptionsOpen(false);
+          }}
+        />
+
+        {enableStudio && <UiEditToolbar />}
+
+        {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
+        {gameMode === 'LOGIN' && <GameLogin />}
+        {gameMode === 'SERVER_SELECT' && <ServerSelect />}
+
+        <DraggablePanel id="classic-panel" className="pointer-events-none absolute bottom-4 right-4 max-md:static max-md:inset-auto">
+          <ClassicPanel />
+        </DraggablePanel>
+
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          {gameMode === 'CRAFTING' && <CraftingOverlay />}
+          {gameMode === 'BASE' && <BaseOverlay />}
+          {gameMode === 'DIALOG' && <DialogOverlay />}
+          {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
+          {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
+          {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
+          {gameMode === 'BATTLE' && <BattleOverlay />}
+          {gameMode === 'PARTY' && <PartyOverlay />}
+          {gameMode === 'DEX' && <SaintsDexOverlay />}
         </div>
-      )}
+        
+        {gameMode === 'SHOP' && <ShopOverlay />}
+        {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
+        
+        <div 
+          className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
+        />
 
-      <GameOptionsMenu 
-        isOpen={isOptionsOpen}
-        onClose={() => setIsOptionsOpen(false)}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-        isAdminUser={enableStudio && isDeveloper}
-        isCreationMode={isCreationMode}
-        onToggleDevEditor={() => {
-          if (!enableStudio || !isDeveloper) return;
-          if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
-          useEditorStore.getState().toggleCreationMode(); 
-          setIsOptionsOpen(false);
-        }}
-      />
+        {gameMode === 'EXPLORING' && !isCreationMode && (
+          <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
+            <MiniMapRadar />
+          </DraggablePanel>
+        )}
+        {gameMode === 'EXPLORING' && !isCreationMode && (
+          <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
+            <SaintsHudOrbs />
+          </DraggablePanel>
+        )}
 
-      {/* UI Edit Toolbar (Studio only) */}
-      {enableStudio && <UiEditToolbar />}
-
-      {/* --- UI Overlays (Higher Z-Index) --- */}
-      {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
-      {gameMode === 'LOGIN' && <GameLogin />}
-      {gameMode === 'SERVER_SELECT' && <ServerSelect />}
-
-      {/* Classic RPG Interface Panel — on mobile this becomes a sheet when open */}
-      <DraggablePanel id="classic-panel" className="absolute bottom-4 right-4 pointer-events-none max-md:static max-md:inset-auto">
-        <ClassicPanel />
-      </DraggablePanel>
-
-      {/* Overlays that aren't part of ClassicPanel */}
-      <div 
-        className="absolute inset-0 pointer-events-none flex items-center justify-center" 
-      >
-        {gameMode === 'CRAFTING' && <CraftingOverlay />}
-        {gameMode === 'BASE' && <BaseOverlay />}
-        {gameMode === 'DIALOG' && <DialogOverlay />}
-        {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
-        {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
-        {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-        {gameMode === 'BATTLE' && <BattleOverlay />}
-        {gameMode === 'PARTY' && <PartyOverlay />}
-        {gameMode === 'DEX' && <SaintsDexOverlay />}
+        {gameMode === 'EXPLORING' && !isCreationMode && (
+          <>
+            <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
+              <Hotbar />
+            </DraggablePanel>
+            <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
+              <GameChat />
+            </DraggablePanel>
+          </>
+        )}
       </div>
-      
-      {gameMode === 'SHOP' && <ShopOverlay />}
-      {/* INVENTORY, SKILLS, EQUIPMENT, QUESTS, GTC, PARTY are now in ClassicPanel */}
-      {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
-      
-      {/* Cinematic Map Transition Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black transition-opacity duration-300 z-[9999] pointer-events-none ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
-      />
-
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
-          <MiniMapRadar />
-        </DraggablePanel>
-      )}
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
-          <SaintsHudOrbs />
-        </DraggablePanel>
-      )}
-
-      {/* Unified Game Chat UI & Hotbar */}
-      {gameMode === 'EXPLORING' && !isCreationMode && (
-        <>
-          <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
-            <Hotbar />
-          </DraggablePanel>
-          <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
-            <GameChat />
-          </DraggablePanel>
-        </>
-      )}
     </div>
   );
 }
