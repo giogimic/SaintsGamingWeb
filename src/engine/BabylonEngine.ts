@@ -1317,14 +1317,30 @@ export class BabylonEngine {
   }
 
   private applySpriteSheetUv(tex: Texture, config: SpriteSheetConfig) {
-    // Dual approach: mesh UVs (preferred) + texture scale (fallback if UV buffer
-    // isn't updatable yet). Both target the same cell.
+    // Mesh vertex UVs (setSpriteCellUVs) own the cell crop. Keep texture scale at 1
+    // so we do not double-crop (mesh UV × uScale) into a tiny brown/empty rectangle.
     tex.wrapU = Texture.CLAMP_ADDRESSMODE;
     tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-    tex.uScale = 1 / config.columns;
-    tex.vScale = 1 / config.rows;
+    tex.uScale = 1;
+    tex.vScale = 1;
     tex.uOffset = 0;
     tex.vOffset = 0;
+  }
+
+  /** Procedural silhouette must be full-frame — walk-sheet UVs crop it to a brown block. */
+  private applyDefaultPlayerFallback(spriteMesh: Mesh, mat: StandardMaterial) {
+    if (!this.defaultPlayerTexture) return;
+    mat.diffuseTexture = this.defaultPlayerTexture;
+    mat.diffuseTexture.hasAlpha = true;
+    this.applySpriteSheetUv(this.defaultPlayerTexture, SINGLE_FRAME_SPRITE_CONFIG);
+    this.setSpriteCellUVs(spriteMesh, 0, 0, 1, 1);
+    if (spriteMesh.metadata) {
+      spriteMesh.metadata.spriteConfig = SINGLE_FRAME_SPRITE_CONFIG;
+      spriteMesh.metadata.spriteUrl = "defaultPlayerTex";
+      spriteMesh.metadata.uvFullFrame = true;
+      spriteMesh.metadata.uvCol = 0;
+      spriteMesh.metadata.uvRow = 0;
+    }
   }
 
   public updateEntity(entity: BabylonEntityData) {
@@ -1346,6 +1362,7 @@ export class BabylonEngine {
         },
         this.scene
       );
+      const createdMesh = spriteMesh;
 
       // Initialize Metadata for Animation & Movement
       spriteMesh.metadata = {
@@ -1391,10 +1408,7 @@ export class BabylonEngine {
           },
           () => {
             console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
-            if (this.defaultPlayerTexture && mat) {
-              mat.diffuseTexture = this.defaultPlayerTexture;
-              mat.diffuseTexture.hasAlpha = true;
-            }
+            this.applyDefaultPlayerFallback(createdMesh, mat);
           }
         );
         tex.hasAlpha = true;
@@ -1421,8 +1435,7 @@ export class BabylonEngine {
 
         mat.diffuseTexture = tex;
       } else if (this.defaultPlayerTexture) {
-        mat.diffuseTexture = this.defaultPlayerTexture;
-        mat.diffuseTexture.hasAlpha = true;
+        this.applyDefaultPlayerFallback(createdMesh, mat);
       }
 
       spriteMesh.material = mat;
@@ -1460,6 +1473,7 @@ export class BabylonEngine {
       const mat = spriteMesh.material as StandardMaterial;
       const tex = mat?.diffuseTexture as Texture;
       const currentUrl = (spriteMesh.metadata?.spriteUrl as string | undefined) || tex?.name;
+      const existingMesh = spriteMesh;
       
       if (mat) {
         // If the URL changed (and it's not falling back to the default dynamic texture)
@@ -1476,10 +1490,7 @@ export class BabylonEngine {
             },
             () => {
               console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
-              if (this.defaultPlayerTexture) {
-                mat.diffuseTexture = this.defaultPlayerTexture;
-                mat.diffuseTexture.hasAlpha = true;
-              }
+              this.applyDefaultPlayerFallback(existingMesh, mat);
             }
           );
           newTex.hasAlpha = true;
@@ -1494,7 +1505,7 @@ export class BabylonEngine {
           }
           mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
-          mat.diffuseTexture = this.defaultPlayerTexture;
+          this.applyDefaultPlayerFallback(existingMesh, mat);
         }
       }
     }
