@@ -24,7 +24,7 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
 1. File gaps from `DEMO_SMOKE.md` run
 2. Per-character bramble flags if shards fight over shared grid
-3. ALIGNMENT D — Studio: modes / tag UX after place→save is solid; seed assets if DB empty (`npx tsx scripts/seed-game-assets-from-public.ts`)
+3. ALIGNMENT D — Studio: contextual modes / tag UX (place→save→create now solid)
 4. ALIGNMENT E
 
 ---

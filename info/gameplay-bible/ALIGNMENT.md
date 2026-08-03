@@ -78,6 +78,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 3. Tag/component placement UX over raw logic paint  
 4. **Done 2026-08-03:** World Builder **Save Map** → `POST /api/maps/[slug]` + `admin_reload_map` hot-reload; **Logic (−1)** layer target (was unreachable `-2`)  
 5. **Done 2026-08-03:** NPC Drop mutates `activeMapData.npcs` (+ `/api/npc-dialogue`); Asset browsers use `/api/assets` (no Prisma-in-browser); seed from `public/game-assets`  
+6. **Done 2026-08-03:** Create New Map persists via `POST /api/maps`; +Layer works; map search hydrates from `/api/maps`; tileset img path fallback  
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  

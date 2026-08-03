@@ -291,6 +291,30 @@ export const WorldBuilderPanel: React.FC = () => {
               placeholder="Display Name"
               className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
             />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-slate-400">W</label>
+                <input
+                  type="number"
+                  min={8}
+                  max={128}
+                  value={newMapWidth}
+                  onChange={(e) => setNewMapWidth(parseInt(e.target.value, 10) || 24)}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] text-slate-400">H</label>
+                <input
+                  type="number"
+                  min={8}
+                  max={128}
+                  value={newMapHeight}
+                  onChange={(e) => setNewMapHeight(parseInt(e.target.value, 10) || 24)}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
+                />
+              </div>
+            </div>
             <button
               onClick={() => void handleCreateNewMapSubmit()}
               disabled={isCreating}
