@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store';
-import { searchMapIndex, registerNewMap } from '../../data/map-index';
-import { GAME_MAPS, invalidateMapCache } from '../../data/maps';
+import { searchMapIndex, registerNewMap, type MapIndexEntry } from '../../data/map-index';
+import { GAME_MAPS, invalidateMapCache, loadMap } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
@@ -22,13 +22,51 @@ export const WorldBuilderPanel: React.FC = () => {
   const [newMapWidth, setNewMapWidth] = useState(24);
   const [newMapHeight, setNewMapHeight] = useState(24);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
   
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
   const brushTileId = useEditorStore((state) => state.activeBrushTileId);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
 
-  const mapIndex = searchMapIndex(mapSearchQuery);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/maps');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const entries: MapIndexEntry[] = (data.maps || []).map((m: any) => ({
+          id: m.id,
+          name: m.name || m.id,
+          category: 'Special' as const,
+          recommendedLevel: 1,
+          width: 24,
+          height: 24,
+          npcCount: 0,
+          gateCount: 0,
+          hasEncounters: false,
+        }));
+        setRemoteMaps(entries);
+      } catch {
+        /* ignore — local index still works */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isCreating, isSaving]);
+
+  const localIndex = searchMapIndex(mapSearchQuery);
+  const q = mapSearchQuery.trim().toLowerCase();
+  const remoteFiltered = remoteMaps.filter((m) =>
+    !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
+  );
+  const seen = new Set(localIndex.map((m) => m.id));
+  const mapIndex = [
+    ...localIndex,
+    ...remoteFiltered.filter((m) => !seen.has(m.id)),
+  ];
   const baseMapId = toBaseMapId(String(currentMapId || ''));
   const currentMapData = activeMapData || GAME_MAPS[baseMapId] || {
     id: baseMapId,
@@ -41,10 +79,25 @@ export const WorldBuilderPanel: React.FC = () => {
     ]
   };
 
-  const handleWarpToMap = (targetMapId: string) => {
-    useGameStore.setState({ currentMapId: targetMapId });
-    setMapSearchQuery('');
-    showToast(`Warped to map: ${targetMapId}`);
+  const defaultTilesets = [
+    { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+    { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+    { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+    { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+    { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+  ];
+
+  const handleWarpToMap = async (targetMapId: string) => {
+    try {
+      const loaded = await loadMap(targetMapId);
+      useGameStore.setState({ currentMapId: targetMapId, activeMapData: loaded });
+      setMapSearchQuery('');
+      showToast(`Warped to map: ${targetMapId}`);
+    } catch {
+      useGameStore.setState({ currentMapId: targetMapId });
+      setMapSearchQuery('');
+      showToast(`Warped to map: ${targetMapId} (loading…)`);
+    }
   };
 
   const handleSaveMap = async () => {
@@ -85,16 +138,18 @@ export const WorldBuilderPanel: React.FC = () => {
     }
   };
 
-  const handleCreateNewMapSubmit = () => {
+  const handleCreateNewMapSubmit = async () => {
     if (!newMapSlug) {
       showToast('Please enter a valid Map ID slug!');
       return;
     }
 
     const cleanSlug = newMapSlug.toUpperCase().replace(/\s+/g, '_');
-    const newGrid = Array(newMapHeight).fill(0).map((_, r) =>
-      Array(newMapWidth).fill(0).map((_, c) =>
-        (r === 0 || r === newMapHeight - 1 || c === 0 || c === newMapWidth - 1) ? 1 : 0
+    const w = Math.max(8, Math.min(128, Number(newMapWidth) || 24));
+    const h = Math.max(8, Math.min(128, Number(newMapHeight) || 24));
+    const newGrid = Array(h).fill(0).map((_, r) =>
+      Array(w).fill(0).map((_, c) =>
+        (r === 0 || r === h - 1 || c === 0 || c === w - 1) ? 1 : 0
       )
     );
 
@@ -103,22 +158,65 @@ export const WorldBuilderPanel: React.FC = () => {
       name: newMapName || cleanSlug,
       grid: newGrid,
       gates: {},
-      npcs: [],
-      encounterPool: [],
-      tileLayers: [{ name: 'Ground', grid: newGrid }],
-      tilesets: [
-        { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
-        { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-        { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-        { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-        { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 }
-      ]
+      npcs: [] as any[],
+      encounterPool: [] as any[],
+      tileLayers: [{ name: 'Ground', grid: newGrid.map((row) => [...row]) }],
+      tilesets: defaultTilesets,
     };
 
-    registerNewMap(newMapData);
-    useGameStore.setState({ currentMapId: cleanSlug, activeMapData: newMapData });
-    setIsCreatingNewMap(false);
-    showToast(`Created & Warped to new map: ${cleanSlug}`);
+    setIsCreating(true);
+    try {
+      const res = await fetch(`/api/maps/${encodeURIComponent(cleanSlug)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newMapData.name,
+          grid: newMapData.grid,
+          gates: newMapData.gates,
+          npcs: newMapData.npcs,
+          encounterPool: newMapData.encounterPool,
+          tileLayers: newMapData.tileLayers,
+          tilesets: newMapData.tilesets,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err?.error || `Create failed (${res.status})`);
+        return;
+      }
+
+      invalidateMapCache(cleanSlug);
+      registerNewMap(newMapData);
+      useGameStore.setState({ currentMapId: cleanSlug, activeMapData: newMapData });
+      emitSocketEvent?.('admin_reload_map', { mapId: cleanSlug });
+      setIsCreatingNewMap(false);
+      setNewMapSlug('');
+      setNewMapName('');
+      showToast(`Created & saved map: ${cleanSlug}`);
+    } catch (e: any) {
+      console.error('[Studio] Create map failed', e);
+      showToast(e?.message || 'Create failed');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleAddLayer = () => {
+    if (!activeMapData && !currentMapData) {
+      showToast('Load a map before adding layers.');
+      return;
+    }
+    const base = activeMapData || currentMapData;
+    const h = base.grid?.length || 24;
+    const w = base.grid?.[0]?.length || 24;
+    const empty = Array(h).fill(0).map(() => Array(w).fill(0));
+    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
+    const nextIdx = layers.length;
+    layers.push({ name: `Layer ${nextIdx}`, grid: empty });
+    const next = { ...base, tileLayers: layers };
+    useGameStore.getState().setActiveMapData(next);
+    setActiveLayerIdx(nextIdx);
+    showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
   };
 
   const handleBrushSelect = (tileId: number) => {
@@ -160,7 +258,7 @@ export const WorldBuilderPanel: React.FC = () => {
             {mapIndex.map((m) => (
               <div
                 key={m.id}
-                onClick={() => handleWarpToMap(m.id)}
+                onClick={() => void handleWarpToMap(m.id)}
                 className="px-2 py-1 hover:bg-white/10 cursor-pointer flex justify-between items-center"
               >
                 <span>{m.name}</span>
@@ -194,10 +292,11 @@ export const WorldBuilderPanel: React.FC = () => {
               className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
             />
             <button
-              onClick={handleCreateNewMapSubmit}
-              className="w-full py-1 bg-green-600/80 hover:bg-green-500 text-white rounded font-bold"
+              onClick={() => void handleCreateNewMapSubmit()}
+              disabled={isCreating}
+              className="w-full py-1 bg-green-600/80 hover:bg-green-500 disabled:opacity-50 text-white rounded font-bold"
             >
-              Generate
+              {isCreating ? 'Creating…' : 'Generate'}
             </button>
           </div>
         )}
@@ -250,7 +349,7 @@ export const WorldBuilderPanel: React.FC = () => {
             activeLayerIdx={activeLayerIdx}
             onLayerChange={setActiveLayerIdx}
             tileLayers={currentMapData.tileLayers || []}
-            onAddLayer={() => {}} // Placeholder for now
+            onAddLayer={handleAddLayer}
           />
         </div>
       </div>
