@@ -49,7 +49,7 @@
 | Inventory | Partial |
 | Skills framework | Partial (not full 27) |
 | Base plot place/save/visit | Partial foundation (`BASE`, overlays) |
-| Editor load/place/save | **Improved 2026-08-03:** Save/NPC/Quest docks; Asset Manager via `/api/assets`; Walk Mode default; `validateMapSave`; dock layout persist (`sg.studio.panelLayout.v1`) |
+| Editor load/place/save | **Improved 2026-08-03:** Save/NPC/Quest docks; Asset packs + gameplay flags; Walk Mode; `validateMapSave`; dock persist; **component forms** + Warp Gate (`logicComponents`) |
 
 ---
 
