@@ -23,9 +23,9 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 ### Suggested next (after human smoke)
 
 1. File gaps from `DEMO_SMOKE.md` run
-2. Per-character bramble flags if shards fight over shared grid
+2. Per-character bramble flags if shards fight over shared grid — **Done 2026-08-03:** personal overlay (shared DEMO grid stays tile 11; walk/visuals per account; Q4 hydrate on join)
 3. ALIGNMENT D — Studio Quest dock **done 2026-08-03** (templates list + ACCEPT_QUEST assign); optional per-dock permission matrix later
-4. ALIGNMENT E — **E.1–E.3 done 2026-08-03**; Studio asset client load improved (GET-by-id, pagination, sheet frames seed); next: human smoke / DEMO_SMOKE gaps / bramble per-character if shards fight
+4. ALIGNMENT E — **E.1–E.3 done**; Studio asset client load improved; **CONTINUE #2 per-account bramble done 2026-08-03**; next: human `DEMO_SMOKE` / remaining Studio polish from docs
 
 ---
 

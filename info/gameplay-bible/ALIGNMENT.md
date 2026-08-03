@@ -42,7 +42,7 @@
 
 | MPV proof | Status |
 | :--- | :---: |
-| Multiplayer lobby (see/move/chat) | **Improved 2026-08-03:** same-shard see/move/local-chat + soft reconnect verified via 2-socket smoke; party chat event fixed; staff kick disables rejoin. Human UI smoke still welcome (`LOBBY_VERIFY.md`) |
+| Multiplayer lobby (see/move/chat) | **Improved 2026-08-03:** same-shard see/move/local-chat + soft reconnect; **bramble clears are per-account** (shared grid stays seeded) |
 | Tuxemon-based adventure zone | Partial (maps + tuxemon data present) |
 | Encounters + TB capture loop end-to-end | Improved (2.1.114) — directMessage, capture math, PlayerCreature insert; needs human smoke |
 | RT combat vs monsters (server math, loot) | Improved (2.1.114) — range/LoS/miss/crit + loot despawn; needs human smoke |
