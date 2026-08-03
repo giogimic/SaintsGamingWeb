@@ -153,6 +153,9 @@ export class BabylonEngine {
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
+  /** Studio paint overlays — batched tileset meshes have no per-cell `tile_*` picks. */
+  private paintOverlayMeshes: Map<string, Mesh> = new Map();
+  private mapPickPlane?: Mesh;
 
   public onEntityClick?: (entityId: string) => void;
 
@@ -598,6 +601,11 @@ export class BabylonEngine {
     this.tileMeshes = [];
     this.objectMeshes = [];
     this.waterMaterials = [];
+    this.clearPaintOverlays();
+    if (this.mapPickPlane) {
+      this.mapPickPlane.dispose();
+      this.mapPickPlane = undefined;
+    }
     this.cameraSnapped = false; // Force snap on next setCameraPosition
 
     const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
@@ -957,6 +965,23 @@ export class BabylonEngine {
       }
     }
 
+    // Invisible full-map pick plane — batched `tileset_mesh_*` quads skip empty
+    // cells, so clicks would miss holes / never resolve (r,c) without this.
+    const pickW = width * tileSize;
+    const pickH = height * tileSize;
+    const pickPlane = MeshBuilder.CreateGround(
+      'map_pick_plane',
+      { width: pickW, height: pickH },
+      this.scene
+    );
+    pickPlane.position = new Vector3(0, -0.01, 0);
+    pickPlane.parent = this.rootNode;
+    pickPlane.isPickable = true;
+    pickPlane.isVisible = false;
+    pickPlane.visibility = 0;
+    this.mapPickPlane = pickPlane;
+    this.tileMeshes.push(pickPlane);
+
     // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
     if (npcs) {
       npcs.forEach((npc) => {
@@ -1101,6 +1126,56 @@ export class BabylonEngine {
     this.updateSingleTile(r, c, tileId, -1);
   }
 
+  private clearPaintOverlays() {
+    this.paintOverlayMeshes.forEach((m) => m.dispose());
+    this.paintOverlayMeshes.clear();
+  }
+
+  /** Convert world XZ (root-local) to tile row/col. */
+  public worldToTile(worldX: number, worldZ: number): { r: number; c: number } | null {
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const s = this.currentTileSize || 1;
+    if (!w || !h) return null;
+    const c = Math.floor(worldX / s + w / 2);
+    const r = Math.floor(h / 2 - worldZ / s);
+    if (r < 0 || c < 0 || r >= h || c >= w) return null;
+    return { r, c };
+  }
+
+  private estimateTilesetRows(
+    ts: { imageSource: string; columns: number; tilewidth?: number; tileheight?: number; imageheight?: number; tilecount?: number },
+    localGid: number
+  ): number {
+    let estimatedRows = 24;
+    const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+    const sizes = TILESET_SIZES[rawSource];
+    if (sizes && sizes.h && ts.tileheight) {
+      estimatedRows = Math.floor(sizes.h / ts.tileheight);
+    } else if (ts.imageheight && ts.tileheight) {
+      estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
+    } else if (ts.tilecount && ts.columns) {
+      estimatedRows = Math.ceil(ts.tilecount / ts.columns);
+    } else if (ts.imageSource.includes("Terrain")) {
+      estimatedRows = 24;
+    } else if (ts.imageSource.includes("Furniture")) {
+      estimatedRows = 11;
+    } else if (ts.imageSource.includes("Interior_Walls")) {
+      estimatedRows = 12;
+    } else if (ts.imageSource.includes("Interior_Floors")) {
+      estimatedRows = 12;
+    } else if (ts.imageSource.includes("Vegetation")) {
+      estimatedRows = 4;
+    } else {
+      estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns));
+    }
+    return estimatedRows;
+  }
+
+  /**
+   * Paint / update a visual tile. Batched maps use `tileset_mesh_*` (no `tile_*`
+   * meshes), so we keep a per-cell overlay plane for live Studio feedback.
+   */
   public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>) {
     if (layerIdx === -1) {
       const tileMesh = this.scene.getMeshByName(`tile_${r}_${c}`) as Mesh;
@@ -1111,61 +1186,120 @@ export class BabylonEngine {
     }
 
     const meshName = `tile_${layerIdx}_${r}_${c}`;
-    const tileMesh = this.scene.getMeshByName(meshName) as Mesh;
-    if (!tileMesh || !tileMesh.material || !tilesets || tilesets.length === 0) return;
+    const legacyMesh = this.scene.getMeshByName(meshName) as Mesh | null;
+
+    // Erase → drop overlay (batch still shows old art until map reload/save).
+    if (!tileId) {
+      const key = `${layerIdx}_${r}_${c}`;
+      const overlay = this.paintOverlayMeshes.get(key);
+      if (overlay) {
+        overlay.dispose();
+        this.paintOverlayMeshes.delete(key);
+      }
+      if (legacyMesh && legacyMesh.material) {
+        legacyMesh.isVisible = false;
+      }
+      return;
+    }
+
+    if (!tilesets || tilesets.length === 0) {
+      if (legacyMesh && legacyMesh.material) {
+        this.applyTileMaterial(legacyMesh.material as StandardMaterial, tileId, r, c);
+      }
+      return;
+    }
 
     const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
-    const ts = sortedTilesets.find(t => tileId >= t.firstgid);
+    const ts = sortedTilesets.find((t) => tileId >= t.firstgid);
     if (!ts || !ts.imageSource) return;
-
-    const mat = this.tilesetMaterialCache.get(ts.imageSource);
-    if (mat) {
-      tileMesh.material = mat;
-    }
 
     const localGid = tileId - ts.firstgid;
     const tsCol = localGid % ts.columns;
     const tsRow = Math.floor(localGid / ts.columns);
-    
-    // Calculate exact rows if possible
-    let estimatedRows = 24;
-    const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-    const sizes = TILESET_SIZES[rawSource];
-    if (sizes && sizes.h && ts.tileheight) {
-      estimatedRows = Math.floor(sizes.h / ts.tileheight);
-    } else if (ts.imageheight && ts.tileheight) {
-      estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
-    } else if (ts.tilecount && ts.columns) {
-      estimatedRows = Math.ceil(ts.tilecount / ts.columns);
-    } else {
-      if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
-      else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
-      else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
-      else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
-      else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
-      else estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns));
-    }
-    
-    // Half-pixel inset to prevent tile edge bleeding/seams
+    const estimatedRows = this.estimateTilesetRows(ts, localGid);
+
     const imgW = ts.columns * (ts.tilewidth || 16);
     const imgH = estimatedRows * (ts.tileheight || 16);
     const hpU = 0.5 / imgW;
     const hpV = 0.5 / imgH;
-
-    // InvertY = false means Texture (0,0) is Top-Left
     const u0 = tsCol / ts.columns + hpU;
     const u1 = (tsCol + 1) / ts.columns - hpU;
-    const v0 = tsRow / estimatedRows + hpV; // Top of tile
-    const v1 = (tsRow + 1) / estimatedRows - hpV; // Bottom of tile
+    const v0 = tsRow / estimatedRows + hpV;
+    const v1 = (tsRow + 1) / estimatedRows - hpV;
+    const uvData = [u0, v1, u1, v1, u1, v0, u0, v0];
 
-    // Plane vertices: 0=Bottom-Left, 1=Bottom-Right, 2=Top-Right, 3=Top-Left
-    const uvData = [
-      u0, v1, // Bottom-Left Vertex -> Bottom of Tile
-      u1, v1, // Bottom-Right Vertex -> Bottom of Tile
-      u1, v0, // Top-Right Vertex -> Top of Tile
-      u0, v0  // Top-Left Vertex -> Top of Tile
-    ];
-    tileMesh.setVerticesData(VertexBuffer.UVKind, uvData);
+    // Prefer legacy per-tile mesh when present (fallback renderer).
+    if (legacyMesh) {
+      let mat = this.tilesetMaterialCache.get(ts.imageSource);
+      if (!mat) {
+        mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
+        let tex = this.tilesetTextureCache.get(ts.imageSource);
+        if (!tex) {
+          const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+          const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+          tex = new Texture(tilesetPath, this.scene, true, false, 1);
+          tex.hasAlpha = true;
+          this.tilesetTextureCache.set(ts.imageSource, tex);
+        }
+        mat.diffuseTexture = tex;
+        mat.useAlphaFromDiffuseTexture = true;
+        mat.backFaceCulling = false;
+        mat.specularColor = new Color3(0.05, 0.05, 0.05);
+        this.tilesetMaterialCache.set(ts.imageSource, mat);
+      }
+      legacyMesh.material = mat;
+      legacyMesh.isVisible = true;
+      try {
+        legacyMesh.markVerticesDataAsUpdatable(VertexBuffer.UVKind, true);
+      } catch { /* ignore */ }
+      legacyMesh.setVerticesData(VertexBuffer.UVKind, uvData, true);
+      return;
+    }
+
+    // Batched path: create / refresh a pickable overlay plane above the cell.
+    const key = `${layerIdx}_${r}_${c}`;
+    let overlay = this.paintOverlayMeshes.get(key);
+    const tileSize = this.currentTileSize || 1;
+    const posX = (c - this.currentMapWidth / 2) * tileSize;
+    const posZ = (this.currentMapHeight / 2 - r) * tileSize;
+    const y = layerIdx * 0.02 + 0.03;
+
+    if (!overlay) {
+      overlay = MeshBuilder.CreatePlane(
+        `paint_${layerIdx}_${r}_${c}`,
+        { size: tileSize, updatable: true },
+        this.scene
+      );
+      overlay.rotation.x = Math.PI / 2;
+      overlay.parent = this.rootNode;
+      overlay.isPickable = false;
+      this.paintOverlayMeshes.set(key, overlay);
+    }
+
+    overlay.position = new Vector3(posX, y, posZ);
+
+    let mat = this.tilesetMaterialCache.get(ts.imageSource);
+    if (!mat) {
+      mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
+      let tex = this.tilesetTextureCache.get(ts.imageSource);
+      if (!tex) {
+        const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+        const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+        tex = new Texture(tilesetPath, this.scene, true, false, 1);
+        tex.hasAlpha = true;
+        this.tilesetTextureCache.set(ts.imageSource, tex);
+      }
+      mat.diffuseTexture = tex;
+      mat.useAlphaFromDiffuseTexture = true;
+      mat.backFaceCulling = false;
+      mat.specularColor = new Color3(0.05, 0.05, 0.05);
+      this.tilesetMaterialCache.set(ts.imageSource, mat);
+    }
+    overlay.material = mat;
+    try {
+      overlay.markVerticesDataAsUpdatable(VertexBuffer.UVKind, true);
+    } catch { /* ignore */ }
+    overlay.setVerticesData(VertexBuffer.UVKind, uvData, true);
   }
 
   // --- LOGIC GRID OVERLAY SYSTEM ---
@@ -1237,27 +1371,39 @@ export class BabylonEngine {
 
   public enableTilePicking(onTileClick: (r: number, c: number, layerIdx?: number) => void) {
     this.scene.onPointerDown = (_evt, pickResult) => {
-      if (pickResult.hit && pickResult.pickedMesh) {
-        const name = pickResult.pickedMesh.name;
-        // Match tile_ with 3 parts (tile_r_c) or 4 parts (tile_layer_r_c) or logic_r_c
-        if (name.startsWith('tile_') || name.startsWith('logic_')) {
-          const parts = name.split('_');
-          if (parts[0] === 'logic') {
-            const r = parseInt(parts[1], 10);
-            const c = parseInt(parts[2], 10);
-            onTileClick(r, c, -2);
-          } else if (parts.length === 3) {
-            const r = parseInt(parts[1], 10);
-            const c = parseInt(parts[2], 10);
-            onTileClick(r, c, -1);
-          } else if (parts.length === 4) {
-            const layerIdx = parseInt(parts[1], 10);
-            const r = parseInt(parts[2], 10);
-            const c = parseInt(parts[3], 10);
-            onTileClick(r, c, layerIdx);
-          }
+      if (!pickResult.hit || !pickResult.pickedMesh) return;
+
+      const name = pickResult.pickedMesh.name;
+
+      // Prefer named logic / legacy per-tile meshes when present.
+      if (name.startsWith('logic_') || name.startsWith('tile_')) {
+        const parts = name.split('_');
+        if (parts[0] === 'logic') {
+          const r = parseInt(parts[1], 10);
+          const c = parseInt(parts[2], 10);
+          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, -2);
+          return;
+        }
+        if (parts.length === 3) {
+          const r = parseInt(parts[1], 10);
+          const c = parseInt(parts[2], 10);
+          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, -1);
+          return;
+        }
+        if (parts.length === 4) {
+          const layerIdx = parseInt(parts[1], 10);
+          const r = parseInt(parts[2], 10);
+          const c = parseInt(parts[3], 10);
+          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, layerIdx);
+          return;
         }
       }
+
+      // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
+      const point = pickResult.pickedPoint;
+      if (!point) return;
+      const tile = this.worldToTile(point.x, point.z);
+      if (tile) onTileClick(tile.r, tile.c, -1);
     };
   }
 

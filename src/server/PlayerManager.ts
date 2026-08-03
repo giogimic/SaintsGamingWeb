@@ -148,7 +148,24 @@ export class PlayerManager {
         this.worldManager.leaveInstance(existingPlayer.mapId, existingPlayer.accountId);
         this.players.delete(existingId);
         this.inputQueues.delete(existingId);
-        this.engine.events.emit("leaveRoom", { socketId: existingPlayer.socketId, room: existingPlayer.mapId });
+        // Tell peers the old avatar left (re-join / character switch) so ghosts clear.
+        this.engine.events.emit("networkBroadcast", {
+          room: existingPlayer.mapId,
+          event: "player_left",
+          data: { socketId: existingPlayer.socketId, entityId: existingId },
+        });
+        this.engine.events.emit("leaveRoom", {
+          socketId: existingPlayer.socketId,
+          room: existingPlayer.mapId,
+        });
+        this.engine.events.emit("leaveRoom", {
+          socketId: existingPlayer.socketId,
+          room: InterestManager.roomKey(
+            existingPlayer.mapId,
+            existingPlayer.zoneX,
+            existingPlayer.zoneY
+          ),
+        });
       }
     }
 
@@ -182,13 +199,16 @@ export class PlayerManager {
     }
 
     if (!instanceId) {
-      // Use dynamic sharding to get an instance
-      const instance = await this.worldManager.joinMap(data.mapId, accountId, isPrivate);
+      // Always join the resolved playable base map — never raw data.mapId
+      // (shard suffix / retired SAINTS_VILLAGE created parallel rooms and hid peers).
+      const instance = await this.worldManager.joinMap(requestedMapId, accountId, isPrivate);
       instanceId = instance.instanceId;
     }
 
-    const startX = typeof data.x === "number" ? data.x : 14;
-    const startY = typeof data.y === "number" ? data.y : 15;
+    const startX =
+      remappedFromRetired || typeof data.x !== "number" ? DEMO_SPAWN.x : data.x;
+    const startY =
+      remappedFromRetired || typeof data.y !== "number" ? DEMO_SPAWN.y : data.y;
     const startZone = InterestManager.zoneOf(startX, startY);
 
     const player: PlayerState = {
@@ -214,8 +234,8 @@ export class PlayerManager {
     // matches this join. Never overwrite the live instanceId with a stale
     // map id (that put players in different rooms and hid multiplayer).
     const savedPos = await this.persistence.loadPlayerPosition(accountId);
-    if (savedPos) {
-      if (isSameBaseMap(String(savedPos.mapId || ""), String(data.mapId || ""))) {
+    if (savedPos && !remappedFromRetired) {
+      if (isSameBaseMap(String(savedPos.mapId || ""), requestedMapId)) {
         player.x = savedPos.x;
         player.y = savedPos.y;
         const z = InterestManager.zoneOf(player.x, player.y);
