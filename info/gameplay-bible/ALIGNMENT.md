@@ -49,7 +49,7 @@
 | Inventory | Partial |
 | Skills framework | Partial (not full 27) |
 | Base plot place/save/visit | Partial foundation (`BASE`, overlays) |
-| Editor load/place/save | **Improved 2026-08-03:** Save Map + Logic (−1); NPC place → `activeMapData.npcs` + optional dialogue upsert; Asset Manager via `/api/assets` (seed `scripts/seed-game-assets-from-public.ts`) |
+| Editor load/place/save | **Improved 2026-08-03:** Save/NPC/Quest docks; Asset Manager via `/api/assets` + seed frames/pagination/get-by-id |
 
 ---
 

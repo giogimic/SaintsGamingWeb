@@ -25,7 +25,7 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 1. File gaps from `DEMO_SMOKE.md` run
 2. Per-character bramble flags if shards fight over shared grid
 3. ALIGNMENT D — Studio Quest dock **done 2026-08-03** (templates list + ACCEPT_QUEST assign); optional per-dock permission matrix later
-4. ALIGNMENT E — **E.1–E.3 done 2026-08-03** (pinned creature, GTC/inventory bridge, remarkable-capture feed posts); next: human smoke / DEMO_SMOKE gaps / Studio polish from docs
+4. ALIGNMENT E — **E.1–E.3 done 2026-08-03**; Studio asset client load improved (GET-by-id, pagination, sheet frames seed); next: human smoke / DEMO_SMOKE gaps / bramble per-character if shards fight
 
 ---
 
