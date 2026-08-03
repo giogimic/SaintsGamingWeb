@@ -23,6 +23,7 @@ import { NpcEditorPanel } from './panels/NpcEditorPanel';
 import { DevToolsPanel } from './panels/DevToolsPanel';
 import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
 import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
+import { QuestEditorPanel } from './panels/QuestEditorPanel';
 
 const MODE_BUTTONS: Array<{
   id: StudioMode;
@@ -37,8 +38,7 @@ const MODE_BUTTONS: Array<{
     id: 'quest',
     label: 'Quest',
     icon: <ScrollText className="w-4 h-4" />,
-    disabled: true,
-    title: 'Quest dock deferred — use NPC + Properties for now',
+    title: 'Quest templates + assign ACCEPT_QUEST to map NPCs',
   },
   { id: 'creature', label: 'Creature', icon: <PawPrint className="w-4 h-4" /> },
   { id: 'test', label: 'Test', icon: <Play className="w-4 h-4" />, title: 'Walk the world (exit Studio tools)' },
@@ -100,6 +100,10 @@ export const StudioEditorShell: React.FC = () => {
           <NpcEditorPanel />
         </DraggablePanel>
 
+        <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />}>
+          <QuestEditorPanel />
+        </DraggablePanel>
+
         <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />}>
           <DevToolsPanel />
         </DraggablePanel>
@@ -150,6 +154,7 @@ export const StudioEditorShell: React.FC = () => {
           <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} label="Props" />
           <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} label="Assets" />
           <DockButton id="npc" icon={<Users className="w-5 h-5" />} label="NPCs" />
+          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} label="Quests" />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
           <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" />
           <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" />

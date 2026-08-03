@@ -24,8 +24,8 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 
 1. File gaps from `DEMO_SMOKE.md` run
 2. Per-character bramble flags if shards fight over shared grid
-3. ALIGNMENT D — Studio: Quest panel when ready; optional per-dock permission matrix later
-4. ALIGNMENT E
+3. ALIGNMENT D — Studio Quest dock **done 2026-08-03** (templates list + ACCEPT_QUEST assign); optional per-dock permission matrix later
+4. ALIGNMENT E — Profile pinned creature → marketplace/inventory bridge → social feed hooks
 
 ---
 

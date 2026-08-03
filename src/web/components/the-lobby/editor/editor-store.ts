@@ -23,7 +23,7 @@ export interface FloatingPanelState {
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, PanelId[]> = {
   build: ['build', 'properties'],
   npc: ['npc', 'properties', 'assets'],
-  quest: [], // no QuestEditorPanel yet — mode is disabled in UI
+  quest: ['npc', 'quest'],
   creature: ['creature'],
   test: [],
 };
@@ -122,7 +122,6 @@ export const useEditorStore = create<EditorState>()(
           closeAllPanels(state);
           return;
         }
-        // Quest has no panel yet — stay in creation but open nothing / keep toast via UI
         state.isCreationMode = true;
         openModePanels(state, mode);
       }),
