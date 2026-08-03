@@ -88,8 +88,7 @@ export const SaintsHudOrbs: React.FC = () => {
             <div className="mt-0.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-lobby-fog md:gap-2 md:text-[10px] md:tracking-[0.2em]">
               <span className="text-lobby-film">Lv {level}</span>
               <span className="text-lobby-ash">·</span>
-              <span className="hidden text-lobby-soul xs:inline sm:inline">Soul Film</span>
-              <span className="text-lobby-soul sm:hidden">Film</span>
+              <span className="text-lobby-soul">Film</span>
             </div>
           </div>
         </div>
