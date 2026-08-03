@@ -515,6 +515,25 @@ export default function TheLobby({
           FLEE: 'Got away safely.',
         };
         state.showToast(messages[data.result] || 'Battle ended.');
+
+        // ALIGNMENT E.3 — remarkable captures → SocialPost (reuse createSocialPost)
+        if (data.result === 'CAPTURE' && data.capture?.isRemarkable) {
+          const name = data.capture.name || data.capture.speciesSlug || 'a creature';
+          const slug = data.capture.speciesSlug || 'unknown';
+          const first = data.capture.isFirstOfSpecies ? ' (first of species!)' : '';
+          void import('@/app/actions/social')
+            .then(({ createSocialPost }) =>
+              createSocialPost(
+                `Just captured ${name}${first} in The Lobby! 🐾 #SaintsTamer #Capture #${String(slug).replace(/[^a-zA-Z0-9_]/g, '')}`
+              )
+            )
+            .then(() => {
+              state.showToast('Shared capture to Community Feed!');
+            })
+            .catch((err) => {
+              console.warn('[lobby] capture feed post failed', err);
+            });
+        }
       } else if (data?.winner === myId) {
         state.showToast('You won the battle!');
       } else if (data?.winner) {
