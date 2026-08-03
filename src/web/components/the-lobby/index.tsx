@@ -823,11 +823,32 @@ export default function TheLobby({
       }
     });
 
+    // Depend on stable session user id only — NOT `session` object identity
+    // (NextAuth refetches) and NOT `activeCharacterId` (character select would
+    // tear down the socket, clear otherPlayers, and hide peers). Re-join on
+    // character change is handled by selectAndLoadCharacter's join_map emit.
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activeCharacterId, status, session]);
+  }, [status, session?.user?.id]);
+
+  // If character becomes available after socket connect, ensure we are on-map.
+  useEffect(() => {
+    if (!activeCharacterId || status !== 'authenticated' || !session?.user?.id) return;
+    const socket = socketRef.current;
+    if (!socket?.connected) return;
+    const state = useGameStore.getState();
+    if (state.gameMode !== 'EXPLORING') return;
+    socket.emit('join_map', {
+      accountId: session.user.id,
+      mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
+      x: state.player.position?.x ?? 14,
+      y: state.player.position?.y ?? 15,
+      name: state.player.name || 'Player',
+      spriteId: state.player.spriteId || 'adventurer',
+    });
+  }, [activeCharacterId, status, session?.user?.id]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
