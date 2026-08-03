@@ -154,10 +154,10 @@ export default function TheLobby({
         mapEntities: [], // clear stale placeholders; socket will repopulate
       });
 
-      // Notify socket server of loaded character specs
+      // Notify socket server of loaded character specs (base map id only — never shard suffix)
       socketRef.current?.emit('join_map', {
-        accountId: charId,
-        mapId: validMapId,
+        accountId: session?.user?.id || charId,
+        mapId: toBaseMapId(validMapId),
         x: validPosition.x,
         y: validPosition.y,
         name: res.data.name,
@@ -299,7 +299,7 @@ export default function TheLobby({
         }
         socket.emit('join_map', {
           accountId: effectiveAccountId,
-          mapId: state.currentMapId,
+          mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
           x: state.player.position?.x ?? 6,
           y: state.player.position?.y ?? 2,
           name: state.player.name || 'Player',

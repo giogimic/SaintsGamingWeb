@@ -259,15 +259,17 @@ export class WorldManager {
   }
 
   public async joinMap(mapId: string, accountId: string, isPrivate: boolean = false): Promise<MapInstance> {
+    // Always shard against the base definition id — never DEMO_SANDBOX_ch1_ch1.
+    const baseMapId = toBaseMapId(String(mapId || DEMO_MAP_ID)) || DEMO_MAP_ID;
     // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
-    await mapLoader.loadMapData(mapId);
+    await mapLoader.loadMapData(baseMapId);
 
     if (isPrivate) {
       // Private instances (e.g. player bases) are isolated per account
-      const instanceId = `${mapId}_${accountId}`;
+      const instanceId = `${baseMapId}_${accountId}`;
       let instance = this.instances.get(instanceId);
       if (!instance) {
-        instance = this.createInstance(instanceId, mapId);
+        instance = this.createInstance(instanceId, baseMapId);
       }
       instance.playerCount++;
       return instance;
@@ -279,7 +281,7 @@ export class WorldManager {
     let maxShardNum = 0;
 
     for (const [id, instance] of this.instances.entries()) {
-      if (instance.mapId === mapId && !id.includes("_acc")) {
+      if (instance.mapId === baseMapId && !id.includes("_acc")) {
         // Extract channel number (e.g., SAINTS_VILLAGE_ch1 -> 1)
         const match = id.match(/_ch(\d+)$/);
         if (match) {
@@ -297,8 +299,8 @@ export class WorldManager {
     // If no available shard, create a new one
     if (!availableShard) {
       const newShardNum = maxShardNum + 1;
-      const newInstanceId = `${mapId}_ch${newShardNum}`;
-      availableShard = this.createInstance(newInstanceId, mapId);
+      const newInstanceId = `${baseMapId}_ch${newShardNum}`;
+      availableShard = this.createInstance(newInstanceId, baseMapId);
     }
 
     availableShard.playerCount++;

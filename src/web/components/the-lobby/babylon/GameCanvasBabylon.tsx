@@ -14,7 +14,7 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 
 import QuestTrackerOverlay from '../quest-tracker-overlay';
 import CraftingOverlay from '../crafting-overlay';
-import { isSameBaseMap } from '@/shared/net/mapIds';
+import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { normalizeGates } from '@/shared/game/logicComponents';
@@ -162,7 +162,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         const p = useGameStore.getState().player;
         emitSocketEvent?.('join_map', {
           accountId: p.accountId,
-          mapId: gate.targetMapId,
+          mapId: toBaseMapId(gate.targetMapId),
           x: spawn.x,
           y: spawn.y,
           name: p.name || 'Player',
