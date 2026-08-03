@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from './store';
-import { Play, ScrollText, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Play, ScrollText, Settings, Volume2, VolumeX, LogOut } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { useEditorStore } from './editor/editor-store';
@@ -182,7 +182,7 @@ export default function GameTitleScreen() {
   };
 
   return (
-    <div className="absolute inset-0 z-[100] overflow-hidden" style={{ background: '#05000f' }}>
+    <div className="pointer-events-auto absolute inset-0 z-[100] overflow-hidden" style={{ background: '#05000f' }}>
       <TitleBackground />
 
       {/* Vignette overlay */}
@@ -197,7 +197,7 @@ export default function GameTitleScreen() {
         style={{ background: 'linear-gradient(to top, rgba(5,0,15,0.9) 0%, transparent 100%)' }}
       />
 
-      {/* Mute button */}
+      {/* Mute + account + leave */}
       <button
         onClick={() => setIsMuted(m => !m)}
         className="absolute top-4 left-4 z-20 p-2.5 rounded-xl border border-violet-900/40 text-violet-400/50 hover:text-violet-300 hover:border-violet-500/40 transition-all"
@@ -206,18 +206,31 @@ export default function GameTitleScreen() {
         {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
       </button>
 
-      {/* Signed-in badge */}
-      {status === 'authenticated' && (
-        <div
-          className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl border border-violet-800/40"
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        {status === 'authenticated' && (
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-violet-800/40"
+            style={{ background: 'rgba(10,5,25,0.7)', backdropFilter: 'blur(8px)' }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs text-violet-300 font-mono">
+              {session?.user?.name || session?.user?.username || 'Tamer'}
+            </span>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = '/';
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/40 text-rose-200 hover:bg-rose-900/50 hover:text-white transition-all font-mono text-xs font-bold uppercase tracking-wider"
           style={{ background: 'rgba(10,5,25,0.7)', backdropFilter: 'blur(8px)' }}
+          title="Return to the Saints Gaming website"
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-violet-300 font-mono">
-            {session?.user?.name || 'Tamer'}
-          </span>
-        </div>
-      )}
+          <LogOut size={14} />
+          Leave
+        </button>
+      </div>
 
       {/* Main content */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full pb-16">
