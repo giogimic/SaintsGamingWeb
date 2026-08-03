@@ -268,9 +268,14 @@ export default function TheLobby({
     // Phase 10: Require active NextAuth session before connecting to the socket
     if (typeof window === 'undefined' || status !== 'authenticated' || !session?.user?.id) return;
 
-    // Connect to the unified Next.js MMO server with the session token
+    // Soft-reconnect stays in-world (does not dump to title/login menu).
+    let hadLobbyDisconnect = false;
     const socket = io({
-      auth: { token: session.user.id }
+      auth: { token: session.user.id },
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 8000,
     });
     socketRef.current = socket;
     
@@ -279,6 +284,11 @@ export default function TheLobby({
       state.setEmitSocketEvent((event, data) => {
         socket.emit(event, data);
       });
+
+      if (hadLobbyDisconnect) {
+        state.showToast('Reconnected to lobby.');
+        hadLobbyDisconnect = false;
+      }
 
       const effectiveAccountId = activeCharacterId || state.player.accountId;
       if (effectiveAccountId) {
@@ -291,6 +301,18 @@ export default function TheLobby({
           spriteId: state.player.spriteId || 'adventurer'
         });
       }
+    });
+
+    socket.on('disconnect', (reason) => {
+      // Stay in EXPLORING — do not dump to menu. Peers get player_left server-side.
+      hadLobbyDisconnect = true;
+      useGameStore.getState().setOtherPlayers({});
+      if (reason === 'io server disconnect') {
+        // Server forced disconnect (kick); do not auto-reconnect.
+        useGameStore.getState().showToast('Disconnected from lobby.');
+        return;
+      }
+      useGameStore.getState().showToast('Connection lost — reconnecting…');
     });
     
     socket.on('map_joined', (data) => {
@@ -385,6 +407,9 @@ export default function TheLobby({
 
     socket.on('force_disconnect', (data: { reason?: string }) => {
       useGameStore.getState().showToast(data?.reason || 'Disconnected by staff.');
+      // Staff kick: do not soft-reconnect back onto the map.
+      socket.io.reconnection(false);
+      socket.disconnect();
     });
 
     socket.on('global_chat_msg', (data) => {
@@ -412,9 +437,23 @@ export default function TheLobby({
       });
       window.dispatchEvent(msgEvent);
     });
-    
-    socket.on('player_left', (socketId) => {
-      useGameStore.getState().removeOtherPlayer(socketId);
+
+    // Economy / party system lines arrive as chat_message (channel SYSTEM|PARTY).
+    socket.on('chat_message', (data: any) => {
+      const channel = String(data?.channel || 'SYSTEM').toUpperCase();
+      const type =
+        channel === 'PARTY' ? 'PARTY' :
+        channel === 'GLOBAL' ? 'GLOBAL' :
+        'SYSTEM';
+      window.dispatchEvent(new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: data?.senderName || data?.sender || 'Server',
+          text: data?.message || '',
+          timestamp: data?.timestamp || Date.now(),
+          type,
+        }
+      }));
     });
     
     // Phase 9: Real-Time Map Editor Synchronization
