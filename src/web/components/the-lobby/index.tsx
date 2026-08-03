@@ -997,7 +997,10 @@ export default function TheLobby({
         </div>
       )}
       
-      {/* Scale desktop HUD chrome on phones (canvas + touch stay full-bleed). */}
+      {/* Scale desktop HUD chrome on phones (canvas + touch stay full-bleed).
+          pointer-events-none so canvas/world receive clicks; every interactive
+          child (title, login, server select, overlays, buttons) MUST set
+          pointer-events-auto on its root or it will not receive mouse input. */}
       <div
         className="pointer-events-none absolute inset-0 origin-top-left z-40"
         style={

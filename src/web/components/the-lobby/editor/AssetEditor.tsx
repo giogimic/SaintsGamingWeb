@@ -485,7 +485,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
 
       {/* Reclassify Modal */}
       {reclassifyModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="pointer-events-auto fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-[#0b1320] border border-purple-500/50 p-6 rounded-xl w-full max-w-md shadow-2xl flex flex-col gap-4">
             <span className="text-purple-400 font-bold text-sm tracking-wider">[ RECLASSIFY GAME ASSET ]</span>
             <p className="text-xs text-slate-300 leading-relaxed">

@@ -37,7 +37,7 @@ export function TurnBattleOverlay() {
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm animate-in fade-in duration-500">
+    <div className="pointer-events-auto absolute inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm animate-in fade-in duration-500">
       
       {/* Top Half: 3D-ish Battle Scene using basic UI elements for MVP */}
       <div className="flex-1 relative overflow-hidden flex flex-col justify-between p-8">

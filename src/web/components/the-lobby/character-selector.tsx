@@ -62,7 +62,7 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
 
   return (
     <div
-      className="fixed inset-0 w-full h-full overflow-y-auto z-[100]"
+      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100]"
       style={{ background: 'rgba(5,0,15,0.95)', backdropFilter: 'blur(14px)' }}
     >
       {/* Ambient glow */}

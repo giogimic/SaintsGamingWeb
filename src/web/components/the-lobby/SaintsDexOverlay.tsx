@@ -194,7 +194,7 @@ export default function SaintsDexOverlay() {
 
       {/* Selected Species Detail Modal */}
       {selectedSpecies && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+        <div className="pointer-events-auto fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
           <div className="bg-slate-900 border-2 border-cyan-500 p-5 rounded-lg max-w-md w-full text-slate-100 font-mono relative shadow-2xl">
             <button
               onClick={() => setSelectedSpecies(null)}

@@ -49,7 +49,7 @@ export default function ProfessorLabOverlay({ onClose }: { onClose: () => void }
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-md font-mono select-none">
+    <div className="pointer-events-auto absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 sm:p-6 backdrop-blur-md font-mono select-none">
       <div className="w-full max-w-4xl bg-slate-900 border-2 border-emerald-500/50 rounded-2xl p-6 shadow-2xl space-y-6">
         <div className="text-center space-y-2 border-b border-slate-800 pb-4">
           <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm uppercase tracking-widest font-bold">
