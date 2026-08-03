@@ -11,6 +11,7 @@ import {
   Sword,
   Settings,
   Maximize2,
+  LogOut,
 } from 'lucide-react';
 import { useGameStore, type MobileControlMode } from './store';
 
@@ -215,9 +216,11 @@ function FloatingJoystick() {
 function ActionCluster({
   onToggleFullscreen,
   onToggleOptions,
+  onLeaveGame,
 }: {
   onToggleFullscreen?: () => void;
   onToggleOptions?: () => void;
+  onLeaveGame?: () => void;
 }) {
   const toggleInventory = () => {
     const state = useGameStore.getState();
@@ -263,6 +266,15 @@ function ActionCluster({
         >
           <Maximize2 className="w-5 h-5" />
         </button>
+        <button
+          type="button"
+          onClick={() => onLeaveGame?.()}
+          className="col-span-2 w-full h-11 bg-rose-950/85 border border-rose-500/50 rounded-xl flex items-center justify-center gap-2 text-rose-200 active:bg-rose-800 active:text-white transition-all backdrop-blur-md font-mono text-[10px] font-bold uppercase tracking-wider"
+          title="Leave Game — return to website"
+        >
+          <LogOut className="w-4 h-4" />
+          Leave
+        </button>
       </div>
 
       <button
@@ -279,9 +291,11 @@ function ActionCluster({
 export default function MobileControls({
   onToggleFullscreen,
   onToggleOptions,
+  onLeaveGame,
 }: {
   onToggleFullscreen?: () => void;
   onToggleOptions?: () => void;
+  onLeaveGame?: () => void;
 }) {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const mode = useGameStore((s) => s.mobileControlMode);
@@ -300,7 +314,11 @@ export default function MobileControls({
   return (
     <>
       {controlMode === 'floating' ? <FloatingJoystick /> : <StaticDPad />}
-      <ActionCluster onToggleFullscreen={onToggleFullscreen} onToggleOptions={onToggleOptions} />
+      <ActionCluster
+        onToggleFullscreen={onToggleFullscreen}
+        onToggleOptions={onToggleOptions}
+        onLeaveGame={onLeaveGame}
+      />
     </>
   );
 }
