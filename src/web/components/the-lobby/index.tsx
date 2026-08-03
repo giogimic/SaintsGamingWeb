@@ -23,7 +23,6 @@ import DraggablePanel from './DraggablePanel';
 import GameTitleScreen from './GameTitleScreen';
 import GameLogin from './GameLogin';
 import ServerSelect from './ServerSelect';
-import BattleOverlay from './BattleOverlay';
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { StaffFloatingMenu } from './StaffFloatingMenu';
@@ -185,6 +184,8 @@ export default function TheLobby({
       await useGameStore.getState().fetchLogicTiles();
 
       if (enableStudio) {
+        // Doc 16: Walk Mode is the default Studio entry — create tools are opt-in.
+        useEditorStore.getState().enterWalkMode();
         const mapsRes = await fetchAllMaps();
         if (mapsRes.success && mapsRes.data) {
           setDevMapList(mapsRes.data);
@@ -1083,7 +1084,7 @@ export default function TheLobby({
           {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
           {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
           {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-          {gameMode === 'BATTLE' && <BattleOverlay />}
+          {/* TB UI: TurnBattleOverlay only (film_standard). Do not also mount legacy BattleOverlay — dual CRYSTAL+FILM bug. */}
           {gameMode === 'PARTY' && <PartyOverlay />}
           {gameMode === 'DEX' && <SaintsDexOverlay />}
         </div>

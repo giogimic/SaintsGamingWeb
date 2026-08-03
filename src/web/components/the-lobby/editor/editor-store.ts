@@ -42,6 +42,8 @@ interface EditorState {
   
   // Actions
   toggleCreationMode: () => void;
+  /** Doc 16 Walk Mode — exit create tools; default Studio entry. */
+  enterWalkMode: () => void;
   setStudioMode: (mode: StudioMode) => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
@@ -96,7 +98,7 @@ export const useEditorStore = create<EditorState>()(
   subscribeWithSelector(
     immer((set, get) => ({
       isCreationMode: false,
-      studioMode: 'build',
+      studioMode: 'test',
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,
@@ -113,6 +115,12 @@ export const useEditorStore = create<EditorState>()(
           state.studioMode = 'test';
           closeAllPanels(state);
         }
+      }),
+
+      enterWalkMode: () => set((state) => {
+        state.isCreationMode = false;
+        state.studioMode = 'test';
+        closeAllPanels(state);
       }),
 
       setStudioMode: (mode) => set((state) => {

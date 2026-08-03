@@ -41,15 +41,21 @@ const MODE_BUTTONS: Array<{
     title: 'Quest templates + assign ACCEPT_QUEST to map NPCs',
   },
   { id: 'creature', label: 'Creature', icon: <PawPrint className="w-4 h-4" /> },
-  { id: 'test', label: 'Test', icon: <Play className="w-4 h-4" />, title: 'Walk the world (exit Studio tools)' },
+  { id: 'test', label: 'Walk', icon: <Play className="w-4 h-4" />, title: 'Walk Mode — play-test the world (create tools off)' },
 ];
 
 export const StudioEditorShell: React.FC = () => {
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
+  const enterWalkMode = useEditorStore((state) => state.enterWalkMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
   const showToast = useGameStore((state) => state.showToast);
+
+  useEffect(() => {
+    // Ensure every Studio mount starts in Walk Mode (create tools opt-in).
+    enterWalkMode();
+  }, [enterWalkMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -63,7 +69,7 @@ export const StudioEditorShell: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleCreationMode]);
 
-  // Thin re-enter chip when walking in Test mode on /studio
+  // Walk Mode chip — create tools are opt-in (doc 16)
   if (!isCreationMode) {
     return (
       <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto">
@@ -71,11 +77,11 @@ export const StudioEditorShell: React.FC = () => {
           type="button"
           onClick={() => setStudioMode('build')}
           className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/40 bg-[#050b14]/90 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20"
-          title="Re-enter Studio tools (Ctrl+E)"
+          title="Opt into Studio create tools (Ctrl+E)"
         >
-          <Hammer className="w-4 h-4" />
-          Studio · Build
-          <span className="text-slate-500 normal-case tracking-normal font-medium">Ctrl+E</span>
+          <Play className="w-4 h-4" />
+          Walk Mode
+          <span className="text-slate-500 normal-case tracking-normal font-medium">· open Build Ctrl+E</span>
         </button>
       </div>
     );
@@ -163,8 +169,9 @@ export const StudioEditorShell: React.FC = () => {
           <button 
             onClick={() => setStudioMode('test')}
             className="flex flex-col items-center gap-1 p-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors"
+            title="Return to Walk Mode"
           >
-            <span className="font-bold text-[10px] uppercase font-mono">Exit (Ctrl+E)</span>
+            <span className="font-bold text-[10px] uppercase font-mono">Walk (Ctrl+E)</span>
           </button>
         </div>
       </div>
