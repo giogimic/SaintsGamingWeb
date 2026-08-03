@@ -40,7 +40,7 @@ export default function GameLogin() {
 
   return (
     <div
-      className="absolute inset-0 z-[110] flex items-center justify-center animate-in fade-in duration-300"
+      className="pointer-events-auto absolute inset-0 z-[110] flex items-center justify-center animate-in fade-in duration-300"
       style={{ background: 'rgba(5,0,15,0.92)', backdropFilter: 'blur(12px)' }}
     >
       {/* Subtle glow behind the card */}

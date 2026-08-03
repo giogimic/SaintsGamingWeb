@@ -982,9 +982,11 @@ export default function TheLobby({
         }}
       />
 
-      {/* Touch controls stay full-size (do not scale — fingers need real targets). */}
-      <div className="pointer-events-none absolute inset-0 z-30">
-        <div className="pointer-events-auto absolute inset-0">
+      {/* Touch controls — only in-world. Do NOT wrap in a full-screen
+          pointer-events-auto layer: that sat above the title UI (z-30 vs sibling
+          z-auto) and swallowed ENTER WORLD / menu clicks on desktop. */}
+      {(gameMode === 'EXPLORING' || gameMode === 'BATTLE') && !isCreationMode && (
+        <div className="pointer-events-none absolute inset-0 z-30">
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
             onToggleOptions={() => setIsOptionsOpen(true)}
@@ -993,11 +995,11 @@ export default function TheLobby({
             }}
           />
         </div>
-      </div>
+      )}
       
       {/* Scale desktop HUD chrome on phones (canvas + touch stay full-bleed). */}
       <div
-        className="pointer-events-none absolute inset-0 origin-top-left"
+        className="pointer-events-none absolute inset-0 origin-top-left z-40"
         style={
           isMobile
             ? {
@@ -1030,7 +1032,8 @@ export default function TheLobby({
           </div>
         )}
 
-        {gameMode !== 'BATTLE' && (
+        {/* In-world chrome only — title/login have their own Leave control */}
+        {(gameMode === 'EXPLORING' || isCreationMode) && (
           <div
             className="pointer-events-none absolute z-40 flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
             style={{
