@@ -988,6 +988,9 @@ export default function TheLobby({
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
             onToggleOptions={() => setIsOptionsOpen(true)}
+            onLeaveGame={() => {
+              window.location.href = '/';
+            }}
           />
         </div>
       </div>
@@ -1059,10 +1062,21 @@ export default function TheLobby({
             )}
             <button
               onClick={() => setIsOptionsOpen(true)}
-              className="pointer-events-auto hidden items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-slate-300 shadow-lg backdrop-blur-md transition-all hover:bg-white/10 hover:text-white active:scale-95 md:flex md:gap-2 md:px-3"
+              className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-slate-300 shadow-lg backdrop-blur-md transition-all hover:bg-white/10 hover:text-white active:scale-95 md:gap-2 md:px-3"
             >
               <span className="text-sm leading-none">⚙️</span>
-              <span>OPTIONS (ESC)</span>
+              <span className="hidden sm:inline">OPTIONS (ESC)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/';
+              }}
+              className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-950/70 px-2.5 py-1.5 font-mono text-[11px] font-medium text-rose-200 shadow-lg backdrop-blur-md transition-all hover:bg-rose-900/80 hover:text-white active:scale-95 md:gap-2 md:px-3"
+              title="Return to the Saints Gaming website"
+            >
+              <span className="text-sm leading-none">⎋</span>
+              <span>LEAVE</span>
             </button>
           </div>
         )}

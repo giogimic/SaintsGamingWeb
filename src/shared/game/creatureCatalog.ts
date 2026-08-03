@@ -328,7 +328,16 @@ const MISSING_NPC_PLACEHOLDERS = new Set([
   "cow",
   "guide_1",
   "npc_default",
+  // Legacy peer default — file never shipped; use adventurer walk sheet.
+  "hero_male",
+  "hero_female",
 ]);
+
+/** Player/peer aliases that must never 404 into the brown UV-cropped fallback. */
+const PLAYER_SPRITE_ALIASES: Record<string, string> = {
+  hero_male: "adventurer",
+  hero_female: "adventurer",
+};
 
 const CUSTOM_NPC_SLUGS = [
   "candrift_keeper",
@@ -398,6 +407,11 @@ export function resolveEntitySpriteUrl(
       return resolveEntitySpriteUrl(bare, { ...opts, kind: opts?.kind || "monster" });
     }
     return creatureAssetUrl(key);
+  }
+
+  const playerAlias = PLAYER_SPRITE_ALIASES[key];
+  if (playerAlias && (opts?.kind === "player" || opts?.kind === "npc" || !opts?.kind)) {
+    return resolveEntitySpriteUrl(playerAlias, { ...opts, kind: opts?.kind || "player", fallback });
   }
 
   const def = getFallbackCreature(key);
