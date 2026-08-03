@@ -272,6 +272,13 @@ export class PlayerManager {
       accountId,
     });
 
+    // CONTINUE #2 — personal bramble overlay (shared grid stays seeded for other accounts)
+    this.engine.events.emit("playerBrambleHydrateRequest", {
+      socketId,
+      accountId,
+      mapId: requestedMapId,
+    });
+
     // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
     let mapCreatures: any[] = [];
     this.engine.events.emit("requestCreaturesInMap", {
@@ -477,7 +484,12 @@ export class PlayerManager {
           const targetX = player.x + delta.dx;
           const targetY = player.y + delta.dy;
 
-          const walkable = this.worldManager.isWalkable(player.mapId, targetX, targetY);
+          const walkable = this.worldManager.isWalkable(
+            player.mapId,
+            targetX,
+            targetY,
+            player.accountId
+          );
           const occupied = this.worldManager.isOccupied(player.mapId, targetX, targetY);
 
           if (walkable && !occupied) {
