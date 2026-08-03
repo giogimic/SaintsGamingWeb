@@ -1294,6 +1294,12 @@ export class BabylonEngine {
     columns: number,
     rows: number
   ) {
+    // Non-updatable planes ignore UV writes — force the buffer updatable first.
+    try {
+      mesh.markVerticesDataAsUpdatable(VertexBuffer.UVKind, true);
+    } catch {
+      /* older buffers */
+    }
     if (columns <= 1 && rows <= 1) {
       mesh.setVerticesData(VertexBuffer.UVKind, [0, 0, 1, 0, 1, 1, 0, 1], true);
       return;
@@ -1307,12 +1313,13 @@ export class BabylonEngine {
     mesh.setVerticesData(VertexBuffer.UVKind, [u0, v0, u1, v0, u1, v1, u0, v1], true);
   }
 
-  private applySpriteSheetUv(tex: Texture, _config: SpriteSheetConfig) {
-    // Texture stays full-frame; cropping is done per-mesh via setSpriteCellUVs.
+  private applySpriteSheetUv(tex: Texture, config: SpriteSheetConfig) {
+    // Dual approach: mesh UVs (preferred) + texture scale (fallback if UV buffer
+    // isn't updatable yet). Both target the same cell.
     tex.wrapU = Texture.CLAMP_ADDRESSMODE;
     tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-    tex.uScale = 1;
-    tex.vScale = 1;
+    tex.uScale = 1 / config.columns;
+    tex.vScale = 1 / config.rows;
     tex.uOffset = 0;
     tex.vOffset = 0;
   }
@@ -1328,8 +1335,11 @@ export class BabylonEngine {
       spriteMesh = MeshBuilder.CreatePlane(
         `entity_${entity.id}`,
         {
-          width: this.currentTileSize * (singleFrame ? 0.9 : 1.1),
-          height: this.currentTileSize * (singleFrame ? 1.15 : 1.5),
+          // OW portrait crops read huge on the old 1.5-tall plane — keep them compact.
+          width: this.currentTileSize * (singleFrame ? 0.7 : 1.0),
+          height: this.currentTileSize * (singleFrame ? 0.95 : 1.4),
+          // Required so setSpriteCellUVs can rewrite vertex UVs each anim frame.
+          updatable: true,
         },
         this.scene
       );
@@ -1365,8 +1375,10 @@ export class BabylonEngine {
       if (entity.spriteUrl) {
         // Always invertY=true (Babylon default). Re-apply UV in onLoad — Babylon can
         // reset transforms when the image bytes arrive, which showed full 3×4 sheets.
+        // Unique URL per mesh so Babylon's texture cache can't share UV state.
+        const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
         const tex = new Texture(
-          entity.spriteUrl,
+          texUrl,
           this.scene,
           true,
           true,
@@ -1449,8 +1461,9 @@ export class BabylonEngine {
       if (mat) {
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
+          const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
           const newTex = new Texture(
-            entity.spriteUrl,
+            texUrl,
             this.scene,
             true,
             true,
@@ -1471,12 +1484,14 @@ export class BabylonEngine {
           if (spriteMesh.metadata) {
             spriteMesh.metadata.spriteConfig = resolvedConfig;
             spriteMesh.metadata.spriteUrl = entity.spriteUrl;
+            // Force UV cell recompute next anim tick
+            spriteMesh.metadata.uvCol = undefined;
+            spriteMesh.metadata.uvRow = undefined;
+            spriteMesh.metadata.uvFullFrame = false;
           }
           mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
           mat.diffuseTexture = this.defaultPlayerTexture;
-        } else if (entity.spriteUrl && tex && tex.name !== 'defaultPlayerTex') {
-          this.applySpriteSheetUv(tex, resolvedConfig);
         }
       }
     }
