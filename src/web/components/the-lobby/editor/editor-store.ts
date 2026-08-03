@@ -4,6 +4,9 @@ import { immer } from 'zustand/middleware/immer';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'creature' | 'dev' | 'characters';
 
+/** ALIGNMENT Slice D contextual modes — panel presets over existing docks. */
+export type StudioMode = 'build' | 'npc' | 'quest' | 'creature' | 'test';
+
 export interface FloatingPanelState {
   id: PanelId;
   title: string;
@@ -16,8 +19,18 @@ export interface FloatingPanelState {
   zIndex: number;
 }
 
+/** Default panels opened when entering each studio mode (Test closes all). */
+export const STUDIO_MODE_DEFAULTS: Record<StudioMode, PanelId[]> = {
+  build: ['build', 'properties'],
+  npc: ['npc', 'properties', 'assets'],
+  quest: [], // no QuestEditorPanel yet — mode is disabled in UI
+  creature: ['creature'],
+  test: [],
+};
+
 interface EditorState {
   isCreationMode: boolean;
+  studioMode: StudioMode;
   panels: Record<PanelId, FloatingPanelState>;
   activePanel: PanelId | null;
   highestZIndex: number;
@@ -29,6 +42,7 @@ interface EditorState {
   
   // Actions
   toggleCreationMode: () => void;
+  setStudioMode: (mode: StudioMode) => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
   togglePanel: (id: PanelId) => void;
@@ -53,10 +67,36 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   characters: { id: 'characters', title: 'Starter Heroes', isOpen: false, isCollapsed: false, x: 560, y: 80, width: 720, height: 640, zIndex: 10 },
 };
 
+function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {
+  (Object.keys(state.panels) as PanelId[]).forEach((k) => {
+    state.panels[k].isOpen = false;
+  });
+  state.activePanel = null;
+}
+
+function openModePanels(
+  state: {
+    panels: Record<PanelId, FloatingPanelState>;
+    activePanel: PanelId | null;
+    highestZIndex: number;
+  },
+  mode: StudioMode
+) {
+  closeAllPanels(state);
+  const defaults = STUDIO_MODE_DEFAULTS[mode] || [];
+  for (const id of defaults) {
+    state.panels[id].isOpen = true;
+    state.highestZIndex += 1;
+    state.panels[id].zIndex = state.highestZIndex;
+    state.activePanel = id;
+  }
+}
+
 export const useEditorStore = create<EditorState>()(
   subscribeWithSelector(
     immer((set, get) => ({
       isCreationMode: false,
+      studioMode: 'build',
       panels: DEFAULT_PANELS,
       activePanel: null,
       highestZIndex: 10,
@@ -66,16 +106,25 @@ export const useEditorStore = create<EditorState>()(
 
       toggleCreationMode: () => set((state) => {
         state.isCreationMode = !state.isCreationMode;
-        // If turning on, open default panels
         if (state.isCreationMode) {
-          state.panels.build.isOpen = true;
-          state.panels.properties.isOpen = true;
+          state.studioMode = 'build';
+          openModePanels(state, 'build');
         } else {
-          // If turning off, close all
-          Object.keys(state.panels).forEach((k) => {
-            state.panels[k as PanelId].isOpen = false;
-          });
+          state.studioMode = 'test';
+          closeAllPanels(state);
         }
+      }),
+
+      setStudioMode: (mode) => set((state) => {
+        state.studioMode = mode;
+        if (mode === 'test') {
+          state.isCreationMode = false;
+          closeAllPanels(state);
+          return;
+        }
+        // Quest has no panel yet — stay in creation but open nothing / keep toast via UI
+        state.isCreationMode = true;
+        openModePanels(state, mode);
       }),
 
       openPanel: (id) => set((state) => {

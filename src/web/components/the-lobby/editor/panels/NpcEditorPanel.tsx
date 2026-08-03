@@ -44,6 +44,15 @@ export const NpcEditorPanel: React.FC = () => {
     }
   }, [clickedTile]);
 
+  React.useEffect(() => {
+    const onPick = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { key?: string } | undefined;
+      if (detail?.key) setNpcSprite(detail.key);
+    };
+    window.addEventListener('studio_sprite_picked', onPick);
+    return () => window.removeEventListener('studio_sprite_picked', onPick);
+  }, []);
+
   const handleAddNpc = async () => {
     if (!activeMapData) {
       showToast('Load a map in Studio before placing NPCs.');
@@ -120,7 +129,7 @@ export const NpcEditorPanel: React.FC = () => {
             type="text"
             value={npcSprite}
             onChange={(e) => setNpcSprite(e.target.value)}
-            placeholder="Sprite key (e.g. adventurer) or /game-assets/npc/….png"
+            placeholder="Sprite key — or pick in Assets → Sprite Browser"
             className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
           />
           <textarea
