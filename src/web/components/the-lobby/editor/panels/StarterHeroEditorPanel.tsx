@@ -525,7 +525,7 @@ export function StarterHeroEditorPanel() {
       {/* Requirements Modal Overlay */}
       {showDocs && (
         <div
-          className="absolute inset-0 z-30 p-4 overflow-y-auto animate-in fade-in duration-200"
+          className="pointer-events-auto absolute inset-0 z-30 p-4 overflow-y-auto animate-in fade-in duration-200"
           style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
         >
           <div className="max-w-2xl mx-auto space-y-4">
@@ -593,7 +593,7 @@ export function StarterHeroEditorPanel() {
       {/* JSON Import/Export Modal */}
       {showJsonModal && (
         <div
-          className="absolute inset-0 z-30 p-4 flex items-center justify-center animate-in fade-in duration-200"
+          className="pointer-events-auto absolute inset-0 z-30 p-4 flex items-center justify-center animate-in fade-in duration-200"
           style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
         >
           <div className="w-full max-w-lg bg-[#0a051d] border border-violet-500/30 rounded-2xl p-5 space-y-4 shadow-2xl">
