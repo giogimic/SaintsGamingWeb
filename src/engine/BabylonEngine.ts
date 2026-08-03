@@ -474,40 +474,37 @@ export class BabylonEngine {
           }
         }
 
-        // 2. UV Frame Cycling (Animation)
-        if (mesh.material) {
-          const mat = mesh.material as StandardMaterial;
-          const tex = mat.diffuseTexture as Texture;
-          if (tex && state.spriteConfig) {
-            const config = state.spriteConfig as SpriteSheetConfig;
-
-            // Single-frame OW/portrait billboards — never apply 3×4 walk UV offsets
-            // (that was cropping *-ow sprites into empty/wrong strips).
-            if (config.columns <= 1 && config.rows <= 1) {
-              tex.uOffset = 0;
-              tex.vOffset = 0;
-              tex.uScale = 1;
-              tex.vScale = 1;
+        // 2. UV Frame Cycling (per-mesh vertex UVs — not shared Texture.uScale)
+        if (state.spriteConfig) {
+          const config = state.spriteConfig as SpriteSheetConfig;
+          if (config.columns <= 1 && config.rows <= 1) {
+            if (!state.uvFullFrame) {
+              this.setSpriteCellUVs(mesh, 0, 0, 1, 1);
+              state.uvFullFrame = true;
+            }
+          } else {
+            state.uvFullFrame = false;
+            const dir = state.direction || 'down';
+            const rowIdx = config.directions[dir] ?? config.directions.down;
+            let col = config.idleFrame;
+            if (state.isMoving) {
+              state.animTime += deltaTime * config.walkSpeed;
+              const frameSeq = config.walkCycle;
+              col = frameSeq[Math.floor(state.animTime) % frameSeq.length];
             } else {
-              // Keep sheet scale locked (metadata may flip between single/walk)
-              tex.uScale = 1 / config.columns;
-              tex.vScale = 1 / config.rows;
-
-              // Update row (direction) - Map top-to-bottom row index to Babylon V offset
-              const dir = state.direction || 'down';
-              const rowIdx = config.directions[dir] ?? config.directions.down;
-              tex.vOffset = (config.rows - 1 - rowIdx) * (1 / config.rows);
-
-              // Update column (animation frame)
-              if (state.isMoving) {
-                state.animTime += deltaTime * config.walkSpeed;
-                const frameSeq = config.walkCycle;
-                const f = frameSeq[Math.floor(state.animTime) % frameSeq.length];
-                tex.uOffset = f * (1 / config.columns);
-              } else {
-                state.animTime = 0;
-                tex.uOffset = config.idleFrame * (1 / config.columns);
-              }
+              state.animTime = 0;
+            }
+            if (
+              state.uvCol !== col ||
+              state.uvRow !== rowIdx ||
+              state.uvCols !== config.columns ||
+              state.uvRows !== config.rows
+            ) {
+              this.setSpriteCellUVs(mesh, col, rowIdx, config.columns, config.rows);
+              state.uvCol = col;
+              state.uvRow = rowIdx;
+              state.uvCols = config.columns;
+              state.uvRows = config.rows;
             }
           }
         }
@@ -1285,15 +1282,39 @@ export class BabylonEngine {
     return DEFAULT_SPRITE_CONFIG;
   }
 
-  private applySpriteSheetUv(tex: Texture, config: SpriteSheetConfig) {
+  /**
+   * Crop a walk-sheet cell onto the mesh's own UV vertices.
+   * Prefer this over Texture.uScale — Babylon caches textures by URL, so
+   * shared uScale/vOffset fought between meshes and left full 3×4 sheets visible.
+   */
+  private setSpriteCellUVs(
+    mesh: Mesh,
+    col: number,
+    row: number,
+    columns: number,
+    rows: number
+  ) {
+    if (columns <= 1 && rows <= 1) {
+      mesh.setVerticesData(VertexBuffer.UVKind, [0, 0, 1, 0, 1, 1, 0, 1], true);
+      return;
+    }
+    const u0 = col / columns;
+    const u1 = (col + 1) / columns;
+    // row 0 = top of sheet; with invertY textures, high V is the image top.
+    const v1 = 1 - row / rows;
+    const v0 = 1 - (row + 1) / rows;
+    // CreatePlane vertex order: BL, BR, TR, TL
+    mesh.setVerticesData(VertexBuffer.UVKind, [u0, v0, u1, v0, u1, v1, u0, v1], true);
+  }
+
+  private applySpriteSheetUv(tex: Texture, _config: SpriteSheetConfig) {
+    // Texture stays full-frame; cropping is done per-mesh via setSpriteCellUVs.
     tex.wrapU = Texture.CLAMP_ADDRESSMODE;
     tex.wrapV = Texture.CLAMP_ADDRESSMODE;
-    tex.uScale = 1 / config.columns;
-    tex.vScale = 1 / config.rows;
-    if (config.columns <= 1 && config.rows <= 1) {
-      tex.uOffset = 0;
-      tex.vOffset = 0;
-    }
+    tex.uScale = 1;
+    tex.vScale = 1;
+    tex.uOffset = 0;
+    tex.vOffset = 0;
   }
 
   public updateEntity(entity: BabylonEntityData) {
@@ -1364,6 +1385,24 @@ export class BabylonEngine {
         tex.hasAlpha = true;
         this.applySpriteSheetUv(tex, resolvedConfig);
         spriteMesh.metadata.spriteConfig = resolvedConfig;
+        // Initial cell crop on the mesh itself
+        if (singleFrame) {
+          this.setSpriteCellUVs(spriteMesh, 0, 0, 1, 1);
+          spriteMesh.metadata.uvFullFrame = true;
+        } else {
+          const rowIdx = resolvedConfig.directions.down;
+          this.setSpriteCellUVs(
+            spriteMesh,
+            resolvedConfig.idleFrame,
+            rowIdx,
+            resolvedConfig.columns,
+            resolvedConfig.rows
+          );
+          spriteMesh.metadata.uvCol = resolvedConfig.idleFrame;
+          spriteMesh.metadata.uvRow = rowIdx;
+          spriteMesh.metadata.uvCols = resolvedConfig.columns;
+          spriteMesh.metadata.uvRows = resolvedConfig.rows;
+        }
 
         mat.diffuseTexture = tex;
       } else if (this.defaultPlayerTexture) {
