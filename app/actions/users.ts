@@ -64,6 +64,7 @@ export async function getPublicProfile(username: string) {
           name: true,
           spriteId: true,
           classId: true,
+          stateData: true,
         }
       }
     }

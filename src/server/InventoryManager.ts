@@ -51,6 +51,15 @@ export class InventoryManager {
 
   public async initialize() {
     console.log("[InventoryManager] Initialized ARPG Economy Engine");
+    // ALIGNMENT E.2 — push cold inventory on lobby join so web marketplace buys appear
+    this.engine.events.on(
+      "playerInventorySyncRequest",
+      async (data: { socketId: string; accountId: string }) => {
+        const userId = await resolveUserId(data.accountId);
+        if (!userId || !data.socketId) return;
+        await this.syncInventory(data.socketId, userId);
+      }
+    );
   }
 
   private async syncInventory(socketId: string, userId: string) {

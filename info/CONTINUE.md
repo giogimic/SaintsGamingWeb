@@ -25,7 +25,7 @@ Bible: [`info/gameplay-bible/README.md`](./gameplay-bible/README.md)
 1. File gaps from `DEMO_SMOKE.md` run
 2. Per-character bramble flags if shards fight over shared grid
 3. ALIGNMENT D — Studio Quest dock **done 2026-08-03** (templates list + ACCEPT_QUEST assign); optional per-dock permission matrix later
-4. ALIGNMENT E — **E.1 pinned creature done 2026-08-03**; next: marketplace/inventory bridge → social feed hooks
+4. ALIGNMENT E — **E.1 pinned creature done**; **E.2 inventory/GTC async bridge done 2026-08-03**; next: social feed hooks for rare captures
 
 ---
 

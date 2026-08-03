@@ -83,7 +83,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature — **Done 2026-08-03:** `User.pinnedBeastId` → owned `PlayerCreature`; profile shows pixel sprite (`getPublicProfile.pinnedCreature`)  
-2. Marketplace / inventory async bridge  
+2. Marketplace / inventory async bridge — **Done 2026-08-03:** web `purchaseGtcListing` / `createGtcListing` + profile inventory from `PlayerInventoryItem`; lobby `inventory_sync` on join  
 3. Social feed hooks for rare captures  
 
 ---

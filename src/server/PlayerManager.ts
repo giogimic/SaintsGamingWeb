@@ -266,6 +266,12 @@ export class PlayerManager {
       }
     });
 
+    // ALIGNMENT E.2 — hydrate lobby inventory from PlayerInventoryItem (web buys, shop, craft)
+    this.engine.events.emit("playerInventorySyncRequest", {
+      socketId,
+      accountId,
+    });
+
     // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
     let mapCreatures: any[] = [];
     this.engine.events.emit("requestCreaturesInMap", {

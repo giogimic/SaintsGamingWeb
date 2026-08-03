@@ -130,7 +130,12 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           {profile.gameCharacters && profile.gameCharacters.length > 0 ? (
             <div className="space-y-4">
               {profile.gameCharacters.map((char) => (
-                <ProfileCharacterDetails key={char.id} character={char as any} />
+                <ProfileCharacterDetails
+                  key={char.id}
+                  character={char as any}
+                  userId={profile.id}
+                  isSelf={isSelf}
+                />
               ))}
             </div>
           ) : (
