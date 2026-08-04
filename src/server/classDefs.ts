@@ -2,7 +2,7 @@
  * Runtime loader for playable CharacterClass rows (DB → fallback catalog).
  */
 
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import {
   ClassDefData,
   DEFAULT_GAME_CONFIG_SLUG,
@@ -12,8 +12,6 @@ import {
   resolveClassStats,
 } from "@/shared/game/classCatalog";
 import { classRowToData } from "@/shared/game/classDefMap";
-
-const prisma = new PrismaClient();
 
 export async function ensureDefaultGameConfig(): Promise<{
   id: string;

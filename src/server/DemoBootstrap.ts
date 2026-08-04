@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import { FALLBACK_CREATURE_DEFS } from "@/shared/game/creatureCatalog";
 import {
   DEMO_ENCOUNTERS,
@@ -20,8 +20,6 @@ import {
   SAINTS_TRAIL_QUEST_CHAIN,
   SAINTS_TRAIL_DIALOGUES,
 } from "./saintsTrailQuests";
-
-const prisma = new PrismaClient();
 
 const mapLoader = require("../engine/map-loader.js");
 

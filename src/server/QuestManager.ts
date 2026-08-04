@@ -1,21 +1,6 @@
 import { GameEngine } from "./GameEngine";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-async function resolveUserId(accountOrUserId: string): Promise<string | null> {
-  if (!accountOrUserId) return null;
-  const asAccount = await prisma.account.findFirst({
-    where: { id: accountOrUserId },
-    select: { userId: true },
-  });
-  if (asAccount?.userId) return asAccount.userId;
-  const asUser = await prisma.user.findFirst({
-    where: { id: accountOrUserId },
-    select: { id: true },
-  });
-  return asUser?.id ?? null;
-}
+import { prisma } from "@/web/lib/prisma";
+import { resolveUserId } from "./inventoryService";
 
 export class QuestManager {
   constructor(private engine: GameEngine) {

@@ -28,13 +28,13 @@ export function NewThreadForm({ subcategoryId, subcategorySlug }: { subcategoryI
     setError(null);
 
     try {
-      const payload: any = { title, body, subcategoryId, tags };
+      const payload: any = { title, body, subcategorySlug, subcategoryId, tags };
       if (showPoll && pollQuestion.trim() && pollOptions.filter(o => o.trim()).length >= 2) {
         payload.pollQuestion = pollQuestion.trim();
         payload.pollOptions = pollOptions.filter(o => o.trim());
       }
 
-      const res = await fetch("/api/forum/thread", {
+      const res = await fetch("/api/forum/threads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

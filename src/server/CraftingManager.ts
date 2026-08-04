@@ -2,6 +2,11 @@ import { prisma } from "@/web/lib/prisma";
 import { GameEngine } from "./GameEngine";
 import { PlayerManager } from "./PlayerManager";
 import { SHOP_CRAFT_RECIPES } from "@/shared/game/shopCatalog";
+import {
+  addItemWithMeta,
+  inventorySnapshot,
+  removeItem,
+} from "./inventoryService";
 
 type RecipeRow = {
   slug: string;
@@ -82,12 +87,7 @@ export class CraftingManager {
   }
 
   private async inventorySnapshot(userId: string): Promise<Record<string, number>> {
-    const rows = await prisma.playerInventoryItem.findMany({ where: { userId } });
-    const inv: Record<string, number> = {};
-    for (const row of rows) {
-      inv[row.itemSlug] = (inv[row.itemSlug] || 0) + row.quantity;
-    }
-    return inv;
+    return inventorySnapshot(userId);
   }
 
   public async handleCraftItem(accountId: string, recipeSlug: string, socketId: string) {
@@ -146,20 +146,14 @@ export class CraftingManager {
       }
 
       for (const ing of ingredients) {
-        let remainingToDeduct = ing.qty;
-        const ownedItems = inventory.filter((i) => i.itemSlug === ing.itemSlug);
-        for (const owned of ownedItems) {
-          if (remainingToDeduct <= 0) break;
-          if (owned.quantity <= remainingToDeduct) {
-            remainingToDeduct -= owned.quantity;
-            await prisma.playerInventoryItem.delete({ where: { id: owned.id } });
-          } else {
-            await prisma.playerInventoryItem.update({
-              where: { id: owned.id },
-              data: { quantity: owned.quantity - remainingToDeduct },
-            });
-            remainingToDeduct = 0;
-          }
+        const ok = await removeItem(userId, ing.itemSlug, ing.qty);
+        if (!ok) {
+          this.engine.events.emit("directMessage", {
+            socketId,
+            event: "show_toast",
+            data: { message: `Not enough ${ing.itemSlug}. Need ${ing.qty}.` },
+          });
+          return;
         }
       }
 
@@ -174,39 +168,12 @@ export class CraftingManager {
       }
 
       const stackable = outputTemplate?.stackable ?? true;
-      if (stackable) {
-        const existing = await prisma.playerInventoryItem.findFirst({
-          where: { userId, itemSlug: recipe.outputItemSlug },
-        });
-        if (existing) {
-          await prisma.playerInventoryItem.update({
-            where: { id: existing.id },
-            data: { quantity: existing.quantity + recipe.outputQuantity },
-          });
-        } else {
-          await prisma.playerInventoryItem.create({
-            data: {
-              userId,
-              itemSlug: recipe.outputItemSlug,
-              quantity: recipe.outputQuantity,
-              durability,
-              affixes,
-            },
-          });
-        }
-      } else {
-        for (let i = 0; i < recipe.outputQuantity; i++) {
-          await prisma.playerInventoryItem.create({
-            data: {
-              userId,
-              itemSlug: recipe.outputItemSlug,
-              quantity: 1,
-              durability,
-              affixes,
-            },
-          });
-        }
-      }
+      await addItemWithMeta(userId, recipe.outputItemSlug, {
+        quantity: recipe.outputQuantity,
+        durability: durability ?? null,
+        affixes: affixes ?? null,
+        stackable,
+      });
 
       const newXp = playerSkill.xp + recipe.xpReward;
       const newLevel = Math.max(playerSkill.level, Math.floor(Math.sqrt(newXp / 100)) + 1);

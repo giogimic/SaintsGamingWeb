@@ -178,6 +178,7 @@ export default function TheLobby({
       socketRef.current?.emit('join_map', {
         accountId: session?.user?.id || charId,
         mapId: toBaseMapId(validMapId),
+        lobby: !enableStudio,
         x: validPosition.x,
         y: validPosition.y,
         name: res.data.name,
@@ -250,6 +251,7 @@ export default function TheLobby({
       socketRef.current?.emit('join_map', {
         accountId,
         mapId: toBaseMapId(validMapId),
+        lobby: false, // Studio must not force DEMO_SANDBOX multiplayer shard
         x: validPosition.x,
         y: validPosition.y,
         name: authorName,
@@ -396,12 +398,25 @@ export default function TheLobby({
         }
         socket.emit('join_map', {
           accountId: effectiveAccountId,
-          mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
+          // Lobby multiplayer always rejoins DEMO_SANDBOX (ignore warp/stale store).
+          mapId: enableStudio
+            ? toBaseMapId(state.currentMapId || 'DEMO_SANDBOX')
+            : 'DEMO_SANDBOX',
+          lobby: !enableStudio,
           x: state.player.position?.x ?? 6,
           y: state.player.position?.y ?? 2,
           name: state.player.name || 'Player',
           spriteId: state.player.spriteId || 'adventurer'
         });
+        if (!enableStudio) {
+          const cur = toBaseMapId(state.currentMapId || '');
+          if (cur !== 'DEMO_SANDBOX') {
+            state.setCurrentMapId('DEMO_SANDBOX');
+            void loadMap('DEMO_SANDBOX').then((m) => {
+              useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+            });
+          }
+        }
       }
     });
 
@@ -665,7 +680,7 @@ export default function TheLobby({
 
     // --- PHASE 3: MMO Real-Time Combat ---
     socket.on('combat_update', (data) => {
-      // Dispatch custom event so the BattleOverlay can render damage numbers and logs
+      // RT HUD / floating combat feedback listens via window event
       const msgEvent = new CustomEvent('combat_update_event', { detail: data });
       window.dispatchEvent(msgEvent);
     });
@@ -947,7 +962,7 @@ export default function TheLobby({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [status, session?.user?.id]);
+  }, [status, session?.user?.id, enableStudio]);
 
   // If character becomes available after socket connect, ensure we are on-map.
   useEffect(() => {
@@ -956,15 +971,25 @@ export default function TheLobby({
     if (!socket?.connected) return;
     const state = useGameStore.getState();
     if (state.gameMode !== 'EXPLORING') return;
+    const mapId = enableStudio
+      ? toBaseMapId(state.currentMapId || 'DEMO_SANDBOX')
+      : 'DEMO_SANDBOX';
+    if (!enableStudio && toBaseMapId(state.currentMapId || '') !== 'DEMO_SANDBOX') {
+      state.setCurrentMapId('DEMO_SANDBOX');
+      void loadMap('DEMO_SANDBOX').then((m) => {
+        useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+      });
+    }
     socket.emit('join_map', {
       accountId: session.user.id,
-      mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
+      mapId,
+      lobby: !enableStudio,
       x: state.player.position?.x ?? 14,
       y: state.player.position?.y ?? 15,
       name: state.player.name || 'Player',
       spriteId: state.player.spriteId || 'adventurer',
     });
-  }, [activeCharacterId, status, session?.user?.id]);
+  }, [activeCharacterId, status, session?.user?.id, enableStudio]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -1269,7 +1294,7 @@ export default function TheLobby({
           {gameMode === 'PROFESSOR_LAB' && <ProfessorLabOverlay onClose={() => useGameStore.getState().setGameMode('EXPLORING')} />}
           {gameMode === 'ACHIEVEMENTS' && <AchievementsOverlay />}
           {gameMode === 'LEADERBOARD' && <LeaderboardOverlay />}
-          {/* TB UI: TurnBattleOverlay only (film_standard). Do not also mount legacy BattleOverlay — dual CRYSTAL+FILM bug. */}
+          {/* TB UI: TurnBattleOverlay only (mounted when gameMode === BATTLE above) */}
           {gameMode === 'PARTY' && <PartyOverlay />}
           {gameMode === 'DEX' && <SaintsDexOverlay />}
         </div>

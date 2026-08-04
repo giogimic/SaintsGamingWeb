@@ -1,10 +1,9 @@
 import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerManager } from "./PlayerManager";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import { toBaseMapId } from "@/shared/net/mapIds";
-
-const prisma = new PrismaClient();
+import { addItem, resolveUserId, wearToolDurability } from "./inventoryService";
 
 // Using require for legacy map loader
 const mapLoader = require("../engine/map-loader.js");
@@ -17,20 +16,6 @@ const RESOURCE_NODE_MAP: Record<
   5: { skillSlug: "woodcutting", resourceSlug: "wood_log", xpAmount: 25, respawnTimeMs: 10000 },
   6: { skillSlug: "mining", resourceSlug: "ore_copper", xpAmount: 25, respawnTimeMs: 15000 },
 };
-
-async function resolveUserId(accountOrUserId: string): Promise<string | null> {
-  if (!accountOrUserId) return null;
-  const asAccount = await prisma.account.findFirst({
-    where: { id: accountOrUserId },
-    select: { userId: true },
-  });
-  if (asAccount?.userId) return asAccount.userId;
-  const asUser = await prisma.user.findFirst({
-    where: { id: accountOrUserId },
-    select: { id: true },
-  });
-  return asUser?.id ?? null;
-}
 
 export class InventoryManager {
   private activeLootBags = new Map<
@@ -138,19 +123,7 @@ export class InventoryManager {
 
     for (const item of items) {
       if (!item?.slug || !item.qty) continue;
-      const existing = await prisma.playerInventoryItem.findFirst({
-        where: { userId, itemSlug: item.slug },
-      });
-      if (existing) {
-        await prisma.playerInventoryItem.update({
-          where: { id: existing.id },
-          data: { quantity: existing.quantity + item.qty },
-        });
-      } else {
-        await prisma.playerInventoryItem.create({
-          data: { userId, itemSlug: item.slug, quantity: item.qty },
-        });
-      }
+      await addItem(userId, item.slug, item.qty);
     }
 
     // Quest JSON uses `gold`; shop wallet is GameCharacter.stateData.credits
@@ -284,20 +257,7 @@ export class InventoryManager {
       return;
     }
 
-    let invItem = await prisma.playerInventoryItem.findFirst({
-      where: { userId, itemSlug: resourceSlug },
-    });
-
-    if (invItem) {
-      await prisma.playerInventoryItem.update({
-        where: { id: invItem.id },
-        data: { quantity: invItem.quantity + 1 },
-      });
-    } else {
-      await prisma.playerInventoryItem.create({
-        data: { userId, itemSlug: resourceSlug, quantity: 1 },
-      });
-    }
+    await addItem(userId, resourceSlug, 1);
 
     this.engine.events.emit("grantSkillXp", { accountId, skillSlug, amount: xpAmount });
 
@@ -309,18 +269,12 @@ export class InventoryManager {
     });
 
     if (tool.durability !== null && tool.durability !== undefined) {
-      const newDurability = tool.durability - 1;
-      if (newDurability <= 0) {
-        await prisma.playerInventoryItem.delete({ where: { id: tool.id } });
+      const wear = await wearToolDurability(tool.id, 1);
+      if (wear === "broken") {
         this.engine.events.emit("directMessage", {
           socketId,
           event: "show_toast",
           data: { message: `Your ${requiredToolSlug} broke!` },
-        });
-      } else {
-        await prisma.playerInventoryItem.update({
-          where: { id: tool.id },
-          data: { durability: newDurability },
         });
       }
     }
@@ -472,20 +426,7 @@ export class InventoryManager {
     if (!userId) return;
 
     for (const item of loot.items) {
-      const invItem = await prisma.playerInventoryItem.findFirst({
-        where: { userId, itemSlug: item.itemId },
-      });
-
-      if (invItem) {
-        await prisma.playerInventoryItem.update({
-          where: { id: invItem.id },
-          data: { quantity: invItem.quantity + item.quantity },
-        });
-      } else {
-        await prisma.playerInventoryItem.create({
-          data: { userId, itemSlug: item.itemId, quantity: item.quantity },
-        });
-      }
+      await addItem(userId, item.itemId, item.quantity);
     }
 
     this.activeLootBags.delete(lootId);

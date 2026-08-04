@@ -10,25 +10,9 @@ import {
   FALLBACK_CLASS_DEFS,
 } from '@/shared/game/classCatalog';
 import { classDataToDb, classRowToData } from '@/shared/game/classDefMap';
+import { ensureDefaultGameConfig } from '@/server/classDefs';
 
 export type ClassDefRow = ClassDefData & { id?: string };
-
-async function ensureDefaultGameConfig() {
-  let config = await prisma.gameConfig.findUnique({ where: { slug: DEFAULT_GAME_CONFIG_SLUG } });
-  if (!config) {
-    config = await prisma.gameConfig.create({
-      data: {
-        slug: DEFAULT_GAME_CONFIG_SLUG,
-        name: 'Saints Gaming',
-        description: 'Default Saints MMO config',
-        isActive: true,
-        globalShinyChancePercent: DEFAULT_GLOBAL_SHINY_CHANCE_PERCENT,
-        baseStats: JSON.stringify({ hp: 100, atk: 50, def: 45, spd: 50, ratk: 45, rdef: 45 }),
-      },
-    });
-  }
-  return config;
-}
 
 /** Shared + profile-scoped classes for a world profile (null profileId = shared). */
 function classScopeWhere(profileId?: string | null) {

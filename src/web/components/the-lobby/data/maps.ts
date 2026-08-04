@@ -1,5 +1,5 @@
 import { Point } from '../store';
-import { ElementType } from './saints-dex';
+import type { ElementType } from '@/shared/game/elementMatchups';
 import { listGateTargets } from '@/shared/game/mapGates';
 
 export interface MapGate {

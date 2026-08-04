@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import {
   CreatureDefData,
   FALLBACK_CREATURE_DEFS,
@@ -7,8 +7,6 @@ import {
   toPlayerCreatureStats,
 } from "@/shared/game/creatureCatalog";
 import { creatureRowToData } from "@/shared/game/creatureDefMap";
-
-const prisma = new PrismaClient();
 
 export async function loadCreatureDef(slug: string): Promise<CreatureDefData | null> {
   try {

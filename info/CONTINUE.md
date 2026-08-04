@@ -1,17 +1,47 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-04  
+**Last updated:** 2026-08-04 (Studio resume after duplicate strip)  
 **Point every new session at this file first.**
 
 ---
 
 ## Current Focus
 
-**Game engine editor foundation** — Phase 1–2d on `main` (Editor/Playtest, camera, catalogs, avatar-hide, **avatar-free author session**). See `logs/studio-first-hybrid-foundation.md`.
+**Resume Studio / game-engine editor work.** Strip pause is lifted.
 
-**Just checkpointed:** `/studio` opens DEMO as author (no character). Dock **Hero** optional for Playtest.
+Before coding Studio, read:
 
-**Studio world profiles + Saints Trail + Viewfinder UI (on `main`)**
+1. **This file**
+2. **`logs/2026-08-04-studio-resume-after-strip.md`** — contracts from the duplicate strip (lobby vs Studio maps, catalogs, inventory, classes)
+3. `logs/studio-first-hybrid-foundation.md`
+4. Trail/Spyder smokes as needed
+
+**Do not** reintroduce deleted ghosts (Pixi battle, Phase-5 ClassEditor/GameConfigManager, CreatureDb, `:3001` party client, dual TB overlays).
+
+---
+
+## Strip follow-ups already landed (adapt to these)
+
+| Area | Behavior |
+| :--- | :--- |
+| `/lobby` map | Always **`DEMO_SANDBOX`** + `join_map.lobby: true` (multiplayer shard) |
+| `/studio` map | Author/character map preserved; `lobby: false`; off-DEMO warps OK |
+| Creatures | `creatureCatalog` + DB; `saints-dex` is UI adapter only |
+| Classes | **`ClassEditorPanel` only** (DevTools tab uses it too) |
+| Inventory | Server writes via **`src/server/inventoryService.ts`** |
+| Combat | Keep RT + TB modes; TB UI = `TurnBattleOverlay` only |
+
+Full audit: `logs/2026-08-04-duplicate-systems-audit.md`
+
+---
+
+## Studio foundation (unchanged goals)
+
+**Game engine editor** — Phase 1–2d on `main` (Editor/Playtest, camera, catalogs, avatar-hide, **avatar-free author session**). See `logs/studio-first-hybrid-foundation.md`.
+
+**Checkpoint:** `/studio` opens DEMO as author (no character). Dock **Hero** optional for Playtest.
+
+**World profiles + Saints Trail + Viewfinder UI (on `main`)**
 
 - Profiles: Tuxemon / Custom 1 / Custom 2 (+ blank / Clone Trail)
 - Custom 1 = Saints Trail on `DEMO_SANDBOX` (editable quests + dialogue)
@@ -22,22 +52,17 @@ Progress log: `logs/STUDIO_PHASES_3_7.md` (local)
 Trail smoke: [`info/game/SAINTS_TRAIL_SMOKE.md`](./game/SAINTS_TRAIL_SMOKE.md)  
 Spyder smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
 
-### Just shipped
+### First checks this session
 
-- Phases 1–7: quests dock, world profiles, Saints Trail, Talk dock, catalog scope, Spyder Q12, gather
-- Clone Trail → Custom 2 (namespaced)
-- Playthrough fixes (tools ≠ Q6 accept; DB dialogue; real sprites)
-- Lobby World picker (localStorage) + dialogue cache freshness
-- Classes panel scoped by world **`profileId`** (null/empty = shared; GameConfig FK stays `saints`)
-- Viewfinder Interface Editor (auto-close Options, floating toolbar, Escape)
+```bash
+npm run dev
+# warm cold compile once
+curl --max-time 120 http://localhost:3000/studio
+# Paint: tools on → brush → ground → Save Map
+# Warp via World Builder; confirm lobby still sticks to DEMO_SANDBOX
+```
 
-### Verified
-- `npm run smoke:saints-trail:play` — 21/21 greeter→gather
-- `npm run visual:saints-trail` — Custom 1 → Demo Sandbox + Trail Greeter tracker
-- `npm run smoke:spyder` — Spyder path incl. Q12
-- `node scripts/visual-interface-editor.mjs` — Viewfinder UX
-
-### Pipeline
+### Pipeline (when reseeding)
 
 ```bash
 npx prisma db push
@@ -48,7 +73,6 @@ SMOKE_CLONE_SLUG=custom_2 npm run smoke:saints-trail
 npm run smoke:saints-trail:play
 npm run visual:saints-trail   # needs npm run dev
 npm run smoke:spyder
-npm run dev
 ```
 
 ### Back-line (do not prioritize)
@@ -60,12 +84,14 @@ npm run dev
 | FiveM bridges / UCP depth | Same lane as UCP — wait for plugin design |
 | S3/CDN as default | Optional path exists; local uploads fine |
 | Heavy AI | Forum enhance exists; don’t expand |
+| Dual map-loader merge | Maintenance only; not blocking Studio |
 
 ---
 
 ## Mandatory Read Order
 
 1. **This file**
-2. `info/game/SAINTS_TRAIL_SMOKE.md` (Custom 1) and/or `info/game/SPYDER_SMOKE.md` (Tuxemon)
-3. `info/game/GAME_FOUNDATION_SYSTEMS.md`
-4. `info/game/CLASS_SKILLS_SHINY.md`
+2. `logs/2026-08-04-studio-resume-after-strip.md`
+3. `info/game/SAINTS_TRAIL_SMOKE.md` (Custom 1) and/or `info/game/SPYDER_SMOKE.md` (Tuxemon)
+4. `info/game/GAME_FOUNDATION_SYSTEMS.md`
+5. `info/game/CLASS_SKILLS_SHINY.md`

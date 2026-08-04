@@ -3,6 +3,7 @@
 import { prisma } from '@/web/lib/prisma';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
+import { addItem, removeItem } from '@/server/inventoryService';
 
 export async function getLiveGtcListings(filterType: string = 'ALL') {
   try {
@@ -123,23 +124,7 @@ export async function purchaseGtcListing(listingId: string) {
       }
 
       if (listing.itemType === 'MATERIAL' && listing.itemId) {
-        const existing = await tx.playerInventoryItem.findFirst({
-          where: { userId: buyerUserId, itemSlug: listing.itemId },
-        });
-        if (existing) {
-          await tx.playerInventoryItem.update({
-            where: { id: existing.id },
-            data: { quantity: existing.quantity + 1 },
-          });
-        } else {
-          await tx.playerInventoryItem.create({
-            data: {
-              userId: buyerUserId,
-              itemSlug: listing.itemId,
-              quantity: 1,
-            },
-          });
-        }
+        await addItem(buyerUserId, listing.itemId, 1, tx);
       } else if (listing.itemType !== 'MATERIAL') {
         throw new Error('Only MATERIAL listings can be purchased on the website for now');
       }
@@ -204,19 +189,9 @@ export async function createGtcListing(input: {
     if (!char) return { success: false, error: 'No character found' };
 
     const listing = await prisma.$transaction(async (tx) => {
-      const inventory = await tx.playerInventoryItem.findFirst({
-        where: { userId, itemSlug },
-      });
-      if (!inventory || inventory.quantity < 1) {
+      const removed = await removeItem(userId, itemSlug, 1, tx);
+      if (!removed) {
         throw new Error(`You don't have ${itemSlug}`);
-      }
-      if (inventory.quantity === 1) {
-        await tx.playerInventoryItem.delete({ where: { id: inventory.id } });
-      } else {
-        await tx.playerInventoryItem.update({
-          where: { id: inventory.id },
-          data: { quantity: inventory.quantity - 1 },
-        });
       }
 
       return tx.gtcListing.create({
