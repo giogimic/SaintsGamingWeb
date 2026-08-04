@@ -161,6 +161,8 @@ Saving from Studio must not require an MMO restart. Prefer:
 * Cache invalidation for loot pools, encounters, NPC defs
 * Safe sync to connected players without disconnect
 
+**Full live-ops contract** (publish, rollback, staging, backups, `content_reload` bus): [`26-studio-live-operations.md`](./26-studio-live-operations.md).
+
 Full hot-reload matrix (shops, quests, dialogue, resource nodes) is phased; do not block Phase 1 on complete coverage.
 
 ---
