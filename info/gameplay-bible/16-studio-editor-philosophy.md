@@ -157,18 +157,21 @@ Advanced Tier is hidden behind an explicit toggle. Default Studio stays fun-firs
 
 # 11. Studio Roadmap Checklist
 
-- [ ] **Walk Mode** as the default entry — create tools are opt-in, not forced.
-- [ ] **Five Modes** switcher (Walk / Paint / Place / Populate / Script) with clear hotkeys.
-- [ ] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev).
-- [ ] **Permission gates** for Player / Creator / Developer / Admin on `/studio` and save APIs.
-- [ ] **Tag & component** palette for harvest, warp, shop, dialogue, and quest giver.
-- [ ] **Asset Manager** with visual + gameplay metadata and approved pack filters.
-- [ ] **Fun-first loop** verified: place → walk → interact → tweak → save under 60 seconds.
-- [ ] **Server validation** on save (spawn safety, collision sanity, logic tile allowlists).
+Detailed interaction specs: [`19-studio-ux-design.md`](./19-studio-ux-design.md) §20.
+
+- [x] **Walk Mode** as the default entry — create tools are opt-in, not forced.
+- [ ] **Five Modes** switcher (Walk / Paint / Place / Populate / Script) with clear hotkeys — designed in **19**; labels/aliases next.
+- [x] **Floating docks** with persisted layout (World Builder, Properties, Assets, NPC, Quest, Creature, Dev + Loot/Dialogue/…).
+- [x] **Permission gates** for Admin+/Developer on `/studio` and save APIs (Creator tier deferred).
+- [ ] **Tag & component** palette split from Inspector — **19** §6.4 / §8.1.
+- [x] **Asset Manager** with visual + gameplay metadata and approved pack filters (DnD to world per **19**).
+- [ ] **Fun-first loop** verified under 60s after UX-1/2.
+- [x] **Server validation** on save (spawn safety, collision sanity, logic tile allowlists) — extend with status Validation popover.
 - [ ] **Ollama authoring assist** for dialogue drafts (offline from production runtime).
-- [ ] **Advanced Tier** toggle for raw JSON, bulk import, and live map push.
-- [ ] **Publish flow** — private → friends → public → featured (Admin).
-- [ ] Cross-check map layer rules against [`08-world-building-editor-architecture.md`](./08-world-building-editor-architecture.md).
+- [ ] **Advanced Tier** toggle for raw JSON, bulk import, and live map push — **19** §19.
+- [ ] **Publish flow** — private → friends → public → featured (Admin) — **19** §9.
+- [x] Cross-check map layer rules against [`08`](./08-world-building-editor-architecture.md) + [`18`](./18-studio-master-architecture.md).
+- [x] Complete UX contract — [`19`](./19-studio-ux-design.md).
 
 ---
 
