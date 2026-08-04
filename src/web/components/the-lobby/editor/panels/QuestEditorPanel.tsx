@@ -8,8 +8,9 @@ import {
   type QuestObjectiveInput,
 } from '@/app/actions/quest-templates';
 import { useEditorStore } from '../editor-store';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import {
-  Plus, Trash2, Save, RefreshCw, ScrollText, CheckCircle2, AlertCircle,
+  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 
 const inputCls =
@@ -140,52 +141,51 @@ export function QuestEditorPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full gap-3 text-xs font-mono min-h-0">
-      <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 text-[#cbb26a] font-bold">
-          <ScrollText className="w-4 h-4" />
-          Quests · {activeGameId}
-        </div>
+    <CatalogEditorShell
+      title="Quest Catalog"
+      blurb={`Script mode · profile ${activeGameId} · QuestTemplate SoT`}
+      dirty={isNew}
+      toolbar={
         <div className="flex gap-1">
-          <button type="button" onClick={() => void load()} className="p-1.5 rounded hover:bg-white/5 text-slate-400" title="Refresh">
-            <RefreshCw className="w-3.5 h-3.5" />
+          <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={handleNew} className="p-1.5 rounded hover:bg-white/5 text-emerald-400" title="New quest">
-            <Plus className="w-3.5 h-3.5" />
+          <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New quest">
+            <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-      </div>
-
-      {status && (
-        <div className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-300' : 'bg-red-900/40 text-red-300'}`}>
-          {status.type === 'success' ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-          {status.msg}
-        </div>
-      )}
-
-      <div className="grid grid-cols-5 gap-3 min-h-0 flex-1 overflow-hidden">
-        <div className="col-span-2 overflow-y-auto space-y-1 border border-slate-800 rounded-lg p-1.5 bg-[#050b14]/50">
+      }
+      list={
+        <div className="space-y-1">
           {list.length === 0 && (
-            <p className="text-slate-500 text-[10px] p-2">No quests for this profile. Seed Spyder or create one.</p>
+            <p className="p-2 text-[10px] text-slate-500">No quests for this profile. Seed Spyder or create one.</p>
           )}
           {list.map((q) => (
             <button
               key={q.id}
               type="button"
               onClick={() => handleSelect(q)}
-              className={`w-full text-left px-2 py-1.5 rounded border transition-colors ${
+              className={`w-full rounded border px-2 py-1.5 text-left transition-colors ${
                 form.slug === q.slug && !isNew
                   ? 'border-amber-600/50 bg-amber-900/20 text-amber-100'
-                  : 'border-transparent hover:bg-white/5 text-slate-300'
+                  : 'border-transparent text-slate-300 hover:bg-white/5'
               }`}
             >
-              <div className="font-bold text-[11px] truncate">{q.title}</div>
-              <div className="text-[9px] text-slate-500 truncate">{q.slug}</div>
+              <div className="truncate text-[11px] font-bold">{q.title}</div>
+              <div className="truncate text-[9px] text-slate-500">{q.slug}</div>
             </button>
           ))}
         </div>
+      }
+    >
+      {status && (
+        <div className={`mb-2 flex items-center gap-1.5 rounded px-2 py-1 text-[10px] ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-300' : 'bg-red-900/40 text-red-300'}`}>
+          {status.type === 'success' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+          {status.msg}
+        </div>
+      )}
 
-        <div className="col-span-3 overflow-y-auto space-y-3 pr-1">
+      <div className="space-y-3 pr-1">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>Slug</label>
@@ -302,8 +302,7 @@ export function QuestEditorPanel() {
               </button>
             )}
           </div>
-        </div>
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 }

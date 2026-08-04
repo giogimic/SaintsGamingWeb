@@ -19,9 +19,10 @@ import {
   FALLBACK_CREATURE_DEFS,
 } from '@/shared/game/creatureCatalog';
 import {
-  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, PawPrint, CheckCircle2, AlertCircle,
+  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
 
 const inputCls =
   'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-emerald-700 transition-colors';
@@ -132,38 +133,82 @@ export function CreatureDefEditorPanel() {
   );
 
   return (
-    <div className="h-full flex flex-col bg-[#050b14] font-mono text-[11px]">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-emerald-900/40 shrink-0">
-        <div className="flex items-center gap-2">
-          <PawPrint className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="font-black text-emerald-300 uppercase tracking-wider text-[11px]">Creature Catalog</span>
-          <span className="text-[9px] text-emerald-500/80">{list.length} defs</span>
-        </div>
-        <div className="flex gap-1">
-          <button onClick={handleSeed} className="px-2 py-1 rounded bg-emerald-950/50 border border-emerald-800 text-emerald-300 flex items-center gap-1" title="Seed defaults">
+    <CatalogEditorShell
+      title="Creature Catalog"
+      blurb={`${list.length} defs · world ${activeGameId} · GameAsset + CreatureDef SoT`}
+      dirty={isNew}
+      toolbar={
+        <div className="flex flex-wrap gap-1">
+          <button type="button" onClick={handleSeed} className="flex items-center gap-1 rounded border border-emerald-800 bg-emerald-950/50 px-2 py-1 text-emerald-300" title="Seed defaults">
             <Database size={10} /> Seed
           </button>
-          <button onClick={() => setShowJson((v) => !v)} className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 flex items-center gap-1">
+          <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">
             <FileJson size={10} /> JSON
           </button>
-          <button onClick={handleNew} className="px-2 py-1 rounded bg-emerald-700 text-white flex items-center gap-1">
+          <button type="button" onClick={handleNew} className="flex items-center gap-1 rounded bg-emerald-700 px-2 py-1 text-white">
             <Plus size={10} /> New
           </button>
-          <button onClick={() => void load()} className="p-1 rounded border border-slate-700 text-slate-400">
+          <button type="button" onClick={() => void load()} className="rounded border border-slate-700 p-1 text-slate-400">
             <RefreshCw size={12} />
           </button>
         </div>
-      </div>
-
+      }
+      list={
+        <div className="space-y-0.5">
+          {list.map((c) => (
+            <div
+              key={c.slug}
+              onClick={() => handleSelect(c)}
+              className={`cursor-pointer border-b border-slate-900 p-2 hover:bg-emerald-950/30 ${form.slug === c.slug ? 'bg-emerald-950/50' : ''}`}
+            >
+              <div className="flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={creatureAssetUrl(c.spriteOverworld)} alt="" className="h-6 w-6 object-contain" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-bold text-[10px] text-slate-200">{c.name}</div>
+                  <div className="truncate text-[9px] text-slate-500">
+                    {c.typePrimary}
+                    {c.typeSecondary !== 'None' ? `/${c.typeSecondary}` : ''}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="text-slate-500 hover:text-emerald-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void toggleCreatureDefActive(c.slug, !c.isActive).then(load);
+                  }}
+                >
+                  {c.isActive ? <Eye size={10} /> : <EyeOff size={10} />}
+                </button>
+                <button
+                  type="button"
+                  className="text-slate-500 hover:text-red-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleDelete(c.slug);
+                  }}
+                >
+                  <Trash2 size={10} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {list.length === 0 && (
+            <p className="p-2 text-[10px] text-slate-500">No defs — Seed or New.</p>
+          )}
+        </div>
+      }
+    >
       {status && (
-        <div className={`px-3 py-1.5 text-[10px] flex items-center gap-1 ${status.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+        <div className={`mb-2 flex items-center gap-1 px-1 text-[10px] ${status.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
           {status.type === 'success' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
           {status.msg}
         </div>
       )}
 
       {showJson && (
-        <div className="p-3 border-b border-slate-800 space-y-2">
+        <div className="mb-3 space-y-2 border-b border-slate-800 pb-3">
           <textarea
             className={`${inputCls} h-24`}
             placeholder="Paste CreatureDef JSON array…"
@@ -171,7 +216,8 @@ export function CreatureDefEditorPanel() {
             onChange={(e) => setJsonInput(e.target.value)}
           />
           <button
-            className="px-3 py-1.5 bg-emerald-700 text-white rounded font-bold"
+            type="button"
+            className="rounded bg-emerald-700 px-3 py-1.5 font-bold text-white"
             onClick={async () => {
               setLoading(true);
               const res = await importCreatureDefsJson(jsonInput);
@@ -186,7 +232,8 @@ export function CreatureDefEditorPanel() {
             Import
           </button>
           <button
-            className="ml-2 px-3 py-1.5 border border-slate-600 text-slate-300 rounded"
+            type="button"
+            className="ml-2 rounded border border-slate-600 px-3 py-1.5 text-slate-300"
             onClick={() => {
               navigator.clipboard.writeText(JSON.stringify(FALLBACK_CREATURE_DEFS, null, 2));
               showStatus('success', 'Copied seed JSON');
@@ -197,56 +244,7 @@ export function CreatureDefEditorPanel() {
         </div>
       )}
 
-      <div className="flex flex-1 min-h-0">
-        {/* List */}
-        <div className="w-40 border-r border-slate-800 overflow-y-auto shrink-0">
-          {list.map((c) => (
-            <div
-              key={c.slug}
-              onClick={() => handleSelect(c)}
-              className={`p-2 cursor-pointer border-b border-slate-900 hover:bg-emerald-950/30 ${form.slug === c.slug ? 'bg-emerald-950/50' : ''}`}
-            >
-              <div className="flex items-center gap-2">
-                <img src={creatureAssetUrl(c.spriteOverworld)} alt="" className="w-8 h-8 object-contain pixelated bg-black/40 rounded" />
-                <div className="min-w-0">
-                  <div className="font-bold text-slate-200 truncate">{c.name}</div>
-                  <div className="text-[9px] text-slate-500 truncate">
-                    {c.typePrimary}
-                    {c.typeSecondary !== 'None' ? `/${c.typeSecondary}` : ''}
-                    {c.isStarter ? ' · S' : ''}
-                    {c.isWildSpawn ? ' · W' : ''}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-1 mt-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void toggleCreatureDefActive(c.slug, !c.isActive).then(load);
-                  }}
-                  className="text-slate-500 hover:text-emerald-400"
-                >
-                  {c.isActive ? <Eye size={10} /> : <EyeOff size={10} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleDelete(c.slug);
-                  }}
-                  className="text-slate-500 hover:text-red-400"
-                >
-                  <Trash2 size={10} />
-                </button>
-              </div>
-            </div>
-          ))}
-          {list.length === 0 && (
-            <div className="p-3 text-slate-500 text-[10px]">No DB rows — Seed or use fallback in gameplay.</div>
-          )}
-        </div>
-
-        {/* Form */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="space-y-3 pr-1">
           {(isNew || form.slug) && (
             <>
               <div className="grid grid-cols-2 gap-2">
@@ -478,10 +476,9 @@ export function CreatureDefEditorPanel() {
             </>
           )}
           {!isNew && !form.slug && (
-            <div className="text-slate-500 text-center mt-10">Select a creature or click New / Seed.</div>
+            <div className="mt-10 text-center text-slate-500">Select a creature or click New / Seed.</div>
           )}
-        </div>
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 }

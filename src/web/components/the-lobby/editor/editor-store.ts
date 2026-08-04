@@ -76,6 +76,8 @@ interface EditorState {
   activeLayerIdx: number;
   clickedTile: { r: number; c: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
+  /** Soft editor overlay: show tile XY in paint HUD. */
+  showEditorCoords: boolean;
 
   setActiveGameId: (id: string) => void;
   getStudioRuntime: () => StudioRuntime;
@@ -99,6 +101,7 @@ interface EditorState {
   setActiveLayerIdx: (idx: number) => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
+  setShowEditorCoords: (on: boolean) => void;
   markMapDirty: () => void;
   clearMapDirty: () => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
@@ -299,6 +302,7 @@ export const useEditorStore = create<EditorState>()(
       activeLayerIdx: 0,
       clickedTile: null,
       lastPaintedTile: null,
+      showEditorCoords: true,
 
       getStudioRuntime: () => studioRuntimeFromCreation(get().isCreationMode),
 
@@ -481,6 +485,10 @@ export const useEditorStore = create<EditorState>()(
       setLastPaintedTile: (tile) =>
         set((state) => {
           state.lastPaintedTile = tile;
+        }),
+      setShowEditorCoords: (on) =>
+        set((state) => {
+          state.showEditorCoords = on;
         }),
       markMapDirty: () =>
         set((state) => {

@@ -32,6 +32,14 @@ Phase 2a = editor camera + CatalogEditorShell / SchemaFieldRenderer wiring.
 | SchemaFieldRenderer | Wired into NPC panel (General + Appearance from `entitySchemas`) |
 | Paint HUD | Shows pan / undo hints |
 
+## Phase 2b shipped
+
+| Piece | What |
+| :--- | :--- |
+| Creature Catalog | Migrated onto `CatalogEditorShell` |
+| Quest Catalog | Migrated onto `CatalogEditorShell` |
+| Overlay hint | Paint HUD XY toggle (`showEditorCoords`) |
+
 ## Verify
 
 ```bash
@@ -42,6 +50,6 @@ npx vitest run src/shared/game/studioSession.test.ts src/shared/game/studioModes
 
 - Avatar-free editor session (no player required to author)
 - PIE private shard
-- Migrate Creature/Quest/Loot docks onto CatalogEditorShell
+- Migrate Loot/Dialogue/Classes docks onto CatalogEditorShell
 - Definition undo stack
-- Toggleable debug overlays (spawn/warp/chunk)
+- Richer debug overlays (spawn/warp/chunk)

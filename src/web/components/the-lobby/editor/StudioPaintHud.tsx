@@ -16,6 +16,8 @@ export function StudioPaintHud() {
   const lastPainted = useEditorStore((s) => s.lastPaintedTile);
   const clicked = useEditorStore((s) => s.clickedTile);
   const mapDirty = useEditorStore((s) => s.mapDirty);
+  const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
+  const setShowEditorCoords = useEditorStore((s) => s.setShowEditorCoords);
   const logicTiles = useGameStore((s) => s.logicTiles);
   const activeMapData = useGameStore((s) => s.activeMapData);
 
@@ -61,10 +63,23 @@ export function StudioPaintHud() {
           )}
         </div>
 
+        <button
+          type="button"
+          onClick={() => setShowEditorCoords(!showEditorCoords)}
+          className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+            showEditorCoords
+              ? 'border-sky-500/40 bg-sky-950/40 text-sky-200'
+              : 'border-white/10 bg-black/30 text-slate-500'
+          }`}
+          title="Toggle coordinate readout"
+        >
+          XY {showEditorCoords ? 'On' : 'Off'}
+        </button>
+
         <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-400">
           <MousePointerClick className="h-3.5 w-3.5" />
           <span>Paint · MMB / Space+drag pan · Ctrl+Z</span>
-          {cell && (
+          {showEditorCoords && cell && (
             <span className="text-[#e2d5b3]">
               · ({cell.c}, {cell.r})
             </span>
