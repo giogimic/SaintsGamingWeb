@@ -7,7 +7,9 @@
 
 ## Current Focus
 
-**Game engine editor foundation** — Phase 1–2c on `main` (Editor/Playtest, camera, CatalogEditorShell across NPC/Creature/Quest/Loot/Dialogue/Class, avatar-hide). See `logs/studio-first-hybrid-foundation.md`.
+**Game engine editor foundation** — Phase 1–2d on `main` (Editor/Playtest, camera, catalogs, avatar-hide, **avatar-free author session**). See `logs/studio-first-hybrid-foundation.md`.
+
+**Just checkpointed:** `/studio` opens DEMO as author (no character). Dock **Hero** optional for Playtest.
 
 **Studio world profiles + Saints Trail + Viewfinder UI (on `main`)**
 

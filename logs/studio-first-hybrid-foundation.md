@@ -49,15 +49,24 @@ Phase 2a = editor camera + CatalogEditorShell / SchemaFieldRenderer wiring.
 | Loot Catalog | Migrated onto `CatalogEditorShell` |
 | Avatar-free viewport | Hide `player_main` in Editor runtime; restore on Playtest (`shouldHidePlayerAvatar`) |
 
+## Phase 2d shipped (checkpoint)
+
+| Piece | What |
+| :--- | :--- |
+| Author session | `/studio` loads `DEMO_SANDBOX` without character select (`enterStudioAuthorSession`) |
+| Optional hero | Dock **Hero** → character select; cancel returns to author session |
+| Persist gate | Autosave still requires `activeCharacterId` (author sessions do not write character state) |
+
 ## Verify
 
 ```bash
 npx vitest run src/shared/game/studioSession.test.ts src/shared/game/studioModes.test.ts src/shared/game/editorOps.test.ts
 ```
 
+Manual: open `/studio` while logged in → Editor on DEMO without Choose Hero. **Hero** dock to load a character for Playtest.
+
 ## Next
 
-- Full avatar-free session (no character required to open Studio map)
 - PIE private shard
 - Starter Heroes dock on CatalogEditorShell
 - Definition undo stack

@@ -25,6 +25,7 @@ import {
   Coins,
   Wrench,
   Footprints,
+  UserRound,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -317,6 +318,18 @@ export const StudioEditorShell: React.FC = () => {
           <DockButton id="loot" icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
+          <button
+            type="button"
+            onClick={() => {
+              useGameStore.getState().setGameMode('CHARACTER_SELECT');
+              showToast('Load a character for Playtest — or cancel back to author session');
+            }}
+            className="flex flex-col items-center gap-0.5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors min-w-[64px]"
+            title="Load a game character (optional — author session needs none)"
+          >
+            <UserRound className="w-4 h-4" />
+            <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Hero</span>
+          </button>
           <button
             type="button"
             onClick={() => {
