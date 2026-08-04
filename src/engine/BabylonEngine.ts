@@ -780,7 +780,11 @@ export class BabylonEngine {
         mesh.material = mat;
         this.tileMeshes.push(mesh);
       });
-    } else {
+    }
+
+    // If rich layers were all GID 0 (or failed), fall back to colored logic grid.
+    // Otherwise Studio shows only scene clearColor (near-black) — DEMO after PR #20.
+    if (this.tileMeshes.length === 0) {
       // Fallback: simple colored grid rendering with 2.5D geometry
       const baseGrounds: Record<number, Mesh> = {};
       const baseObjects: Record<number, Mesh[]> = {};
@@ -816,6 +820,7 @@ export class BabylonEngine {
               if (this.waterTexture) (groundBase.material as StandardMaterial).diffuseTexture = this.waterTexture;
             }
           }
+
 
           // 3D Objects Instancing
           if (tileId === 1 || tileId === 2 || tileId === 3 || tileId === 5 || tileId === 6 || tileId === 7 || tileId === 9 || tileId === 10 || tileId === 11 || tileId === 12) {
