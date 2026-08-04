@@ -7,7 +7,7 @@
 
 ## Current Focus
 
-**Game engine editor foundation** — Phase 1 (Editor/Playtest) + Phase 2a (editor camera, CatalogEditorShell, SchemaFieldRenderer on NPCs). See `logs/studio-first-hybrid-foundation.md`.
+**Game engine editor foundation** — Phase 1–2b on `main` (Editor/Playtest, camera, CatalogEditorShell on NPC/Creature/Quest). See `logs/studio-first-hybrid-foundation.md`.
 
 **Studio world profiles + Saints Trail + Viewfinder UI (on `main`)**
 
