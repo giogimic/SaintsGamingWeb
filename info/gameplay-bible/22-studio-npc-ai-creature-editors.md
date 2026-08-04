@@ -6,13 +6,14 @@
 
 > **Companions (do not fork)**
 > - [`15-quests-dialogue-npc-ai.md`](./15-quests-dialogue-npc-ai.md) — dialogue/quest/FSM philosophy
+> - [`24-studio-quest-editor.md`](./24-studio-quest-editor.md) — **complete quest editor** (graphs, schedules, testing)
 > - [`18`](./18-studio-master-architecture.md) — registries, hot-reload
 > - [`19`](./19-studio-ux-design.md) — docks, Inspector, graphs, shortcuts
 > - [`20`](./20-studio-entity-system.md) — entity components / prefabs / spawners
 > - [`21`](./21-studio-world-building-tools.md) — place vs paint; spawn regions
 > - [`07`](./07-technical-economic-rules.md) / [`11`](./11-turn-based-battle-engine.md) — capture & combat constitution
 
-**This document is the NPC/AI/creature editor master.** Evolve existing docks (`NpcEditorPanel`, `DialogueEditorPanel`, `QuestEditorPanel`, `CreatureDefEditorPanel`) + entity components — do not invent parallel “AI Studio” apps.
+**This document is the NPC/AI/creature editor master.** Quest graph/schedules/cutscenes/testing detail: **`24`**. Evolve existing docks — do not invent parallel “AI Studio” apps.
 
 ---
 
