@@ -40,6 +40,8 @@ interface GameCanvasBabylonProps {
   activeBrushTileId?: number;
   activeLayerIdx?: number;
   isDevEditorOpen?: boolean;
+  /** Bible 17 — skip encounters/combat step actions while Studio create tools are open. */
+  suppressGameplay?: boolean;
   onMapClick?: (r: number, c: number) => void;
 }
 
@@ -48,6 +50,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   activeBrushTileId = 1,
   activeLayerIdx = -1,
   isDevEditorOpen = false,
+  suppressGameplay = false,
   onMapClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -198,8 +201,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       store.addPendingMove({ seq, direction: dir, predictedPos: { x: targetX, y: targetY } });
       emitSocketEvent?.('input', { type: "MOVE", direction: dir, sequence: seq, timestamp: Date.now() });
 
-      // Handle Step Actions
-      if (result.stepAction) {
+      // Handle Step Actions (suppressed during Studio create tools — bible 17)
+      if (result.stepAction && !suppressGameplay) {
         const payload = result.stepPayload || {};
         switch (result.stepAction) {
           case 'ENCOUNTER':
