@@ -63,6 +63,7 @@ export const StudioEditorShell: React.FC = () => {
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
   const closePanel = useEditorStore((state) => state.closePanel);
   const showToast = useGameStore((state) => state.showToast);
+  const gameMode = useGameStore((state) => state.gameMode);
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
 
@@ -86,12 +87,20 @@ export const StudioEditorShell: React.FC = () => {
       // Ctrl+E to toggle Creation Mode — shell is only mounted on /studio
       if (e.ctrlKey && e.key.toLowerCase() === 'e') {
         e.preventDefault();
+        // Only toggle while in-world — avoid opening docks over title/login.
+        const mode = useGameStore.getState().gameMode;
+        if (mode !== 'EXPLORING' && mode !== 'BATTLE') return;
         toggleCreationMode();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleCreationMode]);
+
+  // Hide Studio chrome until the player is in-world (title/login/server-select).
+  if (gameMode !== 'EXPLORING' && gameMode !== 'BATTLE') {
+    return null;
+  }
 
   // Walk Mode chip — create tools are opt-in (doc 16)
   if (!isCreationMode) {
