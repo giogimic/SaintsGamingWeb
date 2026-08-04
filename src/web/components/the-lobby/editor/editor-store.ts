@@ -9,7 +9,7 @@ import {
   savePanelLayoutsToStorage,
 } from '@/shared/game/studioPanelLayout';
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'dev' | 'characters' | 'classes';
+export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes';
 
 /** ALIGNMENT Slice D contextual modes — panel presets over existing docks. */
 export type StudioMode = 'build' | 'npc' | 'quest' | 'creature' | 'test';
@@ -31,7 +31,7 @@ export const STUDIO_MODE_DEFAULTS: Record<StudioMode, PanelId[]> = {
   build: ['build', 'properties'],
   npc: ['npc', 'properties', 'assets'],
   quest: ['npc', 'quest'],
-  creature: ['creature'],
+  creature: ['creature', 'loot'],
   test: [],
 };
 
@@ -81,6 +81,7 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
   quest: { id: 'quest', title: 'Quest Editor', isOpen: false, isCollapsed: false, x: 150, y: 150, width: 720, height: 560, zIndex: 10 },
   dialogue: { id: 'dialogue', title: 'Dialogue Editor', isOpen: false, isCollapsed: false, x: 180, y: 80, width: 860, height: 620, zIndex: 10 },
   creature: { id: 'creature', title: 'Creature Catalog', isOpen: false, isCollapsed: false, x: 480, y: 60, width: 780, height: 680, zIndex: 10 },
+  loot: { id: 'loot', title: 'Loot Manager', isOpen: false, isCollapsed: false, x: 420, y: 80, width: 760, height: 640, zIndex: 10 },
   dev: { id: 'dev', title: 'Dev Tools', isOpen: false, isCollapsed: false, x: 20, y: 640, width: 600, height: 300, zIndex: 10 },
   characters: { id: 'characters', title: 'Starter Heroes', isOpen: false, isCollapsed: false, x: 560, y: 80, width: 720, height: 640, zIndex: 10 },
   classes: { id: 'classes', title: 'Classes & Skills', isOpen: false, isCollapsed: false, x: 200, y: 40, width: 820, height: 700, zIndex: 10 },

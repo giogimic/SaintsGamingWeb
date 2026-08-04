@@ -16,6 +16,7 @@ import {
   ScrollText,
   MessageSquare,
   Play,
+  Coins,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -30,6 +31,7 @@ import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
 import { ClassEditorPanel } from './panels/ClassEditorPanel';
 import { QuestEditorPanel } from './panels/QuestEditorPanel';
 import { DialogueEditorPanel } from './panels/DialogueEditorPanel';
+import { LootManagerPanel } from './panels/LootManagerPanel';
 import { WorldProfileBar } from './WorldProfileBar';
 
 const MODE_BUTTONS: Array<{
@@ -168,6 +170,12 @@ export const StudioEditorShell: React.FC = () => {
           </DraggablePanel>
         )}
 
+        {canUseStudioDock(permissionLevel, 'loot') && (
+          <DraggablePanel id="loot" icon={<Coins className="w-4 h-4" />}>
+            <LootManagerPanel />
+          </DraggablePanel>
+        )}
+
         {canUseStudioDock(permissionLevel, 'classes') && (
           <DraggablePanel id="classes" icon={<UserCheck className="w-4 h-4" />}>
             <ClassEditorPanel />
@@ -220,6 +228,7 @@ export const StudioEditorShell: React.FC = () => {
           )}
           <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" permissionLevel={permissionLevel} />
           <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} label="Creatures" permissionLevel={permissionLevel} />
+          <DockButton id="loot" icon={<Coins className="w-5 h-5" />} label="Loot" permissionLevel={permissionLevel} />
           <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} label="Classes" permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
           <button

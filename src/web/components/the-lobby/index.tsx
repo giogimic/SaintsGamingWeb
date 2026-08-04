@@ -29,6 +29,11 @@ import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import {
+  setEditorMode,
+  shouldShowGameplayHud,
+  shouldSuppressGameplaySystems,
+} from '@/shared/game/studioSession';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -88,6 +93,20 @@ export default function TheLobby({
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setClickedTile = useEditorStore((state) => state.setClickedTile);
+  const suppressGameplay = shouldSuppressGameplaySystems({
+    isEditorMode: enableStudio,
+    isCreationMode,
+  });
+  const showGameplayHud = shouldShowGameplayHud({
+    isEditorMode: enableStudio,
+    isCreationMode,
+  });
+
+  // Bible 17 — Studio sets global isEditorMode for clean gameplay gating.
+  useEffect(() => {
+    setEditorMode(enableStudio);
+    return () => setEditorMode(false);
+  }, [enableStudio]);
 
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
@@ -488,6 +507,15 @@ export default function TheLobby({
     });
     
     socket.on('battle_started', (data) => {
+      // Bible 17: ignore combat while Studio create tools are open.
+      if (
+        shouldSuppressGameplaySystems({
+          isEditorMode: enableStudio,
+          isCreationMode: useEditorStore.getState().isCreationMode,
+        })
+      ) {
+        return;
+      }
       const state = useGameStore.getState();
       // Safety: ignore battles for other accounts if a map broadcast ever leaks through
       if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
@@ -1009,6 +1037,7 @@ export default function TheLobby({
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={activeLayerIdx}
         isDevEditorOpen={isCreationMode}
+        suppressGameplay={suppressGameplay}
         onMapClick={(r, c) => {
           if (isCreationMode) setClickedTile({r, c});
         }}
@@ -1046,11 +1075,11 @@ export default function TheLobby({
             : undefined
         }
       >
-        {gameMode === 'BATTLE' && <TurnBattleOverlay />}
+        {gameMode === 'BATTLE' && !suppressGameplay && <TurnBattleOverlay />}
 
         {enableStudio && <StudioEditorShell />}
 
-        {isStaff && gameMode === 'EXPLORING' && !isCreationMode && (
+        {isStaff && gameMode === 'EXPLORING' && showGameplayHud && (
           <StaffFloatingMenu
             permissionLevel={permissionLevel}
             isStudioRoute={enableStudio}
