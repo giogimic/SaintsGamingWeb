@@ -94,21 +94,27 @@ export default function TheLobby({
   const [viewportReady, setViewportReady] = useState(false);
   
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
+  /** Studio editor tools only — never treat /lobby as create-mode (store defaults true). */
+  const studioToolsOpen = enableStudio && isCreationMode;
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setClickedTile = useEditorStore((state) => state.setClickedTile);
   const suppressGameplay = shouldSuppressGameplaySystems({
     isEditorMode: enableStudio,
-    isCreationMode,
+    isCreationMode: studioToolsOpen,
   });
   const showGameplayHud = shouldShowGameplayHud({
     isEditorMode: enableStudio,
-    isCreationMode,
+    isCreationMode: studioToolsOpen,
   });
 
   // Bible 17 — Studio sets global isEditorMode for clean gameplay gating.
+  // Lobby must clear create-mode so shared editor-store never blocks walk/avatar.
   useEffect(() => {
     setEditorMode(enableStudio);
+    if (!enableStudio) {
+      useEditorStore.setState({ isCreationMode: false, studioMode: 'test' });
+    }
     return () => setEditorMode(false);
   }, [enableStudio]);
 
@@ -612,7 +618,7 @@ export default function TheLobby({
       if (
         shouldSuppressGameplaySystems({
           isEditorMode: enableStudio,
-          isCreationMode: useEditorStore.getState().isCreationMode,
+          isCreationMode: enableStudio && useEditorStore.getState().isCreationMode,
         })
       ) {
         return;
@@ -1184,17 +1190,17 @@ export default function TheLobby({
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={activeLayerIdx}
-        isDevEditorOpen={isCreationMode}
+        isDevEditorOpen={studioToolsOpen}
         suppressGameplay={suppressGameplay}
         onMapClick={(r, c) => {
-          if (isCreationMode) setClickedTile({r, c});
+          if (studioToolsOpen) setClickedTile({r, c});
         }}
       />
 
       {/* Touch controls — only in-world. Do NOT wrap in a full-screen
           pointer-events-auto layer: that sat above the title UI (z-30 vs sibling
           z-auto) and swallowed ENTER WORLD / menu clicks on desktop. */}
-      {(gameMode === 'EXPLORING' || gameMode === 'BATTLE') && !isCreationMode && (
+      {(gameMode === 'EXPLORING' || gameMode === 'BATTLE') && !studioToolsOpen && (
         <div className="pointer-events-none absolute inset-0 z-30">
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
@@ -1247,7 +1253,7 @@ export default function TheLobby({
         )}
 
         {/* In-world chrome only — title/login have their own Leave control */}
-        {(gameMode === 'EXPLORING' || isCreationMode) && (
+        {(gameMode === 'EXPLORING' || studioToolsOpen) && (
           <div
             className="pointer-events-none absolute z-40 flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
             style={{
@@ -1259,13 +1265,13 @@ export default function TheLobby({
               <button
                 onClick={() => useEditorStore.getState().toggleCreationMode()}
                 className={`pointer-events-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] font-medium shadow-lg transition-all active:scale-95 md:gap-2 md:px-3
-                  ${isCreationMode 
+                  ${studioToolsOpen 
                     ? 'border-[#806f47] bg-[#cbb26a] text-black shadow-[0_0_15px_rgba(203,178,106,0.3)] hover:bg-amber-500' 
                     : 'border-[#806f47]/50 bg-black/60 text-[#cbb26a] backdrop-blur-md hover:border-[#cbb26a] hover:bg-white/10'
                   }`}
               >
                 <span className="text-sm leading-none">🔨</span>
-                <span className="hidden sm:inline">{isCreationMode ? 'PLAY (Ctrl+E)' : 'EDIT (Ctrl+E)'}</span>
+                <span className="hidden sm:inline">{studioToolsOpen ? 'PLAY (Ctrl+E)' : 'EDIT (Ctrl+E)'}</span>
               </button>
             )}
             {!enableStudio && canStudio && (
@@ -1304,10 +1310,10 @@ export default function TheLobby({
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
           isAdminUser={enableStudio && canStudio}
-          isCreationMode={isCreationMode}
+          isCreationMode={studioToolsOpen}
           onToggleDevEditor={() => {
             if (!enableStudio || !canStudio) return;
-            if (!isCreationMode) useGameStore.getState().setGameMode('EXPLORING');
+            if (!studioToolsOpen) useGameStore.getState().setGameMode('EXPLORING');
             useEditorStore.getState().toggleCreationMode(); 
             setIsOptionsOpen(false);
           }}
@@ -1344,18 +1350,18 @@ export default function TheLobby({
           className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
         />
 
-        {gameMode === 'EXPLORING' && !isCreationMode && (
+        {gameMode === 'EXPLORING' && showGameplayHud && (
           <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
             <MiniMapRadar />
           </DraggablePanel>
         )}
-        {gameMode === 'EXPLORING' && !isCreationMode && (
+        {gameMode === 'EXPLORING' && showGameplayHud && (
           <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
             <SaintsHudOrbs />
           </DraggablePanel>
         )}
 
-        {gameMode === 'EXPLORING' && !isCreationMode && (
+        {gameMode === 'EXPLORING' && showGameplayHud && (
           <>
             <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
               <Hotbar />

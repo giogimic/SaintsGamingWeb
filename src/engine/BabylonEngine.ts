@@ -552,17 +552,17 @@ export class BabylonEngine {
   public snapCameraTo(worldX: number, worldZ: number) {
     const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
     const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
-    const viewHalfWidth = this.camera?.orthoRight || 10;
-    // Due to the camera's 45 degree pitch, the ground area seen is vertically elongated
-    const viewHalfHeight = (this.camera?.orthoTop || 10) * 1.414;
+    // Soft edge margin: allow focus on north/south border tiles so avatars
+    // and Studio paint stay reachable (hard viewHalf clamp hid top rows).
+    const margin = Math.max(this.currentTileSize * 0.5, 0.5);
 
-    if (halfWidth > viewHalfWidth) {
-      worldX = Math.max(-halfWidth + viewHalfWidth, Math.min(halfWidth - viewHalfWidth, worldX));
+    if (halfWidth > margin) {
+      worldX = Math.max(-halfWidth + margin, Math.min(halfWidth - margin, worldX));
     } else {
       worldX = 0;
     }
-    if (halfHeight > viewHalfHeight) {
-      worldZ = Math.max(-halfHeight + viewHalfHeight, Math.min(halfHeight - viewHalfHeight, worldZ));
+    if (halfHeight > margin) {
+      worldZ = Math.max(-halfHeight + margin, Math.min(halfHeight - margin, worldZ));
     } else {
       worldZ = 0;
     }
@@ -583,17 +583,15 @@ export class BabylonEngine {
 
     const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
     const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
-    const viewHalfWidth = this.camera?.orthoRight || 10;
-    // Due to the camera's 45 degree pitch, the ground area seen is vertically elongated
-    const viewHalfHeight = (this.camera?.orthoTop || 10) * 1.414;
+    const margin = Math.max(this.currentTileSize * 0.5, 0.5);
 
-    if (halfWidth > viewHalfWidth) {
-      targetX = Math.max(-halfWidth + viewHalfWidth, Math.min(halfWidth - viewHalfWidth, targetX));
+    if (halfWidth > margin) {
+      targetX = Math.max(-halfWidth + margin, Math.min(halfWidth - margin, targetX));
     } else {
       targetX = 0;
     }
-    if (halfHeight > viewHalfHeight) {
-      targetZ = Math.max(-halfHeight + viewHalfHeight, Math.min(halfHeight - viewHalfHeight, targetZ));
+    if (halfHeight > margin) {
+      targetZ = Math.max(-halfHeight + margin, Math.min(halfHeight - margin, targetZ));
     } else {
       targetZ = 0;
     }
@@ -705,7 +703,7 @@ export class BabylonEngine {
     }
   }
 
-  /** Screen-pixel drag → world pan (orthographic approx). */
+  /** Screen-pixel drag → world pan (orthographic approx). Unclamped in editor. */
   public panEditorCameraByScreenDelta(dxPx: number, dyPx: number) {
     const h = Math.max(1, this.engine.getRenderHeight());
     const ortho = this.camera.orthoTop || 10;
@@ -713,7 +711,12 @@ export class BabylonEngine {
     const worldPerPx = (ortho * 2) / h;
     const worldDx = -dxPx * worldPerPx;
     const worldDz = dyPx * worldPerPx * 1.414;
-    this.snapCameraTo(this.cameraTargetX + worldDx, this.cameraTargetZ + worldDz);
+    // Editor pan must reach map edges — do not use play-mode hard clamp.
+    this.cameraTargetX += worldDx;
+    this.cameraTargetZ += worldDz;
+    this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
+    this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
+    this.cameraSnapped = true;
   }
 
   public resetCameraSnap() {

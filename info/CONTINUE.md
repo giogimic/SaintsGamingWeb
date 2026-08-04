@@ -39,7 +39,7 @@ Full audit: `logs/2026-08-04-duplicate-systems-audit.md`
 
 **Game engine editor** — Phase 1–**2f** on `main` (catalogs, author session, **PIE private shard**). See `logs/studio-first-hybrid-foundation.md` · `logs/2026-08-04-studio-pie-shard.md`.
 
-**Checkpoint:** Playtest joins `studio_pie_{userId}`; Studio author uses private map instance (not lobby DEMO_chN).
+**Just fixed:** Lobby was stuck in Studio create-mode (`isDevEditorOpen={isCreationMode}`). Play is gated with `studioToolsOpen = enableStudio && isCreationMode` only. See `logs/2026-08-04-lobby-studio-walk-fix.md`.
 
 **World profiles + Saints Trail + Viewfinder UI (on `main`)**
 
