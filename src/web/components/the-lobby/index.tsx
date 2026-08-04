@@ -199,6 +199,77 @@ export default function TheLobby({
     setIsInitializing(false);
   };
 
+  /**
+   * Avatar-free Studio author session — load a map without a game character.
+   * Account still joins the map room for hot-reload; player mesh stays hidden in Editor.
+   */
+  const enterStudioAuthorSession = async (mapId: string = 'DEMO_SANDBOX') => {
+    if (!enableStudio) return;
+    setIsInitializing(true);
+    const DEMO_SPAWN = { x: 14, y: 15 };
+    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? 'DEMO_SANDBOX' : mapId.replace(/_ch\d+$/, '');
+    let validPosition = { ...DEMO_SPAWN };
+
+    try {
+      const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
+      const mw = loaded.grid?.[0]?.length || 30;
+      const mh = loaded.grid?.length || 30;
+      validPosition = {
+        x: Math.max(1, Math.min(mw - 2, DEMO_SPAWN.x)),
+        y: Math.max(1, Math.min(mh - 2, DEMO_SPAWN.y)),
+      };
+      useGameStore.getState().setActiveMapData(loaded);
+    } catch {
+      validMapId = 'DEMO_SANDBOX';
+      validPosition = { ...DEMO_SPAWN };
+      try {
+        const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
+        useGameStore.getState().setActiveMapData(loaded);
+      } catch {
+        /* map API may be down — canvas still mounts empty */
+      }
+    }
+
+    const authorName = session?.user?.name || 'Studio Author';
+    const accountId = session?.user?.id;
+    useGameStore.getState().hydratePlayer({
+      accountId: accountId || undefined,
+      name: authorName,
+      spriteId: 'adventurer',
+      position: validPosition,
+      currentMapId: validMapId,
+    });
+    useGameStore.setState({
+      currentMapId: validMapId,
+      instanceId: validMapId,
+      gameMode: 'EXPLORING',
+      mapEntities: [],
+    });
+
+    if (accountId) {
+      socketRef.current?.emit('join_map', {
+        accountId,
+        mapId: toBaseMapId(validMapId),
+        x: validPosition.x,
+        y: validPosition.y,
+        name: authorName,
+        spriteId: 'adventurer',
+      });
+    }
+
+    setActiveCharacterId(undefined);
+    setShowCreator(false);
+    setShowSelector(false);
+    useEditorStore.getState().enterDevelopmentMode();
+
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', '/studio');
+    }
+
+    useGameStore.getState().showToast('Author session — no character (avatar hidden while editing)');
+    setIsInitializing(false);
+  };
+
   useEffect(() => {
     async function initData() {
       useGameStore.getState().hydrateMobileControlMode();
@@ -261,23 +332,16 @@ export default function TheLobby({
   useEffect(() => {
     if (status === 'authenticated') {
       setPermissionLevel(session?.user?.permissionLevel ?? 0);
-      loadCharactersList().then((chars) => {
+      loadCharactersList().then(() => {
         if (initialCharacterId && isInitializing) {
           selectAndLoadCharacter(initialCharacterId);
         } else if (isInitializing) {
-          setIsInitializing(false);
-          // Studio: skip title splash — go to character select (or server select if empty).
-          // Title "ENTER WORLD" was easy to miss / feel broken when already logged in.
+          // Studio: avatar-free author session by default (no character required).
+          // Pass ?characterId= to load a real character for Playtest instead.
           if (enableStudio) {
-            const mode = useGameStore.getState().gameMode;
-            if (mode === 'TITLE_SCREEN' || mode === 'LOGIN') {
-              if (chars.length > 0) {
-                setShowSelector(true);
-                useGameStore.getState().setGameMode('CHARACTER_SELECT');
-              } else {
-                useGameStore.getState().setGameMode('SERVER_SELECT');
-              }
-            }
+            void enterStudioAuthorSession('DEMO_SANDBOX');
+          } else {
+            setIsInitializing(false);
           }
         }
       });
@@ -1031,10 +1095,20 @@ export default function TheLobby({
   if (gameMode === 'CHARACTER_SELECT' || showSelector) {
     return (
       <CharacterSelector 
-        characters={userCharacters} 
+        characters={userCharacters}
         onSelect={(id) => selectAndLoadCharacter(id)} 
         onCreateNew={() => { useGameStore.getState().setGameMode('CHARACTER_CREATOR'); setShowSelector(false); setShowCreator(true); }}
         onRefresh={() => loadCharactersList()}
+        onCancel={
+          enableStudio
+            ? () => {
+                setShowSelector(false);
+                void enterStudioAuthorSession(
+                  toBaseMapId(useGameStore.getState().currentMapId || 'DEMO_SANDBOX')
+                );
+              }
+            : undefined
+        }
       />
     );
   }

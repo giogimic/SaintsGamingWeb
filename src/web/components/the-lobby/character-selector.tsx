@@ -11,6 +11,8 @@ interface CharacterSelectorProps {
   onSelect: (characterId: string) => void;
   onCreateNew: () => void;
   onRefresh: () => void;
+  /** Studio author session — return without picking a character. */
+  onCancel?: () => void;
 }
 
 const CLASS_ICONS: Record<string, any> = {
@@ -41,7 +43,7 @@ const CLASS_COLORS: Record<string, { glow: string; accent: string; label: string
 
 const DEFAULT_COLOR = { glow: 'rgba(139,92,246,0.25)', accent: '#a78bfa', label: '#c4b5fd' };
 
-export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh }: CharacterSelectorProps) {
+export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh, onCancel }: CharacterSelectorProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -287,6 +289,21 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
             </div>
           </div>
         </div>
+
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="mt-8 px-5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all hover:scale-[1.02]"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(139,92,246,0.25)',
+              color: 'rgba(196,181,253,0.7)',
+            }}
+          >
+            Back to Author Session
+          </button>
+        )}
 
         <p className="mt-10 text-violet-700/30 text-[10px] font-mono tracking-widest">
           ᚠ &nbsp; Saints Online &nbsp; ᚠ
