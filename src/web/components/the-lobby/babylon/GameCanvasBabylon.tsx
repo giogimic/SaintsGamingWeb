@@ -811,8 +811,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
             return;
           }
-          if (!paintCell(activeMap, target, r, c, logicId)) {
-            showToast(`Cell (${c}, ${r}) is outside the logic grid.`);
+          const logicWrite = paintCell(activeMap, target, r, c, logicId);
+          if (!logicWrite.ok) {
+            showToast(logicWrite.reason);
             return;
           }
           if (onMapClick) onMapClick(r, c);
@@ -824,8 +825,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           return;
         }
 
-        if (!paintCell(activeMap, target, r, c, activeBrushTileId)) {
-          showToast(`Cell (${c}, ${r}) is outside layer ${target.layerIdx}.`);
+        const visualWrite = paintCell(activeMap, target, r, c, activeBrushTileId);
+        if (!visualWrite.ok) {
+          showToast(visualWrite.reason);
           return;
         }
         if (onMapClick) onMapClick(r, c);

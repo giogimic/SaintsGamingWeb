@@ -69,42 +69,53 @@ describe("resolvePaintTarget", () => {
 describe("paintCell", () => {
   it("writes the logic grid in place", () => {
     const map = demoMap();
-    expect(paintCell(map, { kind: "logic" }, 2, 1, 5)).toBe(true);
+    expect(paintCell(map, { kind: "logic" }, 2, 1, 5)).toEqual({ ok: true });
     expect(map.grid![2][1]).toBe(5);
   });
 
   it("writes a visual layer in place without touching the logic grid", () => {
     const map = demoMap();
-    expect(paintCell(map, { kind: "visual", layerIdx: 0 }, 0, 2, 4321)).toBe(true);
+    expect(paintCell(map, { kind: "visual", layerIdx: 0 }, 0, 2, 4321)).toEqual({ ok: true });
     expect(map.tileLayers![0].grid![0][2]).toBe(4321);
     expect(map.grid![0][2]).toBe(0);
   });
 
   it("is idempotent when the cell already holds the id", () => {
     const map = demoMap();
-    expect(paintCell(map, { kind: "visual", layerIdx: 0 }, 1, 1, 17)).toBe(true);
+    expect(paintCell(map, { kind: "visual", layerIdx: 0 }, 1, 1, 17)).toEqual({ ok: true });
     expect(map.tileLayers![0].grid![1][1]).toBe(17);
   });
 
-  it("returns false instead of throwing on a ragged grid", () => {
+  it("reports a ragged grid instead of throwing", () => {
     const map: PaintableMap = {
       tilesets: [{ firstgid: 1 }],
       tileLayers: [{ name: "Ground", grid: [[17, 17], undefined as unknown as number[]] }],
     };
     expect(() => paintCell(map, { kind: "visual", layerIdx: 0 }, 1, 0, 20)).not.toThrow();
-    expect(paintCell(map, { kind: "visual", layerIdx: 0 }, 1, 0, 20)).toBe(false);
+    expect(paintCell(map, { kind: "visual", layerIdx: 0 }, 1, 0, 20).ok).toBe(false);
   });
 
-  it("returns false for out-of-bounds cells", () => {
+  it("reports frozen map data instead of throwing", () => {
     const map = demoMap();
-    expect(paintCell(map, { kind: "logic" }, 9, 0, 1)).toBe(false);
-    expect(paintCell(map, { kind: "logic" }, 0, 9, 1)).toBe(false);
-    expect(paintCell(map, { kind: "logic" }, -1, 0, 1)).toBe(false);
+    map.grid!.forEach((row) => Object.freeze(row));
+    Object.freeze(map.grid);
+    const result = paintCell(map, { kind: "logic" }, 0, 0, 2);
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ reason: expect.stringContaining("read-only") });
+    expect(map.grid![0][0]).toBe(0);
   });
 
-  it("never writes for an unavailable target", () => {
+  it("reports out-of-bounds cells", () => {
     const map = demoMap();
-    expect(paintCell(map, { kind: "unavailable", reason: "nope" }, 0, 0, 99)).toBe(false);
+    expect(paintCell(map, { kind: "logic" }, 9, 0, 1).ok).toBe(false);
+    expect(paintCell(map, { kind: "logic" }, 0, 9, 1).ok).toBe(false);
+    expect(paintCell(map, { kind: "logic" }, -1, 0, 1).ok).toBe(false);
+  });
+
+  it("never writes for an unavailable target and passes the reason through", () => {
+    const map = demoMap();
+    const result = paintCell(map, { kind: "unavailable", reason: "nope" }, 0, 0, 99);
+    expect(result).toEqual({ ok: false, reason: "nope" });
     expect(map.grid![0][0]).toBe(0);
   });
 });

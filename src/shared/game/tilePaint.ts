@@ -56,11 +56,12 @@ export function resolvePaintTarget(
   return { kind: "visual", layerIdx: activeLayerIdx };
 }
 
+export type PaintResult = { ok: true } | { ok: false; reason: string };
+
 /**
- * Write one cell in place. Returns false for out-of-bounds or malformed rows
- * instead of throwing — a ragged grid used to raise inside the Babylon pointer
- * callback after the visual had already been applied, so the map data and the
- * screen disagreed.
+ * Write one cell in place, reporting a reason instead of throwing. A ragged grid
+ * used to raise inside the Babylon pointer callback after the visual had already
+ * been applied, so the map data and the screen disagreed with no error surfaced.
  */
 export function paintCell(
   map: PaintableMap | null | undefined,
@@ -68,18 +69,29 @@ export function paintCell(
   r: number,
   c: number,
   tileId: number
-): boolean {
-  if (target.kind === "unavailable") return false;
+): PaintResult {
+  if (target.kind === "unavailable") return { ok: false, reason: target.reason };
 
+  const label = target.kind === "logic" ? "the logic grid" : `layer ${target.layerIdx}`;
   const grid = target.kind === "logic" ? map?.grid : map?.tileLayers?.[target.layerIdx]?.grid;
-  if (!Array.isArray(grid)) return false;
+  if (!Array.isArray(grid)) return { ok: false, reason: `Cannot paint: ${label} is missing.` };
 
-  if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) return false;
+  if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) {
+    return { ok: false, reason: `Cell (${c}, ${r}) is outside ${label}.` };
+  }
   const row = grid[r];
-  if (!Array.isArray(row) || c >= row.length) return false;
+  if (!Array.isArray(row) || c >= row.length) {
+    return { ok: false, reason: `Cell (${c}, ${r}) is outside ${label}.` };
+  }
+
+  // A frozen row means the map came from immer-produced state. Report it rather
+  // than throwing from inside the pointer handler where nothing surfaces it.
+  if (Object.isFrozen(row)) {
+    return { ok: false, reason: `Cannot paint: ${label} is read-only (frozen map data).` };
+  }
 
   row[c] = tileId;
-  return true;
+  return { ok: true };
 }
 
 /**
