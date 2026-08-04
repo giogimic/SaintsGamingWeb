@@ -74,6 +74,37 @@ event described in doc 26 is not implemented — only `map_reloaded` exists.
 
 ## 2. Why tile painting "only sometimes works"
 
+### 2.0 The map data was frozen, so writes threw (confirmed at runtime — primary cause)
+
+`useGameStore` uses the **immer** middleware, and immer deep-freezes the state it
+produces. Every `set((state) => …)` action in that store — player movement, chat,
+HP ticks, quest updates — therefore froze `activeMapData.grid` and
+`activeMapData.tileLayers[i].grid` along with the rest of the tree.
+
+Painting mutates that data in place, so a stroke raised
+`TypeError: Cannot assign to read only property '<index>' of object '[object Array]'`
+from inside the Babylon `scene.onPointerDown` handler, where nothing surfaced it.
+The two symptoms follow directly from statement order in the old handler:
+
+- **Visual layer:** `updateSingleTile` ran *before* the grid write, so the tile
+  appeared on screen and the write then threw. Nothing was persisted, and the
+  overlay disappeared on the next remount.
+- **Logic layer:** `activeMap.grid[r][c] = …` ran *first*, so the throw happened
+  before `updateLogicTile` and the click produced no visual change whatsoever.
+  This is precisely "I see the clicks but I don't see it working".
+
+Whether a given stroke landed depended on whether any unrelated immer action had
+produced state since the map was loaded — hence the intermittency. Note also that
+`setActiveMapData` and the raw `useGameStore.setState({ activeMapData })` calls in
+`WorldBuilderPanel` and `PropertiesPanel` pass an object rather than a recipe, so
+they do *not* freeze; the freeze arrived later, from an unrelated action. Two
+paths, two different outcomes, same click.
+
+Fixed with `setAutoFreeze(false)` in `store.ts`, because `activeMapData` is handed
+straight to Babylon and mutated in place by design. `paintCell` additionally
+refuses a frozen row and reports it, so a regression here is visible in a toast
+instead of being swallowed.
+
 ### 2.1 The Next.js dev watcher wipes paint about once a second (confirmed)
 
 This is the dominant cause and it is not a painting bug at all.
@@ -157,6 +188,12 @@ map itself and paints a **local-only** object, while `handleSaveMap` falls back 
 ---
 
 ## 3. Why logic painting shows clicks but does nothing
+
+### 3.0 The write threw before the repaint
+
+See 2.0. On the Logic layer the grid write came first, so the frozen-state
+`TypeError` aborted the handler before `updateLogicTile` was ever reached. This is
+the primary cause of this symptom.
 
 ### 3.1 The logic overlay is never rebuilt after the engine remounts
 
@@ -290,6 +327,7 @@ code is gating correctly, so the data is the more likely culprit.
 
 | # | Change | Fixes |
 | --- | --- | --- |
+| 0 | `setAutoFreeze(false)` in `store.ts`; `paintCell` refuses and reports a frozen row | 2.0, 3.0 |
 | 1 | `next.config.ts` ignores the SQLite files and `logs/` in the dev watcher | 2.1 |
 | 2 | Logic-overlay effect moved after the engine-mount effect; `updateLogicTile` reports a miss and the caller rebuilds the overlay | 3.1 |
 | 3 | `activeLogicTileId` split from `activeBrushTileId`; unregistered logic ids are refused with a toast | 2.2, 3.2 |
@@ -303,7 +341,74 @@ code is gating correctly, so the data is the more likely culprit.
 | 11 | `/admin` dashboard cards gated per required level | 4.3 |
 | 12 | `toggleDevConsole` requires Developer+; `ServerControl` self-gates | 4.3 |
 
-## 6. Known gaps not addressed here
+## 6. Verification
+
+`npm run lint` clean. `npm test` 182 passing across 38 files, including 19 new
+cases for `tilePaint.ts`. `npx tsc --noEmit` adds no new errors (the three in
+`studioTilesetBootstrap.test.ts` are also on `main`).
+
+### Dev watcher
+
+Measured against the running server:
+
+| Action | Before | After |
+| --- | --- | --- |
+| `touch prisma/prisma/db/dev.db` ×1 | 1 recompile | 0 |
+| `touch prisma/prisma/db/dev.db` ×5 | 5 recompiles | 0 |
+| `touch` a `.tsx` source file | 1 recompile | 1 (HMR still works) |
+
+### Painting, in the browser on `/studio` with `DEMO_SANDBOX`
+
+All nine checks passed: tiles appear on click, no error dialog, tiles still
+present after 25 idle seconds, tiles land on the clicked cell even next to a
+sprite, the logic overlay appears on switching to Logic (−1), logic cells recolour,
+the save succeeds, and both the overlay and further logic painting survive the
+post-save hot reload.
+
+Save toast read `Saved map DEMO_SANDBOX`, followed by
+`Map updated by admin: Hot-reloading DEMO_SANDBOX...`.
+
+Persistence was then confirmed server-side by re-reading
+`GET /api/maps/DEMO_SANDBOX`, which matched the strokes exactly:
+
+| Grid | Before | After |
+| --- | --- | --- |
+| logic id 1 (Solid Wall) | 116 | 122 (+6 red cells painted) |
+| logic id 2 (Tall Grass) | 86 | 88 (+2 green cells painted) |
+| logic id 0 (Walkable) | 611 | 603 (−8) |
+| Ground GID 17 | 900 | 893 |
+| Ground GID 22 (water) | 0 | 7 (7 water tiles painted) |
+
+All saved logic ids stayed inside the registered 0–11 range, so `validateMapSave`
+accepted the map — the failure mode from 2.2 no longer occurs.
+
+### Permissions
+
+Verified with a purpose-made account at `permissionLevel` 20 with `isWriter` set —
+the exact profile that used to be shown the full admin grid:
+
+- `/admin` renders one card, News Management, matching its sidebar entry. No User
+  Management, Game Dev Suite, Modpacks, Forum Categories, and no System Status.
+- `/studio` redirects to `/lobby`.
+- `/lobby` shows no OPEN STUDIO button and no Staff menu.
+- `POST /api/game/server-status` returns 403; `POST /api/maps/DEMO_SANDBOX`
+  returns 403. The same calls as the Developer account succeed.
+
+The Start Realm button's own branch could not be exercised because the dev server
+always reports the realm online, so the offline warning block never renders. Its
+client gate (`canUseStudioServerControls`) is unchanged by this work, and the
+underlying POST is confirmed to reject level 20.
+
+### Observed but not fixed
+
+The recording shows the whole scene blanking for a frame two or three times.
+That is the Babylon engine remounting — `setCurrentMapId` clears `activeMapData`,
+which rebuilds the map — triggered here by the character being defeated and
+respawned while walking around in Build mode. Painted tiles now survive it,
+because the strokes are written into `tileLayers` and the rebuild renders from
+there, but the flash itself is pre-existing and untouched.
+
+## 7. Known gaps not addressed here
 
 - Erasing (GID 0) on a batched map removes the overlay but leaves the underlying
   `tileset_mesh_*` art until the next full reload. Fixing this needs a
