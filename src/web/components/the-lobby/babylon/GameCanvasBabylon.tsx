@@ -22,9 +22,13 @@ import { normalizeGates } from '@/shared/game/logicComponents';
 import {
   LOGIC_LAYER_IDX,
   isPaintableLogicId,
-  paintCell,
   resolvePaintTarget,
 } from '@/shared/game/tilePaint';
+import { paintWorldCell } from '@/shared/game/worldDocument';
+import {
+  STUDIO_MAP_CELLS_CHANGED_EVENT,
+  type StudioMapCellsChangedDetail,
+} from '@/shared/game/studioEvents';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -77,6 +81,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [isEngineReady, setIsEngineReady] = useState(false);
   const tryMoveDirectionRef = useRef<(dx: number, dy: number) => void>(() => {});
   const handleInteractRef = useRef<() => void>(() => {});
+  const editorToolsRef = useRef(isDevEditorOpen);
+  editorToolsRef.current = isDevEditorOpen;
 
   // Async map state — engine only mounts AFTER map data is ready
   const [mapData, setMapData] = useState<GameMapData | null>(null);
@@ -140,6 +146,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number) => {
+    // Editor runtime: gameplay input dormant (engine-editor foundation).
+    if (isDevEditorOpen) return;
     if (!activeMap) return;
     
     const store = useGameStore.getState();
@@ -262,6 +270,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Interact / Talk Handler
   const handleInteract = () => {
+    if (isDevEditorOpen) return;
     const store = useGameStore.getState();
     const currentPlayer = store.player;
     const curX = currentPlayer.position?.x ?? 6;
@@ -334,8 +343,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [clearAutoWalk]);
 
-  // MobileControls → same movement / interact pipeline as keyboard
+  // MobileControls → same movement / interact pipeline as keyboard (playtest only)
   useEffect(() => {
+    if (isDevEditorOpen) return;
     const onMove = (e: Event) => {
       const { dx, dy } = (e as CustomEvent<{ dx: number; dy: number }>).detail || {};
       if (typeof dx === 'number' && typeof dy === 'number') {
@@ -349,7 +359,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener(LOBBY_TOUCH_MOVE_EVENT, onMove);
       window.removeEventListener(LOBBY_TOUCH_INTERACT_EVENT, onInteract);
     };
-  }, []);
+  }, [isDevEditorOpen]);
 
   useEffect(() => {
     const handleCombatUpdate = (e: Event) => {
@@ -569,12 +579,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           spriteConfig: freshPlayer.spriteConfig
         });
 
-        // Camera smoothly tracks player mesh (for fluid interpolation)
-        const playerMesh = babylonEngine.getEntityMesh('player_main');
-        if (playerMesh) {
-          babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.08);
-        } else {
-          babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
+        // Camera: follow player in Playtest only; Editor uses free pan/zoom
+        if (!editorToolsRef.current) {
+          const playerMesh = babylonEngine.getEntityMesh('player_main');
+          if (playerMesh) {
+            babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.08);
+          } else {
+            babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
+          }
         }
       }
 
@@ -796,13 +808,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const engine = engineRef.current;
     if (!engine) return;
 
-    const syncPaintedMap = (map: any) => {
-      const store = useGameStore.getState();
-      // Keep store on the same object so Save Map sees in-place paint without remounting.
-      if (store.activeMapData !== map) {
-        store.setActiveMapData(map);
-      }
-      useEditorStore.getState().markMapDirty();
+    const worldSync = {
+      ensureActiveMap: (map: any) => {
+        const store = useGameStore.getState();
+        // Keep store on the same object so Save Map sees in-place paint without remounting.
+        if (store.activeMapData !== map) {
+          store.setActiveMapData(map);
+        }
+      },
+      markDirty: () => useEditorStore.getState().markMapDirty(),
     };
 
     if (isDevEditorOpen) {
@@ -823,12 +837,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
             return;
           }
-          const logicWrite = paintCell(activeMap, target, r, c, logicId);
-          if (!logicWrite.ok) {
-            showToast(logicWrite.reason);
+          const painted = paintWorldCell(activeMap, LOGIC_LAYER_IDX, r, c, logicId, worldSync);
+          if ('error' in painted) {
+            showToast(painted.error);
             return;
           }
-          syncPaintedMap(activeMap);
+          useEditorStore.getState().pushPaintOp([painted.cell]);
           // A missing overlay means the engine was rebuilt under us; rebuild and retry.
           if (!engine.updateLogicTile(r, c, logicId)) {
             engine.enableLogicGridOverlay(activeMap?.grid || []);
@@ -837,12 +851,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           return;
         }
 
-        const visualWrite = paintCell(activeMap, target, r, c, activeBrushTileId);
-        if (!visualWrite.ok) {
-          showToast(visualWrite.reason);
+        const painted = paintWorldCell(
+          activeMap,
+          target.layerIdx,
+          r,
+          c,
+          activeBrushTileId,
+          worldSync
+        );
+        if ('error' in painted) {
+          showToast(painted.error);
           return;
         }
-        syncPaintedMap(activeMap);
+        useEditorStore.getState().pushPaintOp([painted.cell]);
         engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, activeMap.tilesets);
       }, { drag: true });
     } else {
@@ -894,8 +915,43 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
   }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
 
-  // Handle Keyboard WASD & Arrow Key Movement
+  // Undo/redo mesh sync from editor op stack
   useEffect(() => {
+    const onCellsChanged = (e: Event) => {
+      const engine = engineRef.current;
+      const map = useGameStore.getState().activeMapData;
+      if (!engine || !map) return;
+      const detail = (e as CustomEvent<StudioMapCellsChangedDetail>).detail;
+      if (!detail?.cells?.length) return;
+      for (const cell of detail.cells) {
+        if (cell.layerIdx === LOGIC_LAYER_IDX) {
+          if (!engine.updateLogicTile(cell.r, cell.c, cell.value)) {
+            engine.enableLogicGridOverlay(map.grid || []);
+            engine.updateLogicTile(cell.r, cell.c, cell.value);
+          }
+        } else {
+          engine.updateSingleTile(cell.r, cell.c, cell.value, cell.layerIdx, map.tilesets);
+        }
+      }
+    };
+    window.addEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
+    return () => window.removeEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
+  }, []);
+
+  // Editor camera: detach follow, enable middle-mouse / Space+drag pan
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine || !isEngineReady) return;
+    engine.setEditorCameraMode(isDevEditorOpen);
+    return () => {
+      engine.setEditorCameraMode(false);
+    };
+  }, [isDevEditorOpen, isEngineReady]);
+
+  // Keyboard WASD / interact — playtest only (editor runtime keeps sim dormant)
+  useEffect(() => {
+    if (isDevEditorOpen) return;
+
     const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
     let lastMoveTime = 0;
     let animationFrameId: number;
@@ -907,7 +963,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const key = e.key.toLowerCase();
       if (key in keys) {
         keys[key as keyof typeof keys] = true;
-        clearAutoWalk(); // Cancel any click-to-move pathfinding
+        clearAutoWalk();
       } else if (key === 'e' || key === ' ') {
         handleInteract();
       }
@@ -936,17 +992,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const now = performance.now();
       const isTryingToMove = dx !== 0 || dy !== 0;
 
-      // 250ms movement cooldown matching BabylonEngine's 4.0 tiles/sec interpolation
       if (isTryingToMove && state.gameMode === 'EXPLORING' && (now - lastMoveTime) >= 250) {
         lastMoveTime = now;
         const pos = state.player.position;
         if (pos) {
-          const nextX = pos.x + dx;
-          const nextY = pos.y + dy;
-          tryMovePlayerTo(nextX, nextY);
+          tryMovePlayerTo(pos.x + dx, pos.y + dy);
         }
       } else if (!isTryingToMove && state.player.isMoving && (now - lastMoveTime) >= 250 && !autoWalkIntervalRef.current) {
-        // Stop moving animation if no keys are pressed and we finished the last move tween
         useGameStore.getState().setPlayerPosition(state.player.position, state.player.direction, false);
       }
       
@@ -962,7 +1014,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener('keyup', handleKeyUp);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [mapWidth, mapHeight, mapData]);
+  }, [isDevEditorOpen, mapWidth, mapHeight, mapData]);
 
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">

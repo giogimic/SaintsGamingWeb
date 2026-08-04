@@ -205,7 +205,7 @@ export default function TheLobby({
       await useGameStore.getState().fetchLogicTiles();
 
       if (enableStudio) {
-        // Studio opens in Development Mode; Walk Mode is for play-testing only.
+        // Studio opens in Editor runtime; Playtest is for play systems only.
         useEditorStore.getState().enterDevelopmentMode();
         const mapsRes = await fetchAllMaps();
         if (mapsRes.success && mapsRes.data) {
@@ -989,9 +989,7 @@ export default function TheLobby({
       }
       const key = e.key.toLowerCase();
       if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
-      else if (key === 'e' && enableStudio && canStudio) {
-        useEditorStore.getState().toggleCreationMode();
-      }
+      // Bare `e` is interact in playtest (canvas). Studio Editor↔Play is Ctrl+E only.
       else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
       else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
       else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
@@ -1130,7 +1128,7 @@ export default function TheLobby({
                   }`}
               >
                 <span className="text-sm leading-none">🔨</span>
-                <span className="hidden sm:inline">{isCreationMode ? 'WALK (Ctrl+E)' : 'DEVELOP (Ctrl+E)'}</span>
+                <span className="hidden sm:inline">{isCreationMode ? 'PLAY (Ctrl+E)' : 'EDIT (Ctrl+E)'}</span>
               </button>
             )}
             {!enableStudio && canStudio && (

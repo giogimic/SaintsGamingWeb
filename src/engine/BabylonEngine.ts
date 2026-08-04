@@ -182,6 +182,28 @@ export class BabylonEngine {
   private cameraTargetX: number = 0;
   private cameraTargetZ: number = 0;
   private cameraSnapped: boolean = false;
+  /** When true, camera ignores player follow and accepts editor pan. */
+  private editorCameraMode: boolean = false;
+  private editorPanPointerId: number | null = null;
+  private editorPanLastClientX: number = 0;
+  private editorPanLastClientY: number = 0;
+  private editorSpaceHeld: boolean = false;
+  private editorCameraBookmark: { x: number; z: number; ortho: number } | null = null;
+  private onEditorPointerDown = (e: PointerEvent) => this.handleEditorPointerDown(e);
+  private onEditorPointerMove = (e: PointerEvent) => this.handleEditorPointerMove(e);
+  private onEditorPointerUp = (e: PointerEvent) => this.handleEditorPointerUp(e);
+  private onEditorKeyDown = (e: KeyboardEvent) => {
+    if (e.code === 'Space' && !(e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) {
+      e.preventDefault();
+      this.editorSpaceHeld = true;
+    }
+  };
+  private onEditorAuxClick = (e: MouseEvent) => {
+    if (e.button === 1) e.preventDefault();
+  };
+  private onEditorKeyUp = (e: KeyboardEvent) => {
+    if (e.code === 'Space') this.editorSpaceHeld = false;
+  };
   private selectionRingMesh?: Mesh;
   private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
 
@@ -553,9 +575,12 @@ export class BabylonEngine {
   }
 
   /**
-   * Smoothly follow a world position each tick
+   * Smoothly follow a world position each tick.
+   * No-op while editor camera mode is active (engine-editor foundation).
    */
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.08) {
+    if (this.editorCameraMode) return;
+
     const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
     const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
     const viewHalfWidth = this.camera?.orthoRight || 10;
@@ -589,6 +614,106 @@ export class BabylonEngine {
       new Vector3(targetX, 0, targetZ),
       lerpFactor
     ));
+  }
+
+  public isEditorCameraMode(): boolean {
+    return this.editorCameraMode;
+  }
+
+  /**
+   * Detach player follow and enable middle-mouse / Space+drag pan.
+   * Call when entering Studio editor runtime; disable on Playtest.
+   */
+  public setEditorCameraMode(enabled: boolean) {
+    if (this.editorCameraMode === enabled) return;
+    this.editorCameraMode = enabled;
+    if (enabled) {
+      this.editorCameraBookmark = {
+        x: this.cameraTargetX,
+        z: this.cameraTargetZ,
+        ortho: this.camera.orthoTop || 10,
+      };
+      this.canvas.addEventListener('pointerdown', this.onEditorPointerDown);
+      this.canvas.addEventListener('auxclick', this.onEditorAuxClick);
+      window.addEventListener('pointermove', this.onEditorPointerMove);
+      window.addEventListener('pointerup', this.onEditorPointerUp);
+      window.addEventListener('keydown', this.onEditorKeyDown);
+      window.addEventListener('keyup', this.onEditorKeyUp);
+    } else {
+      this.canvas.removeEventListener('pointerdown', this.onEditorPointerDown);
+      this.canvas.removeEventListener('auxclick', this.onEditorAuxClick);
+      window.removeEventListener('pointermove', this.onEditorPointerMove);
+      window.removeEventListener('pointerup', this.onEditorPointerUp);
+      window.removeEventListener('keydown', this.onEditorKeyDown);
+      window.removeEventListener('keyup', this.onEditorKeyUp);
+      this.editorPanPointerId = null;
+      this.editorSpaceHeld = false;
+      // Resume follow from current focus — do not jump to pre-edit bookmark
+      // (author may have panned; Playtest should start from what they see).
+      this.cameraSnapped = true;
+    }
+  }
+
+  /** Restore camera focus saved when editor mode was entered (optional). */
+  public restoreEditorCameraBookmark() {
+    if (!this.editorCameraBookmark) return;
+    const { x, z, ortho } = this.editorCameraBookmark;
+    this.updateCameraAspect(ortho);
+    this.snapCameraTo(x, z);
+  }
+
+  public getCameraFocus(): { x: number; z: number; ortho: number } {
+    return {
+      x: this.cameraTargetX,
+      z: this.cameraTargetZ,
+      ortho: this.camera.orthoTop || 10,
+    };
+  }
+
+  private handleEditorPointerDown(e: PointerEvent) {
+    if (!this.editorCameraMode) return;
+    const middle = e.button === 1;
+    const spaceLeft = e.button === 0 && this.editorSpaceHeld;
+    if (!middle && !spaceLeft) return;
+    e.preventDefault();
+    this.editorPanPointerId = e.pointerId;
+    this.editorPanLastClientX = e.clientX;
+    this.editorPanLastClientY = e.clientY;
+    try {
+      this.canvas.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private handleEditorPointerMove(e: PointerEvent) {
+    if (!this.editorCameraMode || this.editorPanPointerId !== e.pointerId) return;
+    const dx = e.clientX - this.editorPanLastClientX;
+    const dy = e.clientY - this.editorPanLastClientY;
+    this.editorPanLastClientX = e.clientX;
+    this.editorPanLastClientY = e.clientY;
+    this.panEditorCameraByScreenDelta(dx, dy);
+  }
+
+  private handleEditorPointerUp(e: PointerEvent) {
+    if (this.editorPanPointerId !== e.pointerId) return;
+    this.editorPanPointerId = null;
+    try {
+      this.canvas.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Screen-pixel drag → world pan (orthographic approx). */
+  public panEditorCameraByScreenDelta(dxPx: number, dyPx: number) {
+    const h = Math.max(1, this.engine.getRenderHeight());
+    const ortho = this.camera.orthoTop || 10;
+    // Match isometric view: screen Y maps roughly to world Z with pitch stretch.
+    const worldPerPx = (ortho * 2) / h;
+    const worldDx = -dxPx * worldPerPx;
+    const worldDz = dyPx * worldPerPx * 1.414;
+    this.snapCameraTo(this.cameraTargetX + worldDx, this.cameraTargetZ + worldDz);
   }
 
   public resetCameraSnap() {
@@ -2058,6 +2183,7 @@ private resolveTilePick(
   }
 
   public dispose() {
+    this.setEditorCameraMode(false);
     window.removeEventListener('resize', this.onResize);
     this.stopRenderLoop();
     this.guiTexture.dispose();

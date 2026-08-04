@@ -245,7 +245,7 @@ export const WorldBuilderPanel: React.FC = () => {
         <p className="mt-1">
           Pick a map → choose <span className="text-[#e2d5b3]">Logic</span> or a visual layer → select a brush →{' '}
           <span className="text-[#e2d5b3]">click or drag</span> on the ground →{' '}
-          <span className="text-[#e2d5b3]">Save Map</span>. Use Walk Mode to play-test.
+          <span className="text-[#e2d5b3]">Save Map</span>. Use Play to playtest.
         </p>
       </div>
 

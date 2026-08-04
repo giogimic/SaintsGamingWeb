@@ -7,7 +7,7 @@
 
 ## Current Focus
 
-**Staging rebuild:** Duplicate `useEditorStore` import in `GameCanvasBabylon.tsx` fixed on `main` — redeploy Docker web container. See `logs/LOCAL_CHANGELOG.md`.
+**Game engine editor foundation** — Phase 1 (Editor/Playtest) + Phase 2a (editor camera, CatalogEditorShell, SchemaFieldRenderer on NPCs). See `logs/studio-first-hybrid-foundation.md`.
 
 **Studio world profiles + Saints Trail + Viewfinder UI (on `main`)**
 

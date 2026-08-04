@@ -1,12 +1,12 @@
 /**
- * Saints Studio session flags (bible 17).
+ * Saints Studio session — game-engine editor runtime gates (bible 17 / 29 / 30).
  *
- * `isEditorMode` is true whenever the client is on `/studio`.
- * Create tools use `isCreationMode` (editor-store); Studio defaults to
- * Development Mode. Walk Mode play-tests with gameplay systems re-enabled.
+ * Studio is the engine development environment. The MMO play loop is a Playtest
+ * viewport mode, not the owner of authoring tools.
  *
- * Full avatar-free / no-gameplay-network Studio sessions are a later phase —
- * Phase 1 provides a clean gate without duplicating lobby vs studio shells.
+ * `isEditorMode` — client is on `/studio`.
+ * `StudioRuntime` — `editor` (tools on, sim dormant) vs `playtest` (Play).
+ * `isCreationMode` — legacy alias for `runtime === 'editor'` (creationActive).
  */
 
 /** Global editor flag — set true when Studio client mounts. */
@@ -20,24 +20,45 @@ export function getIsEditorMode(): boolean {
   return isEditorMode;
 }
 
+/** Engine-editor vs in-viewport playtest. */
+export type StudioRuntime = "editor" | "playtest";
+
 export type StudioGameplayGate = {
   isEditorMode: boolean;
-  /** True when Studio create docks / paint tools are active. */
+  /** True when Studio create docks / paint tools are active (runtime === editor). */
   isCreationMode: boolean;
 };
 
-/**
- * Soft-disable combat, encounters, and loot pickup while authoring.
- * Walk Mode (`!isCreationMode`) keeps play-test systems on.
- */
-export function shouldSuppressGameplaySystems(gate: StudioGameplayGate): boolean {
+/** Derive runtime from legacy creation flag (single source in editor-store). */
+export function studioRuntimeFromCreation(isCreationMode: boolean): StudioRuntime {
+  return isCreationMode ? "editor" : "playtest";
+}
+
+/** Bible 29: creationActive when not in Walk/playtest. */
+export function isCreationActive(gate: StudioGameplayGate): boolean {
   return gate.isEditorMode && gate.isCreationMode;
 }
 
-/** Player HUD chrome (hotbar, orbs, chat) — hide during create tools. */
+/**
+ * Soft-disable combat, encounters, and loot pickup while authoring.
+ * Playtest (`!isCreationMode`) keeps play systems on.
+ */
+export function shouldSuppressGameplaySystems(gate: StudioGameplayGate): boolean {
+  return isCreationActive(gate);
+}
+
+/** Player HUD chrome (hotbar, orbs, chat) — hide during editor runtime. */
 export function shouldShowGameplayHud(gate: StudioGameplayGate): boolean {
   if (!gate.isEditorMode) return true;
   return !gate.isCreationMode;
+}
+
+/**
+ * Hard gate: player movement, interact, WASD, click-to-move, touch move.
+ * True only in Studio editor runtime.
+ */
+export function shouldDisableGameplayInput(gate: StudioGameplayGate): boolean {
+  return isCreationActive(gate);
 }
 
 /** Editor-only overlays must never be serialized into runtime map exports. */

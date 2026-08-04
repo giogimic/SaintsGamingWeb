@@ -14,10 +14,19 @@ Cause: PR #26 (`e015f61`) added a second identical import of `useEditorStore` (l
 - Ran `npx prisma generate` (stale client missing `globalShinyChancePercent`)
 - `npm install` (missing `@aws-sdk/client-s3` after pull)
 - **Verified:** `npm run build` succeeds on `main` + this one-line fix
-- Committed and pushed to `origin/main`
+- Committed and pushed to `origin/main` (`4d1ba70`)
 
 ### Deploy note
 Staging: pull latest `main`, rebuild the web container.
+
+---
+
+## 2026-08-04 — Game engine editor foundation (Phase 1 + 2a)
+
+See `logs/studio-first-hybrid-foundation.md`.
+
+- Phase 1: Editor/Playtest hard split, worldDocument paint path, EditorOp undo, canonical mode labels
+- Phase 2a: editor camera pan (MMB / Space+drag), CatalogEditorShell, SchemaFieldRenderer on NPC panel
 
 ---
 
