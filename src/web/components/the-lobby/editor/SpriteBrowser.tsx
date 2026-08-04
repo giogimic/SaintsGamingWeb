@@ -15,6 +15,8 @@ import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/
 
 /** Optional class filter for sprite browser (Catalog / ClassEditorPanel). */
 export type SpriteClassFilter = {
+  /** Display label in the Class filter chip (optional). */
+  name?: string;
   allowedSpriteTags?: string[];
   spriteFilters?: Record<string, string[]>;
 };
@@ -201,7 +203,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
             }`}
           >
             <UserCheck className="w-3.5 h-3.5" />
-            <span>Class: {classDef.name}</span>
+            <span>Class: {classDef.name || 'Filter'}</span>
           </button>
         )}
 

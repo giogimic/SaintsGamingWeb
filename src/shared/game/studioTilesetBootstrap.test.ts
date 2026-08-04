@@ -14,8 +14,8 @@ describe("ensureMapHasStudioTilesets", () => {
     const next = ensureMapHasStudioTilesets({
       id: "DEMO_SANDBOX",
       grid,
-      tileLayers: [],
-      tilesets: [],
+      tileLayers: [] as Array<{ name: string; grid: number[][] }>,
+      tilesets: [] as typeof DEFAULT_STUDIO_TILESETS,
     });
     expect(next.tileLayers).toHaveLength(1);
     const ground = next.tileLayers![0]!;
