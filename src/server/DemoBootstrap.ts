@@ -9,7 +9,7 @@ import {
   DEMO_MAP_W,
   DEFAULT_STUDIO_TILESETS,
   buildDemoSandboxGrid,
-  buildEmptyGroundLayer,
+  buildDefaultGroundLayer,
   needsStudioTilesetBootstrap,
 } from "./demoMapSeed";
 import {
@@ -180,7 +180,7 @@ async function seedDemoMap() {
     existing.tileLayersData,
     existing.tilesetsData
   );
-  const groundLayer = buildEmptyGroundLayer(grid);
+  const groundLayer = buildDefaultGroundLayer(grid);
   const tileLayersJson = JSON.stringify([groundLayer]);
   const tilesetsJson = JSON.stringify(DEFAULT_STUDIO_TILESETS);
 
