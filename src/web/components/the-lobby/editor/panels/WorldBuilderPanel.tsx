@@ -13,6 +13,7 @@ import {
   DEFAULT_STUDIO_TILESETS,
   ensureMapHasStudioTilesets,
 } from '@/shared/game/studioTilesetBootstrap';
+import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -118,7 +119,8 @@ export const WorldBuilderPanel: React.FC = () => {
     }
     setIsSaving(true);
     try {
-      const payload = {
+      // Bible 17: never persist Studio-only overlay keys into runtime map JSON.
+      const payload = stripEditorOverlaysFromMapPayload({
         name: currentMapData.name || baseMapId,
         grid: currentMapData.grid,
         gates: currentMapData.gates || {},
@@ -126,7 +128,7 @@ export const WorldBuilderPanel: React.FC = () => {
         encounterPool: currentMapData.encounterPool || [],
         tileLayers: currentMapData.tileLayers || [],
         tilesets: currentMapData.tilesets || [],
-      };
+      });
       const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
