@@ -37,9 +37,9 @@ Full audit: `logs/2026-08-04-duplicate-systems-audit.md`
 
 ## Studio foundation (unchanged goals)
 
-**Game engine editor** — Phase 1–2d on `main` (Editor/Playtest, camera, catalogs, avatar-hide, **avatar-free author session**). See `logs/studio-first-hybrid-foundation.md`.
+**Game engine editor** — Phase 1–**2e** on `main` (Editor/Playtest, catalogs incl. **Starter Heroes** on CatalogEditorShell, avatar-free author session). See `logs/studio-first-hybrid-foundation.md`.
 
-**Checkpoint:** `/studio` opens DEMO as author (no character). Dock **Hero** optional for Playtest.
+**Checkpoint:** `/studio` opens DEMO as author. Characters dock = Heroes catalog chrome. Dock **Hero** optional for Playtest character.
 
 **World profiles + Saints Trail + Viewfinder UI (on `main`)**
 
