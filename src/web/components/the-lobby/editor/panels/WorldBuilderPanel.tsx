@@ -9,6 +9,10 @@ import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react'
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
+import {
+  DEFAULT_STUDIO_TILESETS,
+  ensureMapHasStudioTilesets,
+} from '@/shared/game/studioTilesetBootstrap';
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -59,6 +63,18 @@ export const WorldBuilderPanel: React.FC = () => {
     return () => { cancelled = true; };
   }, [isCreating, isSaving]);
 
+  // Legacy DEMO_SANDBOX (and similar) may load with tileLayers:[], tilesets:[].
+  // Inject defaults in-memory so TilesetPicker + paint overlays work before Save.
+  useEffect(() => {
+    if (!activeMapData) return;
+    const ensured = ensureMapHasStudioTilesets(activeMapData);
+    if (ensured === activeMapData) return;
+    useGameStore.getState().setActiveMapData(ensured);
+    if (useEditorStore.getState().activeLayerIdx < 0) {
+      useEditorStore.getState().setActiveLayerIdx(0);
+    }
+  }, [activeMapData]);
+
   const localIndex = searchMapIndex(mapSearchQuery);
   const q = mapSearchQuery.trim().toLowerCase();
   const remoteFiltered = remoteMaps.filter((m) =>
@@ -70,28 +86,21 @@ export const WorldBuilderPanel: React.FC = () => {
     ...remoteFiltered.filter((m) => !seen.has(m.id)),
   ];
   const baseMapId = toBaseMapId(String(currentMapId || ''));
-  const currentMapData = activeMapData || GAME_MAPS[baseMapId] || {
+  const rawMapData = activeMapData || GAME_MAPS[baseMapId] || {
     id: baseMapId,
     name: baseMapId,
     grid: Array(24).fill(0).map(() => Array(24).fill(0)),
     gates: {},
-    tileLayers: [{ name: 'Ground', grid: Array(24).fill(0).map(() => Array(24).fill(0)) }],
-    tilesets: [
-      { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 }
-    ]
+    tileLayers: [],
+    tilesets: [],
   };
+  const currentMapData = ensureMapHasStudioTilesets(rawMapData);
 
-  const defaultTilesets = [
-    { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
-    { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-    { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-    { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-    { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
-  ];
+  const defaultTilesets = DEFAULT_STUDIO_TILESETS;
 
   const handleWarpToMap = async (targetMapId: string) => {
     try {
-      const loaded = await loadMap(targetMapId);
+      const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
       useGameStore.setState({ currentMapId: targetMapId, activeMapData: loaded });
       setMapSearchQuery('');
       showToast(`Warped to map: ${targetMapId}`);
