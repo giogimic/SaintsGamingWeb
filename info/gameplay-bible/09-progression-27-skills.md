@@ -1,5 +1,7 @@
 # Saints Gaming — Progression & The 27-Skill Matrix (9.txt)
 
+> **Studio skill/XP/profession editors:** [`25-studio-gameplay-editors.md`](./25-studio-gameplay-editors.md) · Economy: [`23`](./23-studio-economy-system.md)
+
 The core loop of Saints Gaming revolves around leveling up a massive web of 27 distinct skills. Inspired by classic MMOs, everything the player does contributes to their long-term account value.
 
 ---
