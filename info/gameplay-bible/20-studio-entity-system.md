@@ -7,11 +7,12 @@
 > **Companions (do not fork)**
 > - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — registries, map SoT, hot-reload, reuse rules
 > - [`19-studio-ux-design.md`](./19-studio-ux-design.md) — Inspector, Outliner, Place mode, gizmos
+> - [`21-studio-world-building-tools.md`](./21-studio-world-building-tools.md) — paint vs place; buildings/vegetation tools
 > - [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md) — Phase 1 schemas / loot refs
 > - [`08`](./08-world-building-editor-architecture.md) — Logic (−1) collision authority
 > - [`15`](./15-quests-dialogue-npc-ai.md) — dialogue / quest / AI behaviour intent
 
-**This document is the entity master.** Existing `entitySchemas.ts`, `lootRefs.ts`, `mapLayers.ts`, `logicComponents.ts`, `WorldMap.npcsData` / `gatesData` / Logic grid are **inputs to unify** — not systems to rewrite in one shot.
+**This document is the entity master.** Existing `entitySchemas.ts`, `lootRefs.ts`, `mapLayers.ts`, `logicComponents.ts`, `WorldMap.npcsData` / `gatesData` / Logic grid are **inputs to unify** — not systems to rewrite in one shot. World paint vs place tools: **`21`**.
 
 ---
 
