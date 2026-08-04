@@ -11,7 +11,7 @@ export const DEMO_MAP_H = 30;
  * Default Tuxemon/George tilesets for Studio visual paint.
  * DEMO_SANDBOX historically shipped logic-grid only (tileLayers=[], tilesets=[]),
  * which left TilesetPicker empty and made PR #18 paint overlays a no-op.
- * Keep in sync with WorldBuilderPanel / createBlankWorldProfile.
+ * Keep in sync with WorldBuilderPanel / createBlankWorldProfile / studioTilesetBootstrap.
  */
 export type StudioTilesetMeta = {
   firstgid: number;
@@ -29,22 +29,46 @@ export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
   { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
 ];
 
-/** Empty Ground visual layer sized to a logic grid (GID 0 = transparent / unset). */
-export function buildEmptyGroundLayer(grid: number[][]): { name: string; grid: number[][] } {
+/**
+ * Terrain_by_George first tile (firstgid=1). Used so bootstrapped DEMO is not a
+ * black void — rich path skips GID 0, so an all-zero Ground draws nothing.
+ */
+export const DEFAULT_STUDIO_GROUND_GID = 1;
+
+export function isVisualTileLayersBlank(
+  layers: Array<{ grid?: number[][] }> | null | undefined
+): boolean {
+  if (!Array.isArray(layers) || layers.length === 0) return true;
+  return layers.every((layer) => {
+    const grid = layer?.grid;
+    if (!Array.isArray(grid) || grid.length === 0) return true;
+    return grid.every((row) => !Array.isArray(row) || row.every((cell) => !cell));
+  });
+}
+
+/** Ground visual layer filled with default terrain so Studio isn't a black void. */
+export function buildDefaultGroundLayer(grid: number[][]): { name: string; grid: number[][] } {
   const h = grid.length || DEMO_MAP_H;
   const w = grid[0]?.length || DEMO_MAP_W;
   return {
     name: "Ground",
-    grid: Array.from({ length: h }, () => Array.from({ length: w }, () => 0)),
+    grid: Array.from({ length: h }, () =>
+      Array.from({ length: w }, () => DEFAULT_STUDIO_GROUND_GID)
+    ),
   };
 }
 
-/** True when Studio cannot paint visuals (no layers and/or no tilesets). */
+/** @deprecated Prefer buildDefaultGroundLayer — all-zero Ground renders black in Babylon. */
+export function buildEmptyGroundLayer(grid: number[][]): { name: string; grid: number[][] } {
+  return buildDefaultGroundLayer(grid);
+}
+
+/** True when Studio cannot show/paint visuals (missing tilesets and/or blank layers). */
 export function needsStudioTilesetBootstrap(
   tileLayersData: string | null | undefined,
   tilesetsData: string | null | undefined
 ): boolean {
-  let layers: unknown[] = [];
+  let layers: Array<{ grid?: number[][] }> = [];
   let tilesets: unknown[] = [];
   try {
     layers = JSON.parse(tileLayersData || "[]");
@@ -56,7 +80,10 @@ export function needsStudioTilesetBootstrap(
   } catch {
     tilesets = [];
   }
-  return !Array.isArray(layers) || layers.length === 0 || !Array.isArray(tilesets) || tilesets.length === 0;
+  if (!Array.isArray(tilesets) || tilesets.length === 0) return true;
+  if (!Array.isArray(layers) || layers.length === 0) return true;
+  // PR #20 bootstrapped tilesets + all-zero Ground → black rich path. Re-fill.
+  return isVisualTileLayersBlank(layers);
 }
 
 /** Logic tile definitions (same as scripts/seed-tiles + bramble). */
