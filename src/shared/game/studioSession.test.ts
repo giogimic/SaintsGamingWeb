@@ -64,6 +64,12 @@ describe("studioSession", () => {
     ).toBe(false);
   });
 
+  it("builds bible PIE room ids", async () => {
+    const { studioPieRoomId } = await import("./studioSession");
+    expect(studioPieRoomId("user-123")).toBe("studio_pie_user-123");
+    expect(studioPieRoomId("a/b?c")).toBe("studio_pie_abc");
+  });
+
   it("never exports editor overlays to runtime", () => {
     expect(shouldExportEditorOverlays()).toBe(false);
   });

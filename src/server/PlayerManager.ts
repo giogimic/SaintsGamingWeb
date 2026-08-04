@@ -188,13 +188,16 @@ export class PlayerManager {
     // Ensure map definition is loaded
     await this.worldManager.loadMap(requestedMapId);
     
-    // Check if it's a private instance request
-    const isPrivate = requestedMapId === 'BASE' || data.isPrivate === true;
+    // Check if it's a private instance request (Studio author / player base)
+    // PIE (bible 32) uses a dedicated studio_pie_{userId} room.
+    const isPie = data?.pie === true;
+    const isPrivate =
+      !isPie && (requestedMapId === "BASE" || data?.isPrivate === true);
     
     // Phase 8: Shard Syncing (Party Lock Rule)
     let instanceId: string | undefined;
     
-    if (this.partyManager) {
+    if (!isPie && this.partyManager) {
       const leaderId = this.partyManager.getPartyLeader(accountId);
       if (leaderId && leaderId !== accountId) {
         // Find if the leader is online and on the exact same base map
@@ -211,7 +214,9 @@ export class PlayerManager {
     if (!instanceId) {
       // Always join the resolved playable base map — never raw data.mapId
       // (shard suffix / retired SAINTS_VILLAGE created parallel rooms and hid peers).
-      const instance = await this.worldManager.joinMap(requestedMapId, accountId, isPrivate);
+      const instance = await this.worldManager.joinMap(requestedMapId, accountId, isPrivate, {
+        pie: isPie,
+      });
       instanceId = instance.instanceId;
     }
 

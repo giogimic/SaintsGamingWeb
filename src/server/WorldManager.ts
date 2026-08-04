@@ -258,7 +258,12 @@ export class WorldManager {
     return undefined;
   }
 
-  public async joinMap(mapId: string, accountId: string, isPrivate: boolean = false): Promise<MapInstance> {
+  public async joinMap(
+    mapId: string,
+    accountId: string,
+    isPrivate: boolean = false,
+    opts?: { pie?: boolean }
+  ): Promise<MapInstance> {
     // Always shard against the base definition id — never DEMO_SANDBOX_ch1_ch1.
     // Retired sandboxes (SAINTS_VILLAGE) remap to the live demo map.
     let baseMapId = toBaseMapId(String(mapId || DEMO_MAP_ID)) || DEMO_MAP_ID;
@@ -266,8 +271,19 @@ export class WorldManager {
     // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
     await mapLoader.loadMapData(baseMapId);
 
+    if (opts?.pie) {
+      // Bible 32 — Play-In-Editor private room (isolate from public DEMO shards).
+      const instanceId = studioPieRoomId(accountId);
+      let instance = this.instances.get(instanceId);
+      if (!instance) {
+        instance = this.createInstance(instanceId, baseMapId);
+      }
+      instance.playerCount++;
+      return instance;
+    }
+
     if (isPrivate) {
-      // Private instances (e.g. player bases) are isolated per account
+      // Private instances (e.g. player bases / Studio author) are isolated per account
       const instanceId = `${baseMapId}_${accountId}`;
       let instance = this.instances.get(instanceId);
       if (!instance) {

@@ -66,6 +66,15 @@ export function shouldHidePlayerAvatar(gate: StudioGameplayGate): boolean {
   return isCreationActive(gate);
 }
 
+/**
+ * Bible 32 PIE — private playtest room id (not the public DEMO shard).
+ * Base map definition is still loaded from the authored mapId on join.
+ */
+export function studioPieRoomId(accountId: string): string {
+  const safe = String(accountId || "anon").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+  return `studio_pie_${safe || "anon"}`;
+}
+
 /** Editor-only overlays must never be serialized into runtime map exports. */
 export function shouldExportEditorOverlays(): boolean {
   return false;

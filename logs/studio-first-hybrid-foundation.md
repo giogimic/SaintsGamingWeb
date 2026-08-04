@@ -63,23 +63,30 @@ Phase 2a = editor camera + CatalogEditorShell / SchemaFieldRenderer wiring.
 | :--- | :--- |
 | Starter Heroes Catalog | `StarterHeroEditorPanel` on `CatalogEditorShell` (shared chrome + list/form) |
 
+## Phase 2f shipped
+
+| Piece | What |
+| :--- | :--- |
+| PIE private shard | Playtest → `studio_pie_{userId}` room; Studio author joins `isPrivate` (not public DEMO_chN) |
+| Events | `STUDIO_PIE_CHANGED_EVENT` on Play / Stop Playtest |
+
 ## Verify
 
 ```bash
 npx vitest run src/shared/game/studioSession.test.ts src/shared/game/studioModes.test.ts src/shared/game/editorOps.test.ts
 ```
 
-Manual: open `/studio` while logged in → Editor on DEMO without Choose Hero. **Hero** dock to load a character for Playtest. Characters dock → Starter Heroes catalog chrome.
+Manual: open `/studio` → Play → toast “PIE — private playtest shard”. Lobby `/lobby` peers must not see Studio PIE avatars on DEMO.
 
 ## Post-strip contracts (do not regress)
 
 See `logs/2026-08-04-studio-resume-after-strip.md`:
 - `/lobby` → always DEMO + `lobby: true`
-- `/studio` → author/character map + `lobby: false`
+- `/studio` → author/character map + `lobby: false` + private/PIE isolation
 - Classes → `ClassEditorPanel` only; inventory → `inventoryService`; TB → `TurnBattleOverlay` only
 
 ## Next
 
-- PIE private shard
 - Definition undo stack
 - Richer debug overlays (spawn/warp/chunk)
+- PIE options (pause spawners / god mode) — Advanced

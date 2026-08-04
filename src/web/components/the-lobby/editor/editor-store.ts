@@ -26,11 +26,22 @@ import {
 } from '@/shared/game/editorOps';
 import type { PaintableMap } from '@/shared/game/tilePaint';
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
+import { STUDIO_PIE_CHANGED_EVENT } from '@/shared/game/studioEvents';
+import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
+
+function emitPieChanged(pie: boolean) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<StudioPieChangedDetail>(STUDIO_PIE_CHANGED_EVENT, {
+      detail: { pie },
+    })
+  );
+}
 
 export interface FloatingPanelState {
   id: PanelId;
@@ -331,6 +342,7 @@ export const useEditorStore = create<EditorState>()(
           state.isCreationMode = false;
           state.studioMode = 'test';
           closeAllPanels(state);
+          queueMicrotask(() => emitPieChanged(true));
         }),
 
       enterDevelopmentMode: () =>
@@ -368,10 +380,12 @@ export const useEditorStore = create<EditorState>()(
             state.studioMode = 'develop';
             openModePanels(state, 'develop');
           }
+          queueMicrotask(() => emitPieChanged(false));
         }),
 
       setStudioMode: (mode) =>
         set((state) => {
+          const wasEditor = state.isCreationMode;
           state.studioMode = mode;
           if (mode === 'test') {
             if (state.isCreationMode) {
@@ -379,11 +393,13 @@ export const useEditorStore = create<EditorState>()(
             }
             state.isCreationMode = false;
             closeAllPanels(state);
+            if (wasEditor) queueMicrotask(() => emitPieChanged(true));
             return;
           }
           state.isCreationMode = true;
           state.playtestSnapshot = null;
           openModePanels(state, mode);
+          if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
         }),
 
       openPanel: (id) =>
