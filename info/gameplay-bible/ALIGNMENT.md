@@ -72,10 +72,12 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 2. Capture math + `PlayerCreature` insert + crystal consume  
 3. Victory/defeat/flee return to overworld  
 
-### Slice D — Studio creator UX (16, toward MPV editor) — **NEXT**
-1. Contextual modes (Build / NPC / Quest / Creature / Test)  
-2. Permission-gated floating docks (extend current shell)  
-3. Tag/component placement UX over raw logic paint  
+### Slice D — Studio creator UX (16, toward MPV editor) — **IN PROGRESS**
+1. Contextual modes (Build / NPC / Quest / Creature / Test) — **done**  
+2. Permission-gated floating docks (extend current shell) — **done** (+ Loot Manager)  
+3. Tag/component placement UX over raw logic paint — partial (`logicComponents`)  
+4. **Phase 1 World Builder & Economy (17)** — **done**: `isEditorMode`, layer/entity/loot schemas, soft gameplay suppress in create tools, `/api/loot/tables`  
+5. Remaining (Phase 2+): schema property panels for all entity kinds, Item Creator, avatar-free Studio session
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
@@ -96,5 +98,5 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 ## Immediate next decision for product owner
 
 Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
-Next product pick: **D** (Studio creator UX) or **E** (website ↔ game), or quest grants for gather tools.  
-Human smoke: claim Rockitten → shop/craft crystal → TB capture; RT hotbar vs wild Rockitten.
+Slice **D** Phase 1 foundation landed (bible **17**). Next: Phase 2 entity schema panels / Item Creator, or **E** (website ↔ game).  
+Human smoke: Studio Build → Loot Manager create pool → Walk Mode play-test; claim Rockitten → TB capture.

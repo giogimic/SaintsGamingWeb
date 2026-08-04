@@ -22,6 +22,8 @@ describe("studioPermissions", () => {
     expect(canUseStudioDock(400, "dev")).toBe(true);
     expect(canUseStudioDock(200, "dev")).toBe(false);
     expect(canUseStudioDock(1000, "build")).toBe(true);
+    expect(canUseStudioDock(400, "loot")).toBe(true);
+    expect(canUseStudioDock(20, "loot")).toBe(false);
   });
 
   it("keeps engine config at Developer+", () => {
