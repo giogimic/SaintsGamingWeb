@@ -9,10 +9,11 @@
 > - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — systems, registries, hot-reload, reuse rules
 > - [`20-studio-entity-system.md`](./20-studio-entity-system.md) — entity/component/prefab model (Inspector binds here)
 > - [`21-studio-world-building-tools.md`](./21-studio-world-building-tools.md) — terrain, regions, brushes, layers, save pipelines
+> - [`22-studio-npc-ai-creature-editors.md`](./22-studio-npc-ai-creature-editors.md) — NPC/AI/creature docks & data
 > - [`08`](./08-world-building-editor-architecture.md) / [`17`](./17-studio-world-builder-economy.md) — layers & Phase 1 contracts
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth
 
-**This document is the UX master.** `16` owns philosophy. `18` owns systems. `19` owns **every pixel of authoring chrome and every interaction**. `20` owns what placed objects are. `21` owns world paint/region tools. Implement by evolving existing docks — not a second Studio UI.
+**This document is the UX master.** `16` owns philosophy. `18` owns systems. `19` owns authoring chrome. `20` entities · `21` world tools · `22` NPC/AI/creature editors. Implement by evolving existing docks — not a second Studio UI.
 
 ---
 
