@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
-import { Tag } from 'lucide-react';
+import { Tag, MousePointerClick } from 'lucide-react';
 import { LOGIC_COMPONENT_PRESETS } from '@/shared/game/logicComponents';
 
 /**
@@ -13,8 +13,8 @@ import { LOGIC_COMPONENT_PRESETS } from '@/shared/game/logicComponents';
 export function LogicTagPalette() {
   const logicTiles = useGameStore((s) => s.logicTiles);
   const fetchLogicTiles = useGameStore((s) => s.fetchLogicTiles);
-  const brushId = useEditorStore((s) => s.activeBrushTileId);
-  const setBrush = useEditorStore((s) => s.setActiveBrushTileId);
+  const brushId = useEditorStore((s) => s.activeLogicTileId);
+  const setBrush = useEditorStore((s) => s.setActiveLogicTileId);
   const setLayer = useEditorStore((s) => s.setActiveLayerIdx);
   const showToast = useGameStore((s) => s.showToast);
 
@@ -34,7 +34,7 @@ export function LogicTagPalette() {
   if (tiles.length === 0) {
     return (
       <div className="rounded border border-slate-800 bg-[#050b14]/80 p-3 text-[11px] text-slate-400">
-        No logic tags loaded. Open Properties → Register Component, or wait for DemoBootstrap tiles.
+        No logic tags loaded. Open Inspector → Register Component, or wait for DemoBootstrap tiles.
       </div>
     );
   }
@@ -42,8 +42,14 @@ export function LogicTagPalette() {
   return (
     <div className="space-y-2">
       <p className="text-[10px] leading-relaxed text-slate-400">
-        Fun-first: paint a tag → Walk Mode → interact → Save Map.
+        Logic paints colored overlays on the map — not tileset art. After painting, switch to{' '}
+        <span className="text-emerald-300">Walk Mode</span> to step on / interact with tags, then Save Map.
       </p>
+
+      <div className="flex items-start gap-2 rounded border border-rose-500/25 bg-rose-950/20 px-2 py-1.5 text-[10px] text-rose-100/90">
+        <MousePointerClick className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>Click or drag across cells. Overlay colors update live so you can see what you painted.</span>
+      </div>
 
       {quickPresets.length > 0 && (
         <div className="flex flex-wrap gap-1">
@@ -54,7 +60,7 @@ export function LogicTagPalette() {
               onClick={() => {
                 setLayer(-1);
                 setBrush(p.paintTileId!);
-                showToast(`Brush: ${p.label}`);
+                showToast(`Brush: ${p.label} — paint, then Walk to test`);
               }}
               className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                 brushId === p.paintTileId
@@ -87,10 +93,15 @@ export function LogicTagPalette() {
               }`}
             >
               <span
-                className={`h-3.5 w-3.5 shrink-0 rounded-sm border border-white/20 ${tile.color || 'bg-slate-600'}`}
+                className={`h-5 w-5 shrink-0 rounded-md border border-white/25 shadow-inner ${tile.color || 'bg-slate-600'}`}
                 title={tile.color}
               />
-              <span className="min-w-0 flex-1 truncate text-[11px] font-bold">{tile.name}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[11px] font-bold">{tile.name}</span>
+                <span className="block truncate text-[9px] text-slate-500">
+                  {tile.interactable ? 'Interact (face tile + F)' : tile.onStepAction ? `Step: ${tile.onStepAction}` : 'Collision / tag'}
+                </span>
+              </span>
               <span className="font-mono text-[9px] text-slate-500">#{tile.id}</span>
               {tile.isSolid && (
                 <span className="rounded bg-red-900/40 px-1 text-[8px] uppercase text-red-300">solid</span>

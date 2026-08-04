@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { Server, Power, RefreshCw, Activity, CheckCircle2, XCircle, ShieldAlert, Cpu } from 'lucide-react';
+import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
 export const ServerControl: React.FC = () => {
+  const { data: session } = useSession();
+  // Gate here as well as in DevToolsPanel so realm controls stay hidden wherever
+  // this component is mounted.
+  const canControlServer = canUseStudioServerControls(session?.user?.permissionLevel);
   const [statusData, setStatusData] = useState<{ status: 'online' | 'offline'; players: number; capacity: number; isDevMode?: boolean; isDevOverride?: boolean }>({
     status: 'offline',
     players: 0,
@@ -70,6 +76,15 @@ export const ServerControl: React.FC = () => {
   };
 
   const isOnline = statusData.status === 'online';
+
+  if (!canControlServer) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 p-6 text-center font-mono text-xs text-slate-400">
+        <ShieldAlert className="h-6 w-6 text-amber-500" />
+        <p>Realm server controls require Admin+.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#050b14] border border-slate-800 rounded-xl p-4 space-y-4 shadow-2xl max-w-3xl mx-auto font-mono text-xs">

@@ -22,10 +22,12 @@ export const PropertiesPanel: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
   const logicTiles = useGameStore((state) => state.logicTiles);
   const fetchLogicTiles = useGameStore((state) => state.fetchLogicTiles);
-  const setBrush = useEditorStore((s) => s.setActiveBrushTileId);
+  // Everything this panel paints lands on Logic (−1), so it drives the logic
+  // brush rather than the visual GID brush.
+  const setBrush = useEditorStore((s) => s.setActiveLogicTileId);
   const setLayer = useEditorStore((s) => s.setActiveLayerIdx);
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
-  const brushId = useEditorStore((s) => s.activeBrushTileId);
+  const brushId = useEditorStore((s) => s.activeLogicTileId);
   const clickedTile = useEditorStore((s) => s.clickedTile);
 
   const currentMapData = activeMapData || GAME_MAPS[currentMapId] || {
@@ -75,7 +77,7 @@ export const PropertiesPanel: React.FC = () => {
     }
     setLayer(-1);
     setBrush(p.paintTileId);
-    showToast(`Brush: ${p.label} (#${p.paintTileId}) — paint, Walk, then Save`);
+    showToast(`Brush: ${p.label} (#${p.paintTileId}) — paint, Walk Mode to test, then Save`);
   };
 
   const handleSaveLogicTile = async () => {
@@ -138,11 +140,14 @@ export const PropertiesPanel: React.FC = () => {
       spawnPoint: { x: warpSpawnX, y: warpSpawnY },
     };
     const nextGates = upsertWarpGate(currentMapData.gates, gate);
-    const next = { ...currentMapData, gates: nextGates };
+    const nextGrid = (currentMapData.grid || []).map((row: number[], ri: number) =>
+      row.map((cell: number, ci: number) => (ri === y && ci === x ? 3 : cell))
+    );
+    const next = { ...currentMapData, gates: nextGates, grid: nextGrid };
     useGameStore.setState({ activeMapData: next });
-    // Also paint Gate A marker so the tile is visible in logic layer.
     setLayer(-1);
     setBrush(3);
+    useEditorStore.getState().markMapDirty();
     showToast(`Warp @ (${x},${y}) → ${gate.targetMapId} — Save Map to persist`);
   };
 
@@ -162,7 +167,7 @@ export const PropertiesPanel: React.FC = () => {
   return (
     <div className="space-y-4 text-xs font-mono">
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-3 text-[10px] text-slate-400 leading-relaxed">
-        Fun-first: pick a component → paint on Logic (−1) → <span className="text-[#e2d5b3]">Walk</span> to feel it → tweak →{' '}
+        Fun-first: pick a component → paint on Logic (−1) → <span className="text-[#e2d5b3]">Walk Mode</span> to feel it → tweak →{' '}
         <span className="text-[#e2d5b3]">Save Map</span>.
       </div>
 

@@ -21,6 +21,7 @@ import {
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
 import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
+import { isTilePickTarget } from "../shared/game/tilePaint";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -602,6 +603,9 @@ export class BabylonEngine {
     this.objectMeshes = [];
     this.waterMaterials = [];
     this.clearPaintOverlays();
+    // Stale logic planes would keep the previous map's dimensions; the caller
+    // re-enables the overlay after the rebuild.
+    this.disableLogicGridOverlay();
     if (this.mapPickPlane) {
       this.mapPickPlane.dispose();
       this.mapPickPlane = undefined;
@@ -1261,13 +1265,15 @@ export class BabylonEngine {
       return;
     }
 
-    // Batched path: create / refresh a pickable overlay plane above the cell.
+    // Batched path: create / refresh an overlay plane just above the cell.
     const key = `${layerIdx}_${r}_${c}`;
     let overlay = this.paintOverlayMeshes.get(key);
     const tileSize = this.currentTileSize || 1;
     const posX = (c - this.currentMapWidth / 2) * tileSize;
     const posZ = (this.currentMapHeight / 2 - r) * tileSize;
-    const y = layerIdx * 0.02 + 0.03;
+    // Batched layer `i` sits at `i * 0.02`. Stay inside our own layer's slot so
+    // painting layer 0 is not drawn over the art of layer 1+.
+    const y = layerIdx * 0.02 + 0.011;
 
     if (!overlay) {
       overlay = MeshBuilder.CreatePlane(
@@ -1310,7 +1316,10 @@ export class BabylonEngine {
   // --- LOGIC GRID OVERLAY SYSTEM ---
 
   private logicOverlayMeshes: Mesh[] = [];
-  
+  /** One material per logic id instead of one per cell — a 30×30 map used to
+   *  build 900 materials, which stalled every switch to the Logic layer. */
+  private logicMaterialCache: Map<number, StandardMaterial> = new Map();
+
   public enableLogicGridOverlay(logicGrid: number[][]) {
     if (this.logicOverlayMeshes.length > 0) {
       this.logicOverlayMeshes.forEach(m => m.dispose());
@@ -1324,7 +1333,7 @@ export class BabylonEngine {
     for (let r = 0; r < height; r++) {
       for (let c = 0; c < width; c++) {
         const logicId = logicGrid[r]?.[c] || 0;
-        
+
         const plane = MeshBuilder.CreatePlane(`logic_${r}_${c}`, { size: this.currentTileSize }, this.scene);
         plane.rotation.x = Math.PI / 2;
         const posX = (c - width / 2) * this.currentTileSize;
@@ -1332,12 +1341,8 @@ export class BabylonEngine {
         plane.position = new Vector3(posX, yOffset, posZ);
         plane.parent = this.rootNode;
         plane.isPickable = true; // IMPORTANT: intercept clicks
+        plane.material = this.getLogicMaterial(logicId);
 
-        const mat = new StandardMaterial(`logicMat_${r}_${c}`, this.scene);
-        mat.alpha = 0.5; // Semi-transparent
-        this.applyLogicMaterialColor(mat, logicId);
-        plane.material = mat;
-        
         this.logicOverlayMeshes.push(plane);
       }
     }
@@ -1348,72 +1353,168 @@ export class BabylonEngine {
     this.logicOverlayMeshes = [];
   }
 
-  public updateLogicTile(r: number, c: number, logicId: number) {
-    const plane = this.scene.getMeshByName(`logic_${r}_${c}`) as Mesh;
-    if (plane && plane.material) {
-      this.applyLogicMaterialColor(plane.material as StandardMaterial, logicId);
-    }
+  /** True once `enableLogicGridOverlay` has built the pickable logic planes. */
+  public hasLogicGridOverlay(): boolean {
+    return this.logicOverlayMeshes.length > 0;
+  }
+
+  /**
+   * Recolour one logic cell. Returns false when the overlay is not built, so the
+   * caller can rebuild it rather than leave the click with no visible result.
+   */
+  public updateLogicTile(r: number, c: number, logicId: number): boolean {
+    const plane = this.scene.getMeshByName(`logic_${r}_${c}`) as Mesh | null;
+    if (!plane) return false;
+    plane.material = this.getLogicMaterial(logicId);
+    return true;
+  }
+
+  private getLogicMaterial(logicId: number): StandardMaterial {
+    const cached = this.logicMaterialCache.get(logicId);
+    if (cached) return cached;
+    const mat = new StandardMaterial(`logicMat_${logicId}`, this.scene);
+    this.applyLogicMaterialColor(mat, logicId);
+    this.logicMaterialCache.set(logicId, mat);
+    return mat;
   }
 
   private applyLogicMaterialColor(mat: StandardMaterial, logicId: number) {
+    // Distinct, readable Studio colors (walkable stays visible enough to confirm paint).
     if (logicId === 0) {
-      mat.diffuseColor = Color3.FromHexString("#064e3b"); // Walkable (emerald-900)
-      mat.alpha = 0.2; // less visible
+      mat.diffuseColor = Color3.FromHexString("#10b981");
+      mat.alpha = 0.38;
     } else if (logicId === 1) {
-      mat.diffuseColor = Color3.FromHexString("#dc2626"); // Solid (red-600)
-      mat.alpha = 0.7;
+      mat.diffuseColor = Color3.FromHexString("#dc2626");
+      mat.alpha = 0.72;
     } else if (logicId === 2) {
-      mat.diffuseColor = Color3.FromHexString("#22c55e"); // Grass (green-500)
+      mat.diffuseColor = Color3.FromHexString("#22c55e");
       mat.alpha = 0.7;
     } else if (logicId === 3 || logicId === 4) {
-      mat.diffuseColor = Color3.FromHexString("#f59e0b"); // Gate (amber)
+      mat.diffuseColor = Color3.FromHexString("#f59e0b");
+      mat.alpha = 0.72;
+    } else if (logicId === 5) {
+      mat.diffuseColor = Color3.FromHexString("#92400e");
+      mat.alpha = 0.7;
+    } else if (logicId === 6) {
+      mat.diffuseColor = Color3.FromHexString("#78716c");
+      mat.alpha = 0.7;
+    } else if (logicId === 7) {
+      mat.diffuseColor = Color3.FromHexString("#eab308");
+      mat.alpha = 0.7;
+    } else if (logicId === 8) {
+      mat.diffuseColor = Color3.FromHexString("#ec4899");
+      mat.alpha = 0.7;
+    } else if (logicId === 9) {
+      mat.diffuseColor = Color3.FromHexString("#64748b");
+      mat.alpha = 0.7;
+    } else if (logicId === 10) {
+      mat.diffuseColor = Color3.FromHexString("#0284c7");
+      mat.alpha = 0.7;
+    } else if (logicId === 11) {
+      mat.diffuseColor = Color3.FromHexString("#3f6212");
+      mat.alpha = 0.72;
+    } else if (logicId === 12) {
+      mat.diffuseColor = Color3.FromHexString("#4338ca");
       mat.alpha = 0.7;
     } else {
-      mat.diffuseColor = Color3.FromHexString("#6366f1"); // Other nodes (indigo)
-      mat.alpha = 0.6;
+      // Stable hash so custom tags stay visually distinct.
+      const hue = ((logicId * 47) % 360) / 360;
+      mat.diffuseColor = Color3.FromHSV(hue * 360, 0.65, 0.9);
+      mat.alpha = 0.62;
     }
   }
 
-  public enableTilePicking(onTileClick: (r: number, c: number, layerIdx?: number) => void) {
-    this.scene.onPointerDown = (_evt, pickResult) => {
-      if (!pickResult.hit || !pickResult.pickedMesh) return;
+private resolveTilePick(
+    pickResult: { hit?: boolean; pickedMesh?: { name: string } | null; pickedPoint?: { x: number; z: number } | null } | null
+  ): { r: number; c: number; layerIdx: number } | null {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return null;
 
-      const name = pickResult.pickedMesh.name;
+    const name = pickResult.pickedMesh.name;
 
-      // Prefer named logic / legacy per-tile meshes when present.
-      if (name.startsWith('logic_') || name.startsWith('tile_')) {
-        const parts = name.split('_');
-        if (parts[0] === 'logic') {
-          const r = parseInt(parts[1], 10);
-          const c = parseInt(parts[2], 10);
-          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, -2);
-          return;
-        }
-        if (parts.length === 3) {
-          const r = parseInt(parts[1], 10);
-          const c = parseInt(parts[2], 10);
-          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, -1);
-          return;
-        }
-        if (parts.length === 4) {
-          const layerIdx = parseInt(parts[1], 10);
-          const r = parseInt(parts[2], 10);
-          const c = parseInt(parts[3], 10);
-          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, layerIdx);
-          return;
-        }
+    // Prefer named logic / legacy per-tile meshes when present.
+    if (name.startsWith('logic_') || name.startsWith('tile_')) {
+      const parts = name.split('_');
+      if (parts[0] === 'logic') {
+        const r = parseInt(parts[1], 10);
+        const c = parseInt(parts[2], 10);
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -2 };
+        return null;
       }
+      if (parts.length === 3) {
+        const r = parseInt(parts[1], 10);
+        const c = parseInt(parts[2], 10);
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -1 };
+        return null;
+      }
+      if (parts.length === 4) {
+        const layerIdx = parseInt(parts[1], 10);
+        const r = parseInt(parts[2], 10);
+        const c = parseInt(parts[3], 10);
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx };
+        return null;
+      }
+    }
 
-      // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
-      const point = pickResult.pickedPoint;
-      if (!point) return;
-      const tile = this.worldToTile(point.x, point.z);
-      if (tile) onTileClick(tile.r, tile.c, -1);
+    // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
+    // Ignore entity billboards — their picked points sit above the ground and
+    // resolve to the wrong cell (or off-map).
+    if (!isTilePickTarget(name)) return null;
+    const point = pickResult.pickedPoint;
+    if (!point) return null;
+    const tile = this.worldToTile(point.x, point.z);
+    if (!tile) return null;
+    return { r: tile.r, c: tile.c, layerIdx: -1 };
+  }
+
+  /**
+   * Enable click (+ optional drag) paint / move picking.
+   * Drag re-picks under the cursor so authors can stroke tiles continuously.
+   * Keep drag off for Walk Mode click-to-move so pointer moves do not repath.
+   */
+  public enableTilePicking(
+    onTileClick: (r: number, c: number, layerIdx?: number) => void,
+    options?: { drag?: boolean }
+  ) {
+    let isPainting = false;
+    let lastKey = '';
+    const allowDrag = !!options?.drag;
+
+    const emitFromScenePick = () => {
+      if (!this.scene) return;
+      const pickResult = this.scene.pick(
+        this.scene.pointerX,
+        this.scene.pointerY,
+        (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
+      );
+      const resolved = this.resolveTilePick(pickResult);
+      if (!resolved) return;
+      const key = `${resolved.r},${resolved.c}`;
+      if (key === lastKey) return;
+      lastKey = key;
+      onTileClick(resolved.r, resolved.c, resolved.layerIdx);
+    };
+
+    this.scene.onPointerDown = () => {
+      isPainting = true;
+      lastKey = '';
+      emitFromScenePick();
+    };
+
+    this.scene.onPointerUp = () => {
+      isPainting = false;
+      lastKey = '';
+    };
+
+    this.scene.onPointerMove = () => {
+      if (!allowDrag || !isPainting || !this.scene) return;
+      emitFromScenePick();
     };
   }
 
   public disableTilePicking() {
     this.scene.onPointerDown = undefined;
+    this.scene.onPointerUp = undefined;
+    this.scene.onPointerMove = undefined;
   }
 
   public getEntityMesh(entityId: string) {

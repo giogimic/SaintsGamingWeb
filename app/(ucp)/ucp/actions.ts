@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { PERMISSION_LEVELS, hasPermission } from "@/web/lib/permissions";
 
 export async function createCharacter(formData: FormData) {
   const session = await auth();
@@ -150,6 +151,16 @@ export async function updateForumPin(formData: FormData) {
 export async function toggleDevConsole(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  // The settings page hides this control below Developer, but the action itself
+  // was self-serve — any user could set their own devConsoleEnabled flag.
+  const actor = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { permissionLevel: true },
+  });
+  if (!actor || !hasPermission(actor.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) {
     throw new Error("Unauthorized");
   }
 
