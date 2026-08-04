@@ -10,7 +10,7 @@
 > - [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md) — Phase 1 isolation, entity/loot contracts, phased delivery
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth vs bible intent
 
-**This document is the master.** `08` owns layer physics truth. `16` owns feel. `17` owns Phase 1 contracts. `18` owns systems. [`19`](./19-studio-ux-design.md)–[`25`](./25-studio-gameplay-editors.md) cover UX through gameplay editors. [`26`](./26-studio-live-operations.md) owns **live operations** (hot reload, publish, deploy). [`27`](./27-studio-production-tools.md) owns the **production tools suite**. [`28`](./28-studio-backend-architecture.md) owns the **unified backend** (Prisma, services, cache, APIs, sockets, migrations). The `content_reload` bus in §7 is implemented per **26**/**28**.
+**This document is the master.** `08` owns layer physics truth. `16` owns feel. `17` owns Phase 1 contracts. `18` owns systems. [`19`](./19-studio-ux-design.md)–[`25`](./25-studio-gameplay-editors.md) cover UX through gameplay editors. [`26`](./26-studio-live-operations.md) owns **live operations**. [`27`](./27-studio-production-tools.md) owns **production tools**. [`28`](./28-studio-backend-architecture.md) owns the **unified backend**. [`29`](./29-studio-glossary-canonical.md)–[`33`](./33-studio-gap-closure-register.md) own **canonical names, editor kernel, integrations, commercial completeness, and gap closure** — when vocabulary conflicts, **29 wins**; when chrome conflicts, **30 wins**. The `content_reload` bus in §7 is **non-authoritative subset** of **29** §6 / **26**.
 
 ---
 

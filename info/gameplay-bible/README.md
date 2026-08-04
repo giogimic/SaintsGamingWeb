@@ -1,11 +1,11 @@
 # Saints Gaming — Gameplay Bible
 
-**Status:** Draft set + Studio architecture (17–28)  
+**Status:** Draft set + Studio architecture (17–33)  
 **Role:** Product + systems constitution for the MMO / engine / Studio  
 **Companion vision:** [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
 
 Read order for implementers: **01 → 07 → 06 → 12**, then topic docs as needed.  
-Always pair **08 + 16–28** for Studio work (`26` = live ops, `27` = production tools, `28` = backend). Always pair **02 + 07 + 11** for combat/capture.
+Studio commercial suite: **29 → 30 → 31 → 32 → 33**, then domain depth **08 + 16–28**. Always pair **02 + 07 + 11** for combat/capture.
 
 ---
 
@@ -41,6 +41,11 @@ Always pair **08 + 16–28** for Studio work (`26` = live ops, `27` = production
 | 26 | [`26-studio-live-operations.md`](./26-studio-live-operations.md) | **Live ops** — hot reload, publish, rollback, deploy |
 | 27 | [`27-studio-production-tools.md`](./27-studio-production-tools.md) | **Production tools** — projects, packages, search, deps, tasks, team, audit, l10n |
 | 28 | [`28-studio-backend-architecture.md`](./28-studio-backend-architecture.md) | **Backend** — Prisma, MariaDB, services, cache, APIs, sockets, migrations, tests |
+| 29 | [`29-studio-glossary-canonical.md`](./29-studio-glossary-canonical.md) | **Glossary** — normative names, modes, PanelIds, refs, SoT, reload events |
+| 30 | [`30-studio-editor-kernel-standard.md`](./30-studio-editor-kernel-standard.md) | **Editor kernel** — standardize every editor, Inspector, workflow; chrome errata |
+| 31 | [`31-studio-integration-contracts.md`](./31-studio-integration-contracts.md) | **Integrations** — every system↔system sequence |
+| 32 | [`32-studio-commercial-completeness.md`](./32-studio-commercial-completeness.md) | **Commercial bar** — collab, VC, recovery, l10n, CI, PIE, plugins, telemetry |
+| 33 | [`33-studio-gap-closure-register.md`](./33-studio-gap-closure-register.md) | **Gap register** — audit findings closed; no open architectural holes |
 
 ## Alignment
 

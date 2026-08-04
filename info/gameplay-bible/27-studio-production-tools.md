@@ -9,6 +9,7 @@
 > - [`18`](./18-studio-master-architecture.md) — registries & reuse rules
 > - [`19`](./19-studio-ux-design.md) — chrome, Ctrl+K, docks
 > - [`28-studio-backend-architecture.md`](./28-studio-backend-architecture.md) — APIs, audit table, search index, packages persistence
+> - [`29`](./29-studio-glossary-canonical.md)–[`30`](./30-studio-editor-kernel-standard.md) — PanelIds + CatalogEditorShell for every production dock
 > - Site RBAC: `src/web/lib/permissions.ts`, `info/admin/PERMISSIONS.md`
 
 **This document is the production-tools master.** Evolve World profiles, Asset Browser, `studioPermissions`, Dev Tools metrics, `docs/`/`info/` — do not invent a second IDE outside `/studio`.

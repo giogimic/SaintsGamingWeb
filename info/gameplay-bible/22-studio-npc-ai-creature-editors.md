@@ -6,14 +6,16 @@
 
 > **Companions (do not fork)**
 > - [`15-quests-dialogue-npc-ai.md`](./15-quests-dialogue-npc-ai.md) — dialogue/quest/FSM philosophy
-> - [`24-studio-quest-editor.md`](./24-studio-quest-editor.md) — **complete quest editor** (graphs, schedules, testing)
+> - [`24-studio-quest-editor.md`](./24-studio-quest-editor.md) — **complete quest editor** (graphs, schedules, testing); **supersedes §3.9 objective/reward sketches**
+> - [`29`](./29-studio-glossary-canonical.md) — `aiProfileId`, ResourceRef, RewardBundle (no `gold`)
+> - [`31`](./31-studio-integration-contracts.md) — NPC↔quest↔dialogue↔loot wiring
 > - [`18`](./18-studio-master-architecture.md) — registries, hot-reload
-> - [`19`](./19-studio-ux-design.md) — docks, Inspector, graphs, shortcuts
+> - [`19`](./19-studio-ux-design.md) · [`30`](./30-studio-editor-kernel-standard.md) — docks / Inspector kernel
 > - [`20`](./20-studio-entity-system.md) — entity components / prefabs / spawners
 > - [`21`](./21-studio-world-building-tools.md) — place vs paint; spawn regions
 > - [`07`](./07-technical-economic-rules.md) / [`11`](./11-turn-based-battle-engine.md) — capture & combat constitution
 
-**This document is the NPC/AI/creature editor master.** Quest graph/schedules/cutscenes/testing detail: **`24`**. Evolve existing docks — do not invent parallel “AI Studio” apps.
+**This document is the NPC/AI/creature editor master.** Quest graph/schedules/cutscenes/testing detail: **`24`**. Objective types & rewards: **`24` + `29` RewardBundle** (ignore stale `gold` / partial enums in §3.9). Evolve existing docks — do not invent parallel “AI Studio” apps.
 
 ---
 
@@ -418,14 +420,8 @@ type QuestObjectiveDoc = {
   mapId?: string;
 };
 
-type QuestRewardsDoc = {
-  xp?: number;
-  gold?: number;
-  items?: Array<{ slug: string; qty: number }>;
-  nextQuest?: string;
-  reputation?: ReputationAdjust[];
-  unlockFlags?: string[];
-};
+type QuestRewardsDoc = RewardBundle; // canonical — see 29 §7 / 31 §1 (no authoring field `gold`)
+// Historical sketch removed: { xp?, gold?, items? } — do not implement gold
 
 type QuestTemplateDoc = {
   slug: string;
