@@ -1,11 +1,11 @@
 # Saints Gaming — Gameplay Bible
 
-**Status:** Draft set + Studio architecture (17–23)  
+**Status:** Draft set + Studio architecture (17–24)  
 **Role:** Product + systems constitution for the MMO / engine / Studio  
 **Companion vision:** [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
 
 Read order for implementers: **01 → 07 → 06 → 12**, then topic docs as needed.  
-Always pair **08 + 16 + 17 + 18 + 19 + 20 + 21 + 22 + 23** for Studio work (`23` = economy). Always pair **02 + 07 + 11** for combat/capture.
+Always pair **08 + 16–24** for Studio work (`24` = quest editor). Always pair **02 + 07 + 11** for combat/capture.
 
 ---
 
@@ -36,6 +36,7 @@ Always pair **08 + 16 + 17 + 18 + 19 + 20 + 21 + 22 + 23** for Studio work (`23`
 | 21 | [`21-studio-world-building-tools.md`](./21-studio-world-building-tools.md) | **World-building tools** — terrain through save workflows |
 | 22 | [`22-studio-npc-ai-creature-editors.md`](./22-studio-npc-ai-creature-editors.md) | **NPC / AI / Creature editors** — dialogue, quests, bosses, events |
 | 23 | [`23-studio-economy-system.md`](./23-studio-economy-system.md) | **Economy** — items, loot, craft, trade, modifiers |
+| 24 | [`24-studio-quest-editor.md`](./24-studio-quest-editor.md) | **Quest editor** — chains, graphs, schedules, testing |
 
 ## Alignment
 
