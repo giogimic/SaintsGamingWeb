@@ -37,9 +37,9 @@ Full audit: `logs/2026-08-04-duplicate-systems-audit.md`
 
 ## Studio foundation (unchanged goals)
 
-**Game engine editor** — Phase 1–**2e** on `main` (Editor/Playtest, catalogs incl. **Starter Heroes** on CatalogEditorShell, avatar-free author session). See `logs/studio-first-hybrid-foundation.md`.
+**Game engine editor** — Phase 1–**2f** on `main` (catalogs, author session, **PIE private shard**). See `logs/studio-first-hybrid-foundation.md` · `logs/2026-08-04-studio-pie-shard.md`.
 
-**Checkpoint:** `/studio` opens DEMO as author. Characters dock = Heroes catalog chrome. Dock **Hero** optional for Playtest character.
+**Checkpoint:** Playtest joins `studio_pie_{userId}`; Studio author uses private map instance (not lobby DEMO_chN).
 
 **World profiles + Saints Trail + Viewfinder UI (on `main`)**
 

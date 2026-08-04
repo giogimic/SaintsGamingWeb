@@ -21,7 +21,8 @@ Tests after strip + follow-ups: **191 pass**, lint clean.
 | Route | Map join behavior |
 | :--- | :--- |
 | **`/lobby`** | Always multiplayer map **`DEMO_SANDBOX`**. `join_map` sends `lobby: true`. Server forces `DEMO_MAP_ID`. Off-DEMO gate warps blocked. |
-| **`/studio`** | Keeps character/author map (except retired `SAINTS_VILLAGE` → DEMO). `join_map` sends `lobby: false` / omits force. Gate warps allowed. |
+| **`/studio`** | Keeps character/author map (except retired `SAINTS_VILLAGE` → DEMO). `join_map` sends `lobby: false` + `isPrivate: true` (author). Playtest sends `pie: true` → `studio_pie_{userId}`. Gate warps allowed. |
+
 
 - Client: `index.tsx` (`enableStudio`), `GameCanvasBabylon.tsx` (`getIsEditorMode()`)
 - Server: `PlayerManager.resolvePlayableMapId(..., { lobby })` when `data.lobby === true`

@@ -166,10 +166,10 @@ export const StudioEditorShell: React.FC = () => {
         <div className="sg-glass max-w-md rounded-2xl border border-emerald-500/30 bg-[#050b14]/95 px-4 py-3 text-center shadow-2xl">
           <div className="flex items-center justify-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-300">
             <Footprints className="h-4 w-4" />
-            Playtest · Live viewport
+            Playtest · PIE private shard
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-            Gameplay systems are on. Editor tools stay frozen until you stop playtest.
+            Gameplay systems are on. Isolated from public lobby DEMO. Editor tools stay frozen until you stop playtest.
           </p>
         </div>
         <button

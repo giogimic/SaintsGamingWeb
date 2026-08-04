@@ -34,6 +34,10 @@ import {
   shouldShowGameplayHud,
   shouldSuppressGameplaySystems,
 } from '@/shared/game/studioSession';
+import {
+  STUDIO_PIE_CHANGED_EVENT,
+  type StudioPieChangedDetail,
+} from '@/shared/game/studioEvents';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -179,6 +183,8 @@ export default function TheLobby({
         accountId: session?.user?.id || charId,
         mapId: toBaseMapId(validMapId),
         lobby: !enableStudio,
+        isPrivate: enableStudio,
+        pie: enableStudio && !useEditorStore.getState().isCreationMode,
         x: validPosition.x,
         y: validPosition.y,
         name: res.data.name,
@@ -251,6 +257,8 @@ export default function TheLobby({
         accountId,
         mapId: toBaseMapId(validMapId),
         lobby: false, // Studio must not force DEMO_SANDBOX multiplayer shard
+        isPrivate: true, // Isolate author from public DEMO channels
+        pie: false,
         x: validPosition.x,
         y: validPosition.y,
         name: authorName,
@@ -402,6 +410,8 @@ export default function TheLobby({
             ? toBaseMapId(state.currentMapId || 'DEMO_SANDBOX')
             : 'DEMO_SANDBOX',
           lobby: !enableStudio,
+          isPrivate: enableStudio,
+          pie: enableStudio && !useEditorStore.getState().isCreationMode,
           x: state.player.position?.x ?? 6,
           y: state.player.position?.y ?? 2,
           name: state.player.name || 'Player',
@@ -983,12 +993,41 @@ export default function TheLobby({
       accountId: session.user.id,
       mapId,
       lobby: !enableStudio,
+      isPrivate: enableStudio,
+      pie: enableStudio && !useEditorStore.getState().isCreationMode,
       x: state.player.position?.x ?? 14,
       y: state.player.position?.y ?? 15,
       name: state.player.name || 'Player',
       spriteId: state.player.spriteId || 'adventurer',
     });
   }, [activeCharacterId, status, session?.user?.id, enableStudio]);
+
+  // Studio PIE — rejoin private playtest shard / author private shard on Play ↔ Editor.
+  useEffect(() => {
+    if (!enableStudio) return;
+    const onPieChanged = (ev: Event) => {
+      const pie = (ev as CustomEvent<StudioPieChangedDetail>).detail?.pie === true;
+      const socket = socketRef.current;
+      const accountId = session?.user?.id;
+      if (!socket?.connected || !accountId) return;
+      const state = useGameStore.getState();
+      if (state.gameMode !== 'EXPLORING' && state.gameMode !== 'BATTLE') return;
+      socket.emit('join_map', {
+        accountId,
+        mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
+        lobby: false,
+        isPrivate: !pie,
+        pie,
+        x: state.player.position?.x ?? 14,
+        y: state.player.position?.y ?? 15,
+        name: state.player.name || 'Studio Author',
+        spriteId: state.player.spriteId || 'adventurer',
+      });
+      state.showToast(pie ? 'PIE — private playtest shard' : 'Editor — private author shard');
+    };
+    window.addEventListener(STUDIO_PIE_CHANGED_EVENT, onPieChanged as EventListener);
+    return () => window.removeEventListener(STUDIO_PIE_CHANGED_EVENT, onPieChanged as EventListener);
+  }, [enableStudio, session?.user?.id]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
