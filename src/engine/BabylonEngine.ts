@@ -21,6 +21,7 @@ import {
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
 import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
+import { isTilePickTarget } from "../shared/game/tilePaint";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -602,6 +603,9 @@ export class BabylonEngine {
     this.objectMeshes = [];
     this.waterMaterials = [];
     this.clearPaintOverlays();
+    // Stale logic planes would keep the previous map's dimensions; the caller
+    // re-enables the overlay after the rebuild.
+    this.disableLogicGridOverlay();
     if (this.mapPickPlane) {
       this.mapPickPlane.dispose();
       this.mapPickPlane = undefined;
@@ -1261,13 +1265,15 @@ export class BabylonEngine {
       return;
     }
 
-    // Batched path: create / refresh a pickable overlay plane above the cell.
+    // Batched path: create / refresh an overlay plane just above the cell.
     const key = `${layerIdx}_${r}_${c}`;
     let overlay = this.paintOverlayMeshes.get(key);
     const tileSize = this.currentTileSize || 1;
     const posX = (c - this.currentMapWidth / 2) * tileSize;
     const posZ = (this.currentMapHeight / 2 - r) * tileSize;
-    const y = layerIdx * 0.02 + 0.03;
+    // Batched layer `i` sits at `i * 0.02`. Stay inside our own layer's slot so
+    // painting layer 0 is not drawn over the art of layer 1+.
+    const y = layerIdx * 0.02 + 0.011;
 
     if (!overlay) {
       overlay = MeshBuilder.CreatePlane(
@@ -1310,7 +1316,10 @@ export class BabylonEngine {
   // --- LOGIC GRID OVERLAY SYSTEM ---
 
   private logicOverlayMeshes: Mesh[] = [];
-  
+  /** One material per logic id instead of one per cell — a 30×30 map used to
+   *  build 900 materials, which stalled every switch to the Logic layer. */
+  private logicMaterialCache: Map<number, StandardMaterial> = new Map();
+
   public enableLogicGridOverlay(logicGrid: number[][]) {
     if (this.logicOverlayMeshes.length > 0) {
       this.logicOverlayMeshes.forEach(m => m.dispose());
@@ -1324,7 +1333,7 @@ export class BabylonEngine {
     for (let r = 0; r < height; r++) {
       for (let c = 0; c < width; c++) {
         const logicId = logicGrid[r]?.[c] || 0;
-        
+
         const plane = MeshBuilder.CreatePlane(`logic_${r}_${c}`, { size: this.currentTileSize }, this.scene);
         plane.rotation.x = Math.PI / 2;
         const posX = (c - width / 2) * this.currentTileSize;
@@ -1332,12 +1341,8 @@ export class BabylonEngine {
         plane.position = new Vector3(posX, yOffset, posZ);
         plane.parent = this.rootNode;
         plane.isPickable = true; // IMPORTANT: intercept clicks
+        plane.material = this.getLogicMaterial(logicId);
 
-        const mat = new StandardMaterial(`logicMat_${r}_${c}`, this.scene);
-        mat.alpha = 0.5; // Semi-transparent
-        this.applyLogicMaterialColor(mat, logicId);
-        plane.material = mat;
-        
         this.logicOverlayMeshes.push(plane);
       }
     }
@@ -1348,11 +1353,29 @@ export class BabylonEngine {
     this.logicOverlayMeshes = [];
   }
 
-  public updateLogicTile(r: number, c: number, logicId: number) {
-    const plane = this.scene.getMeshByName(`logic_${r}_${c}`) as Mesh;
-    if (plane && plane.material) {
-      this.applyLogicMaterialColor(plane.material as StandardMaterial, logicId);
-    }
+  /** True once `enableLogicGridOverlay` has built the pickable logic planes. */
+  public hasLogicGridOverlay(): boolean {
+    return this.logicOverlayMeshes.length > 0;
+  }
+
+  /**
+   * Recolour one logic cell. Returns false when the overlay is not built, so the
+   * caller can rebuild it rather than leave the click with no visible result.
+   */
+  public updateLogicTile(r: number, c: number, logicId: number): boolean {
+    const plane = this.scene.getMeshByName(`logic_${r}_${c}`) as Mesh | null;
+    if (!plane) return false;
+    plane.material = this.getLogicMaterial(logicId);
+    return true;
+  }
+
+  private getLogicMaterial(logicId: number): StandardMaterial {
+    const cached = this.logicMaterialCache.get(logicId);
+    if (cached) return cached;
+    const mat = new StandardMaterial(`logicMat_${logicId}`, this.scene);
+    this.applyLogicMaterialColor(mat, logicId);
+    this.logicMaterialCache.set(logicId, mat);
+    return mat;
   }
 
   private applyLogicMaterialColor(mat: StandardMaterial, logicId: number) {
@@ -1375,10 +1398,18 @@ export class BabylonEngine {
   }
 
   public enableTilePicking(onTileClick: (r: number, c: number, layerIdx?: number) => void) {
-    this.scene.onPointerDown = (_evt, pickResult) => {
-      if (!pickResult.hit || !pickResult.pickedMesh) return;
+    this.scene.onPointerDown = () => {
+      // Re-pick against map surfaces only. The default pick can land on a
+      // billboarded `entity_*` sprite, whose picked point is metres above the
+      // ground and resolves to the wrong cell (or off-map, dropping the click).
+      const pick = this.scene.pick(
+        this.scene.pointerX,
+        this.scene.pointerY,
+        (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
+      );
+      if (!pick?.hit || !pick.pickedMesh) return;
 
-      const name = pickResult.pickedMesh.name;
+      const name = pick.pickedMesh.name;
 
       // Prefer named logic / legacy per-tile meshes when present.
       if (name.startsWith('logic_') || name.startsWith('tile_')) {
@@ -1404,8 +1435,8 @@ export class BabylonEngine {
         }
       }
 
-      // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
-      const point = pickResult.pickedPoint;
+      // Batched tilesets (`tileset_mesh_*`) and the full-map pick plane.
+      const point = pick.pickedPoint;
       if (!point) return;
       const tile = this.worldToTile(point.x, point.z);
       if (tile) onTileClick(tile.r, tile.c, -1);

@@ -18,6 +18,13 @@ import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { normalizeGates } from '@/shared/game/logicComponents';
+import { useEditorStore } from '../editor/editor-store';
+import {
+  LOGIC_LAYER_IDX,
+  isPaintableLogicId,
+  paintCell,
+  resolvePaintTarget,
+} from '@/shared/game/tilePaint';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -115,6 +122,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       });
     });
   }, [currentMapId, activeMapData]);
+
+  // Studio paints by mutating `mapData` in place, and Save Map reads
+  // `activeMapData` from the store. When this component loaded the map itself
+  // the two were different objects, so every stroke was silently dropped on
+  // save. Publish the loaded map so both sides share one reference.
+  useEffect(() => {
+    if (!isDevEditorOpen || !mapData) return;
+    if (useGameStore.getState().activeMapData) return;
+    useGameStore.getState().setActiveMapData(mapData);
+  }, [isDevEditorOpen, mapData]);
 
   // Derive dimensions — use loaded map data or safe defaults
   const activeMap = mapData as any;
@@ -431,16 +448,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener('lobby_tile_changed', handleTileChanged);
     };
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
-
-  useEffect(() => {
-    if (engineRef.current) {
-      if (activeLayerIdx === -1) {
-        engineRef.current.enableLogicGridOverlay(activeMap?.grid || []);
-      } else {
-        engineRef.current.disableLogicGridOverlay();
-      }
-    }
-  }, [activeLayerIdx, activeMap]);
 
   useEffect(() => {
     // Wait until map data is fully loaded from the API before mounting engine
@@ -769,47 +776,60 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }, [activeMap]);
 
 
+  // Logic (−1) overlay. Declared after the engine-mount effect on purpose:
+  // React runs every cleanup for a commit before any setup, so an earlier
+  // declaration saw `engineRef.current === null` on a mapData change and the
+  // overlay was never rebuilt — logic clicks then registered with no visible
+  // result for the rest of the session.
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (activeLayerIdx === LOGIC_LAYER_IDX) {
+      engine.enableLogicGridOverlay(activeMap?.grid || []);
+    } else {
+      engine.disableLogicGridOverlay();
+    }
+  }, [activeLayerIdx, mapData, activeMap]);
+
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
 
     if (isDevEditorOpen) {
-      engine.enableTilePicking((r, c, clickedLayerIdx) => {
-        if (activeLayerIdx === -1) {
-          // Painting Logic layer (collision / authority grid) — bible layer −1
-          if (activeMap?.grid?.[r]) {
-            activeMap.grid[r][c] = activeBrushTileId;
-            engine.updateLogicTile(r, c, activeBrushTileId);
+      engine.enableTilePicking((r, c) => {
+        const target = resolvePaintTarget(activeMap, activeLayerIdx);
+        if (target.kind === 'unavailable') {
+          showToast(target.reason);
+          return;
+        }
+
+        if (target.kind === 'logic') {
+          const logicId = useEditorStore.getState().activeLogicTileId;
+          const logicTiles = useGameStore.getState().logicTiles;
+          if (!isPaintableLogicId(logicTiles, logicId)) {
+            showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
+            return;
+          }
+          if (!paintCell(activeMap, target, r, c, logicId)) {
+            showToast(`Cell (${c}, ${r}) is outside the logic grid.`);
+            return;
+          }
+          if (onMapClick) onMapClick(r, c);
+          // A missing overlay means the engine was rebuilt under us; rebuild and retry.
+          if (!engine.updateLogicTile(r, c, logicId)) {
+            engine.enableLogicGridOverlay(activeMap?.grid || []);
+            engine.updateLogicTile(r, c, logicId);
           }
           return;
         }
 
-        if (onMapClick) onMapClick(r, c);
-
-        const targetLayerIdx = activeLayerIdx >= 0 ? activeLayerIdx : (clickedLayerIdx || 0);
-        
-        // Always try to use the rich tileset array if present
-        if (targetLayerIdx !== -1 && activeMap?.tileLayers?.[targetLayerIdx]) {
-          engine.updateSingleTile(r, c, activeBrushTileId, targetLayerIdx, activeMap.tilesets);
-          activeMap.tileLayers[targetLayerIdx].grid[r][c] = activeBrushTileId;
-        } else if (targetLayerIdx !== -1 && (!activeMap?.tilesets || activeMap.tilesets.length === 0)) {
-          // Empty tilesets → paint overlays cannot render (PR #18 path). Need bootstrap.
-          showToast('Map has no tilesets — open World Builder or Save after seed bootstrap.');
-        } else if (targetLayerIdx !== -1) {
-          // Has tilesets but missing layer — fall back to logic grid only for persistence
-          showToast('No visual layer at this index — Add Layer in World Builder, or switch to Logic (−1).');
-          engine.updateSingleTile(r, c, activeBrushTileId);
-          if (activeMap?.grid?.[r]) {
-            activeMap.grid[r][c] = activeBrushTileId;
-          }
-        } else {
-          // Fallback to legacy single grid
-          engine.updateSingleTile(r, c, activeBrushTileId);
-          if (activeMap?.grid?.[r]) {
-            activeMap.grid[r][c] = activeBrushTileId;
-          }
+        if (!paintCell(activeMap, target, r, c, activeBrushTileId)) {
+          showToast(`Cell (${c}, ${r}) is outside layer ${target.layerIdx}.`);
+          return;
         }
+        if (onMapClick) onMapClick(r, c);
+        engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, activeMap.tilesets);
       });
     } else {
       // Click-to-move in exploration mode with Pathfinding

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { DEFAULT_WORLD_PROFILE_ID } from '@/shared/game/worldProfiles';
+import { DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import {
   extractPanelLayouts,
   loadPanelLayoutsFromStorage,
@@ -47,7 +48,12 @@ interface EditorState {
   panelLayoutsHydrated: boolean;
   
   // Editor Tools State
+  /** Visual GID brush for `tileLayers` (layer >= 0). */
   activeBrushTileId: number;
+  /** MapLogicTile id brush for the Logic layer (−1). Deliberately separate from
+   *  `activeBrushTileId`: a tileset GID is not a valid logic id, and painting one
+   *  into the logic grid makes `validateMapSave` reject the whole map. */
+  activeLogicTileId: number;
   activeLayerIdx: number;
   clickedTile: { r: number; c: number } | null;
   
@@ -68,6 +74,7 @@ interface EditorState {
   hydratePanelLayouts: () => void;
   
   setActiveBrushTileId: (id: number) => void;
+  setActiveLogicTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
 }
@@ -126,7 +133,8 @@ export const useEditorStore = create<EditorState>()(
       activePanel: null,
       highestZIndex: 10,
       panelLayoutsHydrated: false,
-      activeBrushTileId: 1,
+      activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
+      activeLogicTileId: 1,
       activeLayerIdx: 0,
       clickedTile: null,
 
@@ -242,6 +250,7 @@ export const useEditorStore = create<EditorState>()(
       }),
 
       setActiveBrushTileId: (id) => set((state) => { state.activeBrushTileId = id; }),
+      setActiveLogicTileId: (id) => set((state) => { state.activeLogicTileId = id; }),
       setActiveLayerIdx: (idx) => set((state) => { state.activeLayerIdx = idx; }),
       setClickedTile: (tile) => set((state) => { state.clickedTile = tile; })
     }))
