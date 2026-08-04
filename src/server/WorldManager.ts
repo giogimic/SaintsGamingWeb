@@ -1,5 +1,6 @@
 import { GameEngine } from "./GameEngine";
 import { toBaseMapId } from "@/shared/net/mapIds";
+import { studioPieRoomId } from "@/shared/game/studioSession";
 import { DEMO_MAP_ID, DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
 // Using require for legacy JS modules (they can be converted to TS later)
