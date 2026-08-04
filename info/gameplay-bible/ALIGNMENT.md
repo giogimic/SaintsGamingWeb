@@ -1,7 +1,7 @@
 # Gameplay Bible ↔ Codebase Alignment
 
-**Date:** 2026-08-04 (Slice D architecture through world-building tools)  
-**Bible:** `info/gameplay-bible/` (21 pages)  
+**Date:** 2026-08-04 (Slice D through NPC/AI/creature editors)  
+**Bible:** `info/gameplay-bible/` (22 pages)  
 **Purpose:** Honest status for “continue till complete” — what exists, what conflicts, what to build next.
 
 > Roadmap checkboxes in `12-demo-vertical-slice-roadmap.md` are **aspirational product intent**. This file is the **engineering truth**.
@@ -102,7 +102,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 ## Immediate next decision for product owner
 
 Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
-Slice **D** docs through **21** (architecture, UX, entities, world-building tools) landed. Next code: **19 UX-1** + **21 WB1** + **20 E1**. Or **E** (website ↔ game).  
+Slice **D** docs through **22** landed. Next code: **19 UX-1** + **21 WB1** + **20 E1** + **22 NAC1**. Or **E** (website ↔ game).  
 Human smoke: Studio Build → Loot Manager create pool → Walk Mode play-test; claim Rockitten → TB capture.
 
 ---

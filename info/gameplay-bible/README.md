@@ -1,11 +1,11 @@
 # Saints Gaming — Gameplay Bible
 
-**Status:** Draft set + Studio architecture (17–21)  
+**Status:** Draft set + Studio architecture (17–22)  
 **Role:** Product + systems constitution for the MMO / engine / Studio  
 **Companion vision:** [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
 
 Read order for implementers: **01 → 07 → 06 → 12**, then topic docs as needed.  
-Always pair **08 + 16 + 17 + 18 + 19 + 20 + 21** for editor/world-building work (`18` systems, `19` UX, `20` entities, `21` world tools). Always pair **02 + 07 + 11** for combat/capture.
+Always pair **08 + 16 + 17 + 18 + 19 + 20 + 21 + 22** for editor work (`22` = NPC/AI/creature editors). Always pair **02 + 07 + 11** for combat/capture.
 
 ---
 
@@ -34,6 +34,7 @@ Always pair **08 + 16 + 17 + 18 + 19 + 20 + 21** for editor/world-building work 
 | 19 | [`19-studio-ux-design.md`](./19-studio-ux-design.md) | **Complete UX** — every dock, tool, shortcut, workflow |
 | 20 | [`20-studio-entity-system.md`](./20-studio-entity-system.md) | **Entity system** — components, prefabs, lifecycle, runtime |
 | 21 | [`21-studio-world-building-tools.md`](./21-studio-world-building-tools.md) | **World-building tools** — terrain through save workflows |
+| 22 | [`22-studio-npc-ai-creature-editors.md`](./22-studio-npc-ai-creature-editors.md) | **NPC / AI / Creature editors** — dialogue, quests, bosses, events |
 
 ## Alignment
 

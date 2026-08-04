@@ -10,7 +10,7 @@
 > - [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md) — Phase 1 isolation, entity/loot contracts, phased delivery
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth vs bible intent
 
-**This document is the master.** `08` owns layer physics truth. `16` owns feel. `17` owns Phase 1 contracts. `18` owns **system inventory, unification rules, subsystem specs, and how every future feature plugs in**. [`19`](./19-studio-ux-design.md) owns authoring chrome. [`20`](./20-studio-entity-system.md) owns entities/prefabs. [`21`](./21-studio-world-building-tools.md) owns **every world-building tool and paint→save workflow**.
+**This document is the master.** `08` owns layer physics truth. `16` owns feel. `17` owns Phase 1 contracts. `18` owns systems. [`19`](./19-studio-ux-design.md) UX · [`20`](./20-studio-entity-system.md) entities · [`21`](./21-studio-world-building-tools.md) world tools · [`22`](./22-studio-npc-ai-creature-editors.md) **NPC/AI/creature editors & data**.
 
 ---
 
