@@ -10,7 +10,7 @@
 > - [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md) — Phase 1 isolation, entity/loot contracts, phased delivery
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth vs bible intent
 
-**This document is the master.** `08` owns layer physics truth. `16` owns feel. `17` owns Phase 1 contracts. `18` owns systems. [`19`](./19-studio-ux-design.md)–[`25`](./25-studio-gameplay-editors.md) cover UX through gameplay editors. [`26`](./26-studio-live-operations.md) owns **live operations** (hot reload, publish, deploy). The `content_reload` bus in §7 is implemented per **26**.
+**This document is the master.** `08` owns layer physics truth. `16` owns feel. `17` owns Phase 1 contracts. `18` owns systems. [`19`](./19-studio-ux-design.md)–[`25`](./25-studio-gameplay-editors.md) cover UX through gameplay editors. [`26`](./26-studio-live-operations.md) owns **live operations** (hot reload, publish, deploy). [`27`](./27-studio-production-tools.md) owns the **production tools suite** (projects, packages, search, deps, tasks, team, audit, l10n). The `content_reload` bus in §7 is implemented per **26**.
 
 ---
 
