@@ -261,11 +261,24 @@ export default function TheLobby({
   useEffect(() => {
     if (status === 'authenticated') {
       setPermissionLevel(session?.user?.permissionLevel ?? 0);
-      loadCharactersList().then(() => {
+      loadCharactersList().then((chars) => {
         if (initialCharacterId && isInitializing) {
           selectAndLoadCharacter(initialCharacterId);
         } else if (isInitializing) {
           setIsInitializing(false);
+          // Studio: skip title splash — go to character select (or server select if empty).
+          // Title "ENTER WORLD" was easy to miss / feel broken when already logged in.
+          if (enableStudio) {
+            const mode = useGameStore.getState().gameMode;
+            if (mode === 'TITLE_SCREEN' || mode === 'LOGIN') {
+              if (chars.length > 0) {
+                setShowSelector(true);
+                useGameStore.getState().setGameMode('CHARACTER_SELECT');
+              } else {
+                useGameStore.getState().setGameMode('SERVER_SELECT');
+              }
+            }
+          }
         }
       });
     } else if (status === 'unauthenticated') {
@@ -274,7 +287,7 @@ export default function TheLobby({
         setIsInitializing(false);
       }
     }
-  }, [status, initialCharacterId, isInitializing, session?.user?.permissionLevel]);
+  }, [status, initialCharacterId, isInitializing, session?.user?.permissionLevel, enableStudio]);
 
   // Handle fallback events like unauthorized creation
   useEffect(() => {

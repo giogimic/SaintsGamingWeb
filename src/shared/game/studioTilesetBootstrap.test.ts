@@ -27,26 +27,44 @@ describe("ensureMapHasStudioTilesets", () => {
     expect(next.tilesets).toEqual(DEFAULT_STUDIO_TILESETS);
   });
 
-  it("refills all-zero Ground that would render black", () => {
+  it("upgrades legacy GID-1 stair fill to solid grass", () => {
     const map = {
-      grid: [
-        [0, 0],
-        [0, 0],
-      ],
+      grid: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => 0)),
       tileLayers: [
         {
           name: "Ground",
-          grid: [
-            [0, 0],
-            [0, 0],
-          ],
+          grid: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => 1)),
+        },
+      ],
+      tilesets: [...DEFAULT_STUDIO_TILESETS],
+    };
+    const next = ensureMapHasStudioTilesets(map);
+    expect(next.tileLayers![0].grid.every((row: number[]) => row.every((c: number) => c === DEFAULT_STUDIO_GROUND_GID))).toBe(
+      true
+    );
+  });
+
+  it("refills sparse Ground that would render nearly black", () => {
+    const map = {
+      grid: Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => 0)),
+      tileLayers: [
+        {
+          name: "Ground",
+          grid: Array.from({ length: 10 }, (_, r) =>
+            Array.from({ length: 10 }, (_, c) => (r === 0 && c < 3 ? 42 + c : 0))
+          ),
         },
       ],
       tilesets: [...DEFAULT_STUDIO_TILESETS],
     };
     const next = ensureMapHasStudioTilesets(map);
     expect(isVisualTileLayersBlank(next.tileLayers)).toBe(false);
-    expect(next.tileLayers![0].grid[0][0]).toBe(DEFAULT_STUDIO_GROUND_GID);
+    // Preserves the 3 painted brush cells
+    expect(next.tileLayers![0].grid[0][0]).toBe(42);
+    expect(next.tileLayers![0].grid[0][1]).toBe(43);
+    expect(next.tileLayers![0].grid[0][2]).toBe(44);
+    // Fills the rest
+    expect(next.tileLayers![0].grid[5][5]).toBe(DEFAULT_STUDIO_GROUND_GID);
   });
 
   it("leaves rich maps alone", () => {

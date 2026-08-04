@@ -22,18 +22,94 @@ export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
   { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
 ];
 
-/** Terrain_by_George firstgid — visible default fill for sandboxes. */
-export const DEFAULT_STUDIO_GROUND_GID = 1;
+/**
+ * Solid grass on Terrain_by_George (localId 16 → GID 17).
+ * Do NOT use GID 1 — that is a stair fragment and renders as green wedges on black.
+ */
+export const DEFAULT_STUDIO_GROUND_GID = 17;
+
+/** Old bootstrap fill — stair fragment tiles. */
+export const LEGACY_BAD_GROUND_GIDS = new Set([1]);
+
+/** Fraction of non-zero cells below which a layer is treated as an empty sandbox. */
+export const STUDIO_GROUND_FILL_DENSITY = 0.05;
+
+export function countVisualGids(
+  layers: Array<{ grid?: number[][] }> | null | undefined
+): { total: number; nonzero: number } {
+  let total = 0;
+  let nonzero = 0;
+  if (!Array.isArray(layers)) return { total: 0, nonzero: 0 };
+  for (const layer of layers) {
+    const grid = layer?.grid;
+    if (!Array.isArray(grid)) continue;
+    for (const row of grid) {
+      if (!Array.isArray(row)) continue;
+      for (const cell of row) {
+        total += 1;
+        if (cell) nonzero += 1;
+      }
+    }
+  }
+  return { total, nonzero };
+}
 
 export function isVisualTileLayersBlank(
   layers: Array<{ grid?: number[][] }> | null | undefined
 ): boolean {
   if (!Array.isArray(layers) || layers.length === 0) return true;
-  return layers.every((layer) => {
+  const { total, nonzero } = countVisualGids(layers);
+  if (total === 0) return true;
+  // Nearly-empty sandboxes (e.g. 3 painted tiles on 30×30) still look black.
+  if (nonzero / total < STUDIO_GROUND_FILL_DENSITY) return true;
+  return isLegacyBadGroundFill(layers);
+}
+
+/** True when ≥90% of cells are the old stair-fragment GID 1 fill. */
+export function isLegacyBadGroundFill(
+  layers: Array<{ grid?: number[][] }> | null | undefined
+): boolean {
+  if (!Array.isArray(layers) || layers.length === 0) return false;
+  let total = 0;
+  let bad = 0;
+  for (const layer of layers) {
     const grid = layer?.grid;
-    if (!Array.isArray(grid) || grid.length === 0) return true;
-    return grid.every((row) => !Array.isArray(row) || row.every((cell) => !cell));
-  });
+    if (!Array.isArray(grid)) continue;
+    for (const row of grid) {
+      if (!Array.isArray(row)) continue;
+      for (const cell of row) {
+        total += 1;
+        if (LEGACY_BAD_GROUND_GIDS.has(cell)) bad += 1;
+      }
+    }
+  }
+  return total > 0 && bad / total >= 0.9;
+}
+
+/** Fill GID-0 cells with default terrain; preserve any painted non-zero GIDs. */
+export function fillZeroGidsInLayers<T extends { name: string; grid: number[][] }>(
+  layers: T[],
+  fillGid: number = DEFAULT_STUDIO_GROUND_GID
+): T[] {
+  return layers.map((layer) => ({
+    ...layer,
+    grid: (layer.grid || []).map((row) =>
+      (row || []).map((cell) => (cell ? cell : fillGid))
+    ),
+  }));
+}
+
+/** Replace legacy stair GID fills with solid grass; keep other painted GIDs. */
+export function upgradeLegacyGroundGids<T extends { name: string; grid: number[][] }>(
+  layers: T[],
+  fillGid: number = DEFAULT_STUDIO_GROUND_GID
+): T[] {
+  return layers.map((layer) => ({
+    ...layer,
+    grid: (layer.grid || []).map((row) =>
+      (row || []).map((cell) => (LEGACY_BAD_GROUND_GIDS.has(cell) ? fillGid : cell))
+    ),
+  }));
 }
 
 export function buildDefaultGroundLayer(grid: number[][] | undefined): {
@@ -67,16 +143,27 @@ export function ensureMapHasStudioTilesets<
   },
 >(map: T): T {
   const needsTilesets = !Array.isArray(map.tilesets) || map.tilesets.length === 0;
-  const needsLayers =
+  const layersBlank =
     !Array.isArray(map.tileLayers) ||
     map.tileLayers.length === 0 ||
     isVisualTileLayersBlank(map.tileLayers);
 
-  if (!needsLayers && !needsTilesets) return map;
+  if (!layersBlank && !needsTilesets) return map;
+
+  // Prefer filling zeros in existing layers (keeps the 1–3 painted brush tests)
+  // over replacing the whole Ground when tilesets already exist.
+  let nextLayers = map.tileLayers;
+  if (!Array.isArray(nextLayers) || nextLayers.length === 0) {
+    nextLayers = [buildDefaultGroundLayer(map.grid)];
+  } else if (isLegacyBadGroundFill(nextLayers)) {
+    nextLayers = upgradeLegacyGroundGids(nextLayers);
+  } else if (layersBlank) {
+    nextLayers = fillZeroGidsInLayers(nextLayers);
+  }
 
   return {
     ...map,
-    tileLayers: needsLayers ? [buildDefaultGroundLayer(map.grid)] : map.tileLayers,
+    tileLayers: nextLayers,
     tilesets: needsTilesets ? [...DEFAULT_STUDIO_TILESETS] : map.tilesets,
   };
 }
