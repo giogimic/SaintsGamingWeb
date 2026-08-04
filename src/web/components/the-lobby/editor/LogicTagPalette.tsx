@@ -13,8 +13,8 @@ import { LOGIC_COMPONENT_PRESETS } from '@/shared/game/logicComponents';
 export function LogicTagPalette() {
   const logicTiles = useGameStore((s) => s.logicTiles);
   const fetchLogicTiles = useGameStore((s) => s.fetchLogicTiles);
-  const brushId = useEditorStore((s) => s.activeBrushTileId);
-  const setBrush = useEditorStore((s) => s.setActiveBrushTileId);
+  const brushId = useEditorStore((s) => s.activeLogicTileId);
+  const setBrush = useEditorStore((s) => s.setActiveLogicTileId);
   const setLayer = useEditorStore((s) => s.setActiveLayerIdx);
   const showToast = useGameStore((s) => s.showToast);
 

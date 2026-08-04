@@ -70,10 +70,9 @@ export const WorldBuilderPanel: React.FC = () => {
     if (!activeMapData) return;
     const ensured = ensureMapHasStudioTilesets(activeMapData);
     if (ensured === activeMapData) return;
+    // Leave activeLayerIdx alone: forcing it to 0 here used to silently drag the
+    // creator off Logic (−1) mid-edit, so their next clicks painted GIDs.
     useGameStore.getState().setActiveMapData(ensured);
-    if (useEditorStore.getState().activeLayerIdx < 0) {
-      useEditorStore.getState().setActiveLayerIdx(0);
-    }
   }, [activeMapData]);
 
   const localIndex = searchMapIndex(mapSearchQuery);

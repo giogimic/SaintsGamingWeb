@@ -22,10 +22,12 @@ export const PropertiesPanel: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
   const logicTiles = useGameStore((state) => state.logicTiles);
   const fetchLogicTiles = useGameStore((state) => state.fetchLogicTiles);
-  const setBrush = useEditorStore((s) => s.setActiveBrushTileId);
+  // Everything this panel paints lands on Logic (−1), so it drives the logic
+  // brush rather than the visual GID brush.
+  const setBrush = useEditorStore((s) => s.setActiveLogicTileId);
   const setLayer = useEditorStore((s) => s.setActiveLayerIdx);
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
-  const brushId = useEditorStore((s) => s.activeBrushTileId);
+  const brushId = useEditorStore((s) => s.activeLogicTileId);
   const clickedTile = useEditorStore((s) => s.clickedTile);
 
   const currentMapData = activeMapData || GAME_MAPS[currentMapId] || {
