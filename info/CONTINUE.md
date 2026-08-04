@@ -1,11 +1,13 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-02  
+**Last updated:** 2026-08-04  
 **Point every new session at this file first.**
 
 ---
 
 ## Current Focus
+
+**Staging rebuild:** Duplicate `useEditorStore` import in `GameCanvasBabylon.tsx` fixed on `main` — redeploy Docker web container. See `logs/LOCAL_CHANGELOG.md`.
 
 **Studio world profiles + Saints Trail + Viewfinder UI (on `main`)**
 
