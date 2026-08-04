@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BabylonEngine } from '@/engine/BabylonEngine';
 import { resolveEncounter } from '@/game/CreatureDb';
 import { useGameStore } from '../store';
+import { useEditorStore } from '../editor/editor-store';
 import { loadMap } from '../data/maps';
 import type { GameMapData } from '../data/maps';
 import { soundSynth } from '@/engine/sound-synth';
@@ -47,7 +48,7 @@ interface GameCanvasBabylonProps {
 
 export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   onCanvasReady,
-  activeBrushTileId = 1,
+  activeBrushTileId = 17,
   activeLayerIdx = -1,
   isDevEditorOpen = false,
   suppressGameplay = false,
@@ -774,18 +775,32 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const engine = engineRef.current;
     if (!engine) return;
 
+    const syncPaintedMap = (map: any) => {
+      const store = useGameStore.getState();
+      // Keep store on the same object so Save Map sees in-place paint without remounting.
+      if (store.activeMapData !== map) {
+        store.setActiveMapData(map);
+      }
+      useEditorStore.getState().markMapDirty();
+    };
+
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c, clickedLayerIdx) => {
+        if (!activeMap) return;
+
+        // Always record selection (logic + visual) for Inspector / warp tools.
+        if (onMapClick) onMapClick(r, c);
+        useEditorStore.getState().setLastPaintedTile({ r, c });
+
         if (activeLayerIdx === -1) {
           // Painting Logic layer (collision / authority grid) — bible layer −1
           if (activeMap?.grid?.[r]) {
             activeMap.grid[r][c] = activeBrushTileId;
             engine.updateLogicTile(r, c, activeBrushTileId);
+            syncPaintedMap(activeMap);
           }
           return;
         }
-
-        if (onMapClick) onMapClick(r, c);
 
         const targetLayerIdx = activeLayerIdx >= 0 ? activeLayerIdx : (clickedLayerIdx || 0);
         
@@ -793,6 +808,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         if (targetLayerIdx !== -1 && activeMap?.tileLayers?.[targetLayerIdx]) {
           engine.updateSingleTile(r, c, activeBrushTileId, targetLayerIdx, activeMap.tilesets);
           activeMap.tileLayers[targetLayerIdx].grid[r][c] = activeBrushTileId;
+          syncPaintedMap(activeMap);
         } else if (targetLayerIdx !== -1 && (!activeMap?.tilesets || activeMap.tilesets.length === 0)) {
           // Empty tilesets → paint overlays cannot render (PR #18 path). Need bootstrap.
           showToast('Map has no tilesets — open World Builder or Save after seed bootstrap.');
@@ -802,15 +818,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           engine.updateSingleTile(r, c, activeBrushTileId);
           if (activeMap?.grid?.[r]) {
             activeMap.grid[r][c] = activeBrushTileId;
+            syncPaintedMap(activeMap);
           }
         } else {
           // Fallback to legacy single grid
           engine.updateSingleTile(r, c, activeBrushTileId);
           if (activeMap?.grid?.[r]) {
             activeMap.grid[r][c] = activeBrushTileId;
+            syncPaintedMap(activeMap);
           }
         }
-      });
+      }, { drag: true });
     } else {
       // Click-to-move in exploration mode with Pathfinding
       engine.enableTilePicking((r, c) => {

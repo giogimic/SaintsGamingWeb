@@ -2,7 +2,13 @@
 
 import React, { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useEditorStore, PanelId, StudioMode } from './editor-store';
+import {
+  useEditorStore,
+  PanelId,
+  StudioMode,
+  STUDIO_MODE_META,
+  STUDIO_DOCK_META,
+} from './editor-store';
 import { DraggablePanel } from './DraggablePanel';
 import {
   Hammer,
@@ -17,9 +23,12 @@ import {
   MessageSquare,
   Play,
   Coins,
+  Wrench,
+  Footprints,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
+import { StudioPaintHud } from './StudioPaintHud';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
 import { PropertiesPanel } from './panels/PropertiesPanel';
@@ -36,21 +45,13 @@ import { WorldProfileBar } from './WorldProfileBar';
 
 const MODE_BUTTONS: Array<{
   id: StudioMode;
-  label: string;
   icon: React.ReactNode;
-  disabled?: boolean;
-  title?: string;
 }> = [
-  { id: 'build', label: 'Build', icon: <Hammer className="w-4 h-4" /> },
-  { id: 'npc', label: 'NPC', icon: <Users className="w-4 h-4" /> },
-  {
-    id: 'quest',
-    label: 'Quest',
-    icon: <ScrollText className="w-4 h-4" />,
-    title: 'Quest templates + assign ACCEPT_QUEST to map NPCs',
-  },
-  { id: 'creature', label: 'Creature', icon: <PawPrint className="w-4 h-4" /> },
-  { id: 'test', label: 'Walk', icon: <Play className="w-4 h-4" />, title: 'Walk Mode — play-test the world (create tools off)' },
+  { id: 'develop', icon: <Wrench className="w-4 h-4" /> },
+  { id: 'npc', icon: <Users className="w-4 h-4" /> },
+  { id: 'quest', icon: <ScrollText className="w-4 h-4" /> },
+  { id: 'creature', icon: <PawPrint className="w-4 h-4" /> },
+  { id: 'test', icon: <Footprints className="w-4 h-4" /> },
 ];
 
 export const StudioEditorShell: React.FC = () => {
@@ -58,8 +59,9 @@ export const StudioEditorShell: React.FC = () => {
   const permissionLevel = session?.user?.permissionLevel ?? 0;
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
+  const mapDirty = useEditorStore((state) => state.mapDirty);
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
-  const enterWalkMode = useEditorStore((state) => state.enterWalkMode);
+  const enterDevelopmentMode = useEditorStore((state) => state.enterDevelopmentMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
   const closePanel = useEditorStore((state) => state.closePanel);
   const showToast = useGameStore((state) => state.showToast);
@@ -68,12 +70,11 @@ export const StudioEditorShell: React.FC = () => {
   const canDev = canUseStudioDock(permissionLevel, 'dev');
 
   useEffect(() => {
-    // Doc 16 §4: restore dock geometry from localStorage, then Walk Mode (create tools opt-in).
+    // Restore dock geometry, then enter Development Mode (tools on by default).
     useEditorStore.getState().hydratePanelLayouts();
-    enterWalkMode();
-  }, [enterWalkMode]);
+    enterDevelopmentMode();
+  }, [enterDevelopmentMode]);
 
-  // Close docks the user cannot open (e.g. Dev without Admin+).
   useEffect(() => {
     (Object.keys(useEditorStore.getState().panels) as PanelId[]).forEach((id) => {
       if (!canUseStudioDock(permissionLevel, id)) {
@@ -84,10 +85,9 @@ export const StudioEditorShell: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+E to toggle Creation Mode — shell is only mounted on /studio
+      // Ctrl+E toggles Develop ↔ Walk
       if (e.ctrlKey && e.key.toLowerCase() === 'e') {
         e.preventDefault();
-        // Only toggle while in-world — avoid opening docks over title/login.
         const mode = useGameStore.getState().gameMode;
         if (mode !== 'EXPLORING' && mode !== 'BATTLE') return;
         toggleCreationMode();
@@ -97,32 +97,43 @@ export const StudioEditorShell: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleCreationMode]);
 
-  // Hide Studio chrome until the player is in-world (title/login/server-select).
   if (gameMode !== 'EXPLORING' && gameMode !== 'BATTLE') {
     return null;
   }
 
-  // Walk Mode chip — create tools are opt-in (doc 16)
+  // Walk Mode — testing only; compact return chip
   if (!isCreationMode) {
     return (
-      <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto">
+      <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2">
+        <div className="sg-glass max-w-md rounded-2xl border border-emerald-500/30 bg-[#050b14]/95 px-4 py-3 text-center shadow-2xl">
+          <div className="flex items-center justify-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+            <Footprints className="h-4 w-4" />
+            Walk Mode · Testing
+          </div>
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+            Move, interact, and feel the map. Create tools are hidden until you return to Develop.
+          </p>
+        </div>
         <button
           type="button"
-          onClick={() => setStudioMode('build')}
-          className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/40 bg-[#050b14]/90 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20"
-          title="Opt into Studio create tools (Ctrl+E)"
+          onClick={() => setStudioMode('develop')}
+          className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/50 bg-[#050b14]/95 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20"
+          title="Return to Development Mode (Ctrl+E)"
         >
-          <Play className="w-4 h-4" />
-          Walk Mode
-          <span className="text-slate-500 normal-case tracking-normal font-medium">· open Build Ctrl+E</span>
+          <Wrench className="h-4 w-4" />
+          Back to Develop
+          <span className="font-medium normal-case tracking-normal text-slate-500">Ctrl+E</span>
         </button>
       </div>
     );
   }
 
+  const activeMeta = STUDIO_MODE_META[studioMode];
+
   return (
     <div className="fixed inset-0 pointer-events-none z-[100]">
       <WorldProfileBar />
+      <StudioPaintHud />
 
       <div className="pointer-events-auto">
         {canUseStudioDock(permissionLevel, 'build') && (
@@ -193,59 +204,73 @@ export const StudioEditorShell: React.FC = () => {
       </div>
 
       {/* Mode strip + dock */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2">
-        <div className="sg-glass bg-[#050b14]/95 border border-[#806f47]/50 rounded-full px-2 py-1.5 flex items-center gap-1 shadow-2xl">
-          <span className="px-2 font-mono text-[9px] uppercase tracking-[0.2em] text-[#806f47]">Mode</span>
-          {MODE_BUTTONS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              disabled={m.disabled}
-              title={m.title || m.label}
-              onClick={() => {
-                if (m.disabled) {
-                  showToast(m.title || 'Not available yet');
-                  return;
-                }
-                setStudioMode(m.id);
-              }}
-              className={`
-                flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider transition-all
-                ${m.disabled
-                  ? 'cursor-not-allowed text-slate-600 opacity-50'
-                  : studioMode === m.id
-                    ? 'bg-[#cbb26a]/20 text-[#cbb26a] shadow-[inset_0_0_12px_rgba(203,178,106,0.15)]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'}
-              `}
-            >
-              {m.icon}
-              {m.label}
-            </button>
-          ))}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw]">
+        <div className="sg-glass rounded-2xl border border-[#806f47]/40 bg-[#050b14]/95 px-3 py-2 shadow-2xl">
+          <div className="flex flex-wrap items-center justify-center gap-1">
+            <span className="px-2 font-mono text-[9px] uppercase tracking-[0.2em] text-[#806f47]">
+              Workspace
+            </span>
+            {MODE_BUTTONS.map((m) => {
+              const meta = STUDIO_MODE_META[m.id];
+              const active = studioMode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  title={`${meta.label} — ${meta.blurb}`}
+                  onClick={() => setStudioMode(m.id)}
+                  className={`
+                    flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider transition-all
+                    ${active
+                      ? m.id === 'test'
+                        ? 'bg-emerald-500/20 text-emerald-300 shadow-[inset_0_0_12px_rgba(16,185,129,0.15)]'
+                        : 'bg-[#cbb26a]/20 text-[#cbb26a] shadow-[inset_0_0_12px_rgba(203,178,106,0.15)]'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                  `}
+                >
+                  {m.icon}
+                  {meta.label}
+                </button>
+              );
+            })}
+            {mapDirty && (
+              <span className="ml-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-200">
+                Unsaved
+              </span>
+            )}
+          </div>
+          <p className="mt-1.5 max-w-xl text-center text-[10px] leading-relaxed text-slate-400">
+            <span className="font-semibold text-[#e2d5b3]">{activeMeta.label}:</span> {activeMeta.blurb}
+          </p>
         </div>
 
-        <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-4 py-2 flex items-center gap-3 shadow-2xl">
-          <DockButton id="build" icon={<Hammer className="w-5 h-5" />} label="Build" permissionLevel={permissionLevel} />
-          <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} label="Props" permissionLevel={permissionLevel} />
-          <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} label="Assets" permissionLevel={permissionLevel} />
-          <DockButton id="npc" icon={<Users className="w-5 h-5" />} label="NPCs" permissionLevel={permissionLevel} />
-          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} label="Quests" permissionLevel={permissionLevel} />
-          <DockButton id="dialogue" icon={<MessageSquare className="w-5 h-5" />} label="Talk" permissionLevel={permissionLevel} />
-          <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
+        <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-3 py-2 flex items-center gap-1.5 sm:gap-2 shadow-2xl overflow-x-auto max-w-full">
+          <DockButton id="build" icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="npc" icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="dialogue" icon={<MessageSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           {canDev && (
-            <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} label="Dev" permissionLevel={permissionLevel} />
+            <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
           )}
-          <DockButton id="characters" icon={<Sword className="w-5 h-5" />} label="Heroes" permissionLevel={permissionLevel} />
-          <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} label="Creatures" permissionLevel={permissionLevel} />
-          <DockButton id="loot" icon={<Coins className="w-5 h-5" />} label="Loot" permissionLevel={permissionLevel} />
-          <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} label="Classes" permissionLevel={permissionLevel} />
-          <div className="w-px h-6 bg-[#806f47]/30 mx-1" />
+          <DockButton id="characters" icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="loot" icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           <button
-            onClick={() => setStudioMode('test')}
-            className="flex flex-col items-center gap-1 p-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors"
-            title="Return to Walk Mode"
+            type="button"
+            onClick={() => {
+              setStudioMode('test');
+              showToast('Walk Mode — play-test the map');
+            }}
+            className="flex flex-col items-center gap-0.5 p-2 rounded-xl text-emerald-400 hover:bg-emerald-500/10 transition-colors min-w-[64px]"
+            title={STUDIO_MODE_META.test.blurb}
           >
-            <span className="font-bold text-[10px] uppercase font-mono">Walk (Ctrl+E)</span>
+            <Play className="w-4 h-4" />
+            <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Walk</span>
           </button>
         </div>
       </div>
@@ -256,17 +281,19 @@ export const StudioEditorShell: React.FC = () => {
 const DockButton: React.FC<{
   id: PanelId;
   icon: React.ReactNode;
-  label: string;
   permissionLevel: number;
-}> = ({ id, icon, label, permissionLevel }) => {
+}> = ({ id, icon, permissionLevel }) => {
   const isOpen = useEditorStore((state) => state.panels[id].isOpen);
   const togglePanel = useEditorStore((state) => state.togglePanel);
   const showToast = useGameStore((state) => state.showToast);
+  const meta = STUDIO_DOCK_META[id];
 
   if (!canUseStudioDock(permissionLevel, id)) return null;
 
   return (
     <button
+      type="button"
+      title={`${meta.label} — ${meta.blurb}`}
       onClick={() => {
         if (!canUseStudioDock(permissionLevel, id)) {
           showToast('Insufficient permission for this dock');
@@ -275,12 +302,12 @@ const DockButton: React.FC<{
         togglePanel(id);
       }}
       className={`
-        flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[60px]
+        flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]
         ${isOpen ? 'bg-[#806f47]/20 text-[#cbb26a] shadow-[inset_0_0_10px_rgba(203,178,106,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}
       `}
     >
       {icon}
-      <span className="font-bold text-[10px] uppercase font-mono tracking-wider">{label}</span>
+      <span className="font-bold text-[9px] uppercase font-mono tracking-wider">{meta.label}</span>
       <div className={`w-1 h-1 rounded-full mt-0.5 ${isOpen ? 'bg-[#cbb26a]' : 'bg-transparent'}`} />
     </button>
   );

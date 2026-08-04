@@ -1356,64 +1356,134 @@ export class BabylonEngine {
   }
 
   private applyLogicMaterialColor(mat: StandardMaterial, logicId: number) {
+    // Distinct, readable Studio colors (walkable stays visible enough to confirm paint).
     if (logicId === 0) {
-      mat.diffuseColor = Color3.FromHexString("#064e3b"); // Walkable (emerald-900)
-      mat.alpha = 0.2; // less visible
+      mat.diffuseColor = Color3.FromHexString("#10b981");
+      mat.alpha = 0.38;
     } else if (logicId === 1) {
-      mat.diffuseColor = Color3.FromHexString("#dc2626"); // Solid (red-600)
-      mat.alpha = 0.7;
+      mat.diffuseColor = Color3.FromHexString("#dc2626");
+      mat.alpha = 0.72;
     } else if (logicId === 2) {
-      mat.diffuseColor = Color3.FromHexString("#22c55e"); // Grass (green-500)
+      mat.diffuseColor = Color3.FromHexString("#22c55e");
       mat.alpha = 0.7;
     } else if (logicId === 3 || logicId === 4) {
-      mat.diffuseColor = Color3.FromHexString("#f59e0b"); // Gate (amber)
+      mat.diffuseColor = Color3.FromHexString("#f59e0b");
+      mat.alpha = 0.72;
+    } else if (logicId === 5) {
+      mat.diffuseColor = Color3.FromHexString("#92400e");
+      mat.alpha = 0.7;
+    } else if (logicId === 6) {
+      mat.diffuseColor = Color3.FromHexString("#78716c");
+      mat.alpha = 0.7;
+    } else if (logicId === 7) {
+      mat.diffuseColor = Color3.FromHexString("#eab308");
+      mat.alpha = 0.7;
+    } else if (logicId === 8) {
+      mat.diffuseColor = Color3.FromHexString("#ec4899");
+      mat.alpha = 0.7;
+    } else if (logicId === 9) {
+      mat.diffuseColor = Color3.FromHexString("#64748b");
+      mat.alpha = 0.7;
+    } else if (logicId === 10) {
+      mat.diffuseColor = Color3.FromHexString("#0284c7");
+      mat.alpha = 0.7;
+    } else if (logicId === 11) {
+      mat.diffuseColor = Color3.FromHexString("#3f6212");
+      mat.alpha = 0.72;
+    } else if (logicId === 12) {
+      mat.diffuseColor = Color3.FromHexString("#4338ca");
       mat.alpha = 0.7;
     } else {
-      mat.diffuseColor = Color3.FromHexString("#6366f1"); // Other nodes (indigo)
-      mat.alpha = 0.6;
+      // Stable hash so custom tags stay visually distinct.
+      const hue = ((logicId * 47) % 360) / 360;
+      mat.diffuseColor = Color3.FromHSV(hue * 360, 0.65, 0.9);
+      mat.alpha = 0.62;
     }
   }
 
-  public enableTilePicking(onTileClick: (r: number, c: number, layerIdx?: number) => void) {
-    this.scene.onPointerDown = (_evt, pickResult) => {
-      if (!pickResult.hit || !pickResult.pickedMesh) return;
+  private resolveTilePick(
+    pickResult: { hit?: boolean; pickedMesh?: { name: string } | null; pickedPoint?: { x: number; z: number } | null } | null
+  ): { r: number; c: number; layerIdx: number } | null {
+    if (!pickResult?.hit || !pickResult.pickedMesh) return null;
 
-      const name = pickResult.pickedMesh.name;
+    const name = pickResult.pickedMesh.name;
 
-      // Prefer named logic / legacy per-tile meshes when present.
-      if (name.startsWith('logic_') || name.startsWith('tile_')) {
-        const parts = name.split('_');
-        if (parts[0] === 'logic') {
-          const r = parseInt(parts[1], 10);
-          const c = parseInt(parts[2], 10);
-          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, -2);
-          return;
-        }
-        if (parts.length === 3) {
-          const r = parseInt(parts[1], 10);
-          const c = parseInt(parts[2], 10);
-          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, -1);
-          return;
-        }
-        if (parts.length === 4) {
-          const layerIdx = parseInt(parts[1], 10);
-          const r = parseInt(parts[2], 10);
-          const c = parseInt(parts[3], 10);
-          if (!Number.isNaN(r) && !Number.isNaN(c)) onTileClick(r, c, layerIdx);
-          return;
-        }
+    // Prefer named logic / legacy per-tile meshes when present.
+    if (name.startsWith('logic_') || name.startsWith('tile_')) {
+      const parts = name.split('_');
+      if (parts[0] === 'logic') {
+        const r = parseInt(parts[1], 10);
+        const c = parseInt(parts[2], 10);
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -2 };
+        return null;
       }
+      if (parts.length === 3) {
+        const r = parseInt(parts[1], 10);
+        const c = parseInt(parts[2], 10);
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx: -1 };
+        return null;
+      }
+      if (parts.length === 4) {
+        const layerIdx = parseInt(parts[1], 10);
+        const r = parseInt(parts[2], 10);
+        const c = parseInt(parts[3], 10);
+        if (!Number.isNaN(r) && !Number.isNaN(c)) return { r, c, layerIdx };
+        return null;
+      }
+    }
 
-      // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
-      const point = pickResult.pickedPoint;
-      if (!point) return;
-      const tile = this.worldToTile(point.x, point.z);
-      if (tile) onTileClick(tile.r, tile.c, -1);
+    // Batched tilesets (`tileset_mesh_*`), map_pick_plane, paint overlays, etc.
+    const point = pickResult.pickedPoint;
+    if (!point) return null;
+    const tile = this.worldToTile(point.x, point.z);
+    if (!tile) return null;
+    return { r: tile.r, c: tile.c, layerIdx: -1 };
+  }
+
+  /**
+   * Enable click (+ optional drag) paint / move picking.
+   * Drag re-picks under the cursor so authors can stroke tiles continuously.
+   * Keep drag off for Walk Mode click-to-move so pointer moves do not repath.
+   */
+  public enableTilePicking(
+    onTileClick: (r: number, c: number, layerIdx?: number) => void,
+    options?: { drag?: boolean }
+  ) {
+    let isPainting = false;
+    let lastKey = '';
+    const allowDrag = !!options?.drag;
+
+    const emit = (pickResult: any) => {
+      const resolved = this.resolveTilePick(pickResult);
+      if (!resolved) return;
+      const key = `${resolved.r},${resolved.c}`;
+      if (key === lastKey) return;
+      lastKey = key;
+      onTileClick(resolved.r, resolved.c, resolved.layerIdx);
+    };
+
+    this.scene.onPointerDown = (_evt, pickResult) => {
+      isPainting = true;
+      lastKey = '';
+      emit(pickResult);
+    };
+
+    this.scene.onPointerUp = () => {
+      isPainting = false;
+      lastKey = '';
+    };
+
+    this.scene.onPointerMove = () => {
+      if (!allowDrag || !isPainting || !this.scene) return;
+      const pickResult = this.scene.pick(this.scene.pointerX, this.scene.pointerY);
+      emit(pickResult);
     };
   }
 
   public disableTilePicking() {
     this.scene.onPointerDown = undefined;
+    this.scene.onPointerUp = undefined;
+    this.scene.onPointerMove = undefined;
   }
 
   public getEntityMesh(entityId: string) {
