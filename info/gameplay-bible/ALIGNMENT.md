@@ -1,7 +1,7 @@
 # Gameplay Bible ↔ Codebase Alignment
 
-**Date:** 2026-08-04 (Slice D through production tools)  
-**Bible:** `info/gameplay-bible/` (27 pages)  
+**Date:** 2026-08-04 (Slice D through Studio backend)  
+**Bible:** `info/gameplay-bible/` (28 pages)  
 **Purpose:** Honest status for “continue till complete” — what exists, what conflicts, what to build next.
 
 > Roadmap checkboxes in `12-demo-vertical-slice-roadmap.md` are **aspirational product intent**. This file is the **engineering truth**.
@@ -87,7 +87,8 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 12. **Complete Gameplay Editors (25)** — **done (docs)**: combat/abilities/status/skills/classes/professions/XP/balance; phases GP1–GP6  
 13. **Complete Live Operations (26)** — **done (docs)**: hot reload bus, publish, versioning, rollback, testing, preview, staging, prod deploy, patches, migrations, asset validation, deps, conflicts, backups, recovery, profiling; phases LO1–LO6; prefer content reload over restarts  
 14. **Complete Production Tools (27)** — **done (docs)**: project browser, packages, assets, omnisearch, ref viewer, dependency graph, tasks, bookmarks/favorites, templates/prefabs, docs/notes, team, permissions, audit, l10n, analytics, diagnostics/performance; phases PT0–PT7  
-15. Remaining (implement): **LO1 content_reload bus** + prior QE1/ECO1/GP1/UX-1 + **PT1** omnisearch/bookmarks — map reload gains version; loot/quest emit without PM2 restart
+15. **Complete Studio Backend (28)** — **done (docs)**: unified Prisma/MariaDB, services layer, ContentCache, transactions, permissions, APIs, sockets, live sync, serialization, migrate policy, testing; complexity cuts (WorldMap SoT, demote GameMap/SaintsMap/GameQuest); phases BE1–BE8  
+16. Remaining (implement): **BE1/LO1** `emitContentReload` + deprecate `admin_save_map` + prior QE1/ECO1/GP1/UX-1 + **PT1** — map reload gains version; loot/quest emit without PM2 restart
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
@@ -108,8 +109,8 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 ## Immediate next decision for product owner
 
 Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
-Slice **D** docs through **27** (production tools) landed. Next code: **LO1** `emitContentReload` + **GP1/QE1/ECO1** + **PT1**. Or **E** (website ↔ game).  
-Human smoke: Studio Build → Save Map → `map_reloaded` without server restart; Loot edit should not need `update.sh`.
+Slice **D** docs through **28** (Studio backend) landed. Next code: **BE1/LO1** `emitContentReload` + deprecate socket map-save + **GP1/QE1/ECO1** + **PT1**. Or **E** (website ↔ game).  
+Human smoke: Studio Build → Save Map → `map_reloaded` / `content_reload` without server restart; Loot edit should not need `update.sh`.
 
 ---
 
