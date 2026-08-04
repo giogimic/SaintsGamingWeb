@@ -790,6 +790,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         if (targetLayerIdx !== -1 && activeMap?.tileLayers?.[targetLayerIdx]) {
           engine.updateSingleTile(r, c, activeBrushTileId, targetLayerIdx, activeMap.tilesets);
           activeMap.tileLayers[targetLayerIdx].grid[r][c] = activeBrushTileId;
+        } else if (targetLayerIdx !== -1 && (!activeMap?.tilesets || activeMap.tilesets.length === 0)) {
+          // Empty tilesets → paint overlays cannot render (PR #18 path). Need bootstrap.
+          showToast('Map has no tilesets — open World Builder or Save after seed bootstrap.');
+        } else if (targetLayerIdx !== -1) {
+          // Has tilesets but missing layer — fall back to logic grid only for persistence
+          showToast('No visual layer at this index — Add Layer in World Builder, or switch to Logic (−1).');
+          engine.updateSingleTile(r, c, activeBrushTileId);
+          if (activeMap?.grid?.[r]) {
+            activeMap.grid[r][c] = activeBrushTileId;
+          }
         } else {
           // Fallback to legacy single grid
           engine.updateSingleTile(r, c, activeBrushTileId);
