@@ -2,6 +2,8 @@
 
 **Process model:** Custom Node server (`server.ts`) hosts Next.js + Socket.io + MMO GameEngine.
 
+**Studio backend contract:** [`../gameplay-bible/28-studio-backend-architecture.md`](../gameplay-bible/28-studio-backend-architecture.md) — Prisma SoT, services, ContentReloadBus, migrations, tests. Live ops: [`../gameplay-bible/26-studio-live-operations.md`](../gameplay-bible/26-studio-live-operations.md).
+
 ---
 
 ## Process entry

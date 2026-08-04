@@ -1,5 +1,7 @@
 # Saints Gaming — The Turn-Based Battle Engine (11.txt)
 
+> **Studio TB/ability/status editors:** [`25-studio-gameplay-editors.md`](./25-studio-gameplay-editors.md) · Capture constitution: [`07`](./07-technical-economic-rules.md)
+
 To bridge the gap between the Real-Time MMO world and the Creature Collection mechanics, Saints Gaming utilizes a dedicated Turn-Based Battle Engine for all wild creature encounters. 
 
 ---

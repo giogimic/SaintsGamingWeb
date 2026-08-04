@@ -5,9 +5,12 @@ Production architecture for Saints Studio as a complete game creation suite.
 > **Companions**
 > - [`08-world-building-editor-architecture.md`](./08-world-building-editor-architecture.md) — map JSON, visual layers 0–3, Logic (−1) authority
 > - [`16-studio-editor-philosophy.md`](./16-studio-editor-philosophy.md) — creator UX, modes, docks, fun-first loop
+> - [`23-studio-economy-system.md`](./23-studio-economy-system.md) — **complete economy** (Item Creator, loot, craft, trade, modifiers)
+> - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — master audit, unification rules, every subsystem spec
+> - [`19-studio-ux-design.md`](./19-studio-ux-design.md) — complete UX: chrome, tools, shortcuts, workflows
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth vs bible intent
 
-This document is the **system contract**. `08`/`16` remain the layering and UX sources of truth; this page adds entity/economy isolation and phased delivery.
+This document is the **Phase 1 system contract** (isolation, layers, entities, loot). Full economy SoT and editors: **`23`**. For Studio inventory use **`18`**; UX **`19`**; entities **`20`**.
 
 ---
 
@@ -157,6 +160,8 @@ Saving from Studio must not require an MMO restart. Prefer:
 * Existing `admin_reload_map` / map version bumps
 * Cache invalidation for loot pools, encounters, NPC defs
 * Safe sync to connected players without disconnect
+
+**Full live-ops contract** (publish, rollback, staging, backups, `content_reload` bus): [`26-studio-live-operations.md`](./26-studio-live-operations.md).
 
 Full hot-reload matrix (shops, quests, dialogue, resource nodes) is phased; do not block Phase 1 on complete coverage.
 

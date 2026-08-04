@@ -2,6 +2,9 @@
 
 The core loop of Saints Gaming relies on long-term progression. The 27-Skill Matrix is designed to create deep interdependencies between players, forming the foundation of a robust MMO economy.
 
+> **Studio economy registries, editors, and anti-duplication rules:** [`23-studio-economy-system.md`](./23-studio-economy-system.md)  
+> **Gameplay skill/profession/combat editors:** [`25-studio-gameplay-editors.md`](./25-studio-gameplay-editors.md)
+
 ---
 
 # 1. The Interdependency Principle
