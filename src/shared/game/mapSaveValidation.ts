@@ -66,6 +66,11 @@ export function validateMapSave(
         details.push(`Non-numeric tile at (${c},${r}).`);
         continue;
       }
+      // 0 = empty / unset logic cell (always walkable). Not every DB seeds id 0.
+      if (id === 0) {
+        walkableCount += 1;
+        continue;
+      }
       const meta = byId.get(id);
       if (!meta) {
         unknownIds.add(id);

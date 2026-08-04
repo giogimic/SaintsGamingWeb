@@ -27,6 +27,13 @@ describe("validateMapSave", () => {
     if (!r.ok) expect(r.error).toMatch(/between/);
   });
 
+  it("treats logic id 0 as empty walkable even when not registered", () => {
+    const tiles: LogicTileMeta[] = [{ id: 1, isSolid: true }, { id: 2, isSolid: false }];
+    const grid = openGrid(8, 8, 0);
+    grid[1][1] = 2;
+    expect(validateMapSave({ grid }, tiles)).toEqual({ ok: true });
+  });
+
   it("rejects unknown logic tile ids", () => {
     const grid = openGrid();
     grid[3][3] = 99;
