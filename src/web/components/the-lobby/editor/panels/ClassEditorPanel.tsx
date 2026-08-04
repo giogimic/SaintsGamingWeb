@@ -21,9 +21,10 @@ import {
 } from '@/shared/game/classCatalog';
 import { COMBAT_SKILL_TYPINGS, skillSlugToLabel } from '@/shared/game/skillTypings';
 import { useEditorStore } from '../editor-store';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson,
-  UserCheck, CheckCircle2, AlertCircle, Sparkles,
+  CheckCircle2, AlertCircle, Sparkles,
 } from 'lucide-react';
 
 const inputCls =
@@ -163,29 +164,66 @@ export function ClassEditorPanel() {
   const resolved = resolveClassStats(form);
 
   return (
-    <div className="h-full flex flex-col text-xs font-mono text-slate-200">
-      <div className="flex items-center justify-between gap-2 pb-2 border-b border-[#806f47]/30 mb-2">
-        <div className="flex items-center gap-1.5 text-[#cbb26a] font-bold uppercase tracking-wider">
-          <UserCheck className="w-3.5 h-3.5" /> Classes
-        </div>
+    <CatalogEditorShell
+      title="Class Catalog"
+      blurb={`Catalog mode · profile ${activeGameId} · CharacterClass SoT`}
+      dirty={isNew}
+      toolbar={
         <div className="flex flex-wrap gap-1">
-          <button onClick={() => void load()} className="px-2 py-1 rounded bg-[#0b1320] border border-slate-700 hover:border-[#806f47]/50" title="Refresh">
-            <RefreshCw size={12} />
+          <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => void handleSeed()} className="px-2 py-1 rounded bg-[#0b1320] border border-slate-700 hover:border-[#806f47]/50 flex items-center gap-1">
-            <Database size={12} /> Seed
+          <button type="button" onClick={() => void handleSeed()} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Seed defaults">
+            <Database className="h-3.5 w-3.5" /> Seed
           </button>
-          <button onClick={() => setShowJson((v) => !v)} className="px-2 py-1 rounded bg-[#0b1320] border border-slate-700 hover:border-[#806f47]/50 flex items-center gap-1">
-            <FileJson size={12} /> JSON
+          <button type="button" onClick={() => setShowJson((v) => !v)} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Import JSON">
+            <FileJson className="h-3.5 w-3.5" /> JSON
           </button>
-          <button onClick={handleNew} className="px-2 py-1 rounded bg-[#806f47]/30 border border-[#806f47]/50 text-[#e2d5b3] flex items-center gap-1">
-            <Plus size={12} /> New
+          <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New class">
+            <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-      </div>
-
+      }
+      list={
+        <div className="space-y-1">
+          {list.map((c) => (
+            <button
+              key={c.slug}
+              type="button"
+              onClick={() => handleSelect(c)}
+              className={`w-full rounded border px-2 py-1.5 text-left text-[11px] transition-colors ${
+                form.slug === c.slug && !isNew
+                  ? 'border-[#806f47] bg-[#806f47]/15 text-[#e2d5b3]'
+                  : 'border-transparent text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1">
+                <span className="font-bold truncate" style={{ color: c.color }}>{c.name}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleToggle(c.slug, !c.isPlayable);
+                  }}
+                  title={c.isPlayable ? 'Playable' : 'Hidden'}
+                >
+                  {c.isPlayable ? <Eye size={11} className="text-emerald-400" /> : <EyeOff size={11} className="text-slate-500" />}
+                </button>
+              </div>
+              <div className="text-[9px] text-slate-500">
+                {c.classId}
+                <span className="text-slate-600"> · {c.profileId || 'shared'}</span>
+              </div>
+            </button>
+          ))}
+          {list.length === 0 && (
+            <p className="p-2 text-center text-[10px] text-slate-500">No classes. Click Seed.</p>
+          )}
+        </div>
+      }
+    >
       {status && (
-        <div className={`mb-2 px-2 py-1 rounded flex items-center gap-1 ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-200' : 'bg-red-900/40 text-red-200'}`}>
+        <div className={`mb-2 px-2 py-1 rounded flex items-center gap-1 text-[10px] ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-200' : 'bg-red-900/40 text-red-200'}`}>
           {status.type === 'success' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
           {status.msg}
         </div>
@@ -206,7 +244,7 @@ export function ClassEditorPanel() {
             onChange={(e) => setGlobalShiny(parseFloat(e.target.value) || 0)}
           />
           <span className="text-slate-500 whitespace-nowrap">%</span>
-          <button onClick={() => void handleSaveGlobalShiny()} className="px-2 py-1 bg-[#806f47]/40 hover:bg-[#806f47]/60 rounded text-[#e2d5b3]">
+          <button type="button" onClick={() => void handleSaveGlobalShiny()} className="px-2 py-1 bg-[#806f47]/40 hover:bg-[#806f47]/60 rounded text-[#e2d5b3]">
             Save
           </button>
         </div>
@@ -221,48 +259,13 @@ export function ClassEditorPanel() {
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
           />
-          <button onClick={() => void handleImport()} disabled={loading} className="px-3 py-1 bg-[#806f47]/40 rounded text-[#e2d5b3]">
+          <button type="button" onClick={() => void handleImport()} disabled={loading} className="px-3 py-1 bg-[#806f47]/40 rounded text-[#e2d5b3]">
             Import JSON
           </button>
         </div>
       )}
 
-      <div className="flex-1 min-h-0 grid grid-cols-[200px_1fr] gap-2">
-        <div className="overflow-y-auto space-y-1 border border-slate-800 rounded p-1 bg-[#050b14]/80">
-          {list.map((c) => (
-            <button
-              key={c.slug}
-              onClick={() => handleSelect(c)}
-              className={`w-full text-left px-2 py-1.5 rounded border text-[11px] ${
-                form.slug === c.slug && !isNew
-                  ? 'border-[#806f47] bg-[#806f47]/15 text-[#e2d5b3]'
-                  : 'border-transparent hover:bg-white/5 text-slate-300'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-1">
-                <span className="font-bold truncate" style={{ color: c.color }}>{c.name}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleToggle(c.slug, !c.isPlayable);
-                  }}
-                  title={c.isPlayable ? 'Playable' : 'Hidden'}
-                >
-                  {c.isPlayable ? <Eye size={11} className="text-emerald-400" /> : <EyeOff size={11} className="text-slate-500" />}
-                </button>
-              </div>
-              <div className="text-[9px] text-slate-500">
-                {c.classId}
-                <span className="text-slate-600"> · {c.profileId || 'shared'}</span>
-              </div>
-            </button>
-          ))}
-          {list.length === 0 && (
-            <div className="text-slate-500 p-2 text-center">No classes. Click Seed.</div>
-          )}
-        </div>
-
-        <div className="overflow-y-auto space-y-3 pr-1">
+      <div className="space-y-3 pr-1">
           {(isNew || form.slug) && (
             <>
               <div className="grid grid-cols-2 gap-2">
@@ -351,11 +354,12 @@ export function ClassEditorPanel() {
                 </label>
                 <div className="flex-1" />
                 {!isNew && form.slug && (
-                  <button onClick={() => void handleDelete(form.slug)} className="px-2 py-1 text-red-300 border border-red-900/50 rounded flex items-center gap-1">
+                  <button type="button" onClick={() => void handleDelete(form.slug)} className="px-2 py-1 text-red-300 border border-red-900/50 rounded flex items-center gap-1">
                     <Trash2 size={12} /> Delete
                   </button>
                 )}
                 <button
+                  type="button"
                   disabled={loading}
                   onClick={() => void handleSave()}
                   className="px-4 py-2 bg-[#806f47]/50 hover:bg-[#806f47]/70 text-[#e2d5b3] font-bold rounded flex items-center gap-1"
@@ -368,8 +372,7 @@ export function ClassEditorPanel() {
           {!isNew && !form.slug && (
             <div className="text-slate-500 text-center mt-10">Select a class or click New / Seed.</div>
           )}
-        </div>
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 }

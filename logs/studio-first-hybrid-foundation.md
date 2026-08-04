@@ -38,7 +38,16 @@ Phase 2a = editor camera + CatalogEditorShell / SchemaFieldRenderer wiring.
 | :--- | :--- |
 | Creature Catalog | Migrated onto `CatalogEditorShell` |
 | Quest Catalog | Migrated onto `CatalogEditorShell` |
+| Dialogue Catalog | Migrated onto `CatalogEditorShell` |
+| Class Catalog | Migrated onto `CatalogEditorShell` |
 | Overlay hint | Paint HUD XY toggle (`showEditorCoords`) |
+
+## Phase 2c shipped
+
+| Piece | What |
+| :--- | :--- |
+| Loot Catalog | Migrated onto `CatalogEditorShell` |
+| Avatar-free viewport | Hide `player_main` in Editor runtime; restore on Playtest (`shouldHidePlayerAvatar`) |
 
 ## Verify
 
@@ -48,8 +57,8 @@ npx vitest run src/shared/game/studioSession.test.ts src/shared/game/studioModes
 
 ## Next
 
-- Avatar-free editor session (no player required to author)
+- Full avatar-free session (no character required to open Studio map)
 - PIE private shard
-- Migrate Loot/Dialogue/Classes docks onto CatalogEditorShell
+- Starter Heroes dock on CatalogEditorShell
 - Definition undo stack
 - Richer debug overlays (spawn/warp/chunk)

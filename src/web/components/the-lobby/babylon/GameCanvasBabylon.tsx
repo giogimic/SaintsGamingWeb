@@ -578,6 +578,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           chatMessage: useGameStore.getState().localChat || undefined,
           spriteConfig: freshPlayer.spriteConfig
         });
+        // Keep avatar hidden while editor tools are active (avatar-free viewport)
+        babylonEngine.setEntityVisible('player_main', !editorToolsRef.current);
 
         // Camera: follow player in Playtest only; Editor uses free pan/zoom
         if (!editorToolsRef.current) {
@@ -943,8 +945,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const engine = engineRef.current;
     if (!engine || !isEngineReady) return;
     engine.setEditorCameraMode(isDevEditorOpen);
+    // Avatar-free authoring: hide local player while tools are open
+    engine.setEntityVisible('player_main', !isDevEditorOpen);
     return () => {
       engine.setEditorCameraMode(false);
+      engine.setEntityVisible('player_main', true);
     };
   }, [isDevEditorOpen, isEngineReady]);
 

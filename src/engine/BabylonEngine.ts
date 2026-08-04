@@ -1646,6 +1646,14 @@ private resolveTilePick(
     return this.entityMeshes.get(entityId);
   }
 
+  /** Show/hide an entity mesh (avatar-free editor: hide player_main). */
+  public setEntityVisible(entityId: string, visible: boolean) {
+    const mesh = this.entityMeshes.get(entityId);
+    if (mesh) mesh.setEnabled(visible);
+    const shadow = this.shadowMeshes.get(entityId);
+    if (shadow) shadow.setEnabled(visible);
+  }
+
   private resolveSpriteConfig(entity: BabylonEntityData): SpriteSheetConfig {
     // URL is source of truth — never let a stale SINGLE_FRAME client override
     // wipe 3×4 walk sheets (that rendered rockitten as a full grid).

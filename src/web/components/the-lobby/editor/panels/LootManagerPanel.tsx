@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Coins,
   Copy,
   Plus,
   RefreshCw,
@@ -11,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useGameStore } from '../../store';
 import {
   aggregateDropStats,
@@ -250,20 +250,10 @@ export const LootManagerPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 p-3 text-slate-200">
-      <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
-        <div>
-          <div className="flex items-center gap-2">
-            <Coins className="h-4 w-4 text-[#cbb26a]" />
-            <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-[#cbb26a]">
-              Loot Manager
-            </h3>
-          </div>
-          <p className="mt-1 text-[10px] text-slate-500">
-            Global pools for world profile <span className="text-slate-300">{activeGameId}</span>. Entities
-            reference pool IDs — change once, update everywhere.
-          </p>
-        </div>
+    <CatalogEditorShell
+      title="Loot Catalog"
+      blurb={`Pools for world ${activeGameId}. Entities reference pool IDs — change once, update everywhere.`}
+      toolbar={
         <div className="flex gap-1">
           <button
             type="button"
@@ -283,172 +273,170 @@ export const LootManagerPanel: React.FC = () => {
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-      </div>
-
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-2 top-2 h-3.5 w-3.5 text-slate-500" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search pools…"
-          className="w-full rounded-md border border-slate-700 bg-black/40 py-1.5 pl-7 pr-2 font-mono text-[11px] outline-none focus:border-[#cbb26a]/50"
-        />
-      </div>
-
-      <div className="grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-hidden">
-        <ul className="min-h-0 space-y-1 overflow-y-auto rounded-md border border-slate-800 bg-black/20 p-1">
-          {filtered.length === 0 && (
-            <li className="p-3 text-center font-mono text-[10px] text-slate-500">
-              {loading ? 'Loading…' : 'No loot pools yet — create one.'}
-            </li>
-          )}
-          {filtered.map((t) => (
-            <li key={t.id}>
+      }
+      list={
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2 top-2 h-3.5 w-3.5 text-slate-500" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search pools…"
+              className="w-full rounded-md border border-slate-700 bg-black/40 py-1.5 pl-7 pr-2 font-mono text-[11px] outline-none focus:border-[#cbb26a]/50"
+            />
+          </div>
+          <ul className="space-y-1">
+            {filtered.length === 0 && (
+              <li className="p-3 text-center font-mono text-[10px] text-slate-500">
+                {loading ? 'Loading…' : 'No loot pools yet — create one.'}
+              </li>
+            )}
+            {filtered.map((t) => (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(t.id)}
+                  className={`w-full rounded-md px-2 py-1.5 text-left transition-colors ${
+                    selectedId === t.id
+                      ? 'bg-[#cbb26a]/15 text-[#cbb26a]'
+                      : 'text-slate-300 hover:bg-white/5'
+                  }`}
+                >
+                  <div className="truncate font-mono text-[11px] font-bold">{t.name}</div>
+                  <div className="truncate font-mono text-[9px] text-slate-500">
+                    {t.entries.length} entries · {t.rollsPerDrop} roll(s)
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      }
+    >
+      <div className="min-h-0 space-y-2 overflow-y-auto p-1">
+        {!selected ? (
+          <p className="p-4 text-center font-mono text-[10px] text-slate-500">
+            Select a pool to edit, simulate, or export.
+          </p>
+        ) : (
+          <>
+            <label className="block space-y-1">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Name</span>
+              <input
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[11px]"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+                Rolls per drop
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={draftRolls}
+                onChange={(e) => setDraftRolls(Number(e.target.value) || 1)}
+                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[11px]"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+                Weighted entries (JSON)
+              </span>
+              <textarea
+                rows={5}
+                value={draftEntriesJson}
+                onChange={(e) => setDraftEntriesJson(e.target.value)}
+                className="w-full resize-y rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px]"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
+                Guaranteed drops (JSON)
+              </span>
+              <textarea
+                rows={3}
+                value={draftGuaranteedJson}
+                onChange={(e) => setDraftGuaranteedJson(e.target.value)}
+                className="w-full resize-y rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px]"
+              />
+            </label>
+            <div className="flex flex-wrap gap-1 pt-1">
               <button
                 type="button"
-                onClick={() => setSelectedId(t.id)}
-                className={`w-full rounded-md px-2 py-1.5 text-left transition-colors ${
-                  selectedId === t.id
-                    ? 'bg-[#cbb26a]/15 text-[#cbb26a]'
-                    : 'text-slate-300 hover:bg-white/5'
-                }`}
+                disabled={saving}
+                onClick={() => void savePool()}
+                className="rounded-md border border-[#806f47]/50 bg-[#cbb26a]/15 px-2 py-1 font-mono text-[10px] font-bold uppercase text-[#cbb26a]"
               >
-                <div className="truncate font-mono text-[11px] font-bold">{t.name}</div>
-                <div className="truncate font-mono text-[9px] text-slate-500">
-                  {t.entries.length} entries · {t.rollsPerDrop} roll(s)
-                </div>
+                Save
               </button>
-            </li>
-          ))}
-        </ul>
-
-        <div className="min-h-0 space-y-2 overflow-y-auto rounded-md border border-slate-800 bg-black/20 p-2">
-          {!selected ? (
-            <p className="p-4 text-center font-mono text-[10px] text-slate-500">
-              Select a pool to edit, simulate, or export.
-            </p>
-          ) : (
-            <>
-              <label className="block space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Name</span>
-                <input
-                  value={draftName}
-                  onChange={(e) => setDraftName(e.target.value)}
-                  className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[11px]"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                  Rolls per drop
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void clonePool()}
+                className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 font-mono text-[10px] uppercase text-slate-300"
+              >
+                <Copy className="h-3 w-3" /> Clone
+              </button>
+              <button
+                type="button"
+                onClick={exportJson}
+                className="rounded-md border border-slate-700 px-2 py-1 font-mono text-[10px] uppercase text-slate-300"
+              >
+                Export
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void deletePool()}
+                className="inline-flex items-center gap-1 rounded-md border border-red-900/50 px-2 py-1 font-mono text-[10px] uppercase text-red-400"
+              >
+                <Trash2 className="h-3 w-3" /> Delete
+              </button>
+            </div>
+            <div className="mt-2 space-y-2 border-t border-slate-800 pt-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-[#cbb26a]" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Simulate
                 </span>
                 <input
                   type="number"
                   min={1}
-                  max={20}
-                  value={draftRolls}
-                  onChange={(e) => setDraftRolls(Number(e.target.value) || 1)}
-                  className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[11px]"
+                  max={5000}
+                  value={simCount}
+                  onChange={(e) => setSimCount(Number(e.target.value) || 100)}
+                  className="ml-auto w-20 rounded-md border border-slate-700 bg-black/40 px-2 py-0.5 font-mono text-[10px]"
                 />
-              </label>
-              <label className="block space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                  Weighted entries (JSON)
-                </span>
-                <textarea
-                  rows={5}
-                  value={draftEntriesJson}
-                  onChange={(e) => setDraftEntriesJson(e.target.value)}
-                  className="w-full resize-y rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px]"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                  Guaranteed drops (JSON)
-                </span>
-                <textarea
-                  rows={3}
-                  value={draftGuaranteedJson}
-                  onChange={(e) => setDraftGuaranteedJson(e.target.value)}
-                  className="w-full resize-y rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px]"
-                />
-              </label>
-
-              <div className="flex flex-wrap gap-1 pt-1">
                 <button
                   type="button"
-                  disabled={saving}
-                  onClick={() => void savePool()}
-                  className="rounded-md border border-[#806f47]/50 bg-[#cbb26a]/15 px-2 py-1 font-mono text-[10px] font-bold uppercase text-[#cbb26a]"
+                  onClick={runSimulate}
+                  className="rounded-md border border-[#806f47]/40 px-2 py-0.5 font-mono text-[10px] uppercase text-[#cbb26a]"
                 >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void clonePool()}
-                  className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 font-mono text-[10px] uppercase text-slate-300"
-                >
-                  <Copy className="h-3 w-3" /> Clone
-                </button>
-                <button
-                  type="button"
-                  onClick={exportJson}
-                  className="rounded-md border border-slate-700 px-2 py-1 font-mono text-[10px] uppercase text-slate-300"
-                >
-                  Export
-                </button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void deletePool()}
-                  className="inline-flex items-center gap-1 rounded-md border border-red-900/50 px-2 py-1 font-mono text-[10px] uppercase text-red-400"
-                >
-                  <Trash2 className="h-3 w-3" /> Delete
+                  Run
                 </button>
               </div>
-
-              <div className="mt-2 space-y-2 border-t border-slate-800 pt-2">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-[#cbb26a]" />
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Simulate
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={5000}
-                    value={simCount}
-                    onChange={(e) => setSimCount(Number(e.target.value) || 100)}
-                    className="ml-auto w-20 rounded-md border border-slate-700 bg-black/40 px-2 py-0.5 font-mono text-[10px]"
-                  />
-                  <button
-                    type="button"
-                    onClick={runSimulate}
-                    className="rounded-md border border-[#806f47]/40 px-2 py-0.5 font-mono text-[10px] uppercase text-[#cbb26a]"
-                  >
-                    Run
-                  </button>
-                </div>
-                {simStats && (
-                  <ul className="max-h-32 space-y-1 overflow-y-auto font-mono text-[10px]">
-                    {Object.entries(simStats)
-                      .sort((a, b) => b[1].rate - a[1].rate)
-                      .map(([itemId, s]) => (
-                        <li key={itemId} className="flex justify-between gap-2 text-slate-300">
-                          <span>{itemId}</span>
-                          <span className="text-slate-500">
-                            {(s.rate * 100).toFixed(1)}% · avg qty{' '}
-                            {(s.totalQty / Math.max(1, simCount)).toFixed(2)}
-                          </span>
-                        </li>
-                      ))}
-                  </ul>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+              {simStats && (
+                <ul className="max-h-32 space-y-1 overflow-y-auto font-mono text-[10px]">
+                  {Object.entries(simStats)
+                    .sort((a, b) => b[1].rate - a[1].rate)
+                    .map(([itemId, s]) => (
+                      <li key={itemId} className="flex justify-between gap-2 text-slate-300">
+                        <span>{itemId}</span>
+                        <span className="text-slate-500">
+                          {(s.rate * 100).toFixed(1)}% · avg qty{' '}
+                          {(s.totalQty / Math.max(1, simCount)).toFixed(2)}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 };

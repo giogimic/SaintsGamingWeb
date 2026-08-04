@@ -1,5 +1,58 @@
 # Local Changelog
 
+## 2026-08-04 — Deleted obsolete `giogimic/*` remotes
+
+Deleted all 12 leftover feature branches on `origin` (nothing unmerged; #26 + later studio work already on main). Skipped salvaging duplicate audit docs — main already has `logs/2026-08-04-studio-paint-and-permission-audit.md`, `studio-systems-audit.md`, `studio-dev-mode-ux.md`.
+
+Remote now: `origin/main` only (plus `HEAD`).
+
+---
+
+## 2026-08-04 — Dialogue + Class panels → CatalogEditorShell
+
+### Change
+- `DialogueEditorPanel.tsx` and `ClassEditorPanel.tsx` now use shared `CatalogEditorShell` chrome (same pattern as `QuestEditorPanel.tsx`).
+- Custom headers / grid list-form layouts replaced with `title` / `blurb` / `dirty` / `toolbar` / `list` + children.
+- Removed unused header icons (`MessageSquare`, `UserCheck`). Form bodies, save/delete/seed/json/shiny/nodes behavior preserved.
+
+---
+
+## 2026-08-04 — Remote branch cleanup audit (vs `origin/main` @ `2b8af68`)
+
+Fetch pruned 3 already-deleted remotes: `lobby-click-pass-all-49b4`, `realtime-milestone-2-1aba`, `ucp-back-line-1aba`.
+
+**Nothing left to merge.** All remaining `origin/giogimic/*` tips are either ancestors of main or squash-landed via #26 / later studio commits; merging any tip would regress (tips are behind main by 4–38 commits).
+
+| Branch | Status | Action |
+| :--- | :--- | :--- |
+| `branch-cleanup-defeat-fix-49b4` | Ancestor (0 ahead) | **Delete** |
+| `studio-architecture-phase1-370c` | Ancestor | **Delete** |
+| `studio-demo-tileset-seed-370c` | Ancestor | **Delete** |
+| `studio-demo-visible-ground-49b4` | Ancestor | **Delete** |
+| `studio-master-architecture-49b4` | Ancestor | **Delete** |
+| `studio-systems-audit-e53a` | Patch on main (`git cherry -`) | **Delete** |
+| `studio-dev-mode-ux-e53a` | Landed via #26 squash | **Delete** |
+| `studio-paint-and-permission-audit-56ee` | Landed via #26 | **Delete** |
+| `studio-paint-and-permission-fixes-72c8` | Landed via #26 | **Delete** |
+| `studio-paint-permissions-ux-49b4` | Landed via #26 | **Delete** |
+| `studio-paint-permissions-audit-7229` | Code on main; only unique file is alternate audit doc | **Delete** (optional salvage doc first) |
+| `studio-paint-permissions-audit-d3a5` | Same; unique `info/audits/...` doc only | **Delete** (optional salvage) |
+
+Local: only `main` checked out. No open feature branches locally.
+
+---
+
+## 2026-08-04 — Hide The Lobby nav link for guests
+
+### Change
+- `src/shared/components/navbar.tsx`: desktop + mobile nav now omit `/lobby` (“The Lobby”) unless `session.user` is present.
+- Public visitors no longer see a site-chrome link into the game; logged-in users still do.
+
+### Note
+- UI-only gate — direct `/lobby` URLs are unchanged. Route auth can be added separately if needed.
+
+---
+
 ## 2026-08-04 — Staging build break (duplicate import)
 
 ### Problem

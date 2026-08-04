@@ -5,6 +5,7 @@ import {
   setEditorMode,
   shouldDisableGameplayInput,
   shouldExportEditorOverlays,
+  shouldHidePlayerAvatar,
   shouldShowGameplayHud,
   shouldSuppressGameplaySystems,
   studioRuntimeFromCreation,
@@ -52,6 +53,15 @@ describe("studioSession", () => {
     expect(shouldShowGameplayHud({ isEditorMode: true, isCreationMode: true })).toBe(false);
     expect(shouldShowGameplayHud({ isEditorMode: true, isCreationMode: false })).toBe(true);
     expect(shouldShowGameplayHud({ isEditorMode: false, isCreationMode: false })).toBe(true);
+  });
+
+  it("hides player avatar during Studio editor runtime", () => {
+    expect(
+      shouldHidePlayerAvatar({ isEditorMode: true, isCreationMode: true })
+    ).toBe(true);
+    expect(
+      shouldHidePlayerAvatar({ isEditorMode: true, isCreationMode: false })
+    ).toBe(false);
   });
 
   it("never exports editor overlays to runtime", () => {
