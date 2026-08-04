@@ -24,10 +24,12 @@ When new code is pushed to the repository, **do not** manually run `git pull` or
 ./scripts/update.sh
 ```
 
-This script safely automates the entire update pipeline:
+This script safely automates the entire **code** update pipeline:
 1. Performs an automated database backup.
 2. Pulls the latest code from `main`.
 3. Rebuilds the Docker containers and applies any database schema changes.
+
+For **content** hot-reload (maps, loot, quests) without restart, see [`info/gameplay-bible/26-studio-live-operations.md`](../gameplay-bible/26-studio-live-operations.md).
 4. Restarts the Node server and reloads the Caddy proxy seamlessly.
 
 ## Manual Local Development (Advanced)

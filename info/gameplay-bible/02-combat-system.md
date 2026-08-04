@@ -1,5 +1,7 @@
 # Saints Gaming — Gameplay Bible: Combat System Decision (Draft v0.1)
 
+> **Studio combat/ability/status editors:** [`25-studio-gameplay-editors.md`](./25-studio-gameplay-editors.md) · TB: [`11`](./11-turn-based-battle-engine.md)
+
 # Combat Identity
 
 **Saints Gaming uses real-time MMO-style combat with creature abilities, player skills, and cooperative party mechanics.**

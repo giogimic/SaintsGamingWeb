@@ -2,6 +2,8 @@
 
 Saints Gaming is not a standalone executable; it is embedded deeply within a Next.js 16 web application. This provides a massive advantage for user acquisition, social loops, and account management, but it requires strict architectural boundaries.
 
+> **Schema / Studio backend truth:** [`28-studio-backend-architecture.md`](./28-studio-backend-architecture.md) (supersedes idealized model names in this doc and in `13` where they drift from `prisma/schema.prisma`).
+
 ---
 
 # 1. The Next.js & Game Engine Boundary
