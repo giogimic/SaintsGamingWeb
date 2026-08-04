@@ -10,8 +10,9 @@ import {
   type DialogueOptionInput,
 } from '@/app/actions/npc-dialogue';
 import { KNOWN_ACTIONS } from '@/shared/game/dialogueActions';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import {
-  Plus, Trash2, Save, RefreshCw, MessageSquare, CheckCircle2, AlertCircle,
+  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle,
 } from 'lucide-react';
 
 const inputCls =
@@ -152,79 +153,79 @@ export function DialogueEditorPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full gap-3 text-slate-200">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-sky-400" />
-          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
-            Dialogue
-          </span>
-        </div>
+    <CatalogEditorShell
+      title="Dialogue Catalog"
+      blurb="Script mode · NpcDialogueTree SoT · nodes or raw JSON"
+      dirty={isNew}
+      toolbar={
         <div className="flex gap-1">
           <button
             type="button"
             onClick={() => void loadList()}
-            className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-900"
+            className="rounded p-1.5 text-slate-400 hover:bg-white/5"
             title="Refresh"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
           <button
             type="button"
             onClick={handleNew}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg border border-sky-900/50 text-sky-300 text-[10px] font-bold uppercase"
+            className="rounded p-1.5 text-sky-400 hover:bg-white/5"
+            title="New dialogue"
           >
-            <Plus className="w-3.5 h-3.5" /> New
+            <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-      </div>
-
-      {status && (
-        <div
-          className={`flex items-center gap-2 text-[10px] px-2 py-1 rounded-lg border ${
-            status.type === 'success'
-              ? 'border-emerald-900/50 text-emerald-300'
-              : 'border-red-900/50 text-red-300'
-          }`}
-        >
-          {status.type === 'success' ? (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          ) : (
-            <AlertCircle className="w-3.5 h-3.5" />
-          )}
-          {status.msg}
-        </div>
-      )}
-
-      <div className="grid grid-cols-5 gap-3 min-h-0 flex-1">
-        <div className="col-span-2 flex flex-col gap-2 min-h-0">
+      }
+      list={
+        <div className="flex flex-col gap-2">
           <input
             className={inputCls}
             placeholder="Filter npcId…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
-          <div className="flex-1 overflow-y-auto rounded-xl border border-slate-800 divide-y divide-slate-900/80 max-h-[420px]">
+          <div className="space-y-1">
             {list.map((row) => (
               <button
                 key={row.npcId}
                 type="button"
                 onClick={() => void handleSelect(row.npcId)}
-                className={`w-full text-left px-2.5 py-2 text-[11px] hover:bg-slate-900/80 ${
-                  row.npcId === npcId ? 'bg-sky-950/40 text-sky-200' : 'text-slate-400'
+                className={`w-full rounded border px-2 py-1.5 text-left transition-colors ${
+                  row.npcId === npcId
+                    ? 'border-sky-600/50 bg-sky-950/40 text-sky-200'
+                    : 'border-transparent text-slate-400 hover:bg-white/5'
                 }`}
               >
-                <div className="font-mono truncate">{row.npcId}</div>
-                <div className="text-[9px] text-slate-600 truncate">{row.name}</div>
+                <div className="truncate font-mono text-[11px]">{row.npcId}</div>
+                <div className="truncate text-[9px] text-slate-600">{row.name}</div>
               </button>
             ))}
             {list.length === 0 && (
-              <div className="p-3 text-[10px] text-slate-600">No dialogue trees.</div>
+              <p className="p-2 text-[10px] text-slate-500">No dialogue trees.</p>
             )}
           </div>
         </div>
+      }
+    >
+      {status && (
+        <div
+          className={`mb-2 flex items-center gap-1.5 rounded px-2 py-1 text-[10px] ${
+            status.type === 'success'
+              ? 'bg-emerald-900/40 text-emerald-300'
+              : 'bg-red-900/40 text-red-300'
+          }`}
+        >
+          {status.type === 'success' ? (
+            <CheckCircle2 className="h-3 w-3" />
+          ) : (
+            <AlertCircle className="h-3 w-3" />
+          )}
+          {status.msg}
+        </div>
+      )}
 
-        <div className="col-span-3 flex flex-col gap-2 min-h-0 overflow-y-auto max-h-[480px] pr-1">
+      <div className="flex flex-col gap-2 pr-1">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>npcId</label>
@@ -424,8 +425,7 @@ export function DialogueEditorPanel() {
               <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
           </div>
-        </div>
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 }

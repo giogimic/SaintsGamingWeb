@@ -61,6 +61,11 @@ export function shouldDisableGameplayInput(gate: StudioGameplayGate): boolean {
   return isCreationActive(gate);
 }
 
+/** Hide local player avatar while authoring (avatar-free editor viewport). */
+export function shouldHidePlayerAvatar(gate: StudioGameplayGate): boolean {
+  return isCreationActive(gate);
+}
+
 /** Editor-only overlays must never be serialized into runtime map exports. */
 export function shouldExportEditorOverlays(): boolean {
   return false;
