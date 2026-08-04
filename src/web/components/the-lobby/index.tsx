@@ -1090,7 +1090,9 @@ export default function TheLobby({
       >
         {gameMode === 'BATTLE' && !suppressGameplay && <TurnBattleOverlay />}
 
-        {enableStudio && <StudioEditorShell />}
+        {/* Defense-in-depth: /studio layout already redirects non-Admin+ users,
+            but gate the shell on the client too if this mounts elsewhere. */}
+        {enableStudio && canStudio && <StudioEditorShell />}
 
         {isStaff && gameMode === 'EXPLORING' && showGameplayHud && (
           <StaffFloatingMenu
