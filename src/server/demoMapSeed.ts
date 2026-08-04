@@ -7,6 +7,58 @@ export const DEMO_MAP_ID = "DEMO_SANDBOX";
 export const DEMO_MAP_W = 30;
 export const DEMO_MAP_H = 30;
 
+/**
+ * Default Tuxemon/George tilesets for Studio visual paint.
+ * DEMO_SANDBOX historically shipped logic-grid only (tileLayers=[], tilesets=[]),
+ * which left TilesetPicker empty and made PR #18 paint overlays a no-op.
+ * Keep in sync with WorldBuilderPanel / createBlankWorldProfile.
+ */
+export type StudioTilesetMeta = {
+  firstgid: number;
+  imageSource: string;
+  columns: number;
+  tilewidth: number;
+  tileheight: number;
+};
+
+export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
+  { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+  { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+  { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+  { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
+  { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
+];
+
+/** Empty Ground visual layer sized to a logic grid (GID 0 = transparent / unset). */
+export function buildEmptyGroundLayer(grid: number[][]): { name: string; grid: number[][] } {
+  const h = grid.length || DEMO_MAP_H;
+  const w = grid[0]?.length || DEMO_MAP_W;
+  return {
+    name: "Ground",
+    grid: Array.from({ length: h }, () => Array.from({ length: w }, () => 0)),
+  };
+}
+
+/** True when Studio cannot paint visuals (no layers and/or no tilesets). */
+export function needsStudioTilesetBootstrap(
+  tileLayersData: string | null | undefined,
+  tilesetsData: string | null | undefined
+): boolean {
+  let layers: unknown[] = [];
+  let tilesets: unknown[] = [];
+  try {
+    layers = JSON.parse(tileLayersData || "[]");
+  } catch {
+    layers = [];
+  }
+  try {
+    tilesets = JSON.parse(tilesetsData || "[]");
+  } catch {
+    tilesets = [];
+  }
+  return !Array.isArray(layers) || layers.length === 0 || !Array.isArray(tilesets) || tilesets.length === 0;
+}
+
 /** Logic tile definitions (same as scripts/seed-tiles + bramble). */
 export const DEMO_LOGIC_TILES = [
   { id: 0, name: "Walkable", color: "bg-emerald-900", isSolid: false, interactable: false, onInteractAction: null as string | null, onInteractPayload: null as string | null, onStepAction: null as string | null, onStepPayload: null as string | null },
