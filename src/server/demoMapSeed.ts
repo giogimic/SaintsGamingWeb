@@ -30,20 +30,89 @@ export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
 ];
 
 /**
- * Terrain_by_George first tile (firstgid=1). Used so bootstrapped DEMO is not a
- * black void — rich path skips GID 0, so an all-zero Ground draws nothing.
+ * Solid grass on Terrain_by_George (localId 16 → GID 17).
+ * GID 1 is a stair fragment — filling with it produces green wedges on black.
  */
-export const DEFAULT_STUDIO_GROUND_GID = 1;
+export const DEFAULT_STUDIO_GROUND_GID = 17;
+
+/** Old bootstrap fill — stair fragment tiles. */
+export const LEGACY_BAD_GROUND_GIDS = new Set([1]);
+
+/** Below this non-zero density, treat visual layers as an empty sandbox. */
+export const STUDIO_GROUND_FILL_DENSITY = 0.05;
+
+export function countVisualGids(
+  layers: Array<{ grid?: number[][] }> | null | undefined
+): { total: number; nonzero: number } {
+  let total = 0;
+  let nonzero = 0;
+  if (!Array.isArray(layers)) return { total: 0, nonzero: 0 };
+  for (const layer of layers) {
+    const grid = layer?.grid;
+    if (!Array.isArray(grid)) continue;
+    for (const row of grid) {
+      if (!Array.isArray(row)) continue;
+      for (const cell of row) {
+        total += 1;
+        if (cell) nonzero += 1;
+      }
+    }
+  }
+  return { total, nonzero };
+}
 
 export function isVisualTileLayersBlank(
   layers: Array<{ grid?: number[][] }> | null | undefined
 ): boolean {
   if (!Array.isArray(layers) || layers.length === 0) return true;
-  return layers.every((layer) => {
+  const { total, nonzero } = countVisualGids(layers);
+  if (total === 0) return true;
+  if (nonzero / total < STUDIO_GROUND_FILL_DENSITY) return true;
+  return isLegacyBadGroundFill(layers);
+}
+
+export function isLegacyBadGroundFill(
+  layers: Array<{ grid?: number[][] }> | null | undefined
+): boolean {
+  if (!Array.isArray(layers) || layers.length === 0) return false;
+  let total = 0;
+  let bad = 0;
+  for (const layer of layers) {
     const grid = layer?.grid;
-    if (!Array.isArray(grid) || grid.length === 0) return true;
-    return grid.every((row) => !Array.isArray(row) || row.every((cell) => !cell));
-  });
+    if (!Array.isArray(grid)) continue;
+    for (const row of grid) {
+      if (!Array.isArray(row)) continue;
+      for (const cell of row) {
+        total += 1;
+        if (LEGACY_BAD_GROUND_GIDS.has(cell)) bad += 1;
+      }
+    }
+  }
+  return total > 0 && bad / total >= 0.9;
+}
+
+export function fillZeroGidsInLayers<T extends { name: string; grid: number[][] }>(
+  layers: T[],
+  fillGid: number = DEFAULT_STUDIO_GROUND_GID
+): T[] {
+  return layers.map((layer) => ({
+    ...layer,
+    grid: (layer.grid || []).map((row) =>
+      (row || []).map((cell) => (cell ? cell : fillGid))
+    ),
+  }));
+}
+
+export function upgradeLegacyGroundGids<T extends { name: string; grid: number[][] }>(
+  layers: T[],
+  fillGid: number = DEFAULT_STUDIO_GROUND_GID
+): T[] {
+  return layers.map((layer) => ({
+    ...layer,
+    grid: (layer.grid || []).map((row) =>
+      (row || []).map((cell) => (LEGACY_BAD_GROUND_GIDS.has(cell) ? fillGid : cell))
+    ),
+  }));
 }
 
 /** Ground visual layer filled with default terrain so Studio isn't a black void. */
@@ -68,7 +137,7 @@ export function needsStudioTilesetBootstrap(
   tileLayersData: string | null | undefined,
   tilesetsData: string | null | undefined
 ): boolean {
-  let layers: Array<{ grid?: number[][] }> = [];
+  let layers: Array<{ name?: string; grid?: number[][] }> = [];
   let tilesets: unknown[] = [];
   try {
     layers = JSON.parse(tileLayersData || "[]");
@@ -82,7 +151,7 @@ export function needsStudioTilesetBootstrap(
   }
   if (!Array.isArray(tilesets) || tilesets.length === 0) return true;
   if (!Array.isArray(layers) || layers.length === 0) return true;
-  // PR #20 bootstrapped tilesets + all-zero Ground → black rich path. Re-fill.
+  // Nearly-empty Ground (PR #20 all-zero, or a few brush tests) still looks black.
   return isVisualTileLayersBlank(layers);
 }
 

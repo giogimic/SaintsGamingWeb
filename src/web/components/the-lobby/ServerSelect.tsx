@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useGameStore } from './store';
 import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
+import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
 interface ServerInfo {
   id: string;
@@ -27,6 +29,7 @@ function PingDots({ status }: { status: 'online' | 'offline' }) {
 }
 
 export default function ServerSelect() {
+  const { data: session, status: authStatus } = useSession();
   const setGameMode = useGameStore((state) => state.setGameMode);
   const mmoPlayerCount = useRealtimeStore((s) => s.mmoPlayerCount);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
@@ -35,6 +38,12 @@ export default function ServerSelect() {
   ]);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isStartingServer, setIsStartingServer] = useState(false);
+
+  // Start Realm is Admin+ only (POST /api/game/server-status). Never show to
+  // logged-out users or regular players — the button would 401/403.
+  const canStartRealm =
+    authStatus === 'authenticated' &&
+    canUseStudioServerControls(session?.user?.permissionLevel);
 
   const fetchStatus = async () => {
     try {
@@ -117,7 +126,7 @@ export default function ServerSelect() {
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500"
+      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500"
       style={{ background: 'rgba(5,0,15,0.94)', backdropFilter: 'blur(14px)' }}
     >
       {/* Background glow */}
@@ -202,21 +211,27 @@ export default function ServerSelect() {
             >
               <div className="flex items-center gap-2 text-red-300 text-xs font-mono">
                 <AlertTriangle size={14} className="text-red-400 shrink-0" />
-                <span>Realm is currently offline. Start server to enter.</span>
+                <span>
+                  {canStartRealm
+                    ? 'Realm is currently offline. Start server to enter.'
+                    : 'Realm is currently offline. Please try again later.'}
+                </span>
               </div>
-              <button
-                onClick={handleStartDevServer}
-                disabled={isStartingServer}
-                className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shrink-0"
-                style={{
-                  background: 'rgba(16,185,129,0.2)',
-                  border: '1px solid rgba(16,185,129,0.4)',
-                  color: '#6ee7b7',
-                }}
-              >
-                <Power size={11} />
-                {isStartingServer ? 'Starting...' : 'Start Realm (Dev)'}
-              </button>
+              {canStartRealm && (
+                <button
+                  onClick={handleStartDevServer}
+                  disabled={isStartingServer}
+                  className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shrink-0"
+                  style={{
+                    background: 'rgba(16,185,129,0.2)',
+                    border: '1px solid rgba(16,185,129,0.4)',
+                    color: '#6ee7b7',
+                  }}
+                >
+                  <Power size={11} />
+                  {isStartingServer ? 'Starting...' : 'Start Realm (Dev)'}
+                </button>
+              )}
             </div>
           )}
 
