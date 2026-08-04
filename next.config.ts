@@ -30,6 +30,21 @@ const nextConfig: NextConfig = {
       test: /\.tsx?$/,
       exclude: /scripts/,
     });
+    // The SQLite database lives inside the repo, so every gameplay write used to
+    // trip the dev watcher. The resulting Fast Refresh remounts the Babylon
+    // canvas, and remounting clears live Studio paint overlays.
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: [
+        "**/.git/**",
+        "**/node_modules/**",
+        "**/logs/**",
+        "**/*.db",
+        "**/*.db-journal",
+        "**/*.db-wal",
+        "**/*.db-shm",
+      ],
+    };
     return config;
   },
   images: {

@@ -2,8 +2,8 @@
  * Saints Studio session flags (bible 17).
  *
  * `isEditorMode` is true whenever the client is on `/studio`.
- * Create tools use `isCreationMode` (editor-store); Walk Mode play-tests
- * with gameplay systems re-enabled (bible 16 fun-first loop).
+ * Create tools use `isCreationMode` (editor-store); Studio defaults to
+ * Development Mode. Walk Mode play-tests with gameplay systems re-enabled.
  *
  * Full avatar-free / no-gameplay-network Studio sessions are a later phase —
  * Phase 1 provides a clean gate without duplicating lobby vs studio shells.

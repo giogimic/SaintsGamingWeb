@@ -25,7 +25,7 @@ export const AssetBrowserPanel: React.FC = () => {
 
   useEffect(() => {
     if (studioMode === 'npc') setActiveTab('sprites');
-    else if (studioMode === 'build') setActiveTab('manager');
+    else if (studioMode === 'develop') setActiveTab('manager');
   }, [studioMode]);
 
   const handleSpriteSelect = (assets: GameAssetItem[]) => {

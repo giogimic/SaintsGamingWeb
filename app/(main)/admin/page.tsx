@@ -1,13 +1,28 @@
 import { prisma } from "@/web/lib/prisma";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Users, FileText, Gamepad2, Tv, MessageSquare, LayoutDashboard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { auth } from "@/auth";
+import { PERMISSION_LEVELS, hasPermission } from "@/web/lib/permissions";
 
 export const metadata = {
   title: "Admin Dashboard",
 };
 
 export default async function AdminDashboardPage() {
+  // The layout admits Moderator+ *or* isWriter, so a level-20 writer lands here.
+  // Gate each card the same way the sidebar does instead of advertising modules
+  // the visitor cannot open.
+  const session = await auth();
+  if (!session?.user?.id) redirect("/not-found");
+  const viewer = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { permissionLevel: true, isWriter: true },
+  });
+  if (!viewer) redirect("/not-found");
+  const level = viewer.permissionLevel;
+
   // Fetch some quick stats
   const [
     userCount,
@@ -46,6 +61,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/news",
       icon: <FileText className="h-6 w-6 text-primary" />,
       stat: `${newsCount} Articles`,
+      isVisible: hasPermission(level, PERMISSION_LEVELS.ADMIN) || viewer.isWriter,
     },
     {
       title: "Modpacks & Servers",
@@ -53,6 +69,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/modpacks",
       icon: <Gamepad2 className="h-6 w-6 text-primary" />,
       stat: `${modpackCount} Modpacks`,
+      isVisible: hasPermission(level, PERMISSION_LEVELS.ADMIN),
     },
     {
       title: "Stream Approvals",
@@ -60,6 +77,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/streams",
       icon: <Tv className="h-6 w-6 text-primary" />,
       stat: `${streamCount} Profiles`,
+      isVisible: hasPermission(level, PERMISSION_LEVELS.MODERATOR),
     },
     {
       title: "Forum Categories",
@@ -67,6 +85,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/forum",
       icon: <MessageSquare className="h-6 w-6 text-primary" />,
       stat: `${categoryCount} Categories`,
+      isVisible: hasPermission(level, PERMISSION_LEVELS.HEAD_MODERATOR),
     },
     {
       title: "Game Dev Suite",
@@ -74,6 +93,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/game-dev/quests",
       icon: <Gamepad2 className="h-6 w-6 text-emerald-400" />,
       stat: `${gameQuestCount} Quests / ${gameAssetCount} Assets`,
+      isVisible: hasPermission(level, PERMISSION_LEVELS.DEVELOPER),
     },
     {
       title: "User Management",
@@ -81,8 +101,9 @@ export default async function AdminDashboardPage() {
       href: "/admin/users",
       icon: <Users className="h-6 w-6 text-muted-foreground" />,
       stat: `${userCount} Users`,
+      isVisible: hasPermission(level, PERMISSION_LEVELS.ADMIN),
     },
-  ];
+  ].filter((link) => link.isVisible);
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -118,6 +139,21 @@ export default async function AdminDashboardPage() {
           </Link>
         ))}
 
+        {quickLinks.length === 0 && (
+          <Card className="h-full bg-card/40 border-border/50 sg-glass md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold">No modules available</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Your account does not have access to any management modules. Use the
+                sidebar for the areas you can reach.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {hasPermission(level, PERMISSION_LEVELS.MODERATOR) && (
         <Card className="h-full bg-primary/5 border-primary/20 sg-glass">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-primary">System Status</CardTitle>
@@ -149,6 +185,7 @@ export default async function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );

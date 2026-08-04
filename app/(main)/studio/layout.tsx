@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/web/lib/prisma';
-import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 export const metadata: Metadata = {
   title: 'Studio | Saints Gaming',
@@ -21,7 +21,10 @@ export default async function StudioLayout({
     select: { permissionLevel: true },
   });
 
-  if (!dbUser || !hasPermission(dbUser.permissionLevel, PERMISSION_LEVELS.DEVELOPER)) {
+  // Single source of truth with the client gate. This route previously required
+  // DEVELOPER while `canEnterStudio` (and every Studio dock and content API) uses
+  // ADMIN, so Admins were shown OPEN STUDIO and then bounced back to /lobby.
+  if (!dbUser || !canEnterStudio(dbUser.permissionLevel)) {
     redirect('/lobby');
   }
 

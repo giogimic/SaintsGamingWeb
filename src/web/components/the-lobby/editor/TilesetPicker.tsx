@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 
 interface TilesetPickerProps {
   tilesets: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
@@ -20,8 +20,26 @@ export default function TilesetPicker({
   onAddLayer
 }: TilesetPickerProps) {
   const [activeTsIdx, setActiveTsIdx] = useState(0);
+  const [natural, setNatural] = useState({ w: 0, h: 0 });
   const ts = tilesets[activeTsIdx];
   const imgRef = useRef<HTMLImageElement>(null);
+
+  const selection = useMemo(() => {
+    if (!ts || !natural.w || !natural.h) return null;
+    const local = activeBrushTileId - ts.firstgid;
+    if (local < 0) return null;
+    const maxLocal = Math.floor(natural.h / ts.tileheight) * ts.columns;
+    if (local >= maxLocal) return null;
+    const col = local % ts.columns;
+    const row = Math.floor(local / ts.columns);
+    return {
+      leftPct: (col / ts.columns) * 100,
+      topPct: ((row * ts.tileheight) / natural.h) * 100,
+      widthPct: (1 / ts.columns) * 100,
+      heightPct: (ts.tileheight / natural.h) * 100,
+      local,
+    };
+  }, [ts, activeBrushTileId, natural]);
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!ts || !imgRef.current) return;
@@ -37,6 +55,9 @@ export default function TilesetPicker({
     
     const col = Math.floor(nativeX / ts.tilewidth);
     const row = Math.floor(nativeY / ts.tileheight);
+
+    if (col < 0 || row < 0 || col >= ts.columns) return;
+    if (nativeY >= imgRef.current.naturalHeight) return;
     
     const gid = ts.firstgid + (row * ts.columns) + col;
     onBrushSelect(gid);
@@ -44,14 +65,19 @@ export default function TilesetPicker({
 
   return (
     <div className="flex flex-col gap-2 font-mono">
+      <p className="text-[10px] leading-relaxed text-slate-400">
+        Click a tile below to set your brush, then click or drag on the map. Prefer solid grass (GID 17) for ground fills.
+      </p>
+
       <div className="flex flex-col gap-1 bg-black/40 p-2 rounded border border-slate-800">
         <div className="flex justify-between items-center mb-1">
            <span className="text-[10px] font-bold text-slate-400">TILE LAYERS</span>
-           <button onClick={onAddLayer} className="text-[10px] bg-amber-700 hover:bg-[#806f47] text-white px-1.5 rounded transition-colors">+ Layer</button>
+           <button type="button" onClick={onAddLayer} className="text-[10px] bg-amber-700 hover:bg-[#806f47] text-white px-1.5 rounded transition-colors">+ Layer</button>
         </div>
         {tileLayers.map((layer, idx) => (
           <button 
-            key={idx} 
+            key={idx}
+            type="button"
             onClick={() => onLayerChange(idx)}
             className={`text-left text-xs px-2 py-1 rounded transition-colors ${activeLayerIdx === idx ? 'bg-[#806f47] text-white font-bold' : 'bg-[#0b1320] text-slate-400 hover:bg-slate-800'}`}
           >
@@ -64,7 +90,10 @@ export default function TilesetPicker({
         <label className="text-[10px] font-bold text-slate-400">ACTIVE TILESET</label>
         <select 
           value={activeTsIdx} 
-          onChange={(e) => setActiveTsIdx(parseInt(e.target.value))}
+          onChange={(e) => {
+            setActiveTsIdx(parseInt(e.target.value));
+            setNatural({ w: 0, h: 0 });
+          }}
           className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
         >
           {tilesets.map((t, i) => (
@@ -75,25 +104,43 @@ export default function TilesetPicker({
 
       {ts && (
         <div className="bg-black/60 rounded border border-slate-700 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
-           <img 
-             ref={imgRef}
-             src={
-               ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
-                 ? ts.imageSource
-                 : `/game-assets/tilesets/${ts.imageSource}`
-             }
-             alt={ts.imageSource}
-             onClick={handleImageClick}
-             className="cursor-crosshair w-full"
-             style={{ imageRendering: 'pixelated', minWidth: `${ts.columns * ts.tilewidth}px` }}
-             onError={(e) => {
-               const el = e.currentTarget;
-               if (!el.dataset.fallback) {
-                 el.dataset.fallback = '1';
-                 el.src = `/game-assets/tilesets/Terrain_by_George.png`;
+           <div className="relative inline-block min-w-full">
+             <img 
+               ref={imgRef}
+               src={
+                 ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
+                   ? ts.imageSource
+                   : `/game-assets/tilesets/${ts.imageSource}`
                }
-             }}
-           />
+               alt={ts.imageSource}
+               onClick={handleImageClick}
+               onLoad={(e) => {
+                 const el = e.currentTarget;
+                 setNatural({ w: el.naturalWidth, h: el.naturalHeight });
+               }}
+               className="cursor-crosshair w-full"
+               style={{ imageRendering: 'pixelated', minWidth: `${ts.columns * ts.tilewidth}px` }}
+               onError={(e) => {
+                 const el = e.currentTarget;
+                 if (!el.dataset.fallback) {
+                   el.dataset.fallback = '1';
+                   el.src = `/game-assets/tilesets/Terrain_by_George.png`;
+                 }
+               }}
+             />
+             {selection && (
+               <div
+                 className="pointer-events-none absolute border-2 border-[#cbb26a] bg-[#cbb26a]/15 shadow-[0_0_0_1px_rgba(0,0,0,0.75)]"
+                 style={{
+                   left: `${selection.leftPct}%`,
+                   top: `${selection.topPct}%`,
+                   width: `${selection.widthPct}%`,
+                   height: `${selection.heightPct}%`,
+                 }}
+                 title={`Selected local ${selection.local}`}
+               />
+             )}
+           </div>
         </div>
       )}
       

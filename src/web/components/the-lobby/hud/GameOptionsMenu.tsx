@@ -134,7 +134,7 @@ export default function GameOptionsMenu({
                   
                   {isAdminUser && (
                     <div className="flex items-center justify-between p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl mb-6">
-                      <span className="text-amber-700 font-extrabold text-sm uppercase">Studio Editor Mode (Ctrl+E)</span>
+                      <span className="text-amber-700 font-extrabold text-sm uppercase">Development Mode (Ctrl+E)</span>
                       <button 
                         onClick={onToggleDevEditor}
                         className={`w-12 h-6 rounded-full relative transition-colors border-2 ${isCreationMode ? 'bg-amber-400 border-amber-500' : 'bg-slate-200 border-slate-300'}`}

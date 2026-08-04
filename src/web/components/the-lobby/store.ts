@@ -1,7 +1,23 @@
 import { create } from 'zustand';
+import { setAutoFreeze } from 'immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { buildInitialSkills } from '../../../shared/game/skillTypings';
+
+/**
+ * `activeMapData` is handed straight to Babylon and mutated in place by Studio
+ * paint, so it must stay writable.
+ *
+ * Immer deep-freezes the whole produced state, and every `set((state) => …)`
+ * action here — player movement, chat, HP — froze `activeMapData.grid` along
+ * with it. Painting then threw `Cannot assign to read only property` from inside
+ * the Babylon pointer handler: for a visual layer the overlay had already been
+ * drawn so the tile appeared but was never persisted, and for the Logic layer the
+ * write came first so the click did nothing at all. Whether a stroke landed
+ * depended on which unrelated action had produced state most recently, which is
+ * why painting appeared to work only some of the time.
+ */
+setAutoFreeze(false);
 
 export type GameMode = 'TITLE_SCREEN' | 'LOGIN' | 'SERVER_SELECT' | 'CHARACTER_SELECT' | 'CHARACTER_CREATOR' | 'EXPLORING' | 'BATTLE' | 'DEX' | 'SHOP' | 'SKILLS' | 'INVENTORY' | 'PARTY' | 'EQUIPMENT' | 'CRAFTING' | 'BASE' | 'DIALOG' | 'MAP_EDITOR' | 'PAUSED' | 'PROFESSOR_LAB' | 'GTC' | 'QUESTS' | 'LEADERBOARD' | 'ACHIEVEMENTS';
 

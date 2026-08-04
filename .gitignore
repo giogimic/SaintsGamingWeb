@@ -57,7 +57,9 @@ docker-compose.yml
 # AI / Local Work
 /ai/
 /articles/
-/logs/
+# Runtime log files stay ignored; written-up audits / change logs are tracked.
+/logs/*
+!/logs/*.md
 /.agents/
 /.tools/
 /patch/

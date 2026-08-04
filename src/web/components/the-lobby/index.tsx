@@ -205,8 +205,8 @@ export default function TheLobby({
       await useGameStore.getState().fetchLogicTiles();
 
       if (enableStudio) {
-        // Doc 16: Walk Mode is the default Studio entry — create tools are opt-in.
-        useEditorStore.getState().enterWalkMode();
+        // Studio opens in Development Mode; Walk Mode is for play-testing only.
+        useEditorStore.getState().enterDevelopmentMode();
         const mapsRes = await fetchAllMaps();
         if (mapsRes.success && mapsRes.data) {
           setDevMapList(mapsRes.data);
@@ -1090,7 +1090,9 @@ export default function TheLobby({
       >
         {gameMode === 'BATTLE' && !suppressGameplay && <TurnBattleOverlay />}
 
-        {enableStudio && <StudioEditorShell />}
+        {/* Defense-in-depth: /studio layout already redirects non-Admin+ users,
+            but gate the shell on the client too if this mounts elsewhere. */}
+        {enableStudio && canStudio && <StudioEditorShell />}
 
         {isStaff && gameMode === 'EXPLORING' && showGameplayHud && (
           <StaffFloatingMenu
@@ -1128,7 +1130,7 @@ export default function TheLobby({
                   }`}
               >
                 <span className="text-sm leading-none">🔨</span>
-                <span className="hidden sm:inline">STUDIO (Ctrl+E)</span>
+                <span className="hidden sm:inline">{isCreationMode ? 'WALK (Ctrl+E)' : 'DEVELOP (Ctrl+E)'}</span>
               </button>
             )}
             {!enableStudio && canStudio && (
