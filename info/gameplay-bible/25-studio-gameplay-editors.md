@@ -7,8 +7,10 @@
 > **Companions (do not fork)**
 > - [`02-combat-system.md`](./02-combat-system.md) · [`11-turn-based-battle-engine.md`](./11-turn-based-battle-engine.md) — combat constitution
 > - [`09-progression-27-skills.md`](./09-progression-27-skills.md) · [`14-skills-economy-deep-dive.md`](./14-skills-economy-deep-dive.md) — skill matrix intent
-> - [`25-studio-gameplay-editors.md`](./25-studio-gameplay-editors.md) — **ability/skill/profession/balance editors**
+> - [`23-studio-economy-system.md`](./23-studio-economy-system.md) — items, recipes, gather defs, loot
 > - [`22`](./22-studio-npc-ai-creature-editors.md) · [`24`](./24-studio-quest-editor.md) · [`18`](./18-studio-master-architecture.md) · [`19`](./19-studio-ux-design.md)
+
+**This document is the gameplay-editor master.** One **Ability** registry, one **Status** registry, one **Skill** registry, one **Class** dock, one **Profession/Recipe** pipeline, one **XP curve** config — editors are thin shells over shared catalogs (`CatalogEditorShell` / `SchemaFieldRenderer`).
 
 **This document is the gameplay-editor master.** One **Ability** registry, one **Status** registry, one **Skill** registry, one **Class** dock, one **Profession/Recipe** pipeline, one **XP curve** config — editors are thin shells over shared catalogs (`CatalogEditorShell` / `SchemaFieldRenderer`).
 
