@@ -182,7 +182,7 @@ export default function GameTitleScreen() {
   };
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-[100] overflow-hidden" style={{ background: '#05000f' }}>
+    <div className="pointer-events-auto absolute inset-0 z-[200] overflow-hidden" style={{ background: '#05000f' }}>
       <TitleBackground />
 
       {/* Vignette overlay */}
