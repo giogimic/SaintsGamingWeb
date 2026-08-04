@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
+import { STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import { StudioPaintHud } from './StudioPaintHud';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
@@ -85,43 +86,99 @@ export const StudioEditorShell: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+E toggles Develop ↔ Walk
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      // Ctrl+E toggles Editor ↔ Playtest
       if (e.ctrlKey && e.key.toLowerCase() === 'e') {
         e.preventDefault();
         const mode = useGameStore.getState().gameMode;
         if (mode !== 'EXPLORING' && mode !== 'BATTLE') return;
         toggleCreationMode();
+        return;
+      }
+
+      // Ctrl+Z / Ctrl+Y — map-scope undo/redo (editor runtime only)
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const map = useGameStore.getState().activeMapData;
+        if (!map) return;
+        const result = useEditorStore.getState().undoLastOp(map);
+        if (!result.ok || !result.op) return;
+        if (result.op.kind === 'paint_cells') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: result.op.cells.map((c) => ({
+                  r: c.r,
+                  c: c.c,
+                  layerIdx: c.layerIdx,
+                  value: c.before,
+                })),
+              },
+            })
+          );
+        }
+        showToast('Undo');
+        return;
+      }
+
+      if (e.ctrlKey && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const map = useGameStore.getState().activeMapData;
+        if (!map) return;
+        const result = useEditorStore.getState().redoLastOp(map);
+        if (!result.ok || !result.op) return;
+        if (result.op.kind === 'paint_cells') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: result.op.cells.map((c) => ({
+                  r: c.r,
+                  c: c.c,
+                  layerIdx: c.layerIdx,
+                  value: c.after,
+                })),
+              },
+            })
+          );
+        }
+        showToast('Redo');
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleCreationMode]);
+  }, [toggleCreationMode, showToast]);
 
   if (gameMode !== 'EXPLORING' && gameMode !== 'BATTLE') {
     return null;
   }
 
-  // Walk Mode — testing only; compact return chip
+  // Playtest — compact return chip
   if (!isCreationMode) {
     return (
       <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2">
         <div className="sg-glass max-w-md rounded-2xl border border-emerald-500/30 bg-[#050b14]/95 px-4 py-3 text-center shadow-2xl">
           <div className="flex items-center justify-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-300">
             <Footprints className="h-4 w-4" />
-            Walk Mode · Testing
+            Playtest · Live viewport
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-            Move, interact, and feel the map. Create tools are hidden until you return to Develop.
+            Gameplay systems are on. Editor tools stay frozen until you stop playtest.
           </p>
         </div>
         <button
           type="button"
-          onClick={() => setStudioMode('develop')}
+          onClick={() => useEditorStore.getState().exitPlaytest()}
           className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/50 bg-[#050b14]/95 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20"
-          title="Return to Development Mode (Ctrl+E)"
+          title="Return to Editor (Ctrl+E)"
         >
           <Wrench className="h-4 w-4" />
-          Back to Develop
+          Stop Playtest
           <span className="font-medium normal-case tracking-normal text-slate-500">Ctrl+E</span>
         </button>
       </div>
@@ -263,14 +320,14 @@ export const StudioEditorShell: React.FC = () => {
           <button
             type="button"
             onClick={() => {
-              setStudioMode('test');
-              showToast('Walk Mode — play-test the map');
+              useEditorStore.getState().enterPlaytest();
+              showToast('Playtest — gameplay systems on');
             }}
             className="flex flex-col items-center gap-0.5 p-2 rounded-xl text-emerald-400 hover:bg-emerald-500/10 transition-colors min-w-[64px]"
             title={STUDIO_MODE_META.test.blurb}
           >
             <Play className="w-4 h-4" />
-            <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Walk</span>
+            <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Play</span>
           </button>
         </div>
       </div>

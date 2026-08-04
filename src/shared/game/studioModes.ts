@@ -1,9 +1,21 @@
 /**
  * Studio workspace mode ids + copy (shared so tests stay free of web imports).
  * PanelId `build` remains the World Builder dock id for permissions compatibility.
+ *
+ * Canonical engine-editor UI labels (bible 29): Walk · Paint · Place · Populate · Script · Catalog.
+ * Internal ids stay stable for permissions / defaults.
  */
 
 export type StudioMode = 'develop' | 'npc' | 'quest' | 'creature' | 'test';
+
+/** Bible 29 canonical tool modes (UI vocabulary). */
+export type StudioCanonicalMode =
+  | 'walk'
+  | 'paint'
+  | 'place'
+  | 'populate'
+  | 'script'
+  | 'catalog';
 
 export type StudioDockId =
   | 'build'
@@ -18,6 +30,15 @@ export type StudioDockId =
   | 'characters'
   | 'classes';
 
+/** Map stable internal ids → canonical engine-editor labels. */
+export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
+  test: 'walk',
+  develop: 'paint',
+  npc: 'populate',
+  quest: 'script',
+  creature: 'catalog',
+};
+
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['build', 'properties'],
@@ -27,28 +48,40 @@ export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   test: [],
 };
 
-export const STUDIO_MODE_META: Record<StudioMode, { label: string; blurb: string }> = {
+export const STUDIO_MODE_META: Record<
+  StudioMode,
+  { label: string; canonical: StudioCanonicalMode; blurb: string }
+> = {
   develop: {
-    label: 'Develop',
-    blurb: 'Paint tiles & logic, save maps, place warps.',
+    label: 'Paint',
+    canonical: 'paint',
+    blurb: 'Author terrain, logic layers, and world structure.',
   },
   npc: {
-    label: 'NPC',
-    blurb: 'Place and edit NPCs, dialogue keys, and sprites.',
+    label: 'Populate',
+    canonical: 'populate',
+    blurb: 'Place NPCs, sprites, and dialogue hooks.',
   },
   quest: {
-    label: 'Quest',
-    blurb: 'Author quest templates and wire ACCEPT_QUEST on NPCs.',
+    label: 'Script',
+    canonical: 'script',
+    blurb: 'Author quests, dialogue trees, and triggers.',
   },
   creature: {
-    label: 'Creature',
-    blurb: 'Browse creature defs and loot tables.',
+    label: 'Catalog',
+    canonical: 'catalog',
+    blurb: 'Edit creature defs, loot tables, and definitions.',
   },
   test: {
-    label: 'Walk',
-    blurb: 'Play-test movement, gathers, and encounters. Tools hidden.',
+    label: 'Play',
+    canonical: 'walk',
+    blurb: 'Playtest movement, gathers, and encounters. Tools hidden.',
   },
 };
+
+/** Place mode is designed (bible 16) — surfaces as coming-online under Paint docks. */
+export const STUDIO_PLACE_MODE_NOTE =
+  'Place mode (objects as entities) comes online next — use Populate for NPCs today.';
 
 export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: string }> = {
   build: {

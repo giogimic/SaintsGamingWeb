@@ -15,6 +15,17 @@ import {
   mergePanelLayouts,
   savePanelLayoutsToStorage,
 } from '@/shared/game/studioPanelLayout';
+import {
+  emptyEditorOpStack,
+  pushEditorOp,
+  redoEditorOp,
+  undoEditorOp,
+  type EditorOp,
+  type EditorOpStack,
+  type PaintedCell,
+} from '@/shared/game/editorOps';
+import type { PaintableMap } from '@/shared/game/tilePaint';
+import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes';
 
@@ -33,7 +44,18 @@ export interface FloatingPanelState {
   zIndex: number;
 }
 
+/** Snapshot restored when leaving Playtest → Editor. */
+type PlaytestRestoreSnapshot = {
+  studioMode: StudioMode;
+  openPanelIds: PanelId[];
+  activeBrushTileId: number;
+  activeLogicTileId: number;
+  activeLayerIdx: number;
+  mapDirty: boolean;
+};
+
 interface EditorState {
+  /** Legacy: true = editor runtime (tools on). Prefer getStudioRuntime(). */
   isCreationMode: boolean;
   /** Active Studio world profile (WorldMap.gameId / QuestTemplate.gameId). */
   activeGameId: string;
@@ -45,26 +67,23 @@ interface EditorState {
   panelLayoutsHydrated: boolean;
   /** Unsaved paint / map edits since last Save Map. */
   mapDirty: boolean;
+  /** Map-scope undo/redo (bible 30). */
+  opStack: EditorOpStack;
+  playtestSnapshot: PlaytestRestoreSnapshot | null;
 
-  // Editor Tools State
-  /** Visual GID brush for `tileLayers` (layer >= 0). */
   activeBrushTileId: number;
-  /** MapLogicTile id brush for the Logic layer (−1). Deliberately separate from
-   *  `activeBrushTileId`: a tileset GID is not a valid logic id, and painting one
-   *  into the logic grid makes `validateMapSave` reject the whole map. */
   activeLogicTileId: number;
   activeLayerIdx: number;
   clickedTile: { r: number; c: number } | null;
-  /** Last painted cell — shown in the paint HUD. */
   lastPaintedTile: { r: number; c: number } | null;
 
-  // Actions
   setActiveGameId: (id: string) => void;
+  getStudioRuntime: () => StudioRuntime;
   toggleCreationMode: () => void;
-  /** Walk Mode — play-test only; create tools off. */
   enterWalkMode: () => void;
-  /** Development Mode — default Studio entry with World + Inspector open. */
+  enterPlaytest: () => void;
   enterDevelopmentMode: () => void;
+  exitPlaytest: () => void;
   setStudioMode: (mode: StudioMode) => void;
   openPanel: (id: PanelId) => void;
   closePanel: (id: PanelId) => void;
@@ -73,7 +92,6 @@ interface EditorState {
   updatePanelPosition: (id: PanelId, x: number, y: number) => void;
   updatePanelSize: (id: PanelId, width: number, height: number) => void;
   bringToFront: (id: PanelId) => void;
-  /** Load persisted dock geometry (x/y/w/h/collapse). Does not restore isOpen. */
   hydratePanelLayouts: () => void;
 
   setActiveBrushTileId: (id: number) => void;
@@ -83,6 +101,10 @@ interface EditorState {
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
   markMapDirty: () => void;
   clearMapDirty: () => void;
+  pushPaintOp: (cells: PaintedCell[]) => void;
+  undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
+  redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
+  clearOpStack: () => void;
 }
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
@@ -234,6 +256,27 @@ function openModePanels(
   }
 }
 
+function capturePlaytestSnapshot(state: {
+  studioMode: StudioMode;
+  panels: Record<PanelId, FloatingPanelState>;
+  activeBrushTileId: number;
+  activeLogicTileId: number;
+  activeLayerIdx: number;
+  mapDirty: boolean;
+}): PlaytestRestoreSnapshot {
+  const openPanelIds = (Object.keys(state.panels) as PanelId[]).filter(
+    (id) => state.panels[id].isOpen
+  );
+  return {
+    studioMode: state.studioMode === 'test' ? 'develop' : state.studioMode,
+    openPanelIds,
+    activeBrushTileId: state.activeBrushTileId,
+    activeLogicTileId: state.activeLogicTileId,
+    activeLayerIdx: state.activeLayerIdx,
+    mapDirty: state.mapDirty,
+  };
+}
+
 function persistLayouts(get: () => EditorState) {
   savePanelLayoutsToStorage(get().panels);
 }
@@ -249,11 +292,15 @@ export const useEditorStore = create<EditorState>()(
       highestZIndex: 10,
       panelLayoutsHydrated: false,
       mapDirty: false,
+      opStack: emptyEditorOpStack(),
+      playtestSnapshot: null,
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
       clickedTile: null,
       lastPaintedTile: null,
+
+      getStudioRuntime: () => studioRuntimeFromCreation(get().isCreationMode),
 
       setActiveGameId: (id) =>
         set((state) => {
@@ -263,20 +310,20 @@ export const useEditorStore = create<EditorState>()(
           }
         }),
 
-      toggleCreationMode: () =>
-        set((state) => {
-          state.isCreationMode = !state.isCreationMode;
-          if (state.isCreationMode) {
-            state.studioMode = 'develop';
-            openModePanels(state, 'develop');
-          } else {
-            state.studioMode = 'test';
-            closeAllPanels(state);
-          }
-        }),
+      toggleCreationMode: () => {
+        if (get().isCreationMode) {
+          get().enterPlaytest();
+        } else {
+          get().exitPlaytest();
+        }
+      },
 
-      enterWalkMode: () =>
+      enterWalkMode: () => get().enterPlaytest(),
+
+      enterPlaytest: () =>
         set((state) => {
+          if (!state.isCreationMode) return;
+          state.playtestSnapshot = capturePlaytestSnapshot(state);
           state.isCreationMode = false;
           state.studioMode = 'test';
           closeAllPanels(state);
@@ -286,18 +333,52 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           state.isCreationMode = true;
           state.studioMode = 'develop';
+          state.playtestSnapshot = null;
           openModePanels(state, 'develop');
+        }),
+
+      exitPlaytest: () =>
+        set((state) => {
+          const snap = state.playtestSnapshot;
+          state.isCreationMode = true;
+          if (snap) {
+            state.studioMode = snap.studioMode;
+            state.activeBrushTileId = snap.activeBrushTileId;
+            state.activeLogicTileId = snap.activeLogicTileId;
+            state.activeLayerIdx = snap.activeLayerIdx;
+            state.mapDirty = snap.mapDirty;
+            closeAllPanels(state);
+            for (const id of snap.openPanelIds) {
+              if (state.panels[id]) {
+                state.panels[id].isOpen = true;
+                state.highestZIndex += 1;
+                state.panels[id].zIndex = state.highestZIndex;
+                state.activePanel = id;
+              }
+            }
+            if (snap.openPanelIds.length === 0) {
+              openModePanels(state, snap.studioMode === 'test' ? 'develop' : snap.studioMode);
+            }
+            state.playtestSnapshot = null;
+          } else {
+            state.studioMode = 'develop';
+            openModePanels(state, 'develop');
+          }
         }),
 
       setStudioMode: (mode) =>
         set((state) => {
           state.studioMode = mode;
           if (mode === 'test') {
+            if (state.isCreationMode) {
+              state.playtestSnapshot = capturePlaytestSnapshot(state);
+            }
             state.isCreationMode = false;
             closeAllPanels(state);
             return;
           }
           state.isCreationMode = true;
+          state.playtestSnapshot = null;
           openModePanels(state, mode);
         }),
 
@@ -381,7 +462,7 @@ export const useEditorStore = create<EditorState>()(
           state.panelLayoutsHydrated = true;
         }),
 
-setActiveBrushTileId: (id) =>
+      setActiveBrushTileId: (id) =>
         set((state) => {
           state.activeBrushTileId = id;
         }),
@@ -408,6 +489,45 @@ setActiveBrushTileId: (id) =>
       clearMapDirty: () =>
         set((state) => {
           state.mapDirty = false;
+        }),
+
+      pushPaintOp: (cells) =>
+        set((state) => {
+          const meaningful = cells.filter((c) => c.before !== c.after);
+          if (meaningful.length === 0) return;
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_cells',
+            cells: meaningful,
+          });
+        }),
+
+      undoLastOp: (map) => {
+        const stack = get().opStack;
+        const result = undoEditorOp(map, stack);
+        if (result.error) return { ok: false, op: null, error: result.error };
+        if (!result.op) return { ok: false, op: null };
+        set((state) => {
+          state.opStack = result.stack;
+          state.mapDirty = true;
+        });
+        return { ok: true, op: result.op };
+      },
+
+      redoLastOp: (map) => {
+        const stack = get().opStack;
+        const result = redoEditorOp(map, stack);
+        if (result.error) return { ok: false, op: null, error: result.error };
+        if (!result.op) return { ok: false, op: null };
+        set((state) => {
+          state.opStack = result.stack;
+          state.mapDirty = true;
+        });
+        return { ok: true, op: result.op };
+      },
+
+      clearOpStack: () =>
+        set((state) => {
+          state.opStack = emptyEditorOpStack();
         }),
     }))
   )

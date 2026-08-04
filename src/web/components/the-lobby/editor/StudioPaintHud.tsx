@@ -45,7 +45,7 @@ export function StudioPaintHud() {
 
         <div
           className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 font-mono text-[10px] text-slate-200"
-          title={logicMeta ? `${logicMeta.name} — paint then Walk to test` : 'Active brush GID / logic id'}
+          title={logicMeta ? `${logicMeta.name} — paint then Play to test` : 'Active brush GID / logic id'}
         >
           <Brush className="h-3.5 w-3.5 text-[#cbb26a]" />
           {logicMeta ? (
@@ -63,7 +63,7 @@ export function StudioPaintHud() {
 
         <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-400">
           <MousePointerClick className="h-3.5 w-3.5" />
-          <span>Click or drag to paint</span>
+          <span>Paint · MMB / Space+drag pan · Ctrl+Z</span>
           {cell && (
             <span className="text-[#e2d5b3]">
               · ({cell.c}, {cell.r})
