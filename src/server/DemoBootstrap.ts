@@ -10,6 +10,8 @@ import {
   DEFAULT_STUDIO_TILESETS,
   buildDemoSandboxGrid,
   buildDefaultGroundLayer,
+  fillZeroGidsInLayers,
+  upgradeLegacyGroundGids,
   needsStudioTilesetBootstrap,
 } from "./demoMapSeed";
 import {
@@ -176,12 +178,24 @@ async function seedDemoMap() {
   const npcsJson = JSON.stringify(npcs);
 
   // Studio visual paint needs tileLayers + tilesets. Legacy DEMO rows often have [].
+  // Nearly-empty Ground (all zeros / a few brush tests) still renders black in Babylon.
   const needsRich = !existing || needsStudioTilesetBootstrap(
     existing.tileLayersData,
     existing.tilesetsData
   );
-  const groundLayer = buildDefaultGroundLayer(grid);
-  const tileLayersJson = JSON.stringify([groundLayer]);
+  let tileLayersJson = JSON.stringify([buildDefaultGroundLayer(grid)]);
+  if (needsRich && existing?.tileLayersData) {
+    try {
+      const parsed = JSON.parse(existing.tileLayersData);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Preserve painted GIDs; upgrade legacy stair fill / fill zeros with grass.
+        const upgraded = upgradeLegacyGroundGids(fillZeroGidsInLayers(parsed));
+        tileLayersJson = JSON.stringify(upgraded);
+      }
+    } catch {
+      // keep default ground
+    }
+  }
   const tilesetsJson = JSON.stringify(DEFAULT_STUDIO_TILESETS);
 
   if (!existing) {
