@@ -7,7 +7,10 @@ import {
   DEMO_MAP_ID,
   DEMO_MAP_NPCS,
   DEMO_MAP_W,
+  DEFAULT_STUDIO_TILESETS,
   buildDemoSandboxGrid,
+  buildEmptyGroundLayer,
+  needsStudioTilesetBootstrap,
 } from "./demoMapSeed";
 import {
   SAINTS_TRAIL_GAME_ID,
@@ -172,6 +175,15 @@ async function seedDemoMap() {
   }
   const npcsJson = JSON.stringify(npcs);
 
+  // Studio visual paint needs tileLayers + tilesets. Legacy DEMO rows often have [].
+  const needsRich = !existing || needsStudioTilesetBootstrap(
+    existing.tileLayersData,
+    existing.tilesetsData
+  );
+  const groundLayer = buildEmptyGroundLayer(grid);
+  const tileLayersJson = JSON.stringify([groundLayer]);
+  const tilesetsJson = JSON.stringify(DEFAULT_STUDIO_TILESETS);
+
   if (!existing) {
     await prisma.worldMap.create({
       data: {
@@ -182,6 +194,8 @@ async function seedDemoMap() {
         gatesData: "{}",
         npcsData: npcsJson,
         encountersData: encountersJson,
+        tileLayersData: tileLayersJson,
+        tilesetsData: tilesetsJson,
       },
     });
   } else if (forceMap) {
@@ -193,6 +207,20 @@ async function seedDemoMap() {
         gridData: gridJson,
         npcsData: npcsJson,
         encountersData: encountersJson,
+        tileLayersData: tileLayersJson,
+        tilesetsData: tilesetsJson,
+        version: { increment: 1 },
+      },
+    });
+  } else if (needsRich) {
+    // Backfill visual layers/tilesets only — never clobber an existing Studio paint.
+    await prisma.worldMap.update({
+      where: { id: DEMO_MAP_ID },
+      data: {
+        gameId: SAINTS_TRAIL_GAME_ID,
+        npcsData: npcsJson,
+        tileLayersData: tileLayersJson,
+        tilesetsData: tilesetsJson,
         version: { increment: 1 },
       },
     });
@@ -235,7 +263,7 @@ async function seedDemoMap() {
     mapLoader.invalidateMap(DEMO_MAP_ID);
   }
   console.log(
-    `[DemoBootstrap] DEMO_SANDBOX ready (gameId=${SAINTS_TRAIL_GAME_ID}, forceMap=${forceMap})`
+    `[DemoBootstrap] DEMO_SANDBOX ready (gameId=${SAINTS_TRAIL_GAME_ID}, forceMap=${forceMap}, tilesetBootstrap=${needsRich})`
   );
 }
 

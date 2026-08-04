@@ -28,6 +28,7 @@ import { useGameStore } from './store';
 import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
+import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -127,7 +128,7 @@ export default function TheLobby({
       }
 
       try {
-        const loaded = await loadMap(validMapId);
+        const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
         const mw = loaded.grid?.[0]?.length || 30;
         const mh = loaded.grid?.length || 30;
         validPosition = {
@@ -323,9 +324,15 @@ export default function TheLobby({
     socket.on('map_joined', (data) => {
       const state = useGameStore.getState();
       state.setInstanceId(data.instanceId);
-      // Server may remap retired maps (SAINTS_VILLAGE → DEMO_SANDBOX)
-      if (data.mapId && data.mapId !== state.currentMapId) {
-        state.setCurrentMapId(data.mapId);
+      // Server may remap retired maps (SAINTS_VILLAGE → DEMO_SANDBOX).
+      // Compare base ids — setCurrentMapId clears activeMapData and would wipe Studio paint state.
+      const joinedBase = toBaseMapId(String(data.mapId || ''));
+      const currentBase = toBaseMapId(String(state.currentMapId || ''));
+      if (joinedBase && joinedBase !== currentBase) {
+        state.setCurrentMapId(joinedBase);
+        void loadMap(joinedBase).then((m) => {
+          useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+        });
       }
       if (typeof data.x === 'number' && typeof data.y === 'number') {
         state.setPlayerPosition({ x: data.x, y: data.y }, state.player.direction || 'down', false);
@@ -468,7 +475,7 @@ export default function TheLobby({
       try {
         // Bust the local cache and fetch the fresh map
         const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}?t=${Date.now()}`);
-        const freshMapData = await res.json();
+        const freshMapData = ensureMapHasStudioTilesets(await res.json());
         useGameStore.getState().setActiveMapData(freshMapData);
       } catch (err) {
         console.error("Failed to hot-reload map data:", err);
@@ -600,7 +607,11 @@ export default function TheLobby({
       const state = useGameStore.getState();
       state.showToast("You blacked out... Respawning at Safe Zone");
       state.setInstanceId(data.instanceId);
-      state.setCurrentMapId(data.mapId);
+      const defeatMap = toBaseMapId(String(data.mapId || 'DEMO_SANDBOX'));
+      state.setCurrentMapId(defeatMap);
+      void loadMap(defeatMap).then((m) => {
+        useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+      });
       state.setPlayerPosition({ x: data.x, y: data.y }, 'down', false);
       state.modifyHp(9999); // Full heal (clamped to maxHp by modifyHp)
     });
