@@ -238,7 +238,6 @@ export default function TheLobby({
       name: authorName,
       spriteId: 'adventurer',
       position: validPosition,
-      currentMapId: validMapId,
     });
     useGameStore.setState({
       currentMapId: validMapId,

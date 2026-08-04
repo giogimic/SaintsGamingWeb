@@ -57,17 +57,29 @@ Phase 2a = editor camera + CatalogEditorShell / SchemaFieldRenderer wiring.
 | Optional hero | Dock **Hero** → character select; cancel returns to author session |
 | Persist gate | Autosave still requires `activeCharacterId` (author sessions do not write character state) |
 
+## Phase 2e shipped
+
+| Piece | What |
+| :--- | :--- |
+| Starter Heroes Catalog | `StarterHeroEditorPanel` on `CatalogEditorShell` (shared chrome + list/form) |
+
 ## Verify
 
 ```bash
 npx vitest run src/shared/game/studioSession.test.ts src/shared/game/studioModes.test.ts src/shared/game/editorOps.test.ts
 ```
 
-Manual: open `/studio` while logged in → Editor on DEMO without Choose Hero. **Hero** dock to load a character for Playtest.
+Manual: open `/studio` while logged in → Editor on DEMO without Choose Hero. **Hero** dock to load a character for Playtest. Characters dock → Starter Heroes catalog chrome.
+
+## Post-strip contracts (do not regress)
+
+See `logs/2026-08-04-studio-resume-after-strip.md`:
+- `/lobby` → always DEMO + `lobby: true`
+- `/studio` → author/character map + `lobby: false`
+- Classes → `ClassEditorPanel` only; inventory → `inventoryService`; TB → `TurnBattleOverlay` only
 
 ## Next
 
 - PIE private shard
-- Starter Heroes dock on CatalogEditorShell
 - Definition undo stack
 - Richer debug overlays (spawn/warp/chunk)

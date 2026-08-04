@@ -89,7 +89,7 @@ Studio creature editor = `CreatureDefEditorPanel` + catalog/actions — keep usi
 4. Open Catalog → Classes / Creatures — edit via panels (not deleted DevTools editors).
 5. Resume whatever paint/permission/UX item was mid-flight before the strip pause.
 
-Uncommitted strip work is still local (large diff). Commit when the human asks — do not mix a huge strip commit with a tiny Studio paint fix unless requested.
+Strip is on `main` (`c212dac`). Continue Studio features in focused commits — do not mix unrelated cleanup with editor UX unless requested.
 
 ---
 

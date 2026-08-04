@@ -7,6 +7,7 @@ import {
 } from '@/app/actions/starter-heroes';
 import { GAME_SPRITES } from '@/web/components/the-lobby/data/sprites';
 import { useEditorStore } from '../editor-store';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Swords, Wand2, Feather,
   ChevronDown, ChevronUp, Database, AlertCircle, CheckCircle2, Users,
@@ -451,331 +452,120 @@ export function StarterHeroEditorPanel() {
   let isJsonValid = true;
   try { JSON.parse(form.startingInventory); } catch { isJsonValid = false; }
 
-  const inputCls = "w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-violet-700 transition-colors";
+  const inputCls = "w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-[#806f47] transition-colors";
   const labelCls = "block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1";
+  const activeCount = heroes.filter((h) => h.isActive).length;
 
   return (
-    <div className="h-full flex flex-col bg-[#050b14] font-mono text-[11px] relative">
-
-      {/* Panel Header */}
-      <div
-        className="flex items-center justify-between px-3 py-2 shrink-0"
-        style={{ borderBottom: '1px solid rgba(139,92,246,0.15)' }}
-      >
-        <div className="flex items-center gap-2">
-          <Users className="w-3.5 h-3.5 text-violet-400" />
-          <span className="font-black text-violet-300 text-[11px] uppercase tracking-wider">
-            Starter Heroes Editor
-          </span>
-          <span
-            className="px-1.5 py-0.5 rounded text-[9px] font-black"
-            style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)' }}
-          >
-            {heroes.filter(h => h.isActive).length}/{heroes.length} active
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => setShowDocs(d => !d)}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all"
-            style={{
-              background: showDocs ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(139,92,246,0.25)',
-              color: showDocs ? '#a78bfa' : 'rgba(196,181,253,0.7)',
-            }}
-          >
-            <BookOpen size={10} />
-            Requirements Guide
-          </button>
-          <button
-            onClick={() => setShowJsonModal(true)}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all"
-            style={{
-              background: 'rgba(139,92,246,0.1)',
-              border: '1px solid rgba(139,92,246,0.25)',
-              color: '#a78bfa',
-            }}
-          >
-            <FileJson size={10} />
-            JSON
-          </button>
-          <button
-            onClick={handleSeed}
-            disabled={loading}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all"
-            style={{
-              background: 'rgba(139,92,246,0.1)',
-              border: '1px solid rgba(139,92,246,0.25)',
-              color: '#a78bfa',
-            }}
-            title="Seed 16 default heroes"
-          >
-            <Database size={10} />
-            Seed Defaults
-          </button>
-          <button
-            onClick={load}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-violet-300 transition-colors"
-          >
-            <RefreshCw size={11} />
-          </button>
-        </div>
-      </div>
-
-      {/* Requirements Modal Overlay */}
-      {showDocs && (
-        <div
-          className="pointer-events-auto absolute inset-0 z-30 p-4 overflow-y-auto animate-in fade-in duration-200"
-          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
-        >
-          <div className="max-w-2xl mx-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-violet-500/20 pb-3">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-violet-400" />
-                <h3 className="font-black text-violet-200 text-sm">Character Creation Studio Requirements</h3>
-              </div>
-              <button
-                onClick={() => setShowDocs(false)}
-                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-violet-900/30 text-violet-300 hover:bg-violet-800/40"
-              >
-                Close (ESC)
-              </button>
-            </div>
-
-            <div className="space-y-3 text-[11px] text-violet-200/80 leading-relaxed font-mono">
-              <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20">
-                <h4 className="font-bold text-violet-300 mb-1">📌 System Architecture & Flow</h4>
-                <p>
-                  The Saints Gaming Character Creator displays active <code className="text-violet-400">StarterHero</code> archetypes on Step 1 (HERO_PICK).
-                  When a user picks an archetype, its sprite, class, starting map, and inventory specs are passed forward to character creation.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20 space-y-2">
-                <h4 className="font-bold text-violet-300">📋 Field Specifications & Requirements</h4>
-                <ul className="space-y-1.5 list-disc list-inside">
-                  <li><strong className="text-violet-200">slug</strong>: Unique key string (lowercase, underscores, no spaces). E.g. <code className="text-violet-400">tuxemon_beast_master</code>.</li>
-                  <li><strong className="text-violet-200">name</strong>: Hero title displayed on character creator cards. Recommended 3–20 chars. E.g. <code className="text-violet-400">Beast Master</code>.</li>
-                  <li><strong className="text-violet-200">classId</strong>: Must match an active class ID: <code className="text-violet-400">WARRIOR</code>, <code className="text-violet-400">MAGE</code>, or <code className="text-violet-400">THIEF</code>.</li>
-                  <li><strong className="text-violet-200">spriteKey</strong>: Name of sprite file (without extension) in <code className="text-violet-400">/public/game-assets/npc/</code> (or Tuxemon pool). E.g. <code className="text-violet-400">catgirl</code>, <code className="text-violet-400">dragonrider</code>.</li>
-                  <li><strong className="text-violet-200">flavor</strong>: 1-line description displayed under hero name. Max 80 chars.</li>
-                  <li><strong className="text-violet-200">tag & tagColor</strong>: Difficulty/style badge text & hex color code (e.g. <code className="text-violet-400">Beast Master</code> / <code className="text-violet-400">#f472b6</code>).</li>
-                  <li><strong className="text-violet-200">sortOrder</strong>: Integer index controlling card position in Character Creator.</li>
-                  <li><strong className="text-violet-200">startingInventory</strong>: Valid JSON object string map of item IDs to quantities. E.g. <code className="text-violet-400">{`{"capture_script":20,"patch_kit":10}`}</code>.</li>
-                </ul>
-              </div>
-
-              <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20">
-                <h4 className="font-bold text-violet-300 mb-1">💡 Example JSON Definition</h4>
-                <pre className="p-2 rounded bg-[#050b14] border border-violet-900/50 text-[10px] text-violet-300 overflow-x-auto">
-{`{
-  "slug": "tuxemon_tamer",
-  "name": "Beast Master",
-  "classId": "WARRIOR",
-  "spriteKey": "catgirl",
-  "flavor": "Tuxemon creature specialist with high catch rate.",
-  "tag": "Beast Master",
-  "tagColor": "#f472b6",
-  "sortOrder": 1,
-  "isActive": true,
-  "startingMap": "DEMO_SANDBOX",
-  "startingX": 14,
-  "startingY": 15,
-  "startingInventory": "{\\"capture_script\\":20,\\"patch_kit\\":10}"
-}`}
-                </pre>
-              </div>
-            </div>
+    <div className="relative h-full min-h-0">
+      <CatalogEditorShell
+        title="Starter Heroes"
+        blurb={`Catalog mode · profile ${activeGameId} · ${activeCount}/${heroes.length} active · StarterHero SoT`}
+        dirty={isNew}
+        toolbar={
+          <div className="flex flex-wrap gap-1">
+            <button type="button" onClick={() => setShowDocs((d) => !d)} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Requirements guide">
+              <BookOpen className="h-3.5 w-3.5" /> Guide
+            </button>
+            <button type="button" onClick={() => setShowJsonModal(true)} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Import JSON">
+              <FileJson className="h-3.5 w-3.5" /> JSON
+            </button>
+            <button type="button" onClick={() => void handleSeed()} disabled={loading} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Seed defaults">
+              <Database className="h-3.5 w-3.5" /> Seed
+            </button>
+            <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New hero">
+              <Plus className="h-3.5 w-3.5" />
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* JSON Import/Export Modal */}
-      {showJsonModal && (
-        <div
-          className="pointer-events-auto absolute inset-0 z-30 p-4 flex items-center justify-center animate-in fade-in duration-200"
-          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
-        >
-          <div className="w-full max-w-lg bg-[#0a051d] border border-violet-500/30 rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-violet-500/20 pb-3">
-              <div className="flex items-center gap-2">
-                <FileJson className="w-4 h-4 text-violet-400" />
-                <h3 className="font-black text-violet-200 text-sm">JSON Import / Export</h3>
-              </div>
-              <button
-                onClick={() => setShowJsonModal(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-[10px] text-violet-400/60">
-              Paste single JSON object or array of objects to import, or copy current hero spec.
-            </p>
-
-            <textarea
-              value={jsonInput}
-              onChange={e => setJsonInput(e.target.value)}
-              rows={8}
-              className={inputCls + ' text-[10px] font-mono'}
-              placeholder={`[\n  {\n    "slug": "custom_hero",\n    "name": "Custom Hero",\n    "classId": "WARRIOR",\n    "spriteKey": "warrior",\n    "flavor": "Custom archetype description",\n    "tag": "Custom",\n    "tagColor": "#a78bfa"\n  }\n]`}
-            />
-
-            <div className="flex items-center justify-between pt-2 border-t border-violet-500/20">
-              <button
-                onClick={() => setJsonInput(JSON.stringify(form, null, 2))}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-violet-900/40 text-violet-300 hover:bg-violet-800/50 flex items-center gap-1.5"
-              >
-                <Copy size={11} /> Load Current Form JSON
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowJsonModal(false)}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleImportJson}
-                  disabled={loading || !jsonInput.trim()}
-                  className="px-4 py-1.5 rounded-lg font-black text-[10px] bg-violet-600 hover:bg-violet-500 text-white flex items-center gap-1.5 disabled:opacity-40"
-                >
-                  <Download size={11} /> Import JSON
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Status bar */}
-      {status && (
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold shrink-0 animate-in fade-in duration-150"
-          style={{
-            background: status.type === 'success' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-            borderBottom: `1px solid ${status.type === 'success' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
-            color: status.type === 'success' ? '#6ee7b7' : '#fca5a5',
-          }}
-        >
-          {status.type === 'success' ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
-          {status.msg}
-        </div>
-      )}
-
-      <div className="flex-1 flex overflow-hidden">
-
-        {/* LEFT: Hero List & Archetype Generator */}
-        <div
-          className="w-48 shrink-0 flex flex-col overflow-hidden"
-          style={{ borderRight: '1px solid rgba(139,92,246,0.1)' }}
-        >
-          {/* Quick Creator Toolbar */}
-          <div className="p-1.5 space-y-1.5 shrink-0 border-b border-violet-500/15 bg-violet-950/20">
+        }
+        list={
+          <div className="flex h-full min-h-0 flex-col gap-1.5">
             <button
+              type="button"
               onClick={handleNew}
-              className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[10px] font-black transition-all"
-              style={{
-                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
-                color: 'white',
-                boxShadow: '0 0 10px rgba(139,92,246,0.3)',
-              }}
+              className="w-full rounded-lg border border-[#806f47]/40 bg-[#806f47]/20 px-2 py-1.5 text-[10px] font-bold text-[#e2d5b3] hover:bg-[#806f47]/30 flex items-center justify-center gap-1"
             >
-              <Plus size={11} strokeWidth={3} />
-              New Custom Hero
+              <Plus size={11} strokeWidth={3} /> New Custom Hero
             </button>
-
             <button
+              type="button"
               onClick={handleRandomize}
-              className="w-full flex items-center justify-center gap-1.5 py-1 rounded-lg text-[10px] font-bold transition-all text-violet-300 hover:bg-violet-900/30"
-              style={{ border: '1px solid rgba(139,92,246,0.2)' }}
+              className="w-full rounded-lg border border-slate-700 px-2 py-1 text-[10px] font-bold text-slate-300 hover:bg-white/5 flex items-center justify-center gap-1"
             >
-              <Sparkles size={11} />
-              Random Archetype
+              <Sparkles size={11} /> Random Archetype
             </button>
-
-            {/* Presets dropdown */}
-            <div className="relative group">
-              <div className="px-2 py-1 text-[8px] font-black uppercase text-violet-400/50 tracking-wider">
-                ⚡ Archetype Presets
-              </div>
-              <div className="space-y-0.5 max-h-36 overflow-y-auto pr-0.5">
-                {ARCHETYPE_PRESETS.map((preset) => (
-                  <button
-                    key={preset.data.slug}
-                    onClick={() => handleApplyPreset(preset)}
-                    className="w-full text-left px-2 py-1 rounded text-[9px] text-violet-300/80 hover:text-violet-100 hover:bg-violet-900/30 truncate transition-colors flex items-center gap-1"
-                  >
-                    <span>{preset.icon}</span>
-                    <span className="truncate">{preset.name.replace(/^[^\s]+\s*/, '')}</span>
-                  </button>
-                ))}
-              </div>
+            <div className="text-[8px] font-black uppercase tracking-wider text-slate-500 px-1 pt-1">Archetype Presets</div>
+            <div className="max-h-28 space-y-0.5 overflow-y-auto pr-0.5">
+              {ARCHETYPE_PRESETS.map((preset) => (
+                <button
+                  key={preset.data.slug}
+                  type="button"
+                  onClick={() => handleApplyPreset(preset)}
+                  className="w-full truncate rounded px-2 py-1 text-left text-[9px] text-slate-400 hover:bg-white/5 hover:text-slate-200 flex items-center gap-1"
+                >
+                  <span>{preset.icon}</span>
+                  <span className="truncate">{preset.name.replace(/^[^\s]+\s*/, '')}</span>
+                </button>
+              ))}
+            </div>
+            <div className="text-[8px] font-black uppercase tracking-wider text-slate-500 px-1 border-t border-slate-800 pt-1">
+              Heroes Pool ({heroes.length})
+            </div>
+            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
+              {heroes.length === 0 ? (
+                <p className="p-2 text-center text-[10px] text-slate-500">No heroes yet. Click Seed.</p>
+              ) : (
+                heroes.map((h) => (
+                  <HeroListItem
+                    key={h.slug}
+                    hero={h}
+                    isSelected={selected?.slug === h.slug && !isNew}
+                    onSelect={() => handleSelectHero(h)}
+                    onToggle={() => void handleToggle(h)}
+                    onDelete={() => void handleDelete(h.slug)}
+                  />
+                ))
+              )}
             </div>
           </div>
-
-          {/* Existing Heroes List */}
-          <div className="px-2 py-1 text-[8px] font-black uppercase text-violet-400/40 tracking-wider border-b border-violet-500/10">
-            Heroes Pool ({heroes.length})
+        }
+      >
+        {status && (
+          <div className={`mb-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-200' : 'bg-red-900/40 text-red-200'}`}>
+            {status.type === 'success' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+            {status.msg}
           </div>
+        )}
 
-          <div className="flex-1 overflow-y-auto p-1.5 space-y-1">
-            {heroes.length === 0 ? (
-              <div className="text-center py-8 text-violet-700/40 text-[10px]">
-                No heroes yet.<br />Click &quot;Seed Defaults&quot; to start.
-              </div>
-            ) : (
-              heroes.map(h => (
-                <HeroListItem
-                  key={h.slug}
-                  hero={h}
-                  isSelected={selected?.slug === h.slug && !isNew}
-                  onSelect={() => handleSelectHero(h)}
-                  onToggle={() => handleToggle(h)}
-                  onDelete={() => handleDelete(h.slug)}
-                />
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT: Form */}
         {(selected || isNew) ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-
-            {/* Form header */}
-            <div
-              className="flex items-center justify-between px-3 py-2 shrink-0"
-              style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}
-            >
-              <span className="text-violet-200 font-black text-[11px] flex items-center gap-1.5">
-                {isNew ? '✦ New Hero Archetype' : `Editing: ${selected?.name}`}
+          <div className="flex min-h-0 flex-col">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-[#806f47]/20 pb-2">
+              <span className="text-[11px] font-bold text-[#e2d5b3]">
+                {isNew ? 'New Hero Archetype' : `Editing: ${selected?.name}`}
               </span>
               <div className="flex items-center gap-1.5">
                 <button
+                  type="button"
                   onClick={handleCopyFormJson}
-                  className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-violet-400/80 hover:text-violet-200 bg-violet-900/20 hover:bg-violet-900/40 flex items-center gap-1"
+                  className="rounded px-2 py-1 text-[10px] font-bold text-slate-300 hover:bg-white/5 flex items-center gap-1"
                 >
                   {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
                   {copied ? 'Copied!' : 'Copy Spec'}
                 </button>
                 <button
-                  onClick={handleSave}
+                  type="button"
+                  onClick={() => void handleSave()}
                   disabled={loading || !isSpriteValid || !isSlugValid || !isJsonValid}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-wider transition-all disabled:opacity-40"
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
-                    color: 'white',
-                    boxShadow: '0 0 12px rgba(139,92,246,0.3)',
-                  }}
+                  className="rounded bg-[#806f47]/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#e2d5b3] hover:bg-[#806f47]/70 disabled:opacity-40 flex items-center gap-1"
                 >
                   <Save size={11} />
-                  {loading ? 'Saving...' : 'Save Archetype'}
+                  {loading ? 'Saving…' : 'Save Archetype'}
                 </button>
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
 
               {/* ── Validation Status Bar ── */}
@@ -1109,31 +899,162 @@ export function StarterHeroEditorPanel() {
                 </p>
               </section>
 
+
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3" style={{ color: 'rgba(139,92,246,0.2)' }}>
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-600">
             <Users size={32} />
-            <p className="text-[10px] font-mono text-center">
+            <p className="text-center text-[10px]">
               Select a hero to edit<br />or click &quot;New Custom Hero&quot;
             </p>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleRandomize}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-violet-300 bg-violet-900/30 hover:bg-violet-800/40 border border-violet-500/30 flex items-center gap-1"
+                className="flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-1.5 text-[10px] font-bold text-slate-300 hover:bg-white/5"
               >
                 <Sparkles size={11} /> Generate Random Hero
               </button>
               <button
-                onClick={handleSeed}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-violet-300 bg-violet-900/30 hover:bg-violet-800/40 border border-violet-500/30 flex items-center gap-1"
+                type="button"
+                onClick={() => void handleSeed()}
+                className="flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-1.5 text-[10px] font-bold text-slate-300 hover:bg-white/5"
               >
                 <Database size={11} /> Seed Defaults
               </button>
             </div>
           </div>
         )}
-      </div>
+      </CatalogEditorShell>
+
+      {/* Requirements Modal Overlay */}
+      {showDocs && (
+        <div
+          className="pointer-events-auto absolute inset-0 z-30 p-4 overflow-y-auto animate-in fade-in duration-200"
+          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+        >
+          <div className="max-w-2xl mx-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-violet-500/20 pb-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-violet-400" />
+                <h3 className="font-black text-violet-200 text-sm">Character Creation Studio Requirements</h3>
+              </div>
+              <button
+                onClick={() => setShowDocs(false)}
+                className="px-2.5 py-1 rounded-lg text-xs font-bold bg-violet-900/30 text-violet-300 hover:bg-violet-800/40"
+              >
+                Close (ESC)
+              </button>
+            </div>
+
+            <div className="space-y-3 text-[11px] text-violet-200/80 leading-relaxed font-mono">
+              <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20">
+                <h4 className="font-bold text-violet-300 mb-1">📌 System Architecture & Flow</h4>
+                <p>
+                  The Saints Gaming Character Creator displays active <code className="text-violet-400">StarterHero</code> archetypes on Step 1 (HERO_PICK).
+                  When a user picks an archetype, its sprite, class, starting map, and inventory specs are passed forward to character creation.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20 space-y-2">
+                <h4 className="font-bold text-violet-300">📋 Field Specifications & Requirements</h4>
+                <ul className="space-y-1.5 list-disc list-inside">
+                  <li><strong className="text-violet-200">slug</strong>: Unique key string (lowercase, underscores, no spaces). E.g. <code className="text-violet-400">tuxemon_beast_master</code>.</li>
+                  <li><strong className="text-violet-200">name</strong>: Hero title displayed on character creator cards. Recommended 3–20 chars. E.g. <code className="text-violet-400">Beast Master</code>.</li>
+                  <li><strong className="text-violet-200">classId</strong>: Must match an active class ID: <code className="text-violet-400">WARRIOR</code>, <code className="text-violet-400">MAGE</code>, or <code className="text-violet-400">THIEF</code>.</li>
+                  <li><strong className="text-violet-200">spriteKey</strong>: Name of sprite file (without extension) in <code className="text-violet-400">/public/game-assets/npc/</code> (or Tuxemon pool). E.g. <code className="text-violet-400">catgirl</code>, <code className="text-violet-400">dragonrider</code>.</li>
+                  <li><strong className="text-violet-200">flavor</strong>: 1-line description displayed under hero name. Max 80 chars.</li>
+                  <li><strong className="text-violet-200">tag & tagColor</strong>: Difficulty/style badge text & hex color code (e.g. <code className="text-violet-400">Beast Master</code> / <code className="text-violet-400">#f472b6</code>).</li>
+                  <li><strong className="text-violet-200">sortOrder</strong>: Integer index controlling card position in Character Creator.</li>
+                  <li><strong className="text-violet-200">startingInventory</strong>: Valid JSON object string map of item IDs to quantities. E.g. <code className="text-violet-400">{`{"capture_script":20,"patch_kit":10}`}</code>.</li>
+                </ul>
+              </div>
+
+              <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20">
+                <h4 className="font-bold text-violet-300 mb-1">💡 Example JSON Definition</h4>
+                <pre className="p-2 rounded bg-[#050b14] border border-violet-900/50 text-[10px] text-violet-300 overflow-x-auto">
+{`{
+  "slug": "tuxemon_tamer",
+  "name": "Beast Master",
+  "classId": "WARRIOR",
+  "spriteKey": "catgirl",
+  "flavor": "Tuxemon creature specialist with high catch rate.",
+  "tag": "Beast Master",
+  "tagColor": "#f472b6",
+  "sortOrder": 1,
+  "isActive": true,
+  "startingMap": "DEMO_SANDBOX",
+  "startingX": 14,
+  "startingY": 15,
+  "startingInventory": "{\\"capture_script\\":20,\\"patch_kit\\":10}"
+}`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* JSON Import/Export Modal */}
+      {showJsonModal && (
+        <div
+          className="pointer-events-auto absolute inset-0 z-30 p-4 flex items-center justify-center animate-in fade-in duration-200"
+          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+        >
+          <div className="w-full max-w-lg bg-[#0a051d] border border-violet-500/30 rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-violet-500/20 pb-3">
+              <div className="flex items-center gap-2">
+                <FileJson className="w-4 h-4 text-violet-400" />
+                <h3 className="font-black text-violet-200 text-sm">JSON Import / Export</h3>
+              </div>
+              <button
+                onClick={() => setShowJsonModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-[10px] text-violet-400/60">
+              Paste single JSON object or array of objects to import, or copy current hero spec.
+            </p>
+
+            <textarea
+              value={jsonInput}
+              onChange={e => setJsonInput(e.target.value)}
+              rows={8}
+              className={inputCls + ' text-[10px] font-mono'}
+              placeholder={`[\n  {\n    "slug": "custom_hero",\n    "name": "Custom Hero",\n    "classId": "WARRIOR",\n    "spriteKey": "warrior",\n    "flavor": "Custom archetype description",\n    "tag": "Custom",\n    "tagColor": "#a78bfa"\n  }\n]`}
+            />
+
+            <div className="flex items-center justify-between pt-2 border-t border-violet-500/20">
+              <button
+                onClick={() => setJsonInput(JSON.stringify(form, null, 2))}
+                className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-violet-900/40 text-violet-300 hover:bg-violet-800/50 flex items-center gap-1.5"
+              >
+                <Copy size={11} /> Load Current Form JSON
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowJsonModal(false)}
+                  className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImportJson}
+                  disabled={loading || !jsonInput.trim()}
+                  className="px-4 py-1.5 rounded-lg font-black text-[10px] bg-violet-600 hover:bg-violet-500 text-white flex items-center gap-1.5 disabled:opacity-40"
+                >
+                  <Download size={11} /> Import JSON
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
