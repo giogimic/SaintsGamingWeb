@@ -1,7 +1,7 @@
 # Gameplay Bible ↔ Codebase Alignment
 
-**Date:** 2026-08-02  
-**Bible:** `info/gameplay-bible/` (16 pages)  
+**Date:** 2026-08-04 (Slice D master architecture)  
+**Bible:** `info/gameplay-bible/` (18 pages)  
 **Purpose:** Honest status for “continue till complete” — what exists, what conflicts, what to build next.
 
 > Roadmap checkboxes in `12-demo-vertical-slice-roadmap.md` are **aspirational product intent**. This file is the **engineering truth**.
@@ -73,11 +73,12 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 3. Victory/defeat/flee return to overworld  
 
 ### Slice D — Studio creator UX (16, toward MPV editor) — **IN PROGRESS**
-1. Contextual modes (Build / NPC / Quest / Creature / Test) — **done**  
+1. Contextual modes (Build / NPC / Quest / Creature / Test) — **done** (bible Walk/Paint/Place/Populate/Script aliases → see **18**)  
 2. Permission-gated floating docks (extend current shell) — **done** (+ Loot Manager)  
 3. Tag/component placement UX over raw logic paint — partial (`logicComponents`)  
 4. **Phase 1 World Builder & Economy (17)** — **done**: `isEditorMode`, layer/entity/loot schemas, soft gameplay suppress in create tools, `/api/loot/tables`  
-5. Remaining (Phase 2+): schema property panels for all entity kinds, Item Creator, avatar-free Studio session
+5. **Master architecture (18)** — **done (docs)**: full audit, reuse/merge rules, subsystem specs, hot-reload bus, plugin checklist  
+6. Remaining (Phase 2+ per **18** §11): wire `SchemaFieldRenderer`, NPC live push, Place/Script modes, Item Creator, avatar-free session — **extend existing systems; no parallel rewrites**
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
@@ -98,5 +99,13 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 ## Immediate next decision for product owner
 
 Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
-Slice **D** Phase 1 foundation landed (bible **17**). Next: Phase 2 entity schema panels / Item Creator, or **E** (website ↔ game).  
+Slice **D** Phase 1 (**17**) + master architecture (**18**) landed. Next implement **18 Phase 2** (schema panels + NPC hot-reload + mode/hotkey cleanup), not new parallel editors. Or **E** (website ↔ game).  
 Human smoke: Studio Build → Loot Manager create pool → Walk Mode play-test; claim Rockitten → TB capture.
+
+---
+
+## Studio unification notes (from 18 audit)
+
+| Keep | Merge / demote | Do not create |
+| :--- | :--- | :--- |
+| WorldMap, Logic −1, existing docks, `entitySchemas`, `SchemaFieldRenderer`, `lootRefs`, DEMO bootstrap | GameMap reads, SaintsMap, dual ClassEditor, GameConfig loot writers as SoT, `ITEM_DB` as authoring SoT, `RESOURCE_NODE_MAP` magic | Second map table, second loot pipeline, second dock store, orphan property UIs |

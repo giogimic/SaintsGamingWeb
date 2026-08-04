@@ -1,6 +1,6 @@
 # Saints Gaming — Studio Editor Philosophy & Creator Experience (16.txt)
 
-Saints Studio is not a secondary tool bolted onto the game. It is the product surface where worlds are born. The architectural layers of map data, logic tiles, and object placement are defined in [`08-world-building-editor-architecture.md`](./08-world-building-editor-architecture.md). Production Studio isolation, entity schemas, and loot/economy contracts live in [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md). This document defines how creating should *feel*.
+Saints Studio is not a secondary tool bolted onto the game. It is the product surface where worlds are born. The architectural layers of map data, logic tiles, and object placement are defined in [`08-world-building-editor-architecture.md`](./08-world-building-editor-architecture.md). Production Studio isolation, entity schemas, and loot/economy contracts live in [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md). The full system inventory, merge rules, and subsystem specs live in [`18-studio-master-architecture.md`](./18-studio-master-architecture.md). This document defines how creating should *feel*.
 
 ---
 

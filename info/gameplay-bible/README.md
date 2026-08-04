@@ -1,11 +1,11 @@
 # Saints Gaming — Gameplay Bible
 
-**Status:** Draft set ingested 2026-08-02 (16 pages) + Studio economy architecture (17)  
+**Status:** Draft set ingested 2026-08-02 + Studio economy (17) + master architecture (18)  
 **Role:** Product + systems constitution for the MMO / engine / Studio  
 **Companion vision:** [`../vision/ECOSYSTEM.md`](../vision/ECOSYSTEM.md)
 
 Read order for implementers: **01 → 07 → 06 → 12**, then topic docs as needed.  
-Always pair **08 + 16 + 17** for editor work. Always pair **02 + 07 + 11** for combat/capture.
+Always pair **08 + 16 + 17 + 18** for editor work (`18` is the master system inventory). Always pair **02 + 07 + 11** for combat/capture.
 
 ---
 
@@ -30,6 +30,7 @@ Always pair **08 + 16 + 17** for editor work. Always pair **02 + 07 + 11** for c
 | 15 | [`15-quests-dialogue-npc-ai.md`](./15-quests-dialogue-npc-ai.md) | Quests, dialogue, NPC FSM |
 | 16 | [`16-studio-editor-philosophy.md`](./16-studio-editor-philosophy.md) | Creator UX / Studio philosophy |
 | 17 | [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md) | Studio isolation, layers, entities, loot/economy |
+| 18 | [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) | **Master** audit + unified subsystem architecture |
 
 ## Alignment
 

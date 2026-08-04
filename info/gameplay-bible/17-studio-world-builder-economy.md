@@ -5,9 +5,10 @@ Production architecture for Saints Studio as a complete game creation suite.
 > **Companions**
 > - [`08-world-building-editor-architecture.md`](./08-world-building-editor-architecture.md) — map JSON, visual layers 0–3, Logic (−1) authority
 > - [`16-studio-editor-philosophy.md`](./16-studio-editor-philosophy.md) — creator UX, modes, docks, fun-first loop
+> - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — **master** audit, unification rules, every subsystem spec
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth vs bible intent
 
-This document is the **system contract**. `08`/`16` remain the layering and UX sources of truth; this page adds entity/economy isolation and phased delivery.
+This document is the **Phase 1 system contract** (isolation, layers, entities, loot). `08`/`16` remain layering and UX sources of truth. For full Studio inventory, duplicates-to-merge, and detailed subsystem designs, use **`18`** — do not invent parallel architectures.
 
 ---
 
