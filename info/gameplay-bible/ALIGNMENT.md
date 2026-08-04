@@ -1,7 +1,7 @@
 # Gameplay Bible ↔ Codebase Alignment
 
-**Date:** 2026-08-04 (Slice D through NPC/AI/creature editors)  
-**Bible:** `info/gameplay-bible/` (22 pages)  
+**Date:** 2026-08-04 (Slice D through economy system)  
+**Bible:** `info/gameplay-bible/` (23 pages)  
 **Purpose:** Honest status for “continue till complete” — what exists, what conflicts, what to build next.
 
 > Roadmap checkboxes in `12-demo-vertical-slice-roadmap.md` are **aspirational product intent**. This file is the **engineering truth**.
@@ -82,7 +82,8 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 7. **Complete Entity System (20)** — **done (docs)**: lifecycle, serialization, components, schemas, validation, events, refs, deps, runtime conversion, editor meta, prefabs/templates/variants/inheritance/composition; phases E1–E6  
 8. **Complete World-Building Tools (21)** — **done (docs)**: terrain→save workflows, regions, auto-tile, brushes/fill/selection, layer ops, roads/water/rivers/cliffs/vegetation/buildings/furniture/lighting/weather/audio/biome/spawn; phases WB1–WB6  
 9. **NPC / AI / Creature editors (22)** — **done (docs)**: NPC creation, BT/FSM, schedules, dialogue, relationships, patrols, combat AI, shops, quests, reputation, CreatureDef, capture, spawning, evolution, companions, bosses, world bosses, events; phases NAC1–NAC6  
-10. Remaining (implement): **19 UX-1** + **21 WB1** + **20 E1** + **22 NAC1** — evolve existing docks/managers; no parallel AI Studio
+10. **Complete Economy (23)** — **done (docs)**: Item Creator, equipment/consumables/materials, currencies, loot pools/groups/overrides/sim, crafting/gathering/refining, trading/auction/vendors, drop+economy balancing, rarity/tags/collections/achievements, global modifiers/seasons; phases ECO1–ECO6; unify ItemTemplate + LootService  
+11. Remaining (implement): **19 UX-1** + **21 WB1** + **20 E1** + **22 NAC1** + **23 ECO1** — evolve registries; no parallel ITEM_DB/loot/recipe SoTs
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
@@ -103,14 +104,15 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 ## Immediate next decision for product owner
 
 Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
-Slice **D** docs through **22** landed. Next code: **19 UX-1** + **21 WB1** + **20 E1** + **22 NAC1**. Or **E** (website ↔ game).  
+Slice **D** docs through **23** (economy) landed. Next code: **UX-1 + WB1 + E1 + NAC1 + ECO1** (ItemTemplate SoT + LootService death drops). Or **E** (website ↔ game).  
 Human smoke: Studio Build → Loot Manager create pool → Walk Mode play-test; claim Rockitten → TB capture.
 
 ---
 
-## Studio unification notes (from 18–20 audit)
+## Studio unification notes (from 18–23 audit)
 
 | Keep | Merge / demote | Do not create |
 | :--- | :--- | :--- |
 | WorldMap, Logic −1, existing docks, `entitySchemas`, `SchemaFieldRenderer`, `lootRefs`, DEMO bootstrap | GameMap reads, SaintsMap, dual ClassEditor, GameConfig loot writers as SoT, `ITEM_DB` as authoring SoT, `RESOURCE_NODE_MAP` magic | Second map table, second loot pipeline, second dock store, orphan property UIs, parallel ECS library |
 | `npcsData`/`gatesData` via **adapters** during E1–E2 | Flat one-off object JSON columns per feature | Bespoke Studio panels per new gameplay object — use components (`20`) |
+| `ItemTemplate` + `LootTable` + `CraftingRecipe` + Loot Manager | Dead `CRAFTING_RECIPES`, hardcoded craft overlay lists, hardcoded death loot, dual wood/ore slugs | Second price list beside `vendorValue` / ShopListing (`23`) |
