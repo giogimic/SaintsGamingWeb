@@ -1,12 +1,10 @@
 import { GameEngine } from "./GameEngine";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import {
   calculateCombatLevelFromXp,
   isCombatSkillTyping,
   normalizeSkillSlug,
 } from "@/shared/game/skillTypings";
-
-const prisma = new PrismaClient();
 
 /** Gathering / artisan OSRS-style curve (legacy, max 99). */
 export function calculateGatheringLevelFromXp(xp: number): number {

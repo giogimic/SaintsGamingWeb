@@ -1,21 +1,16 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import { GameEngine } from "./GameEngine";
 import { getShopListing, sellPrice, SHOP_CATALOG } from "@/shared/game/shopCatalog";
-
-const prisma = new PrismaClient();
+import {
+  addItem,
+  inventorySnapshot,
+  removeItem,
+  resolveUserId as resolveUserIdShared,
+} from "./inventoryService";
 
 async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
-  const asAccount = await prisma.account.findFirst({
-    where: { id: accountOrUserId },
-    select: { userId: true },
-  });
-  if (asAccount?.userId) return asAccount.userId;
-  const asUser = await prisma.user.findFirst({
-    where: { id: accountOrUserId },
-    select: { id: true },
-  });
-  return asUser?.id ?? null;
+  return resolveUserIdShared(accountOrUserId);
 }
 
 async function loadCredits(userId: string): Promise<{ charId: string; credits: number; state: Record<string, unknown> } | null> {
@@ -31,47 +26,6 @@ async function saveCredits(charId: string, state: Record<string, unknown>, credi
     where: { id: charId },
     data: { stateData: JSON.stringify(state) },
   });
-}
-
-async function addItem(userId: string, itemSlug: string, qty: number) {
-  const existing = await prisma.playerInventoryItem.findFirst({
-    where: { userId, itemSlug },
-  });
-  if (existing) {
-    await prisma.playerInventoryItem.update({
-      where: { id: existing.id },
-      data: { quantity: existing.quantity + qty },
-    });
-  } else {
-    await prisma.playerInventoryItem.create({
-      data: { userId, itemSlug, quantity: qty },
-    });
-  }
-}
-
-async function removeItem(userId: string, itemSlug: string, qty: number): Promise<boolean> {
-  const existing = await prisma.playerInventoryItem.findFirst({
-    where: { userId, itemSlug },
-  });
-  if (!existing || existing.quantity < qty) return false;
-  if (existing.quantity === qty) {
-    await prisma.playerInventoryItem.delete({ where: { id: existing.id } });
-  } else {
-    await prisma.playerInventoryItem.update({
-      where: { id: existing.id },
-      data: { quantity: existing.quantity - qty },
-    });
-  }
-  return true;
-}
-
-async function inventorySnapshot(userId: string): Promise<Record<string, number>> {
-  const rows = await prisma.playerInventoryItem.findMany({ where: { userId } });
-  const inv: Record<string, number> = {};
-  for (const row of rows) {
-    inv[row.itemSlug] = (inv[row.itemSlug] || 0) + row.quantity;
-  }
-  return inv;
 }
 
 export class ShopManager {

@@ -34,10 +34,10 @@ export function CreateThreadForm({
     setError(null);
 
     try {
-      const res = await fetch("/api/forum/thread", {
+      const res = await fetch("/api/forum/threads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, body, subcategoryId }),
+        body: JSON.stringify({ title, body, subcategorySlug, subcategoryId }),
       });
 
       const data = await res.json();
@@ -46,7 +46,7 @@ export function CreateThreadForm({
         throw new Error(data.message || "Failed to create thread");
       }
 
-      router.push(`/forum/thread/${data.slug}`);
+      router.push(`/forum/t/${data.slug}`);
       router.refresh();
     } catch (err) {
       if (err instanceof Error) {

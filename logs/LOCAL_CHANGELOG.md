@@ -1,5 +1,56 @@
 # Local Changelog
 
+## 2026-08-04 — Studio resume notes + CONTINUE update
+
+Strip pause lifted. Handoff: `logs/2026-08-04-studio-resume-after-strip.md` + updated `info/CONTINUE.md`. Studio author `join_map` explicitly sets `lobby: false` so DEMO force never applies in Studio.
+
+---
+
+## 2026-08-04 — Lobby multiplayer map + inventoryService gaps
+
+### Multiplayer map (`DEMO_SANDBOX`)
+- Lobby `join_map` (character load, reconnect, late-join) always uses `DEMO_SANDBOX` + `lobby: true`
+- Server `PlayerManager` honors `lobby`/`forceDemo` → forces `DEMO_MAP_ID` shard
+- Lobby gate warps off-DEMO blocked (Studio still free to warp)
+
+### InventoryService
+- Tx-aware `addItem`/`removeItem`/`inventorySnapshot` (GTC purchase/list via `app/actions/gtc.ts` + EconomyManager)
+- `addItemWithMeta` for craft durability/affixes
+- `wearToolDurability` for gather tool wear
+- CraftingManager + InventoryManager wired through service
+
+Tests: 191 pass. Lint clean.
+
+---
+
+## 2026-08-04 — Post-strip re-audit
+
+Re-audited after destructive strip. **Verdict: no further same-degree ghost strip needed.** Remaining HIGH items are consolidation (dual map loaders; inventoryService gaps in GTC/craft/durability), not competing live systems. See audit log post-strip section.
+
+---
+
+## 2026-08-04 — Destructive duplicate strip (complete)
+
+Studio paused. RT+TB combat modes kept. All plan phases done. Tests: **191 pass**.
+
+- **P1 ghosts:** killed party `:3001` client, BattleOverlay/Pixi/battle-engine, PartyUI, JagexHudOrbs, dex-overlay, EntityManager, audio, legacy game-server, unused deps (pixi/howler/easystarjs/dompurify/rehype-sanitize)
+- **P2 creatures:** CreatureDb+JSON gone; saints-dex adapts catalog; shared `elementMatchups`
+- **P3 inventory/Prisma:** `inventoryService` + shared prisma on live managers
+- **P4 classes:** Phase-5 ClassEditor/GameConfigManager stack deleted; DevTools → ClassEditorPanel
+- **P5 forum/leftovers:** create-thread → `/api/forum/threads` only; FloatingHealthBars only; lobby achievements stub deleted
+
+Details: `logs/2026-08-04-duplicate-systems-audit.md` implementation status section.
+
+---
+
+## 2026-08-04 — Full duplicate-systems audit
+
+Read-only audit of overlapping/parallel systems. In-progress paths ignored as primary findings. Full report: `logs/2026-08-04-duplicate-systems-audit.md`. No application code changed.
+
+Top live risks: dead client party socket (`:3001`), triple creature catalogs, inventory CRUD fan-out, leftover TB/Pixi battle UIs, many ad-hoc `PrismaClient`s.
+
+---
+
 ## 2026-08-04 — Deleted obsolete `giogimic/*` remotes
 
 Deleted all 12 leftover feature branches on `origin` (nothing unmerged; #26 + later studio work already on main). Skipped salvaging duplicate audit docs — main already has `logs/2026-08-04-studio-paint-and-permission-audit.md`, `studio-systems-audit.md`, `studio-dev-mode-ux.md`.

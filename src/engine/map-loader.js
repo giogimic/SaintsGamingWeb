@@ -10,7 +10,16 @@
 
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({ log: ['error'] });
+/** Reuse Next/server singleton when present (avoids a second pool beside web/lib/prisma). */
+function getPrisma() {
+  const g = globalThis;
+  if (g.prisma) return g.prisma;
+  const client = new PrismaClient({ log: ['error'] });
+  if (process.env.NODE_ENV !== 'production') g.prisma = client;
+  return client;
+}
+
+const prisma = getPrisma();
 
 // In-memory cache: mapId -> { grid, gates, npcs, dimensions }
 const mapCache = {};

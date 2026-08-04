@@ -1,6 +1,7 @@
 import { MultiTierCurrency } from "./types";
 import { toBaseMapId } from "@/shared/net/mapIds";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
+import { modifyInventory as modifyInventoryQty, resolveUserId } from "./inventoryService";
 
 export interface PersistenceManager {
   savePlayerPosition(accountId: string, mapId: string, x: number, y: number): Promise<void>;
@@ -12,7 +13,6 @@ export interface PersistenceManager {
   transferCreature(fromAccountId: string, toAccountId: string, creatureInstanceId: string): Promise<boolean>;
 }
 
-const prisma = new PrismaClient();
 export class DatabasePersistenceManager implements PersistenceManager {
   public async savePlayerPosition(accountId: string, mapId: string, x: number, y: number): Promise<void> {
     if (accountId.startsWith("acc_")) return; // Skip anonymous connections
@@ -80,7 +80,9 @@ export class DatabasePersistenceManager implements PersistenceManager {
   }
 
   public async modifyInventory(accountId: string, itemId: string, amount: number): Promise<void> {
-    // Implement via Prisma later
+    const userId = await resolveUserId(accountId);
+    if (!userId) return;
+    await modifyInventoryQty(userId, itemId, amount);
   }
 
   public async transferCreature(fromAccountId: string, toAccountId: string, creatureInstanceId: string): Promise<boolean> {

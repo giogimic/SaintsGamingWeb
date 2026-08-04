@@ -2,27 +2,23 @@
 
 import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import GameConfigEditor from '../GameConfigEditor';
-import ClassEditor from '../ClassEditor';
+import { ClassEditorPanel } from './ClassEditorPanel';
 import ServerControl from '../ServerControl';
-import { TerminalSquare, UserCheck, Server, ShieldAlert } from 'lucide-react';
+import { UserCheck, Server, ShieldAlert } from 'lucide-react';
 import {
   canUseStudioEngineConfig,
   canUseStudioServerControls,
 } from '@/shared/game/studioPermissions';
 
+/** Dev Tools: server controls + canonical ClassEditorPanel (Catalog stack). */
 export const DevToolsPanel: React.FC = () => {
   const { data: session } = useSession();
   const level = session?.user?.permissionLevel ?? 0;
   const canServer = canUseStudioServerControls(level);
   const canEngine = canUseStudioEngineConfig(level);
 
-  const defaultTab: 'config' | 'classes' | 'server' = canServer
-    ? 'server'
-    : canEngine
-      ? 'config'
-      : 'server';
-  const [activeTab, setActiveTab] = useState<'config' | 'classes' | 'server'>(defaultTab);
+  const defaultTab: 'classes' | 'server' = canServer ? 'server' : 'classes';
+  const [activeTab, setActiveTab] = useState<'classes' | 'server'>(defaultTab);
 
   if (!canServer && !canEngine) {
     return (
@@ -50,18 +46,6 @@ export const DevToolsPanel: React.FC = () => {
         )}
         {canEngine && (
           <button
-            onClick={() => setActiveTab('config')}
-            className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-              activeTab === 'config'
-                ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-            }`}
-          >
-            <TerminalSquare className="w-3 h-3" /> Engine Config
-          </button>
-        )}
-        {canEngine && (
-          <button
             onClick={() => setActiveTab('classes')}
             className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
               activeTab === 'classes'
@@ -76,15 +60,10 @@ export const DevToolsPanel: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
         {activeTab === 'server' && canServer && <ServerControl />}
-        {activeTab === 'config' && canEngine && <GameConfigEditor />}
-        {activeTab === 'classes' && canEngine && <ClassEditor />}
-        {activeTab === 'server' && !canServer && (
-          <p className="p-4 text-xs text-slate-500">Admin+ required for server controls.</p>
-        )}
-        {(activeTab === 'config' || activeTab === 'classes') && !canEngine && (
-          <p className="p-4 text-xs text-slate-500">Developer+ required for engine config.</p>
-        )}
+        {activeTab === 'classes' && canEngine && <ClassEditorPanel />}
       </div>
     </div>
   );
 };
+
+export default DevToolsPanel;

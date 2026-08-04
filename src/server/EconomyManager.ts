@@ -1,6 +1,7 @@
 import { prisma } from "@/web/lib/prisma";
 import { GameEngine } from "./GameEngine";
 import { PlayerManager } from "./PlayerManager";
+import { removeItem, resolveUserId, addItem } from "./inventoryService";
 
 export class EconomyManager {
   private engine: GameEngine;
@@ -28,20 +29,11 @@ export class EconomyManager {
     try {
       // 1. Verify user owns the item in Prisma (Cold State)
       if (data.itemType === "MATERIAL") {
-        const inventory = await prisma.playerInventoryItem.findFirst({
-          where: { userId: data.accountId, itemSlug: data.itemId }
-        });
-
-        if (!inventory || inventory.quantity < 1) {
+        const userId = (await resolveUserId(data.accountId)) || data.accountId;
+        const removed = await removeItem(userId, data.itemId, 1);
+        if (!removed) {
           this.engine.events.emit("directMessage", { socketId: data.socketId, event: "chat_message", data: { channel: "SYSTEM", senderId: "SERVER", senderName: "System", message: `You don't have enough ${data.itemId}.`, timestamp: Date.now() } });
           return;
-        }
-
-        // Deduct item
-        if (inventory.quantity === 1) {
-          await prisma.playerInventoryItem.delete({ where: { id: inventory.id } });
-        } else {
-          await prisma.playerInventoryItem.update({ where: { id: inventory.id }, data: { quantity: inventory.quantity - 1 } });
         }
       } else if (data.itemType === "EQUIPMENT") {
         this.engine.events.emit("directMessage", { socketId: data.socketId, event: "chat_message", data: { channel: "SYSTEM", senderId: "SERVER", senderName: "System", message: `Equipment sales not fully supported yet.`, timestamp: Date.now() } });
@@ -128,15 +120,9 @@ export class EconomyManager {
         }
 
         // Add item to buyer
-        if (listing.itemType === "MATERIAL") {
-          const existing = await tx.playerInventoryItem.findFirst({
-            where: { userId: data.accountId, itemSlug: listing.itemId! }
-          });
-          if (existing) {
-            await tx.playerInventoryItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + 1 } });
-          } else {
-            await tx.playerInventoryItem.create({ data: { userId: data.accountId, itemSlug: listing.itemId!, quantity: 1 } });
-          }
+        if (listing.itemType === "MATERIAL" && listing.itemId) {
+          const buyerUserId = (await resolveUserId(data.accountId)) || data.accountId;
+          await addItem(buyerUserId, listing.itemId, 1, tx);
         } else if (listing.itemType === "EQUIPMENT") {
            // For now, equipment is added to inventory items as well, or we just throw.
            // Since we don't support selling equipment yet, this shouldn't be reached.

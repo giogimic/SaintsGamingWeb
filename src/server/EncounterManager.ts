@@ -1,5 +1,5 @@
 import { GameEngine } from "./GameEngine";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import {
   computeCaptureChance,
   rollCaptureSuccess,
@@ -13,8 +13,7 @@ import {
 import { creatureAssetUrl } from "@/shared/game/creatureCatalog";
 import { isRemarkableCapture } from "@/shared/game/remarkableCapture";
 import { grantsForTurnBattle } from "@/shared/game/combatSkillXp";
-
-const prisma = new PrismaClient();
+import { addItem, removeItem, resolveUserId as resolveUserIdShared } from "./inventoryService";
 
 export interface EncounterProvider {
   type: string;
@@ -50,18 +49,7 @@ export interface BattleState {
 /** Socket auth id is User.id; some paths historically looked up Account.id. */
 async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
-
-  const asAccount = await prisma.account.findFirst({
-    where: { id: accountOrUserId },
-    select: { userId: true },
-  });
-  if (asAccount?.userId) return asAccount.userId;
-
-  const asUser = await prisma.user.findFirst({
-    where: { id: accountOrUserId },
-    select: { id: true },
-  });
-  return asUser?.id ?? null;
+  return resolveUserIdShared(accountOrUserId);
 }
 
 export class EncounterManager {
@@ -294,10 +282,8 @@ export class EncounterManager {
         return;
       }
 
-      const inv = await prisma.playerInventoryItem.findFirst({
-        where: { userId, itemSlug: itemId },
-      });
-      if (!inv || inv.quantity < 1) {
+      const consumed = await removeItem(userId, itemId, 1);
+      if (!consumed) {
         battle.log.push("You don't have any capture film.");
         this.sendToPlayer(battle.socketId, "show_toast", {
           message: "You need Standard Film (buy/craft at the merchant, or ask Vance).",
@@ -305,16 +291,6 @@ export class EncounterManager {
         battle.phase = "WAITING_FOR_INPUT";
         this.broadcastUpdate(battle);
         return;
-      }
-
-      // Consume one film exposure (server-authoritative)
-      if (inv.quantity <= 1) {
-        await prisma.playerInventoryItem.delete({ where: { id: inv.id } });
-      } else {
-        await prisma.playerInventoryItem.update({
-          where: { id: inv.id },
-          data: { quantity: inv.quantity - 1 },
-        });
       }
 
       battle.log.push(`You exposed a frame of film!`);
@@ -516,20 +492,7 @@ export class EncounterManager {
     // Victory: generic loot into inventory (bible 11)
     if (result === "WIN" && userId) {
       try {
-        const lootSlug = "monster_fang";
-        const existing = await prisma.playerInventoryItem.findFirst({
-          where: { userId, itemSlug: lootSlug },
-        });
-        if (existing) {
-          await prisma.playerInventoryItem.update({
-            where: { id: existing.id },
-            data: { quantity: existing.quantity + 1 },
-          });
-        } else {
-          await prisma.playerInventoryItem.create({
-            data: { userId, itemSlug: lootSlug, quantity: 1 },
-          });
-        }
+        await addItem(userId, "monster_fang", 1);
         this.sendToPlayer(battle.socketId, "show_toast", {
           message: "Victory! Received Monster Fang.",
         });

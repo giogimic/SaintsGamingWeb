@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { AssetManager, GameAssetItem, SpriteFrame } from '@/engine/assets/AssetManager';
 import { AssetPathResolver } from '@/engine/assets/AssetPathResolver';
-import { CharacterClassSystem, CharacterClassDefinition } from '@/game/CharacterClassSystem';
 import SpritePreview from './SpritePreview';
 import {
   Search,
@@ -14,14 +13,49 @@ import {
 } from 'lucide-react';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
 
+/** Optional class filter for sprite browser (Catalog / ClassEditorPanel). */
+export type SpriteClassFilter = {
+  allowedSpriteTags?: string[];
+  spriteFilters?: Record<string, string[]>;
+};
+
 export interface SpriteBrowserProps {
-  classDef?: CharacterClassDefinition;
+  classDef?: SpriteClassFilter;
   filterTags?: string[];
   filterType?: string;
   multiSelect?: boolean;
   selectedAssetIds?: string[];
   onSelect: (assets: GameAssetItem[]) => void;
   onClose?: () => void;
+}
+
+function filterSpritesForClass(
+  items: GameAssetItem[],
+  classDef: SpriteClassFilter
+): GameAssetItem[] {
+  const allowedTags = classDef.allowedSpriteTags || [];
+  const spriteFilters = classDef.spriteFilters || {};
+  if (allowedTags.length === 0 && Object.keys(spriteFilters).length === 0) {
+    return items;
+  }
+  return items.filter((sprite) => {
+    const spriteTags = sprite.tags || [];
+    const metadata = sprite.metadata || {};
+    if (allowedTags.length > 0) {
+      const hasAllowedTag =
+        allowedTags.some((tag) => spriteTags.includes(tag.toLowerCase())) ||
+        spriteTags.includes('player') ||
+        spriteTags.includes('hero') ||
+        spriteTags.includes('npc');
+      if (!hasAllowedTag) return false;
+    }
+    for (const [filterKey, filterValues] of Object.entries(spriteFilters)) {
+      if (!filterValues || filterValues.length === 0) continue;
+      const spriteValue = metadata[filterKey] as string | undefined;
+      if (spriteValue && !filterValues.includes(spriteValue)) return false;
+    }
+    return true;
+  });
 }
 
 export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
@@ -62,8 +96,8 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
       const manager = AssetManager.getInstance();
 
       if (activeClassFilter && classDef) {
-        const classSystem = CharacterClassSystem.getInstance();
-        result = await classSystem.getSpritesForClass(classDef);
+        const searchResult = await manager.searchAssets({ type: 'SPRITE' });
+        result = filterSpritesForClass(searchResult.items, classDef);
         more = false;
         count = result.length;
       } else {

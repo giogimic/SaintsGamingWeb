@@ -1,5 +1,5 @@
 import { GameEngine } from "./GameEngine";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/web/lib/prisma";
 import { VANCE_TREE } from "./DemoBootstrap";
 import { loadCreatureDef, toPlayerCreatureStats } from "./creatureDefs";
 import {
@@ -18,10 +18,13 @@ import {
   SPYDER_QUEST_CHAIN,
 } from "./spyderQuests";
 import { dialogueCache, invalidateDialogueCache } from "./dialogueCache";
+import {
+  addItems,
+  inventorySnapshot,
+  resolveUserId as resolveUserIdShared,
+} from "./inventoryService";
 
 export { invalidateDialogueCache };
-
-const prisma = new PrismaClient();
 
 /**
  * Built-in fallback trees when DB has no row.
@@ -49,43 +52,7 @@ const SPYDER_DEFAULT_STARTER = "budaye";
 
 async function resolveUserId(accountOrUserId: string): Promise<string | null> {
   if (!accountOrUserId || accountOrUserId.startsWith("acc_")) return null;
-  const asAccount = await prisma.account.findFirst({
-    where: { id: accountOrUserId },
-    select: { userId: true },
-  });
-  if (asAccount?.userId) return asAccount.userId;
-  const asUser = await prisma.user.findFirst({
-    where: { id: accountOrUserId },
-    select: { id: true },
-  });
-  return asUser?.id ?? null;
-}
-
-async function addItems(userId: string, items: { slug: string; qty: number }[]) {
-  for (const item of items) {
-    const existing = await prisma.playerInventoryItem.findFirst({
-      where: { userId, itemSlug: item.slug },
-    });
-    if (existing) {
-      await prisma.playerInventoryItem.update({
-        where: { id: existing.id },
-        data: { quantity: existing.quantity + item.qty },
-      });
-    } else {
-      await prisma.playerInventoryItem.create({
-        data: { userId, itemSlug: item.slug, quantity: item.qty },
-      });
-    }
-  }
-}
-
-async function inventorySnapshot(userId: string): Promise<Record<string, number>> {
-  const rows = await prisma.playerInventoryItem.findMany({ where: { userId } });
-  const inv: Record<string, number> = {};
-  for (const row of rows) {
-    inv[row.itemSlug] = (inv[row.itemSlug] || 0) + row.quantity;
-  }
-  return inv;
+  return resolveUserIdShared(accountOrUserId);
 }
 
 export class DialogueManager {

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BabylonEngine } from '@/engine/BabylonEngine';
-import { resolveEncounter } from '@/game/CreatureDb';
 import { useGameStore } from '../store';
 import { useEditorStore } from '../editor/editor-store';
 import { loadMap } from '../data/maps';
@@ -29,6 +28,10 @@ import {
   STUDIO_MAP_CELLS_CHANGED_EVENT,
   type StudioMapCellsChangedDetail,
 } from '@/shared/game/studioEvents';
+import { getIsEditorMode } from '@/shared/game/studioSession';
+
+/** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
+const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
 
 const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
   const playerPos = useGameStore((state) => state.player.position);
@@ -183,14 +186,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (result.type === 'WARP') {
       const gate = result.gate;
       const spawn = gate.targetSpawn || { x: 6, y: 2 };
+      const targetBase = toBaseMapId(gate.targetMapId);
+      // Public lobby stays on DEMO_SANDBOX so peers share a multiplayer shard.
+      // Studio / playtest may warp to any map.
+      if (!getIsEditorMode() && targetBase !== LOBBY_MULTIPLAYER_MAP) {
+        showToast(`Multiplayer stays on ${LOBBY_MULTIPLAYER_MAP} — open Studio to visit other maps.`);
+        return;
+      }
       const finishWarp = () => {
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(spawn);
-        // Re-join server map room so other players / chat stay in sync after warps
         const p = useGameStore.getState().player;
         emitSocketEvent?.('join_map', {
           accountId: p.accountId,
-          mapId: toBaseMapId(gate.targetMapId),
+          mapId: targetBase,
+          lobby: !getIsEditorMode(),
           x: spawn.x,
           y: spawn.y,
           name: p.name || 'Player',
@@ -733,15 +743,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       }
     };
 
-    const handleHpUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const data = customEvent.detail;
-      const engine = engineRef.current;
-      if (engine && data.entityId) {
-        engine.renderHealthBar(data.entityId, data.hpPercent);
-      }
-    };
-
     const handleLootDropped = (e: Event) => {
       const customEvent = e as CustomEvent;
       const data = customEvent.detail;
@@ -777,13 +778,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
 
     window.addEventListener('combat_update_event', handleCombatUpdate);
-    window.addEventListener('creature_hp_update_event', handleHpUpdate);
     window.addEventListener('loot_dropped_event', handleLootDropped);
     window.addEventListener('loot_despawned_event', handleLootDespawned);
     
     return () => {
       window.removeEventListener('combat_update_event', handleCombatUpdate);
-      window.removeEventListener('creature_hp_update_event', handleHpUpdate);
       window.removeEventListener('loot_dropped_event', handleLootDropped);
       window.removeEventListener('loot_despawned_event', handleLootDespawned);
     };

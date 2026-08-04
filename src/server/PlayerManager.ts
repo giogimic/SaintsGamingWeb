@@ -1,23 +1,27 @@
 import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
-import { PlayerInput } from "./types";
+import { PlayerInput, EntityType } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
 import { isSameBaseMap, toBaseMapId } from "@/shared/net/mapIds";
 import { DEMO_MAP_ID } from "./demoMapSeed";
 import { grantsForDamageTaken, grantsForKill } from "@/shared/game/combatSkillXp";
-import { PrismaClient } from "@prisma/client";
-import { EntityType } from "./types";
+import { prisma } from "@/web/lib/prisma";
+import { addItem as addInventoryItem, removeItem as removeInventoryItem, resolveUserId } from "./inventoryService";
 
 /** Retired sandbox — always redirect joins/respawns to the live demo map. */
 const RETIRED_MAPS = new Set(["SAINTS_VILLAGE"]);
 const DEMO_SPAWN = { x: 14, y: 15 };
 
-function resolvePlayableMapId(mapId: string | undefined | null): string {
+function resolvePlayableMapId(
+  mapId: string | undefined | null,
+  opts?: { lobby?: boolean }
+): string {
+  // Public multiplayer lobby always shards on DEMO_SANDBOX so peers share a room.
+  if (opts?.lobby) return DEMO_MAP_ID;
   const base = toBaseMapId(String(mapId || DEMO_MAP_ID));
   if (!base || RETIRED_MAPS.has(base)) return DEMO_MAP_ID;
   return base;
 }
-const prisma = new PrismaClient();
 export interface PlayerState {
   entityId: string;
   accountId: string;
@@ -116,11 +120,16 @@ export class PlayerManager {
   }
 
   public async removeItem(accountId: string, itemId: string, amount: number = 1): Promise<boolean> {
-    return false;
+    const userId = await resolveUserId(accountId);
+    if (!userId) return false;
+    return removeInventoryItem(userId, itemId, amount);
   }
 
   public async addItem(accountId: string, itemId: string, amount: number = 1): Promise<boolean> {
-    return false;
+    const userId = await resolveUserId(accountId);
+    if (!userId) return false;
+    await addInventoryItem(userId, itemId, amount);
+    return true;
   }
 
   public async addCredits(accountId: string, amount: number): Promise<boolean> {
@@ -174,7 +183,8 @@ export class PlayerManager {
     // Never join retired sandboxes (SAINTS_VILLAGE) — that stranded players with broken sprites.
     const rawBaseMap = toBaseMapId(String(data?.mapId || DEMO_MAP_ID));
     const remappedFromRetired = RETIRED_MAPS.has(rawBaseMap);
-    const requestedMapId = resolvePlayableMapId(data?.mapId);
+    const forceLobby = data?.lobby === true || data?.forceDemo === true;
+    const requestedMapId = resolvePlayableMapId(data?.mapId, { lobby: forceLobby });
     // Ensure map definition is loaded
     await this.worldManager.loadMap(requestedMapId);
     

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { getFriendsList, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend } from "@/app/actions/messenger";
 import { useMessenger } from "./messenger-provider";
 import { useRealtimeStore } from "@/web/hooks/useRealtimeStore";
+import { useGameStore } from "@/web/components/the-lobby/store";
 import { Input } from "@/shared/ui/input";
 import { Button } from "@/shared/ui/button";
 import { ScrollArea } from "@/shared/ui/scroll-area";
@@ -13,6 +14,7 @@ import Image from "next/image";
 export function FriendsList() {
   const { setActiveChat } = useMessenger();
   const presenceByUserId = useRealtimeStore((s) => s.presenceByUserId);
+  const emitSocketEvent = useGameStore((s) => s.emitSocketEvent);
   const [friends, setFriends] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -189,10 +191,13 @@ export function FriendsList() {
                         className="h-7 px-2 text-[10px] font-mono text-cyan-400 border-cyan-700/50 hover:bg-cyan-950"
                         onClick={(e) => {
                           e.stopPropagation();
-                          import('@/game/party-manager').then(({ partyManager }) => {
-                            partyManager.inviteToParty(f.user.id);
-                            alert(`Party invite sent to ${f.user.username}!`);
-                          });
+                          // Live game socket (server PartyManager) — not the deleted :3001 party-manager ghost
+                          if (!emitSocketEvent) {
+                            alert("Join the lobby first to invite friends to a party.");
+                            return;
+                          }
+                          emitSocketEvent("party_invite", f.user.username);
+                          alert(`Party invite sent to ${f.user.username}!`);
                         }}
                       >
                         + PARTY
