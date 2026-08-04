@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { BabylonEngine } from '@/engine/BabylonEngine';
 import { resolveEncounter } from '@/game/CreatureDb';
 import { useGameStore } from '../store';
+import { useEditorStore } from '../editor/editor-store';
 import { loadMap } from '../data/maps';
 import type { GameMapData } from '../data/maps';
 import { soundSynth } from '@/engine/sound-synth';
@@ -54,7 +55,7 @@ interface GameCanvasBabylonProps {
 
 export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   onCanvasReady,
-  activeBrushTileId = 1,
+  activeBrushTileId = 17,
   activeLayerIdx = -1,
   isDevEditorOpen = false,
   suppressGameplay = false,
@@ -796,6 +797,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const engine = engineRef.current;
     if (!engine) return;
 
+    const syncPaintedMap = (map: any) => {
+      const store = useGameStore.getState();
+      // Keep store on the same object so Save Map sees in-place paint without remounting.
+      if (store.activeMapData !== map) {
+        store.setActiveMapData(map);
+      }
+      useEditorStore.getState().markMapDirty();
+    };
+
     if (isDevEditorOpen) {
       engine.enableTilePicking((r, c) => {
         const target = resolvePaintTarget(activeMap, activeLayerIdx);
@@ -803,6 +813,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           showToast(target.reason);
           return;
         }
+
+        if (onMapClick) onMapClick(r, c);
+        useEditorStore.getState().setLastPaintedTile({ r, c });
 
         if (target.kind === 'logic') {
           const logicId = useEditorStore.getState().activeLogicTileId;
@@ -816,7 +829,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             showToast(logicWrite.reason);
             return;
           }
-          if (onMapClick) onMapClick(r, c);
+          syncPaintedMap(activeMap);
           // A missing overlay means the engine was rebuilt under us; rebuild and retry.
           if (!engine.updateLogicTile(r, c, logicId)) {
             engine.enableLogicGridOverlay(activeMap?.grid || []);
@@ -830,9 +843,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           showToast(visualWrite.reason);
           return;
         }
-        if (onMapClick) onMapClick(r, c);
+        syncPaintedMap(activeMap);
         engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, activeMap.tilesets);
-      });
+      }, { drag: true });
     } else {
       // Click-to-move in exploration mode with Pathfinding
       engine.enableTilePicking((r, c) => {

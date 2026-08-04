@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { searchMapIndex, registerNewMap } from '../../data/map-index';
-import { GAME_MAPS, listMaps, invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
+import { GAME_MAPS, invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
@@ -73,6 +73,7 @@ export const WorldBuilderPanel: React.FC = () => {
     // Leave activeLayerIdx alone: forcing it to 0 here used to silently drag the
     // creator off Logic (−1) mid-edit, so their next clicks painted GIDs.
     useGameStore.getState().setActiveMapData(ensured);
+    // Do NOT force layer away from Logic (−1) — authors may be painting tags.
   }, [activeMapData]);
 
   const localIndex = searchMapIndex(mapSearchQuery);
@@ -141,6 +142,7 @@ export const WorldBuilderPanel: React.FC = () => {
       invalidateMapCache(baseMapId);
       // Notify server + peers to hot-reload from WorldMap (shard-safe global broadcast).
       emitSocketEvent?.('admin_reload_map', { mapId: baseMapId });
+      useEditorStore.getState().clearMapDirty();
       showToast(`Saved map ${baseMapId}`);
     } catch (e: any) {
       console.error('[Studio] Save map failed', e);
@@ -238,6 +240,15 @@ export const WorldBuilderPanel: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs font-mono">
+      <div className="rounded border border-[#806f47]/35 bg-[#0b1320]/70 p-2.5 text-[10px] leading-relaxed text-slate-400">
+        <p className="font-bold uppercase tracking-wider text-[#cbb26a]">World Builder</p>
+        <p className="mt-1">
+          Pick a map → choose <span className="text-[#e2d5b3]">Logic</span> or a visual layer → select a brush →{' '}
+          <span className="text-[#e2d5b3]">click or drag</span> on the ground →{' '}
+          <span className="text-[#e2d5b3]">Save Map</span>. Use Walk Mode to play-test.
+        </p>
+      </div>
+
       {/* MAP SELECTOR */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center justify-between text-[#cbb26a]">
@@ -342,8 +353,12 @@ export const WorldBuilderPanel: React.FC = () => {
       {/* LAYER SELECTOR */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-          <Layers className="w-3.5 h-3.5" /> Layer Targeting
+          <Layers className="w-3.5 h-3.5" /> What are you painting?
         </div>
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          <span className="text-rose-200">Logic</span> = collision & gameplay tags (colored overlay).{' '}
+          <span className="text-[#e2d5b3]">Ground / layers</span> = visible tileset art.
+        </p>
         <div className="flex gap-1 overflow-x-auto custom-scrollbar pb-1">
           <button
             type="button"

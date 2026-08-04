@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { PanelId, useEditorStore } from './editor-store';
-import { X, Minus, Move, Maximize2 } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { PanelId, useEditorStore, STUDIO_DOCK_META } from './editor-store';
+import { X, Minus, Maximize2 } from 'lucide-react';
 
 interface DraggablePanelProps {
   id: PanelId;
@@ -112,11 +112,18 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
           ${isActive ? 'from-[#162238] via-[#0b1320] to-[#162238] border-b border-[#cbb26a]/30' : 'from-[#0b1320] to-[#050b14] border-b border-[#806f47]/20'}
         `}
       >
-        <div className="flex items-center gap-2 pointer-events-none">
-          {icon && <span className="text-[#cbb26a]">{icon}</span>}
-          <span className={`font-bold text-xs tracking-wide uppercase font-mono ${isActive ? 'text-white' : 'text-slate-400'}`}>
-            {title}
-          </span>
+        <div className="flex min-w-0 flex-col pointer-events-none">
+          <div className="flex items-center gap-2">
+            {icon && <span className="text-[#cbb26a]">{icon}</span>}
+            <span className={`font-bold text-xs tracking-wide uppercase font-mono ${isActive ? 'text-white' : 'text-slate-400'}`}>
+              {title}
+            </span>
+          </div>
+          {STUDIO_DOCK_META[id]?.blurb && (
+            <span className="mt-0.5 truncate text-[9px] font-medium normal-case tracking-normal text-slate-500">
+              {STUDIO_DOCK_META[id].blurb}
+            </span>
+          )}
         </div>
         
         {/* Controls */}
