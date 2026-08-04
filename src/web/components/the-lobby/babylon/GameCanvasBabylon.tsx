@@ -19,7 +19,6 @@ import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { normalizeGates } from '@/shared/game/logicComponents';
-import { useEditorStore } from '../editor/editor-store';
 import {
   LOGIC_LAYER_IDX,
   isPaintableLogicId,
