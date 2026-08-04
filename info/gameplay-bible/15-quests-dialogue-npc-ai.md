@@ -2,6 +2,9 @@
 
 Saints Gaming features a rich narrative world. To scale the writing process without bloating the real-time server, we utilize a hybrid approach of LLM pre-generation and strict server-side state machines.
 
+> **Studio editors & full data contracts:** [`22-studio-npc-ai-creature-editors.md`](./22-studio-npc-ai-creature-editors.md)  
+> Entity components: [`20`](./20-studio-entity-system.md) · UX docks: [`19`](./19-studio-ux-design.md)
+
 ---
 
 # 1. The Pre-Generation Philosophy (Ollama)
