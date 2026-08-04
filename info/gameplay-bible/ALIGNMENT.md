@@ -81,7 +81,8 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 6. **Complete UX design (19)** — **done (docs)**: every chrome region, tool, dock, menu, inspector, shortcut, DnD, workflow, overlay/gizmo; phased UX-1…UX-5  
 7. **Complete Entity System (20)** — **done (docs)**: lifecycle, serialization, components, schemas, validation, events, refs, deps, runtime conversion, editor meta, prefabs/templates/variants/inheritance/composition; phases E1–E6  
 8. **Complete World-Building Tools (21)** — **done (docs)**: terrain→save workflows, regions, auto-tile, brushes/fill/selection, layer ops, roads/water/rivers/cliffs/vegetation/buildings/furniture/lighting/weather/audio/biome/spawn; phases WB1–WB6  
-9. Remaining (implement): **19 UX-1** + **21 WB1** (brush suite) + **20 E1** (entity adapters) — evolve WorldBuilder/Babylon paint/entity place; no second map editor
+9. **NPC / AI / Creature editors (22)** — **done (docs)**: NPC creation, BT/FSM, schedules, dialogue, relationships, patrols, combat AI, shops, quests, reputation, CreatureDef, capture, spawning, evolution, companions, bosses, world bosses, events; phases NAC1–NAC6  
+10. Remaining (implement): **19 UX-1** + **21 WB1** + **20 E1** + **22 NAC1** — evolve existing docks/managers; no parallel AI Studio
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
