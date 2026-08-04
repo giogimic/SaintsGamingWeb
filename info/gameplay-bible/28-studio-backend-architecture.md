@@ -9,6 +9,7 @@
 > - [`13-database-event-architecture.md`](./13-database-event-architecture.md) — event dictionary (aspirational; **this doc owns schema truth**)
 > - [`18`](./18-studio-master-architecture.md)–[`27`](./27-studio-production-tools.md) — Studio product contracts
 > - [`26-studio-live-operations.md`](./26-studio-live-operations.md) — publish / reload / migrate policy
+> - [`29`](./29-studio-glossary-canonical.md)–[`31`](./31-studio-integration-contracts.md) — ids, services mutate template, audit coverage
 > - Ops inventory: `info/backend/OVERVIEW.md`, `info/backend/API_CATALOG.md`, `info/database/WORLDMAP.md`, `info/uploads/STORAGE.md`
 
 **This document is the Studio backend master.** Evolve `prisma/schema.prisma`, `app/api/**`, `app/actions/**`, `src/server/**`, `src/shared/game/**`, `map-loader`, `studioPermissions` — **do not invent a second Studio backend** beside the Next + Socket.io process.

@@ -9,6 +9,7 @@
 > - [`19`](./19-studio-ux-design.md) · [`21`](./21-studio-world-building-tools.md) · [`23`](./23-studio-economy-system.md) · [`24`](./24-studio-quest-editor.md) · [`25`](./25-studio-gameplay-editors.md)
 > - [`27-studio-production-tools.md`](./27-studio-production-tools.md) — packages, audit, deps UI, team gates around publish
 > - [`28-studio-backend-architecture.md`](./28-studio-backend-architecture.md) — ContentReloadBus, services, transactions, migrate policy
+> - [`29`](./29-studio-glossary-canonical.md)–[`33`](./33-studio-gap-closure-register.md) — canonical reload union, publish integrations, commercial ops
 > - [`10-web-architecture-persistence.md`](./10-web-architecture-persistence.md) — Next/hot-cold boundary
 > - Deploy: `scripts/update.sh`, `scripts/setup.sh`, `entrypoint.sh`, `docs/developer-guide/installation.md`, `info/ops/STAGING_SMOKE.md`
 

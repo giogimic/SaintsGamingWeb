@@ -12,9 +12,10 @@
 > - [`22-studio-npc-ai-creature-editors.md`](./22-studio-npc-ai-creature-editors.md) — NPC/AI/creature docks & data
 > - [`08`](./08-world-building-editor-architecture.md) / [`17`](./17-studio-world-builder-economy.md) — layers & Phase 1 contracts
 > - [`26`](./26-studio-live-operations.md) · [`27`](./27-studio-production-tools.md) — live ops + production docks (Ctrl+K, Project Browser, Tasks, Audit)
+> - [`29`](./29-studio-glossary-canonical.md)–[`30`](./30-studio-editor-kernel-standard.md) — **normative** PanelIds, modes, chrome errata (patch this doc)
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth
 
-**This document is the UX master.** `16` owns philosophy. `18` owns systems. `19` owns authoring chrome. `20` entities · `21` world tools · `22` NPC/AI/creature editors. `27` owns production-tool docks registered into this chrome. Implement by evolving existing docks — not a second Studio UI.
+**This document is the UX master for layout origins.** `16` owns philosophy. `18` owns systems. **`30` patches chrome** (menus, status, shortcuts, zoning) when later docks expand the surface. `20` entities · `21` world tools · `22` NPC/AI/creature editors. `27` production-tool docks. Implement by evolving existing docks — not a second Studio UI.
 
 ---
 
