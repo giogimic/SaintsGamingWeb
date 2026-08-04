@@ -7,13 +7,15 @@ Saints Gaming is fundamentally designed as an "Editor-First" MMO. If a developer
 > - [`17-studio-world-builder-economy.md`](./17-studio-world-builder-economy.md) — Studio isolation, entity/loot/economy contracts  
 > - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — master audit, unification rules, every subsystem  
 > - [`19-studio-ux-design.md`](./19-studio-ux-design.md) — complete UX contract (tools, inspector, shortcuts)  
+> - [`20-studio-entity-system.md`](./20-studio-entity-system.md) — unified entity/component/prefab model  
 >  
 > `08` covers the technical map data architecture (schemas, layers, DB sync).  
 > `16` covers the human experience design (UI, roles, workflows, creator language).  
 > `17` covers production Studio isolation and data-driven economy.  
 > `18` is the master inventory — reuse existing systems; do not invent parallels.  
 > `19` specifies every Studio interaction surface.  
-> Read **08 + 16 + 17 + 18 + 19** together when implementing any part of the editor.
+> `20` specifies how every placed object is composed and serialized.  
+> Read **08 + 16 + 17 + 18 + 19 + 20** together when implementing any part of the editor.
 
 ---
 

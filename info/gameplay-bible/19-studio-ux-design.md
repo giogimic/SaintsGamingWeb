@@ -7,10 +7,11 @@
 > **Companions (do not fork)**
 > - [`16-studio-editor-philosophy.md`](./16-studio-editor-philosophy.md) — feel, fun-first, anti-patterns
 > - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — systems, registries, hot-reload, reuse rules
+> - [`20-studio-entity-system.md`](./20-studio-entity-system.md) — entity/component/prefab model (Inspector binds here)
 > - [`08`](./08-world-building-editor-architecture.md) / [`17`](./17-studio-world-builder-economy.md) — layers & Phase 1 contracts
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth
 
-**This document is the UX master.** `16` owns philosophy. `18` owns systems. `19` owns **every pixel of authoring chrome and every interaction**. Implement by evolving existing docks (`StudioEditorShell`, `editor-store`, panels) — not a second Studio UI.
+**This document is the UX master.** `16` owns philosophy. `18` owns systems. `19` owns **every pixel of authoring chrome and every interaction**. `20` owns what those interactions edit. Implement by evolving existing docks (`StudioEditorShell`, `editor-store`, panels) — not a second Studio UI.
 
 ---
 

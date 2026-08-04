@@ -106,8 +106,9 @@ Human smoke: Studio Build → Loot Manager create pool → Walk Mode play-test; 
 
 ---
 
-## Studio unification notes (from 18 audit)
+## Studio unification notes (from 18–20 audit)
 
 | Keep | Merge / demote | Do not create |
 | :--- | :--- | :--- |
-| WorldMap, Logic −1, existing docks, `entitySchemas`, `SchemaFieldRenderer`, `lootRefs`, DEMO bootstrap | GameMap reads, SaintsMap, dual ClassEditor, GameConfig loot writers as SoT, `ITEM_DB` as authoring SoT, `RESOURCE_NODE_MAP` magic | Second map table, second loot pipeline, second dock store, orphan property UIs |
+| WorldMap, Logic −1, existing docks, `entitySchemas`, `SchemaFieldRenderer`, `lootRefs`, DEMO bootstrap | GameMap reads, SaintsMap, dual ClassEditor, GameConfig loot writers as SoT, `ITEM_DB` as authoring SoT, `RESOURCE_NODE_MAP` magic | Second map table, second loot pipeline, second dock store, orphan property UIs, parallel ECS library |
+| `npcsData`/`gatesData` via **adapters** during E1–E2 | Flat one-off object JSON columns per feature | Bespoke Studio panels per new gameplay object — use components (`20`) |
