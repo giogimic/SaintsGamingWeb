@@ -1,7 +1,7 @@
 # Gameplay Bible ↔ Codebase Alignment
 
-**Date:** 2026-08-04 (Slice D master architecture + UX)  
-**Bible:** `info/gameplay-bible/` (19 pages)  
+**Date:** 2026-08-04 (Slice D architecture + UX + entities)  
+**Bible:** `info/gameplay-bible/` (20 pages)  
 **Purpose:** Honest status for “continue till complete” — what exists, what conflicts, what to build next.
 
 > Roadmap checkboxes in `12-demo-vertical-slice-roadmap.md` are **aspirational product intent**. This file is the **engineering truth**.
@@ -79,7 +79,8 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 4. **Phase 1 World Builder & Economy (17)** — **done**: `isEditorMode`, layer/entity/loot schemas, soft gameplay suppress in create tools, `/api/loot/tables`  
 5. **Master architecture (18)** — **done (docs)**: full audit, reuse/merge rules, subsystem specs, hot-reload bus, plugin checklist  
 6. **Complete UX design (19)** — **done (docs)**: every chrome region, tool, dock, menu, inspector, shortcut, DnD, workflow, overlay/gizmo; phased UX-1…UX-5  
-7. Remaining (Phase 2+ / UX-1+ per **18** §11 + **19** §20): status bar + Select vs Brush + fix `E` hotkey; wire `SchemaFieldRenderer`; Outliner; NPC live push; Place/Script modes; Item Creator — **evolve existing shell/panels; no parallel UI framework**
+7. **Complete Entity System (20)** — **done (docs)**: lifecycle, serialization, components, schemas, validation, events, refs, deps, runtime conversion, editor meta, prefabs/templates/variants/inheritance/composition; phases E1–E6  
+8. Remaining (implement per **18**/**19**/**20**): UX-1 chrome; E1 entity types+adapters; wire SchemaFieldRenderer; NPC live push; Place stamps archetypes — **evolve existing systems; no parallel ECS/UI frameworks**
 
 ### Slice E — Website ↔ game (10, ecosystem)
 1. Profile pinned creature  
@@ -100,7 +101,7 @@ Aligned with bible + Golden Rule + “improve don’t replace”:
 ## Immediate next decision for product owner
 
 Slices **A–C** + shop/craft/Rockitten MPV path in **2.1.115**.  
-Slice **D** Phase 1 (**17**) + master architecture (**18**) + UX contract (**19**) landed. Next implement **19 UX-1** (status bar, Select vs Brush, hotkey fix, mode labels) then **18 Phase 2** / **19 UX-2** (Inspector + Outliner). Or **E** (website ↔ game).  
+Slice **D** Phase 1 (**17**) + master architecture (**18**) + UX (**19**) + entity system (**20**) landed (docs). Next: **19 UX-1** + **20 E1** (entity types/adapters) in code. Or **E** (website ↔ game).  
 Human smoke: Studio Build → Loot Manager create pool → Walk Mode play-test; claim Rockitten → TB capture.
 
 ---

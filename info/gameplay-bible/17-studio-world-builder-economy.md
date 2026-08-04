@@ -7,9 +7,10 @@ Production architecture for Saints Studio as a complete game creation suite.
 > - [`16-studio-editor-philosophy.md`](./16-studio-editor-philosophy.md) — creator UX, modes, docks, fun-first loop
 > - [`18-studio-master-architecture.md`](./18-studio-master-architecture.md) — **master** audit, unification rules, every subsystem spec
 > - [`19-studio-ux-design.md`](./19-studio-ux-design.md) — complete UX: chrome, tools, shortcuts, workflows
+> - [`20-studio-entity-system.md`](./20-studio-entity-system.md) — unified entity / component / prefab architecture
 > - [`ALIGNMENT.md`](./ALIGNMENT.md) — engineering truth vs bible intent
 
-This document is the **Phase 1 system contract** (isolation, layers, entities, loot). `08`/`16` remain layering and UX *philosophy* sources of truth. For full Studio inventory use **`18`**; for every interaction/window use **`19`** — do not invent parallel architectures or UIs.
+This document is the **Phase 1 system contract** (isolation, layers, entities, loot). `08`/`16` remain layering and UX *philosophy* sources of truth. For full Studio inventory use **`18`**; for every interaction/window use **`19`**; for the placed-object model use **`20`**.
 
 ---
 
