@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Party invite + TB creature swap
+
+Real party invite accept/decline path; Turn Battle CREATURES switches to next healthy party member.  
+See `logs/2026-08-05-lobby-player-stubs.md`.
+
+---
+
 ## 2026-08-05 — Manual smokes (create/save + lobby MP)
 
 API create→save→reload and two-socket same-shard peer visibility both PASS; scripts under `scripts/smoke-*.ts`.  
