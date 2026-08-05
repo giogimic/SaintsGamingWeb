@@ -14,6 +14,7 @@ AOI is **not** the DEMO blocker (30×30 / zone 16 → all peers adjacent).
 | Change | Where |
 | :--- | :--- |
 | Public shards = `_chN` only (`isPublicChannelInstanceId`) | `mapIds.ts` + `WorldManager.joinMap` |
+| `pickPublicShardAssignment` extracted (testable) | `mapIds.ts` → `WorldManager` |
 | GC empty private/PIE instances on leave | `WorldManager.leaveInstance` |
 | Party force-join only onto public channels | `canPartyForceJoinInstance` + `PlayerManager` |
 | Studio gate warps pass `isPrivate` / `pie` | `GameCanvasBabylon` |
@@ -21,7 +22,7 @@ AOI is **not** the DEMO blocker (30×30 / zone 16 → all peers adjacent).
 | Peer coords use `??` (tile 0,0 safe) | `GameCanvasBabylon` |
 | Dev `console.debug` for `map_joined` / `map_players` | `index.tsx` |
 
-## P3 polish (shipped with P2)
+## P3 polish
 
 | Change | Where |
 | :--- | :--- |
@@ -29,13 +30,28 @@ AOI is **not** the DEMO blocker (30×30 / zone 16 → all peers adjacent).
 | Erase (GID 0) covers batched art with void plate | `BabylonEngine.updateSingleTile` |
 | Erase + Grass quick brushes in World Builder | `WorldBuilderPanel` |
 | Mode labels already canonical (Paint/Populate/…) | no change — already in `studioModes.ts` |
+| Definition undo stack (snapshot ops) | `definitionOps.ts` + editor-store + Quest catalog |
+| Catalog undo/redo chrome | `CatalogEditorShell` |
+| PIE options (pause spawners / god mode) | `pieOptions.ts` + Playtest chip + `suppressGameplay` |
 
-Parked for later: definition undo stack, PIE god-mode options, full batched remesh index.
+### Definition undo (v1)
+
+- Separate stack from map paint (`definitionOpStack`).
+- Quest editor records snapshots on field **blur** and discrete structural edits (+ stage).
+- Undo/Redo buttons restore the form for the active `quest:{slug}` key only (top-of-stack must match).
+
+### PIE options (v1)
+
+- Defaults: isolate shard on, pause spawners on, god mode off, pause world events on (reserved).
+- Playtest chip toggles pause spawners / god mode.
+- Studio Playtest: `shouldPieSuppressEncounters` soft-gates step encounters (same `suppressGameplay` path as editor).
 
 ## Verify
 
 ```bash
-npx vitest run src/shared/net/mapIds.test.ts
+npx vitest run src/shared/net/mapIds.test.ts \
+  src/shared/game/definitionOps.test.ts \
+  src/shared/game/pieOptions.test.ts
 ```
 
 Manual MP (two browsers, `/lobby` only):
@@ -44,6 +60,16 @@ Manual MP (two browsers, `/lobby` only):
 2. DevTools: both `map_joined.instanceId` match `DEMO_SANDBOX_chN` (same N).
 3. Both see each other’s sprites + movement + chat bubble.
 
+Manual P3:
+
+1. `/studio` → Script → Quest → edit title → blur → Undo restores.
+2. Playtest chip → toggle Pause spawners / God mode; walk wild tiles; encounters respect toggles.
+
 ## Status
 
-P0 + P1 + P2 + partial P3 code landed on this branch.
+| Phase | Status |
+| :--- | :--- |
+| P0 | Verified |
+| P1 | Code landed (manual create/save smoke nice-to-have) |
+| P2 | Code + unit tests; manual two-browser `/lobby` smoke open |
+| P3 | Brush/erase + definition undo + PIE options landed |

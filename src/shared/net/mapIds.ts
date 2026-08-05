@@ -16,7 +16,9 @@ export function isSameBaseMap(a: string, b: string): boolean {
   return toBaseMapId(a) === toBaseMapId(b);
 }
 
-/** Public multiplayer channel: `MAPID_chN` only (never private / PIE rooms). */
+/**
+ * Public multiplayer channel: `MAPID_chN` only (never private / PIE rooms).
+ */
 export function isPublicChannelInstanceId(instanceId: string | null | undefined): boolean {
   if (!instanceId) return false;
   return /_ch\d+$/.test(instanceId);
@@ -38,4 +40,52 @@ export function canPartyForceJoinInstance(
 ): boolean {
   if (!isPublicChannelInstanceId(leaderInstanceId)) return false;
   return isSameBaseMap(leaderInstanceId, requestedBaseMapId);
+}
+
+export type PublicShardCandidate = {
+  instanceId: string;
+  mapId: string;
+  playerCount: number;
+};
+
+export type PublicShardPick =
+  | { action: "join"; instanceId: string }
+  | { action: "create"; instanceId: string; shardNum: number };
+
+/**
+ * Choose which public `_chN` room a lobby join should use.
+ * Ignores private (`MAP_user`) and PIE (`studio_pie_*`) instances even when
+ * their `mapId` matches the base definition (the P2 multiplayer bug).
+ */
+export function pickPublicShardAssignment(
+  baseMapId: string,
+  instances: PublicShardCandidate[],
+  maxPlayersPerShard: number
+): PublicShardPick {
+  let maxShardNum = 0;
+  let available: PublicShardCandidate | undefined;
+
+  for (const inst of instances) {
+    if (inst.mapId !== baseMapId || !isPublicChannelInstanceId(inst.instanceId)) {
+      continue;
+    }
+    const match = inst.instanceId.match(/_ch(\d+)$/);
+    if (match) {
+      const n = parseInt(match[1], 10);
+      if (n > maxShardNum) maxShardNum = n;
+    }
+    if (!available && inst.playerCount < maxPlayersPerShard) {
+      available = inst;
+    }
+  }
+
+  if (available) {
+    return { action: "join", instanceId: available.instanceId };
+  }
+  const shardNum = maxShardNum + 1;
+  return {
+    action: "create",
+    instanceId: `${baseMapId}_ch${shardNum}`,
+    shardNum,
+  };
 }

@@ -1,13 +1,13 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0–P2 + partial P3 landed)  
+**Last updated:** 2026-08-05 (P0–P3 landed on branch)  
 **Point every new session at this file first.**
 
 ---
 
 ## Current Focus
 
-**P0 → P2 product gaps** (not catalog polish). Full plan:
+**P0 → P3 product gaps.** Full plan:
 
 → **`logs/2026-08-05-studio-game-priority-plan.md`**  
 → P0: `logs/2026-08-05-studio-p0-demo-depth-paint.md`  
@@ -19,7 +19,7 @@
 | **P0** | DEMO north depth + paint | **Verified** — `/lobby` north avatar above grass |
 | **P1** | Map create/save | **Code landed** — manual create/save smoke |
 | **P2** | Lobby multiplayer visibility | **Code landed** — two-browser `/lobby` smoke |
-| **P3** | Brush reset, erase void, mode labels | **Partial** — definition undo / PIE options still parked |
+| **P3** | Brush/erase, definition undo, PIE options | **Code landed** — Quest blur-undo + Playtest toggles |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 

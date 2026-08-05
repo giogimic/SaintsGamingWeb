@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — P2/P3 finish (definition undo + PIE options)
+
+`pickPublicShardAssignment` wired into `WorldManager`; definition snapshot undo in Quest catalog; PIE pause-spawners/god-mode on Playtest chip gate encounters.  
+See `logs/2026-08-05-studio-p2-mp-p3-polish.md`.
+
+---
+
 ## 2026-08-05 — P2 lobby MP + P3 polish
 
 Public shard filter no longer picks Studio private/PIE rooms; party/warp/join hardened; erase void overlay + brush reset on layer switch.  

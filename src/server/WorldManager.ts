@@ -1,5 +1,5 @@
 import { GameEngine } from "./GameEngine";
-import { isPublicChannelInstanceId, toBaseMapId } from "@/shared/net/mapIds";
+import { isPublicChannelInstanceId, pickPublicShardAssignment, toBaseMapId } from "@/shared/net/mapIds";
 import { studioPieRoomId } from "@/shared/game/studioSession";
 import { DEMO_MAP_ID, DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
@@ -295,30 +295,24 @@ export class WorldManager {
     }
 
     // Public maps use dynamic sharding — ONLY `_chN` rooms.
-    // Legacy filter `!id.includes("_acc")` wrongly treated Studio private
-    // (`MAP_<accountId>`) and PIE (`studio_pie_*`) as public, splitting lobby peers.
+    // Private (`MAP_<accountId>`) and PIE (`studio_pie_*`) must never be selected.
+    const pick = pickPublicShardAssignment(
+      baseMapId,
+      Array.from(this.instances.values()).map((inst) => ({
+        instanceId: inst.instanceId,
+        mapId: inst.mapId,
+        playerCount: inst.playerCount,
+      })),
+      MAX_PLAYERS_PER_SHARD
+    );
+
     let availableShard: MapInstance | undefined;
-    let maxShardNum = 0;
-
-    for (const [id, instance] of this.instances.entries()) {
-      if (instance.mapId !== baseMapId || !isPublicChannelInstanceId(id)) continue;
-
-      const match = id.match(/_ch(\d+)$/);
-      if (match) {
-        const shardNum = parseInt(match[1], 10);
-        if (shardNum > maxShardNum) maxShardNum = shardNum;
-      }
-
-      if (instance.playerCount < MAX_PLAYERS_PER_SHARD) {
-        availableShard = instance;
-        break;
-      }
+    if (pick.action === "join") {
+      availableShard = this.instances.get(pick.instanceId);
     }
-
-    // If no available shard, create a new one
     if (!availableShard) {
-      const newShardNum = maxShardNum + 1;
-      const newInstanceId = `${baseMapId}_ch${newShardNum}`;
+      const newInstanceId =
+        pick.action === "create" ? pick.instanceId : `${baseMapId}_ch1`;
       availableShard = this.createInstance(newInstanceId, baseMapId);
     }
 

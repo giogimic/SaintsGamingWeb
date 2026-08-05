@@ -34,6 +34,7 @@ import {
   shouldShowGameplayHud,
   shouldSuppressGameplaySystems,
 } from '@/shared/game/studioSession';
+import { shouldPieSuppressEncounters } from '@/shared/game/pieOptions';
 import {
   STUDIO_PIE_CHANGED_EVENT,
   type StudioPieChangedDetail,
@@ -96,13 +97,18 @@ export default function TheLobby({
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   /** Studio editor tools only — never treat /lobby as create-mode (store defaults true). */
   const studioToolsOpen = enableStudio && isCreationMode;
+  const pieOptions = useEditorStore((state) => state.pieOptions);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setClickedTile = useEditorStore((state) => state.setClickedTile);
-  const suppressGameplay = shouldSuppressGameplaySystems({
-    isEditorMode: enableStudio,
-    isCreationMode: studioToolsOpen,
-  });
+  const suppressGameplay =
+    shouldSuppressGameplaySystems({
+      isEditorMode: enableStudio,
+      isCreationMode: studioToolsOpen,
+    }) ||
+    (enableStudio &&
+      !isCreationMode &&
+      shouldPieSuppressEncounters(pieOptions));
   const showGameplayHud = shouldShowGameplayHud({
     isEditorMode: enableStudio,
     isCreationMode: studioToolsOpen,

@@ -28,6 +28,19 @@ import type { PaintableMap } from '@/shared/game/tilePaint';
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
 import { STUDIO_PIE_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
+import {
+  clearDefinitionOpsForKey,
+  emptyDefinitionOpStack,
+  pushDefinitionOp,
+  redoDefinitionOp,
+  undoDefinitionOp,
+  type DefinitionOp,
+  type DefinitionOpStack,
+} from '@/shared/game/definitionOps';
+import {
+  DEFAULT_PIE_OPTIONS,
+  type PieOptions,
+} from '@/shared/game/pieOptions';
 
 export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes';
 
@@ -80,6 +93,10 @@ interface EditorState {
   mapDirty: boolean;
   /** Map-scope undo/redo (bible 30). */
   opStack: EditorOpStack;
+  /** Definition-form undo/redo (bible 30 — separate from map ops). */
+  definitionOpStack: DefinitionOpStack;
+  /** PIE Playtest options (bible 32 §4). */
+  pieOptions: PieOptions;
   playtestSnapshot: PlaytestRestoreSnapshot | null;
 
   activeBrushTileId: number;
@@ -119,6 +136,12 @@ interface EditorState {
   undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   clearOpStack: () => void;
+
+  setPieOption: <K extends keyof PieOptions>(key: K, value: PieOptions[K]) => void;
+  recordDefinitionChange: (resourceKey: string, before: unknown, after: unknown) => void;
+  undoDefinitionChange: () => DefinitionOp | null;
+  redoDefinitionChange: () => DefinitionOp | null;
+  clearDefinitionStackFor: (resourceKey: string) => void;
 }
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
@@ -307,6 +330,8 @@ export const useEditorStore = create<EditorState>()(
       panelLayoutsHydrated: false,
       mapDirty: false,
       opStack: emptyEditorOpStack(),
+      definitionOpStack: emptyDefinitionOpStack(),
+      pieOptions: { ...DEFAULT_PIE_OPTIONS },
       playtestSnapshot: null,
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeLogicTileId: 1,
@@ -566,6 +591,47 @@ export const useEditorStore = create<EditorState>()(
       clearOpStack: () =>
         set((state) => {
           state.opStack = emptyEditorOpStack();
+        }),
+
+      setPieOption: (key, value) =>
+        set((state) => {
+          state.pieOptions[key] = value;
+        }),
+
+      recordDefinitionChange: (resourceKey, before, after) =>
+        set((state) => {
+          state.definitionOpStack = pushDefinitionOp(
+            state.definitionOpStack,
+            resourceKey,
+            before,
+            after
+          );
+        }),
+
+      undoDefinitionChange: () => {
+        const { stack, op } = undoDefinitionOp(get().definitionOpStack);
+        if (!op) return null;
+        set((state) => {
+          state.definitionOpStack = stack;
+        });
+        return op;
+      },
+
+      redoDefinitionChange: () => {
+        const { stack, op } = redoDefinitionOp(get().definitionOpStack);
+        if (!op) return null;
+        set((state) => {
+          state.definitionOpStack = stack;
+        });
+        return op;
+      },
+
+      clearDefinitionStackFor: (resourceKey) =>
+        set((state) => {
+          state.definitionOpStack = clearDefinitionOpsForKey(
+            state.definitionOpStack,
+            resourceKey
+          );
         }),
     }))
   )
