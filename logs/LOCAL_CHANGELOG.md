@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Manual smokes (create/save + lobby MP)
+
+API create→save→reload and two-socket same-shard peer visibility both PASS; scripts under `scripts/smoke-*.ts`.  
+See `logs/2026-08-05-studio-manual-smokes.md`.
+
+---
+
 ## 2026-08-05 — Studio NPC live spawn
 
 Populate place NPC emits `studio_spawn_npc` so warm shards get `creature_spawned` without rejoin.  
