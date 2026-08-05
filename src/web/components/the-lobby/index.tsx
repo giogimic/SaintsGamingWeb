@@ -37,7 +37,14 @@ import {
 import { shouldPieSuppressEncounters } from '@/shared/game/pieOptions';
 import { shouldKeepActiveMapData } from '@/shared/game/mapSwitch';
 import {
+  mergeMapDocumentInPlace,
+  shouldApplyMapReload,
+  shouldClearPeersOnDisconnect,
+} from '@/shared/game/lobbyReconnect';
+import {
+  STUDIO_MAP_HOT_RELOAD_EVENT,
   STUDIO_PIE_CHANGED_EVENT,
+  type StudioMapHotReloadDetail,
   type StudioPieChangedDetail,
 } from '@/shared/game/studioEvents';
 
@@ -449,7 +456,10 @@ export default function TheLobby({
     socket.on('disconnect', (reason) => {
       // Stay in EXPLORING — do not dump to menu. Peers get player_left server-side.
       hadLobbyDisconnect = true;
-      useGameStore.getState().setOtherPlayers({});
+      // Soft blips keep peer sprites until map_players refreshes after reconnect.
+      if (shouldClearPeersOnDisconnect(reason)) {
+        useGameStore.getState().setOtherPlayers({});
+      }
       if (reason === 'io server disconnect') {
         // Server forced disconnect (kick); do not auto-reconnect.
         useGameStore.getState().showToast('Disconnected from lobby.');
@@ -580,6 +590,7 @@ export default function TheLobby({
 
     socket.on('force_disconnect', (data: { reason?: string }) => {
       useGameStore.getState().showToast(data?.reason || 'Disconnected by staff.');
+      useGameStore.getState().setOtherPlayers({});
       // Staff kick: do not soft-reconnect back onto the map.
       socket.io.reconnection(false);
       socket.disconnect();
@@ -629,17 +640,47 @@ export default function TheLobby({
       }));
     });
     
-    // Phase 9: Real-Time Map Editor Synchronization
+    // Phase 9: Real-Time Map Editor Synchronization (hot remesh, no remount blast)
     socket.on('map_reloaded', async (data) => {
-      const mapId = data.mapId;
-      useGameStore.getState().showToast(`Map updated by admin! Hot-reloading ${mapId}...`);
+      const mapId = String(data?.mapId || '');
+      const state = useGameStore.getState();
+      const mapDirty = useEditorStore.getState().mapDirty;
+      if (
+        !shouldApplyMapReload({
+          reloadMapId: mapId,
+          currentMapId: state.currentMapId,
+          isStudio: enableStudio,
+          mapDirty,
+        })
+      ) {
+        if (
+          enableStudio &&
+          mapDirty &&
+          shouldKeepActiveMapData(state.activeMapData, mapId)
+        ) {
+          state.showToast('Server map saved — keeping your unsaved Studio paint.');
+        }
+        return;
+      }
+
+      state.showToast(`Map updated — hot-reloading ${mapId}…`);
       try {
-        // Bust the local cache and fetch the fresh map
         const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}?t=${Date.now()}`);
         const freshMapData = ensureMapHasStudioTilesets(await res.json());
-        useGameStore.getState().setActiveMapData(freshMapData);
+        const live = useGameStore.getState().activeMapData;
+        if (live && shouldKeepActiveMapData(live, mapId)) {
+          // Keep object identity so GameCanvas does not dispose/remount Babylon.
+          mergeMapDocumentInPlace(live, freshMapData);
+          window.dispatchEvent(
+            new CustomEvent<StudioMapHotReloadDetail>(STUDIO_MAP_HOT_RELOAD_EVENT, {
+              detail: { mapId },
+            })
+          );
+        } else {
+          useGameStore.getState().setActiveMapData(freshMapData);
+        }
       } catch (err) {
-        console.error("Failed to hot-reload map data:", err);
+        console.error('Failed to hot-reload map data:', err);
       }
     });
     
