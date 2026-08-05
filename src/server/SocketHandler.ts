@@ -212,6 +212,26 @@ export class SocketHandler {
         }
       );
 
+      socket.on(
+        "studio_despawn_npc",
+        async (data: { mapId?: string; npcId?: string }) => {
+          if (!data?.mapId || !data?.npcId) return;
+          try {
+            const user = await prisma.user.findUnique({
+              where: { id: accountId },
+              select: { permissionLevel: true },
+            });
+            if (!user || !canWriteStudioContent(user.permissionLevel)) return;
+            this.engine.events.emit("studioDespawnNpc", {
+              mapId: data.mapId,
+              npcId: data.npcId,
+            });
+          } catch (err) {
+            console.warn("[Socket] studio_despawn_npc failed:", err);
+          }
+        }
+      );
+
       // --- PHASE 6: NPCs & Dialogue ---
       socket.on("npc_interact", (data) => {
         // data: { mapId, targetId }
