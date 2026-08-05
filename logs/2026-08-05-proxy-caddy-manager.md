@@ -1,0 +1,25 @@
+﻿# Proxy Caddy manager script
+
+Date: 2026-08-05
+
+## Goal
+Add a script to manage the extra everse_proxy subdomain blocks inside the Caddyfile that scripts/setup.sh configures.
+
+## Implementation plan
+- Add scripts/proxy-caddy.sh.
+- Script maintains entries between markers inside /etc/caddy/Caddyfile:
+  - # SAINTS_PROXY_LIST_BEGIN
+  - # SAINTS_PROXY_LIST_END
+- Commands:
+  - list
+  - dd <subdomain> <upstream_host> <upstream_port> (or <upstream_host:port>)
+  - emove <subdomain>
+  - eload
+
+## Notes
+- Keeps the rest of the Caddyfile untouched (only rewrites the marked section).
+
+## Status
+- Added `scripts/proxy-caddy.sh` (marker-managed proxy section).
+- The section is only rewritten between `# SAINTS_PROXY_LIST_BEGIN` and `# SAINTS_PROXY_LIST_END`.
+\n- Updated scripts/proxy-caddy.sh with ui interactive mode (whiptail when available, plain menu otherwise).
