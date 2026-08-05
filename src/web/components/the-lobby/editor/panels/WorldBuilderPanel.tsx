@@ -3,17 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { searchMapIndex, registerNewMap } from '../../data/map-index';
-import { GAME_MAPS, invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
+import { invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
-import {
-  DEFAULT_STUDIO_TILESETS,
-  ensureMapHasStudioTilesets,
-} from '@/shared/game/studioTilesetBootstrap';
+import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
+import {
+  buildNewStudioMap,
+  formatMapWriteError,
+  normalizeStudioMapVisuals,
+} from '@/shared/game/studioMapCreate';
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -87,17 +89,18 @@ export const WorldBuilderPanel: React.FC = () => {
     ...remoteFiltered.filter((m) => !seen.has(m.id)),
   ];
   const baseMapId = toBaseMapId(String(currentMapId || ''));
-  const rawMapData = activeMapData || GAME_MAPS[baseMapId] || {
-    id: baseMapId,
-    name: baseMapId,
-    grid: Array(24).fill(0).map(() => Array(24).fill(0)),
-    gates: {},
-    tileLayers: [],
-    tilesets: [],
-  };
-  const currentMapData = ensureMapHasStudioTilesets(rawMapData);
-
-  const defaultTilesets = DEFAULT_STUDIO_TILESETS;
+  // UI chrome (layer list / picker) may show an empty shell while loading —
+  // Save Map never uses this shell; it requires activeMapData (live edits).
+  const currentMapData = ensureMapHasStudioTilesets(
+    activeMapData || {
+      id: baseMapId,
+      name: baseMapId,
+      grid: Array(24).fill(0).map(() => Array(24).fill(0)),
+      gates: {},
+      tileLayers: [],
+      tilesets: [],
+    }
+  );
 
   const handleWarpToMap = async (targetMapId: string) => {
     try {
@@ -117,17 +120,29 @@ export const WorldBuilderPanel: React.FC = () => {
       showToast('No map loaded to save.');
       return;
     }
+    // Never persist GAME_MAPS / empty shell — only the live Studio document.
+    const live = useGameStore.getState().activeMapData;
+    if (!live?.grid) {
+      showToast('Map data not loaded yet — wait for the world to appear, then Save.');
+      return;
+    }
+    const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(live));
+    // Keep store aligned with what we persist (repaired Ground/tilesets).
+    if (saveDoc !== live) {
+      useGameStore.getState().setActiveMapData(saveDoc);
+    }
     setIsSaving(true);
     try {
       // Bible 17: never persist Studio-only overlay keys into runtime map JSON.
       const payload = stripEditorOverlaysFromMapPayload({
-        name: currentMapData.name || baseMapId,
-        grid: currentMapData.grid,
-        gates: currentMapData.gates || {},
-        npcs: currentMapData.npcs || [],
-        encounterPool: currentMapData.encounterPool || [],
-        tileLayers: currentMapData.tileLayers || [],
-        tilesets: currentMapData.tilesets || [],
+        name: saveDoc.name || baseMapId,
+        gameId: saveDoc.gameId,
+        grid: saveDoc.grid,
+        gates: saveDoc.gates || {},
+        npcs: saveDoc.npcs || [],
+        encounterPool: saveDoc.encounterPool || [],
+        tileLayers: saveDoc.tileLayers || [],
+        tilesets: saveDoc.tilesets || [],
       });
       const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
         method: 'POST',
@@ -136,7 +151,7 @@ export const WorldBuilderPanel: React.FC = () => {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        showToast(err?.error || `Save failed (${res.status})`);
+        showToast(formatMapWriteError(res.status, err));
         return;
       }
       invalidateMapCache(baseMapId);
@@ -146,46 +161,34 @@ export const WorldBuilderPanel: React.FC = () => {
       showToast(`Saved map ${baseMapId}`);
     } catch (e: any) {
       console.error('[Studio] Save map failed', e);
-      showToast(e?.message || 'Save failed');
+      showToast(e?.message || 'Save failed — network error.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleCreateNewMapSubmit = async () => {
-    if (!newMapSlug) {
-      showToast('Please enter a valid Map ID slug!');
+    const built = buildNewStudioMap({
+      slug: newMapSlug,
+      name: newMapName,
+      gameId: activeGameId,
+      width: newMapWidth,
+      height: newMapHeight,
+    });
+    if (!built.ok) {
+      showToast(built.error);
       return;
     }
-
-    const cleanSlug = newMapSlug.toUpperCase().replace(/\s+/g, '_');
-    const w = Math.max(8, Math.min(128, Number(newMapWidth) || 24));
-    const h = Math.max(8, Math.min(128, Number(newMapHeight) || 24));
-    const newGrid = Array(h).fill(0).map((_, r) =>
-      Array(w).fill(0).map((_, c) =>
-        (r === 0 || r === h - 1 || c === 0 || c === w - 1) ? 1 : 0
-      )
-    );
-
-    const newMapData = {
-      id: cleanSlug,
-      name: newMapName || cleanSlug,
-      gameId: activeGameId,
-      grid: newGrid,
-      gates: {},
-      npcs: [] as any[],
-      encounterPool: [] as any[],
-      tileLayers: [{ name: 'Ground', grid: newGrid.map((row) => [...row]) }],
-      tilesets: defaultTilesets,
-    };
+    const newMapData = built.map;
 
     setIsCreating(true);
     try {
-      const res = await fetch(`/api/maps/${encodeURIComponent(cleanSlug)}`, {
+      const res = await fetch(`/api/maps/${encodeURIComponent(newMapData.id)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newMapData.name,
+          gameId: newMapData.gameId,
           grid: newMapData.grid,
           gates: newMapData.gates,
           npcs: newMapData.npcs,
@@ -196,32 +199,33 @@ export const WorldBuilderPanel: React.FC = () => {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        showToast(err?.error || `Create failed (${res.status})`);
+        showToast(formatMapWriteError(res.status, err));
         return;
       }
 
-      invalidateMapCache(cleanSlug);
+      invalidateMapCache(newMapData.id);
       registerNewMap(newMapData);
-      useGameStore.setState({ currentMapId: cleanSlug, activeMapData: newMapData });
-      emitSocketEvent?.('admin_reload_map', { mapId: cleanSlug });
+      useGameStore.setState({ currentMapId: newMapData.id, activeMapData: newMapData });
+      useEditorStore.getState().clearMapDirty();
+      emitSocketEvent?.('admin_reload_map', { mapId: newMapData.id });
       setIsCreatingNewMap(false);
       setNewMapSlug('');
       setNewMapName('');
-      showToast(`Created & saved map: ${cleanSlug}`);
+      showToast(`Created & saved map: ${newMapData.id}`);
     } catch (e: any) {
       console.error('[Studio] Create map failed', e);
-      showToast(e?.message || 'Create failed');
+      showToast(e?.message || 'Create failed — network error.');
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleAddLayer = () => {
-    if (!activeMapData && !currentMapData) {
+    if (!activeMapData) {
       showToast('Load a map before adding layers.');
       return;
     }
-    const base = activeMapData || currentMapData;
+    const base = activeMapData;
     const h = base.grid?.length || 24;
     const w = base.grid?.[0]?.length || 24;
     const empty = Array(h).fill(0).map(() => Array(w).fill(0));
@@ -259,8 +263,9 @@ export const WorldBuilderPanel: React.FC = () => {
         <button
           type="button"
           onClick={() => void handleSaveMap()}
-          disabled={isSaving}
+          disabled={isSaving || !activeMapData}
           className="w-full py-1.5 bg-[#cbb26a]/90 hover:bg-[#cbb26a] disabled:opacity-50 text-[#0a0a0f] rounded font-bold flex items-center justify-center gap-1.5"
+          title={!activeMapData ? 'Wait for the map to load' : 'Persist grid, layers, and tilesets'}
         >
           <Save className="w-3.5 h-3.5" />
           {isSaving ? 'Saving…' : 'Save Map'}

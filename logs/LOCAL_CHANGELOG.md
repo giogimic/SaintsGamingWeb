@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — P1 Studio map create / save
+
+Create New Map no longer copies logic→visual GIDs; Save requires live `activeMapData`; louder auth/validation toasts; API repairs bad visuals on create/write.  
+See `logs/2026-08-05-studio-p1-map-create-save.md`.
+
+---
+
 ## 2026-08-05 — P0 DEMO north depth + paint
 
 Batched tileset alpha-blend buried northern sprites/overlays. Switched to ALPHATEST depth write, pick-plane-only hits, softer camera margin, slightly higher avatar clearance.  

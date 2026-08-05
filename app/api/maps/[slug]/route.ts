@@ -3,6 +3,7 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { validateMapSave } from "@/shared/game/mapSaveValidation";
+import { normalizeStudioMapVisuals } from "@/shared/game/studioMapCreate";
 
 /**
  * GET /api/maps/[slug] — Load a map from WorldMap (primary) or GameMap (fallback).
@@ -66,7 +67,10 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized — sign in required to create or save maps." },
+        { status: 401 }
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -74,7 +78,13 @@ export async function POST(
       select: { permissionLevel: true },
     });
     if (!user || !canWriteStudioContent(user.permissionLevel)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            "Forbidden — Admin+ (permission level 400) required to create or save maps.",
+        },
+        { status: 403 }
+      );
     }
 
     const { slug } = await params;
@@ -100,6 +110,26 @@ export async function POST(
       }
     }
 
+    // Repair missing tilesets / blank Ground / logic→visual copies when visuals
+    // are part of this write. Do not invent layers on grid-only updates.
+    const writingVisuals =
+      Array.isArray(body.tileLayers) || Array.isArray(body.tilesets);
+    const visualsForWrite = writingVisuals
+      ? normalizeStudioMapVisuals({
+          grid: Array.isArray(body.grid) ? body.grid : undefined,
+          tileLayers: Array.isArray(body.tileLayers) ? body.tileLayers : [],
+          tilesets: Array.isArray(body.tilesets) ? body.tilesets : [],
+        })
+      : null;
+    // New maps always get a visible Ground + tilesets even if the client omitted them.
+    const visualsForCreate =
+      visualsForWrite ??
+      normalizeStudioMapVisuals({
+        grid: Array.isArray(body.grid) ? body.grid : undefined,
+        tileLayers: [],
+        tilesets: [],
+      });
+
     const worldMap = await prisma.worldMap.upsert({
       where: { id: slug },
       update: {
@@ -109,8 +139,12 @@ export async function POST(
         ...(body.gates ? { gatesData: JSON.stringify(body.gates) } : {}),
         ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
         ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
-        ...(body.tileLayers ? { tileLayersData: JSON.stringify(body.tileLayers) } : {}),
-        ...(body.tilesets ? { tilesetsData: JSON.stringify(body.tilesets) } : {}),
+        ...(visualsForWrite
+          ? {
+              tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
+              tilesetsData: JSON.stringify(visualsForWrite.tilesets || []),
+            }
+          : {}),
         version: { increment: 1 },
       },
       create: {
@@ -121,8 +155,8 @@ export async function POST(
         gatesData: JSON.stringify(body.gates || {}),
         npcsData: JSON.stringify(body.npcs || []),
         encountersData: JSON.stringify(body.encounterPool || []),
-        tileLayersData: JSON.stringify(body.tileLayers || []),
-        tilesetsData: JSON.stringify(body.tilesets || []),
+        tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
+        tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
       },
     });
 

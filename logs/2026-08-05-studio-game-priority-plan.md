@@ -147,8 +147,8 @@ curl --max-time 120 http://localhost:3000/lobby
 
 | Phase | Status |
 | :--- | :--- |
-| P0 depth + north paint | **IN PROGRESS** — code on `giogimic/studio-p0-demo-depth-paint-2d3d`; see `logs/2026-08-05-studio-p0-demo-depth-paint.md` |
-| P1 create/save | OPEN (create fill bug confirmed in code) |
+| P0 depth + north paint | **CODE LANDED** — `logs/2026-08-05-studio-p0-demo-depth-paint.md` |
+| P1 create/save | **CODE LANDED** — `logs/2026-08-05-studio-p1-map-create-save.md` |
 | P2 lobby MP | OPEN (verify first; fix if broken) |
 | P3 polish | PARKED until P0–P2 |
 
