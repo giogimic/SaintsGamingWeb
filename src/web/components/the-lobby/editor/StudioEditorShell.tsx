@@ -62,6 +62,8 @@ export const StudioEditorShell: React.FC = () => {
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   const studioMode = useEditorStore((state) => state.studioMode);
   const mapDirty = useEditorStore((state) => state.mapDirty);
+  const pieOptions = useEditorStore((state) => state.pieOptions);
+  const setPieOption = useEditorStore((state) => state.setPieOption);
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
   const enterDevelopmentMode = useEditorStore((state) => state.enterDevelopmentMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
@@ -159,7 +161,7 @@ export const StudioEditorShell: React.FC = () => {
     return null;
   }
 
-  // Playtest — compact return chip
+  // Playtest — compact return chip + PIE options (bible 32 §4)
   if (!isCreationMode) {
     return (
       <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2">
@@ -169,8 +171,46 @@ export const StudioEditorShell: React.FC = () => {
             Playtest · PIE private shard
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-            Gameplay systems are on. Isolated from public lobby DEMO. Editor tools stay frozen until you stop playtest.
+            Isolated from public lobby DEMO. Editor tools stay frozen until you stop playtest.
           </p>
+          <div className="mt-3 grid grid-cols-1 gap-1.5 text-left sm:grid-cols-2">
+            <label className="flex items-center gap-2 rounded-lg border border-slate-800 bg-black/30 px-2 py-1.5 text-[10px] text-slate-300">
+              <input
+                type="checkbox"
+                checked={pieOptions.isolateShard}
+                disabled
+                className="accent-emerald-500"
+              />
+              Isolate shard
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-800 bg-black/30 px-2 py-1.5 text-[10px] text-slate-300 hover:border-emerald-700/40">
+              <input
+                type="checkbox"
+                checked={pieOptions.pauseSpawners}
+                onChange={(e) => setPieOption('pauseSpawners', e.target.checked)}
+                className="accent-emerald-500"
+              />
+              Pause spawners
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-800 bg-black/30 px-2 py-1.5 text-[10px] text-slate-300 hover:border-emerald-700/40">
+              <input
+                type="checkbox"
+                checked={pieOptions.godMode}
+                onChange={(e) => setPieOption('godMode', e.target.checked)}
+                className="accent-emerald-500"
+              />
+              God mode (no encounters)
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border border-slate-800 bg-black/30 px-2 py-1.5 text-[10px] text-slate-500">
+              <input
+                type="checkbox"
+                checked={pieOptions.pauseWorldEvents}
+                disabled
+                className="accent-emerald-500"
+              />
+              Pause world events
+            </label>
+          </div>
         </div>
         <button
           type="button"

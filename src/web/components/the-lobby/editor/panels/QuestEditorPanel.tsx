@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listQuestTemplates,
   upsertQuestTemplate,
@@ -9,6 +9,7 @@ import {
 } from '@/app/actions/quest-templates';
 import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { definitionOpValue } from '@/shared/game/definitionOps';
 import {
   Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle,
 } from 'lucide-react';
@@ -35,7 +36,9 @@ type QuestRow = {
   }>;
 };
 
-const emptyQuest = (gameId: string): Omit<QuestRow, 'id'> & { id?: string } => ({
+type QuestForm = Omit<QuestRow, 'id'> & { id?: string };
+
+const emptyQuest = (gameId: string): QuestForm => ({
   slug: '',
   gameId,
   title: '',
@@ -48,13 +51,40 @@ const emptyQuest = (gameId: string): Omit<QuestRow, 'id'> & { id?: string } => (
   ],
 });
 
+function questResourceKey(form: QuestForm, isNew: boolean): string {
+  if (isNew || !form.slug) return 'quest:new';
+  return `quest:${form.slug}`;
+}
+
+function isQuestForm(value: unknown): value is QuestForm {
+  return Boolean(value && typeof value === 'object' && 'slug' in value && 'title' in value);
+}
+
 export function QuestEditorPanel() {
   const activeGameId = useEditorStore((s) => s.activeGameId);
+  const definitionOpStack = useEditorStore((s) => s.definitionOpStack);
+  const recordDefinitionChange = useEditorStore((s) => s.recordDefinitionChange);
+  const undoDefinitionChange = useEditorStore((s) => s.undoDefinitionChange);
+  const redoDefinitionChange = useEditorStore((s) => s.redoDefinitionChange);
+  const clearDefinitionStackFor = useEditorStore((s) => s.clearDefinitionStackFor);
+
   const [list, setList] = useState<QuestRow[]>([]);
   const [form, setForm] = useState(emptyQuest(activeGameId));
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const formRef = useRef(form);
+  const isNewRef = useRef(isNew);
+  const fieldBaselineRef = useRef<QuestForm | null>(null);
+
+  formRef.current = form;
+  isNewRef.current = isNew;
+
+  const resourceKey = questResourceKey(form, isNew);
+  const topUndo = definitionOpStack.undo[definitionOpStack.undo.length - 1];
+  const topRedo = definitionOpStack.redo[definitionOpStack.redo.length - 1];
+  const canUndoDefinition = topUndo?.resourceKey === resourceKey;
+  const canRedoDefinition = topRedo?.resourceKey === resourceKey;
 
   const load = useCallback(async () => {
     const res = await listQuestTemplates(activeGameId);
@@ -63,16 +93,24 @@ export function QuestEditorPanel() {
 
   useEffect(() => {
     void load();
+    clearDefinitionStackFor('quest:new');
     setForm(emptyQuest(activeGameId));
     setIsNew(false);
-  }, [load, activeGameId]);
+  }, [load, activeGameId, clearDefinitionStackFor]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
     setTimeout(() => setStatus(null), 3500);
   };
 
+  const commitFormChange = (next: QuestForm, key = questResourceKey(formRef.current, isNewRef.current)) => {
+    recordDefinitionChange(key, formRef.current, next);
+    setForm(next);
+  };
+
   const handleSelect = (q: QuestRow) => {
+    const prevKey = questResourceKey(formRef.current, isNewRef.current);
+    clearDefinitionStackFor(prevKey);
     setForm({
       ...q,
       rewards: (() => {
@@ -87,6 +125,8 @@ export function QuestEditorPanel() {
   };
 
   const handleNew = () => {
+    const prevKey = questResourceKey(formRef.current, isNewRef.current);
+    clearDefinitionStackFor(prevKey);
     setForm(emptyQuest(activeGameId));
     setIsNew(true);
   };
@@ -110,6 +150,7 @@ export function QuestEditorPanel() {
     setLoading(false);
     if (res.success) {
       showStatus('success', `${form.title} saved.`);
+      clearDefinitionStackFor(questResourceKey(form, isNew));
       setIsNew(false);
       await load();
     } else {
@@ -125,6 +166,7 @@ export function QuestEditorPanel() {
     setLoading(false);
     if (res.success) {
       showStatus('success', 'Deleted.');
+      clearDefinitionStackFor(questResourceKey(form, false));
       setForm(emptyQuest(activeGameId));
       setIsNew(false);
       await load();
@@ -133,18 +175,45 @@ export function QuestEditorPanel() {
     }
   };
 
-  const setObj = (idx: number, patch: Partial<QuestObjectiveInput>) => {
-    setForm((prev) => ({
-      ...prev,
-      objectives: prev.objectives.map((o, i) => (i === idx ? { ...o, ...patch } : o)),
-    }));
+  const onFieldFocus = () => {
+    fieldBaselineRef.current = structuredClone(formRef.current);
+  };
+
+  const onFieldBlur = () => {
+    const baseline = fieldBaselineRef.current;
+    fieldBaselineRef.current = null;
+    if (!baseline) return;
+    if (JSON.stringify(baseline) === JSON.stringify(formRef.current)) return;
+    recordDefinitionChange(
+      questResourceKey(baseline, isNewRef.current),
+      baseline,
+      formRef.current
+    );
+  };
+
+  const applyDefinitionHistory = (direction: 'undo' | 'redo') => {
+    const top =
+      direction === 'undo'
+        ? definitionOpStack.undo[definitionOpStack.undo.length - 1]
+        : definitionOpStack.redo[definitionOpStack.redo.length - 1];
+    if (!top || top.resourceKey !== resourceKey) return;
+    const op =
+      direction === 'undo' ? undoDefinitionChange() : redoDefinitionChange();
+    if (!op) return;
+    const value = definitionOpValue(op, direction);
+    if (!isQuestForm(value)) return;
+    setForm(value);
   };
 
   return (
     <CatalogEditorShell
       title="Quest Catalog"
-      blurb={`Script mode · profile ${activeGameId} · QuestTemplate SoT`}
-      dirty={isNew}
+      blurb={`Script mode · profile ${activeGameId} · QuestTemplate SoT · definition undo on blur`}
+      dirty={isNew || canUndoDefinition}
+      canUndoDefinition={canUndoDefinition}
+      canRedoDefinition={canRedoDefinition}
+      onUndoDefinition={() => applyDefinitionHistory('undo')}
+      onRedoDefinition={() => applyDefinitionHistory('redo')}
       toolbar={
         <div className="flex gap-1">
           <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
@@ -189,11 +258,24 @@ export function QuestEditorPanel() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className={labelCls}>Slug</label>
-              <input className={inputCls} value={form.slug} disabled={!isNew} onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))} />
+              <input
+                className={inputCls}
+                value={form.slug}
+                disabled={!isNew}
+                onFocus={onFieldFocus}
+                onBlur={onFieldBlur}
+                onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))}
+              />
             </div>
             <div>
               <label className={labelCls}>Title</label>
-              <input className={inputCls} value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+              <input
+                className={inputCls}
+                value={form.title}
+                onFocus={onFieldFocus}
+                onBlur={onFieldBlur}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              />
             </div>
           </div>
           <div>
@@ -201,6 +283,8 @@ export function QuestEditorPanel() {
             <textarea
               className={`${inputCls} min-h-[48px]`}
               value={form.description}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
             />
           </div>
@@ -209,6 +293,8 @@ export function QuestEditorPanel() {
             <textarea
               className={`${inputCls} min-h-[72px] font-mono`}
               value={form.rewards}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
               onChange={(e) => setForm((p) => ({ ...p, rewards: e.target.value }))}
             />
           </div>
@@ -220,19 +306,19 @@ export function QuestEditorPanel() {
                 type="button"
                 className="text-[10px] text-emerald-400 hover:underline"
                 onClick={() =>
-                  setForm((p) => ({
-                    ...p,
+                  commitFormChange({
+                    ...formRef.current,
                     objectives: [
-                      ...p.objectives,
+                      ...formRef.current.objectives,
                       {
-                        stage: p.objectives.length + 1,
+                        stage: formRef.current.objectives.length + 1,
                         type: 'TALK',
                         targetSlug: '',
                         requiredQty: 1,
                         description: '',
                       },
                     ],
-                  }))
+                  })
                 }
               >
                 + stage
@@ -247,7 +333,18 @@ export function QuestEditorPanel() {
                       type="number"
                       className={inputCls}
                       value={o.stage}
-                      onChange={(e) => setObj(idx, { stage: parseInt(e.target.value, 10) || 1 })}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          objectives: prev.objectives.map((obj, i) =>
+                            i === idx
+                              ? { ...obj, stage: parseInt(e.target.value, 10) || 1 }
+                              : obj
+                          ),
+                        }))
+                      }
                     />
                   </div>
                   <div>
@@ -255,7 +352,16 @@ export function QuestEditorPanel() {
                     <select
                       className={inputCls}
                       value={o.type}
-                      onChange={(e) => setObj(idx, { type: e.target.value })}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          objectives: prev.objectives.map((obj, i) =>
+                            i === idx ? { ...obj, type: e.target.value } : obj
+                          ),
+                        }))
+                      }
                     >
                       {['TALK', 'CLAIM', 'BATTLE', 'GATHER', 'KILL', 'EXPLORE'].map((t) => (
                         <option key={t} value={t}>{t}</option>
@@ -267,7 +373,16 @@ export function QuestEditorPanel() {
                     <input
                       className={inputCls}
                       value={o.targetSlug}
-                      onChange={(e) => setObj(idx, { targetSlug: e.target.value })}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          objectives: prev.objectives.map((obj, i) =>
+                            i === idx ? { ...obj, targetSlug: e.target.value } : obj
+                          ),
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -275,7 +390,16 @@ export function QuestEditorPanel() {
                   className={inputCls}
                   placeholder="Description"
                   value={o.description}
-                  onChange={(e) => setObj(idx, { description: e.target.value })}
+                  onFocus={onFieldFocus}
+                  onBlur={onFieldBlur}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      objectives: prev.objectives.map((obj, i) =>
+                        i === idx ? { ...obj, description: e.target.value } : obj
+                      ),
+                    }))
+                  }
                 />
               </div>
             ))}
