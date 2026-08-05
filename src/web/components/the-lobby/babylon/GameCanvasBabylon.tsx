@@ -26,7 +26,9 @@ import {
 import { paintWorldCell } from '@/shared/game/worldDocument';
 import {
   STUDIO_MAP_CELLS_CHANGED_EVENT,
+  STUDIO_MAP_HOT_RELOAD_EVENT,
   type StudioMapCellsChangedDetail,
+  type StudioMapHotReloadDetail,
 } from '@/shared/game/studioEvents';
 import { getIsEditorMode } from '@/shared/game/studioSession';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
@@ -967,6 +969,34 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     window.addEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
     return () => window.removeEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
   }, []);
+
+  // Server map_reloaded — remesh tiles without disposing Babylon / wiping peers.
+  useEffect(() => {
+    const onHotReload = (e: Event) => {
+      const engine = engineRef.current;
+      const map = useGameStore.getState().activeMapData as GameMapData | null;
+      if (!engine || !map?.grid) return;
+      const detail = (e as CustomEvent<StudioMapHotReloadDetail>).detail;
+      if (detail?.mapId && !isSameBaseMap(detail.mapId, currentMapId)) return;
+
+      const width = map.grid[0]?.length || 24;
+      const height = map.grid.length || 24;
+      engine.loadTilemap({
+        id: currentMapId,
+        width,
+        height,
+        tileSize: 1,
+        tiles: map.grid,
+        tileLayers: map.tileLayers,
+        tilesets: map.tilesets,
+        npcs: [],
+      });
+      // Local mapData state still points at the same live object — refresh dims only.
+      setMapData(map);
+    };
+    window.addEventListener(STUDIO_MAP_HOT_RELOAD_EVENT, onHotReload);
+    return () => window.removeEventListener(STUDIO_MAP_HOT_RELOAD_EVENT, onHotReload);
+  }, [currentMapId]);
 
   // Editor camera: detach follow, enable middle-mouse / Space+drag pan
   useEffect(() => {
