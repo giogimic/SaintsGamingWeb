@@ -89,14 +89,13 @@ See `logs/2026-08-04-studio-resume-after-strip.md`:
 
 **Game-only queue** (one PR → merge to `main` → then next):
 
-1. Gate/Playtest warp syncs `activeMapData` — **on main** (#29)
+1. Gate/Playtest warp — **on main** (#29)
 2. Live batched remesh — **on main** (#30)
-3. Lobby MP reconnect / `map_reloaded` harden — **on main** (#31)
-4. NPC place live spawn — `logs/2026-08-05-studio-npc-live-spawn.md`
+3. Lobby MP reconnect — **on main** (#31)
+4. NPC place live spawn — **on main** (#32)
+5. Warp/spawn author overlays — **on main** (#33)
+6. NPC edit/delete/despawn — **on main** (#34)
+7. Definition undo Creature + Dialogue — `logs/2026-08-05-studio-catalog-def-undo.md` (#35)
+8. Manual smokes · player stubs (party / TB swap)
 
-P0–P3 product blockers are on `main` (#28).
-
-Parked foundation polish:
-
-- Richer debug overlays (spawn/warp/chunk)
-- Definition undo on remaining catalogs (Quest has v1)
+P0–P3 product blockers are on `main` (#28). Quest definition undo v1 already shipped; Creature + Dialogue reuse the same stack.

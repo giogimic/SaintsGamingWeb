@@ -35,6 +35,13 @@ export class CreatureManager {
     this.engine.events.on("aiTick", (data) => this.tickWanderAI(data));
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
     this.engine.events.on("spawnCreature", (data) => this.spawnCreature(data));
+    this.engine.events.on(
+      "despawnNpcById",
+      (data: { mapId: string; npcId: string; callback?: (n: number) => void }) => {
+        const n = this.despawnNpcsByDialogueId(data.mapId, data.npcId);
+        data.callback?.(n);
+      }
+    );
     this.engine.events.on("creatureDamaged", (data) => this.handleCreatureDamaged(data));
     this.engine.events.on("requestCreatureState", (entityId, callback) => {
       callback(this.creatures.get(entityId));
@@ -54,6 +61,32 @@ export class CreatureManager {
       if (c.mapId === mapId) out.push(c);
     }
     return out;
+  }
+
+  /** Studio delete — remove NPCs matching stable dialogueNpcId on an instance. */
+  public despawnNpcsByDialogueId(instanceId: string, dialogueNpcId: string): number {
+    const stable = String(dialogueNpcId || "");
+    if (!stable) return 0;
+    const bare = stable.replace(/^npc_/, "");
+    let removed = 0;
+    for (const [entityId, creature] of [...this.creatures.entries()]) {
+      if (creature.mapId !== instanceId) continue;
+      if (creature.entityType !== EntityType.NPC) continue;
+      const match =
+        creature.dialogueNpcId === stable ||
+        creature.templateId === bare ||
+        entityId.startsWith(`npc_${bare}_`);
+      if (!match) continue;
+      this.worldManager.removeEntity(creature.mapId, creature.x, creature.y, entityId);
+      this.creatures.delete(entityId);
+      this.engine.events.emit("networkBroadcast", {
+        room: creature.mapId,
+        event: "creature_despawned",
+        data: { entityId },
+      });
+      removed++;
+    }
+    return removed;
   }
 
   private handleCreatureDamaged(data: { entityId: string, attackerId: string, damage: number }) {
