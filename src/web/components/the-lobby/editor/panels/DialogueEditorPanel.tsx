@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listNpcDialogueTrees,
   getNpcDialogueTree,
@@ -11,6 +11,7 @@ import {
 } from '@/app/actions/npc-dialogue';
 import { KNOWN_ACTIONS } from '@/shared/game/dialogueActions';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import {
   Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle,
 } from 'lucide-react';
@@ -18,6 +19,14 @@ import {
 const inputCls =
   'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-sky-700 transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
+
+type DialogueForm = {
+  npcId: string;
+  name: string;
+  nodes: DialogueNodeInput[];
+  rawMode: boolean;
+  rawJson: string;
+};
 
 function treeToNodes(tree: Record<string, unknown>): DialogueNodeInput[] {
   return Object.entries(tree).map(([id, raw]) => {
@@ -48,17 +57,74 @@ const emptyNodes = (): DialogueNodeInput[] => [
   },
 ];
 
+function emptyDialogueForm(): DialogueForm {
+  const nodes = emptyNodes();
+  return {
+    npcId: '',
+    name: '',
+    nodes,
+    rawMode: false,
+    rawJson: JSON.stringify({ node_start: nodes[0] }, null, 2),
+  };
+}
+
+function dialogueResourceKey(form: DialogueForm, isNew: boolean): string {
+  if (isNew || !form.npcId) return 'dialogue:new';
+  return `dialogue:${form.npcId}`;
+}
+
+function isDialogueForm(value: unknown): value is DialogueForm {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      'npcId' in value &&
+      'nodes' in value &&
+      Array.isArray((value as DialogueForm).nodes)
+  );
+}
+
+function nodesToRawJson(nodes: DialogueNodeInput[]): string {
+  const tree: Record<string, unknown> = {};
+  for (const n of nodes) {
+    tree[n.id] = {
+      text: n.text,
+      options: n.options.map((o) => {
+        const opt: Record<string, string> = {
+          label: o.label,
+          nextNode: o.nextNode,
+        };
+        if (o.action) opt.action = o.action;
+        if (o.questSlug) opt.questSlug = o.questSlug;
+        return opt;
+      }),
+    };
+  }
+  return JSON.stringify(tree, null, 2);
+}
+
 export function DialogueEditorPanel() {
   const [list, setList] = useState<Array<{ npcId: string; name: string }>>([]);
   const [filter, setFilter] = useState('');
-  const [npcId, setNpcId] = useState('');
-  const [name, setName] = useState('');
-  const [nodes, setNodes] = useState<DialogueNodeInput[]>(emptyNodes());
-  const [rawMode, setRawMode] = useState(false);
-  const [rawJson, setRawJson] = useState('{}');
+  const [form, setForm] = useState<DialogueForm>(emptyDialogueForm);
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const isNewRef = useRef(isNew);
+  isNewRef.current = isNew;
+
+  const resourceKey = dialogueResourceKey(form, isNew);
+  const {
+    canUndoDefinition,
+    canRedoDefinition,
+    syncFormRef,
+    onFieldFocus,
+    onFieldBlur,
+    commitStructural,
+    applyHistory,
+    clearDefinitionStackFor,
+  } = useDefinitionFormHistory<DialogueForm>(resourceKey);
+
+  syncFormRef(form);
 
   const loadList = useCallback(async () => {
     const res = await listNpcDialogueTrees(filter);
@@ -82,35 +148,46 @@ export function DialogueEditorPanel() {
       showStatus('error', res.error || 'Load failed');
       return;
     }
-    setNpcId(res.data.npcId);
-    setName(res.data.name);
-    setNodes(treeToNodes(res.data.tree));
-    setRawJson(JSON.stringify(res.data.tree, null, 2));
+    clearDefinitionStackFor(dialogueResourceKey(form, isNewRef.current));
+    const nodes = treeToNodes(res.data.tree);
+    setForm({
+      npcId: res.data.npcId,
+      name: res.data.name,
+      nodes,
+      rawMode: false,
+      rawJson: JSON.stringify(res.data.tree, null, 2),
+    });
     setIsNew(false);
   };
 
   const handleNew = () => {
-    setNpcId('npc_');
-    setName('New NPC');
-    setNodes(emptyNodes());
-    setRawJson(JSON.stringify({ node_start: emptyNodes()[0] }, null, 2));
+    clearDefinitionStackFor(dialogueResourceKey(form, isNewRef.current));
+    const nodes = emptyNodes();
+    setForm({
+      npcId: 'npc_',
+      name: 'New NPC',
+      nodes,
+      rawMode: false,
+      rawJson: JSON.stringify({ node_start: nodes[0] }, null, 2),
+    });
     setIsNew(true);
   };
 
   const handleSave = async () => {
-    if (!npcId.trim()) {
+    if (!form.npcId.trim()) {
       showStatus('error', 'npcId required');
       return;
     }
     setLoading(true);
     const res = await upsertNpcDialogueTree(
-      rawMode
-        ? { npcId, name, rawJson }
-        : { npcId, name, nodes }
+      form.rawMode
+        ? { npcId: form.npcId, name: form.name, rawJson: form.rawJson }
+        : { npcId: form.npcId, name: form.name, nodes: form.nodes }
     );
     setLoading(false);
     if (res.success) {
-      showStatus('success', `Saved ${npcId}`);
+      showStatus('success', `Saved ${form.npcId}`);
+      clearDefinitionStackFor(dialogueResourceKey(form, isNew));
       setIsNew(false);
       await loadList();
     } else {
@@ -119,15 +196,16 @@ export function DialogueEditorPanel() {
   };
 
   const handleDelete = async () => {
-    if (!npcId || isNew) return;
-    if (!confirm(`Delete dialogue for ${npcId}?`)) return;
+    if (!form.npcId || isNew) return;
+    if (!confirm(`Delete dialogue for ${form.npcId}?`)) return;
     setLoading(true);
-    const res = await deleteNpcDialogueTree(npcId);
+    const res = await deleteNpcDialogueTree(form.npcId);
     setLoading(false);
     if (res.success) {
       showStatus('success', 'Deleted');
-      setNpcId('');
-      setNodes(emptyNodes());
+      clearDefinitionStackFor(dialogueResourceKey(form, false));
+      setForm(emptyDialogueForm());
+      setIsNew(false);
       await loadList();
     } else {
       showStatus('error', res.error || 'Delete failed');
@@ -135,7 +213,10 @@ export function DialogueEditorPanel() {
   };
 
   const updateNode = (idx: number, patch: Partial<DialogueNodeInput>) => {
-    setNodes((prev) => prev.map((n, i) => (i === idx ? { ...n, ...patch } : n)));
+    setForm((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n, i) => (i === idx ? { ...n, ...patch } : n)),
+    }));
   };
 
   const updateOption = (
@@ -143,20 +224,39 @@ export function DialogueEditorPanel() {
     optIdx: number,
     patch: Partial<DialogueOptionInput>
   ) => {
-    setNodes((prev) =>
-      prev.map((n, i) => {
+    setForm((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n, i) => {
         if (i !== nodeIdx) return n;
         const options = n.options.map((o, j) => (j === optIdx ? { ...o, ...patch } : o));
         return { ...n, options };
-      })
-    );
+      }),
+    }));
+  };
+
+  const commitNodes = (nodes: DialogueNodeInput[]) => {
+    const next = { ...form, nodes };
+    commitStructural(next);
+    setForm(next);
   };
 
   return (
     <CatalogEditorShell
       title="Dialogue Catalog"
-      blurb="Script mode · NpcDialogueTree SoT · nodes or raw JSON"
-      dirty={isNew}
+      blurb="Script mode · NpcDialogueTree SoT · definition undo on blur"
+      dirty={isNew || canUndoDefinition}
+      canUndoDefinition={canUndoDefinition}
+      canRedoDefinition={canRedoDefinition}
+      onUndoDefinition={() =>
+        applyHistory('undo', (value) => {
+          if (isDialogueForm(value)) setForm(value);
+        })
+      }
+      onRedoDefinition={() =>
+        applyHistory('redo', (value) => {
+          if (isDialogueForm(value)) setForm(value);
+        })
+      }
       toolbar={
         <div className="flex gap-1">
           <button
@@ -192,7 +292,7 @@ export function DialogueEditorPanel() {
                 type="button"
                 onClick={() => void handleSelect(row.npcId)}
                 className={`w-full rounded border px-2 py-1.5 text-left transition-colors ${
-                  row.npcId === npcId
+                  row.npcId === form.npcId
                     ? 'border-sky-600/50 bg-sky-950/40 text-sky-200'
                     : 'border-transparent text-slate-400 hover:bg-white/5'
                 }`}
@@ -231,23 +331,31 @@ export function DialogueEditorPanel() {
               <label className={labelCls}>npcId</label>
               <input
                 className={inputCls}
-                value={npcId}
-                disabled={!isNew && !!npcId}
-                onChange={(e) => setNpcId(e.target.value)}
+                value={form.npcId}
+                disabled={!isNew && !!form.npcId}
+                onFocus={onFieldFocus}
+                onBlur={onFieldBlur}
+                onChange={(e) => setForm((p) => ({ ...p, npcId: e.target.value }))}
               />
             </div>
             <div>
               <label className={labelCls}>Display name</label>
-              <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} />
+              <input
+                className={inputCls}
+                value={form.name}
+                onFocus={onFieldFocus}
+                onBlur={onFieldBlur}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setRawMode(false)}
+              onClick={() => setForm((p) => ({ ...p, rawMode: false }))}
               className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border ${
-                !rawMode ? 'border-sky-700 text-sky-300' : 'border-slate-800 text-slate-500'
+                !form.rawMode ? 'border-sky-700 text-sky-300' : 'border-slate-800 text-slate-500'
               }`}
             >
               Nodes
@@ -255,43 +363,34 @@ export function DialogueEditorPanel() {
             <button
               type="button"
               onClick={() => {
-                if (!rawMode) {
-                  const tree: Record<string, unknown> = {};
-                  for (const n of nodes) {
-                    tree[n.id] = {
-                      text: n.text,
-                      options: n.options.map((o) => {
-                        const opt: Record<string, string> = {
-                          label: o.label,
-                          nextNode: o.nextNode,
-                        };
-                        if (o.action) opt.action = o.action;
-                        if (o.questSlug) opt.questSlug = o.questSlug;
-                        return opt;
-                      }),
-                    };
-                  }
-                  setRawJson(JSON.stringify(tree, null, 2));
-                }
-                setRawMode(true);
+                if (form.rawMode) return;
+                const next = {
+                  ...form,
+                  rawMode: true,
+                  rawJson: nodesToRawJson(form.nodes),
+                };
+                commitStructural(next);
+                setForm(next);
               }}
               className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border ${
-                rawMode ? 'border-sky-700 text-sky-300' : 'border-slate-800 text-slate-500'
+                form.rawMode ? 'border-sky-700 text-sky-300' : 'border-slate-800 text-slate-500'
               }`}
             >
               Raw JSON
             </button>
           </div>
 
-          {rawMode ? (
+          {form.rawMode ? (
             <textarea
               className={`${inputCls} min-h-[280px] font-mono text-[10px]`}
-              value={rawJson}
-              onChange={(e) => setRawJson(e.target.value)}
+              value={form.rawJson}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
+              onChange={(e) => setForm((p) => ({ ...p, rawJson: e.target.value }))}
             />
           ) : (
             <div className="space-y-3">
-              {nodes.map((node, ni) => (
+              {form.nodes.map((node, ni) => (
                 <div
                   key={`${node.id}-${ni}`}
                   className="rounded-xl border border-slate-800 bg-[#080e18] p-2.5 space-y-2"
@@ -302,13 +401,15 @@ export function DialogueEditorPanel() {
                       <input
                         className={inputCls}
                         value={node.id}
+                        onFocus={onFieldFocus}
+                        onBlur={onFieldBlur}
                         onChange={(e) => updateNode(ni, { id: e.target.value })}
                       />
                     </div>
                     <button
                       type="button"
                       className="self-end p-2 text-red-400/80 hover:bg-red-950/30 rounded-lg"
-                      onClick={() => setNodes((prev) => prev.filter((_, i) => i !== ni))}
+                      onClick={() => commitNodes(form.nodes.filter((_, i) => i !== ni))}
                       title="Remove node"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -319,6 +420,8 @@ export function DialogueEditorPanel() {
                     <textarea
                       className={`${inputCls} min-h-[56px]`}
                       value={node.text}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
                       onChange={(e) => updateNode(ni, { text: e.target.value })}
                     />
                   </div>
@@ -333,17 +436,23 @@ export function DialogueEditorPanel() {
                           className={inputCls}
                           placeholder="Label"
                           value={opt.label}
+                          onFocus={onFieldFocus}
+                          onBlur={onFieldBlur}
                           onChange={(e) => updateOption(ni, oi, { label: e.target.value })}
                         />
                         <input
                           className={inputCls}
                           placeholder="nextNode"
                           value={opt.nextNode}
+                          onFocus={onFieldFocus}
+                          onBlur={onFieldBlur}
                           onChange={(e) => updateOption(ni, oi, { nextNode: e.target.value })}
                         />
                         <select
                           className={inputCls}
                           value={opt.action || ''}
+                          onFocus={onFieldFocus}
+                          onBlur={onFieldBlur}
                           onChange={(e) => updateOption(ni, oi, { action: e.target.value })}
                         >
                           {KNOWN_ACTIONS.map((a) => (
@@ -356,15 +465,21 @@ export function DialogueEditorPanel() {
                           className={inputCls}
                           placeholder="questSlug (ACCEPT_QUEST)"
                           value={opt.questSlug || ''}
+                          onFocus={onFieldFocus}
+                          onBlur={onFieldBlur}
                           onChange={(e) => updateOption(ni, oi, { questSlug: e.target.value })}
                         />
                         <button
                           type="button"
                           className="col-span-2 text-[9px] text-red-400/70 text-left"
                           onClick={() =>
-                            updateNode(ni, {
-                              options: node.options.filter((_, j) => j !== oi),
-                            })
+                            commitNodes(
+                              form.nodes.map((n, i) =>
+                                i === ni
+                                  ? { ...n, options: n.options.filter((_, j) => j !== oi) }
+                                  : n
+                              )
+                            )
                           }
                         >
                           Remove option
@@ -375,12 +490,19 @@ export function DialogueEditorPanel() {
                       type="button"
                       className="text-[9px] font-bold uppercase text-sky-400/80"
                       onClick={() =>
-                        updateNode(ni, {
-                          options: [
-                            ...node.options,
-                            { label: '…', nextNode: 'exit', action: '', questSlug: '' },
-                          ],
-                        })
+                        commitNodes(
+                          form.nodes.map((n, i) =>
+                            i === ni
+                              ? {
+                                  ...n,
+                                  options: [
+                                    ...n.options,
+                                    { label: '…', nextNode: 'exit', action: '', questSlug: '' },
+                                  ],
+                                }
+                              : n
+                          )
+                        )
                       }
                     >
                       + Option
@@ -392,10 +514,10 @@ export function DialogueEditorPanel() {
                 type="button"
                 className="text-[10px] font-bold uppercase text-sky-300"
                 onClick={() =>
-                  setNodes((prev) => [
-                    ...prev,
+                  commitNodes([
+                    ...form.nodes,
                     {
-                      id: `node_${prev.length + 1}`,
+                      id: `node_${form.nodes.length + 1}`,
                       text: '',
                       options: [{ label: 'Back', nextNode: 'node_start', action: '', questSlug: '' }],
                     },

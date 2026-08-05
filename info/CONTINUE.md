@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0–P7 on main; author overlays next)  
+**Last updated:** 2026-08-05 (P0–P7 on main; P8–P11 author-loop PRs)  
 **Point every new session at this file first.**
 
 ---
@@ -12,13 +12,15 @@
 One PR → merge to `main` → then next:
 
 1. **Done on main:** #28–#32 (product gaps → … → NPC live spawn)  
-2. **In flight:** Warp/spawn author overlays — `logs/2026-08-05-studio-author-overlays.md`  
-3. **Queued:** NPC edit/delete/despawn · manual smokes · definition undo Creature/Dialogue · player stubs
+2. **Open PRs:** #33 overlays · #34 NPC lifecycle · catalog def undo (Creature/Dialogue)  
+3. **Queued:** manual smokes · player stubs (party invite / TB swap)
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
 | **P0–P7** | Depth → NPC live spawn | **On main** (#28–#32) |
-| **P8** | Warp/spawn author overlays | **This branch** |
+| **P8** | Warp/spawn author overlays | **PR #33** |
+| **P9** | NPC edit/delete/live despawn | **PR #34** |
+| **P11** | Definition undo Creature + Dialogue | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
