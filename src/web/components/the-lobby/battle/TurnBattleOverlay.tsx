@@ -25,13 +25,19 @@ export function TurnBattleOverlay() {
     ? `${trainerName || "Trainer"}'s ${wildCreature.name}`
     : wildCreature.name;
 
-  const handleAction = (action: string, moveId?: string, itemId?: string) => {
+  const handleAction = (
+    action: string,
+    moveId?: string,
+    itemId?: string,
+    creatureId?: string
+  ) => {
     if (phase !== 'WAITING_FOR_INPUT') return;
     emitSocketEvent?.('battle_submit_action', {
       battleId: activeBattle.id,
       action,
       moveId,
       itemId,
+      creatureId,
       mapId: currentMapId
     });
   };
@@ -172,8 +178,9 @@ export function TurnBattleOverlay() {
           
           <button 
             disabled={phase !== 'WAITING_FOR_INPUT'}
-            onClick={() => {}} // TODO: Swap creatures
-            className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed opacity-50"
+            onClick={() => handleAction('SWITCH')}
+            className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Switch to the next healthy party creature"
           >
             CREATURES
           </button>

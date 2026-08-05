@@ -149,12 +149,13 @@ export class SocketHandler {
       });
 
       socket.on("battle_submit_action", (data) => {
-        // data: { battleId, action, moveId, itemId, mapId }
+        // data: { battleId, action, moveId, itemId, creatureId, mapId }
         this.engine.events.emit("battleSubmitAction", {
           battleId: data.battleId,
           action: data.action,
           moveId: data.moveId,
           itemId: data.itemId,
+          creatureId: data.creatureId,
           socketId: socket.id,
           mapId: data.mapId
         });
@@ -282,6 +283,12 @@ export class SocketHandler {
       });
       socket.on("party_invite", (targetName) => {
         this.engine.events.emit("partyInvite", { accountId, targetName });
+      });
+      socket.on("party_invite_accept", () => {
+        this.engine.events.emit("partyInviteAccept", { accountId });
+      });
+      socket.on("party_invite_decline", () => {
+        this.engine.events.emit("partyInviteDecline", { accountId });
       });
       socket.on("party_join", (leaderName) => {
         this.engine.events.emit("partyJoin", { accountId, leaderName });
