@@ -27,3 +27,5 @@ Add a script to manage the extra everse_proxy subdomain blocks inside the Caddy
 - Enhanced UI: whiptail textbox for list, remove uses a selectable menu, and add/remove now reload Caddy immediately.
 
 - Fixed wk syntax errors on Debian by renaming the internal awk state variable from in to managed (some awk treat in as reserved).
+
+- UI fix: removed set -e so dismissing whiptail dialogs (Esc/cancel) doesn’t exit the menu.

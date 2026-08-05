@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Do not use `set -e` here: `whiptail` exits non-zero when users press Esc/cancel
+# which should not terminate the whole UI flow.
+set -uo pipefail
 
 # Manage extra reverse_proxy subdomain blocks in /etc/caddy/Caddyfile.
 # We only rewrite the section between BEGIN/END markers so we never clobber
