@@ -5,11 +5,11 @@ import { useGameStore } from '../../store';
 import { searchMapIndex, registerNewMap } from '../../data/map-index';
 import { invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
-import { Compass, Plus, Search, Layers, Grid, Save, Shield } from 'lucide-react';
+import { Compass, Plus, Search, Layers, Grid, Save, Shield, Eraser } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
-import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 import {
   buildNewStudioMap,
@@ -399,6 +399,34 @@ export const WorldBuilderPanel: React.FC = () => {
           <Grid className="w-3.5 h-3.5" />
           {activeLayerIdx === -1 ? 'Logic Tags' : 'Asset Picker'}
         </div>
+        {activeLayerIdx >= 0 && (
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setBrushTileId(0)}
+              className={`flex-1 py-1 rounded border flex items-center justify-center gap-1 ${
+                brushTileId === 0
+                  ? 'bg-rose-900/50 border-rose-400 text-rose-100'
+                  : 'border-slate-700 text-slate-400 hover:bg-white/5'
+              }`}
+              title="Erase visual tile (GID 0)"
+            >
+              <Eraser className="w-3 h-3" /> Erase
+            </button>
+            <button
+              type="button"
+              onClick={() => setBrushTileId(DEFAULT_STUDIO_GROUND_GID)}
+              className={`flex-1 py-1 rounded border text-[10px] ${
+                brushTileId === DEFAULT_STUDIO_GROUND_GID
+                  ? 'bg-[#806f47]/40 border-[#cbb26a] text-[#e2d5b3]'
+                  : 'border-slate-700 text-slate-400 hover:bg-white/5'
+              }`}
+              title="Solid grass GID 17"
+            >
+              Grass ({DEFAULT_STUDIO_GROUND_GID})
+            </button>
+          </div>
+        )}
         <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
           {activeLayerIdx === -1 ? (
             <LogicTagPalette />

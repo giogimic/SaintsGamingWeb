@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — P2 lobby MP + P3 polish
+
+Public shard filter no longer picks Studio private/PIE rooms; party/warp/join hardened; erase void overlay + brush reset on layer switch.  
+See `logs/2026-08-05-studio-p2-mp-p3-polish.md`.
+
+---
+
 ## 2026-08-05 — P1 Studio map create / save
 
 Create New Map no longer copies logic→visual GIDs; Save requires live `activeMapData`; louder auth/validation toasts; API repairs bad visuals on create/write.  

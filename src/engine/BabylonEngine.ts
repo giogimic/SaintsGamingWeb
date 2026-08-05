@@ -212,6 +212,8 @@ export class BabylonEngine {
   };
   private selectionRingMesh?: Mesh;
   private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
+  /** Covers erased cells so batched tileset art disappears without a full remesh. */
+  private eraseVoidMaterial?: StandardMaterial;
 
   /**
    * Ground tilesets are one batched mesh per image. Alpha-*blend* sorts that
@@ -227,6 +229,20 @@ export class BabylonEngine {
     mat.backFaceCulling = false;
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
+  }
+
+  private getEraseVoidMaterial(): StandardMaterial {
+    if (!this.eraseVoidMaterial) {
+      const mat = new StandardMaterial('erase_void_mat', this.scene);
+      // Match scene clearColor so GID 0 reads as an empty hole.
+      mat.diffuseColor = new Color3(0.02, 0.04, 0.06);
+      mat.specularColor = new Color3(0, 0, 0);
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      mat.forceDepthWrite = true;
+      this.eraseVoidMaterial = mat;
+    }
+    return this.eraseVoidMaterial;
   }
 
   constructor(canvas: HTMLCanvasElement) {
@@ -1338,15 +1354,31 @@ export class BabylonEngine {
     const meshName = `tile_${layerIdx}_${r}_${c}`;
     const legacyMesh = this.scene.getMeshByName(meshName) as Mesh | null;
 
-    // Erase → drop overlay (batch still shows old art until map reload/save).
+    // Erase → cover batched art with a void plate (GID 0 skips quads on remount).
     if (!tileId) {
       const key = `${layerIdx}_${r}_${c}`;
-      const overlay = this.paintOverlayMeshes.get(key);
-      if (overlay) {
-        overlay.dispose();
-        this.paintOverlayMeshes.delete(key);
+      let overlay = this.paintOverlayMeshes.get(key);
+      const tileSize = this.currentTileSize || 1;
+      const posX = (c - this.currentMapWidth / 2) * tileSize;
+      const posZ = (this.currentMapHeight / 2 - r) * tileSize;
+      const y = paintOverlayHeight(layerIdx);
+
+      if (!overlay) {
+        overlay = MeshBuilder.CreatePlane(
+          `paint_${layerIdx}_${r}_${c}`,
+          { size: tileSize, updatable: true },
+          this.scene
+        );
+        overlay.rotation.x = Math.PI / 2;
+        overlay.parent = this.rootNode;
+        overlay.isPickable = false;
+        this.paintOverlayMeshes.set(key, overlay);
       }
-      if (legacyMesh && legacyMesh.material) {
+      overlay.position = new Vector3(posX, y, posZ);
+      overlay.material = this.getEraseVoidMaterial();
+      overlay.isVisible = true;
+
+      if (legacyMesh) {
         legacyMesh.isVisible = false;
       }
       return;

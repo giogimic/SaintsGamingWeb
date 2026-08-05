@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0 + P1 code landed)  
+**Last updated:** 2026-08-05 (P0–P2 + partial P3 landed)  
 **Point every new session at this file first.**
 
 ---
@@ -10,14 +10,16 @@
 **P0 → P2 product gaps** (not catalog polish). Full plan:
 
 → **`logs/2026-08-05-studio-game-priority-plan.md`**  
-→ **P0 impl:** `logs/2026-08-05-studio-p0-demo-depth-paint.md`  
-→ **P1 impl:** `logs/2026-08-05-studio-p1-map-create-save.md`
+→ P0: `logs/2026-08-05-studio-p0-demo-depth-paint.md`  
+→ P1: `logs/2026-08-05-studio-p1-map-create-save.md`  
+→ P2/P3: `logs/2026-08-05-studio-p2-mp-p3-polish.md`
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **P0** | DEMO north half: character under ground tiles; northern paint buried | **Code landed** — needs manual visual confirm |
-| **P1** | Studio create/save maps unreliable (create copies logic→visual GIDs; auth/validation gates) | **Code landed** — needs manual create/save smoke |
-| **P2** | Lobby multiplayer visibility (test on `/lobby` only; Studio is private/PIE) | OPEN |
+| **P0** | DEMO north depth + paint | **Code landed** — manual visual confirm |
+| **P1** | Map create/save | **Code landed** — manual create/save smoke |
+| **P2** | Lobby multiplayer visibility | **Code landed** — two-browser `/lobby` smoke |
+| **P3** | Brush reset, erase void, mode labels | **Partial** — definition undo / PIE options still parked |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
@@ -25,7 +27,7 @@ Before coding, read:
 
 1. **This file**
 2. **`logs/2026-08-05-studio-game-priority-plan.md`**
-3. **`logs/2026-08-05-studio-p0-demo-depth-paint.md`** / **`logs/2026-08-05-studio-p1-map-create-save.md`**
+3. Latest P0/P1/P2 impl logs under `logs/2026-08-05-studio-*`
 4. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
 5. `logs/studio-first-hybrid-foundation.md`
 6. Trail/Spyder smokes as needed

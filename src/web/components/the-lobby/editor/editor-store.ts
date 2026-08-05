@@ -492,7 +492,21 @@ export const useEditorStore = create<EditorState>()(
         }),
       setActiveLayerIdx: (idx) =>
         set((state) => {
+          const prev = state.activeLayerIdx;
           state.activeLayerIdx = idx;
+          // Switching Logic ↔ visual: reset brushes so a logic id is not painted
+          // as a visual GID (stair fragment) and vice versa.
+          if (prev === -1 && idx >= 0) {
+            // Entering a visual layer from Logic — prefer solid grass.
+            if (state.activeBrushTileId <= 12) {
+              state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
+            }
+          } else if (prev >= 0 && idx === -1) {
+            // Entering Logic from visual — keep registered wall default if brush was a huge GID.
+            if (state.activeLogicTileId > 50) {
+              state.activeLogicTileId = 1;
+            }
+          }
         }),
       setClickedTile: (tile) =>
         set((state) => {

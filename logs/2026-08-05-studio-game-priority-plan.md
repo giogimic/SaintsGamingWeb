@@ -149,7 +149,7 @@ curl --max-time 120 http://localhost:3000/lobby
 | :--- | :--- |
 | P0 depth + north paint | **CODE LANDED** — `logs/2026-08-05-studio-p0-demo-depth-paint.md` |
 | P1 create/save | **CODE LANDED** — `logs/2026-08-05-studio-p1-map-create-save.md` |
-| P2 lobby MP | OPEN (verify first; fix if broken) |
-| P3 polish | PARKED until P0–P2 |
+| P2 lobby MP | **CODE LANDED** — `logs/2026-08-05-studio-p2-mp-p3-polish.md` |
+| P3 polish | **PARTIAL** — brush/erase done; definition undo / PIE options parked |
 
 Update this file as each phase lands.
