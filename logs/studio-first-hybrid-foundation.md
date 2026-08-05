@@ -90,8 +90,8 @@ See `logs/2026-08-04-studio-resume-after-strip.md`:
 **Game-only queue** (one PR → merge to `main` → then next):
 
 1. Gate/Playtest warp syncs `activeMapData` — **on main** (#29)
-2. Live batched remesh — `logs/2026-08-05-studio-live-tile-remesh.md`
-3. Lobby MP two-browser smoke / reconnect harden if needed
+2. Live batched remesh — **on main** (#30)
+3. Lobby MP reconnect / `map_reloaded` harden — `logs/2026-08-05-lobby-mp-reconnect-harden.md`
 
 P0–P3 product blockers are on `main` (#28).
 

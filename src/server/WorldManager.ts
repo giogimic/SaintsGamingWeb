@@ -49,11 +49,7 @@ export class WorldManager {
     const success = await mapLoader.saveMapData(data.mapId, data);
     if (success) {
       console.log(`[WorldManager] Map ${data.mapId} saved to database and hot reloaded.`);
-      // Global broadcast — players live on shard rooms (`_chN`), not base mapId alone.
-      this.engine.events.emit("networkBroadcast", {
-        event: "map_reloaded",
-        data: { mapId: data.mapId }
-      });
+      this.broadcastMapReloaded(data.mapId);
     }
   }
 
@@ -62,10 +58,30 @@ export class WorldManager {
     if (!data?.mapId) return;
     mapLoader.invalidateMap(data.mapId);
     console.log(`[WorldManager] Map ${data.mapId} cache invalidated; broadcasting map_reloaded.`);
-    this.engine.events.emit("networkBroadcast", {
-      event: "map_reloaded",
-      data: { mapId: data.mapId },
-    });
+    this.broadcastMapReloaded(data.mapId);
+  }
+
+  /**
+   * Notify only shards of this base map (public `_chN`, private, PIE) —
+   * never a global `io.emit` that remounts unrelated clients.
+   */
+  private broadcastMapReloaded(mapId: string) {
+    const base = toBaseMapId(String(mapId || ""));
+    if (!base) return;
+    let rooms = 0;
+    for (const [instanceId, inst] of this.instances.entries()) {
+      if (inst.mapId !== base) continue;
+      this.engine.events.emit("networkBroadcast", {
+        room: instanceId,
+        event: "map_reloaded",
+        data: { mapId: base },
+      });
+      rooms++;
+    }
+    if (rooms === 0) {
+      // No warm instances — still useful for clients mid-join; scoped no-op is fine.
+      console.log(`[WorldManager] map_reloaded skipped (no instances for ${base})`);
+    }
   }
 
   public async initialize() {

@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Lobby MP reconnect + map_reloaded harden
+
+Soft disconnect keeps peers; `map_reloaded` scoped to shard rooms + in-place hot remesh (no Babylon remount).  
+See `logs/2026-08-05-lobby-mp-reconnect-harden.md`.
+
+---
+
 ## 2026-08-05 — Studio live batched remesh
 
 Paint/erase patches `tileset_mesh_*` quads in place (cell index + UV/collapse/append); overlays are fallback only.  

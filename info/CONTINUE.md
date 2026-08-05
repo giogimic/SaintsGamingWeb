@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (gate-warp on main; live remesh in flight)  
+**Last updated:** 2026-08-05 (remesh on main; lobby MP harden in flight)  
 **Point every new session at this file first.**
 
 ---
@@ -11,9 +11,9 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** Gate warp map document — #29  
-2. **In flight:** Live batched remesh — `logs/2026-08-05-studio-live-tile-remesh.md`  
-3. **Queued:** Lobby MP two-browser smoke / reconnect harden if needed
+1. **Done on main:** Gate warp — #29 · Live remesh — #30  
+2. **In flight:** Lobby MP reconnect / `map_reloaded` harden — `logs/2026-08-05-lobby-mp-reconnect-harden.md`  
+3. **Queued:** Pick next game gap after merge (debug overlays / catalog undo / Trail smoke)
 
 → Plan archive: `logs/2026-08-05-studio-game-priority-plan.md`  
 → P2/P3: `logs/2026-08-05-studio-p2-mp-p3-polish.md`
@@ -22,7 +22,8 @@ One PR → merge to `main` → then next:
 | :--- | :--- | :--- |
 | **P0–P3** | Depth, maps, MP, polish | **On main** (#28) |
 | **P4** | Gate warp stale map document | **On main** (#29) |
-| **P5** | Live batched paint remesh | **This branch** |
+| **P5** | Live batched paint remesh | **On main** (#30) |
+| **P6** | Lobby MP reconnect + map hot-reload | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
