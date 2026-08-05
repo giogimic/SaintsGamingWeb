@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Brush, Grid3X3, Shield, MousePointerClick } from 'lucide-react';
+import { Brush, Grid3X3, Shield, MousePointerClick, DoorOpen, MapPin } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 
@@ -18,6 +18,10 @@ export function StudioPaintHud() {
   const mapDirty = useEditorStore((s) => s.mapDirty);
   const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
   const setShowEditorCoords = useEditorStore((s) => s.setShowEditorCoords);
+  const showWarpOverlays = useEditorStore((s) => s.showWarpOverlays);
+  const setShowWarpOverlays = useEditorStore((s) => s.setShowWarpOverlays);
+  const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
+  const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
   const logicTiles = useGameStore((s) => s.logicTiles);
   const activeMapData = useGameStore((s) => s.activeMapData);
 
@@ -74,6 +78,34 @@ export function StudioPaintHud() {
           title="Toggle coordinate readout"
         >
           XY {showEditorCoords ? 'On' : 'Off'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowWarpOverlays(!showWarpOverlays)}
+          className={`flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+            showWarpOverlays
+              ? 'border-amber-500/40 bg-amber-950/40 text-amber-200'
+              : 'border-white/10 bg-black/30 text-slate-500'
+          }`}
+          title="Toggle warp gate markers"
+        >
+          <DoorOpen className="h-3 w-3" />
+          Gates {showWarpOverlays ? 'On' : 'Off'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowSpawnOverlays(!showSpawnOverlays)}
+          className={`flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+            showSpawnOverlays
+              ? 'border-sky-500/40 bg-sky-950/40 text-sky-200'
+              : 'border-white/10 bg-black/30 text-slate-500'
+          }`}
+          title="Toggle NPC spawn + gate spawn-pin markers"
+        >
+          <MapPin className="h-3 w-3" />
+          Spawns {showSpawnOverlays ? 'On' : 'Off'}
         </button>
 
         <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-400">
