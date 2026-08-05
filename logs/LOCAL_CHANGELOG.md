@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Studio gate warp map document sync
+
+Gate/Playtest warps load destination `activeMapData` with `currentMapId`; canvas rejects stale docs.  
+See `logs/2026-08-05-studio-gate-warp-mapdata.md`.
+
+---
+
 ## 2026-08-05 — P2/P3 finish (definition undo + PIE options)
 
 `pickPublicShardAssignment` wired into `WorldManager`; definition snapshot undo in Quest catalog; PIE pause-spawners/god-mode on Playtest chip gate encounters.  

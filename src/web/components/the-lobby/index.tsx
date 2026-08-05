@@ -35,6 +35,7 @@ import {
   shouldSuppressGameplaySystems,
 } from '@/shared/game/studioSession';
 import { shouldPieSuppressEncounters } from '@/shared/game/pieOptions';
+import { shouldKeepActiveMapData } from '@/shared/game/mapSwitch';
 import {
   STUDIO_PIE_CHANGED_EVENT,
   type StudioPieChangedDetail,
@@ -475,6 +476,17 @@ export default function TheLobby({
         state.setCurrentMapId(joinedBase);
         void loadMap(joinedBase).then((m) => {
           useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+        });
+      } else if (
+        joinedBase &&
+        !shouldKeepActiveMapData(state.activeMapData, joinedBase)
+      ) {
+        // Same base id but missing/stale document (e.g. gate warp race) — refresh once.
+        void loadMap(joinedBase).then((m) => {
+          const live = useGameStore.getState();
+          if (!shouldKeepActiveMapData(live.activeMapData, joinedBase)) {
+            live.setActiveMapData(ensureMapHasStudioTilesets(m));
+          }
         });
       }
       if (typeof data.x === 'number' && typeof data.y === 'number') {

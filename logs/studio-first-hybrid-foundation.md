@@ -87,14 +87,15 @@ See `logs/2026-08-04-studio-resume-after-strip.md`:
 
 ## Next
 
-**Product blockers first** (see `logs/2026-08-05-studio-game-priority-plan.md`):
+**Game-only queue** (one PR → merge to `main` → then next):
 
-1. P0 — DEMO north depth + paint reachability  
-2. P1 — Map create/save reliability  
-3. P2 — Lobby multiplayer visibility  
+1. Gate/Playtest warp syncs `activeMapData` — `logs/2026-08-05-studio-gate-warp-mapdata.md`
+2. Live batched remesh (paint without overlay/void plates)
+3. Lobby MP two-browser smoke / reconnect harden if needed
 
-Parked foundation polish (after P0–P2):
+P0–P3 product blockers are on `main` (#28).
 
-- Definition undo stack
+Parked foundation polish:
+
 - Richer debug overlays (spawn/warp/chunk)
-- PIE options (pause spawners / god mode) — Advanced
+- Definition undo on remaining catalogs (Quest has v1)
