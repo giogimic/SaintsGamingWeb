@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0–P9 on main; catalog def undo next)  
+**Last updated:** 2026-08-05 (P0–P9 + P11 on main; P10 smokes this PR)  
 **Point every new session at this file first.**
 
 ---
@@ -11,16 +11,18 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#34 (product gaps → … → overlays → NPC lifecycle)  
-2. **In flight:** Definition undo Creature + Dialogue — `logs/2026-08-05-studio-catalog-def-undo.md`  
-3. **Queued:** manual smokes · player stubs (party invite / TB swap)
+1. **Done on main:** #28–#35 (product gaps → … → overlays → NPC lifecycle → catalog def undo)  
+2. **In flight:** Manual smokes (create/save + lobby MP) — `logs/2026-08-05-studio-manual-smokes.md`  
+3. **Queued:** player stubs (party invite / TB creature swap)
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
 | **P0–P7** | Depth → NPC live spawn | **On main** (#28–#32) |
 | **P8** | Warp/spawn author overlays | **On main** (#33) |
 | **P9** | NPC edit/delete/live despawn | **On main** (#34) |
-| **P11** | Definition undo Creature + Dialogue | **This branch** (#35) |
+| **P10** | Manual smokes (create/save + lobby MP) | **PASS** — this PR (#36) |
+| **P11** | Definition undo Creature + Dialogue | **On main** (#35) |
+| **P12** | Party invite / TB creature swap | **Next** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
