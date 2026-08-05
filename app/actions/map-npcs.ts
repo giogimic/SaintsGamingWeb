@@ -3,6 +3,8 @@
 import { prisma } from '@/web/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { checkAdminPermission } from './game-admin';
+import { invalidateDialogueCache } from '@/server/dialogueCache';
+import { toBaseMapId } from '@/shared/net/mapIds';
 
 export type MapNpcData = {
   id: string;
@@ -58,7 +60,7 @@ export async function placeMapNpc(opts: {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
 
-  const mapId = opts.mapId;
+  const mapId = toBaseMapId(opts.mapId);
   if (!mapId) return { success: false, error: 'Map id required' };
 
   try {
@@ -133,6 +135,7 @@ export async function placeMapNpc(opts: {
 
     revalidatePath('/studio');
     revalidatePath('/lobby');
+    invalidateDialogueCache(id);
     return { success: true, npc, count: npcs.length };
   } catch (err: any) {
     console.error('[placeMapNpc]', err);

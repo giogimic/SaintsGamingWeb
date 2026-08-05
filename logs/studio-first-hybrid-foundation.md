@@ -91,7 +91,8 @@ See `logs/2026-08-04-studio-resume-after-strip.md`:
 
 1. Gate/Playtest warp syncs `activeMapData` — **on main** (#29)
 2. Live batched remesh — **on main** (#30)
-3. Lobby MP reconnect / `map_reloaded` harden — `logs/2026-08-05-lobby-mp-reconnect-harden.md`
+3. Lobby MP reconnect / `map_reloaded` harden — **on main** (#31)
+4. NPC place live spawn — `logs/2026-08-05-studio-npc-live-spawn.md`
 
 P0–P3 product blockers are on `main` (#28).
 

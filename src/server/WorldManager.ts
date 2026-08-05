@@ -42,6 +42,19 @@ export class WorldManager {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
     this.engine.events.on("adminSaveMap", (data) => this.handleAdminSaveMap(data));
     this.engine.events.on("adminReloadMap", (data) => this.handleAdminReloadMap(data));
+    this.engine.events.on(
+      "studioSpawnNpc",
+      (data: {
+        mapId?: string;
+        npc?: { id: string; name: string; x: number; y: number; sprite?: string };
+      }) => {
+        if (!data?.mapId || !data?.npc?.id) return;
+        const n = this.spawnNpcLive(data.mapId, data.npc);
+        console.log(
+          `[WorldManager] studioSpawnNpc ${data.npc.id} on ${data.mapId} → ${n} instance(s)`
+        );
+      }
+    );
   }
 
   private async handleAdminSaveMap(data: any) {
@@ -148,6 +161,7 @@ export class WorldManager {
           spawnMode: "STATIC",
           name: npc.name || rawId,
           spriteKey: String(sprite).replace(/^\/game-assets\/npc\//, "").replace(/\.png$/, ""),
+          dialogueNpcId: rawId.startsWith("npc_") ? rawId : `npc_${rawId.replace(/^npc_/, "")}`,
         });
       }
     }
@@ -187,6 +201,47 @@ export class WorldManager {
     }
 
     return instance;
+  }
+
+  /**
+   * Studio place-NPC: push a live STATIC NPC onto every warm instance of this
+   * base map and refresh the map-loader cache so future joins see it too.
+   */
+  public spawnNpcLive(
+    baseMapId: string,
+    npc: { id: string; name: string; x: number; y: number; sprite?: string }
+  ): number {
+    const base = toBaseMapId(String(baseMapId || ""));
+    if (!base || !npc?.id) return 0;
+
+    mapLoader.invalidateMap(base);
+    void mapLoader.loadMapData(base).catch((err: unknown) => {
+      console.warn("[WorldManager] spawnNpcLive cache reload failed:", err);
+    });
+
+    const rawId = String(npc.id);
+    const dialogueNpcId = rawId.startsWith("npc_") ? rawId : `npc_${rawId}`;
+    const spriteKey = String(npc.sprite || rawId.replace(/^npc_/, ""))
+      .replace(/^\/game-assets\/npc\//, "")
+      .replace(/\.png$/, "");
+
+    let spawned = 0;
+    for (const [instanceId, inst] of this.instances.entries()) {
+      if (inst.mapId !== base) continue;
+      this.engine.events.emit("spawnCreature", {
+        templateId: rawId.replace(/^npc_/, ""),
+        entityType: "NPC",
+        mapId: instanceId,
+        x: Number(npc.x) || 0,
+        y: Number(npc.y) || 0,
+        spawnMode: "STATIC",
+        name: npc.name || rawId,
+        spriteKey,
+        dialogueNpcId,
+      });
+      spawned++;
+    }
+    return spawned;
   }
 
   public getInstance(instanceId: string): MapInstance | undefined {
