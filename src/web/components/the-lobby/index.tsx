@@ -858,6 +858,33 @@ export default function TheLobby({
       useGameStore.getState().showToast(data.message);
     });
 
+    // Party invite from friends list / PartyManager (Y accept / N decline while focused)
+    socket.on('party_invite', (data: { fromName?: string; fromAccountId?: string }) => {
+      const from = data?.fromName || 'A tamer';
+      useGameStore.getState().showToast(`${from} invited you to a party (Y/N)`);
+      window.dispatchEvent(
+        new CustomEvent('game_chat_msg', {
+          detail: {
+            id: Date.now().toString() + Math.random(),
+            sender: 'Server',
+            text: `${from} invited you to a party. Press Y to accept or N to decline.`,
+            timestamp: Date.now(),
+            type: 'SYSTEM',
+          },
+        })
+      );
+    });
+
+    socket.on('party_update', (data: { type?: string; members?: string[] }) => {
+      if (data?.type === 'UPDATE' && Array.isArray(data.members)) {
+        useGameStore.getState().showToast(`Party updated (${data.members.length})`);
+      } else if (data?.type === 'DISBANDED' || data?.type === 'LEFT') {
+        useGameStore.getState().showToast(
+          data.type === 'DISBANDED' ? 'Party disbanded' : 'Left party'
+        );
+      }
+    });
+
     socket.on('sync_credits', (data) => {
       if (typeof data?.credits === 'number') {
         useGameStore.setState((state) => {
@@ -1204,6 +1231,8 @@ export default function TheLobby({
       else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
       else if (key === 'x') useGameStore.getState().setGameMode('DEX');
       else if (key === 'b') useGameStore.getState().setGameMode('ACHIEVEMENTS');
+      else if (key === 'y') socketRef.current?.emit('party_invite_accept');
+      else if (key === 'n') socketRef.current?.emit('party_invite_decline');
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
     return () => window.removeEventListener('keydown', handleGlobalHotkeys);
