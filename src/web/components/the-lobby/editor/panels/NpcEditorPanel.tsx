@@ -1,8 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { placeMapNpc } from '@/app/actions/map-npcs';
-import { UserPlus, Save, Loader2 } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  deleteMapNpc,
+  listMapNpcs,
+  placeMapNpc,
+  updateMapNpc,
+  type MapNpcData,
+} from '@/app/actions/map-npcs';
+import { UserPlus, Save, Loader2, Trash2, RefreshCw } from 'lucide-react';
 import {
   defaultEntityProps,
   fieldsForCategory,
@@ -13,7 +19,10 @@ import { SchemaFieldRenderer } from '../components/SchemaFieldRenderer';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import {
   appendNpcToMapDoc,
+  buildStudioDespawnNpcEmit,
   buildStudioSpawnNpcEmit,
+  removeNpcFromMapDoc,
+  upsertNpcInMapDoc,
 } from '@/shared/game/studioNpcSpawn';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
@@ -40,6 +49,7 @@ function normalizeSpriteKey(input: string): string {
 export const NpcEditorPanel: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
   const currentMapId = useGameStore((state) => state.currentMapId);
+  const mapId = toBaseMapId((currentMapId || '').split('#')[0] || '');
 
   const schema = useMemo(() => getEntitySchema('npc'), []);
   const [entityProps, setEntityProps] = useState<Record<string, unknown>>(() => ({
@@ -50,24 +60,87 @@ export const NpcEditorPanel: React.FC = () => {
   const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Tamer!');
   const [questSlug, setQuestSlug] = useState('');
   const [saving, setSaving] = useState(false);
+  const [list, setList] = useState<MapNpcData[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const clickedTile = useEditorStore((state) => state.clickedTile);
   const [spawnX, setSpawnX] = useState(10);
   const [spawnY, setSpawnY] = useState(10);
 
-  React.useEffect(() => {
-    if (clickedTile) {
+  const reloadList = useCallback(async () => {
+    if (!mapId) {
+      setList([]);
+      return;
+    }
+    const res = await listMapNpcs(mapId);
+    if (res.success) setList(res.data);
+  }, [mapId]);
+
+  useEffect(() => {
+    void reloadList();
+  }, [reloadList]);
+
+  useEffect(() => {
+    if (clickedTile && !selectedId) {
+      setSpawnX(clickedTile.c);
+      setSpawnY(clickedTile.r);
+    } else if (clickedTile && selectedId) {
       setSpawnX(clickedTile.c);
       setSpawnY(clickedTile.r);
     }
-  }, [clickedTile]);
+  }, [clickedTile, selectedId]);
 
   const onFieldChange = (key: string, value: unknown) => {
     setEntityProps((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleAddNpc = async () => {
-    const mapId = toBaseMapId((currentMapId || '').split('#')[0] || '');
+  const handleNew = () => {
+    setSelectedId(null);
+    setEntityProps({
+      ...defaultEntityProps('npc'),
+      displayName: 'Keeper Alex',
+      spriteId: 'heroine',
+    });
+    setNpcDialogue('Welcome to the animist grounds, Tamer!');
+    setQuestSlug('');
+  };
+
+  const handleSelect = (npc: MapNpcData) => {
+    setSelectedId(npc.id);
+    setEntityProps((prev) => ({
+      ...prev,
+      displayName: npc.name,
+      spriteId: npc.sprite || 'adventurer',
+    }));
+    setSpawnX(npc.x);
+    setSpawnY(npc.y);
+    setNpcDialogue(npc.dialogue?.[0] || '');
+  };
+
+  const liveResync = (npc: MapNpcData, mode: 'spawn' | 'replace') => {
+    const live = useGameStore.getState().activeMapData;
+    if (mode === 'replace') {
+      const despawn = buildStudioDespawnNpcEmit(mapId, npc.id);
+      if (despawn) {
+        useGameStore.getState().emitSocketEvent?.('studio_despawn_npc', despawn);
+      }
+      upsertNpcInMapDoc(live, npc);
+    } else {
+      appendNpcToMapDoc(live, npc);
+    }
+    const payload = buildStudioSpawnNpcEmit(mapId, {
+      id: npc.id,
+      name: npc.name,
+      x: npc.x,
+      y: npc.y,
+      sprite: npc.sprite,
+    });
+    if (payload) {
+      useGameStore.getState().emitSocketEvent?.('studio_spawn_npc', payload);
+    }
+  };
+
+  const handleSave = async () => {
     if (!mapId) {
       showToast('No active map — enter a world first.');
       return;
@@ -75,6 +148,29 @@ export const NpcEditorPanel: React.FC = () => {
     const npcName = String(entityProps.displayName || 'Villager');
     const npcSprite = normalizeSpriteKey(String(entityProps.spriteId || 'adventurer'));
     setSaving(true);
+
+    if (selectedId) {
+      const res = await updateMapNpc({
+        mapId,
+        npcId: selectedId,
+        name: npcName,
+        sprite: npcSprite,
+        x: spawnX,
+        y: spawnY,
+        greeting: npcDialogue,
+        questSlug: questSlug.trim() || undefined,
+      });
+      setSaving(false);
+      if (res.success && res.npc) {
+        liveResync(res.npc, 'replace');
+        showToast(`Updated ${npcName} — live resync.`);
+        await reloadList();
+      } else {
+        showToast(res.error || 'Failed to update NPC');
+      }
+      return;
+    }
+
     const res = await placeMapNpc({
       mapId,
       name: npcName,
@@ -86,21 +182,32 @@ export const NpcEditorPanel: React.FC = () => {
     });
     setSaving(false);
     if (res.success && res.npc) {
-      const live = useGameStore.getState().activeMapData;
-      appendNpcToMapDoc(live, res.npc);
-      const payload = buildStudioSpawnNpcEmit(mapId, {
-        id: res.npc.id,
-        name: res.npc.name,
-        x: res.npc.x,
-        y: res.npc.y,
-        sprite: res.npc.sprite,
-      });
-      if (payload) {
-        useGameStore.getState().emitSocketEvent?.('studio_spawn_npc', payload);
-      }
+      liveResync(res.npc, 'spawn');
+      setSelectedId(res.npc.id);
       showToast(`Placed ${npcName} on ${mapId} (${res.count} NPCs) — live spawn.`);
+      await reloadList();
     } else {
       showToast(res.error || 'Failed to save NPC');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!mapId || !selectedId) return;
+    if (!confirm(`Delete ${selectedId} from ${mapId}?`)) return;
+    setSaving(true);
+    const res = await deleteMapNpc({ mapId, npcId: selectedId });
+    setSaving(false);
+    if (res.success) {
+      removeNpcFromMapDoc(useGameStore.getState().activeMapData, selectedId);
+      const despawn = buildStudioDespawnNpcEmit(mapId, selectedId);
+      if (despawn) {
+        useGameStore.getState().emitSocketEvent?.('studio_despawn_npc', despawn);
+      }
+      showToast(`Deleted ${selectedId} — live despawn.`);
+      handleNew();
+      await reloadList();
+    } else {
+      showToast(res.error || 'Failed to delete NPC');
     }
   };
 
@@ -112,12 +219,41 @@ export const NpcEditorPanel: React.FC = () => {
   return (
     <CatalogEditorShell
       title="NPC Catalog"
-      blurb={`Schema-driven place tool · map ${currentMapId || '—'} · WorldMap.npcsData`}
+      blurb={`Place / edit / delete · map ${currentMapId || '—'} · WorldMap.npcsData`}
+      dirty={!!selectedId}
       toolbar={
-        <span className="flex items-center gap-1 text-[10px] text-slate-500">
-          <UserPlus className="h-3.5 w-3.5 text-[#cbb26a]" />
-          Click a tile, fill props, Save
-        </span>
+        <div className="flex gap-1">
+          <button type="button" onClick={() => void reloadList()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh list">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New NPC">
+            <UserPlus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      }
+      list={
+        <div className="space-y-1">
+          {list.length === 0 && (
+            <p className="p-2 text-[10px] text-slate-500">No NPCs on this map yet.</p>
+          )}
+          {list.map((npc) => (
+            <button
+              key={npc.id}
+              type="button"
+              onClick={() => handleSelect(npc)}
+              className={`w-full rounded border px-2 py-1.5 text-left transition-colors ${
+                selectedId === npc.id
+                  ? 'border-amber-600/50 bg-amber-900/20 text-amber-100'
+                  : 'border-transparent text-slate-300 hover:bg-white/5'
+              }`}
+            >
+              <div className="truncate text-[11px] font-bold">{npc.name}</div>
+              <div className="truncate text-[9px] text-slate-500">
+                {npc.id} · ({npc.x},{npc.y})
+              </div>
+            </button>
+          ))}
+        </div>
       }
     >
       <div className="space-y-3">
@@ -178,17 +314,32 @@ export const NpcEditorPanel: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void handleAddNpc()}
-          disabled={saving}
-          className="flex w-full items-center justify-center gap-1 rounded bg-[#806f47]/80 py-1.5 font-bold text-[#050b14] hover:bg-[#806f47] disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Save NPC to Map
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className="flex flex-1 items-center justify-center gap-1 rounded bg-[#806f47]/80 py-1.5 font-bold text-[#050b14] hover:bg-[#806f47] disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {selectedId ? 'Update NPC' : 'Save NPC to Map'}
+          </button>
+          {selectedId && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={saving}
+              className="rounded border border-red-800/50 px-3 py-1.5 text-red-300 hover:bg-red-900/30 disabled:opacity-50"
+              title="Delete NPC"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
         <p className="text-[9px] text-slate-600">
-          Internal id preview: {slugifyNpcId(String(entityProps.displayName || 'villager'))}
+          {selectedId
+            ? `Editing ${selectedId}`
+            : `Internal id preview: ${slugifyNpcId(String(entityProps.displayName || 'villager'))}`}
         </p>
       </div>
     </CatalogEditorShell>

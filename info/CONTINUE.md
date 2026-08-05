@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0–P7 on main; P8–P12 author/player queue)  
+**Last updated:** 2026-08-05 (P0–P11 on main; P12 player stubs this PR)  
 **Point every new session at this file first.**
 
 ---
@@ -11,15 +11,18 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#32  
-2. **Open PRs:** #33 overlays · #34 NPC lifecycle · #35 def undo · #36 smokes · this player-stubs PR  
+1. **Done on main:** #28–#36 (product gaps → … → catalog def undo → manual smokes)  
+2. **In flight:** Party invite + TB creature swap — `logs/2026-08-05-lobby-player-stubs.md`  
 3. **After merge:** polish / Trail content — not foundation rebuild
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
 | **P0–P7** | Depth → NPC live spawn | **On main** (#28–#32) |
-| **P8–P11** | Overlays · NPC lifecycle · smokes · def undo | **PRs #33–#36** |
-| **P12** | Party invite + TB creature swap | **This branch** |
+| **P8** | Warp/spawn author overlays | **On main** (#33) |
+| **P9** | NPC edit/delete/live despawn | **On main** (#34) |
+| **P10** | Manual smokes (create/save + lobby MP) | **On main** (#36) |
+| **P11** | Definition undo Creature + Dialogue | **On main** (#35) |
+| **P12** | Party invite + TB creature swap | **This branch** (#37) |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
