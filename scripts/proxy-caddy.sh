@@ -204,12 +204,17 @@ list_proxies() {
       #   subdomain {
       #     reverse_proxy host:port
       #   }
-      if (match($0, /^[[:space:]]*([A-Za-z0-9._-]+)[[:space:]]*\{[[:space:]]*$/, m)) {
-        domain=m[1]
+      if ($0 ~ /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/) {
+        domain=$0
+        gsub(/^[[:space:]]+/, "", domain)
+        gsub(/[[:space:]]*\{[[:space:]]*$/, "", domain)
         next
       }
-      if (domain != "" && match($0, /^[[:space:]]*reverse_proxy[[:space:]]+([^[:space:]]+)[[:space:]]*$/, m)) {
-        printf("%s -> %s\n", domain, m[1])
+      if (domain != "" && $0 ~ /^[[:space:]]*reverse_proxy[[:space:]]+/) {
+        up=$0
+        gsub(/^[[:space:]]*reverse_proxy[[:space:]]+/, "", up)
+        gsub(/[[:space:]]*$/, "", up)
+        printf("%s -> %s\n", domain, up)
         domain=""
       }
     }
@@ -274,8 +279,10 @@ add_proxy() {
 
     cap==1 {
       capText = capText $0 "\n"
-      if (match($0, /^[[:space:]]*([A-Za-z0-9._-]+)[[:space:]]*\{[[:space:]]*$/, m)) {
-        capDomain=m[1]
+      if (capDomain == "" && $0 ~ /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/) {
+        capDomain=$0
+        gsub(/^[[:space:]]+/, "", capDomain)
+        gsub(/[[:space:]]*\{[[:space:]]*$/, "", capDomain)
       }
       if ($0 ~ /^[[:space:]]*\}[[:space:]]*$/) {
         if (capDomain == targetDomain) {
@@ -316,9 +323,11 @@ remove_proxy() {
     managed!=1 { print; next }
 
     # Skip the entire block matching targetDomain; preserve all other blocks.
-    cap==0 && match($0, /^[[:space:]]*([A-Za-z0-9._-]+)[[:space:]]*\{[[:space:]]*$/, m) {
+    cap==0 && $0 ~ /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/ {
       cap=1
-      capDomain=m[1]
+      capDomain=$0
+      gsub(/^[[:space:]]+/, "", capDomain)
+      gsub(/[[:space:]]*\{[[:space:]]*$/, "", capDomain)
       capText=""
       next
     }
