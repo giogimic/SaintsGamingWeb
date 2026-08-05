@@ -1011,6 +1011,34 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
   }, [isDevEditorOpen, isEngineReady]);
 
+  const showWarpOverlays = useEditorStore((s) => s.showWarpOverlays);
+  const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
+
+  // Editor-only warp / NPC / spawn-pin markers (never serialized).
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine || !isEngineReady) return;
+    if (!isDevEditorOpen) {
+      engine.clearAuthorOverlays();
+      return;
+    }
+    const map = useGameStore.getState().activeMapData || activeMap;
+    const gates = normalizeGates(map?.gates);
+    engine.setAuthorOverlays({
+      gates: showWarpOverlays ? gates : [],
+      spawnSourceGates: showSpawnOverlays ? gates : [],
+      npcs: showSpawnOverlays ? (map?.npcs || []) : [],
+      showGateSpawns: showSpawnOverlays,
+    });
+  }, [
+    isDevEditorOpen,
+    isEngineReady,
+    showWarpOverlays,
+    showSpawnOverlays,
+    activeMap,
+    activeMapData,
+  ]);
+
   // Keyboard WASD / interact — playtest only (editor runtime keeps sim dormant)
   useEffect(() => {
     if (isDevEditorOpen) return;

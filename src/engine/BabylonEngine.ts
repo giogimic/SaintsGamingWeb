@@ -37,6 +37,13 @@ import {
   tilesetUvForOverlayPlane,
   type TilesetUvInput,
 } from "../shared/game/tileBatchHelpers";
+import {
+  AUTHOR_OVERLAY_Y,
+  authorOverlayGateMarkers,
+  authorOverlayNpcMarkers,
+  authorOverlaySpawnMarkers,
+  type AuthorOverlaysInput,
+} from "../shared/game/authorOverlays";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -773,6 +780,7 @@ export class BabylonEngine {
     this.objectMeshes = [];
     this.waterMaterials = [];
     this.clearPaintOverlays();
+    this.clearAuthorOverlays();
     this.batchedQuadIndex.clear();
     this.tilesetMeshBySource.clear();
     // Stale logic planes would keep the previous map's dimensions; the caller
@@ -1594,6 +1602,74 @@ export class BabylonEngine {
       overlay.markVerticesDataAsUpdatable(VertexBuffer.UVKind, true);
     } catch { /* ignore */ }
     overlay.setVerticesData(VertexBuffer.UVKind, uvData, true);
+  }
+
+  // --- AUTHOR OVERLAYS (editor-only; never serialized) ---
+
+  private authorOverlayMeshes: Mesh[] = [];
+  private authorOverlayMats: Partial<Record<"gate" | "npc" | "spawn", StandardMaterial>> = {};
+
+  private getAuthorOverlayMaterial(kind: "gate" | "npc" | "spawn"): StandardMaterial {
+    let mat = this.authorOverlayMats[kind];
+    if (mat) return mat;
+    mat = new StandardMaterial(`author_overlay_${kind}`, this.scene);
+    mat.emissiveColor =
+      kind === "gate"
+        ? new Color3(0.95, 0.55, 0.15)
+        : kind === "npc"
+          ? new Color3(0.35, 0.75, 1.0)
+          : new Color3(0.45, 0.95, 0.45);
+    mat.diffuseColor = mat.emissiveColor;
+    mat.alpha = 0.55;
+    mat.backFaceCulling = false;
+    mat.disableLighting = true;
+    this.authorOverlayMats[kind] = mat;
+    return mat;
+  }
+
+  public clearAuthorOverlays() {
+    this.authorOverlayMeshes.forEach((m) => m.dispose());
+    this.authorOverlayMeshes = [];
+  }
+
+  /**
+   * Rebuild editor-only warp / NPC / spawn-pin markers.
+   * Pass null to clear. Meshes are pick-through (`isPickable = false`).
+   */
+  public setAuthorOverlays(input: AuthorOverlaysInput | null) {
+    this.clearAuthorOverlays();
+    if (!input) return;
+
+    const tileSize = this.currentTileSize || 1;
+    const markers = [
+      ...authorOverlayGateMarkers(input.gates),
+      ...(input.showGateSpawns
+        ? authorOverlaySpawnMarkers(input.spawnSourceGates ?? input.gates)
+        : []),
+      ...authorOverlayNpcMarkers(input.npcs),
+    ];
+
+    for (const m of markers) {
+      const { posX, posZ } = tileCellWorldPos(
+        m.y,
+        m.x,
+        this.currentMapWidth,
+        this.currentMapHeight,
+        tileSize
+      );
+      const size = tileSize * (m.kind === "spawn" ? 0.45 : 0.7);
+      const plane = MeshBuilder.CreatePlane(
+        `author_${m.kind}_${m.key}`,
+        { size },
+        this.scene
+      );
+      plane.rotation.x = Math.PI / 2;
+      plane.position = new Vector3(posX, AUTHOR_OVERLAY_Y, posZ);
+      plane.parent = this.rootNode;
+      plane.isPickable = false;
+      plane.material = this.getAuthorOverlayMaterial(m.kind);
+      this.authorOverlayMeshes.push(plane);
+    }
   }
 
   // --- LOGIC GRID OVERLAY SYSTEM ---
