@@ -1,5 +1,5 @@
 import { GameEngine } from "./GameEngine";
-import { toBaseMapId } from "@/shared/net/mapIds";
+import { isPublicChannelInstanceId, pickPublicShardAssignment, toBaseMapId } from "@/shared/net/mapIds";
 import { studioPieRoomId } from "@/shared/game/studioSession";
 import { DEMO_MAP_ID, DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
@@ -294,31 +294,25 @@ export class WorldManager {
       return instance;
     }
 
-    // Public maps use dynamic sharding
-    // Find an existing shard with space
+    // Public maps use dynamic sharding — ONLY `_chN` rooms.
+    // Private (`MAP_<accountId>`) and PIE (`studio_pie_*`) must never be selected.
+    const pick = pickPublicShardAssignment(
+      baseMapId,
+      Array.from(this.instances.values()).map((inst) => ({
+        instanceId: inst.instanceId,
+        mapId: inst.mapId,
+        playerCount: inst.playerCount,
+      })),
+      MAX_PLAYERS_PER_SHARD
+    );
+
     let availableShard: MapInstance | undefined;
-    let maxShardNum = 0;
-
-    for (const [id, instance] of this.instances.entries()) {
-      if (instance.mapId === baseMapId && !id.includes("_acc")) {
-        // Extract channel number (e.g., SAINTS_VILLAGE_ch1 -> 1)
-        const match = id.match(/_ch(\d+)$/);
-        if (match) {
-          const shardNum = parseInt(match[1]);
-          if (shardNum > maxShardNum) maxShardNum = shardNum;
-        }
-
-        if (instance.playerCount < MAX_PLAYERS_PER_SHARD) {
-          availableShard = instance;
-          break;
-        }
-      }
+    if (pick.action === "join") {
+      availableShard = this.instances.get(pick.instanceId);
     }
-
-    // If no available shard, create a new one
     if (!availableShard) {
-      const newShardNum = maxShardNum + 1;
-      const newInstanceId = `${baseMapId}_ch${newShardNum}`;
+      const newInstanceId =
+        pick.action === "create" ? pick.instanceId : `${baseMapId}_ch1`;
       availableShard = this.createInstance(newInstanceId, baseMapId);
     }
 
@@ -330,7 +324,14 @@ export class WorldManager {
     const instance = this.instances.get(instanceId);
     if (instance) {
       instance.playerCount = Math.max(0, instance.playerCount - 1);
-      // Optional: Clean up empty instances to free memory (skip for now to avoid rapid thrashing)
+      // Drop empty private/PIE rooms so they cannot be mistaken for public shards.
+      // Keep empty public `_chN` rooms warm to avoid thrashing channel numbers.
+      if (
+        instance.playerCount === 0 &&
+        !isPublicChannelInstanceId(instanceId)
+      ) {
+        this.instances.delete(instanceId);
+      }
     }
   }
 

@@ -2,7 +2,11 @@ import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerInput, EntityType } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
-import { isSameBaseMap, toBaseMapId } from "@/shared/net/mapIds";
+import {
+  canPartyForceJoinInstance,
+  isSameBaseMap,
+  toBaseMapId,
+} from "@/shared/net/mapIds";
 import { DEMO_MAP_ID } from "./demoMapSeed";
 import { grantsForDamageTaken, grantsForKill } from "@/shared/game/combatSkillXp";
 import { prisma } from "@/web/lib/prisma";
@@ -203,8 +207,8 @@ export class PlayerManager {
         // Find if the leader is online and on the exact same base map
         // We need to iterate over this.players to find the leader
         const leader = Array.from(this.players.values()).find(p => p.accountId === leaderId);
-        if (leader && leader.mapId.startsWith(requestedMapId)) {
-          // Force join the leader's exact instance!
+        if (leader && canPartyForceJoinInstance(leader.mapId, requestedMapId)) {
+          // Force join the leader's public channel only (never private/PIE).
           const joined = this.worldManager.forceJoinInstance(leader.mapId, accountId);
           if (joined) instanceId = leader.mapId;
         }

@@ -147,9 +147,9 @@ curl --max-time 120 http://localhost:3000/lobby
 
 | Phase | Status |
 | :--- | :--- |
-| P0 depth + north paint | OPEN |
-| P1 create/save | OPEN (create fill bug confirmed in code) |
-| P2 lobby MP | OPEN (verify first; fix if broken) |
-| P3 polish | PARKED until P0–P2 |
+| P0 depth + north paint | **VERIFIED** — lobby north avatar above grass (`logs/2026-08-05-studio-p0-demo-depth-paint.md`) |
+| P1 create/save | **CODE LANDED** — `logs/2026-08-05-studio-p1-map-create-save.md` |
+| P2 lobby MP | **CODE LANDED** — `logs/2026-08-05-studio-p2-mp-p3-polish.md` |
+| P3 polish | **CODE LANDED** — brush/erase + definition undo + PIE options (`logs/2026-08-05-studio-p2-mp-p3-polish.md`) |
 
 Update this file as each phase lands.

@@ -1,21 +1,25 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (priority plan for demo depth / map save / MP)  
+**Last updated:** 2026-08-05 (P0–P3 landed on branch)  
 **Point every new session at this file first.**
 
 ---
 
 ## Current Focus
 
-**P0 → P2 product gaps** (not catalog polish). Full plan:
+**P0 → P3 product gaps.** Full plan:
 
-→ **`logs/2026-08-05-studio-game-priority-plan.md`**
+→ **`logs/2026-08-05-studio-game-priority-plan.md`**  
+→ P0: `logs/2026-08-05-studio-p0-demo-depth-paint.md`  
+→ P1: `logs/2026-08-05-studio-p1-map-create-save.md`  
+→ P2/P3: `logs/2026-08-05-studio-p2-mp-p3-polish.md`
 
-| Priority | Issue |
-| :--- | :--- |
-| **P0** | DEMO north half: character under ground tiles; those cells hard/impossible to paint |
-| **P1** | Studio create/save maps unreliable (create copies logic→visual GIDs; auth/validation gates) |
-| **P2** | Lobby multiplayer visibility (test on `/lobby` only; Studio is private/PIE) |
+| Priority | Issue | Status |
+| :--- | :--- | :--- |
+| **P0** | DEMO north depth + paint | **Verified** — `/lobby` north avatar above grass |
+| **P1** | Map create/save | **Code landed** — manual create/save smoke |
+| **P2** | Lobby multiplayer visibility | **Code landed** — two-browser `/lobby` smoke |
+| **P3** | Brush/erase, definition undo, PIE options | **Code landed** — Quest blur-undo + Playtest toggles |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
@@ -23,9 +27,10 @@ Before coding, read:
 
 1. **This file**
 2. **`logs/2026-08-05-studio-game-priority-plan.md`**
-3. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
-4. `logs/studio-first-hybrid-foundation.md`
-5. Trail/Spyder smokes as needed
+3. Latest P0/P1/P2 impl logs under `logs/2026-08-05-studio-*`
+4. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
+5. `logs/studio-first-hybrid-foundation.md`
+6. Trail/Spyder smokes as needed
 
 **Do not** reintroduce deleted ghosts (Pixi battle, Phase-5 ClassEditor/GameConfigManager, CreatureDb, `:3001` party client, dual TB overlays).
 

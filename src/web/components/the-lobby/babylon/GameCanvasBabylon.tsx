@@ -197,10 +197,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         useGameStore.setState({ currentMapId: gate.targetMapId });
         setPlayerPosition(spawn);
         const p = useGameStore.getState().player;
+        const inStudio = getIsEditorMode();
+        const creation = useEditorStore.getState().isCreationMode;
         emitSocketEvent?.('join_map', {
           accountId: p.accountId,
           mapId: targetBase,
-          lobby: !getIsEditorMode(),
+          lobby: !inStudio,
+          // Studio must stay on private / PIE — never leak into public DEMO_chN.
+          isPrivate: inStudio && creation,
+          pie: inStudio && !creation,
           x: spawn.x,
           y: spawn.y,
           name: p.name || 'Player',
@@ -617,8 +622,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
         Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
           babylonEngine._renderedSockets.add(socketId);
-          const targetX = other.x || 6;
-          const targetY = other.y || 2;
+          // Prefer ?? so tile (0,0) is not remapped to demo defaults.
+          const targetX = other.x ?? 6;
+          const targetY = other.y ?? 2;
           
           const ox = targetX - mapWidth / 2;
           const oz = mapHeight / 2 - targetY;

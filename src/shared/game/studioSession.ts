@@ -41,7 +41,8 @@ export function isCreationActive(gate: StudioGameplayGate): boolean {
 
 /**
  * Soft-disable combat, encounters, and loot pickup while authoring.
- * Playtest (`!isCreationMode`) keeps play systems on.
+ * Playtest (`!isCreationMode`) keeps play systems on unless PIE options
+ * suppress encounters (see `shouldPieSuppressEncounters` in pieOptions.ts).
  */
 export function shouldSuppressGameplaySystems(gate: StudioGameplayGate): boolean {
   return isCreationActive(gate);

@@ -34,6 +34,7 @@ import {
   shouldShowGameplayHud,
   shouldSuppressGameplaySystems,
 } from '@/shared/game/studioSession';
+import { shouldPieSuppressEncounters } from '@/shared/game/pieOptions';
 import {
   STUDIO_PIE_CHANGED_EVENT,
   type StudioPieChangedDetail,
@@ -96,13 +97,18 @@ export default function TheLobby({
   const isCreationMode = useEditorStore((state) => state.isCreationMode);
   /** Studio editor tools only — never treat /lobby as create-mode (store defaults true). */
   const studioToolsOpen = enableStudio && isCreationMode;
+  const pieOptions = useEditorStore((state) => state.pieOptions);
   const activeBrushTileId = useEditorStore((state) => state.activeBrushTileId);
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setClickedTile = useEditorStore((state) => state.setClickedTile);
-  const suppressGameplay = shouldSuppressGameplaySystems({
-    isEditorMode: enableStudio,
-    isCreationMode: studioToolsOpen,
-  });
+  const suppressGameplay =
+    shouldSuppressGameplaySystems({
+      isEditorMode: enableStudio,
+      isCreationMode: studioToolsOpen,
+    }) ||
+    (enableStudio &&
+      !isCreationMode &&
+      shouldPieSuppressEncounters(pieOptions));
   const showGameplayHud = shouldShowGameplayHud({
     isEditorMode: enableStudio,
     isCreationMode: studioToolsOpen,
@@ -405,7 +411,11 @@ export default function TheLobby({
       }
 
       const effectiveAccountId = session.user.id || state.player.accountId;
-      if (effectiveAccountId) {
+      // Do not join a public shard from the title/character-select screen —
+      // wait until EXPLORING (character load / Studio author session).
+      const inWorld =
+        state.gameMode === 'EXPLORING' || state.gameMode === 'BATTLE';
+      if (effectiveAccountId && inWorld) {
         if (!state.player.accountId || state.player.accountId !== session.user.id) {
           useGameStore.getState().hydratePlayer({ accountId: session.user.id });
         }
@@ -418,8 +428,8 @@ export default function TheLobby({
           lobby: !enableStudio,
           isPrivate: enableStudio,
           pie: enableStudio && !useEditorStore.getState().isCreationMode,
-          x: state.player.position?.x ?? 6,
-          y: state.player.position?.y ?? 2,
+          x: state.player.position?.x ?? 14,
+          y: state.player.position?.y ?? 15,
           name: state.player.name || 'Player',
           spriteId: state.player.spriteId || 'adventurer'
         });
@@ -450,6 +460,13 @@ export default function TheLobby({
     socket.on('map_joined', (data) => {
       const state = useGameStore.getState();
       state.setInstanceId(data.instanceId);
+      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        const peerCount = Object.keys(useGameStore.getState().otherPlayers || {}).length;
+        console.debug(
+          '[lobby] map_joined',
+          { instanceId: data.instanceId, mapId: data.mapId, peerHint: peerCount }
+        );
+      }
       // Server may remap retired maps (SAINTS_VILLAGE → DEMO_SANDBOX).
       // Compare base ids — setCurrentMapId clears activeMapData and would wipe Studio paint state.
       const joinedBase = toBaseMapId(String(data.mapId || ''));
@@ -469,6 +486,12 @@ export default function TheLobby({
       const filtered = { ...players };
       if (socket.id) delete filtered[socket.id];
       useGameStore.getState().setOtherPlayers(filtered);
+      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        console.debug('[lobby] map_players', {
+          count: Object.keys(filtered).length,
+          instanceId: useGameStore.getState().instanceId,
+        });
+      }
     });
     
     socket.on('player_joined', (data) => {

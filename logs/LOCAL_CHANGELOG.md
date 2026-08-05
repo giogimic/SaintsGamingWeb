@@ -1,5 +1,33 @@
 # Local Changelog
 
+## 2026-08-05 — P2/P3 finish (definition undo + PIE options)
+
+`pickPublicShardAssignment` wired into `WorldManager`; definition snapshot undo in Quest catalog; PIE pause-spawners/god-mode on Playtest chip gate encounters.  
+See `logs/2026-08-05-studio-p2-mp-p3-polish.md`.
+
+---
+
+## 2026-08-05 — P2 lobby MP + P3 polish
+
+Public shard filter no longer picks Studio private/PIE rooms; party/warp/join hardened; erase void overlay + brush reset on layer switch.  
+See `logs/2026-08-05-studio-p2-mp-p3-polish.md`.
+
+---
+
+## 2026-08-05 — P1 Studio map create / save
+
+Create New Map no longer copies logic→visual GIDs; Save requires live `activeMapData`; louder auth/validation toasts; API repairs bad visuals on create/write.  
+See `logs/2026-08-05-studio-p1-map-create-save.md`.
+
+---
+
+## 2026-08-05 — P0 DEMO north depth + paint
+
+Batched tileset alpha-blend buried northern sprites/overlays. Switched to ALPHATEST depth write, pick-plane-only hits, softer camera margin, slightly higher avatar clearance.  
+See `logs/2026-08-05-studio-p0-demo-depth-paint.md`.
+
+---
+
 ## 2026-08-05 — Studio / game priority plan
 
 Status + ordered plan for reported gaps (north DEMO depth/paint, map create/save, lobby MP).  

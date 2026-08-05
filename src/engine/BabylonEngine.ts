@@ -9,6 +9,7 @@ import {
   DirectionalLight,
   ShadowGenerator,
   MeshBuilder,
+  Material,
   StandardMaterial,
   Texture,
   DynamicTexture,
@@ -22,6 +23,11 @@ import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
 import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
 import { isTilePickTarget } from "../shared/game/tilePaint";
+import {
+  ENTITY_GROUND_CLEARANCE,
+  clampCameraFocus,
+  paintOverlayHeight,
+} from "../shared/game/babylonViewHelpers";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -206,6 +212,38 @@ export class BabylonEngine {
   };
   private selectionRingMesh?: Mesh;
   private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
+  /** Covers erased cells so batched tileset art disappears without a full remesh. */
+  private eraseVoidMaterial?: StandardMaterial;
+
+  /**
+   * Ground tilesets are one batched mesh per image. Alpha-*blend* sorts that
+   * whole mesh by its center — north of center, sprites + paint overlays draw
+   * first and then get buried under the ground. Alpha-*test* writes depth per
+   * texel so characters stay above the plane everywhere.
+   */
+  private configureTilesetMaterial(mat: StandardMaterial) {
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.transparencyMode = Material.MATERIAL_ALPHATEST;
+    mat.alphaCutOff = 0.05;
+    mat.forceDepthWrite = true;
+    mat.backFaceCulling = false;
+    mat.specularColor = new Color3(0.05, 0.05, 0.05);
+    mat.specularPower = 32;
+  }
+
+  private getEraseVoidMaterial(): StandardMaterial {
+    if (!this.eraseVoidMaterial) {
+      const mat = new StandardMaterial('erase_void_mat', this.scene);
+      // Match scene clearColor so GID 0 reads as an empty hole.
+      mat.diffuseColor = new Color3(0.02, 0.04, 0.06);
+      mat.specularColor = new Color3(0, 0, 0);
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      mat.forceDepthWrite = true;
+      this.eraseVoidMaterial = mat;
+    }
+    return this.eraseVoidMaterial;
+  }
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -550,22 +588,16 @@ export class BabylonEngine {
    * Move camera instantly to a world position (used on map load / spawn)
    */
   public snapCameraTo(worldX: number, worldZ: number) {
-    const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
-    const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
-    // Soft edge margin: allow focus on north/south border tiles so avatars
-    // and Studio paint stay reachable (hard viewHalf clamp hid top rows).
-    const margin = Math.max(this.currentTileSize * 0.5, 0.5);
-
-    if (halfWidth > margin) {
-      worldX = Math.max(-halfWidth + margin, Math.min(halfWidth - margin, worldX));
-    } else {
-      worldX = 0;
-    }
-    if (halfHeight > margin) {
-      worldZ = Math.max(-halfHeight + margin, Math.min(halfHeight - margin, worldZ));
-    } else {
-      worldZ = 0;
-    }
+    // Soft edge margin: keep north/south border tiles in frame for avatars + paint.
+    const clamped = clampCameraFocus(
+      worldX,
+      worldZ,
+      this.currentMapWidth,
+      this.currentMapHeight,
+      this.currentTileSize
+    );
+    worldX = clamped.x;
+    worldZ = clamped.z;
 
     this.cameraTargetX = worldX;
     this.cameraTargetZ = worldZ;
@@ -581,20 +613,15 @@ export class BabylonEngine {
   public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.08) {
     if (this.editorCameraMode) return;
 
-    const halfWidth = (this.currentMapWidth * this.currentTileSize) / 2;
-    const halfHeight = (this.currentMapHeight * this.currentTileSize) / 2;
-    const margin = Math.max(this.currentTileSize * 0.5, 0.5);
-
-    if (halfWidth > margin) {
-      targetX = Math.max(-halfWidth + margin, Math.min(halfWidth - margin, targetX));
-    } else {
-      targetX = 0;
-    }
-    if (halfHeight > margin) {
-      targetZ = Math.max(-halfHeight + margin, Math.min(halfHeight - margin, targetZ));
-    } else {
-      targetZ = 0;
-    }
+    const clamped = clampCameraFocus(
+      targetX,
+      targetZ,
+      this.currentMapWidth,
+      this.currentMapHeight,
+      this.currentTileSize
+    );
+    targetX = clamped.x;
+    targetZ = clamped.z;
 
     this.cameraTargetX = targetX;
     this.cameraTargetZ = targetZ;
@@ -902,14 +929,15 @@ export class BabylonEngine {
             this.tilesetTextureCache.set(imageSource, tex);
           }
           mat.diffuseTexture = tex;
-          mat.useAlphaFromDiffuseTexture = true;
-          mat.backFaceCulling = false;
-          // Subtly enhance color for the classic RPG vibe
-          mat.specularColor = new Color3(0.05, 0.05, 0.05);
-          mat.specularPower = 32;
+          this.configureTilesetMaterial(mat);
           this.tilesetMaterialCache.set(imageSource, mat);
+        } else {
+          // Re-apply in case an older cache entry still used alpha-blend.
+          this.configureTilesetMaterial(mat);
         }
         mesh.material = mat;
+        // Pick through map_pick_plane only — batched alpha meshes mis-hit cells.
+        mesh.isPickable = false;
         this.tileMeshes.push(mesh);
       });
     }
@@ -1103,7 +1131,7 @@ export class BabylonEngine {
     }
 
     // Invisible full-map pick plane — batched `tileset_mesh_*` quads skip empty
-    // cells, so clicks would miss holes / never resolve (r,c) without this.
+    // cells and are non-pickable; this plane is the sole click authority.
     const pickW = width * tileSize;
     const pickH = height * tileSize;
     const pickPlane = MeshBuilder.CreateGround(
@@ -1111,7 +1139,8 @@ export class BabylonEngine {
       { width: pickW, height: pickH },
       this.scene
     );
-    pickPlane.position = new Vector3(0, -0.01, 0);
+    // Slightly above y=0 so the ray hits even when ground quads write depth.
+    pickPlane.position = new Vector3(0, 0.001, 0);
     pickPlane.parent = this.rootNode;
     pickPlane.isPickable = true;
     pickPlane.isVisible = false;
@@ -1325,15 +1354,31 @@ export class BabylonEngine {
     const meshName = `tile_${layerIdx}_${r}_${c}`;
     const legacyMesh = this.scene.getMeshByName(meshName) as Mesh | null;
 
-    // Erase → drop overlay (batch still shows old art until map reload/save).
+    // Erase → cover batched art with a void plate (GID 0 skips quads on remount).
     if (!tileId) {
       const key = `${layerIdx}_${r}_${c}`;
-      const overlay = this.paintOverlayMeshes.get(key);
-      if (overlay) {
-        overlay.dispose();
-        this.paintOverlayMeshes.delete(key);
+      let overlay = this.paintOverlayMeshes.get(key);
+      const tileSize = this.currentTileSize || 1;
+      const posX = (c - this.currentMapWidth / 2) * tileSize;
+      const posZ = (this.currentMapHeight / 2 - r) * tileSize;
+      const y = paintOverlayHeight(layerIdx);
+
+      if (!overlay) {
+        overlay = MeshBuilder.CreatePlane(
+          `paint_${layerIdx}_${r}_${c}`,
+          { size: tileSize, updatable: true },
+          this.scene
+        );
+        overlay.rotation.x = Math.PI / 2;
+        overlay.parent = this.rootNode;
+        overlay.isPickable = false;
+        this.paintOverlayMeshes.set(key, overlay);
       }
-      if (legacyMesh && legacyMesh.material) {
+      overlay.position = new Vector3(posX, y, posZ);
+      overlay.material = this.getEraseVoidMaterial();
+      overlay.isVisible = true;
+
+      if (legacyMesh) {
         legacyMesh.isVisible = false;
       }
       return;
@@ -1379,10 +1424,10 @@ export class BabylonEngine {
           this.tilesetTextureCache.set(ts.imageSource, tex);
         }
         mat.diffuseTexture = tex;
-        mat.useAlphaFromDiffuseTexture = true;
-        mat.backFaceCulling = false;
-        mat.specularColor = new Color3(0.05, 0.05, 0.05);
+        this.configureTilesetMaterial(mat);
         this.tilesetMaterialCache.set(ts.imageSource, mat);
+      } else {
+        this.configureTilesetMaterial(mat);
       }
       legacyMesh.material = mat;
       legacyMesh.isVisible = true;
@@ -1399,9 +1444,7 @@ export class BabylonEngine {
     const tileSize = this.currentTileSize || 1;
     const posX = (c - this.currentMapWidth / 2) * tileSize;
     const posZ = (this.currentMapHeight / 2 - r) * tileSize;
-    // Batched layer `i` sits at `i * 0.02`. Stay inside our own layer's slot so
-    // painting layer 0 is not drawn over the art of layer 1+.
-    const y = layerIdx * 0.02 + 0.011;
+    const y = paintOverlayHeight(layerIdx);
 
     if (!overlay) {
       overlay = MeshBuilder.CreatePlane(
@@ -1429,10 +1472,10 @@ export class BabylonEngine {
         this.tilesetTextureCache.set(ts.imageSource, tex);
       }
       mat.diffuseTexture = tex;
-      mat.useAlphaFromDiffuseTexture = true;
-      mat.backFaceCulling = false;
-      mat.specularColor = new Color3(0.05, 0.05, 0.05);
+      this.configureTilesetMaterial(mat);
       this.tilesetMaterialCache.set(ts.imageSource, mat);
+    } else {
+      this.configureTilesetMaterial(mat);
     }
     overlay.material = mat;
     try {
@@ -1733,7 +1776,7 @@ private resolveTilePick(
 
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
-    const targetPos = new Vector3(entity.x, 0.85, entity.y);
+    const targetPos = new Vector3(entity.x, ENTITY_GROUND_CLEARANCE, entity.y);
     const resolvedConfig = this.resolveSpriteConfig(entity);
     const singleFrame = resolvedConfig.columns <= 1 && resolvedConfig.rows <= 1;
 
