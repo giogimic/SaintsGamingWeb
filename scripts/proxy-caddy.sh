@@ -184,9 +184,9 @@ parse_upstream() {
 list_proxies() {
   ensure_markers
   $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" '
-    $0 ~ begin { in=1; next }
-    $0 ~ end { in=0 }
-    in==1 {
+    $0 ~ begin { managed=1; next }
+    $0 ~ end { managed=0 }
+    managed==1 {
       # Expected block:
       #   subdomain {
       #     reverse_proxy host:port
@@ -240,16 +240,16 @@ add_proxy() {
       printf("%s", s);
     }
 
-    $0 ~ begin { in=1; print; next }
+    $0 ~ begin { managed=1; print; next }
     $0 ~ end {
       # If we never saw the domain block, append it right before END_MARK.
-      if (in==1 && updated!=1) emit_block(targetDomain, targetUpstream);
-      in=0
+      if (managed==1 && updated!=1) emit_block(targetDomain, targetUpstream);
+      managed=0
       print
       next
     }
 
-    in!=1 { print; next }
+    managed!=1 { print; next }
 
     # Inside managed section:
     # We capture blocks for each domain and decide to keep/update.
@@ -298,9 +298,9 @@ remove_proxy() {
   tmp="$(mktemp)"
 
   $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" '
-    $0 ~ begin { in=1; print; next }
-    $0 ~ end { in=0; print; next }
-    in!=1 { print; next }
+    $0 ~ begin { managed=1; print; next }
+    $0 ~ end { managed=0; print; next }
+    managed!=1 { print; next }
 
     # Skip the entire block matching targetDomain; preserve all other blocks.
     cap==0 && match($0, /^[[:space:]]*([A-Za-z0-9._-]+)[[:space:]]*\{[[:space:]]*$/, m) {
