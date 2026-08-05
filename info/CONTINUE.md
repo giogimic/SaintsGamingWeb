@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (priority plan for demo depth / map save / MP)  
+**Last updated:** 2026-08-05 (P0 DEMO depth/paint code landed)  
 **Point every new session at this file first.**
 
 ---
@@ -9,13 +9,14 @@
 
 **P0 → P2 product gaps** (not catalog polish). Full plan:
 
-→ **`logs/2026-08-05-studio-game-priority-plan.md`**
+→ **`logs/2026-08-05-studio-game-priority-plan.md`**  
+→ **P0 impl:** `logs/2026-08-05-studio-p0-demo-depth-paint.md`
 
-| Priority | Issue |
-| :--- | :--- |
-| **P0** | DEMO north half: character under ground tiles; those cells hard/impossible to paint |
-| **P1** | Studio create/save maps unreliable (create copies logic→visual GIDs; auth/validation gates) |
-| **P2** | Lobby multiplayer visibility (test on `/lobby` only; Studio is private/PIE) |
+| Priority | Issue | Status |
+| :--- | :--- | :--- |
+| **P0** | DEMO north half: character under ground tiles; northern paint buried | **Code landed** — needs manual visual confirm |
+| **P1** | Studio create/save maps unreliable (create copies logic→visual GIDs; auth/validation gates) | OPEN |
+| **P2** | Lobby multiplayer visibility (test on `/lobby` only; Studio is private/PIE) | OPEN |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
@@ -23,9 +24,10 @@ Before coding, read:
 
 1. **This file**
 2. **`logs/2026-08-05-studio-game-priority-plan.md`**
-3. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
-4. `logs/studio-first-hybrid-foundation.md`
-5. Trail/Spyder smokes as needed
+3. **`logs/2026-08-05-studio-p0-demo-depth-paint.md`** (when touching render/pick)
+4. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
+5. `logs/studio-first-hybrid-foundation.md`
+6. Trail/Spyder smokes as needed
 
 **Do not** reintroduce deleted ghosts (Pixi battle, Phase-5 ClassEditor/GameConfigManager, CreatureDb, `:3001` party client, dual TB overlays).
 
