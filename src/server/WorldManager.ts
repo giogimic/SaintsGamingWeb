@@ -55,6 +55,16 @@ export class WorldManager {
         );
       }
     );
+    this.engine.events.on(
+      "studioDespawnNpc",
+      (data: { mapId?: string; npcId?: string }) => {
+        if (!data?.mapId || !data?.npcId) return;
+        const n = this.despawnNpcLive(data.mapId, data.npcId);
+        console.log(
+          `[WorldManager] studioDespawnNpc ${data.npcId} on ${data.mapId} → ${n} removed`
+        );
+      }
+    );
   }
 
   private async handleAdminSaveMap(data: any) {
@@ -242,6 +252,34 @@ export class WorldManager {
       spawned++;
     }
     return spawned;
+  }
+
+  /**
+   * Studio delete-NPC: despawn live entities matching the stable npc id on
+   * every warm instance, then refresh map-loader cache.
+   */
+  public despawnNpcLive(baseMapId: string, npcId: string): number {
+    const base = toBaseMapId(String(baseMapId || ""));
+    const id = String(npcId || "");
+    if (!base || !id) return 0;
+
+    mapLoader.invalidateMap(base);
+    void mapLoader.loadMapData(base).catch((err: unknown) => {
+      console.warn("[WorldManager] despawnNpcLive cache reload failed:", err);
+    });
+
+    let removed = 0;
+    for (const [instanceId, inst] of this.instances.entries()) {
+      if (inst.mapId !== base) continue;
+      this.engine.events.emit("despawnNpcById", {
+        mapId: instanceId,
+        npcId: id,
+        callback: (n: number) => {
+          removed += n || 0;
+        },
+      });
+    }
+    return removed;
   }
 
   public getInstance(instanceId: string): MapInstance | undefined {
