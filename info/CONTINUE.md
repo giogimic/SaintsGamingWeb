@@ -16,7 +16,7 @@
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **P0** | DEMO north depth + paint | **Code landed** — manual visual confirm |
+| **P0** | DEMO north depth + paint | **Verified** — `/lobby` north avatar above grass |
 | **P1** | Map create/save | **Code landed** — manual create/save smoke |
 | **P2** | Lobby multiplayer visibility | **Code landed** — two-browser `/lobby` smoke |
 | **P3** | Brush reset, erase void, mode labels | **Partial** — definition undo / PIE options still parked |

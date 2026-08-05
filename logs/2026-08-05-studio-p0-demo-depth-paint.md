@@ -31,4 +31,10 @@ Manual:
 
 ## Status
 
-P0 code landed; awaiting manual visual confirm. P1/P2 still open.
+P0 code landed; **manual visual confirm passed** (2026-08-05):
+- `/lobby` north cells (20,5), (26,4), (28,4) — avatar above grass
+- Studio paint not exercised (login required in that session)
+- Screenshots: `/opt/cursor/artifacts/screenshots/p0-fix-*.webp`
+- Report: `/opt/cursor/artifacts/p0-verification-report.md`
+
+P1/P2/P3 also landed on the same branch — see sibling logs.
