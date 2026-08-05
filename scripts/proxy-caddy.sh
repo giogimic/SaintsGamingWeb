@@ -2,6 +2,7 @@
 # Do not use `set -e` here: `whiptail` exits non-zero when users press Esc/cancel
 # which should not terminate the whole UI flow.
 set -uo pipefail
+export TERM="${TERM:-xterm}"
 
 # Manage extra reverse_proxy subdomain blocks in /etc/caddy/Caddyfile.
 # We only rewrite the section between BEGIN/END markers so we never clobber
@@ -56,7 +57,8 @@ has_whiptail() {
 ui_mode() {
   ensure_markers
 
-  if has_whiptail; then
+  # Prefer whiptail only when we appear to be in an interactive terminal.
+  if has_whiptail && [[ -t 0 && -t 1 ]]; then
     # Simple whiptail loop: if menu args get too complex, fall back to prompts.
     # This keeps the script dependency-light while still offering a nicer UX.
     while true; do
@@ -67,6 +69,12 @@ ui_mode() {
         "remove" "Remove a proxy block" \
         "reload" "Reload Caddy" \
         "exit" "Exit" 3>&1 1>&2 2>/dev/null)" || true
+
+      # If whiptail failed to render (common under sudo without TERM/TTY),
+      # drop back to plain menu.
+      if [[ "${choice:-}" == "" ]]; then
+        break
+      fi
 
       case "$choice" in
         list)
@@ -123,7 +131,10 @@ ui_mode() {
           ;;
       esac
     done
-    return 0
+    # If we broke out due to whiptail failure, fall through to plain UI.
+    if [[ "${choice:-}" != "" ]]; then
+      return 0
+    fi
   fi
 
   # Plain interactive fallback.
