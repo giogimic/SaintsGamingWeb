@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P6 on main; NPC live spawn in flight)  
+**Last updated:** 2026-08-05 (P0–P7 on main; P8–P11 open; P10 smokes green)  
 **Point every new session at this file first.**
 
 ---
@@ -11,14 +11,18 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#31 (product gaps → gate warp → remesh → MP reconnect)  
-2. **In flight:** NPC live spawn — `logs/2026-08-05-studio-npc-live-spawn.md`  
-3. **Queued:** Warp/spawn debug overlays · definition undo on other catalogs
+1. **Done on main:** #28–#32 (product gaps → … → NPC live spawn)  
+2. **Open PRs:** #33 overlays · #34 NPC lifecycle · #35 catalog def undo · this smoke scripts PR  
+3. **Queued:** player stubs (party invite / TB creature swap)
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **P0–P6** | Depth → MP reconnect | **On main** (#28–#31) |
-| **P7** | NPC place live spawn | **This branch** |
+| **P0–P7** | Depth → NPC live spawn | **On main** (#28–#32) |
+| **P8** | Warp/spawn author overlays | **PR #33** |
+| **P9** | NPC edit/delete/live despawn | **PR #34** |
+| **P10** | Manual smokes (create/save + lobby MP) | **PASS** — `logs/2026-08-05-studio-manual-smokes.md` |
+| **P11** | Definition undo Creature + Dialogue | **PR #35** |
+| **P12** | Party invite / TB creature swap | **Next** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
