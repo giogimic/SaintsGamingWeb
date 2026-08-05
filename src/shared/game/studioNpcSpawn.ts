@@ -39,3 +39,37 @@ export function appendNpcToMapDoc(
   live.npcs = list;
   return true;
 }
+
+export function removeNpcFromMapDoc(
+  live: { npcs?: unknown[] } | null | undefined,
+  npcId: string
+): boolean {
+  if (!live || !Array.isArray(live.npcs) || !npcId) return false;
+  const next = live.npcs.filter((n: any) => !n || n.id !== npcId);
+  if (next.length === live.npcs.length) return false;
+  live.npcs = next;
+  return true;
+}
+
+export function upsertNpcInMapDoc(
+  live: { npcs?: unknown[] } | null | undefined,
+  npc: StudioNpcSpawnPayload
+): boolean {
+  if (!live || !npc?.id) return false;
+  const list = Array.isArray(live.npcs) ? [...live.npcs] : [];
+  const idx = list.findIndex((n: any) => n && n.id === npc.id);
+  if (idx >= 0) list[idx] = { ...(list[idx] as object), ...npc };
+  else list.push(npc);
+  live.npcs = list;
+  return true;
+}
+
+export function buildStudioDespawnNpcEmit(
+  mapId: string,
+  npcId: string
+): { mapId: string; npcId: string } | null {
+  const m = String(mapId || "").trim();
+  const id = String(npcId || "").trim();
+  if (!m || !id) return null;
+  return { mapId: m, npcId: id };
+}
