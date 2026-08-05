@@ -188,6 +188,30 @@ export class SocketHandler {
         }
       });
 
+      // Studio Populate: persist already done via placeMapNpc — push live spawn.
+      socket.on(
+        "studio_spawn_npc",
+        async (data: {
+          mapId?: string;
+          npc?: { id: string; name: string; x: number; y: number; sprite?: string };
+        }) => {
+          if (!data?.mapId || !data?.npc?.id) return;
+          try {
+            const user = await prisma.user.findUnique({
+              where: { id: accountId },
+              select: { permissionLevel: true },
+            });
+            if (!user || !canWriteStudioContent(user.permissionLevel)) return;
+            this.engine.events.emit("studioSpawnNpc", {
+              mapId: data.mapId,
+              npc: data.npc,
+            });
+          } catch (err) {
+            console.warn("[Socket] studio_spawn_npc failed:", err);
+          }
+        }
+      );
+
       // --- PHASE 6: NPCs & Dialogue ---
       socket.on("npc_interact", (data) => {
         // data: { mapId, targetId }

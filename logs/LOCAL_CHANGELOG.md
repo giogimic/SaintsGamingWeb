@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Studio NPC live spawn
+
+Populate place NPC emits `studio_spawn_npc` so warm shards get `creature_spawned` without rejoin.  
+See `logs/2026-08-05-studio-npc-live-spawn.md`.
+
+---
+
 ## 2026-08-05 — Lobby MP reconnect + map_reloaded harden
 
 Soft disconnect keeps peers; `map_reloaded` scoped to shard rooms + in-place hot remesh (no Babylon remount).  

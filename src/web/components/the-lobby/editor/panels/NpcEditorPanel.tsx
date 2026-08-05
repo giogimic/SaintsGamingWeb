@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useGameStore } from '../../store';
-import { useEditorStore } from '../editor-store';
 import { placeMapNpc } from '@/app/actions/map-npcs';
 import { UserPlus, Save, Loader2 } from 'lucide-react';
 import {
@@ -12,6 +10,13 @@ import {
 } from '@/shared/game/entitySchemas';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { SchemaFieldRenderer } from '../components/SchemaFieldRenderer';
+import { toBaseMapId } from '@/shared/net/mapIds';
+import {
+  appendNpcToMapDoc,
+  buildStudioSpawnNpcEmit,
+} from '@/shared/game/studioNpcSpawn';
+import { useGameStore } from '../../store';
+import { useEditorStore } from '../editor-store';
 
 function slugifyNpcId(name: string): string {
   const base =
@@ -62,7 +67,7 @@ export const NpcEditorPanel: React.FC = () => {
   };
 
   const handleAddNpc = async () => {
-    const mapId = (currentMapId || '').split('#')[0];
+    const mapId = toBaseMapId((currentMapId || '').split('#')[0] || '');
     if (!mapId) {
       showToast('No active map — enter a world first.');
       return;
@@ -80,8 +85,20 @@ export const NpcEditorPanel: React.FC = () => {
       questSlug: questSlug.trim() || undefined,
     });
     setSaving(false);
-    if (res.success) {
-      showToast(`Saved ${npcName} on ${mapId} (${res.count} NPCs). Rejoin map to spawn.`);
+    if (res.success && res.npc) {
+      const live = useGameStore.getState().activeMapData;
+      appendNpcToMapDoc(live, res.npc);
+      const payload = buildStudioSpawnNpcEmit(mapId, {
+        id: res.npc.id,
+        name: res.npc.name,
+        x: res.npc.x,
+        y: res.npc.y,
+        sprite: res.npc.sprite,
+      });
+      if (payload) {
+        useGameStore.getState().emitSocketEvent?.('studio_spawn_npc', payload);
+      }
+      showToast(`Placed ${npcName} on ${mapId} (${res.count} NPCs) — live spawn.`);
     } else {
       showToast(res.error || 'Failed to save NPC');
     }
