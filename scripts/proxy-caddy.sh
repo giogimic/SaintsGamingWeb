@@ -71,7 +71,11 @@ ui_mode() {
           local out
           out="$(list_proxies || true)"
           if [[ -z "$out" ]]; then out="(no proxies configured yet)"; fi
-          whiptail --msgbox "$out" 15 80
+          local tmp
+          tmp="$(mktemp)"
+          printf "%s\n" "$out" > "$tmp"
+          whiptail --title "Current Proxies" --textbox "$tmp" 20 80
+          rm -f "$tmp"
           ;;
         add)
           local sub
@@ -83,15 +87,30 @@ ui_mode() {
           [[ -z "${upstream:-}" ]] && continue
 
           add_proxy "$sub" "$upstream"
-          whiptail --msgbox "Added/updated: $sub -> $upstream" 8 60
+          reload_caddy
+          whiptail --msgbox "Added/updated: $sub -> $upstream (reloaded)" 8 70
           ;;
         remove)
-          local sub
-          sub="$(whiptail --inputbox "Subdomain to remove" 10 70 3>&1 1>&2 2>/dev/null)" || true
-          [[ -z "${sub:-}" ]] && continue
+          local proxies
+          mapfile -t proxies < <(list_proxies || true)
 
+          local sub=""
+          if [[ "${#proxies[@]}" -eq 0 ]]; then
+            sub="$(whiptail --inputbox "Subdomain to remove" 10 70 3>&1 1>&2 2>/dev/null)" || true
+          else
+            local args=()
+            for l in "${proxies[@]}"; do
+              local dom="${l%% ->*}"
+              local up="${l#*-> }"
+              args+=("$dom" "$up")
+            done
+            sub="$(whiptail --title "Remove Proxy" --menu "Select a proxy to remove" 20 78 10 "${args[@]}" 3>&1 1>&2 2>/dev/null)" || true
+          fi
+
+          [[ -z "${sub:-}" ]] && continue
           remove_proxy "$sub"
-          whiptail --msgbox "Removed (if present): $sub" 8 60
+          reload_caddy
+          whiptail --msgbox "Removed: $sub (reloaded)" 8 55
           ;;
         reload)
           reload_caddy
@@ -126,13 +145,15 @@ ui_mode() {
         read -rp "Upstream host:port (e.g. 127.0.0.1:8080): " upstream
         [[ -z "${upstream:-}" ]] && continue
         add_proxy "$sub" "$upstream"
-        echo "Added/updated: $sub -> $upstream"
+        reload_caddy
+        echo "Added/updated: $sub -> $upstream (reloaded)"
         ;;
       3)
         read -rp "Subdomain to remove: " sub
         [[ -z "${sub:-}" ]] && continue
         remove_proxy "$sub"
-        echo "Removed (if present): $sub"
+        reload_caddy
+        echo "Removed: $sub (reloaded)"
         ;;
       4)
         reload_caddy

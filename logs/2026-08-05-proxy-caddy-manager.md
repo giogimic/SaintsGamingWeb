@@ -23,3 +23,5 @@ Add a script to manage the extra everse_proxy subdomain blocks inside the Caddy
 - Added `scripts/proxy-caddy.sh` (marker-managed proxy section).
 - The section is only rewritten between `# SAINTS_PROXY_LIST_BEGIN` and `# SAINTS_PROXY_LIST_END`.
 \n- Updated scripts/proxy-caddy.sh with ui interactive mode (whiptail when available, plain menu otherwise).
+
+- Enhanced UI: whiptail textbox for list, remove uses a selectable menu, and add/remove now reload Caddy immediately.
