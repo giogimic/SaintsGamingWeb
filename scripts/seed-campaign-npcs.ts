@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Seed curated Spyder campaign NPCs + quest chain into WorldMap / dialogue / QuestTemplate.
- * Does not require Tuxemon TMX (use import-map-npcs-from-tmx.ts when TUXEMON_PATH is set).
+ * Does not require Tuxemon TMX; this repo seeds curated campaign NPCs only.
  *
  * Usage: npx tsx scripts/seed-campaign-npcs.ts
  * Alias: npm run seed:campaign-npcs  |  npm run seed:azure
@@ -64,7 +64,7 @@ function dialogueTreeFor(npc: {
         ],
       },
       accepted: {
-        text: "Good. Speak with the townsfolk around the plaza. When you're ready for wilds, take the east road out of town to Route 1 — tall grass waits there.",
+        text: "Good. Speak with the townsfolk around the plaza. When you're ready for wilds, take the east road out of town to Route 1 â€” tall grass waits there.",
         options: [{ label: "Understood.", nextNode: "exit" }],
       },
     };
@@ -91,7 +91,7 @@ async function upsertMapNpcs(
 ) {
   const map = await prisma.worldMap.findUnique({ where: { id: mapId } });
   if (!map) {
-    console.log(`  skip ${mapId} (WorldMap missing — run migrate:campaign)`);
+    console.log(`  skip ${mapId} (WorldMap missing â€” run migrate:campaign)`);
     return 0;
   }
 
@@ -231,16 +231,16 @@ async function upsertQuestChain() {
 }
 
 async function main() {
-  console.log("Seeding campaign NPCs…");
+  console.log("Seeding campaign NPCsâ€¦");
   let total = 0;
   for (const [mapId, seeds] of Object.entries(CAMPAIGN_NPC_SEEDS)) {
     total += await upsertMapNpcs(mapId, [...seeds]);
   }
 
-  console.log("Upserting Spyder quest chain…");
+  console.log("Upserting Spyder quest chainâ€¦");
   await upsertQuestChain();
 
-  console.log("Ambient dialogue + wall prune…");
+  console.log("Ambient dialogue + wall pruneâ€¦");
   await seedAmbientDialogue();
 
   console.log(`Done. ${total} NPC placements across ${Object.keys(CAMPAIGN_NPC_SEEDS).length} maps.`);
@@ -252,3 +252,4 @@ main()
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
+

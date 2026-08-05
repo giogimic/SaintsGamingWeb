@@ -1,5 +1,5 @@
-#!/bin/sh
-# Runtime entrypoint — handles migration and startup
+﻿#!/bin/sh
+# Runtime entrypoint â€” handles migration and startup
 
 # Ensure the SQLite DB directory exists (volume mount target)
 mkdir -p /app/prisma/db
@@ -36,7 +36,7 @@ if [ "$DB_SKIP_MIGRATION" != "true" ]; then
         echo "[!] ERROR: Database migration failed! Aborting startup."
         exit 1
     fi
-    echo "[✓] Database schema ready."
+    echo "[âœ“] Database schema ready."
     # Only seed if the database is new/empty (file < 500KB means no data yet)
     DB_FILE="/app/prisma/db/dev.db"
     DB_SIZE=0
@@ -44,10 +44,11 @@ if [ "$DB_SKIP_MIGRATION" != "true" ]; then
         DB_SIZE=$(stat -c%s "$DB_FILE" 2>/dev/null || echo 0)
     fi
     if [ "$DB_SIZE" -lt 512000 ]; then
-        echo "[*] Fresh database detected — seeding Tuxemon data..."
-        npx tsx scripts/import-tuxemon-data.ts || true
+        echo "[*] Fresh database detected - using server bootstrap seeds..."
+        # `server.ts` always calls `bootstrapDemoContent()` which seeds demo content
+        # (including CreatureDef rows) idempotently on every boot.
     else
-        echo "[*] Database already seeded (${DB_SIZE} bytes) — skipping seed."
+        echo "[*] Database already seeded (${DB_SIZE} bytes) - skipping demo seed."
     fi
 else
     echo "[*] Skipping schema migration (DB_SKIP_MIGRATION=true)."

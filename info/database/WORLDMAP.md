@@ -1,7 +1,7 @@
-# WorldMap Ops
+﻿# WorldMap Ops
 
 **Source of truth:** Prisma `WorldMap` table (runtime).  
-**Seed dump (scripts only):** `scripts/data/campaign-maps.generated.ts` — never import from `app/` or `src/web/`.
+**Seed dump (scripts only):** `scripts/data/campaign-maps.generated.ts` â€” never import from `app/` or `src/web/`.
 
 ---
 
@@ -31,7 +31,7 @@ Kept in sync by migrate + `POST /api/maps/[slug]` so older server consumers that
 ## Ops commands
 
 ```bash
-# Upsert seed dump → WorldMap + GameMap mirror
+# Upsert seed dump â†’ WorldMap + GameMap mirror
 npx tsx scripts/migrate-campaign-maps-to-db.ts
 
 # Smoke counts + AZURE_TOWN shape
@@ -42,15 +42,14 @@ npx tsx scripts/validate-maps.ts
 ```
 
 Expected after a full campaign migrate: **235** `WorldMap` rows with `gameId=tuxemon`.  
-`AZURE_TOWN` should be present (typically 50×50 grid).
+`AZURE_TOWN` should be present (typically 50Ã—50 grid).
 
 Regenerate the seed (then re-migrate):
 
 ```bash
-# Any of:
-npx tsx scripts/import-full-tuxemon-campaign.ts
-npx tsx scripts/reimport-rich-tuxemon-maps.ts
-# → writes scripts/data/campaign-maps.generated.ts
+# Regenerate scripts/data/campaign-maps.generated.ts from your Tuxemon source (one-time),
+# then re-run the normal migration:
+npx tsx scripts/migrate-campaign-maps-to-db.ts
 ```
 
 ---
@@ -60,11 +59,11 @@ npx tsx scripts/reimport-rich-tuxemon-maps.ts
 | Path | Role |
 | :--- | :--- |
 | `GET /api/maps?gameId=tuxemon` | Index (`listMaps()`) |
-| `GET /api/maps/[slug]` | Full payload (`loadMap()`) — WorldMap then GameMap |
+| `GET /api/maps/[slug]` | Full payload (`loadMap()`) â€” WorldMap then GameMap |
 | `POST /api/maps/[slug]` | Upsert (Developer+); mirrors GameMap |
 | `src/engine/map-loader.js` | Server collision; prefers WorldMap |
 | `src/web/components/the-lobby/data/maps.ts` | Client cache + `loadMap` / `listMaps` |
-| Stub `.../data/campaign-maps.ts` | Empty exports only — do not re-fill |
+| Stub `.../data/campaign-maps.ts` | Empty exports only â€” do not re-fill |
 
 ---
 
