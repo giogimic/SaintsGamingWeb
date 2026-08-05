@@ -25,3 +25,5 @@ Add a script to manage the extra everse_proxy subdomain blocks inside the Caddy
 \n- Updated scripts/proxy-caddy.sh with ui interactive mode (whiptail when available, plain menu otherwise).
 
 - Enhanced UI: whiptail textbox for list, remove uses a selectable menu, and add/remove now reload Caddy immediately.
+
+- Fixed wk syntax errors on Debian by renaming the internal awk state variable from in to managed (some awk treat in as reserved).
