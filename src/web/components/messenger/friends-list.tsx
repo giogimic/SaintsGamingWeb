@@ -197,7 +197,6 @@ export function FriendsList() {
                             return;
                           }
                           emitSocketEvent("party_invite", f.user.username);
-                          alert(`Party invite sent to ${f.user.username}!`);
                         }}
                       >
                         + PARTY

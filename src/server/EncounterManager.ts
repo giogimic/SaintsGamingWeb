@@ -246,6 +246,7 @@ export class EncounterManager {
     action: string;
     moveId?: string;
     itemId?: string;
+    creatureId?: string;
     socketId?: string;
     mapId?: string;
   }) {
@@ -261,6 +262,17 @@ export class EncounterManager {
     if (data.action === "FLEE") {
       battle.log.push("You fled successfully!");
       await this.endBattle(data.battleId, mapId, "FLEE");
+      return;
+    }
+
+    if (data.action === "SWITCH" || data.action === "SWAP") {
+      const swapped = await this.switchPlayerCreature(battle, data.creatureId);
+      if (!swapped) {
+        battle.phase = "WAITING_FOR_INPUT";
+        this.broadcastUpdate(battle);
+        return;
+      }
+      await this.enemyTurn(battle, mapId);
       return;
     }
 
@@ -333,7 +345,70 @@ export class EncounterManager {
       }
 
       await this.enemyTurn(battle, mapId);
+      return;
     }
+
+    // Unknown action — return input to the player
+    battle.phase = "WAITING_FOR_INPUT";
+    this.broadcastUpdate(battle);
+  }
+
+  /** Persist active HP and bring in another healthy party creature. */
+  private async switchPlayerCreature(
+    battle: BattleState,
+    creatureId?: string
+  ): Promise<boolean> {
+    const userId = await resolveUserId(battle.accountId);
+    if (!userId) {
+      battle.log.push("Cannot switch creatures right now.");
+      this.sendToPlayer(battle.socketId, "show_toast", {
+        message: "Cannot switch creatures right now.",
+      });
+      return false;
+    }
+
+    if (battle.playerCreature.id && battle.playerCreature.id !== "pc_1") {
+      try {
+        await prisma.playerCreature.update({
+          where: { id: battle.playerCreature.id },
+          data: { currentHp: Math.max(0, battle.playerCreature.hp) },
+        });
+      } catch (e) {
+        console.warn("[EncounterManager] Failed to persist HP before switch", e);
+      }
+    }
+
+    const party = await prisma.playerCreature.findMany({
+      where: { userId, isParty: true },
+      orderBy: { slotIndex: "asc" },
+    });
+
+    const candidates = party.filter(
+      (c) => c.id !== battle.playerCreature.id && c.currentHp > 0
+    );
+    if (candidates.length === 0) {
+      battle.log.push("No other healthy creatures in your party!");
+      this.sendToPlayer(battle.socketId, "show_toast", {
+        message: "No other healthy creatures to switch to.",
+      });
+      return false;
+    }
+
+    const next =
+      (creatureId && candidates.find((c) => c.id === creatureId)) || candidates[0];
+    const def = await loadCreatureDef(next.speciesSlug);
+    battle.playerCreature = {
+      id: next.id,
+      name: next.nickname || def?.name || next.speciesSlug,
+      hp: next.currentHp,
+      maxHp: next.maxHp,
+      level: next.level,
+      spriteKey: creatureAssetUrl(
+        def?.spriteOverworld || def?.spriteBattle || "daemon_data"
+      ),
+    };
+    battle.log.push(`Go! ${battle.playerCreature.name}!`);
+    return true;
   }
 
   private async enemyTurn(battle: BattleState, mapId?: string) {
