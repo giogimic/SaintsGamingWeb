@@ -1,5 +1,19 @@
 # Local Changelog
 
+## 2026-08-05 — P0 DEMO north depth + paint
+
+Batched tileset alpha-blend buried northern sprites/overlays. Switched to ALPHATEST depth write, pick-plane-only hits, softer camera margin, slightly higher avatar clearance.  
+See `logs/2026-08-05-studio-p0-demo-depth-paint.md`.
+
+---
+
+## 2026-08-05 — Studio / game priority plan
+
+Status + ordered plan for reported gaps (north DEMO depth/paint, map create/save, lobby MP).  
+No application code changed. See `logs/2026-08-05-studio-game-priority-plan.md`; `info/CONTINUE.md` updated.
+
+---
+
 ## 2026-08-04 — Studio resume notes + CONTINUE update
 
 Strip pause lifted. Handoff: `logs/2026-08-04-studio-resume-after-strip.md` + updated `info/CONTINUE.md`. Studio author `join_map` explicitly sets `lobby: false` so DEMO force never applies in Studio.
