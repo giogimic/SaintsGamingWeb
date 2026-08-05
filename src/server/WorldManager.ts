@@ -161,6 +161,7 @@ export class WorldManager {
           spawnMode: "STATIC",
           name: npc.name || rawId,
           spriteKey: String(sprite).replace(/^\/game-assets\/npc\//, "").replace(/\.png$/, ""),
+          dialogueNpcId: rawId.startsWith("npc_") ? rawId : `npc_${rawId.replace(/^npc_/, "")}`,
         });
       }
     }
