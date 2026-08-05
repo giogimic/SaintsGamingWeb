@@ -29,6 +29,8 @@ import {
   type StudioMapCellsChangedDetail,
 } from '@/shared/game/studioEvents';
 import { getIsEditorMode } from '@/shared/game/studioSession';
+import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { shouldKeepActiveMapData } from '@/shared/game/mapSwitch';
 
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
 const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
@@ -104,18 +106,24 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   useEffect(() => {
     setIsEngineReady(false);
-    
-    // Phase 9: If activeMapData is pushed via Socket.io hot-reload, use it instantly!
-    if (activeMapData) {
+
+    // Prefer live Studio / socket document only when it matches currentMapId.
+    // Gate warps that flip the id without clearing activeMapData used to keep DEMO.
+    if (activeMapData && shouldKeepActiveMapData(activeMapData, currentMapId)) {
       setMapData(activeMapData);
       // Brief delay to allow React to flush to DOM before remounting Engine
       setTimeout(() => setIsEngineReady(true), 50);
       return;
     }
-    
+
     setMapData(null); // Reset on map change so engine remounts cleanly
     loadMap(currentMapId).then((data) => {
-      setMapData(data);
+      const ensured = ensureMapHasStudioTilesets(data);
+      setMapData(ensured);
+      const store = useGameStore.getState();
+      if (!shouldKeepActiveMapData(store.activeMapData, currentMapId)) {
+        store.setActiveMapData(ensured);
+      }
     }).catch(() => {
       // Fallback map if API fails
       setMapData({
@@ -194,24 +202,39 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         return;
       }
       const finishWarp = () => {
-        useGameStore.setState({ currentMapId: gate.targetMapId });
-        setPlayerPosition(spawn);
-        const p = useGameStore.getState().player;
-        const inStudio = getIsEditorMode();
-        const creation = useEditorStore.getState().isCreationMode;
-        emitSocketEvent?.('join_map', {
-          accountId: p.accountId,
-          mapId: targetBase,
-          lobby: !inStudio,
-          // Studio must stay on private / PIE — never leak into public DEMO_chN.
-          isPrivate: inStudio && creation,
-          pie: inStudio && !creation,
-          x: spawn.x,
-          y: spawn.y,
-          name: p.name || 'Player',
-          spriteId: p.spriteId || 'adventurer',
-        });
-        showToast(`Warped to ${gate.targetMapId}`);
+        // Load destination document before flipping ids — never leave stale
+        // activeMapData mounted (World Builder warp already does this pair).
+        void loadMap(gate.targetMapId)
+          .then((data) => {
+            const loaded = ensureMapHasStudioTilesets(data);
+            useGameStore.setState({
+              currentMapId: gate.targetMapId,
+              activeMapData: loaded,
+            });
+          })
+          .catch(() => {
+            // Clears activeMapData so the canvas effect loads fresh.
+            useGameStore.getState().setCurrentMapId(gate.targetMapId);
+          })
+          .finally(() => {
+            setPlayerPosition(spawn);
+            const p = useGameStore.getState().player;
+            const inStudio = getIsEditorMode();
+            const creation = useEditorStore.getState().isCreationMode;
+            emitSocketEvent?.('join_map', {
+              accountId: p.accountId,
+              mapId: targetBase,
+              lobby: !inStudio,
+              // Studio must stay on private / PIE — never leak into public DEMO_chN.
+              isPrivate: inStudio && creation,
+              pie: inStudio && !creation,
+              x: spawn.x,
+              y: spawn.y,
+              name: p.name || 'Player',
+              spriteId: p.spriteId || 'adventurer',
+            });
+            showToast(`Warped to ${gate.targetMapId}`);
+          });
       };
       if (isDevEditorOpen) {
         finishWarp();
