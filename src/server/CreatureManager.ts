@@ -110,6 +110,7 @@ export class CreatureManager {
     ownerId?: string;
     name?: string;
     spriteKey?: string;
+    dialogueNpcId?: string;
   }) {
     const isNpc = data.entityType === EntityType.NPC;
     const cleanTemplate = String(data.templateId || "villager").replace(/^npc_/, "");
@@ -124,6 +125,13 @@ export class CreatureManager {
           ? "professor"
           : cleanTemplate
         : cleanTemplate);
+
+    const dialogueNpcId = isNpc
+      ? data.dialogueNpcId ||
+        (cleanTemplate.includes("vance")
+          ? "npc_warden_vance"
+          : `npc_${cleanTemplate}`)
+      : undefined;
 
     const creature: CreatureState = {
       entityId,
@@ -144,6 +152,7 @@ export class CreatureManager {
       isMoving: false,
       direction: "down",
       lastMoveTime: Date.now(),
+      dialogueNpcId,
     };
 
     this.creatures.set(entityId, creature);
@@ -157,6 +166,7 @@ export class CreatureManager {
       data: {
         ...creature,
         spriteKey,
+        dialogueNpcId,
       },
     });
   }

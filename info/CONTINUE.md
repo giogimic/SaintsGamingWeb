@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (remesh on main; lobby MP harden in flight)  
+**Last updated:** 2026-08-05 (P6 on main; NPC live spawn in flight)  
 **Point every new session at this file first.**
 
 ---
@@ -11,19 +11,14 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** Gate warp — #29 · Live remesh — #30  
-2. **In flight:** Lobby MP reconnect / `map_reloaded` harden — `logs/2026-08-05-lobby-mp-reconnect-harden.md`  
-3. **Queued:** Pick next game gap after merge (debug overlays / catalog undo / Trail smoke)
-
-→ Plan archive: `logs/2026-08-05-studio-game-priority-plan.md`  
-→ P2/P3: `logs/2026-08-05-studio-p2-mp-p3-polish.md`
+1. **Done on main:** #28–#31 (product gaps → gate warp → remesh → MP reconnect)  
+2. **In flight:** NPC live spawn — `logs/2026-08-05-studio-npc-live-spawn.md`  
+3. **Queued:** Warp/spawn debug overlays · definition undo on other catalogs
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **P0–P3** | Depth, maps, MP, polish | **On main** (#28) |
-| **P4** | Gate warp stale map document | **On main** (#29) |
-| **P5** | Live batched paint remesh | **On main** (#30) |
-| **P6** | Lobby MP reconnect + map hot-reload | **This branch** |
+| **P0–P6** | Depth → MP reconnect | **On main** (#28–#31) |
+| **P7** | NPC place live spawn | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
