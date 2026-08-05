@@ -17,6 +17,28 @@ if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   SUDO="sudo"
 fi
 
+safe_write_caddyfile() {
+  local tmp_file="$1"
+  if [[ ! -s "$tmp_file" ]]; then
+    echo "[proxy-caddy] Refusing to write empty output to $CADDYFILE" >&2
+    return 1
+  fi
+  if ! grep -qF "$BEGIN_MARK" "$tmp_file" || ! grep -qF "$END_MARK" "$tmp_file"; then
+    echo "[proxy-caddy] Refusing to write: managed markers missing in generated file." >&2
+    return 1
+  fi
+
+  local backup
+  backup="${CADDYFILE}.bak.$(date +%Y%m%d%H%M%S)"
+  if ! $SUDO cp "$CADDYFILE" "$backup" 2>/dev/null; then
+    echo "[proxy-caddy] Warning: could not create backup at $backup" >&2
+  else
+    echo "[proxy-caddy] Backup written: $backup"
+  fi
+
+  $SUDO cp "$tmp_file" "$CADDYFILE"
+}
+
 ensure_markers() {
   # Ensure both marker lines exist; if missing, append at end of file.
   if ! $SUDO grep -qF "$BEGIN_MARK" "$CADDYFILE" 2>/dev/null; then
@@ -249,7 +271,7 @@ add_proxy() {
   local tmp
   tmp="$(mktemp)"
 
-  $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" -v targetUpstream="$upstream" '
+  if ! $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" -v targetUpstream="$upstream" '
     function emit_block(dom, up,    s) {
       # Normalize formatting.
       s = dom " {\n" \
@@ -298,9 +320,13 @@ add_proxy() {
 
     # Non-block lines inside markers (blank lines / whitespace) -> keep.
     { print }
-  ' "$CADDYFILE" > "$tmp"
+  ' "$CADDYFILE" > "$tmp"; then
+    rm -f "$tmp"
+    echo "[proxy-caddy] Failed to parse/transform $CADDYFILE (add aborted)." >&2
+    return 1
+  fi
 
-  $SUDO cp "$tmp" "$CADDYFILE"
+  safe_write_caddyfile "$tmp"
   rm -f "$tmp"
 }
 
@@ -317,7 +343,7 @@ remove_proxy() {
   local tmp
   tmp="$(mktemp)"
 
-  $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" '
+  if ! $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" '
     $0 ~ begin { managed=1; print; next }
     $0 ~ end { managed=0; print; next }
     managed!=1 { print; next }
@@ -345,19 +371,40 @@ remove_proxy() {
 
     # Preserve any non-block whitespace inside managed section.
     { print }
-  ' "$CADDYFILE" > "$tmp"
+  ' "$CADDYFILE" > "$tmp"; then
+    rm -f "$tmp"
+    echo "[proxy-caddy] Failed to parse/transform $CADDYFILE (remove aborted)." >&2
+    return 1
+  fi
 
-  $SUDO cp "$tmp" "$CADDYFILE"
+  safe_write_caddyfile "$tmp"
   rm -f "$tmp"
 }
 
 reload_caddy() {
   if command -v systemctl >/dev/null 2>&1; then
-    $SUDO systemctl reload caddy || $SUDO systemctl restart caddy
-    return 0
+    if $SUDO systemctl reload caddy; then
+      echo "[proxy-caddy] Caddy reloaded."
+      return 0
+    fi
+    if $SUDO systemctl restart caddy; then
+      echo "[proxy-caddy] Caddy restarted."
+      return 0
+    fi
+    echo "[proxy-caddy] Failed to reload/restart caddy.service." >&2
+    return 1
   fi
   # Fallback: try caddy directly.
-  $SUDO caddy reload --config "$CADDYFILE" || $SUDO caddy restart --config "$CADDYFILE"
+  if $SUDO caddy reload --config "$CADDYFILE"; then
+    echo "[proxy-caddy] Caddy reloaded via CLI."
+    return 0
+  fi
+  if $SUDO caddy restart --config "$CADDYFILE"; then
+    echo "[proxy-caddy] Caddy restarted via CLI."
+    return 0
+  fi
+  echo "[proxy-caddy] Failed to reload/restart caddy via CLI." >&2
+  return 1
 }
 
 main() {
