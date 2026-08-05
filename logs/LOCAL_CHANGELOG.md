@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Studio author overlays (warp + spawn)
+
+Editor-only gate / NPC / spawn-pin markers with Paint HUD toggles.  
+See `logs/2026-08-05-studio-author-overlays.md`.
+
+---
+
 ## 2026-08-05 — Studio NPC live spawn
 
 Populate place NPC emits `studio_spawn_npc` so warm shards get `creature_spawned` without rejoin.  

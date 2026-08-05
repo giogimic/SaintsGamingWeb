@@ -89,14 +89,15 @@ See `logs/2026-08-04-studio-resume-after-strip.md`:
 
 **Game-only queue** (one PR → merge to `main` → then next):
 
-1. Gate/Playtest warp syncs `activeMapData` — **on main** (#29)
+1. Gate/Playtest warp — **on main** (#29)
 2. Live batched remesh — **on main** (#30)
-3. Lobby MP reconnect / `map_reloaded` harden — **on main** (#31)
-4. NPC place live spawn — `logs/2026-08-05-studio-npc-live-spawn.md`
+3. Lobby MP reconnect — **on main** (#31)
+4. NPC place live spawn — **on main** (#32)
+5. Warp/spawn author overlays — `logs/2026-08-05-studio-author-overlays.md`
 
 P0–P3 product blockers are on `main` (#28).
 
-Parked foundation polish:
+Parked / next foundation polish:
 
-- Richer debug overlays (spawn/warp/chunk)
 - Definition undo on remaining catalogs (Quest has v1)
+- NPC edit/delete/despawn lifecycle
