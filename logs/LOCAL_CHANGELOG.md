@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-05 — Studio live batched remesh
+
+Paint/erase patches `tileset_mesh_*` quads in place (cell index + UV/collapse/append); overlays are fallback only.  
+See `logs/2026-08-05-studio-live-tile-remesh.md`.
+
+---
+
 ## 2026-08-05 — Studio gate warp map document sync
 
 Gate/Playtest warps load destination `activeMapData` with `currentMapId`; canvas rejects stale docs.  

@@ -28,6 +28,15 @@ import {
   clampCameraFocus,
   paintOverlayHeight,
 } from "../shared/game/babylonViewHelpers";
+import {
+  cellBatchKey,
+  collapsedQuadPositions,
+  groundQuadPositions,
+  tileCellWorldPos,
+  tilesetUvForGid,
+  tilesetUvForOverlayPlane,
+  type TilesetUvInput,
+} from "../shared/game/tileBatchHelpers";
 
 export interface BabylonMapChunk {
   chunkX: number;
@@ -160,8 +169,14 @@ export class BabylonEngine {
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
-  /** Studio paint overlays — batched tileset meshes have no per-cell `tile_*` picks. */
+  /** Studio paint overlays — fallback when batched remesh cannot patch a cell. */
   private paintOverlayMeshes: Map<string, Mesh> = new Map();
+  /** layerIdx_r_c → quad in a `tileset_mesh_*` (live remesh). */
+  private batchedQuadIndex: Map<
+    string,
+    { imageSource: string; vertexBase: number; layerIdx: number; r: number; c: number }
+  > = new Map();
+  private tilesetMeshBySource: Map<string, Mesh> = new Map();
   private mapPickPlane?: Mesh;
 
   public onEntityClick?: (entityId: string) => void;
@@ -758,6 +773,8 @@ export class BabylonEngine {
     this.objectMeshes = [];
     this.waterMaterials = [];
     this.clearPaintOverlays();
+    this.batchedQuadIndex.clear();
+    this.tilesetMeshBySource.clear();
     // Stale logic planes would keep the previous map's dimensions; the caller
     // re-enables the overlay after the rebuild.
     this.disableLogicGridOverlay();
@@ -813,6 +830,9 @@ export class BabylonEngine {
               const ts = sortedTilesets.find(t => gid >= t.firstgid);
               if (!ts || !ts.imageSource) continue;
 
+              const absR = chunk.chunkY * chunk.height + r;
+              const absC = chunk.chunkX * chunk.width + c;
+
               // Local position relative to the center of the entire map
               const localX = (c - width / 2) * tileSize;
               const localZ = (height / 2 - r) * tileSize;
@@ -821,40 +841,8 @@ export class BabylonEngine {
               const posX = localX + chunkOffsetX;
               const posZ = localZ + chunkOffsetZ;
 
-            const localId = gid - ts.firstgid;
-            const col = localId % ts.columns;
-            const row = Math.floor(localId / ts.columns);
-            
-            // Calculate exact rows if possible
-            let estimatedRows = 24;
-            const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const sizes = TILESET_SIZES[rawSource];
-            if (sizes && sizes.h && ts.tileheight) {
-              estimatedRows = Math.floor(sizes.h / ts.tileheight);
-            } else if (ts.imageheight && ts.tileheight) {
-              estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
-            } else if (ts.tilecount && ts.columns) {
-              estimatedRows = Math.ceil(ts.tilecount / ts.columns);
-            } else {
-              if (ts.imageSource.includes("Terrain")) estimatedRows = 24;
-              else if (ts.imageSource.includes("Furniture")) estimatedRows = 11;
-              else if (ts.imageSource.includes("Interior_Walls")) estimatedRows = 12;
-              else if (ts.imageSource.includes("Interior_Floors")) estimatedRows = 12;
-              else if (ts.imageSource.includes("Vegetation")) estimatedRows = 4;
-              else estimatedRows = Math.max(16, Math.ceil((localId + 1) / ts.columns));
-            }
-
-            // Half-pixel inset to prevent tile edge bleeding/seams
-            const imgW = ts.columns * (ts.tilewidth || 16);
-            const imgH = estimatedRows * (ts.tileheight || 16);
-            const hpU = 0.5 / imgW;
-            const hpV = 0.5 / imgH;
-
-            // InvertY = false means Texture (0,0) is Top-Left
-            const u0 = col / ts.columns + hpU;
-            const u1 = (col + 1) / ts.columns - hpU;
-            const v0 = row / estimatedRows + hpV; // Top of tile
-            const v1 = (row + 1) / estimatedRows - hpV; // Bottom of tile
+            const uvPair = tilesetUvForGid(gid, ts, TILESET_SIZES);
+            // tilesetUvForGid already accounts for local id via gid - firstgid
 
             let vData = tilesetVertexData.get(ts.imageSource);
             if (!vData) {
@@ -862,28 +850,9 @@ export class BabylonEngine {
               tilesetVertexData.set(ts.imageSource, vData);
             }
 
-            // Vertices for the quad (flat on XZ plane with Math.PI/2 rotation behavior factored in)
-            const x0 = posX - tileSize / 2;
-            const x1 = posX + tileSize / 2;
-            const z0 = posZ - tileSize / 2;
-            const z1 = posZ + tileSize / 2;
             const y = heightOffset;
-
-            // Notice vertex order is adapted so normal points UP (positive Y)
-            vData.positions.push(
-              x0, y, z1, // Top-left
-              x1, y, z1, // Top-right
-              x1, y, z0, // Bottom-right
-              x0, y, z0  // Bottom-left
-            );
-
-            // Match UVs to vertices (u0,v0 is top-left in standard WebGL texture if invertY=false)
-            vData.uvs.push(
-              u0, v0, // Top-Left
-              u1, v0, // Top-Right
-              u1, v1, // Bottom-Right
-              u0, v1  // Bottom-Left
-            );
+            vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize));
+            vData.uvs.push(...uvPair);
 
             // Triangle indices
             const vi = vData.vertexIndex;
@@ -891,6 +860,13 @@ export class BabylonEngine {
               vi + 0, vi + 2, vi + 1,
               vi + 0, vi + 3, vi + 2
             );
+            this.batchedQuadIndex.set(cellBatchKey(layerIdx, absR, absC), {
+              imageSource: ts.imageSource,
+              vertexBase: vi,
+              layerIdx,
+              r: absR,
+              c: absC,
+            });
             vData.vertexIndex += 4;
           }
         }
@@ -912,7 +888,8 @@ export class BabylonEngine {
         VertexData.ComputeNormals(vData.positions, vData.indices, normals);
         vertexData.normals = normals;
         
-        vertexData.applyToMesh(mesh, false);
+        // Updatable so Studio paint can patch UV/positions without remount.
+        vertexData.applyToMesh(mesh, true);
         mesh.parent = this.rootNode;
         mesh.receiveShadows = true;
 
@@ -939,6 +916,7 @@ export class BabylonEngine {
         // Pick through map_pick_plane only — batched alpha meshes mis-hit cells.
         mesh.isPickable = false;
         this.tileMeshes.push(mesh);
+        this.tilesetMeshBySource.set(imageSource, mesh);
       });
     }
 
@@ -1309,38 +1287,177 @@ export class BabylonEngine {
     return { r, c };
   }
 
-  private estimateTilesetRows(
-    ts: { imageSource: string; columns: number; tilewidth?: number; tileheight?: number; imageheight?: number; tilecount?: number },
-    localGid: number
-  ): number {
-    let estimatedRows = 24;
-    const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-    const sizes = TILESET_SIZES[rawSource];
-    if (sizes && sizes.h && ts.tileheight) {
-      estimatedRows = Math.floor(sizes.h / ts.tileheight);
-    } else if (ts.imageheight && ts.tileheight) {
-      estimatedRows = Math.floor(ts.imageheight / ts.tileheight);
-    } else if (ts.tilecount && ts.columns) {
-      estimatedRows = Math.ceil(ts.tilecount / ts.columns);
-    } else if (ts.imageSource.includes("Terrain")) {
-      estimatedRows = 24;
-    } else if (ts.imageSource.includes("Furniture")) {
-      estimatedRows = 11;
-    } else if (ts.imageSource.includes("Interior_Walls")) {
-      estimatedRows = 12;
-    } else if (ts.imageSource.includes("Interior_Floors")) {
-      estimatedRows = 12;
-    } else if (ts.imageSource.includes("Vegetation")) {
-      estimatedRows = 4;
+  private disposePaintOverlay(key: string) {
+    const overlay = this.paintOverlayMeshes.get(key);
+    if (!overlay) return;
+    overlay.dispose();
+    this.paintOverlayMeshes.delete(key);
+  }
+
+  private ensureTilesetMesh(imageSource: string): Mesh {
+    const existing = this.tilesetMeshBySource.get(imageSource);
+    if (existing && !existing.isDisposed()) return existing;
+
+    const mesh = new Mesh(`tileset_mesh_${imageSource}`, this.scene);
+    mesh.parent = this.rootNode;
+    mesh.receiveShadows = true;
+    mesh.isPickable = false;
+
+    let mat = this.tilesetMaterialCache.get(imageSource);
+    if (!mat) {
+      mat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
+      let tex = this.tilesetTextureCache.get(imageSource);
+      if (!tex) {
+        const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+        const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+        tex = new Texture(tilesetPath, this.scene, true, false, 1);
+        tex.hasAlpha = true;
+        this.tilesetTextureCache.set(imageSource, tex);
+      }
+      mat.diffuseTexture = tex;
+      this.configureTilesetMaterial(mat);
+      this.tilesetMaterialCache.set(imageSource, mat);
     } else {
-      estimatedRows = Math.max(16, Math.ceil((localGid + 1) / ts.columns));
+      this.configureTilesetMaterial(mat);
     }
-    return estimatedRows;
+    mesh.material = mat;
+    mesh.setVerticesData(VertexBuffer.PositionKind, [], true);
+    mesh.setVerticesData(VertexBuffer.UVKind, [], true);
+    mesh.setVerticesData(VertexBuffer.NormalKind, [], true);
+    mesh.setIndices([]);
+    this.tileMeshes.push(mesh);
+    this.tilesetMeshBySource.set(imageSource, mesh);
+    return mesh;
+  }
+
+  private collapseBatchedQuad(ref: {
+    imageSource: string;
+    vertexBase: number;
+  }) {
+    const mesh = this.tilesetMeshBySource.get(ref.imageSource);
+    if (!mesh || mesh.isDisposed()) return;
+    const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
+    if (!positions) return;
+    const collapsed = collapsedQuadPositions();
+    const offset = ref.vertexBase * 3;
+    for (let i = 0; i < 12; i++) {
+      positions[offset + i] = collapsed[i]!;
+    }
+    mesh.updateVerticesData(VertexBuffer.PositionKind, positions);
+  }
+
+  private writeBatchedQuad(
+    ref: { imageSource: string; vertexBase: number },
+    positions: number[],
+    uvs: number[]
+  ) {
+    const mesh = this.tilesetMeshBySource.get(ref.imageSource);
+    if (!mesh || mesh.isDisposed()) return;
+    const posData = mesh.getVerticesData(VertexBuffer.PositionKind);
+    const uvData = mesh.getVerticesData(VertexBuffer.UVKind);
+    if (!posData || !uvData) return;
+    const pOff = ref.vertexBase * 3;
+    const uOff = ref.vertexBase * 2;
+    for (let i = 0; i < 12; i++) posData[pOff + i] = positions[i]!;
+    for (let i = 0; i < 8; i++) uvData[uOff + i] = uvs[i]!;
+    mesh.updateVerticesData(VertexBuffer.PositionKind, posData);
+    mesh.updateVerticesData(VertexBuffer.UVKind, uvData);
+  }
+
+  private appendBatchedQuad(
+    imageSource: string,
+    positions: number[],
+    uvs: number[],
+    layerIdx: number,
+    r: number,
+    c: number
+  ): { imageSource: string; vertexBase: number; layerIdx: number; r: number; c: number } | null {
+    const mesh = this.ensureTilesetMesh(imageSource);
+    const posData = Array.from(mesh.getVerticesData(VertexBuffer.PositionKind) || []);
+    const uvData = Array.from(mesh.getVerticesData(VertexBuffer.UVKind) || []);
+    const idxData = Array.from(mesh.getIndices() || []);
+    const vertexBase = posData.length / 3;
+    posData.push(...positions);
+    uvData.push(...uvs);
+    idxData.push(
+      vertexBase + 0,
+      vertexBase + 2,
+      vertexBase + 1,
+      vertexBase + 0,
+      vertexBase + 3,
+      vertexBase + 2
+    );
+    const normals: number[] = [];
+    VertexData.ComputeNormals(posData, idxData, normals);
+    mesh.setVerticesData(VertexBuffer.PositionKind, posData, true);
+    mesh.setVerticesData(VertexBuffer.UVKind, uvData, true);
+    mesh.setVerticesData(VertexBuffer.NormalKind, normals, true);
+    mesh.setIndices(idxData);
+    return { imageSource, vertexBase, layerIdx, r, c };
   }
 
   /**
-   * Paint / update a visual tile. Batched maps use `tileset_mesh_*` (no `tile_*`
-   * meshes), so we keep a per-cell overlay plane for live Studio feedback.
+   * Patch a cell on `tileset_mesh_*` in place (paint / erase / overpaint).
+   * Returns false when there is no batched mesh path (caller may use overlays).
+   */
+  private patchBatchedTile(
+    r: number,
+    c: number,
+    tileId: number,
+    layerIdx: number,
+    tilesets?: TilesetUvInput[]
+  ): boolean {
+    if (this.tilesetMeshBySource.size === 0 && this.batchedQuadIndex.size === 0) {
+      return false;
+    }
+    const key = cellBatchKey(layerIdx, r, c);
+    this.disposePaintOverlay(key);
+    const existing = this.batchedQuadIndex.get(key);
+
+    if (!tileId) {
+      if (existing) {
+        this.collapseBatchedQuad(existing);
+        this.batchedQuadIndex.delete(key);
+      }
+      return true;
+    }
+
+    if (!tilesets || tilesets.length === 0) return false;
+    const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
+    const ts = sortedTilesets.find((t) => tileId >= t.firstgid);
+    if (!ts?.imageSource) return false;
+
+    const uvs = tilesetUvForGid(tileId, ts, TILESET_SIZES);
+    const tileSize = this.currentTileSize || 1;
+    const { posX, posZ } = tileCellWorldPos(
+      r,
+      c,
+      this.currentMapWidth,
+      this.currentMapHeight,
+      tileSize
+    );
+    const y = layerIdx * 0.02;
+    const positions = groundQuadPositions(posX, posZ, y, tileSize);
+
+    if (existing && existing.imageSource === ts.imageSource) {
+      this.writeBatchedQuad(existing, positions, uvs);
+      return true;
+    }
+
+    if (existing) {
+      this.collapseBatchedQuad(existing);
+      this.batchedQuadIndex.delete(key);
+    }
+
+    const ref = this.appendBatchedQuad(ts.imageSource, positions, uvs, layerIdx, r, c);
+    if (!ref) return false;
+    this.batchedQuadIndex.set(key, ref);
+    return true;
+  }
+
+  /**
+   * Paint / update a visual tile. Prefers in-place batched remesh; falls back
+   * to per-cell overlay planes when no `tileset_mesh_*` exists.
    */
   public updateSingleTile(r: number, c: number, tileId: number, layerIdx: number = -1, tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>) {
     if (layerIdx === -1) {
@@ -1354,9 +1471,17 @@ export class BabylonEngine {
     const meshName = `tile_${layerIdx}_${r}_${c}`;
     const legacyMesh = this.scene.getMeshByName(meshName) as Mesh | null;
 
-    // Erase → cover batched art with a void plate (GID 0 skips quads on remount).
+    // Live remesh — mutate batched quads so Save/reload matches what you paint.
+    if (this.patchBatchedTile(r, c, tileId, layerIdx, tilesets)) {
+      if (legacyMesh) {
+        legacyMesh.isVisible = !!tileId;
+      }
+      return;
+    }
+
+    // Erase → cover leftover art with a void plate (no batched mesh path).
     if (!tileId) {
-      const key = `${layerIdx}_${r}_${c}`;
+      const key = cellBatchKey(layerIdx, r, c);
       let overlay = this.paintOverlayMeshes.get(key);
       const tileSize = this.currentTileSize || 1;
       const posX = (c - this.currentMapWidth / 2) * tileSize;
@@ -1395,20 +1520,7 @@ export class BabylonEngine {
     const ts = sortedTilesets.find((t) => tileId >= t.firstgid);
     if (!ts || !ts.imageSource) return;
 
-    const localGid = tileId - ts.firstgid;
-    const tsCol = localGid % ts.columns;
-    const tsRow = Math.floor(localGid / ts.columns);
-    const estimatedRows = this.estimateTilesetRows(ts, localGid);
-
-    const imgW = ts.columns * (ts.tilewidth || 16);
-    const imgH = estimatedRows * (ts.tileheight || 16);
-    const hpU = 0.5 / imgW;
-    const hpV = 0.5 / imgH;
-    const u0 = tsCol / ts.columns + hpU;
-    const u1 = (tsCol + 1) / ts.columns - hpU;
-    const v0 = tsRow / estimatedRows + hpV;
-    const v1 = (tsRow + 1) / estimatedRows - hpV;
-    const uvData = [u0, v1, u1, v1, u1, v0, u0, v0];
+    const uvData = tilesetUvForOverlayPlane(tileId, ts, TILESET_SIZES);
 
     // Prefer legacy per-tile mesh when present (fallback renderer).
     if (legacyMesh) {
@@ -1438,8 +1550,8 @@ export class BabylonEngine {
       return;
     }
 
-    // Batched path: create / refresh an overlay plane just above the cell.
-    const key = `${layerIdx}_${r}_${c}`;
+    // Overlay fallback when no batched mesh exists yet.
+    const key = cellBatchKey(layerIdx, r, c);
     let overlay = this.paintOverlayMeshes.get(key);
     const tileSize = this.currentTileSize || 1;
     const posX = (c - this.currentMapWidth / 2) * tileSize;

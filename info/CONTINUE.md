@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0–P3 on main; gate-warp mapdoc next)  
+**Last updated:** 2026-08-05 (gate-warp on main; live remesh in flight)  
 **Point every new session at this file first.**
 
 ---
@@ -9,22 +9,20 @@
 
 **Game / Studio / lobby only** — do not prioritize marketing site, forum, UCP, Discord, FiveM.
 
-P0–P3 product gaps are on **`main`** (#28). Next game slices (one PR each; **merge to main before starting the next**):
+One PR → merge to `main` → then next:
 
-1. **In flight:** Gate/Playtest warp must load destination `activeMapData` — `logs/2026-08-05-studio-gate-warp-mapdata.md`
-2. **Queued:** Live batched remesh (replace paint overlay + erase void plates)
-3. **Queued:** Lobby MP two-browser smoke + reconnect harden if needed
+1. **Done on main:** Gate warp map document — #29  
+2. **In flight:** Live batched remesh — `logs/2026-08-05-studio-live-tile-remesh.md`  
+3. **Queued:** Lobby MP two-browser smoke / reconnect harden if needed
 
 → Plan archive: `logs/2026-08-05-studio-game-priority-plan.md`  
 → P2/P3: `logs/2026-08-05-studio-p2-mp-p3-polish.md`
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **P0** | DEMO north depth + paint | **On main** |
-| **P1** | Map create/save | **On main** |
-| **P2** | Lobby multiplayer visibility | **On main** (manual two-browser smoke still nice) |
-| **P3** | Brush/erase, definition undo, PIE options | **On main** |
-| **P4** | Gate warp stale map document | **This branch** |
+| **P0–P3** | Depth, maps, MP, polish | **On main** (#28) |
+| **P4** | Gate warp stale map document | **On main** (#29) |
+| **P5** | Live batched paint remesh | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
