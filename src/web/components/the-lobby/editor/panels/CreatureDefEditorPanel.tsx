@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getAllCreatureDefs,
   upsertCreatureDef,
@@ -23,10 +23,20 @@ import {
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 
 const inputCls =
   'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-emerald-700 transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
+
+function creatureResourceKey(form: CreatureDefData, isNew: boolean): string {
+  if (isNew || !form.slug) return 'creature:new';
+  return `creature:${form.slug}`;
+}
+
+function isCreatureForm(value: unknown): value is CreatureDefData {
+  return Boolean(value && typeof value === 'object' && 'slug' in value && 'name' in value);
+}
 
 export function CreatureDefEditorPanel() {
   const activeGameId = useEditorStore((s) => s.activeGameId);
@@ -38,6 +48,22 @@ export function CreatureDefEditorPanel() {
   const [showJson, setShowJson] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const [assetFilter, setAssetFilter] = useState('');
+  const isNewRef = useRef(isNew);
+  isNewRef.current = isNew;
+
+  const resourceKey = creatureResourceKey(form, isNew);
+  const {
+    canUndoDefinition,
+    canRedoDefinition,
+    syncFormRef,
+    onFieldFocus,
+    onFieldBlur,
+    commitStructural,
+    applyHistory,
+    clearDefinitionStackFor,
+  } = useDefinitionFormHistory<CreatureDefData>(resourceKey);
+
+  syncFormRef(form);
 
   const load = useCallback(async () => {
     const res = await getAllCreatureDefs(activeGameId);
@@ -46,9 +72,10 @@ export function CreatureDefEditorPanel() {
 
   useEffect(() => {
     void load();
+    clearDefinitionStackFor('creature:new');
     setForm({ ...emptyCreatureDef(), gameId: activeGameId });
     setIsNew(false);
-  }, [load, activeGameId]);
+  }, [load, activeGameId, clearDefinitionStackFor]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -59,11 +86,13 @@ export function CreatureDefEditorPanel() {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSelect = (c: CreatureDefData) => {
+    clearDefinitionStackFor(creatureResourceKey(form, isNewRef.current));
     setForm({ ...c });
     setIsNew(false);
   };
 
   const handleNew = () => {
+    clearDefinitionStackFor(creatureResourceKey(form, isNewRef.current));
     setForm({ ...emptyCreatureDef(), gameId: activeGameId, sortOrder: list.length + 1 });
     setIsNew(true);
   };
@@ -78,6 +107,7 @@ export function CreatureDefEditorPanel() {
     setLoading(false);
     if (res.success) {
       showStatus('success', `${form.name} saved.`);
+      clearDefinitionStackFor(creatureResourceKey(form, isNew));
       setIsNew(false);
       await load();
     } else {
@@ -102,30 +132,47 @@ export function CreatureDefEditorPanel() {
       showStatus('success', 'Deleted.');
       await load();
       if (form.slug === slug) {
+        clearDefinitionStackFor(creatureResourceKey(form, false));
         setForm(emptyCreatureDef());
         setIsNew(false);
       }
     } else showStatus('error', res.error || 'Delete failed');
   };
 
-  const updatePassive = (idx: number, patch: Partial<CreaturePassive>) => {
+  const updatePassive = (idx: number, patch: Partial<CreaturePassive>, structural = false) => {
     const passives = form.passives.map((p, i) => (i === idx ? { ...p, ...patch } : p));
     if (patch.isDefault) {
       for (let i = 0; i < passives.length; i++) passives[i].isDefault = i === idx;
     }
-    f('passives', passives);
+    const next = { ...form, passives };
+    if (structural) commitStructural(next);
+    setForm(next);
   };
 
   const addPassive = () => {
-    f('passives', [
-      ...form.passives,
-      {
-        id: `passive_${form.passives.length + 1}`,
-        name: 'New Passive',
-        description: '',
-        isDefault: form.passives.length === 0,
-      },
-    ]);
+    const next: CreatureDefData = {
+      ...form,
+      passives: [
+        ...form.passives,
+        {
+          id: `passive_${form.passives.length + 1}`,
+          name: 'New Passive',
+          description: '',
+          isDefault: form.passives.length === 0,
+        },
+      ],
+    };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const setSpriteKey = (kind: 'overworld' | 'battle', key: string) => {
+    const next: CreatureDefData =
+      kind === 'overworld'
+        ? { ...form, spriteOverworld: key }
+        : { ...form, spriteBattle: key };
+    commitStructural(next);
+    setForm(next);
   };
 
   const assets = CREATURE_ASSET_OPTIONS.filter(
@@ -135,8 +182,20 @@ export function CreatureDefEditorPanel() {
   return (
     <CatalogEditorShell
       title="Creature Catalog"
-      blurb={`${list.length} defs · world ${activeGameId} · GameAsset + CreatureDef SoT`}
-      dirty={isNew}
+      blurb={`${list.length} defs · world ${activeGameId} · GameAsset + CreatureDef SoT · definition undo on blur`}
+      dirty={isNew || canUndoDefinition}
+      canUndoDefinition={canUndoDefinition}
+      canRedoDefinition={canRedoDefinition}
+      onUndoDefinition={() =>
+        applyHistory('undo', (value) => {
+          if (isCreatureForm(value)) setForm(value);
+        })
+      }
+      onRedoDefinition={() =>
+        applyHistory('redo', (value) => {
+          if (isCreatureForm(value)) setForm(value);
+        })
+      }
       toolbar={
         <div className="flex flex-wrap gap-1">
           <button type="button" onClick={handleSeed} className="flex items-center gap-1 rounded border border-emerald-800 bg-emerald-950/50 px-2 py-1 text-emerald-300" title="Seed defaults">
@@ -253,19 +312,40 @@ export function CreatureDefEditorPanel() {
                   <input
                     className={inputCls + ' mb-2'}
                     value={form.gameId ?? ''}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
                     onChange={(e) => f('gameId', e.target.value || null)}
                     placeholder="tuxemon / custom_1 / empty=shared"
                   />
                   <label className={labelCls}>Slug</label>
-                  <input className={inputCls} value={form.slug} disabled={!isNew} onChange={(e) => f('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} />
+                  <input
+                    className={inputCls}
+                    value={form.slug}
+                    disabled={!isNew}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Name</label>
-                  <input className={inputCls} value={form.name} onChange={(e) => f('name', e.target.value)} />
+                  <input
+                    className={inputCls}
+                    value={form.name}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('name', e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Type Primary</label>
-                  <select className={inputCls} value={form.typePrimary} onChange={(e) => f('typePrimary', e.target.value)}>
+                  <select
+                    className={inputCls}
+                    value={form.typePrimary}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('typePrimary', e.target.value)}
+                  >
                     {CREATURE_ELEMENT_TYPES.filter((t) => t !== 'None').map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
@@ -273,7 +353,13 @@ export function CreatureDefEditorPanel() {
                 </div>
                 <div>
                   <label className={labelCls}>Type Secondary</label>
-                  <select className={inputCls} value={form.typeSecondary} onChange={(e) => f('typeSecondary', e.target.value)}>
+                  <select
+                    className={inputCls}
+                    value={form.typeSecondary}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('typeSecondary', e.target.value)}
+                  >
                     {CREATURE_ELEMENT_TYPES.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
@@ -283,9 +369,21 @@ export function CreatureDefEditorPanel() {
 
               <div>
                 <label className={labelCls}>Overworld / card sprite</label>
-                <input className={inputCls + ' mb-1'} value={form.spriteOverworld} onChange={(e) => f('spriteOverworld', e.target.value)} />
+                <input
+                  className={inputCls + ' mb-1'}
+                  value={form.spriteOverworld}
+                  onFocus={onFieldFocus}
+                  onBlur={onFieldBlur}
+                  onChange={(e) => f('spriteOverworld', e.target.value)}
+                />
                 <label className={labelCls}>Battle sprite</label>
-                <input className={inputCls + ' mb-1'} value={form.spriteBattle || ''} onChange={(e) => f('spriteBattle', e.target.value)} />
+                <input
+                  className={inputCls + ' mb-1'}
+                  value={form.spriteBattle || ''}
+                  onFocus={onFieldFocus}
+                  onBlur={onFieldBlur}
+                  onChange={(e) => f('spriteBattle', e.target.value)}
+                />
                 <input
                   className={inputCls + ' mb-1'}
                   placeholder="Filter assets…"
@@ -297,10 +395,7 @@ export function CreatureDefEditorPanel() {
                     <button
                       key={a.key}
                       type="button"
-                      onClick={() => {
-                        if (a.kind === 'overworld') f('spriteOverworld', a.key);
-                        else f('spriteBattle', a.key);
-                      }}
+                      onClick={() => setSpriteKey(a.kind === 'overworld' ? 'overworld' : 'battle', a.key)}
                       className="border border-slate-800 rounded p-1 hover:border-emerald-600 bg-black/40"
                       title={a.label}
                     >
@@ -336,6 +431,8 @@ export function CreatureDefEditorPanel() {
                         type="number"
                         className={inputCls}
                         value={form[key] as number}
+                        onFocus={onFieldFocus}
+                        onBlur={onFieldBlur}
                         onChange={(e) => f(key, Number(e.target.value))}
                       />
                     </div>
@@ -346,16 +443,34 @@ export function CreatureDefEditorPanel() {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className={labelCls + ' mb-0'}>Passives (default + potential)</label>
-                  <button onClick={addPassive} className="text-emerald-400 text-[9px]">+ Add</button>
+                  <button type="button" onClick={addPassive} className="text-emerald-400 text-[9px]">+ Add</button>
                 </div>
                 <div className="space-y-2">
                   {form.passives.map((p, idx) => (
                     <div key={idx} className="border border-slate-800 rounded p-2 space-y-1">
                       <div className="flex gap-1 items-center">
-                        <input className={inputCls} value={p.id} onChange={(e) => updatePassive(idx, { id: e.target.value })} placeholder="id" />
-                        <input className={inputCls} value={p.name} onChange={(e) => updatePassive(idx, { name: e.target.value })} placeholder="name" />
+                        <input
+                          className={inputCls}
+                          value={p.id}
+                          onFocus={onFieldFocus}
+                          onBlur={onFieldBlur}
+                          onChange={(e) => updatePassive(idx, { id: e.target.value })}
+                          placeholder="id"
+                        />
+                        <input
+                          className={inputCls}
+                          value={p.name}
+                          onFocus={onFieldFocus}
+                          onBlur={onFieldBlur}
+                          onChange={(e) => updatePassive(idx, { name: e.target.value })}
+                          placeholder="name"
+                        />
                         <label className="flex items-center gap-1 text-[9px] text-slate-400 shrink-0">
-                          <input type="checkbox" checked={!!p.isDefault} onChange={(e) => updatePassive(idx, { isDefault: e.target.checked })} />
+                          <input
+                            type="checkbox"
+                            checked={!!p.isDefault}
+                            onChange={(e) => updatePassive(idx, { isDefault: e.target.checked }, true)}
+                          />
                           Default
                         </label>
                       </div>
@@ -363,6 +478,8 @@ export function CreatureDefEditorPanel() {
                         className={inputCls}
                         rows={2}
                         value={p.description}
+                        onFocus={onFieldFocus}
+                        onBlur={onFieldBlur}
                         onChange={(e) => updatePassive(idx, { description: e.target.value })}
                         placeholder="Description"
                       />
@@ -374,15 +491,35 @@ export function CreatureDefEditorPanel() {
               <div className="grid grid-cols-1 gap-2">
                 <div>
                   <label className={labelCls}>World skill name</label>
-                  <input className={inputCls} value={form.worldSkillName} onChange={(e) => f('worldSkillName', e.target.value)} />
+                  <input
+                    className={inputCls}
+                    value={form.worldSkillName}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('worldSkillName', e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>World skill description</label>
-                  <textarea className={inputCls} rows={2} value={form.worldSkillDescription} onChange={(e) => f('worldSkillDescription', e.target.value)} />
+                  <textarea
+                    className={inputCls}
+                    rows={2}
+                    value={form.worldSkillDescription}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('worldSkillDescription', e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className={labelCls}>Flavor</label>
-                  <textarea className={inputCls} rows={2} value={form.flavor} onChange={(e) => f('flavor', e.target.value)} />
+                  <textarea
+                    className={inputCls}
+                    rows={2}
+                    value={form.flavor}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => f('flavor', e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -393,7 +530,11 @@ export function CreatureDefEditorPanel() {
                     <input
                       type="checkbox"
                       checked={form.shinyEnabled !== false}
-                      onChange={(e) => f('shinyEnabled', e.target.checked)}
+                      onChange={(e) => {
+                        const next = { ...form, shinyEnabled: e.target.checked };
+                        commitStructural(next);
+                        setForm(next);
+                      }}
                     />{' '}
                     Shinies enabled
                   </label>
@@ -401,7 +542,11 @@ export function CreatureDefEditorPanel() {
                     <input
                       type="checkbox"
                       checked={form.shinyUseGlobalChance !== false}
-                      onChange={(e) => f('shinyUseGlobalChance', e.target.checked)}
+                      onChange={(e) => {
+                        const next = { ...form, shinyUseGlobalChance: e.target.checked };
+                        commitStructural(next);
+                        setForm(next);
+                      }}
                     />{' '}
                     Sync global chance
                   </label>
@@ -416,6 +561,8 @@ export function CreatureDefEditorPanel() {
                       max={100}
                       className={inputCls}
                       value={form.shinyChancePercent ?? 0.5}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
                       onChange={(e) => f('shinyChancePercent', parseFloat(e.target.value) || 0)}
                     />
                   </div>
@@ -429,6 +576,8 @@ export function CreatureDefEditorPanel() {
                     <input
                       className={inputCls}
                       value={form.shinySpriteOverworld || ''}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
                       onChange={(e) => f('shinySpriteOverworld', e.target.value || null)}
                       placeholder="defaults to overworld sprite"
                     />
@@ -438,6 +587,8 @@ export function CreatureDefEditorPanel() {
                     <input
                       className={inputCls}
                       value={form.shinySpriteBattle || ''}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
                       onChange={(e) => f('shinySpriteBattle', e.target.value || null)}
                       placeholder="defaults to battle sprite"
                     />
@@ -447,6 +598,8 @@ export function CreatureDefEditorPanel() {
                     <input
                       className={inputCls}
                       value={form.shinySpriteBack || ''}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
                       onChange={(e) => f('shinySpriteBack', e.target.value || null)}
                       placeholder="defaults to back sprite"
                     />
@@ -456,13 +609,40 @@ export function CreatureDefEditorPanel() {
 
               <div className="flex flex-wrap gap-3 items-center">
                 <label className="flex items-center gap-1 text-slate-300">
-                  <input type="checkbox" checked={form.isStarter} onChange={(e) => f('isStarter', e.target.checked)} /> Starter
+                  <input
+                    type="checkbox"
+                    checked={form.isStarter}
+                    onChange={(e) => {
+                      const next = { ...form, isStarter: e.target.checked };
+                      commitStructural(next);
+                      setForm(next);
+                    }}
+                  />{' '}
+                  Starter
                 </label>
                 <label className="flex items-center gap-1 text-slate-300">
-                  <input type="checkbox" checked={form.isWildSpawn} onChange={(e) => f('isWildSpawn', e.target.checked)} /> Wild spawn
+                  <input
+                    type="checkbox"
+                    checked={form.isWildSpawn}
+                    onChange={(e) => {
+                      const next = { ...form, isWildSpawn: e.target.checked };
+                      commitStructural(next);
+                      setForm(next);
+                    }}
+                  />{' '}
+                  Wild spawn
                 </label>
                 <label className="flex items-center gap-1 text-slate-300">
-                  <input type="checkbox" checked={form.isActive} onChange={(e) => f('isActive', e.target.checked)} /> Active
+                  <input
+                    type="checkbox"
+                    checked={form.isActive}
+                    onChange={(e) => {
+                      const next = { ...form, isActive: e.target.checked };
+                      commitStructural(next);
+                      setForm(next);
+                    }}
+                  />{' '}
+                  Active
                 </label>
                 <div className="flex-1" />
                 <button

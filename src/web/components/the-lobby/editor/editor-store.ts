@@ -106,6 +106,10 @@ interface EditorState {
   lastPaintedTile: { r: number; c: number } | null;
   /** Soft editor overlay: show tile XY in paint HUD. */
   showEditorCoords: boolean;
+  /** Editor-only viewport markers for gate tiles. */
+  showWarpOverlays: boolean;
+  /** Editor-only viewport markers for NPC spawn tiles + gate spawn pins. */
+  showSpawnOverlays: boolean;
 
   setActiveGameId: (id: string) => void;
   getStudioRuntime: () => StudioRuntime;
@@ -130,6 +134,8 @@ interface EditorState {
   setClickedTile: (tile: { r: number; c: number } | null) => void;
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
   setShowEditorCoords: (on: boolean) => void;
+  setShowWarpOverlays: (on: boolean) => void;
+  setShowSpawnOverlays: (on: boolean) => void;
   markMapDirty: () => void;
   clearMapDirty: () => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
@@ -339,6 +345,8 @@ export const useEditorStore = create<EditorState>()(
       clickedTile: null,
       lastPaintedTile: null,
       showEditorCoords: true,
+      showWarpOverlays: true,
+      showSpawnOverlays: true,
 
       getStudioRuntime: () => studioRuntimeFromCreation(get().isCreationMode),
 
@@ -544,6 +552,14 @@ export const useEditorStore = create<EditorState>()(
       setShowEditorCoords: (on) =>
         set((state) => {
           state.showEditorCoords = on;
+        }),
+      setShowWarpOverlays: (on) =>
+        set((state) => {
+          state.showWarpOverlays = on;
+        }),
+      setShowSpawnOverlays: (on) =>
+        set((state) => {
+          state.showSpawnOverlays = on;
         }),
       markMapDirty: () =>
         set((state) => {
