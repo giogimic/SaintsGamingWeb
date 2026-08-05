@@ -87,6 +87,14 @@ See `logs/2026-08-04-studio-resume-after-strip.md`:
 
 ## Next
 
+**Product blockers first** (see `logs/2026-08-05-studio-game-priority-plan.md`):
+
+1. P0 — DEMO north depth + paint reachability  
+2. P1 — Map create/save reliability  
+3. P2 — Lobby multiplayer visibility  
+
+Parked foundation polish (after P0–P2):
+
 - Definition undo stack
 - Richer debug overlays (spawn/warp/chunk)
 - PIE options (pause spawners / god mode) — Advanced
