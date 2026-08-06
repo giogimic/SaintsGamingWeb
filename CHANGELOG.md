@@ -1,3 +1,8 @@
+## [2.1.125] - 2026-08-06
+### Fixed
+- Fixed Socket.io authentication fallback to support NextAuth secure cookies in local development environments with HTTPS (NEXT_PUBLIC_SITE_URL=https://localhost). This resolves the issue where players and entities failed to load due to a rejected socket connection.
+- Updated update.sh to extract the MARIADB_ROOT_PASSWORD from the Docker container environment when auto-fixing credentials, preventing setup failures when the root password differs from the database user password.
+
 ## [2.1.122] - 2026-08-06
 - Implemented Phase 4 Turn-Based Engine Math (ARPG formulas, STAB, Element matches)
 - Updated TurnBattleOverlay to render a 2x2 grid of creature abilities
@@ -643,3 +648,4 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+

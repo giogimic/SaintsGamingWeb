@@ -55,11 +55,21 @@ export class SocketHandler {
     // Phase 10: Enforce Production Authentication
     this.io.use(async (socket, next) => {
       try {
-        const token = await getToken({ 
+        let token = await getToken({ 
           req: socket.request as any, 
           secret: process.env.AUTH_SECRET,
           cookieName: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token"
         });
+
+        if (!token) {
+          // Fallback for dev environments running on HTTPS which force secure cookies (e.g. NEXT_PUBLIC_SITE_URL=https://localhost)
+          token = await getToken({
+            req: socket.request as any,
+            secret: process.env.AUTH_SECRET,
+            cookieName: "__Secure-authjs.session-token"
+          });
+        }
+
 
         // Fallback for development/testing if a static auth token is passed
         const bypassToken = socket.handshake.auth?.token;
