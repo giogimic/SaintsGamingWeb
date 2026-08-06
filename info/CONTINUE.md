@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (#39 on main; only-grass entity visibility in flight)  
+**Last updated:** 2026-08-06 (#28–#40 on main; lobby entities + MP presence verified)  
 **Point every new session at this file first.**
 
 ---
@@ -11,15 +11,15 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#39 (MP join-storm + peer wipe + presence UI)  
-2. **In flight:** Only-grass / no characters — `logs/2026-08-06-lobby-entities-visible.md`  
-3. **After merge:** `/lobby` shows avatar + DEMO NPCs; two accounts still see each other
+1. **Done on main:** #28–#40 (MP + only-grass entity visibility)  
+2. **Verified:** `/lobby` shows avatar + DEMO NPCs (not grass-only)  
+3. **Next:** two-account peer confirm on production-like `/lobby` if still flaky; otherwise resume Studio/game plan from `logs/2026-08-05-studio-game-priority-plan.md`
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
 | **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
 | **MP #38–#39** | Join-storm + peer wipe + presence UI | **On main** |
-| **Entities** | Avatar/NPCs buried or remount-wiped (only grass) | **This branch** |
+| **Entities #40** | Avatar/NPCs above grass (only-grass wipe) | **On main** (browser confirm) |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
