@@ -27,11 +27,11 @@ Saints Gaming is an ambitious web platform combining community management (forum
 
 ## Tech Stack
 - **Framework:** Next.js 15+ (App Router) & React 19
-- **Language:** TypeScript
+- **Language:** TypeScript (+ optional **Go** realtime MMO under `go-mmo/`)
 - **Styling:** Tailwind CSS & Vanilla CSS Design Tokens
 - **Database:** Prisma ORM (SQLite / MariaDB)
 - **Game Engine:** Custom Babylon.js 2.5D Wrapper (`BabylonEngine.ts`)
-- **Multiplayer:** Socket.io Engine (`GameEngine.ts`, `PlayerManager.ts`, `SocketHandler.ts`)
+- **Multiplayer:** Socket.io — Next `server.ts` by default, or Go on `:3001` when `NEXT_PUBLIC_GO_MMO_URL` is set
 
 ## Deployment & Setup
 
@@ -48,6 +48,15 @@ To pull the latest code, backup the database, rebuild containers, and restart gr
 ```bash
 ./scripts/update.sh
 ```
+
+### 3. Optional Go MMO (parallel realtime)
+```bash
+./go-mmo/scripts/setup-go-mmo.sh
+# sets/asks NEXT_PUBLIC_GO_MMO_URL — restart Next afterward
+./go-mmo/bin/go-mmo
+# Existing Caddy only: ./scripts/dev-proxy.sh add go.yourdomain 3001
+```
+Studio editor UI and map CRUD stay on Next (`/api/maps`). Live shards sync to Go after save when the env URL is set.
 
 *(For manual local development without Docker, refer to [Installation Guide](docs/developer-guide/installation.md)).*
 

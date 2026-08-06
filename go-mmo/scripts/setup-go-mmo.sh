@@ -158,6 +158,40 @@ EOF
   log "Wrote $ENV_FILE"
 }
 
+# Point the Next lobby client at this Go instance (safe upsert in root .env).
+upsert_root_go_mmo_url() {
+  local public_url="$1"
+  local root_env="$ROOT/.env"
+  local val="$public_url"
+  # Prefer local upstream for same-machine Next; HTTPS subdomain still works via Caddy.
+  if [[ "$public_url" == http://* || "$public_url" == https://* ]]; then
+    val="$public_url"
+  else
+    val="http://127.0.0.1:${DEFAULT_PORT}"
+  fi
+  # When behind Caddy subdomain, browser must hit that origin for sockets (CORS + TLS).
+  # When public_url is https://go… use that; otherwise 127.0.0.1:port for local.
+  if [[ -f "$root_env" ]]; then
+    if grep -q '^NEXT_PUBLIC_GO_MMO_URL=' "$root_env" 2>/dev/null; then
+      if [[ "$NON_INTERACTIVE" -eq 1 ]] || yesno "Update root .env NEXT_PUBLIC_GO_MMO_URL to $val?" "y"; then
+        # portable sed-free replace
+        local tmp
+        tmp="$(mktemp)"
+        awk -v v="$val" 'BEGIN{done=0} /^NEXT_PUBLIC_GO_MMO_URL=/ { print "NEXT_PUBLIC_GO_MMO_URL=" v; done=1; next } { print } END { if (!done) print "NEXT_PUBLIC_GO_MMO_URL=" v }' "$root_env" > "$tmp"
+        mv "$tmp" "$root_env"
+        log "Set NEXT_PUBLIC_GO_MMO_URL=$val in $root_env (restart Next to pick up)."
+      fi
+    else
+      if [[ "$NON_INTERACTIVE" -eq 1 ]] || yesno "Add NEXT_PUBLIC_GO_MMO_URL=$val to root .env so lobby/Studio use Go?" "y"; then
+        printf '\n# Go MMO lobby socket\nNEXT_PUBLIC_GO_MMO_URL=%s\n' "$val" >> "$root_env"
+        log "Appended NEXT_PUBLIC_GO_MMO_URL=$val to $root_env (restart Next to pick up)."
+      fi
+    fi
+  else
+    log "No root .env yet — set NEXT_PUBLIC_GO_MMO_URL=$val after Next setup."
+  fi
+}
+
 ensure_env_example() {
   cat > "$ENV_EXAMPLE" <<EOF
 GO_MMO_PORT=3001
@@ -368,6 +402,13 @@ main() {
     add_proxy_additive "$subdomain" "$host" "$port" || warn "Proxy add failed."
   fi
 
+  # Lobby client URL: HTTPS subdomain if proxied, else local upstream.
+  local client_url="$public_url"
+  if [[ "$client_url" != http* ]]; then
+    client_url="http://127.0.0.1:${port}"
+  fi
+  upsert_root_go_mmo_url "$client_url"
+
   if [[ "$mode" == "proxy" ]]; then
     cat <<EOF
 
@@ -376,10 +417,12 @@ main() {
 ------------------------------------------------------------
   Upstream: ${host}:${port}
   Public:   ${public_url}
+  Client:   NEXT_PUBLIC_GO_MMO_URL → ${client_url}
   Tool:     ${DEV_PROXY}
 
  Start Go MMO separately, then traffic hits the subdomain.
  Rerun safely: ./go-mmo/scripts/setup-go-mmo.sh --proxy-only
+ Restart Next after .env change so the lobby picks up the Go URL.
 ------------------------------------------------------------
 EOF
     exit 0
