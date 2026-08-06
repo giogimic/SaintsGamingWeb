@@ -156,3 +156,45 @@ ON CONFLICT(accountId, slug) DO UPDATE SET
   status=excluded.status, objectiveJson=excluded.objectiveJson
 `, accountID, p.Slug, p.Status, string(raw))
 }
+
+func (s *Store) LoadSkills(accountID string) map[string]int {
+	out := map[string]int{}
+	if !s.ok() || accountID == "" {
+		return out
+	}
+	rows, err := s.DB.Query(`SELECT skillSlug, xp FROM GoSkillXP WHERE accountId = ?`, accountID)
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var slug string
+		var xp int
+		if rows.Scan(&slug, &xp) == nil {
+			out[slug] = xp
+		}
+	}
+	return out
+}
+
+func (s *Store) SaveSkills(accountID string, xp map[string]int) {
+	if !s.ok() || accountID == "" || xp == nil {
+		return
+	}
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+	_, _ = tx.Exec(`DELETE FROM GoSkillXP WHERE accountId = ?`, accountID)
+	for slug, v := range xp {
+		if v <= 0 {
+			continue
+		}
+		_, _ = tx.Exec(
+			`INSERT INTO GoSkillXP (accountId, skillSlug, xp) VALUES (?, ?, ?)`,
+			accountID, slug, v,
+		)
+	}
+	_ = tx.Commit()
+}

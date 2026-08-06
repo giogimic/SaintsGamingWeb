@@ -66,10 +66,10 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		deps.Combat = combat.NewManager()
 	}
 	if deps.Encounters == nil {
-		deps.Encounters = encounter.NewManager()
+		deps.Encounters = encounter.NewManager(nil)
 	}
 	if deps.Dialogue == nil {
-		deps.Dialogue = dialogue.NewManager()
+		deps.Dialogue = dialogue.NewManager(nil)
 	}
 	if deps.Quests == nil {
 		deps.Quests = quest.NewManager(nil)
@@ -81,7 +81,7 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		deps.GTC = economy.NewManager()
 	}
 	if deps.Skills == nil {
-		deps.Skills = skill.NewManager()
+		deps.Skills = skill.NewManager(nil)
 	}
 	if deps.Loot == nil {
 		deps.Loot = world.NewLootManager()
@@ -318,11 +318,17 @@ func (h *Hub) handleEncounter(accountID string) {
 	if !res.Triggered {
 		return
 	}
+	maxHP := res.BaseHP
+	if maxHP < 1 {
+		maxHP = 40 + res.Level*5
+	}
 	spawned := h.eng.Creatures().Spawn(p.MapID, creature.Entity{
 		Species: res.Species, Name: res.Species, X: p.X + 1, Y: p.Y,
-		Sprite: res.Species, Hostile: true, Level: res.Level, MaxHP: 40 + res.Level*5,
+		Sprite: res.Species, Hostile: true, Level: res.Level, MaxHP: maxHP,
 	})
-	sess := h.deps.Combat.StartTB(accountID, spawned.ID, p.MapID, p.HP, spawned.HP)
+	ps := combat.DefaultPlayerStats(p.HP)
+	cs := combat.DefaultCreatureStats(res.Level, maxHP)
+	sess := h.deps.Combat.StartTBWithStats(accountID, spawned.ID, p.MapID, p.HP, spawned.HP, ps, cs)
 	h.EmitToSocket(p.SocketID, protocol.EvBattleStarted, map[string]any{
 		"combatId": sess.ID, "species": res.Species, "level": res.Level, "mode": "tb",
 		"creatureId": spawned.ID, "hp": spawned.HP, "maxHp": spawned.MaxHP,

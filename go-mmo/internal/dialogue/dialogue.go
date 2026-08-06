@@ -1,6 +1,11 @@
 package dialogue
 
-import "sync"
+import (
+	"database/sql"
+	"encoding/json"
+	"strings"
+	"sync"
+)
 
 // Node is one dialogue step.
 type Node struct {
@@ -14,7 +19,7 @@ type Node struct {
 type Choice struct {
 	Label     string `json:"label"`
 	Next      string `json:"next,omitempty"`
-	Action    string `json:"action,omitempty"` // end | accept_quest | complete_quest
+	Action    string `json:"action,omitempty"` // end | accept_quest | complete_quest | open_shop
 	QuestSlug string `json:"questSlug,omitempty"`
 }
 
@@ -33,19 +38,22 @@ type Session struct {
 	TargetID  string
 }
 
-// Manager holds demo dialogue trees (Saints Trail welcome + shop).
+// Manager holds dialogue trees (seeded demos + optional SQLite NpcDialogueTree rows).
 type Manager struct {
 	mu       sync.RWMutex
 	trees    map[string]*Tree
 	sessions map[string]*Session // account -> session
+	db       *sql.DB
 }
 
-func NewManager() *Manager {
+func NewManager(db *sql.DB) *Manager {
 	m := &Manager{
 		trees:    make(map[string]*Tree),
 		sessions: make(map[string]*Session),
+		db:       db,
 	}
 	m.seed()
+	_ = m.LoadFromDB()
 	return m
 }
 
@@ -94,6 +102,128 @@ func (m *Manager) seed() {
 	m.trees["npc_shop"] = m.trees["demo_shop"]
 }
 
+// LoadFromDB imports Prisma-compatible NpcDialogueTree rows (npcId + JSON data).
+func (m *Manager) LoadFromDB() error {
+	if m.db == nil {
+		return nil
+	}
+	rows, err := m.db.Query(`SELECT npcId, name, data FROM NpcDialogueTree`)
+	if err != nil {
+		// Table may be empty / missing on fresh Go-only DBs
+		return err
+	}
+	defer rows.Close()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for rows.Next() {
+		var npcID, name, raw string
+		if rows.Scan(&npcID, &name, &raw) != nil {
+			continue
+		}
+		tree, ok := parsePrismaTree(npcID, name, raw)
+		if !ok {
+			continue
+		}
+		m.trees[npcID] = tree
+	}
+	return nil
+}
+
+func parsePrismaTree(npcID, name, raw string) (*Tree, bool) {
+	var blob map[string]json.RawMessage
+	if json.Unmarshal([]byte(raw), &blob) != nil || len(blob) == 0 {
+		return nil, false
+	}
+	nodes := make(map[string]Node)
+	start := "node_start"
+	if _, ok := blob["node_start"]; !ok {
+		start = "start"
+	}
+	for id, nodeRaw := range blob {
+		var loose struct {
+			Text     string `json:"text"`
+			Speaker  string `json:"speaker"`
+			Choices  []struct {
+				Label     string `json:"label"`
+				Next      string `json:"next"`
+				NextNode  string `json:"nextNode"`
+				Action    string `json:"action"`
+				QuestSlug string `json:"questSlug"`
+			} `json:"choices"`
+			Options []struct {
+				Label     string `json:"label"`
+				Next      string `json:"next"`
+				NextNode  string `json:"nextNode"`
+				Action    string `json:"action"`
+				QuestSlug string `json:"questSlug"`
+			} `json:"options"`
+		}
+		if json.Unmarshal(nodeRaw, &loose) != nil {
+			continue
+		}
+		speaker := loose.Speaker
+		if speaker == "" {
+			speaker = name
+		}
+		n := Node{ID: id, Speaker: speaker, Text: loose.Text}
+		src := loose.Choices
+		if len(src) == 0 {
+			for _, o := range loose.Options {
+				src = append(src, o)
+			}
+		}
+		for _, c := range src {
+			next := c.Next
+			if next == "" {
+				next = c.NextNode
+			}
+			action := normalizeAction(c.Action, next)
+			if next == "exit" && action == "" {
+				action = "end"
+				next = ""
+			}
+			n.Choices = append(n.Choices, Choice{
+				Label: c.Label, Next: next, Action: action, QuestSlug: c.QuestSlug,
+			})
+		}
+		if len(n.Choices) == 0 {
+			n.Choices = []Choice{{Label: "…", Action: "end"}}
+		}
+		nodes[id] = n
+	}
+	if len(nodes) == 0 {
+		return nil, false
+	}
+	if _, ok := nodes[start]; !ok {
+		for id := range nodes {
+			start = id
+			break
+		}
+	}
+	return &Tree{ID: npcID, Start: start, Nodes: nodes}, true
+}
+
+func normalizeAction(action, next string) string {
+	a := strings.ToLower(strings.TrimSpace(action))
+	switch a {
+	case "accept_quest", "acceptquest":
+		return "accept_quest"
+	case "complete_quest", "completequest":
+		return "complete_quest"
+	case "open_shop", "openshop":
+		return "open_shop"
+	case "end", "exit", "close":
+		return "end"
+	case "":
+		if next == "" || next == "exit" {
+			return "end"
+		}
+		return ""
+	default:
+		return a
+	}
+}
+
 // Start begins dialogue for target (npc id or tree id).
 func (m *Manager) Start(accountID, targetID string) (Node, bool) {
 	m.mu.Lock()
@@ -107,7 +237,7 @@ func (m *Manager) Start(accountID, targetID string) (Node, bool) {
 	return node, true
 }
 
-// Select advances by choice index or next node id.
+// SelectResult is the outcome of a choice.
 type SelectResult struct {
 	Node      *Node
 	Ended     bool
@@ -168,7 +298,12 @@ func (m *Manager) Select(accountID string, nextNode string, choiceIdx int) Selec
 		res.Ended = true
 		return res
 	}
-	n := tree.Nodes[choice.Next]
+	n, ok := tree.Nodes[choice.Next]
+	if !ok {
+		delete(m.sessions, accountID)
+		res.Ended = true
+		return res
+	}
 	sess.NodeID = n.ID
 	cp := n
 	res.Node = &cp
@@ -179,4 +314,10 @@ func (m *Manager) End(accountID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	delete(m.sessions, accountID)
+}
+
+func (m *Manager) TreeCount() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return len(m.trees)
 }

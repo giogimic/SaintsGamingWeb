@@ -48,12 +48,12 @@ func main() {
 		Parties:    party.NewManager(),
 		Inventory:  inventory.NewManager(sqlDB),
 		Combat:     combat.NewManager(),
-		Encounters: encounter.NewManager(),
-		Dialogue:   dialogue.NewManager(),
+		Encounters: encounter.NewManager(sqlDB),
+		Dialogue:   dialogue.NewManager(sqlDB),
 		Quests:     quest.NewManager(sqlDB),
 		Craft:      craft.NewManager(),
 		GTC:        economy.NewManager(),
-		Skills:     skill.NewManager(),
+		Skills:     skill.NewManager(sqlDB),
 		Loot:       world.NewLootManager(),
 		SaveMap: func(id, name, grid, npcs, tiles, tilesets string) error {
 			return httpapi.PersistMap(sqlDB, wm, id, name, grid, npcs, tiles, tilesets)
