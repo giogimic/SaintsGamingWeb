@@ -36,3 +36,8 @@ Manual `/lobby`:
 1. Own avatar visible on grass near spawn  
 2. Trail NPCs (Vance / greeter / etc.) visible near plaza  
 3. Two different accounts → peer nameplate + Nearby ≥ 1  
+
+## Status
+
+**Merged:** #40 → `main` (`e1c0619`)  
+**Browser confirm (2026-08-06):** `/lobby` as `mp_vis_a` — own avatar + ~7 NPC sprites on Saints Trail Sandbox grass (not grass-only). Screenshot: `/tmp/computer-use/5b4b2.webp`.

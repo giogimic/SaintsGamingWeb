@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-06 — Lobby entities visible (#40 on main)
+
+Merged + browser-confirmed avatar/NPCs on `/lobby` grass.  
+See `logs/2026-08-06-lobby-entities-visible.md`.
+
+---
+
 ## 2026-08-06 — Lobby entities visible (only-grass fix)
 
 Stop Babylon remount wiping sprites; entity alphatest + render group above grass; live NPC fallback; no poisoned empty map cache.  
