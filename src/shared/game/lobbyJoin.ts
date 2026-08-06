@@ -39,17 +39,23 @@ export function shouldSkipRedundantLobbyJoin(opts: {
 }
 
 /**
- * Empty map_players must not wipe peers that are still on the same public shard
- * (join-storm race). Non-empty snapshots always win.
+ * Empty map_players must not wipe peers during lobby seat races.
+ * Non-empty snapshots always win.
+ *
+ * Important: character load used to set instanceId to the *base* map id
+ * (`DEMO_SANDBOX`) before `map_joined` delivered `*_chN`. Guarding only on
+ * `isPublicChannelInstanceId` left that window unprotected.
  */
 export function shouldReplacePeerSnapshot(opts: {
   incomingCount: number;
   existingCount: number;
   currentInstanceId?: string | null;
+  /** True for /lobby public multiplayer (not Studio private/PIE). */
+  lobbySeat?: boolean;
 }): boolean {
   if (opts.incomingCount > 0) return true;
   if (opts.existingCount === 0) return true;
-  // Keep peers on a live public shard when the snapshot is empty (race).
+  if (opts.lobbySeat) return false;
   if (isPublicChannelInstanceId(opts.currentInstanceId)) return false;
   return true;
 }

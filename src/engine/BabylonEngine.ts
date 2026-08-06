@@ -173,6 +173,14 @@ export class BabylonEngine {
   private currentMapId: string = '';
   private currentMapWidth: number = 24;
   private currentMapHeight: number = 24;
+
+  /** Live tilemap dims for world↔tile math (peers / camera) after hot remesh. */
+  public getMapWidth(): number {
+    return this.currentMapWidth;
+  }
+  public getMapHeight(): number {
+    return this.currentMapHeight;
+  }
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
@@ -206,6 +214,8 @@ export class BabylonEngine {
   private waterMaterials: StandardMaterial[] = [];
   private guiTexture: AdvancedDynamicTexture;
   private chatBubbles: Map<string, Rectangle> = new Map();
+  /** Floating name labels for multiplayer peers (not local player_main). */
+  private nameplates: Map<string, Rectangle> = new Map();
   private shadowGen?: ShadowGenerator;
   private cameraTargetX: number = 0;
   private cameraTargetZ: number = 0;
@@ -2169,6 +2179,44 @@ private resolveTilePick(
       chatBubble.dispose();
       this.chatBubbles.delete(entity.id);
     }
+
+    // Multiplayer peers: always show a nameplate so they are not mistaken for NPCs.
+    const wantsNameplate =
+      !!entity.isPlayer &&
+      entity.id.startsWith('multiplayer_') &&
+      !!entity.name;
+    let nameplate = this.nameplates.get(entity.id);
+    if (wantsNameplate) {
+      if (!nameplate) {
+        nameplate = new Rectangle(`nameplate_${entity.id}`);
+        nameplate.width = '160px';
+        nameplate.height = '22px';
+        nameplate.thickness = 0;
+        nameplate.background = 'transparent';
+        const label = new TextBlock();
+        label.text = entity.name;
+        label.color = '#fde68a';
+        label.fontSize = 12;
+        label.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+        label.fontWeight = '700';
+        label.shadowColor = 'black';
+        label.shadowBlur = 3;
+        label.shadowOffsetX = 1;
+        label.shadowOffsetY = 1;
+        nameplate.addControl(label);
+        this.guiTexture.addControl(nameplate);
+        nameplate.linkWithMesh(spriteMesh);
+        nameplate.linkOffsetY = -52;
+        this.nameplates.set(entity.id, nameplate);
+      } else {
+        const label = nameplate.children[0] as TextBlock;
+        if (label && label.text !== entity.name) label.text = entity.name;
+      }
+    } else if (nameplate) {
+      this.guiTexture.removeControl(nameplate);
+      nameplate.dispose();
+      this.nameplates.delete(entity.id);
+    }
   }
 
   // --- COMBAT VISUAL FX ---
@@ -2421,6 +2469,12 @@ private resolveTilePick(
       this.guiTexture.removeControl(chatBubble);
       chatBubble.dispose();
       this.chatBubbles.delete(id);
+    }
+    const nameplate = this.nameplates.get(id);
+    if (nameplate) {
+      this.guiTexture.removeControl(nameplate);
+      nameplate.dispose();
+      this.nameplates.delete(id);
     }
   }
 

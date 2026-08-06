@@ -15,6 +15,7 @@ import ProfessorLabOverlay from './ProfessorLabOverlay';
 import LeaderboardOverlay from './leaderboard-overlay';
 import AchievementsOverlay from './achievements-overlay';
 import MiniMapRadar from './MiniMapRadar';
+import PeerPresenceHud from './PeerPresenceHud';
 import MobileControls from './MobileControls';
 import SaintsHudOrbs from './hud/SaintsHudOrbs';
 import ClassicPanel from './ClassicPanel';
@@ -200,9 +201,12 @@ export default function TheLobby({
       });
       useGameStore.setState({
         currentMapId: validMapId,
-        instanceId: validMapId,
+        // Never pretend we're seated on a public shard until map_joined
+        // delivers DEMO_SANDBOX_chN — a base instanceId disabled peer-wipe guards.
+        instanceId: '',
         gameMode: 'EXPLORING',
         mapEntities: [], // clear stale placeholders; socket will repopulate
+        otherPlayers: {}, // fresh seat; map_players / player_joined refill
       });
 
       // Notify socket server of loaded character specs (base map id only — never shard suffix)
@@ -530,6 +534,8 @@ export default function TheLobby({
           incomingCount,
           existingCount,
           currentInstanceId: state.instanceId,
+          // /lobby public seat — keep peers through base-id / join races
+          lobbySeat: !enableStudio,
         })
       ) {
         if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
@@ -552,7 +558,24 @@ export default function TheLobby({
     socket.on('player_joined', (data) => {
       if (data.socketId !== socket.id) {
         useGameStore.getState().updateOtherPlayer(data.socketId, data);
+        // Visible confirmation that the peer store received the join (helps
+        // separate "not on shard" from "sprite not rendering").
+        if (!enableStudio && data?.name) {
+          const at =
+            typeof data.x === 'number' && typeof data.y === 'number'
+              ? ` @ (${Math.round(data.x)}, ${Math.round(data.y)})`
+              : '';
+          useGameStore.getState().showToast(`${data.name} is nearby${at}`);
+        }
       }
+    });
+
+    socket.on('session_replaced', (data: { reason?: string }) => {
+      useGameStore.getState().setOtherPlayers({});
+      useGameStore.getState().showToast(
+        data?.reason ||
+          'Signed in elsewhere — one account is one lobby seat. Use two different accounts to see each other.'
+      );
     });
     
     socket.on('player_moved', (raw) => {
@@ -1503,6 +1526,9 @@ export default function TheLobby({
           className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
         />
 
+        {gameMode === 'EXPLORING' && showGameplayHud && !enableStudio && (
+          <PeerPresenceHud />
+        )}
         {gameMode === 'EXPLORING' && showGameplayHud && (
           <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
             <MiniMapRadar />

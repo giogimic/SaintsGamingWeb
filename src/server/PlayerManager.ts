@@ -185,7 +185,7 @@ export class PlayerManager {
       room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
     });
 
-    this.sendMapPlayersSnapshot(player);
+    // map_joined before map_players so the client arms shard/peer guards first
     this.engine.events.emit("directMessage", {
       socketId: player.socketId,
       event: "map_joined",
@@ -196,6 +196,7 @@ export class PlayerManager {
         y: player.y,
       },
     });
+    this.sendMapPlayersSnapshot(player);
 
     // Meta refresh for peers (same socketId — client upserts, does not ghost)
     this.engine.events.emit("networkBroadcast", {
@@ -270,6 +271,10 @@ export class PlayerManager {
     // Clean up existing player entities for this socket or account to prevent duplicate entities
     for (const [existingId, existingPlayer] of Array.from(this.players.entries())) {
       if (existingPlayer.socketId === socketId || (accountId && existingPlayer.accountId === accountId)) {
+        const replacedOtherSocket =
+          !!accountId &&
+          existingPlayer.accountId === accountId &&
+          existingPlayer.socketId !== socketId;
         this.worldManager.removeEntity(existingPlayer.mapId, existingPlayer.x, existingPlayer.y, existingId);
         this.worldManager.leaveInstance(existingPlayer.mapId, existingPlayer.accountId);
         this.players.delete(existingId);
@@ -292,6 +297,18 @@ export class PlayerManager {
             existingPlayer.zoneY
           ),
         });
+        // One account = one lobby seat. Tell the displaced client why they vanished
+        // (same user in two browsers never sees "another player").
+        if (replacedOtherSocket) {
+          this.engine.events.emit("directMessage", {
+            socketId: existingPlayer.socketId,
+            event: "session_replaced",
+            data: {
+              reason:
+                "Signed in elsewhere — one account is one lobby seat. Use two different accounts to see each other.",
+            },
+          });
+        }
       }
     }
 
@@ -376,10 +393,7 @@ export class PlayerManager {
       room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
     });
 
-    // Send full map state to the new player
-    this.sendMapPlayersSnapshot(player);
-
-    // Notify the client what shard they are in (always the playable base map id)
+    // Notify shard id before peer snapshot so client guards arm first
     this.engine.events.emit("directMessage", {
       socketId,
       event: "map_joined",
@@ -390,6 +404,9 @@ export class PlayerManager {
         y: player.y,
       }
     });
+
+    // Send full map state to the new player
+    this.sendMapPlayersSnapshot(player);
 
     // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
     let mapCreatures: any[] = [];
