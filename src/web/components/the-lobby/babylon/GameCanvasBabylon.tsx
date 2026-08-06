@@ -107,19 +107,38 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }, []);
 
   useEffect(() => {
-    setIsEngineReady(false);
-
     // Prefer live Studio / socket document only when it matches currentMapId.
     // Gate warps that flip the id without clearing activeMapData used to keep DEMO.
     if (activeMapData && shouldKeepActiveMapData(activeMapData, currentMapId)) {
-      setMapData(activeMapData);
-      // Brief delay to allow React to flush to DOM before remounting Engine
-      setTimeout(() => setIsEngineReady(true), 50);
+      setMapData((prev) => {
+        // Same object — no-op (avoids Babylon remount).
+        if (prev === activeMapData) return prev;
+        if (prev && shouldKeepActiveMapData(prev as Record<string, unknown>, currentMapId)) {
+          const prevNpcs = Array.isArray((prev as { npcs?: unknown[] }).npcs)
+            ? (prev as { npcs: unknown[] }).npcs.length
+            : 0;
+          const nextNpcs = Array.isArray((activeMapData as { npcs?: unknown[] }).npcs)
+            ? (activeMapData as { npcs: unknown[] }).npcs.length
+            : 0;
+          const prevTiles = Array.isArray((prev as { tilesets?: unknown[] }).tilesets)
+            ? (prev as { tilesets: unknown[] }).tilesets.length
+            : 0;
+          const nextTiles = Array.isArray((activeMapData as { tilesets?: unknown[] }).tilesets)
+            ? (activeMapData as { tilesets: unknown[] }).tilesets.length
+            : 0;
+          // Keep engine-stable ref unless the store doc is clearly richer (NPCs /
+          // tilesets arrived after a barren first paint).
+          if (nextNpcs <= prevNpcs && nextTiles <= prevTiles) return prev;
+        }
+        return activeMapData;
+      });
+      setIsEngineReady(true);
       return;
     }
 
     // Keep prior mapData while fetching the same base map — setMapData(null)
     // disposed Babylon with no replacement and hid peer sprites mid-join.
+    setIsEngineReady(false);
     setMapData((prev) => {
       if (prev && shouldKeepActiveMapData(prev as Record<string, unknown>, currentMapId)) {
         return prev;
@@ -133,6 +152,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (!shouldKeepActiveMapData(store.activeMapData, currentMapId)) {
         store.setActiveMapData(ensured);
       }
+      setIsEngineReady(true);
     }).catch(() => {
       // Fallback map if API fails
       setMapData({
@@ -146,6 +166,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         gates: {},
         npcs: [],
       });
+      setIsEngineReady(true);
     });
   }, [currentMapId, activeMapData]);
 
@@ -506,9 +527,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
   }, [mapData]); // Added mapData to dependencies since it's used in the new listeners
 
+  // Stable key so setActiveMapData new-object refreshes do not dispose Babylon
+  // (that wiped player_main + NPCs and left only grass).
+  const engineMapKey = mapData
+    ? toBaseMapId(String((mapData as { id?: string }).id || currentMapId || ''))
+    : '';
+
   useEffect(() => {
     // Wait until map data is fully loaded from the API before mounting engine
-    if (!canvasRef.current || !mapData) return;
+    if (!canvasRef.current || !mapData || !engineMapKey) return;
 
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
@@ -685,8 +712,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       // Render map entities: socket mapEntities + static map NPCs as fallback
       // (socket snapshot can miss if join races; map JSON still has placements).
+      // Read live store doc — mount closure activeMap.npcs goes stale when we
+      // keep the Babylon engine across setActiveMapData refreshes.
       const mapEntities = useGameStore.getState().mapEntities || [];
-      const staticNpcs = (activeMap?.npcs || []).map((npc: any) => ({
+      const liveMapDoc =
+        (useGameStore.getState().activeMapData as {
+          npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
+        } | null) || activeMap;
+      const staticNpcs = (liveMapDoc?.npcs || []).map((npc: any) => ({
         id: `mapnpc_${npc.id}`,
         type: 'NPC' as const,
         spriteKey: npc.sprite || 'adventurer',
@@ -719,8 +752,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       merged.forEach((ent) => {
         if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
           activeEntities.add(ent.id);
-          const ex = ent.position.x - mapWidth / 2;
-          const ez = mapHeight / 2 - ent.position.y;
+          const ex = ent.position.x - liveW / 2;
+          const ez = liveH / 2 - ent.position.y;
           const kind =
             ent.type === 'NPC'
               ? 'npc'
@@ -758,8 +791,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       babylonEngine.dispose();
       engineRef.current = null;
     };
-  // Re-run when mapData resolves or currentMapId changes
-  }, [currentMapId, mapData]);
+  // Remount only when the base map seat changes — not on every mapData object identity.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
+  }, [engineMapKey]);
 
   // Handle Combat Target Selection Ring
   useEffect(() => {

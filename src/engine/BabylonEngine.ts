@@ -2017,9 +2017,17 @@ private resolveTilePick(
       spriteMesh.isPickable = true;
 
       const mat = new StandardMaterial(`entityMat_${entity.id}`, this.scene);
+      // Alpha-test + depth write so sprites sit above batched grass (P0 bury
+      // fixed tileset mats; entity mats were still ALPHATESTANDBLEND and could
+      // vanish under the ground mesh — "only grass" with no characters).
       mat.useAlphaFromDiffuseTexture = true;
-      mat.transparencyMode = 2; // ALPHATESTANDBLEND
+      mat.transparencyMode = Material.MATERIAL_ALPHATEST;
+      mat.alphaCutOff = 0.05;
+      mat.forceDepthWrite = true;
       mat.backFaceCulling = false;
+
+      // Draw after ground (group 0) so characters always composite on top.
+      spriteMesh.renderingGroupId = 1;
 
       if (entity.spriteUrl) {
         // Always invertY=true (Babylon default). Re-apply UV in onLoad — Babylon can
@@ -2074,11 +2082,12 @@ private resolveTilePick(
       shadow.rotation.x = Math.PI / 2;
       shadow.position.y = -0.7; // Relative to spriteMesh center
       shadow.parent = spriteMesh;
+      shadow.renderingGroupId = 1;
       
       const shadowMat = new StandardMaterial(`shadowMat_${entity.id}`, this.scene);
       shadowMat.diffuseColor = new Color3(0, 0, 0);
       shadowMat.alpha = 0.3;
-      shadowMat.transparencyMode = 2;
+      shadowMat.transparencyMode = Material.MATERIAL_ALPHABLEND;
       shadowMat.zOffset = -1; // Prevent Z-fighting with floor
       shadow.material = shadowMat;
       this.shadowMeshes.set(entity.id, shadow);
@@ -2098,8 +2107,15 @@ private resolveTilePick(
         spriteMesh.metadata.spriteConfig = resolvedConfig;
       }
 
-      // Check if sprite URL changed
+      // Keep peers / NPCs above grass if they were created before this fix.
+      spriteMesh.renderingGroupId = 1;
       const mat = spriteMesh.material as StandardMaterial;
+      if (mat && mat.transparencyMode !== Material.MATERIAL_ALPHATEST) {
+        mat.useAlphaFromDiffuseTexture = true;
+        mat.transparencyMode = Material.MATERIAL_ALPHATEST;
+        mat.alphaCutOff = 0.05;
+        mat.forceDepthWrite = true;
+      }
       const tex = mat?.diffuseTexture as Texture;
       const currentUrl = (spriteMesh.metadata?.spriteUrl as string | undefined) || tex?.name;
       const existingMesh = spriteMesh;
