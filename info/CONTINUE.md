@@ -11,9 +11,9 @@
 
 ### Parallel track (do NOT merge until owner says so)
 
-**Branch `giogimic/go-mmo-backend-2d3d`** — rewrite heavy MMO backend in Go under `go-mmo/`.
-Setup: `./go-mmo/scripts/setup-go-mmo.sh` (detects Caddy, asks subdomain, port **3100**).
-Log: `logs/2026-08-06-go-mmo-backend.md`. Continues should deepen Go parity (combat, inventory, studio sockets), keep TS `main` untouched.
+**Branch `giogimic/go-mmo-backend-2d3d`** — Go MMO backend rewrite under `go-mmo/` (**backend conversion complete**; do not merge until owner says).
+Setup: `./go-mmo/scripts/setup-go-mmo.sh` (Caddy subdomain, port **3100**).
+Log: `logs/2026-08-06-go-mmo-backend.md`. Optional next: client A/B URL, Studio UI in Go, deeper skill/TB formulas.
 
 ### Main / prod track
 
@@ -25,7 +25,7 @@ One PR → merge to `main` → then next:
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **Go MMO** | Full backend rewrite on alt ports | **In progress** (branch only) |
+| **Go MMO** | Full backend rewrite on alt ports | **Backend complete** (branch only; do not merge) |
 | **Prod deploy** | `next start` skipped Socket.io + DemoBootstrap | **Fix PR** (entrypoint / `npm start` → `server.ts`) |
 | **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
 | **MP #38–#39** | Join-storm + peer wipe + presence UI | **On main** |

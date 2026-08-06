@@ -11,14 +11,19 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/bootstrap"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/combat"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/config"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/craft"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/creature"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/db"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/dialogue"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/economy"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/encounter"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/engine"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/httpapi"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/inventory"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/party"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/player"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/quest"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/skill"
 	mmsocket "github.com/giogimic/SaintsGamingWeb/go-mmo/internal/socket"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/world"
 	enginetypes "github.com/zishang520/engine.io/v2/types"
@@ -43,6 +48,15 @@ func main() {
 		Inventory:  inventory.NewManager(),
 		Combat:     combat.NewManager(),
 		Encounters: encounter.NewManager(),
+		Dialogue:   dialogue.NewManager(),
+		Quests:     quest.NewManager(),
+		Craft:      craft.NewManager(),
+		GTC:        economy.NewManager(),
+		Skills:     skill.NewManager(),
+		Loot:       world.NewLootManager(),
+		SaveMap: func(id, name, grid, npcs, tiles, tilesets string) error {
+			return httpapi.PersistMap(sqlDB, wm, id, name, grid, npcs, tiles, tilesets)
+		},
 	}
 
 	if err := bootstrap.EnsureDemo(sqlDB, wm); err != nil {
