@@ -510,7 +510,16 @@ export const useGameStore = create<GameState>()(
       setOtherPlayers: (players) => set((state) => { state.otherPlayers = players; }),
       updateOtherPlayer: (socketId, data) => set((state) => {
         if (!state.otherPlayers[socketId]) {
-          state.otherPlayers[socketId] = { x: data.x || 0, y: data.y || 0, name: data.name || 'Unknown', spriteId: data.spriteId || 'adventurer', direction: data.direction, isMoving: data.isMoving, chatMessage: data.chatMessage, customization: data.customization };
+          state.otherPlayers[socketId] = {
+            x: data.x ?? 0,
+            y: data.y ?? 0,
+            name: data.name || 'Unknown',
+            spriteId: data.spriteId || 'adventurer',
+            direction: data.direction,
+            isMoving: data.isMoving,
+            chatMessage: data.chatMessage,
+            customization: data.customization,
+          };
         } else {
           if (data.x !== undefined) state.otherPlayers[socketId].x = data.x;
           if (data.y !== undefined) state.otherPlayers[socketId].y = data.y;

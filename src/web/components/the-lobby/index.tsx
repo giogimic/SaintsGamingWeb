@@ -42,6 +42,11 @@ import {
   shouldClearPeersOnDisconnect,
 } from '@/shared/game/lobbyReconnect';
 import {
+  buildJoinKey,
+  shouldReplacePeerSnapshot,
+  shouldSkipRedundantLobbyJoin,
+} from '@/shared/game/lobbyJoin';
+import {
   STUDIO_MAP_HOT_RELOAD_EVENT,
   STUDIO_PIE_CHANGED_EVENT,
   type StudioMapHotReloadDetail,
@@ -94,6 +99,8 @@ export default function TheLobby({
   const { data: session, status } = useSession();
   const containerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
+  /** Last successful lobby/studio join contract — used to coalesce join storms. */
+  const lastJoinKeyRef = useRef<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
@@ -199,17 +206,21 @@ export default function TheLobby({
       });
 
       // Notify socket server of loaded character specs (base map id only — never shard suffix)
-      socketRef.current?.emit('join_map', {
-        accountId: session?.user?.id || charId,
-        mapId: toBaseMapId(validMapId),
-        lobby: !enableStudio,
-        isPrivate: enableStudio,
-        pie: enableStudio && !useEditorStore.getState().isCreationMode,
-        x: validPosition.x,
-        y: validPosition.y,
-        name: res.data.name,
-        spriteId: res.data.spriteId || 'adventurer'
-      });
+      if (socketRef.current) {
+        const joinPayload = {
+          accountId: session?.user?.id || charId,
+          mapId: toBaseMapId(validMapId),
+          lobby: !enableStudio,
+          isPrivate: enableStudio,
+          pie: enableStudio && !useEditorStore.getState().isCreationMode,
+          x: validPosition.x,
+          y: validPosition.y,
+          name: res.data.name,
+          spriteId: res.data.spriteId || 'adventurer',
+        };
+        lastJoinKeyRef.current = buildJoinKey(joinPayload);
+        socketRef.current.emit('join_map', joinPayload);
+      }
 
       setActiveCharacterId(charId);
       setShowCreator(false);
@@ -427,7 +438,7 @@ export default function TheLobby({
         if (!state.player.accountId || state.player.accountId !== session.user.id) {
           useGameStore.getState().hydratePlayer({ accountId: session.user.id });
         }
-        socket.emit('join_map', {
+        const joinPayload = {
           accountId: effectiveAccountId,
           // Lobby multiplayer always rejoins DEMO_SANDBOX (ignore warp/stale store).
           mapId: enableStudio
@@ -439,8 +450,11 @@ export default function TheLobby({
           x: state.player.position?.x ?? 14,
           y: state.player.position?.y ?? 15,
           name: state.player.name || 'Player',
-          spriteId: state.player.spriteId || 'adventurer'
-        });
+          spriteId: state.player.spriteId || 'adventurer',
+        };
+        // Reconnect always joins (lastJoinKey cleared on disconnect).
+        lastJoinKeyRef.current = buildJoinKey(joinPayload);
+        socket.emit('join_map', joinPayload);
         if (!enableStudio) {
           const cur = toBaseMapId(state.currentMapId || '');
           if (cur !== 'DEMO_SANDBOX') {
@@ -456,6 +470,7 @@ export default function TheLobby({
     socket.on('disconnect', (reason) => {
       // Stay in EXPLORING — do not dump to menu. Peers get player_left server-side.
       hadLobbyDisconnect = true;
+      lastJoinKeyRef.current = null;
       // Soft blips keep peer sprites until map_players refreshes after reconnect.
       if (shouldClearPeersOnDisconnect(reason)) {
         useGameStore.getState().setOtherPlayers({});
@@ -505,13 +520,31 @@ export default function TheLobby({
     });
 
     socket.on('map_players', (players) => {
-      const filtered = { ...players };
+      const filtered = { ...(players || {}) };
       if (socket.id) delete filtered[socket.id];
-      useGameStore.getState().setOtherPlayers(filtered);
+      const state = useGameStore.getState();
+      const incomingCount = Object.keys(filtered).length;
+      const existingCount = Object.keys(state.otherPlayers || {}).length;
+      if (
+        !shouldReplacePeerSnapshot({
+          incomingCount,
+          existingCount,
+          currentInstanceId: state.instanceId,
+        })
+      ) {
+        if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+          console.debug('[lobby] map_players keep peers (empty snapshot race)', {
+            existingCount,
+            instanceId: state.instanceId,
+          });
+        }
+        return;
+      }
+      state.setOtherPlayers(filtered);
       if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
         console.debug('[lobby] map_players', {
-          count: Object.keys(filtered).length,
-          instanceId: useGameStore.getState().instanceId,
+          count: incomingCount,
+          instanceId: state.instanceId,
         });
       }
     });
@@ -1083,6 +1116,7 @@ export default function TheLobby({
   }, [status, session?.user?.id, enableStudio]);
 
   // If character becomes available after socket connect, ensure we are on-map.
+  // Skip when already seated on the public lobby shard (avoids join storms).
   useEffect(() => {
     if (!activeCharacterId || status !== 'authenticated' || !session?.user?.id) return;
     const socket = socketRef.current;
@@ -1098,7 +1132,7 @@ export default function TheLobby({
         useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
       });
     }
-    socket.emit('join_map', {
+    const joinPayload = {
       accountId: session.user.id,
       mapId,
       lobby: !enableStudio,
@@ -1108,7 +1142,21 @@ export default function TheLobby({
       y: state.player.position?.y ?? 15,
       name: state.player.name || 'Player',
       spriteId: state.player.spriteId || 'adventurer',
-    });
+    };
+    if (
+      shouldSkipRedundantLobbyJoin({
+        contract: joinPayload,
+        currentInstanceId: state.instanceId,
+        lastJoinKey: lastJoinKeyRef.current,
+      })
+    ) {
+      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        console.debug('[lobby] skip redundant late join_map', state.instanceId);
+      }
+      return;
+    }
+    lastJoinKeyRef.current = buildJoinKey(joinPayload);
+    socket.emit('join_map', joinPayload);
   }, [activeCharacterId, status, session?.user?.id, enableStudio]);
 
   // Studio PIE — rejoin private playtest shard / author private shard on Play ↔ Editor.

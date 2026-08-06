@@ -4,6 +4,7 @@ import { PlayerInput, EntityType } from "./types";
 import { DatabasePersistenceManager } from "./PersistenceManager";
 import {
   canPartyForceJoinInstance,
+  isPublicChannelInstanceId,
   isSameBaseMap,
   toBaseMapId,
 } from "@/shared/net/mapIds";
@@ -153,7 +154,119 @@ export class PlayerManager {
     return Array.from(this.players.values()).filter(p => p.mapId === mapId);
   }
 
+  /** Refresh meta + reseat rooms without player_left (lobby join storms). */
+  private refreshLobbySeat(
+    player: PlayerState,
+    data: any,
+    requestedMapId: string,
+    remappedFromRetired: boolean
+  ) {
+    if (data?.name) player.name = String(data.name);
+    if (data?.spriteId) player.spriteId = String(data.spriteId);
+
+    if (
+      !remappedFromRetired &&
+      typeof data?.x === "number" &&
+      typeof data?.y === "number"
+    ) {
+      this.worldManager.removeEntity(player.mapId, player.x, player.y, player.entityId);
+      player.x = data.x;
+      player.y = data.y;
+      const z = InterestManager.zoneOf(player.x, player.y);
+      player.zoneX = z.zx;
+      player.zoneY = z.zy;
+      this.worldManager.addEntity(player.mapId, player.x, player.y, player.entityId);
+    }
+
+    // Ensure shard + AOI rooms (reconnect-safe if rooms were dropped)
+    this.engine.events.emit("joinRoom", { socketId: player.socketId, room: player.mapId });
+    this.engine.events.emit("joinRoom", {
+      socketId: player.socketId,
+      room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
+    });
+
+    this.sendMapPlayersSnapshot(player);
+    this.engine.events.emit("directMessage", {
+      socketId: player.socketId,
+      event: "map_joined",
+      data: {
+        instanceId: player.mapId,
+        mapId: requestedMapId,
+        x: player.x,
+        y: player.y,
+      },
+    });
+
+    // Meta refresh for peers (same socketId — client upserts, does not ghost)
+    this.engine.events.emit("networkBroadcast", {
+      room: player.mapId,
+      event: "player_joined",
+      data: {
+        socketId: player.socketId,
+        entityId: player.entityId,
+        x: player.x,
+        y: player.y,
+        direction: player.direction,
+        name: player.name,
+        spriteId: player.spriteId,
+        isMoving: player.isMoving,
+      },
+    });
+  }
+
+  private sendMapPlayersSnapshot(player: PlayerState) {
+    const mapPlayers: Record<string, unknown> = {};
+    for (const p of this.players.values()) {
+      if (p.mapId === player.mapId && p.entityId !== player.entityId) {
+        mapPlayers[p.socketId] = {
+          socketId: p.socketId,
+          entityId: p.entityId,
+          x: p.x,
+          y: p.y,
+          direction: p.direction,
+          name: p.name,
+          spriteId: p.spriteId,
+          isMoving: p.isMoving,
+        };
+      }
+    }
+    this.engine.events.emit("directMessage", {
+      socketId: player.socketId,
+      event: "map_players",
+      data: mapPlayers,
+    });
+  }
+
   private async handleClientJoin({ accountId, socketId, data }: any) {
+    // Never join retired sandboxes (SAINTS_VILLAGE) — that stranded players with broken sprites.
+    const rawBaseMap = toBaseMapId(String(data?.mapId || DEMO_MAP_ID));
+    const remappedFromRetired = RETIRED_MAPS.has(rawBaseMap);
+    const forceLobby = data?.lobby === true || data?.forceDemo === true;
+    const requestedMapId = resolvePlayableMapId(data?.mapId, { lobby: forceLobby });
+    // Check if it's a private instance request (Studio author / player base)
+    // PIE (bible 32) uses a dedicated studio_pie_{userId} room.
+    const isPie = data?.pie === true;
+    const isPrivate =
+      !isPie && (requestedMapId === "BASE" || data?.isPrivate === true);
+
+    // Soft rejoin: same socket already seated on the public lobby shard.
+    // UI join storms (character load + connect + late-join effect) used to
+    // player_left + recreate and briefly hide peers for everyone.
+    const seated = Array.from(this.players.values()).find(
+      (p) => p.socketId === socketId && p.accountId === accountId
+    );
+    if (
+      seated &&
+      forceLobby &&
+      !isPie &&
+      !isPrivate &&
+      isPublicChannelInstanceId(seated.mapId) &&
+      isSameBaseMap(seated.mapId, requestedMapId)
+    ) {
+      this.refreshLobbySeat(seated, data, requestedMapId, remappedFromRetired);
+      return;
+    }
+
     // Clean up existing player entities for this socket or account to prevent duplicate entities
     for (const [existingId, existingPlayer] of Array.from(this.players.entries())) {
       if (existingPlayer.socketId === socketId || (accountId && existingPlayer.accountId === accountId)) {
@@ -184,19 +297,8 @@ export class PlayerManager {
 
     // Generate entity ID
     const entityId = `player_${accountId}_${Date.now()}`;
-    // Never join retired sandboxes (SAINTS_VILLAGE) — that stranded players with broken sprites.
-    const rawBaseMap = toBaseMapId(String(data?.mapId || DEMO_MAP_ID));
-    const remappedFromRetired = RETIRED_MAPS.has(rawBaseMap);
-    const forceLobby = data?.lobby === true || data?.forceDemo === true;
-    const requestedMapId = resolvePlayableMapId(data?.mapId, { lobby: forceLobby });
     // Ensure map definition is loaded
     await this.worldManager.loadMap(requestedMapId);
-    
-    // Check if it's a private instance request (Studio author / player base)
-    // PIE (bible 32) uses a dedicated studio_pie_{userId} room.
-    const isPie = data?.pie === true;
-    const isPrivate =
-      !isPie && (requestedMapId === "BASE" || data?.isPrivate === true);
     
     // Phase 8: Shard Syncing (Party Lock Rule)
     let instanceId: string | undefined;
@@ -275,22 +377,7 @@ export class PlayerManager {
     });
 
     // Send full map state to the new player
-    const mapPlayers: any = {};
-    for (const p of this.players.values()) {
-      if (p.mapId === player.mapId && p.entityId !== entityId) {
-        mapPlayers[p.socketId] = {
-           socketId: p.socketId,
-           entityId: p.entityId,
-           x: p.x, y: p.y, direction: p.direction, name: p.name, spriteId: p.spriteId, isMoving: p.isMoving
-        };
-      }
-    }
-    
-    this.engine.events.emit("directMessage", { 
-      socketId, 
-      event: "map_players", 
-      data: mapPlayers 
-    });
+    this.sendMapPlayersSnapshot(player);
 
     // Notify the client what shard they are in (always the playable base map id)
     this.engine.events.emit("directMessage", {
