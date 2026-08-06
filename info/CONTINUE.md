@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (prod grass-only = custom server not running; deploy fix in flight)  
+**Last updated:** 2026-08-06 (Go MMO rewrite on separate branch — do not merge to main yet)  
 **Point every new session at this file first.**
 
 ---
@@ -9,14 +9,23 @@
 
 **Game / Studio / lobby only** — do not prioritize marketing site, forum, UCP, Discord, FiveM.
 
+### Parallel track (do NOT merge until owner says so)
+
+**Branch `giogimic/go-mmo-backend-2d3d`** — rewrite heavy MMO backend in Go under `go-mmo/`.
+Setup: `./go-mmo/scripts/setup-go-mmo.sh` (detects Caddy, asks subdomain, port **3100**).
+Log: `logs/2026-08-06-go-mmo-backend.md`. Continues should deepen Go parity (combat, inventory, studio sockets), keep TS `main` untouched.
+
+### Main / prod track
+
 One PR → merge to `main` → then next:
 
-1. **P0 now:** Deploy custom `server.ts` in Docker/PM2 (`entrypoint.sh` was using `next start` → `/api/maps` empty + `/socket.io` 404 on saintsgaming.net). See `logs/2026-08-06-prod-custom-server-404.md`.
+1. **P0:** Deploy custom `server.ts` in Docker/PM2 (see prod 404 logs / #43–#44).
 2. **Done on main:** #28–#42 (MP + entity visibility + GameMapData cast)
 3. **After prod redeploy:** confirm `/api/maps` has `DEMO_SANDBOX`, socket polling ≠ 404, then two-account lobby peers
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
+| **Go MMO** | Full backend rewrite on alt ports | **In progress** (branch only) |
 | **Prod deploy** | `next start` skipped Socket.io + DemoBootstrap | **Fix PR** (entrypoint / `npm start` → `server.ts`) |
 | **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
 | **MP #38–#39** | Join-storm + peer wipe + presence UI | **On main** |
