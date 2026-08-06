@@ -129,17 +129,16 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
 
     echo -e "${GREEN}[✓] Web container rebuilt and restarted.${NC}\n"
 
-    # --- Restart Game Server (MMO Socket Server) ---
+    # MMO sockets live inside the web container (server.ts). Stop any leftover :3001 container.
+    if sudo docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo$'; then
+        echo -e "${CYAN}[*] Removing obsolete saints-gaming-mmo container (sockets are on web:3000)...${NC}"
+        sudo docker rm -f saints-gaming-mmo 2>/dev/null || true
+    fi
     if command -v pm2 &>/dev/null; then
-        echo -e "${CYAN}[*] Restarting game server (saints-gaming-mmo)...${NC}"
-        pm2 restart saints-gaming-mmo 2>/dev/null || pm2 start game-server.js --name saints-gaming-mmo 2>/dev/null || true
-        echo -e "${GREEN}[✓] Game server restarted.${NC}"
-    elif sudo docker ps | grep -q "saints-gaming-mmo" 2>/dev/null; then
-        echo -e "${CYAN}[*] Restarting game server container...${NC}"
-        sudo docker restart saints-gaming-mmo 2>/dev/null || true
-        echo -e "${GREEN}[✓] Game server container restarted.${NC}"
-    else
-        echo -e "${YELLOW}[!] No PM2 or Docker game server found. You may need to manually restart game-server.js${NC}"
+        echo -e "${CYAN}[*] Ensuring PM2 runs custom server.ts (not next start / game-server.js)...${NC}"
+        pm2 delete saints-gaming-mmo 2>/dev/null || true
+        pm2 restart saints-gaming-web 2>/dev/null || pm2 start ecosystem.config.js 2>/dev/null || true
+        echo -e "${GREEN}[✓] PM2 web/MMO process refreshed.${NC}"
     fi
 
     # Reload proxy server if present
@@ -168,8 +167,9 @@ else
     npm run build
 
     if command -v pm2 &>/dev/null; then
-        echo -e "${CYAN}[*] Reloading PM2 processes (web + game server)...${NC}"
-        pm2 reload all
+        echo -e "${CYAN}[*] Reloading PM2 (custom server.ts via ecosystem.config.js)...${NC}"
+        pm2 delete saints-gaming-mmo 2>/dev/null || true
+        pm2 startOrReload ecosystem.config.js 2>/dev/null || pm2 reload all 2>/dev/null || true
     fi
 fi
 
@@ -178,3 +178,5 @@ echo -e "${YELLOW}Useful Commands:${NC}"
 echo -e "  View Logs:    sudo docker logs saints-gaming-web -f"
 echo -e "  Stop:         sudo docker compose down"
 echo -e "  Restart:      sudo docker compose restart"
+echo -e "  Verify maps:  curl -sS \$SITE/api/maps | head"
+echo -e "  Verify sock:  curl -sS -o /dev/null -w '%{http_code}\\n' \"\$SITE/socket.io/?EIO=4&transport=polling\""

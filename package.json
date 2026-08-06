@@ -9,7 +9,8 @@
     "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && prisma generate && prisma db push",
     "dev": "npx tsx server.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "npx tsx server.ts",
+    "start:next": "next start",
     "lint": "eslint",
     "release": "node scripts/release.mjs",
     "test": "vitest run",
@@ -87,6 +88,7 @@
     "swr": "^2.4.2",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
+    "tsx": "^4.23.1",
     "tw-animate-css": "^1.4.0",
     "vitest": "^4.1.10",
     "xml2js": "^0.6.2",
@@ -113,7 +115,6 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "shadcn": "^4.11.0",
     "tailwindcss": "^4",
-    "tsx": "^4.23.1",
     "typescript": "^5"
   },
   "ignoreScripts": [

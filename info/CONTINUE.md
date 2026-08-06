@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (#28–#40 on main; GameMapData build cast hotfix in flight)  
+**Last updated:** 2026-08-06 (prod grass-only = custom server not running; deploy fix in flight)  
 **Point every new session at this file first.**
 
 ---
@@ -11,26 +11,28 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#40 (MP + only-grass entity visibility)  
-2. **Verified:** `/lobby` shows avatar + DEMO NPCs (not grass-only)  
-3. **Next:** two-account peer confirm on production-like `/lobby` if still flaky; otherwise resume Studio/game plan from `logs/2026-08-05-studio-game-priority-plan.md`
+1. **P0 now:** Deploy custom `server.ts` in Docker/PM2 (`entrypoint.sh` was using `next start` → `/api/maps` empty + `/socket.io` 404 on saintsgaming.net). See `logs/2026-08-06-prod-custom-server-404.md`.
+2. **Done on main:** #28–#42 (MP + entity visibility + GameMapData cast)
+3. **After prod redeploy:** confirm `/api/maps` has `DEMO_SANDBOX`, socket polling ≠ 404, then two-account lobby peers
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
+| **Prod deploy** | `next start` skipped Socket.io + DemoBootstrap | **Fix PR** (entrypoint / `npm start` → `server.ts`) |
 | **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
 | **MP #38–#39** | Join-storm + peer wipe + presence UI | **On main** |
-| **Entities #40** | Avatar/NPCs above grass (only-grass wipe) | **On main** (browser confirm) |
+| **Entities #40** | Avatar/NPCs above grass (only-grass wipe) | **On main** (local OK; prod blocked by API 404s) |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
 Before coding, read:
 
 1. **This file**
-2. **`logs/2026-08-05-studio-game-priority-plan.md`**
-3. Latest P0/P1/P2 impl logs under `logs/2026-08-05-studio-*`
-4. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
-5. `logs/studio-first-hybrid-foundation.md`
-6. Trail/Spyder smokes as needed
+2. **`logs/2026-08-06-prod-custom-server-404.md`** if lobby is grass-only on a deployed host
+3. **`logs/2026-08-05-studio-game-priority-plan.md`**
+4. Latest P0/P1/P2 impl logs under `logs/2026-08-05-studio-*`
+5. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
+6. `logs/studio-first-hybrid-foundation.md`
+7. Trail/Spyder smokes as needed
 
 **Do not** reintroduce deleted ghosts (Pixi battle, Phase-5 ClassEditor/GameConfigManager, CreatureDb, `:3001` party client, dual TB overlays).
 
