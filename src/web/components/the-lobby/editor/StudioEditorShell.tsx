@@ -26,6 +26,7 @@ import {
   Wrench,
   Footprints,
   UserRound,
+  Package,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -43,6 +44,7 @@ import { ClassEditorPanel } from './panels/ClassEditorPanel';
 import { QuestEditorPanel } from './panels/QuestEditorPanel';
 import { DialogueEditorPanel } from './panels/DialogueEditorPanel';
 import { LootManagerPanel } from './panels/LootManagerPanel';
+import { ItemEditorPanel } from './panels/ItemEditorPanel';
 import { WorldProfileBar } from './WorldProfileBar';
 
 const MODE_BUTTONS: Array<{
@@ -299,6 +301,12 @@ export const StudioEditorShell: React.FC = () => {
             <ClassEditorPanel />
           </DraggablePanel>
         )}
+
+        {canUseStudioDock(permissionLevel, 'items') && (
+          <DraggablePanel id="items" icon={<Package className="w-4 h-4" />}>
+            <ItemEditorPanel />
+          </DraggablePanel>
+        )}
       </div>
 
       {/* Mode strip + dock */}
@@ -356,6 +364,7 @@ export const StudioEditorShell: React.FC = () => {
           <DockButton id="characters" icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="loot" icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="items" icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           <button

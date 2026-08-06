@@ -28,7 +28,8 @@ export type StudioDockId =
   | 'loot'
   | 'dev'
   | 'characters'
-  | 'classes';
+  | 'classes'
+  | 'items';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -44,7 +45,7 @@ export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['build', 'properties'],
   npc: ['npc', 'properties', 'assets'],
   quest: ['npc', 'quest'],
-  creature: ['creature', 'loot'],
+  creature: ['creature', 'loot', 'items'],
   test: [],
 };
 
@@ -127,5 +128,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   classes: {
     label: 'Classes',
     blurb: 'Class and skill definitions.',
+  },
+  items: {
+    label: 'Items',
+    blurb: 'Item definitions and economy values.',
   },
 };

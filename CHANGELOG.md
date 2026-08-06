@@ -1,3 +1,11 @@
+## [2.1.121] - 2026-08-06
+
+### Added
+- **Phase 3 Item Creator Dock**: Implemented the UI and backend logic for the Item Creator panel in the Studio.
+  - Features a searchable sidebar and dynamic form to edit item properties (`ItemTemplate`).
+  - Added a read-only Dependency Viewer that scans `LootTable` and `CraftingRecipe` entries to show where items are used.
+  - Successfully integrated the dock into the `StudioEditorShell` under "Catalog Mode".
+
 ## [2.1.120] - 2026-08-06
 
 ### Added

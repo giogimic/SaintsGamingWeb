@@ -42,7 +42,7 @@ import {
   type PieOptions,
 } from '@/shared/game/pieOptions';
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes';
+export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes' | 'items';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -270,6 +270,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 40,
     width: 820,
     height: 700,
+    zIndex: 10,
+  },
+  items: {
+    id: 'items',
+    title: 'Item Creator',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 60,
+    width: 800,
+    height: 600,
     zIndex: 10,
   },
 };
