@@ -1,5 +1,7 @@
 ﻿#!/bin/sh
-# Runtime entrypoint â€” handles migration and startup
+# Runtime entrypoint — handles migration and startup.
+# Production MUST run custom server.ts (Next + Socket.io + GameEngine + DemoBootstrap).
+# Plain `next start` leaves /socket.io and map bootstrap dead (grass-only lobby).
 
 # Ensure the SQLite DB directory exists (volume mount target)
 mkdir -p /app/prisma/db
@@ -36,28 +38,13 @@ if [ "$DB_SKIP_MIGRATION" != "true" ]; then
         echo "[!] ERROR: Database migration failed! Aborting startup."
         exit 1
     fi
-    echo "[âœ“] Database schema ready."
-    # Only seed if the database is new/empty (file < 500KB means no data yet)
-    DB_FILE="/app/prisma/db/dev.db"
-    DB_SIZE=0
-    if [ -f "$DB_FILE" ]; then
-        DB_SIZE=$(stat -c%s "$DB_FILE" 2>/dev/null || echo 0)
-    fi
-    if [ "$DB_SIZE" -lt 512000 ]; then
-        echo "[*] Fresh database detected - using server bootstrap seeds..."
-        # `server.ts` always calls `bootstrapDemoContent()` which seeds demo content
-        # (including CreatureDef rows) idempotently on every boot.
-    else
-        echo "[*] Database already seeded (${DB_SIZE} bytes) - skipping demo seed."
-    fi
+    echo "[✓] Database schema ready."
+    echo "[*] Demo maps/NPCs seed via server.ts bootstrapDemoContent() on every boot."
 else
     echo "[*] Skipping schema migration (DB_SKIP_MIGRATION=true)."
 fi
 
-# Start the standalone MMO WebSockets server in the background
-echo "[*] Starting Saints Tamer MMO Server (port 3001)..."
-node game-server.js &
-
-# Start the application
-echo "[*] Starting Next.js server..."
+# Single process: Next.js + Socket.io + MMO GameEngine (see package.json "start").
+# Do NOT start legacy game-server.js (removed) or plain `next start` — both break lobby.
+echo "[*] Starting Saints Gaming (custom server.ts on port ${PORT:-3000})..."
 exec npm run start

@@ -22,7 +22,8 @@ import { RealtimeService } from "./src/server/realtime/RealtimeService";
 import { attachRedisAdapter } from "./src/server/net/redisAdapter";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
+// Docker sets HOSTNAME=0.0.0.0; default to all interfaces in prod so lobby sockets work.
+const hostname = process.env.HOSTNAME || (dev ? "localhost" : "0.0.0.0");
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
@@ -105,7 +106,7 @@ app.prepare().then(async () => {
   // Start the tick loop
   gameEngine.start();
 
-  server.listen(port, () => {
+  server.listen(port, hostname, () => {
     console.log(`> Saints MMO Server ready on http://${hostname}:${port}`);
     console.log(`> Saints Realtime Platform initialized`);
   });

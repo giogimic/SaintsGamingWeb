@@ -7,7 +7,7 @@ Saints Gaming is a single Next.js 15 / React 19 full-stack app (community platfo
 The startup update script already runs `npm install` and `npm run setup` (Prisma generate + `prisma db push` against SQLite at `prisma/db/dev.db`). You do not need to reinstall or re-push the schema on a fresh VM.
 
 ### Running the app
-- Dev: `npm run dev` — this runs `server.ts`, wiring Next.js + Socket.io + the MMO GameEngine on port 3000. Do NOT use `npm start` for end-to-end work; plain `next start` skips the custom server, so sockets and the MMO engine won't run.
+- Dev: `npm run dev` — this runs `server.ts`, wiring Next.js + Socket.io + the MMO GameEngine on port 3000. Production `npm start` / Docker `entrypoint.sh` also run `server.ts` (same process). Use `npm run start:next` only if you intentionally want plain Next without sockets/MMO (lobby will be grass-only: no maps seed, `/socket.io` 404).
 - Lint / test / build / smoke: `npm run lint`, `npm test` (Vitest), `npm run build`, `npm run smoke` (smoke needs a dev server already running; it also honors `PORT` / `BASE_URL`).
 
 ### Non-obvious gotchas
