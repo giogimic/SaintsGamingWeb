@@ -62,6 +62,7 @@ import { QUEST_DB } from './data/quests';
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
+import { lobbySocketConnect } from '@/shared/net/goMmoSocket';
 import { useSession } from 'next-auth/react';
 import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { toBaseMapId } from '@/shared/net/mapIds';
@@ -413,13 +414,8 @@ export default function TheLobby({
 
     // Soft-reconnect stays in-world (does not dump to title/login menu).
     let hadLobbyDisconnect = false;
-    const socket = io({
-      auth: { token: session.user.id },
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 8000,
-    });
+    const { url: goUrl, options: socketOpts } = lobbySocketConnect(session.user.id);
+    const socket = goUrl ? io(goUrl, socketOpts) : io(socketOpts);
     socketRef.current = socket;
     
     socket.on('connect', () => {
