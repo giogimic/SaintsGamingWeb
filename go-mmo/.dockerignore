@@ -4,4 +4,3 @@ data/
 docker-compose.yml
 *.db
 *.db-*
-testdata/*.db

@@ -2,27 +2,32 @@
 
 Parallel realtime MMO server rewritten in Go from the existing TypeScript
 `server.ts` / `GameEngine` / `SocketHandler` ideas. Lives under `go-mmo/` on
-branch `giogimic/go-mmo-backend-2d3d`. **Do not merge to `main` until explicitly approved.**
+the go-mmo feature branch. **Do not merge to `main` until explicitly approved.**
 
 ## Defaults
 
 | | |
 |---|---|
-| Listen | `0.0.0.0:3100` (Next stays on `:3000`) |
-| DB | SQLite (`GO_MMO_DATABASE_URL`, default `file:../prisma/db/dev.db` or setup creates `go-mmo-dev.db`) |
+| Listen | `0.0.0.0:3001` (Next stays on `:3000`) |
+| Caddy | Existing install detected; subdomain → `127.0.0.1:3001` |
+| Docker | `saints-gaming-go-mmo` (+ `1`/`2`/`3`… if name already in use) |
+| DB | SQLite (`GO_MMO_DATABASE_URL`) |
 | Sim / net | 20 TPS / 10 TPS |
 | Auth | Auth.js JWT cookie **or** `auth.token = "dev:<accountId>"` when `GO_MMO_DEV_AUTH=true` |
 
 ## Quick start
 
 ```bash
-# Interactive: detect Caddy, ask subdomain, write .env, build binary
+# Interactive: detect existing Caddy, ask subdomain, allocate free
+# container name (base → base1 → base2…), write .env, optional docker up
 ./go-mmo/scripts/setup-go-mmo.sh
 
-# Non-interactive example
-GO_MMO_SUBDOMAIN=go.saintsgaming.net GO_MMO_PORT=3100 \
-  ./go-mmo/scripts/setup-go-mmo.sh --non-interactive
+# Non-interactive example (port 3001 + existing Caddy)
+GO_MMO_SUBDOMAIN=go.saintsgaming.net GO_MMO_PORT=3001 \
+  ./go-mmo/scripts/setup-go-mmo.sh --non-interactive --docker
 
+# Host binary (no Docker)
+./go-mmo/scripts/setup-go-mmo.sh --no-docker
 set -a; source go-mmo/.env; set +a
 ./go-mmo/bin/go-mmo
 ```
@@ -30,6 +35,9 @@ set -a; source go-mmo/.env; set +a
 Caddy integration reuses `scripts/proxy-caddy.sh` markers
 `# SAINTS_PROXY_LIST_BEGIN` / `# SAINTS_PROXY_LIST_END` so the primary site
 block is never clobbered.
+
+Container names: if `saints-gaming-go-mmo` exists, setup picks
+`saints-gaming-go-mmo1`, then `2`, `3`, etc. Same for compose project.
 
 ## Wire protocol (client-compatible)
 
@@ -46,12 +54,10 @@ Studio private / PIE: `{base}_{accountId}` / `studio_pie_{accountId}`.
 ```
 go-mmo/
   cmd/server/          HTTP + Socket.IO entry
-  internal/
-    config/ auth/ db/ protocol/
-    world/ player/ aoi/ creature/ engine/
-    socket/ httpapi/ bootstrap/
-    party/ combat/ …   (stubs for full parity)
+  Dockerfile           container image (EXPOSE 3001)
+  docker-compose.base.yml
   scripts/setup-go-mmo.sh
+  internal/…
 ```
 
 ## Tests

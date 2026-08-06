@@ -12,7 +12,7 @@
 ### Parallel track (do NOT merge until owner says so)
 
 **Branch `giogimic/go-mmo-backend-2d3d`** — Go MMO backend rewrite under `go-mmo/` (**backend conversion complete**; do not merge until owner says).
-Setup: `./go-mmo/scripts/setup-go-mmo.sh` (Caddy subdomain, port **3100**).
+Setup: `./go-mmo/scripts/setup-go-mmo.sh` (existing Caddy subdomain → port **3001**; Docker names get `1`/`2`/`3`… if taken).
 Log: `logs/2026-08-06-go-mmo-backend.md`. Optional next: client A/B URL, Studio UI in Go, deeper skill/TB formulas.
 
 ### Main / prod track

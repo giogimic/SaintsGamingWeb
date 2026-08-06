@@ -1,0 +1,28 @@
+# Template for Go MMO parallel deploy. setup-go-mmo.sh copies this to
+# docker-compose.yml and substitutes port + unique container_name.
+services:
+  go-mmo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: saints-gaming-go-mmo
+    container_name: saints-gaming-go-mmo
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - GO_MMO_HOST=0.0.0.0
+      - GO_MMO_PORT=3001
+      - GO_MMO_DATABASE_URL=file:/app/data/go-mmo.db
+      - GO_MMO_DEV_AUTH=${GO_MMO_DEV_AUTH:-true}
+      - AUTH_SECRET=${AUTH_SECRET:-dev-secret-change-me}
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

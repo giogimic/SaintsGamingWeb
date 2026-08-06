@@ -1,5 +1,15 @@
 # Local Changelog
 
+## 2026-08-06 — Go MMO :3001 + container name suffixes
+
+- Default Go MMO listen / Caddy upstream: **3001** (was 3100).
+- `setup-go-mmo.sh`: detect existing Caddy; Docker optional; if
+  `saints-gaming-go-mmo` is in use → `…1`, `…2`, `…3`…
+- Added `go-mmo/Dockerfile` + `docker-compose.base.yml`.
+- Log: `logs/2026-08-06-go-mmo-caddy-3001.md`
+
+---
+
 ## 2026-08-06 — Fix GameMapData cast (Docker build)
 
 `GameCanvasBabylon` no longer casts map docs to `Record<string, unknown>` (broke `npm run build`).  
