@@ -1,3 +1,12 @@
+## [2.1.120] - 2026-08-06
+
+### Added
+- **Hybrid Go MMO**: Fully wired Go MMO backend for real-time game simulation.
+- **Persistence**: Player position, inventory, quests, and skill XP are now natively persisted in the SQLite DB via Go MMO.
+- **Map Synchronization**: Next.js automatically notifies Go MMO (`notifyGoMapSynced`) whenever a map is saved in Studio.
+- **Incremental Rendering**: Babylon game client now processes `map_reloaded` events incrementally to avoid wiping player peers and meshes on map updates.
+- **Combat Formulas**: Brought turn-based combat and skill grants into alignment with the gameplay bible on the Go MMO side.
+
 ## [2.1.119] - 2026-08-02
 
 ### Fixed
