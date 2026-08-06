@@ -8,6 +8,8 @@ import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 
+export const dynamic = 'force-dynamic';
+
 async function loadMapPayload(slug: string) {
   const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
   if (worldMap) {

@@ -1,3 +1,7 @@
+## [2.1.126] - 2026-08-06
+### Fixed
+- Fixed Next.js App Router aggressively caching API responses for /api/maps and /api/maps/[slug], which caused stale map data (with empty NPCs arrays) to be served to the client and broke entity rendering.
+
 ## [2.1.125] - 2026-08-06
 ### Fixed
 - Fixed Socket.io authentication fallback to support NextAuth secure cookies in local development environments with HTTPS (NEXT_PUBLIC_SITE_URL=https://localhost). This resolves the issue where players and entities failed to load due to a rejected socket connection.
@@ -648,4 +652,5 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
