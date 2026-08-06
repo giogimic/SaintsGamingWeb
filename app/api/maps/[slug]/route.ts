@@ -61,17 +61,16 @@ export async function GET(
     const { slug } = await params;
 
     let payload = await loadMapPayload(slug);
-    if (!payload && slug === DEMO_MAP_ID) {
-      const ensured = await ensureStudioMapFoundation();
-      if (ensured.demoMap) {
+    if (!payload && (slug === DEMO_MAP_ID || slug.toUpperCase() === DEMO_MAP_ID)) {
+      await ensureStudioMapFoundation();
+      payload = await loadMapPayload(DEMO_MAP_ID);
+      if (!payload) {
         payload = await loadMapPayload(slug);
-      } else if (ensured.error) {
-        console.error("[api/maps] DEMO ensure failed:", ensured.error);
       }
     }
 
     if (!payload) {
-      return NextResponse.json({ error: "Map not found" }, { status: 404 });
+      return NextResponse.json({ error: `Map '${slug}' not found` }, { status: 404 });
     }
     return NextResponse.json(payload);
   } catch (error) {

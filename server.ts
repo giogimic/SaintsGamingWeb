@@ -96,7 +96,11 @@ app.prepare().then(async () => {
   // Attach Socket.io to the Next.js HTTP server (forum RealtimeProvider + optional TS game)
   const io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: (requestOrigin, callback) => {
+        // Dynamically mirror request origin for credentialed requests across subdomains
+        callback(null, requestOrigin || "*");
+      },
+      credentials: true,
       methods: ["GET", "POST"],
     },
   });
