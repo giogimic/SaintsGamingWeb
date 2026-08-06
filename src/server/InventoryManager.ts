@@ -4,6 +4,7 @@ import { PlayerManager } from "./PlayerManager";
 import { prisma } from "@/web/lib/prisma";
 import { toBaseMapId } from "@/shared/net/mapIds";
 import { addItem, resolveUserId, wearToolDurability } from "./inventoryService";
+import { calculateGatherSuccess } from "./SkillManager";
 
 // Using require for legacy map loader
 const mapLoader = require("../engine/map-loader.js");
@@ -11,10 +12,10 @@ const mapLoader = require("../engine/map-loader.js");
 // MapLogicTile ids: 5 = Wood Tree, 6 = Ore Rock
 const RESOURCE_NODE_MAP: Record<
   number,
-  { skillSlug: string; resourceSlug: string; xpAmount: number; respawnTimeMs: number }
+  { skillSlug: string; resourceSlug: string; xpAmount: number; respawnTimeMs: number; levelReq: number }
 > = {
-  5: { skillSlug: "woodcutting", resourceSlug: "wood_log", xpAmount: 25, respawnTimeMs: 10000 },
-  6: { skillSlug: "mining", resourceSlug: "ore_copper", xpAmount: 25, respawnTimeMs: 15000 },
+  5: { skillSlug: "woodcutting", resourceSlug: "wood_log", xpAmount: 25, respawnTimeMs: 10000, levelReq: 1 },
+  6: { skillSlug: "mining", resourceSlug: "ore_copper", xpAmount: 25, respawnTimeMs: 15000, levelReq: 1 },
 };
 
 export class InventoryManager {
@@ -32,6 +33,7 @@ export class InventoryManager {
     this.engine.events.on("entityDeath", (data) => this.handleEntityDeath(data));
     this.engine.events.on("pickupLootRequest", (data) => this.handlePickupLootRequest(data));
     this.engine.events.on("grantRewards", (data) => this.handleGrantRewards(data));
+    this.engine.events.on("repairItemRequest", (data) => this.handleRepairItem(data));
   }
 
   public async initialize() {
@@ -166,6 +168,65 @@ export class InventoryManager {
     }
   }
 
+  private async handleRepairItem(data: { accountId: string; socketId: string; itemId: string }) {
+    const userId = await resolveUserId(data.accountId);
+    if (!userId) return;
+
+    const item = await prisma.playerInventoryItem.findUnique({
+      where: { id: data.itemId }
+    });
+
+    if (!item || item.userId !== userId || item.durability === null) return;
+
+    const template = await prisma.itemTemplate.findUnique({
+      where: { slug: item.itemSlug }
+    });
+
+    if (!template || !template.baseDurability || item.durability >= template.baseDurability) return;
+
+    // Currency sink: Repair costs 100G
+    const repairCost = 100;
+    const char = await prisma.gameCharacter.findFirst({ where: { userId } });
+    if (!char) return;
+
+    const state = JSON.parse(char.stateData || "{}") as Record<string, any>;
+    const credits = Number(state.credits || 0);
+
+    if (credits < repairCost) {
+      this.engine.events.emit("directMessage", {
+        socketId: data.socketId,
+        event: "show_toast",
+        data: { message: `You need ${repairCost} G to repair this item.` },
+      });
+      return;
+    }
+
+    state.credits = credits - repairCost;
+    await prisma.gameCharacter.update({
+      where: { id: char.id },
+      data: { stateData: JSON.stringify(state) },
+    });
+
+    await prisma.playerInventoryItem.update({
+      where: { id: data.itemId },
+      data: { durability: template.baseDurability },
+    });
+
+    this.engine.events.emit("directMessage", {
+      socketId: data.socketId,
+      event: "sync_credits",
+      data: { credits: state.credits },
+    });
+    
+    this.engine.events.emit("directMessage", {
+      socketId: data.socketId,
+      event: "show_toast",
+      data: { message: `Item repaired for ${repairCost} G!` },
+    });
+    
+    await this.syncInventory(data.socketId, userId);
+  }
+
   private resolveGatherInstance(accountId: string, mapId: string) {
     const player = this.playerManager?.getPlayerByAccountId(accountId);
     if (player?.mapId) {
@@ -238,7 +299,7 @@ export class InventoryManager {
       return;
     }
 
-    const { resourceSlug, skillSlug, xpAmount, respawnTimeMs } = nodeConfig;
+    const { resourceSlug, skillSlug, xpAmount, respawnTimeMs, levelReq } = nodeConfig;
 
     const userId = await resolveUserId(accountId);
     if (!userId) return;
@@ -253,6 +314,30 @@ export class InventoryManager {
         socketId,
         event: "show_toast",
         data: { message: `You need a ${requiredToolSlug.replace("_", " ")} to gather here.` },
+      });
+      return;
+    }
+
+    const skill = await prisma.playerSkill.findUnique({
+      where: { userId_skillSlug: { userId, skillSlug } },
+    });
+    const playerLevel = skill ? skill.level : 1;
+
+    if (playerLevel < levelReq) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "show_toast",
+        data: { message: `Requires ${skillSlug} level ${levelReq}.` },
+      });
+      return;
+    }
+
+    const success = calculateGatherSuccess(playerLevel, levelReq);
+    if (!success) {
+      this.engine.events.emit("directMessage", {
+        socketId,
+        event: "show_toast",
+        data: { message: `You failed to gather ${resourceSlug.replace("_", " ")}.` },
       });
       return;
     }

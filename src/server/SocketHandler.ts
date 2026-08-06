@@ -269,7 +269,56 @@ export class SocketHandler {
         });
       });
 
+      socket.on("place_structure", (data) => {
+        this.engine.events.emit("placeStructureRequest", {
+          accountId,
+          socketId: socket.id,
+          mapId: data.mapId,
+          x: data.x,
+          y: data.y,
+          structureType: data.structureType
+        });
+      });
+
+      socket.on("assign_worker", (data) => {
+        this.engine.events.emit("assignWorkerRequest", {
+          accountId,
+          socketId: socket.id,
+          structureId: data.structureId,
+          creatureId: data.creatureId
+        });
+      });
+
+      socket.on("repair_item", (data) => {
+        this.engine.events.emit("repairItemRequest", {
+          accountId,
+          socketId: socket.id,
+          itemId: data.itemId
+        });
+      });
+
       // --- PHASE 8: Social & Party Systems ---
+      
+      // Guilds
+      socket.on("guild_create", (data) => {
+        this.engine.events.emit("guildCreate", { accountId, socketId: socket.id, name: data.name, tag: data.tag });
+      });
+      socket.on("guild_invite", (targetName) => {
+        this.engine.events.emit("guildInvite", { accountId, socketId: socket.id, targetName });
+      });
+      socket.on("guild_invite_accept", () => {
+        this.engine.events.emit("guildInviteAccept", { accountId, socketId: socket.id });
+      });
+      socket.on("guild_leave", () => {
+        this.engine.events.emit("guildLeave", { accountId, socketId: socket.id });
+      });
+      socket.on("guild_bank_deposit", (data) => {
+        this.engine.events.emit("guildBankDeposit", { accountId, socketId: socket.id, itemSlug: data.itemSlug, qty: data.qty });
+      });
+      socket.on("guild_bank_withdraw", (data) => {
+        this.engine.events.emit("guildBankWithdraw", { accountId, socketId: socket.id, itemSlug: data.itemSlug, qty: data.qty });
+      });
+
       // --- PHASE 9: Global Trading Center (GTC) ---
       socket.on("gtc_create_listing", (data) => {
         this.engine.events.emit("gtcCreateListing", {

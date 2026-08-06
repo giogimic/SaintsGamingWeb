@@ -7,6 +7,7 @@ import {
   inventorySnapshot,
   removeItem,
 } from "./inventoryService";
+import { calculateLevelForSkill } from "./SkillManager";
 
 type RecipeRow = {
   slug: string;
@@ -38,23 +39,53 @@ export class CraftingManager {
   }
 
   private generateCraftedAffixes(itemSlug: string, skillLevel: number) {
-    const hasAffix = Math.random() < 0.3 + skillLevel * 0.01;
-    if (!hasAffix) return null;
+    const roll = Math.random();
+    let rarity = "COMMON";
+    let numAffixes = 0;
+    
+    // Scale rarity chance with skill level (up to 50% boost at level 50)
+    const skillMultiplier = 1 + (skillLevel / 100);
 
-    const affixes = [
+    if (roll < 0.05 * skillMultiplier) { rarity = "LEGENDARY"; numAffixes = 3; }
+    else if (roll < 0.15 * skillMultiplier) { rarity = "EPIC"; numAffixes = 2; }
+    else if (roll < 0.35 * skillMultiplier) { rarity = "RARE"; numAffixes = 1; }
+    else if (roll < 0.60 * skillMultiplier) { rarity = "UNCOMMON"; numAffixes = 1; }
+    
+    if (numAffixes === 0) return null;
+
+    const availableAffixes = [
       { key: "attackPower", max: 5 },
       { key: "defense", max: 5 },
       { key: "maxHp", max: 20 },
       { key: "critChance", max: 0.05 },
+      { key: "lifesteal", max: 0.1 },
+      { key: "gatherSpeed", max: 1.5 }
     ];
 
-    const chosen = affixes[Math.floor(Math.random() * affixes.length)];
-    let val = Math.random() * chosen.max;
-    val = val * (1 + skillLevel / 100);
-    if (chosen.max >= 1) val = Math.ceil(val);
-    else val = Number(val.toFixed(2));
+    const affixes: Record<string, any> = { rarity };
+    
+    // Shuffle and pick
+    const shuffled = availableAffixes.sort(() => 0.5 - Math.random());
+    for (let i = 0; i < numAffixes; i++) {
+      const chosen = shuffled[i];
+      let val = Math.random() * chosen.max;
+      
+      // Rarity multiplier
+      let rarityMultiplier = 1.0;
+      if (rarity === "UNCOMMON") rarityMultiplier = 1.2;
+      if (rarity === "RARE") rarityMultiplier = 1.5;
+      if (rarity === "EPIC") rarityMultiplier = 2.0;
+      if (rarity === "LEGENDARY") rarityMultiplier = 3.0;
 
-    return JSON.stringify({ [chosen.key]: val });
+      val = val * (1 + skillLevel / 100) * rarityMultiplier;
+      
+      if (chosen.max >= 1) val = Math.ceil(val);
+      else val = Number(val.toFixed(2));
+      
+      affixes[chosen.key] = val;
+    }
+
+    return JSON.stringify(affixes);
   }
 
   private async resolveRecipe(recipeSlug: string): Promise<RecipeRow | null> {
@@ -176,7 +207,7 @@ export class CraftingManager {
       });
 
       const newXp = playerSkill.xp + recipe.xpReward;
-      const newLevel = Math.max(playerSkill.level, Math.floor(Math.sqrt(newXp / 100)) + 1);
+      const newLevel = Math.max(playerSkill.level, calculateLevelForSkill(recipe.skillSlug, newXp));
       await prisma.playerSkill.update({
         where: { id: playerSkill.id },
         data: { xp: newXp, level: newLevel },

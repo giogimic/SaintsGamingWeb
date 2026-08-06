@@ -23,6 +23,23 @@ export class WorldManager {
   // Key: instanceId_x_y -> expirationTimestamp
   private depletedNodes = new Map<string, number>();
 
+  public depleteNode(instanceId: string, x: number, y: number, durationMs: number) {
+    const key = `${instanceId}_${x}_${y}`;
+    this.depletedNodes.set(key, Date.now() + durationMs);
+    console.log(`[WorldManager] Node depleted at ${x}, ${y} for ${durationMs}ms`);
+  }
+
+  public isNodeDepleted(instanceId: string, x: number, y: number): boolean {
+    const key = `${instanceId}_${x}_${y}`;
+    const expireTime = this.depletedNodes.get(key);
+    if (!expireTime) return false;
+    if (Date.now() >= expireTime) {
+      this.depletedNodes.delete(key);
+      return false;
+    }
+    return true;
+  }
+
   /**
    * CONTINUE #2 — per-account bramble clears (do not mutate shared DEMO grid).
    * Key: accountId/userId → Set of "x,y"
@@ -507,19 +524,6 @@ export class WorldManager {
   }
 
   // --- Phase 7: Node Depletion Engine ---
-
-  public isNodeDepleted(instanceId: string, x: number, y: number): boolean {
-    const key = `${instanceId}_${x}_${y}`;
-    const expiration = this.depletedNodes.get(key);
-    if (expiration && Date.now() < expiration) {
-      return true;
-    }
-    // Clean up expired ones lazily
-    if (expiration) {
-      this.depletedNodes.delete(key);
-    }
-    return false;
-  }
 
   public setNodeDepleted(instanceId: string, x: number, y: number, respawnTimeMs: number) {
     const key = `${instanceId}_${x}_${y}`;

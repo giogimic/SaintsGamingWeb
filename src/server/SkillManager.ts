@@ -6,20 +6,22 @@ import {
   normalizeSkillSlug,
 } from "@/shared/game/skillTypings";
 
-/** Gathering / artisan OSRS-style curve (legacy, max 99). */
+/** Phase 7: Unified curve Level = floor(sqrt(XP / 50)) + 1, max Level 50. */
 export function calculateGatheringLevelFromXp(xp: number): number {
-  let level = 1;
-  let requiredXp = 0;
+  if (xp < 0) return 1;
+  const level = Math.floor(Math.sqrt(xp / 50)) + 1;
+  return Math.min(level, 50);
+}
 
-  for (let i = 1; i < 99; i++) {
-    requiredXp += Math.floor(i + 300 * Math.pow(2, i / 7)) / 4;
-    if (xp >= requiredXp) {
-      level = i + 1;
-    } else {
-      break;
-    }
-  }
-  return Math.min(level, 99);
+/** 
+ * Success roll: base 50% + 5% per level above the node's required level.
+ * Capped between 5% and 95%. 
+ */
+export function calculateGatherSuccess(playerLevel: number, nodeLevel: number): boolean {
+  const diff = playerLevel - nodeLevel;
+  let chance = 0.50 + (diff * 0.05);
+  chance = Math.max(0.05, Math.min(chance, 0.95));
+  return Math.random() < chance;
 }
 
 /** @deprecated use calculateGatheringLevelFromXp or calculateCombatLevelFromXp */

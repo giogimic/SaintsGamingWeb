@@ -98,6 +98,7 @@ model User {
   level               Int       @default(1)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+  playerStructures    PlayerStructure[]
 
   // Relations
   accounts       Account[]
@@ -1250,8 +1251,6 @@ model CreatureTemplate {
   learnedAbilities     CreatureLearnedAbility[]
   evolutions           CreatureEvolution[]
   stats                CreatureBaseStats?
-
-  @@index([dexNumber])
 }
 
 model CreatureBaseStats {
@@ -1285,6 +1284,7 @@ model CreatureEvolution {
   targetSlug   String
   atLevel      Int?
   itemRequired String?
+  spriteOverworld String?
 
   @@index([speciesId])
 }
@@ -1369,6 +1369,9 @@ model PlayerCreature {
   /// Instance tags e.g. ["shiny"] for display/filter
   tagsJson    String   @default("[]")
   capturedAt  DateTime @default(now())
+
+  // Base automation
+  assignedStructure  PlayerStructure?
 
   @@index([userId])
   @@index([speciesSlug])
@@ -1569,6 +1572,7 @@ model Guild {
   tag       String   @unique
   leaderId  String
   leader    User     @relation("GuildLeader", fields: [leaderId], references: [id])
+  bankJson  String?  @default("{}")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1685,4 +1689,21 @@ model CreatureDef {
   @@index([typePrimary])
   @@index([isWildSpawn, isActive])
   @@index([gameId])
+}
+
+model PlayerStructure {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mapId            String
+  x                Int
+  y                Int
+  structureType    String   // "FURNACE", "WORKBENCH", "LUMBER_MILL"
+  workerCreatureId String?  @unique // A creature can only work at one station
+  worker           PlayerCreature? @relation(fields: [workerCreatureId], references: [id], onDelete: SetNull)
+  lastTickAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([mapId])
 }

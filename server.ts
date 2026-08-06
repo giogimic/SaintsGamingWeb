@@ -17,6 +17,8 @@ import { PartyManager } from "./src/server/PartyManager";
 import { CraftingManager } from "./src/server/CraftingManager";
 import { EconomyManager } from "./src/server/EconomyManager";
 import { ShopManager } from "./src/server/ShopManager";
+import { BaseManager } from "./src/server/BaseManager";
+import { GuildManager } from "./src/server/GuildManager";
 import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
 import { attachRedisAdapter } from "./src/server/net/redisAdapter";
@@ -128,6 +130,8 @@ app.prepare().then(async () => {
     const economyManager = new EconomyManager(gameEngine, playerManager);
     const shopManager = new ShopManager(gameEngine);
     void shopManager;
+    const baseManager = new BaseManager(gameEngine);
+    const guildManager = new GuildManager(gameEngine);
 
     const socketHandler = new SocketHandler(io, gameEngine, _realtimeService);
     await worldManager.initialize();
@@ -137,6 +141,8 @@ app.prepare().then(async () => {
     await inventoryManager.initialize();
     await craftingManager.initialize();
     await economyManager.initialize();
+    await baseManager.initialize();
+    await guildManager.initialize();
     socketHandler.initialize();
     gameEngine.start();
     console.log("> TS GameEngine enabled (ENABLE_TS_GAME_ENGINE or no Go URL)");
