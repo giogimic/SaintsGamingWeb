@@ -6,9 +6,12 @@ remain TypeScript; set `NEXT_PUBLIC_GO_MMO_URL` to point the lobby game socket h
 ## Will Studio still work?
 
 **Yes.** Studio editor chrome and map **save/load** use Next `/api/maps` (Prisma).
-When Go is enabled, save also emits `admin_save_map` so the Go live world matches
-paint/collision. NPC live spawn/despawn sockets go to Go. Forum `RealtimeProvider`
-stays on Next.
+After save, Next also calls Go `POST /api/internal/sync-map` (Bearer `AUTH_SECRET`)
+so live shards reload without relying only on the client. When Go is enabled,
+Next skips the TS `GameEngine` tick unless `ENABLE_TS_GAME_ENGINE=1`.
+Forum `RealtimeProvider` stays on Next.
+
+Inventory / quests / last seat persist in Go SQLite (`GoInventory`, `GoQuestProgress`, `GoPlayerState`).
 
 ## Defaults
 

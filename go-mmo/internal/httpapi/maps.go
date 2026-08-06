@@ -14,8 +14,10 @@ import (
 
 // Server exposes REST helpers for maps (parity with /api/maps).
 type Server struct {
-	DB    *sql.DB
-	World *world.Manager
+	DB          *sql.DB
+	World       *world.Manager
+	Secret      string // AUTH_SECRET / internal bearer for Next → Go sync
+	OnMapSynced func(mapID string)
 }
 
 func (s *Server) Handler() http.Handler {
@@ -24,6 +26,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/health", s.health)
 	mux.HandleFunc("/api/maps", s.mapsRoot)
 	mux.HandleFunc("/api/maps/", s.mapByID)
+	mux.HandleFunc("/api/internal/sync-map", s.internalSyncMap)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
 	mux.HandleFunc("/api/craft/recipes", s.craftRecipes)
 	return withCORS(mux)
@@ -172,7 +175,38 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if s.OnMapSynced != nil {
+		s.OnMapSynced(id)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id})
+}
+
+// internalSyncMap accepts map payloads from Next after Prisma save (Bearer AUTH_SECRET).
+func (s *Server) internalSyncMap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !s.authorizeInternal(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	s.saveMap(w, r, "")
+}
+
+func (s *Server) authorizeInternal(r *http.Request) bool {
+	if s.Secret == "" {
+		return false
+	}
+	authz := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if strings.HasPrefix(authz, prefix) && strings.TrimSpace(authz[len(prefix):]) == s.Secret {
+		return true
+	}
+	if r.Header.Get("X-Saints-Internal-Secret") == s.Secret {
+		return true
+	}
+	return false
 }
 
 // PersistMap writes WorldMap + refreshes in-memory def.

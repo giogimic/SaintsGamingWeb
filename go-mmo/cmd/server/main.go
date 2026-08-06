@@ -22,6 +22,7 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/inventory"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/party"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/player"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/quest"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/skill"
 	mmsocket "github.com/giogimic/SaintsGamingWeb/go-mmo/internal/socket"
@@ -41,15 +42,15 @@ func main() {
 	defer sqlDB.Close()
 
 	wm := world.NewManager(cfg.LobbyCapacity)
-	pm := player.NewManager(16)
+	pm := player.NewManager(16, sqlDB)
 	cm := creature.NewManager()
 	deps := mmsocket.Deps{
 		Parties:    party.NewManager(),
-		Inventory:  inventory.NewManager(),
+		Inventory:  inventory.NewManager(sqlDB),
 		Combat:     combat.NewManager(),
 		Encounters: encounter.NewManager(),
 		Dialogue:   dialogue.NewManager(),
-		Quests:     quest.NewManager(),
+		Quests:     quest.NewManager(sqlDB),
 		Craft:      craft.NewManager(),
 		GTC:        economy.NewManager(),
 		Skills:     skill.NewManager(),
@@ -76,7 +77,14 @@ func main() {
 	io := socket.NewServer(nil, ioOpts)
 	hub.Attach(io)
 
-	api := &httpapi.Server{DB: sqlDB, World: wm}
+	api := &httpapi.Server{
+		DB:     sqlDB,
+		World:  wm,
+		Secret: cfg.AuthSecret,
+		OnMapSynced: func(mapID string) {
+			hub.BroadcastAll(protocol.EvMapReloaded, map[string]string{"mapId": mapID})
+		},
+	}
 	root := http.NewServeMux()
 	root.Handle("/", api.Handler())
 	root.Handle("/socket.io/", io.ServeHandler(nil))

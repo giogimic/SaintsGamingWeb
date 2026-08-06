@@ -60,7 +60,7 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		deps.Parties = party.NewManager()
 	}
 	if deps.Inventory == nil {
-		deps.Inventory = inventory.NewManager()
+		deps.Inventory = inventory.NewManager(nil)
 	}
 	if deps.Combat == nil {
 		deps.Combat = combat.NewManager()
@@ -72,7 +72,7 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		deps.Dialogue = dialogue.NewManager()
 	}
 	if deps.Quests == nil {
-		deps.Quests = quest.NewManager()
+		deps.Quests = quest.NewManager(nil)
 	}
 	if deps.Craft == nil {
 		deps.Craft = craft.NewManager()
@@ -254,6 +254,13 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 
 	def, _ := h.eng.World().GetDef(base)
 	x, y := def.SpawnX, def.SpawnY
+	hot := h.eng.Players().LoadHot(accountID)
+	if hot.OK && req.X == nil && req.Y == nil {
+		// Prefer saved seat when rejoining the same base map without an explicit spawn.
+		if hot.MapID == "" || hot.MapID == base {
+			x, y = hot.X, hot.Y
+		}
+	}
 	if req.X != nil {
 		x = *req.X
 	}
@@ -270,6 +277,10 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	}
 
 	p := h.eng.Players().Create(accountID, sid, name, sprite, inst.InstanceID, base, x, y)
+	if hot.OK && hot.Credits > 0 {
+		p.Credits = hot.Credits
+	}
+	h.deps.Inventory.Ensure(accountID)
 	h.JoinRoom(sid, inst.InstanceID)
 	h.joinAOI(sid, p)
 
@@ -565,6 +576,11 @@ func (h *Hub) broadcastAll(event string, payload any) {
 	for _, id := range ids {
 		h.EmitToSocket(id, event, payload)
 	}
+}
+
+// BroadcastAll fans an event to every connected socket (e.g. map_reloaded from Next sync).
+func (h *Hub) BroadcastAll(event string, payload any) {
+	h.broadcastAll(event, payload)
 }
 
 func (h *Hub) JoinRoom(socketID, room string) {

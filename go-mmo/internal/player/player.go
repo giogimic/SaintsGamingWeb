@@ -1,10 +1,12 @@
 package player
 
 import (
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/persist"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"
 )
 
@@ -38,23 +40,44 @@ type State struct {
 
 // Manager tracks connected players keyed by account + socket.
 type Manager struct {
-	mu           sync.RWMutex
-	byAccount    map[string]*State
-	bySocket     map[string]*State
-	occupied     map[string]map[string]string // instanceID -> "x,y" -> accountID
-	aoiZoneSize  int
+	mu          sync.RWMutex
+	byAccount   map[string]*State
+	bySocket    map[string]*State
+	occupied    map[string]map[string]string // instanceID -> "x,y" -> accountID
+	aoiZoneSize int
+	store       *persist.Store
 }
 
-func NewManager(aoiZoneSize int) *Manager {
+func NewManager(aoiZoneSize int, db *sql.DB) *Manager {
 	if aoiZoneSize <= 0 {
 		aoiZoneSize = 16
+	}
+	var store *persist.Store
+	if db != nil {
+		store = &persist.Store{DB: db}
 	}
 	return &Manager{
 		byAccount:   make(map[string]*State),
 		bySocket:    make(map[string]*State),
 		occupied:    make(map[string]map[string]string),
 		aoiZoneSize: aoiZoneSize,
+		store:       store,
 	}
+}
+
+// LoadHot returns last saved overworld seat for an account (if any).
+func (m *Manager) LoadHot(accountID string) persist.PlayerHot {
+	if m.store == nil {
+		return persist.PlayerHot{}
+	}
+	return m.store.LoadPlayer(accountID)
+}
+
+func (m *Manager) persistLocked(p *State) {
+	if m.store == nil || p == nil {
+		return
+	}
+	m.store.SavePlayer(p.AccountID, p.BaseMapID, p.X, p.Y, p.Credits)
 }
 
 func (m *Manager) ZoneSize() int { return m.aoiZoneSize }
@@ -120,6 +143,7 @@ func (m *Manager) Remove(socketID string) *State {
 	if p == nil {
 		return nil
 	}
+	m.persistLocked(p)
 	delete(m.bySocket, socketID)
 	if cur := m.byAccount[p.AccountID]; cur != nil && cur.SocketID == socketID {
 		delete(m.byAccount, p.AccountID)

@@ -1,6 +1,11 @@
 package inventory
 
-import "sync"
+import (
+	"database/sql"
+	"sync"
+
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/persist"
+)
 
 // Item stack in a player's bag.
 type Item struct {
@@ -9,29 +14,60 @@ type Item struct {
 	Qty  int    `json:"qty"`
 }
 
-// Manager is an in-memory inventory store (DB persistence later).
+// Manager is an inventory store with optional SQLite persistence.
 type Manager struct {
-	mu   sync.RWMutex
-	bags map[string]map[string]*Item // account -> itemId -> item
+	mu      sync.RWMutex
+	bags    map[string]map[string]*Item // account -> itemId -> item
 	credits map[string]int
+	store   *persist.Store
 }
 
-func NewManager() *Manager {
+func NewManager(db *sql.DB) *Manager {
+	var store *persist.Store
+	if db != nil {
+		store = &persist.Store{DB: db}
+	}
 	return &Manager{
 		bags:    make(map[string]map[string]*Item),
 		credits: make(map[string]int),
+		store:   store,
 	}
+}
+
+func (m *Manager) flush(accountID string) {
+	if m.store == nil {
+		return
+	}
+	bag := m.bags[accountID]
+	items := make([]persist.Item, 0, len(bag))
+	for _, it := range bag {
+		items = append(items, persist.Item{ID: it.ID, Name: it.Name, Qty: it.Qty})
+	}
+	m.store.SaveInventory(accountID, items, m.credits[accountID])
 }
 
 func (m *Manager) Ensure(accountID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if _, ok := m.bags[accountID]; !ok {
-		m.bags[accountID] = map[string]*Item{
-			"potion": {ID: "potion", Name: "Potion", Qty: 3},
-		}
-		m.credits[accountID] = 100
+	if _, ok := m.bags[accountID]; ok {
+		return
 	}
+	if m.store != nil {
+		if items, credits, ok := m.store.LoadInventory(accountID); ok {
+			bag := make(map[string]*Item, len(items))
+			for _, it := range items {
+				bag[it.ID] = &Item{ID: it.ID, Name: it.Name, Qty: it.Qty}
+			}
+			m.bags[accountID] = bag
+			m.credits[accountID] = credits
+			return
+		}
+	}
+	m.bags[accountID] = map[string]*Item{
+		"potion": {ID: "potion", Name: "Potion", Qty: 3},
+	}
+	m.credits[accountID] = 100
+	m.flush(accountID)
 }
 
 func (m *Manager) List(accountID string) []Item {
@@ -60,6 +96,7 @@ func (m *Manager) AddCredits(accountID string, delta int) int {
 	if m.credits[accountID] < 0 {
 		m.credits[accountID] = 0
 	}
+	m.flush(accountID)
 	return m.credits[accountID]
 }
 
@@ -77,6 +114,7 @@ func (m *Manager) AddItem(accountID, id, name string, qty int) []Item {
 	for _, it := range bag {
 		out = append(out, *it)
 	}
+	m.flush(accountID)
 	return out
 }
 
@@ -92,6 +130,7 @@ func (m *Manager) Consume(accountID, id string, qty int) bool {
 	if it.Qty <= 0 {
 		delete(m.bags[accountID], id)
 	}
+	m.flush(accountID)
 	return true
 }
 
@@ -115,6 +154,7 @@ func (m *Manager) Buy(accountID, id, name string, price, qty int) (ok bool, cred
 	for _, it := range bag {
 		out = append(out, *it)
 	}
+	m.flush(accountID)
 	return true, m.credits[accountID], out
 }
 
@@ -136,5 +176,6 @@ func (m *Manager) Sell(accountID, id string, price, qty int) (ok bool, credits i
 	for _, x := range m.bags[accountID] {
 		out = append(out, *x)
 	}
+	m.flush(accountID)
 	return true, m.credits[accountID], out
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestCreateMoveAndPeers(t *testing.T) {
-	m := player.NewManager(16)
+	m := player.NewManager(16, nil)
 	p := m.Create("a1", "s1", "Ada", "spr", "DEMO_SANDBOX_ch1", "DEMO_SANDBOX", 5, 5)
 	if p.EntityID == "" {
 		t.Fatal("missing entity id")
@@ -38,7 +38,7 @@ func TestCreateMoveAndPeers(t *testing.T) {
 }
 
 func TestSessionReplaceTracking(t *testing.T) {
-	m := player.NewManager(16)
+	m := player.NewManager(16, nil)
 	m.Create("a1", "s1", "Ada", "spr", "DEMO_ch1", "DEMO", 1, 1)
 	if m.SocketIDForAccount("a1") != "s1" {
 		t.Fatal("socket map")

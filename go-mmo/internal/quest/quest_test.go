@@ -7,7 +7,7 @@ import (
 )
 
 func TestQuestAcceptAdvance(t *testing.T) {
-	m := quest.NewManager()
+	m := quest.NewManager(nil)
 	p := m.Accept("a1", "saints_trail_intro")
 	if p == nil || p.Status != "active" {
 		t.Fatal(p)
