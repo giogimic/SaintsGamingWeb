@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (#28–#40 on main; lobby entities + MP presence verified)  
+**Last updated:** 2026-08-06 (#28–#40 on main; GameMapData build cast hotfix in flight)  
 **Point every new session at this file first.**
 
 ---
