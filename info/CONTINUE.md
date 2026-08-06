@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (P0–P12 + #38 on main; peer wipe / base instanceId fix)  
+**Last updated:** 2026-08-06 (P0–P12 + #38 on main; MP peer presence UI on this branch)  
 **Point every new session at this file first.**
 
 ---
@@ -12,14 +12,14 @@
 One PR → merge to `main` → then next:
 
 1. **Done on main:** #28–#38 (incl. join-storm soft rejoin)  
-2. **In flight:** Lobby MP peer wipe while `instanceId` still base — `logs/2026-08-06-lobby-mp-peer-wipe-base-instance.md`  
-3. **After merge:** two-browser `/lobby` confirm (toast “is nearby” + sprites)
+2. **In flight:** Lobby MP peer wipe + presence UI — `logs/2026-08-06-lobby-mp-peer-wipe-base-instance.md`, `logs/2026-08-06-lobby-mp-peer-presence-ui.md`  
+3. **After merge:** two **different** accounts on `/lobby` — HUD Nearby ≥ 1, nameplate, amber minimap dot
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
 | **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
 | **MP #38** | Join-storm soft rejoin | **On main** |
-| **MP follow-up** | Base `instanceId` empty-snapshot wipe + Babylon dispose gap | **This branch** |
+| **MP follow-up** | Base `instanceId` wipe + peer presence UI / same-account toast | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 

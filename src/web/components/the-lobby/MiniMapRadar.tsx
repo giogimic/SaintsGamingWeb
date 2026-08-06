@@ -27,6 +27,7 @@ export default function MiniMapRadar() {
   const instanceId = useGameStore(state => state.instanceId);
   const playerPos = useGameStore(state => state.player.position);
   const mapEntities = useGameStore(state => state.mapEntities);
+  const otherPlayers = useGameStore(state => state.otherPlayers);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -87,6 +88,24 @@ export default function MiniMapRadar() {
       }
     });
 
+    // Multiplayer peers — amber dots (distinct from NPC blue)
+    Object.values(otherPlayers || {}).forEach((peer) => {
+      if (typeof peer.x !== 'number' || typeof peer.y !== 'number') return;
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(
+        peer.x * cellW + cellW / 2,
+        peer.y * cellH + cellH / 2,
+        Math.max(2, cellW * 1.1),
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
     // Player pulsing dot (animate)
     const now = Date.now();
     const pulse = Math.abs(Math.sin(now * 0.004));
@@ -124,7 +143,7 @@ export default function MiniMapRadar() {
       0, Math.PI * 2
     );
     ctx.fill();
-  }, [currentMapId, playerPos, mapEntities]);
+  }, [currentMapId, playerPos, mapEntities, otherPlayers]);
 
   // Animate minimap at ~20fps for pulse effect
   useEffect(() => {
