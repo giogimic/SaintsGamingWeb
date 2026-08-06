@@ -159,19 +159,22 @@ func (m *Manager) Levels(accountID string) map[string]int {
 }
 
 // CombatGrants mirrors grantsForTurnBattle loosely using bible skill slugs.
-func CombatGrants(winner string) []Grant {
+func CombatGrants(winner string, creatureLevel int) []Grant {
+	if creatureLevel < 1 {
+		creatureLevel = 1
+	}
 	if winner == "player" {
 		return []Grant{
-			{Skill: "attack", XP: 25},
-			{Skill: "strength", XP: 15},
-			{Skill: "hitpoints", XP: 10},
-			{Skill: "defence", XP: 8},
+			{Skill: "attack", XP: 15 + creatureLevel*5},
+			{Skill: "strength", XP: 10 + creatureLevel*3},
+			{Skill: "hitpoints", XP: 5 + creatureLevel*2},
+			{Skill: "defence", XP: 5 + creatureLevel*2},
 		}
 	}
 	if winner == "flee" {
-		return []Grant{{Skill: "agility", XP: 5}}
+		return []Grant{{Skill: "agility", XP: 2 + creatureLevel}}
 	}
-	return []Grant{{Skill: "hitpoints", XP: 5}, {Skill: "defence", XP: 3}}
+	return []Grant{{Skill: "hitpoints", XP: 2 + creatureLevel}, {Skill: "defence", XP: 2 + creatureLevel}}
 }
 
 func max0(n int) int {

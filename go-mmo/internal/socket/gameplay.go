@@ -72,6 +72,7 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 
 func (h *Hub) handleBattleSubmit(accountID string, datas []any) {
 	action := "attack"
+	moveId := "strike"
 	if len(datas) > 0 {
 		b, _ := json.Marshal(datas[0])
 		var m map[string]any
@@ -81,6 +82,9 @@ func (h *Hub) handleBattleSubmit(accountID string, datas []any) {
 			}
 			if a, ok := m["type"].(string); ok {
 				action = a
+			}
+			if a, ok := m["moveId"].(string); ok {
+				moveId = a
 			}
 		}
 	}
@@ -100,7 +104,7 @@ func (h *Hub) handleBattleSubmit(accountID string, datas []any) {
 			"combatId": sess.ID, "mode": "tb", "creatureId": cre.ID, "hp": cre.HP, "maxHp": cre.MaxHP,
 		})
 	}
-	sess = h.deps.Combat.SubmitTB(accountID, strings.ToLower(action))
+	sess = h.deps.Combat.SubmitTB(accountID, strings.ToLower(action), strings.ToLower(moveId))
 	h.EmitToSocket(p.SocketID, protocol.EvBattleUpdate, map[string]any{
 		"combatId": sess.ID, "playerHp": sess.PlayerHP, "creatureHp": sess.CreatureHP,
 		"turn": sess.Turn, "ended": sess.Ended, "winner": sess.Winner, "mode": "tb",
@@ -121,7 +125,11 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 		h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
 		h.EmitToSocket(sid, protocol.EvSyncCredits, map[string]any{"credits": h.deps.Inventory.Credits(accountID)})
 		h.deps.Quests.Advance(accountID, "gather_scrap", 0) // no-op if missing
-		for _, g := range skill.CombatGrants(winner) {
+		creatureLvl := 3
+		if sess := h.deps.Combat.GetByPlayer(accountID); sess != nil {
+			creatureLvl = sess.CreatureStats.Level
+		}
+		for _, g := range skill.CombatGrants(winner, creatureLvl) {
 			xp := h.deps.Skills.Add(accountID, g.Skill, g.XP)
 			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{
 				"skills": xp,
@@ -135,7 +143,11 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 		}
 	} else if winner != "flee" {
 		h.EmitToSocket(sid, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
-		for _, g := range skill.CombatGrants(winner) {
+		creatureLvl := 3
+		if sess := h.deps.Combat.GetByPlayer(accountID); sess != nil {
+			creatureLvl = sess.CreatureStats.Level
+		}
+		for _, g := range skill.CombatGrants(winner, creatureLvl) {
 			xp := h.deps.Skills.Add(accountID, g.Skill, g.XP)
 			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{
 				"skills": xp,
@@ -479,6 +491,36 @@ func (h *Hub) handleDialogueSelectFull(accountID string, datas []any) {
 	}
 	if res.OpenShop {
 		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.DefaultCatalog()})
+	}
+	if res.Action == "grant_demo_tools" {
+		h.deps.Inventory.AddItem(accountID, "axe_bronze", "Rook Hatchet", 1)
+		items := h.deps.Inventory.AddItem(accountID, "pickaxe_bronze", "Crude Pickaxe", 1)
+		h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Received Rook Hatchet & Crude Pickaxe. Finish the Trail chain!"})
+	}
+	if res.Action == "heal_party" {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Your party was fully healed."})
+		if p := h.eng.Players().GetByAccount(accountID); p != nil {
+			p.HP = p.MaxHP
+		}
+	}
+	if res.Action == "grant_spyder_starter" {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Budaye joined your party!"})
+	}
+	if res.Action == "demo_quest_report" {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Check your quest tracker for the next step."})
+	}
+	if res.Action == "start_trainer_battle" {
+		if p := h.eng.Players().GetByAccount(accountID); p != nil {
+			cre := h.eng.Creatures().Spawn(p.MapID, creature.Entity{
+				Species: "rockitten", Name: "Rockitten", X: p.X + 1, Y: p.Y,
+				Sprite: "rockitten", Hostile: true, Level: 6, MaxHP: 60,
+			})
+			sess := h.deps.Combat.StartTB(accountID, cre.ID, p.MapID, p.HP, cre.HP)
+			h.EmitToSocket(p.SocketID, protocol.EvBattleStarted, map[string]any{
+				"combatId": sess.ID, "mode": "tb", "creatureId": cre.ID, "hp": cre.HP, "maxHp": cre.MaxHP,
+			})
+		}
 	}
 	if res.Ended {
 		h.EmitToSocket(sid, protocol.EvDialogueEnd, map[string]any{})

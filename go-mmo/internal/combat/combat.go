@@ -15,16 +15,18 @@ type Stats struct {
 	AbilityDefense   float64
 	CombatTempo      float64
 	Level            int
+	Types            []ElementType
 }
 
 func DefaultPlayerStats(hp int) Stats {
 	return Stats{
-		PhysicalPower: 10 + float64(max(1, hp))*0.05,
+		PhysicalPower:   10 + float64(max(1, hp))*0.05,
 		PhysicalDefense: 10,
-		AbilityPower: 10,
-		AbilityDefense: 10,
-		CombatTempo: 100,
-		Level: 5,
+		AbilityPower:    10,
+		AbilityDefense:  10,
+		CombatTempo:     100,
+		Level:           5,
+		Types:           []ElementType{None},
 	}
 }
 
@@ -39,6 +41,7 @@ func DefaultCreatureStats(level, maxHP int) Stats {
 		AbilityDefense:  6 + float64(level),
 		CombatTempo:     90 + float64(level),
 		Level:           level,
+		Types:           []ElementType{None},
 	}
 }
 
@@ -121,22 +124,61 @@ func (m *Manager) GetByPlayer(playerID string) *Session {
 	return m.byID[id]
 }
 
-func calcDamage(atk, def Stats, power float64, magic, crit bool, rng *rand.Rand) (dmg int, wasCrit bool) {
-	var raw float64
-	if magic {
-		raw = (power * atk.AbilityPower) / math.Max(1, def.AbilityDefense)
-	} else {
-		raw = (power * atk.PhysicalPower) / math.Max(1, def.PhysicalDefense)
+func calcDamageARPG(atk, def Stats, move *CombatAbility, stab bool, typeMod float64, rng *rand.Rand) (dmg int, wasCrit bool) {
+	if move == nil {
+		move = GetCombatAbility("strike")
 	}
-	wasCrit = crit
-	if !wasCrit && rng != nil && rng.Float64() < 0.08 {
+	isMagic := (move.Category == Special || move.Category == Heal)
+	atkStat := atk.PhysicalPower
+	defStat := def.PhysicalDefense
+	if isMagic {
+		atkStat = atk.AbilityPower
+		defStat = def.AbilityDefense
+	}
+	power := float64(move.Power)
+	if power < 1 {
+		power = 10
+	}
+	level := float64(atk.Level)
+	if level < 1 {
+		level = 1
+	}
+
+	raw := ((level * power * atkStat) / (math.Max(1, defStat) * 10)) + 2.0
+	
+	stabMod := 1.0
+	if stab {
+		stabMod = 1.25
+	}
+	raw = raw * typeMod * stabMod
+
+	wasCrit = false
+	if rng != nil && rng.Float64() < 0.08 {
 		wasCrit = true
-	}
-	if wasCrit {
 		raw *= 1.5
 	}
-	dmg = int(math.Max(1, math.Floor(raw)))
-	return dmg, wasCrit
+	return int(math.Max(1, math.Floor(raw))), wasCrit
+}
+
+func executeHit(atk, def Stats, moveId string, rng *rand.Rand) (dmg int, wasCrit bool) {
+	move := GetCombatAbility(moveId)
+	if move == nil {
+		move = GetCombatAbility("strike")
+	}
+	stab := false
+	for _, t := range atk.Types {
+		if t == move.Element {
+			stab = true
+			break
+		}
+	}
+	typeMod := 1.0
+	for _, t := range def.Types {
+		if t != None {
+			typeMod *= GetCombatMultiplier(move.Element, t)
+		}
+	}
+	return calcDamageARPG(atk, def, move, stab, typeMod, rng)
 }
 
 func (m *Manager) ApplyPlayerHit(playerID string, dmg int) *Session {
@@ -147,7 +189,7 @@ func (m *Manager) ApplyPlayerHit(playerID string, dmg int) *Session {
 		return s
 	}
 	if dmg < 1 {
-		dmg, s.LastCrit = calcDamage(s.PlayerStats, s.CreatureStats, 12, false, false, m.rng)
+		dmg, s.LastCrit = executeHit(s.PlayerStats, s.CreatureStats, "strike", m.rng)
 	}
 	s.LastDamage = dmg
 	s.CreatureHP -= dmg
@@ -170,7 +212,7 @@ func (m *Manager) ApplyCreatureHit(playerID string, dmg int) *Session {
 		return s
 	}
 	if dmg < 1 {
-		dmg, s.LastCrit = calcDamage(s.CreatureStats, s.PlayerStats, 10, false, false, m.rng)
+		dmg, s.LastCrit = executeHit(s.CreatureStats, s.PlayerStats, "strike", m.rng)
 	}
 	s.LastDamage = dmg
 	s.PlayerHP -= dmg
@@ -186,7 +228,7 @@ func (m *Manager) ApplyCreatureHit(playerID string, dmg int) *Session {
 }
 
 // SubmitTB handles battle_submit_action: attack | defend | item | flee | magic.
-func (m *Manager) SubmitTB(playerID, action string) *Session {
+func (m *Manager) SubmitTB(playerID, action, moveId string) *Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s := m.sessionLocked(playerID)
@@ -219,7 +261,7 @@ func (m *Manager) SubmitTB(playerID, action string) *Session {
 		s.Turn = "creature"
 	case "defend":
 		s.Turn = "creature"
-		incoming, crit := calcDamage(s.CreatureStats, s.PlayerStats, 8, false, false, m.rng)
+		incoming, crit := executeHit(s.CreatureStats, s.PlayerStats, "strike", m.rng)
 		incoming = int(math.Max(1, math.Floor(float64(incoming)*0.35)))
 		s.LastDamage = incoming
 		s.LastCrit = crit
@@ -239,7 +281,7 @@ func (m *Manager) SubmitTB(playerID, action string) *Session {
 		}
 		s.Turn = "creature"
 	case "magic":
-		dmg, crit := calcDamage(s.PlayerStats, s.CreatureStats, 14, true, false, m.rng)
+		dmg, crit := executeHit(s.PlayerStats, s.CreatureStats, "fireball", m.rng)
 		s.LastDamage = dmg
 		s.LastCrit = crit
 		s.CreatureHP -= dmg
@@ -252,7 +294,7 @@ func (m *Manager) SubmitTB(playerID, action string) *Session {
 		}
 		s.Turn = "creature"
 	default: // attack
-		dmg, crit := calcDamage(s.PlayerStats, s.CreatureStats, 12, false, false, m.rng)
+		dmg, crit := executeHit(s.PlayerStats, s.CreatureStats, moveId, m.rng)
 		s.LastDamage = dmg
 		s.LastCrit = crit
 		s.CreatureHP -= dmg
@@ -266,7 +308,7 @@ func (m *Manager) SubmitTB(playerID, action string) *Session {
 		s.Turn = "creature"
 	}
 	// Creature turn
-	cdmg, ccrit := calcDamage(s.CreatureStats, s.PlayerStats, 10, false, false, m.rng)
+	cdmg, ccrit := executeHit(s.CreatureStats, s.PlayerStats, "strike", m.rng)
 	s.LastDamage = cdmg
 	s.LastCrit = ccrit
 	s.PlayerHP -= cdmg
