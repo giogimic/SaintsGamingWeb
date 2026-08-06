@@ -9,11 +9,14 @@ import (
 	"time"
 
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/bootstrap"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/combat"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/config"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/creature"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/db"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/encounter"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/engine"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/httpapi"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/inventory"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/party"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/player"
 	mmsocket "github.com/giogimic/SaintsGamingWeb/go-mmo/internal/socket"
@@ -35,15 +38,20 @@ func main() {
 	wm := world.NewManager(cfg.LobbyCapacity)
 	pm := player.NewManager(16)
 	cm := creature.NewManager()
-	parties := party.NewManager()
+	deps := mmsocket.Deps{
+		Parties:    party.NewManager(),
+		Inventory:  inventory.NewManager(),
+		Combat:     combat.NewManager(),
+		Encounters: encounter.NewManager(),
+	}
 
 	if err := bootstrap.EnsureDemo(sqlDB, wm); err != nil {
 		log.Fatalf("bootstrap: %v", err)
 	}
 
-	hub := mmsocket.NewHub(cfg, nil, parties)
+	hub := mmsocket.NewHub(cfg, nil, deps)
 	eng := engine.New(cfg, wm, pm, cm, hub)
-	hub = mmsocket.NewHub(cfg, eng, parties)
+	hub = mmsocket.NewHub(cfg, eng, deps)
 	eng = engine.New(cfg, wm, pm, cm, hub)
 
 	ioOpts := socket.DefaultServerOptions()
