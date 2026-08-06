@@ -57,6 +57,8 @@ const (
 	EvShopSell          = "shop_sell"
 	EvShopCatalog       = "shop_catalog"
 	EvClaimStarter      = "claim_starter"
+	EvGTCCreateListing  = "gtc_create_listing"
+	EvGTCPurchaseListing = "gtc_purchase_listing"
 	EvJoinRoom          = "join_room"
 	EvLeaveRoom         = "leave_room"
 	EvForceDisconnect   = "force_disconnect"
@@ -92,6 +94,14 @@ const (
 	EvPartyUpdate         = "party_update"
 	EvPartyInviteEvt      = "party_invite"
 	EvPresenceUpdated     = "presence.updated"
+	EvGTCSuccess          = "gtc_transaction_success"
+	EvGTCError            = "gtc_transaction_error"
+	EvLootSpawned         = "loot_spawned"
+	EvLootRemoved         = "loot_removed"
+	EvQuestUpdate         = "quest_update"
+	EvSkillXP             = "skill_xp"
+	EvNPCSpawned          = "npc_spawned"
+	EvNPCDespawned        = "npc_despawned"
 )
 
 // JoinMapRequest is the client join_map payload.

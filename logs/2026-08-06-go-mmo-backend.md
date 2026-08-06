@@ -9,18 +9,36 @@ Remake the heavy realtime MMO backend in Go using existing TypeScript
 ideas/contracts (Socket.IO events, DEMO_SANDBOX shards, Auth.js JWT), as a
 **parallel test environment** on alternate ports with Caddy subdomain wiring.
 
-## Done this pass
+## Status: BACKEND CONVERSION COMPLETE (parity pass)
 
-- Scaffold `go-mmo/` module (`github.com/giogimic/SaintsGamingWeb/go-mmo`)
-- Config default `:3100`, SQLite via `modernc.org/sqlite`
-- World shards (`DEMO_SANDBOX_chN`, private, PIE), walkability, demo map seed
-- Player seats, input queue, move cooldown, occupancy, AOI room helpers
-- Engine sim 20 Hz / net 10 Hz with `move_ack` / `position_correction` / `player_moved`
-- Socket.IO hub (`zishang520/socket.io`) — join_map, input, chat, party stubs, NPC dialogue toast
-- REST `/healthz`, `/api/maps`, `/api/maps/:id` with lazy DEMO ensure
-- Auth.js JWT parse + `GO_MMO_DEV_AUTH` token bypass
-- `scripts/setup-go-mmo.sh` — detect Caddy, prompt subdomain, call `scripts/proxy-caddy.sh`
-- Tests green: `go test ./...` · binary builds
+All `SocketHandler.ts` client events are implemented on the Go hub. Heavy
+sim/net path runs in Go on `:3100`. Studio map save/reload/NPC spawn work
+over sockets + REST. Full Studio UI rewrite in Go remains **optional / later**.
+
+### Socket event parity (TS → Go)
+
+join_map, input, combat_action, combat_cast, encounter_check,
+battle_submit_action, admin_save_map, admin_reload_map, studio_spawn_npc,
+studio_despawn_npc, npc_interact, dialogue_select, gather_interact,
+gtc_create_listing, gtc_purchase_listing, pickup_loot, party_*, global_chat,
+chat_message, staff_announce, staff_kick, craft_item, shop_*, claim_starter,
+force_disconnect.
+
+### Systems
+
+| Area | Package |
+|------|---------|
+| Shards / walk / studio NPCs / loot | `internal/world` |
+| Players / AOI / input | `internal/player`, `aoi` |
+| Engine 20/10 Hz | `internal/engine` |
+| RT + TB combat | `internal/combat` |
+| Encounters | `internal/encounter` |
+| Dialogue + Saints Trail quests | `internal/dialogue`, `quest` |
+| Inventory / shop / craft / GTC | `inventory`, `shop`, `craft`, `economy` |
+| Skills XP | `internal/skill` |
+| HTTP maps CRUD + health | `internal/httpapi` |
+| Auth.js JWT + dev token | `internal/auth` |
+| Caddy setup | `scripts/setup-go-mmo.sh` |
 
 ## Run
 
@@ -30,23 +48,17 @@ set -a; source go-mmo/.env; set +a
 ./go-mmo/bin/go-mmo
 ```
 
-## Next continues (parity backlog)
+## Optional later (not blocking “backend conversion”)
 
-1. Full combat / encounter / TB battle parity with TS managers
-2. Inventory, shop buy/sell, craft, GTC listings
-3. Quest + dialogue trees (Saints Trail)
-4. Studio admin_save_map / reload + NPC spawn over sockets
-5. Point lobby client optionally at Go socket URL for A/B
-6. Studio editor surface in Go (optional later)
+1. Point lobby/studio client `NEXT_PUBLIC_GO_MMO_URL` at Go socket for A/B
+2. Studio editor UI rewritten in Go (user said maybe)
+3. Deeper 27-skill / TB formula parity with bible numbers
+4. Persist inventory/quests to SQLite (currently hot memory + maps in DB)
 
-## Smoke checked
+## Smoke
 
 - `GET /healthz` → ok
 - `GET /api/maps` → DEMO_SANDBOX
-- Engine.IO polling handshake on `/socket.io/`
-
-## Pass 2 — gameplay managers
-
-- Wired combat (RT hit/flee), inventory buy/sell, shop catalog, grass encounter rolls
-- Tests: combat + inventory
-- Socket events: combat_action, encounter_check, shop_buy/sell, claim_starter loot
+- `PUT /api/maps/DEMO_SANDBOX` → persist
+- Engine.IO polling `/socket.io/` → 200
+- `go test ./...` green

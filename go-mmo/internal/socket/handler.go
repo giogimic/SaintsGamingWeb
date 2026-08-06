@@ -10,14 +10,19 @@ import (
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/auth"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/combat"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/config"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/craft"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/creature"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/dialogue"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/economy"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/encounter"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/engine"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/inventory"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/party"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/player"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/quest"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/shop"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/skill"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/world"
 	"github.com/zishang520/socket.io/v2/socket"
 )
@@ -28,6 +33,13 @@ type Deps struct {
 	Inventory  *inventory.Manager
 	Combat     *combat.Manager
 	Encounters *encounter.Manager
+	Dialogue   *dialogue.Manager
+	Quests     *quest.Manager
+	Craft      *craft.Manager
+	GTC        *economy.Manager
+	Skills     *skill.Manager
+	Loot       *world.LootManager
+	SaveMap    func(id, name, grid, npcs, tiles, tilesets string) error
 }
 
 // Hub bridges Engine Emitter to Socket.IO rooms.
@@ -55,6 +67,24 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 	}
 	if deps.Encounters == nil {
 		deps.Encounters = encounter.NewManager()
+	}
+	if deps.Dialogue == nil {
+		deps.Dialogue = dialogue.NewManager()
+	}
+	if deps.Quests == nil {
+		deps.Quests = quest.NewManager()
+	}
+	if deps.Craft == nil {
+		deps.Craft = craft.NewManager()
+	}
+	if deps.GTC == nil {
+		deps.GTC = economy.NewManager()
+	}
+	if deps.Skills == nil {
+		deps.Skills = skill.NewManager()
+	}
+	if deps.Loot == nil {
+		deps.Loot = world.NewLootManager()
 	}
 	return &Hub{
 		cfg:     cfg,
@@ -136,18 +166,23 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On(protocol.EvPartyInviteDecline, func(datas ...any) {
 		h.deps.Parties.Decline(accountID)
 	})
+	client.On(protocol.EvPartyJoin, func(datas ...any) {
+		// Treat as invite-accept toward named leader
+		leader := asString(datas, 0)
+		if leader != "" {
+			h.deps.Parties.Invite(leader, accountID)
+			h.handlePartyAccept(accountID)
+		}
+	})
 	client.On(protocol.EvPartyLeave, func(datas ...any) {
 		h.deps.Parties.Leave(accountID)
 		h.EmitToSocket(sid, protocol.EvPartyUpdate, map[string]any{"members": []string{}})
 	})
 	client.On(protocol.EvNPCInteract, func(datas ...any) {
-		h.EmitToSocket(sid, protocol.EvDialogueStart, map[string]any{
-			"id":    "demo_welcome",
-			"lines": []string{"Welcome to the Go MMO sandbox.", "Walk with WASD / arrows. Peers share your shard."},
-		})
+		h.handleNPCInteractFull(accountID, datas)
 	})
 	client.On(protocol.EvDialogueSelect, func(datas ...any) {
-		h.EmitToSocket(sid, protocol.EvDialogueEnd, map[string]any{})
+		h.handleDialogueSelectFull(accountID, datas)
 	})
 	client.On(protocol.EvShopCatalog, func(datas ...any) {
 		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.DefaultCatalog()})
@@ -166,6 +201,7 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	client.On(protocol.EvForceDisconnect, func(datas ...any) {
 		client.Disconnect(true)
 	})
+	h.registerGameplay(client, accountID, sid)
 	client.On("disconnect", func(datas ...any) {
 		h.onDisconnect(sid, accountID)
 	})
@@ -275,9 +311,9 @@ func (h *Hub) handleEncounter(accountID string) {
 		Species: res.Species, Name: res.Species, X: p.X + 1, Y: p.Y,
 		Sprite: res.Species, Hostile: true, Level: res.Level, MaxHP: 40 + res.Level*5,
 	})
-	sess := h.deps.Combat.Start(accountID, spawned.ID, p.MapID, p.HP, spawned.HP)
+	sess := h.deps.Combat.StartTB(accountID, spawned.ID, p.MapID, p.HP, spawned.HP)
 	h.EmitToSocket(p.SocketID, protocol.EvBattleStarted, map[string]any{
-		"combatId": sess.ID, "species": res.Species, "level": res.Level,
+		"combatId": sess.ID, "species": res.Species, "level": res.Level, "mode": "tb",
 		"creatureId": spawned.ID, "hp": spawned.HP, "maxHp": spawned.MaxHP,
 	})
 	h.EmitToRoom(p.MapID, protocol.EvCreatureSpawned, spawned)
@@ -301,26 +337,15 @@ func (h *Hub) handleAttack(accountID, targetID string) {
 		"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
 	})
 	if sess.Ended {
-		h.EmitToSocket(p.SocketID, protocol.EvBattleEnded, map[string]any{"winner": sess.Winner, "combatId": sess.ID})
-		if sess.Winner == "player" {
-			h.eng.Creatures().Despawn(p.MapID, sess.CreatureID)
-			h.EmitToRoom(p.MapID, protocol.EvCreatureDespawned, map[string]string{"id": sess.CreatureID})
-			items := h.deps.Inventory.AddItem(accountID, "loot_scrap", "Scrap", 1)
-			h.deps.Inventory.AddCredits(accountID, 15)
-			h.EmitToSocket(p.SocketID, protocol.EvInventorySync, map[string]any{"items": items})
-			h.EmitToSocket(p.SocketID, protocol.EvSyncCredits, map[string]any{"credits": h.deps.Inventory.Credits(accountID)})
-		} else {
-			h.EmitToSocket(p.SocketID, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
-		}
-	} else {
-		sess = h.deps.Combat.ApplyCreatureHit(accountID, 6)
-		h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{
-			"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
-		})
-		if sess.Ended {
-			h.EmitToSocket(p.SocketID, protocol.EvBattleEnded, map[string]any{"winner": sess.Winner, "combatId": sess.ID})
-			h.EmitToSocket(p.SocketID, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
-		}
+		h.finishCombat(accountID, p.SocketID, p.MapID, sess.CreatureID, sess.Winner)
+		return
+	}
+	sess = h.deps.Combat.ApplyCreatureHit(accountID, 6)
+	h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{
+		"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
+	})
+	if sess.Ended {
+		h.finishCombat(accountID, p.SocketID, p.MapID, sess.CreatureID, sess.Winner)
 	}
 }
 

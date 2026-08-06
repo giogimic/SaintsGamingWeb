@@ -27,3 +27,16 @@ func TestFleeEnd(t *testing.T) {
 		t.Fatal("expected cleared")
 	}
 }
+
+func TestTBSubmit(t *testing.T) {
+	m := combat.NewManager()
+	s := m.StartTB("p1", "c1", "DEMO_ch1", 100, 30)
+	s = m.SubmitTB("p1", "attack")
+	if s.CreatureHP >= 30 {
+		t.Fatalf("expected damage %+v", s)
+	}
+	s = m.SubmitTB("p1", "flee")
+	if !s.Ended || s.Winner != "flee" {
+		t.Fatalf("%+v", s)
+	}
+}
