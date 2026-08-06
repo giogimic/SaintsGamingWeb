@@ -91,7 +91,8 @@ export async function loadMap(mapId: string): Promise<GameMapData> {
     return mapData;
   } catch (err) {
     console.error(`Error loading map ${mapId}:`, err);
-    // Return fallback empty map if fetch fails
+    // Do NOT cache empty fallbacks — a transient fetch failure would permanently
+    // poison DEMO with npcs:[] (grass only, no characters) for the session.
     const fallback: GameMapData = {
       id: mapId,
       name: mapId,
@@ -100,7 +101,6 @@ export async function loadMap(mapId: string): Promise<GameMapData> {
       npcs: [],
       encounterPool: [],
     };
-    mapCache[mapId] = fallback;
     return fallback;
   }
 }
