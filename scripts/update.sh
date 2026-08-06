@@ -59,14 +59,14 @@ fi
 
 # --- Automated Database Backup ---
 if grep -q "DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
-    if sudo docker ps | grep -q "saints-gaming-db"; then
+    if docker ps | grep -q "saints-gaming-db"; then
         echo -e "${CYAN}[*] Performing automated database backup before updating...${NC}"
         mkdir -p backups
         TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
         DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
         DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
         
-        sudo docker exec saints-gaming-db mariadb-dump -u "$DB_USER" -p"$DB_PASS" saints_gaming > "backups/db_backup_$TIMESTAMP.sql" 2>/dev/null
+        docker exec saints-gaming-db mariadb-dump -u "$DB_USER" -p"$DB_PASS" saints_gaming > "backups/db_backup_$TIMESTAMP.sql" 2>/dev/null
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}[✓] Database backed up to backups/db_backup_$TIMESTAMP.sql${NC}"
         else
@@ -96,11 +96,11 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
         if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
             echo -e "${CYAN}[*] Verifying MariaDB credentials match .env...${NC}"
-            if ! sudo docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
+            if ! docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
                 echo -e "${YELLOW}[!] Credential mismatch detected — resetting MariaDB user password to match .env...${NC}"
-                sudo docker exec saints-gaming-db mariadb -u root -p"$DB_PASS" -e \
+                docker exec saints-gaming-db mariadb -u root -p"$DB_PASS" -e \
                     "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null || \
-                sudo docker exec saints-gaming-db mariadb -u root -e \
+                docker exec saints-gaming-db mariadb -u root -e \
                     "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}'; FLUSH PRIVILEGES;" 2>/dev/null
                 if [ $? -eq 0 ]; then
                     echo -e "${GREEN}[✓] MariaDB credentials synced successfully.${NC}"
@@ -115,13 +115,13 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         fi
     fi
 
-    sudo docker compose build web > docker_build.log 2>&1
+    docker compose build web > docker_build.log 2>&1
     if [ $? -ne 0 ]; then
         echo -e "${RED}[!] Build failed! Check docker_build.log for details.${NC}"
         exit 1
     fi
 
-    sudo docker compose up -d --no-deps web >> docker_build.log 2>&1
+    docker compose up -d --no-deps web >> docker_build.log 2>&1
     if [ $? -ne 0 ]; then
         echo -e "${RED}[!] Failed to start web container. Check docker_build.log.${NC}"
         exit 1
@@ -130,9 +130,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     echo -e "${GREEN}[✓] Web container rebuilt and restarted.${NC}\n"
 
     # MMO sockets live inside the web container (server.ts). Stop any leftover :3001 container.
-    if sudo docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo$'; then
+    if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo$'; then
         echo -e "${CYAN}[*] Removing obsolete saints-gaming-mmo container (sockets are on web:3000)...${NC}"
-        sudo docker rm -f saints-gaming-mmo 2>/dev/null || true
+        docker rm -f saints-gaming-mmo 2>/dev/null || true
     fi
     if command -v pm2 &>/dev/null; then
         echo -e "${CYAN}[*] Ensuring PM2 runs custom server.ts (not next start / game-server.js)...${NC}"
@@ -175,8 +175,8 @@ fi
 
 echo -e "${GREEN}${BOLD}[✓] Update Complete!${NC}\n"
 echo -e "${YELLOW}Useful Commands:${NC}"
-echo -e "  View Logs:    sudo docker logs saints-gaming-web -f"
-echo -e "  Stop:         sudo docker compose down"
-echo -e "  Restart:      sudo docker compose restart"
+echo -e "  View Logs:    docker logs saints-gaming-web -f"
+echo -e "  Stop:         docker compose down"
+echo -e "  Restart:      docker compose restart"
 echo -e "  Verify maps:  curl -sS \$SITE/api/maps | head"
 echo -e "  Verify sock:  curl -sS -o /dev/null -w '%{http_code}\\n' \"\$SITE/socket.io/?EIO=4&transport=polling\""

@@ -685,10 +685,10 @@ echo -e "${CYAN}${BOLD}  Starting Cluster Build...${NC}"
 echo -e "${PURPLE}${BOLD}========================================${NC}"
 
 # Remove only THIS install's containers (unique names) — never clobber a sibling stack.
-sudo docker rm -f "$WEB_CONTAINER_NAME" "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
+docker rm -f "$WEB_CONTAINER_NAME" "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
 
 # Build
-sudo docker compose build --no-cache > docker_build.log 2>&1 && sudo docker compose up -d >> docker_build.log 2>&1 &
+docker compose build --no-cache > docker_build.log 2>&1 && docker compose up -d >> docker_build.log 2>&1 &
 BUILD_PID=$!
 
 echo -e "${YELLOW}Building containers... You can view docker_build.log for live output.${NC}"
@@ -706,7 +706,7 @@ if [ "$DB_PROVIDER_OPT" = "2" ]; then
     echo -e "\n${CYAN}[*] Waiting for MariaDB to become ready...${NC}"
     DB_READY=0
     for i in $(seq 1 30); do
-        sudo docker compose exec -T db mysqladmin ping -h localhost -uroot -p"${DB_PASS}" >/dev/null 2>&1 && DB_READY=1 && break
+        docker compose exec -T db mysqladmin ping -h localhost -uroot -p"${DB_PASS}" >/dev/null 2>&1 && DB_READY=1 && break
         printf "."
         sleep 2
     done
@@ -715,7 +715,7 @@ if [ "$DB_PROVIDER_OPT" = "2" ]; then
         echo -e "${GREEN}[✓] MariaDB is ready.${NC}"
     else
         echo -e "${RED}[!] MariaDB did not become ready in time. Migrations may fail.${NC}"
-        echo -e "${YELLOW}    Check: sudo docker logs ${DB_CONTAINER_NAME}${NC}"
+        echo -e "${YELLOW}    Check: docker logs ${DB_CONTAINER_NAME}${NC}"
     fi
 fi
 
@@ -776,9 +776,9 @@ if [ $SERVER_READY -eq 1 ]; then
     fi
     echo -e "============================================================"
     echo -e "${YELLOW}Useful Commands:${NC}"
-    echo -e "  View Logs:      sudo docker logs ${WEB_CONTAINER_NAME} -f"
-    echo -e "  Stop Cluster:   sudo docker compose down"
-    echo -e "  Restart:        sudo docker compose restart"
+    echo -e "  View Logs:      docker logs ${WEB_CONTAINER_NAME} -f"
+    echo -e "  Stop Cluster:   docker compose down"
+    echo -e "  Restart:        docker compose restart"
     echo -e "  Update:         ./update.sh"
     if [ "$ENABLE_GO_MMO" = "1" ]; then
         echo -e "  Go MMO setup:   ./go-mmo/scripts/setup-go-mmo.sh --full"
@@ -787,5 +787,5 @@ if [ $SERVER_READY -eq 1 ]; then
     echo -e "============================================================\n"
 else
     echo -e "${RED}[!] Server took too long to start. It may still be running migrations.${NC}"
-    echo -e "${YELLOW}    Check: sudo docker logs ${WEB_CONTAINER_NAME}${NC}"
+    echo -e "${YELLOW}    Check: docker logs ${WEB_CONTAINER_NAME}${NC}"
 fi
