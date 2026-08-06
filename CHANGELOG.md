@@ -1,3 +1,8 @@
+## [2.1.127] - 2026-08-06
+### Fixed
+- Fixed Socket.io CORS origin handling (Access-Control-Allow-Origin) when withCredentials is enabled, resolving socket connection blocks when requests cross domains/subdomains (e.g. saintsgaming.net -> online.saintsgaming.net).
+- Fixed /api/maps/DEMO_SANDBOX 404 error when DB foundation seed is unpopulated; ensured seedDemoMap is always executed in ensureStudioMapFoundation even if logic tile seed is skipped.
+
 ## [2.1.126] - 2026-08-06
 ### Fixed
 - Fixed Next.js App Router aggressively caching API responses for /api/maps and /api/maps/[slug], which caused stale map data (with empty NPCs arrays) to be served to the client and broke entity rendering.
@@ -652,5 +657,6 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 

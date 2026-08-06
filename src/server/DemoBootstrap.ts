@@ -363,13 +363,14 @@ export async function ensureStudioMapFoundation(): Promise<{
   foundationInflight = (async () => {
     let logicTiles = false;
     let demoMap = false;
+    let errStr: string | undefined;
+
     try {
       await seedLogicTiles();
       logicTiles = true;
     } catch (e) {
-      const msg = (e as Error).message;
-      console.warn("[DemoBootstrap] Logic tiles seed skipped:", msg);
-      return { logicTiles, demoMap, error: msg };
+      errStr = (e as Error).message;
+      console.warn("[DemoBootstrap] Logic tiles seed skipped:", errStr);
     }
     try {
       await seedDemoMap();
@@ -377,9 +378,9 @@ export async function ensureStudioMapFoundation(): Promise<{
     } catch (e) {
       const msg = (e as Error).message;
       console.warn("[DemoBootstrap] DEMO_SANDBOX seed skipped:", msg);
-      return { logicTiles, demoMap, error: msg };
+      if (!errStr) errStr = msg;
     }
-    return { logicTiles, demoMap };
+    return { logicTiles, demoMap, error: errStr };
   })().finally(() => {
     foundationInflight = null;
   });
