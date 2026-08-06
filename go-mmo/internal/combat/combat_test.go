@@ -35,8 +35,20 @@ func TestTBSubmit(t *testing.T) {
 	if s.CreatureHP >= 30 {
 		t.Fatalf("expected damage %+v", s)
 	}
-	s = m.SubmitTB("p1", "flee")
-	if !s.Ended || s.Winner != "flee" {
-		t.Fatalf("%+v", s)
+	// Flee is chance-based; End always clears.
+	m.End("p1")
+	if m.GetByPlayer("p1") != nil {
+		t.Fatal("expected cleared after End")
+	}
+}
+
+func TestTBFormulaDamage(t *testing.T) {
+	m := combat.NewManager()
+	ps := combat.Stats{PhysicalPower: 40, PhysicalDefense: 10, AbilityPower: 10, AbilityDefense: 10, CombatTempo: 120, Level: 10}
+	cs := combat.Stats{PhysicalPower: 5, PhysicalDefense: 5, AbilityPower: 5, AbilityDefense: 5, CombatTempo: 80, Level: 2}
+	s := m.StartTBWithStats("p1", "c1", "DEMO_ch1", 100, 200, ps, cs)
+	s = m.SubmitTB("p1", "attack")
+	if s.LastDamage < 5 {
+		t.Fatalf("expected meaningful damage got %d", s.LastDamage)
 	}
 }

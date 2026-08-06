@@ -104,6 +104,7 @@ func (h *Hub) handleBattleSubmit(accountID string, datas []any) {
 	h.EmitToSocket(p.SocketID, protocol.EvBattleUpdate, map[string]any{
 		"combatId": sess.ID, "playerHp": sess.PlayerHP, "creatureHp": sess.CreatureHP,
 		"turn": sess.Turn, "ended": sess.Ended, "winner": sess.Winner, "mode": "tb",
+		"damage": sess.LastDamage, "crit": sess.LastCrit,
 	})
 	if sess.Ended {
 		h.finishCombat(accountID, p.SocketID, p.MapID, sess.CreatureID, sess.Winner)
@@ -122,7 +123,11 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 		h.deps.Quests.Advance(accountID, "gather_scrap", 0) // no-op if missing
 		for _, g := range skill.CombatGrants(winner) {
 			xp := h.deps.Skills.Add(accountID, g.Skill, g.XP)
-			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{"skills": xp, "grant": g})
+			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{
+				"skills": xp,
+				"levels": h.deps.Skills.Levels(accountID),
+				"grant":  g,
+			})
 		}
 		if p := h.eng.Players().GetByAccount(accountID); p != nil && h.deps.Loot != nil {
 			drop := h.deps.Loot.Drop(instanceID, "loot_scrap", "Scrap", 1, p.X, p.Y)
@@ -132,7 +137,11 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 		h.EmitToSocket(sid, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
 		for _, g := range skill.CombatGrants(winner) {
 			xp := h.deps.Skills.Add(accountID, g.Skill, g.XP)
-			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{"skills": xp, "grant": g})
+			h.EmitToSocket(sid, protocol.EvSkillXP, map[string]any{
+				"skills": xp,
+				"levels": h.deps.Skills.Levels(accountID),
+				"grant":  g,
+			})
 		}
 	}
 }

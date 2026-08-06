@@ -119,6 +119,20 @@ func migrate(db *sql.DB) error {
 			objectiveJson TEXT NOT NULL DEFAULT '{}',
 			PRIMARY KEY (accountId, slug)
 		)`,
+		`CREATE TABLE IF NOT EXISTS GoSkillXP (
+			accountId TEXT NOT NULL,
+			skillSlug TEXT NOT NULL,
+			xp INTEGER NOT NULL DEFAULT 0,
+			PRIMARY KEY (accountId, skillSlug)
+		)`,
+		`CREATE TABLE IF NOT EXISTS NpcDialogueTree (
+			id TEXT PRIMARY KEY,
+			npcId TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			data TEXT NOT NULL,
+			createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

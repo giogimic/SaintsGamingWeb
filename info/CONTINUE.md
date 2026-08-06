@@ -36,12 +36,13 @@
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **Hybrid Go** | Persist + server map sync + TS engine gate | **On main** |
-| **Go MMO setup** | Setup option + client wire | **On main** |
-| **Prod maps** | Lazy DEMO ensure | **On main** |
-| **P0–P12 / MP** | Studio + lobby | **On main** |
+| **Hybrid Go** | Persist + server map sync + TS engine gate | **On main / complete** |
+| **Go MMO setup** | Setup option + client wire | **On main / complete** |
+| **Prod maps** | Lazy DEMO ensure | **On main / complete** |
+| **P0–P12 / MP** | Studio + lobby | **On main / complete** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
+Go MMO persistence (inventory/quests/position via SQLite) and `notifyGoMapSynced` are fully wired and functional.
 
 Before coding, read:
 

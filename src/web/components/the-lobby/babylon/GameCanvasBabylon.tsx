@@ -93,6 +93,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Async map state — engine only mounts AFTER map data is ready
   const [mapData, setMapData] = useState<GameMapData | null>(null);
+  const mapDataRef = useRef<GameMapData | null>(null);
+  mapDataRef.current = mapData;
 
   const clearAutoWalk = useCallback(() => {
     if (autoWalkIntervalRef.current) {
@@ -1009,7 +1011,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     return () => window.removeEventListener(STUDIO_MAP_CELLS_CHANGED_EVENT, onCellsChanged);
   }, []);
 
-  // Server map_reloaded — remesh tiles without disposing Babylon / wiping peers.
+  // Server map_reloaded — prefer incremental tile patches when dims unchanged
+  // (avoids full remesh wiping peer meshes / paint overlays).
   useEffect(() => {
     const onHotReload = (e: Event) => {
       const engine = engineRef.current;
@@ -1020,6 +1023,34 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       const width = map.grid[0]?.length || 24;
       const height = map.grid.length || 24;
+      const prev = mapDataRef.current;
+      const sameDims =
+        !!prev?.grid &&
+        prev.grid.length === height &&
+        (prev.grid[0]?.length || 0) === width;
+
+      if (sameDims && Array.isArray(map.tileLayers) && map.tileLayers.length > 0) {
+        for (let li = 0; li < map.tileLayers.length; li++) {
+          const layer = map.tileLayers[li] as any;
+          const cells = layer?.grid || layer?.data || layer;
+          if (!Array.isArray(cells)) continue;
+          for (let r = 0; r < height; r++) {
+            const row = cells[r];
+            if (!Array.isArray(row)) continue;
+            for (let c = 0; c < width; c++) {
+              const gid = Number(row[c] || 0);
+              engine.updateSingleTile(r, c, gid, li, map.tilesets);
+            }
+          }
+        }
+        if (Array.isArray(map.grid)) {
+          engine.enableLogicGridOverlay?.(map.grid);
+        }
+        setMapData(map);
+        mapDataRef.current = map;
+        return;
+      }
+
       engine.loadTilemap({
         id: currentMapId,
         width,
@@ -1030,8 +1061,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tilesets: map.tilesets,
         npcs: [],
       });
-      // Local mapData state still points at the same live object — refresh dims only.
       setMapData(map);
+      mapDataRef.current = map;
     };
     window.addEventListener(STUDIO_MAP_HOT_RELOAD_EVENT, onHotReload);
     return () => window.removeEventListener(STUDIO_MAP_HOT_RELOAD_EVENT, onHotReload);

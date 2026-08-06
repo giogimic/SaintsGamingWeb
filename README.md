@@ -57,7 +57,7 @@ To pull the latest code, backup the database, rebuild containers, and restart gr
 ./go-mmo/scripts/setup-go-mmo.sh --full
 # Existing Caddy only: ./scripts/dev-proxy.sh add go.yourdomain 3001
 ```
-Studio editor UI and map CRUD stay on Next (`/api/maps`). Live shards sync to Go after save when the env URL is set.
+Studio editor UI and map CRUD stay on Next (`/api/maps`). Live shards sync to Go after save when the env URL is set. Go MMO fully handles character persistence (position, inventory, quests, skill XP) using SQLite.
 
 *(For manual local development without Docker, refer to [Installation Guide](docs/developer-guide/installation.md)).*
 
