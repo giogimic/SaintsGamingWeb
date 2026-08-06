@@ -3,6 +3,8 @@
  * Capture tools are forbidden here — capture is turn-based only (bible 07 §5, 11).
  */
 
+import type { CreatureElementType } from "./creatureCatalog";
+
 export type AbilityCategory = "physical" | "special" | "utility" | "heal" | "buff";
 
 export type CombatAbility = {
@@ -12,6 +14,7 @@ export type CombatAbility = {
   category: AbilityCategory;
   cooldownMs: number;
   rangeTiles: number;
+  element?: CreatureElementType;
 };
 
 /** Ability ids that must never appear on the RT hotbar or be accepted by CombatManager. */
@@ -42,18 +45,18 @@ export function isForbiddenRtCaptureAbility(abilityId: string | undefined | null
 }
 
 const ABILITIES: Record<string, CombatAbility> = {
-  strike: { id: "strike", name: "Strike", power: 40, category: "physical", cooldownMs: 1500, rangeTiles: 1 },
-  cleave: { id: "cleave", name: "Cleave", power: 55, category: "physical", cooldownMs: 4000, rangeTiles: 1 },
-  dash: { id: "dash", name: "Dash", power: 0, category: "utility", cooldownMs: 8000, rangeTiles: 3 },
-  shout: { id: "shout", name: "War Cry", power: 0, category: "buff", cooldownMs: 12000, rangeTiles: 0 },
-  fireball: { id: "fireball", name: "Fireball", power: 50, category: "special", cooldownMs: 2000, rangeTiles: 6 },
-  frost: { id: "frost", name: "Frost Nova", power: 45, category: "special", cooldownMs: 6000, rangeTiles: 3 },
-  blink: { id: "blink", name: "Blink", power: 0, category: "utility", cooldownMs: 8000, rangeTiles: 0 },
-  shield: { id: "shield", name: "Mana Shield", power: 0, category: "buff", cooldownMs: 15000, rangeTiles: 0 },
-  shoot: { id: "shoot", name: "Shoot", power: 35, category: "physical", cooldownMs: 1200, rangeTiles: 7 },
-  multishot: { id: "multishot", name: "Volley", power: 30, category: "physical", cooldownMs: 5000, rangeTiles: 7 },
-  trap: { id: "trap", name: "Snare", power: 10, category: "utility", cooldownMs: 10000, rangeTiles: 5 },
-  heal: { id: "heal", name: "Bandage", power: 0, category: "heal", cooldownMs: 20000, rangeTiles: 0 },
+  strike: { id: "strike", name: "Strike", power: 40, category: "physical", cooldownMs: 1500, rangeTiles: 1, element: "None" },
+  cleave: { id: "cleave", name: "Cleave", power: 55, category: "physical", cooldownMs: 4000, rangeTiles: 1, element: "None" },
+  dash: { id: "dash", name: "Dash", power: 0, category: "utility", cooldownMs: 8000, rangeTiles: 3, element: "None" },
+  shout: { id: "shout", name: "War Cry", power: 0, category: "buff", cooldownMs: 12000, rangeTiles: 0, element: "None" },
+  fireball: { id: "fireball", name: "Fireball", power: 50, category: "special", cooldownMs: 2000, rangeTiles: 6, element: "Solar" },
+  frost: { id: "frost", name: "Frost Nova", power: 45, category: "special", cooldownMs: 6000, rangeTiles: 3, element: "Cryo" },
+  blink: { id: "blink", name: "Blink", power: 0, category: "utility", cooldownMs: 8000, rangeTiles: 0, element: "Cyber" },
+  shield: { id: "shield", name: "Mana Shield", power: 0, category: "buff", cooldownMs: 15000, rangeTiles: 0, element: "Volt" },
+  shoot: { id: "shoot", name: "Shoot", power: 35, category: "physical", cooldownMs: 1200, rangeTiles: 7, element: "None" },
+  multishot: { id: "multishot", name: "Volley", power: 30, category: "physical", cooldownMs: 5000, rangeTiles: 7, element: "None" },
+  trap: { id: "trap", name: "Snare", power: 10, category: "utility", cooldownMs: 10000, rangeTiles: 5, element: "Geo" },
+  heal: { id: "heal", name: "Bandage", power: 0, category: "heal", cooldownMs: 20000, rangeTiles: 0, element: "Bio" },
 };
 
 export function getCombatAbility(abilityId: string): CombatAbility | null {
