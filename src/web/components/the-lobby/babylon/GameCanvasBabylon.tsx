@@ -118,7 +118,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       return;
     }
 
-    setMapData(null); // Reset on map change so engine remounts cleanly
+    // Keep prior mapData while fetching the same base map — setMapData(null)
+    // disposed Babylon with no replacement and hid peer sprites mid-join.
+    setMapData((prev) => {
+      if (prev && shouldKeepActiveMapData(prev as Record<string, unknown>, currentMapId)) {
+        return prev;
+      }
+      return null;
+    });
     loadMap(currentMapId).then((data) => {
       const ensured = ensureMapHasStudioTilesets(data);
       setMapData(ensured);
@@ -596,12 +603,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     // Start 60FPS Render Loop
     babylonEngine.startRenderLoop(() => {
+      // Prefer live engine dims — closure mapWidth/Height go stale across hot remesh
+      // without a full remount.
+      const liveW = babylonEngine.getMapWidth() || mapWidth;
+      const liveH = babylonEngine.getMapHeight() || mapHeight;
       const freshPlayer = useGameStore.getState().player;
       if (freshPlayer && freshPlayer.position) {
         const px = freshPlayer.position.x ?? 6;
         const py = freshPlayer.position.y ?? 2;
-        const worldX = px - mapWidth / 2;
-        const worldZ = mapHeight / 2 - py;
+        const worldX = px - liveW / 2;
+        const worldZ = liveH / 2 - py;
 
         babylonEngine.updateEntity({
           id: 'player_main',
@@ -651,8 +662,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const targetX = other.x ?? 6;
           const targetY = other.y ?? 2;
           
-          const ox = targetX - mapWidth / 2;
-          const oz = mapHeight / 2 - targetY;
+          const ox = targetX - liveW / 2;
+          const oz = liveH / 2 - targetY;
           
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,

@@ -173,6 +173,14 @@ export class BabylonEngine {
   private currentMapId: string = '';
   private currentMapWidth: number = 24;
   private currentMapHeight: number = 24;
+
+  /** Live tilemap dims for world↔tile math (peers / camera) after hot remesh. */
+  public getMapWidth(): number {
+    return this.currentMapWidth;
+  }
+  public getMapHeight(): number {
+    return this.currentMapHeight;
+  }
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();

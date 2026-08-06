@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-06 — Lobby MP peer wipe (base instanceId)
+
+Character load no longer sets base `instanceId`; lobby empty `map_players` keeps peers; `map_joined` before snapshot; Babylon keeps visual during same-base reload.  
+See `logs/2026-08-06-lobby-mp-peer-wipe-base-instance.md`.
+
+---
+
 ## 2026-08-06 — Lobby MP join-storm / peer wipe
 
 Soft rejoin same socket on public shard; coalesce late `join_map`; empty `map_players` no longer wipes peers.  

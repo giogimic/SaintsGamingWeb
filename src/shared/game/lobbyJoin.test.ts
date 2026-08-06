@@ -95,4 +95,15 @@ describe("lobbyJoin", () => {
       })
     ).toBe(true);
   });
+
+  it("keeps peers on lobby seat even when instanceId is still the base map", () => {
+    expect(
+      shouldReplacePeerSnapshot({
+        incomingCount: 0,
+        existingCount: 1,
+        currentInstanceId: "DEMO_SANDBOX",
+        lobbySeat: true,
+      })
+    ).toBe(false);
+  });
 });

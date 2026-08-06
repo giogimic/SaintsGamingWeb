@@ -36,3 +36,5 @@ npx tsx scripts/smoke-lobby-mp.ts
 ```
 
 If alone: confirm you are not on `/studio`, not the same account in two tabs, and both `instanceId`s match.
+
+**Quick split:** toast “\<name\> is nearby” means the peer store got the join; no toast ⇒ seat/shard problem; toast but no sprite ⇒ render/dispose path.
