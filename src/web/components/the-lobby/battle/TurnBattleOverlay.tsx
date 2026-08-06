@@ -1,12 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store';
 import { cn } from '@/shared/lib/utils';
+import { getCombatAbility } from '@/shared/game/combatAbilities';
 
 export function TurnBattleOverlay() {
   const activeBattle = useGameStore(state => state.activeBattle);
   const emitSocketEvent = useGameStore(state => state.emitSocketEvent);
   const currentMapId = useGameStore(state => state.currentMapId);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const [showMoves, setShowMoves] = useState(false);
 
   // Auto-scroll the combat log
   useEffect(() => {
@@ -32,6 +34,13 @@ export function TurnBattleOverlay() {
     creatureId?: string
   ) => {
     if (phase !== 'WAITING_FOR_INPUT') return;
+    
+    if (action === 'FIGHT' && !moveId) {
+      setShowMoves(true);
+      return;
+    }
+    
+    setShowMoves(false);
     emitSocketEvent?.('battle_submit_action', {
       battleId: activeBattle.id,
       action,
@@ -159,40 +168,70 @@ export function TurnBattleOverlay() {
 
         {/* Right: Action Menu */}
         <div className="w-96 p-6 grid grid-cols-2 gap-4">
-          <button 
-            disabled={phase !== 'WAITING_FOR_INPUT'}
-            onClick={() => handleAction('FIGHT', 'tackle')}
-            className="sg-button-primary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            FIGHT
-          </button>
-          
-          <button 
-            disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
-            onClick={() => handleAction('ITEM', undefined, 'film_standard')}
-            className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            title={isTrainer ? "Can't capture a trainer's creature" : undefined}
-          >
-            {isTrainer ? "NO CAPTURE" : "EXPOSE FILM"}
-          </button>
-          
-          <button 
-            disabled={phase !== 'WAITING_FOR_INPUT'}
-            onClick={() => handleAction('SWITCH')}
-            className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Switch to the next healthy party creature"
-          >
-            CREATURES
-          </button>
-          
-          <button 
-            disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
-            onClick={() => handleAction('FLEE')}
-            className="sg-button-secondary text-xl text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed border-red-500/30 hover:border-red-500/50 hover:bg-red-500/10"
-            title={isTrainer ? "Can't run from a trainer battle" : undefined}
-          >
-            {isTrainer ? "NO RUN" : "RUN"}
-          </button>
+          {showMoves ? (
+            <>
+              {((playerCreature as any).abilities || [{ abilitySlug: 'strike' }]).slice(0, 4).map((abilityObj: any, i: number) => {
+                const ability = getCombatAbility(abilityObj.abilitySlug) || getCombatAbility('strike')!;
+                return (
+                  <button
+                    key={i}
+                    disabled={phase !== 'WAITING_FOR_INPUT'}
+                    onClick={() => handleAction('FIGHT', ability.id)}
+                    className="sg-button-primary text-sm flex flex-col items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="font-bold text-lg uppercase">{ability.name}</span>
+                    <span className="text-xs opacity-80 font-normal">
+                      {ability.element || 'Normal'} {ability.power > 0 ? `· ${ability.power} PWR` : '· Status'}
+                    </span>
+                  </button>
+                );
+              })}
+              {/* If fewer than 4 moves, fill with empty space to keep grid consistent, but we actually just want a Back button */}
+              <button 
+                onClick={() => setShowMoves(false)}
+                className="col-span-2 mt-2 sg-button-secondary text-sm border-white/20 hover:border-white/40 hover:bg-white/5"
+              >
+                BACK
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                disabled={phase !== 'WAITING_FOR_INPUT'}
+                onClick={() => handleAction('FIGHT')}
+                className="sg-button-primary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                FIGHT
+              </button>
+              
+              <button 
+                disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
+                onClick={() => handleAction('ITEM', undefined, 'film_standard')}
+                className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                title={isTrainer ? "Can't capture a trainer's creature" : undefined}
+              >
+                {isTrainer ? "NO CAPTURE" : "EXPOSE FILM"}
+              </button>
+              
+              <button 
+                disabled={phase !== 'WAITING_FOR_INPUT'}
+                onClick={() => handleAction('SWITCH')}
+                className="sg-button-secondary text-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Switch to the next healthy party creature"
+              >
+                CREATURES
+              </button>
+              
+              <button 
+                disabled={phase !== 'WAITING_FOR_INPUT' || !!isTrainer}
+                onClick={() => handleAction('FLEE')}
+                className="sg-button-secondary text-xl text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed border-red-500/30 hover:border-red-500/50 hover:bg-red-500/10"
+                title={isTrainer ? "Can't run from a trainer battle" : undefined}
+              >
+                {isTrainer ? "NO RUN" : "RUN"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,3 +1,7 @@
+## [2.1.122] - 2026-08-06
+- Implemented Phase 4 Turn-Based Engine Math (ARPG formulas, STAB, Element matches)
+- Updated TurnBattleOverlay to render a 2x2 grid of creature abilities
+
 ## [2.1.121] - 2026-08-06
 
 ### Added

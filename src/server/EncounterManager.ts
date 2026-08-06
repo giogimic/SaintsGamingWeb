@@ -14,6 +14,9 @@ import { creatureAssetUrl } from "@/shared/game/creatureCatalog";
 import { isRemarkableCapture } from "@/shared/game/remarkableCapture";
 import { grantsForTurnBattle } from "@/shared/game/combatSkillXp";
 import { addItem, removeItem, resolveUserId as resolveUserIdShared } from "./inventoryService";
+import { CreatureElementType, CreatureAbilitySlot } from "@/shared/game/creatureCatalog";
+import { getCombatAbility } from "@/shared/game/combatAbilities";
+import { getCombatMultiplier } from "@/shared/game/elementMatchups";
 
 export interface EncounterProvider {
   type: string;
@@ -34,6 +37,10 @@ export interface BattleState {
     level: number;
     spriteKey: string;
     name: string;
+    typePrimary: CreatureElementType | string;
+    typeSecondary: CreatureElementType | string;
+    stats: any;
+    abilities: CreatureAbilitySlot[];
   };
   playerCreature: {
     id: string;
@@ -42,6 +49,10 @@ export interface BattleState {
     level: number;
     spriteKey: string;
     name: string;
+    typePrimary: CreatureElementType | string;
+    typeSecondary: CreatureElementType | string;
+    stats: any;
+    abilities: CreatureAbilitySlot[];
   };
   log: string[];
 }
@@ -204,6 +215,16 @@ export class EncounterManager {
       return;
     }
 
+    let pStats: any = {};
+    let pAbilities: CreatureAbilitySlot[] = [];
+    try {
+      pStats = JSON.parse(activeCreature.stats as string);
+      pAbilities = JSON.parse(activeCreature.abilities as string);
+    } catch {
+      pStats = playerDef ? toPlayerCreatureStats(playerDef) : {};
+      pAbilities = playerDef?.abilities || [{ abilitySlug: "strike", currentCooldown: 0 }];
+    }
+
     const battleId = `battle_${Date.now()}_${data.accountId}`;
     const playerCreatureData = {
       id: activeCreature.id,
@@ -212,7 +233,14 @@ export class EncounterManager {
       maxHp: activeCreature.maxHp,
       level: activeCreature.level,
       spriteKey: creatureAssetUrl(playerDef?.spriteOverworld || playerDef?.spriteBattle || "daemon_data"),
+      typePrimary: playerDef?.typePrimary || "None",
+      typeSecondary: playerDef?.typeSecondary || "None",
+      stats: pStats,
+      abilities: pAbilities,
     };
+
+    const wStats = toPlayerCreatureStats(wildDef);
+    const wAbilities = wildDef.abilities || [{ abilitySlug: "strike", currentCooldown: 0 }];
 
     const battleState: BattleState = {
       id: battleId,
@@ -227,6 +255,10 @@ export class EncounterManager {
         maxHp: wildDef.baseHp,
         level: wildDef.starterLevel,
         spriteKey: creatureAssetUrl(wildDef.spriteOverworld || wildDef.spriteBattle || "daemon_data"),
+        typePrimary: wildDef.typePrimary || "None",
+        typeSecondary: wildDef.typeSecondary || "None",
+        stats: wStats,
+        abilities: wAbilities,
       },
       playerCreature: playerCreatureData,
       log: [`A wild ${wildDef.name} appeared!`],
@@ -326,16 +358,51 @@ export class EncounterManager {
     }
 
     if (data.action === "FIGHT") {
-      const level = battle.playerCreature.level;
-      const power = 40;
-      const defense = 20;
-      const typeModifier = 1.0;
-      const rawDamage = Math.max(1, Math.floor((level * power) / defense) * typeModifier);
-      const damage = Math.floor(rawDamage * (0.85 + Math.random() * 0.15));
+      const moveId = data.moveId || "strike";
+      const move = getCombatAbility(moveId);
+      if (!move) {
+        battle.log.push(`Invalid move: ${moveId}.`);
+        battle.phase = "WAITING_FOR_INPUT";
+        this.broadcastUpdate(battle);
+        return;
+      }
 
-      battle.wildCreature.hp = Math.max(0, battle.wildCreature.hp - damage);
+      const level = battle.playerCreature.level;
+      const power = move.power || 0;
+      
+      let attackStat = battle.playerCreature.stats?.physicalPower || 10;
+      let defenseStat = battle.wildCreature.stats?.physicalDefense || 10;
+      if (move.category === "special") {
+        attackStat = battle.playerCreature.stats?.abilityPower || 10;
+        defenseStat = battle.wildCreature.stats?.abilityDefense || 10;
+      }
+      
+      let stabModifier = 1.0;
+      if (move.element && move.element !== "None" && (move.element === battle.playerCreature.typePrimary || move.element === battle.playerCreature.typeSecondary)) {
+        stabModifier = 1.25;
+      }
+      
+      let typeModifier = 1.0;
+      if (move.element) {
+         const m1 = getCombatMultiplier(move.element, battle.wildCreature.typePrimary as CreatureElementType);
+         const m2 = getCombatMultiplier(move.element, battle.wildCreature.typeSecondary as CreatureElementType);
+         typeModifier = m1 * m2;
+      }
+      
+      const baseRaw = Math.floor((level * power * attackStat) / (defenseStat * 10)) + 2;
+      const rawDamage = Math.max(1, baseRaw * typeModifier * stabModifier);
+      const damage = power > 0 ? Math.floor(rawDamage * (0.85 + Math.random() * 0.15)) : 0;
+
+      if (damage > 0) {
+        battle.wildCreature.hp = Math.max(0, battle.wildCreature.hp - damage);
+      }
+      
+      let effectivenessLog = "";
+      if (typeModifier > 1.0 && power > 0) effectivenessLog = " It was highly effective!";
+      else if (typeModifier < 1.0 && power > 0) effectivenessLog = " It was not very effective...";
+
       battle.log.push(
-        `${battle.playerCreature.name} used ${data.moveId || "Tackle"}! Deals ${damage} damage.`
+        `${battle.playerCreature.name} used ${move.name}!${damage > 0 ? ` Deals ${damage} damage.` : ""}${effectivenessLog}`
       );
 
       if (battle.wildCreature.hp <= 0) {
@@ -397,6 +464,15 @@ export class EncounterManager {
     const next =
       (creatureId && candidates.find((c) => c.id === creatureId)) || candidates[0];
     const def = await loadCreatureDef(next.speciesSlug);
+    let pStats: any = {};
+    let pAbilities: CreatureAbilitySlot[] = [];
+    try {
+      pStats = JSON.parse(next.stats as string);
+      pAbilities = JSON.parse(next.abilities as string);
+    } catch {
+      pStats = def ? toPlayerCreatureStats(def) : {};
+      pAbilities = def?.abilities || [{ abilitySlug: "strike", currentCooldown: 0 }];
+    }
     battle.playerCreature = {
       id: next.id,
       name: next.nickname || def?.name || next.speciesSlug,
@@ -406,20 +482,56 @@ export class EncounterManager {
       spriteKey: creatureAssetUrl(
         def?.spriteOverworld || def?.spriteBattle || "daemon_data"
       ),
+      typePrimary: def?.typePrimary || "None",
+      typeSecondary: def?.typeSecondary || "None",
+      stats: pStats,
+      abilities: pAbilities,
     };
     battle.log.push(`Go! ${battle.playerCreature.name}!`);
     return true;
   }
 
   private async enemyTurn(battle: BattleState, mapId?: string) {
-    const level = battle.wildCreature.level;
-    const power = 35;
-    const defense = 25;
-    const rawDamage = Math.max(1, Math.floor((level * power) / defense));
-    const enemyDamage = Math.floor(rawDamage * (0.85 + Math.random() * 0.15));
+    const abilities = battle.wildCreature.abilities || [];
+    const randomMove = abilities[Math.floor(Math.random() * abilities.length)];
+    const moveId = randomMove?.abilitySlug || "strike";
+    const move = getCombatAbility(moveId) || getCombatAbility("strike")!;
 
-    battle.playerCreature.hp = Math.max(0, battle.playerCreature.hp - enemyDamage);
-    battle.log.push(`Wild ${battle.wildCreature.name} attacks! Deals ${enemyDamage} damage.`);
+    const level = battle.wildCreature.level;
+    const power = move.power || 0;
+
+    let attackStat = battle.wildCreature.stats?.physicalPower || 10;
+    let defenseStat = battle.playerCreature.stats?.physicalDefense || 10;
+    if (move.category === "special") {
+      attackStat = battle.wildCreature.stats?.abilityPower || 10;
+      defenseStat = battle.playerCreature.stats?.abilityDefense || 10;
+    }
+
+    let stabModifier = 1.0;
+    if (move.element && move.element !== "None" && (move.element === battle.wildCreature.typePrimary || move.element === battle.wildCreature.typeSecondary)) {
+      stabModifier = 1.25;
+    }
+
+    let typeModifier = 1.0;
+    if (move.element) {
+       const m1 = getCombatMultiplier(move.element, battle.playerCreature.typePrimary as CreatureElementType);
+       const m2 = getCombatMultiplier(move.element, battle.playerCreature.typeSecondary as CreatureElementType);
+       typeModifier = m1 * m2;
+    }
+
+    const baseRaw = Math.floor((level * power * attackStat) / (defenseStat * 10)) + 2;
+    const rawDamage = Math.max(1, baseRaw * typeModifier * stabModifier);
+    const enemyDamage = power > 0 ? Math.floor(rawDamage * (0.85 + Math.random() * 0.15)) : 0;
+
+    if (enemyDamage > 0) {
+      battle.playerCreature.hp = Math.max(0, battle.playerCreature.hp - enemyDamage);
+    }
+    
+    let effectivenessLog = "";
+    if (typeModifier > 1.0 && power > 0) effectivenessLog = " It was highly effective!";
+    else if (typeModifier < 1.0 && power > 0) effectivenessLog = " It was not very effective...";
+
+    battle.log.push(`Wild ${battle.wildCreature.name} used ${move.name}!${enemyDamage > 0 ? ` Deals ${enemyDamage} damage.` : ""}${effectivenessLog}`);
 
     if (battle.playerCreature.hp <= 0) {
       battle.log.push(`${battle.playerCreature.name} fainted! You whited out!`);
