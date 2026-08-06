@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/bootstrap"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/dialogue"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/world"
 )
@@ -16,6 +17,7 @@ import (
 type Server struct {
 	DB          *sql.DB
 	World       *world.Manager
+	Dialogue    *dialogue.Manager
 	Secret      string // AUTH_SECRET / internal bearer for Next → Go sync
 	OnMapSynced func(mapID string)
 }
@@ -27,6 +29,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/maps", s.mapsRoot)
 	mux.HandleFunc("/api/maps/", s.mapByID)
 	mux.HandleFunc("/api/internal/sync-map", s.internalSyncMap)
+	mux.HandleFunc("/api/internal/sync-dialogue", s.internalSyncDialogue)
 	mux.HandleFunc("/api/gtc/listings", s.gtcListings)
 	mux.HandleFunc("/api/craft/recipes", s.craftRecipes)
 	return withCORS(mux)
@@ -179,6 +182,24 @@ func (s *Server) saveMap(w http.ResponseWriter, r *http.Request, pathID string) 
 		s.OnMapSynced(id)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "id": id})
+}
+
+func (s *Server) internalSyncDialogue(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !s.authorizeInternal(r) {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if s.Dialogue != nil {
+		if err := s.Dialogue.LoadFromDB(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 // internalSyncMap accepts map payloads from Next after Prisma save (Bearer AUTH_SECRET).

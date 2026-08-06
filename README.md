@@ -49,15 +49,16 @@ To pull the latest code, backup the database, rebuild containers, and restart gr
 ./scripts/update.sh
 ```
 
-### 3. Go MMO (lobby / Studio realtime — setup option)
-`./scripts/setup.sh` asks whether to enable Go (recommended). That writes `NEXT_PUBLIC_GO_MMO_URL`, can start Go on `:3001`, and optionally adds a `go.` Caddy subdomain.
+### 3. Go MMO (Live Production Server)
+`./scripts/setup.sh` automatically configures the Go MMO backend (recommended). This writes `NEXT_PUBLIC_GO_MMO_URL`, starts the high-performance Go socket server on `:3001`, and optionally adds a `go.` Caddy subdomain.
 
 ```bash
 # Standalone / re-run
 ./go-mmo/scripts/setup-go-mmo.sh --full
 # Existing Caddy only: ./scripts/dev-proxy.sh add go.yourdomain 3001
 ```
-Studio editor UI and map CRUD stay on Next (`/api/maps`). Live shards sync to Go after save when the env URL is set. Go MMO fully handles character persistence (position, inventory, quests, skill XP) using SQLite.
+
+**Note**: The Go MMO backend is now the fully featured, production-ready live server handling all character persistence (SQLite), socket networking, dynamic encounters, dialogue trees, combat formulas, and real-time multiplayer states. The Next.js API continues to serve as the Studio editor persistence layer (`/api/maps`), which automatically hot-reloads via internal webhooks to Go.
 
 *(For manual local development without Docker, refer to [Installation Guide](docs/developer-guide/installation.md)).*
 

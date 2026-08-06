@@ -66,7 +66,7 @@ func Load() Config {
 		HTTPAddr:      host + ":" + strconv.Itoa(port),
 		DatabaseURL:   getenv("GO_MMO_DATABASE_URL", getenv("DATABASE_URL", "file:../prisma/db/dev.db")),
 		AuthSecret:    getenv("AUTH_SECRET", "dev-secret-change-me"),
-		DevAuthBypass: getenvBool("GO_MMO_DEV_AUTH", true),
+		DevAuthBypass: getenvBool("GO_MMO_DEV_AUTH", getenv("NODE_ENV", "development") != "production"),
 		SimTPS:        getenvInt("GO_MMO_SIM_TPS", 20),
 		NetTPS:        getenvInt("GO_MMO_NET_TPS", 10),
 		MaxPlayers:    getenvInt("GO_MMO_MAX_PLAYERS", 500),

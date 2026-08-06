@@ -38,3 +38,26 @@ func TestSkillPersist(t *testing.T) {
 		t.Fatal(m2.Levels("a1"))
 	}
 }
+
+func TestCombatGrants(t *testing.T) {
+	playerGrants := skill.CombatGrants("player")
+	if len(playerGrants) != 4 {
+		t.Errorf("expected 4 grants for player win, got %d", len(playerGrants))
+	}
+	expectedPlayer := map[string]int{"attack": 25, "strength": 15, "hitpoints": 10, "defence": 8}
+	for _, g := range playerGrants {
+		if expectedPlayer[g.Skill] != g.XP {
+			t.Errorf("expected %d xp for %s, got %d", expectedPlayer[g.Skill], g.Skill, g.XP)
+		}
+	}
+
+	fleeGrants := skill.CombatGrants("flee")
+	if len(fleeGrants) != 1 || fleeGrants[0].Skill != "agility" || fleeGrants[0].XP != 5 {
+		t.Errorf("expected agility grant for fleeing, got %v", fleeGrants)
+	}
+
+	loseGrants := skill.CombatGrants("lose")
+	if len(loseGrants) != 2 {
+		t.Errorf("expected 2 grants for lose, got %d", len(loseGrants))
+	}
+}
