@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-06 — Fix GameMapData cast (Docker build)
+
+`GameCanvasBabylon` no longer casts map docs to `Record<string, unknown>` (broke `npm run build`).  
+See `logs/2026-08-06-lobby-entities-visible.md`.
+
+---
+
 ## 2026-08-06 — Lobby entities visible (#40 on main)
 
 Merged + browser-confirmed avatar/NPCs on `/lobby` grass.  
