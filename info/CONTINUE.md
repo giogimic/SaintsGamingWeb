@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (Go MMO on main; prod maps lazy-ensure; Caddy proxy harden)  
+**Last updated:** 2026-08-06 (setup offers Go MMO for lobby/Studio)  
 **Point every new session at this file first.**
 
 ---
@@ -9,19 +9,20 @@
 
 **Game / Studio / lobby only** — do not prioritize marketing site, forum, UCP, Discord, FiveM.
 
-### Go MMO (on `main`)
+### Go MMO (on `main` — setup option)
 
-`go-mmo/` realtime backend is **merged**. Next/TS `server.ts` remains the default socket when unset.
+`go-mmo/` realtime backend is **merged**. **`./scripts/setup.sh` asks to enable it** (recommended) — destination for lobby/Studio game sockets. Next/TS `server.ts` remains the default when you say No / leave `NEXT_PUBLIC_GO_MMO_URL` unset.
 
 | Piece | How |
 |------|-----|
-| Run Go | `./go-mmo/scripts/setup-go-mmo.sh` then `./go-mmo/bin/go-mmo` (or Docker) |
-| Caddy | `./scripts/dev-proxy.sh add <sub> 3001` (additive only; never rewrites primary) |
-| Point lobby | Set `NEXT_PUBLIC_GO_MMO_URL=http://127.0.0.1:3001` (setup can write this) |
+| Setup | `./scripts/setup.sh` → **Go MMO Backend** yes/no (then optional `go.` subdomain) |
+| Standalone | `./go-mmo/scripts/setup-go-mmo.sh --full` |
+| Caddy only | `./scripts/dev-proxy.sh add <sub> 3001` |
+| Point lobby | `NEXT_PUBLIC_GO_MMO_URL` (setup writes this when enabled) |
 | Studio | **UI + `/api/maps` stay on Next.** Live walk/NPC/reload sync via Go when URL is set (`admin_save_map` after save). |
 | Forum sockets | `RealtimeProvider` stays same-origin Next — do not point at Go |
 
-Log: `logs/2026-08-06-go-mmo-client-wire.md`. Optional later (not blocking): deeper skill/TB formulas, inventory SQLite persistence, Studio UI rewrite in Go.
+Log: `logs/2026-08-06-setup-go-mmo-option.md`. Optional later: deeper skill/TB formulas, inventory SQLite persistence, Studio UI rewrite in Go.
 
 ### Main / prod track
 

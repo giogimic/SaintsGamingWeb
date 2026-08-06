@@ -49,11 +49,12 @@ To pull the latest code, backup the database, rebuild containers, and restart gr
 ./scripts/update.sh
 ```
 
-### 3. Optional Go MMO (parallel realtime)
+### 3. Go MMO (lobby / Studio realtime — setup option)
+`./scripts/setup.sh` asks whether to enable Go (recommended). That writes `NEXT_PUBLIC_GO_MMO_URL`, can start Go on `:3001`, and optionally adds a `go.` Caddy subdomain.
+
 ```bash
-./go-mmo/scripts/setup-go-mmo.sh
-# sets/asks NEXT_PUBLIC_GO_MMO_URL — restart Next afterward
-./go-mmo/bin/go-mmo
+# Standalone / re-run
+./go-mmo/scripts/setup-go-mmo.sh --full
 # Existing Caddy only: ./scripts/dev-proxy.sh add go.yourdomain 3001
 ```
 Studio editor UI and map CRUD stay on Next (`/api/maps`). Live shards sync to Go after save when the env URL is set.

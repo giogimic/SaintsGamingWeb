@@ -22,9 +22,13 @@ stays on Next.
 ## Quick start
 
 ```bash
-./go-mmo/scripts/setup-go-mmo.sh
-# restart Next so NEXT_PUBLIC_GO_MMO_URL is picked up
-./go-mmo/bin/go-mmo
+# During main install (recommended): say YES to Go MMO in ./scripts/setup.sh
+
+# Standalone full setup (env + docker + optional Caddy subdomain)
+./go-mmo/scripts/setup-go-mmo.sh --full
+
+# Subdomain only on existing Caddy
+./go-mmo/scripts/setup-go-mmo.sh --proxy-only
 ```
 
 Unset `NEXT_PUBLIC_GO_MMO_URL` to fall back to TypeScript `server.ts` sockets.

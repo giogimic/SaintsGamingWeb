@@ -39,13 +39,14 @@ For **content** hot-reload (maps, loot, quests) without restart, see [`info/game
 
 ## 3. Optional Go MMO (parallel realtime)
 
-On `main`, the Go realtime server under `go-mmo/` can run beside Next on **:3001**:
+`./scripts/setup.sh` offers **Enable Go MMO** (recommended) and can set `NEXT_PUBLIC_GO_MMO_URL`, start Docker on **:3001**, and add a `go.` subdomain via additive Caddy.
+
+Standalone / rerun:
 
 ```bash
-./go-mmo/scripts/setup-go-mmo.sh
+./go-mmo/scripts/setup-go-mmo.sh --full
 # or attach a subdomain only:
 ./go-mmo/scripts/setup-go-mmo.sh --proxy-only
-# then set NEXT_PUBLIC_GO_MMO_URL and restart Next
 ```
 
 See `go-mmo/README.md` and `info/CONTINUE.md`.
