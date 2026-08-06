@@ -38,22 +38,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
-
-  game-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: saints-gaming-mmo
-    container_name: saints-gaming-mmo
-    restart: unless-stopped
-    command: node game-server.js
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./data:/app/prisma/db
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=production
-      - DB_PROVIDER=${DB_PROVIDER:-sqlite}
+      start_period: 40s
+    # Socket.io + GameEngine run inside web via server.ts (npm start).
+    # Legacy separate game-server.js on :3001 was removed — do not resurrect it.
