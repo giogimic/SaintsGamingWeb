@@ -11,7 +11,12 @@
 # Usage:
 #   ./go-mmo/scripts/setup-go-mmo.sh
 #   GO_MMO_SUBDOMAIN=go.example.com GO_MMO_PORT=3001 \
-#     ./go-mmo/scripts/setup-go-mmo.sh --non-interactive --docker
+#     ./go-mmo/scripts/setup-go-mmo.sh --non-interactive --docker --full
+#
+# Flags:
+#   --full   Force full stack (env + docker/binary + optional proxy), even when
+#            Caddy/containers already exist. Used by scripts/setup.sh.
+#   --proxy-only   Only upsert a Caddy subdomain (no containers).
 #
 set -uo pipefail
 
@@ -33,6 +38,7 @@ COMPOSE_PROJECT_BASE="${GO_MMO_COMPOSE_PROJECT:-saints-go-mmo}"
 NON_INTERACTIVE=0
 USE_DOCKER="${GO_MMO_USE_DOCKER:-auto}"
 PROXY_ONLY=0
+FORCE_FULL=0
 
 for arg in "$@"; do
   case "$arg" in
@@ -40,6 +46,7 @@ for arg in "$@"; do
     --docker) USE_DOCKER=1 ;;
     --no-docker) USE_DOCKER=0 ;;
     --proxy-only) PROXY_ONLY=1 ;;
+    --full) FORCE_FULL=1 ;;
     --help|-h)
       sed -n '1,25p' "$0"
       exit 0
@@ -288,6 +295,9 @@ main() {
   local mode="full"
   if [[ "$PROXY_ONLY" -eq 1 ]]; then
     mode="proxy"
+  elif [[ "$FORCE_FULL" -eq 1 ]]; then
+    mode="full"
+    log "Full setup requested (--full) — unique names + free port; primary Caddy untouched."
   elif [[ "$existing" -eq 1 ]]; then
     log "Existing install / conflict hints:"
     printf '%b' "$hints" >&2

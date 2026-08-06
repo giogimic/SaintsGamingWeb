@@ -592,7 +592,80 @@ NGINXEOF
     done
 fi
 
+# --- Go MMO (destination realtime for lobby / Studio) ---
+# Next keeps site APIs + /api/maps; game sockets move to Go when enabled.
+ENABLE_GO_MMO=0
+GO_MMO_PORT=3001
+GO_MMO_PUBLIC_URL=""
+GO_MMO_SUBDOMAIN_CHOSEN=""
+GO_MMO_SETUP_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../go-mmo/scripts/setup-go-mmo.sh"
+# Resolve in case setup.sh lives at repo root as ./setup.sh symlink/copy
+if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
+    GO_MMO_SETUP_SCRIPT="$(pwd)/go-mmo/scripts/setup-go-mmo.sh"
+fi
+
+if whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nRecommended — this is the destination backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :3001 + NEXT_PUBLIC_GO_MMO_URL\nNO  = TypeScript server.ts sockets only" 16 74; then
+    ENABLE_GO_MMO=1
+fi
+
+if [ "$ENABLE_GO_MMO" = "1" ]; then
+    while ss -tuln 2>/dev/null | grep -q ":$GO_MMO_PORT "; do
+        GO_MMO_PORT=$((GO_MMO_PORT + 1))
+    done
+    GO_MMO_PUBLIC_URL="http://127.0.0.1:$GO_MMO_PORT"
+
+    if [ "$USE_CADDY" = "1" ] || [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+        if whiptail --title "Go MMO Subdomain" --yesno "Add a Caddy subdomain for Go MMO?\n(additive — primary site untouched)\n\nNeeded so browsers can reach sockets over HTTPS (127.0.0.1 only works on this machine)." 13 72; then
+            GO_MMO_SUBDOMAIN_CHOSEN=$(whiptail --title "Go MMO Subdomain" --inputbox "Subdomain for Go MMO sockets:" 10 60 "go.$DOMAIN" 3>&1 1>&2 2>&3) || true
+            if [ -n "$GO_MMO_SUBDOMAIN_CHOSEN" ]; then
+                GO_MMO_PUBLIC_URL="https://$GO_MMO_SUBDOMAIN_CHOSEN"
+            fi
+        fi
+    else
+        CUSTOM_GO_URL=$(whiptail --title "Go MMO Public URL" --inputbox "No Caddy detected.\nEnter the browser-reachable Go URL (or keep local for same-machine only):" 12 70 "$GO_MMO_PUBLIC_URL" 3>&1 1>&2 2>&3) || true
+        if [ -n "$CUSTOM_GO_URL" ]; then
+            GO_MMO_PUBLIC_URL="$CUSTOM_GO_URL"
+        fi
+    fi
+
+    # Bake into .env before docker build so Next inlines NEXT_PUBLIC_GO_MMO_URL.
+    if [ -f .env ]; then
+        if grep -q '^NEXT_PUBLIC_GO_MMO_URL=' .env 2>/dev/null; then
+            TMP_ENV="$(mktemp)"
+            awk -v v="$GO_MMO_PUBLIC_URL" 'BEGIN{done=0} /^NEXT_PUBLIC_GO_MMO_URL=/ { print "NEXT_PUBLIC_GO_MMO_URL=" v; done=1; next } { print } END { if (!done) print "NEXT_PUBLIC_GO_MMO_URL=" v }' .env > "$TMP_ENV"
+            mv "$TMP_ENV" .env
+        else
+            printf '\n# Go MMO lobby/Studio sockets (destination realtime backend)\nNEXT_PUBLIC_GO_MMO_URL=%s\n' "$GO_MMO_PUBLIC_URL" >> .env
+        fi
+        echo -e "${GREEN}[✓] NEXT_PUBLIC_GO_MMO_URL=$GO_MMO_PUBLIC_URL${NC}"
+    fi
+
+    if [ -f "$GO_MMO_SETUP_SCRIPT" ]; then
+        echo -e "${CYAN}[*] Setting up Go MMO (full stack beside Next)...${NC}"
+        chmod +x "$GO_MMO_SETUP_SCRIPT" 2>/dev/null || true
+        export GO_MMO_PORT
+        if [ -n "$GO_MMO_SUBDOMAIN_CHOSEN" ]; then
+            export GO_MMO_SUBDOMAIN="$GO_MMO_SUBDOMAIN_CHOSEN"
+        fi
+        # --full: do not fall back to proxy-only just because Caddy already exists
+        if GO_MMO_PORT="$GO_MMO_PORT" GO_MMO_SUBDOMAIN="${GO_MMO_SUBDOMAIN_CHOSEN}" \
+            bash "$GO_MMO_SETUP_SCRIPT" --non-interactive --docker --full; then
+            echo -e "${GREEN}[✓] Go MMO setup finished (port $GO_MMO_PORT).${NC}"
+        else
+            echo -e "${YELLOW}[!] Go MMO setup reported errors — Next will still build. Retry: ./go-mmo/scripts/setup-go-mmo.sh --full${NC}"
+        fi
+    else
+        echo -e "${YELLOW}[!] Missing $GO_MMO_SETUP_SCRIPT — URL written; run Go setup manually later.${NC}"
+    fi
+else
+    echo -e "${YELLOW}[*] Skipping Go MMO — lobby/Studio will use TypeScript server.ts sockets.${NC}"
+fi
+
 # --- Deployment Summary ---
+GO_SUMMARY="skipped (TS sockets)"
+if [ "$ENABLE_GO_MMO" = "1" ]; then
+    GO_SUMMARY="$GO_MMO_PUBLIC_URL (port $GO_MMO_PORT)"
+fi
 whiptail --title "Deployment Summary" --msgbox "======================================
   Deployment Summary
 ======================================
@@ -600,9 +673,10 @@ Database    : $DB_NAME
 Domain      : $DOMAIN
 SSL Option  : $SSL_CHOICE
 Admin User  : $ADMIN_USER
+Go MMO      : $GO_SUMMARY
 ======================================
 
-Press OK to build and deploy." 16 60
+Press OK to build and deploy." 18 60
 
 clear
 
@@ -696,12 +770,20 @@ if [ $SERVER_READY -eq 1 ]; then
     echo -e "${CYAN}URL:${NC}            ${SITE_URL}"
     echo -e "${CYAN}Admin User:${NC}     ${ADMIN_USER}"
     echo -e "${CYAN}Admin Pass:${NC}     (Hidden for security)"
+    if [ "$ENABLE_GO_MMO" = "1" ]; then
+        echo -e "${CYAN}Go MMO:${NC}         ${GO_MMO_PUBLIC_URL}"
+        echo -e "${CYAN}Go port:${NC}        ${GO_MMO_PORT} (lobby/Studio sockets)"
+    fi
     echo -e "============================================================"
     echo -e "${YELLOW}Useful Commands:${NC}"
     echo -e "  View Logs:      sudo docker logs ${WEB_CONTAINER_NAME} -f"
     echo -e "  Stop Cluster:   sudo docker compose down"
     echo -e "  Restart:        sudo docker compose restart"
     echo -e "  Update:         ./update.sh"
+    if [ "$ENABLE_GO_MMO" = "1" ]; then
+        echo -e "  Go MMO setup:   ./go-mmo/scripts/setup-go-mmo.sh --full"
+        echo -e "  Dev proxy:      ./scripts/dev-proxy.sh status"
+    fi
     echo -e "============================================================\n"
 else
     echo -e "${RED}[!] Server took too long to start. It may still be running migrations.${NC}"

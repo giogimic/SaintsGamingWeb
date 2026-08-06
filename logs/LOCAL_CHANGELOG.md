@@ -1,5 +1,13 @@
 # Local Changelog
 
+## 2026-08-06 — Setup offers Go MMO (destination realtime)
+
+- `scripts/setup.sh`: enable Go MMO for lobby/Studio (recommended); subdomain + `.env` + `--full` docker setup.
+- `setup-go-mmo.sh --full` for non-interactive full stack beside existing Caddy.
+- Docs + `.env.example` updated. Log: `logs/2026-08-06-setup-go-mmo-option.md`
+
+---
+
 ## 2026-08-06 — GitHub cleanup: maps ensure + Caddy + docs
 
 - Cherry-picked prod lazy DEMO_SANDBOX ensure onto `main`; deleted leftover feature remotes.
