@@ -1,5 +1,14 @@
 # Local Changelog
 
+## 2026-08-06 — Go MMO client wire (lobby + Studio)
+
+- Lobby socket uses `NEXT_PUBLIC_GO_MMO_URL` when set (else TS same-origin).
+- Studio: HTTP maps stay on Next; after save emit `admin_save_map` for Go live sync.
+- Docs: CONTINUE + READMEs — Go on main.
+- Log: `logs/2026-08-06-go-mmo-client-wire.md`
+
+---
+
 ## 2026-08-06 — Additive dev-proxy + conflict-safe setup
 
 - New `scripts/dev-proxy.sh`: subdomain upsert only on existing Caddy (rerunnable).

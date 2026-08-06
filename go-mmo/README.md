@@ -1,51 +1,30 @@
-# Go MMO backend (branch-only)
+# Go MMO backend (on `main`)
 
-Parallel realtime MMO server rewritten in Go from the existing TypeScript
-`server.ts` / `GameEngine` / `SocketHandler` ideas. Lives under `go-mmo/`.
-**Do not merge to `main` until explicitly approved** (unless you are promoting it).
+Parallel realtime MMO server in Go. Lives under `go-mmo/`. Next.js + Studio UI
+remain TypeScript; set `NEXT_PUBLIC_GO_MMO_URL` to point the lobby game socket here.
+
+## Will Studio still work?
+
+**Yes.** Studio editor chrome and map **save/load** use Next `/api/maps` (Prisma).
+When Go is enabled, save also emits `admin_save_map` so the Go live world matches
+paint/collision. NPC live spawn/despawn sockets go to Go. Forum `RealtimeProvider`
+stays on Next.
 
 ## Defaults
 
 | | |
 |---|---|
-| Listen | `0.0.0.0:3001` (Next stays on `:3000`) |
-| Caddy | **Additive only** via `./scripts/dev-proxy.sh` (primary site untouched) |
-| Docker | `saints-gaming-go-mmo` (+ `1`/`2`/`3`… if name already in use) |
-| DB | SQLite (`GO_MMO_DATABASE_URL`) |
-| Auth | Auth.js JWT **or** `auth.token = "dev:<accountId>"` when `GO_MMO_DEV_AUTH=true` |
+| Listen | `0.0.0.0:3001` |
+| Client | `NEXT_PUBLIC_GO_MMO_URL` (optional) |
+| Caddy | `./scripts/dev-proxy.sh` (additive) |
+| Auth | `auth.token` = account id when `GO_MMO_DEV_AUTH=true` |
 
 ## Quick start
 
 ```bash
-# Detect existing install → ask → subdomain-only or full parallel setup
 ./go-mmo/scripts/setup-go-mmo.sh
-
-# Only register a subdomain on the already-running primary Caddy
-GO_MMO_SUBDOMAIN=go.example.com ./go-mmo/scripts/setup-go-mmo.sh --proxy-only --non-interactive
-
-# Host CLI (safe reruns — never rewrites primary Caddy site)
-./scripts/dev-proxy.sh status
-./scripts/dev-proxy.sh add go.example.com 3001
-./scripts/dev-proxy.sh ask
+# restart Next so NEXT_PUBLIC_GO_MMO_URL is picked up
+./go-mmo/bin/go-mmo
 ```
 
-Caddy integration uses managed markers via `scripts/proxy-caddy.sh` /
-`scripts/dev-proxy.sh` so the primary site block is never clobbered.
-
-## Layout
-
-```
-go-mmo/
-  cmd/server/
-  Dockerfile
-  docker-compose.base.yml
-  scripts/setup-go-mmo.sh
-  internal/…
-```
-
-## Tests
-
-```bash
-cd go-mmo && go test ./...
-go build -o bin/go-mmo ./cmd/server
-```
+Unset `NEXT_PUBLIC_GO_MMO_URL` to fall back to TypeScript `server.ts` sockets.

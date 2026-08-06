@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (Go MMO rewrite on separate branch — do not merge to main yet)  
+**Last updated:** 2026-08-06 (Go MMO **on main** — lobby/Studio can target it)  
 **Point every new session at this file first.**
 
 ---
@@ -9,27 +9,31 @@
 
 **Game / Studio / lobby only** — do not prioritize marketing site, forum, UCP, Discord, FiveM.
 
-### Parallel track (do NOT merge until owner says so)
+### Go MMO (on `main`)
 
-**Branch `giogimic/go-mmo-backend-2d3d`** — Go MMO backend rewrite under `go-mmo/` (**backend conversion complete**; do not merge until owner says).
-Setup: `./go-mmo/scripts/setup-go-mmo.sh` (asks if stack/Caddy already running; `--proxy-only` / `./scripts/dev-proxy.sh` for subdomain-only on existing Caddy → **:3001**; unique container names).
-Log: `logs/2026-08-06-go-mmo-backend.md`. Optional next: client A/B URL, Studio UI in Go, deeper skill/TB formulas.
+`go-mmo/` realtime backend is **merged**. Next/TS `server.ts` remains the default socket when unset.
+
+| Piece | How |
+|------|-----|
+| Run Go | `./go-mmo/scripts/setup-go-mmo.sh` then `./go-mmo/bin/go-mmo` (or Docker) |
+| Caddy | `./scripts/dev-proxy.sh add <sub> 3001` (additive only) |
+| Point lobby | Set `NEXT_PUBLIC_GO_MMO_URL=http://127.0.0.1:3001` (setup can write this) |
+| Studio | **UI + `/api/maps` stay on Next.** Live walk/NPC/reload sync via Go when URL is set (`admin_save_map` after save). |
+| Forum sockets | `RealtimeProvider` stays same-origin Next — do not point at Go |
+
+Log: `logs/2026-08-06-go-mmo-client-wire.md`. Optional later (not blocking): deeper skill/TB formulas, inventory SQLite persistence, Studio UI rewrite in Go.
 
 ### Main / prod track
 
-One PR → merge to `main` → then next:
-
-1. **P0:** Deploy custom `server.ts` in Docker/PM2 (see prod 404 logs / #43–#44).
-2. **Done on main:** #28–#42 (MP + entity visibility + GameMapData cast)
-3. **After prod redeploy:** confirm `/api/maps` has `DEMO_SANDBOX`, socket polling ≠ 404, then two-account lobby peers
+1. **Prod:** confirm custom `server.ts` in Docker (`npm start`) — maps + socket.io
+2. After deploy: `/api/maps` has `DEMO_SANDBOX`, socket ≠ 404, two-account lobby peers
+3. Optional: enable Go on a host with `NEXT_PUBLIC_GO_MMO_URL` + `dev-proxy`
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **Go MMO** | Full backend rewrite on alt ports | **Backend complete** (branch only; do not merge) |
-| **Prod deploy** | `next start` skipped Socket.io + DemoBootstrap | **Fix PR** (entrypoint / `npm start` → `server.ts`) |
-| **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
-| **MP #38–#39** | Join-storm + peer wipe + presence UI | **On main** |
-| **Entities #40** | Avatar/NPCs above grass (only-grass wipe) | **On main** (local OK; prod blocked by API 404s) |
+| **Go MMO** | Backend + client wire on main | **On main** — enable via env |
+| **Prod deploy** | `next start` skipped Socket.io + DemoBootstrap | Fixed via entrypoint / `npm start` |
+| **P0–P12 / MP / entities** | Studio + lobby fixes | **On main** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 
@@ -38,87 +42,4 @@ Before coding, read:
 1. **This file**
 2. **`logs/2026-08-06-prod-custom-server-404.md`** if lobby is grass-only on a deployed host
 3. **`logs/2026-08-05-studio-game-priority-plan.md`**
-4. Latest P0/P1/P2 impl logs under `logs/2026-08-05-studio-*`
-5. **`logs/2026-08-04-studio-resume-after-strip.md`** — lobby vs Studio map contracts
-6. `logs/studio-first-hybrid-foundation.md`
-7. Trail/Spyder smokes as needed
-
-**Do not** reintroduce deleted ghosts (Pixi battle, Phase-5 ClassEditor/GameConfigManager, CreatureDb, `:3001` party client, dual TB overlays).
-
----
-
-## Strip follow-ups already landed (adapt to these)
-
-| Area | Behavior |
-| :--- | :--- |
-| `/lobby` map | Always **`DEMO_SANDBOX`** + `join_map.lobby: true` (multiplayer shard) |
-| `/studio` map | Author/character map preserved; `lobby: false`; off-DEMO warps OK |
-| Creatures | `creatureCatalog` + DB; `saints-dex` is UI adapter only |
-| Classes | **`ClassEditorPanel` only** (DevTools tab uses it too) |
-| Inventory | Server writes via **`src/server/inventoryService.ts`** |
-| Combat | Keep RT + TB modes; TB UI = `TurnBattleOverlay` only |
-
-Full audit: `logs/2026-08-04-duplicate-systems-audit.md`
-
----
-
-## Studio foundation (unchanged goals)
-
-**Game engine editor** — Phase 1–**2f** on `main` (catalogs, author session, **PIE private shard**). See `logs/studio-first-hybrid-foundation.md` · `logs/2026-08-04-studio-pie-shard.md`.
-
-**Just fixed:** Lobby was stuck in Studio create-mode (`isDevEditorOpen={isCreationMode}`). Play is gated with `studioToolsOpen = enableStudio && isCreationMode` only. See `logs/2026-08-04-lobby-studio-walk-fix.md`.
-
-**World profiles + Saints Trail + Viewfinder UI (on `main`)**
-
-- Profiles: Tuxemon / Custom 1 / Custom 2 (+ blank / Clone Trail)
-- Custom 1 = Saints Trail on `DEMO_SANDBOX` (editable quests + dialogue)
-- Spyder showcase remains on **Tuxemon** (Q1–Q12)
-- Interface Editor Viewfinder Edit Mode shipped (#8)
-
-Progress log: `logs/STUDIO_PHASES_3_7.md` (local)  
-Trail smoke: [`info/game/SAINTS_TRAIL_SMOKE.md`](./game/SAINTS_TRAIL_SMOKE.md)  
-Spyder smoke: [`info/game/SPYDER_SMOKE.md`](./game/SPYDER_SMOKE.md)
-
-### First checks this session
-
-```bash
-npm run dev
-# warm cold compile once
-curl --max-time 120 http://localhost:3000/studio
-# Paint: tools on → brush → ground → Save Map
-# Warp via World Builder; confirm lobby still sticks to DEMO_SANDBOX
-```
-
-### Pipeline (when reseeding)
-
-```bash
-npx prisma db push
-npm run ensure:world-profiles && npm run ensure:starter-heroes
-FORCE_TRAIL_SEED=1 npm run seed:saints-trail
-FORCE_QUEST_SEED=1 npm run seed:campaign-npcs
-SMOKE_CLONE_SLUG=custom_2 npm run smoke:saints-trail
-npm run smoke:saints-trail:play
-npm run visual:saints-trail   # needs npm run dev
-npm run smoke:spyder
-```
-
-### Back-line (do not prioritize)
-
-| Area | Why |
-| :--- | :--- |
-| **UCP** (`/ucp/*`) | Uncertain if we ship it; needs a planned FiveM plugin first — likely much later |
-| Discord bot bridge | Ecosystem nice-to-have |
-| FiveM bridges / UCP depth | Same lane as UCP — wait for plugin design |
-| S3/CDN as default | Optional path exists; local uploads fine |
-| Heavy AI | Forum enhance exists; don’t expand |
-| Dual map-loader merge | Maintenance only; not blocking Studio |
-
----
-
-## Mandatory Read Order
-
-1. **This file**
-2. `logs/2026-08-04-studio-resume-after-strip.md`
-3. `info/game/SAINTS_TRAIL_SMOKE.md` (Custom 1) and/or `info/game/SPYDER_SMOKE.md` (Tuxemon)
-4. `info/game/GAME_FOUNDATION_SYSTEMS.md`
-5. `info/game/CLASS_SKILLS_SHINY.md`
+4. **`go-mmo/README.md`** when working on the Go socket path
