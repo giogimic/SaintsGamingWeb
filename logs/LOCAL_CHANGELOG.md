@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-06 — Lobby MP peer presence UI
+
+Nameplates + amber minimap peers + Nearby HUD; `session_replaced` when same account takes the seat.  
+See `logs/2026-08-06-lobby-mp-peer-presence-ui.md`.
+
+---
+
 ## 2026-08-06 — Lobby MP peer wipe (base instanceId)
 
 Character load no longer sets base `instanceId`; lobby empty `map_players` keeps peers; `map_joined` before snapshot; Babylon keeps visual during same-base reload.  

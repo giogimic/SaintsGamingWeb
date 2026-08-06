@@ -41,3 +41,5 @@ Manual (two **different** accounts on `/lobby` only):
 3. Mutual sprites + movement  
 
 If you see the toast but no sprite → render path; if no toast → still not on the same public seat.
+
+**Follow-up:** peer nameplates / minimap / presence HUD + `session_replaced` — see `logs/2026-08-06-lobby-mp-peer-presence-ui.md`.
