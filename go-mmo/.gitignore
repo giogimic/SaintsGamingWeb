@@ -1,0 +1,7 @@
+bin/
+data/
+.env
+docker-compose.yml
+*.db
+*.db-*
+testdata/*.db

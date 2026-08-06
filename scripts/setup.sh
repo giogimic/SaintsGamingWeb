@@ -122,43 +122,136 @@ elif [ "$MUST_REUSE_ENV" = "1" ]; then
     exit 1
 fi
 
+# --- Helpers: unique Docker names (base, then base1, base2, …) ---
+container_name_in_use() {
+    local name="$1"
+    command -v docker &>/dev/null || return 1
+    docker ps -a --format '{{.Names}}' 2>/dev/null | grep -Fxq -- "$name"
+}
+unique_container_name() {
+    local base="$1"
+    local name="$base"
+    local n=1
+    while container_name_in_use "$name"; do
+        name="${base}${n}"
+        n=$((n + 1))
+        if [ "$n" -gt 999 ]; then
+            echo "${base}$$"
+            return 0
+        fi
+    done
+    if [ "$name" != "$base" ]; then
+        echo -e "${YELLOW}[*] Container name '$base' in use — using '$name'.${NC}" >&2
+    fi
+    echo "$name"
+}
+
+WEB_CONTAINER_NAME="saints-gaming-web"
+DB_CONTAINER_NAME="saints-gaming-db"
+EXISTING_CADDY_ADDITIVE=0
+DEV_PROXY_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dev-proxy.sh"
+
+# --- Detect already-running stack / Caddy (ask before changing anything) ---
+EXISTING_HINTS=""
+if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+    EXISTING_HINTS="${EXISTING_HINTS}• Caddy install detected\n"
+fi
+if command -v systemctl &>/dev/null && systemctl is-active --quiet caddy 2>/dev/null; then
+    EXISTING_HINTS="${EXISTING_HINTS}• Caddy service is RUNNING\n"
+fi
+if container_name_in_use "saints-gaming-web"; then
+    EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-web exists\n"
+fi
+if container_name_in_use "saints-gaming-db"; then
+    EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-db exists\n"
+fi
+
+if [ -n "$EXISTING_HINTS" ]; then
+    EXIST_OPT=$(whiptail --title "Existing Server Detected" --menu "Something is already set up on this host:\n\n${EXISTING_HINTS}\nWhat should setup do?" 20 78 4 \
+    "1" "Add subdomain only (keep primary Caddy/site — recommended for reruns)" \
+    "2" "Continue full setup beside it (unique container names + free ports)" \
+    "3" "Abort (use ./update.sh or ./scripts/dev-proxy.sh instead)" \
+    "4" "Continue and allow killing conflicting ports (destructive)" 3>&1 1>&2 2>&3) || exit 1
+
+    if [ "$EXIST_OPT" = "1" ]; then
+        EXISTING_CADDY_ADDITIVE=1
+        REVERSE_PROXY_MODE=1
+        echo -e "${GREEN}[*] Additive mode: will not rewrite primary Caddy; only upsert a subdomain via dev-proxy.${NC}"
+    elif [ "$EXIST_OPT" = "3" ]; then
+        echo -e "${GREEN}[*] Aborted. For subdomain-only: ./scripts/dev-proxy.sh ask${NC}"
+        exit 0
+    elif [ "$EXIST_OPT" = "4" ]; then
+        echo -e "${YELLOW}[*] Destructive path allowed for this run.${NC}"
+        ALLOW_KILL_PORTS=1
+    else
+        ALLOW_KILL_PORTS=0
+    fi
+fi
+
 # --- Port Auto-Discovery ---
 HTTP_PORT=80
 HTTPS_PORT=443
 WEB_PORT=3000
-REVERSE_PROXY_MODE=0
+REVERSE_PROXY_MODE=${REVERSE_PROXY_MODE:-0}
+ALLOW_KILL_PORTS=${ALLOW_KILL_PORTS:-0}
 CONFLICTS=""
 
 if ss -tuln | grep -q ":80 "; then CONFLICTS="$CONFLICTS Port 80\n"; fi
 if ss -tuln | grep -q ":443 "; then CONFLICTS="$CONFLICTS Port 443\n"; fi
 if ss -tuln | grep -q ":3000 "; then CONFLICTS="$CONFLICTS Port 3000\n"; fi
 
-if [ -n "$CONFLICTS" ]; then
-    PORT_OPT=$(whiptail --title "Port Conflicts Detected" --menu "The following ports are already in use:\n$CONFLICTS\nHow do you want to resolve this?" 16 75 3 \
-    "1" "Aggressively KILL conflicting services (Frees ports)" \
-    "2" "Behind a Reverse Proxy Mode (Skips 80/443)" \
-    "3" "Use alternative ports" 3>&1 1>&2 2>&3)
+if [ "$EXISTING_CADDY_ADDITIVE" = "1" ]; then
+    # Sit behind the already-running proxy: pick a free app port, never bind 80/443.
+    REVERSE_PROXY_MODE=1
+    HTTP_PORT=""
+    HTTPS_PORT=""
+    while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
+    whiptail --title "Behind Existing Proxy" --msgbox "Additive / behind-proxy mode.\n\nApp will listen on: $WEB_PORT\nPrimary Caddy site will NOT be rewritten.\nYou will be asked for a subdomain to add." 12 70
+elif [ -n "$CONFLICTS" ]; then
+    PORT_OPT=$(whiptail --title "Port Conflicts Detected" --menu "The following ports are already in use:\n$CONFLICTS\nHow do you want to resolve this?" 18 75 4 \
+    "1" "Behind existing / reverse proxy (skip 80/443, free app port)" \
+    "2" "Use alternative ports" \
+    "3" "Abort — do not change anything" \
+    "4" "KILL conflicting services (destructive)" 3>&1 1>&2 2>&3) || exit 1
 
     if [ "$PORT_OPT" = "1" ]; then
-        echo -e "${CYAN}Killing processes on conflicting ports...${NC}"
-        sudo apt-get update && sudo apt-get install -y psmisc
-        sudo fuser -k 80/tcp 443/tcp 3000/tcp || true
-        sleep 2
-    elif [ "$PORT_OPT" = "2" ]; then
         REVERSE_PROXY_MODE=1
         HTTP_PORT=""
         HTTPS_PORT=""
         while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
-        whiptail --title "Reverse Proxy Mode" --msgbox "Reverse Proxy Mode Enabled.\n\nThe internal web server will be exposed on port: $WEB_PORT\n\nYou MUST configure your Reverse Proxy (e.g., Nginx Proxy Manager) to point your domain to http://127.0.0.1:$WEB_PORT" 12 65
-    elif [ "$PORT_OPT" = "3" ]; then
+        # Prefer attaching to existing Caddy when present.
+        if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+            EXISTING_CADDY_ADDITIVE=1
+            whiptail --title "Reverse Proxy Mode" --msgbox "Existing Caddy detected.\n\nApp port: $WEB_PORT\nSetup will ADD a subdomain only (primary site untouched).\nOr use: ./scripts/dev-proxy.sh ask" 13 70
+        else
+            whiptail --title "Reverse Proxy Mode" --msgbox "Reverse Proxy Mode Enabled.\n\nApp port: $WEB_PORT\nPoint your external proxy at http://127.0.0.1:$WEB_PORT" 12 65
+        fi
+    elif [ "$PORT_OPT" = "2" ]; then
         while ss -tuln | grep -q ":$HTTP_PORT "; do HTTP_PORT=$((HTTP_PORT+1)); done
         while ss -tuln | grep -q ":$HTTPS_PORT "; do HTTPS_PORT=$((HTTPS_PORT+1)); done
         while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
         whiptail --title "New Ports Selected" --msgbox "Selected new available ports:\n\nHTTP: $HTTP_PORT\nHTTPS: $HTTPS_PORT\nWeb App: $WEB_PORT" 12 50
+    elif [ "$PORT_OPT" = "3" ]; then
+        echo -e "${GREEN}[*] Aborted with no changes.${NC}"
+        exit 0
+    elif [ "$PORT_OPT" = "4" ]; then
+        if [ "$ALLOW_KILL_PORTS" != "1" ]; then
+            if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/3000?" 10 55; then
+                exit 1
+            fi
+        fi
+        echo -e "${CYAN}Killing processes on conflicting ports...${NC}"
+        sudo apt-get update && sudo apt-get install -y psmisc
+        sudo fuser -k 80/tcp 443/tcp 3000/tcp || true
+        sleep 2
     else
         exit 1
     fi
 fi
+
+# Allocate unique container names so a second install cannot collide with itself.
+WEB_CONTAINER_NAME="$(unique_container_name saints-gaming-web)"
+DB_CONTAINER_NAME="$(unique_container_name saints-gaming-db)"
 
 # --- RAM Check ---
 if [ -f /proc/meminfo ]; then
@@ -181,7 +274,8 @@ inject_depends_on() {
 with open('docker-compose.yml', 'r') as f:
     c = f.read()
 if 'depends_on:' not in c:
-    c = c.replace('container_name: saints-gaming-web', 'container_name: saints-gaming-web\n    depends_on:\n      db:\n        condition: service_started')
+    needle = 'container_name: ${WEB_CONTAINER_NAME}'
+    c = c.replace(needle, needle + '\n    depends_on:\n      db:\n        condition: service_started')
     with open('docker-compose.yml', 'w') as f:
         f.write(c)
 " 2>/dev/null || true
@@ -260,7 +354,8 @@ chmod -R 777 data uploads
 
 cp docker-compose.base.yml docker-compose.yml
 sed -i "s/- \"3000:3000\"/- \"$WEB_PORT:3000\"/g" docker-compose.yml
-
+sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CONTAINER_NAME}/g" docker-compose.yml
+# Keep image name stable; only container_name must be unique across parallel installs.
 if [ "$REVERSE_PROXY_MODE" = "1" ]; then
     sed -i "/- \"80:80\"/d" docker-compose.yml
     sed -i "/- \"443:443\"/d" docker-compose.yml
@@ -295,7 +390,7 @@ if [ "$DB_PROVIDER_OPT" = "2" ]; then
 
   db:
     image: mariadb:10.11
-    container_name: saints-gaming-db
+    container_name: ${DB_CONTAINER_NAME}
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: saints_gaming
@@ -342,11 +437,48 @@ echo -e "${GREEN}[✓] .env file created successfully.${NC}"
 USE_CADDY=0
 RUN_CERTBOT=0
 SSL_CHOICE="None"
+ADDITIVE_SUBDOMAIN=""
 
-if [ "$REVERSE_PROXY_MODE" = "1" ]; then
+if [ "$EXISTING_CADDY_ADDITIVE" = "1" ]; then
+    SSL_CHOICE="Existing Caddy (subdomain only)"
+    echo -e "${YELLOW}[*] Existing Caddy — additive subdomain only (no primary rewrite, no Caddy install)...${NC}"
+    chmod +x "$DEV_PROXY_SCRIPT" 2>/dev/null || true
+    ADDITIVE_SUBDOMAIN=$(whiptail --title "Subdomain for this install" --inputbox "Enter the subdomain this instance should serve\n(e.g. staging.$DOMAIN or go.$DOMAIN).\n\nPrimary site on Caddy will NOT be changed." 12 70 "staging.$DOMAIN" 3>&1 1>&2 2>&3) || true
+    if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
+        if [ -x "$DEV_PROXY_SCRIPT" ] || [ -f "$DEV_PROXY_SCRIPT" ]; then
+            bash "$DEV_PROXY_SCRIPT" add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || \
+              echo -e "${RED}[!] dev-proxy add failed — run manually: ./scripts/dev-proxy.sh add $ADDITIVE_SUBDOMAIN $WEB_PORT${NC}"
+        else
+            echo -e "${RED}[!] Missing scripts/dev-proxy.sh — add the subdomain manually later.${NC}"
+        fi
+    else
+        echo -e "${YELLOW}[*] No subdomain entered — app will only be reachable on 127.0.0.1:$WEB_PORT${NC}"
+    fi
+elif [ "$REVERSE_PROXY_MODE" = "1" ]; then
     SSL_CHOICE="Reverse Proxy (External)"
     echo -e "${YELLOW}[*] Skipping web server installation (Reverse Proxy Mode)...${NC}"
+    if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+        if whiptail --title "Attach to Existing Caddy?" --yesno "Caddy is present on this host.\n\nAdd a subdomain for this install now? (additive — primary site untouched)" 12 70 3>&1 1>&2 2>&3; then
+            EXISTING_CADDY_ADDITIVE=1
+            ADDITIVE_SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Subdomain (e.g. app.$DOMAIN):" 10 60 "app.$DOMAIN" 3>&1 1>&2 2>&3) || true
+            if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
+                bash "$DEV_PROXY_SCRIPT" add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
+            fi
+        fi
+    fi
 else
+    if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+        if whiptail --title "Existing Caddy" --yesno "Caddy is already installed.\n\nYES = add this site as a subdomain only (safe rerun)\nNO  = manage Caddy as a fresh primary install (may overwrite Caddyfile)" 13 72 3>&1 1>&2 2>&3; then
+            EXISTING_CADDY_ADDITIVE=1
+            SSL_CHOICE="Existing Caddy (subdomain only)"
+            ADDITIVE_SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Subdomain for this install:" 10 60 "$DOMAIN" 3>&1 1>&2 2>&3) || true
+            if [ -n "$ADDITIVE_SUBDOMAIN" ]; then
+                bash "$DEV_PROXY_SCRIPT" add "$ADDITIVE_SUBDOMAIN" 127.0.0.1 "$WEB_PORT" -y || true
+            fi
+        fi
+    fi
+
+    if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
     if command -v nginx &>/dev/null; then
         if whiptail --title "Web Server Upgrade" --yesno "Nginx is currently installed.\n\nWould you like to REMOVE Nginx and install Caddy instead?\n(Caddy handles SSL automatically — no Certbot needed)" 12 70 3>&1 1>&2 2>&3; then
             echo -e "${RED}[!] Stopping and purging Nginx...${NC}"
@@ -371,10 +503,14 @@ else
             sudo apt update && sudo apt install -y caddy
         fi
         SSL_CHOICE="Caddy (Automatic HTTPS)"
+        # Fresh primary site + empty managed proxy section for future dev-proxy adds.
         cat <<CADDYEOF | sudo tee /etc/caddy/Caddyfile
 $DOMAIN, www.$DOMAIN {
     reverse_proxy 127.0.0.1:$WEB_PORT
 }
+
+# SAINTS_PROXY_LIST_BEGIN
+# SAINTS_PROXY_LIST_END
 CADDYEOF
         sudo systemctl reload caddy || sudo systemctl restart caddy
     else
@@ -414,12 +550,13 @@ NGINXEOF
             RUN_CERTBOT=1
         fi
     fi
+    fi
 fi
 
-# --- Additional Subdomain Proxies ---
+# --- Additional Subdomain Proxies (additive via dev-proxy when Caddy) ---
 EXTRA_SUBDOMAINS=()
-if [ "$REVERSE_PROXY_MODE" != "1" ]; then
-    while whiptail --title "Additional Subdomain Proxy" --yesno "Would you like to add a subdomain proxy for another service?\n(e.g., panel.$DOMAIN for AMP/Pterodactyl)" 12 70 3>&1 1>&2 2>&3; do
+if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ]; then
+    while whiptail --title "Additional Subdomain Proxy" --yesno "Add another subdomain proxy for a side service?\n(uses ./scripts/dev-proxy.sh — primary site untouched)" 11 70 3>&1 1>&2 2>&3; do
         SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. panel.$DOMAIN):" 10 60 "panel.$DOMAIN" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$SUBDOMAIN" ]; then break; fi
         PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the local port this service runs on:" 10 60 "8080" 3>&1 1>&2 2>&3)
@@ -427,18 +564,12 @@ if [ "$REVERSE_PROXY_MODE" != "1" ]; then
         PROXY_IP=$(whiptail --title "Target IP" --inputbox "Enter the internal target IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$PROXY_IP" ]; then break; fi
 
-        if [ "$USE_CADDY" = "1" ]; then
-            cat <<CADDYEOF | sudo tee -a /etc/caddy/Caddyfile
-
-$SUBDOMAIN {
-    reverse_proxy $PROXY_IP:$PROXY_PORT
-}
-CADDYEOF
-            sudo systemctl reload caddy || sudo systemctl restart caddy
+        if [ -f "$DEV_PROXY_SCRIPT" ] && { [ "$USE_CADDY" = "1" ] || [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; }; then
+            bash "$DEV_PROXY_SCRIPT" add "$SUBDOMAIN" "$PROXY_IP" "$PROXY_PORT" -y || true
         else
             cat <<NGINXEOF | sudo tee /etc/nginx/sites-available/$SUBDOMAIN
 server {
-    listen $HTTP_PORT;
+    listen ${HTTP_PORT:-80};
     server_name $SUBDOMAIN;
     location / {
         proxy_pass http://$PROXY_IP:$PROXY_PORT;
@@ -479,8 +610,8 @@ echo -e "${PURPLE}${BOLD}========================================${NC}"
 echo -e "${CYAN}${BOLD}  Starting Cluster Build...${NC}"
 echo -e "${PURPLE}${BOLD}========================================${NC}"
 
-# Remove any leftover containers from failed installs
-sudo docker rm -f saints-gaming-web saints-gaming-db >/dev/null 2>&1 || true
+# Remove only THIS install's containers (unique names) — never clobber a sibling stack.
+sudo docker rm -f "$WEB_CONTAINER_NAME" "$DB_CONTAINER_NAME" >/dev/null 2>&1 || true
 
 # Build
 sudo docker compose build --no-cache > docker_build.log 2>&1 && sudo docker compose up -d >> docker_build.log 2>&1 &
@@ -510,7 +641,7 @@ if [ "$DB_PROVIDER_OPT" = "2" ]; then
         echo -e "${GREEN}[✓] MariaDB is ready.${NC}"
     else
         echo -e "${RED}[!] MariaDB did not become ready in time. Migrations may fail.${NC}"
-        echo -e "${YELLOW}    Check: sudo docker logs saints-gaming-db${NC}"
+        echo -e "${YELLOW}    Check: sudo docker logs ${DB_CONTAINER_NAME}${NC}"
     fi
 fi
 
@@ -567,12 +698,12 @@ if [ $SERVER_READY -eq 1 ]; then
     echo -e "${CYAN}Admin Pass:${NC}     (Hidden for security)"
     echo -e "============================================================"
     echo -e "${YELLOW}Useful Commands:${NC}"
-    echo -e "  View Logs:      sudo docker logs saints-gaming-web -f"
+    echo -e "  View Logs:      sudo docker logs ${WEB_CONTAINER_NAME} -f"
     echo -e "  Stop Cluster:   sudo docker compose down"
     echo -e "  Restart:        sudo docker compose restart"
     echo -e "  Update:         ./update.sh"
     echo -e "============================================================\n"
 else
     echo -e "${RED}[!] Server took too long to start. It may still be running migrations.${NC}"
-    echo -e "${YELLOW}    Check: sudo docker logs saints-gaming-web${NC}"
+    echo -e "${YELLOW}    Check: sudo docker logs ${WEB_CONTAINER_NAME}${NC}"
 fi

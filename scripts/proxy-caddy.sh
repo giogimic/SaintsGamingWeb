@@ -12,9 +12,22 @@ CADDYFILE="${CADDYFILE:-/etc/caddy/Caddyfile}"
 BEGIN_MARK="${BEGIN_MARK:-# SAINTS_PROXY_LIST_BEGIN}"
 END_MARK="${END_MARK:-# SAINTS_PROXY_LIST_END}"
 
+# Use sudo only when the Caddyfile (or its directory) is not writable.
+# Blind sudo breaks some environments (e.g. Windows sudo) by swallowing awk stdout.
 SUDO=""
 if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-  SUDO="sudo"
+  if [[ -e "$CADDYFILE" ]]; then
+    if [[ ! -w "$CADDYFILE" ]]; then SUDO="sudo"; fi
+  else
+    parent="$(dirname "$CADDYFILE")"
+    if [[ ! -w "$parent" ]]; then SUDO="sudo"; fi
+  fi
+fi
+
+# Privileged service control (reload) still needs root when not already root.
+SUDO_SYS=""
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  SUDO_SYS="sudo"
 fi
 
 safe_write_caddyfile() {
@@ -383,11 +396,11 @@ remove_proxy() {
 
 reload_caddy() {
   if command -v systemctl >/dev/null 2>&1; then
-    if $SUDO systemctl reload caddy; then
+    if $SUDO_SYS systemctl reload caddy; then
       echo "[proxy-caddy] Caddy reloaded."
       return 0
     fi
-    if $SUDO systemctl restart caddy; then
+    if $SUDO_SYS systemctl restart caddy; then
       echo "[proxy-caddy] Caddy restarted."
       return 0
     fi
@@ -395,11 +408,11 @@ reload_caddy() {
     return 1
   fi
   # Fallback: try caddy directly.
-  if $SUDO caddy reload --config "$CADDYFILE"; then
+  if $SUDO_SYS caddy reload --config "$CADDYFILE"; then
     echo "[proxy-caddy] Caddy reloaded via CLI."
     return 0
   fi
-  if $SUDO caddy restart --config "$CADDYFILE"; then
+  if $SUDO_SYS caddy restart --config "$CADDYFILE"; then
     echo "[proxy-caddy] Caddy restarted via CLI."
     return 0
   fi
@@ -414,23 +427,21 @@ main() {
       list_proxies
       ;;
     add)
-      # add <subdomain> <host> <port>
-      # add <subdomain> <host:port>
       if [[ "${2:-}" == "" || "${3:-}" == "" ]]; then
         usage
         exit 1
       fi
       if [[ "${4:-}" != "" ]]; then
-        add_proxy "$2" "$3" "$4"
+        add_proxy "$2" "$3" "$4" || exit 1
       else
-        add_proxy "$2" "$3"
+        add_proxy "$2" "$3" || exit 1
       fi
       ;;
     remove)
-      remove_proxy "${2:-}"
+      remove_proxy "${2:-}" || exit 1
       ;;
     reload)
-      reload_caddy
+      reload_caddy || exit 1
       ;;
     ui)
       ui_mode
