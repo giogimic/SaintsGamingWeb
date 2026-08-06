@@ -212,6 +212,16 @@ func normalizeAction(action, next string) string {
 		return "complete_quest"
 	case "open_shop", "openshop":
 		return "open_shop"
+	case "grant_demo_tools", "grantdemotools":
+		return "grant_demo_tools"
+	case "grant_spyder_starter", "grantspyderstarter":
+		return "grant_spyder_starter"
+	case "heal_party", "healparty":
+		return "heal_party"
+	case "demo_quest_report", "demoquestreport":
+		return "demo_quest_report"
+	case "start_trainer_battle", "starttrainerbattle":
+		return "start_trainer_battle"
 	case "end", "exit", "close":
 		return "end"
 	case "":

@@ -31,7 +31,7 @@ func TestFleeEnd(t *testing.T) {
 func TestTBSubmit(t *testing.T) {
 	m := combat.NewManager()
 	s := m.StartTB("p1", "c1", "DEMO_ch1", 100, 30)
-	s = m.SubmitTB("p1", "attack")
+	s = m.SubmitTB("p1", "attack", "strike")
 	if s.CreatureHP >= 30 {
 		t.Fatalf("expected damage %+v", s)
 	}
@@ -47,7 +47,7 @@ func TestTBFormulaDamage(t *testing.T) {
 	ps := combat.Stats{PhysicalPower: 40, PhysicalDefense: 10, AbilityPower: 10, AbilityDefense: 10, CombatTempo: 120, Level: 10}
 	cs := combat.Stats{PhysicalPower: 5, PhysicalDefense: 5, AbilityPower: 5, AbilityDefense: 5, CombatTempo: 80, Level: 2}
 	s := m.StartTBWithStats("p1", "c1", "DEMO_ch1", 100, 200, ps, cs)
-	s = m.SubmitTB("p1", "attack")
+	s = m.SubmitTB("p1", "attack", "strike")
 	if s.LastDamage < 5 {
 		t.Fatalf("expected meaningful damage got %d", s.LastDamage)
 	}
