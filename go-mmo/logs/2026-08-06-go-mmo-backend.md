@@ -44,3 +44,9 @@ set -a; source go-mmo/.env; set +a
 - `GET /healthz` → ok
 - `GET /api/maps` → DEMO_SANDBOX
 - Engine.IO polling handshake on `/socket.io/`
+
+## Pass 2 — gameplay managers
+
+- Wired combat (RT hit/flee), inventory buy/sell, shop catalog, grass encounter rolls
+- Tests: combat + inventory
+- Socket events: combat_action, encounter_check, shop_buy/sell, claim_starter loot

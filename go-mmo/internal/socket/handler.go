@@ -8,33 +8,58 @@ import (
 
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/aoi"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/auth"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/combat"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/config"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/creature"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/encounter"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/engine"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/inventory"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/party"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/player"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/shop"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/world"
 	"github.com/zishang520/socket.io/v2/socket"
 )
 
-// Hub bridges Engine Emitter to Socket.IO rooms.
-type Hub struct {
-	cfg    config.Config
-	eng    *engine.Engine
-	parties *party.Manager
-	io     *socket.Server
-
-	mu       sync.RWMutex
-	sockets  map[string]*socket.Socket // socketID -> socket
-	rooms    map[string]map[string]struct{} // room -> socketIDs
-	userOf   map[string]string // socketID -> accountID
+// Deps bundles gameplay managers for the hub.
+type Deps struct {
+	Parties    *party.Manager
+	Inventory  *inventory.Manager
+	Combat     *combat.Manager
+	Encounters *encounter.Manager
 }
 
-func NewHub(cfg config.Config, eng *engine.Engine, parties *party.Manager) *Hub {
+// Hub bridges Engine Emitter to Socket.IO rooms.
+type Hub struct {
+	cfg   config.Config
+	eng   *engine.Engine
+	deps  Deps
+	io    *socket.Server
+
+	mu      sync.RWMutex
+	sockets map[string]*socket.Socket
+	rooms   map[string]map[string]struct{}
+	userOf  map[string]string
+}
+
+func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
+	if deps.Parties == nil {
+		deps.Parties = party.NewManager()
+	}
+	if deps.Inventory == nil {
+		deps.Inventory = inventory.NewManager()
+	}
+	if deps.Combat == nil {
+		deps.Combat = combat.NewManager()
+	}
+	if deps.Encounters == nil {
+		deps.Encounters = encounter.NewManager()
+	}
 	return &Hub{
 		cfg:     cfg,
 		eng:     eng,
-		parties: parties,
+		deps:    deps,
 		sockets: make(map[string]*socket.Socket),
 		rooms:   make(map[string]map[string]struct{}),
 		userOf:  make(map[string]string),
@@ -55,7 +80,7 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	if accountID == "" {
 		log.Printf("[socket] reject unauthenticated %s", sid)
 		client.Emit("error", map[string]string{"message": "unauthorized"})
-		_ = client.Disconnect(true)
+		client.Disconnect(true)
 		return
 	}
 
@@ -64,53 +89,60 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	h.userOf[sid] = accountID
 	h.mu.Unlock()
 
-	// One account = one lobby seat
 	if prev := h.eng.Players().SocketIDForAccount(accountID); prev != "" && prev != sid {
 		h.EmitToSocket(prev, protocol.EvSessionReplaced, map[string]string{"reason": "new_session"})
 		if prevSock := h.getSocket(prev); prevSock != nil {
-			_ = prevSock.Disconnect(true)
+			prevSock.Disconnect(true)
 		}
 	}
 
 	log.Printf("[socket] connected account=%s sid=%s", accountID, sid)
-	h.joinRoomLocked(sid, "user:"+accountID)
+	h.JoinRoom(sid, "user:"+accountID)
+	h.deps.Inventory.Ensure(accountID)
 	h.EmitToSocket(sid, protocol.EvPresenceUpdated, map[string]any{
 		"accountId": accountID, "status": "online",
 	})
+	h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": h.deps.Inventory.List(accountID)})
+	h.EmitToSocket(sid, protocol.EvSyncCredits, map[string]any{"credits": h.deps.Inventory.Credits(accountID)})
 
 	client.On(protocol.EvJoinMap, func(datas ...any) {
-		req := decodeJoin(datas)
-		h.handleJoinMap(client, accountID, req)
+		h.handleJoinMap(client, accountID, decodeJoin(datas))
 	})
 	client.On(protocol.EvInput, func(datas ...any) {
 		in := decodeInput(datas)
 		h.eng.Players().EnqueueInput(accountID, in)
+		if in.Type == "ATTACK" {
+			h.handleAttack(accountID, in.TargetID)
+		}
+	})
+	client.On(protocol.EvCombatAction, func(datas ...any) {
+		h.handleCombatAction(accountID, datas)
+	})
+	client.On(protocol.EvEncounterCheck, func(datas ...any) {
+		h.handleEncounter(accountID)
 	})
 	client.On(protocol.EvGlobalChat, func(datas ...any) {
-		msg := asString(datas, 0)
-		h.broadcastChat(accountID, msg, true)
+		h.broadcastChat(accountID, asString(datas, 0), true)
 	})
 	client.On(protocol.EvChatMessage, func(datas ...any) {
-		msg := asString(datas, 0)
-		h.broadcastChat(accountID, msg, false)
+		h.broadcastChat(accountID, asString(datas, 0), false)
 	})
 	client.On(protocol.EvPartyInvite, func(datas ...any) {
-		target := asString(datas, 0)
-		h.handlePartyInvite(accountID, target)
+		h.handlePartyInvite(accountID, asString(datas, 0))
 	})
 	client.On(protocol.EvPartyInviteAccept, func(datas ...any) {
 		h.handlePartyAccept(accountID)
 	})
 	client.On(protocol.EvPartyInviteDecline, func(datas ...any) {
-		h.parties.Decline(accountID)
+		h.deps.Parties.Decline(accountID)
 	})
 	client.On(protocol.EvPartyLeave, func(datas ...any) {
-		h.parties.Leave(accountID)
+		h.deps.Parties.Leave(accountID)
 		h.EmitToSocket(sid, protocol.EvPartyUpdate, map[string]any{"members": []string{}})
 	})
 	client.On(protocol.EvNPCInteract, func(datas ...any) {
 		h.EmitToSocket(sid, protocol.EvDialogueStart, map[string]any{
-			"id": "demo_welcome",
+			"id":    "demo_welcome",
 			"lines": []string{"Welcome to the Go MMO sandbox.", "Walk with WASD / arrows. Peers share your shard."},
 		})
 	})
@@ -118,21 +150,21 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		h.EmitToSocket(sid, protocol.EvDialogueEnd, map[string]any{})
 	})
 	client.On(protocol.EvShopCatalog, func(datas ...any) {
-		h.EmitToSocket(sid, "shop_catalog", map[string]any{
-			"items": []map[string]any{
-				{"id": "potion", "name": "Potion", "price": 25},
-				{"id": "revive", "name": "Revive Dust", "price": 100},
-			},
-		})
+		h.EmitToSocket(sid, "shop_catalog", map[string]any{"items": shop.DefaultCatalog()})
+	})
+	client.On(protocol.EvShopBuy, func(datas ...any) {
+		h.handleShopBuy(accountID, datas)
+	})
+	client.On(protocol.EvShopSell, func(datas ...any) {
+		h.handleShopSell(accountID, datas)
 	})
 	client.On(protocol.EvClaimStarter, func(datas ...any) {
+		items := h.deps.Inventory.AddItem(accountID, "starter_creature", "Starter", 1)
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Starter claimed (Go backend)"})
-		h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{
-			"items": []map[string]any{{"id": "starter_creature", "qty": 1}},
-		})
+		h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
 	})
 	client.On(protocol.EvForceDisconnect, func(datas ...any) {
-		_ = client.Disconnect(true)
+		client.Disconnect(true)
 	})
 	client.On("disconnect", func(datas ...any) {
 		h.onDisconnect(sid, accountID)
@@ -140,7 +172,6 @@ func (h *Hub) onConnect(client *socket.Socket) {
 }
 
 func (h *Hub) authenticate(client *socket.Socket) string {
-	// Handshake auth.token (dev bypass)
 	if h.cfg.DevAuthBypass {
 		if authData := client.Handshake().Auth; authData != nil {
 			if m, ok := authData.(map[string]any); ok {
@@ -152,14 +183,12 @@ func (h *Hub) authenticate(client *socket.Socket) string {
 			}
 		}
 	}
-	// Cookie JWT from request headers
 	if ctx := client.Request(); ctx != nil {
 		if s, err := auth.SessionFromRequest(ctx.Request(), h.cfg.AuthSecret); err == nil {
 			return s.UserID
 		}
 	}
 	if h.cfg.DevAuthBypass {
-		// Last resort for local smoke: anonymous ephemeral id
 		return "dev_" + string(client.Id())
 	}
 	return ""
@@ -173,7 +202,6 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		base = protocol.DemoMapID
 	}
 
-	// Leave prior instance
 	if prev := h.eng.Players().GetByAccount(accountID); prev != nil {
 		h.leaveAOI(sid, prev)
 		h.LeaveRoom(sid, prev.MapID)
@@ -209,7 +237,6 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 	h.JoinRoom(sid, inst.InstanceID)
 	h.joinAOI(sid, p)
 
-	// Seed creatures once per public shard when first player arrives
 	if inst.PlayerCount == 1 && world.IsPublicChannel(inst.InstanceID) && base == protocol.DemoMapID {
 		h.eng.Creatures().SeedDemoSpawns(inst.InstanceID)
 	}
@@ -220,15 +247,172 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		X:          p.X,
 		Y:          p.Y,
 	})
-	peers := h.eng.Players().SnapshotPeers(inst.InstanceID, accountID)
-	h.EmitToSocket(sid, protocol.EvMapPlayers, peers)
+	h.EmitToSocket(sid, protocol.EvMapPlayers, h.eng.Players().SnapshotPeers(inst.InstanceID, accountID))
 	h.EmitToRoom(inst.InstanceID, protocol.EvPlayerJoined, p.Peer())
-
 	for _, c := range h.eng.Creatures().List(inst.InstanceID) {
 		h.EmitToSocket(sid, protocol.EvCreatureSpawned, c)
 	}
-
 	log.Printf("[socket] join_map account=%s base=%s instance=%s", accountID, base, inst.InstanceID)
+}
+
+func (h *Hub) handleEncounter(accountID string) {
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil {
+		return
+	}
+	tile := protocol.TileGrass
+	if def, ok := h.eng.World().GetDef(p.BaseMapID); ok {
+		ix, iy := int(p.X), int(p.Y)
+		if iy >= 0 && iy < len(def.Grid) && ix >= 0 && ix < len(def.Grid[iy]) {
+			tile = def.Grid[iy][ix]
+		}
+	}
+	res := h.deps.Encounters.Check(accountID, tile)
+	if !res.Triggered {
+		return
+	}
+	spawned := h.eng.Creatures().Spawn(p.MapID, creature.Entity{
+		Species: res.Species, Name: res.Species, X: p.X + 1, Y: p.Y,
+		Sprite: res.Species, Hostile: true, Level: res.Level, MaxHP: 40 + res.Level*5,
+	})
+	sess := h.deps.Combat.Start(accountID, spawned.ID, p.MapID, p.HP, spawned.HP)
+	h.EmitToSocket(p.SocketID, protocol.EvBattleStarted, map[string]any{
+		"combatId": sess.ID, "species": res.Species, "level": res.Level,
+		"creatureId": spawned.ID, "hp": spawned.HP, "maxHp": spawned.MaxHP,
+	})
+	h.EmitToRoom(p.MapID, protocol.EvCreatureSpawned, spawned)
+}
+
+func (h *Hub) handleAttack(accountID, targetID string) {
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil {
+		return
+	}
+	sess := h.deps.Combat.GetByPlayer(accountID)
+	if sess == nil && targetID != "" {
+		sess = h.deps.Combat.Start(accountID, targetID, p.MapID, p.HP, 50)
+		h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{"combatId": sess.ID, "phase": "start"})
+	}
+	if sess == nil {
+		return
+	}
+	sess = h.deps.Combat.ApplyPlayerHit(accountID, 10)
+	h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{
+		"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
+	})
+	if sess.Ended {
+		h.EmitToSocket(p.SocketID, protocol.EvBattleEnded, map[string]any{"winner": sess.Winner, "combatId": sess.ID})
+		if sess.Winner == "player" {
+			h.eng.Creatures().Despawn(p.MapID, sess.CreatureID)
+			h.EmitToRoom(p.MapID, protocol.EvCreatureDespawned, map[string]string{"id": sess.CreatureID})
+			items := h.deps.Inventory.AddItem(accountID, "loot_scrap", "Scrap", 1)
+			h.deps.Inventory.AddCredits(accountID, 15)
+			h.EmitToSocket(p.SocketID, protocol.EvInventorySync, map[string]any{"items": items})
+			h.EmitToSocket(p.SocketID, protocol.EvSyncCredits, map[string]any{"credits": h.deps.Inventory.Credits(accountID)})
+		} else {
+			h.EmitToSocket(p.SocketID, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
+		}
+	} else {
+		sess = h.deps.Combat.ApplyCreatureHit(accountID, 6)
+		h.EmitToSocket(p.SocketID, protocol.EvCombatUpdate, map[string]any{
+			"combatId": sess.ID, "creatureHp": sess.CreatureHP, "playerHp": sess.PlayerHP, "ended": sess.Ended, "winner": sess.Winner,
+		})
+		if sess.Ended {
+			h.EmitToSocket(p.SocketID, protocol.EvBattleEnded, map[string]any{"winner": sess.Winner, "combatId": sess.ID})
+			h.EmitToSocket(p.SocketID, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
+		}
+	}
+}
+
+func (h *Hub) handleCombatAction(accountID string, datas []any) {
+	action := "attack"
+	if len(datas) > 0 {
+		b, _ := json.Marshal(datas[0])
+		var m map[string]any
+		if json.Unmarshal(b, &m) == nil {
+			if a, ok := m["action"].(string); ok {
+				action = a
+			}
+			if t, ok := m["targetId"].(string); ok {
+				h.handleAttack(accountID, t)
+				return
+			}
+		}
+	}
+	if action == "flee" {
+		h.deps.Combat.End(accountID)
+		if p := h.eng.Players().GetByAccount(accountID); p != nil {
+			h.EmitToSocket(p.SocketID, protocol.EvBattleEnded, map[string]any{"winner": "flee"})
+		}
+		return
+	}
+	h.handleAttack(accountID, "")
+}
+
+func (h *Hub) handleShopBuy(accountID string, datas []any) {
+	id, qty := "potion", 1
+	if len(datas) > 0 {
+		b, _ := json.Marshal(datas[0])
+		var m map[string]any
+		if json.Unmarshal(b, &m) == nil {
+			if v, ok := m["itemId"].(string); ok {
+				id = v
+			}
+			if v, ok := m["id"].(string); ok {
+				id = v
+			}
+			if v, ok := m["qty"].(float64); ok {
+				qty = int(v)
+			}
+		}
+	}
+	cat, ok := shop.Find(id)
+	p := h.eng.Players().GetByAccount(accountID)
+	sid := ""
+	if p != nil {
+		sid = p.SocketID
+	} else {
+		sid = h.eng.Players().SocketIDForAccount(accountID)
+	}
+	if !ok {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "unknown item"})
+		return
+	}
+	okBuy, credits, items := h.deps.Inventory.Buy(accountID, cat.ID, cat.Name, cat.Price, qty)
+	if !okBuy {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "not enough credits"})
+		return
+	}
+	h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
+	h.EmitToSocket(sid, protocol.EvSyncCredits, map[string]any{"credits": credits})
+}
+
+func (h *Hub) handleShopSell(accountID string, datas []any) {
+	id, qty := "potion", 1
+	if len(datas) > 0 {
+		b, _ := json.Marshal(datas[0])
+		var m map[string]any
+		if json.Unmarshal(b, &m) == nil {
+			if v, ok := m["itemId"].(string); ok {
+				id = v
+			}
+			if v, ok := m["qty"].(float64); ok {
+				qty = int(v)
+			}
+		}
+	}
+	p := h.eng.Players().GetByAccount(accountID)
+	sid := ""
+	if p != nil {
+		sid = p.SocketID
+	}
+	okSell, credits, items := h.deps.Inventory.Sell(accountID, id, 10, qty)
+	if !okSell {
+		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "cannot sell"})
+		return
+	}
+	h.EmitToSocket(sid, protocol.EvInventorySync, map[string]any{"items": items})
+	h.EmitToSocket(sid, protocol.EvSyncCredits, map[string]any{"credits": credits})
 }
 
 func (h *Hub) onDisconnect(sid, accountID string) {
@@ -239,6 +423,7 @@ func (h *Hub) onDisconnect(sid, accountID string) {
 		h.eng.World().LeaveInstance(p.MapID)
 		h.EmitToRoom(p.MapID, protocol.EvPlayerLeft, map[string]string{"socketId": p.SocketID, "entityId": p.EntityID})
 	}
+	h.deps.Combat.End(accountID)
 	h.mu.Lock()
 	delete(h.sockets, sid)
 	delete(h.userOf, sid)
@@ -247,13 +432,11 @@ func (h *Hub) onDisconnect(sid, accountID string) {
 }
 
 func (h *Hub) joinAOI(sid string, p *player.State) {
-	room := aoi.RoomName(p.MapID, p.ZoneX, p.ZoneY)
-	h.JoinRoom(sid, room)
+	h.JoinRoom(sid, aoi.RoomName(p.MapID, p.ZoneX, p.ZoneY))
 }
 
 func (h *Hub) leaveAOI(sid string, p *player.State) {
-	room := aoi.RoomName(p.MapID, p.ZoneX, p.ZoneY)
-	h.LeaveRoom(sid, room)
+	h.LeaveRoom(sid, aoi.RoomName(p.MapID, p.ZoneX, p.ZoneY))
 }
 
 func (h *Hub) broadcastChat(accountID, msg string, global bool) {
@@ -277,30 +460,27 @@ func (h *Hub) broadcastChat(accountID, msg string, global bool) {
 }
 
 func (h *Hub) handlePartyInvite(leader, targetName string) {
-	// Resolve target by display name (simple scan)
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-	var targetAccount string
-	for _, p := range h.eng.Players().ListOnInstance("") {
-		_ = p
+	accounts := make([]string, 0, len(h.userOf))
+	for _, aid := range h.userOf {
+		accounts = append(accounts, aid)
 	}
-	// Fallback: treat targetName as account id
-	targetAccount = targetName
-	for _, sock := range h.sockets {
-		aid := h.userOf[string(sock.Id())]
+	h.mu.RUnlock()
+	for _, aid := range accounts {
 		st := h.eng.Players().GetByAccount(aid)
-		if st != nil && (st.Name == targetName || aid == targetName) {
-			targetAccount = aid
-			h.parties.Invite(leader, targetAccount)
+		if st == nil {
+			continue
+		}
+		if st.Name == targetName || aid == targetName {
+			h.deps.Parties.Invite(leader, aid)
 			h.EmitToSocket(st.SocketID, protocol.EvPartyInviteEvt, map[string]string{"from": leader})
 			return
 		}
 	}
-	_ = targetAccount
 }
 
 func (h *Hub) handlePartyAccept(accountID string) {
-	p := h.parties.Accept(accountID)
+	p := h.deps.Parties.Accept(accountID)
 	if p == nil {
 		return
 	}
@@ -313,19 +493,16 @@ func (h *Hub) handlePartyAccept(accountID string) {
 	}
 }
 
-// --- Emitter interface ---
-
 func (h *Hub) EmitToSocket(socketID, event string, payload any) {
 	s := h.getSocket(socketID)
 	if s == nil {
 		return
 	}
-	s.Emit(event, payload)
+	_ = s.Emit(event, payload)
 }
 
 func (h *Hub) EmitToRoom(room, event string, payload any) {
 	if strings.HasPrefix(room, "aoi-broadcast:") {
-		// aoi-broadcast:instance:zx:zy
 		parts := strings.Split(room, ":")
 		if len(parts) == 4 {
 			inst := parts[1]
@@ -402,8 +579,6 @@ func (h *Hub) getSocket(id string) *socket.Socket {
 	defer h.mu.RUnlock()
 	return h.sockets[id]
 }
-
-// --- decode helpers ---
 
 func decodeJoin(datas []any) protocol.JoinMapRequest {
 	var req protocol.JoinMapRequest
