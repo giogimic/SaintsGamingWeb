@@ -108,6 +108,30 @@ async function main() {
   const bSeesA = Object.keys(peers || {}).length >= 1;
   const aSeesB = peerJoin?.name === "SmokeB";
 
+  // Join-storm regression: A re-emits join_map (same socket). Soft rejoin must
+  // NOT permanently player_left A — B should still see A (or get player_joined).
+  let aLeftB = false;
+  const onLeft = (data: { socketId?: string }) => {
+    if (data?.socketId === sa.id) aLeftB = true;
+  };
+  sb.on("player_left", onLeft);
+  const aRejoined = once<{ instanceId?: string }>(sa, "map_joined");
+  const peersAfterStorm = once<Record<string, unknown>>(sa, "map_players");
+  sa.emit("join_map", {
+    mapId: "DEMO_SANDBOX",
+    lobby: true,
+    name: "SmokeA",
+    x: 10,
+    y: 10,
+  });
+  const [mapA2, peers2] = await Promise.all([aRejoined, peersAfterStorm]);
+  // Give B a beat to receive any leave/join
+  await new Promise((r) => setTimeout(r, 300));
+  sb.off("player_left", onLeft);
+
+  const stillSameShard = mapA2.instanceId === mapA.instanceId;
+  const aStillSeesB = Object.keys(peers2 || {}).length >= 1;
+
   sa.disconnect();
   sb.disconnect();
   await prisma.$disconnect();
@@ -120,8 +144,25 @@ async function main() {
     console.error("[smoke-lobby-mp] FAIL: peers not visible", { bSeesA, aSeesB });
     process.exit(1);
   }
+  if (!stillSameShard || !aStillSeesB) {
+    console.error("[smoke-lobby-mp] FAIL: soft rejoin lost seat/peers", {
+      stillSameShard,
+      aStillSeesB,
+      mapA2,
+      aLeftB,
+    });
+    process.exit(1);
+  }
+  if (aLeftB) {
+    console.error("[smoke-lobby-mp] FAIL: soft rejoin emitted player_left to peer");
+    process.exit(1);
+  }
 
-  console.log("[smoke-lobby-mp] PASS same shard", mapA.instanceId, "+ mutual visibility");
+  console.log(
+    "[smoke-lobby-mp] PASS same shard",
+    mapA.instanceId,
+    "+ mutual visibility + soft rejoin"
+  );
 }
 
 main().catch(async (err) => {
