@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/maps?gameId=tuxemon
  * Lists WorldMap index rows for lobby/editor map pickers.
