@@ -41,3 +41,7 @@ Manual `/lobby`:
 
 **Merged:** #40 → `main` (`e1c0619`)  
 **Browser confirm (2026-08-06):** `/lobby` as `mp_vis_a` — own avatar + ~7 NPC sprites on Saints Trail Sandbox grass (not grass-only). Screenshot: `/tmp/computer-use/5b4b2.webp`.
+
+## Hotfix — Docker build type error
+
+`prev as Record<string, unknown>` failed under `tsc` (`GameMapData` has no index signature). Pass `GameMapData` directly into `shouldKeepActiveMapData` (accepts `MapIdDoc`).
