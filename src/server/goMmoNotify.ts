@@ -66,3 +66,37 @@ export async function notifyGoMapSynced(payload: {
     return { ok: false, error: msg };
   }
 }
+
+export async function notifyGoDialogueSynced(): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const base = goMmoInternalBase();
+  if (!base) {
+    return { ok: true, skipped: true };
+  }
+  const secret =
+    process.env.GO_MMO_INTERNAL_SECRET ||
+    process.env.SAINTS_INTERNAL_SECRET ||
+    process.env.AUTH_SECRET ||
+    "";
+  if (!secret) {
+    return { ok: false, error: "missing secret" };
+  }
+
+  try {
+    const res = await fetch(`${base}/api/internal/sync-dialogue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${secret}`,
+      },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      return { ok: false, error: `http ${res.status}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, error: msg };
+  }
+}

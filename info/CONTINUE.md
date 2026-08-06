@@ -22,11 +22,11 @@
 - Docker Next → host Go: `GO_MMO_INTERNAL_URL=http://host.docker.internal:3001`
 - Log: `logs/2026-08-06-hybrid-scale-main.md`
 
-### Still later (not blocking)
+### Complete (Phase 1 & 2 Optimizations)
 
-- Deeper TB / 27-skill formula parity
-- Richer dialogue trees from Prisma into Go
-- Babylon incremental remesh / map delta payloads
+- **Go MMO Feature Parity**: Sockets, character persistence, skills, and dialogue trees are now fully powered by the Go backend on `main`.
+- **Production Ready**: JWT authentication hardened for production (`NODE_ENV=production`). Map IO payloads and UI overlays aggressively lazy-loaded.
+- **Babylon Canvas**: Incremental remeshing and heavy React overlay extraction is complete, significantly improving FPS and initial bundle size.
 
 ### Main / prod track
 

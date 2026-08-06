@@ -4,6 +4,7 @@ import { prisma } from "@/web/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "./game-admin";
 import { invalidateDialogueCache } from "@/server/dialogueCache";
+import { notifyGoDialogueSynced } from "@/server/goMmoNotify";
 
 export type DialogueOptionInput = {
   label: string;
@@ -126,6 +127,7 @@ export async function upsertNpcDialogueTree(input: {
     invalidateDialogueCache(npcId);
     revalidatePath("/studio");
     revalidatePath("/lobby");
+    void notifyGoDialogueSynced();
     return { success: true };
   } catch (err) {
     console.error("[upsertNpcDialogueTree]", err);
@@ -140,6 +142,7 @@ export async function deleteNpcDialogueTree(npcId: string) {
     await prisma.npcDialogueTree.delete({ where: { npcId } });
     invalidateDialogueCache(npcId);
     revalidatePath("/studio");
+    void notifyGoDialogueSynced();
     return { success: true };
   } catch (err) {
     console.error("[deleteNpcDialogueTree]", err);

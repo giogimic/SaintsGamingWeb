@@ -78,9 +78,10 @@ func main() {
 	hub.Attach(io)
 
 	api := &httpapi.Server{
-		DB:     sqlDB,
-		World:  wm,
-		Secret: cfg.AuthSecret,
+		DB:       sqlDB,
+		World:    wm,
+		Dialogue: deps.Dialogue,
+		Secret:   cfg.AuthSecret,
 		OnMapSynced: func(mapID string) {
 			hub.BroadcastAll(protocol.EvMapReloaded, map[string]string{"mapId": mapID})
 		},
