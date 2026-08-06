@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-06 (P0–P12 on main; lobby MP join-storm fix)  
+**Last updated:** 2026-08-06 (P0–P12 + #38 on main; peer wipe / base instanceId fix)  
 **Point every new session at this file first.**
 
 ---
@@ -11,14 +11,15 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#37 (product gaps → … → player stubs)  
-2. **In flight:** Lobby MP peer visibility (join-storm) — `logs/2026-08-06-lobby-mp-join-storm-fix.md`  
-3. **After merge:** two-browser `/lobby` confirm + Trail polish — not foundation rebuild
+1. **Done on main:** #28–#38 (incl. join-storm soft rejoin)  
+2. **In flight:** Lobby MP peer wipe while `instanceId` still base — `logs/2026-08-06-lobby-mp-peer-wipe-base-instance.md`  
+3. **After merge:** two-browser `/lobby` confirm (toast “is nearby” + sprites)
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
 | **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
-| **MP fix** | Join-storm soft rejoin + peer wipe guard | **This branch** |
+| **MP #38** | Join-storm soft rejoin | **On main** |
+| **MP follow-up** | Base `instanceId` empty-snapshot wipe + Babylon dispose gap | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 

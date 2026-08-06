@@ -185,7 +185,7 @@ export class PlayerManager {
       room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
     });
 
-    this.sendMapPlayersSnapshot(player);
+    // map_joined before map_players so the client arms shard/peer guards first
     this.engine.events.emit("directMessage", {
       socketId: player.socketId,
       event: "map_joined",
@@ -196,6 +196,7 @@ export class PlayerManager {
         y: player.y,
       },
     });
+    this.sendMapPlayersSnapshot(player);
 
     // Meta refresh for peers (same socketId — client upserts, does not ghost)
     this.engine.events.emit("networkBroadcast", {
@@ -376,10 +377,7 @@ export class PlayerManager {
       room: InterestManager.roomKey(player.mapId, player.zoneX, player.zoneY),
     });
 
-    // Send full map state to the new player
-    this.sendMapPlayersSnapshot(player);
-
-    // Notify the client what shard they are in (always the playable base map id)
+    // Notify shard id before peer snapshot so client guards arm first
     this.engine.events.emit("directMessage", {
       socketId,
       event: "map_joined",
@@ -390,6 +388,9 @@ export class PlayerManager {
         y: player.y,
       }
     });
+
+    // Send full map state to the new player
+    this.sendMapPlayersSnapshot(player);
 
     // Snapshot NPCs / wild creatures already in this shard (Vance, Rockitten)
     let mapCreatures: any[] = [];

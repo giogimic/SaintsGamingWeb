@@ -200,9 +200,12 @@ export default function TheLobby({
       });
       useGameStore.setState({
         currentMapId: validMapId,
-        instanceId: validMapId,
+        // Never pretend we're seated on a public shard until map_joined
+        // delivers DEMO_SANDBOX_chN — a base instanceId disabled peer-wipe guards.
+        instanceId: '',
         gameMode: 'EXPLORING',
         mapEntities: [], // clear stale placeholders; socket will repopulate
+        otherPlayers: {}, // fresh seat; map_players / player_joined refill
       });
 
       // Notify socket server of loaded character specs (base map id only — never shard suffix)
@@ -530,6 +533,8 @@ export default function TheLobby({
           incomingCount,
           existingCount,
           currentInstanceId: state.instanceId,
+          // /lobby public seat — keep peers through base-id / join races
+          lobbySeat: !enableStudio,
         })
       ) {
         if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
@@ -552,6 +557,11 @@ export default function TheLobby({
     socket.on('player_joined', (data) => {
       if (data.socketId !== socket.id) {
         useGameStore.getState().updateOtherPlayer(data.socketId, data);
+        // Visible confirmation that the peer store received the join (helps
+        // separate "not on shard" from "sprite not rendering").
+        if (!enableStudio && data?.name) {
+          useGameStore.getState().showToast(`${data.name} is nearby`);
+        }
       }
     });
     
