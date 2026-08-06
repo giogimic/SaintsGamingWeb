@@ -5,6 +5,7 @@ import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { validateMapSave } from "@/shared/game/mapSaveValidation";
 import { normalizeStudioMapVisuals } from "@/shared/game/studioMapCreate";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
+import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 
 async function loadMapPayload(slug: string) {
@@ -208,6 +209,16 @@ export async function POST(
         npcs: JSON.stringify(body.npcs || []),
         encounters: JSON.stringify(body.encounterPool || []),
       },
+    });
+
+    // Hybrid: Next remains map writer; push live world to Go when enabled.
+    void notifyGoMapSynced({
+      id: worldMap.id,
+      name: worldMap.name,
+      gridData: body.grid ?? JSON.parse(worldMap.gridData || "[]"),
+      npcsData: body.npcs ?? JSON.parse(worldMap.npcsData || "[]"),
+      tileLayersData: visualsForWrite?.tileLayers ?? JSON.parse(worldMap.tileLayersData || "[]"),
+      tilesetsData: visualsForWrite?.tilesets ?? JSON.parse(worldMap.tilesetsData || "[]"),
     });
 
     return NextResponse.json({ success: true, map: { id: worldMap.id, version: worldMap.version } });

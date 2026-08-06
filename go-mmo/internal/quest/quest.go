@@ -1,6 +1,11 @@
 package quest
 
-import "sync"
+import (
+	"database/sql"
+	"sync"
+
+	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/persist"
+)
 
 // Def is a quest template.
 type Def struct {
@@ -17,17 +22,23 @@ type Progress struct {
 	Objective map[string]int `json:"objective"`
 }
 
-// Manager tracks Saints Trail-style quests in memory.
+// Manager tracks Saints Trail-style quests with optional SQLite persistence.
 type Manager struct {
 	mu    sync.RWMutex
 	defs  map[string]Def
 	byAcc map[string]map[string]*Progress
+	store *persist.Store
 }
 
-func NewManager() *Manager {
+func NewManager(db *sql.DB) *Manager {
+	var store *persist.Store
+	if db != nil {
+		store = &persist.Store{DB: db}
+	}
 	m := &Manager{
 		defs:  make(map[string]Def),
 		byAcc: make(map[string]map[string]*Progress),
+		store: store,
 	}
 	m.defs["saints_trail_intro"] = Def{
 		Slug: "saints_trail_intro", Name: "Saints Trail: First Steps",
@@ -42,6 +53,32 @@ func NewManager() *Manager {
 	return m
 }
 
+func (m *Manager) ensureLoaded(accountID string) {
+	if _, ok := m.byAcc[accountID]; ok {
+		return
+	}
+	bag := make(map[string]*Progress)
+	if m.store != nil {
+		for _, qp := range m.store.LoadQuests(accountID) {
+			obj := qp.Objective
+			if obj == nil {
+				obj = map[string]int{}
+			}
+			bag[qp.Slug] = &Progress{Slug: qp.Slug, Status: qp.Status, Objective: obj}
+		}
+	}
+	m.byAcc[accountID] = bag
+}
+
+func (m *Manager) flush(accountID string, p *Progress) {
+	if m.store == nil || p == nil {
+		return
+	}
+	m.store.SaveQuest(accountID, persist.QuestProg{
+		Slug: p.Slug, Status: p.Status, Objective: p.Objective,
+	})
+}
+
 func (m *Manager) Accept(accountID, slug string) *Progress {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -49,11 +86,8 @@ func (m *Manager) Accept(accountID, slug string) *Progress {
 	if !ok {
 		return nil
 	}
-	bag, ok := m.byAcc[accountID]
-	if !ok {
-		bag = make(map[string]*Progress)
-		m.byAcc[accountID] = bag
-	}
+	m.ensureLoaded(accountID)
+	bag := m.byAcc[accountID]
 	if p, exists := bag[slug]; exists {
 		return p
 	}
@@ -63,12 +97,14 @@ func (m *Manager) Accept(accountID, slug string) *Progress {
 	}
 	p := &Progress{Slug: slug, Status: "active", Objective: obj}
 	bag[slug] = p
+	m.flush(accountID, p)
 	return p
 }
 
 func (m *Manager) Advance(accountID, objective string, delta int) []*Progress {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.ensureLoaded(accountID)
 	bag := m.byAcc[accountID]
 	out := make([]*Progress, 0)
 	for _, p := range bag {
@@ -87,6 +123,7 @@ func (m *Manager) Advance(accountID, objective string, delta int) []*Progress {
 			if complete {
 				p.Status = "complete"
 			}
+			m.flush(accountID, p)
 			cp := *p
 			out = append(out, &cp)
 		}
@@ -95,6 +132,9 @@ func (m *Manager) Advance(accountID, objective string, delta int) []*Progress {
 }
 
 func (m *Manager) List(accountID string) []Progress {
+	m.mu.Lock()
+	m.ensureLoaded(accountID)
+	m.mu.Unlock()
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	out := make([]Progress, 0)

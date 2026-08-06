@@ -346,31 +346,44 @@ async function seedDemoQuests() {
  * Ensure MapLogicTile defs + DEMO_SANDBOX exist.
  * Safe for boot AND for map API lazy-heal when production DB was never seeded
  * (boot seed skipped / failed → empty /api/maps → Studio/lobby grass-only).
+ * Concurrent callers share one in-flight promise (stampede-proof).
  */
+let foundationInflight: Promise<{
+  logicTiles: boolean;
+  demoMap: boolean;
+  error?: string;
+}> | null = null;
+
 export async function ensureStudioMapFoundation(): Promise<{
   logicTiles: boolean;
   demoMap: boolean;
   error?: string;
 }> {
-  let logicTiles = false;
-  let demoMap = false;
-  try {
-    await seedLogicTiles();
-    logicTiles = true;
-  } catch (e) {
-    const msg = (e as Error).message;
-    console.warn("[DemoBootstrap] Logic tiles seed skipped:", msg);
-    return { logicTiles, demoMap, error: msg };
-  }
-  try {
-    await seedDemoMap();
-    demoMap = true;
-  } catch (e) {
-    const msg = (e as Error).message;
-    console.warn("[DemoBootstrap] DEMO_SANDBOX seed skipped:", msg);
-    return { logicTiles, demoMap, error: msg };
-  }
-  return { logicTiles, demoMap };
+  if (foundationInflight) return foundationInflight;
+  foundationInflight = (async () => {
+    let logicTiles = false;
+    let demoMap = false;
+    try {
+      await seedLogicTiles();
+      logicTiles = true;
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.warn("[DemoBootstrap] Logic tiles seed skipped:", msg);
+      return { logicTiles, demoMap, error: msg };
+    }
+    try {
+      await seedDemoMap();
+      demoMap = true;
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.warn("[DemoBootstrap] DEMO_SANDBOX seed skipped:", msg);
+      return { logicTiles, demoMap, error: msg };
+    }
+    return { logicTiles, demoMap };
+  })().finally(() => {
+    foundationInflight = null;
+  });
+  return foundationInflight;
 }
 
 /** Idempotent demo seed — safe to run on every server boot. */

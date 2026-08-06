@@ -1,5 +1,14 @@
 # Local Changelog
 
+## 2026-08-06 — Hybrid scale on main
+
+- Go SQLite persist: inventory, quests, player seat
+- Next → Go `sync-map` after `/api/maps` save; foundation single-flight
+- `server.ts` gates TS GameEngine when Go URL set
+- Log: `logs/2026-08-06-hybrid-scale-main.md`
+
+---
+
 ## 2026-08-06 — Setup offers Go MMO (destination realtime)
 
 - `scripts/setup.sh`: enable Go MMO for lobby/Studio (recommended); subdomain + `.env` + `--full` docker setup.

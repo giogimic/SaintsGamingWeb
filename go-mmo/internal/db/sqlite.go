@@ -97,6 +97,28 @@ func migrate(db *sql.DB) error {
 			catchRate REAL DEFAULT 1,
 			starterLevel INTEGER DEFAULT 5
 		)`,
+		`CREATE TABLE IF NOT EXISTS GoPlayerState (
+			accountId TEXT PRIMARY KEY,
+			mapId TEXT NOT NULL DEFAULT 'DEMO_SANDBOX',
+			x REAL NOT NULL DEFAULT 5,
+			y REAL NOT NULL DEFAULT 5,
+			credits INTEGER NOT NULL DEFAULT 100,
+			updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+		)`,
+		`CREATE TABLE IF NOT EXISTS GoInventory (
+			accountId TEXT NOT NULL,
+			itemId TEXT NOT NULL,
+			name TEXT NOT NULL,
+			qty INTEGER NOT NULL,
+			PRIMARY KEY (accountId, itemId)
+		)`,
+		`CREATE TABLE IF NOT EXISTS GoQuestProgress (
+			accountId TEXT NOT NULL,
+			slug TEXT NOT NULL,
+			status TEXT NOT NULL,
+			objectiveJson TEXT NOT NULL DEFAULT '{}',
+			PRIMARY KEY (accountId, slug)
+		)`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {
