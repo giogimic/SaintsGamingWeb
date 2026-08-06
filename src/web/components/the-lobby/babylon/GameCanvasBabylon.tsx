@@ -113,24 +113,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       setMapData((prev) => {
         // Same object — no-op (avoids Babylon remount).
         if (prev === activeMapData) return prev;
-        if (prev && shouldKeepActiveMapData(prev as Record<string, unknown>, currentMapId)) {
-          const prevNpcs = Array.isArray((prev as { npcs?: unknown[] }).npcs)
-            ? (prev as { npcs: unknown[] }).npcs.length
-            : 0;
-          const nextNpcs = Array.isArray((activeMapData as { npcs?: unknown[] }).npcs)
-            ? (activeMapData as { npcs: unknown[] }).npcs.length
-            : 0;
-          const prevTiles = Array.isArray((prev as { tilesets?: unknown[] }).tilesets)
-            ? (prev as { tilesets: unknown[] }).tilesets.length
-            : 0;
-          const nextTiles = Array.isArray((activeMapData as { tilesets?: unknown[] }).tilesets)
-            ? (activeMapData as { tilesets: unknown[] }).tilesets.length
+        if (prev && shouldKeepActiveMapData(prev, currentMapId)) {
+          const prevNpcs = Array.isArray(prev.npcs) ? prev.npcs.length : 0;
+          const nextNpcs = Array.isArray(activeMapData.npcs) ? activeMapData.npcs.length : 0;
+          const prevTiles = Array.isArray(prev.tilesets) ? prev.tilesets.length : 0;
+          const nextTiles = Array.isArray(activeMapData.tilesets)
+            ? activeMapData.tilesets.length
             : 0;
           // Keep engine-stable ref unless the store doc is clearly richer (NPCs /
           // tilesets arrived after a barren first paint).
           if (nextNpcs <= prevNpcs && nextTiles <= prevTiles) return prev;
         }
-        return activeMapData;
+        return activeMapData as GameMapData;
       });
       setIsEngineReady(true);
       return;
@@ -140,7 +134,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // disposed Babylon with no replacement and hid peer sprites mid-join.
     setIsEngineReady(false);
     setMapData((prev) => {
-      if (prev && shouldKeepActiveMapData(prev as Record<string, unknown>, currentMapId)) {
+      if (prev && shouldKeepActiveMapData(prev, currentMapId)) {
         return prev;
       }
       return null;
