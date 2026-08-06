@@ -16,6 +16,35 @@ import {
   formatMapWriteError,
   normalizeStudioMapVisuals,
 } from '@/shared/game/studioMapCreate';
+import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
+
+/** After Next `/api/maps` save: sync Go live world (or TS cache reload). */
+function notifyLiveMapSync(
+  emit: ((event: string, data: any) => void) | undefined,
+  mapId: string,
+  payload: {
+    name?: string;
+    grid?: unknown;
+    npcs?: unknown;
+    tileLayers?: unknown;
+    tilesets?: unknown;
+  }
+) {
+  if (!emit) return;
+  if (isGoMmoSocketEnabled()) {
+    // Go admin_reload alone does not read Next Prisma — push the doc so walk/collision match paint.
+    emit('admin_save_map', {
+      mapId,
+      name: payload.name || mapId,
+      gridData: payload.grid ?? [],
+      npcsData: payload.npcs ?? [],
+      tileLayersData: payload.tileLayers ?? [],
+      tilesetsData: payload.tilesets ?? [],
+    });
+  } else {
+    emit('admin_reload_map', { mapId });
+  }
+}
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -155,8 +184,7 @@ export const WorldBuilderPanel: React.FC = () => {
         return;
       }
       invalidateMapCache(baseMapId);
-      // Notify server + peers to hot-reload from WorldMap (shard-safe global broadcast).
-      emitSocketEvent?.('admin_reload_map', { mapId: baseMapId });
+      notifyLiveMapSync(emitSocketEvent, baseMapId, payload);
       useEditorStore.getState().clearMapDirty();
       showToast(`Saved map ${baseMapId}`);
     } catch (e: any) {
@@ -207,7 +235,13 @@ export const WorldBuilderPanel: React.FC = () => {
       registerNewMap(newMapData);
       useGameStore.setState({ currentMapId: newMapData.id, activeMapData: newMapData });
       useEditorStore.getState().clearMapDirty();
-      emitSocketEvent?.('admin_reload_map', { mapId: newMapData.id });
+      notifyLiveMapSync(emitSocketEvent, newMapData.id, {
+        name: newMapData.name,
+        grid: newMapData.grid,
+        npcs: newMapData.npcs,
+        tileLayers: newMapData.tileLayers,
+        tilesets: newMapData.tilesets,
+      });
       setIsCreatingNewMap(false);
       setNewMapSlug('');
       setNewMapName('');
