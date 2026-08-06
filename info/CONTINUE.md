@@ -1,6 +1,6 @@
 # CONTINUE HERE — Dev Handoff
 
-**Last updated:** 2026-08-05 (P0–P11 on main; P12 player stubs this PR)  
+**Last updated:** 2026-08-06 (P0–P12 on main; lobby MP join-storm fix)  
 **Point every new session at this file first.**
 
 ---
@@ -11,18 +11,14 @@
 
 One PR → merge to `main` → then next:
 
-1. **Done on main:** #28–#36 (product gaps → … → catalog def undo → manual smokes)  
-2. **In flight:** Party invite + TB creature swap — `logs/2026-08-05-lobby-player-stubs.md`  
-3. **After merge:** polish / Trail content — not foundation rebuild
+1. **Done on main:** #28–#37 (product gaps → … → player stubs)  
+2. **In flight:** Lobby MP peer visibility (join-storm) — `logs/2026-08-06-lobby-mp-join-storm-fix.md`  
+3. **After merge:** two-browser `/lobby` confirm + Trail polish — not foundation rebuild
 
 | Priority | Issue | Status |
 | :--- | :--- | :--- |
-| **P0–P7** | Depth → NPC live spawn | **On main** (#28–#32) |
-| **P8** | Warp/spawn author overlays | **On main** (#33) |
-| **P9** | NPC edit/delete/live despawn | **On main** (#34) |
-| **P10** | Manual smokes (create/save + lobby MP) | **On main** (#36) |
-| **P11** | Definition undo Creature + Dialogue | **On main** (#35) |
-| **P12** | Party invite + TB creature swap | **This branch** (#37) |
+| **P0–P12** | Depth → party invite / TB swap | **On main** (#28–#37) |
+| **MP fix** | Join-storm soft rejoin + peer wipe guard | **This branch** |
 
 Strip pause remains lifted. Editor foundation Phase 1–2f is on `main` — do not rebuild it.
 

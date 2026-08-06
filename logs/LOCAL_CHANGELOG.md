@@ -1,5 +1,12 @@
 # Local Changelog
 
+## 2026-08-06 — Lobby MP join-storm / peer wipe
+
+Soft rejoin same socket on public shard; coalesce late `join_map`; empty `map_players` no longer wipes peers.  
+See `logs/2026-08-06-lobby-mp-join-storm-fix.md`.
+
+---
+
 ## 2026-08-05 — Party invite + TB creature swap
 
 Real party invite accept/decline path; Turn Battle CREATURES switches to next healthy party member.  
