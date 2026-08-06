@@ -12,7 +12,7 @@ ideas/contracts (Socket.IO events, DEMO_SANDBOX shards, Auth.js JWT), as a
 ## Status: BACKEND CONVERSION COMPLETE (parity pass)
 
 All `SocketHandler.ts` client events are implemented on the Go hub. Heavy
-sim/net path runs in Go on `:3100`. Studio map save/reload/NPC spawn work
+sim/net path runs in Go on `:3001` (existing Caddy → subdomain). Studio map save/reload/NPC spawn work
 over sockets + REST. Full Studio UI rewrite in Go remains **optional / later**.
 
 ### Socket event parity (TS → Go)
