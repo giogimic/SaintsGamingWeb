@@ -4,10 +4,51 @@ import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { validateMapSave } from "@/shared/game/mapSaveValidation";
 import { normalizeStudioMapVisuals } from "@/shared/game/studioMapCreate";
+import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
+import { DEMO_MAP_ID } from "@/server/demoMapSeed";
+
+async function loadMapPayload(slug: string) {
+  const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
+  if (worldMap) {
+    return {
+      id: worldMap.id,
+      gameId: worldMap.gameId,
+      name: worldMap.name,
+      grid: JSON.parse(worldMap.gridData || "[]"),
+      gates: JSON.parse(worldMap.gatesData || "{}"),
+      npcs: JSON.parse(worldMap.npcsData || "[]"),
+      encounterPool: JSON.parse(worldMap.encountersData || "[]"),
+      tileLayers: JSON.parse(worldMap.tileLayersData || "[]"),
+      tilesets: JSON.parse(worldMap.tilesetsData || "[]"),
+      version: worldMap.version,
+      source: "worldMap" as const,
+    };
+  }
+
+  const gameMap = await prisma.gameMap.findUnique({ where: { id: slug } });
+  if (gameMap) {
+    return {
+      id: gameMap.id,
+      name: gameMap.name,
+      width: gameMap.width,
+      height: gameMap.height,
+      grid: JSON.parse(gameMap.tilesetData || "[]"),
+      gates: JSON.parse(gameMap.gates || "{}"),
+      npcs: JSON.parse(gameMap.npcs || "[]"),
+      encounterPool: JSON.parse(gameMap.encounters || "[]"),
+      tileLayers: [],
+      tilesets: [],
+      source: "gameMap" as const,
+    };
+  }
+
+  return null;
+}
 
 /**
  * GET /api/maps/[slug] — Load a map from WorldMap (primary) or GameMap (fallback).
  * Campaign map payloads are no longer imported from the 12MB static module.
+ * Missing DEMO_SANDBOX triggers lazy DemoBootstrap (production empty-DB heal).
  */
 export async function GET(
   _request: NextRequest,
@@ -16,41 +57,20 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
-    if (worldMap) {
-      return NextResponse.json({
-        id: worldMap.id,
-        gameId: worldMap.gameId,
-        name: worldMap.name,
-        grid: JSON.parse(worldMap.gridData || "[]"),
-        gates: JSON.parse(worldMap.gatesData || "{}"),
-        npcs: JSON.parse(worldMap.npcsData || "[]"),
-        encounterPool: JSON.parse(worldMap.encountersData || "[]"),
-        tileLayers: JSON.parse(worldMap.tileLayersData || "[]"),
-        tilesets: JSON.parse(worldMap.tilesetsData || "[]"),
-        version: worldMap.version,
-        source: "worldMap",
-      });
+    let payload = await loadMapPayload(slug);
+    if (!payload && slug === DEMO_MAP_ID) {
+      const ensured = await ensureStudioMapFoundation();
+      if (ensured.demoMap) {
+        payload = await loadMapPayload(slug);
+      } else if (ensured.error) {
+        console.error("[api/maps] DEMO ensure failed:", ensured.error);
+      }
     }
 
-    const gameMap = await prisma.gameMap.findUnique({ where: { id: slug } });
-    if (gameMap) {
-      return NextResponse.json({
-        id: gameMap.id,
-        name: gameMap.name,
-        width: gameMap.width,
-        height: gameMap.height,
-        grid: JSON.parse(gameMap.tilesetData || "[]"),
-        gates: JSON.parse(gameMap.gates || "{}"),
-        npcs: JSON.parse(gameMap.npcs || "[]"),
-        encounterPool: JSON.parse(gameMap.encounters || "[]"),
-        tileLayers: [],
-        tilesets: [],
-        source: "gameMap",
-      });
+    if (!payload) {
+      return NextResponse.json({ error: "Map not found" }, { status: 404 });
     }
-
-    return NextResponse.json({ error: "Map not found" }, { status: 404 });
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("Failed to fetch map:", error);
     return NextResponse.json({ error: "Failed to fetch map" }, { status: 500 });
@@ -95,9 +115,16 @@ export async function POST(
 
     // Bible 08/16: reject trapped spawns, unknown logic ids, bad NPC placement when grid is sent.
     if (Array.isArray(body.grid)) {
-      const logicTiles = await prisma.mapLogicTile.findMany({
+      let logicTiles = await prisma.mapLogicTile.findMany({
         select: { id: true, isSolid: true },
       });
+      // Empty logic catalog → create map always 400; heal from demo seed first.
+      if (logicTiles.length === 0) {
+        await ensureStudioMapFoundation();
+        logicTiles = await prisma.mapLogicTile.findMany({
+          select: { id: true, isSolid: true },
+        });
+      }
       const check = validateMapSave(
         { grid: body.grid, npcs: Array.isArray(body.npcs) ? body.npcs : [] },
         logicTiles
@@ -186,6 +213,10 @@ export async function POST(
     return NextResponse.json({ success: true, map: { id: worldMap.id, version: worldMap.version } });
   } catch (error) {
     console.error("Failed to update map:", error);
-    return NextResponse.json({ error: "Failed to update map" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to update map";
+    return NextResponse.json(
+      { error: "Failed to update map", details: [message] },
+      { status: 500 }
+    );
   }
 }

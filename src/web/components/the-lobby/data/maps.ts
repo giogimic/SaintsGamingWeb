@@ -51,6 +51,22 @@ export interface GameMapData {
 }
 
 const mapCache: Record<string, GameMapData> = {};
+/** Dedupe concurrent fetches for the same id (Studio remount storms). */
+const mapInflight = new Map<string, Promise<GameMapData>>();
+/** Brief cooldown after a failed fetch so we don't hammer /api/maps on 404 loops. */
+const mapFailUntil = new Map<string, number>();
+const MAP_FAIL_COOLDOWN_MS = 8_000;
+
+function emptyMapFallback(mapId: string): GameMapData {
+  return {
+    id: mapId,
+    name: mapId,
+    grid: Array(20).fill(0).map(() => Array(20).fill(0)),
+    gates: {},
+    npcs: [],
+    encounterPool: [],
+  };
+}
 
 /**
  * Asynchronously load map from database API with local caching
@@ -66,43 +82,44 @@ function isValidMapId(mapId: unknown): mapId is string {
 
 export async function loadMap(mapId: string): Promise<GameMapData> {
   if (!isValidMapId(mapId)) {
-    const fallback: GameMapData = {
-      id: 'INVALID',
-      name: 'INVALID',
-      grid: Array(20).fill(0).map(() => Array(20).fill(0)),
-      gates: {},
-      npcs: [],
-      encounterPool: [],
-    };
-    return fallback;
+    return emptyMapFallback('INVALID');
   }
 
   if (mapCache[mapId]) {
     return mapCache[mapId];
   }
 
-  try {
-    const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}`);
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: Failed to load map ${mapId}`);
-    }
-    const mapData: GameMapData = await res.json();
-    mapCache[mapId] = mapData;
-    return mapData;
-  } catch (err) {
-    console.error(`Error loading map ${mapId}:`, err);
-    // Do NOT cache empty fallbacks — a transient fetch failure would permanently
-    // poison DEMO with npcs:[] (grass only, no characters) for the session.
-    const fallback: GameMapData = {
-      id: mapId,
-      name: mapId,
-      grid: Array(20).fill(0).map(() => Array(20).fill(0)),
-      gates: {},
-      npcs: [],
-      encounterPool: [],
-    };
-    return fallback;
+  const failUntil = mapFailUntil.get(mapId);
+  if (failUntil && Date.now() < failUntil) {
+    return emptyMapFallback(mapId);
   }
+
+  const existing = mapInflight.get(mapId);
+  if (existing) return existing;
+
+  const pending = (async (): Promise<GameMapData> => {
+    try {
+      const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: Failed to load map ${mapId}`);
+      }
+      const mapData: GameMapData = await res.json();
+      mapCache[mapId] = mapData;
+      mapFailUntil.delete(mapId);
+      return mapData;
+    } catch (err) {
+      console.error(`Error loading map ${mapId}:`, err);
+      // Do NOT cache empty fallbacks long-term — only cool down retries.
+      // A transient failure must not permanently poison DEMO with npcs:[].
+      mapFailUntil.set(mapId, Date.now() + MAP_FAIL_COOLDOWN_MS);
+      return emptyMapFallback(mapId);
+    } finally {
+      mapInflight.delete(mapId);
+    }
+  })();
+
+  mapInflight.set(mapId, pending);
+  return pending;
 }
 
 export function getCachedMap(mapId: string): GameMapData | null {
@@ -125,9 +142,11 @@ export function patchCachedMapTile(
 export function invalidateMapCache(mapId?: string) {
   if (!mapId) {
     for (const key of Object.keys(mapCache)) delete mapCache[key];
+    mapFailUntil.clear();
     return;
   }
   delete mapCache[mapId];
+  mapFailUntil.delete(mapId);
 }
 
 export interface MapIndexEntry {
