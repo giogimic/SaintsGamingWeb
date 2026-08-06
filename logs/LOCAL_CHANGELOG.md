@@ -1,5 +1,23 @@
 # Local Changelog
 
+## 2026-08-06 — GitHub cleanup: maps ensure + Caddy + docs
+
+- Cherry-picked prod lazy DEMO_SANDBOX ensure onto `main`; deleted leftover feature remotes.
+- `proxy-caddy.sh`: safe sudo read + propagate write failures.
+- Docs: `CONTINUE`, `AGENTS`, `installation.md`, go-mmo status logs marked **on main**.
+- Log: `logs/2026-08-06-caddy-setup-fail-and-branches.md`
+
+---
+
+## 2026-08-06 — Caddy setup fail + branch cleanup
+
+- Go MMO fully on `main` (through PR #48). Merged feature branches deleted.
+- Keep note: prod-ensure content now on main (was `a3253da`).
+- `proxy-caddy.sh`: `sudo cat | awk` reads; propagate write failures; fix remove block keep.
+- Log: `logs/2026-08-06-caddy-setup-fail-and-branches.md`
+
+---
+
 ## 2026-08-06 — Go MMO client wire (lobby + Studio)
 
 - Lobby socket uses `NEXT_PUBLIC_GO_MMO_URL` when set (else TS same-origin).

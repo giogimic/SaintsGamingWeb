@@ -1,7 +1,6 @@
-# 2026-08-06 — Go MMO backend (branch-only)
+# 2026-08-06 — Go MMO backend
 
-**Branch:** `giogimic/go-mmo-backend-2d3d`  
-**Do not merge to `main` until explicitly approved.**
+**Status:** **On `main`** (via go-mmo PRs through #48).
 
 ## Goal
 

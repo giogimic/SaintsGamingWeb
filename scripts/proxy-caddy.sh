@@ -30,6 +30,20 @@ if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   SUDO_SYS="sudo"
 fi
 
+# Read Caddyfile to stdout. Prefer `sudo cat | awk` over `sudo awk … > tmp`
+# so elevated runs never swallow awk stdout into an empty write.
+read_caddyfile() {
+  if [[ ! -e "$CADDYFILE" ]]; then
+    echo "[proxy-caddy] Caddyfile not found: $CADDYFILE" >&2
+    return 1
+  fi
+  if [[ -n "$SUDO" ]]; then
+    $SUDO cat "$CADDYFILE"
+  else
+    cat "$CADDYFILE"
+  fi
+}
+
 safe_write_caddyfile() {
   local tmp_file="$1"
   if [[ ! -s "$tmp_file" ]]; then
@@ -49,7 +63,11 @@ safe_write_caddyfile() {
     echo "[proxy-caddy] Backup written: $backup"
   fi
 
-  $SUDO cp "$tmp_file" "$CADDYFILE"
+  if ! $SUDO cp "$tmp_file" "$CADDYFILE"; then
+    echo "[proxy-caddy] Failed to write $CADDYFILE" >&2
+    return 1
+  fi
+  return 0
 }
 
 ensure_markers() {
@@ -231,7 +249,7 @@ parse_upstream() {
 
 list_proxies() {
   ensure_markers
-  $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" '
+  read_caddyfile | awk -v begin="$BEGIN_MARK" -v end="$END_MARK" '
     $0 ~ begin { managed=1; next }
     $0 ~ end { managed=0 }
     managed==1 {
@@ -253,7 +271,7 @@ list_proxies() {
         domain=""
       }
     }
-  ' "$CADDYFILE"
+  '
 }
 
 add_proxy() {
@@ -284,7 +302,7 @@ add_proxy() {
   local tmp
   tmp="$(mktemp)"
 
-  if ! $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" -v targetUpstream="$upstream" '
+  if ! read_caddyfile | awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" -v targetUpstream="$upstream" '
     function emit_block(dom, up,    s) {
       # Normalize formatting.
       s = dom " {\n" \
@@ -333,14 +351,18 @@ add_proxy() {
 
     # Non-block lines inside markers (blank lines / whitespace) -> keep.
     { print }
-  ' "$CADDYFILE" > "$tmp"; then
+  ' > "$tmp"; then
     rm -f "$tmp"
     echo "[proxy-caddy] Failed to parse/transform $CADDYFILE (add aborted)." >&2
     return 1
   fi
 
-  safe_write_caddyfile "$tmp"
+  if ! safe_write_caddyfile "$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
   rm -f "$tmp"
+  return 0
 }
 
 remove_proxy() {
@@ -356,18 +378,19 @@ remove_proxy() {
   local tmp
   tmp="$(mktemp)"
 
-  if ! $SUDO awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" '
+  if ! read_caddyfile | awk -v begin="$BEGIN_MARK" -v end="$END_MARK" -v targetDomain="$subdomain" '
     $0 ~ begin { managed=1; print; next }
     $0 ~ end { managed=0; print; next }
     managed!=1 { print; next }
 
     # Skip the entire block matching targetDomain; preserve all other blocks.
+    # Keep the opening brace line in capText so kept blocks stay intact.
     cap==0 && $0 ~ /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/ {
       cap=1
       capDomain=$0
       gsub(/^[[:space:]]+/, "", capDomain)
       gsub(/[[:space:]]*\{[[:space:]]*$/, "", capDomain)
-      capText=""
+      capText=$0 "\n"
       next
     }
 
@@ -384,14 +407,18 @@ remove_proxy() {
 
     # Preserve any non-block whitespace inside managed section.
     { print }
-  ' "$CADDYFILE" > "$tmp"; then
+  ' > "$tmp"; then
     rm -f "$tmp"
     echo "[proxy-caddy] Failed to parse/transform $CADDYFILE (remove aborted)." >&2
     return 1
   fi
 
-  safe_write_caddyfile "$tmp"
+  if ! safe_write_caddyfile "$tmp"; then
+    rm -f "$tmp"
+    return 1
+  fi
   rm -f "$tmp"
+  return 0
 }
 
 reload_caddy() {
