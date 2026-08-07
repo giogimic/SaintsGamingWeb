@@ -137,13 +137,6 @@ export class PlayerManager {
     return true;
   }
 
-  public async addCredits(accountId: string, amount: number): Promise<boolean> {
-    return false;
-  }
-
-  public async removeCredits(accountId: string, amount: number): Promise<boolean> {
-    return false;
-  }
 
   public getPlayer(entityId: string): PlayerState | undefined {
     return this.players.get(entityId);

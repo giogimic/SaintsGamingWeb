@@ -17,12 +17,14 @@ export async function GET() {
       });
     }
 
-    // Attempt to hit external game server endpoints or local dev instance
-    const urlsToTry = [
-      'http://game-server:3001/status', // Docker Compose environment
-      'http://localhost:3001/status',   // PM2 or separate process
-      'http://127.0.0.1:3001/status',
-    ];
+    // Attempt to hit external game server endpoints (Go MMO or configured dev instance)
+    const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL;
+    const urlsToTry: string[] = [];
+    if (goMmoBase) {
+      urlsToTry.push(`${goMmoBase.replace(/\/$/, '')}/api/health`, `${goMmoBase.replace(/\/$/, '')}/status`);
+    } else {
+      urlsToTry.push('http://game-server:3001/status');
+    }
 
     for (const url of urlsToTry) {
       try {

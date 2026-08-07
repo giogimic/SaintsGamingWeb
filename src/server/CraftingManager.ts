@@ -2,6 +2,7 @@ import { prisma } from "@/web/lib/prisma";
 import { GameEngine } from "./GameEngine";
 import { PlayerManager } from "./PlayerManager";
 import { SHOP_CRAFT_RECIPES } from "@/shared/game/shopCatalog";
+import { gameEvents } from "@/shared/events/gameEventBus";
 import {
   addItemWithMeta,
   inventorySnapshot,
@@ -204,6 +205,12 @@ export class CraftingManager {
         durability: durability ?? null,
         affixes: affixes ?? null,
         stackable,
+      });
+
+      gameEvents.emit("item.crafted", {
+        userId,
+        itemSlug: recipe.outputItemSlug,
+        quantity: recipe.outputQuantity,
       });
 
       const newXp = playerSkill.xp + recipe.xpReward;

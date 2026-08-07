@@ -1,5 +1,6 @@
 import { GameEngine } from "./GameEngine";
 import { prisma } from "@/web/lib/prisma";
+import { gameEvents } from "@/shared/events/gameEventBus";
 import {
   computeCaptureChance,
   rollCaptureSuccess,
@@ -659,6 +660,11 @@ export class EncounterManager {
         console.log(
           `[EncounterManager] Captured ${battle.wildCreature.templateId} for user ${userId}`
         );
+        gameEvents.emit("creature.captured", {
+          userId,
+          creatureSlug: battle.wildCreature.templateId,
+          mapId: battle.mapId,
+        });
         this.engine.events.emit("ecosystemBroadcast", {
           type: "creature.captured",
           payload: {
@@ -678,6 +684,11 @@ export class EncounterManager {
 
     // Victory: generic loot into inventory (bible 11)
     if (result === "WIN" && userId) {
+      gameEvents.emit("creature.defeated", {
+        userId,
+        creatureSlug: battle.wildCreature.templateId,
+        mapId: battle.mapId,
+      });
       try {
         await addItem(userId, "monster_fang", 1);
         this.sendToPlayer(battle.socketId, "show_toast", {

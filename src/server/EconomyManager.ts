@@ -2,6 +2,7 @@ import { prisma } from "@/web/lib/prisma";
 import { GameEngine } from "./GameEngine";
 import { PlayerManager } from "./PlayerManager";
 import { removeItem, resolveUserId, addItem } from "./inventoryService";
+import { gameEvents } from "@/shared/events/gameEventBus";
 
 export class EconomyManager {
   private engine: GameEngine;
@@ -130,6 +131,14 @@ export class EconomyManager {
 
         await tx.gtcListing.delete({ where: { id: data.listingId } });
         return { listing, buyerCredits: buyerState.credits };
+      });
+
+      const buyerUserId = (await resolveUserId(data.accountId)) || data.accountId;
+      gameEvents.emit("trade.completed", {
+        userId: buyerUserId,
+        itemSlug: result.listing.itemId,
+        credits: result.listing.price,
+        type: "buy",
       });
 
       this.engine.events.emit("directMessage", { socketId: data.socketId, event: "sync_credits", data: { credits: result.buyerCredits } });

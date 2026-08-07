@@ -233,3 +233,38 @@ export const DEMO_WILD_SPOTS = [
 export const DEMO_ENCOUNTERS = [
   { speciesSlug: "rockitten", weight: 1, minLevel: 3, maxLevel: 5 },
 ];
+
+export function buildTrainingGroundsGrid(): number[][] {
+  const w = 20;
+  const h = 20;
+  const grid: number[][] = [];
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 0;
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) tile = 1;
+      else if (x >= 5 && x <= 15 && y >= 5 && y <= 15) tile = 2; // Central arena tall grass
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+export function buildCrystalCavernsGrid(): number[][] {
+  const w = 25;
+  const h = 25;
+  const grid: number[][] = [];
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 1; // Default solid rock cave wall
+      if (x >= 2 && x <= 22 && y >= 2 && y <= 22) tile = 0; // Main cavern floor
+      if (x >= 8 && x <= 16 && y >= 8 && y <= 16) tile = 6; // Dense ore vein
+      if (x === 12 && y === 5) tile = 11; // Bramble-blocked deep passage
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}

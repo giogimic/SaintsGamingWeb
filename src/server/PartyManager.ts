@@ -1,5 +1,6 @@
 import { GameEngine } from "./GameEngine";
 import { prisma } from "@/web/lib/prisma";
+import { gameEvents } from "@/shared/events/gameEventBus";
 
 type PendingInvite = {
   fromAccountId: string;
@@ -200,6 +201,7 @@ export class PartyManager {
 
     party.add(joinerId);
     this.playerPartyMap.set(joinerId, leaderId);
+    gameEvents.emit("party.formed", { userId: joinerId, partyId: leaderId });
     this.broadcastPartyUpdate(leaderId);
   }
 

@@ -1,4 +1,5 @@
-import { EventEmitter } from "events";
+import { registerAchievementListeners } from "./AchievementListener";
+import { registerStatsListeners } from "./StatsListener";
 
 export class GameEngine {
   private tickRate = 20; // 20 TPS simulation
@@ -20,6 +21,8 @@ export class GameEngine {
     this.isRunning = true;
     this.lastTick = Date.now();
     this.lastNetworkTick = Date.now();
+    registerAchievementListeners();
+    registerStatsListeners();
     this.tickLoop();
     console.log(`[GameEngine] Started (Sim: ${this.tickRate} TPS, Net: ${this.networkTickRate} TPS)`);
     

@@ -143,6 +143,7 @@ model User {
   // Generic Creature System
   playerCreatures PlayerCreature[]
   playerInventory PlayerInventoryItem[]
+  playerStats     PlayerStats?
   playerSkills    PlayerSkill[]
   playerQuestStates PlayerQuestState[]
 
@@ -749,6 +750,17 @@ model WorldMap {
   tileLayersData String   @default("[]") // JSON for TMX tile layers
   tilesetsData   String   @default("[]") // JSON for tilesets metadata
   version        Int      @default(1)
+  
+  // Rich Map Metadata
+  musicTrack        String?
+  weatherType       String?  // 'clear' | 'rain' | 'snow' | 'fog' | 'storm'
+  recommendedLevel  Int?
+  lightingPreset    String?  // 'day' | 'dusk' | 'night' | 'cave'
+  respawnRulesJson  String?
+  entryRequirements String?
+  biome             String?
+  description       String?
+
   updatedAt      DateTime @updatedAt
 
   @@index([gameId])
@@ -1391,6 +1403,43 @@ model PlayerInventoryItem {
 
   @@unique([userId, itemSlug, id]) // Remove old unique constraint that prevented duplicates. Players can have multiple identical swords with different durability/affixes.
   @@index([userId])
+}
+
+model InventoryLog {
+  id        String   @id @default(cuid())
+  userId    String
+  itemSlug  String
+  quantity  Int
+  reason    String   // 'gather', 'craft', 'quest_reward', 'shop_buy', 'shop_sell', 'trade', 'loot', etc.
+  source    String?  // Context, e.g. 'shop:merchant_01'
+  metadata  String?  // JSON string for additional context
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemSlug])
+  @@index([reason])
+  @@index([createdAt])
+}
+
+model PlayerStats {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  creaturesOwned  Int      @default(0)
+  questsCompleted Int      @default(0)
+  itemsCrafted    Int      @default(0)
+  combatXpTotal   Int      @default(0)
+  tradesCompleted Int      @default(0)
+  creditsEarned   Int      @default(0)
+  
+  updatedAt       DateTime @updatedAt
+
+  @@index([creaturesOwned])
+  @@index([questsCompleted])
+  @@index([itemsCrafted])
+  @@index([combatXpTotal])
+  @@index([creditsEarned])
 }
 
 // ─── Phase 7: The 27-Skill Matrix & Economy ─────────────────────

@@ -90,6 +90,43 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
       }
     }
 
+    if (!ownedBadges.has("first_capture") || !ownedBadges.has("creature_collector_10")) {
+      const creaturesCount = await prisma.playerCreature.count({ where: { userId } });
+      if (!ownedBadges.has("first_capture") && creaturesCount >= 1) {
+        newAwards.push("first_capture");
+      }
+      if (!ownedBadges.has("creature_collector_10") && creaturesCount >= 10) {
+        newAwards.push("creature_collector_10");
+      }
+    }
+
+    if (!ownedBadges.has("quest_complete_5")) {
+      const completedQuests = await prisma.playerQuestState.count({
+        where: { userId, status: "COMPLETED" },
+      });
+      if (completedQuests >= 5) {
+        newAwards.push("quest_complete_5");
+      }
+    }
+
+    if (!ownedBadges.has("first_craft")) {
+      const craftLogs = await prisma.inventoryLog.count({
+        where: { userId, reason: "craft" },
+      });
+      if (craftLogs >= 1) {
+        newAwards.push("first_craft");
+      }
+    }
+
+    if (!ownedBadges.has("first_trade")) {
+      const tradeLogs = await prisma.inventoryLog.count({
+        where: { userId, reason: { in: ["trade", "shop_buy", "shop_sell"] } },
+      });
+      if (tradeLogs >= 1) {
+        newAwards.push("first_trade");
+      }
+    }
+
     for (const badgeId of newAwards) {
       await prisma.userAchievement.create({
         data: { userId, badgeId },
