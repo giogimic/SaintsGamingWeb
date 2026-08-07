@@ -21,6 +21,8 @@ export function TurnBattleOverlay() {
 
   const { wildCreature, playerCreature, phase, log, isTrainer, trainerName } = activeBattle;
   
+  if (!wildCreature || !playerCreature) return null;
+
   const wildHpPercent = Math.max(0, Math.min(100, (wildCreature.hp / wildCreature.maxHp) * 100));
   const playerHpPercent = Math.max(0, Math.min(100, (playerCreature.hp / playerCreature.maxHp) * 100));
   const foeTitle = isTrainer
