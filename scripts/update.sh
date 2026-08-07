@@ -77,12 +77,51 @@ if grep -q "DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/de
 fi
 
 # --- Git Pull ---
-echo -e "${CYAN}[*] Pulling latest code from Git (forcing to origin/main)...${NC}"
+echo -e "${CYAN}[*] Fetching latest code from Git...${NC}"
 git fetch --all
 if [ $? -ne 0 ]; then
     echo -e "${RED}[!] git fetch failed. Check your internet connection.${NC}"
     exit 1
 fi
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo -e "${YELLOW}[!] Warning: You are on branch '$CURRENT_BRANCH', not 'main'.${NC}"
+    read -p "Are you sure you want to reset this branch to origin/main? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${RED}[*] Update aborted.${NC}"
+        exit 1
+    fi
+fi
+
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git rev-parse origin/main)
+
+if [ "$LOCAL" = "$REMOTE" ]; then
+    echo -e "${GREEN}[✓] Already up to date with origin/main.${NC}"
+    read -p "Do you want to force rebuild anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 0
+    fi
+else
+    echo -e "${CYAN}[*] Updates found. Commits to be applied:${NC}"
+    git log HEAD..origin/main --oneline
+    echo ""
+fi
+
+if ! git diff-index --quiet HEAD --; then
+    echo -e "${YELLOW}[!] Warning: You have uncommitted local changes that will be OVERWRITTEN.${NC}"
+    read -p "Continue and OVERWRITE local changes? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${RED}[*] Update aborted.${NC}"
+        exit 1
+    fi
+fi
+
+echo -e "${CYAN}[*] Pulling latest code (resetting to origin/main)...${NC}"
 git reset --hard origin/main
 echo -e "${GREEN}[✓] Code updated.${NC}\n"
 
