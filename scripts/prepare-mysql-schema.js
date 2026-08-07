@@ -25,7 +25,8 @@ const textFields = [
   { model: 'StreamProfile', fields: ['streamTitle', 'channelUrl'] },
   { model: 'SiteSetting', fields: ['value'] },
   { model: 'GameCharacter', fields: ['stateData'] },
-  { model: 'WorldMap', fields: ['gridData', 'gatesData'] },
+  { model: 'WorldMap', fields: ['gridData', 'gatesData', 'npcsData', 'encountersData', 'tileLayersData', 'tilesetsData', 'respawnRulesJson', 'entryRequirements'] },
+  { model: 'GameMap', fields: ['tilesetData', 'npcs', 'encounters', 'gates'] },
   { model: 'MmoDaemon', fields: ['stats', 'moves'] }
 ];
 
@@ -51,7 +52,8 @@ const lines = schema.split('\n').map(line => {
         const fieldRegex = new RegExp(`^(\\s+${field}\\s+String\\??)(.*)$`);
         const match = line.match(fieldRegex);
         if (match && !line.includes('@db.Text') && !line.includes('@db.LongText')) {
-          return `${match[1]} @db.Text${match[2]}`;
+          const dbType = (inModel === 'WorldMap' || inModel === 'GameMap') ? '@db.LongText' : '@db.Text';
+          return `${match[1]} ${dbType}${match[2]}`;
         }
       }
     }
