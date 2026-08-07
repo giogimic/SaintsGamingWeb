@@ -59,8 +59,8 @@ export class WorldManager {
 
   constructor(private engine: GameEngine) {
     this.engine.events.on("resolveCollisions", () => this.resolveCollisions());
-    this.engine.events.on("adminSaveMap", (data) => this.handleAdminSaveMap(data));
-    this.engine.events.on("adminReloadMap", (data) => this.handleAdminReloadMap(data));
+    this.engine.events.on("adminSaveMap", (data: any) => this.handleAdminSaveMap(data));
+    this.engine.events.on("adminReloadMap", (data: any) => this.handleAdminReloadMap(data));
     this.engine.events.on(
       "studioSpawnNpc",
       (data: {
@@ -178,8 +178,8 @@ export class WorldManager {
         const rawId = String(npc.id || npc.templateId || "villager");
         const sprite =
           npc.sprite ||
-          npc.spriteKey ||
-          npc.spriteId ||
+          (npc as any).spriteKey ||
+          (npc as any).spriteId ||
           rawId.replace(/^npc_/, "");
         this.engine.events.emit("spawnCreature", {
           templateId: rawId.replace(/^npc_/, ""),

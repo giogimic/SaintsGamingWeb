@@ -39,7 +39,7 @@ export function calculateLevelForSkill(skillSlug: string, xp: number): number {
 
 export class SkillManager {
   constructor(private engine: GameEngine) {
-    this.engine.events.on("grantSkillXp", (data) => this.handleGrantXp(data));
+    this.engine.events.on("grantSkillXp", (data: any) => this.handleGrantXp(data));
   }
 
   public async initialize() {

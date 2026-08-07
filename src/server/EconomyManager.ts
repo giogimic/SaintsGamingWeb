@@ -136,7 +136,7 @@ export class EconomyManager {
       const buyerUserId = (await resolveUserId(data.accountId)) || data.accountId;
       gameEvents.emit("trade.completed", {
         userId: buyerUserId,
-        itemSlug: result.listing.itemId,
+        itemSlug: result.listing.itemId || "",
         credits: result.listing.price,
         type: "buy",
       });

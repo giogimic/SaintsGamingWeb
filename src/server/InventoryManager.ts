@@ -30,11 +30,11 @@ export class InventoryManager {
     private worldManager: WorldManager,
     private playerManager?: PlayerManager
   ) {
-    this.engine.events.on("gatherInteractRequest", (data) => this.handleGather(data));
-    this.engine.events.on("entityDeath", (data) => this.handleEntityDeath(data));
-    this.engine.events.on("pickupLootRequest", (data) => this.handlePickupLootRequest(data));
-    this.engine.events.on("grantRewards", (data) => this.handleGrantRewards(data));
-    this.engine.events.on("repairItemRequest", (data) => this.handleRepairItem(data));
+    this.engine.events.on("gatherInteractRequest", (data: any) => this.handleGather(data));
+    this.engine.events.on("entityDeath", (data: any) => this.handleEntityDeath(data));
+    this.engine.events.on("pickupLootRequest", (data: any) => this.handlePickupLootRequest(data));
+    this.engine.events.on("grantRewards", (data: any) => this.handleGrantRewards(data));
+    this.engine.events.on("repairItemRequest", (data: any) => this.handleRepairItem(data));
   }
 
   public async initialize() {

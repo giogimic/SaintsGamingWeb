@@ -68,9 +68,10 @@ export class EncounterManager {
   private activeBattles: Map<string, BattleState> = new Map();
 
   constructor(private engine: GameEngine) {
-    this.engine.events.on("triggerEncounter", (data) => this.handleEncounterTrigger(data));
-    this.engine.events.on("battleSubmitAction", (data) => this.handleBattleAction(data));
-    this.engine.events.on("claimStarter", (data) => this.handleClaimStarter(data));
+
+    this.engine.events.on("triggerEncounter", (data: any) => this.handleEncounterTrigger(data));
+    this.engine.events.on("battleSubmitAction", (data: any) => this.handleBattleAction(data));
+    this.engine.events.on("claimStarter", (data: any) => this.handleClaimStarter(data));
   }
 
   private sendToPlayer(socketId: string | undefined, event: string, data: unknown) {
@@ -663,7 +664,7 @@ export class EncounterManager {
         gameEvents.emit("creature.captured", {
           userId,
           creatureSlug: battle.wildCreature.templateId,
-          mapId: battle.mapId,
+          mapId: battle.mapId || "",
         });
         this.engine.events.emit("ecosystemBroadcast", {
           type: "creature.captured",
@@ -687,7 +688,7 @@ export class EncounterManager {
       gameEvents.emit("creature.defeated", {
         userId,
         creatureSlug: battle.wildCreature.templateId,
-        mapId: battle.mapId,
+        mapId: battle.mapId || "",
       });
       try {
         await addItem(userId, "monster_fang", 1);

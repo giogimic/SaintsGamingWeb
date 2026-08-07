@@ -6,12 +6,12 @@ export class GuildManager {
   private pendingInvites = new Map<string, { guildId: string; guildName: string }>(); // targetAccountId -> { guildId, guildName }
 
   constructor(private engine: GameEngine) {
-    this.engine.events.on("guildCreate", (data) => this.handleCreate(data));
-    this.engine.events.on("guildInvite", (data) => this.handleInvite(data));
-    this.engine.events.on("guildInviteAccept", (data) => this.handleAcceptInvite(data));
-    this.engine.events.on("guildLeave", (data) => this.handleLeave(data));
-    this.engine.events.on("guildBankDeposit", (data) => this.handleBankDeposit(data));
-    this.engine.events.on("guildBankWithdraw", (data) => this.handleBankWithdraw(data));
+    this.engine.events.on("guildCreate", (data: any) => this.handleCreate(data));
+    this.engine.events.on("guildInvite", (data: any) => this.handleInvite(data));
+    this.engine.events.on("guildInviteAccept", (data: any) => this.handleAcceptInvite(data));
+    this.engine.events.on("guildLeave", (data: any) => this.handleLeave(data));
+    this.engine.events.on("guildBankDeposit", (data: any) => this.handleBankDeposit(data));
+    this.engine.events.on("guildBankWithdraw", (data: any) => this.handleBankWithdraw(data));
   }
 
   public async initialize() {

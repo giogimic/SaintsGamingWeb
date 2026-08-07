@@ -31,10 +31,10 @@ export class CreatureManager {
   private dirtyEntities = new Set<string>();
 
   constructor(private engine: GameEngine, private worldManager: WorldManager) {
-    this.engine.events.on("updateEntities", (dt) => this.tickCombatAI(dt));
-    this.engine.events.on("aiTick", (data) => this.tickWanderAI(data));
+    this.engine.events.on("updateEntities", (dt: any) => this.tickCombatAI(dt));
+    this.engine.events.on("aiTick", (data: any) => this.tickWanderAI(data));
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
-    this.engine.events.on("spawnCreature", (data) => this.spawnCreature(data));
+    this.engine.events.on("spawnCreature", (data: any) => this.spawnCreature(data));
     this.engine.events.on(
       "despawnNpcById",
       (data: { mapId: string; npcId: string; callback?: (n: number) => void }) => {
@@ -42,7 +42,7 @@ export class CreatureManager {
         data.callback?.(n);
       }
     );
-    this.engine.events.on("creatureDamaged", (data) => this.handleCreatureDamaged(data));
+    this.engine.events.on("creatureDamaged", (data: any) => this.handleCreatureDamaged(data));
     this.engine.events.on("requestCreatureState", (entityId, callback) => {
       callback(this.creatures.get(entityId));
     });

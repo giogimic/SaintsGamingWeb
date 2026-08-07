@@ -1,3 +1,4 @@
+import { EventEmitter } from "events";
 import { registerAchievementListeners } from "./AchievementListener";
 import { registerStatsListeners } from "./StatsListener";
 
@@ -27,10 +28,10 @@ export class GameEngine {
     console.log(`[GameEngine] Started (Sim: ${this.tickRate} TPS, Net: ${this.networkTickRate} TPS)`);
     
     // Listen for join/leave to maintain socket map
-    this.events.on("clientJoinRequest", ({ accountId, socketId }) => {
+    this.events.on("clientJoinRequest", ({ accountId, socketId }: any) => {
       this.accountSocketMap.set(accountId, socketId);
     });
-    this.events.on("playerDisconnected", ({ accountId }) => {
+    this.events.on("playerDisconnected", ({ accountId }: any) => {
       this.accountSocketMap.delete(accountId);
     });
   }
