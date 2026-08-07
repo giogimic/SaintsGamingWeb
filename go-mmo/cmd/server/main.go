@@ -69,9 +69,13 @@ func main() {
 	hub = mmsocket.NewHub(cfg, eng, deps)
 	eng = engine.New(cfg, wm, pm, cm, hub)
 
+	var socketOrigin any = cfg.CORSOrigin
+	if cfg.CORSOrigin == "*" {
+		socketOrigin = true
+	}
 	ioOpts := socket.DefaultServerOptions()
 	ioOpts.SetCors(&enginetypes.Cors{
-		Origin:      cfg.CORSOrigin,
+		Origin:      socketOrigin,
 		Credentials: true,
 	})
 	io := socket.NewServer(nil, ioOpts)
