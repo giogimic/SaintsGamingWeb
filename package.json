@@ -1,6 +1,6 @@
 {
   "name": "saints-web",
-  "version": "2.1.137",
+  "version": "2.1.138",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -15,8 +15,6 @@
     "release": "node scripts/release.mjs",
     "test": "vitest run",
     "smoke": "bash ./scripts/smoke-staging.sh",
-
-
     "migrate:campaign": "tsx scripts/migrate-campaign-maps-to-db.ts",
     "ensure:campaign": "tsx scripts/ensure-campaign-playable.ts",
     "seed:campaign-npcs": "tsx scripts/seed-campaign-npcs.ts",
@@ -24,7 +22,6 @@
     "seed:ambient": "tsx scripts/seed-ambient-dialogue.ts",
     "seed:azure": "tsx scripts/seed-campaign-npcs.ts",
     "smoke:spyder": "tsx scripts/smoke-spyder-path.ts",
-
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
     "seed:saints-trail": "tsx scripts/seed-saints-trail.ts",
@@ -33,7 +30,6 @@
     "visual:saints-trail": "node scripts/visual-saints-trail.mjs",
     "clone:saints-trail": "tsx scripts/clone-saints-trail.ts",
     "visual:browser-to-game": "node scripts/visual-browser-to-game.mjs"
-
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
