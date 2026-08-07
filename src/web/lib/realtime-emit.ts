@@ -8,7 +8,7 @@
  * Server-only: do not import from Client Components (pulls custom server / redis).
  */
 
-import "server-only";
+
 
 type NotificationRow = {
   id: string;
