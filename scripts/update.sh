@@ -58,7 +58,7 @@ if [ ! -f docker-compose.yml ]; then
 fi
 
 # --- Automated Database Backup ---
-if grep -q "DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
+if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
     if docker ps | grep -q "saints-gaming-db"; then
         echo -e "${CYAN}[*] Performing automated database backup before updating...${NC}"
         mkdir -p backups
@@ -130,13 +130,14 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
     echo -e "${CYAN}[*] Docker environment detected. Rebuilding web container...${NC}"
 
     # --- Verify & Fix MariaDB Credentials ---
-    if grep -q "DATABASE_URL=.*@db:3306" .env 2>/dev/null; then
-        DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-        DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
-        if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
-            echo -e "${CYAN}[*] Verifying MariaDB credentials match .env...${NC}"
-            if ! docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
-                echo -e "${YELLOW}[!] Credential mismatch detected — resetting MariaDB user password to match .env...${NC}"
+    if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null; then
+        if docker ps | grep -q "saints-gaming-db"; then
+            DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+            DB_USER=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://\([^:]*\):.*|\1|p')
+            if [ -n "$DB_PASS" ] && [ -n "$DB_USER" ]; then
+                echo -e "${CYAN}[*] Verifying MariaDB credentials match .env...${NC}"
+                if ! docker exec saints-gaming-db mariadb -u "$DB_USER" -p"$DB_PASS" -e "SELECT 1;" saints_gaming &>/dev/null; then
+                    echo -e "${YELLOW}[!] Credential mismatch detected — resetting MariaDB user password to match .env...${NC}"
                 
                 # Extract root password from container environment to ensure we can connect
                 ROOT_PASS=$(docker exec saints-gaming-db env | grep MARIADB_ROOT_PASSWORD= | cut -d= -f2-)
@@ -157,6 +158,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
                 echo -e "${GREEN}[✓] MariaDB credentials are valid.${NC}"
             fi
             # We don't touch docker-compose.yml passwords here anymore, let setup.sh or manual config handle that
+        fi
+        else
+            echo -e "${YELLOW}[*] saints-gaming-db container not running, skipping credential check.${NC}"
         fi
     fi
 
