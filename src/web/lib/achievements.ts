@@ -4,7 +4,7 @@
  * realtime-emit → custom server → redis into the browser bundle.
  */
 
-import "server-only";
+
 
 import { prisma } from "./prisma";
 import { emitNotificationCreated } from "./realtime-emit";
