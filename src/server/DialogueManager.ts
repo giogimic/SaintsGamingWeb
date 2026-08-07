@@ -1,5 +1,6 @@
 import { GameEngine } from "./GameEngine";
 import { prisma } from "@/web/lib/prisma";
+import { gameEvents } from "@/shared/events/gameEventBus";
 import { VANCE_TREE } from "./DemoBootstrap";
 import { loadCreatureDef, toPlayerCreatureStats } from "./creatureDefs";
 import {
@@ -450,6 +451,11 @@ export class DialogueManager {
 
     const startNode = tree[startKey] || tree["node_start"];
     if (!startNode) return;
+
+    const userId = await resolveUserId(accountId);
+    if (userId) {
+      gameEvents.emit("npc.interacted", { userId, npcId, mapId: mapId || "" });
+    }
 
     // Quest engine listens on engine `dialogue_start` (not the socket event).
     this.engine.events.emit("dialogue_start", {

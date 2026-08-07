@@ -3,8 +3,10 @@ import { isPublicChannelInstanceId, pickPublicShardAssignment, toBaseMapId } fro
 import { studioPieRoomId } from "@/shared/game/studioSession";
 import { DEMO_MAP_ID, DEMO_VANCE_SPAWN, DEMO_WILD_SPOTS } from "./demoMapSeed";
 
-// Using require for legacy JS modules (they can be converted to TS later)
-const mapLoader = require("../engine/map-loader.js");
+import { loadMapData, saveMapData, loadLogicTiles } from "@/shared/game/mapLoader";
+import { getCachedMap, invalidateMapCache, patchCachedMapTile } from "@/shared/game/mapCache";
+import { isWalkableSync } from "@/shared/game/mapQueries";
+
 const spatialGrid = require("../engine/spatial-grid.js");
 
 export interface MapInstance {
@@ -86,7 +88,7 @@ export class WorldManager {
 
   private async handleAdminSaveMap(data: any) {
     if (!data.mapId) return;
-    const success = await mapLoader.saveMapData(data.mapId, data);
+    const success = await saveMapData(data.mapId, data);
     if (success) {
       console.log(`[WorldManager] Map ${data.mapId} saved to database and hot reloaded.`);
       this.broadcastMapReloaded(data.mapId);
@@ -96,7 +98,7 @@ export class WorldManager {
   /** REST already wrote WorldMap — just invalidate server cache and notify clients. */
   private handleAdminReloadMap(data: { mapId?: string }) {
     if (!data?.mapId) return;
-    mapLoader.invalidateMap(data.mapId);
+    invalidateMapCache(data.mapId);
     console.log(`[WorldManager] Map ${data.mapId} cache invalidated; broadcasting map_reloaded.`);
     this.broadcastMapReloaded(data.mapId);
   }
@@ -125,7 +127,7 @@ export class WorldManager {
   }
 
   public async initialize() {
-    await mapLoader.initialize();
+    await loadLogicTiles();
     this.startAiLoop();
   }
 
@@ -162,7 +164,7 @@ export class WorldManager {
 
   public async loadMap(mapId: string) {
     // Loads the Map Definition (collision grid, blocked areas, triggers)
-    await mapLoader.loadMapData(mapId);
+    await loadMapData(mapId);
   }
 
   public createInstance(instanceId: string, mapId: string): MapInstance {
@@ -170,7 +172,7 @@ export class WorldManager {
     this.instances.set(instanceId, instance);
 
     // Phase 6: Spawn NPCs for this instance
-    const mapData = mapLoader.getCachedMap(mapId);
+    const mapData = getCachedMap(mapId);
     if (mapData && mapData.npcs) {
       for (const npc of mapData.npcs) {
         const rawId = String(npc.id || npc.templateId || "villager");
@@ -241,8 +243,8 @@ export class WorldManager {
     const base = toBaseMapId(String(baseMapId || ""));
     if (!base || !npc?.id) return 0;
 
-    mapLoader.invalidateMap(base);
-    void mapLoader.loadMapData(base).catch((err: unknown) => {
+    invalidateMapCache(base);
+    void loadMapData(base).catch((err: unknown) => {
       console.warn("[WorldManager] spawnNpcLive cache reload failed:", err);
     });
 
@@ -280,8 +282,8 @@ export class WorldManager {
     const id = String(npcId || "");
     if (!base || !id) return 0;
 
-    mapLoader.invalidateMap(base);
-    void mapLoader.loadMapData(base).catch((err: unknown) => {
+    invalidateMapCache(base);
+    void loadMapData(base).catch((err: unknown) => {
       console.warn("[WorldManager] despawnNpcLive cache reload failed:", err);
     });
 
@@ -323,10 +325,7 @@ export class WorldManager {
     x: number,
     y: number
   ): boolean {
-    const map =
-      typeof mapLoader.getMapDataSync === "function"
-        ? mapLoader.getMapDataSync(baseMapId)
-        : mapLoader.getCachedMap?.(baseMapId);
+    const map = getCachedMap(baseMapId);
     const tile = map?.grid?.[y]?.[x];
     const already = accountKeys.some((k) => this.hasAccountClearedBramble(k, x, y));
     if (tile !== 11 && !already) return false;
@@ -369,10 +368,7 @@ export class WorldManager {
 
   /** @deprecated Shared-grid clear — must not wipe the demo map for other accounts. */
   public clearBrambleAt(baseMapId: string, x: number, y: number): boolean {
-    const map =
-      typeof mapLoader.getMapDataSync === "function"
-        ? mapLoader.getMapDataSync(baseMapId)
-        : mapLoader.getCachedMap?.(baseMapId);
+    const map = getCachedMap(baseMapId);
     return map?.grid?.[y]?.[x] === 11;
   }
 
@@ -396,7 +392,7 @@ export class WorldManager {
     let baseMapId = toBaseMapId(String(mapId || DEMO_MAP_ID)) || DEMO_MAP_ID;
     if (baseMapId === "SAINTS_VILLAGE") baseMapId = DEMO_MAP_ID;
     // Ensure WorldMap (incl. NPC sprite keys) is cached before first shard spawn.
-    await mapLoader.loadMapData(baseMapId);
+    await loadMapData(baseMapId);
 
     if (opts?.pie) {
       // Bible 32 — Play-In-Editor private room (isolate from public DEMO shards).
@@ -468,12 +464,9 @@ export class WorldManager {
   public isWalkable(instanceId: string, x: number, y: number, accountId?: string): boolean {
     const instance = this.instances.get(instanceId);
     if (!instance) return false;
-    if (mapLoader.isWalkableSync(instance.mapId, x, y)) return true;
+    if (isWalkableSync(instance.mapId, x, y)) return true;
     if (accountId && this.hasAccountClearedBramble(accountId, x, y)) {
-      const map =
-        typeof mapLoader.getMapDataSync === "function"
-          ? mapLoader.getMapDataSync(instance.mapId)
-          : mapLoader.getCachedMap?.(instance.mapId);
+      const map = getCachedMap(instance.mapId);
       // Cleared bramble stays tile 11 on shared grid — treat as walkable for this account
       if (map?.grid?.[y]?.[x] === 11) return true;
     }

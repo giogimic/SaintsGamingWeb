@@ -2,12 +2,13 @@ import { GameEngine } from "./GameEngine";
 import { WorldManager } from "./WorldManager";
 import { PlayerManager } from "./PlayerManager";
 import { prisma } from "@/web/lib/prisma";
+import { gameEvents } from "@/shared/events/gameEventBus";
 import { toBaseMapId } from "@/shared/net/mapIds";
-import { addItem, resolveUserId, wearToolDurability } from "./inventoryService";
+import { addItem, repairItemDurability, resolveUserId, wearToolDurability } from "./inventoryService";
 import { calculateGatherSuccess } from "./SkillManager";
 
-// Using require for legacy map loader
-const mapLoader = require("../engine/map-loader.js");
+import { loadMapData } from "@/shared/game/mapLoader";
+import { getCachedMap } from "@/shared/game/mapCache";
 
 // MapLogicTile ids: 5 = Wood Tree, 6 = Ore Rock
 const RESOURCE_NODE_MAP: Record<
@@ -207,10 +208,7 @@ export class InventoryManager {
       data: { stateData: JSON.stringify(state) },
     });
 
-    await prisma.playerInventoryItem.update({
-      where: { id: data.itemId },
-      data: { durability: template.baseDurability },
-    });
+    await repairItemDurability(data.itemId, template.baseDurability);
 
     this.engine.events.emit("directMessage", {
       socketId: data.socketId,
@@ -259,10 +257,10 @@ export class InventoryManager {
     }
 
     // Ensure map definition is cached
-    let mapDef = mapLoader.getMapDataSync(instance.mapId);
+    let mapDef = getCachedMap(instance.mapId);
     if (!mapDef) {
-      await mapLoader.loadMapData(instance.mapId);
-      mapDef = mapLoader.getMapDataSync(instance.mapId);
+      await loadMapData(instance.mapId);
+      mapDef = getCachedMap(instance.mapId);
     }
     if (!mapDef || !mapDef.grid || !mapDef.grid[y] || mapDef.grid[y][x] === undefined) return;
 
@@ -343,6 +341,12 @@ export class InventoryManager {
     }
 
     await addItem(userId, resourceSlug, 1);
+    gameEvents.emit("item.gathered", {
+      userId,
+      itemSlug: resourceSlug,
+      quantity: 1,
+      nodeType: tileId,
+    });
 
     this.engine.events.emit("grantSkillXp", { accountId, skillSlug, amount: xpAmount });
 

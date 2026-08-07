@@ -2423,51 +2423,6 @@ private resolveTilePick(
     this.activeProjectiles.set(projectileId, { mesh, observer });
   }
 
-  public renderHealthBar(targetId: string, hpPercent: number) {
-    const targetMesh = this.entityMeshes.get(targetId);
-    if (!targetMesh) return;
-
-    let hpBarGroup = this.scene.getMeshByName(`hpGroup_${targetId}`);
-    let fgMesh = this.scene.getMeshByName(`hpFg_${targetId}`);
-
-    if (!hpBarGroup || !fgMesh) {
-      // Create new health bar
-      hpBarGroup = MeshBuilder.CreatePlane(`hpGroup_${targetId}`, { width: 1.5, height: 0.2 }, this.scene);
-      hpBarGroup.position.y = 2.0; // Above head
-      hpBarGroup.parent = targetMesh; // Attach to entity
-      hpBarGroup.billboardMode = Mesh.BILLBOARDMODE_ALL;
-
-      const bgMat = new StandardMaterial(`hpBgMat_${targetId}`, this.scene);
-      bgMat.diffuseColor = new Color3(0.2, 0.2, 0.2);
-      bgMat.emissiveColor = new Color3(0.2, 0.2, 0.2);
-      hpBarGroup.material = bgMat;
-
-      fgMesh = MeshBuilder.CreatePlane(`hpFg_${targetId}`, { width: 1.5, height: 0.2 }, this.scene);
-      fgMesh.parent = hpBarGroup;
-      fgMesh.position.z = -0.01; // Slightly in front of bg
-
-      const fgMat = new StandardMaterial(`hpFgMat_${targetId}`, this.scene);
-      fgMat.diffuseColor = new Color3(0.2, 0.8, 0.2); // Green
-      fgMat.emissiveColor = new Color3(0.2, 0.8, 0.2);
-      fgMesh.material = fgMat;
-    }
-
-    // Update width and color based on HP
-    fgMesh.scaling.x = Math.max(0.01, hpPercent);
-    fgMesh.position.x = -0.75 + (1.5 * fgMesh.scaling.x) / 2; // Keep left-aligned
-
-    const mat = fgMesh.material as StandardMaterial;
-    if (hpPercent < 0.2) {
-      mat.diffuseColor = new Color3(0.8, 0.1, 0.1); // Red
-      mat.emissiveColor = new Color3(0.8, 0.1, 0.1);
-    } else if (hpPercent < 0.5) {
-      mat.diffuseColor = new Color3(0.8, 0.8, 0.1); // Yellow
-      mat.emissiveColor = new Color3(0.8, 0.8, 0.1);
-    } else {
-      mat.diffuseColor = new Color3(0.2, 0.8, 0.2); // Green
-      mat.emissiveColor = new Color3(0.2, 0.8, 0.2);
-    }
-  }
 
   public removeEntity(id: string) {
     const mesh = this.entityMeshes.get(id);

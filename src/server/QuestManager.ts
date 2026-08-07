@@ -1,6 +1,7 @@
 import { GameEngine } from "./GameEngine";
 import { prisma } from "@/web/lib/prisma";
 import { resolveUserId } from "./inventoryService";
+import { gameEvents } from "@/shared/events/gameEventBus";
 
 export class QuestManager {
   constructor(private engine: GameEngine) {
@@ -101,6 +102,11 @@ export class QuestManager {
       await prisma.playerQuestState.update({
         where: { id: state.id },
         data: { status: "COMPLETED", completedAt: new Date() },
+      });
+
+      gameEvents.emit("quest.completed", {
+        userId,
+        questId: template.slug || template.id,
       });
 
       this.notifyClient(accountId, `Quest Completed: ${template.title}!`, socketId);

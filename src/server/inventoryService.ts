@@ -8,6 +8,70 @@ import { prisma } from "@/web/lib/prisma";
 /** Client usable inside prisma.$transaction */
 export type InventoryDb = Prisma.TransactionClient | typeof prisma;
 
+export type InventoryReason =
+  | "gather"
+  | "craft"
+  | "quest_reward"
+  | "shop_buy"
+  | "shop_sell"
+  | "trade"
+  | "loot"
+  | "npc_grant"
+  | "capture_cost"
+  | "admin"
+  | "system";
+
+export interface InventoryTransaction {
+  userId: string;
+  itemSlug: string;
+  quantity: number; // positive = add, negative = remove
+  reason: InventoryReason;
+  source?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export async function executeTransaction(
+  tx: InventoryTransaction,
+  db: InventoryDb = prisma
+): Promise<{ success: boolean; newQuantity: number }> {
+  const { userId, itemSlug, quantity, reason, source, metadata } = tx;
+  if (!userId || !itemSlug || quantity === 0) {
+    return { success: false, newQuantity: 0 };
+  }
+
+  let success = false;
+  let newQuantity = 0;
+
+  if (quantity > 0) {
+    await addItem(userId, itemSlug, quantity, db);
+    success = true;
+  } else {
+    success = await removeItem(userId, itemSlug, -quantity, db);
+  }
+
+  if (success) {
+    const snap = await inventorySnapshot(userId, db);
+    newQuantity = snap[itemSlug] || 0;
+
+    try {
+      await db.inventoryLog.create({
+        data: {
+          userId,
+          itemSlug,
+          quantity,
+          reason,
+          source: source || null,
+          metadata: metadata ? JSON.stringify(metadata) : null,
+        },
+      });
+    } catch {
+      // Non-fatal logging fallback
+    }
+  }
+
+  return { success, newQuantity };
+}
+
 export async function resolveUserId(
   accountOrUserId: string
 ): Promise<string | null> {
@@ -170,6 +234,23 @@ export async function addItemWithMeta(
       },
     });
   }
+}
+
+/** Repair item durability by row id. */
+export async function repairItemDurability(
+  itemRowId: string,
+  targetDurability: number,
+  db: InventoryDb = prisma
+): Promise<boolean> {
+  const existing = await db.playerInventoryItem.findUnique({
+    where: { id: itemRowId },
+  });
+  if (!existing) return false;
+  await db.playerInventoryItem.update({
+    where: { id: itemRowId },
+    data: { durability: targetDurability },
+  });
+  return true;
 }
 
 /** Wear tool durability by row id. Returns whether the tool broke. */

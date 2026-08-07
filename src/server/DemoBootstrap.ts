@@ -9,19 +9,17 @@ import {
   DEMO_MAP_W,
   DEFAULT_STUDIO_TILESETS,
   buildDemoSandboxGrid,
+  buildTrainingGroundsGrid,
+  buildCrystalCavernsGrid,
   buildDefaultGroundLayer,
   fillZeroGidsInLayers,
   upgradeLegacyGroundGids,
   needsStudioTilesetBootstrap,
 } from "./demoMapSeed";
-import {
-  SAINTS_TRAIL_GAME_ID,
-  SAINTS_TRAIL_NPCS,
-  SAINTS_TRAIL_QUEST_CHAIN,
-  SAINTS_TRAIL_DIALOGUES,
-} from "./saintsTrailQuests";
+import { SAINTS_TRAIL_GAME_ID, SAINTS_TRAIL_NPCS, SAINTS_TRAIL_QUEST_CHAIN, SAINTS_TRAIL_DIALOGUES } from "./saintsTrailQuests";
+import { EXPANSION_QUESTS } from "./expansionQuests";
 
-const mapLoader = require("../engine/map-loader.js");
+import { invalidateLogicTilesCache } from "@/shared/game/mapCache";
 
 const VANCE_TREE = {
   node_start: {
@@ -146,9 +144,7 @@ async function seedLogicTiles() {
       },
     });
   }
-  if (typeof mapLoader.invalidateLogicTiles === "function") {
-    mapLoader.invalidateLogicTiles();
-  }
+  invalidateLogicTilesCache();
   console.log(`[DemoBootstrap] MapLogicTile × ${DEMO_LOGIC_TILES.length}`);
 }
 
@@ -279,6 +275,58 @@ async function seedDemoMap() {
   );
 }
 
+async function seedExpansionMaps() {
+  const tgGrid = buildTrainingGroundsGrid();
+  const ccGrid = buildCrystalCavernsGrid();
+
+  // 1. TRAINING_GROUNDS
+  const existingTg = await prisma.worldMap.findUnique({ where: { id: "TRAINING_GROUNDS" } });
+  if (!existingTg) {
+    await prisma.worldMap.create({
+      data: {
+        id: "TRAINING_GROUNDS",
+        gameId: SAINTS_TRAIL_GAME_ID,
+        name: "Training Grounds",
+        gridData: JSON.stringify(tgGrid),
+        gatesData: JSON.stringify({ 1: { targetMapId: "DEMO_SANDBOX", spawnPoint: { x: 15, y: 15 } } }),
+        npcsData: JSON.stringify([{ id: "npc_tutor_1", name: "Combat Tutor", x: 10, y: 10, sprite: "trainer" }]),
+        encountersData: JSON.stringify([{ speciesSlug: "rockitten", weight: 1, minLevel: 1, maxLevel: 3 }]),
+        tileLayersData: JSON.stringify([buildDefaultGroundLayer(tgGrid)]),
+        tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+        biome: "town",
+        weatherType: "clear",
+        recommendedLevel: 1,
+        lightingPreset: "day",
+        description: "An open arena where aspiring fighters hone their craft.",
+      },
+    });
+  }
+
+  // 2. CRYSTAL_CAVERNS
+  const existingCc = await prisma.worldMap.findUnique({ where: { id: "CRYSTAL_CAVERNS" } });
+  if (!existingCc) {
+    await prisma.worldMap.create({
+      data: {
+        id: "CRYSTAL_CAVERNS",
+        gameId: SAINTS_TRAIL_GAME_ID,
+        name: "Crystal Caverns",
+        gridData: JSON.stringify(ccGrid),
+        gatesData: JSON.stringify({ 1: { targetMapId: "DEMO_SANDBOX", spawnPoint: { x: 20, y: 20 } } }),
+        npcsData: JSON.stringify([]),
+        encountersData: JSON.stringify([{ speciesSlug: "rockitten", weight: 1, minLevel: 3, maxLevel: 8 }]),
+        tileLayersData: JSON.stringify([buildDefaultGroundLayer(ccGrid)]),
+        tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+        biome: "cave",
+        weatherType: "clear",
+        recommendedLevel: 5,
+        lightingPreset: "cave",
+        description: "Ancient tunnels rich with ore. Bramble and shadow creatures guard the depths.",
+        entryRequirements: JSON.stringify({ minLevel: 3 }),
+      },
+    });
+  }
+}
+
 async function seedDemoQuests() {
   const force = process.env.FORCE_TRAIL_SEED === "1" || process.env.FORCE_QUEST_SEED === "1";
   let created = 0;
@@ -337,8 +385,40 @@ async function seedDemoQuests() {
       });
     }
   }
+
+  for (const q of EXPANSION_QUESTS) {
+    const existing = await prisma.questTemplate.findUnique({
+      where: { slug: q.slug },
+    });
+    const rewardsJson = JSON.stringify(q.rewards);
+    if (!existing) {
+      const row = await prisma.questTemplate.create({
+        data: {
+          slug: q.slug,
+          gameId: q.gameId,
+          title: q.title,
+          description: q.description,
+          rewards: rewardsJson,
+        },
+      });
+      for (const obj of q.objectives) {
+        await prisma.questObjective.create({
+          data: {
+            questId: row.id,
+            stage: obj.stage,
+            type: obj.type,
+            targetSlug: obj.targetSlug,
+            requiredQty: obj.requiredQty,
+            description: obj.description,
+          },
+        });
+      }
+      created++;
+    }
+  }
+
   console.log(
-    `[DemoBootstrap] Saints Trail quests × ${SAINTS_TRAIL_QUEST_CHAIN.length} (new=${created}, force=${force})`
+    `[DemoBootstrap] Saints Trail + Expansion quests seeded (new=${created}, force=${force})`
   );
 }
 
@@ -374,6 +454,7 @@ export async function ensureStudioMapFoundation(): Promise<{
     }
     try {
       await seedDemoMap();
+      await seedExpansionMaps();
       demoMap = true;
     } catch (e) {
       const msg = (e as Error).message;

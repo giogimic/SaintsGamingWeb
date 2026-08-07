@@ -1,3 +1,54 @@
+## [2.1.137] - 2026-08-07
+### Added
+- Expanded `WorldMap` model in `schema.prisma` with rich metadata fields (`musicTrack`, `weatherType`, `recommendedLevel`, `lightingPreset`, `biome`, `description`, `entryRequirements`).
+- Added map grid builders for `TRAINING_GROUNDS` and `CRYSTAL_CAVERNS` in `demoMapSeed.ts` and automated DB seeding in `DemoBootstrap.ts`.
+
+## [2.1.136] - 2026-08-07
+### Added
+- Created data-driven expansion quest definitions (`src/server/expansionQuests.ts`) including Q005 ("Soul Binding") and Q006 ("Market Forces").
+- Registered expansion quest seeding in `DemoBootstrap.ts`.
+
+## [2.1.135] - 2026-08-07
+### Added
+- Added `PlayerStats` aggregate model to `schema.prisma` with indexed O(1) leaderboard columns.
+- Created `StatsListener` (`src/server/StatsListener.ts`) updating `PlayerStats` via `GameEventBus` triggers.
+- Created `GET /api/leaderboards/game` endpoint supporting creatures, quests, crafts, combat, and wealth boards.
+
+## [2.1.134] - 2026-08-07
+### Added
+- Added `AchievementListener` (`src/server/AchievementListener.ts`) subscribing to `GameEventBus` topics for decoupled achievement awards.
+- Added 7 new game achievement definitions to `achievements-catalog.ts` and automated evaluation in `achievements.ts`.
+
+## [2.1.133] - 2026-08-07
+### Removed
+- Safely deleted 5 verified orphan files: `WorldMapNavigator.tsx`, `rpg-stats-overlay.tsx`, `generated-assets.ts`, `dpad.tsx`, and `demoQuests.ts`.
+
+## [2.1.132] - 2026-08-07
+### Changed
+- Replaced legacy `src/engine/map-loader.js` with modular TS map architecture: `src/shared/game/types/map.ts` (DTOs), `mapLoader.ts` (persistence), `mapCache.ts` (cache & invalidation), and `mapQueries.ts` (isWalkable & tile queries).
+- Updated `WorldManager`, `InventoryManager`, and `DemoBootstrap` to consume the unified map system.
+
+## [2.1.131] - 2026-08-07
+### Added
+- Created isomorphic `GameEventBus` (`src/shared/events/gameEventBus.ts`) with typed event bus schemas and unit tests.
+- Wired event emitters across `EncounterManager`, `CraftingManager`, `InventoryManager`, `QuestManager`, `EconomyManager`, `PartyManager`, and `DialogueManager`.
+
+## [2.1.130] - 2026-08-07
+### Added
+- Added `InventoryTransaction`, `InventoryReason`, `executeTransaction()`, `repairItemDurability()`, and `InventoryLog` model to `inventoryService.ts` and `schema.prisma`.
+### Fixed
+- Replaced raw `playerInventoryItem.update()` in `InventoryManager.ts` with `repairItemDurability()`.
+- Removed dead `addCredits` / `removeCredits` stubs from `PlayerManager.ts`.
+
+## [2.1.129] - 2026-08-07
+### Fixed
+- Updated `app/api/game/server-status/route.ts` probes to respect `GO_MMO_INTERNAL_URL` / `NEXT_PUBLIC_GO_MMO_URL` when present instead of querying legacy hardcoded 3001 ports.
+- Removed unused `renderHealthBar` canvas method in `BabylonEngine.ts`.
+
+## [2.1.128] - 2026-08-07
+### Added
+- Created `info/game/SUBSYSTEM_OWNERSHIP.md` establishing Phase 0 subsystem boundaries and architectural isolation rules.
+
 ## [2.1.127] - 2026-08-06
 ### Fixed
 - Fixed Socket.io CORS origin handling (Access-Control-Allow-Origin) when withCredentials is enabled, resolving socket connection blocks when requests cross domains/subdomains (e.g. saintsgaming.net -> online.saintsgaming.net).
