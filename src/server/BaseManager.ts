@@ -5,9 +5,9 @@ import { addItem } from "./inventoryService";
 
 export class BaseManager {
   constructor(private engine: GameEngine) {
-    this.engine.events.on("placeStructureRequest", (data) => this.handlePlaceStructure(data));
-    this.engine.events.on("assignWorkerRequest", (data) => this.handleAssignWorker(data));
-    this.engine.events.on("claimProductionRequest", (data) => this.handleClaimProduction(data));
+    this.engine.events.on("placeStructureRequest", (data: any) => this.handlePlaceStructure(data));
+    this.engine.events.on("assignWorkerRequest", (data: any) => this.handleAssignWorker(data));
+    this.engine.events.on("claimProductionRequest", (data: any) => this.handleClaimProduction(data));
   }
 
   public async initialize() {

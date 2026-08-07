@@ -65,19 +65,19 @@ export class PlayerManager {
   private dirtyEntities = new Set<string>(); // Entities that changed this tick
 
   constructor(private engine: GameEngine, private worldManager: WorldManager, private partyManager?: PartyManager) {
-    this.engine.events.on("clientJoinRequest", (data) => this.handleClientJoin(data));
-    this.engine.events.on("playerInput", (data) => this.queueInput(data));
-    this.engine.events.on("playerDisconnected", (data) => this.handleDisconnect(data));
-    this.engine.events.on("playerDamaged", (data) => this.handlePlayerDamaged(data));
-    this.engine.events.on("creatureAoEAttack", (data) => this.handleCreatureAoEAttack(data));
-    this.engine.events.on("entityDeath", (data) => this.handleEntityDeathKillBonus(data));
+    this.engine.events.on("clientJoinRequest", (data: any) => this.handleClientJoin(data));
+    this.engine.events.on("playerInput", (data: any) => this.queueInput(data));
+    this.engine.events.on("playerDisconnected", (data: any) => this.handleDisconnect(data));
+    this.engine.events.on("playerDamaged", (data: any) => this.handlePlayerDamaged(data));
+    this.engine.events.on("creatureAoEAttack", (data: any) => this.handleCreatureAoEAttack(data));
+    this.engine.events.on("entityDeath", (data: any) => this.handleEntityDeathKillBonus(data));
     this.engine.events.on("processInputs", () => this.processInputs());
     this.engine.events.on("broadcastDeltas", () => this.broadcastDeltas());
-    this.engine.events.on("lockPlayerMovement", (accountId) => this.setPlayerLock(accountId, true));
-    this.engine.events.on("unlockPlayerMovement", (accountId) => this.setPlayerLock(accountId, false));
+    this.engine.events.on("lockPlayerMovement", (accountId: any) => this.setPlayerLock(accountId, true));
+    this.engine.events.on("unlockPlayerMovement", (accountId: any) => this.setPlayerLock(accountId, false));
     
     // Phase 8: Data requests from other managers
-    this.engine.events.on("requestPlayersInMap", ({ mapId, callback }) => {
+    this.engine.events.on("requestPlayersInMap", ({ mapId, callback  }: any) => {
       callback(this.getPlayersInMap(mapId));
     });
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/web/lib/prisma";
+import { invalidateMapCache } from "@/shared/game/mapCache";
 import { FALLBACK_CREATURE_DEFS } from "@/shared/game/creatureCatalog";
 import {
   DEMO_ENCOUNTERS,
@@ -267,8 +268,8 @@ async function seedDemoMap() {
       : { npcs: npcsJson },
   });
 
-  if (typeof mapLoader.invalidateMap === "function") {
-    mapLoader.invalidateMap(DEMO_MAP_ID);
+  if (typeof invalidateMapCache === "function") {
+    invalidateMapCache(DEMO_MAP_ID);
   }
   console.log(
     `[DemoBootstrap] DEMO_SANDBOX ready (gameId=${SAINTS_TRAIL_GAME_ID}, forceMap=${forceMap}, tilesetBootstrap=${needsRich})`

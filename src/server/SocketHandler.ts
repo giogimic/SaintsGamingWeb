@@ -122,7 +122,7 @@ export class SocketHandler {
 
       // We do not store game state here. The socket only communicates.
 
-      socket.on("join_map", (data) => {
+      socket.on("join_map", (data: any) => {
         console.log(`[Socket] ${accountId} attempting to join map`);
         this.engine.events.emit("clientJoinRequest", { accountId, socketId: socket.id, data });
         void this.broadcastPresence(accountId, "playing");
@@ -135,7 +135,7 @@ export class SocketHandler {
       });
 
       // --- PHASE 3: MMO Real-Time Combat Listeners ---
-      socket.on("combat_action", (data) => {
+      socket.on("combat_action", (data: any) => {
         // data: { targetId, abilityId } or legacy { move }
         this.engine.events.emit("combatRequestAction", {
           accountId,
@@ -146,7 +146,7 @@ export class SocketHandler {
       });
 
       // --- PHASE 4: Encounter Checks ---
-      socket.on("encounter_check", (data) => {
+      socket.on("encounter_check", (data: any) => {
         // data: { mapId, x, y }
         this.engine.events.emit("triggerEncounter", {
           providerType: "tall_grass",
@@ -158,7 +158,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("battle_submit_action", (data) => {
+      socket.on("battle_submit_action", (data: any) => {
         // data: { battleId, action, moveId, itemId, creatureId, mapId }
         this.engine.events.emit("battleSubmitAction", {
           battleId: data.battleId,
@@ -244,7 +244,7 @@ export class SocketHandler {
       );
 
       // --- PHASE 6: NPCs & Dialogue ---
-      socket.on("npc_interact", (data) => {
+      socket.on("npc_interact", (data: any) => {
         // data: { mapId, targetId }
         this.engine.events.emit("npcInteractRequest", {
           accountId,
@@ -254,7 +254,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("dialogue_select", (data) => {
+      socket.on("dialogue_select", (data: any) => {
         // data: { mapId, targetId, nextNode }
         this.engine.events.emit("dialogueSelectAction", {
           accountId,
@@ -268,7 +268,7 @@ export class SocketHandler {
       });
 
       // --- PHASE 7: Gathering & Economy ---
-      socket.on("gather_interact", (data) => {
+      socket.on("gather_interact", (data: any) => {
         // data: { mapId, targetX, targetY }
         this.engine.events.emit("gatherInteractRequest", {
           accountId,
@@ -279,7 +279,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("place_structure", (data) => {
+      socket.on("place_structure", (data: any) => {
         this.engine.events.emit("placeStructureRequest", {
           accountId,
           socketId: socket.id,
@@ -290,7 +290,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("assign_worker", (data) => {
+      socket.on("assign_worker", (data: any) => {
         this.engine.events.emit("assignWorkerRequest", {
           accountId,
           socketId: socket.id,
@@ -299,7 +299,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("repair_item", (data) => {
+      socket.on("repair_item", (data: any) => {
         this.engine.events.emit("repairItemRequest", {
           accountId,
           socketId: socket.id,
@@ -310,7 +310,7 @@ export class SocketHandler {
       // --- PHASE 8: Social & Party Systems ---
       
       // Guilds
-      socket.on("guild_create", (data) => {
+      socket.on("guild_create", (data: any) => {
         this.engine.events.emit("guildCreate", { accountId, socketId: socket.id, name: data.name, tag: data.tag });
       });
       socket.on("guild_invite", (targetName) => {
@@ -322,15 +322,15 @@ export class SocketHandler {
       socket.on("guild_leave", () => {
         this.engine.events.emit("guildLeave", { accountId, socketId: socket.id });
       });
-      socket.on("guild_bank_deposit", (data) => {
+      socket.on("guild_bank_deposit", (data: any) => {
         this.engine.events.emit("guildBankDeposit", { accountId, socketId: socket.id, itemSlug: data.itemSlug, qty: data.qty });
       });
-      socket.on("guild_bank_withdraw", (data) => {
+      socket.on("guild_bank_withdraw", (data: any) => {
         this.engine.events.emit("guildBankWithdraw", { accountId, socketId: socket.id, itemSlug: data.itemSlug, qty: data.qty });
       });
 
       // --- PHASE 9: Global Trading Center (GTC) ---
-      socket.on("gtc_create_listing", (data) => {
+      socket.on("gtc_create_listing", (data: any) => {
         this.engine.events.emit("gtcCreateListing", {
           accountId,
           socketId: socket.id,
@@ -338,7 +338,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("gtc_purchase_listing", (data) => {
+      socket.on("gtc_purchase_listing", (data: any) => {
         this.engine.events.emit("gtcPurchaseListing", {
           accountId,
           socketId: socket.id,
@@ -346,7 +346,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("pickup_loot", (data) => {
+      socket.on("pickup_loot", (data: any) => {
         // data: { mapId, x, y }
         this.engine.events.emit("pickupLootRequest", {
           accountId,
@@ -467,7 +467,7 @@ export class SocketHandler {
         }
       });
 
-      socket.on("combat_cast", (data) => {
+      socket.on("combat_cast", (data: any) => {
         // Hotbar sends { abilityId, targetId }. Capture tools are rejected server-side.
         this.engine.events.emit("combatRequestAction", {
           accountId,
@@ -485,7 +485,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("shop_buy", (data) => {
+      socket.on("shop_buy", (data: any) => {
         this.engine.events.emit("shopBuy", {
           accountId,
           socketId: socket.id,
@@ -494,7 +494,7 @@ export class SocketHandler {
         });
       });
 
-      socket.on("shop_sell", (data) => {
+      socket.on("shop_sell", (data: any) => {
         this.engine.events.emit("shopSell", {
           accountId,
           socketId: socket.id,
@@ -507,7 +507,7 @@ export class SocketHandler {
         this.engine.events.emit("shopCatalogRequest", { socketId: socket.id });
       });
 
-      socket.on("claim_starter", (data) => {
+      socket.on("claim_starter", (data: any) => {
         this.engine.events.emit("claimStarter", {
           accountId,
           socketId: socket.id,
@@ -565,16 +565,16 @@ export class SocketHandler {
       }
     );
 
-    this.engine.events.on("directMessage", ({ socketId, event, data }) => {
+    this.engine.events.on("directMessage", ({ socketId, event, data  }: any) => {
       this.io.to(socketId).emit(event, data);
     });
     
-    this.engine.events.on("joinRoom", ({ socketId, room }) => {
+    this.engine.events.on("joinRoom", ({ socketId, room  }: any) => {
       const socket = this.io.sockets.sockets.get(socketId);
       if (socket) socket.join(room);
     });
     
-    this.engine.events.on("leaveRoom", ({ socketId, room }) => {
+    this.engine.events.on("leaveRoom", ({ socketId, room  }: any) => {
       const socket = this.io.sockets.sockets.get(socketId);
       if (socket) socket.leave(room);
     });

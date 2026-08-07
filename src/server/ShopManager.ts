@@ -30,9 +30,9 @@ async function saveCredits(charId: string, state: Record<string, unknown>, credi
 
 export class ShopManager {
   constructor(private engine: GameEngine) {
-    this.engine.events.on("shopBuy", (data) => this.handleBuy(data));
-    this.engine.events.on("shopSell", (data) => this.handleSell(data));
-    this.engine.events.on("shopCatalogRequest", (data) => this.handleCatalog(data));
+    this.engine.events.on("shopBuy", (data: any) => this.handleBuy(data));
+    this.engine.events.on("shopSell", (data: any) => this.handleSell(data));
+    this.engine.events.on("shopCatalogRequest", (data: any) => this.handleCatalog(data));
   }
 
   private toast(socketId: string, message: string) {

@@ -5,15 +5,15 @@ import { gameEvents } from "@/shared/events/gameEventBus";
 
 export class QuestManager {
   constructor(private engine: GameEngine) {
-    this.engine.events.on("monsterKilled", (data) => this.handleEvent("KILL", data));
-    this.engine.events.on("itemGathered", (data) => this.handleEvent("GATHER", data));
-    this.engine.events.on("dialogue_start", (data) => this.handleEvent("TALK", data));
-    this.engine.events.on("itemCrafted", (data) => this.handleEvent("CRAFT", data));
-    this.engine.events.on("starterClaimed", (data) => this.handleEvent("CLAIM", data));
-    this.engine.events.on("creatureCaptured", (data) => this.handleEvent("CLAIM", data));
-    this.engine.events.on("trainerDefeated", (data) => this.handleEvent("BATTLE", data));
-    this.engine.events.on("brambleCleared", (data) => this.handleEvent("CLEAR", data));
-    this.engine.events.on("acceptQuest", (data) => this.acceptQuest(data));
+    this.engine.events.on("monsterKilled", (data: any) => this.handleEvent("KILL", data));
+    this.engine.events.on("itemGathered", (data: any) => this.handleEvent("GATHER", data));
+    this.engine.events.on("dialogue_start", (data: any) => this.handleEvent("TALK", data));
+    this.engine.events.on("itemCrafted", (data: any) => this.handleEvent("CRAFT", data));
+    this.engine.events.on("starterClaimed", (data: any) => this.handleEvent("CLAIM", data));
+    this.engine.events.on("creatureCaptured", (data: any) => this.handleEvent("CLAIM", data));
+    this.engine.events.on("trainerDefeated", (data: any) => this.handleEvent("BATTLE", data));
+    this.engine.events.on("brambleCleared", (data: any) => this.handleEvent("CLEAR", data));
+    this.engine.events.on("acceptQuest", (data: any) => this.acceptQuest(data));
   }
 
   public async initialize() {

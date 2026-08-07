@@ -19,29 +19,29 @@ export class PartyManager {
   private pendingInvites = new Map<string, PendingInvite>();
 
   constructor(private engine: GameEngine) {
-    this.engine.events.on("playerDisconnected", ({ accountId }) => {
+    this.engine.events.on("playerDisconnected", ({ accountId  }: any) => {
       this.pendingInvites.delete(accountId);
       this.leaveParty(accountId);
     });
-    this.engine.events.on("partyChat", ({ accountId, message }) => {
+    this.engine.events.on("partyChat", ({ accountId, message  }: any) => {
       const senderName = this.resolveOnlineName(accountId) || "Party Member";
       this.broadcastPartyMessage(accountId, senderName, message);
     });
-    this.engine.events.on("partyInvite", ({ accountId, targetName }) => {
+    this.engine.events.on("partyInvite", ({ accountId, targetName  }: any) => {
       void this.handlePartyInvite(accountId, String(targetName || ""));
     });
-    this.engine.events.on("partyInviteAccept", ({ accountId }) => {
+    this.engine.events.on("partyInviteAccept", ({ accountId  }: any) => {
       this.handleInviteAccept(accountId);
     });
-    this.engine.events.on("partyInviteDecline", ({ accountId }) => {
+    this.engine.events.on("partyInviteDecline", ({ accountId  }: any) => {
       this.handleInviteDecline(accountId);
     });
-    this.engine.events.on("partyJoin", ({ accountId, leaderName }) => {
+    this.engine.events.on("partyJoin", ({ accountId, leaderName  }: any) => {
       // Dev/fallback: `/p join [leaderAccountId]`
       this.createOrJoinParty(leaderName, accountId);
       this.emitSystemToAccount(accountId, `Joined party of ${leaderName}!`);
     });
-    this.engine.events.on("partyLeave", ({ accountId }) => {
+    this.engine.events.on("partyLeave", ({ accountId  }: any) => {
       this.leaveParty(accountId);
     });
   }

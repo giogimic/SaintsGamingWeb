@@ -58,9 +58,9 @@ async function resolveUserId(accountOrUserId: string): Promise<string | null> {
 
 export class DialogueManager {
   constructor(private engine: GameEngine) {
-    this.engine.events.on("npcInteractRequest", (data) => this.handleNpcInteract(data));
-    this.engine.events.on("dialogueSelectAction", (data) => this.handleDialogueSelect(data));
-    this.engine.events.on("showTrainerPostBattleDialogue", (data) =>
+    this.engine.events.on("npcInteractRequest", (data: any) => this.handleNpcInteract(data));
+    this.engine.events.on("dialogueSelectAction", (data: any) => this.handleDialogueSelect(data));
+    this.engine.events.on("showTrainerPostBattleDialogue", (data: any) =>
       this.handleTrainerPostBattleDialogue(data)
     );
   }
