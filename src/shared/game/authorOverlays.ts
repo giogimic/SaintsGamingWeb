@@ -25,6 +25,7 @@ export type AuthorOverlaysInput = {
   npcs?: AuthorOverlayNpc[] | null;
   /** Destination spawn pins derived from gate.spawnPoint (same-map preview). */
   showGateSpawns?: boolean;
+  monsterSpawners?: AuthorOverlayNpc[] | null;
 };
 
 /** World Y for author markers — above paint (~0.03), below logic planes (0.5). */
@@ -60,6 +61,20 @@ export function authorOverlayNpcMarkers(
       x: n.x,
       y: n.y,
       kind: "npc" as const,
+    }));
+}
+
+export function authorOverlayMonsterSpawnerMarkers(
+  spawners: AuthorOverlayNpc[] | null | undefined
+): Array<{ key: string; x: number; y: number; kind: "monster_spawner" }> {
+  if (!spawners?.length) return [];
+  return spawners
+    .filter((n) => n && Number.isFinite(n.x) && Number.isFinite(n.y))
+    .map((n) => ({
+      key: n.id || `ms_${n.x}_${n.y}`,
+      x: n.x,
+      y: n.y,
+      kind: "monster_spawner" as const,
     }));
 }
 

@@ -1,3 +1,9 @@
+## [2.1.144] - 2026-08-08
+- `.docs/` added to `.gitignore`.
+- Studio Upgrades: Advanced logic painting undo batching.
+- Studio Upgrades: Monster Spawner UI enhancements and visual overlays.
+- Performance: Large Map mesh chunking (32x32 tiles) implemented for buttery smooth rendering and editing.
+
 ## [2.1.143] - 2026-08-08
 ### Fixed
 - Fixed `/api/admin/system/update` endpoint to look for update scripts inside the `scripts/` directory.

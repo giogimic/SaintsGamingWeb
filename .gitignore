@@ -62,6 +62,7 @@ docker-compose.yml
 !/logs/*.md
 /.agents/
 /.tools/
+/.docs/
 /patch/
 /the-game/
 /scratch/

@@ -58,6 +58,8 @@ export const LootManagerPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  
+  const dataVersion = useEditorStore((s) => s.dataVersion);
   const [simCount, setSimCount] = useState(100);
   const [simStats, setSimStats] = useState<Record<string, { count: number; totalQty: number; rate: number }> | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -83,7 +85,7 @@ export const LootManagerPanel: React.FC = () => {
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -132,6 +134,7 @@ export const LootManagerPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Create failed');
       showToast('Loot pool created');
+      useEditorStore.getState().incrementDataVersion();
       await load();
       if (data.item?.id) setSelectedId(data.item.id);
     } catch (err) {

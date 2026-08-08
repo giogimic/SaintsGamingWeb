@@ -166,6 +166,57 @@ export const PropertiesPanel: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs font-mono">
+      {/* SELECTION CONTEXT */}
+      <div className="bg-[#0b1320]/60 border border-[#cbb26a]/40 rounded p-3 space-y-2 shadow-[0_0_15px_rgba(203,178,106,0.1)]">
+        <div className="flex items-center gap-1.5 font-bold text-[#e2d5b3] border-b border-[#cbb26a]/30 pb-1 uppercase tracking-widest text-[10px]">
+          <MapPin className="w-4 h-4" /> Selection Context
+        </div>
+        {clickedTile ? (
+          <div className="space-y-2 pt-1">
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="bg-[#050b14] border border-[#806f47]/30 p-2 rounded">
+                <span className="text-slate-500 block mb-0.5">Coordinates</span>
+                <span className="text-white font-bold">X: {clickedTile.c} <span className="text-[#806f47]">|</span> Y: {clickedTile.r}</span>
+              </div>
+              <div className="bg-[#050b14] border border-[#806f47]/30 p-2 rounded">
+                <span className="text-slate-500 block mb-0.5">Base Tile ID</span>
+                <span className="text-white font-bold">
+                  {currentMapData?.grid?.[clickedTile.r]?.[clickedTile.c] ?? 'Empty (0)'}
+                </span>
+              </div>
+            </div>
+            
+            {/* Logic Tile Data */}
+            {(() => {
+              const logicId = currentMapData?.grid?.[clickedTile.r]?.[clickedTile.c];
+              const logicObj = logicId && logicTiles[logicId];
+              if (!logicObj) return null;
+              return (
+                <div className="bg-[#050b14] border border-blue-900/40 p-2 rounded flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-sm ${logicObj.color || 'bg-blue-500'}`} />
+                  <div>
+                    <span className="block text-white font-bold">{logicObj.name} <span className="text-slate-500 font-normal">#{logicObj.id}</span></span>
+                    {logicObj.onInteractAction && <span className="text-blue-300 text-[9px] block">Interact: {logicObj.onInteractAction}</span>}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Warp Gate Data */}
+            {mapGates.some(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r) && (
+              <div className="bg-purple-900/20 border border-purple-500/30 p-2 rounded">
+                <span className="text-purple-300 font-bold block mb-0.5">Warp Gate Present</span>
+                <span className="text-purple-200/70 block text-[9px]">Target: {mapGates.find(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r)?.targetMapId}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-slate-500 italic py-2 text-center text-[10px]">
+            Click a tile in the viewport to inspect its properties.
+          </div>
+        )}
+      </div>
+
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-3 text-[10px] text-slate-400 leading-relaxed">
         Fun-first: pick a component → paint on Logic (−1) → <span className="text-[#e2d5b3]">Walk Mode</span> to feel it → tweak →{' '}
         <span className="text-[#e2d5b3]">Save Map</span>.

@@ -1009,6 +1009,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, activeMap.tilesets);
       }, {
         drag: true,
+        onDragStart: () => {
+          useEditorStore.getState().startPaintTransaction();
+        },
+        onDragEnd: () => {
+          useEditorStore.getState().commitPaintTransaction();
+        },
         onTileHover: (r, c) => {
           const store = useEditorStore.getState();
           if (store.brushMode === 'prefab' && store.activePrefabId) {
@@ -1196,10 +1202,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     }
     const map = useGameStore.getState().activeMapData || activeMap;
     const gates = normalizeGates(map?.gates);
+    const allNpcs = map?.npcs || [];
+    const justNpcs = allNpcs.filter((n: any) => n.entityType !== 'spawner');
+    const spawners = allNpcs.filter((n: any) => n.entityType === 'spawner');
+
     engine.setAuthorOverlays({
       gates: showWarpOverlays ? gates : [],
       spawnSourceGates: showSpawnOverlays ? gates : [],
-      npcs: showSpawnOverlays ? (map?.npcs || []) : [],
+      npcs: showSpawnOverlays ? justNpcs : [],
+      monsterSpawners: showSpawnOverlays ? spawners : [],
       showGateSpawns: showSpawnOverlays,
     });
   }, [
