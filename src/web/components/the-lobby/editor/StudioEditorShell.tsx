@@ -45,6 +45,8 @@ import { QuestEditorPanel } from './panels/QuestEditorPanel';
 import { DialogueEditorPanel } from './panels/DialogueEditorPanel';
 import { LootManagerPanel } from './panels/LootManagerPanel';
 import { ItemEditorPanel } from './panels/ItemEditorPanel';
+import { MonsterSpawnerPanel } from './panels/MonsterSpawnerPanel';
+import { PrefabBuilderPanel } from './panels/PrefabBuilderPanel';
 import { WorldProfileBar } from './WorldProfileBar';
 
 const MODE_BUTTONS: Array<{
@@ -307,6 +309,18 @@ export const StudioEditorShell: React.FC = () => {
             <ItemEditorPanel />
           </DraggablePanel>
         )}
+
+        {canUseStudioDock(permissionLevel, 'spawner') && (
+          <DraggablePanel id="spawner" icon={<Sword className="w-4 h-4" />}>
+            <MonsterSpawnerPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'prefab') && (
+          <DraggablePanel id="prefab" icon={<Package className="w-4 h-4" />}>
+            <PrefabBuilderPanel />
+          </DraggablePanel>
+        )}
       </div>
 
       {/* Mode strip + dock */}
@@ -353,6 +367,7 @@ export const StudioEditorShell: React.FC = () => {
         <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-3 py-2 flex items-center gap-1.5 sm:gap-2 shadow-2xl overflow-x-auto max-w-full">
           <DockButton id="build" icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="prefab" icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="npc" icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />

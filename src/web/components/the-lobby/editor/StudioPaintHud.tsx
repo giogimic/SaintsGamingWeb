@@ -22,6 +22,8 @@ export function StudioPaintHud() {
   const setShowWarpOverlays = useEditorStore((s) => s.setShowWarpOverlays);
   const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
   const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
+  const brushRadius = useEditorStore((s) => s.brushRadius);
+  const setBrushRadius = useEditorStore((s) => s.setBrushRadius);
   const logicTiles = useGameStore((s) => s.logicTiles);
   const activeMapData = useGameStore((s) => s.activeMapData);
 
@@ -107,6 +109,13 @@ export function StudioPaintHud() {
           <MapPin className="h-3 w-3" />
           Spawns {showSpawnOverlays ? 'On' : 'Off'}
         </button>
+
+        <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-300">
+          <span className="text-slate-500">Size</span>
+          <button onClick={() => setBrushRadius(brushRadius - 1)} className="hover:text-white px-1 font-bold">−</button>
+          <span className="font-bold text-[#cbb26a]">{brushRadius}</span>
+          <button onClick={() => setBrushRadius(brushRadius + 1)} className="hover:text-white px-1 font-bold">+</button>
+        </div>
 
         <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-400">
           <MousePointerClick className="h-3.5 w-3.5" />

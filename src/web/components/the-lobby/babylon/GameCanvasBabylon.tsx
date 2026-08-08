@@ -883,6 +883,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const engine = engineRef.current;
     if (!engine) return;
 
+    // Sync brush radius
+    engine.setBrushRadius(useEditorStore.getState().brushRadius);
+
     const worldSync = {
       ensureActiveMap: (map: any) => {
         const store = useGameStore.getState();
@@ -894,9 +897,70 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       markDirty: () => useEditorStore.getState().markMapDirty(),
     };
 
-    if (isDevEditorOpen) {
-      engine.enableTilePicking((r, c) => {
-        const target = resolvePaintTarget(activeMap, activeLayerIdx);
+      if (isDevEditorOpen) {
+        engine.enableTilePicking((r, c, _, eventType) => {
+          const store = useEditorStore.getState();
+          const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId } = store;
+
+          if (brushMode === 'select') {
+            if (eventType === 'down') {
+              setSelectionStart({ r, c });
+              setSelectionEnd({ r, c });
+              engine.setSelectionPreview(r, c, r, c);
+            } else if (eventType === 'move') {
+              setSelectionEnd({ r, c });
+              if (store.selectionStart) {
+                engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
+              }
+            }
+            return;
+          }
+
+          if (brushMode === 'prefab') {
+            if (eventType !== 'down') return;
+            const prefab = store.prefabs.find((p) => p.id === activePrefabId);
+            if (!prefab) {
+              showToast('Select a prefab from the Prefab Builder first.');
+              return;
+            }
+
+            const ops: any[] = [];
+            // Paste Visual Data
+            prefab.visualData?.forEach((v: any) => {
+              const tr = r + v.r;
+              const tc = c + v.c;
+              if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
+              const targetLayer = v.layerOffset; // Keep original layer
+              const painted = paintWorldCell(activeMap, targetLayer, tr, tc, v.tileId, worldSync);
+              if (!('error' in painted)) {
+                ops.push(painted.cell);
+                engine.updateSingleTile(tr, tc, v.tileId, targetLayer, activeMap.tilesets);
+              }
+            });
+
+            // Paste Logic Data
+            prefab.logicData?.forEach((l: any) => {
+              const tr = r + l.r;
+              const tc = c + l.c;
+              if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
+              const painted = paintWorldCell(activeMap, LOGIC_LAYER_IDX, tr, tc, l.tileId, worldSync);
+              if (!('error' in painted)) {
+                ops.push(painted.cell);
+                if (!engine.updateLogicTile(tr, tc, l.tileId)) {
+                  engine.enableLogicGridOverlay(activeMap?.grid || []);
+                  engine.updateLogicTile(tr, tc, l.tileId);
+                }
+              }
+            });
+
+            if (ops.length > 0) {
+              store.pushPaintOp(ops);
+              store.markMapDirty();
+            }
+            return;
+          }
+
+          const target = resolvePaintTarget(activeMap, activeLayerIdx);
         if (target.kind === 'unavailable') {
           showToast(target.reason);
           return;
@@ -940,7 +1004,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         useEditorStore.getState().pushPaintOp([painted.cell]);
         engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, activeMap.tilesets);
-      }, { drag: true });
+      }, {
+        drag: true,
+        onTileHover: (r, c) => {
+          const store = useEditorStore.getState();
+          if (store.brushMode === 'prefab' && store.activePrefabId) {
+            const prefab = store.prefabs.find(p => p.id === store.activePrefabId);
+            if (prefab) {
+              engine.setSelectionPreview(r, c, r + prefab.height - 1, c + prefab.width - 1);
+            }
+          } else if (store.brushMode === 'select') {
+            if (store.selectionStart && !store.selectionEnd) {
+              engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
+            }
+          }
+        }
+      });
     } else {
       // Click-to-move in exploration mode with Pathfinding
       engine.enableTilePicking((r, c) => {
@@ -989,6 +1068,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       });
     }
   }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
+
+    // Sync brush radius separately so we don't re-bind tile picking on every brush size change
+    useEffect(() => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const unsub = useEditorStore.subscribe((state, prevState) => {
+        engine.setBrushRadius(state.brushRadius);
+        if (state.brushMode !== 'select' && prevState.brushMode === 'select') {
+          engine.clearSelectionPreview();
+        }
+      });
+      return unsub;
+    }, []);
 
   // Undo/redo mesh sync from editor op stack
   useEffect(() => {

@@ -29,7 +29,9 @@ export type StudioDockId =
   | 'dev'
   | 'characters'
   | 'classes'
-  | 'items';
+  | 'items'
+  | 'spawner'
+  | 'prefab';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -42,8 +44,8 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
-  develop: ['build', 'properties'],
-  npc: ['npc', 'properties', 'assets'],
+  develop: ['build', 'properties', 'prefab'],
+  npc: ['npc', 'properties', 'assets', 'spawner'],
   quest: ['npc', 'quest'],
   creature: ['creature', 'loot', 'items'],
   test: [],
@@ -132,5 +134,13 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   items: {
     label: 'Items',
     blurb: 'Item definitions and economy values.',
+  },
+  spawner: {
+    label: 'Spawners',
+    blurb: 'Monster spawners for hostile roaming enemies.',
+  },
+  prefab: {
+    label: 'Prefabs',
+    blurb: 'Stamp pre-built multi-tile structures.',
   },
 };

@@ -165,6 +165,7 @@ model User {
   replyLikes            ReplyLike[]
   achievements          UserAchievement[]
   uiPresets             UiPreset[]
+  mapPrefabs            MapPrefab[]
 
   @@index([createdAt])
 }
@@ -737,6 +738,23 @@ model GameCharacter {
   gtcListings GtcListing[]
 
   @@index([userId])
+}
+
+model MapPrefab {
+  id         String   @id @default(cuid())
+  authorId   String
+  name       String
+  category   String   @default("decor")
+  width      Int
+  height     Int
+  visualData String // JSON array of tiles: [{ layerOffset, r, c, tileId }]
+  logicData  String // JSON array of logic tags: [{ r, c, tileId }]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
 }
 
 model WorldMap {
