@@ -14,7 +14,6 @@ import {
 import type { ItemTemplate } from '@prisma/client';
 
 export const ItemEditorPanel: React.FC = () => {
-  const isOpen = useEditorStore((s) => s.panels.items.isOpen);
   const activePanel = useEditorStore((s) => s.activePanel);
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
   const dataVersion = useEditorStore((s) => s.dataVersion);
@@ -133,14 +132,8 @@ export const ItemEditorPanel: React.FC = () => {
     setSaving(false);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className={`flex h-full w-full pointer-events-auto bg-black/80 backdrop-blur-md text-white border transition-colors ${
-        isFocused ? 'border-amber-500/50' : 'border-white/10'
-      }`}
-    >
+    <div className="flex h-full w-full bg-black/80 text-white">
         {/* LEFT SIDEBAR - List */}
         <div className="w-1/3 border-r border-white/10 flex flex-col h-full bg-black/40">
           <div className="p-3 border-b border-white/10 flex gap-2">
