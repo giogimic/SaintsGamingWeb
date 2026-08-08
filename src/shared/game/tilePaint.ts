@@ -116,8 +116,7 @@ export function isTilePickTarget(meshName: string | null | undefined): boolean {
     meshName === "map_pick_plane" ||
     meshName.startsWith("logic_") ||
     meshName.startsWith("tile_") ||
-    meshName.startsWith("tileset_mesh_") ||
     meshName.startsWith("ground_") ||
-    meshName.startsWith("base_ground_")
+    meshName.startsWith("paint_")
   );
 }

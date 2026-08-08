@@ -897,7 +897,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       markDirty: () => useEditorStore.getState().markMapDirty(),
     };
 
+      let cleanupPan = () => {};
+
       if (isDevEditorOpen) {
+        cleanupPan = engine.startEditorKeyboardPan() || (() => {});
         engine.enableTilePicking((r, c, _, eventType) => {
           const store = useEditorStore.getState();
           const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId } = store;
@@ -1067,6 +1070,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
       });
     }
+
+    return () => {
+      engine.disableTilePicking();
+      cleanupPan();
+    };
   }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
 
     // Sync brush radius separately so we don't re-bind tile picking on every brush size change

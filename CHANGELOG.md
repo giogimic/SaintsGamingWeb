@@ -1,3 +1,8 @@
+## [2.1.142] - 2026-08-08
+### Fixed
+- Fixed Studio tile picking precision by bypassing batched visual tile meshes and raycasting directly against a mathematical `Z=0.001` ground plane.
+- Fixed inability to navigate large maps in Studio mode by properly mounting and unmounting the WASD/Arrow key `startEditorKeyboardPan` loop.
+
 ## [2.1.141] - 2026-08-08
 ### Added
 - Added Database Setup for `MapPrefab` in `schema.prisma`.
