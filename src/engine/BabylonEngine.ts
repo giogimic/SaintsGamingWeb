@@ -831,6 +831,16 @@ export class BabylonEngine {
       const tilesetVertexData: Map<string, { positions: number[], indices: number[], uvs: number[], vertexIndex: number }> = new Map();
       const CHUNK_SIZE = 32;
 
+      // Normalize input: if chunks aren't provided, treat the base map as a single chunk at 0,0
+      const chunksToRender: BabylonMapChunk[] = mapData.chunks?.length 
+        ? mapData.chunks 
+        : [{
+            chunkX: 0, chunkY: 0, 
+            width: width, height: height, 
+            grid: tiles || [], 
+            tileLayers: tileLayers
+          }];
+
       // Ensure we treat the map as 32x32 chunks, regardless of input structure
       const processTile = (r: number, c: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number) => {
         const gid = layer.grid[r]?.[c] ?? 0;
