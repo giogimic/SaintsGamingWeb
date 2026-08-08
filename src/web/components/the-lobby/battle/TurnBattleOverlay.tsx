@@ -17,11 +17,25 @@ export function TurnBattleOverlay() {
     }
   }, [activeBattle?.log]);
 
-  if (!activeBattle) return null;
+  if (!activeBattle) {
+    return null;
+  }
 
   const { wildCreature, playerCreature, phase, log, isTrainer, trainerName } = activeBattle;
   
-  if (!wildCreature || !playerCreature) return null;
+  if (!wildCreature || !playerCreature) {
+    return (
+      <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-red-900/90 text-white p-6">
+        <div>
+          <h2 className="text-xl font-bold text-red-300 mb-2">Battle State Error</h2>
+          <p>Missing creature data in active battle.</p>
+          <pre className="mt-4 text-xs bg-black/50 p-4 rounded overflow-auto max-w-2xl max-h-64">
+            {JSON.stringify(activeBattle, null, 2)}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
   const wildHpPercent = Math.max(0, Math.min(100, (wildCreature.hp / wildCreature.maxHp) * 100));
   const playerHpPercent = Math.max(0, Math.min(100, (playerCreature.hp / playerCreature.maxHp) * 100));
@@ -54,9 +68,8 @@ export function TurnBattleOverlay() {
   };
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm animate-in fade-in duration-500">
-      
-      {/* Top Half: 3D-ish Battle Scene using basic UI elements for MVP */}
+    <div className="pointer-events-auto absolute inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-md">
+      {/* Top Half: Creatures */}
       <div className="flex-1 relative overflow-hidden flex flex-col justify-between p-8">
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/40 to-emerald-900/40 pointer-events-none" />

@@ -325,7 +325,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   };
 
   const tryMoveDirection = (dx: number, dy: number) => {
-    const currentPlayer = useGameStore.getState().player;
+    const state = useGameStore.getState();
+    if (state.gameMode !== 'EXPLORING') return;
+    const currentPlayer = state.player;
     const curX = currentPlayer.position?.x ?? 6;
     const curY = currentPlayer.position?.y ?? 2;
     tryMovePlayerTo(curX + dx, curY + dy);
