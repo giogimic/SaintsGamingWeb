@@ -42,6 +42,7 @@ import {
   authorOverlayGateMarkers,
   authorOverlayNpcMarkers,
   authorOverlaySpawnMarkers,
+  authorOverlayMonsterSpawnerMarkers,
   type AuthorOverlaysInput,
 } from "../shared/game/authorOverlays";
 
