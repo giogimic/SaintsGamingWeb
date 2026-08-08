@@ -246,6 +246,14 @@ export class BabylonEngine {
   private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
   /** Covers erased cells so batched tileset art disappears without a full remesh. */
   private eraseVoidMaterial?: StandardMaterial;
+  /** Adjustable brush radius for multi-tile paint (1 = single tile). */
+  private brushRadius: number = 1;
+  /** Brush preview overlay meshes. */
+  private brushPreviewMeshes: Mesh[] = [];
+  private selectionPreviewMeshes: Mesh[] = [];
+  /** Editor keyboard pan active keys. */
+  private editorPanKeysHeld: Set<string> = new Set();
+  private editorPanAnimFrameId: number | null = null;
 
   /**
    * Ground tilesets are one batched mesh per image. Alpha-*blend* sorts that
@@ -326,7 +334,9 @@ export class BabylonEngine {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const currentOrtho = this.camera.orthoTop || 10;
-      const newOrtho = Math.max(5, Math.min(22, currentOrtho * zoomFactor));
+      // Editor mode allows much further zoom-out for large maps.
+      const maxZoom = this.editorCameraMode ? 60 : 22;
+      const newOrtho = Math.max(3, Math.min(maxZoom, currentOrtho * zoomFactor));
       const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
       this.camera.orthoLeft = -newOrtho * aspect;
       this.camera.orthoRight = newOrtho * aspect;
@@ -1293,12 +1303,14 @@ export class BabylonEngine {
     this.paintOverlayMeshes.clear();
   }
 
-  /** Convert world XZ (root-local) to tile row/col. */
+  /** Convert world XZ (root-local) to tile row/col. Uses center-of-cell alignment. */
   public worldToTile(worldX: number, worldZ: number): { r: number; c: number } | null {
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
     const s = this.currentTileSize || 1;
     if (!w || !h) return null;
+    // Center-aligned: the pick point at the center of tile (r,c) should map exactly to (r,c).
+    // Tile centers in world space: x = (c - w/2 + 0.5) * s, z = (h/2 - r - 0.5) * s
     const c = Math.floor(worldX / s + w / 2);
     const r = Math.floor(h / 2 - worldZ / s);
     if (r < 0 || c < 0 || r >= h || c >= w) return null;
@@ -1839,16 +1851,17 @@ private resolveTilePick(
    * Enable click (+ optional drag) paint / move picking.
    * Drag re-picks under the cursor so authors can stroke tiles continuously.
    * Keep drag off for Walk Mode click-to-move so pointer moves do not repath.
+   * With brushRadius > 1, emits all cells in a circular area around the pick center.
    */
   public enableTilePicking(
-    onTileClick: (r: number, c: number, layerIdx?: number) => void,
-    options?: { drag?: boolean }
+    onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up') => void,
+    options?: { drag?: boolean; onTileHover?: (r: number, c: number) => void }
   ) {
     let isPainting = false;
     let lastKey = '';
     const allowDrag = !!options?.drag;
 
-    const emitFromScenePick = () => {
+    const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
       if (!this.scene) return;
       const pickResult = this.scene.pick(
         this.scene.pointerX,
@@ -1860,23 +1873,65 @@ private resolveTilePick(
       const key = `${resolved.r},${resolved.c}`;
       if (key === lastKey) return;
       lastKey = key;
-      onTileClick(resolved.r, resolved.c, resolved.layerIdx);
+
+      // Apply brush radius — emit all cells within radius.
+      if (this.brushRadius <= 1) {
+        onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType);
+      } else {
+        const rad = this.brushRadius - 1;
+        const w = this.currentMapWidth;
+        const h = this.currentMapHeight;
+        for (let dr = -rad; dr <= rad; dr++) {
+          for (let dc = -rad; dc <= rad; dc++) {
+            // Circular brush: only paint cells within euclidean radius.
+            if (dr * dr + dc * dc > rad * rad + rad) continue;
+            const nr = resolved.r + dr;
+            const nc = resolved.c + dc;
+            if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
+              onTileClick(nr, nc, resolved.layerIdx, eventType);
+            }
+          }
+        }
+      }
+    };
+
+    const updateBrushPreview = () => {
+      if (!this.scene || this.brushRadius <= 1) {
+        this.clearBrushPreview();
+        return;
+      }
+      const pickResult = this.scene.pick(
+        this.scene.pointerX,
+        this.scene.pointerY,
+        (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
+      );
+      const resolved = this.resolveTilePick(pickResult);
+      if (!resolved) {
+        this.clearBrushPreview();
+        return;
+      }
+      this.renderBrushPreview(resolved.r, resolved.c);
+      if (options?.onTileHover) {
+        options.onTileHover(resolved.r, resolved.c);
+      }
     };
 
     this.scene.onPointerDown = () => {
       isPainting = true;
       lastKey = '';
-      emitFromScenePick();
+      emitFromScenePick('down');
     };
 
     this.scene.onPointerUp = () => {
       isPainting = false;
       lastKey = '';
+      emitFromScenePick('up');
     };
 
     this.scene.onPointerMove = () => {
+      updateBrushPreview();
       if (!allowDrag || !isPainting || !this.scene) return;
-      emitFromScenePick();
+      emitFromScenePick('move');
     };
   }
 
@@ -1884,6 +1939,196 @@ private resolveTilePick(
     this.scene.onPointerDown = undefined;
     this.scene.onPointerUp = undefined;
     this.scene.onPointerMove = undefined;
+    this.clearBrushPreview();
+  }
+
+  /** Set brush radius for multi-tile painting. */
+  public setBrushRadius(radius: number) {
+    this.brushRadius = Math.max(1, Math.min(10, radius));
+    if (this.brushRadius <= 1) this.clearBrushPreview();
+  }
+
+  /** Clear brush preview overlay. */
+  private clearBrushPreview() {
+    for (const m of this.brushPreviewMeshes) m.dispose();
+    this.brushPreviewMeshes = [];
+  }
+
+  public clearSelectionPreview() {
+    for (const m of this.selectionPreviewMeshes) m.dispose();
+    this.selectionPreviewMeshes = [];
+  }
+
+  public setSelectionPreview(r1: number, c1: number, r2: number, c2: number) {
+    this.clearSelectionPreview();
+    const minR = Math.min(r1, r2);
+    const maxR = Math.max(r1, r2);
+    const minC = Math.min(c1, c2);
+    const maxC = Math.max(c1, c2);
+
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+
+    let previewMat = this.scene.getMaterialByName('selection_preview_mat') as StandardMaterial | null;
+    if (!previewMat) {
+      const mat = new StandardMaterial('selection_preview_mat', this.scene);
+      mat.diffuseColor = new Color3(0.5, 0.4, 1.0);
+      mat.alpha = 0.4;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      previewMat = mat;
+    }
+
+    for (let r = minR; r <= maxR; r++) {
+      for (let c = minC; c <= maxC; c++) {
+        if (r < 0 || r >= h || c < 0 || c >= w) continue;
+        const posX = (c - w / 2) * s + s * 0.5;
+        const posZ = (h / 2 - r) * s - s * 0.5;
+        const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.95 }, this.scene);
+        plane.rotation.x = Math.PI / 2;
+        plane.position.x = posX;
+        plane.position.z = posZ;
+        plane.position.y = 0.02; // slightly above brush preview
+        plane.material = previewMat;
+        plane.isPickable = false;
+        this.selectionPreviewMeshes.push(plane);
+      }
+    }
+  }
+
+  /** Render semi-transparent brush preview at given center tile. */
+  private renderBrushPreview(centerR: number, centerC: number) {
+    this.clearBrushPreview();
+    const rad = this.brushRadius - 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const s = this.currentTileSize || 1;
+
+    let previewMat = this.scene.getMaterialByName('brush_preview_mat') as StandardMaterial | null;
+    if (!previewMat) {
+      const mat = new StandardMaterial('brush_preview_mat', this.scene);
+      mat.diffuseColor = new Color3(0.3, 0.8, 1.0);
+      mat.alpha = 0.25;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      previewMat = mat;
+    }
+
+    for (let dr = -rad; dr <= rad; dr++) {
+      for (let dc = -rad; dc <= rad; dc++) {
+        if (dr * dr + dc * dc > rad * rad + rad) continue;
+        const nr = centerR + dr;
+        const nc = centerC + dc;
+        if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
+        const posX = (nc - w / 2) * s + s * 0.5;
+        const posZ = (h / 2 - nr) * s - s * 0.5;
+        const plane = MeshBuilder.CreatePlane(`brush_preview_${nr}_${nc}`, { size: s * 0.95 }, this.scene);
+        plane.rotation.x = Math.PI / 2;
+        plane.position = new Vector3(posX, 0.15, posZ);
+        plane.parent = this.rootNode;
+        plane.material = previewMat;
+        plane.isPickable = false;
+        this.brushPreviewMeshes.push(plane);
+      }
+    }
+  }
+
+  /** Fit the entire map in the editor viewport. */
+  public fitMapInView() {
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const s = this.currentTileSize || 1;
+    if (!w || !h) return;
+    const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
+    // The orthographic size needed to fit the larger dimension.
+    const orthoH = (h * s) / 2 + 2;
+    const orthoW = (w * s) / (2 * aspect) + 2;
+    const ortho = Math.max(orthoH, orthoW);
+    const clamped = Math.max(3, Math.min(60, ortho));
+    this.updateCameraAspect(clamped);
+    // Center camera on map center.
+    this.snapCameraTo(0, 0);
+  }
+
+  /** Jump editor camera to a specific tile coordinate. */
+  public panEditorCameraToTile(r: number, c: number) {
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const s = this.currentTileSize || 1;
+    if (!w || !h) return;
+    const worldX = (c - w / 2 + 0.5) * s;
+    const worldZ = (h / 2 - r - 0.5) * s;
+    this.snapCameraTo(worldX, worldZ);
+  }
+
+  /** Start WASD/arrow key pan loop for editor camera. */
+  public startEditorKeyboardPan() {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!this.editorCameraMode) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const code = e.code;
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home'].includes(code)) {
+        e.preventDefault();
+        if (code === 'Home') {
+          this.fitMapInView();
+          return;
+        }
+        this.editorPanKeysHeld.add(code);
+        this.startEditorPanLoop();
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      this.editorPanKeysHeld.delete(e.code);
+      if (this.editorPanKeysHeld.size === 0 && this.editorPanAnimFrameId !== null) {
+        cancelAnimationFrame(this.editorPanAnimFrameId);
+        this.editorPanAnimFrameId = null;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    // Return cleanup function.
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      this.editorPanKeysHeld.clear();
+      if (this.editorPanAnimFrameId !== null) {
+        cancelAnimationFrame(this.editorPanAnimFrameId);
+        this.editorPanAnimFrameId = null;
+      }
+    };
+  }
+
+  private startEditorPanLoop() {
+    if (this.editorPanAnimFrameId !== null) return;
+    let lastTime = performance.now();
+    const loop = (now: number) => {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+      if (this.editorPanKeysHeld.size === 0) {
+        this.editorPanAnimFrameId = null;
+        return;
+      }
+      // Pan speed scales with current zoom level.
+      const ortho = this.camera.orthoTop || 10;
+      const speed = ortho * 1.2 * dt;
+      let dx = 0;
+      let dz = 0;
+      if (this.editorPanKeysHeld.has('KeyW') || this.editorPanKeysHeld.has('ArrowUp')) dz += speed;
+      if (this.editorPanKeysHeld.has('KeyS') || this.editorPanKeysHeld.has('ArrowDown')) dz -= speed;
+      if (this.editorPanKeysHeld.has('KeyA') || this.editorPanKeysHeld.has('ArrowLeft')) dx -= speed;
+      if (this.editorPanKeysHeld.has('KeyD') || this.editorPanKeysHeld.has('ArrowRight')) dx += speed;
+      if (dx !== 0 || dz !== 0) {
+        this.cameraTargetX += dx;
+        this.cameraTargetZ += dz;
+        this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
+        this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
+        this.cameraSnapped = true;
+      }
+      this.editorPanAnimFrameId = requestAnimationFrame(loop);
+    };
+    this.editorPanAnimFrameId = requestAnimationFrame(loop);
   }
 
   public getEntityMesh(entityId: string) {

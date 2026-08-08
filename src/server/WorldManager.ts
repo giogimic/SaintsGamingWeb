@@ -175,23 +175,39 @@ export class WorldManager {
     const mapData = getCachedMap(mapId);
     if (mapData && mapData.npcs) {
       for (const npc of mapData.npcs) {
-        const rawId = String(npc.id || npc.templateId || "villager");
-        const sprite =
-          npc.sprite ||
-          (npc as any).spriteKey ||
-          (npc as any).spriteId ||
-          rawId.replace(/^npc_/, "");
-        this.engine.events.emit("spawnCreature", {
-          templateId: rawId.replace(/^npc_/, ""),
-          entityType: "NPC",
-          mapId: instanceId,
-          x: npc.x,
-          y: npc.y,
-          spawnMode: "STATIC",
-          name: npc.name || rawId,
-          spriteKey: String(sprite).replace(/^\/game-assets\/npc\//, "").replace(/\.png$/, ""),
-          dialogueNpcId: rawId.startsWith("npc_") ? rawId : `npc_${rawId.replace(/^npc_/, "")}`,
-        });
+        if ((npc as any).entityType === "spawner") {
+          const pool = String((npc as any).monsterPool || "rockitten").split(",").map((s) => s.trim());
+          const count = Number((npc as any).maxPopulation) || 3;
+          for (let i = 0; i < count; i++) {
+            const template = pool[Math.floor(Math.random() * pool.length)];
+            this.engine.events.emit("spawnCreature", {
+              templateId: template,
+              entityType: "CREATURE",
+              mapId: instanceId,
+              x: Number(npc.x) + (Math.random() * 2 - 1) * (Number((npc as any).wanderRadius) || 5),
+              y: Number(npc.y) + (Math.random() * 2 - 1) * (Number((npc as any).wanderRadius) || 5),
+              spawnMode: "ROAMING",
+            });
+          }
+        } else {
+          const rawId = String(npc.id || npc.templateId || "villager");
+          const sprite =
+            npc.sprite ||
+            (npc as any).spriteKey ||
+            (npc as any).spriteId ||
+            rawId.replace(/^npc_/, "");
+          this.engine.events.emit("spawnCreature", {
+            templateId: rawId.replace(/^npc_/, ""),
+            entityType: "NPC",
+            mapId: instanceId,
+            x: npc.x,
+            y: npc.y,
+            spawnMode: "STATIC",
+            name: npc.name || rawId,
+            spriteKey: String(sprite).replace(/^\/game-assets\/npc\//, "").replace(/\.png$/, ""),
+            dialogueNpcId: rawId.startsWith("npc_") ? rawId : `npc_${rawId.replace(/^npc_/, "")}`,
+          });
+        }
       }
     }
 

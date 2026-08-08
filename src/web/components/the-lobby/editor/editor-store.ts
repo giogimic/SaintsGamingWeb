@@ -42,7 +42,7 @@ import {
   type PieOptions,
 } from '@/shared/game/pieOptions';
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes' | 'items';
+export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes' | 'items' | 'spawner' | 'prefab';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -76,6 +76,7 @@ type PlaytestRestoreSnapshot = {
   activeLogicTileId: number;
   activeLayerIdx: number;
   mapDirty: boolean;
+  brushRadius: number;
 };
 
 interface EditorState {
@@ -102,6 +103,12 @@ interface EditorState {
   activeBrushTileId: number;
   activeLogicTileId: number;
   activeLayerIdx: number;
+  brushRadius: number;
+  brushMode: 'paint' | 'select' | 'prefab';
+  activePrefabId: string | null;
+  prefabs: any[];
+  selectionStart: { r: number; c: number } | null;
+  selectionEnd: { r: number; c: number } | null;
   clickedTile: { r: number; c: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
   /** Soft editor overlay: show tile XY in paint HUD. */
@@ -136,6 +143,12 @@ interface EditorState {
   setShowEditorCoords: (on: boolean) => void;
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
+  setBrushRadius: (radius: number) => void;
+  setBrushMode: (mode: 'paint' | 'select' | 'prefab') => void;
+  setActivePrefabId: (id: string | null) => void;
+  setPrefabs: (prefabs: any[]) => void;
+  setSelectionStart: (tile: { r: number; c: number } | null) => void;
+  setSelectionEnd: (tile: { r: number; c: number } | null) => void;
   markMapDirty: () => void;
   clearMapDirty: () => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
@@ -283,6 +296,28 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  spawner: {
+    id: 'spawner',
+    title: 'Monster Spawner',
+    isOpen: false,
+    isCollapsed: false,
+    x: 500,
+    y: 100,
+    width: 440,
+    height: 560,
+    zIndex: 10,
+  },
+  prefab: {
+    id: 'prefab',
+    title: 'Prefab Builder',
+    isOpen: false,
+    isCollapsed: false,
+    x: 60,
+    y: 60,
+    width: 400,
+    height: 600,
+    zIndex: 10,
+  },
 };
 
 function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {
@@ -317,6 +352,7 @@ function capturePlaytestSnapshot(state: {
   activeLogicTileId: number;
   activeLayerIdx: number;
   mapDirty: boolean;
+  brushRadius: number;
 }): PlaytestRestoreSnapshot {
   const openPanelIds = (Object.keys(state.panels) as PanelId[]).filter(
     (id) => state.panels[id].isOpen
@@ -328,6 +364,7 @@ function capturePlaytestSnapshot(state: {
     activeLogicTileId: state.activeLogicTileId,
     activeLayerIdx: state.activeLayerIdx,
     mapDirty: state.mapDirty,
+    brushRadius: state.brushRadius,
   };
 }
 
@@ -353,6 +390,12 @@ export const useEditorStore = create<EditorState>()(
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
+      brushRadius: 1,
+      brushMode: 'paint',
+      activePrefabId: null,
+      prefabs: [],
+      selectionStart: null,
+      selectionEnd: null,
       clickedTile: null,
       lastPaintedTile: null,
       showEditorCoords: true,
@@ -407,6 +450,7 @@ export const useEditorStore = create<EditorState>()(
             state.activeLogicTileId = snap.activeLogicTileId;
             state.activeLayerIdx = snap.activeLayerIdx;
             state.mapDirty = snap.mapDirty;
+            state.brushRadius = snap.brushRadius;
             closeAllPanels(state);
             for (const id of snap.openPanelIds) {
               if (state.panels[id]) {
@@ -571,6 +615,30 @@ export const useEditorStore = create<EditorState>()(
       setShowSpawnOverlays: (on) =>
         set((state) => {
           state.showSpawnOverlays = on;
+        }),
+      setBrushRadius: (radius) =>
+        set((state) => {
+          state.brushRadius = Math.max(1, Math.min(10, radius));
+        }),
+      setBrushMode: (mode) =>
+        set((state) => {
+          state.brushMode = mode;
+        }),
+      setActivePrefabId: (id) =>
+        set((state) => {
+          state.activePrefabId = id;
+        }),
+      setPrefabs: (prefabs) =>
+        set((state) => {
+          state.prefabs = prefabs;
+        }),
+      setSelectionStart: (tile) =>
+        set((state) => {
+          state.selectionStart = tile;
+        }),
+      setSelectionEnd: (tile) =>
+        set((state) => {
+          state.selectionEnd = tile;
         }),
       markMapDirty: () =>
         set((state) => {

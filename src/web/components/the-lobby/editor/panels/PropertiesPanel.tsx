@@ -429,18 +429,49 @@ export const PropertiesPanel: React.FC = () => {
             {preset.fields.map((f) => (
               <div key={f.key}>
                 <label className="block text-[10px] text-slate-400">{f.label}</label>
-                <input
-                  type={f.type === 'number' ? 'number' : 'text'}
-                  step={f.type === 'number' ? 'any' : undefined}
-                  value={fieldValues[f.key] ?? f.defaultValue}
-                  onChange={(e) =>
-                    setFieldValues((prev) => ({
-                      ...prev,
-                      [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
-                    }))
-                  }
-                  className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
-                />
+                {f.type === 'enum' && f.options ? (
+                  <select
+                    value={String(fieldValues[f.key] ?? f.defaultValue)}
+                    onChange={(e) =>
+                      setFieldValues((prev) => ({
+                        ...prev,
+                        [f.key]: e.target.value,
+                      }))
+                    }
+                    className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-[11px]"
+                  >
+                    {f.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type={f.type === 'number' ? 'number' : 'text'}
+                    step={f.type === 'number' ? 'any' : undefined}
+                    value={fieldValues[f.key] ?? f.defaultValue}
+                    onChange={(e) =>
+                      setFieldValues((prev) => ({
+                        ...prev,
+                        [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
+                      }))
+                    }
+                    className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-[11px]"
+                  />
+                )}
+                {f.key === 'lootPoolId' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStudioMode('creature');
+                      showToast('Opened Loot Manager. Copy a pool ID and paste it here.');
+                    }}
+                    className="mt-1 w-full text-[9px] uppercase tracking-wider font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded py-0.5 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    Link Loot Table
+                  </button>
+                )}
               </div>
             ))}
           </div>

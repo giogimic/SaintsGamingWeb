@@ -1,4 +1,23 @@
-## [2.1.137] - 2026-08-07
+## [2.1.141] - 2026-08-08
+### Added
+- Added Database Setup for `MapPrefab` in `schema.prisma`.
+- Created `PrefabBuilderPanel` for the Studio to manage map prefabs.
+- Added `setSelectionPreview` in `BabylonEngine` to render multi-tile bounding boxes on the map.
+- Implemented Prefab ghosting and preview overlay rendering based on bounding size.
+- Implemented `pastePrefab` stamping algorithm to inject multi-tile visual data and logic tags seamlessly onto the map grid.
+- Implemented `brushMode` system ('paint', 'select', 'prefab') to `editor-store.ts`.
+
+## [2.1.140] - 2026-08-08
+### Added
+- Added `monster_spawner` to `LogicComponentKind` to support placing spawners via Studio mode.
+- Created `MonsterSpawnerPanel` for managing wild spawners, wander radius, population density, and level in Real World maps.
+- Implemented adjustable logic paint brush radius via the new size stepper in `StudioPaintHud`.
+- Added support for enum fields in `PropertiesPanel` to configure new spawner types and attributes.
+- Wired spawner extraction directly into `WorldManager.ts`, placing dynamic monsters onto the grid upon map initialization.
+- Refactored `GameCanvasBabylon.ts` tile picking raycasts to paint across the entire brush radius.
+- Standardized game terminology in AGENTS.md (Saints Buddy Battles, Hero Battles, Player Battles).
+
+## [2.1.139] - 2026-08-08
 ### Added
 - Expanded `WorldMap` model in `schema.prisma` with rich metadata fields (`musicTrack`, `weatherType`, `recommendedLevel`, `lightingPreset`, `biome`, `description`, `entryRequirements`).
 - Added map grid builders for `TRAINING_GROUNDS` and `CRYSTAL_CAVERNS` in `demoMapSeed.ts` and automated DB seeding in `DemoBootstrap.ts`.

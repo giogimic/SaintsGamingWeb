@@ -15,15 +15,18 @@ export type LogicComponentKind =
   | "bramble"
   | "fishing"
   | "base"
+  | "monster_spawner"
   | "custom";
 
 export type LogicComponentField = {
   key: string;
   label: string;
-  type: "number" | "string";
+  type: "number" | "string" | "enum";
   /** Which payload object the field writes into. */
   bucket: "interact" | "step";
   defaultValue: string | number;
+  /** For enum fields — dropdown options. */
+  options?: Array<{ value: string; label: string }>;
 };
 
 export type LogicComponentPreset = {
@@ -87,6 +90,21 @@ export const LOGIC_COMPONENT_PRESETS: LogicComponentPreset[] = [
     fields: [
       { key: "xp", label: "XP", type: "number", bucket: "interact", defaultValue: 25 },
       { key: "resource", label: "Resource", type: "string", bucket: "interact", defaultValue: "wood" },
+      { key: "lootPoolId", label: "Loot Pool ID", type: "string", bucket: "interact", defaultValue: "" },
+      {
+        key: "rarity", label: "Rarity", type: "enum", bucket: "interact", defaultValue: "common",
+        options: [
+          { value: "common", label: "Common" },
+          { value: "uncommon", label: "Uncommon" },
+          { value: "rare", label: "Rare" },
+          { value: "epic", label: "Epic" },
+          { value: "legendary", label: "Legendary" },
+        ],
+      },
+      { key: "requiredLevel", label: "Required Level", type: "number", bucket: "interact", defaultValue: 1 },
+      { key: "respawnMs", label: "Respawn (ms)", type: "number", bucket: "interact", defaultValue: 60000 },
+      { key: "durability", label: "Durability (hits)", type: "number", bucket: "interact", defaultValue: 1 },
+      { key: "requiredTool", label: "Required Tool", type: "string", bucket: "interact", defaultValue: "axe" },
     ],
   },
   {
@@ -104,6 +122,31 @@ export const LOGIC_COMPONENT_PRESETS: LogicComponentPreset[] = [
     fields: [
       { key: "xp", label: "XP", type: "number", bucket: "interact", defaultValue: 25 },
       { key: "resource", label: "Resource", type: "string", bucket: "interact", defaultValue: "ore" },
+      { key: "lootPoolId", label: "Loot Pool ID", type: "string", bucket: "interact", defaultValue: "" },
+      {
+        key: "rarity", label: "Rarity", type: "enum", bucket: "interact", defaultValue: "common",
+        options: [
+          { value: "common", label: "Common" },
+          { value: "uncommon", label: "Uncommon" },
+          { value: "rare", label: "Rare" },
+          { value: "epic", label: "Epic" },
+          { value: "legendary", label: "Legendary" },
+        ],
+      },
+      {
+        key: "oreType", label: "Ore Type", type: "enum", bucket: "interact", defaultValue: "copper",
+        options: [
+          { value: "copper", label: "Copper" },
+          { value: "iron", label: "Iron" },
+          { value: "gold", label: "Gold" },
+          { value: "mithril", label: "Mithril" },
+          { value: "adamant", label: "Adamant" },
+        ],
+      },
+      { key: "requiredLevel", label: "Required Level", type: "number", bucket: "interact", defaultValue: 1 },
+      { key: "respawnMs", label: "Respawn (ms)", type: "number", bucket: "interact", defaultValue: 90000 },
+      { key: "durability", label: "Durability (hits)", type: "number", bucket: "interact", defaultValue: 3 },
+      { key: "requiredTool", label: "Required Tool", type: "string", bucket: "interact", defaultValue: "pickaxe" },
     ],
   },
   {
@@ -213,6 +256,38 @@ export const LOGIC_COMPONENT_PRESETS: LogicComponentPreset[] = [
     onInteractAction: null,
     onStepAction: "OPEN_BASE",
     fields: [],
+  },
+  {
+    kind: "monster_spawner",
+    tag: "spawner",
+    label: "Monster Spawner",
+    description: "Area spawner for hostile roaming monsters. Monsters aggro and fight players in real-time combat.",
+    paintTileId: 13,
+    name: "Monster Spawner",
+    color: "bg-rose-700",
+    isSolid: false,
+    interactable: false,
+    onInteractAction: null,
+    onStepAction: "MONSTER_SPAWN_ZONE",
+    fields: [
+      { key: "monsterPool", label: "Monster Pool (slugs)", type: "string", bucket: "step", defaultValue: "rockitten" },
+      { key: "maxPopulation", label: "Max Population", type: "number", bucket: "step", defaultValue: 3 },
+      { key: "wanderRadius", label: "Wander Radius", type: "number", bucket: "step", defaultValue: 5 },
+      { key: "respawnDelayMs", label: "Respawn Delay (ms)", type: "number", bucket: "step", defaultValue: 30000 },
+      { key: "aggroRadius", label: "Aggro Radius", type: "number", bucket: "step", defaultValue: 4 },
+      { key: "level", label: "Monster Level", type: "number", bucket: "step", defaultValue: 1 },
+      { key: "lootPoolId", label: "Loot Pool ID", type: "string", bucket: "step", defaultValue: "" },
+      {
+        key: "difficulty", label: "Difficulty", type: "enum", bucket: "step", defaultValue: "normal",
+        options: [
+          { value: "easy", label: "Easy" },
+          { value: "normal", label: "Normal" },
+          { value: "hard", label: "Hard" },
+          { value: "elite", label: "Elite" },
+          { value: "boss", label: "Boss" },
+        ],
+      },
+    ],
   },
 ];
 

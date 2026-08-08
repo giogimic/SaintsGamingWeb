@@ -22,7 +22,9 @@ export type StudioDockId =
   | "dev"
   | "characters"
   | "classes"
-  | "items";
+  | "items"
+  | "spawner"
+  | "prefab";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -49,6 +51,8 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   characters: STUDIO_ENTRY_LEVEL,
   classes: STUDIO_ENTRY_LEVEL,
   items: STUDIO_ENTRY_LEVEL,
+  spawner: STUDIO_ENTRY_LEVEL,
+  prefab: STUDIO_ENTRY_LEVEL,
   dev: STUDIO_SERVER_CONTROLS_LEVEL,
 };
 
