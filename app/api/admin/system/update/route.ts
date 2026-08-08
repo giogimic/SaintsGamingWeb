@@ -27,7 +27,7 @@ export async function POST() {
     
     // Execute the script in the background
     // We don't await the full result because the server might restart mid-request
-    const scriptPath = path.join(process.cwd(), scriptName);
+    const scriptPath = path.join(process.cwd(), "scripts", scriptName);
     
     exec(`"${scriptPath}"`, (error, stdout, stderr) => {
       if (error) {

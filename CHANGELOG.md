@@ -1,3 +1,8 @@
+## [2.1.143] - 2026-08-08
+### Fixed
+- Fixed `/api/admin/system/update` endpoint to look for update scripts inside the `scripts/` directory.
+- Created `scripts/update.bat` to support automated Git pulling and updating on Windows environments.
+
 ## [2.1.142] - 2026-08-08
 ### Fixed
 - Fixed Studio tile picking precision by bypassing batched visual tile meshes and raycasting directly against a mathematical `Z=0.001` ground plane.
