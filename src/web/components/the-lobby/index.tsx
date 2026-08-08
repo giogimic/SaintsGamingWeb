@@ -24,7 +24,7 @@ const DraggablePanel = dynamic(() => import('./DraggablePanel'));
 const GameTitleScreen = dynamic(() => import('./GameTitleScreen'));
 const GameLogin = dynamic(() => import('./GameLogin'));
 const ServerSelect = dynamic(() => import('./ServerSelect'));
-const TurnBattleOverlay = dynamic(() => import('./battle/TurnBattleOverlay').then(m => m.TurnBattleOverlay));
+import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
 import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
@@ -1372,7 +1372,7 @@ export default function TheLobby({
       {/* Touch controls — only in-world. Do NOT wrap in a full-screen
           pointer-events-auto layer: that sat above the title UI (z-30 vs sibling
           z-auto) and swallowed ENTER WORLD / menu clicks on desktop. */}
-      {(gameMode === 'EXPLORING' || gameMode === 'BATTLE') && !studioToolsOpen && (
+      {gameMode === 'EXPLORING' && !studioToolsOpen && (
         <div className="pointer-events-none absolute inset-0 z-30">
           <MobileControls
             onToggleFullscreen={toggleFullscreen}
