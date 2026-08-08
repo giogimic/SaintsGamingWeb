@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Layout, Model, TabNode, IJsonModel, Action, Actions } from 'flexlayout-react';
 import {
   useEditorStore,
   PanelId,
@@ -10,6 +9,7 @@ import {
   STUDIO_MODE_META,
   STUDIO_DOCK_META,
 } from './editor-store';
+import { DraggablePanel } from './DraggablePanel';
 import {
   Hammer,
   Settings2,
@@ -60,56 +60,6 @@ const MODE_BUTTONS: Array<{
   { id: 'test', icon: <Footprints className="w-4 h-4" /> },
 ];
 
-const initialLayout: IJsonModel = {
-  global: {
-    tabEnableClose: true,
-    tabSetEnableMaximize: false
-  },
-  layout: {
-    type: "row",
-    weight: 100,
-    children: [
-      {
-        type: "tabset",
-        weight: 20,
-        id: "left-dock",
-        children: [
-          { type: "tab", name: "World Builder", component: "build" }
-        ]
-      },
-      {
-        type: "tabset",
-        weight: 60,
-        id: "center-viewport",
-        enableDrop: false,
-        enableDrag: false,
-        children: [
-          { type: "tab", name: "Viewport", component: "viewport", enableClose: false }
-        ]
-      },
-      {
-        type: "tabset",
-        weight: 20,
-        id: "right-dock",
-        children: [
-          { type: "tab", name: "Properties", component: "properties" }
-        ]
-      }
-    ]
-  },
-  borders: [
-    {
-      type: "border",
-      location: "bottom",
-      size: 300,
-      children: [
-        { type: "tab", name: "Assets", component: "assets" },
-        { type: "tab", name: "Dev Tools", component: "dev" }
-      ]
-    }
-  ]
-};
-
 export const StudioEditorShell: React.FC = () => {
   const { data: session } = useSession();
   const permissionLevel = session?.user?.permissionLevel ?? 0;
@@ -121,19 +71,25 @@ export const StudioEditorShell: React.FC = () => {
   const toggleCreationMode = useEditorStore((state) => state.toggleCreationMode);
   const enterDevelopmentMode = useEditorStore((state) => state.enterDevelopmentMode);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
+  const closePanel = useEditorStore((state) => state.closePanel);
   const showToast = useGameStore((state) => state.showToast);
   const gameMode = useGameStore((state) => state.gameMode);
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
-  
-  const layoutRef = useRef<any>(null);
-  const [model] = useState(() => Model.fromJson(initialLayout));
 
   useEffect(() => {
     // Restore dock geometry, then enter Development Mode (tools on by default).
     useEditorStore.getState().hydratePanelLayouts();
     enterDevelopmentMode();
   }, [enterDevelopmentMode]);
+
+  useEffect(() => {
+    (Object.keys(useEditorStore.getState().panels) as PanelId[]).forEach((id) => {
+      if (!canUseStudioDock(permissionLevel, id)) {
+        closePanel(id);
+      }
+    });
+  }, [permissionLevel, closePanel]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -209,7 +165,7 @@ export const StudioEditorShell: React.FC = () => {
     return null;
   }
 
-  // Playtest — compact return chip + PIE options
+  // Playtest — compact return chip + PIE options (bible 32 §4)
   if (!isCreationMode) {
     return (
       <div className="fixed bottom-6 left-1/2 z-[100] -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2">
@@ -274,76 +230,166 @@ export const StudioEditorShell: React.FC = () => {
     );
   }
 
-  const factory = (node: TabNode) => {
-    const component = node.getComponent();
-    switch (component) {
-      case 'build': return <WorldBuilderPanel />;
-      case 'properties': return <PropertiesPanel />;
-      case 'assets': return <AssetBrowserPanel />;
-      case 'npc': return <NpcEditorPanel />;
-      case 'dev': return <DevToolsPanel />;
-      case 'characters': return <StarterHeroEditorPanel />;
-      case 'creature': return <CreatureDefEditorPanel />;
-      case 'classes': return <ClassEditorPanel />;
-      case 'quest': return <QuestEditorPanel />;
-      case 'dialogue': return <DialogueEditorPanel />;
-      case 'loot': return <LootManagerPanel />;
-      case 'items': return <ItemEditorPanel />;
-      case 'spawner': return <MonsterSpawnerPanel />;
-      case 'prefab': return <PrefabBuilderPanel />;
-      case 'viewport': return <div className="w-full h-full pointer-events-none" />;
-      default: return <div>Unknown component: {component}</div>;
-    }
-  };
-
-  const handleAction = (action: Action) => {
-    // If a user clicks a dock button, we can dispatch actions to FlexLayout
-    return action;
-  };
+  const activeMeta = STUDIO_MODE_META[studioMode];
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col">
+    <div className="fixed inset-0 pointer-events-none z-[100]">
       <WorldProfileBar />
       <StudioPaintHud />
 
-      {/* FlexLayout Container */}
-      <div className="flex-1 relative pointer-events-none">
-        <Layout 
-          ref={layoutRef} 
-          model={model} 
-          factory={factory} 
-          onAction={handleAction} 
-        />
+      <div className="pointer-events-auto">
+        {canUseStudioDock(permissionLevel, 'build') && (
+          <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />}>
+            <WorldBuilderPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'properties') && (
+          <DraggablePanel id="properties" icon={<Settings2 className="w-4 h-4" />}>
+            <PropertiesPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'assets') && (
+          <DraggablePanel id="assets" icon={<ImageIcon className="w-4 h-4" />}>
+            <AssetBrowserPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'npc') && (
+          <DraggablePanel id="npc" icon={<Users className="w-4 h-4" />}>
+            <NpcEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'quest') && (
+          <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />}>
+            <QuestEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'dialogue') && (
+          <DraggablePanel id="dialogue" icon={<MessageSquare className="w-4 h-4" />}>
+            <DialogueEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canDev && (
+          <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />}>
+            <DevToolsPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'characters') && (
+          <DraggablePanel id="characters" icon={<Sword className="w-4 h-4" />}>
+            <StarterHeroEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'creature') && (
+          <DraggablePanel id="creature" icon={<PawPrint className="w-4 h-4" />}>
+            <CreatureDefEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'loot') && (
+          <DraggablePanel id="loot" icon={<Coins className="w-4 h-4" />}>
+            <LootManagerPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'classes') && (
+          <DraggablePanel id="classes" icon={<UserCheck className="w-4 h-4" />}>
+            <ClassEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'items') && (
+          <DraggablePanel id="items" icon={<Package className="w-4 h-4" />}>
+            <ItemEditorPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'spawner') && (
+          <DraggablePanel id="spawner" icon={<Sword className="w-4 h-4" />}>
+            <MonsterSpawnerPanel />
+          </DraggablePanel>
+        )}
+
+        {canUseStudioDock(permissionLevel, 'prefab') && (
+          <DraggablePanel id="prefab" icon={<Package className="w-4 h-4" />}>
+            <PrefabBuilderPanel />
+          </DraggablePanel>
+        )}
       </div>
 
-      {/* Legacy Mode strip + dock - keep for quick launching panels into flexlayout */}
+      {/* Mode strip + dock */}
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw]">
+        <div className="sg-glass rounded-2xl border border-[#806f47]/40 bg-[#050b14]/95 px-3 py-2 shadow-2xl">
+          <div className="flex flex-wrap items-center justify-center gap-1">
+            <span className="px-2 font-mono text-[9px] uppercase tracking-[0.2em] text-[#806f47]">
+              Workspace
+            </span>
+            {MODE_BUTTONS.map((m) => {
+              const meta = STUDIO_MODE_META[m.id];
+              const active = studioMode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  title={`${meta.label} — ${meta.blurb}`}
+                  onClick={() => setStudioMode(m.id)}
+                  className={`
+                    flex items-center gap-1.5 rounded-full px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wider transition-all
+                    ${active
+                      ? m.id === 'test'
+                        ? 'bg-emerald-500/20 text-emerald-300 shadow-[inset_0_0_12px_rgba(16,185,129,0.15)]'
+                        : 'bg-[#cbb26a]/20 text-[#cbb26a] shadow-[inset_0_0_12px_rgba(203,178,106,0.15)]'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                  `}
+                >
+                  {m.icon}
+                  {meta.label}
+                </button>
+              );
+            })}
+            {mapDirty && (
+              <span className="ml-1 rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-200">
+                Unsaved
+              </span>
+            )}
+          </div>
+          <p className="mt-1.5 max-w-xl text-center text-[10px] leading-relaxed text-slate-400">
+            <span className="font-semibold text-[#e2d5b3]">{activeMeta.label}:</span> {activeMeta.blurb}
+          </p>
+        </div>
+
         <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-3 py-2 flex items-center gap-1.5 sm:gap-2 shadow-2xl overflow-x-auto max-w-full">
-          <DockButton id="build" layoutRef={layoutRef} icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="properties" layoutRef={layoutRef} icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="prefab" layoutRef={layoutRef} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="assets" layoutRef={layoutRef} icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="npc" layoutRef={layoutRef} icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="quest" layoutRef={layoutRef} icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="dialogue" layoutRef={layoutRef} icon={<MessageSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="build" icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="properties" icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="prefab" icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="assets" icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="npc" icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="quest" icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="dialogue" icon={<MessageSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           {canDev && (
-            <DockButton id="dev" layoutRef={layoutRef} icon={<TerminalSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
+            <DockButton id="dev" icon={<TerminalSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
           )}
-          <DockButton id="characters" layoutRef={layoutRef} icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="creature" layoutRef={layoutRef} icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="loot" layoutRef={layoutRef} icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="items" layoutRef={layoutRef} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="classes" layoutRef={layoutRef} icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="characters" icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="creature" icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="loot" icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="items" icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="classes" icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           <button
             type="button"
             onClick={() => {
               useGameStore.getState().setGameMode('CHARACTER_SELECT');
-              showToast('Load a character for Playtest');
+              showToast('Load a character for Playtest — or cancel back to author session');
             }}
             className="flex flex-col items-center gap-0.5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors min-w-[64px]"
-            title="Load a game character (optional)"
+            title="Load a game character (optional — author session needs none)"
           >
             <UserRound className="w-4 h-4" />
             <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Hero</span>
@@ -370,8 +416,9 @@ const DockButton: React.FC<{
   id: PanelId;
   icon: React.ReactNode;
   permissionLevel: number;
-  layoutRef: React.RefObject<any>;
-}> = ({ id, icon, permissionLevel, layoutRef }) => {
+}> = ({ id, icon, permissionLevel }) => {
+  const isOpen = useEditorStore((state) => state.panels[id].isOpen);
+  const togglePanel = useEditorStore((state) => state.togglePanel);
   const showToast = useGameStore((state) => state.showToast);
   const meta = STUDIO_DOCK_META[id];
 
@@ -382,28 +429,20 @@ const DockButton: React.FC<{
       type="button"
       title={`${meta.label} — ${meta.blurb}`}
       onClick={() => {
-        if (!layoutRef.current) return;
-        
-        // Check if tab already exists
-        const nodes = layoutRef.current.getModel().getNodeById(id);
-        if (nodes) {
-          layoutRef.current.doAction(Actions.selectTab(id));
-        } else {
-          // Add tab to the left dock by default
-          layoutRef.current.addTabToTabSet("left-dock", {
-            type: "tab",
-            id: id,
-            name: meta.label,
-            component: id,
-          });
+        if (!canUseStudioDock(permissionLevel, id)) {
+          showToast('Insufficient permission for this dock');
+          return;
         }
+        togglePanel(id);
       }}
       className={`
-        flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px] text-slate-400 hover:text-white hover:bg-white/5
+        flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px]
+        ${isOpen ? 'bg-[#806f47]/20 text-[#cbb26a] shadow-[inset_0_0_10px_rgba(203,178,106,0.1)]' : 'text-slate-400 hover:text-white hover:bg-white/5'}
       `}
     >
       {icon}
       <span className="font-bold text-[9px] uppercase font-mono tracking-wider">{meta.label}</span>
+      <div className={`w-1 h-1 rounded-full mt-0.5 ${isOpen ? 'bg-[#cbb26a]' : 'bg-transparent'}`} />
     </button>
   );
 };

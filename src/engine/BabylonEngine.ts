@@ -827,93 +827,90 @@ export class BabylonEngine {
     if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
       const sortedTilesets = [...tilesets].sort((a, b) => b.firstgid - a.firstgid);
 
+      // Group meshes by imageSource AND chunk (32x32)
       const tilesetVertexData: Map<string, { positions: number[], indices: number[], uvs: number[], vertexIndex: number }> = new Map();
+      const CHUNK_SIZE = 32;
 
-      // Normalize input: if chunks aren't provided, treat the base map as a single chunk at 0,0
-      const chunksToRender: BabylonMapChunk[] = mapData.chunks?.length 
-        ? mapData.chunks 
-        : [{
-            chunkX: 0, chunkY: 0, 
-            width: width, height: height, 
-            grid: tiles || [], 
-            tileLayers: tileLayers
-          }];
+      // Ensure we treat the map as 32x32 chunks, regardless of input structure
+      const processTile = (r: number, c: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number) => {
+        const gid = layer.grid[r]?.[c] ?? 0;
+        if (gid === 0) return;
+
+        const ts = sortedTilesets.find((t: any) => gid >= t.firstgid);
+        if (!ts || !ts.imageSource) return;
+
+        // Determine which 32x32 chunk this tile belongs to
+        const chunkR = Math.floor(r / CHUNK_SIZE);
+        const chunkC = Math.floor(c / CHUNK_SIZE);
+        const chunkKey = `${ts.imageSource}_${chunkR}_${chunkC}`;
+
+        const localX = (c - width / 2) * tileSize;
+        const localZ = (height / 2 - r) * tileSize;
+        const posX = localX + chunkOffsetX;
+        const posZ = localZ + chunkOffsetZ;
+        const y = layerIdx * 0.02;
+
+        const uvPair = tilesetUvForGid(gid, ts, TILESET_SIZES);
+
+        let vData = tilesetVertexData.get(chunkKey);
+        if (!vData) {
+          vData = { positions: [], indices: [], uvs: [], vertexIndex: 0 };
+          tilesetVertexData.set(chunkKey, vData);
+        }
+
+        vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize));
+        vData.uvs.push(...uvPair);
+
+        const vi = vData.vertexIndex;
+        vData.indices.push(
+          vi + 0, vi + 2, vi + 1,
+          vi + 0, vi + 3, vi + 2
+        );
+        
+        this.batchedQuadIndex.set(cellBatchKey(layerIdx, r, c), {
+          imageSource: ts.imageSource,
+          vertexBase: vi,
+          layerIdx,
+          r,
+          c,
+        });
+        vData.vertexIndex += 4;
+      };
 
       chunksToRender.forEach(chunk => {
         if (!chunk.tileLayers) return;
         
-        // Calculate the world-space offset for the center of this chunk
-        // Assuming chunkX/Y are grid coordinates where 1 unit = chunkWidth tiles
         const chunkOffsetX = chunk.chunkX * chunk.width * tileSize;
-        const chunkOffsetZ = -(chunk.chunkY * chunk.height * tileSize); // -Z is down in our setup
+        const chunkOffsetZ = -(chunk.chunkY * chunk.height * tileSize);
 
         chunk.tileLayers.forEach((layer, layerIdx) => {
-          const heightOffset = layerIdx * 0.02;
-
           for (let r = 0; r < chunk.height; r++) {
             for (let c = 0; c < chunk.width; c++) {
-              const gid = layer.grid[r]?.[c] ?? 0;
-              if (gid === 0) continue;
-
-              const ts = sortedTilesets.find(t => gid >= t.firstgid);
-              if (!ts || !ts.imageSource) continue;
-
-              const absR = chunk.chunkY * chunk.height + r;
-              const absC = chunk.chunkX * chunk.width + c;
-
-              // Local position relative to the center of the entire map
-              const localX = (c - width / 2) * tileSize;
-              const localZ = (height / 2 - r) * tileSize;
-              
-              // Apply chunk offset
-              const posX = localX + chunkOffsetX;
-              const posZ = localZ + chunkOffsetZ;
-
-            const uvPair = tilesetUvForGid(gid, ts, TILESET_SIZES);
-            // tilesetUvForGid already accounts for local id via gid - firstgid
-
-            let vData = tilesetVertexData.get(ts.imageSource);
-            if (!vData) {
-              vData = { positions: [], indices: [], uvs: [], vertexIndex: 0 };
-              tilesetVertexData.set(ts.imageSource, vData);
+              processTile(r, c, layer, layerIdx, chunkOffsetX, chunkOffsetZ);
             }
-
-            const y = heightOffset;
-            vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize));
-            vData.uvs.push(...uvPair);
-
-            // Triangle indices
-            const vi = vData.vertexIndex;
-            vData.indices.push(
-              vi + 0, vi + 2, vi + 1,
-              vi + 0, vi + 3, vi + 2
-            );
-            this.batchedQuadIndex.set(cellBatchKey(layerIdx, absR, absC), {
-              imageSource: ts.imageSource,
-              vertexBase: vi,
-              layerIdx,
-              r: absR,
-              c: absC,
-            });
-            vData.vertexIndex += 4;
           }
-        }
+        });
       });
-    });
 
-      // Build one mesh per tileset
-      tilesetVertexData.forEach((vData, imageSource) => {
-        if (vData.vertexIndex === 0) return;
+      tilesetVertexData.forEach((data, chunkKey) => {
+        // chunkKey looks like "tileset.png_0_0"
+        // we can extract imageSource by stripping the _r_c suffix
+        const parts = chunkKey.split('_');
+        const chunkC = parts.pop();
+        const chunkR = parts.pop();
+        const imageSource = parts.join('_');
+
+        if (data.vertexIndex === 0) return;
         
-        const mesh = new Mesh(`tileset_mesh_${imageSource}`, this.scene);
+        const mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
         
         const vertexData = new VertexData();
-        vertexData.positions = vData.positions;
-        vertexData.indices = vData.indices;
-        vertexData.uvs = vData.uvs;
+        vertexData.positions = data.positions;
+        vertexData.indices = data.indices;
+        vertexData.uvs = data.uvs;
         
         const normals: number[] = [];
-        VertexData.ComputeNormals(vData.positions, vData.indices, normals);
+        VertexData.ComputeNormals(data.positions, data.indices, normals);
         vertexData.normals = normals;
         
         // Updatable so Studio paint can patch UV/positions without remount.
@@ -944,7 +941,7 @@ export class BabylonEngine {
         // Pick through map_pick_plane only — batched alpha meshes mis-hit cells.
         mesh.isPickable = false;
         this.tileMeshes.push(mesh);
-        this.tilesetMeshBySource.set(imageSource, mesh);
+        this.tilesetMeshBySource.set(chunkKey, mesh);
       });
     }
 
@@ -1324,11 +1321,12 @@ export class BabylonEngine {
     this.paintOverlayMeshes.delete(key);
   }
 
-  private ensureTilesetMesh(imageSource: string): Mesh {
-    const existing = this.tilesetMeshBySource.get(imageSource);
+  private ensureTilesetMesh(imageSource: string, chunkR: number, chunkC: number): Mesh {
+    const chunkKey = `${imageSource}_${chunkR}_${chunkC}`;
+    const existing = this.tilesetMeshBySource.get(chunkKey);
     if (existing && !existing.isDisposed()) return existing;
 
-    const mesh = new Mesh(`tileset_mesh_${imageSource}`, this.scene);
+    const mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
     mesh.parent = this.rootNode;
     mesh.receiveShadows = true;
     mesh.isPickable = false;
@@ -1356,7 +1354,7 @@ export class BabylonEngine {
     mesh.setVerticesData(VertexBuffer.NormalKind, [], true);
     mesh.setIndices([]);
     this.tileMeshes.push(mesh);
-    this.tilesetMeshBySource.set(imageSource, mesh);
+    this.tilesetMeshBySource.set(chunkKey, mesh);
     return mesh;
   }
 
@@ -1377,11 +1375,12 @@ export class BabylonEngine {
   }
 
   private writeBatchedQuad(
-    ref: { imageSource: string; vertexBase: number },
+    ref: { imageSource: string; vertexBase: number; r: number; c: number },
     positions: number[],
     uvs: number[]
   ) {
-    const mesh = this.tilesetMeshBySource.get(ref.imageSource);
+    const chunkKey = `${ref.imageSource}_${Math.floor(ref.r / 32)}_${Math.floor(ref.c / 32)}`;
+    const mesh = this.tilesetMeshBySource.get(chunkKey);
     if (!mesh || mesh.isDisposed()) return;
     const posData = mesh.getVerticesData(VertexBuffer.PositionKind);
     const uvData = mesh.getVerticesData(VertexBuffer.UVKind);
@@ -1402,7 +1401,9 @@ export class BabylonEngine {
     r: number,
     c: number
   ): { imageSource: string; vertexBase: number; layerIdx: number; r: number; c: number } | null {
-    const mesh = this.ensureTilesetMesh(imageSource);
+    const chunkR = Math.floor(r / 32);
+    const chunkC = Math.floor(c / 32);
+    const mesh = this.ensureTilesetMesh(imageSource, chunkR, chunkC);
     const posData = Array.from(mesh.getVerticesData(VertexBuffer.PositionKind) || []);
     const uvData = Array.from(mesh.getVerticesData(VertexBuffer.UVKind) || []);
     const idxData = Array.from(mesh.getIndices() || []);
@@ -1629,9 +1630,9 @@ export class BabylonEngine {
   // --- AUTHOR OVERLAYS (editor-only; never serialized) ---
 
   private authorOverlayMeshes: Mesh[] = [];
-  private authorOverlayMats: Partial<Record<"gate" | "npc" | "spawn", StandardMaterial>> = {};
+  private authorOverlayMats: Partial<Record<"gate" | "npc" | "spawn" | "monster_spawner", StandardMaterial>> = {};
 
-  private getAuthorOverlayMaterial(kind: "gate" | "npc" | "spawn"): StandardMaterial {
+  private getAuthorOverlayMaterial(kind: "gate" | "npc" | "spawn" | "monster_spawner"): StandardMaterial {
     let mat = this.authorOverlayMats[kind];
     if (mat) return mat;
     mat = new StandardMaterial(`author_overlay_${kind}`, this.scene);
@@ -1640,7 +1641,9 @@ export class BabylonEngine {
         ? new Color3(0.95, 0.55, 0.15)
         : kind === "npc"
           ? new Color3(0.35, 0.75, 1.0)
-          : new Color3(0.45, 0.95, 0.45);
+          : kind === "monster_spawner"
+            ? new Color3(1.0, 0.35, 0.35)
+            : new Color3(0.45, 0.95, 0.45);
     mat.diffuseColor = mat.emissiveColor;
     mat.alpha = 0.55;
     mat.backFaceCulling = false;
@@ -1669,6 +1672,7 @@ export class BabylonEngine {
         ? authorOverlaySpawnMarkers(input.spawnSourceGates ?? input.gates)
         : []),
       ...authorOverlayNpcMarkers(input.npcs),
+      ...authorOverlayMonsterSpawnerMarkers(input.monsterSpawners),
     ];
 
     for (const m of markers) {
@@ -1855,7 +1859,12 @@ private resolveTilePick(
    */
   public enableTilePicking(
     onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up') => void,
-    options?: { drag?: boolean; onTileHover?: (r: number, c: number) => void }
+    options?: { 
+      drag?: boolean; 
+      onTileHover?: (r: number, c: number) => void;
+      onDragStart?: () => void;
+      onDragEnd?: () => void;
+    }
   ) {
     let isPainting = false;
     let lastKey = '';
@@ -1919,6 +1928,7 @@ private resolveTilePick(
     this.scene.onPointerDown = () => {
       isPainting = true;
       lastKey = '';
+      if (options?.onDragStart) options.onDragStart();
       emitFromScenePick('down');
     };
 
@@ -1926,6 +1936,7 @@ private resolveTilePick(
       isPainting = false;
       lastKey = '';
       emitFromScenePick('up');
+      if (options?.onDragEnd) options.onDragEnd();
     };
 
     this.scene.onPointerMove = () => {

@@ -98,7 +98,12 @@ interface EditorState {
   definitionOpStack: DefinitionOpStack;
   /** PIE Playtest options (bible 32 §4). */
   pieOptions: PieOptions;
+  /** Cross-module data invalidation version. Increment to trigger refetches. */
+  dataVersion: number;
   playtestSnapshot: PlaytestRestoreSnapshot | null;
+
+  /** Active paint transaction (for grouping brush strokes). */
+  paintTransaction: PaintedCell[] | null;
 
   activeBrushTileId: number;
   activeLogicTileId: number;
@@ -131,9 +136,13 @@ interface EditorState {
   togglePanel: (id: PanelId) => void;
   toggleCollapse: (id: PanelId) => void;
   updatePanelPosition: (id: PanelId, x: number, y: number) => void;
+  startPaintTransaction: () => void;
+  commitPaintTransaction: () => void;
   updatePanelSize: (id: PanelId, width: number, height: number) => void;
   bringToFront: (id: PanelId) => void;
   hydratePanelLayouts: () => void;
+  /** Force refetch data across modules. */
+  incrementDataVersion: () => void;
 
   setActiveBrushTileId: (id: number) => void;
   setActiveLogicTileId: (id: number) => void;
@@ -386,6 +395,8 @@ export const useEditorStore = create<EditorState>()(
       opStack: emptyEditorOpStack(),
       definitionOpStack: emptyDefinitionOpStack(),
       pieOptions: { ...DEFAULT_PIE_OPTIONS },
+      dataVersion: 0,
+      paintTransaction: null,
       playtestSnapshot: null,
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeLogicTileId: 1,
@@ -533,6 +544,22 @@ export const useEditorStore = create<EditorState>()(
         persistLayouts(get);
       },
 
+      startPaintTransaction: () =>
+        set((state) => {
+          state.paintTransaction = [];
+        }),
+      commitPaintTransaction: () =>
+        set((state) => {
+          if (state.paintTransaction && state.paintTransaction.length > 0) {
+            state.opStack = pushEditorOp(state.opStack, {
+              kind: 'paint_cells',
+              cells: state.paintTransaction,
+            });
+            state.mapDirty = true;
+          }
+          state.paintTransaction = null;
+        }),
+
       updatePanelSize: (id, width, height) => {
         set((state) => {
           state.panels[id].width = width;
@@ -568,6 +595,11 @@ export const useEditorStore = create<EditorState>()(
             state.panels[id].isCollapsed = merged[id].isCollapsed;
           });
           state.panelLayoutsHydrated = true;
+        }),
+      
+      incrementDataVersion: () =>
+        set((state) => {
+          state.dataVersion += 1;
         }),
 
       setActiveBrushTileId: (id) =>
@@ -651,12 +683,15 @@ export const useEditorStore = create<EditorState>()(
 
       pushPaintOp: (cells) =>
         set((state) => {
-          const meaningful = cells.filter((c) => c.before !== c.after);
-          if (meaningful.length === 0) return;
-          state.opStack = pushEditorOp(state.opStack, {
-            kind: 'paint_cells',
-            cells: meaningful,
-          });
+          if (state.paintTransaction) {
+            state.paintTransaction.push(...cells);
+          } else {
+            state.opStack = pushEditorOp(state.opStack, {
+              kind: 'paint_cells',
+              cells,
+            });
+            state.mapDirty = true;
+          }
         }),
 
       undoLastOp: (map) => {

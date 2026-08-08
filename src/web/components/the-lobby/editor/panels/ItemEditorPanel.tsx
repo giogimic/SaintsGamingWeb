@@ -16,7 +16,8 @@ import type { ItemTemplate } from '@prisma/client';
 export const ItemEditorPanel: React.FC = () => {
   const isOpen = useEditorStore((s) => s.panels.items.isOpen);
   const activePanel = useEditorStore((s) => s.activePanel);
-  const isFocused = activePanel === 'items';
+  const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
+  const dataVersion = useEditorStore((s) => s.dataVersion);
 
   const [items, setItems] = useState<ItemTemplate[]>([]);
   const [search, setSearch] = useState('');
@@ -48,10 +49,8 @@ export const ItemEditorPanel: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isOpen) {
-      loadList();
-    }
-  }, [isOpen, search]);
+    loadList();
+  }, [search, dataVersion]);
 
   const handleSelect = async (slug: string) => {
     setActiveSlug(slug);
@@ -110,7 +109,8 @@ export const ItemEditorPanel: React.FC = () => {
     const res = await upsertItemTemplate(formData);
     if (res.success && res.data) {
       setActiveSlug(res.data.slug);
-      loadList();
+      incrementDataVersion();
+      await loadList();
       alert('Saved successfully!');
     } else {
       alert(`Error: ${res.error}`);
@@ -124,8 +124,9 @@ export const ItemEditorPanel: React.FC = () => {
     setSaving(true);
     const res = await deleteItemTemplate(activeSlug);
     if (res.success) {
+      incrementDataVersion();
       setActiveSlug(null);
-      loadList();
+      await loadList();
     } else {
       alert(`Error: ${res.error}`);
     }

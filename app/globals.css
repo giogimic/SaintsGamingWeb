@@ -1,3 +1,4 @@
+@import 'flexlayout-react/style/dark.css';
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -415,3 +416,14 @@
   border-radius: 9999px;
   box-shadow: 1.4em 0, 2.8em 0, 4.2em 0;
 }
+
+/* Studio FlexLayout Overrides */
+.flexlayout__layout { pointer-events: none !important; }
+.flexlayout__tabset { pointer-events: auto !important; }
+.flexlayout__splitter { pointer-events: auto !important; }
+.flexlayout__border { pointer-events: auto !important; }
+.flexlayout__tab { pointer-events: auto !important; background: transparent !important; }
+.flexlayout__tabset_header { pointer-events: auto !important; }
+.flexlayout__popup { pointer-events: auto !important; }
+.sg-viewport-tab { pointer-events: none !important; }
+
