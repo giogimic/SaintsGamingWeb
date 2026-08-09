@@ -905,15 +905,16 @@ export class BabylonEngine {
         });
       });
 
+      let totalTilesMeshed = 0;
+
       tilesetVertexData.forEach((data, chunkKey) => {
-        // chunkKey looks like "tileset.png_0_0"
-        // we can extract imageSource by stripping the _r_c suffix
         const parts = chunkKey.split('_');
         const chunkC = parts.pop();
         const chunkR = parts.pop();
         const imageSource = parts.join('_');
 
         if (data.vertexIndex === 0) return;
+        totalTilesMeshed += data.vertexIndex / 4;
         
         const mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
         
@@ -956,6 +957,16 @@ export class BabylonEngine {
         this.tileMeshes.push(mesh);
         this.tilesetMeshBySource.set(chunkKey, mesh);
       });
+
+      console.log(`[BabylonEngine] loadTilemap complete. Meshed ${totalTilesMeshed} tiles across ${tilesetVertexData.size} chunks.`);
+      console.log(`[BabylonEngine] Camera position:`, this.camera.position, `Ortho dims:`, {
+        left: this.camera.orthoLeft,
+        right: this.camera.orthoRight,
+        top: this.camera.orthoTop,
+        bottom: this.camera.orthoBottom
+      });
+      console.log(`[BabylonEngine] Tilesets config:`, config.tilesets);
+      console.log(`[BabylonEngine] Canvas size:`, this.canvas.width, this.canvas.height);
     }
 
     // If rich layers were all GID 0 (or failed), fall back to colored logic grid.
