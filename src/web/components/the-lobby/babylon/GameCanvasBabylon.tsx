@@ -533,7 +533,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   useEffect(() => {
     // Wait until map data is fully loaded from the API before mounting engine
-    if (!canvasRef.current || !mapData || !engineMapKey) return;
+    if (!canvasRef.current || !mapData || !engineMapKey) {
+      console.log('[GameCanvasBabylon] Effect aborted', {
+        hasCanvas: !!canvasRef.current,
+        hasMapData: !!mapData,
+        engineMapKey
+      });
+      return;
+    }
+
+    console.log('[GameCanvasBabylon] Initializing engine for map:', engineMapKey);
 
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
@@ -607,6 +616,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     // Load map grid only — NPCs/wilds come from socket mapEntities (avoids
     // duplicate meshes + broken /assets/sprites/ paths inside loadTilemap).
+    console.log('[GameCanvasBabylon] Calling loadTilemap with', {
+      id: currentMapId,
+      width: mapWidth,
+      height: mapHeight,
+      layerCount: activeMap.tileLayers?.length
+    });
+    
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
