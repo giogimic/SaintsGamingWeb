@@ -178,6 +178,10 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
 
     echo -e "${GREEN}[✓] Web container rebuilt and restarted.${NC}\n"
 
+    echo -e "${CYAN}[*] Syncing local game assets to database...${NC}"
+    docker exec saints-gaming-web npm run sync:assets 2>/dev/null || true
+    echo -e "${GREEN}[✓] Assets synced.${NC}\n"
+
     # MMO sockets live inside the web container (server.ts). Stop any leftover :3001 container.
     if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo$'; then
         echo -e "${CYAN}[*] Removing obsolete saints-gaming-mmo container (sockets are on web:3000)...${NC}"
