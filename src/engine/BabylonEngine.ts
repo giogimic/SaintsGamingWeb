@@ -263,10 +263,11 @@ export class BabylonEngine {
    * texel so characters stay above the plane everywhere.
    */
   private configureTilesetMaterial(mat: StandardMaterial) {
-    mat.transparencyMode = Material.MATERIAL_OPAQUE;
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.transparencyMode = Material.MATERIAL_ALPHATEST;
+    mat.alphaCutOff = 0.05;
     mat.forceDepthWrite = true;
     mat.backFaceCulling = false;
-    mat.disableLighting = true; // Pixel art doesn't need 3D normals/lighting
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
   }
@@ -873,8 +874,8 @@ export class BabylonEngine {
 
         const vi = vData.vertexIndex;
         vData.indices.push(
-          vi + 0, vi + 2, vi + 1,
-          vi + 0, vi + 3, vi + 2
+          vi + 0, vi + 1, vi + 2,
+          vi + 0, vi + 2, vi + 3
         );
         
         this.batchedQuadIndex.set(cellBatchKey(layerIdx, absR, absC), {
@@ -928,8 +929,7 @@ export class BabylonEngine {
         
         // Updatable so Studio paint can patch UV/positions without remount.
         vertexData.applyToMesh(mesh, true);
-      mesh.parent = this.rootNode;
-        mesh.receiveShadows = true;
+        mesh.parent = this.rootNode;
 
         let mat = this.tilesetMaterialCache.get(imageSource);
         if (!mat) {
@@ -952,7 +952,7 @@ export class BabylonEngine {
             // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
             const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
             console.log(`[BabylonEngine] Requesting texture: ${tilesetPath}`);
-            tex = new Texture(tilesetPath, this.scene, true, true, 1);
+            tex = new Texture(tilesetPath, this.scene, true, false, 1);
             tex.onLoadObservable.add(() => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`));
             tex.hasAlpha = true;
             this.tilesetTextureCache.set(imageSource, tex);
@@ -1375,7 +1375,7 @@ export class BabylonEngine {
       if (!tex) {
         const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
         const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
-        tex = new Texture(tilesetPath, this.scene, true, true, 1);
+        tex = new Texture(tilesetPath, this.scene, true, false, 1);
         tex.hasAlpha = true;
         this.tilesetTextureCache.set(imageSource, tex);
       }
@@ -1604,7 +1604,7 @@ export class BabylonEngine {
         if (!tex) {
           const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
           const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
-          tex = new Texture(tilesetPath, this.scene, true, true, 1);
+          tex = new Texture(tilesetPath, this.scene, true, false, 1);
           tex.hasAlpha = true;
           this.tilesetTextureCache.set(ts.imageSource, tex);
         }
@@ -1652,7 +1652,7 @@ export class BabylonEngine {
       if (!tex) {
         const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
         const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
-        tex = new Texture(tilesetPath, this.scene, true, true, 1);
+        tex = new Texture(tilesetPath, this.scene, true, false, 1);
         tex.hasAlpha = true;
         this.tilesetTextureCache.set(ts.imageSource, tex);
       }
