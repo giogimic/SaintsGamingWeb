@@ -315,10 +315,11 @@ export const WorldBuilderPanel: React.FC = () => {
             className="w-full pl-7 pr-2 py-1 bg-[#050b14]/90 border border-slate-700/80 rounded text-slate-200 focus:outline-none focus:border-[#cbb26a]"
           />
         </div>
-
-        {mapSearchQuery && (
-          <div className="max-h-32 overflow-y-auto bg-[#050b14] border border-slate-700 rounded divide-y divide-slate-800 custom-scrollbar">
-            {mapIndex.map((m) => (
+        <div className="max-h-32 overflow-y-auto bg-[#050b14] border border-slate-700 rounded divide-y divide-slate-800 custom-scrollbar mt-2">
+          {mapIndex.length === 0 ? (
+            <div className="p-2 text-xs text-slate-500 text-center">No maps found</div>
+          ) : (
+            mapIndex.map((m) => (
               <div
                 key={m.id}
                 onClick={() => void handleWarpToMap(m.id)}
@@ -327,9 +328,9 @@ export const WorldBuilderPanel: React.FC = () => {
                 <span>{m.name}</span>
                 <span className="text-[9px] text-[#cbb26a]">{"category" in m && m.category ? String(m.category) : (m.id || "")}</span>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
 
         <button
           onClick={() => setIsCreatingNewMap(!isCreatingNewMap)}
