@@ -21,6 +21,7 @@
     "seed:campaign-path": "tsx scripts/seed-campaign-path.ts",
     "seed:ambient": "tsx scripts/seed-ambient-dialogue.ts",
     "seed:azure": "tsx scripts/seed-campaign-npcs.ts",
+    "sync:assets": "tsx scripts/sync-local-assets.ts",
     "smoke:spyder": "tsx scripts/smoke-spyder-path.ts",
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
