@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Layout, Model, TabNode, IJsonModel, Action, Actions } from 'flexlayout-react';
+import { Layout, Model, TabNode, IJsonModel, Action, Actions, DockLocation } from 'flexlayout-react';
 import {
   useEditorStore,
   PanelId,
@@ -388,15 +388,15 @@ const DockButton: React.FC<{
         // Check if tab already exists
         const nodes = model.getNodeById(id);
         if (nodes) {
-          layoutRef.current.doAction(Actions.selectTab(id));
+          model.doAction(Actions.selectTab(id));
         } else {
           // Add tab to the left dock by default
-          layoutRef.current.addTabToTabSet("left-dock", {
+          model.doAction(Actions.addNode({
             type: "tab",
             id: id,
             name: meta.label,
             component: id,
-          });
+          }, "left-dock", DockLocation.CENTER, -1));
         }
       }}
       className={`
