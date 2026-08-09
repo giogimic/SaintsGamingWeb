@@ -40,6 +40,7 @@ export default function MiniMapRadar() {
 
     const grid = mapData.grid;
     const rows = grid.length;
+    if (rows === 0) return;
     const cols = grid[0].length;
 
     const cw = canvas.width;

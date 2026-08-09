@@ -342,8 +342,8 @@ export const PropertiesPanel: React.FC = () => {
         </div>
         {mapGates.length > 0 && (
           <div className="max-h-24 space-y-1 overflow-y-auto text-[10px]">
-            {mapGates.map((g) => (
-              <div key={g.id} className="rounded border border-slate-800 bg-[#050b14] px-2 py-1 text-slate-300">
+            {mapGates.map((g, idx) => (
+              <div key={`${g.id}_${idx}`} className="rounded border border-slate-800 bg-[#050b14] px-2 py-1 text-slate-300">
                 ({g.position.x},{g.position.y}) → {g.targetMapId}
               </div>
             ))}
