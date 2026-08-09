@@ -268,6 +268,7 @@ export class BabylonEngine {
     mat.alphaCutOff = 0.05;
     mat.forceDepthWrite = true;
     mat.backFaceCulling = false;
+    mat.disableLighting = true; // 2D Pixel Art rendering
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
   }
@@ -1227,6 +1228,7 @@ export class BabylonEngine {
     // Specular highlight for all tiles (slight gloss)
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
+    mat.disableLighting = true; // 2D Pixel Art rendering
 
     if (isIndoor) {
       if (tileId === 0) {
@@ -1806,6 +1808,7 @@ export class BabylonEngine {
   }
 
   private applyLogicMaterialColor(mat: StandardMaterial, logicId: number) {
+    mat.disableLighting = true;
     // Distinct, readable Studio colors (walkable stays visible enough to confirm paint).
     if (logicId === 0) {
       mat.diffuseColor = Color3.FromHexString("#10b981");
@@ -2323,6 +2326,7 @@ private resolveTilePick(
       mat.alphaCutOff = 0.05;
       mat.forceDepthWrite = true;
       mat.backFaceCulling = false;
+      mat.disableLighting = true; // 2D Pixel Art rendering
 
       // Draw after ground (group 0) so characters always composite on top.
       spriteMesh.renderingGroupId = 1;
@@ -2385,6 +2389,7 @@ private resolveTilePick(
       const shadowMat = new StandardMaterial(`shadowMat_${entity.id}`, this.scene);
       shadowMat.diffuseColor = new Color3(0, 0, 0);
       shadowMat.alpha = 0.3;
+      shadowMat.disableLighting = true;
       shadowMat.transparencyMode = Material.MATERIAL_ALPHABLEND;
       shadowMat.zOffset = -1; // Prevent Z-fighting with floor
       shadow.material = shadowMat;
@@ -2555,6 +2560,7 @@ private resolveTilePick(
       mat.diffuseColor = new Color3(0.2, 0.8, 1.0); // Cyan
       mat.emissiveColor = new Color3(0.2, 0.8, 1.0);
       mat.alpha = 0.8;
+      mat.disableLighting = true;
       this.selectionRingMesh.material = mat;
       
       // Add a simple rotation animation
@@ -2595,6 +2601,7 @@ private resolveTilePick(
     const mat = new StandardMaterial('projectileMat', this.scene);
     mat.diffuseColor = new Color3(1, 0.4, 0.4); // Reddish for Capture Device
     mat.emissiveColor = new Color3(1, 0.2, 0.2);
+    mat.disableLighting = true;
     projectile.material = mat;
 
     // Simple animation loop to move the projectile towards the target
@@ -2656,6 +2663,7 @@ private resolveTilePick(
     mat.diffuseTexture = dt;
     mat.emissiveColor = new Color3(1, 1, 1);
     mat.backFaceCulling = false;
+    mat.disableLighting = true;
     plane.material = mat;
 
     const font = isCrit ? "bold 64px Arial" : "bold 48px Arial";
@@ -2696,6 +2704,7 @@ private resolveTilePick(
     const mat = new StandardMaterial(`mat_${projectileId}`, this.scene);
     mat.emissiveColor = new Color3(1, 0.5, 0); // Orange fireball
     mat.diffuseColor = new Color3(1, 0.2, 0);
+    mat.disableLighting = true;
     mesh.material = mat;
 
     const targetPos = target.position.clone();

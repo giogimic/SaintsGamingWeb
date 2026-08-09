@@ -1,3 +1,8 @@
+## [2.1.158-2] - 2026-08-09
+### Fixed
+- Fixed Studio hydration regression where the map document would fail to render after fetching because the engine effect did not watch the `mapData` object correctly.
+- Re-established pixel-art 'Unlit' material consistency across all terrain, players, NPCs, projectiles, and damage texts to fix shading imbalances.
+
 ## [2.1.158-1] - 2026-08-09
 ### Fixed
 - Fixed pitch black Studio viewport map tiles by changing tileset triangle index winding order to clockwise so normals correctly point upwards and receive scene lighting.
