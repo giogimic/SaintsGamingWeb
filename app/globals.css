@@ -425,5 +425,6 @@
 .flexlayout__tab { pointer-events: auto !important; background: transparent !important; }
 .flexlayout__tabset_header { pointer-events: auto !important; }
 .flexlayout__popup { pointer-events: auto !important; }
-.sg-viewport-tab { pointer-events: none !important; }
-
+.sg-viewport-tabset { background: transparent !important; pointer-events: none !important; border: none !important; }
+.sg-viewport-tabset .flexlayout__tabset_header { display: none !important; }
+.sg-viewport-tab { pointer-events: none !important; background: transparent !important; }

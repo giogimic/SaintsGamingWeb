@@ -83,8 +83,9 @@ const initialLayout: IJsonModel = {
         id: "center-viewport",
         enableDrop: false,
         enableDrag: false,
+        className: "sg-viewport-tabset",
         children: [
-          { type: "tab", name: "Viewport", component: "viewport", enableClose: false }
+          { type: "tab", name: "Viewport", component: "viewport", enableClose: false, className: "sg-viewport-tab" }
         ]
       },
       {
