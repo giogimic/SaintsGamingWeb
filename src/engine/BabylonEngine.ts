@@ -929,7 +929,7 @@ export class BabylonEngine {
         
         // Updatable so Studio paint can patch UV/positions without remount.
         vertexData.applyToMesh(mesh, true);
-        mesh.parent = this.rootNode;
+      mesh.parent = this.rootNode;
         mesh.receiveShadows = true;
 
         let mat = this.tilesetMaterialCache.get(imageSource);
@@ -937,7 +937,19 @@ export class BabylonEngine {
           mat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
           let tex = this.tilesetTextureCache.get(imageSource);
           if (!tex) {
-            const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+            let rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+            // Fix legacy lowercase DB entries for Linux case-sensitive filesystems
+            const caseFixes: Record<string, string> = {
+              'terrain_by_george.png': 'Terrain_by_George.png',
+              'furniture_and_fittings_by_george.png': 'Furniture_and_Fittings_by_George.png',
+              'interior_walls_by_george.png': 'Interior_Walls_by_George.png',
+              'interior_floors_by_george.png': 'Interior_Floors_by_George.png',
+              'vegetation_and_outdoor_fittings_by_george.png': 'Vegetation_and_Outdoor_Fittings_by_George.png'
+            };
+            if (caseFixes[rawSource.toLowerCase()]) {
+              rawSource = caseFixes[rawSource.toLowerCase()];
+            }
+            
             // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
             const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
             tex = new Texture(tilesetPath, this.scene, true, false, 1);
