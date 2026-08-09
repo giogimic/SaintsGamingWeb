@@ -623,6 +623,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       layerCount: activeMap.tileLayers?.length
     });
     
+    lastLoadedMapDataRef.current = mapData;
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
@@ -808,6 +809,35 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Remount only when the base map seat changes — not on every mapData object identity.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
   }, [engineMapKey]);
+
+  // Handle Map Document Hydration
+  // The synchronous Zustand proxy initially returns an empty map shell for DEMO_SANDBOX.
+  // When the background fetch completes, the fully populated map document arrives and
+  // `mapData` identity changes. However, `engineMapKey` remains identical (DEMO_SANDBOX),
+  // so the initialization effect above does not re-run.
+  // We use this effect to propagate the hydrated geometry without tearing down the engine.
+  const lastLoadedMapDataRef = useRef<any>(null);
+  useEffect(() => {
+    // If engineMapKey effect hasn't initialized the engine yet, skip.
+    if (!engineRef.current || !mapData) return;
+    
+    // Identity check: `mapData` only changes identity when a richer document arrives
+    // or the map is switched. Studio tile painting mutates in place, preserving identity.
+    if (lastLoadedMapDataRef.current === mapData) return;
+    lastLoadedMapDataRef.current = mapData;
+
+    const activeMap = mapData as any;
+    engineRef.current.loadTilemap({
+      id: currentMapId,
+      width: activeMap.width || activeMap.grid?.[0]?.length || 24,
+      height: activeMap.height || activeMap.grid?.length || 24,
+      tileSize: 1,
+      tiles: activeMap.grid,
+      tileLayers: activeMap.tileLayers,
+      tilesets: activeMap.tilesets,
+      npcs: [],
+    });
+  }, [mapData, currentMapId]);
 
   // Handle Combat Target Selection Ring
   useEffect(() => {
