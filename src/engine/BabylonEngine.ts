@@ -269,7 +269,6 @@ export class BabylonEngine {
     mat.forceDepthWrite = true;
     mat.backFaceCulling = false;
     mat.disableLighting = true; // 2D Pixel Art rendering
-    mat.emissiveColor = new Color3(1, 1, 1);
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
   }
@@ -2324,7 +2323,6 @@ private resolveTilePick(
       mat.forceDepthWrite = true;
       mat.backFaceCulling = false;
       mat.disableLighting = true; // 2D Pixel Art rendering
-      mat.emissiveColor = new Color3(1, 1, 1);
 
       // Draw after ground (group 0) so characters always composite on top.
       spriteMesh.renderingGroupId = 1;
