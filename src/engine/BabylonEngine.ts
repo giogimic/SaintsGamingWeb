@@ -843,7 +843,7 @@ export class BabylonEngine {
           }];
 
       // Ensure we treat the map as 32x32 chunks, regardless of input structure
-      const processTile = (r: number, c: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number) => {
+      const processTile = (r: number, c: number, absR: number, absC: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number) => {
         const gid = layer.grid[r]?.[c] ?? 0;
         if (gid === 0) return;
 
@@ -851,8 +851,6 @@ export class BabylonEngine {
         if (!ts || !ts.imageSource) return;
 
         // Determine which 32x32 chunk this tile belongs to
-        const absR = chunk.chunkY * chunk.height + r;
-        const absC = chunk.chunkX * chunk.width + c;
         const chunkR = Math.floor(absR / CHUNK_SIZE);
         const chunkC = Math.floor(absC / CHUNK_SIZE);
         const chunkKey = `${ts.imageSource}_${chunkR}_${chunkC}`;
@@ -898,8 +896,10 @@ export class BabylonEngine {
 
         chunk.tileLayers.forEach((layer, layerIdx) => {
           for (let r = 0; r < chunk.height; r++) {
+            const absR = chunk.chunkY * chunk.height + r;
             for (let c = 0; c < chunk.width; c++) {
-              processTile(r, c, layer, layerIdx, chunkOffsetX, chunkOffsetZ);
+              const absC = chunk.chunkX * chunk.width + c;
+              processTile(r, c, absR, absC, layer, layerIdx, chunkOffsetX, chunkOffsetZ);
             }
           }
         });
