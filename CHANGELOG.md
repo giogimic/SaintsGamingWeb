@@ -1,3 +1,8 @@
+## [2.1.158-1] - 2026-08-09
+### Fixed
+- Fixed pitch black Studio viewport map tiles by changing tileset triangle index winding order to clockwise so normals correctly point upwards and receive scene lighting.
+- Removed conflicting disableLighting and receiveShadows flags that caused silent shader compilation failures on WebGL2 tileset materials.
+
 ## [2.1.144] - 2026-08-08
 - `.docs/` added to `.gitignore`.
 - Studio Upgrades: Advanced logic painting undo batching.
