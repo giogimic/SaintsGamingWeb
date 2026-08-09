@@ -268,6 +268,7 @@ export class BabylonEngine {
     mat.alphaCutOff = 0.05;
     mat.forceDepthWrite = true;
     mat.backFaceCulling = false;
+    mat.disableLighting = true; // Pixel art doesn't need 3D normals/lighting
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
   }
