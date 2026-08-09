@@ -851,8 +851,10 @@ export class BabylonEngine {
         if (!ts || !ts.imageSource) return;
 
         // Determine which 32x32 chunk this tile belongs to
-        const chunkR = Math.floor(r / CHUNK_SIZE);
-        const chunkC = Math.floor(c / CHUNK_SIZE);
+        const absR = chunk.chunkY * chunk.height + r;
+        const absC = chunk.chunkX * chunk.width + c;
+        const chunkR = Math.floor(absR / CHUNK_SIZE);
+        const chunkC = Math.floor(absC / CHUNK_SIZE);
         const chunkKey = `${ts.imageSource}_${chunkR}_${chunkC}`;
 
         const localX = (c - width / 2) * tileSize;
@@ -878,12 +880,12 @@ export class BabylonEngine {
           vi + 0, vi + 3, vi + 2
         );
         
-        this.batchedQuadIndex.set(cellBatchKey(layerIdx, r, c), {
+        this.batchedQuadIndex.set(cellBatchKey(layerIdx, absR, absC), {
           imageSource: ts.imageSource,
           vertexBase: vi,
           layerIdx,
-          r,
-          c,
+          r: absR,
+          c: absC,
         });
         vData.vertexIndex += 4;
       };
@@ -1372,8 +1374,13 @@ export class BabylonEngine {
   private collapseBatchedQuad(ref: {
     imageSource: string;
     vertexBase: number;
+    r: number;
+    c: number;
   }) {
-    const mesh = this.tilesetMeshBySource.get(ref.imageSource);
+    const chunkR = Math.floor(ref.r / 32);
+    const chunkC = Math.floor(ref.c / 32);
+    const chunkKey = `${ref.imageSource}_${chunkR}_${chunkC}`;
+    const mesh = this.tilesetMeshBySource.get(chunkKey);
     if (!mesh || mesh.isDisposed()) return;
     const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
     if (!positions) return;

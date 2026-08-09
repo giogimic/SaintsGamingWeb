@@ -64,13 +64,13 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
     }
 
     if (!ownedBadges.has("social_butterfly")) {
-      const acceptedCount = await prisma.friendship.count({
+      const acceptedCount = prisma.friendship ? await prisma.friendship.count({
         where: {
           status: "ACCEPTED",
           OR: [{ userId }, { friendId: userId }],
         },
-      });
-      if (acceptedCount >= 50) {
+      }) : 0;
+      if (acceptedCount >= 10) {
         newAwards.push("social_butterfly");
       }
     }
@@ -91,7 +91,7 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
     }
 
     if (!ownedBadges.has("first_capture") || !ownedBadges.has("creature_collector_10")) {
-      const creaturesCount = await prisma.playerCreature.count({ where: { userId } });
+      const creaturesCount = prisma.playerCreature ? await prisma.playerCreature.count({ where: { userId } }) : 0;
       if (!ownedBadges.has("first_capture") && creaturesCount >= 1) {
         newAwards.push("first_capture");
       }
@@ -101,27 +101,27 @@ export async function checkAndAwardAchievements(userId: string): Promise<string[
     }
 
     if (!ownedBadges.has("quest_complete_5")) {
-      const completedQuests = await prisma.playerQuestState.count({
+      const completedQuests = prisma.playerQuestState ? await prisma.playerQuestState.count({
         where: { userId, status: "COMPLETED" },
-      });
+      }) : 0;
       if (completedQuests >= 5) {
         newAwards.push("quest_complete_5");
       }
     }
 
     if (!ownedBadges.has("first_craft")) {
-      const craftLogs = await prisma.inventoryLog.count({
+      const craftLogs = prisma.inventoryLog ? await prisma.inventoryLog.count({
         where: { userId, reason: "craft" },
-      });
+      }) : 0;
       if (craftLogs >= 1) {
         newAwards.push("first_craft");
       }
     }
 
     if (!ownedBadges.has("first_trade")) {
-      const tradeLogs = await prisma.inventoryLog.count({
+      const tradeLogs = prisma.inventoryLog ? await prisma.inventoryLog.count({
         where: { userId, reason: { in: ["trade", "shop_buy", "shop_sell"] } },
-      });
+      }) : 0;
       if (tradeLogs >= 1) {
         newAwards.push("first_trade");
       }
