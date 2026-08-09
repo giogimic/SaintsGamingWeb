@@ -291,7 +291,7 @@ export const StudioEditorShell: React.FC = () => {
       case 'items': return <ItemEditorPanel />;
       case 'spawner': return <MonsterSpawnerPanel />;
       case 'prefab': return <PrefabBuilderPanel />;
-      case 'viewport': return <div className="w-full h-full pointer-events-none" />;
+      case 'viewport': return <div className="sg-viewport-container w-full h-full pointer-events-none" />;
       default: return <div>Unknown component: {component}</div>;
     }
   };
