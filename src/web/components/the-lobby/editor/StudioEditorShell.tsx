@@ -319,22 +319,22 @@ export const StudioEditorShell: React.FC = () => {
       {/* Legacy Mode strip + dock - keep for quick launching panels into flexlayout */}
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw]">
         <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-3 py-2 flex items-center gap-1.5 sm:gap-2 shadow-2xl overflow-x-auto max-w-full">
-          <DockButton id="build" layoutRef={layoutRef} icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="properties" layoutRef={layoutRef} icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="prefab" layoutRef={layoutRef} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="assets" layoutRef={layoutRef} icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="npc" layoutRef={layoutRef} icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="quest" layoutRef={layoutRef} icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="dialogue" layoutRef={layoutRef} icon={<MessageSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="build" layoutRef={layoutRef} model={model} icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="properties" layoutRef={layoutRef} model={model} icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="prefab" layoutRef={layoutRef} model={model} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="assets" layoutRef={layoutRef} model={model} icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="npc" layoutRef={layoutRef} model={model} icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="quest" layoutRef={layoutRef} model={model} icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="dialogue" layoutRef={layoutRef} model={model} icon={<MessageSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           {canDev && (
-            <DockButton id="dev" layoutRef={layoutRef} icon={<TerminalSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
+            <DockButton id="dev" layoutRef={layoutRef} model={model} icon={<TerminalSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
           )}
-          <DockButton id="characters" layoutRef={layoutRef} icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="creature" layoutRef={layoutRef} icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="loot" layoutRef={layoutRef} icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="items" layoutRef={layoutRef} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="classes" layoutRef={layoutRef} icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="characters" layoutRef={layoutRef} model={model} icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="creature" layoutRef={layoutRef} model={model} icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="loot" layoutRef={layoutRef} model={model} icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="items" layoutRef={layoutRef} model={model} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="classes" layoutRef={layoutRef} model={model} icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           <button
             type="button"
@@ -371,7 +371,8 @@ const DockButton: React.FC<{
   icon: React.ReactNode;
   permissionLevel: number;
   layoutRef: React.RefObject<any>;
-}> = ({ id, icon, permissionLevel, layoutRef }) => {
+  model: Model;
+}> = ({ id, icon, permissionLevel, layoutRef, model }) => {
   const showToast = useGameStore((state) => state.showToast);
   const meta = STUDIO_DOCK_META[id];
 
@@ -385,7 +386,7 @@ const DockButton: React.FC<{
         if (!layoutRef.current) return;
         
         // Check if tab already exists
-        const nodes = layoutRef.current.getModel().getNodeById(id);
+        const nodes = model.getNodeById(id);
         if (nodes) {
           layoutRef.current.doAction(Actions.selectTab(id));
         } else {
