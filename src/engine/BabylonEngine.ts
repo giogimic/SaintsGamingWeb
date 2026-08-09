@@ -965,7 +965,7 @@ export class BabylonEngine {
         top: this.camera.orthoTop,
         bottom: this.camera.orthoBottom
       });
-      console.log(`[BabylonEngine] Tilesets config:`, config.tilesets);
+      console.log(`[BabylonEngine] Tilesets config:`, tilesets);
       console.log(`[BabylonEngine] Canvas size:`, this.canvas.width, this.canvas.height);
     }
 
