@@ -95,6 +95,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [mapData, setMapData] = useState<GameMapData | null>(null);
   const mapDataRef = useRef<GameMapData | null>(null);
   mapDataRef.current = mapData;
+  const lastLoadedMapDataRef = useRef<any>(null);
 
   const clearAutoWalk = useCallback(() => {
     if (autoWalkIntervalRef.current) {
@@ -124,7 +125,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             : 0;
           // Keep engine-stable ref unless the store doc is clearly richer (NPCs /
           // tilesets arrived after a barren first paint).
-          if (nextNpcs <= prevNpcs && nextTiles <= prevTiles) return prev;
+          if ((prev as any).source === undefined && (activeMapData as any).source !== undefined) {
+             // Accept the DB document (overrides local empty shell)
+          } else if (nextNpcs <= prevNpcs && nextTiles <= prevTiles) {
+            return prev;
+          }
         }
         return activeMapData as GameMapData;
       });
@@ -816,7 +821,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // `mapData` identity changes. However, `engineMapKey` remains identical (DEMO_SANDBOX),
   // so the initialization effect above does not re-run.
   // We use this effect to propagate the hydrated geometry without tearing down the engine.
-  const lastLoadedMapDataRef = useRef<any>(null);
   useEffect(() => {
     // If engineMapKey effect hasn't initialized the engine yet, skip.
     if (!engineRef.current || !mapData) return;

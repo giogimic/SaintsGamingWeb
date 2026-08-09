@@ -269,6 +269,7 @@ export class BabylonEngine {
     mat.forceDepthWrite = true;
     mat.backFaceCulling = false;
     mat.disableLighting = true; // 2D Pixel Art rendering
+    mat.emissiveColor = new Color3(1, 1, 1);
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
   }
@@ -323,10 +324,7 @@ export class BabylonEngine {
     dirLight.position = new Vector3(5, 15, -10);
 
     // Shadow Generator (soft shadows for 2.5D depth)
-    this.shadowGen = new ShadowGenerator(512, dirLight);
-    this.shadowGen.useBlurExponentialShadowMap = true;
-    this.shadowGen.blurKernel = 16;
-    this.shadowGen.darkness = 0.4;
+    this.shadowGen = undefined; // ShadowGenerator disabled in Unlit pixel-art pipeline
 
     // Window Resize Handler
     window.addEventListener('resize', this.onResize);
@@ -1004,7 +1002,6 @@ export class BabylonEngine {
             const mat = new StandardMaterial(`baseMat_${tileId}`, this.scene);
             this.applyTileMaterial(mat, tileId, 0, 0); // Tone variance lost, but it's fine for instancing
             groundBase.material = mat;
-            groundBase.receiveShadows = true;
             this.tileMeshes.push(groundBase);
             baseGrounds[tileId] = groundBase;
             groundBase.isVisible = false; // Hide the base mesh
@@ -1229,6 +1226,7 @@ export class BabylonEngine {
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
     mat.disableLighting = true; // 2D Pixel Art rendering
+    mat.emissiveColor = new Color3(1, 1, 1);
 
     if (isIndoor) {
       if (tileId === 0) {
@@ -1367,7 +1365,6 @@ export class BabylonEngine {
 
     const mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
     mesh.parent = this.rootNode;
-    mesh.receiveShadows = true;
     mesh.isPickable = false;
 
     let mat = this.tilesetMaterialCache.get(imageSource);
@@ -2327,6 +2324,7 @@ private resolveTilePick(
       mat.forceDepthWrite = true;
       mat.backFaceCulling = false;
       mat.disableLighting = true; // 2D Pixel Art rendering
+      mat.emissiveColor = new Color3(1, 1, 1);
 
       // Draw after ground (group 0) so characters always composite on top.
       spriteMesh.renderingGroupId = 1;
