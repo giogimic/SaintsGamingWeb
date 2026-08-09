@@ -425,7 +425,11 @@
 .flexlayout__tab { pointer-events: auto !important; background: transparent !important; }
 .flexlayout__tabset_header { pointer-events: auto !important; }
 .flexlayout__popup { pointer-events: auto !important; }
-.flexlayout__tabset:has(.sg-viewport-tab) { background: transparent !important; pointer-events: none !important; border: none !important; }
-.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_header { display: none !important; }
+
+/* Viewport Pass-through: Any container holding the viewport must let clicks pass */
+.flexlayout__tabset:has(.sg-viewport-container) { background: transparent !important; pointer-events: none !important; border: none !important; }
+.flexlayout__tabset:has(.sg-viewport-container) > .flexlayout__tabset_header { display: none !important; }
+.flexlayout__tabset_content:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
 .flexlayout__tab:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
 .sg-viewport-tab { pointer-events: none !important; background: transparent !important; }
+.sg-viewport-container { pointer-events: none !important; background: transparent !important; }
