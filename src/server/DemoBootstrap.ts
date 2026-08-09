@@ -290,7 +290,7 @@ async function seedExpansionMaps() {
         name: "Training Grounds",
         gridData: JSON.stringify(tgGrid),
         gatesData: JSON.stringify({ 1: { targetMapId: "DEMO_SANDBOX", spawnPoint: { x: 15, y: 15 } } }),
-        npcsData: JSON.stringify([{ id: "npc_tutor_1", name: "Combat Tutor", x: 10, y: 10, sprite: "trainer" }]),
+        npcsData: JSON.stringify([{ id: "npc_tutor_1", name: "Combat Tutor", x: 10, y: 10, sprite: "disciple" }]),
         encountersData: JSON.stringify([{ speciesSlug: "rockitten", weight: 1, minLevel: 1, maxLevel: 3 }]),
         tileLayersData: JSON.stringify([buildDefaultGroundLayer(tgGrid)]),
         tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
