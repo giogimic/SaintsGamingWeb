@@ -1,3 +1,8 @@
+## [2.1.158-3] - 2026-08-09
+### Fixed
+- Fixed unlit sprites and tiles rendering pitch black by explicitly setting their `emissiveColor` to white when `disableLighting` is true.
+- Fixed Studio view failing to render entirely by resolving a React `ReferenceError` during hydration and ensuring empty map shells correctly accept the fetched DB document.
+
 ## [2.1.158-2] - 2026-08-09
 ### Fixed
 - Fixed Studio hydration regression where the map document would fail to render after fetching because the engine effect did not watch the `mapData` object correctly.
