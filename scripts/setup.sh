@@ -755,6 +755,10 @@ if [ $SERVER_READY -eq 1 ]; then
         done
     fi
 
+    echo -e "\n${CYAN}[*] Syncing local game assets to database...${NC}"
+    docker exec $WEB_CONTAINER_NAME npm run sync:assets 2>/dev/null || true
+    echo -e "${GREEN}[✓] Assets synced.${NC}\n"
+
     # Ensure MySQL data is owned by 999 (the mysql user id in container)
     sudo chown -R 999:999 mysql_data 2>/dev/null || true
 
