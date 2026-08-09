@@ -13,11 +13,14 @@ export const dynamic = 'force-dynamic';
 async function loadMapPayload(slug: string) {
   const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
   if (worldMap) {
+    const grid = JSON.parse(worldMap.gridData || "[]");
     return {
       id: worldMap.id,
       gameId: worldMap.gameId,
       name: worldMap.name,
-      grid: JSON.parse(worldMap.gridData || "[]"),
+      width: grid.length > 0 && Array.isArray(grid[0]) ? grid[0].length : 24,
+      height: grid.length || 24,
+      grid: grid,
       gates: JSON.parse(worldMap.gatesData || "{}"),
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
