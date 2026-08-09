@@ -952,7 +952,9 @@ export class BabylonEngine {
             
             // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
             const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+            console.log(`[BabylonEngine] Requesting texture: ${tilesetPath}`);
             tex = new Texture(tilesetPath, this.scene, true, false, 1);
+            tex.onLoadObservable.add(() => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`));
             tex.hasAlpha = true;
             this.tilesetTextureCache.set(imageSource, tex);
           }
