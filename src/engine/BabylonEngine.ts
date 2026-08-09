@@ -262,15 +262,22 @@ export class BabylonEngine {
    * first and then get buried under the ground. Alpha-*test* writes depth per
    * texel so characters stay above the plane everywhere.
    */
-  private configureTilesetMaterial(mat: StandardMaterial) {
+  private configureTilesetMaterial(mat: StandardMaterial, tex?: Texture) {
     mat.useAlphaFromDiffuseTexture = true;
     mat.transparencyMode = Material.MATERIAL_ALPHATEST;
     mat.alphaCutOff = 0.05;
     mat.forceDepthWrite = true;
     mat.backFaceCulling = false;
-    mat.disableLighting = true; // 2D Pixel Art rendering
-    mat.specularColor = new Color3(0.05, 0.05, 0.05);
-    mat.specularPower = 32;
+    
+    // Unlit pipeline: push the texture to the emissive channel and ignore lights
+    if (tex) {
+      mat.diffuseTexture = tex;
+      mat.emissiveTexture = tex;
+    }
+    mat.disableLighting = true;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    
+    mat.specularColor = new Color3(0, 0, 0);
   }
 
   private getEraseVoidMaterial(): StandardMaterial {
@@ -956,11 +963,10 @@ export class BabylonEngine {
             this.tilesetTextureCache.set(imageSource, tex);
           }
           mat.diffuseTexture = tex;
-          this.configureTilesetMaterial(mat);
+          this.configureTilesetMaterial(mat, tex);
           this.tilesetMaterialCache.set(imageSource, mat);
         } else {
-          // Re-apply in case an older cache entry still used alpha-blend.
-          this.configureTilesetMaterial(mat);
+          this.configureTilesetMaterial(mat, mat.diffuseTexture as Texture);
         }
         mesh.material = mat;
         // Pick through map_pick_plane only — batched alpha meshes mis-hit cells.
@@ -1378,10 +1384,10 @@ export class BabylonEngine {
         this.tilesetTextureCache.set(imageSource, tex);
       }
       mat.diffuseTexture = tex;
-      this.configureTilesetMaterial(mat);
+      this.configureTilesetMaterial(mat, tex);
       this.tilesetMaterialCache.set(imageSource, mat);
     } else {
-      this.configureTilesetMaterial(mat);
+      this.configureTilesetMaterial(mat, mat.diffuseTexture as Texture);
     }
     mesh.material = mat;
     mesh.setVerticesData(VertexBuffer.PositionKind, [], true);
@@ -1607,10 +1613,10 @@ export class BabylonEngine {
           this.tilesetTextureCache.set(ts.imageSource, tex);
         }
         mat.diffuseTexture = tex;
-        this.configureTilesetMaterial(mat);
+        this.configureTilesetMaterial(mat, tex);
         this.tilesetMaterialCache.set(ts.imageSource, mat);
       } else {
-        this.configureTilesetMaterial(mat);
+        this.configureTilesetMaterial(mat, mat.diffuseTexture as Texture);
       }
       legacyMesh.material = mat;
       legacyMesh.isVisible = true;
@@ -1655,10 +1661,10 @@ export class BabylonEngine {
         this.tilesetTextureCache.set(ts.imageSource, tex);
       }
       mat.diffuseTexture = tex;
-      this.configureTilesetMaterial(mat);
+      this.configureTilesetMaterial(mat, tex);
       this.tilesetMaterialCache.set(ts.imageSource, mat);
     } else {
-      this.configureTilesetMaterial(mat);
+      this.configureTilesetMaterial(mat, mat.diffuseTexture as Texture);
     }
     overlay.material = mat;
     try {
@@ -2347,6 +2353,9 @@ private resolveTilePick(
           }
         );
         tex.hasAlpha = true;
+        mat.diffuseTexture = tex;
+        mat.emissiveTexture = tex;
+        mat.emissiveColor = new Color3(1, 1, 1);
         this.applySpriteSheetUv(tex, resolvedConfig);
         spriteMesh.metadata.spriteConfig = resolvedConfig;
         // Initial cell crop on the mesh itself
