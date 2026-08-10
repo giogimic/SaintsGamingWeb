@@ -193,7 +193,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     store.setActiveMapData(mapData);
   }, [isDevEditorOpen, mapData, currentMapId]);
 
-  // Derive dimensions — prefer API width/height, then grid / tileLayers.
+  // Derive dimensions — tileLayers first (see resolveMapDimensions), then grid / meta.
   const activeMap = mapData as GameMapData | null;
   const { width: mapWidth, height: mapHeight } = resolveMapDimensions(activeMap || undefined);
 
@@ -587,7 +587,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         if (entityId.startsWith('npc_')) {
         const mapEnt = state.mapEntities.find((e) => e.id === entityId);
         const trueId = entityId.replace(/^npc_/, '').replace(/_\d{10,}$/, '');
-        const npc = activeMap.npcs?.find(
+        // Prefer live store/doc — mount-time `activeMap` can be null to TS and stale at click.
+        const liveMap =
+          (state.activeMapData as GameMapData | null) || mapDataRef.current || activeMap;
+        const npc = liveMap?.npcs?.find(
           (n: any) => n.id === trueId || n.id === `npc_${trueId}` || n.id === entityId
         );
         targetName =
@@ -636,7 +639,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       id: currentMapId,
       width: mapWidth,
       height: mapHeight,
-      layerCount: activeMap.tileLayers?.length
+      layerCount: mapData.tileLayers?.length
     });
     
     lastLoadedMapDataRef.current = mapData;
@@ -646,9 +649,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       width: mapWidth,
       height: mapHeight,
       tileSize: 1, // 1 BJS world unit per tile
-      tiles: activeMap?.grid,
-      tileLayers: activeMap?.tileLayers,
-      tilesets: activeMap?.tilesets,
+      tiles: mapData.grid || [],
+      tileLayers: mapData.tileLayers,
+      tilesets: mapData.tilesets,
       npcs: [],
     });
     setMapMeshEpoch((n) => n + 1);
@@ -958,17 +961,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Handle Live Dev Editor Tile Picking & Click-to-Move
   useEffect(() => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine || !activeMap) return;
+    const map = activeMap;
 
     // Sync brush radius
     engine.setBrushRadius(useEditorStore.getState().brushRadius);
 
     const worldSync = {
-      ensureActiveMap: (map: any) => {
+      ensureActiveMap: (next: any) => {
         const store = useGameStore.getState();
         // Keep store on the same object so Save Map sees in-place paint without remounting.
-        if (store.activeMapData !== map) {
-          store.setActiveMapData(map);
+        if (store.activeMapData !== next) {
+          store.setActiveMapData(next);
         }
       },
       markDirty: () => useEditorStore.getState().markMapDirty(),
@@ -1011,10 +1015,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               const tc = c + v.c;
               if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
               const targetLayer = v.layerOffset; // Keep original layer
-              const painted = paintWorldCell(activeMap, targetLayer, tr, tc, v.tileId, worldSync);
+              const painted = paintWorldCell(map, targetLayer, tr, tc, v.tileId, worldSync);
               if (!('error' in painted)) {
                 ops.push(painted.cell);
-                engine.updateSingleTile(tr, tc, v.tileId, targetLayer, activeMap.tilesets);
+                engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
               }
             });
 
@@ -1023,11 +1027,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               const tr = r + l.r;
               const tc = c + l.c;
               if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
-              const painted = paintWorldCell(activeMap, LOGIC_LAYER_IDX, tr, tc, l.tileId, worldSync);
+              const painted = paintWorldCell(map, LOGIC_LAYER_IDX, tr, tc, l.tileId, worldSync);
               if (!('error' in painted)) {
                 ops.push(painted.cell);
                 if (!engine.updateLogicTile(tr, tc, l.tileId)) {
-                  engine.enableLogicGridOverlay(activeMap?.grid || []);
+                  engine.enableLogicGridOverlay(map.grid || []);
                   engine.updateLogicTile(tr, tc, l.tileId);
                 }
               }
@@ -1040,7 +1044,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             return;
           }
 
-          const target = resolvePaintTarget(activeMap, activeLayerIdx);
+          const target = resolvePaintTarget(map, activeLayerIdx);
         if (target.kind === 'unavailable') {
           showToast(target.reason);
           return;
@@ -1056,7 +1060,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
             return;
           }
-          const painted = paintWorldCell(activeMap, LOGIC_LAYER_IDX, r, c, logicId, worldSync);
+          const painted = paintWorldCell(map, LOGIC_LAYER_IDX, r, c, logicId, worldSync);
           if ('error' in painted) {
             showToast(painted.error);
             return;
@@ -1064,14 +1068,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           useEditorStore.getState().pushPaintOp([painted.cell]);
           // A missing overlay means the engine was rebuilt under us; rebuild and retry.
           if (!engine.updateLogicTile(r, c, logicId)) {
-            engine.enableLogicGridOverlay(activeMap?.grid || []);
+            engine.enableLogicGridOverlay(map.grid || []);
             engine.updateLogicTile(r, c, logicId);
           }
           return;
         }
 
         const painted = paintWorldCell(
-          activeMap,
+          map,
           target.layerIdx,
           r,
           c,
@@ -1083,7 +1087,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           return;
         }
         useEditorStore.getState().pushPaintOp([painted.cell]);
-        engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, activeMap.tilesets);
+        engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, map.tilesets);
       }, {
         drag: true,
         onDragStart: () => {
@@ -1120,11 +1124,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         } else {
            const isWalkable = (x: number, y: number) => {
              const logicTiles = useGameStore.getState().logicTiles;
-             const tileId = activeMap.grid[y]?.[x];
+             const tileId = map.grid[y]?.[x];
              if (logicTiles[tileId]?.isSolid) return false;
              
              const dynamicEntities = useGameStore.getState().mapEntities || [];
-             const isStaticNpc = activeMap.npcs?.some((npc: any) => npc.x === x && npc.y === y);
+             const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
              const isDynamicNpc = dynamicEntities.some((e) => Math.round(e.position.x) === x && Math.round(e.position.y) === y && (e.mapId === currentMapId || !e.mapId));
              if (isStaticNpc || isDynamicNpc) return false;
 

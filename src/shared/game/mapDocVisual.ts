@@ -34,13 +34,17 @@ export function resolveMapDimensions(doc: MapDocVisual | null | undefined): {
   height: number;
 } {
   if (!doc) return { width: 24, height: 24 };
-  const gw = doc.grid?.[0]?.length;
-  const gh = doc.grid?.length;
+  // Visual tileLayers are authoritative for Babylon remesh. Declared width/height
+  // (or an empty logic grid) can lag after Studio paint expands the map — DEMO
+  // shipped as meta 24×24 with a 30×30 Ground layer.
   const lw = doc.tileLayers?.[0]?.grid?.[0]?.length;
   const lh = doc.tileLayers?.[0]?.grid?.length;
+  const gw =
+    Array.isArray(doc.grid) && doc.grid.length > 0 ? doc.grid[0]?.length : undefined;
+  const gh = Array.isArray(doc.grid) && doc.grid.length > 0 ? doc.grid.length : undefined;
   return {
-    width: doc.width || gw || lw || 24,
-    height: doc.height || gh || lh || 24,
+    width: lw || gw || doc.width || 24,
+    height: lh || gh || doc.height || 24,
   };
 }
 

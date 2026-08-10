@@ -7,6 +7,7 @@ import { normalizeStudioMapVisuals } from "@/shared/game/studioMapCreate";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
+import { resolveMapDimensions } from "@/shared/game/mapDocVisual";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,18 +15,21 @@ async function loadMapPayload(slug: string) {
   const worldMap = await prisma.worldMap.findUnique({ where: { id: slug } });
   if (worldMap) {
     const grid = JSON.parse(worldMap.gridData || "[]");
+    const tileLayers = JSON.parse(worldMap.tileLayersData || "[]");
+    const tilesets = JSON.parse(worldMap.tilesetsData || "[]");
+    const dims = resolveMapDimensions({ grid, tileLayers });
     return {
       id: worldMap.id,
       gameId: worldMap.gameId,
       name: worldMap.name,
-      width: grid.length > 0 && Array.isArray(grid[0]) ? grid[0].length : 24,
-      height: grid.length || 24,
+      width: dims.width,
+      height: dims.height,
       grid: grid,
       gates: JSON.parse(worldMap.gatesData || "{}"),
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
-      tileLayers: JSON.parse(worldMap.tileLayersData || "[]"),
-      tilesets: JSON.parse(worldMap.tilesetsData || "[]"),
+      tileLayers,
+      tilesets,
       version: worldMap.version,
       source: "worldMap" as const,
     };
@@ -115,8 +119,14 @@ export async function POST(
     const { slug } = await params;
     const body = await request.json();
     const grid = body.grid || [];
-    const height = Array.isArray(grid) ? grid.length || body.height || 24 : body.height || 24;
-    const width = Array.isArray(grid?.[0]) ? grid[0].length : body.width || 24;
+    const dims = resolveMapDimensions({
+      grid: Array.isArray(grid) ? grid : [],
+      tileLayers: Array.isArray(body.tileLayers) ? body.tileLayers : undefined,
+      width: body.width,
+      height: body.height,
+    });
+    const width = dims.width;
+    const height = dims.height;
 
     // Bible 08/16: reject trapped spawns, unknown logic ids, bad NPC placement when grid is sent.
     if (Array.isArray(body.grid)) {

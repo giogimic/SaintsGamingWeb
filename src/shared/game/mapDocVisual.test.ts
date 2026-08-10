@@ -47,8 +47,20 @@ describe("mapDocVisual", () => {
     expect(isProxyShellMapDoc(null)).toBe(true);
   });
 
-  it("resolves width/height from API fields before grid", () => {
+  it("prefers tileLayers over stale meta / empty logic grid", () => {
     expect(resolveMapDimensions({ width: 40, height: 12, grid: [[0, 0]] })).toEqual({
+      width: 2,
+      height: 1,
+    });
+    expect(
+      resolveMapDimensions({
+        width: 24,
+        height: 24,
+        grid: [],
+        tileLayers: [{ grid: Array(30).fill(0).map(() => Array(30).fill(17)) }],
+      })
+    ).toEqual({ width: 30, height: 30 });
+    expect(resolveMapDimensions({ width: 40, height: 12 })).toEqual({
       width: 40,
       height: 12,
     });

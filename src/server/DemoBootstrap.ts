@@ -234,14 +234,36 @@ async function seedDemoMap() {
       },
     });
   } else {
+    // Heal empty / missing logic grid (meta width fell back to 24 while Ground is 30×30).
+    let healGrid = false;
+    try {
+      const parsed = JSON.parse(existing.gridData || "[]");
+      healGrid = !Array.isArray(parsed) || parsed.length === 0;
+    } catch {
+      healGrid = true;
+    }
     await prisma.worldMap.update({
       where: { id: DEMO_MAP_ID },
       data: {
         gameId: SAINTS_TRAIL_GAME_ID,
         npcsData: npcsJson,
+        ...(healGrid ? { gridData: gridJson } : {}),
         version: { increment: 1 },
       },
     });
+    if (healGrid) {
+      await prisma.gameMap.updateMany({
+        where: { id: DEMO_MAP_ID },
+        data: {
+          width: DEMO_MAP_W,
+          height: DEMO_MAP_H,
+          tilesetData: gridJson,
+        },
+      });
+      console.log(
+        `[DemoBootstrap] Healed DEMO_SANDBOX empty logic grid → ${DEMO_MAP_W}x${DEMO_MAP_H}`
+      );
+    }
   }
 
   await prisma.gameMap.upsert({
