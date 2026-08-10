@@ -33,6 +33,12 @@ import {
 import { getIsEditorMode } from '@/shared/game/studioSession';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { shouldKeepActiveMapData } from '@/shared/game/mapSwitch';
+import {
+  mapVisualFingerprint,
+  resolveMapDimensions,
+  shouldAcceptMapDoc,
+  shouldRemeshMapDoc,
+} from '@/shared/game/mapDocVisual';
 
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
 const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
@@ -95,7 +101,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [mapData, setMapData] = useState<GameMapData | null>(null);
   const mapDataRef = useRef<GameMapData | null>(null);
   mapDataRef.current = mapData;
-  const lastLoadedMapDataRef = useRef<any>(null);
+  /** Last doc whose tile geometry was pushed into Babylon (identity + fingerprint). */
+  const lastLoadedMapDataRef = useRef<GameMapData | null>(null);
+  const lastVisualFingerprintRef = useRef<string>('');
+  /** Bumped after every loadTilemap so author overlays re-attach (load clears them). */
+  const [mapMeshEpoch, setMapMeshEpoch] = useState(0);
 
   const clearAutoWalk = useCallback(() => {
     if (autoWalkIntervalRef.current) {
@@ -114,24 +124,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Gate warps that flip the id without clearing activeMapData used to keep DEMO.
     if (activeMapData && shouldKeepActiveMapData(activeMapData, currentMapId)) {
       setMapData((prev) => {
-        // Same object — no-op (avoids Babylon remount).
+        // Same object — no-op (avoids Babylon remount / remesh).
         if (prev === activeMapData) return prev;
         if (prev && shouldKeepActiveMapData(prev, currentMapId)) {
-          const prevNpcs = Array.isArray(prev.npcs) ? prev.npcs.length : 0;
-          const nextNpcs = Array.isArray(activeMapData.npcs) ? activeMapData.npcs.length : 0;
-          const prevTiles = Array.isArray(prev.tilesets) ? prev.tilesets.length : 0;
-          const nextTiles = Array.isArray(activeMapData.tilesets)
-            ? activeMapData.tilesets.length
-            : 0;
-          // Keep engine-stable ref unless the store doc is clearly richer (NPCs /
-          // tilesets arrived after a barren first paint).
-          if ((prev as any).source === undefined && (activeMapData as any).source !== undefined) {
-             // Accept the DB document (overrides local empty shell)
-          } else if (nextNpcs <= prevNpcs && nextTiles <= prevTiles) {
+          // Stable ref unless next is a real visual/DB upgrade (never NPC-only churn).
+          if (!shouldAcceptMapDoc(prev, activeMapData as GameMapData)) {
             return prev;
           }
         }
-        return activeMapData as GameMapData;
+        return ensureMapHasStudioTilesets(activeMapData as GameMapData);
       });
       setIsEngineReady(true);
       return;
@@ -148,7 +149,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     });
     loadMap(currentMapId).then((data) => {
       const ensured = ensureMapHasStudioTilesets(data);
-      setMapData(ensured);
+      setMapData((prev) => {
+        if (prev && shouldKeepActiveMapData(prev, currentMapId) && !shouldAcceptMapDoc(prev, ensured)) {
+          return prev;
+        }
+        return ensured;
+      });
       const store = useGameStore.getState();
       if (!shouldKeepActiveMapData(store.activeMapData, currentMapId)) {
         store.setActiveMapData(ensured);
@@ -174,17 +180,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   // Studio paints by mutating `mapData` in place, and Save Map reads
   // `activeMapData` from the store. When this component loaded the map itself
   // the two were different objects, so every stroke was silently dropped on
-  // save. Publish the loaded map so both sides share one reference.
+  // save. Publish the loaded map so both sides share one reference — and replace
+  // proxy shells still sitting in the store.
   useEffect(() => {
     if (!isDevEditorOpen || !mapData) return;
-    if (useGameStore.getState().activeMapData) return;
-    useGameStore.getState().setActiveMapData(mapData);
-  }, [isDevEditorOpen, mapData]);
+    const store = useGameStore.getState();
+    const cur = store.activeMapData as GameMapData | null;
+    if (cur === mapData) return;
+    if (cur && shouldKeepActiveMapData(cur, currentMapId) && !shouldAcceptMapDoc(cur, mapData)) {
+      return;
+    }
+    store.setActiveMapData(mapData);
+  }, [isDevEditorOpen, mapData, currentMapId]);
 
-  // Derive dimensions — use loaded map data or safe defaults
-  const activeMap = mapData as any;
-  const mapWidth = activeMap?.grid?.[0]?.length || 24;
-  const mapHeight = activeMap?.grid?.length || 24;
+  // Derive dimensions — prefer API width/height, then grid / tileLayers.
+  const activeMap = mapData as GameMapData | null;
+  const { width: mapWidth, height: mapHeight } = resolveMapDimensions(activeMap || undefined);
 
   // Unified Movement Execution Engine
   const tryMovePlayerTo = (targetX: number, targetY: number) => {
@@ -629,23 +640,30 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     });
     
     lastLoadedMapDataRef.current = mapData;
+    lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,
       height: mapHeight,
       tileSize: 1, // 1 BJS world unit per tile
-      tiles: activeMap.grid,
-      tileLayers: activeMap.tileLayers,
-      tilesets: activeMap.tilesets,
+      tiles: activeMap?.grid,
+      tileLayers: activeMap?.tileLayers,
+      tilesets: activeMap?.tilesets,
       npcs: [],
     });
+    setMapMeshEpoch((n) => n + 1);
 
-    // Snap camera to player's starting position immediately (no lerp on first frame)
-    const initPlayer = useGameStore.getState().player;
-    if (initPlayer?.position) {
-      const initX = (initPlayer.position.x ?? 6) - mapWidth / 2;
-      const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2);
-      babylonEngine.snapCameraTo(initX, initZ);
+    // Editor: frame the whole map (author spawn often sits outside short maps).
+    // Playtest/lobby: snap to the player.
+    if (editorToolsRef.current) {
+      babylonEngine.fitMapInView();
+    } else {
+      const initPlayer = useGameStore.getState().player;
+      if (initPlayer?.position) {
+        const initX = (initPlayer.position.x ?? 6) - mapWidth / 2;
+        const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2);
+        babylonEngine.snapCameraTo(initX, initZ);
+      }
     }
 
     // Start 60FPS Render Loop
@@ -810,37 +828,46 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     return () => {
       babylonEngine.dispose();
       engineRef.current = null;
+      lastLoadedMapDataRef.current = null;
+      lastVisualFingerprintRef.current = '';
     };
   // Remount only when the base map seat changes — not on every mapData object identity.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mapData read when engineMapKey flips
   }, [engineMapKey]);
 
-  // Handle Map Document Hydration
-  // The synchronous Zustand proxy initially returns an empty map shell for DEMO_SANDBOX.
-  // When the background fetch completes, the fully populated map document arrives and
-  // `mapData` identity changes. However, `engineMapKey` remains identical (DEMO_SANDBOX),
-  // so the initialization effect above does not re-run.
-  // We use this effect to propagate the hydrated geometry without tearing down the engine.
+  // Handle Map Document Hydration (Studio + first paint)
+  // Engine remounts only on engineMapKey. When a proxy-shell mounts first and the
+  // DB doc arrives later (same base id), remesh tiles in place — do NOT remesh on
+  // lobby NPC / object-identity churn (fingerprint ignores npcs).
   useEffect(() => {
-    // If engineMapKey effect hasn't initialized the engine yet, skip.
     if (!engineRef.current || !mapData) return;
-    
-    // Identity check: `mapData` only changes identity when a richer document arrives
-    // or the map is switched. Studio tile painting mutates in place, preserving identity.
+    // Paint mutates in place — same identity, skip.
     if (lastLoadedMapDataRef.current === mapData) return;
-    lastLoadedMapDataRef.current = mapData;
+    if (!shouldRemeshMapDoc(lastLoadedMapDataRef.current, mapData)) {
+      // Adopt the newer ref without rebuilding meshes (e.g. metadata-only).
+      lastLoadedMapDataRef.current = mapData;
+      lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
+      return;
+    }
 
-    const activeMap = mapData as any;
+    lastLoadedMapDataRef.current = mapData;
+    lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
+    const dims = resolveMapDimensions(mapData);
+    // NPCs stay empty — socket mapEntities + store activeMapData drive sprites.
     engineRef.current.loadTilemap({
       id: currentMapId,
-      width: activeMap.width || activeMap.grid?.[0]?.length || 24,
-      height: activeMap.height || activeMap.grid?.length || 24,
+      width: dims.width,
+      height: dims.height,
       tileSize: 1,
-      tiles: activeMap.grid,
-      tileLayers: activeMap.tileLayers,
-      tilesets: activeMap.tilesets,
+      tiles: mapData.grid,
+      tileLayers: mapData.tileLayers,
+      tilesets: mapData.tilesets,
       npcs: [],
     });
+    setMapMeshEpoch((n) => n + 1);
+    if (editorToolsRef.current) {
+      engineRef.current.fitMapInView();
+    }
   }, [mapData, currentMapId]);
 
   // Handle Combat Target Selection Ring
@@ -1219,6 +1246,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tilesets: map.tilesets,
         npcs: [],
       });
+      // loadTilemap clears author overlays — re-seed pins/sprites.
+      setMapMeshEpoch((n) => n + 1);
       setMapData(map);
       mapDataRef.current = map;
     };
@@ -1243,6 +1272,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
 
   // Editor-only warp / NPC / spawn-pin markers (never serialized).
+  // Re-run after mapMeshEpoch — loadTilemap clears author overlays.
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine || !isEngineReady) return;
@@ -1259,10 +1289,35 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setAuthorOverlays({
       gates: showWarpOverlays ? gates : [],
       spawnSourceGates: showSpawnOverlays ? gates : [],
+      // Always show map NPC pins in Studio when Spawns is on (map JSON placements).
       npcs: showSpawnOverlays ? justNpcs : [],
       monsterSpawners: showSpawnOverlays ? spawners : [],
       showGateSpawns: showSpawnOverlays,
     });
+
+    // Also seed entity sprites from the map doc — Studio private shards often
+    // have an empty socket mapEntities snapshot, so the render-loop fallback
+    // must not wait on a later store tick after remesh wiped overlays only.
+    const liveW = engine.getMapWidth() || mapWidth;
+    const liveH = engine.getMapHeight() || mapHeight;
+    for (const npc of justNpcs) {
+      if (!Number.isFinite(npc.x) || !Number.isFinite(npc.y)) continue;
+      const spriteUrl = resolveEntitySpriteUrl(npc.sprite || 'adventurer', {
+        kind: 'npc',
+      });
+      engine.updateEntity({
+        id: `mapnpc_${npc.id}`,
+        name: npc.name || npc.id,
+        x: npc.x - liveW / 2,
+        y: liveH / 2 - npc.y,
+        spriteUrl,
+        isPlayer: false,
+        isNpc: true,
+        spriteConfig: isSingleFrameSpriteUrl(spriteUrl)
+          ? SINGLE_FRAME_SPRITE_CONFIG
+          : undefined,
+      });
+    }
   }, [
     isDevEditorOpen,
     isEngineReady,
@@ -1270,6 +1325,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     showSpawnOverlays,
     activeMap,
     activeMapData,
+    mapMeshEpoch,
+    mapWidth,
+    mapHeight,
   ]);
 
   // Keyboard WASD / interact — playtest only (editor runtime keeps sim dormant)

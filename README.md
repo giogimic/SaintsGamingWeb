@@ -60,17 +60,14 @@ To pull the latest code, backup the database, rebuild containers, and restart gr
 
 **Note**: The Go MMO backend is now the fully featured, production-ready live server handling all character persistence (SQLite), socket networking, dynamic encounters, dialogue trees, combat formulas, and real-time multiplayer states. The Next.js API continues to serve as the Studio editor persistence layer (`/api/maps`), which automatically hot-reloads via internal webhooks to Go.
 
-*(For manual local development without Docker, refer to [Installation Guide](docs/developer-guide/installation.md)).*
+*(Local install notes and internal architecture docs live in the private `.docs/` tree on developer machines — not published to this repo.)*
 
 ## Documentation
-The `docs/` folder contains detailed technical specifications:
-- **[Architectural Overview](docs/architecture/overview.md)**
-- **[Networking & Server Authority](docs/architecture/networking.md)**
-- **[Database & Hot/Cold State](docs/architecture/database.md)**
-- **[The Game Loop & Combat Engine](docs/architecture/game-loop.md)**
-- **[World Building & Map Editor](docs/developer-guide/world-building.md)**
-- **[Project Structure & Developer Guide](docs/developer-guide/project-structure.md)**
-- **[Changelog](CHANGELOG.md)**
+- **[Changelog](CHANGELOG.md)** — release history  
+- **[Asset attribution](docs/TUXEMON_ATTRIBUTION.md)** — Tuxemon / LPC licensing  
+- Package READMEs (e.g. `go-mmo/README.md`) for optional subsystems  
+
+Gameplay bibles, Studio contracts, and day-to-day handoff notes are **local-only** under `.docs/` (gitignored).
 
 ## License
 - **Code:** Private / proprietary until stated otherwise.

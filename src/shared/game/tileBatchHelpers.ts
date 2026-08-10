@@ -15,6 +15,35 @@ export type TilesetUvInput = {
 
 export type SizeLookup = Record<string, { w?: number; h?: number }>;
 
+/** Tiled stores H/V/D flip in the high bits of a GID. */
+export const TILED_GID_FLIP_MASK = 0xe0000000;
+
+/** Clear Tiled flip flags so firstgid / UV math uses the real tile id. */
+export function stripTiledGidFlags(gid: number): number {
+  if (!Number.isFinite(gid) || gid <= 0) return 0;
+  return gid & ~TILED_GID_FLIP_MASK;
+}
+
+/** Convert root-local XZ to tile row/col for the batched ground layout. */
+export function worldToTileCoord(
+  worldX: number,
+  worldZ: number,
+  mapWidth: number,
+  mapHeight: number,
+  tileSize: number = 1
+): { r: number; c: number } | null {
+  const w = mapWidth;
+  const h = mapHeight;
+  const s = Number.isFinite(tileSize) && tileSize > 0 ? tileSize : 1;
+  if (!w || !h) return null;
+  // Quads are centered on (c - w/2, h/2 - r). Add 0.5 so each half-tile
+  // maps to the cell under the cursor (not the northwest neighbor).
+  const c = Math.floor(worldX / s + w / 2 + 0.5);
+  const r = Math.floor(h / 2 - worldZ / s + 0.5);
+  if (r < 0 || c < 0 || r >= h || c >= w) return null;
+  return { r, c };
+}
+
 export function cellBatchKey(layerIdx: number, r: number, c: number): string {
   return `${layerIdx}_${r}_${c}`;
 }
@@ -94,7 +123,7 @@ export function tilesetUvForGid(
   ts: TilesetUvInput,
   sizeLookup?: SizeLookup
 ): number[] {
-  const localGid = gid - ts.firstgid;
+  const localGid = stripTiledGidFlags(gid) - ts.firstgid;
   const col = localGid % ts.columns;
   const row = Math.floor(localGid / ts.columns);
   const estimatedRows = estimateTilesetRows(ts, localGid, sizeLookup);

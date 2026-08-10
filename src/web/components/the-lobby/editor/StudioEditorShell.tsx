@@ -84,7 +84,15 @@ const initialLayout: IJsonModel = {
         enableDrop: false,
         enableDrag: false,
         children: [
-          { type: "tab", name: "Viewport", component: "viewport", enableClose: false, className: "sg-viewport-tab" }
+          {
+            type: "tab",
+            name: "Viewport",
+            component: "viewport",
+            enableClose: false,
+            className: "sg-viewport-tab",
+            // Applied to parent tabset when this is the sole stretched tab.
+            tabsetClassName: "sg-viewport-tabset",
+          }
         ]
       },
       {

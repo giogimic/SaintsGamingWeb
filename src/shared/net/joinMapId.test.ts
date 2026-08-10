@@ -36,17 +36,25 @@ describe("worldToTile math", () => {
     h: number,
     s = 1
   ): { r: number; c: number } | null {
-    const c = Math.floor(worldX / s + w / 2);
-    const r = Math.floor(h / 2 - worldZ / s);
+    const c = Math.floor(worldX / s + w / 2 + 0.5);
+    const r = Math.floor(h / 2 - worldZ / s + 0.5);
     if (r < 0 || c < 0 || r >= h || c >= w) return null;
     return { r, c };
   }
 
   it("maps center cell for even dimensions", () => {
-    // For w=h=30, tile (14,15) world: x=(14-15)*1=-1, z=(15-15)*1=0 → wait
     // posX = (c - w/2) * s, posZ = (h/2 - r) * s
     // c=14, r=15, w=30,h=30: x=-1, z=0
     expect(worldToTile(-1, 0, 30, 30)).toEqual({ r: 15, c: 14 });
+  });
+
+  it("maps the full cell footprint, not only the SE half", () => {
+    // Tile c=14 centered at x=-1 spans [-1.5, -0.5]
+    expect(worldToTile(-1.4, 0, 30, 30)).toEqual({ r: 15, c: 14 });
+    expect(worldToTile(-0.6, 0, 30, 30)).toEqual({ r: 15, c: 14 });
+    // Tile r=15 centered at z=0 spans z [-0.5, 0.5]
+    expect(worldToTile(-1, 0.4, 30, 30)).toEqual({ r: 15, c: 14 });
+    expect(worldToTile(-1, -0.4, 30, 30)).toEqual({ r: 15, c: 14 });
   });
 
   it("maps origin corner", () => {

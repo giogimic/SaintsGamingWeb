@@ -5,7 +5,7 @@
  * DO NOT add socket.io imports. This file is shared client/server.
  *
  * ⛔ Before adding a new event:
- *    1. Read /info/realtime/EVENTS.md
+ *    1. Read .docs/info/realtime/EVENTS.md
  *    2. Check this registry for existing events
  *    3. Define schema, priority, persistence, and producers/consumers
  */

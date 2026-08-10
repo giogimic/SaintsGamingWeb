@@ -1,6 +1,7 @@
 import { Point } from '../store';
 import type { ElementType } from '@/shared/game/elementMatchups';
 import { listGateTargets } from '@/shared/game/mapGates';
+import { MAP_DOC_SOURCE_PROXY_SHELL } from '@/shared/game/mapDocVisual';
 
 export interface MapGate {
   targetMapId: string;
@@ -31,6 +32,12 @@ export interface GameMapData {
   name: string;
   grid: number[][]; // 0: safe, 1: wall/boundary, 2: tall grass, 3-4: gates, 5: tree(woodcutting), 6: ore(mining), 7: shop, 8: clinic, 10: fishing spot
   gates: Record<number, MapGate>;
+  /** Present on /api/maps payloads; used for Babylon dims when grid is sparse. */
+  width?: number;
+  height?: number;
+  /** worldMap | gameMap | proxy-shell — shells must never stick over DB docs. */
+  source?: string;
+  version?: number;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
   npcs?: Array<{
@@ -61,10 +68,15 @@ function emptyMapFallback(mapId: string): GameMapData {
   return {
     id: mapId,
     name: mapId,
+    source: MAP_DOC_SOURCE_PROXY_SHELL,
+    width: 20,
+    height: 20,
     grid: Array(20).fill(0).map(() => Array(20).fill(0)),
     gates: {},
     npcs: [],
     encounterPool: [],
+    tileLayers: [],
+    tilesets: [],
   };
 }
 
@@ -200,10 +212,15 @@ export const GAME_MAPS = new Proxy(mapCache, {
     return {
       id: prop,
       name: prop,
+      source: MAP_DOC_SOURCE_PROXY_SHELL,
+      width: 20,
+      height: 20,
       grid: Array(20).fill(0).map(() => Array(20).fill(0)),
       gates: {},
       npcs: [],
       encounterPool: [],
+      tileLayers: [],
+      tilesets: [],
     };
   },
 });

@@ -6,7 +6,7 @@
  * this service — never socket.io directly.
  *
  * ⛔ Before modifying this file:
- *    1. Read /info/realtime/ARCHITECTURE.md
+ *    1. Read .docs/info/realtime/ARCHITECTURE.md
  *    2. Check EVENT_REGISTRY in src/shared/events/registry.ts
  */
 
