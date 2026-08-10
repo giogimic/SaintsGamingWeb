@@ -6,6 +6,7 @@ import {
   tileCellWorldPos,
   tilesetUvForGid,
   tilesetUvForOverlayPlane,
+  worldToTileCoord,
 } from "./tileBatchHelpers";
 
 describe("tileBatchHelpers", () => {
@@ -52,5 +53,24 @@ describe("tileBatchHelpers", () => {
     const overlay = tilesetUvForOverlayPlane(2, ts);
     expect(overlay[1]).toBe(batch[5]);
     expect(overlay[5]).toBe(batch[1]);
+  });
+
+  it("strips Tiled flip flags before UV local ids", () => {
+    const ts = {
+      firstgid: 1,
+      imageSource: "Terrain.png",
+      columns: 8,
+      tilewidth: 16,
+      tileheight: 16,
+    };
+    const sizes = { "Terrain.png": { w: 128, h: 384 } };
+    const flipped = 0x60000000 | 17;
+    expect(tilesetUvForGid(flipped, ts, sizes)).toEqual(tilesetUvForGid(17, ts, sizes));
+  });
+
+  it("worldToTileCoord uses full cell footprints", () => {
+    // c=14 centered at x=-1 on a 30-wide map
+    expect(worldToTileCoord(-1.4, 0, 30, 30)).toEqual({ r: 15, c: 14 });
+    expect(worldToTileCoord(-0.6, 0, 30, 30)).toEqual({ r: 15, c: 14 });
   });
 });

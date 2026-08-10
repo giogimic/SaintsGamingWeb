@@ -32,9 +32,11 @@ import {
   cellBatchKey,
   collapsedQuadPositions,
   groundQuadPositions,
+  stripTiledGidFlags,
   tileCellWorldPos,
   tilesetUvForGid,
   tilesetUvForOverlayPlane,
+  worldToTileCoord,
   type TilesetUvInput,
 } from "../shared/game/tileBatchHelpers";
 import {
@@ -712,6 +714,10 @@ export class BabylonEngine {
       window.addEventListener('pointerup', this.onEditorPointerUp);
       window.addEventListener('keydown', this.onEditorKeyDown);
       window.addEventListener('keyup', this.onEditorKeyUp);
+      // Author session spawn may sit outside the loaded map (e.g. DEMO 14,15 on a 12-tall dojo).
+      if (this.currentMapWidth > 0 && this.currentMapHeight > 0) {
+        this.fitMapInView();
+      }
     } else {
       this.canvas.removeEventListener('pointerdown', this.onEditorPointerDown);
       this.canvas.removeEventListener('auxclick', this.onEditorAuxClick);
@@ -849,7 +855,8 @@ export class BabylonEngine {
 
       // Ensure we treat the map as 32x32 chunks, regardless of input structure
       const processTile = (r: number, c: number, absR: number, absC: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number) => {
-        const gid = layer.grid[r]?.[c] ?? 0;
+        const rawGid = layer.grid[r]?.[c] ?? 0;
+        const gid = stripTiledGidFlags(rawGid);
         if (gid === 0) return;
 
         const ts = sortedTilesets.find((t: any) => gid >= t.firstgid);
@@ -1175,8 +1182,9 @@ export class BabylonEngine {
 
     // Invisible full-map pick plane — batched `tileset_mesh_*` quads skip empty
     // cells and are non-pickable; this plane is the sole click authority.
-    const pickW = width * tileSize;
-    const pickH = height * tileSize;
+    // Pad by one tile so edge-cell half-extents (centers at ±w/2) stay pickable.
+    const pickW = width * tileSize + tileSize;
+    const pickH = height * tileSize + tileSize;
     const pickPlane = MeshBuilder.CreateGround(
       'map_pick_plane',
       { width: pickW, height: pickH },
@@ -1344,16 +1352,13 @@ export class BabylonEngine {
 
   /** Convert world XZ (root-local) to tile row/col. Uses center-of-cell alignment. */
   public worldToTile(worldX: number, worldZ: number): { r: number; c: number } | null {
-    const w = this.currentMapWidth;
-    const h = this.currentMapHeight;
-    const s = this.currentTileSize || 1;
-    if (!w || !h) return null;
-    // Center-aligned: the pick point at the center of tile (r,c) should map exactly to (r,c).
-    // Tile centers in world space: x = (c - w/2 + 0.5) * s, z = (h/2 - r - 0.5) * s
-    const c = Math.floor(worldX / s + w / 2);
-    const r = Math.floor(h / 2 - worldZ / s);
-    if (r < 0 || c < 0 || r >= h || c >= w) return null;
-    return { r, c };
+    return worldToTileCoord(
+      worldX,
+      worldZ,
+      this.currentMapWidth,
+      this.currentMapHeight,
+      this.currentTileSize || 1
+    );
   }
 
   private disposePaintOverlay(key: string) {

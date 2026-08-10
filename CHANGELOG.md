@@ -2,6 +2,9 @@
 ### Fixed
 - Fixed Studio Viewport occlusion where the FlexLayout DOM container rendered a solid background and intercepted pointer events over the underlying WebGL canvas.
 
+### Changed
+- Development knowledge base (`info/`, developer `docs/`, agent `logs/*.md`) moved to local-only `.docs/` (gitignored). Public repo keeps README, CHANGELOG, and `docs/TUXEMON_ATTRIBUTION.md`.
+
 ## [2.1.158-3] - 2026-08-09
 ### Fixed
 - Fixed unlit sprites and tiles rendering pitch black by explicitly setting their `emissiveColor` to white when `disableLighting` is true.

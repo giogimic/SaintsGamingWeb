@@ -418,7 +418,7 @@
 }
 
 /* Studio FlexLayout Overrides */
-.flexlayout__layout { pointer-events: none !important; }
+.flexlayout__layout { pointer-events: none !important; background: transparent !important; }
 .flexlayout__tabset { pointer-events: auto !important; }
 .flexlayout__splitter { pointer-events: auto !important; }
 .flexlayout__border { pointer-events: auto !important; }
@@ -426,10 +426,37 @@
 .flexlayout__tabset_header { pointer-events: auto !important; }
 .flexlayout__popup { pointer-events: auto !important; }
 
-/* Viewport Pass-through: Any container holding the viewport must let clicks pass */
+/*
+ * Viewport Pass-through
+ * Newer flexlayout-react keeps tab *body* under `.flexlayout__tab_moveable` as a
+ * sibling of the tabset chrome — `:has(.sg-viewport-container)` on the tabset
+ * never matches. The Viewport tab *button* still carries `.sg-viewport-tab` inside
+ * the center tabset strip, so `:has(.sg-viewport-tab)` is the reliable selector.
+ */
+.flexlayout__tabset:has(.sg-viewport-tab),
+.flexlayout__tabset.sg-viewport-tabset {
+  background: transparent !important;
+  pointer-events: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.flexlayout__tabset:has(.sg-viewport-tab) > .flexlayout__tabset_tabbar_outer,
+.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_header,
+.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_tabbar_inner,
+.flexlayout__tabset.sg-viewport-tabset > .flexlayout__tabset_tabbar_outer,
+.flexlayout__tabset.sg-viewport-tabset .flexlayout__tabset_header,
+.flexlayout__tabset.sg-viewport-tabset .flexlayout__tabset_tabbar_inner {
+  display: none !important;
+}
+.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_content,
+.flexlayout__tabset.sg-viewport-tabset .flexlayout__tabset_content {
+  pointer-events: none !important;
+  background: transparent !important;
+}
+/* Fallbacks if content is nested / moved */
 .flexlayout__tabset:has(.sg-viewport-container) { background: transparent !important; pointer-events: none !important; border: none !important; }
-.flexlayout__tabset:has(.sg-viewport-container) > .flexlayout__tabset_header { display: none !important; }
 .flexlayout__tabset_content:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
 .flexlayout__tab:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
+.flexlayout__tab_moveable:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
 .sg-viewport-tab { pointer-events: none !important; background: transparent !important; }
 .sg-viewport-container { pointer-events: none !important; background: transparent !important; }

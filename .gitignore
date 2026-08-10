@@ -57,9 +57,14 @@ docker-compose.yml
 # AI / Local Work
 /ai/
 /articles/
-# Runtime log files stay ignored; written-up audits / change logs are tracked.
-/logs/*
-!/logs/*.md
+# Runtime + agent logs — local only (write-ups live under .docs/logs/)
+/logs/
+/go-mmo/logs/
+# Internal knowledge base (bibles, CONTINUE, system docs) — use .docs/
+/info/
+# Developer docs beyond public attribution — use .docs/public-docs/
+/docs/**
+!/docs/TUXEMON_ATTRIBUTION.md
 /.agents/
 /.tools/
 /.docs/

@@ -134,7 +134,12 @@ export const WorldBuilderPanel: React.FC = () => {
   const handleWarpToMap = async (targetMapId: string) => {
     try {
       const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
+      const mw = loaded.grid?.[0]?.length || loaded.width || 24;
+      const mh = loaded.grid?.length || loaded.height || 24;
+      const cx = Math.max(1, Math.min(mw - 2, Math.floor(mw / 2)));
+      const cy = Math.max(1, Math.min(mh - 2, Math.floor(mh / 2)));
       useGameStore.setState({ currentMapId: targetMapId, activeMapData: loaded });
+      useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
       setMapSearchQuery('');
       showToast(`Warped to map: ${targetMapId}`);
     } catch {
