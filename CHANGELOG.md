@@ -1,3 +1,7 @@
+## [2.1.167] - 2026-08-13
+### Added
+- **Turn-Based Battle Keyboard Controls (`TurnBattleOverlay.tsx`)**: Added keyboard shortcuts for creature battle actions (`1` for Fight / Ability 1, `2` for Expose Film / Item, `3` for Switch Creatures, `4` for Run / Flee, and `Escape` for Back).
+
 ## [2.1.166] - 2026-08-13
 ### Added
 - **Studio Pro Hotkeys & Quick Docks (`StudioEditorShell.tsx`)**: Wired `Ctrl+Shift+P` for World Atlas, `Ctrl+Shift+O` for Map Diagnostics & Problems, and `Ctrl+Shift+D` for Dev Tools directly into the key event dispatcher.
