@@ -33,7 +33,8 @@ export type StudioDockId =
   | 'items'
   | 'spawner'
   | 'prefab'
-  | 'atlas';
+  | 'atlas'
+  | 'problems';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -155,5 +156,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   atlas: {
     label: 'World Atlas',
     blurb: 'Drag and drop maps to connect them seamlessly.',
+  },
+  problems: {
+    label: 'Problems',
+    blurb: 'Live validation diagnostics, broken warps, and entity collision checks.',
   },
 };

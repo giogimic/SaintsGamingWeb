@@ -66,7 +66,8 @@ export type PanelId =
   | 'items'
   | 'spawner'
   | 'prefab'
-  | 'atlas';
+  | 'atlas'
+  | 'problems';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -370,6 +371,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 50,
     width: 800,
     height: 700,
+    zIndex: 10,
+  },
+  problems: {
+    id: 'problems',
+    title: 'Problems',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 500,
+    width: 600,
+    height: 250,
     zIndex: 10,
   },
 };

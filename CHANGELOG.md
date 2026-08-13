@@ -1,3 +1,9 @@
+## [2.1.163] - 2026-08-13
+### Added
+- **Studio Problems & Validation Panel (`StudioProblemsPanel.tsx`)**: Created live map diagnostics dock (Bible 30 §8) checking gate target destinations, entity-solid tile collision intersections, map dimension bounds, and layer health, complete with 1-click camera coordinate navigation (`[Y, X]`).
+- **28-Slot RuneScape-Style Inventory (`inventory-overlay.tsx`)**: Redesigned player inventory into a standard 4x7 grid with recessed empty slots, item rarity border glows (Common, Uncommon, Rare, Epic, Legendary), item abbreviations (`10k`, `1M`), and full action toolbars (Equip, Use, Drop).
+- **Live Minimap Radar Active Map Fallback (`MiniMapRadar.tsx`)**: Wired `activeMapData` store fallback into the radar drawing loop so dynamically created or edited Studio maps render real-time geometry accurately.
+
 ## [2.1.162] - 2026-08-13
 ### Added
 - **Centralized Realtime Protocol Specification (`src/shared/net/protocol.ts`)**: Established single source of truth for protocol versioning (`2.1.0`), typed command/event contracts, reliability tiers (`CRITICAL`, `STATE`, `TRANSIENT`, `CHAT`, `PRESENCE`), and payload interfaces for lobby multiplayer and Studio collaboration.

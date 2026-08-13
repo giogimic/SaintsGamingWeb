@@ -52,6 +52,7 @@ import { ItemEditorPanel } from './panels/ItemEditorPanel';
 import { MonsterSpawnerPanel } from './panels/MonsterSpawnerPanel';
 import { PrefabBuilderPanel } from './panels/PrefabBuilderPanel';
 import { WorldAtlasPanel } from './panels/WorldAtlasPanel';
+import { StudioProblemsPanel } from './panels/StudioProblemsPanel';
 import { StudioStatusBar } from './StudioStatusBar';
 
 const MODE_BUTTONS: Array<{
@@ -321,6 +322,7 @@ export const StudioEditorShell: React.FC = () => {
       case 'spawner': return <MonsterSpawnerPanel />;
       case 'prefab': return <PrefabBuilderPanel />;
       case 'atlas': return <WorldAtlasPanel />;
+      case 'problems': return <StudioProblemsPanel />;
       case 'viewport': return <div className="sg-viewport-container w-full h-full pointer-events-none" />;
       default: return <div>Unknown component: {component}</div>;
     }
