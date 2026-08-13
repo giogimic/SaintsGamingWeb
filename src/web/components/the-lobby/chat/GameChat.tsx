@@ -15,7 +15,8 @@ interface ChatMessage {
   sender: string;
   text: string;
   timestamp: number;
-  type: 'LOCAL' | 'GLOBAL' | 'PARTY' | 'SYSTEM';
+  type: 'LOCAL' | 'GLOBAL' | 'PARTY' | 'WHISPER' | 'SYSTEM';
+  recipient?: string;
 }
 
 function FriendsWrapper() {
@@ -35,6 +36,8 @@ function msgClass(type: ChatMessage['type']) {
       return 'lobby-chat-msg-global';
     case 'SYSTEM':
       return 'lobby-chat-msg-system';
+    case 'WHISPER':
+      return 'lobby-chat-msg-whisper';
     default:
       return 'lobby-chat-msg-local';
   }
@@ -64,15 +67,16 @@ export function GameChat() {
       if (e.key === 'Enter' && !isTyping) {
         e.preventDefault();
         setIsExpanded(true);
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 50);
+        setTimeout(() => inputRef.current?.focus(), 50);
+      } else if (e.key === 'Escape' && isExpanded) {
+        inputRef.current?.blur();
+        setIsExpanded(false);
       }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, []);
+  }, [isExpanded]);
 
   useEffect(() => {
     const handleNewMessage = (e: CustomEvent<ChatMessage>) => {
@@ -92,6 +96,29 @@ export function GameChat() {
   const handleSend = () => {
     const text = chatInput.trim();
     if (!text) return;
+
+    // Whispers (/w or /whisper)
+    if (text.startsWith('/w ') || text.startsWith('/whisper ')) {
+      const match = text.match(/^\/(?:w|whisper)\s+(\S+)\s+(.+)$/i);
+      if (match) {
+        const [, targetName, whisperBody] = match;
+        emitSocketEvent?.('whisper', { toPlayerName: targetName, message: whisperBody });
+        setMessages((prev) =>
+          [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              sender: `You -> ${targetName}`,
+              text: whisperBody,
+              timestamp: Date.now(),
+              type: 'WHISPER' as const,
+            },
+          ].slice(-100)
+        );
+        setChatInput('');
+        return;
+      }
+    }
 
     if (text.startsWith('/p join ')) {
       const leaderName = text.replace('/p join ', '').trim();
@@ -160,6 +187,15 @@ export function GameChat() {
     setShowEmotes(false);
   };
 
+  const handleNameClick = (name: string) => {
+    const clean = name.replace(/^\[.*?\]\s*/, '').replace(/->.*$/, '').trim();
+    if (clean && clean !== 'You' && clean !== player.name && clean !== 'System') {
+      setChatInput(`/w ${clean} `);
+      setIsExpanded(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
   const handleEmoteClick = (emote: string) => {
     setChatInput((prev) => prev + emote);
     setShowEmotes(false);
@@ -168,7 +204,7 @@ export function GameChat() {
   const filteredMessages = messages.filter(
     (m) =>
       activeTab === 'LOCAL'
-        ? m.type === 'LOCAL' || m.type === 'SYSTEM'
+        ? m.type === 'LOCAL' || m.type === 'SYSTEM' || m.type === 'WHISPER'
         : m.type === activeTab
   );
 
@@ -235,6 +271,9 @@ export function GameChat() {
                 } else if (msg.type === 'GLOBAL') {
                   prefix = '[Global] ';
                   textStyle = 'text-cyan-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
+                } else if (msg.type === 'WHISPER') {
+                  prefix = '[Whisper] ';
+                  textStyle = 'text-fuchsia-300 font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
                 } else if (msg.type === 'SYSTEM') {
                   prefix = '';
                   textStyle = 'text-amber-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
@@ -244,9 +283,16 @@ export function GameChat() {
 
                 return (
                   <div key={msg.id} className={`flex text-[12px] md:text-[13px] leading-snug font-medium ${isExpanded ? '' : 'animate-in fade-in slide-in-from-bottom-1'}`}>
-                    <span className="mr-1.5 shrink-0 font-extrabold text-cyan-200/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNameClick(msg.sender);
+                      }}
+                      className="mr-1.5 shrink-0 font-extrabold text-cyan-200/80 hover:text-cyan-300 hover:underline cursor-pointer drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] text-left"
+                    >
                       {prefix}{msg.sender}:
-                    </span>
+                    </button>
                     <span className={`${textStyle} break-words`}>{msg.text}</span>
                   </div>
                 );

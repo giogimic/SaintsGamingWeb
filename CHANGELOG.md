@@ -1,3 +1,11 @@
+## [2.1.162] - 2026-08-13
+### Added
+- **Centralized Realtime Protocol Specification (`src/shared/net/protocol.ts`)**: Established single source of truth for protocol versioning (`2.1.0`), typed command/event contracts, reliability tiers (`CRITICAL`, `STATE`, `TRANSIENT`, `CHAT`, `PRESENCE`), and payload interfaces for lobby multiplayer and Studio collaboration.
+- **Modular Realtime Server Services**: Extracted business logic from network transport into dedicated services (`SessionManager.ts`, `ShardManager.ts`, `StudioCollaborationService.ts`, `ChatService.ts`) with `LobbySocketHandler.ts` acting as the authoritative dispatcher.
+- **Automated Vitest Realtime Regression Suite (`src/server/net/LobbySocketHandler.test.ts`)**: Added 9 comprehensive integration and unit tests covering 1-account-1-seat eviction, dynamic shard instance routing, peer replication, position syncing, chat rate limits, Studio soft locks, revision increments, and disconnect lifecycle.
+- **Realtime Connection Health & Diagnostics**: Integrated live realtime connection badges (`Online`, `Connecting`, `Reconnecting`, `Offline`), RTT latency measurement via ping/pong, active shard readouts, and connected peer counts into `StudioStatusBar.tsx` and `PeerPresenceHud.tsx`.
+- **Direct Whisper & Social Chat Improvements**: Added `/w [player]` and `/whisper [player]` commands, clickable player names in chat to auto-target whispers, and distinct magenta formatting for private transmissions.
+
 ## [2.1.161] - 2026-08-13
 ### Fixed
 - **Multiplayer Shard & Player Replication Restore**: Restored authoritative Socket.IO lobby and Studio handler (`LobbySocketHandler.ts`) in `server.ts` to manage shard assignments (`join_map`), player visibility (`map_players`, `player_joined`, `player_left`), movement synchronization (`move`, `player_moved`, `move_ack`), and Studio collaboration soft locks.
