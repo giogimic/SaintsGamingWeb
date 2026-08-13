@@ -86,6 +86,30 @@ function writeCell(
   return paintCell(map, target, r, c, value);
 }
 
+/**
+ * Merge multiple intermediate writes to the same cell within a single stroke/op.
+ * Preserves the initial `before` value and the final `after` value.
+ */
+export function deduplicatePaintedCells(cells: PaintedCell[]): PaintedCell[] {
+  const map = new Map<string, PaintedCell>();
+  for (const cell of cells) {
+    const key = `${cell.layerIdx}:${cell.r}:${cell.c}`;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { ...cell });
+    } else {
+      existing.after = cell.after;
+    }
+  }
+  const result: PaintedCell[] = [];
+  for (const cell of map.values()) {
+    if (cell.before !== cell.after) {
+      result.push(cell);
+    }
+  }
+  return result;
+}
+
 /** Apply op forward (do) or reverse (undo). */
 export function applyEditorOp(
   map: PaintableMap,
@@ -96,7 +120,8 @@ export function applyEditorOp(
     return { ok: false, reason: `Unknown editor op.` };
   }
 
-  for (const cell of op.cells) {
+  const cells = direction === "undo" ? [...op.cells].reverse() : op.cells;
+  for (const cell of cells) {
     const value = direction === "do" ? cell.after : cell.before;
     const result = writeCell(map, cell.layerIdx, cell.r, cell.c, value);
     if (!result.ok) return result;

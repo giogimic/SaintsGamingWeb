@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import { bootstrapDemoContent } from "./src/server/DemoBootstrap";
 import { RealtimeService } from "./src/server/realtime/RealtimeService";
 import { attachRedisAdapter } from "./src/server/net/redisAdapter";
+import { LobbySocketHandler } from "./src/server/net/LobbySocketHandler";
 
 const dev = process.env.NODE_ENV !== "production";
 // Docker sets HOSTNAME=0.0.0.0; default to all interfaces in prod so lobby sockets work.
@@ -33,8 +34,8 @@ app.prepare().then(async () => {
             players: null,
             capacity: 500,
             status: "online",
-            engine: "go-mmo",
-            note: "lobby sockets on Go — see NEXT_PUBLIC_GO_MMO_URL",
+            engine: "hybrid",
+            note: "unified lobby/Studio realtime sockets enabled",
           })
         );
         return;
@@ -48,7 +49,7 @@ app.prepare().then(async () => {
     }
   });
 
-  // Attach Socket.io to the Next.js HTTP server (forum RealtimeProvider only)
+  // Attach Socket.io to the Next.js HTTP server
   const io = new Server(server, {
     cors: {
       origin: (requestOrigin, callback) => {
@@ -62,11 +63,12 @@ app.prepare().then(async () => {
 
   await attachRedisAdapter(io);
   _realtimeService = new RealtimeService(io);
+  new LobbySocketHandler(io);
 
   // Maps / Studio content seed always (API path), even when Go owns game sockets.
   await bootstrapDemoContent();
 
-  console.log(`> TS GameEngine removed — lobby/Studio realtime strictly on Go MMO`);
+  console.log(`> Lobby & Studio Realtime Socket Handler active`);
 
   server.listen(port, hostname, () => {
     console.log(`> Saints Web Server ready on http://${hostname}:${port}`);

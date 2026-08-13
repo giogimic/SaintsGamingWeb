@@ -1951,18 +1951,37 @@ private resolveTilePick(
    * Keep drag off for Walk Mode click-to-move so pointer moves do not repath.
    * With brushRadius > 1, emits all cells in a circular area around the pick center.
    */
+  /**
+   * Enable tile picking for paint/explore interactions.
+   * Drag re-picks under the cursor so authors can stroke tiles continuously.
+   * Mouse drag panning supports MMB (button 1), RMB (button 2), and Space+drag / Pan tool.
+   * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular multi-tile).
+   */
   public enableTilePicking(
     onTileClick: (r: number, c: number, layerIdx?: number, eventType?: 'down' | 'move' | 'up') => void,
     options?: { 
       drag?: boolean; 
       onTileHover?: (r: number, c: number) => void;
+      onTileLeave?: () => void;
       onDragStart?: () => void;
       onDragEnd?: () => void;
+      isPanActive?: () => boolean;
+      onPanStateChange?: (panning: boolean) => void;
     }
   ) {
     let isPainting = false;
+    let isPanning = false;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
     let lastKey = '';
     const allowDrag = !!options?.drag;
+
+    const onContextMenu = (e: MouseEvent) => {
+      if (this.editorCameraMode) {
+        e.preventDefault();
+      }
+    };
+    this.canvas.addEventListener('contextmenu', onContextMenu);
 
     const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
       if (!this.scene) return;
@@ -1974,7 +1993,7 @@ private resolveTilePick(
       const resolved = this.resolveTilePick(pickResult);
       if (!resolved) return;
       const key = `${resolved.r},${resolved.c}`;
-      if (key === lastKey) return;
+      if (key === lastKey && eventType === 'move') return;
       lastKey = key;
 
       // Apply brush radius — emit all cells within radius.
@@ -1999,7 +2018,7 @@ private resolveTilePick(
     };
 
     const updateBrushPreview = () => {
-      if (!this.scene || this.brushRadius <= 1) {
+      if (!this.scene) {
         this.clearBrushPreview();
         return;
       }
@@ -2011,6 +2030,7 @@ private resolveTilePick(
       const resolved = this.resolveTilePick(pickResult);
       if (!resolved) {
         this.clearBrushPreview();
+        if (options?.onTileLeave) options.onTileLeave();
         return;
       }
       this.renderBrushPreview(resolved.r, resolved.c);
@@ -2019,21 +2039,60 @@ private resolveTilePick(
       }
     };
 
-    this.scene.onPointerDown = () => {
-      isPainting = true;
-      lastKey = '';
-      if (options?.onDragStart) options.onDragStart();
-      emitFromScenePick('down');
+    this.scene.onPointerDown = (evt) => {
+      if (!this.scene) return;
+      const button = evt.button;
+      const isPanTrigger = button === 1 || (this.editorCameraMode && button === 2) || (button === 0 && options?.isPanActive?.());
+
+      if (isPanTrigger) {
+        isPanning = true;
+        lastPointerX = evt.clientX;
+        lastPointerY = evt.clientY;
+        if (options?.onPanStateChange) options.onPanStateChange(true);
+        return;
+      }
+
+      if (button === 0) {
+        isPainting = true;
+        lastKey = '';
+        if (options?.onDragStart) options.onDragStart();
+        emitFromScenePick('down');
+      }
     };
 
-    this.scene.onPointerUp = () => {
-      isPainting = false;
-      lastKey = '';
-      emitFromScenePick('up');
-      if (options?.onDragEnd) options.onDragEnd();
+    this.scene.onPointerUp = (evt) => {
+      if (isPanning) {
+        isPanning = false;
+        if (options?.onPanStateChange) options.onPanStateChange(false);
+      }
+      if (isPainting) {
+        isPainting = false;
+        lastKey = '';
+        emitFromScenePick('up');
+        if (options?.onDragEnd) options.onDragEnd();
+      }
     };
 
-    this.scene.onPointerMove = () => {
+    this.scene.onPointerMove = (evt) => {
+      if (isPanning) {
+        const currentOrtho = this.camera.orthoTop || 10;
+        const renderHeight = Math.max(1, this.engine.getRenderHeight());
+        const worldPerPixel = (currentOrtho * 2) / renderHeight;
+        const deltaX = evt.clientX - lastPointerX;
+        const deltaY = evt.clientY - lastPointerY;
+        lastPointerX = evt.clientX;
+        lastPointerY = evt.clientY;
+
+        const panX = -deltaX * worldPerPixel;
+        const panZ = deltaY * worldPerPixel * 1.414;
+        this.cameraTargetX += panX;
+        this.cameraTargetZ += panZ;
+        this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
+        this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
+        this.cameraSnapped = true;
+        return;
+      }
+
       updateBrushPreview();
       if (!allowDrag || !isPainting || !this.scene) return;
       emitFromScenePick('move');
@@ -2050,11 +2109,10 @@ private resolveTilePick(
   /** Set brush radius for multi-tile painting. */
   public setBrushRadius(radius: number) {
     this.brushRadius = Math.max(1, Math.min(10, radius));
-    if (this.brushRadius <= 1) this.clearBrushPreview();
   }
 
   /** Clear brush preview overlay. */
-  private clearBrushPreview() {
+  public clearBrushPreview() {
     for (const m of this.brushPreviewMeshes) m.dispose();
     this.brushPreviewMeshes = [];
   }
@@ -2102,10 +2160,10 @@ private resolveTilePick(
     }
   }
 
-  /** Render semi-transparent brush preview at given center tile. */
+  /** Render semi-transparent brush preview / tile hover reticle at given center tile. */
   private renderBrushPreview(centerR: number, centerC: number) {
     this.clearBrushPreview();
-    const rad = this.brushRadius - 1;
+    const rad = this.brushRadius <= 1 ? 0 : this.brushRadius - 1;
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
     const s = this.currentTileSize || 1;
@@ -2113,11 +2171,25 @@ private resolveTilePick(
     let previewMat = this.scene.getMaterialByName('brush_preview_mat') as StandardMaterial | null;
     if (!previewMat) {
       const mat = new StandardMaterial('brush_preview_mat', this.scene);
-      mat.diffuseColor = new Color3(0.3, 0.8, 1.0);
-      mat.alpha = 0.25;
+      mat.diffuseColor = new Color3(0.3, 0.85, 1.0);
+      mat.alpha = 0.3;
       mat.disableLighting = true;
       mat.backFaceCulling = false;
       previewMat = mat;
+    }
+
+    if (this.brushRadius <= 1) {
+      if (centerR < 0 || centerR >= h || centerC < 0 || centerC >= w) return;
+      const posX = (centerC - w / 2) * s + s * 0.5;
+      const posZ = (h / 2 - centerR) * s - s * 0.5;
+      const plane = MeshBuilder.CreatePlane(`brush_preview_${centerR}_${centerC}`, { size: s * 0.96 }, this.scene);
+      plane.rotation.x = Math.PI / 2;
+      plane.position = new Vector3(posX, 0.16, posZ);
+      plane.parent = this.rootNode;
+      plane.material = previewMat;
+      plane.isPickable = false;
+      this.brushPreviewMeshes.push(plane);
+      return;
     }
 
     for (let dr = -rad; dr <= rad; dr++) {
@@ -2130,13 +2202,21 @@ private resolveTilePick(
         const posZ = (h / 2 - nr) * s - s * 0.5;
         const plane = MeshBuilder.CreatePlane(`brush_preview_${nr}_${nc}`, { size: s * 0.95 }, this.scene);
         plane.rotation.x = Math.PI / 2;
-        plane.position = new Vector3(posX, 0.15, posZ);
+        plane.position = new Vector3(posX, 0.16, posZ);
         plane.parent = this.rootNode;
         plane.material = previewMat;
         plane.isPickable = false;
         this.brushPreviewMeshes.push(plane);
       }
     }
+  }
+
+  /** Zoom the camera by a fractional multiplier factor (e.g. 0.85 = zoom in, 1.15 = zoom out). */
+  public zoomCamera(factor: number) {
+    const currentOrtho = this.camera.orthoTop || 10;
+    const maxZoom = this.editorCameraMode ? 60 : 22;
+    const newOrtho = Math.max(3, Math.min(maxZoom, currentOrtho * factor));
+    this.updateCameraAspect(newOrtho);
   }
 
   /** Fit the entire map in the editor viewport. */

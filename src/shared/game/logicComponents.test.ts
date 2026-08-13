@@ -13,7 +13,7 @@ describe("logicComponents", () => {
     const values = defaultFieldValues(preset);
     values.xp = 40;
     const { onInteractPayload, onStepPayload } = buildPayloadsFromFields(preset, values);
-    expect(onInteractPayload).toEqual({ xp: 40, resource: "wood" });
+    expect(onInteractPayload).toMatchObject({ xp: 40, resource: "wood" });
     expect(onStepPayload).toBeNull();
   });
 

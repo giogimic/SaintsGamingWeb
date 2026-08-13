@@ -216,23 +216,8 @@ export const StudioEditorShell: React.FC = () => {
         e.preventDefault();
         const map = useGameStore.getState().activeMapData;
         if (!map) return;
-        const result = useEditorStore.getState().undoLastOp(map);
-        if (!result.ok || !result.op) return;
-        if (result.op.kind === 'paint_cells') {
-          window.dispatchEvent(
-            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
-              detail: {
-                cells: result.op.cells.map((c) => ({
-                  r: c.r,
-                  c: c.c,
-                  layerIdx: c.layerIdx,
-                  value: c.before,
-                })),
-              },
-            })
-          );
-        }
-        showToast('Undo');
+        const result = useEditorStore.getState().triggerUndo(map);
+        if (result.ok) showToast('Undo');
         return;
       }
 
@@ -241,23 +226,8 @@ export const StudioEditorShell: React.FC = () => {
         e.preventDefault();
         const map = useGameStore.getState().activeMapData;
         if (!map) return;
-        const result = useEditorStore.getState().redoLastOp(map);
-        if (!result.ok || !result.op) return;
-        if (result.op.kind === 'paint_cells') {
-          window.dispatchEvent(
-            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
-              detail: {
-                cells: result.op.cells.map((c) => ({
-                  r: c.r,
-                  c: c.c,
-                  layerIdx: c.layerIdx,
-                  value: c.after,
-                })),
-              },
-            })
-          );
-        }
-        showToast('Redo');
+        const result = useEditorStore.getState().triggerRedo(map);
+        if (result.ok) showToast('Redo');
       }
     };
     window.addEventListener('keydown', handleKeyDown);

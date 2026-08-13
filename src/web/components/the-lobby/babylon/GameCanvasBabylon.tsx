@@ -72,6 +72,33 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const showToast = useGameStore((state) => state.showToast);
   const gainSkillXp = useGameStore((state) => state.gainSkillXp);
   const combatTarget = useGameStore((state) => state.combatTarget);
+  const brushMode = useEditorStore((state) => state.brushMode);
+  const [isPanDragging, setIsPanDragging] = useState(false);
+  const [isSpaceHeld, setIsSpaceHeld] = useState(false);
+  const isSpaceHeldRef = useRef(false);
+  isSpaceHeldRef.current = isSpaceHeld;
+
+  useEffect(() => {
+    if (!isDevEditorOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.code === 'Space' && !e.repeat) {
+        setIsSpaceHeld(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpaceHeld(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isDevEditorOpen]);
 
   // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
@@ -1002,6 +1029,26 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const store = useEditorStore.getState();
           const { brushMode, setSelectionStart, setSelectionEnd, activePrefabId } = store;
 
+          if (brushMode === 'pan') {
+            return;
+          }
+
+          if (brushMode === 'eyedropper') {
+            if (eventType !== 'down') return;
+            if (activeLayerIdx === LOGIC_LAYER_IDX) {
+              const tagId = map.grid?.[r]?.[c] ?? 0;
+              store.setActiveLogicTileId(tagId);
+              const meta = useGameStore.getState().logicTiles?.[tagId];
+              showToast(`Sampled Logic Tag: ${meta?.name || `#${tagId}`}`);
+            } else {
+              const gid = map.tileLayers?.[activeLayerIdx]?.grid?.[r]?.[c] ?? 0;
+              store.setActiveBrushTileId(gid);
+              showToast(`Sampled Visual Tile: GID ${gid}`);
+            }
+            store.setBrushMode('paint');
+            return;
+          }
+
           if (brushMode === 'select') {
             if (eventType === 'down') {
               setSelectionStart({ r, c });
@@ -1061,78 +1108,87 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           const target = resolvePaintTarget(map, activeLayerIdx);
-        if (target.kind === 'unavailable') {
-          showToast(target.reason);
-          return;
-        }
-
-        if (onMapClick) onMapClick(r, c);
-        useEditorStore.getState().setLastPaintedTile({ r, c });
-
-        if (target.kind === 'logic') {
-          const logicId = useEditorStore.getState().activeLogicTileId;
-          const logicTiles = useGameStore.getState().logicTiles;
-          if (!isPaintableLogicId(logicTiles, logicId)) {
-            showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
+          if (target.kind === 'unavailable') {
+            showToast(target.reason);
             return;
           }
-          const painted = paintWorldCell(map, LOGIC_LAYER_IDX, r, c, logicId, worldSync);
+
+          if (onMapClick) onMapClick(r, c);
+          useEditorStore.getState().setLastPaintedTile({ r, c });
+
+          // In erase mode, write 0 (clear tile)
+          const paintValue = brushMode === 'erase' ? 0 : (target.kind === 'logic' ? store.activeLogicTileId : activeBrushTileId);
+
+          if (target.kind === 'logic') {
+            const logicId = paintValue;
+            const logicTiles = useGameStore.getState().logicTiles;
+            if (logicId > 0 && !isPaintableLogicId(logicTiles, logicId)) {
+              showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
+              return;
+            }
+            const painted = paintWorldCell(map, LOGIC_LAYER_IDX, r, c, logicId, worldSync);
+            if ('error' in painted) {
+              showToast(painted.error);
+              return;
+            }
+            useEditorStore.getState().pushPaintOp([painted.cell]);
+            // A missing overlay means the engine was rebuilt under us; rebuild and retry.
+            if (!engine.updateLogicTile(r, c, logicId)) {
+              engine.enableLogicGridOverlay(map.grid || []);
+              engine.updateLogicTile(r, c, logicId);
+            }
+            return;
+          }
+
+          if (target.kind === 'visual' && paintValue > 0) {
+            const isValidGid = map.tilesets?.some((ts: any) => ts.firstgid <= paintValue);
+            if (!isValidGid) {
+              showToast(`Warning: Brush GID ${paintValue} is not in any tileset.`);
+            }
+          }
+
+          const painted = paintWorldCell(
+            map,
+            target.layerIdx,
+            r,
+            c,
+            paintValue,
+            worldSync
+          );
           if ('error' in painted) {
             showToast(painted.error);
             return;
           }
           useEditorStore.getState().pushPaintOp([painted.cell]);
-          // A missing overlay means the engine was rebuilt under us; rebuild and retry.
-          if (!engine.updateLogicTile(r, c, logicId)) {
-            engine.enableLogicGridOverlay(map.grid || []);
-            engine.updateLogicTile(r, c, logicId);
-          }
-          return;
-        }
-
-        if (target.kind === 'visual' && activeBrushTileId > 0) {
-          const isValidGid = map.tilesets?.some((ts: any) => ts.firstgid <= activeBrushTileId);
-          if (!isValidGid) {
-            showToast(`Warning: Brush GID ${activeBrushTileId} is not in any tileset.`);
-          }
-        }
-
-        const painted = paintWorldCell(
-          map,
-          target.layerIdx,
-          r,
-          c,
-          activeBrushTileId,
-          worldSync
-        );
-        if ('error' in painted) {
-          showToast(painted.error);
-          return;
-        }
-        useEditorStore.getState().pushPaintOp([painted.cell]);
-        engine.updateSingleTile(r, c, activeBrushTileId, target.layerIdx, map.tilesets);
-      }, {
-        drag: true,
-        onDragStart: () => {
-          useEditorStore.getState().startPaintTransaction();
-        },
-        onDragEnd: () => {
-          useEditorStore.getState().commitPaintTransaction();
-        },
-        onTileHover: (r, c) => {
-          const store = useEditorStore.getState();
-          if (store.brushMode === 'prefab' && store.activePrefabId) {
-            const prefab = store.prefabs.find(p => p.id === store.activePrefabId);
-            if (prefab) {
-              engine.setSelectionPreview(r, c, r + prefab.height - 1, c + prefab.width - 1);
+          engine.updateSingleTile(r, c, paintValue, target.layerIdx, map.tilesets);
+        }, {
+          drag: true,
+          isPanActive: () => useEditorStore.getState().brushMode === 'pan' || isSpaceHeldRef.current,
+          onPanStateChange: (panning) => setIsPanDragging(panning),
+          onDragStart: () => {
+            useEditorStore.getState().startPaintTransaction();
+          },
+          onDragEnd: () => {
+            useEditorStore.getState().commitPaintTransaction();
+          },
+          onTileHover: (r, c) => {
+            const store = useEditorStore.getState();
+            store.setHoveredTile({ r, c });
+            if (store.brushMode === 'prefab' && store.activePrefabId) {
+              const prefab = store.prefabs.find((p) => p.id === store.activePrefabId);
+              if (prefab) {
+                engine.setSelectionPreview(r, c, r + prefab.height - 1, c + prefab.width - 1);
+              }
+            } else if (store.brushMode === 'select') {
+              if (store.selectionStart && !store.selectionEnd) {
+                engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
+              }
             }
-          } else if (store.brushMode === 'select') {
-            if (store.selectionStart && !store.selectionEnd) {
-              engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
-            }
-          }
-        }
-      });
+          },
+          onTileLeave: () => {
+            useEditorStore.getState().setHoveredTile(null);
+          },
+        });
     } else {
       // Click-to-move in exploration mode with Pathfinding
       engine.enableTilePicking((r, c) => {
@@ -1425,6 +1481,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
   }, [isDevEditorOpen, mapWidth, mapHeight, mapData]);
 
+  let canvasCursor = 'cursor-default';
+  if (isDevEditorOpen) {
+    if (isPanDragging) {
+      canvasCursor = 'cursor-grabbing';
+    } else if (brushMode === 'pan' || isSpaceHeld) {
+      canvasCursor = 'cursor-grab';
+    } else {
+      canvasCursor = 'cursor-crosshair';
+    }
+  }
+
   return (
     <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">
       {/* Loading screen while async map data is fetching */}
@@ -1439,7 +1506,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
       <canvas
         ref={canvasRef}
-        className={`w-full h-full outline-none touch-none ${isDevEditorOpen ? 'cursor-crosshair' : 'cursor-default'}`}
+        className={`w-full h-full outline-none touch-none ${canvasCursor}`}
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
       />
