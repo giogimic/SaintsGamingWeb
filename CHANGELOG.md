@@ -1,3 +1,7 @@
+## [2.1.166] - 2026-08-13
+### Added
+- **Studio Pro Hotkeys & Quick Docks (`StudioEditorShell.tsx`)**: Wired `Ctrl+Shift+P` for World Atlas, `Ctrl+Shift+O` for Map Diagnostics & Problems, and `Ctrl+Shift+D` for Dev Tools directly into the key event dispatcher.
+
 ## [2.1.165] - 2026-08-13
 ### Added
 - **Modal Key Toggling & Escape Target Deselection (`index.tsx`)**: Upgraded global keyboard shortcuts so Inventory (`I`), Skills (`K`), Party (`P`), Dex (`X`), and Achievements (`B`) can be toggled on/off with the same key, and pressing `Escape` intuitively deselects active combat targets before opening the options menu.
