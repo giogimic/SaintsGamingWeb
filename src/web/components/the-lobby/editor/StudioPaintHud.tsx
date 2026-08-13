@@ -1,20 +1,38 @@
 'use client';
 
 import React from 'react';
-import { Brush, Grid3X3, Shield, MousePointerClick, DoorOpen, MapPin } from 'lucide-react';
+import {
+  Brush,
+  Grid3X3,
+  Shield,
+  DoorOpen,
+  MapPin,
+  Eraser,
+  Pipette,
+  Hand,
+  SquareDashed,
+  Box,
+  Undo2,
+  Redo2,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+} from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 
 /**
- * Always-visible paint status while Development tools are open.
- * Helps authors see active layer, brush, and last cell without hunting docks.
+ * Always-visible paint status and quick-tool HUD while in Editor mode.
+ * Quick-switch between Paint, Erase, Sample, Pan, Select, Prefabs, Undo/Redo & Zoom.
  */
 export function StudioPaintHud() {
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
   const layerIdx = useEditorStore((s) => s.activeLayerIdx);
   const brushId = useEditorStore((s) => s.activeBrushTileId);
+  const logicId = useEditorStore((s) => s.activeLogicTileId);
   const lastPainted = useEditorStore((s) => s.lastPaintedTile);
   const clicked = useEditorStore((s) => s.clickedTile);
+  const hovered = useEditorStore((s) => s.hoveredTile);
   const mapDirty = useEditorStore((s) => s.mapDirty);
   const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
   const setShowEditorCoords = useEditorStore((s) => s.setShowEditorCoords);
@@ -24,8 +42,11 @@ export function StudioPaintHud() {
   const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
   const brushRadius = useEditorStore((s) => s.brushRadius);
   const setBrushRadius = useEditorStore((s) => s.setBrushRadius);
+  const brushMode = useEditorStore((s) => s.brushMode);
+  const setBrushMode = useEditorStore((s) => s.setBrushMode);
   const logicTiles = useGameStore((s) => s.logicTiles);
   const activeMapData = useGameStore((s) => s.activeMapData);
+  const showToast = useGameStore((s) => s.showToast);
 
   if (!isCreationMode) return null;
 
@@ -33,12 +54,39 @@ export function StudioPaintHud() {
   const layerName = isLogic
     ? 'Logic (−1)'
     : activeMapData?.tileLayers?.[layerIdx]?.name || `Layer ${layerIdx}`;
-  const logicMeta = isLogic ? logicTiles[brushId] : null;
-  const cell = lastPainted || clicked;
+  const displayId = isLogic ? logicId : brushId;
+  const logicMeta = isLogic ? logicTiles[displayId] : null;
+  const activeCoord = hovered || lastPainted || clicked;
+
+  const handleUndo = () => {
+    if (!activeMapData) return;
+    const res = useEditorStore.getState().triggerUndo(activeMapData);
+    if (res.ok) showToast('Undo');
+    else showToast('Nothing to undo');
+  };
+
+  const handleRedo = () => {
+    if (!activeMapData) return;
+    const res = useEditorStore.getState().triggerRedo(activeMapData);
+    if (res.ok) showToast('Redo');
+    else showToast('Nothing to redo');
+  };
+
+  const handleFitMap = () => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Home' }));
+  };
+
+  const handleZoom = (factor: number) => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: factor > 1 ? 100 : -100 }));
+    }
+  };
 
   return (
     <div className="pointer-events-none absolute top-3 left-1/2 z-[110] -translate-x-1/2">
-      <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-[#806f47]/45 bg-[#050b14]/92 px-3 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-md">
+      <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-[#806f47]/45 bg-[#050b14]/94 px-3 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.55)] backdrop-blur-md">
+        {/* Layer chip */}
         <div
           className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
             isLogic
@@ -51,6 +99,7 @@ export function StudioPaintHud() {
           {layerName}
         </div>
 
+        {/* Brush Info chip */}
         <div
           className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 font-mono text-[10px] text-slate-200"
           title={logicMeta ? `${logicMeta.name} — paint then Play to test` : 'Active brush GID / logic id'}
@@ -59,29 +108,197 @@ export function StudioPaintHud() {
           {logicMeta ? (
             <>
               <span className={`h-2.5 w-2.5 rounded-sm border border-white/20 ${logicMeta.color || 'bg-slate-500'}`} />
-              <span className="max-w-[140px] truncate font-bold">{logicMeta.name}</span>
-              <span className="text-slate-500">#{brushId}</span>
+              <span className="max-w-[120px] truncate font-bold">{logicMeta.name}</span>
+              <span className="text-slate-500">#{displayId}</span>
             </>
           ) : (
             <>
-              <span className="font-bold text-white">GID {brushId}</span>
+              <span className="font-bold text-white">GID {displayId}</span>
             </>
           )}
         </div>
 
+        {/* Divider */}
+        <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+        {/* Tool Modes Group */}
+        <div className="flex items-center gap-1 bg-black/40 rounded-full p-0.5 border border-white/10">
+          <button
+            type="button"
+            onClick={() => setBrushMode('paint')}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'paint'
+                ? 'bg-[#cbb26a] text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Paint Brush (Left Click)"
+          >
+            <Brush className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBrushMode('erase')}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'erase'
+                ? 'bg-rose-500 text-white font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Eraser (Erase to Empty / 0)"
+          >
+            <Eraser className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBrushMode('eyedropper')}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'eyedropper'
+                ? 'bg-sky-500 text-white font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Eyedropper / Sample Tile"
+          >
+            <Pipette className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBrushMode('pan')}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'pan'
+                ? 'bg-emerald-500 text-white font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Pan Hand Tool (Drag to Move Viewport)"
+          >
+            <Hand className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBrushMode('select')}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'select'
+                ? 'bg-purple-500 text-white font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Box Select Tool"
+          >
+            <SquareDashed className="h-3.5 w-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBrushMode('prefab')}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'prefab'
+                ? 'bg-amber-500 text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Prefab Stamp Tool"
+          >
+            <Box className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Undo / Redo Quick Actions */}
+        <div className="flex items-center gap-1 bg-black/40 rounded-full p-0.5 border border-white/10">
+          <button
+            type="button"
+            onClick={handleUndo}
+            className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Zoom & Fit Map */}
+        <div className="flex items-center gap-1 bg-black/40 rounded-full p-0.5 border border-white/10">
+          <button
+            type="button"
+            onClick={() => handleZoom(0.8)}
+            className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title="Zoom In"
+          >
+            <ZoomIn className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleZoom(1.2)}
+            className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title="Zoom Out"
+          >
+            <ZoomOut className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleFitMap}
+            className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title="Fit Map in View (Home)"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Brush Size */}
+        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-2 py-1 font-mono text-[10px] text-slate-300">
+          <span className="text-slate-500">Size</span>
+          <button
+            onClick={() => {
+              const SIZES = [1, 3, 5, 7];
+              let idx = SIZES.indexOf(brushRadius);
+              if (idx === -1) idx = 1;
+              idx = (idx - 1 + SIZES.length) % SIZES.length;
+              setBrushRadius(SIZES[idx]);
+            }}
+            className="hover:text-white px-1 font-bold"
+          >
+            −
+          </button>
+          <span className="font-bold text-[#cbb26a]">{brushRadius}</span>
+          <button
+            onClick={() => {
+              const SIZES = [1, 3, 5, 7];
+              let idx = SIZES.indexOf(brushRadius);
+              if (idx === -1) idx = 0;
+              idx = (idx + 1) % SIZES.length;
+              setBrushRadius(SIZES[idx]);
+            }}
+            className="hover:text-white px-1 font-bold"
+          >
+            +
+          </button>
+        </div>
+
+        {/* Coordinate Readout */}
         <button
           type="button"
           onClick={() => setShowEditorCoords(!showEditorCoords)}
-          className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
+          className={`flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${
             showEditorCoords
               ? 'border-sky-500/40 bg-sky-950/40 text-sky-200'
               : 'border-white/10 bg-black/30 text-slate-500'
           }`}
           title="Toggle coordinate readout"
         >
-          XY {showEditorCoords ? 'On' : 'Off'}
+          {activeCoord && showEditorCoords ? (
+            <span>({activeCoord.c}, {activeCoord.r})</span>
+          ) : (
+            <span>XY {showEditorCoords ? 'On' : 'Off'}</span>
+          )}
         </button>
 
+        {/* Warp Overlays */}
         <button
           type="button"
           onClick={() => setShowWarpOverlays(!showWarpOverlays)}
@@ -96,6 +313,7 @@ export function StudioPaintHud() {
           Gates {showWarpOverlays ? 'On' : 'Off'}
         </button>
 
+        {/* Spawn Overlays */}
         <button
           type="button"
           onClick={() => setShowSpawnOverlays(!showSpawnOverlays)}
@@ -109,35 +327,6 @@ export function StudioPaintHud() {
           <MapPin className="h-3 w-3" />
           Spawns {showSpawnOverlays ? 'On' : 'Off'}
         </button>
-
-        <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-300">
-          <span className="text-slate-500">Size</span>
-          <button onClick={() => {
-            const SIZES = [1, 3, 5, 7];
-            let idx = SIZES.indexOf(brushRadius);
-            if (idx === -1) idx = 1;
-            idx = (idx - 1 + SIZES.length) % SIZES.length;
-            setBrushRadius(SIZES[idx]);
-          }} className="hover:text-white px-1 font-bold">−</button>
-          <span className="font-bold text-[#cbb26a]">{brushRadius}</span>
-          <button onClick={() => {
-            const SIZES = [1, 3, 5, 7];
-            let idx = SIZES.indexOf(brushRadius);
-            if (idx === -1) idx = 0;
-            idx = (idx + 1) % SIZES.length;
-            setBrushRadius(SIZES[idx]);
-          }} className="hover:text-white px-1 font-bold">+</button>
-        </div>
-
-        <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-400">
-          <MousePointerClick className="h-3.5 w-3.5" />
-          <span>Paint · MMB / Space+drag pan · Ctrl+Z</span>
-          {showEditorCoords && cell && (
-            <span className="text-[#e2d5b3]">
-              · ({cell.c}, {cell.r})
-            </span>
-          )}
-        </div>
 
         {mapDirty && (
           <span className="animate-pulse rounded-full border-2 border-red-500 bg-red-600/30 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-red-100 shadow-[0_0_10px_rgba(239,68,68,0.6)]">

@@ -47,10 +47,32 @@ export function GameChat() {
   const [showEmotes, setShowEmotes] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const player = useGameStore((state) => state.player);
   const { isModerator } = useAuth();
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isTyping =
+        activeEl?.tagName === 'INPUT' ||
+        activeEl?.tagName === 'TEXTAREA' ||
+        (activeEl as HTMLElement)?.isContentEditable;
+
+      if (e.key === 'Enter' && !isTyping) {
+        e.preventDefault();
+        setIsExpanded(true);
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 50);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     const handleNewMessage = (e: CustomEvent<ChatMessage>) => {
@@ -258,12 +280,18 @@ export function GameChat() {
                 {player.name || 'You'}
               </span>
               <input
+                ref={inputRef}
                 type="text"
                 placeholder="Broadcast transmission…"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSend();
+                  if (e.key === 'Enter') {
+                    handleSend();
+                  } else if (e.key === 'Escape') {
+                    inputRef.current?.blur();
+                    setIsExpanded(false);
+                  }
                 }}
                 className="h-8 flex-1 rounded-md border border-[#22d3ee]/20 bg-black/60 px-3 text-[13px] text-cyan-50 outline-none transition-colors placeholder:text-cyan-200/30 focus:border-cyan-400 focus:bg-black/80"
                 autoFocus // focus when expanded

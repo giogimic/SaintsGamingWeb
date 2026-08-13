@@ -20,13 +20,14 @@ import {
   pushEditorOp,
   redoEditorOp,
   undoEditorOp,
+  deduplicatePaintedCells,
   type EditorOp,
   type EditorOpStack,
   type PaintedCell,
 } from '@/shared/game/editorOps';
 import type { PaintableMap } from '@/shared/game/tilePaint';
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
-import { STUDIO_PIE_CHANGED_EVENT } from '@/shared/game/studioEvents';
+import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
 import {
   clearDefinitionOpsForKey,
@@ -50,7 +51,22 @@ export type SoftLock = {
   expiresAt: string;
 };
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes' | 'items' | 'spawner' | 'prefab' | 'atlas';
+export type PanelId =
+  | 'build'
+  | 'properties'
+  | 'assets'
+  | 'npc'
+  | 'quest'
+  | 'dialogue'
+  | 'creature'
+  | 'loot'
+  | 'dev'
+  | 'characters'
+  | 'classes'
+  | 'items'
+  | 'spawner'
+  | 'prefab'
+  | 'atlas';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -119,12 +135,13 @@ interface EditorState {
   activeLogicTileId: number;
   activeLayerIdx: number;
   brushRadius: number;
-  brushMode: 'paint' | 'select' | 'prefab';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab';
   activePrefabId: string | null;
   prefabs: any[];
   selectionStart: { r: number; c: number } | null;
   selectionEnd: { r: number; c: number } | null;
   clickedTile: { r: number; c: number } | null;
+  hoveredTile: { r: number; c: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
   /** Soft editor overlay: show tile XY in paint HUD. */
   showEditorCoords: boolean;
@@ -158,12 +175,13 @@ interface EditorState {
   setActiveLogicTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
+  setHoveredTile: (tile: { r: number; c: number } | null) => void;
   setLastPaintedTile: (tile: { r: number; c: number } | null) => void;
   setShowEditorCoords: (on: boolean) => void;
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
-  setBrushMode: (mode: 'paint' | 'select' | 'prefab') => void;
+  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
   setSelectionStart: (tile: { r: number; c: number } | null) => void;
@@ -173,6 +191,8 @@ interface EditorState {
   pushPaintOp: (cells: PaintedCell[]) => void;
   undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
+  triggerUndo: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
+  triggerRedo: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   clearOpStack: () => void;
 
   setPieOption: <K extends keyof PieOptions>(key: K, value: PieOptions[K]) => void;
@@ -434,6 +454,7 @@ export const useEditorStore = create<EditorState>()(
       selectionStart: null,
       selectionEnd: null,
       clickedTile: null,
+      hoveredTile: null,
       lastPaintedTile: null,
       showEditorCoords: true,
       showWarpOverlays: true,
@@ -574,14 +595,18 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           state.paintTransaction = [];
         }),
+
       commitPaintTransaction: () =>
         set((state) => {
           if (state.paintTransaction && state.paintTransaction.length > 0) {
-            state.opStack = pushEditorOp(state.opStack, {
-              kind: 'paint_cells',
-              cells: state.paintTransaction,
-            });
-            state.mapDirty = true;
+            const deduplicated = deduplicatePaintedCells(state.paintTransaction);
+            if (deduplicated.length > 0) {
+              state.opStack = pushEditorOp(state.opStack, {
+                kind: 'paint_cells',
+                cells: deduplicated,
+              });
+              state.mapDirty = true;
+            }
           }
           state.paintTransaction = null;
         }),
@@ -658,6 +683,10 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           state.clickedTile = tile;
         }),
+      setHoveredTile: (tile) =>
+        set((state) => {
+          state.hoveredTile = tile;
+        }),
       setLastPaintedTile: (tile) =>
         set((state) => {
           state.lastPaintedTile = tile;
@@ -712,11 +741,14 @@ export const useEditorStore = create<EditorState>()(
           if (state.paintTransaction) {
             state.paintTransaction.push(...cells);
           } else {
-            state.opStack = pushEditorOp(state.opStack, {
-              kind: 'paint_cells',
-              cells,
-            });
-            state.mapDirty = true;
+            const deduplicated = deduplicatePaintedCells(cells);
+            if (deduplicated.length > 0) {
+              state.opStack = pushEditorOp(state.opStack, {
+                kind: 'paint_cells',
+                cells: deduplicated,
+              });
+              state.mapDirty = true;
+            }
           }
         }),
 
@@ -742,6 +774,46 @@ export const useEditorStore = create<EditorState>()(
           state.mapDirty = true;
         });
         return { ok: true, op: result.op };
+      },
+
+      triggerUndo: (map) => {
+        const res = get().undoLastOp(map);
+        if (!res.ok || !res.op) return res;
+        if (res.op.kind === 'paint_cells') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: res.op.cells.map((c) => ({
+                  r: c.r,
+                  c: c.c,
+                  layerIdx: c.layerIdx,
+                  value: c.before,
+                })),
+              },
+            })
+          );
+        }
+        return res;
+      },
+
+      triggerRedo: (map) => {
+        const res = get().redoLastOp(map);
+        if (!res.ok || !res.op) return res;
+        if (res.op.kind === 'paint_cells') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: res.op.cells.map((c) => ({
+                  r: c.r,
+                  c: c.c,
+                  layerIdx: c.layerIdx,
+                  value: c.after,
+                })),
+              },
+            })
+          );
+        }
+        return res;
       },
 
       clearOpStack: () =>

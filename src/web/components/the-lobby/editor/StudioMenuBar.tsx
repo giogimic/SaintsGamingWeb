@@ -108,8 +108,30 @@ export function StudioMenuBar() {
         </TopLevelMenu>
 
         <TopLevelMenu id="edit" label="Edit">
-          <MenuItem label="Undo" shortcut="Ctrl+Z" icon={Undo} onClick={() => showToast('Use Ctrl+Z')} />
-          <MenuItem label="Redo" shortcut="Ctrl+Y" icon={Redo} onClick={() => showToast('Use Ctrl+Y')} />
+          <MenuItem 
+            label="Undo" 
+            shortcut="Ctrl+Z" 
+            icon={Undo} 
+            onClick={() => {
+              const map = useGameStore.getState().activeMapData;
+              if (!map) return;
+              const res = useEditorStore.getState().triggerUndo(map);
+              if (res.ok) showToast('Undo');
+              else showToast('Nothing to undo');
+            }} 
+          />
+          <MenuItem 
+            label="Redo" 
+            shortcut="Ctrl+Y" 
+            icon={Redo} 
+            onClick={() => {
+              const map = useGameStore.getState().activeMapData;
+              if (!map) return;
+              const res = useEditorStore.getState().triggerRedo(map);
+              if (res.ok) showToast('Redo');
+              else showToast('Nothing to redo');
+            }} 
+          />
           <MenuItem divider />
           <MenuItem label="Cut" shortcut="Ctrl+X" disabled />
           <MenuItem label="Copy" shortcut="Ctrl+C" disabled />
@@ -127,6 +149,10 @@ export function StudioMenuBar() {
         </TopLevelMenu>
 
         <TopLevelMenu id="view" label="View">
+          <MenuItem label="Fit Map in View" shortcut="Home" onClick={() => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Home' }));
+          }} />
+          <MenuItem divider />
           <MenuItem label="Outliner" onClick={() => showToast('Outliner not fully wired')} />
           <MenuItem label="Inspector" onClick={() => showToast('Inspector uses Properties dock')} />
           <MenuItem label="Project Browser" shortcut="Ctrl+Shift+P" onClick={() => showToast('Project Browser panel')} />

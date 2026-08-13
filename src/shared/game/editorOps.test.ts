@@ -5,6 +5,7 @@ import {
   pushEditorOp,
   redoEditorOp,
   undoEditorOp,
+  deduplicatePaintedCells,
 } from "./editorOps";
 import type { PaintableMap } from "./tilePaint";
 
@@ -61,5 +62,26 @@ describe("editorOps", () => {
     });
     undoEditorOp(map, stack);
     expect(map.grid![1]![0]).toBe(0);
+  });
+
+  it("deduplicates repeated cell writes in a single stroke preserving initial before and final after", () => {
+    const cells = [
+      { layerIdx: 0, r: 1, c: 1, before: 1, after: 5 },
+      { layerIdx: 0, r: 1, c: 1, before: 5, after: 17 },
+      { layerIdx: -1, r: 0, c: 0, before: 0, after: 2 },
+    ];
+    const deduped = deduplicatePaintedCells(cells);
+    expect(deduped).toHaveLength(2);
+    expect(deduped[0]).toEqual({ layerIdx: 0, r: 1, c: 1, before: 1, after: 17 });
+    expect(deduped[1]).toEqual({ layerIdx: -1, r: 0, c: 0, before: 0, after: 2 });
+  });
+
+  it("omits cells with no net change from deduplicated op", () => {
+    const cells = [
+      { layerIdx: 0, r: 0, c: 0, before: 1, after: 5 },
+      { layerIdx: 0, r: 0, c: 0, before: 5, after: 1 },
+    ];
+    const deduped = deduplicatePaintedCells(cells);
+    expect(deduped).toHaveLength(0);
   });
 });

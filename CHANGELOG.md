@@ -1,3 +1,18 @@
+## [2.1.161] - 2026-08-13
+### Fixed
+- **Multiplayer Shard & Player Replication Restore**: Restored authoritative Socket.IO lobby and Studio handler (`LobbySocketHandler.ts`) in `server.ts` to manage shard assignments (`join_map`), player visibility (`map_players`, `player_joined`, `player_left`), movement synchronization (`move`, `player_moved`, `move_ack`), and Studio collaboration soft locks.
+- **In-Game Chat Box & Transmission Sync**: Resolved in-game chat broadcasts for Local (`player_chat`), Global (`global_chat_msg`), Party (`party_chat_msg`), and Staff Announcements (`staff_announce`).
+- **Global Enter Key Chat Focus & Escape Handling**: Added global keyboard event listening in `GameChat.tsx` so pressing `Enter` during exploration automatically expands the comms link and focuses the transmission input for instant typing, and `Escape` blurs and collapses it.
+
+## [2.1.160] - 2026-08-13
+### Added
+- **Interactive Tool Modes in Studio Paint HUD**: Added quick-switch buttons for Paint (`Brush`), Erase (`Eraser`), Eyedropper / Sample (`Pipette`), Pan (`Hand`), Box Select (`SquareDashed`), and Prefab Stamp (`Box`).
+- **Undo / Redo Quick Triggers & Menu Integration**: Integrated undo/redo buttons in `StudioPaintHud`, fully wired `Edit -> Undo` and `Edit -> Redo` in `StudioMenuBar`, and unified keyboard shortcuts with automatic remesh event dispatching.
+- **Enhanced Camera View Controls**: Added Zoom In / Out / Fit Map (`Home`) controls in `StudioPaintHud`, `StudioMenuBar`, and mouse wheel / drag zooming.
+- **3D In-World Hover Reticle**: Babylon engine now renders crisp 3D tile reticle indicators on hover for 1x1 brushes as well as multi-cell radius previews with proper height offsetting to eliminate Z-fighting.
+- **Dynamic Cursor & Mouse Pan Navigation**: Added smooth MMB (middle mouse button), RMB (right mouse button), Spacebar+drag, and Pan tool dragging with dynamic cursor states (`cursor-grab`, `cursor-grabbing`, `cursor-crosshair`).
+- **Tile Deduplication in Paint Strokes**: Added `deduplicatePaintedCells` to merge redundant writes during drag painting so single-click and drag undo operations cleanly restore historical state without data corruption.
+
 ## [2.1.159] - 2026-08-13
 ### Removed
 - **TS GameEngine fully removed** — deleted `GameEngine.ts`, `SocketHandler.ts`, `PlayerManager.ts`, `WorldManager.ts`, `InventoryManager.ts`, `CombatManager.ts`, `EncounterManager.ts`, `DialogueManager.ts`, `CraftingManager.ts`, `CreatureManager.ts`, `QuestManager.ts`, `PartyManager.ts`, `GuildManager.ts`, `ShopManager.ts`, `SkillManager.ts`, `EconomyManager.ts`, `PersistenceManager.ts`, `BaseManager.ts`, `AchievementListener.ts`, `StatsListener.ts`, and associated tests. Go MMO is now the sole real-time game backend.
