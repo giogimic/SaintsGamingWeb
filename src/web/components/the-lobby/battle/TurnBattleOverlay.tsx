@@ -11,6 +11,13 @@ export function TurnBattleOverlay() {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [showMoves, setShowMoves] = useState(false);
 
+  const wildCreature = activeBattle?.wildCreature;
+  const playerCreature = activeBattle?.playerCreature;
+  const phase = activeBattle?.phase;
+  const log = activeBattle?.log || [];
+  const isTrainer = activeBattle?.isTrainer;
+  const trainerName = activeBattle?.trainerName;
+
   // Auto-scroll the combat log
   useEffect(() => {
     if (logContainerRef.current) {
@@ -18,11 +25,53 @@ export function TurnBattleOverlay() {
     }
   }, [activeBattle?.log]);
 
+  // Keyboard shortcuts (1-4, Escape) for battle actions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
+      if (phase !== 'WAITING_FOR_INPUT') return;
+
+      if (e.key === 'Escape') {
+        if (showMoves) {
+          e.preventDefault();
+          setShowMoves(false);
+        }
+        return;
+      }
+
+      if (showMoves) {
+        const moveIndex = parseInt(e.key) - 1;
+        const abilities = ((playerCreature as any)?.abilities || [{ abilitySlug: 'strike' }]).slice(0, 4);
+        if (moveIndex >= 0 && moveIndex < abilities.length) {
+          e.preventDefault();
+          const ability = getCombatAbility(abilities[moveIndex].abilitySlug) || getCombatAbility('strike')!;
+          handleAction('FIGHT', ability.id);
+        }
+      } else {
+        if (e.key === '1') {
+          e.preventDefault();
+          handleAction('FIGHT');
+        } else if (e.key === '2' && !isTrainer) {
+          e.preventDefault();
+          handleAction('ITEM', undefined, 'film_standard');
+        } else if (e.key === '3') {
+          e.preventDefault();
+          handleAction('SWITCH');
+        } else if (e.key === '4' && !isTrainer) {
+          e.preventDefault();
+          handleAction('FLEE');
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, showMoves, isTrainer, playerCreature, activeBattle?.id, currentMapId]);
+
   if (!activeBattle) {
     return null;
   }
-
-  const { wildCreature, playerCreature, phase, log, isTrainer, trainerName } = activeBattle;
   
   if (!wildCreature || !playerCreature) {
     return (
