@@ -164,7 +164,7 @@ export function GameChat() {
       className={`pointer-events-auto z-50 flex flex-col transition-all duration-300 ${
         isExpanded
           ? 'h-[40vh] w-[92vw] sm:h-[30vh] sm:w-[400px] md:h-[250px] md:w-[480px] rounded-xl border border-[#22d3ee]/30 bg-[#050b14]/90 shadow-[0_0_20px_rgba(34,211,238,0.15)] backdrop-blur-md'
-          : 'h-auto w-[85vw] sm:w-[350px] md:w-[400px] bg-transparent'
+          : 'h-auto w-[85vw] sm:w-[350px] md:w-[400px] bg-black/40 backdrop-blur-sm rounded-lg border border-white/5'
       }`}
     >
       {/* Header (Only when expanded) */}
@@ -193,11 +193,10 @@ export function GameChat() {
           ) : (
             <div
               ref={scrollRef}
-              className={`h-full w-full space-y-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-cyan-500/20 scrollbar-track-transparent ${!isExpanded ? 'mask-image-gradient-to-t' : ''}`}
-              style={!isExpanded ? { WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 40%)' } : {}}
+              className={`h-full w-full space-y-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-cyan-500/20 scrollbar-track-transparent`}
             >
               {filteredMessages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-xs italic text-cyan-200/40">
+                <div className="flex h-full flex-col items-center justify-center text-xs italic text-cyan-200/70">
                   <span>No transmissions yet.</span>
                 </div>
               ) : (

@@ -13,7 +13,7 @@ import {
   ScrollText,
   Store,
 } from 'lucide-react';
-import { GamePanelShell } from './ui/GamePanelShell';
+import { GamePanelShell } from './hud/GamePanelShell';
 
 export default function ClassicPanel() {
   const { gameMode, setGameMode } = useGameStore();
@@ -35,8 +35,8 @@ export default function ClassicPanel() {
   // Closed tab strip fights mobile ActionCluster — hide until a panel is open on phones.
   if (!isOpen) {
     return (
-      <GamePanelShell accentColor="cyan" className="pointer-events-auto z-40 hidden w-[95vw] max-w-full flex-col overflow-hidden md:flex sm:w-[600px] lg:w-[800px]">
-        <div className="flex overflow-hidden bg-black/30">
+      <GamePanelShell neonAccent="cyan" className="pointer-events-auto z-40 hidden flex-col overflow-hidden md:flex shadow-xl border-[#22d3ee]/40">
+        <div className="flex overflow-hidden bg-[#050b14]/90 backdrop-blur-md">
           <div
             className={tabClass('INVENTORY')}
             onClick={() => setGameMode('INVENTORY')}
@@ -78,8 +78,8 @@ export default function ClassicPanel() {
   }
 
   return (
-    <GamePanelShell accentColor="cyan" className="pointer-events-auto z-40 flex w-[min(95vw,100%)] max-w-full flex-col overflow-hidden max-md:fixed max-md:inset-x-2 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:top-14 max-md:z-[60] sm:w-[600px] lg:w-[800px]">
-      <div className="flex overflow-hidden border-b border-white/10 bg-black/30">
+    <GamePanelShell neonAccent="cyan" className="pointer-events-auto z-40 flex w-[min(95vw,400px)] max-w-full flex-col overflow-hidden max-md:fixed max-md:inset-x-2 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:top-14 max-md:z-[60] shadow-2xl border-[#22d3ee]/50">
+      <div className="flex overflow-hidden border-b border-white/10 bg-[#050b14]/90 backdrop-blur-md">
         <div
           className={tabClass('INVENTORY')}
           onClick={() => setGameMode(gameMode === 'INVENTORY' ? 'EXPLORING' : 'INVENTORY')}

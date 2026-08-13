@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store';
 import { cn } from '@/shared/lib/utils';
 import { getCombatAbility } from '@/shared/game/combatAbilities';
+import { GamePanelShell } from '../hud/GamePanelShell';
 
 export function TurnBattleOverlay() {
   const activeBattle = useGameStore(state => state.activeBattle);
@@ -25,14 +26,14 @@ export function TurnBattleOverlay() {
   
   if (!wildCreature || !playerCreature) {
     return (
-      <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-red-900/90 text-white p-6">
-        <div>
-          <h2 className="text-xl font-bold text-red-300 mb-2">Battle State Error</h2>
-          <p>Missing creature data in active battle.</p>
-          <pre className="mt-4 text-xs bg-black/50 p-4 rounded overflow-auto max-w-2xl max-h-64">
+      <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/90 p-6 backdrop-blur-md">
+        <GamePanelShell neonAccent="magenta" className="p-6 max-w-xl">
+          <h2 className="text-xl font-bold text-[#d946ef] mb-2 font-mono drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]">BATTLE STATE ERROR</h2>
+          <p className="text-cyan-50 font-medium">Missing creature data in active battle.</p>
+          <pre className="mt-4 text-xs bg-black/50 p-4 rounded overflow-auto max-w-2xl max-h-64 border border-[#d946ef]/30 text-magenta-200/80 font-mono shadow-inner">
             {JSON.stringify(activeBattle, null, 2)}
           </pre>
-        </div>
+        </GamePanelShell>
       </div>
     );
   }
@@ -76,7 +77,7 @@ export function TurnBattleOverlay() {
 
         {/* Wild Creature (Top Right) */}
         <div className="self-end flex items-end gap-4 z-10 w-full max-w-md animate-in slide-in-from-right duration-700">
-          <div className="flex-1 bg-black/60 border border-white/20 p-4 rounded-xl shadow-2xl backdrop-blur-md">
+          <GamePanelShell neonAccent="magenta" className="flex-1 p-4">
             <div className="flex justify-between items-center mb-2 gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <h3 className="text-xl font-bold text-white uppercase tracking-wider truncate">{foeTitle}</h3>
@@ -95,10 +96,10 @@ export function TurnBattleOverlay() {
                 style={{ width: `${wildHpPercent}%` }}
               />
             </div>
-            <div className="text-right mt-1 text-xs text-white/70">
-              {wildCreature.hp} / {wildCreature.maxHp}
+            <div className="text-right mt-1.5 text-xs text-magenta-200/80 font-mono tracking-widest font-bold">
+              {wildCreature.hp} <span className="opacity-50">/ {wildCreature.maxHp}</span>
             </div>
-          </div>
+          </GamePanelShell>
           
           <div className={cn(
             "w-48 h-48 relative flex items-center justify-center filter drop-shadow-2xl",
@@ -139,7 +140,7 @@ export function TurnBattleOverlay() {
             />
           </div>
           
-          <div className="flex-1 bg-black/60 border border-white/20 p-4 rounded-xl shadow-2xl backdrop-blur-md mb-8">
+          <GamePanelShell neonAccent="cyan" className="flex-1 p-4 mb-8">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-bold text-white uppercase tracking-wider">{playerCreature.name}</h3>
               <span className="text-blue-400 font-bold">Lv {playerCreature.level}</span>
@@ -151,13 +152,13 @@ export function TurnBattleOverlay() {
                 style={{ width: `${playerHpPercent}%` }}
               />
             </div>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs text-white/50">HP</span>
-              <div className="font-bold text-sm text-white">
-                {playerCreature.hp} / {playerCreature.maxHp}
+            <div className="flex justify-between items-center mt-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-200/50">HP</span>
+              <div className="font-bold text-xs text-cyan-50 font-mono tracking-widest">
+                {playerCreature.hp} <span className="opacity-50">/ {playerCreature.maxHp}</span>
               </div>
             </div>
-          </div>
+          </GamePanelShell>
         </div>
       </div>
 

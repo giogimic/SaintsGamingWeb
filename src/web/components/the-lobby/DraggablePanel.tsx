@@ -88,11 +88,14 @@ export default function DraggablePanel({
     }
 
     const margin = 20;
-    const isStudioEditing = window.location.pathname.includes('/studio');
-    const editorTopBarHeight = isStudioEditing ? 50 : margin;
+    // We must check if actually in creation mode; simple path check applies clamp during playtest too
+    const isStudioEditing = window.location.pathname.includes('/studio') && !document.querySelector('.sg-playtest-active'); // We can use gameMode or just margin for now. Let's just use 20 for playtest.
+    // Actually, in Studio, we can check if .sg-paint-hud is visible or similar, but the safest is just removing the hard 50px clamp if we're not actively in tools.
+    // We will just use `margin` (20) instead of 50 for the top clamp by default, since Studio tools now float.
+    const editorTopBarHeight = margin; 
 
     if (initialX < margin) initialX = margin;
-    if (initialY < editorTopBarHeight) initialY = editorTopBarHeight;
+    if (initialY < margin) initialY = margin;
     if (initialX > window.innerWidth - margin) initialX = window.innerWidth - margin;
     if (initialY > window.innerHeight - margin) initialY = window.innerHeight - margin;
 
@@ -109,16 +112,37 @@ export default function DraggablePanel({
     }
   }, [uiSettings, id]);
 
+  const prevHeightRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+        if (prevHeightRef.current !== null && height !== prevHeightRef.current) {
+          const diff = height - prevHeightRef.current;
+          // If the panel grows, shift Y up so the bottom stays in the same place
+          // (assuming we want it to grow upwards, which is typical for bottom-anchored panels)
+          const currentY = y.get();
+          y.set(currentY - diff);
+          updateUiSetting(id, { y: currentY - diff });
+        }
+        prevHeightRef.current = height;
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [y, id, updateUiSetting]);
+
   const handleDragEnd = () => {
     const margin = 20;
-    const isStudioEditing = window.location.pathname.includes('/studio');
-    const editorTopBarHeight = isStudioEditing ? 50 : margin;
+    const editorTopBarHeight = margin;
 
     let finalX = snap(x.get());
     let finalY = snap(y.get());
 
     if (finalX < margin) finalX = margin;
-    if (finalY < editorTopBarHeight) finalY = editorTopBarHeight;
+    if (finalY < margin) finalY = margin;
 
     if (typeof window !== 'undefined') {
       if (finalX > window.innerWidth - margin) finalX = window.innerWidth - margin;

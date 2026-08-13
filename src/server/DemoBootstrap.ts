@@ -10,6 +10,7 @@ import {
   DEMO_MAP_W,
   DEFAULT_STUDIO_TILESETS,
   buildDemoSandboxGrid,
+  buildLobbyGrid,
   buildTrainingGroundsGrid,
   buildCrystalCavernsGrid,
   buildDefaultGroundLayer,
@@ -298,6 +299,67 @@ async function seedDemoMap() {
   );
 }
 
+async function seedLobbyMap() {
+  const LOBBY_MAP_ID = "LOBBY";
+  const forceMap = process.env.FORCE_DEMO_MAP === "1";
+  const existing = await prisma.worldMap.findUnique({ where: { id: LOBBY_MAP_ID } });
+
+  const grid = buildLobbyGrid(64, 64);
+  const gridJson = JSON.stringify(grid);
+  const npcsJson = "[]";
+  const encountersJson = "[]";
+  const tileLayersJson = JSON.stringify([buildDefaultGroundLayer(grid)]);
+  const tilesetsJson = JSON.stringify(DEFAULT_STUDIO_TILESETS);
+
+  if (!existing || forceMap) {
+    const data = {
+      gameId: SAINTS_TRAIL_GAME_ID,
+      name: "Saints Gaming Lobby",
+      gridData: gridJson,
+      gatesData: "{}",
+      npcsData: npcsJson,
+      encountersData: encountersJson,
+      tileLayersData: tileLayersJson,
+      tilesetsData: tilesetsJson,
+    };
+
+    if (!existing) {
+      await prisma.worldMap.create({ data: { id: LOBBY_MAP_ID, ...data } });
+    } else {
+      await prisma.worldMap.update({ where: { id: LOBBY_MAP_ID }, data });
+    }
+
+    await prisma.gameMap.upsert({
+      where: { id: LOBBY_MAP_ID },
+      create: {
+        id: LOBBY_MAP_ID,
+        name: data.name,
+        width: 64,
+        height: 64,
+        tilesetData: gridJson,
+        npcs: npcsJson,
+        encounters: encountersJson,
+        gates: "{}",
+      },
+      update: {
+        name: data.name,
+        width: 64,
+        height: 64,
+        tilesetData: gridJson,
+        npcs: npcsJson,
+        encounters: encountersJson,
+      },
+    });
+
+    if (typeof invalidateMapCache === "function") {
+      invalidateMapCache(LOBBY_MAP_ID);
+    }
+    console.log(`[DemoBootstrap] LOBBY map ready (forceMap=${forceMap})`);
+  } else {
+    console.log(`[DemoBootstrap] LOBBY map already exists`);
+  }
+}
+
 async function seedExpansionMaps() {
   const tgGrid = buildTrainingGroundsGrid();
   const ccGrid = buildCrystalCavernsGrid();
@@ -477,6 +539,7 @@ export async function ensureStudioMapFoundation(): Promise<{
     }
     try {
       await seedDemoMap();
+      await seedLobbyMap();
       await seedExpansionMaps();
       demoMap = true;
     } catch (e) {

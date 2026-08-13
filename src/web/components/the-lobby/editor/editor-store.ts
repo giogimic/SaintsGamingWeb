@@ -42,7 +42,15 @@ import {
   type PieOptions,
 } from '@/shared/game/pieOptions';
 
-export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes' | 'items' | 'spawner' | 'prefab';
+export type SoftLock = {
+  resource: string;
+  userId: string;
+  displayName: string;
+  at: string;
+  expiresAt: string;
+};
+
+export type PanelId = 'build' | 'properties' | 'assets' | 'npc' | 'quest' | 'dialogue' | 'creature' | 'loot' | 'dev' | 'characters' | 'classes' | 'items' | 'spawner' | 'prefab' | 'atlas';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -101,6 +109,8 @@ interface EditorState {
   /** Cross-module data invalidation version. Increment to trigger refetches. */
   dataVersion: number;
   playtestSnapshot: PlaytestRestoreSnapshot | null;
+  /** Soft locks held by collaborators (CC1). Key is resource string. */
+  activeLocks: Record<string, SoftLock>;
 
   /** Active paint transaction (for grouping brush strokes). */
   paintTransaction: PaintedCell[] | null;
@@ -170,6 +180,10 @@ interface EditorState {
   undoDefinitionChange: () => DefinitionOp | null;
   redoDefinitionChange: () => DefinitionOp | null;
   clearDefinitionStackFor: (resourceKey: string) => void;
+
+  setSoftLock: (lock: SoftLock) => void;
+  removeSoftLock: (resource: string) => void;
+  clearExpiredLocks: () => void;
 }
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
@@ -327,6 +341,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  atlas: {
+    id: 'atlas',
+    title: 'World Atlas',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 50,
+    width: 800,
+    height: 700,
+    zIndex: 10,
+  },
 };
 
 function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {
@@ -398,6 +423,7 @@ export const useEditorStore = create<EditorState>()(
       dataVersion: 0,
       paintTransaction: null,
       playtestSnapshot: null,
+      activeLocks: {},
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
@@ -748,21 +774,35 @@ export const useEditorStore = create<EditorState>()(
       },
 
       redoDefinitionChange: () => {
-        const { stack, op } = redoDefinitionOp(get().definitionOpStack);
-        if (!op) return null;
+        let op: DefinitionOp | null = null;
         set((state) => {
-          state.definitionOpStack = stack;
+          const res = redoDefinitionOp(state.definitionOpStack);
+          state.definitionOpStack = res.stack;
+          op = res.op;
         });
         return op;
       },
 
-      clearDefinitionStackFor: (resourceKey) =>
+      clearDefinitionStackFor: (resourceKey) => {
         set((state) => {
-          state.definitionOpStack = clearDefinitionOpsForKey(
-            state.definitionOpStack,
-            resourceKey
-          );
-        }),
+          state.definitionOpStack = clearDefinitionOpsForKey(state.definitionOpStack, resourceKey);
+        });
+      },
+
+      setSoftLock: (lock) => set((state) => {
+        state.activeLocks[lock.resource] = lock;
+      }),
+      removeSoftLock: (resource) => set((state) => {
+        delete state.activeLocks[resource];
+      }),
+      clearExpiredLocks: () => set((state) => {
+        const now = new Date().toISOString();
+        for (const res in state.activeLocks) {
+          if (state.activeLocks[res].expiresAt < now) {
+            delete state.activeLocks[res];
+          }
+        }
+      }),
     }))
   )
 );

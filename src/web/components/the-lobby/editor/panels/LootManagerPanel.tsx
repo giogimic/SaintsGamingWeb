@@ -1,16 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Copy,
-  Plus,
-  RefreshCw,
-  Search,
-  Sparkles,
-  Trash2,
-} from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
-import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { CatalogEditorShell } from '../CatalogEditorShell';
 import { useGameStore } from '../../store';
 import {
   aggregateDropStats,
@@ -46,10 +39,6 @@ function toPoolDef(row: ApiLootTable): LootPoolDef {
   };
 }
 
-/**
- * Studio Loot Manager (bible 17) — data-driven pools, preview, simulate.
- * Entities reference pool IDs; balancing stays centralized.
- */
 export const LootManagerPanel: React.FC = () => {
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const showToast = useGameStore((s) => s.showToast);
@@ -58,8 +47,11 @@ export const LootManagerPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   const dataVersion = useEditorStore((s) => s.dataVersion);
+  const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
+  
   const [simCount, setSimCount] = useState(100);
   const [simStats, setSimStats] = useState<Record<string, { count: number; totalQty: number; rate: number }> | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -100,6 +92,16 @@ export const LootManagerPanel: React.FC = () => {
 
   const selected = tables.find((t) => t.id === selectedId) ?? null;
 
+  const isDirty = useMemo(() => {
+    if (!selected) return true;
+    return (
+      draftName !== selected.name ||
+      draftRolls !== selected.rollsPerDrop ||
+      draftEntriesJson !== JSON.stringify(selected.entries, null, 2) ||
+      draftGuaranteedJson !== JSON.stringify(selected.guaranteedDrops, null, 2)
+    );
+  }, [selected, draftName, draftRolls, draftEntriesJson, draftGuaranteedJson]);
+
   useEffect(() => {
     if (!selected) {
       setDraftName('');
@@ -116,8 +118,20 @@ export const LootManagerPanel: React.FC = () => {
     setSimStats(null);
   }, [selected]);
 
-  const createPool = async () => {
+  const handleSelect = (id: string) => {
+    if (isDirty && selectedId) {
+      if (!confirm('You have unsaved changes. Discard?')) return;
+    }
+    setSelectedId(id);
+    setValidationError(null);
+  };
+
+  const handleCreateNew = async () => {
+    if (isDirty && selectedId) {
+      if (!confirm('You have unsaved changes. Discard?')) return;
+    }
     setSaving(true);
+    setValidationError(null);
     try {
       const res = await fetch('/api/loot/tables', {
         method: 'POST',
@@ -126,7 +140,7 @@ export const LootManagerPanel: React.FC = () => {
           gameId: activeGameId,
           name: `New Pool ${tables.length + 1}`,
           description: '',
-          entries: [{ itemId: 'wood', weight: 100, min: 1, max: 2 }],
+          entries: [{ itemId: 'wood_log', weight: 100, min: 1, max: 2 }],
           rollsPerDrop: 1,
           guaranteedDrops: [],
         }),
@@ -134,50 +148,20 @@ export const LootManagerPanel: React.FC = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Create failed');
       showToast('Loot pool created');
-      useEditorStore.getState().incrementDataVersion();
+      incrementDataVersion();
       await load();
       if (data.item?.id) setSelectedId(data.item.id);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Create failed');
+      setValidationError(err instanceof Error ? err.message : 'Create failed');
     } finally {
       setSaving(false);
     }
   };
 
-  const clonePool = async () => {
+  const handleSave = async () => {
     if (!selected) return;
     setSaving(true);
-    try {
-      const res = await fetch('/api/loot/tables', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gameId: activeGameId,
-          name: `${selected.name} (copy)`,
-          description: selected.description,
-          entries: selected.entries,
-          rollsPerDrop: selected.rollsPerDrop,
-          guaranteedDrops: selected.guaranteedDrops,
-          minLevel: selected.minLevel,
-          maxLevel: selected.maxLevel,
-          requiredTags: selected.requiredTags,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Clone failed');
-      showToast('Pool cloned');
-      await load();
-      if (data.item?.id) setSelectedId(data.item.id);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Clone failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const savePool = async () => {
-    if (!selected) return;
-    setSaving(true);
+    setValidationError(null);
     try {
       let entries: LootDropEntry[] = [];
       let guaranteedDrops: LootDropEntry[] = [];
@@ -198,247 +182,217 @@ export const LootManagerPanel: React.FC = () => {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
-      showToast('Loot pool saved');
+      if (!res.ok) throw new Error(data.error || 'Update failed');
+      showToast('Pool updated');
+      incrementDataVersion();
       await load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Save failed');
+      setValidationError(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setSaving(false);
     }
   };
 
-  const deletePool = async () => {
+  const handleDelete = async () => {
     if (!selected) return;
-    if (!window.confirm(`Delete loot pool "${selected.name}"?`)) return;
+    if (!confirm('Delete this loot pool? Refs in maps may break.')) return;
     setSaving(true);
+    setValidationError(null);
     try {
-      const res = await fetch(`/api/loot/tables/${selected.id}`, { method: 'DELETE' });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      const res = await fetch(`/api/loot/tables/${selected.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Delete failed');
       showToast('Pool deleted');
       setSelectedId(null);
+      incrementDataVersion();
       await load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Delete failed');
+      setValidationError(err instanceof Error ? err.message : 'Delete failed');
     } finally {
       setSaving(false);
     }
   };
 
-  const runSimulate = () => {
-    if (!selected) return;
-    const pool = toPoolDef({
-      ...selected,
-      name: draftName,
-      rollsPerDrop: draftRolls,
-      entries: JSON.parse(draftEntriesJson),
-      guaranteedDrops: JSON.parse(draftGuaranteedJson),
-    });
-    const samples = Array.from({ length: Math.max(1, Math.min(simCount, 5000)) }, () =>
-      simulateLootPool(pool)
-    );
-    setSimStats(aggregateDropStats(samples));
+  const handleRevert = () => {
+    if (selectedId) {
+      const s = tables.find(t => t.id === selectedId);
+      if (s) {
+        setDraftName(s.name);
+        setDraftEntriesJson(JSON.stringify(s.entries, null, 2));
+        setDraftGuaranteedJson(JSON.stringify(s.guaranteedDrops, null, 2));
+        setDraftRolls(s.rollsPerDrop);
+        setSimStats(null);
+      }
+    }
   };
 
-  const exportJson = () => {
+  const handleSimulate = () => {
     if (!selected) return;
-    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${selected.name.replace(/\s+/g, '_').toLowerCase()}_loot.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const parsedEntries = JSON.parse(draftEntriesJson);
+      const parsedGuaranteed = JSON.parse(draftGuaranteedJson);
+      const tempPool = toPoolDef({
+        ...selected,
+        entries: parsedEntries,
+        guaranteedDrops: parsedGuaranteed,
+        rollsPerDrop: draftRolls,
+      });
+      const results = [];
+      for (let i = 0; i < simCount; i++) {
+        results.push(simulateLootPool(tempPool, { rng: () => Math.random() }));
+      }
+      setSimStats(aggregateDropStats(results));
+    } catch (err) {
+      setValidationError('Invalid JSON, cannot simulate.');
+    }
   };
 
   return (
-    <CatalogEditorShell
-      title="Loot Catalog"
-      blurb={`Pools for world ${activeGameId}. Entities reference pool IDs — change once, update everywhere.`}
-      toolbar={
-        <div className="flex gap-1">
-          <button
-            type="button"
-            title="Refresh"
-            onClick={() => void load()}
-            className="rounded-md border border-slate-700 p-1.5 text-slate-400 hover:text-white"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            type="button"
-            title="Create pool"
-            disabled={saving}
-            onClick={() => void createPool()}
-            className="rounded-md border border-[#806f47]/50 bg-[#cbb26a]/10 p-1.5 text-[#cbb26a] hover:bg-[#cbb26a]/20"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      }
-      list={
-        <div className="space-y-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-2 h-3.5 w-3.5 text-slate-500" />
+    <CatalogEditorShell<ApiLootTable>
+      title="Loot Pools"
+      items={filtered}
+      activeId={selectedId}
+      getItemId={(t) => t.id}
+      getItemName={(t) => t.name}
+      isDirty={(t) => (t.id === selectedId ? isDirty : false)}
+      search={query}
+      onSearchChange={setQuery}
+      onSelect={handleSelect}
+      onCreateNew={handleCreateNew}
+      onSave={handleSave}
+      onRevert={handleRevert}
+      onDelete={handleDelete}
+      saving={saving}
+      validationError={validationError}
+    >
+      <div className="space-y-4">
+        {/* Basic Fields */}
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
+              Pool Name
+            </label>
             <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search pools…"
-              className="w-full rounded-md border border-slate-700 bg-black/40 py-1.5 pl-7 pr-2 font-mono text-[11px] outline-none focus:border-[#cbb26a]/50"
+              className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3]"
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
             />
           </div>
-          <ul className="space-y-1">
-            {filtered.length === 0 && (
-              <li className="p-3 text-center font-mono text-[10px] text-slate-500">
-                {loading ? 'Loading…' : 'No loot pools yet — create one.'}
-              </li>
-            )}
-            {filtered.map((t) => (
-              <li key={t.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(t.id)}
-                  className={`w-full rounded-md px-2 py-1.5 text-left transition-colors ${
-                    selectedId === t.id
-                      ? 'bg-[#cbb26a]/15 text-[#cbb26a]'
-                      : 'text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  <div className="truncate font-mono text-[11px] font-bold">{t.name}</div>
-                  <div className="truncate font-mono text-[9px] text-slate-500">
-                    {t.entries.length} entries · {t.rollsPerDrop} roll(s)
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className="w-24">
+            <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
+              Rolls
+            </label>
+            <input
+              type="number"
+              className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3]"
+              value={draftRolls}
+              onChange={(e) => setDraftRolls(Math.max(1, parseInt(e.target.value) || 1))}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
+              Pool ID (Read Only)
+            </label>
+            <input
+              className="w-full bg-[#050b14] border border-[#806f47]/20 rounded px-3 py-1.5 font-mono text-[#a59981]"
+              value={selected?.id || ''}
+              readOnly
+            />
+          </div>
         </div>
-      }
-    >
-      <div className="min-h-0 space-y-2 overflow-y-auto p-1">
-        {!selected ? (
-          <p className="p-4 text-center font-mono text-[10px] text-slate-500">
-            Select a pool to edit, simulate, or export.
-          </p>
-        ) : (
-          <>
-            <label className="block space-y-1">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Name</span>
-              <input
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[11px]"
-              />
+
+        {/* JSON Editors */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
+              Weighted Entries (JSON)
             </label>
-            <label className="block space-y-1">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                Rolls per drop
-              </span>
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={draftRolls}
-                onChange={(e) => setDraftRolls(Number(e.target.value) || 1)}
-                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[11px]"
-              />
+            <textarea
+              className="w-full h-48 bg-[#111a2a] border border-[#806f47]/40 rounded p-3 font-mono text-xs outline-none focus:border-[#cbb26a] resize-none text-[#e5c07b]"
+              value={draftEntriesJson}
+              onChange={(e) => setDraftEntriesJson(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
+              Guaranteed Drops (JSON)
             </label>
-            <label className="block space-y-1">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                Weighted entries (JSON)
-              </span>
-              <textarea
-                rows={5}
-                value={draftEntriesJson}
-                onChange={(e) => setDraftEntriesJson(e.target.value)}
-                className="w-full resize-y rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px]"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
-                Guaranteed drops (JSON)
-              </span>
-              <textarea
-                rows={3}
-                value={draftGuaranteedJson}
-                onChange={(e) => setDraftGuaranteedJson(e.target.value)}
-                className="w-full resize-y rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px]"
-              />
-            </label>
-            <div className="flex flex-wrap gap-1 pt-1">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void savePool()}
-                className="rounded-md border border-[#806f47]/50 bg-[#cbb26a]/15 px-2 py-1 font-mono text-[10px] font-bold uppercase text-[#cbb26a]"
+            <textarea
+              className="w-full h-48 bg-[#111a2a] border border-[#806f47]/40 rounded p-3 font-mono text-xs outline-none focus:border-[#cbb26a] resize-none text-[#e5c07b]"
+              value={draftGuaranteedJson}
+              onChange={(e) => setDraftGuaranteedJson(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Simulator */}
+        <div className="bg-[#050b14] border border-[#806f47]/30 rounded p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-[#cbb26a] font-bold text-[12px] uppercase tracking-wide">
+              <Sparkles className="w-4 h-4" />
+              <span>Simulate Drops</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] font-bold text-[#806f47] uppercase">Sim Count:</label>
+              <select
+                className="bg-[#111a2a] border border-[#806f47]/40 rounded px-2 py-1 outline-none text-[#e2d5b3]"
+                value={simCount}
+                onChange={(e) => setSimCount(parseInt(e.target.value))}
               >
-                Save
-              </button>
+                <option value={10}>10</option>
+                <option value={100}>100</option>
+                <option value={1000}>1000</option>
+                <option value={10000}>10000</option>
+              </select>
               <button
-                type="button"
-                disabled={saving}
-                onClick={() => void clonePool()}
-                className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1 font-mono text-[10px] uppercase text-slate-300"
+                onClick={handleSimulate}
+                className="bg-[#23354f] hover:bg-[#2d4263] border border-[#405c87] text-white px-3 py-1 rounded transition-colors shadow-sm ml-2 font-bold"
               >
-                <Copy className="h-3 w-3" /> Clone
-              </button>
-              <button
-                type="button"
-                onClick={exportJson}
-                className="rounded-md border border-slate-700 px-2 py-1 font-mono text-[10px] uppercase text-slate-300"
-              >
-                Export
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void deletePool()}
-                className="inline-flex items-center gap-1 rounded-md border border-red-900/50 px-2 py-1 font-mono text-[10px] uppercase text-red-400"
-              >
-                <Trash2 className="h-3 w-3" /> Delete
+                Run
               </button>
             </div>
-            <div className="mt-2 space-y-2 border-t border-slate-800 pt-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-[#cbb26a]" />
-                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Simulate
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  max={5000}
-                  value={simCount}
-                  onChange={(e) => setSimCount(Number(e.target.value) || 100)}
-                  className="ml-auto w-20 rounded-md border border-slate-700 bg-black/40 px-2 py-0.5 font-mono text-[10px]"
-                />
-                <button
-                  type="button"
-                  onClick={runSimulate}
-                  className="rounded-md border border-[#806f47]/40 px-2 py-0.5 font-mono text-[10px] uppercase text-[#cbb26a]"
-                >
-                  Run
-                </button>
-              </div>
-              {simStats && (
-                <ul className="max-h-32 space-y-1 overflow-y-auto font-mono text-[10px]">
-                  {Object.entries(simStats)
-                    .sort((a, b) => b[1].rate - a[1].rate)
-                    .map(([itemId, s]) => (
-                      <li key={itemId} className="flex justify-between gap-2 text-slate-300">
-                        <span>{itemId}</span>
-                        <span className="text-slate-500">
-                          {(s.rate * 100).toFixed(1)}% · avg qty{' '}
-                          {(s.totalQty / Math.max(1, simCount)).toFixed(2)}
-                        </span>
-                      </li>
-                    ))}
-                </ul>
-              )}
+          </div>
+          
+          {simStats ? (
+            <div className="bg-[#111a2a] rounded border border-[#806f47]/20 overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#0b1320] text-[#a59981] font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="px-3 py-2 border-b border-[#806f47]/20">Item ID</th>
+                    <th className="px-3 py-2 text-right border-b border-[#806f47]/20">Drop Rate</th>
+                    <th className="px-3 py-2 text-right border-b border-[#806f47]/20">Total Qty</th>
+                    <th className="px-3 py-2 text-right border-b border-[#806f47]/20">Avg / Drop</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#806f47]/20">
+                  {Object.entries(simStats).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-3 py-4 text-center text-[#806f47] italic">No items dropped.</td>
+                    </tr>
+                  ) : (
+                    Object.entries(simStats)
+                      .sort((a, b) => b[1].rate - a[1].rate)
+                      .map(([itemId, stat]) => (
+                        <tr key={itemId} className="hover:bg-[#806f47]/10 transition-colors">
+                          <td className="px-3 py-2 text-[#cbb26a] font-mono">{itemId}</td>
+                          <td className="px-3 py-2 text-right">{(stat.rate * 100).toFixed(1)}%</td>
+                          <td className="px-3 py-2 text-right">{stat.totalQty}</td>
+                          <td className="px-3 py-2 text-right text-[#a59981]">
+                            {(stat.totalQty / simCount).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          </>
-        )}
+          ) : (
+            <div className="text-center py-4 text-[#806f47] italic text-xs">
+              Click Run to simulate loot rolls with current draft settings.
+            </div>
+          )}
+        </div>
       </div>
     </CatalogEditorShell>
   );

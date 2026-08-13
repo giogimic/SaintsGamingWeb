@@ -6,7 +6,7 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'npc' | 'quest' | 'creature' | 'test';
+export type StudioMode = 'develop' | 'atlas' | 'npc' | 'quest' | 'creature' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
@@ -15,7 +15,8 @@ export type StudioCanonicalMode =
   | 'place'
   | 'populate'
   | 'script'
-  | 'catalog';
+  | 'catalog'
+  | 'atlas';
 
 export type StudioDockId =
   | 'build'
@@ -31,12 +32,14 @@ export type StudioDockId =
   | 'classes'
   | 'items'
   | 'spawner'
-  | 'prefab';
+  | 'prefab'
+  | 'atlas';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
   test: 'walk',
   develop: 'paint',
+  atlas: 'atlas',
   npc: 'populate',
   quest: 'script',
   creature: 'catalog',
@@ -45,6 +48,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   develop: ['build', 'properties', 'prefab'],
+  atlas: ['atlas'],
   npc: ['npc', 'properties', 'assets', 'spawner'],
   quest: ['npc', 'quest'],
   creature: ['creature', 'loot', 'items'],
@@ -59,6 +63,11 @@ export const STUDIO_MODE_META: Record<
     label: 'Paint',
     canonical: 'paint',
     blurb: 'Author terrain, logic layers, and world structure.',
+  },
+  atlas: {
+    label: 'Atlas',
+    canonical: 'atlas',
+    blurb: 'Connect maps visually into a seamless world.',
   },
   npc: {
     label: 'Populate',
@@ -142,5 +151,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   prefab: {
     label: 'Prefabs',
     blurb: 'Stamp pre-built multi-tile structures.',
+  },
+  atlas: {
+    label: 'World Atlas',
+    blurb: 'Drag and drop maps to connect them seamlessly.',
   },
 };

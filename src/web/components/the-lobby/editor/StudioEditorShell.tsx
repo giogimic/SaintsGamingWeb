@@ -27,16 +27,20 @@ import {
   Footprints,
   UserRound,
   Package,
+  Globe,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
 import { STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import { StudioPaintHud } from './StudioPaintHud';
+import { StudioMenuBar } from './StudioMenuBar';
+import { StudioOmnisearch } from './StudioOmnisearch';
+import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { AssetBrowserPanel } from './panels/AssetBrowserPanel';
-import { NpcEditorPanel } from './panels/NpcEditorPanel';
+import { EntityEditorPanel } from './panels/EntityEditorPanel';
 import { DevToolsPanel } from './panels/DevToolsPanel';
 import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
 import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
@@ -47,7 +51,8 @@ import { LootManagerPanel } from './panels/LootManagerPanel';
 import { ItemEditorPanel } from './panels/ItemEditorPanel';
 import { MonsterSpawnerPanel } from './panels/MonsterSpawnerPanel';
 import { PrefabBuilderPanel } from './panels/PrefabBuilderPanel';
-import { WorldProfileBar } from './WorldProfileBar';
+import { WorldAtlasPanel } from './panels/WorldAtlasPanel';
+import { StudioStatusBar } from './StudioStatusBar';
 
 const MODE_BUTTONS: Array<{
   id: StudioMode;
@@ -136,6 +141,7 @@ export const StudioEditorShell: React.FC = () => {
   
   const layoutRef = useRef<any>(null);
   const [model] = useState(() => Model.fromJson(initialLayout));
+  const [omnisearchOpen, setOmnisearchOpen] = useState(false);
 
   useEffect(() => {
     // Restore dock geometry, then enter Development Mode (tools on by default).
@@ -156,6 +162,51 @@ export const StudioEditorShell: React.FC = () => {
         const mode = useGameStore.getState().gameMode;
         if (mode !== 'EXPLORING' && mode !== 'BATTLE') return;
         toggleCreationMode();
+        return;
+      }
+
+      // Bracket keys [ ] cycle brush size
+      if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && (e.key === '[' || e.key === ']')) {
+        e.preventDefault();
+        const currentSize = useEditorStore.getState().brushRadius;
+        const SIZES = [1, 3, 5, 7];
+        let idx = SIZES.indexOf(currentSize);
+        if (idx === -1) idx = 0;
+        
+        if (e.key === ']') {
+          idx = (idx + 1) % SIZES.length;
+        } else {
+          idx = (idx - 1 + SIZES.length) % SIZES.length;
+        }
+        useEditorStore.getState().setBrushRadius(SIZES[idx]);
+        return;
+      }
+
+      // Ctrl+Shift+P toggles Project Browser (stubbed for now)
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        showToast('Project Browser panel');
+        return;
+      }
+
+      // Ctrl+K Omnisearch
+      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setOmnisearchOpen((prev) => !prev);
+        return;
+      }
+
+      // Ctrl+S Save
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        showToast('Save triggered');
+        return;
+      }
+
+      // Ctrl+Shift+S Save All
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        showToast('Save All triggered');
         return;
       }
 
@@ -288,7 +339,7 @@ export const StudioEditorShell: React.FC = () => {
       case 'build': return <WorldBuilderPanel />;
       case 'properties': return <PropertiesPanel />;
       case 'assets': return <AssetBrowserPanel />;
-      case 'npc': return <NpcEditorPanel />;
+      case 'npc': return <EntityEditorPanel />;
       case 'dev': return <DevToolsPanel />;
       case 'characters': return <StarterHeroEditorPanel />;
       case 'creature': return <CreatureDefEditorPanel />;
@@ -299,6 +350,7 @@ export const StudioEditorShell: React.FC = () => {
       case 'items': return <ItemEditorPanel />;
       case 'spawner': return <MonsterSpawnerPanel />;
       case 'prefab': return <PrefabBuilderPanel />;
+      case 'atlas': return <WorldAtlasPanel />;
       case 'viewport': return <div className="sg-viewport-container w-full h-full pointer-events-none" />;
       default: return <div>Unknown component: {component}</div>;
     }
@@ -310,8 +362,11 @@ export const StudioEditorShell: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col">
-      <WorldProfileBar />
+    <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-8">
+      <StudioMenuBar />
+      <StudioFavoritesStrip />
+      <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
+      <StudioStatusBar />
       <StudioPaintHud />
 
       {/* FlexLayout Container */}
@@ -325,9 +380,10 @@ export const StudioEditorShell: React.FC = () => {
       </div>
 
       {/* Legacy Mode strip + dock - keep for quick launching panels into flexlayout */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw]">
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw]">
         <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-3 py-2 flex items-center gap-1.5 sm:gap-2 shadow-2xl overflow-x-auto max-w-full">
           <DockButton id="build" layoutRef={layoutRef} model={model} icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="atlas" layoutRef={layoutRef} model={model} icon={<Globe className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="properties" layoutRef={layoutRef} model={model} icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="prefab" layoutRef={layoutRef} model={model} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="assets" layoutRef={layoutRef} model={model} icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />

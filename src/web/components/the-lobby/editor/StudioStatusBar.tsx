@@ -1,0 +1,172 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import {
+  Globe2, Save, CheckCircle2, Navigation,
+  PenTool, MousePointer2, Brush, Target, AlertCircle
+} from 'lucide-react';
+import { useEditorStore } from './editor-store';
+import { useGameStore } from '../store';
+import {
+  ensureWorldProfiles,
+  setActiveWorldProfile,
+} from '@/app/actions/world-profiles';
+import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
+import { useSession } from 'next-auth/react';
+
+export function StudioStatusBar() {
+  const { data: session } = useSession();
+  const role = session?.user?.role || 'Creator'; // Simplified for UI
+
+  const activeGameId = useEditorStore((s) => s.activeGameId);
+  const setActiveGameId = useEditorStore((s) => s.setActiveGameId);
+  const studioMode = useEditorStore((s) => s.studioMode);
+  const mapDirty = useEditorStore((s) => s.mapDirty);
+  const definitionStack = useEditorStore((s) => s.definitionOpStack);
+  const brushRadius = useEditorStore((s) => s.brushRadius);
+  const clickedTile = useEditorStore((s) => s.clickedTile);
+  const activeLocks = useEditorStore((s) => s.activeLocks);
+  const activeMapData = useGameStore((s) => s.activeMapData);
+
+  const defsDirtyCount = definitionStack.undo.length; // Approximate
+
+  const [profiles, setProfiles] = useState(WORLD_PROFILES.map((p) => ({ ...p, isActive: p.id === activeGameId })));
+  const [busy, setBusy] = useState(false);
+  const [fps, setFps] = useState(0);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('saints.activeGameId');
+      if (stored) setActiveGameId(stored);
+    } catch { /* ignore */ }
+
+    void (async () => {
+      const res = await ensureWorldProfiles();
+      if (res.success) {
+        setProfiles(res.profiles);
+        const stored = (() => {
+          try { return window.localStorage.getItem('saints.activeGameId'); } catch { return null; }
+        })();
+        if (!stored && res.activeId) setActiveGameId(res.activeId);
+      }
+    })();
+  }, [setActiveGameId]);
+
+  useEffect(() => {
+    // Basic FPS counter
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animId = 0;
+    const loop = () => {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        setFps(frameCount);
+        frameCount = 0;
+        lastTime = now;
+      }
+      animId = requestAnimationFrame(loop);
+    };
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  const onSwitch = async (id: string) => {
+    setBusy(true);
+    setActiveGameId(id);
+    await setActiveWorldProfile(id);
+    setBusy(false);
+  };
+
+  const getModeIcon = () => {
+    switch (studioMode) {
+      case 'develop': return <PenTool className="w-3.5 h-3.5" />;
+      case 'npc': return <Target className="w-3.5 h-3.5" />;
+      case 'test': return <Navigation className="w-3.5 h-3.5" />;
+      default: return <MousePointer2 className="w-3.5 h-3.5" />;
+    }
+  };
+
+  const hasSoftLocks = Object.keys(activeLocks).length > 0;
+
+  return (
+    <div className="pointer-events-auto absolute bottom-0 left-0 right-0 h-8 z-[110] bg-[#050b14]/95 border-t border-[#806f47]/30 flex items-center justify-between px-2 text-[11px] font-mono text-[#a59981] select-none shadow-[0_-4px_20px_rgba(0,0,0,0.5)] backdrop-blur-md">
+      
+      {/* LEFT: Dirty States & Tool Status */}
+      <div className="flex items-center gap-4 h-full">
+        <div className="flex items-center gap-2 border-r border-[#806f47]/20 pr-4 h-full">
+          <span className={`font-bold ${mapDirty ? 'text-[#e5c07b]' : 'text-[#5c6370]'}`}>
+            Map{mapDirty ? '*' : ''}
+          </span>
+          <span className={`font-bold ${defsDirtyCount > 0 ? 'text-[#e5c07b]' : 'text-[#5c6370]'}`}>
+            Defs ({defsDirtyCount}){defsDirtyCount > 0 ? '*' : ''}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3 border-r border-[#806f47]/20 pr-4 h-full">
+          <div className="flex items-center gap-1.5 text-[#e2d5b3]">
+            {getModeIcon()} <span className="uppercase">{studioMode}</span>
+          </div>
+          <div className="flex items-center gap-1.5 opacity-80">
+            <Brush className="w-3.5 h-3.5" /> Size: {brushRadius}
+          </div>
+          <div className="opacity-80">
+            {clickedTile ? `[${clickedTile.r}, ${clickedTile.c}]` : '[-, -]'}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[#98c379]">
+          <CheckCircle2 className="w-3.5 h-3.5" /> OK
+        </div>
+      </div>
+
+      {/* RIGHT: Project, Save, FPS */}
+      <div className="flex items-center gap-4 h-full">
+        {hasSoftLocks && (
+          <div className="flex items-center gap-1.5 text-[#e06c75] bg-[#e06c75]/10 px-2 py-0.5 rounded border border-[#e06c75]/30">
+            <AlertCircle className="w-3 h-3" />
+            <span>{Object.keys(activeLocks).length} Lock(s)</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1.5 opacity-60" title="Frames Per Second">
+          {fps} FPS
+        </div>
+
+        <div className="flex items-center gap-2 border-l border-[#806f47]/20 pl-4 h-full">
+          <Globe2 className="w-3.5 h-3.5 opacity-70" />
+          <select
+            disabled={busy}
+            value={activeGameId}
+            onChange={(e) => void onSwitch(e.target.value)}
+            className="bg-transparent border-none text-[#e2d5b3] outline-none cursor-pointer"
+          >
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id} className="bg-[#0b1320]">{p.name || p.id}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2 border-l border-[#806f47]/20 pl-4 h-full">
+          <span className="uppercase opacity-70">{role}</span>
+          <span className="bg-[#cbb26a]/20 text-[#cbb26a] px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider">
+            v{activeMapData?.version || 1}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 pl-2">
+          <button
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
+              mapDirty || defsDirtyCount > 0 
+                ? 'bg-[#cbb26a] text-[#050b14] hover:bg-[#d4c38d] shadow-[0_0_10px_rgba(203,178,106,0.3)]' 
+                : 'bg-[#1a2333] text-[#5c6370] cursor-not-allowed'
+            }`}
+            title="Save Map & Defs (Ctrl+S)"
+          >
+            <Save className="w-3.5 h-3.5" /> Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

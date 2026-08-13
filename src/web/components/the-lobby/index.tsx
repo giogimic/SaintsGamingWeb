@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { useEditorStore } from './editor/editor-store';
 const SaintsDexOverlay = dynamic(() => import('./SaintsDexOverlay'));
 const TargetFrame = dynamic(() => import('./target-frame'));
+const QuestTrackerOverlay = dynamic(() => import('./quest-tracker-overlay'));
 const ShopOverlay = dynamic(() => import('./shop-overlay'));
 const PartyOverlay = dynamic(() => import('./party-overlay'));
 const CraftingOverlay = dynamic(() => import('./crafting-overlay'));
@@ -17,7 +18,7 @@ const AchievementsOverlay = dynamic(() => import('./achievements-overlay'));
 const MiniMapRadar = dynamic(() => import('./MiniMapRadar'));
 const PeerPresenceHud = dynamic(() => import('./PeerPresenceHud'));
 const MobileControls = dynamic(() => import('./MobileControls'));
-const SaintsHudOrbs = dynamic(() => import('./hud/SaintsHudOrbs'));
+const PlayerVitalsHud = dynamic(() => import('./hud/PlayerVitalsHud'));
 const ClassicPanel = dynamic(() => import('./ClassicPanel'));
 const Hotbar = dynamic(() => import('./Hotbar'));
 const DraggablePanel = dynamic(() => import('./DraggablePanel'));
@@ -57,8 +58,9 @@ import {
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
 import { fetchAllGameQuests } from '@/app/actions/game-dev';
-import { GAME_MAPS, loadMap, patchCachedMapTile } from './data/maps';
+import { GAME_MAPS, loadMap, patchCachedMapTile, preloadAdjacentMaps } from './data/maps';
 import { QUEST_DB } from './data/quests';
+
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
 import { io, Socket } from 'socket.io-client';
@@ -159,6 +161,9 @@ export default function TheLobby({
     return [];
   };
 
+  const LOBBY_SPAWN = { x: 32, y: 32 };
+  const DEMO_SPAWN = { x: 14, y: 15 };
+
   const selectAndLoadCharacter = async (charId: string) => {
     setIsInitializing(true);
     const res = await loadGameCharacter(charId);
@@ -167,16 +172,15 @@ export default function TheLobby({
 
       // Player lobby always starts on LOBBY (fallback to DEMO_SANDBOX if not created yet).
       const TARGET_MAP = 'LOBBY';
-      const FALLBACK_MAP = 'DEMO_SANDBOX';
-      const DEMO_SPAWN = { x: 14, y: 15 };
+      const FALLBACK_MAP = 'LOBBY';
       const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
         .replace(/_ch\d+$/, '');
       let validMapId = TARGET_MAP;
-      let validPosition = { ...DEMO_SPAWN };
+      let validPosition = { ...LOBBY_SPAWN };
 
       if (enableStudio && savedMap && savedMap !== 'SAINTS_VILLAGE') {
         validMapId = savedMap;
-        validPosition = parsedState.position || { ...DEMO_SPAWN };
+        validPosition = parsedState.position || { ...LOBBY_SPAWN };
       }
 
       try {
@@ -188,6 +192,7 @@ export default function TheLobby({
           y: Math.max(1, Math.min(mh - 2, validPosition.y ?? DEMO_SPAWN.y)),
         };
         useGameStore.getState().setActiveMapData(loaded);
+        preloadAdjacentMaps(validMapId).catch(console.error);
       } catch {
         validMapId = FALLBACK_MAP;
         validPosition = { ...DEMO_SPAWN };
@@ -253,7 +258,6 @@ export default function TheLobby({
   const enterStudioAuthorSession = async (mapId: string = 'LOBBY') => {
     if (!enableStudio) return;
     setIsInitializing(true);
-    const DEMO_SPAWN = { x: 14, y: 15 };
     let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? 'LOBBY' : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEMO_SPAWN };
 
@@ -262,13 +266,14 @@ export default function TheLobby({
       const mw = loaded.grid?.[0]?.length || 30;
       const mh = loaded.grid?.length || 30;
       validPosition = {
-        x: Math.max(1, Math.min(mw - 2, DEMO_SPAWN.x)),
-        y: Math.max(1, Math.min(mh - 2, DEMO_SPAWN.y)),
+        x: Math.max(1, Math.min(mw - 2, LOBBY_SPAWN.x)),
+        y: Math.max(1, Math.min(mh - 2, LOBBY_SPAWN.y)),
       };
       useGameStore.getState().setActiveMapData(loaded);
+      preloadAdjacentMaps(validMapId).catch(console.error);
     } catch {
       validMapId = 'DEMO_SANDBOX';
-      validPosition = { ...DEMO_SPAWN };
+      validPosition = { ...LOBBY_SPAWN };
       try {
         const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
         useGameStore.getState().setActiveMapData(loaded);
@@ -388,7 +393,7 @@ export default function TheLobby({
           // Studio: avatar-free author session by default (no character required).
           // Pass ?characterId= to load a real character for Playtest instead.
           if (enableStudio) {
-            void enterStudioAuthorSession('DEMO_SANDBOX');
+            void enterStudioAuthorSession('LOBBY');
           } else {
             setIsInitializing(false);
           }
@@ -466,9 +471,10 @@ export default function TheLobby({
             state.setCurrentMapId(fallback);
             void loadMap(fallback).then((m) => {
               useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+              preloadAdjacentMaps(fallback).catch(console.error);
             }).catch(() => {
-               state.setCurrentMapId('DEMO_SANDBOX');
-               void loadMap('DEMO_SANDBOX').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
+               state.setCurrentMapId('LOBBY');
+               void loadMap('LOBBY').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
             });
           }
         }
@@ -509,6 +515,7 @@ export default function TheLobby({
         state.setCurrentMapId(joinedBase);
         void loadMap(joinedBase).then((m) => {
           useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+          preloadAdjacentMaps(joinedBase).catch(console.error);
         });
       } else if (
         joinedBase &&
@@ -519,6 +526,7 @@ export default function TheLobby({
           const live = useGameStore.getState();
           if (!shouldKeepActiveMapData(live.activeMapData, joinedBase)) {
             live.setActiveMapData(ensureMapHasStudioTilesets(m));
+            preloadAdjacentMaps(joinedBase).catch(console.error);
           }
         });
       }
@@ -699,10 +707,25 @@ export default function TheLobby({
         }
       }));
     });
+
+    // CC1: Soft Locks and Presence
+    socket.on('studio_lock', (data: any) => {
+      if (!data?.resource) return;
+      useEditorStore.getState().setSoftLock(data);
+    });
+    socket.on('studio_unlock', (data: any) => {
+      if (!data?.resource) return;
+      useEditorStore.getState().removeSoftLock(data.resource);
+    });
+    socket.on('studio_presence', (data: any) => {
+      // For now, presence is just a heartbeat for locks
+      // In the future, we can add a cursor tracker or presence list.
+    });
     
     // Phase 9: Real-Time Map Editor Synchronization (hot remesh, no remount blast)
-    socket.on('map_reloaded', async (data) => {
-      const mapId = String(data?.mapId || '');
+    socket.on('content_reload', async (data: any) => {
+      if (!data || (data.type !== 'map' && data.type !== 'map_entities')) return;
+      const mapId = String(data.mapId || '');
       const state = useGameStore.getState();
       const mapDirty = useEditorStore.getState().mapDirty;
       if (
@@ -878,7 +901,7 @@ export default function TheLobby({
       const state = useGameStore.getState();
       state.showToast("You blacked out... Respawning at Safe Zone");
       state.setInstanceId(data.instanceId);
-      const defeatMap = toBaseMapId(String(data.mapId || 'DEMO_SANDBOX'));
+      const defeatMap = toBaseMapId(String(data.mapId || 'LOBBY'));
       state.setCurrentMapId(defeatMap);
       void loadMap(defeatMap).then((m) => {
         useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
@@ -1151,11 +1174,11 @@ export default function TheLobby({
     const state = useGameStore.getState();
     if (state.gameMode !== 'EXPLORING') return;
     const mapId = enableStudio
-      ? toBaseMapId(state.currentMapId || 'DEMO_SANDBOX')
-      : 'DEMO_SANDBOX';
-    if (!enableStudio && toBaseMapId(state.currentMapId || '') !== 'DEMO_SANDBOX') {
-      state.setCurrentMapId('DEMO_SANDBOX');
-      void loadMap('DEMO_SANDBOX').then((m) => {
+      ? toBaseMapId(state.currentMapId || 'LOBBY')
+      : 'LOBBY';
+    if (!enableStudio && toBaseMapId(state.currentMapId || '') !== 'LOBBY') {
+      state.setCurrentMapId('LOBBY');
+      void loadMap('LOBBY').then((m) => {
         useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
       });
     }
@@ -1165,8 +1188,8 @@ export default function TheLobby({
       lobby: !enableStudio,
       isPrivate: enableStudio,
       pie: enableStudio && !useEditorStore.getState().isCreationMode,
-      x: state.player.position?.x ?? 14,
-      y: state.player.position?.y ?? 15,
+      x: state.player.position?.x ?? 32,
+      y: state.player.position?.y ?? 32,
       name: state.player.name || 'Player',
       spriteId: state.player.spriteId || 'adventurer',
     };
@@ -1198,7 +1221,7 @@ export default function TheLobby({
       if (state.gameMode !== 'EXPLORING' && state.gameMode !== 'BATTLE') return;
       socket.emit('join_map', {
         accountId,
-        mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
+        mapId: toBaseMapId(state.currentMapId || 'LOBBY'),
         lobby: false,
         isPrivate: !pie,
         pie,
@@ -1353,7 +1376,7 @@ export default function TheLobby({
             ? () => {
                 setShowSelector(false);
                 void enterStudioAuthorSession(
-                  toBaseMapId(useGameStore.getState().currentMapId || 'DEMO_SANDBOX')
+                  toBaseMapId(useGameStore.getState().currentMapId || 'LOBBY')
                 );
               }
             : undefined
@@ -1524,7 +1547,9 @@ export default function TheLobby({
         />
 
         {gameMode === 'EXPLORING' && showGameplayHud && !enableStudio && (
-          <PeerPresenceHud />
+          <DraggablePanel id="peer-presence" anchor="tc">
+            <PeerPresenceHud />
+          </DraggablePanel>
         )}
         {gameMode === 'EXPLORING' && showGameplayHud && (
           <DraggablePanel id="minimap" anchor="tr">
@@ -1533,7 +1558,7 @@ export default function TheLobby({
         )}
         {gameMode === 'EXPLORING' && showGameplayHud && (
           <DraggablePanel id="orbs" anchor="tl">
-            <SaintsHudOrbs />
+            <PlayerVitalsHud />
           </DraggablePanel>
         )}
 
@@ -1544,6 +1569,12 @@ export default function TheLobby({
             </DraggablePanel>
             <DraggablePanel id="chat" anchor="bl">
               <GameChat />
+            </DraggablePanel>
+            <DraggablePanel id="target-frame" anchor="tc">
+              <TargetFrame />
+            </DraggablePanel>
+            <DraggablePanel id="quest-tracker" anchor="tr">
+              <QuestTrackerOverlay />
             </DraggablePanel>
           </>
         )}

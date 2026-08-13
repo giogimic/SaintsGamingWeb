@@ -248,12 +248,41 @@ export const MonsterSpawnerPanel: React.FC = () => {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-xl px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+          className="flex-1 bg-rose-900/40 hover:bg-rose-900/60 text-rose-200 py-2 rounded-lg font-bold border border-rose-800/50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {selectedId ? 'Update Spawner' : 'Place Spawner'}
         </button>
 
+        <button
+          onClick={() => {
+            if (!mapId) return;
+            const pool = String(entityProps.monsterPool || 'slime');
+            const pop = parseInt(String(entityProps.maxPopulation || 3), 10);
+            
+            showToast(`Live testing ${pop}x ${pool} spawner...`);
+            
+            for (let i = 0; i < pop; i++) {
+              const dx = (Math.random() - 0.5) * 4;
+              const dy = (Math.random() - 0.5) * 4;
+              const payload = {
+                id: `test_spawn_${Date.now()}_${i}`,
+                name: pool,
+                x: spawnX + dx,
+                y: spawnY + dy,
+                sprite: pool
+              };
+              useGameStore.getState().emitSocketEvent?.('studio_spawn_npc', {
+                mapId,
+                npc: payload
+              });
+            }
+          }}
+          type="button"
+          className="flex-1 bg-emerald-900/40 hover:bg-emerald-900/60 text-emerald-200 py-2 rounded-lg font-bold border border-emerald-800/50 flex items-center justify-center transition-colors"
+        >
+          Live Test
+        </button>
         {selectedId && (
           <button
             onClick={handleDelete}

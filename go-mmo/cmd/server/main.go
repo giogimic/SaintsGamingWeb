@@ -87,7 +87,12 @@ func main() {
 		Dialogue: deps.Dialogue,
 		Secret:   cfg.AuthSecret,
 		OnMapSynced: func(mapID string) {
-			hub.BroadcastAll(protocol.EvMapReloaded, map[string]string{"mapId": mapID})
+			hub.BroadcastAll(protocol.EvContentReload, map[string]any{
+				"type":    "map",
+				"mapId":   mapID,
+				"version": 0,
+				"at":      time.Now().Format(time.RFC3339),
+			})
 		},
 	}
 	root := http.NewServeMux()

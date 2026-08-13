@@ -112,9 +112,21 @@ export function StudioPaintHud() {
 
         <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-300">
           <span className="text-slate-500">Size</span>
-          <button onClick={() => setBrushRadius(brushRadius - 1)} className="hover:text-white px-1 font-bold">−</button>
+          <button onClick={() => {
+            const SIZES = [1, 3, 5, 7];
+            let idx = SIZES.indexOf(brushRadius);
+            if (idx === -1) idx = 1;
+            idx = (idx - 1 + SIZES.length) % SIZES.length;
+            setBrushRadius(SIZES[idx]);
+          }} className="hover:text-white px-1 font-bold">−</button>
           <span className="font-bold text-[#cbb26a]">{brushRadius}</span>
-          <button onClick={() => setBrushRadius(brushRadius + 1)} className="hover:text-white px-1 font-bold">+</button>
+          <button onClick={() => {
+            const SIZES = [1, 3, 5, 7];
+            let idx = SIZES.indexOf(brushRadius);
+            if (idx === -1) idx = 0;
+            idx = (idx + 1) % SIZES.length;
+            setBrushRadius(SIZES[idx]);
+          }} className="hover:text-white px-1 font-bold">+</button>
         </div>
 
         <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[10px] text-slate-400">

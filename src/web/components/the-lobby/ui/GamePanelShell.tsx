@@ -4,14 +4,14 @@ interface GamePanelShellProps {
   children: React.ReactNode;
   className?: string;
   title?: string;
-  accentColor?: 'cyan' | 'magenta' | 'pink' | 'lime' | 'red';
+  neonAccent?: 'cyan' | 'magenta' | 'pink' | 'lime' | 'red';
 }
 
 export function GamePanelShell({ 
   children, 
   className = '', 
   title,
-  accentColor = 'cyan'
+  neonAccent = 'cyan'
 }: GamePanelShellProps) {
   // Map our semantic accents to tailwind colors from the Neon Miami palette
   const accentClasses = {
@@ -22,7 +22,7 @@ export function GamePanelShell({
     red: 'border-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.2)]',
   };
 
-  const borderClass = accentClasses[accentColor];
+  const borderClass = accentClasses[neonAccent];
 
   return (
     <div className={`flex flex-col bg-[rgba(5,8,14,0.82)] backdrop-blur-sm border ${borderClass} rounded shadow-xl overflow-hidden ${className}`}>

@@ -2,6 +2,7 @@
 
 import { useGameStore } from './store';
 import { useEffect, useState } from 'react';
+import { GamePanelShell } from './ui/GamePanelShell';
 import { isForbiddenRtCaptureAbility } from '@/shared/game/combatAbilities';
 
 type HotbarAbility = {
@@ -125,34 +126,32 @@ export default function Hotbar() {
   const visibleSlots = slots.filter((s, i) => i < 5 || s.ability);
 
   return (
-    <div
-      className="lobby-panel pointer-events-auto absolute left-1/2 z-30 flex -translate-x-1/2 gap-1.5 rounded-xl p-1.5 bottom-[max(1.25rem,calc(6.75rem+env(safe-area-inset-bottom,0px)))] max-md:gap-1 max-md:p-1 md:bottom-6 md:gap-2 md:p-2"
-    >
+    <GamePanelShell neonAccent="cyan" className="pointer-events-auto flex gap-1.5 p-1.5 max-md:gap-1 max-md:p-1 md:gap-2 md:p-2">
       {visibleSlots.map((slot, i) => (
         <div
           key={slot.key || i}
           onClick={() => handleCast(slot)}
-          className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-lobby-border bg-black/45 transition-all hover:border-lobby-soul/55 hover:bg-lobby-soul/15 max-md:h-10 max-md:w-10 md:h-12 md:w-12"
+          className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-[#22d3ee]/30 bg-[#050b14]/80 shadow-[inset_0_0_10px_rgba(34,211,238,0.05)] transition-all hover:border-[#22d3ee]/80 hover:bg-[#22d3ee]/20 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] max-md:h-10 max-md:w-10 md:h-12 md:w-12"
         >
-          <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-lobby-ash transition-colors group-hover:text-lobby-soul md:top-1 md:left-1.5 md:text-[10px]">
+          <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-cyan-200/50 transition-colors group-hover:text-cyan-300 md:top-1 md:left-1.5 md:text-[10px]">
             {slot.key}
           </span>
 
           {slot.ability ? (
             <>
-              <span className="z-10 text-xl drop-shadow-md md:text-2xl">{slot.ability.icon}</span>
+              <span className="z-10 text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] md:text-2xl">{slot.ability.icon}</span>
               {gcdActive && (
                 <div
-                  className="absolute bottom-0 left-0 z-20 w-full bg-black/70 backdrop-blur-sm"
+                  className="absolute bottom-0 left-0 z-20 w-full bg-black/80 backdrop-blur-[2px] transition-all duration-75 ease-linear border-t border-cyan-400/50"
                   style={{ height: `${gcdPercent}%` }}
                 />
               )}
             </>
           ) : (
-            <span className="text-lg font-bold text-lobby-ash/30 md:text-xl">+</span>
+            <span className="text-lg font-bold text-cyan-500/20 md:text-xl">+</span>
           )}
         </div>
       ))}
-    </div>
+    </GamePanelShell>
   );
 }

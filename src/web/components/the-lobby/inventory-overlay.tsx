@@ -53,9 +53,9 @@ export default function InventoryOverlay() {
         </div>
       </div>
 
-      <div className="flex-1 flex gap-4 h-full min-h-[300px]">
-        {/* Left Side: Inventory Grid */}
-        <div className="flex-[2] overflow-y-auto custom-scrollbar pr-2 border-r border-[#22d3ee]/20">
+      <div className="flex-1 flex flex-col gap-2 h-full min-h-[300px] overflow-hidden">
+        {/* Top: Inventory Grid */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar border-b border-[#22d3ee]/20 pb-2">
           {Object.keys(inventory).length === 0 ? (
             <div className="flex items-center justify-center h-full text-slate-400 font-mono italic">
               Your inventory is empty.
@@ -94,43 +94,45 @@ export default function InventoryOverlay() {
           )}
         </div>
 
-        {/* Right Side: Item Details Panel */}
-        <div className="flex-[1] flex flex-col bg-black/40 rounded p-4 border border-[#22d3ee]/20 shadow-inner">
+        {/* Bottom: Item Details Footer */}
+        <div className="h-28 flex bg-black/40 rounded p-2 border border-[#22d3ee]/20 shadow-inner overflow-hidden">
           {activeItem && ITEM_DB[activeItem] && inventory[activeItem] > 0 ? (
-            <div className="flex flex-col h-full animate-in fade-in duration-200">
-              <div className="w-16 h-16 bg-black/60 border border-[#22d3ee]/50 rounded flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(0,0,0,0.5)] mx-auto">
+            <div className="flex w-full animate-in fade-in duration-200 items-center gap-4">
+              <div className="w-16 h-16 bg-black/60 border border-[#22d3ee]/50 rounded flex shrink-0 items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                 <span className="text-cyan-400 font-mono text-xs text-center break-all">{ITEM_DB[activeItem].name}</span>
               </div>
-              <h3 className="text-cyan-100 font-bold text-center mb-1 text-lg">{ITEM_DB[activeItem].name}</h3>
-              <div className="text-center mb-4">
-                <span className="bg-[#1e293b] text-[#94a3b8] text-[10px] px-2 py-0.5 rounded font-mono uppercase border border-[#334155]">{ITEM_DB[activeItem].type}</span>
-              </div>
-              
-              <div className="text-[#a1a1aa] text-sm mb-4 flex-1 font-sans leading-relaxed text-center">
-                {ITEM_DB[activeItem].description}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-cyan-100 font-bold text-sm truncate">{ITEM_DB[activeItem].name}</h3>
+                  <span className="bg-[#1e293b] text-[#94a3b8] text-[9px] px-1.5 py-0.5 rounded font-mono uppercase border border-[#334155]">{ITEM_DB[activeItem].type}</span>
+                </div>
+                <div className="text-[#a1a1aa] text-xs font-sans leading-relaxed line-clamp-2">
+                  {ITEM_DB[activeItem].description}
+                </div>
               </div>
 
               {ITEM_DB[activeItem].stats && (
-                <div className="bg-black/50 p-3 rounded border border-white/10 mb-4">
+                <div className="flex flex-col shrink-0 bg-black/50 p-2 rounded border border-white/10 w-24">
                   {Object.entries(ITEM_DB[activeItem].stats).map(([stat, val]) => (
-                    <div key={stat} className="flex justify-between items-center py-0.5">
-                      <span className="text-slate-400 text-xs uppercase font-mono">{stat}</span>
-                      <span className="text-[#4ade80] text-sm font-bold">+{val}</span>
+                    <div key={stat} className="flex justify-between items-center text-xs">
+                      <span className="text-slate-400 uppercase font-mono">{stat}</span>
+                      <span className="text-[#4ade80] font-bold">+{val}</span>
                     </div>
                   ))}
                 </div>
               )}
 
-              <button 
-                onClick={() => handleItemAction(activeItem, ITEM_DB[activeItem])}
-                className="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold uppercase tracking-wider rounded border border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)] transition-all active:scale-95"
-              >
-                {['HEAD', 'CHEST', 'LEGS', 'WEAPON'].includes(ITEM_DB[activeItem].type) ? 'Equip Item' : 'Use Item'}
-              </button>
+              <div className="shrink-0">
+                <button 
+                  onClick={() => handleItemAction(activeItem, ITEM_DB[activeItem])}
+                  className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase tracking-wider rounded border border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.3)] transition-all active:scale-95 whitespace-nowrap"
+                >
+                  {['HEAD', 'CHEST', 'LEGS', 'WEAPON'].includes(ITEM_DB[activeItem].type) ? 'Equip' : 'Use'}
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center text-slate-500">
-              <div className="w-16 h-16 border-2 border-dashed border-slate-600 rounded mb-4" />
+            <div className="flex w-full items-center justify-center text-center text-slate-500 h-full">
               <p className="font-mono text-xs">Select an item to view details</p>
             </div>
           )}

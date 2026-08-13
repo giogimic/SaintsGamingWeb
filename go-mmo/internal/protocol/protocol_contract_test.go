@@ -11,8 +11,6 @@ func TestCoreEventNamesStable(t *testing.T) {
 	want := map[string]string{
 		"join_map":         protocol.EvJoinMap,
 		"input":            protocol.EvInput,
-		"admin_save_map":   protocol.EvAdminSaveMap,
-		"admin_reload_map": protocol.EvAdminReloadMap,
 		"map_joined":       protocol.EvMapJoined,
 		"map_reloaded":     protocol.EvMapReloaded,
 		"inventory_sync":   protocol.EvInventorySync,

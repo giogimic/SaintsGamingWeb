@@ -6,7 +6,7 @@
  * stays on the Next.js origin (unchanged).
  *
  * Studio map CRUD still uses Next `/api/maps` (Prisma). After save we also
- * emit `admin_save_map` so the Go live world stays in sync.
+ * emit `content_reload` so the Go live world stays in sync.
  */
 
 export function goMmoPublicUrl(): string | undefined {
@@ -57,3 +57,25 @@ export function lobbySocketConnect(accountId: string): LobbySocketConnect {
     },
   };
 }
+
+export type ContentReloadEvent =
+  | { type: "map"; mapId: string; version: number; at: string }
+  | { type: "map_entities"; mapId: string; version: number; at: string }
+  | { type: "loot"; id?: string; gameId?: string; version?: number; at: string }
+  | { type: "item"; id?: string; slug?: string; at: string }
+  | { type: "quest"; id?: string; slug?: string; at: string }
+  | { type: "dialogue"; id?: string; at: string }
+  | { type: "creature"; id?: string; slug?: string; at: string }
+  | { type: "ability"; id?: string; at: string }
+  | { type: "status"; id?: string; at: string }
+  | { type: "skill"; id?: string; at: string }
+  | { type: "class"; id?: string; at: string }
+  | { type: "shop"; id?: string; at: string }
+  | { type: "recipe"; id?: string; at: string }
+  | { type: "logic_tile"; tileId?: number; at: string }
+  | { type: "asset"; id?: string; at: string }
+  | { type: "economy_modifier"; id?: string; at: string }
+  | { type: "world_event"; id?: string; at: string }
+  | { type: "cutscene"; id?: string; at: string }
+  | { type: "package"; id?: string; at: string }
+  | { type: "flush_all_caches"; at: string };

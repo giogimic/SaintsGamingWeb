@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import { Plus, Trash2, BoxSelect, Droplet, LayoutGrid } from 'lucide-react';
-import { listPrefabs, savePrefab, deletePrefab, type PrefabTileData, type PrefabLogicData } from '@/app/actions/prefabs';
+import { listPrefabs, savePrefab, deletePrefab, seedBasicPrefabs, type PrefabTileData, type PrefabLogicData } from '@/app/actions/prefabs';
 import type { MapPrefab } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 
@@ -175,7 +175,23 @@ export const PrefabBuilderPanel: React.FC = () => {
         {loading ? (
           <div className="p-4 text-center opacity-50">Loading...</div>
         ) : prefabs.length === 0 ? (
-          <div className="p-4 text-center opacity-50">No prefabs found.</div>
+          <div className="p-4 text-center opacity-50 space-y-3">
+            <p>No prefabs found.</p>
+            <button
+              onClick={async () => {
+                const res = await seedBasicPrefabs();
+                if (res.success) {
+                  showToast('Starter prefabs seeded!');
+                  reloadPrefabs();
+                } else {
+                  showToast('Failed to seed: ' + res.error);
+                }
+              }}
+              className="px-3 py-1 bg-emerald-600/50 hover:bg-emerald-500/80 rounded text-xs text-white"
+            >
+              Load Starter Prefabs
+            </button>
+          </div>
         ) : (
           prefabs.map((p) => (
             <div

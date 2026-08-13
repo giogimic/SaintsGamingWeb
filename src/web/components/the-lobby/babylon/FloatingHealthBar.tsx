@@ -61,23 +61,20 @@ export const FloatingHealthBars: React.FC<FloatingHealthBarProps> = ({ engine })
         const pos = positions[entityId];
         if (!pos || !pos.isVisible) return null;
 
-        // Soul-film HP tint by remaining essence
-        let fill =
-          'linear-gradient(90deg, #059669, #6ee7b7)';
-        if (hpPercent < 0.5) fill = 'linear-gradient(90deg, #a16207, #e8e8ef)';
-        if (hpPercent < 0.2) fill = 'linear-gradient(90deg, #7c3aed, #f0abfc)';
+        let fill = 'bg-[#bef264] shadow-[0_0_8px_rgba(190,242,100,0.6)]'; // > 50%
+        if (hpPercent < 0.5) fill = 'bg-[#fbbf24] shadow-[0_0_8px_rgba(251,191,36,0.6)]'; // > 20%
+        if (hpPercent < 0.2) fill = 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.6)]';
 
         return (
           <div
             key={entityId}
-            className="lobby-stat-track absolute h-[6px] w-12 -translate-x-1/2 -translate-y-1/2 transform overflow-hidden rounded-[2px]"
+            className="absolute h-1.5 w-10 -translate-x-1/2 -translate-y-1/2 transform overflow-hidden rounded-sm bg-black/60 border border-[#22d3ee]/20"
             style={{ left: pos.x, top: pos.y }}
           >
             <div
-              className="h-full transition-all duration-200"
+              className={`h-full transition-all duration-200 ${fill}`}
               style={{
                 width: `${Math.max(0, Math.min(100, hpPercent * 100))}%`,
-                background: fill,
               }}
             />
           </div>

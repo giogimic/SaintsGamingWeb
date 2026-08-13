@@ -207,6 +207,46 @@ export function buildDemoSandboxGrid(): number[][] {
   return grid;
 }
 
+export function buildLobbyGrid(w: number = 64, h: number = 64): number[][] {
+  const grid: number[][] = [];
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 0; // Walkable by default
+
+      // Outer border wall
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) {
+        tile = 1;
+      }
+      // Simple spawn plaza outline (spawn is at 32, 32)
+      else if ((x === 26 || x === 38) && y >= 26 && y <= 38) {
+        tile = 1; // Left/Right walls
+        // Make openings for exits
+        if (y >= 30 && y <= 34) tile = 0;
+      }
+      else if ((y === 26 || y === 38) && x >= 26 && x <= 38) {
+        tile = 1; // Top/Bottom walls
+        // Make openings for exits
+        if (x >= 30 && x <= 34) tile = 0;
+      }
+      // Add some tall grass patches in the corners of the map
+      else if (x >= 4 && x <= 14 && y >= 4 && y <= 14) tile = 2; // Top-left
+      else if (x >= 50 && x <= 60 && y >= 4 && y <= 14) tile = 2; // Top-right
+      else if (x >= 4 && x <= 14 && y >= 50 && y <= 60) tile = 2; // Bottom-left
+      else if (x >= 50 && x <= 60 && y >= 50 && y <= 60) tile = 2; // Bottom-right
+      // Add a couple of trees (logic 5) and ores (logic 6) nearby the plaza exits
+      else if ((x === 32 || x === 33) && (y === 22 || y === 23)) tile = 5;
+      else if ((x === 32 || x === 33) && (y === 42 || y === 43)) tile = 6;
+      else if ((y === 32 || y === 33) && (x === 22 || x === 23)) tile = 5;
+      else if ((y === 32 || y === 33) && (x === 42 || x === 43)) tile = 6;
+
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
 export const DEMO_MAP_NPCS = [
   {
     id: "npc_guide_1",

@@ -167,4 +167,50 @@ export function normalizeStudioMapVisuals<
   return next;
 }
 
+/**
+ * Resizes a map's logic grid and all visual tileLayers.
+ * If expanding, the logic grid is padded with 0 (passable) and 
+ * the base visual layer (index 0) is padded with DEFAULT_STUDIO_GROUND_GID.
+ */
+export function resizeStudioMap(
+  map: NewStudioMapData | any,
+  newW: number,
+  newH: number
+): any {
+  const w = clampMapDimension(newW);
+  const h = clampMapDimension(newH);
+
+  // Resize logic grid
+  const newGrid = Array.from({ length: h }, (_, r) => {
+    return Array.from({ length: w }, (_, c) => {
+      if (map.grid && r < map.grid.length && c < map.grid[r].length) {
+        return map.grid[r][c];
+      }
+      return 0; // Pad with passable logic
+    });
+  });
+
+  // Resize visual layers
+  const newTileLayers = (map.tileLayers || []).map((layer: any, idx: number) => {
+    const padGid = idx === 0 ? DEFAULT_STUDIO_GROUND_GID : 0;
+    return {
+      ...layer,
+      grid: Array.from({ length: h }, (_, r) => {
+        return Array.from({ length: w }, (_, c) => {
+          if (layer.grid && r < layer.grid.length && c < layer.grid[r].length) {
+            return layer.grid[r][c];
+          }
+          return padGid;
+        });
+      })
+    };
+  });
+
+  return {
+    ...map,
+    grid: newGrid,
+    tileLayers: newTileLayers,
+  };
+}
+
 export { DEFAULT_STUDIO_GROUND_GID };

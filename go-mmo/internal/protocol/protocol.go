@@ -34,8 +34,11 @@ const (
 	EvCombatCast        = "combat_cast"
 	EvEncounterCheck    = "encounter_check"
 	EvBattleSubmit      = "battle_submit_action"
-	EvAdminSaveMap      = "admin_save_map"
-	EvAdminReloadMap    = "admin_reload_map"
+	
+	// Deprecated (replaced by canonical content_reload via redis or internal sync)
+	// EvAdminSaveMap      = "admin_save_map"
+	// EvAdminReloadMap    = "admin_reload_map"
+
 	EvStudioSpawnNPC    = "studio_spawn_npc"
 	EvStudioDespawnNPC  = "studio_despawn_npc"
 	EvNPCInteract       = "npc_interact"
@@ -84,6 +87,7 @@ const (
 	EvBattleUpdate        = "battle_update"
 	EvBattleEnded         = "battle_ended"
 	EvMapReloaded         = "map_reloaded"
+	EvContentReload       = "content_reload"
 	EvShowToast           = "show_toast"
 	EvPlayerChat          = "player_chat"
 	EvGlobalChatMsg       = "global_chat_msg"
@@ -98,6 +102,9 @@ const (
 	EvGTCError            = "gtc_transaction_error"
 	EvLootSpawned         = "loot_spawned"
 	EvLootRemoved         = "loot_removed"
+	EvStudioLock          = "studio_lock"
+	EvStudioUnlock        = "studio_unlock"
+	EvStudioPresence      = "studio_presence"
 	EvQuestUpdate         = "quest_update"
 	EvSkillXP             = "skill_xp"
 	EvNPCSpawned          = "npc_spawned"
