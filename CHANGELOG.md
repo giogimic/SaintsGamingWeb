@@ -1,3 +1,9 @@
+## [2.1.164] - 2026-08-13
+### Added
+- **Studio Quick Map Switcher in Omnisearch (`StudioOmnisearch.tsx`)**: Integrated all registered world maps directly into the Ctrl+K search index with real-time tileset hydration and instant zero-reload map warping.
+- **Wired Studio Top Menu Actions (`StudioMenuBar.tsx`)**: Enabled File -> New Map, Open Map / Quick Search (Ctrl+K), and Map Diagnostics & Problems actions.
+- **Combat Hotbar Cooldown Countdown & Individual Timers (`Hotbar.tsx`)**: Added independent ability cooldown timers from `cooldowns` store with numeric second countdown displays and dark vertical sweep animations.
+
 ## [2.1.163] - 2026-08-13
 ### Added
 - **Studio Problems & Validation Panel (`StudioProblemsPanel.tsx`)**: Created live map diagnostics dock (Bible 30 §8) checking gate target destinations, entity-solid tile collision intersections, map dimension bounds, and layer health, complete with 1-click camera coordinate navigation (`[Y, X]`).
