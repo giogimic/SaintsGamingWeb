@@ -1345,23 +1345,38 @@ export default function TheLobby({
       }
       if (e.key === 'Escape') {
         e.preventDefault();
+        const store = useGameStore.getState();
         // Viewfinder edit mode: Escape exits without the Options modal
-        if (useGameStore.getState().isEditingInterface || useGameStore.getState().isUiEditMode) {
-          useGameStore.getState().setIsEditingInterface(false);
+        if (store.isEditingInterface || store.isUiEditMode) {
+          store.setIsEditingInterface(false);
           setIsOptionsOpen(false);
+          return;
+        }
+        // Sub-mode open: Escape closes back to EXPLORING
+        if (store.gameMode !== 'EXPLORING' && store.gameMode !== 'BATTLE') {
+          store.setGameMode('EXPLORING');
+          return;
+        }
+        // Target selected: Escape deselects target
+        if (store.combatTarget) {
+          store.setCombatTarget(null);
           return;
         }
         setIsOptionsOpen((open) => !open);
         return;
       }
       const key = e.key.toLowerCase();
-      if (key === 'c') useGameStore.getState().setGameMode('CHARACTER_CREATOR');
+      const store = useGameStore.getState();
+      const toggleMode = (targetMode: any) => {
+        store.setGameMode(store.gameMode === targetMode ? 'EXPLORING' : targetMode);
+      };
+      if (key === 'c') store.setGameMode('CHARACTER_CREATOR');
       // Bare `e` is interact in playtest (canvas). Studio Editor↔Play is Ctrl+E only.
-      else if (key === 'i') useGameStore.getState().setGameMode('INVENTORY');
-      else if (key === 'k') useGameStore.getState().setGameMode('SKILLS');
-      else if (key === 'p') useGameStore.getState().setGameMode('PARTY');
-      else if (key === 'x') useGameStore.getState().setGameMode('DEX');
-      else if (key === 'b') useGameStore.getState().setGameMode('ACHIEVEMENTS');
+      else if (key === 'i') toggleMode('INVENTORY');
+      else if (key === 'k') toggleMode('SKILLS');
+      else if (key === 'p') toggleMode('PARTY');
+      else if (key === 'x') toggleMode('DEX');
+      else if (key === 'b') toggleMode('ACHIEVEMENTS');
       else if (key === 'y') socketRef.current?.emit('party_invite_accept');
       else if (key === 'n') socketRef.current?.emit('party_invite_decline');
     };
