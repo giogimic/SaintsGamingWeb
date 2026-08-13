@@ -43,21 +43,7 @@ import {
 /** Lobby multiplayer shard base — keep in sync with server DEMO_MAP_ID. */
 const LOBBY_MULTIPLAYER_MAP = 'DEMO_SANDBOX';
 
-const CanvasHudBadge: React.FC<{ activeMapName?: string, currentMapId: string }> = ({ activeMapName, currentMapId }) => {
-  const playerPos = useGameStore((state) => state.player.position);
-  return (
-    <div className="lobby-panel absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-lg px-3 py-1.5 font-mono text-xs text-lobby-mist">
-      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-lobby-soul shadow-[0_0_6px_rgba(167,139,250,0.8)]" />
-      <span className="text-lobby-ash">Map:</span>
-      <strong className="text-lobby-mist">{activeMapName || currentMapId}</strong>
-      <span className="text-lobby-ash/60">|</span>
-      <span className="text-lobby-ash">Pos:</span>
-      <strong className="text-lobby-film">({playerPos?.x ?? 0}, {playerPos?.y ?? 0})</strong>
-      <span className="text-lobby-ash/60">|</span>
-      <span className="hidden text-lobby-fog sm:inline">BGD / Click to Move</span>
-    </div>
-  );
-};
+
 
 interface GameCanvasBabylonProps {
   onCanvasReady?: (engine: BabylonEngine) => void;
@@ -1074,6 +1060,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           return;
         }
 
+        if (target.kind === 'visual' && activeBrushTileId > 0) {
+          const isValidGid = map.tilesets?.some((ts: any) => ts.firstgid <= activeBrushTileId);
+          if (!isValidGid) {
+            showToast(`Warning: Brush GID ${activeBrushTileId} is not in any tileset.`);
+          }
+        }
+
         const painted = paintWorldCell(
           map,
           target.layerIdx,
@@ -1431,7 +1424,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         <FloatingHealthBars engine={engineRef.current} />
       )}
       
-      <CanvasHudBadge activeMapName={activeMap?.name} currentMapId={currentMapId} />
+
     </div>
   );
 };

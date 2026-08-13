@@ -45,8 +45,7 @@ export function GameChat() {
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showEmotes, setShowEmotes] = useState(false);
-  /** Collapsed by default on narrow viewports so touch controls stay clear. */
-  const [mobileExpanded, setMobileExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
@@ -162,89 +161,72 @@ export function GameChat() {
 
   return (
     <div
-      className={`lobby-panel pointer-events-auto z-50 flex flex-col overflow-hidden rounded-lg max-md:fixed max-md:left-2 max-md:right-auto md:relative md:h-[210px] md:w-[480px] ${
-        mobileExpanded
-          ? 'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom))] max-md:h-[38vh] max-md:w-[min(92vw,22rem)]'
-          : 'max-md:bottom-[calc(7.5rem+env(safe-area-inset-bottom))] max-md:h-auto max-md:w-[min(70vw,14rem)]'
+      className={`pointer-events-auto z-50 flex flex-col transition-all duration-300 ${
+        isExpanded
+          ? 'h-[40vh] w-[92vw] sm:h-[30vh] sm:w-[400px] md:h-[250px] md:w-[480px] rounded-xl border border-[#22d3ee]/30 bg-[#050b14]/90 shadow-[0_0_20px_rgba(34,211,238,0.15)] backdrop-blur-md'
+          : 'h-auto w-[85vw] sm:w-[350px] md:w-[400px] bg-transparent'
       }`}
-      style={{
-        // Desktop DraggablePanel positions this; mobile uses fixed + safe area above.
-      }}
     >
-      <button
-        type="button"
-        onClick={() => setMobileExpanded((v) => !v)}
-        className="lobby-panel-header flex w-full items-center justify-between px-2.5 py-1.5 text-left md:pointer-events-none md:cursor-default md:px-3"
-      >
-        <div className="flex min-w-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-lobby-fog">
-          <Radio className="h-3.5 w-3.5 shrink-0 text-lobby-soul" />
-          <span className="truncate">Soul Channel</span>
-        </div>
-        <div className="mx-2 hidden h-px flex-1 lobby-hairline opacity-70 md:block" />
-        <span className="shrink-0 text-[10px] font-mono text-lobby-film md:hidden">
-          {mobileExpanded ? 'Hide' : 'Open'}
-        </span>
-      </button>
-
-      {!mobileExpanded && (
-        <div className="truncate px-2.5 pb-1.5 text-[11px] text-lobby-ash md:hidden">
-          {latest ? (
-            <span>
-              <span className="font-semibold text-lobby-mist/80">{latest.sender}: </span>
-              {latest.text}
-            </span>
-          ) : (
-            <span className="italic">Tap to open chat</span>
-          )}
-        </div>
+      {/* Header (Only when expanded) */}
+      {isExpanded && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(false)}
+          className="flex w-full items-center justify-between border-b border-[#22d3ee]/20 px-3 py-2 text-left hover:bg-white/5 transition-colors"
+        >
+          <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-widest text-cyan-400">
+            <Radio className="h-4 w-4" />
+            <span>COMM LINK</span>
+          </div>
+          <span className="text-[10px] font-mono text-cyan-200/50">Hide</span>
+        </button>
       )}
 
-      <div className={`${mobileExpanded ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col md:flex`}>
-
-      <div className="relative m-1.5 flex-1 overflow-hidden rounded-md border border-lobby-border bg-black/35">
-        {activeTab === 'FRIENDS' ? (
-          <FriendsWrapper />
-        ) : (
-          <div
-            ref={scrollRef}
-            className="h-full w-full space-y-1 overflow-y-auto p-2.5 scrollbar-thin scrollbar-thumb-lobby-ash/40 scrollbar-track-transparent"
-          >
-            {filteredMessages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-xs italic text-lobby-ash">
-                <span>No exposures on this channel yet.</span>
-              </div>
-            ) : (
-              filteredMessages.map((msg) => {
+      {/* Message List (Slim vs Expanded) */}
+      <div 
+        className={`flex min-h-0 flex-1 flex-col ${isExpanded ? 'p-2' : 'p-1'}`}
+        onClick={() => !isExpanded && setIsExpanded(true)}
+      >
+        <div className={`relative flex-1 overflow-hidden ${isExpanded ? 'rounded-md bg-black/40 border border-[#22d3ee]/10' : ''}`}>
+          {activeTab === 'FRIENDS' && isExpanded ? (
+            <FriendsWrapper />
+          ) : (
+            <div
+              ref={scrollRef}
+              className={`h-full w-full space-y-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-cyan-500/20 scrollbar-track-transparent ${!isExpanded ? 'mask-image-gradient-to-t' : ''}`}
+              style={!isExpanded ? { WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 40%)' } : {}}
+            >
+              {filteredMessages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-xs italic text-cyan-200/40">
+                  <span>No transmissions yet.</span>
+                </div>
+              ) : (
+                (isExpanded ? filteredMessages : filteredMessages.slice(-5)).map((msg) => {
                 
                 // Color coding based on channel (RS style)
                 let prefix = '';
-                let textStyle = { color: 'black', textShadow: 'none' };
-                let senderStyle = { color: 'black' };
+                let textStyle = '';
+                let senderStyle = '';
                 
                 if (msg.type === 'PARTY') {
                   prefix = '[Clan] ';
-                  textStyle = { color: '#7e22ce', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
-                  senderStyle = { color: '#000000' };
+                  textStyle = 'text-[#d946ef] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'; // Magenta
                 } else if (msg.type === 'GLOBAL') {
                   prefix = '[Global] ';
-                  textStyle = { color: '#0284c7', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
-                  senderStyle = { color: '#000000' };
+                  textStyle = 'text-cyan-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
                 } else if (msg.type === 'SYSTEM') {
                   prefix = '';
-                  textStyle = { color: '#9a3412', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
-                  senderStyle = { color: '#9a3412' };
+                  textStyle = 'text-amber-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
                 } else {
-                  textStyle = { color: '#0000ff', textShadow: '1px 1px 0px rgba(255,255,255,0.3)' };
-                  senderStyle = { color: '#000000' };
+                  textStyle = 'text-slate-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]';
                 }
 
                 return (
-                  <div key={msg.id} className={`flex text-[13px] leading-snug ${msgClass(msg.type)}`}>
-                    <span className="mr-1.5 shrink-0 font-semibold text-lobby-mist/90">
-                      {prefix}
-                      {msg.sender}:
+                  <div key={msg.id} className={`flex text-[12px] md:text-[13px] leading-snug font-medium ${isExpanded ? '' : 'animate-in fade-in slide-in-from-bottom-1'}`}>
+                    <span className="mr-1.5 shrink-0 font-extrabold text-cyan-200/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                      {prefix}{msg.sender}:
                     </span>
-                    <span className="break-words">{msg.text}</span>
+                    <span className={`${textStyle} break-words`}>{msg.text}</span>
                   </div>
                 );
               })
@@ -252,66 +234,72 @@ export function GameChat() {
           </div>
         )}
       </div>
+    </div>
 
-      {showEmotes && activeTab !== 'FRIENDS' && (
-        <div className="lobby-panel absolute bottom-16 left-2 z-50 flex gap-1.5 rounded-md p-2 text-lg">
-          {['👋', '⚔️', '🔥', '🏆', 'GG', '❤️', '👀', '🎉'].map((e) => (
-            <button
-              key={e}
-              onClick={() => handleEmoteClick(e)}
-              className="rounded-sm p-1 transition-colors hover:bg-lobby-soul/20"
-            >
-              {e}
-            </button>
-          ))}
-        </div>
+      {/* Interactive elements only show when expanded */}
+      {isExpanded && (
+        <>
+          {showEmotes && activeTab !== 'FRIENDS' && (
+            <div className="absolute bottom-20 left-2 z-50 flex gap-1.5 rounded-lg border border-[#22d3ee]/20 bg-[#050b14]/95 p-2 text-lg shadow-[0_0_15px_rgba(34,211,238,0.2)] backdrop-blur-md">
+              {['👋', '⚔️', '🔥', '🏆', 'GG', '❤️', '👀', '🎉'].map((e) => (
+                <button
+                  key={e}
+                  onClick={() => handleEmoteClick(e)}
+                  className="rounded-md p-1.5 transition-all hover:bg-cyan-500/20 hover:scale-110"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {activeTab !== 'FRIENDS' && (
+            <div className="flex items-center gap-2 border-t border-[#22d3ee]/20 bg-black/40 px-3 py-2">
+              <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-widest text-cyan-400">
+                {player.name || 'You'}
+              </span>
+              <input
+                type="text"
+                placeholder="Broadcast transmission…"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSend();
+                }}
+                className="h-8 flex-1 rounded-md border border-[#22d3ee]/20 bg-black/60 px-3 text-[13px] text-cyan-50 outline-none transition-colors placeholder:text-cyan-200/30 focus:border-cyan-400 focus:bg-black/80"
+                autoFocus // focus when expanded
+              />
+              <button
+                type="button"
+                onClick={() => setShowEmotes((v) => !v)}
+                className="rounded-md border border-[#22d3ee]/30 px-2.5 py-1.5 text-sm text-cyan-300 transition-colors hover:bg-cyan-500/20"
+                title="Emotes"
+              >
+                ✦
+              </button>
+            </div>
+          )}
+
+          <div className="flex gap-1 border-t border-[#22d3ee]/20 bg-black/60 px-2 py-1.5">
+            {tabs.map((t) => {
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  className={`flex-1 rounded-md py-1.5 text-[10px] font-extrabold uppercase tracking-widest transition-all ${
+                    isActive
+                      ? 'bg-cyan-500/20 text-cyan-300 shadow-[inset_0_0_8px_rgba(34,211,238,0.2)] border border-cyan-400/50'
+                      : 'text-cyan-200/40 hover:bg-white/5 hover:text-cyan-100 border border-transparent'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
-
-      {activeTab !== 'FRIENDS' && (
-        <div className="flex items-center gap-2 border-t border-lobby-border px-2.5 py-1.5">
-          <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-lobby-film">
-            {player.name || 'You'}
-          </span>
-          <input
-            type="text"
-            placeholder="Speak into the lens…"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSend();
-            }}
-            className="h-7 flex-1 rounded-sm border border-lobby-border bg-black/40 px-2 text-[13px] text-lobby-mist outline-none placeholder:text-lobby-ash focus:border-lobby-soul/50"
-          />
-          <button
-            type="button"
-            onClick={() => setShowEmotes((v) => !v)}
-            className="rounded-sm border border-lobby-border px-1.5 py-0.5 text-sm text-lobby-fog hover:border-lobby-film/40 hover:text-lobby-mist"
-            title="Emotes"
-          >
-            ✦
-          </button>
-        </div>
-      )}
-
-      <div className="flex gap-1 border-t border-lobby-border bg-black/25 px-1.5 py-1">
-        {tabs.map((t) => {
-          const isActive = activeTab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`flex-1 rounded-sm py-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${
-                isActive
-                  ? 'bg-lobby-soul/25 text-lobby-mist border border-lobby-soul/40'
-                  : 'text-lobby-ash hover:bg-white/5 hover:text-lobby-fog border border-transparent'
-              }`}
-            >
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-      </div>
     </div>
   );
 }

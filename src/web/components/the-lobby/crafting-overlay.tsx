@@ -89,102 +89,98 @@ export default function CraftingOverlay() {
   };
 
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 pointer-events-auto backdrop-blur-sm p-4">
-      <div className="sg-glass rounded-xl w-full max-w-4xl max-h-[80vh] flex flex-col border border-white/10 shadow-2xl overflow-hidden">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+      <div className="flex flex-col w-full max-w-2xl bg-[#050b14]/95 border border-[#22d3ee]/40 rounded-[2rem] overflow-hidden shadow-[0_0_30px_rgba(34,211,238,0.15)]">
         
         {/* Header */}
-        <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/40">
+        <div className="flex items-center justify-between p-4 border-b border-[#22d3ee]/20 bg-black/40">
           <div className="flex items-center gap-3">
-            <Hammer className="w-5 h-5 text-amber-400" />
-            <h2 className="text-xl font-bold tracking-wider uppercase text-white/90">Crafting Station</h2>
+            <Hammer className="w-6 h-6 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+            <h2 className="text-xl font-extrabold text-cyan-50 tracking-tight drop-shadow-md">Crafting Station</h2>
           </div>
           <button 
             onClick={() => setGameMode('EXPLORING')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-white"
+            className="p-2 text-cyan-200/50 hover:bg-white/10 hover:text-cyan-100 transition-colors rounded-full"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Panel: Recipe List */}
-          <div className="w-1/3 border-r border-white/10 overflow-y-auto p-2 bg-black/20">
-            <h3 className="text-sm font-semibold text-white/50 px-2 py-2 uppercase tracking-widest">Available Recipes</h3>
-            <div className="flex flex-col gap-1 mt-2">
+          {/* Recipe List */}
+          <div className="w-1/2 border-r border-[#22d3ee]/20 overflow-y-auto p-4 custom-scrollbar bg-black/20">
+            <h3 className="text-sm font-extrabold text-cyan-200/50 uppercase tracking-widest mb-3">Available Recipes</h3>
+            <div className="space-y-2">
               {recipes.map(recipe => (
                 <button
                   key={recipe.slug}
                   onClick={() => setSelectedRecipe(recipe)}
-                  className={`flex flex-col text-left p-3 rounded-lg transition-all ${
-                    selectedRecipe?.slug === recipe.slug 
-                      ? 'bg-amber-500/20 border border-amber-500/50' 
-                      : 'hover:bg-white/5 border border-transparent'
+                  className={`w-full text-left p-3 rounded-xl border transition-all ${
+                    selectedRecipe?.slug === recipe.slug
+                      ? 'border-[#22d3ee]/50 bg-cyan-500/10 shadow-[inset_0_0_12px_rgba(34,211,238,0.2)]'
+                      : 'border-transparent hover:bg-white/5'
                   }`}
                 >
-                  <span className="font-medium text-white capitalize">
-                    {recipe.outputItemSlug.replace('_', ' ')}
-                  </span>
-                  <span className="text-xs text-amber-400/70">
-                    Lvl {recipe.levelReq} {recipe.skillSlug}
-                  </span>
+                  <div className={`font-extrabold ${selectedRecipe?.slug === recipe.slug ? 'text-cyan-300' : 'text-cyan-50'}`}>
+                    {recipe.outputItemSlug.replace('_', ' ').toUpperCase()}
+                  </div>
+                  <div className="text-xs font-medium text-slate-400 mt-1">
+                    Req: Lvl {recipe.levelReq} {recipe.skillSlug}
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Right Panel: Recipe Details & Crafting */}
-          <div className="w-2/3 p-6 flex flex-col bg-gradient-to-br from-black/40 to-transparent">
+          {/* Recipe Details */}
+          <div className="w-1/2 p-6 flex flex-col bg-transparent">
             {selectedRecipe ? (
-              <div className="flex flex-col h-full">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold text-white capitalize mb-1">
-                      {selectedRecipe.outputItemSlug.replace('_', ' ')}
-                    </h2>
-                    <p className="text-sm text-white/50">
-                      Requires Level {selectedRecipe.levelReq} {selectedRecipe.skillSlug}
-                    </p>
+              <>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-extrabold text-cyan-50 mb-2 drop-shadow-md">
+                    {selectedRecipe.outputItemSlug.replace('_', ' ').toUpperCase()} x{selectedRecipe.outputQuantity}
+                  </h3>
+                  <div className="text-sm font-extrabold text-magenta-400 mb-6 drop-shadow-[0_0_5px_rgba(217,70,239,0.5)]">
+                    +{selectedRecipe.xpReward} {selectedRecipe.skillSlug} XP
                   </div>
-                  <div className="bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded text-amber-400 font-mono text-sm">
-                    +{selectedRecipe.xpReward} XP
-                  </div>
-                </div>
 
-                <div className="mt-8">
-                  <h3 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-4">Required Materials</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {selectedRecipe.ingredients.map((ing, idx) => (
-                      <div key={idx} className="bg-black/30 border border-white/5 p-3 rounded-lg flex justify-between items-center">
-                        <span className="capitalize text-white/90">{ing.itemSlug.replace('_', ' ')}</span>
-                        <span className="font-mono text-white/50">x{ing.qty}</span>
-                      </div>
+                  <h4 className="text-sm font-extrabold text-cyan-200/50 uppercase tracking-widest mb-3">Ingredients</h4>
+                  <ul className="space-y-3">
+                    {selectedRecipe.ingredients.map(ing => (
+                      <li key={ing.itemSlug} className="flex justify-between items-center bg-black/40 p-3 rounded-xl border border-[#22d3ee]/10">
+                        <span className="text-slate-300 font-medium capitalize">{ing.itemSlug.replace('_', ' ')}</span>
+                        <span className="text-cyan-400 font-extrabold font-mono">x{ing.qty}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
 
-                <div className="mt-auto">
+                <div className="mt-6 pt-6 border-t border-[#22d3ee]/20">
                   {isCrafting ? (
-                    <div className="w-full bg-black/50 rounded-full h-12 overflow-hidden relative border border-white/10">
-                      <div 
-                        className="h-full bg-amber-500 transition-all duration-75 ease-linear"
-                        style={{ width: `${progress}%` }}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center font-bold text-white uppercase tracking-wider text-sm">
-                        Crafting...
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-extrabold text-cyan-200/50 uppercase tracking-widest">
+                        <span>Crafting...</span>
+                        <span>{Math.round(progress)}%</span>
+                      </div>
+                      <div className="h-3 w-full bg-black/60 rounded-full overflow-hidden border border-[#22d3ee]/20">
+                        <div 
+                          className="h-full bg-cyan-400 transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                          style={{ width: `${progress}%` }}
+                        />
                       </div>
                     </div>
                   ) : (
                     <button
                       onClick={handleCraft}
-                      className="w-full py-4 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold rounded-lg transition-all hover:scale-[1.01] hover:shadow-lg hover:shadow-amber-500/20 active:scale-95 uppercase tracking-wider"
+                      className="w-full py-4 bg-cyan-600/80 hover:bg-cyan-500 text-white rounded-xl font-extrabold transition-all active:scale-95 shadow-[0_0_15px_rgba(34,211,238,0.3)] border border-cyan-400"
                     >
                       Craft Item
                     </button>
                   )}
                 </div>
-              </div>
+              </>
             ) : (
-              <div className="h-full flex items-center justify-center text-white/30 text-lg">
+              <div className="flex items-center justify-center h-full text-cyan-200/30 font-extrabold italic">
                 Select a recipe to begin
               </div>
             )}

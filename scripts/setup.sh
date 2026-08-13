@@ -604,7 +604,7 @@ if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
     GO_MMO_SETUP_SCRIPT="$(pwd)/go-mmo/scripts/setup-go-mmo.sh"
 fi
 
-if whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nRecommended — this is the destination backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :3001 + NEXT_PUBLIC_GO_MMO_URL\nNO  = TypeScript server.ts sockets only" 16 74; then
+if whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nREQUIRED — this is the sole supported backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :3001 + NEXT_PUBLIC_GO_MMO_URL\nNO  = Emergency TS fallback only" 16 74; then
     ENABLE_GO_MMO=1
 fi
 

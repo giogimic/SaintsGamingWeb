@@ -1,3 +1,15 @@
+## [2.1.158-5] - 2026-08-12
+### Added
+- Toast Queue Stack (`GameToastStack.tsx`) for queuing UI notifications instead of immediately overwriting.
+- Slim Game Chat mode with translucent mask and expand/collapse logic for the primary chat interface.
+
+### Changed
+- Updated `MiniMapRadar.tsx` sizing and applied neon borders to fit the cyber/Miami aesthetic.
+- Restyled `crafting-overlay`, `equipment-overlay`, `quest-tracker-overlay`, and `PeerPresenceHud` using `GamePanelShell` and dark-glass/neon aesthetics.
+
+### Fixed
+- Fixed trailing TS syntax errors in `GameChat.tsx` and `SaintsHudOrbs.tsx`.
+
 ## [2.1.158-4] - 2026-08-09
 ### Fixed
 - Fixed Studio Viewport occlusion where the FlexLayout DOM container rendered a solid background and intercepted pointer events over the underlying WebGL canvas.
