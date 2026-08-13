@@ -1,3 +1,7 @@
+## [2.1.165] - 2026-08-13
+### Added
+- **Modal Key Toggling & Escape Target Deselection (`index.tsx`)**: Upgraded global keyboard shortcuts so Inventory (`I`), Skills (`K`), Party (`P`), Dex (`X`), and Achievements (`B`) can be toggled on/off with the same key, and pressing `Escape` intuitively deselects active combat targets before opening the options menu.
+
 ## [2.1.164] - 2026-08-13
 ### Added
 - **Studio Quick Map Switcher in Omnisearch (`StudioOmnisearch.tsx`)**: Integrated all registered world maps directly into the Ctrl+K search index with real-time tileset hydration and instant zero-reload map warping.
