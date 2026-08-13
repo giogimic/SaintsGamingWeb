@@ -15,6 +15,8 @@ import {
 import { useEditorStore, type PanelId, STUDIO_DOCK_META } from './editor-store';
 import { useGameStore } from '../store';
 import { useStudioBookmarks, type StudioBookmarkEntry } from './hooks/useStudioBookmarks';
+import { GAME_MAPS, loadMap } from '../data/maps';
+import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 
 /* ── Types ────────────────────────────────────────── */
 
@@ -190,6 +192,32 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
         bookmarkable: true,
         onSelect: () => showToast(`Open bookmarked: ${b.title}`),
       }));
+    }
+
+    // Add Maps from GAME_MAPS
+    if (q) {
+      Object.keys(GAME_MAPS).forEach((mapId) => {
+        if (mapId.toLowerCase().includes(q)) {
+          const map = GAME_MAPS[mapId];
+          all.push({
+            id: `map:${mapId}`,
+            type: 'map',
+            title: map.name || mapId,
+            subtitle: `World Map (${map.width}x${map.height}) · Warp`,
+            bookmarkable: true,
+            onSelect: async () => {
+              try {
+                const loaded = ensureMapHasStudioTilesets(await loadMap(mapId));
+                useGameStore.getState().setCurrentMapId(mapId);
+                useGameStore.getState().setActiveMapData(loaded);
+                useGameStore.getState().showToast(`Warped to ${map.name || mapId}`);
+              } catch {
+                useGameStore.getState().showToast(`Failed to load map ${mapId}`);
+              }
+            },
+          });
+        }
+      });
     }
 
     // Add API results

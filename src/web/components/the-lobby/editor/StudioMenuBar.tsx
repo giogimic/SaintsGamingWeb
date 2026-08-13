@@ -95,8 +95,29 @@ export function StudioMenuBar() {
     >
       <div className="flex items-center gap-1">
         <TopLevelMenu id="file" label="File">
-          <MenuItem label="New Map..." disabled />
-          <MenuItem label="Open Map..." disabled />
+          <MenuItem
+            label="New Map..."
+            icon={Folder}
+            onClick={() => {
+              useEditorStore.getState().openPanel('build');
+              showToast('Opened World Builder (Create Map)');
+            }}
+          />
+          <MenuItem
+            label="Open Map / Quick Search..."
+            shortcut="Ctrl+K"
+            icon={Globe}
+            onClick={() => {
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
+            }}
+          />
+          <MenuItem
+            label="Map Diagnostics & Problems"
+            icon={CheckCircle2}
+            onClick={() => {
+              useEditorStore.getState().openPanel('problems');
+            }}
+          />
           <MenuItem divider />
           <MenuItem label="Save" shortcut="Ctrl+S" icon={Save} disabled={!mapDirty} onClick={() => showToast('Save triggered')} />
           <MenuItem label="Save All" shortcut="Ctrl+Shift+S" disabled={!mapDirty} onClick={() => showToast('Save All triggered')} />
@@ -152,11 +173,11 @@ export function StudioMenuBar() {
           <MenuItem label="Fit Map in View" shortcut="Home" onClick={() => {
             window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Home' }));
           }} />
-          <MenuItem divider />
-          <MenuItem label="Outliner" onClick={() => showToast('Outliner not fully wired')} />
-          <MenuItem label="Inspector" onClick={() => showToast('Inspector uses Properties dock')} />
-          <MenuItem label="Project Browser" shortcut="Ctrl+Shift+P" onClick={() => showToast('Project Browser panel')} />
-          <MenuItem label="Assets" onClick={() => showToast('Assets dock')} />
+          <MenuItem label="Problems & Diagnostics" onClick={() => useEditorStore.getState().openPanel('problems')} />
+          <MenuItem label="World Atlas" onClick={() => useEditorStore.getState().openPanel('atlas')} />
+          <MenuItem label="Inspector" onClick={() => useEditorStore.getState().openPanel('properties')} />
+          <MenuItem label="World Builder" onClick={() => useEditorStore.getState().openPanel('build')} />
+          <MenuItem label="Assets" onClick={() => useEditorStore.getState().openPanel('assets')} />
           <MenuItem divider />
           <MenuItem label="Reset Layout" onClick={() => {
             window.localStorage.removeItem('saints.panelLayouts');
