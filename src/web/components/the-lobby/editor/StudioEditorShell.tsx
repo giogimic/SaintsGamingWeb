@@ -183,10 +183,27 @@ export const StudioEditorShell: React.FC = () => {
         return;
       }
 
-      // Ctrl+Shift+P toggles Project Browser (stubbed for now)
+      // Ctrl+Shift+P opens World Atlas / Project Browser
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
-        showToast('Project Browser panel');
+        useEditorStore.getState().openPanel('atlas');
+        showToast('Opened World Atlas');
+        return;
+      }
+
+      // Ctrl+Shift+O opens Problems & Diagnostics
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        useEditorStore.getState().openPanel('problems');
+        showToast('Opened Map Diagnostics');
+        return;
+      }
+
+      // Ctrl+Shift+D opens Dev Tools
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        useEditorStore.getState().openPanel('dev');
+        showToast('Opened Dev Tools');
         return;
       }
 
