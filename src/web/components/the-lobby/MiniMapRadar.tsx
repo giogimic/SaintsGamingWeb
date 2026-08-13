@@ -172,37 +172,36 @@ export default function MiniMapRadar() {
 
   return (
     <div
-      className="pointer-events-none absolute z-20 flex select-none flex-col items-end gap-1 font-mono md:top-16 md:right-4"
-      style={{
-        top: 'max(2.75rem, calc(env(safe-area-inset-top, 0px) + 2.5rem))',
-        right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
-      }}
+      className="pointer-events-none z-20 flex select-none flex-col items-end gap-2 font-mono"
     >
-      <div className="lobby-panel relative h-20 w-20 overflow-hidden rounded-lg shadow-[0_0_24px_rgba(167,139,250,0.22)] md:h-32 md:w-32 md:rounded-xl">
-        <canvas ref={canvasRef} width={128} height={128} className="absolute inset-0 h-full w-full" />
-        <div className="absolute top-0 left-0 h-2.5 w-2.5 border-t-2 border-l-2 border-lobby-film/70 md:h-3 md:w-3" />
-        <div className="absolute top-0 right-0 h-2.5 w-2.5 border-t-2 border-r-2 border-lobby-film/70 md:h-3 md:w-3" />
-        <div className="absolute bottom-0 left-0 h-2.5 w-2.5 border-b-2 border-l-2 border-lobby-soul/70 md:h-3 md:w-3" />
-        <div className="absolute bottom-0 right-0 h-2.5 w-2.5 border-b-2 border-r-2 border-lobby-soul/70 md:h-3 md:w-3" />
-        <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7px] font-bold tracking-widest text-lobby-fog/80 md:top-1 md:text-[8px]">
-          MAP
+      <div className="relative h-24 w-24 overflow-hidden rounded-xl border border-[#22d3ee]/40 bg-[#050b14]/90 shadow-[0_0_20px_rgba(34,211,238,0.2)] md:h-32 md:w-32 backdrop-blur-md">
+        <canvas ref={canvasRef} width={128} height={128} className="absolute inset-0 h-full w-full opacity-80" />
+        
+        {/* Neon Corners */}
+        <div className="absolute top-0 left-0 h-3 w-3 border-t-2 border-l-2 border-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+        <div className="absolute top-0 right-0 h-3 w-3 border-t-2 border-r-2 border-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+        <div className="absolute bottom-0 left-0 h-3 w-3 border-b-2 border-l-2 border-magenta-500 shadow-[0_0_8px_rgba(217,70,239,0.8)] border-[#d946ef]" />
+        <div className="absolute bottom-0 right-0 h-3 w-3 border-b-2 border-r-2 border-magenta-500 shadow-[0_0_8px_rgba(217,70,239,0.8)] border-[#d946ef]" />
+        
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-extrabold tracking-widest text-cyan-200/50 drop-shadow-md">
+          RADAR
         </div>
       </div>
 
-      <div className="lobby-panel flex max-w-[7.5rem] items-center gap-1 overflow-hidden rounded px-1.5 py-0.5 text-[9px] text-lobby-mist md:max-w-[10rem] md:gap-1.5 md:px-2 md:text-[10px]">
-        <Map className="h-2.5 w-2.5 shrink-0 text-lobby-film md:h-3 md:w-3" />
-        <span className="truncate">
+      <div className="flex max-w-[8rem] items-center gap-1.5 overflow-hidden rounded-full border border-[#22d3ee]/30 bg-black/60 px-2.5 py-1 text-[10px] text-cyan-50 shadow-[0_0_10px_rgba(34,211,238,0.1)] md:max-w-[10rem] backdrop-blur-sm">
+        <Map className="h-3 w-3 shrink-0 text-cyan-400" />
+        <span className="truncate font-bold">
           {mapName}
           {channelText}
         </span>
       </div>
 
-      <div className="lobby-panel hidden items-center gap-1 rounded px-2 py-0.5 font-mono text-[9px] text-lobby-fog md:flex">
-        <Compass className="h-2.5 w-2.5 text-lobby-soul" />
-        <span className="text-lobby-film">X</span>
-        <span className="text-lobby-mist">{playerPos.x}</span>
-        <span className="ml-0.5 text-lobby-film">Y</span>
-        <span className="text-lobby-mist">{playerPos.y}</span>
+      <div className="hidden items-center gap-1.5 rounded-full border border-[#d946ef]/30 bg-black/60 px-2.5 py-1 text-[10px] font-bold text-cyan-50 md:flex shadow-[0_0_10px_rgba(217,70,239,0.1)] backdrop-blur-sm">
+        <Compass className="h-3 w-3 text-[#d946ef]" />
+        <span className="text-cyan-200/50">X</span>
+        <span className="text-cyan-50 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">{playerPos.x}</span>
+        <span className="ml-1 text-cyan-200/50">Y</span>
+        <span className="text-cyan-50 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">{playerPos.y}</span>
       </div>
     </div>
   );

@@ -1819,34 +1819,34 @@ export class BabylonEngine {
     // Distinct, readable Studio colors (walkable stays visible enough to confirm paint).
     if (logicId === 0) {
       mat.diffuseColor = Color3.FromHexString("#10b981");
-      mat.alpha = 0.38;
+      mat.alpha = 0.55;
     } else if (logicId === 1) {
       mat.diffuseColor = Color3.FromHexString("#dc2626");
-      mat.alpha = 0.72;
+      mat.alpha = 0.85;
     } else if (logicId === 2) {
       mat.diffuseColor = Color3.FromHexString("#22c55e");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 3 || logicId === 4) {
       mat.diffuseColor = Color3.FromHexString("#f59e0b");
-      mat.alpha = 0.72;
+      mat.alpha = 0.85;
     } else if (logicId === 5) {
       mat.diffuseColor = Color3.FromHexString("#92400e");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 6) {
       mat.diffuseColor = Color3.FromHexString("#78716c");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 7) {
       mat.diffuseColor = Color3.FromHexString("#eab308");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 8) {
       mat.diffuseColor = Color3.FromHexString("#ec4899");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 9) {
       mat.diffuseColor = Color3.FromHexString("#64748b");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 10) {
       mat.diffuseColor = Color3.FromHexString("#0284c7");
-      mat.alpha = 0.7;
+      mat.alpha = 0.85;
     } else if (logicId === 11) {
       mat.diffuseColor = Color3.FromHexString("#3f6212");
       mat.alpha = 0.72;

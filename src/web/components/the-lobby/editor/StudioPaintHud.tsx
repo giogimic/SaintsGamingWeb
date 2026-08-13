@@ -128,8 +128,8 @@ export function StudioPaintHud() {
         </div>
 
         {mapDirty && (
-          <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-200">
-            Unsaved · Save Map
+          <span className="animate-pulse rounded-full border-2 border-red-500 bg-red-600/30 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-red-100 shadow-[0_0_10px_rgba(239,68,68,0.6)]">
+            ⚠️ Unsaved · Save Map
           </span>
         )}
       </div>

@@ -212,7 +212,7 @@ export interface GameState {
   instanceId: string;
   activeMapData: any | null; // For dynamically loaded maps from DB
   mapEntities: MapEntity[];
-  toast: ToastMessage | null;
+  toasts: ToastMessage[];
   activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null;
   setGameMode: (mode: GameMode) => void;
   setCurrentMapId: (id: string) => void;
@@ -276,6 +276,7 @@ export interface GameState {
   catchDaemon: (daemonId: string) => void;
   changeMap: (mapId: string, spawnPoint: Point) => void;
   showToast: (message: string) => void;
+  removeToast: (id: number) => void;
   modifyHp: (amount: number) => void;
   gainXp: (amount: number) => void;
   modifyCredits: (amount: number) => void;
@@ -356,7 +357,7 @@ export const useGameStore = create<GameState>()(
       instanceId: 'DEMO_SANDBOX',
       activeMapData: null,
       mapEntities: [],
-      toast: null,
+      toasts: [],
       activeDialog: null,
       moveSequence: 0,
       pendingMoves: [],
@@ -631,15 +632,21 @@ export const useGameStore = create<GameState>()(
         }),
 
       showToast: (message) => {
+        const id = Date.now() + Math.random();
         set((state) => {
-          state.toast = { id: Date.now(), message };
+          const newToasts = [...state.toasts, { id, message }].slice(-3); // Keep max 3
+          state.toasts = newToasts;
         });
         setTimeout(() => {
           set((state) => {
-            if (state.toast?.message === message) state.toast = null;
+            state.toasts = state.toasts.filter(t => t.id !== id);
           });
         }, 3000);
       },
+      
+      removeToast: (id) => set((state) => {
+        state.toasts = state.toasts.filter(t => t.id !== id);
+      }),
 
       modifyHp: (amount) =>
         set((state) => {
@@ -655,7 +662,11 @@ export const useGameStore = create<GameState>()(
             state.player.level = newLevel;
             state.player.maxHp += 20;
             state.player.hp = state.player.maxHp;
-            state.toast = { id: Date.now(), message: `Level Up! Reached Level ${newLevel}` };
+            const id = Date.now() + Math.random();
+            state.toasts = [...state.toasts, { id, message: `Level Up! Reached Level ${newLevel}` }].slice(-3);
+            setTimeout(() => {
+              set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); });
+            }, 3000);
           }
         }),
 
@@ -678,7 +689,11 @@ export const useGameStore = create<GameState>()(
         const newLevel = Math.floor(Math.sqrt(state.player.skills[skillName].xp / 50)) + 1;
         if (newLevel > state.player.skills[skillName].level && newLevel <= 50) {
           state.player.skills[skillName].level = newLevel;
-          state.toast = { id: Date.now(), message: `${skillName} level up! (${newLevel})` };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: `${skillName} level up! (${newLevel})` }].slice(-3);
+          setTimeout(() => {
+            set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); });
+          }, 3000);
         }
       }),
       equipItem: (slot, itemId) => set((state) => {
@@ -692,7 +707,11 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           state.player.assignedBeasts[facility] = beastId;
           if (beastId) {
-            state.toast = { id: Date.now(), message: `Beast assigned to the ${facility.replace('_', ' ')}!` };
+            const id = Date.now() + Math.random();
+            state.toasts = [...state.toasts, { id, message: `Beast assigned to the ${facility.replace('_', ' ')}!` }].slice(-3);
+            setTimeout(() => {
+              set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); });
+            }, 3000);
           }
         }),
 
@@ -720,10 +739,12 @@ export const useGameStore = create<GameState>()(
           if (collectedOre > 0) {
             state.player.inventory['copper_ore'] = (state.player.inventory['copper_ore'] || 0) + collectedOre;
           }
-          state.toast = { 
-            id: Date.now(), 
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { 
+            id, 
             message: `Base yielded: ${collectedWood > 0 ? collectedWood + ' Wood' : ''} ${collectedOre > 0 ? collectedOre + ' Ore' : ''}` 
-          };
+          }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         }
 
         // Update timestamp keeping the remainder
@@ -734,9 +755,13 @@ export const useGameStore = create<GameState>()(
       addCreatureToParty: (member) => set((state) => {
         if (state.player.creatureParty.length < 6) {
           state.player.creatureParty.push(member);
-          state.toast = { id: Date.now(), message: `${member.nickname} joined your party!` };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: `${member.nickname} joined your party!` }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         } else {
-          state.toast = { id: Date.now(), message: 'Party is full!' };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: 'Party is full!' }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         }
       }),
 
@@ -769,7 +794,9 @@ export const useGameStore = create<GameState>()(
       recordCreatureCapture: (speciesSlug) => set((state) => {
         if (!state.player.creaturesCaught.includes(speciesSlug)) {
           state.player.creaturesCaught.push(speciesSlug);
-          state.toast = { id: Date.now(), message: `New species discovered: ${speciesSlug}!` };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: `New species discovered: ${speciesSlug}!` }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         }
       }),
 
@@ -786,7 +813,9 @@ export const useGameStore = create<GameState>()(
           const oldName = beast.nickname || beast.speciesSlug;
           beast.speciesSlug = newSpeciesSlug;
           if (newNickname) beast.nickname = newNickname;
-          state.toast = { id: Date.now(), message: `✨ What?! ${oldName} evolved into ${newSpeciesSlug}! ✨` };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: `✨ What?! ${oldName} evolved into ${newSpeciesSlug}! ✨` }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         }
       }),
 
@@ -804,7 +833,9 @@ export const useGameStore = create<GameState>()(
       leaveParty: () => set((state) => {
         state.player.party = [];
         state.player.isPartyLeader = false;
-        state.toast = { id: Date.now(), message: 'You left the party' };
+        const id = Date.now() + Math.random();
+        state.toasts = [...state.toasts, { id, message: 'You left the party' }].slice(-3);
+        setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
       }),
 
       updatePartyMemberPosition: (socketId, position) => set((state) => {
@@ -821,9 +852,13 @@ export const useGameStore = create<GameState>()(
       addPartyMember: (member) => set((state) => {
         if (state.player.party.length < 4) {
           state.player.party.push(member);
-          state.toast = { id: Date.now(), message: `${member.name} joined the party!` };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: `${member.name} joined the party!` }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         } else {
-          state.toast = { id: Date.now(), message: 'Party is full!' };
+          const id = Date.now() + Math.random();
+          state.toasts = [...state.toasts, { id, message: 'Party is full!' }].slice(-3);
+          setTimeout(() => set((s) => { s.toasts = s.toasts.filter(t => t.id !== id); }), 3000);
         }
       }),
 

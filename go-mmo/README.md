@@ -18,7 +18,7 @@ Inventory / quests / last seat persist in Go SQLite (`GoInventory`, `GoQuestProg
 | | |
 |---|---|
 | Listen | `0.0.0.0:3001` |
-| Client | `NEXT_PUBLIC_GO_MMO_URL` (optional) |
+| Client | `NEXT_PUBLIC_GO_MMO_URL` (required) |
 | Caddy | `./scripts/dev-proxy.sh` (additive) |
 | Auth | `auth.token` = account id when `GO_MMO_DEV_AUTH=true` |
 
@@ -34,4 +34,4 @@ Inventory / quests / last seat persist in Go SQLite (`GoInventory`, `GoQuestProg
 ./go-mmo/scripts/setup-go-mmo.sh --proxy-only
 ```
 
-Unset `NEXT_PUBLIC_GO_MMO_URL` to fall back to TypeScript `server.ts` sockets.
+Unset `NEXT_PUBLIC_GO_MMO_URL` and set `ENABLE_TS_GAME_ENGINE=1` to fall back to the emergency TypeScript `server.ts` sockets.

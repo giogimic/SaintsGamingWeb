@@ -11,10 +11,13 @@ function snap(n: number) {
   return Math.round(n / SNAP) * SNAP;
 }
 
+export type PanelAnchor = 'tl' | 'tr' | 'bl' | 'bc' | 'br' | 'tc' | 'center';
+
 interface DraggablePanelProps {
   id: string;
   children: React.ReactNode;
   defaultPosition?: { x: number; y: number };
+  anchor?: PanelAnchor;
   defaultScale?: number;
   className?: string;
 }
@@ -23,9 +26,11 @@ export default function DraggablePanel({
   id,
   children,
   defaultPosition = { x: 0, y: 0 },
+  anchor,
   defaultScale = 1,
   className = '',
 }: DraggablePanelProps) {
+  const [isReady, setIsReady] = React.useState(false);
   const isEditing = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
   const uiSettings = useGameStore((s) => s.uiSettings);
   const updateUiSetting = useGameStore((s) => s.updateUiSetting);
@@ -47,34 +52,54 @@ export default function DraggablePanel({
 
   // Load from localStorage (or defaults) on mount / layout reset
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     let initialX = defaultPosition.x;
     let initialY = defaultPosition.y;
     let initialScale = defaultScale;
 
     const saved = localStorage.getItem(`saints-ui-${id}`);
+    let loadedFromSave = false;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.x === 'number') initialX = parsed.x;
-        if (typeof parsed.y === 'number') initialY = parsed.y;
+        if (typeof parsed.x === 'number') { initialX = parsed.x; loadedFromSave = true; }
+        if (typeof parsed.y === 'number') { initialY = parsed.y; loadedFromSave = true; }
         if (typeof parsed.scale === 'number') initialScale = parsed.scale;
-      } catch {
-        /* ignore */
+      } catch {}
+    }
+
+    if (!loadedFromSave && anchor && containerRef.current) {
+      const margin = 20;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const pw = containerRef.current.offsetWidth || 300;
+      const ph = containerRef.current.offsetHeight || 300;
+
+      switch (anchor) {
+        case 'tr': initialX = w - pw - margin; initialY = margin; break;
+        case 'tl': initialX = margin; initialY = margin; break;
+        case 'bl': initialX = margin; initialY = h - ph - margin; break;
+        case 'br': initialX = w - pw - margin; initialY = h - ph - margin; break;
+        case 'bc': initialX = (w - pw) / 2; initialY = h - ph - margin; break;
+        case 'tc': initialX = (w - pw) / 2; initialY = margin; break;
+        case 'center': initialX = (w - pw) / 2; initialY = (h - ph) / 2; break;
       }
     }
 
-    if (typeof window !== 'undefined') {
-      const margin = 20;
-      const editorTopBarHeight = 50;
-      if (initialX < margin) initialX = margin;
-      if (initialY < editorTopBarHeight) initialY = editorTopBarHeight;
-      if (initialX > window.innerWidth - 100) initialX = window.innerWidth - 100;
-      if (initialY > window.innerHeight - 100) initialY = window.innerHeight - 100;
-    }
+    const margin = 20;
+    const isStudioEditing = window.location.pathname.includes('/studio');
+    const editorTopBarHeight = isStudioEditing ? 50 : margin;
+
+    if (initialX < margin) initialX = margin;
+    if (initialY < editorTopBarHeight) initialY = editorTopBarHeight;
+    if (initialX > window.innerWidth - margin) initialX = window.innerWidth - margin;
+    if (initialY > window.innerHeight - margin) initialY = window.innerHeight - margin;
 
     updateUiSetting(id, { x: initialX, y: initialY, scale: initialScale });
     x.set(initialX);
     y.set(initialY);
+    setIsReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, uiLayoutEpoch]);
 
@@ -86,7 +111,8 @@ export default function DraggablePanel({
 
   const handleDragEnd = () => {
     const margin = 20;
-    const editorTopBarHeight = 50;
+    const isStudioEditing = window.location.pathname.includes('/studio');
+    const editorTopBarHeight = isStudioEditing ? 50 : margin;
 
     let finalX = snap(x.get());
     let finalY = snap(y.get());
@@ -95,8 +121,8 @@ export default function DraggablePanel({
     if (finalY < editorTopBarHeight) finalY = editorTopBarHeight;
 
     if (typeof window !== 'undefined') {
-      if (finalX > window.innerWidth - 100) finalX = window.innerWidth - 100;
-      if (finalY > window.innerHeight - 100) finalY = window.innerHeight - 100;
+      if (finalX > window.innerWidth - margin) finalX = window.innerWidth - margin;
+      if (finalY > window.innerHeight - margin) finalY = window.innerHeight - margin;
     }
 
     x.set(finalX);
@@ -123,9 +149,11 @@ export default function DraggablePanel({
         scale: setting.scale,
         transformOrigin: 'center center',
         cursor: isEditing ? 'grab' : undefined,
+        opacity: isReady ? 1 : 0,
+        pointerEvents: isReady ? 'auto' : 'none',
       }}
       whileDrag={isEditing ? { cursor: 'grabbing', zIndex: 80 } : undefined}
-      className={`absolute z-40 ${className} ${
+      className={`absolute top-0 left-0 z-40 ${className} ${
         isEditing
           ? 'rounded-md outline outline-2 outline-dashed outline-[#10B981] outline-offset-2 shadow-[0_0_0_1px_rgba(16,185,129,0.25)]'
           : ''

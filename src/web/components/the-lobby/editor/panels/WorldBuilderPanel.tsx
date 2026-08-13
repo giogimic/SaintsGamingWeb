@@ -57,8 +57,8 @@ export const WorldBuilderPanel: React.FC = () => {
   const [isCreatingNewMap, setIsCreatingNewMap] = useState(false);
   const [newMapSlug, setNewMapSlug] = useState('');
   const [newMapName, setNewMapName] = useState('');
-  const [newMapWidth, setNewMapWidth] = useState(24);
-  const [newMapHeight, setNewMapHeight] = useState(24);
+  const [newMapWidth, setNewMapWidth] = useState(64);
+  const [newMapHeight, setNewMapHeight] = useState(64);
   const [isSaving, setIsSaving] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
@@ -191,7 +191,8 @@ export const WorldBuilderPanel: React.FC = () => {
       invalidateMapCache(baseMapId);
       notifyLiveMapSync(emitSocketEvent, baseMapId, payload);
       useEditorStore.getState().clearMapDirty();
-      showToast(`Saved map ${baseMapId}`);
+      const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
+      showToast(`Saved map ${baseMapId} (Synced to ${backendUsed})`);
     } catch (e: any) {
       console.error('[Studio] Save map failed', e);
       showToast(e?.message || 'Save failed — network error.');
@@ -250,7 +251,8 @@ export const WorldBuilderPanel: React.FC = () => {
       setIsCreatingNewMap(false);
       setNewMapSlug('');
       setNewMapName('');
-      showToast(`Created & saved map: ${newMapData.id}`);
+      const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
+      showToast(`Created & saved map: ${newMapData.id} (Synced to ${backendUsed})`);
     } catch (e: any) {
       console.error('[Studio] Create map failed', e);
       showToast(e?.message || 'Create failed — network error.');

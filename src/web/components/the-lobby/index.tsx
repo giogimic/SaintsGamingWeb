@@ -68,6 +68,7 @@ import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { GameChat } from './chat/GameChat';
+import GameToastStack from './GameToastStack';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
 import { MobileGameLauncher } from './MobileGameLauncher';
@@ -94,7 +95,6 @@ export default function TheLobby({
 }) {
   const enableStudio = mode === 'studio';
   const gameMode = useGameStore((state) => state.gameMode);
-  const toast = useGameStore((state) => state.toast);
   const activeDialog = useGameStore((state) => state.activeDialog);
   const isMapTransitioning = useGameStore((state) => state.isMapTransitioning);
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -165,13 +165,13 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Player lobby always starts on DEMO_SANDBOX (avoid stale SAINTS_VILLAGE saves / HMR store).
-      // Studio may keep a saved map for editor work.
-      const DEMO_MAP = 'DEMO_SANDBOX';
+      // Player lobby always starts on LOBBY (fallback to DEMO_SANDBOX if not created yet).
+      const TARGET_MAP = 'LOBBY';
+      const FALLBACK_MAP = 'DEMO_SANDBOX';
       const DEMO_SPAWN = { x: 14, y: 15 };
       const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
         .replace(/_ch\d+$/, '');
-      let validMapId = DEMO_MAP;
+      let validMapId = TARGET_MAP;
       let validPosition = { ...DEMO_SPAWN };
 
       if (enableStudio && savedMap && savedMap !== 'SAINTS_VILLAGE') {
@@ -189,8 +189,12 @@ export default function TheLobby({
         };
         useGameStore.getState().setActiveMapData(loaded);
       } catch {
-        validMapId = DEMO_MAP;
+        validMapId = FALLBACK_MAP;
         validPosition = { ...DEMO_SPAWN };
+        try {
+          const loadedFallback = ensureMapHasStudioTilesets(await loadMap(validMapId));
+          useGameStore.getState().setActiveMapData(loadedFallback);
+        } catch {}
       }
 
       useGameStore.getState().hydratePlayer({ 
@@ -246,11 +250,11 @@ export default function TheLobby({
    * Avatar-free Studio author session — load a map without a game character.
    * Account still joins the map room for hot-reload; player mesh stays hidden in Editor.
    */
-  const enterStudioAuthorSession = async (mapId: string = 'DEMO_SANDBOX') => {
+  const enterStudioAuthorSession = async (mapId: string = 'LOBBY') => {
     if (!enableStudio) return;
     setIsInitializing(true);
     const DEMO_SPAWN = { x: 14, y: 15 };
-    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? 'DEMO_SANDBOX' : mapId.replace(/_ch\d+$/, '');
+    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? 'LOBBY' : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEMO_SPAWN };
 
     try {
@@ -440,10 +444,10 @@ export default function TheLobby({
         }
         const joinPayload = {
           accountId: effectiveAccountId,
-          // Lobby multiplayer always rejoins DEMO_SANDBOX (ignore warp/stale store).
+          // Lobby multiplayer always rejoins the current valid base map (LOBBY or fallback).
           mapId: enableStudio
-            ? toBaseMapId(state.currentMapId || 'DEMO_SANDBOX')
-            : 'DEMO_SANDBOX',
+            ? toBaseMapId(state.currentMapId || 'LOBBY')
+            : toBaseMapId(state.currentMapId || 'LOBBY'),
           lobby: !enableStudio,
           isPrivate: enableStudio,
           pie: enableStudio && !useEditorStore.getState().isCreationMode,
@@ -457,10 +461,14 @@ export default function TheLobby({
         socket.emit('join_map', joinPayload);
         if (!enableStudio) {
           const cur = toBaseMapId(state.currentMapId || '');
-          if (cur !== 'DEMO_SANDBOX') {
-            state.setCurrentMapId('DEMO_SANDBOX');
-            void loadMap('DEMO_SANDBOX').then((m) => {
+          if (cur !== 'LOBBY' && cur !== 'DEMO_SANDBOX') {
+            const fallback = cur || 'LOBBY';
+            state.setCurrentMapId(fallback);
+            void loadMap(fallback).then((m) => {
               useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+            }).catch(() => {
+               state.setCurrentMapId('DEMO_SANDBOX');
+               void loadMap('DEMO_SANDBOX').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
             });
           }
         }
@@ -1414,15 +1422,6 @@ export default function TheLobby({
           />
         )}
 
-        {toast && (
-          <div className="absolute top-16 left-1/2 z-50 -translate-x-1/2 animate-in slide-in-from-top-4 fade-in duration-300">
-            <div className="relative whitespace-nowrap rounded-xl border border-emerald-500/30 bg-black/80 px-5 py-2.5 text-sm font-bold shadow-[0_0_25px_rgba(16,185,129,0.2)] backdrop-blur-xl">
-              <div className="absolute -top-px left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-              <span className="mr-2 font-mono text-xs text-emerald-400">▶</span>
-              <span className="font-mono text-xs text-emerald-200">{toast.message}</span>
-            </div>
-          </div>
-        )}
 
         {/* In-world chrome only — title/login have their own Leave control */}
         {(gameMode === 'EXPLORING' || studioToolsOpen) && (
@@ -1499,9 +1498,11 @@ export default function TheLobby({
         {gameMode === 'LOGIN' && <GameLogin />}
         {gameMode === 'SERVER_SELECT' && <ServerSelect />}
 
-        <DraggablePanel id="classic-panel" className="pointer-events-none absolute bottom-4 right-4 max-md:static max-md:inset-auto">
+        <DraggablePanel id="classic-panel" anchor="br" className="pointer-events-none max-md:static max-md:inset-auto">
           <ClassicPanel />
         </DraggablePanel>
+        
+        <GameToastStack />
 
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           {gameMode === 'CRAFTING' && <CraftingOverlay />}
@@ -1526,22 +1527,22 @@ export default function TheLobby({
           <PeerPresenceHud />
         )}
         {gameMode === 'EXPLORING' && showGameplayHud && (
-          <DraggablePanel id="minimap" defaultPosition={{ x: 0, y: 0 }}>
+          <DraggablePanel id="minimap" anchor="tr">
             <MiniMapRadar />
           </DraggablePanel>
         )}
         {gameMode === 'EXPLORING' && showGameplayHud && (
-          <DraggablePanel id="orbs" defaultPosition={{ x: 0, y: 0 }}>
+          <DraggablePanel id="orbs" anchor="tl">
             <SaintsHudOrbs />
           </DraggablePanel>
         )}
 
         {gameMode === 'EXPLORING' && showGameplayHud && (
           <>
-            <DraggablePanel id="hotbar" defaultPosition={{ x: 0, y: 0 }}>
+            <DraggablePanel id="hotbar" anchor="bc">
               <Hotbar />
             </DraggablePanel>
-            <DraggablePanel id="chat" defaultPosition={{ x: 0, y: 0 }}>
+            <DraggablePanel id="chat" anchor="bl">
               <GameChat />
             </DraggablePanel>
           </>
