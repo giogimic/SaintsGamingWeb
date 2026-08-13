@@ -28,6 +28,21 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 	client.On(protocol.EvStudioDespawnNPC, func(datas ...any) {
 		h.handleStudioDespawnNPC(accountID, datas)
 	})
+	client.On(protocol.EvStudioLock, func(datas ...any) {
+		if len(datas) > 0 {
+			h.broadcastAll(protocol.EvStudioLock, datas[0])
+		}
+	})
+	client.On(protocol.EvStudioUnlock, func(datas ...any) {
+		if len(datas) > 0 {
+			h.broadcastAll(protocol.EvStudioUnlock, datas[0])
+		}
+	})
+	client.On(protocol.EvStudioPresence, func(datas ...any) {
+		if len(datas) > 0 {
+			h.broadcastAll(protocol.EvStudioPresence, datas[0])
+		}
+	})
 	client.On(protocol.EvGatherInteract, func(datas ...any) {
 		h.handleGather(accountID, datas)
 	})
@@ -188,7 +203,12 @@ func (h *Hub) handleAdminSaveMap(accountID string, datas []any) {
 	if h.deps.SaveMap != nil {
 		_ = h.deps.SaveMap(base, payload.Name, grid, string(payload.NpcsData), string(payload.TileLayersData), string(payload.TilesetsData))
 	}
-	h.broadcastAll(protocol.EvMapReloaded, map[string]string{"mapId": base})
+	h.broadcastAll(protocol.EvContentReload, map[string]any{
+		"type":    "map",
+		"mapId":   base,
+		"version": 0,
+		"at":      time.Now().Format(time.RFC3339),
+	})
 }
 
 func (h *Hub) handleAdminReloadMap(accountID string, datas []any) {
@@ -203,7 +223,12 @@ func (h *Hub) handleAdminReloadMap(accountID string, datas []any) {
 		}
 	}
 	h.eng.World().EnsureDemoDef()
-	h.broadcastAll(protocol.EvMapReloaded, map[string]string{"mapId": mapID})
+	h.broadcastAll(protocol.EvContentReload, map[string]any{
+		"type":    "map",
+		"mapId":   mapID,
+		"version": 0,
+		"at":      time.Now().Format(time.RFC3339),
+	})
 }
 
 func (h *Hub) handleStudioSpawnNPC(accountID string, datas []any) {

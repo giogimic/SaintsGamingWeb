@@ -12,7 +12,7 @@ import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
 import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileControls';
 
-import QuestTrackerOverlay from '../quest-tracker-overlay';
+
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
@@ -205,12 +205,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       dynamicEntities: store.mapEntities || [],
       logicTiles: store.logicTiles,
       playerPos: currentPos,
-      isDevEditorOpen
+      isDevEditorOpen,
+      connections: activeMap.connections
     };
 
     const result = WorldSimulation.tryMove(worldState, targetX, targetY);
 
     if (result.type === 'BLOCKED') {
+      if (isDevEditorOpen && result.reason === 'WALL') {
+        // Prevent toast spam by checking a ref or just letting the toast queue handle it.
+        // We'll rely on the toast queue to coalesce rapid identical messages (built in Game UI P0).
+        store.showToast('Blocked by wall collision (Logic Tag)');
+      }
+      
       // Phase 2: Client Prediction (Turn in place)
       setPlayerPosition(currentPos, result.direction, false);
       const seq = store.incrementMoveSeq();
@@ -230,11 +237,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         return;
       }
       const finishWarp = () => {
+        let loadedGrid: number[][] | undefined = undefined;
         // Load destination document before flipping ids — never leave stale
         // activeMapData mounted (World Builder warp already does this pair).
         void loadMap(gate.targetMapId)
           .then((data) => {
             const loaded = ensureMapHasStudioTilesets(data);
+            loadedGrid = loaded.grid;
             useGameStore.setState({
               currentMapId: gate.targetMapId,
               activeMapData: loaded,
@@ -245,6 +254,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             useGameStore.getState().setCurrentMapId(gate.targetMapId);
           })
           .finally(() => {
+            if (spawn.x === -1 && loadedGrid && loadedGrid.length > 0) {
+              spawn.x = loadedGrid[0].length - 1;
+            }
+            if (spawn.y === -1 && loadedGrid) {
+              spawn.y = loadedGrid.length - 1;
+            }
             setPlayerPosition(spawn);
             const p = useGameStore.getState().player;
             const inStudio = getIsEditorMode();
@@ -360,16 +375,31 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     const result = WorldSimulation.tryInteract(worldState, dir);
 
-    if (result.type === 'RESOURCE_HARVEST') {
+    if (result.type === 'LOGIC_INTERACT') {
       if (result.action === 'OPEN_CRAFTING') {
+        showToast('Opened Crafting Station (Playtest Preview)');
         useGameStore.setState({ gameMode: 'CRAFTING' });
+        return;
+      }
+      if (result.action === 'OPEN_SHOP') {
+        showToast('Opened Shop (Playtest Preview)');
+        return;
+      }
+      if (result.action === 'HEAL') {
+        showToast('Healed at Shrine (Playtest Preview)');
+        return;
+      }
+      if (result.action === 'OPEN_BANK') {
+        showToast('Opened Bank (Playtest Preview)');
         return;
       }
 
       if (result.action === 'HARVEST_WOOD') {
         soundSynth.playWoodcuttingSound();
+        showToast('Harvested Wood');
       } else if (result.action === 'HARVEST_ORE') {
         soundSynth.playMiningSound();
+        showToast('Harvested Ore');
       }
       
       // Phase 5: Server Authority for Gathering
@@ -1415,7 +1445,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       />
       
       {/* Quest Tracker (single instance) */}
-      {!isDevEditorOpen && <QuestTrackerOverlay />}
+
 
       {/* Crafting Menu */}
       <CraftingOverlay />

@@ -15,6 +15,12 @@ export interface WorldState {
   logicTiles: Record<number, any>;
   playerPos: Point;
   isDevEditorOpen: boolean;
+  connections?: {
+    north?: string;
+    south?: string;
+    east?: string;
+    west?: string;
+  };
 }
 
 export type MoveSimulationResult = 
@@ -24,7 +30,7 @@ export type MoveSimulationResult =
 
 export type InteractSimulationResult =
   | { type: 'NONE' }
-  | { type: 'RESOURCE_HARVEST'; action: string; payload: any; targetX: number; targetY: number }
+  | { type: 'LOGIC_INTERACT'; action: string; payload: any; targetX: number; targetY: number }
   | { type: 'NPC_DIALOGUE'; npcId: string; npcName: string; text: string }
   | { type: 'SIGN_READ'; content: string };
 
@@ -50,6 +56,21 @@ export class WorldSimulation {
 
     // Bounds Check
     if (targetX < 0 || targetX >= mapWidth || targetY < 0 || targetY >= mapHeight) {
+      // Check connections for One-World map transitions
+      if (state.connections) {
+        if (targetY < 0 && state.connections.north) {
+          return { type: 'WARP', gate: { targetMapId: state.connections.north, targetSpawn: { x: targetX, y: -1 } } }; // y: -1 means bottom edge
+        }
+        if (targetY >= mapHeight && state.connections.south) {
+          return { type: 'WARP', gate: { targetMapId: state.connections.south, targetSpawn: { x: targetX, y: 0 } } };
+        }
+        if (targetX < 0 && state.connections.west) {
+          return { type: 'WARP', gate: { targetMapId: state.connections.west, targetSpawn: { x: -1, y: targetY } } }; // x: -1 means right edge
+        }
+        if (targetX >= mapWidth && state.connections.east) {
+          return { type: 'WARP', gate: { targetMapId: state.connections.east, targetSpawn: { x: 0, y: targetY } } };
+        }
+      }
       return { type: 'BLOCKED', direction: dir, reason: 'BOUNDS' };
     }
 
@@ -123,7 +144,7 @@ export class WorldSimulation {
       try {
         payload = logicTile.onInteractPayload ? JSON.parse(logicTile.onInteractPayload) : {};
       } catch (e) {}
-      return { type: 'RESOURCE_HARVEST', action: logicTile.onInteractAction, payload, targetX: faceX, targetY: faceY };
+      return { type: 'LOGIC_INTERACT', action: logicTile.onInteractAction, payload, targetX: faceX, targetY: faceY };
     }
 
     // Check NPCs

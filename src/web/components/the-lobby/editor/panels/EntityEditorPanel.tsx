@@ -46,16 +46,18 @@ function normalizeSpriteKey(input: string): string {
   return raw.replace(/^\/+/, '').replace(/\.png$/i, '').replace(/^game-assets\/npc\//i, '');
 }
 
-export const NpcEditorPanel: React.FC = () => {
+export const EntityEditorPanel: React.FC = () => {
   const showToast = useGameStore((state) => state.showToast);
   const currentMapId = useGameStore((state) => state.currentMapId);
   const mapId = toBaseMapId((currentMapId || '').split('#')[0] || '');
 
-  const schema = useMemo(() => getEntitySchema('npc'), []);
+  const [kind, setKind] = useState<'npc' | 'chest' | 'door' | 'decoration' | 'resource_node'>('npc');
+  const schema = useMemo(() => getEntitySchema(kind as any), [kind]);
+
   const [entityProps, setEntityProps] = useState<Record<string, unknown>>(() => ({
-    ...defaultEntityProps('npc'),
-    displayName: 'Keeper Alex',
-    spriteId: 'heroine',
+    ...defaultEntityProps(kind as any),
+    displayName: 'New Entity',
+    spriteId: 'chest',
   }));
   const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Tamer!');
   const [questSlug, setQuestSlug] = useState('');
@@ -97,9 +99,9 @@ export const NpcEditorPanel: React.FC = () => {
   const handleNew = () => {
     setSelectedId(null);
     setEntityProps({
-      ...defaultEntityProps('npc'),
-      displayName: 'Keeper Alex',
-      spriteId: 'heroine',
+      ...defaultEntityProps(kind as any),
+      displayName: 'New ' + kind,
+      spriteId: kind === 'npc' ? 'heroine' : 'chest',
     });
     setNpcDialogue('Welcome to the animist grounds, Tamer!');
     setQuestSlug('');
@@ -218,7 +220,7 @@ export const NpcEditorPanel: React.FC = () => {
 
   return (
     <CatalogEditorShell
-      title="NPC Catalog"
+      title="Entity Catalog"
       blurb={`Place / edit / delete · map ${currentMapId || '—'} · WorldMap.npcsData`}
       dirty={!!selectedId}
       toolbar={
@@ -256,7 +258,22 @@ export const NpcEditorPanel: React.FC = () => {
         </div>
       }
     >
-      <div className="space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-4 text-[11px]">
+        <div className="space-y-1.5">
+          <label className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Entity Kind</label>
+          <select 
+            value={kind} 
+            onChange={(e) => setKind(e.target.value as any)}
+            className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1.5 text-slate-200"
+          >
+            <option value="npc">NPC / Character</option>
+            <option value="chest">Treasure Chest</option>
+            <option value="door">Door / Gate</option>
+            <option value="resource_node">Harvest Node</option>
+            <option value="decoration">Prop / Decoration</option>
+          </select>
+        </div>
+
         <div className="space-y-2 rounded border border-[#806f47]/30 bg-[#0b1320]/60 p-2">
           {schemaFields.map((field) => (
             <SchemaFieldRenderer
@@ -268,49 +285,52 @@ export const NpcEditorPanel: React.FC = () => {
           ))}
         </div>
 
-        <div className="space-y-2 rounded border border-slate-800 bg-black/30 p-2">
-          <label className="block space-y-1">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Greeting
-            </span>
-            <textarea
-              value={npcDialogue}
-              onChange={(e) => setNpcDialogue(e.target.value)}
-              placeholder="Greeting line"
-              className="custom-scrollbar h-20 w-full resize-none rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
-            />
-          </label>
-          <label className="block space-y-1">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Quest slug
-            </span>
+        {kind === 'npc' && (
+          <div className="space-y-2 rounded border border-slate-800 bg-black/30 p-2">
+            <label className="block space-y-1">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Greeting
+              </span>
+              <textarea
+                value={npcDialogue}
+                onChange={(e) => setNpcDialogue(e.target.value)}
+                placeholder="Greeting line"
+                className="custom-scrollbar h-20 w-full resize-none rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Quest slug
+              </span>
+              <input
+                type="text"
+                value={questSlug}
+                onChange={(e) => setQuestSlug(e.target.value)}
+                placeholder="Optional questSlug (ACCEPT_QUEST)"
+                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
+              />
+            </label>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className="mb-1 block text-[10px] text-slate-400">X</label>
             <input
-              type="text"
-              value={questSlug}
-              onChange={(e) => setQuestSlug(e.target.value)}
-              placeholder="Optional questSlug (ACCEPT_QUEST)"
-              className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
+              type="number"
+              value={spawnX}
+              onChange={(e) => setSpawnX(parseInt(e.target.value, 10) || 0)}
+              className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px]"
             />
-          </label>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="mb-1 block text-[10px] text-slate-400">X</label>
-              <input
-                type="number"
-                value={spawnX}
-                onChange={(e) => setSpawnX(parseInt(e.target.value, 10) || 0)}
-                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px]"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="mb-1 block text-[10px] text-slate-400">Y</label>
-              <input
-                type="number"
-                value={spawnY}
-                onChange={(e) => setSpawnY(parseInt(e.target.value, 10) || 0)}
-                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px]"
-              />
-            </div>
+          </div>
+          <div className="flex-1">
+            <label className="mb-1 block text-[10px] text-slate-400">Y</label>
+            <input
+              type="number"
+              value={spawnY}
+              onChange={(e) => setSpawnY(parseInt(e.target.value, 10) || 0)}
+              className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px]"
+            />
           </div>
         </div>
 
@@ -322,7 +342,7 @@ export const NpcEditorPanel: React.FC = () => {
             className="flex flex-1 items-center justify-center gap-1 rounded bg-[#806f47]/80 py-1.5 font-bold text-[#050b14] hover:bg-[#806f47] disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            {selectedId ? 'Update NPC' : 'Save NPC to Map'}
+            {selectedId ? 'Update Entity' : 'Save Entity to Map'}
           </button>
           {selectedId && (
             <button
@@ -330,7 +350,7 @@ export const NpcEditorPanel: React.FC = () => {
               onClick={() => void handleDelete()}
               disabled={saving}
               className="rounded border border-red-800/50 px-3 py-1.5 text-red-300 hover:bg-red-900/30 disabled:opacity-50"
-              title="Delete NPC"
+              title="Delete Entity"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>

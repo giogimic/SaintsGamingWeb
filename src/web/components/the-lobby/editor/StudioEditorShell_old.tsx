@@ -36,7 +36,7 @@ import { StudioPaintHud } from './StudioPaintHud';
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
 import { PropertiesPanel } from './panels/PropertiesPanel';
 import { AssetBrowserPanel } from './panels/AssetBrowserPanel';
-import { NpcEditorPanel } from './panels/NpcEditorPanel';
+import { EntityEditorPanel } from './panels/EntityEditorPanel';
 import { DevToolsPanel } from './panels/DevToolsPanel';
 import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
 import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
@@ -258,7 +258,7 @@ export const StudioEditorShell: React.FC = () => {
 
         {canUseStudioDock(permissionLevel, 'npc') && (
           <DraggablePanel id="npc" icon={<Users className="w-4 h-4" />}>
-            <NpcEditorPanel />
+            <EntityEditorPanel />
           </DraggablePanel>
         )}
 

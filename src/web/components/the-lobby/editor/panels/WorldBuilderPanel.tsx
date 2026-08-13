@@ -9,42 +9,17 @@ import { Compass, Plus, Search, Layers, Grid, Save, Shield, Eraser } from 'lucid
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
 import {
   buildNewStudioMap,
   formatMapWriteError,
   normalizeStudioMapVisuals,
+  resizeStudioMap
 } from '@/shared/game/studioMapCreate';
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
 
-/** After Next `/api/maps` save: sync Go live world (or TS cache reload). */
-function notifyLiveMapSync(
-  emit: ((event: string, data: any) => void) | undefined,
-  mapId: string,
-  payload: {
-    name?: string;
-    grid?: unknown;
-    npcs?: unknown;
-    tileLayers?: unknown;
-    tilesets?: unknown;
-  }
-) {
-  if (!emit) return;
-  if (isGoMmoSocketEnabled()) {
-    // Go admin_reload alone does not read Next Prisma — push the doc so walk/collision match paint.
-    emit('admin_save_map', {
-      mapId,
-      name: payload.name || mapId,
-      gridData: payload.grid ?? [],
-      npcsData: payload.npcs ?? [],
-      tileLayersData: payload.tileLayers ?? [],
-      tilesetsData: payload.tilesets ?? [],
-    });
-  } else {
-    emit('admin_reload_map', { mapId });
-  }
-}
 
 export const WorldBuilderPanel: React.FC = () => {
   const currentMapId = useGameStore((state) => state.currentMapId);
@@ -63,9 +38,16 @@ export const WorldBuilderPanel: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
   
+  const [isResizingMap, setIsResizingMap] = useState(false);
+  const [resizeW, setResizeW] = useState(64);
+  const [resizeH, setResizeH] = useState(64);
+  
   const activeLayerIdx = useEditorStore((state) => state.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((state) => state.setActiveLayerIdx);
   const brushTileId = useEditorStore((state) => state.activeBrushTileId);
+  const activeLogicTileId = useEditorStore((state) => state.activeLogicTileId);
+  const isMapDirty = useEditorStore((state) => state.mapDirty);
+  const isDevEditorOpen = useEditorStore((state) => state.isCreationMode);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
 
   useEffect(() => {
@@ -189,7 +171,6 @@ export const WorldBuilderPanel: React.FC = () => {
         return;
       }
       invalidateMapCache(baseMapId);
-      notifyLiveMapSync(emitSocketEvent, baseMapId, payload);
       useEditorStore.getState().clearMapDirty();
       const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
       showToast(`Saved map ${baseMapId} (Synced to ${backendUsed})`);
@@ -241,13 +222,7 @@ export const WorldBuilderPanel: React.FC = () => {
       registerNewMap(newMapData);
       useGameStore.setState({ currentMapId: newMapData.id, activeMapData: newMapData });
       useEditorStore.getState().clearMapDirty();
-      notifyLiveMapSync(emitSocketEvent, newMapData.id, {
-        name: newMapData.name,
-        grid: newMapData.grid,
-        npcs: newMapData.npcs,
-        tileLayers: newMapData.tileLayers,
-        tilesets: newMapData.tilesets,
-      });
+
       setIsCreatingNewMap(false);
       setNewMapSlug('');
       setNewMapName('');
@@ -279,8 +254,28 @@ export const WorldBuilderPanel: React.FC = () => {
     showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
   };
 
+  const handleResizeMapSubmit = () => {
+    if (!activeMapData) return;
+    const currentW = activeMapData.grid?.[0]?.length || 0;
+    const currentH = activeMapData.grid?.length || 0;
+    if (resizeW < currentW || resizeH < currentH) {
+      if (!confirm('Cropping the map will delete tiles outside the new bounds. Proceed?')) {
+        return;
+      }
+    }
+    const newMap = resizeStudioMap(activeMapData, resizeW, resizeH);
+    useGameStore.getState().setActiveMapData(newMap);
+    useEditorStore.getState().markMapDirty();
+    setIsResizingMap(false);
+    showToast(`Map resized to ${resizeW}x${resizeH} — Save Map to persist.`);
+  };
+
   const handleBrushSelect = (tileId: number) => {
     setBrushTileId(tileId);
+    if (activeLayerIdx === -1) {
+      setActiveLayerIdx(0);
+      showToast('Switched to layer 0 (Visual) for tile paint.');
+    }
   };
 
   return (
@@ -370,7 +365,7 @@ export const WorldBuilderPanel: React.FC = () => {
                   min={8}
                   max={128}
                   value={newMapWidth}
-                  onChange={(e) => setNewMapWidth(parseInt(e.target.value, 10) || 24)}
+                  onChange={(e) => setNewMapWidth(parseInt(e.target.value, 10) || 64)}
                   className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
                 />
               </div>
@@ -381,7 +376,7 @@ export const WorldBuilderPanel: React.FC = () => {
                   min={8}
                   max={128}
                   value={newMapHeight}
-                  onChange={(e) => setNewMapHeight(parseInt(e.target.value, 10) || 24)}
+                  onChange={(e) => setNewMapHeight(parseInt(e.target.value, 10) || 64)}
                   className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
                 />
               </div>
@@ -395,6 +390,145 @@ export const WorldBuilderPanel: React.FC = () => {
             </button>
           </div>
         )}
+
+        {/* RESIZE UI */}
+        <button
+          onClick={() => {
+            setIsResizingMap(!isResizingMap);
+            if (!isResizingMap && activeMapData?.grid) {
+              setResizeW(activeMapData.grid[0]?.length || 64);
+              setResizeH(activeMapData.grid.length || 64);
+            }
+          }}
+          disabled={!activeMapData}
+          className="w-full py-1 border border-dashed border-sky-500/30 hover:bg-sky-500/20 text-slate-300 disabled:opacity-50 rounded flex items-center justify-center gap-1 mt-2"
+        >
+          <Grid className="w-3 h-3" /> Resize Map
+        </button>
+
+        {isResizingMap && (
+          <div className="p-2 bg-[#050b14] border border-sky-500/30 rounded space-y-2 mt-2">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[10px] text-slate-400">New W</label>
+                <input
+                  type="number"
+                  min={8}
+                  max={128}
+                  value={resizeW}
+                  onChange={(e) => setResizeW(parseInt(e.target.value, 10) || 64)}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[10px] text-slate-400">New H</label>
+                <input
+                  type="number"
+                  min={8}
+                  max={128}
+                  value={resizeH}
+                  onChange={(e) => setResizeH(parseInt(e.target.value, 10) || 64)}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleResizeMapSubmit}
+              className="w-full py-1 bg-sky-600/80 hover:bg-sky-500 text-white rounded font-bold"
+            >
+              Apply Resize
+            </button>
+          </div>
+        )}
+
+        {/* CONNECTIONS UI */}
+        <div className="mt-2 space-y-2">
+          <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
+            <Compass className="w-3.5 h-3.5" /> Map Connections
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] text-slate-400">North</label>
+              <input
+                type="text"
+                placeholder="Map ID"
+                value={activeMapData?.connections?.north || ''}
+                onChange={(e) => {
+                  if (activeMapData) {
+                    useGameStore.setState({
+                      activeMapData: {
+                        ...activeMapData,
+                        connections: { ...activeMapData.connections, north: e.target.value || undefined }
+                      }
+                    });
+                    useEditorStore.setState({ mapDirty: true });
+                  }
+                }}
+                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-slate-400">South</label>
+              <input
+                type="text"
+                placeholder="Map ID"
+                value={activeMapData?.connections?.south || ''}
+                onChange={(e) => {
+                  if (activeMapData) {
+                    useGameStore.setState({
+                      activeMapData: {
+                        ...activeMapData,
+                        connections: { ...activeMapData.connections, south: e.target.value || undefined }
+                      }
+                    });
+                    useEditorStore.setState({ mapDirty: true });
+                  }
+                }}
+                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-slate-400">East</label>
+              <input
+                type="text"
+                placeholder="Map ID"
+                value={activeMapData?.connections?.east || ''}
+                onChange={(e) => {
+                  if (activeMapData) {
+                    useGameStore.setState({
+                      activeMapData: {
+                        ...activeMapData,
+                        connections: { ...activeMapData.connections, east: e.target.value || undefined }
+                      }
+                    });
+                    useEditorStore.setState({ mapDirty: true });
+                  }
+                }}
+                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-slate-400">West</label>
+              <input
+                type="text"
+                placeholder="Map ID"
+                value={activeMapData?.connections?.west || ''}
+                onChange={(e) => {
+                  if (activeMapData) {
+                    useGameStore.setState({
+                      activeMapData: {
+                        ...activeMapData,
+                        connections: { ...activeMapData.connections, west: e.target.value || undefined }
+                      }
+                    });
+                    useEditorStore.setState({ mapDirty: true });
+                  }
+                }}
+                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* LAYER SELECTOR */}
@@ -441,6 +575,35 @@ export const WorldBuilderPanel: React.FC = () => {
           <Grid className="w-3.5 h-3.5" />
           {activeLayerIdx === -1 ? 'Logic Tags' : 'Asset Picker'}
         </div>
+
+        {activeLayerIdx === -1 && (
+          <div className="rounded border border-rose-900/50 bg-rose-950/20 p-2 text-[10px] space-y-1">
+            <div className="font-bold text-rose-200 border-b border-rose-900/30 pb-1 mb-1">Smoke Checklist</div>
+            <div className="flex flex-col gap-1 text-slate-300">
+              <div className="flex items-center gap-1.5">
+                {activeLayerIdx === -1 ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
+                <span className={activeLayerIdx === -1 ? "text-emerald-400" : ""}>Layer is Logic (−1)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {activeLogicTileId ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
+                <span className={activeLogicTileId ? "text-emerald-400" : ""}>Logic Tag selected</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {activeLayerIdx === -1 ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
+                <span className={activeLayerIdx === -1 ? "text-emerald-400" : ""}>Overlay is ON</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {isDevEditorOpen ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
+                <span className={isDevEditorOpen ? "text-emerald-400" : ""}>Tools toggle ON</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {!isMapDirty ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
+                <span className={!isMapDirty ? "text-emerald-400" : ""}>Map Saved</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeLayerIdx >= 0 && (
           <div className="flex gap-1">
             <button

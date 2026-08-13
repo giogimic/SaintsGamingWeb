@@ -11,7 +11,7 @@ import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { definitionOpValue } from '@/shared/game/definitionOps';
 import {
-  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle,
+  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle, LayoutTemplate
 } from 'lucide-react';
 
 const inputCls =
@@ -131,6 +131,25 @@ export function QuestEditorPanel() {
     setIsNew(true);
   };
 
+  const handleTemplate = () => {
+    const prevKey = questResourceKey(formRef.current, isNewRef.current);
+    clearDefinitionStackFor(prevKey);
+    setForm({
+      slug: 'fetch_wood_starter',
+      gameId: activeGameId,
+      title: 'Wood for the Fire',
+      description: 'The campfire is running low. Gather some wood logs from the nearby forest.',
+      levelReq: 1,
+      isRepeatable: false,
+      rewards: JSON.stringify({ items: [{ slug: 'gold_coin', qty: 50 }], xp: 100 }, null, 2),
+      objectives: [
+        { stage: 1, type: 'GATHER', targetSlug: 'wood_log', requiredQty: 5, description: 'Gather 5 Wood Logs' },
+        { stage: 2, type: 'TALK', targetSlug: 'npc_warden_vance', requiredQty: 1, description: 'Return to Warden Vance' }
+      ],
+    });
+    setIsNew(true);
+  };
+
   const handleSave = async () => {
     if (!form.slug || !form.title) {
       showStatus('error', 'Slug and title required.');
@@ -221,6 +240,9 @@ export function QuestEditorPanel() {
           </button>
           <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New quest">
             <Plus className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={handleTemplate} className="rounded p-1.5 text-blue-400 hover:bg-white/5" title="Load Starter Template">
+            <LayoutTemplate className="h-3.5 w-3.5" />
           </button>
         </div>
       }

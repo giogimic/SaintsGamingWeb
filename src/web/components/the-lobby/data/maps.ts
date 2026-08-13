@@ -55,6 +55,12 @@ export interface GameMapData {
     weight: number;
   }>;
   chunks?: MapChunkData[];
+  connections?: {
+    north?: string;
+    south?: string;
+    east?: string;
+    west?: string;
+  };
 }
 
 const mapCache: Record<string, GameMapData> = {};
@@ -182,10 +188,22 @@ export async function listMaps(gameId?: string): Promise<MapIndexEntry[]> {
 
 export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
   const current = mapCache[currentMapId];
-  if (!current?.gates) return;
-  for (const targetMapId of listGateTargets(current.gates)) {
-    if (targetMapId && !mapCache[targetMapId]) {
-      loadMap(targetMapId).catch(() => {});
+  if (!current) return;
+  
+  if (current.gates) {
+    for (const targetMapId of listGateTargets(current.gates)) {
+      if (targetMapId && !mapCache[targetMapId]) {
+        loadMap(targetMapId).catch(() => {});
+      }
+    }
+  }
+
+  if (current.connections) {
+    const { north, south, east, west } = current.connections;
+    for (const targetMapId of [north, south, east, west]) {
+      if (targetMapId && !mapCache[targetMapId]) {
+        loadMap(targetMapId).catch(() => {});
+      }
     }
   }
 }

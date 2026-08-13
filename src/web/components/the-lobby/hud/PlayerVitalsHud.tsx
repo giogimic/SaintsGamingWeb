@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useGameStore } from '../store';
-import { Heart, Sparkles, Aperture, Camera } from 'lucide-react';
+import { Heart, Sparkles, Camera } from 'lucide-react';
+import { GamePanelShell } from '../ui/GamePanelShell';
 
 function StatBar({ 
   label, 
@@ -60,7 +61,7 @@ function StatBar({
   );
 }
 
-export const SaintsHudOrbs: React.FC = () => {
+export const PlayerVitalsHud: React.FC = () => {
   const player = useGameStore((state) => state.player);
 
   const hp = player.hp ?? 100;
@@ -88,7 +89,7 @@ export const SaintsHudOrbs: React.FC = () => {
       }}
     >
       {/* Identity — soul-camera plate */}
-      <div className="lobby-panel pointer-events-auto rounded-lg px-2.5 py-2 md:px-3 md:py-2.5">
+      <GamePanelShell neonAccent="magenta" className="pointer-events-auto p-2 md:p-2.5">
         <div className="flex items-center gap-2 md:gap-3">
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-lobby-border-strong bg-lobby-panel-soft shadow-[inset_0_0_12px_rgba(167,139,250,0.25)] md:h-11 md:w-11">
             <Camera className="h-4 w-4 text-lobby-soul md:h-5 md:w-5" strokeWidth={1.75} />
@@ -105,10 +106,10 @@ export const SaintsHudOrbs: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </GamePanelShell>
 
       {/* Separate HP / MP / EXP */}
-      <div className="pointer-events-auto flex flex-col gap-2 rounded-lg px-2.5 py-2 md:gap-3 md:px-3 md:py-3 bg-[rgba(5,8,14,0.82)] backdrop-blur-sm border border-[#22d3ee] shadow-xl">
+      <GamePanelShell neonAccent="cyan" className="pointer-events-auto flex flex-col gap-2 p-2 md:gap-3 md:p-3">
         <StatBar
           label="HP"
           value={hp}
@@ -134,13 +135,13 @@ export const SaintsHudOrbs: React.FC = () => {
           value={xpIntoLevel}
           max={xpSpan}
           percent={xpProgress}
-          fillClass="bg-white/40"
+          fillClass="bg-[#f472b6] shadow-[0_0_8px_rgba(244,114,182,0.4)]"
           ticksCount={4}
           hideHeader={true}
         />
-      </div>
+      </GamePanelShell>
     </div>
   );
 };
 
-export default SaintsHudOrbs;
+export default PlayerVitalsHud;

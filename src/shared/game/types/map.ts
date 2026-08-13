@@ -22,6 +22,7 @@ export interface EncounterEntry {
   minLevel: number;
   maxLevel: number;
   weight: number;
+  timeOfDay?: 'any' | 'day' | 'night';
 }
 
 export interface TileLayer {
@@ -67,3 +68,15 @@ export interface LogicTile {
   onStepAction?: string | null;
   onStepPayload?: string | null;
 }
+
+export interface SkirtConfig {
+  type: 'single';
+  gid: number;
+}
+
+export const BIOME_SKIRT_CONFIG: Record<string, SkirtConfig> = {
+  town: { type: 'single', gid: 17 },
+  overworld: { type: 'single', gid: 17 },
+  cave: { type: 'single', gid: 1 },
+  default: { type: 'single', gid: 17 },
+};

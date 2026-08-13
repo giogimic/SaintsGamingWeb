@@ -13,7 +13,7 @@ import { KNOWN_ACTIONS } from '@/shared/game/dialogueActions';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import {
-  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle,
+  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle, LayoutTemplate
 } from 'lucide-react';
 
 const inputCls =
@@ -173,6 +173,38 @@ export function DialogueEditorPanel() {
     setIsNew(true);
   };
 
+  const handleTemplate = () => {
+    clearDefinitionStackFor(dialogueResourceKey(form, isNewRef.current));
+    const nodes: DialogueNodeInput[] = [
+      {
+        id: 'node_start',
+        text: 'Hello there. We are in need of supplies. Would you be willing to help out?',
+        options: [
+          { label: 'Yes, what do you need?', nextNode: 'node_quest_details', action: '', questSlug: '' },
+          { label: 'Not right now.', nextNode: 'exit', action: '', questSlug: '' }
+        ]
+      },
+      {
+        id: 'node_quest_details',
+        text: 'Excellent! We need you to gather 5 Wood Logs. Let me know when you have them.',
+        options: [
+          { label: 'I accept.', nextNode: 'exit', action: 'ACCEPT_QUEST', questSlug: 'fetch_wood_starter' }
+        ]
+      }
+    ];
+    setForm({
+      npcId: 'npc_warden_vance_template',
+      name: 'Warden Vance (Template)',
+      nodes,
+      rawMode: false,
+      rawJson: JSON.stringify({
+        node_start: nodes[0],
+        node_quest_details: nodes[1]
+      }, null, 2),
+    });
+    setIsNew(true);
+  };
+
   const handleSave = async () => {
     if (!form.npcId.trim()) {
       showStatus('error', 'npcId required');
@@ -274,6 +306,14 @@ export function DialogueEditorPanel() {
             title="New dialogue"
           >
             <Plus className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleTemplate}
+            className="rounded p-1.5 text-blue-400 hover:bg-white/5"
+            title="Load Quest Dialogue Template"
+          >
+            <LayoutTemplate className="h-3.5 w-3.5" />
           </button>
         </div>
       }

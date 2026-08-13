@@ -1,3 +1,35 @@
+## [2.1.159] - 2026-08-13
+### Removed
+- **TS GameEngine fully removed** — deleted `GameEngine.ts`, `SocketHandler.ts`, `PlayerManager.ts`, `WorldManager.ts`, `InventoryManager.ts`, `CombatManager.ts`, `EncounterManager.ts`, `DialogueManager.ts`, `CraftingManager.ts`, `CreatureManager.ts`, `QuestManager.ts`, `PartyManager.ts`, `GuildManager.ts`, `ShopManager.ts`, `SkillManager.ts`, `EconomyManager.ts`, `PersistenceManager.ts`, `BaseManager.ts`, `AchievementListener.ts`, `StatsListener.ts`, and associated tests. Go MMO is now the sole real-time game backend.
+- Removed `SaintsHudOrbs.tsx` (replaced by `PlayerVitalsHud.tsx`).
+- Removed `NpcEditorPanel.tsx` (replaced by `EntityEditorPanel.tsx`).
+
+### Added
+- **Studio Editor expansion**: `EntityEditorPanel`, `WorldAtlasPanel`, `CatalogEditorShell`, `StudioMenuBar`, `StudioStatusBar`, `StudioFavoritesStrip`, `StudioOmnisearch`, `useStudioBookmarks` hook.
+- **World Atlas API** (`app/api/world/atlas/`) for world map data.
+- **PlayerVitalsHud** — new split HP/MP/XP vitals display replacing the monolithic `SaintsHudOrbs`.
+- **GamePanelShell** (hud variant) — shared dark-glass panel wrapper for lobby HUD elements.
+- New `MapPrefab` support in `app/actions/prefabs.ts` and Prisma schema additions.
+- Expanded `demoMapSeed.ts` and `DemoBootstrap.ts` for richer demo content.
+- Logic tag additions in `LogicTagPalette.tsx`.
+
+### Changed
+- `server.ts` slimmed to Go-only path — Socket.io kept for forum `RealtimeProvider` only.
+- `WorldBuilderPanel` significantly expanded (+237 lines) with atlas and prefab workflows.
+- `ItemEditorPanel` and `LootManagerPanel` fully restyled with dark-glass/neon aesthetics.
+- `DialogueEditorPanel`, `MonsterSpawnerPanel`, `PropertiesPanel`, `QuestEditorPanel`, `PrefabBuilderPanel` updated for new editor store shape.
+- `StudioEditorShell` refactored for new menu bar / status bar / omnisearch architecture.
+- `editor-store.ts` expanded with new Studio modes, bookmarks, and catalog state.
+- `studioModes.ts`, `studioPermissions.ts`, `studioMapCreate.ts` updated for new Studio capabilities.
+- Lobby HUD restyled: `Hotbar`, `ClassicPanel`, `DraggablePanel`, `PeerPresenceHud`, `FloatingHealthBar`, `GameChat`, `TurnBattleOverlay`, `GameOptionsMenu`, `inventory-overlay`, `party-overlay`, `quest-tracker-overlay`, `target-frame`, `GamePanelShell`.
+- Go MMO protocol and gameplay handler updates for map sync.
+- `goMmoSocket.ts` updated for new protocol shape.
+- `BabylonEngine.ts` and `WorldSimulation.ts` refined rendering and simulation logic.
+
+### Fixed
+- `starter-heroes.ts` data corrections.
+- Map slug route handling improvements.
+
 ## [2.1.158-5] - 2026-08-12
 ### Added
 - Toast Queue Stack (`GameToastStack.tsx`) for queuing UI notifications instead of immediately overwriting.

@@ -47,7 +47,7 @@ import {
   authorOverlayMonsterSpawnerMarkers,
   type AuthorOverlaysInput,
 } from "../shared/game/authorOverlays";
-
+import { BIOME_SKIRT_CONFIG } from "../shared/game/types/map";
 export interface BabylonMapChunk {
   chunkX: number;
   chunkY: number;
@@ -916,6 +916,48 @@ export class BabylonEngine {
           }
         });
       });
+
+      // --- PHASE B: FILL SKIRT ---
+      const biome = (mapData as any).biome || 'default';
+      const skirtConfig = BIOME_SKIRT_CONFIG[biome] || BIOME_SKIRT_CONFIG['default'];
+      const skirtGid = skirtConfig.gid;
+      const skirtTs = sortedTilesets.find((t: any) => skirtGid >= t.firstgid);
+      
+      if (skirtTs && skirtTs.imageSource) {
+        const SKIRT_PADDING = 64; 
+        const uvPair = tilesetUvForGid(skirtGid, skirtTs, TILESET_SIZES);
+        const y = -0.01; // Render slightly below layer 0
+
+        for (let absR = -SKIRT_PADDING; absR < height + SKIRT_PADDING; absR++) {
+          for (let absC = -SKIRT_PADDING; absC < width + SKIRT_PADDING; absC++) {
+            if (absR >= 0 && absR < height && absC >= 0 && absC < width) continue;
+
+            const chunkR = Math.floor(absR / CHUNK_SIZE);
+            const chunkC = Math.floor(absC / CHUNK_SIZE);
+            const chunkKey = `${skirtTs.imageSource}_${chunkR}_${chunkC}`;
+
+            const posX = (absC - width / 2) * tileSize;
+            const posZ = (height / 2 - absR) * tileSize;
+
+            let vData = tilesetVertexData.get(chunkKey);
+            if (!vData) {
+              vData = { positions: [], indices: [], uvs: [], vertexIndex: 0 };
+              tilesetVertexData.set(chunkKey, vData);
+            }
+
+            vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize));
+            vData.uvs.push(...uvPair);
+
+            const vi = vData.vertexIndex;
+            vData.indices.push(
+              vi + 0, vi + 1, vi + 2,
+              vi + 0, vi + 2, vi + 3
+            );
+            
+            vData.vertexIndex += 4;
+          }
+        }
+      }
 
       let totalTilesMeshed = 0;
 
@@ -1818,45 +1860,45 @@ export class BabylonEngine {
     mat.disableLighting = true;
     // Distinct, readable Studio colors (walkable stays visible enough to confirm paint).
     if (logicId === 0) {
-      mat.diffuseColor = Color3.FromHexString("#10b981");
+      mat.emissiveColor = Color3.FromHexString("#10b981");
       mat.alpha = 0.55;
     } else if (logicId === 1) {
-      mat.diffuseColor = Color3.FromHexString("#dc2626");
+      mat.emissiveColor = Color3.FromHexString("#dc2626");
       mat.alpha = 0.85;
     } else if (logicId === 2) {
-      mat.diffuseColor = Color3.FromHexString("#22c55e");
+      mat.emissiveColor = Color3.FromHexString("#22c55e");
       mat.alpha = 0.85;
     } else if (logicId === 3 || logicId === 4) {
-      mat.diffuseColor = Color3.FromHexString("#f59e0b");
+      mat.emissiveColor = Color3.FromHexString("#f59e0b");
       mat.alpha = 0.85;
     } else if (logicId === 5) {
-      mat.diffuseColor = Color3.FromHexString("#92400e");
+      mat.emissiveColor = Color3.FromHexString("#92400e");
       mat.alpha = 0.85;
     } else if (logicId === 6) {
-      mat.diffuseColor = Color3.FromHexString("#78716c");
+      mat.emissiveColor = Color3.FromHexString("#78716c");
       mat.alpha = 0.85;
     } else if (logicId === 7) {
-      mat.diffuseColor = Color3.FromHexString("#eab308");
+      mat.emissiveColor = Color3.FromHexString("#eab308");
       mat.alpha = 0.85;
     } else if (logicId === 8) {
-      mat.diffuseColor = Color3.FromHexString("#ec4899");
+      mat.emissiveColor = Color3.FromHexString("#ec4899");
       mat.alpha = 0.85;
     } else if (logicId === 9) {
-      mat.diffuseColor = Color3.FromHexString("#64748b");
+      mat.emissiveColor = Color3.FromHexString("#64748b");
       mat.alpha = 0.85;
     } else if (logicId === 10) {
-      mat.diffuseColor = Color3.FromHexString("#0284c7");
+      mat.emissiveColor = Color3.FromHexString("#0284c7");
       mat.alpha = 0.85;
     } else if (logicId === 11) {
-      mat.diffuseColor = Color3.FromHexString("#3f6212");
+      mat.emissiveColor = Color3.FromHexString("#3f6212");
       mat.alpha = 0.72;
     } else if (logicId === 12) {
-      mat.diffuseColor = Color3.FromHexString("#4338ca");
+      mat.emissiveColor = Color3.FromHexString("#4338ca");
       mat.alpha = 0.7;
     } else {
       // Stable hash so custom tags stay visually distinct.
       const hue = ((logicId * 47) % 360) / 360;
-      mat.diffuseColor = Color3.FromHSV(hue * 360, 0.65, 0.9);
+      mat.emissiveColor = Color3.FromHSV(hue * 360, 0.65, 0.9);
       mat.alpha = 0.62;
     }
   }
@@ -2108,7 +2150,7 @@ private resolveTilePick(
     const orthoH = (h * s) / 2 + 2;
     const orthoW = (w * s) / (2 * aspect) + 2;
     const ortho = Math.max(orthoH, orthoW);
-    const clamped = Math.max(3, Math.min(60, ortho));
+    const clamped = Math.max(3, Math.min(128, ortho));
     this.updateCameraAspect(clamped);
     // Center camera on map center.
     this.snapCameraTo(0, 0);

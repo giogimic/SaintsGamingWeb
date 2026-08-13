@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useGameStore } from './store';
-import RpgPanel from './rpg-panel';
+import { GamePanelShell } from './hud/GamePanelShell';
 import { getCreatureById } from './data/saints-dex';
 
 export default function PartyOverlay() {
@@ -23,8 +23,14 @@ export default function PartyOverlay() {
   };
 
   return (
-    <RpgPanel title="PARTY & CO-OP MANAGEMENT" onClose={() => setGameMode('EXPLORING')}>
-      <div className="flex flex-col gap-4 h-full font-mono text-xs">
+    <GamePanelShell neonAccent="cyan" className="pointer-events-auto z-40 flex w-[min(95vw,100%)] max-w-full flex-col overflow-hidden sm:w-[600px] h-[75vh]">
+      <div className="flex justify-between items-center bg-black/40 p-2 border-b border-[#22d3ee]/20 backdrop-blur-md">
+        <h2 className="font-extrabold text-cyan-50 tracking-widest text-sm drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">PARTY & CO-OP MANAGEMENT</h2>
+        <button onClick={() => setGameMode('EXPLORING')} className="text-cyan-200/50 hover:text-cyan-100 transition-colors font-mono">
+          ✕
+        </button>
+      </div>
+      <div className="flex flex-col gap-4 h-full font-mono text-xs p-4 bg-[#050b14]/90 overflow-hidden">
         
         {/* Navigation Bar */}
         <div className="flex justify-between items-center bg-black/60 p-2 rounded-lg border border-slate-800">
@@ -183,12 +189,7 @@ export default function PartyOverlay() {
 
       </div>
 
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4e342e; border-radius: 4px; border: 1px solid #3e2723; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5d4037; }
-      `}} />
-    </RpgPanel>
+
+    </GamePanelShell>
   );
 }

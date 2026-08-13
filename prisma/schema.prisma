@@ -1774,3 +1774,14 @@ model PlayerStructure {
   @@index([userId])
   @@index([mapId])
 }
+
+model WorldAtlas {
+  id            String   @id @default(cuid())
+  gameId        String   @unique @default("tuxemon")
+  lobbyMapId    String?  @default("LOBBY")
+  atlasData     String   @default("{}") // JSON blob of nodes, edges, bufferPresets, options
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([gameId])
+}

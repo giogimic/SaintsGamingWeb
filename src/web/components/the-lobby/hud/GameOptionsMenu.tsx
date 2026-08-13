@@ -198,6 +198,19 @@ export default function GameOptionsMenu({
                     </button>
                   </div>
                 </div>
+                
+                <div className="bg-black/40 border border-[#22d3ee]/20 p-6 rounded-3xl shadow-inner">
+                  <h4 className="text-sm font-extrabold text-cyan-200/50 mb-4 uppercase tracking-widest">
+                    Keyboard Bindings
+                  </h4>
+                  <div className="text-cyan-50 font-extrabold text-lg mb-1">Keybind Remapping</div>
+                  <div className="text-slate-400 text-sm font-medium mb-4">
+                    Rebind hotkeys for menus (I, K, P, etc.) and abilities. Coming soon!
+                  </div>
+                  <div className="flex flex-col items-center justify-center h-24 border border-dashed border-white/10 rounded-xl bg-black/20 text-cyan-200/30">
+                    <p className="font-extrabold text-sm uppercase">Coming Soon</p>
+                  </div>
+                </div>
               </div>
             )}
 

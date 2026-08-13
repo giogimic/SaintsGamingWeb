@@ -53,11 +53,13 @@ export const PropertiesPanel: React.FC = () => {
   const [warpSpawnY, setWarpSpawnY] = useState(15);
 
   const [encounterPool, setEncounterPool] = useState<
-    Array<{ speciesId: string; minLevel: number; maxLevel: number; weight: number }>
+    Array<{ speciesId: string; minLevel: number; maxLevel: number; weight: number; timeOfDay?: 'any'|'day'|'night' }>
   >(currentMapData.encounterPool || []);
   const [selectedSpecies, setSelectedSpecies] = useState('rockitten');
   const [minLevel, setMinLevel] = useState(2);
   const [maxLevel, setMaxLevel] = useState(5);
+  const [weight, setWeight] = useState(30);
+  const [timeOfDay, setTimeOfDay] = useState<'any'|'day'|'night'>('any');
 
   useEffect(() => {
     if (Object.keys(logicTiles).length === 0) {
@@ -120,7 +122,7 @@ export const PropertiesPanel: React.FC = () => {
   };
 
   const handleAddEncounterSpecies = () => {
-    const next = [...encounterPool, { speciesId: selectedSpecies, minLevel, maxLevel, weight: 30 }];
+    const next = [...encounterPool, { speciesId: selectedSpecies, minLevel, maxLevel, weight, timeOfDay }];
     setEncounterPool(next);
     useGameStore.setState({ activeMapData: { ...currentMapData, encounterPool: next } });
     showToast(`Added ${selectedSpecies} to map pool — Save Map to persist`);
@@ -391,7 +393,8 @@ export const PropertiesPanel: React.FC = () => {
             <div key={idx} className="flex items-center justify-between bg-[#050b14] p-1.5 border border-[#806f47]/20 rounded">
               <span className="font-bold text-white">{enc.speciesId}</span>
               <span className="text-[10px] text-slate-400">
-                Lv {enc.minLevel}-{enc.maxLevel}
+                Lv {enc.minLevel}-{enc.maxLevel} (W:{enc.weight})
+                {enc.timeOfDay && enc.timeOfDay !== 'any' && <span className="ml-1 text-sky-400">[{enc.timeOfDay}]</span>}
               </span>
               <button
                 onClick={() => {
@@ -411,7 +414,8 @@ export const PropertiesPanel: React.FC = () => {
               type="text"
               value={selectedSpecies}
               onChange={(e) => setSelectedSpecies(e.target.value)}
-              className="bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+              className="bg-[#050b14] border border-slate-700 rounded px-1 py-1 text-slate-200"
+              placeholder="species_slug"
             />
             <div className="flex gap-1">
               <input
@@ -428,6 +432,25 @@ export const PropertiesPanel: React.FC = () => {
                 className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
                 placeholder="Max"
               />
+            </div>
+            <div className="flex gap-1 col-span-2">
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(parseInt(e.target.value))}
+                className="w-1/2 bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+                placeholder="Weight"
+                title="Spawn Weight (higher = more common)"
+              />
+              <select
+                value={timeOfDay}
+                onChange={(e) => setTimeOfDay(e.target.value as 'any'|'day'|'night')}
+                className="w-1/2 bg-[#050b14] border border-slate-700 rounded px-1 py-1 text-slate-300"
+              >
+                <option value="any">Any Time</option>
+                <option value="day">Day Only</option>
+                <option value="night">Night Only</option>
+              </select>
             </div>
           </div>
           <button
