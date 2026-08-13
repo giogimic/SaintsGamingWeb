@@ -23,6 +23,8 @@ describe("studioPermissions", () => {
     expect(canUseStudioDock(200, "dev")).toBe(false);
     expect(canUseStudioDock(1000, "build")).toBe(true);
     expect(canUseStudioDock(400, "loot")).toBe(true);
+    expect(canUseStudioDock(400, "problems")).toBe(true);
+    expect(canUseStudioDock(20, "problems")).toBe(false);
     expect(canUseStudioDock(20, "loot")).toBe(false);
   });
 

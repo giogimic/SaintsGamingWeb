@@ -27,6 +27,7 @@ export default function MiniMapRadar() {
   const instanceId = useGameStore(state => state.instanceId);
   const playerPos = useGameStore(state => state.player.position);
   const mapEntities = useGameStore(state => state.mapEntities);
+  const activeMapData = useGameStore(state => state.activeMapData);
   const otherPlayers = useGameStore(state => state.otherPlayers);
 
   const draw = useCallback(() => {
@@ -35,7 +36,7 @@ export default function MiniMapRadar() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const mapData = GAME_MAPS[currentMapId];
+    const mapData = activeMapData || GAME_MAPS[currentMapId];
     if (!mapData || !mapData.grid) return;
 
     const grid = mapData.grid;
