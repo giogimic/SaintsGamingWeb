@@ -264,6 +264,10 @@ export interface GameState {
   setCombatTarget: (target: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string, behavior?: string } | null) => void;
   cooldowns: Record<string, number>;
   setCooldown: (abilityId: string, timestamp: number) => void;
+  connectionStatus: 'connected' | 'connecting' | 'reconnecting' | 'disconnected';
+  setConnectionStatus: (status: 'connected' | 'connecting' | 'reconnecting' | 'disconnected') => void;
+  latencyMs: number;
+  setLatencyMs: (ms: number) => void;
   emitSocketEvent?: (event: string, data: any) => void;
   setEmitSocketEvent: (emitter: (event: string, data: any) => void) => void;
   refreshQuestsCounter: number;
@@ -553,6 +557,10 @@ export const useGameStore = create<GameState>()(
       setCooldown: (abilityId, timestamp) => set((state) => {
         state.cooldowns[abilityId] = timestamp;
       }),
+      connectionStatus: 'disconnected',
+      setConnectionStatus: (status) => set((state) => { state.connectionStatus = status; }),
+      latencyMs: 0,
+      setLatencyMs: (ms) => set((state) => { state.latencyMs = ms; }),
       setEmitSocketEvent: (emitter) => set((state) => {
         state.emitSocketEvent = emitter;
       }),

@@ -423,12 +423,26 @@ export default function TheLobby({
 
     // Soft-reconnect stays in-world (does not dump to title/login menu).
     let hadLobbyDisconnect = false;
+    useGameStore.getState().setConnectionStatus('connecting');
     const { url: goUrl, options: socketOpts } = lobbySocketConnect(session.user.id);
     const socket = goUrl ? io(goUrl, socketOpts) : io(socketOpts);
     socketRef.current = socket;
+
+    // Periodic ping/pong for diagnostics & latency RTT
+    const pingInterval = setInterval(() => {
+      if (socket.connected) {
+        const start = performance.now();
+        socket.emit('ping', { clientTime: Date.now() });
+        socket.once('pong', () => {
+          const rtt = Math.round(performance.now() - start);
+          useGameStore.getState().setLatencyMs(rtt);
+        });
+      }
+    }, 5000);
     
     socket.on('connect', () => {
       const state = useGameStore.getState();
+      state.setConnectionStatus('connected');
       state.setEmitSocketEvent((event, data) => {
         socket.emit(event, data);
       });
@@ -481,10 +495,15 @@ export default function TheLobby({
       }
     });
 
+    socket.io.on('reconnect_attempt', () => {
+      useGameStore.getState().setConnectionStatus('reconnecting');
+    });
+
     socket.on('disconnect', (reason) => {
       // Stay in EXPLORING — do not dump to menu. Peers get player_left server-side.
       hadLobbyDisconnect = true;
       lastJoinKeyRef.current = null;
+      useGameStore.getState().setConnectionStatus('disconnected');
       // Soft blips keep peer sprites until map_players refreshes after reconnect.
       if (shouldClearPeersOnDisconnect(reason)) {
         useGameStore.getState().setOtherPlayers({});
@@ -685,6 +704,20 @@ export default function TheLobby({
           text: data.message,
           timestamp: data.timestamp || Date.now(),
           type: 'PARTY'
+        }
+      });
+      window.dispatchEvent(msgEvent);
+    });
+
+    socket.on('whisper_msg', (data) => {
+      const msgEvent = new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString() + Math.random(),
+          sender: data.sender || 'Tamer',
+          text: data.message,
+          timestamp: data.timestamp || Date.now(),
+          type: 'WHISPER',
+          recipient: data.recipient,
         }
       });
       window.dispatchEvent(msgEvent);

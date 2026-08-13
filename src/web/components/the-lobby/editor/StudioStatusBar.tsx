@@ -27,6 +27,10 @@ export function StudioStatusBar() {
   const clickedTile = useEditorStore((s) => s.clickedTile);
   const activeLocks = useEditorStore((s) => s.activeLocks);
   const activeMapData = useGameStore((s) => s.activeMapData);
+  const connectionStatus = useGameStore((s) => s.connectionStatus);
+  const latencyMs = useGameStore((s) => s.latencyMs);
+  const otherPlayers = useGameStore((s) => s.otherPlayers);
+  const peerCount = Object.keys(otherPlayers || {}).length;
 
   const defsDirtyCount = definitionStack.undo.length; // Approximate
 
@@ -113,6 +117,27 @@ export function StudioStatusBar() {
           <div className="opacity-80">
             {clickedTile ? `[${clickedTile.r}, ${clickedTile.c}]` : '[-, -]'}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 border-r border-[#806f47]/20 pr-4 h-full">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              connectionStatus === 'connected'
+                ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
+                : connectionStatus === 'reconnecting' || connectionStatus === 'connecting'
+                ? 'bg-amber-400 animate-pulse'
+                : 'bg-rose-500'
+            }`}
+            title={`Realtime: ${connectionStatus} (${latencyMs}ms)`}
+          />
+          <span className="text-[10px] text-[#e2d5b3]/90 font-bold uppercase tracking-wider">
+            {connectionStatus === 'connected' ? `${latencyMs}ms` : connectionStatus}
+          </span>
+          {peerCount > 0 && (
+            <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded border border-cyan-500/30">
+              {peerCount} Peer{peerCount > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 text-[#98c379]">

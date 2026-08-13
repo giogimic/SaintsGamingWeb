@@ -1,16 +1,24 @@
 /**
  * Saints Gaming — Authoritative Real-Time Lobby & Studio Socket Handler
  *
- * Provides real-time shard management, movement synchronization, local/global/party chat,
- * soft locks for Studio collaboration, and peer presence over Socket.IO.
+ * Coordinates modular realtime services (Session, Shard, Studio Collaboration, Chat)
+ * to provide authoritative multiplayer synchronization, presence, and map editing.
  */
 
 import type { Server, Socket } from "socket.io";
+import { toBaseMapId } from "../../shared/net/mapIds";
 import {
-  toBaseMapId,
-  pickPublicShardAssignment,
-  type PublicShardCandidate,
-} from "@/shared/net/mapIds";
+  REALTIME_PROTOCOL_VERSION,
+  RealtimeEvents,
+  type StudioSoftLock,
+  type StudioTileChangeOp,
+  type WhisperCommand,
+  type PaintTilesCommand,
+} from "../../shared/net/protocol";
+import { SessionManager } from "./SessionManager";
+import { ShardManager } from "./ShardManager";
+import { StudioCollaborationService } from "./StudioCollaborationService";
+import { ChatService } from "./ChatService";
 
 export interface ConnectedPlayer {
   socketId: string;
@@ -28,24 +36,12 @@ export interface ConnectedPlayer {
   joinedAt: number;
 }
 
-export interface SoftLock {
-  resource: string;
-  userId: string;
-  displayName: string;
-  at: string;
-  expiresAt: string;
-}
-
 export class LobbySocketHandler {
   private io: Server;
-  /** Active players keyed by socket.id */
-  private players = new Map<string, ConnectedPlayer>();
-  /** Maps accountId -> socket.id for 1-account-1-seat enforcement */
-  private accountSockets = new Map<string, string>();
-  /** Active rooms: instanceId -> Set of socket.id */
-  private roomMembers = new Map<string, Set<string>>();
-  /** Soft locks for Studio editing */
-  private locks = new Map<string, SoftLock>();
+  private sessions = new SessionManager();
+  private shards = new ShardManager();
+  private studio = new StudioCollaborationService();
+  private chat = new ChatService();
 
   constructor(io: Server) {
     this.io = io;
@@ -58,22 +54,31 @@ export class LobbySocketHandler {
       const accountId = rawToken.replace(/^dev:/, "");
 
       if (accountId) {
-        // Enforce 1-account-1-seat: notify previous socket if open
-        const existingSocketId = this.accountSockets.get(accountId);
-        if (existingSocketId && existingSocketId !== socket.id) {
-          const oldSocket = this.io.sockets.sockets.get(existingSocketId);
+        // Enforce 1-account-1-seat
+        const evictedSocketId = this.sessions.registerSession(socket, accountId);
+        if (evictedSocketId) {
+          const oldSocket = this.io.sockets.sockets.get(evictedSocketId);
           if (oldSocket) {
-            oldSocket.emit("session_replaced", {
+            oldSocket.emit(RealtimeEvents.SESSION_REPLACED, {
               reason: "Signed in from another window or device.",
             });
-            this.handlePlayerLeave(oldSocket, true);
+            this.handlePlayerDisconnect(oldSocket, true);
           }
         }
-        this.accountSockets.set(accountId, socket.id);
       }
 
+      // --- HEARTBEAT & DIAGNOSTICS ---
+      socket.on(RealtimeEvents.PING, (data: { clientTime?: number }) => {
+        this.sessions.touchHeartbeat(socket.id);
+        socket.emit(RealtimeEvents.PONG, {
+          clientTime: data?.clientTime,
+          serverTime: Date.now(),
+          protocolVersion: REALTIME_PROTOCOL_VERSION,
+        });
+      });
+
       // --- JOIN MAP ---
-      socket.on("join_map", (data: any) => {
+      socket.on(RealtimeEvents.JOIN_MAP, (data: any) => {
         try {
           const playerAccountId = String(data?.accountId || accountId || socket.id);
           const rawMapId = String(data?.mapId || "DEMO_SANDBOX");
@@ -82,30 +87,13 @@ export class LobbySocketHandler {
           const isPrivate = Boolean(data?.isPrivate);
           const isPie = Boolean(data?.pie);
 
-          let targetInstanceId: string;
-          if (isPie) {
-            targetInstanceId = `studio_pie_${playerAccountId}`;
-          } else if (isPrivate) {
-            targetInstanceId = `BASE_${playerAccountId}`;
-          } else if (isLobby) {
-            // Build shard candidates for this base map
-            const candidates: PublicShardCandidate[] = [];
-            for (const [instId, members] of this.roomMembers.entries()) {
-              if (toBaseMapId(instId) === baseMapId) {
-                candidates.push({
-                  instanceId: instId,
-                  mapId: baseMapId,
-                  playerCount: members.size,
-                });
-              }
-            }
-            const pick = pickPublicShardAssignment(baseMapId, candidates, 50);
-            targetInstanceId = pick.instanceId;
-          } else {
-            targetInstanceId = `${baseMapId}_ch1`;
-          }
+          const targetInstanceId = this.shards.resolveInstanceId(baseMapId, playerAccountId, {
+            isLobby,
+            isPrivate,
+            pie: isPie,
+          });
 
-          const existingPlayer = this.players.get(socket.id);
+          const existingPlayer = this.shards.getPlayer(socket.id);
           const isSoftRejoin = existingPlayer && existingPlayer.instanceId === targetInstanceId;
 
           const player: ConnectedPlayer = {
@@ -124,163 +112,200 @@ export class LobbySocketHandler {
             joinedAt: existingPlayer?.joinedAt ?? Date.now(),
           };
 
-          if (!isSoftRejoin && existingPlayer) {
-            // Player changed instances — leave old room
-            this.leaveRoom(socket, existingPlayer.instanceId);
+          const joinResult = this.shards.joinShard(player);
+
+          if (joinResult.previousInstanceId) {
+            socket.leave(joinResult.previousInstanceId);
+            socket.to(joinResult.previousInstanceId).emit(RealtimeEvents.PLAYER_LEFT, { socketId: socket.id });
+            socket.to(joinResult.previousInstanceId).emit(RealtimeEvents.PLAYER_LEFT, socket.id);
           }
 
-          this.players.set(socket.id, player);
-          this.joinRoom(socket, targetInstanceId);
+          socket.join(targetInstanceId);
 
-          // 1. Send confirmation to joining client
-          socket.emit("map_joined", {
+          // 1. Send authoritative confirmation
+          socket.emit(RealtimeEvents.MAP_JOINED, {
             instanceId: targetInstanceId,
             mapId: baseMapId,
             x: player.x,
             y: player.y,
+            revision: this.studio.getRevision(baseMapId),
+            protocolVersion: REALTIME_PROTOCOL_VERSION,
           });
 
-          // 2. Gather peers in the target instance
-          const peersRecord: Record<string, ConnectedPlayer> = {};
-          const room = this.roomMembers.get(targetInstanceId);
-          if (room) {
-            for (const memberId of room) {
-              if (memberId !== socket.id) {
-                const peer = this.players.get(memberId);
-                if (peer) {
-                  peersRecord[memberId] = peer;
-                }
-              }
-            }
+          // 2. Send snapshot of existing peers
+          const peers = this.shards.getPeersInShard(targetInstanceId, socket.id);
+          socket.emit(RealtimeEvents.MAP_PLAYERS, peers);
+
+          // 3. Replicate new player to shard peers
+          if (!isSoftRejoin) {
+            socket.to(targetInstanceId).emit(RealtimeEvents.PLAYER_JOINED, {
+              socketId: player.socketId,
+              accountId: player.accountId,
+              name: player.name,
+              spriteId: player.spriteId,
+              x: player.x,
+              y: player.y,
+              direction: player.direction,
+              hp: player.hp,
+              maxHp: player.maxHp,
+            });
           }
-          socket.emit("map_players", peersRecord);
-
-          // 3. Broadcast to peers in that shard
-          socket.to(targetInstanceId).emit("player_joined", {
-            socketId: player.socketId,
-            accountId: player.accountId,
-            name: player.name,
-            spriteId: player.spriteId,
-            x: player.x,
-            y: player.y,
-            direction: player.direction,
-            hp: player.hp,
-            maxHp: player.maxHp,
-          });
         } catch (err) {
           console.error("[LobbySocket] join_map error:", err);
         }
       });
 
       // --- MOVEMENT ---
-      socket.on("move", (data: any) => {
+      socket.on(RealtimeEvents.MOVE, (data: any) => {
         try {
-          const player = this.players.get(socket.id);
+          const x = typeof data?.x === "number" ? data.x : 0;
+          const y = typeof data?.y === "number" ? data.y : 0;
+          const direction = typeof data?.direction === "string" ? data.direction : "down";
+          const moving = Boolean(data?.moving);
+
+          const player = this.shards.updatePlayerPosition(socket.id, x, y, direction, moving);
           if (!player) return;
 
-          if (typeof data?.x === "number") player.x = data.x;
-          if (typeof data?.y === "number") player.y = data.y;
-          if (typeof data?.direction === "string") player.direction = data.direction;
-          player.moving = Boolean(data?.moving);
-
-          // Broadcast to other players in shard
-          socket.to(player.instanceId).emit("player_moved", {
+          socket.to(player.instanceId).emit(RealtimeEvents.PLAYER_MOVED, {
             socketId: socket.id,
             x: player.x,
             y: player.y,
             direction: player.direction,
             moving: player.moving,
+            seq: data?.seq,
           });
 
-          // Acknowledge position to client
-          socket.emit("move_ack", {
+          socket.emit(RealtimeEvents.MOVE_ACK, {
             x: player.x,
             y: player.y,
+            seq: data?.seq,
+            requestId: data?.requestId,
           });
         } catch (err) {
           console.error("[LobbySocket] move error:", err);
         }
       });
 
-      // --- LOCAL CHAT ---
-      socket.on("chat_message", (text: unknown) => {
+      // --- CHAT: LOCAL ---
+      socket.on(RealtimeEvents.CHAT_MESSAGE, (text: unknown) => {
         try {
-          const msg = typeof text === "string" ? text.trim() : "";
-          if (!msg) return;
-          const player = this.players.get(socket.id);
-          const senderName = player?.name || "Player";
-          const instanceId = player?.instanceId;
+          const player = this.shards.getPlayer(socket.id);
+          const result = this.chat.validateAndFormatMessage(
+            socket.id,
+            player?.name || "Player",
+            text,
+            "LOCAL"
+          );
+          if (!result.ok || !result.payload) return;
 
-          const payload = {
-            socketId: socket.id,
-            sender: senderName,
-            message: msg,
-            timestamp: Date.now(),
-            channel: "LOCAL",
-          };
-
-          if (instanceId) {
-            this.io.to(instanceId).emit("player_chat", payload);
+          if (player?.instanceId) {
+            this.io.to(player.instanceId).emit(RealtimeEvents.PLAYER_CHAT, result.payload);
           } else {
-            socket.emit("player_chat", payload);
+            socket.emit(RealtimeEvents.PLAYER_CHAT, result.payload);
           }
         } catch (err) {
           console.error("[LobbySocket] chat_message error:", err);
         }
       });
 
-      // --- GLOBAL CHAT ---
-      socket.on("global_chat", (text: unknown) => {
+      // --- CHAT: GLOBAL ---
+      socket.on(RealtimeEvents.GLOBAL_CHAT, (text: unknown) => {
         try {
-          const msg = typeof text === "string" ? text.trim() : "";
-          if (!msg) return;
-          const player = this.players.get(socket.id);
-          const senderName = player?.name || "Player";
+          const player = this.shards.getPlayer(socket.id);
+          const result = this.chat.validateAndFormatMessage(
+            socket.id,
+            player?.name || "Player",
+            text,
+            "GLOBAL"
+          );
+          if (!result.ok || !result.payload) return;
 
-          this.io.emit("global_chat_msg", {
+          this.io.emit(RealtimeEvents.GLOBAL_CHAT_MSG, {
             socketId: socket.id,
-            sender: senderName,
-            message: msg,
-            timestamp: Date.now(),
+            sender: result.payload.sender,
+            message: result.payload.message,
+            timestamp: result.payload.timestamp,
           });
         } catch (err) {
           console.error("[LobbySocket] global_chat error:", err);
         }
       });
 
-      // --- PARTY CHAT ---
-      socket.on("party_chat", (text: unknown) => {
+      // --- CHAT: PARTY ---
+      socket.on(RealtimeEvents.PARTY_CHAT, (text: unknown) => {
         try {
-          const msg = typeof text === "string" ? text.trim() : "";
-          if (!msg) return;
-          const player = this.players.get(socket.id);
-          const senderName = player?.name || "Player";
-          const instanceId = player?.instanceId;
+          const player = this.shards.getPlayer(socket.id);
+          const result = this.chat.validateAndFormatMessage(
+            socket.id,
+            player?.name || "Player",
+            text,
+            "PARTY"
+          );
+          if (!result.ok || !result.payload) return;
 
-          const payload = {
-            socketId: socket.id,
-            sender: senderName,
-            message: msg,
-            timestamp: Date.now(),
-          };
-
-          if (instanceId) {
-            this.io.to(instanceId).emit("party_chat_msg", payload);
-          } else {
-            socket.emit("party_chat_msg", payload);
+          if (player?.instanceId) {
+            this.io.to(player.instanceId).emit(RealtimeEvents.PARTY_CHAT_MSG, {
+              socketId: socket.id,
+              sender: result.payload.sender,
+              message: result.payload.message,
+              timestamp: result.payload.timestamp,
+            });
           }
         } catch (err) {
           console.error("[LobbySocket] party_chat error:", err);
         }
       });
 
+      // --- CHAT: WHISPER ---
+      socket.on(RealtimeEvents.WHISPER, (cmd: WhisperCommand) => {
+        try {
+          const player = this.shards.getPlayer(socket.id);
+          const result = this.chat.validateAndFormatMessage(
+            socket.id,
+            player?.name || "Player",
+            cmd?.message,
+            "WHISPER",
+            cmd?.toPlayerName
+          );
+          if (!result.ok || !result.payload) return;
+
+          // Find target recipient socket
+          let targetSocketId: string | undefined;
+          for (const inst of this.shards.getAllActiveInstances()) {
+            for (const memberId of inst.members) {
+              const p = this.shards.getPlayer(memberId);
+              if (p && p.name.toLowerCase() === (cmd?.toPlayerName || "").toLowerCase()) {
+                targetSocketId = memberId;
+                break;
+              }
+            }
+            if (targetSocketId) break;
+          }
+
+          if (targetSocketId) {
+            this.io.to(targetSocketId).emit(RealtimeEvents.WHISPER_MSG, result.payload);
+            socket.emit(RealtimeEvents.WHISPER_MSG, result.payload);
+          } else {
+            socket.emit(RealtimeEvents.PLAYER_CHAT, {
+              socketId: "SYSTEM",
+              sender: "System",
+              message: `Player "${cmd?.toPlayerName}" is not online.`,
+              channel: "SYSTEM",
+              timestamp: Date.now(),
+            });
+          }
+        } catch (err) {
+          console.error("[LobbySocket] whisper error:", err);
+        }
+      });
+
       // --- STAFF ANNOUNCEMENTS ---
-      socket.on("staff_announce", (msg: unknown) => {
+      socket.on(RealtimeEvents.STAFF_ANNOUNCE, (msg: unknown) => {
         try {
           const text = typeof msg === "string" ? msg.trim() : "";
           if (!text) return;
-          const player = this.players.get(socket.id);
-          this.io.emit("player_chat", {
+          const player = this.shards.getPlayer(socket.id);
+          this.io.emit(RealtimeEvents.PLAYER_CHAT, {
             socketId: "STAFF",
             sender: `[STAFF] ${player?.name || "Admin"}`,
             message: text,
@@ -292,94 +317,88 @@ export class LobbySocketHandler {
         }
       });
 
-      // --- PARTY INVITE ---
-      socket.on("party_invite", (data: { toAccountId?: string; toName?: string }) => {
-        try {
-          const player = this.players.get(socket.id);
-          if (!player) return;
-
-          let targetSocketId: string | undefined;
-          if (data?.toAccountId) {
-            targetSocketId = this.accountSockets.get(data.toAccountId);
-          }
-          if (!targetSocketId && data?.toName) {
-            for (const [sId, p] of this.players.entries()) {
-              if (p.name.toLowerCase() === data.toName.toLowerCase()) {
-                targetSocketId = sId;
-                break;
-              }
-            }
-          }
-
-          if (targetSocketId) {
-            this.io.to(targetSocketId).emit("party_invite", {
-              fromName: player.name,
-              fromAccountId: player.accountId,
-            });
-          }
-        } catch (err) {
-          console.error("[LobbySocket] party_invite error:", err);
+      // --- STUDIO: SOFT LOCKS ---
+      socket.on(RealtimeEvents.STUDIO_LOCK, (data: StudioSoftLock) => {
+        if (!data?.resource) return;
+        const result = this.studio.acquireLock(data);
+        if (result.success) {
+          this.io.emit(RealtimeEvents.STUDIO_LOCK, result.activeLock);
         }
       });
 
-      // --- STUDIO SOFT LOCKS ---
-      socket.on("studio_lock", (data: SoftLock) => {
+      socket.on(RealtimeEvents.STUDIO_UNLOCK, (data: { resource: string; userId?: string }) => {
         if (!data?.resource) return;
-        this.locks.set(data.resource, data);
-        this.io.emit("studio_lock", data);
+        const uid = data.userId || accountId || socket.id;
+        const released = this.studio.releaseLock(data.resource, uid);
+        if (released) {
+          this.io.emit(RealtimeEvents.STUDIO_UNLOCK, { resource: data.resource });
+        }
       });
 
-      socket.on("studio_unlock", (data: { resource: string }) => {
-        if (!data?.resource) return;
-        this.locks.delete(data.resource);
-        this.io.emit("studio_unlock", data);
+      // --- STUDIO: TILE EDITING ---
+      socket.on(RealtimeEvents.PAINT_TILES, (cmd: PaintTilesCommand) => {
+        try {
+          if (!cmd?.mapId || !Array.isArray(cmd?.ops) || cmd.ops.length === 0) return;
+          const player = this.shards.getPlayer(socket.id);
+          const authorId = player?.accountId || accountId || socket.id;
+          const authorName = player?.name || "Editor";
+
+          const broadcast = this.studio.applyTileChanges(cmd.mapId, cmd.ops, authorId, authorName);
+          this.io.emit(RealtimeEvents.TILE_CHANGED, broadcast);
+        } catch (err) {
+          console.error("[LobbySocket] paint_tiles error:", err);
+        }
       });
 
-      // --- CONTENT RELOAD (Map saves) ---
-      socket.on("content_reload", (data: any) => {
-        this.io.emit("content_reload", data);
+      // --- STUDIO: CONTENT RELOAD ---
+      socket.on(RealtimeEvents.CONTENT_RELOAD, (data: any) => {
+        this.io.emit(RealtimeEvents.CONTENT_RELOAD, data);
+      });
+
+      // --- RESYNC REQUEST ---
+      socket.on(RealtimeEvents.RESYNC_REQUEST, (data: { instanceId?: string; mapId?: string }) => {
+        const instId = data?.instanceId || this.shards.getPlayer(socket.id)?.instanceId;
+        if (!instId) return;
+        const peers = this.shards.getPeersInShard(instId);
+        const mapId = toBaseMapId(data?.mapId || instId);
+        socket.emit(RealtimeEvents.RESYNC_STATE, {
+          instanceId: instId,
+          mapId,
+          revision: this.studio.getRevision(mapId),
+          players: peers,
+          locks: this.studio.getAllLocks(),
+        });
       });
 
       // --- DISCONNECT ---
       socket.on("disconnect", () => {
-        this.handlePlayerLeave(socket, false);
+        this.handlePlayerDisconnect(socket, false);
       });
     });
   }
 
-  private joinRoom(socket: Socket, instanceId: string) {
-    socket.join(instanceId);
-    let members = this.roomMembers.get(instanceId);
-    if (!members) {
-      members = new Set<string>();
-      this.roomMembers.set(instanceId, members);
+  private handlePlayerDisconnect(socket: Socket, replaced: boolean) {
+    const leaveResult = this.shards.leaveShard(socket.id);
+    if (leaveResult) {
+      socket.leave(leaveResult.instanceId);
+      socket.to(leaveResult.instanceId).emit(RealtimeEvents.PLAYER_LEFT, { socketId: socket.id });
+      socket.to(leaveResult.instanceId).emit(RealtimeEvents.PLAYER_LEFT, socket.id);
     }
-    members.add(socket.id);
+    this.chat.cleanSocket(socket.id);
+    if (!replaced) {
+      this.sessions.removeSession(socket.id);
+    }
   }
 
-  private leaveRoom(socket: Socket, instanceId: string) {
-    socket.leave(instanceId);
-    const members = this.roomMembers.get(instanceId);
-    if (members) {
-      members.delete(socket.id);
-      if (members.size === 0) {
-        this.roomMembers.delete(instanceId);
-      }
-    }
-    socket.to(instanceId).emit("player_left", { socketId: socket.id });
-    socket.to(instanceId).emit("player_left", socket.id);
+  public getSessionManager(): SessionManager {
+    return this.sessions;
   }
 
-  private handlePlayerLeave(socket: Socket, replaced: boolean) {
-    const player = this.players.get(socket.id);
-    if (player) {
-      this.leaveRoom(socket, player.instanceId);
-      this.players.delete(socket.id);
-    }
-    if (!replaced && player?.accountId) {
-      if (this.accountSockets.get(player.accountId) === socket.id) {
-        this.accountSockets.delete(player.accountId);
-      }
-    }
+  public getShardManager(): ShardManager {
+    return this.shards;
+  }
+
+  public getStudioService(): StudioCollaborationService {
+    return this.studio;
   }
 }
