@@ -1,9 +1,6 @@
 /**
  * Studio Omnisearch — Ctrl+K command palette for definitions, maps, and actions.
- * PT1 (bible 27 §4.4). Client-side index built from existing API data.
- *
- * Searches maps, items, loot tables, quests, creatures, NPCs, abilities, classes,
- * dialogue, and provides quick-action stubs (open dock, switch mode, etc.).
+ * Searches maps, items, quests, creatures, docks, and quick actions.
  */
 'use client';
 
@@ -17,6 +14,9 @@ import { useGameStore } from '../store';
 import { useStudioBookmarks, type StudioBookmarkEntry } from './hooks/useStudioBookmarks';
 import { GAME_MAPS, loadMap } from '../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { ITEM_DB } from '../data/items';
+import { SAINTS_DEX } from '../data/saints-dex';
+import { SAINTS_TAMER_QUESTS } from '../data/quests';
 
 /* ── Types ────────────────────────────────────────── */
 
@@ -71,7 +71,10 @@ function buildQuickActions(showToast: (msg: string) => void): SearchResult[] {
     type: 'dock' as SearchResultType,
     title: `Open ${meta.label}`,
     subtitle: meta.blurb,
-    onSelect: () => showToast(`Open ${meta.label} dock`),
+    onSelect: () => {
+      useEditorStore.getState().openPanel(id as PanelId);
+      showToast(`Opened ${meta.label} dock`);
+    },
   }));
 
   return [
@@ -90,6 +93,26 @@ function buildQuickActions(showToast: (msg: string) => void): SearchResult[] {
       onSelect: () => {
         useEditorStore.getState().enterPlaytest();
         showToast('Playtest started');
+      },
+    },
+    {
+      id: 'action:atlas',
+      type: 'action',
+      title: 'World Atlas & Connected Maps',
+      subtitle: 'Ctrl+Shift+P',
+      onSelect: () => {
+        useEditorStore.getState().openPanel('atlas');
+        showToast('Opened World Atlas');
+      },
+    },
+    {
+      id: 'action:problems',
+      type: 'action',
+      title: 'Map Diagnostics & Problems',
+      subtitle: 'Ctrl+Shift+O',
+      onSelect: () => {
+        useEditorStore.getState().openPanel('problems');
+        showToast('Opened Map Diagnostics');
       },
     },
     {
@@ -112,8 +135,6 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
   const listRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [apiResults, setApiResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
   const showToast = useGameStore((s) => s.showToast);
   const { bookmarks, toggleBookmark, isBookmarked } = useStudioBookmarks();
 
@@ -124,65 +145,16 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
     if (open) {
       setQuery('');
       setSelectedIdx(0);
-      setApiResults([]);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
 
-  // Debounced API search
-  useEffect(() => {
-    if (!query || query.trim().length < 2) {
-      setApiResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (res.ok) {
-          const data = await res.json();
-          const mapped: SearchResult[] = [];
-          
-          // Map threads/articles/modpacks/users from GlobalSearch API into our format
-          if (data.threads) {
-            data.threads.forEach((t: any) => mapped.push({
-              id: `quest:${t.id}`,
-              type: 'quest',
-              title: t.title,
-              subtitle: `Thread #${t.id}`,
-              bookmarkable: true,
-              onSelect: () => showToast(`Open quest: ${t.title}`),
-            }));
-          }
-          if (data.modpacks) {
-            data.modpacks.forEach((m: any) => mapped.push({
-              id: `item:${m.id}`,
-              type: 'item',
-              title: m.name,
-              subtitle: m.game,
-              bookmarkable: true,
-              onSelect: () => showToast(`Open item: ${m.name}`),
-            }));
-          }
-          setApiResults(mapped);
-        }
-      } catch {
-        // Silently fail
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
-
-    return () => clearTimeout(timer);
-  }, [query, showToast]);
-
-  // Build results: bookmarks first, then API results + quick actions (filtered)
+  // Build results: bookmarks first, then maps, items, creatures, quests, quick actions
   const results = useMemo(() => {
     const q = query.toLowerCase().trim();
     const all: SearchResult[] = [];
 
-    // Show bookmarks if no query, otherwise filter them
+    // Show bookmarks if no query
     if (!q) {
       bookmarks.forEach((b) => all.push({
         id: b.id,
@@ -190,20 +162,22 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
         title: b.title,
         subtitle: '★ Bookmarked',
         bookmarkable: true,
-        onSelect: () => showToast(`Open bookmarked: ${b.title}`),
+        onSelect: () => showToast(`Selected: ${b.title}`),
       }));
     }
 
-    // Add Maps from GAME_MAPS
     if (q) {
+      // 1. Search Maps
       Object.keys(GAME_MAPS).forEach((mapId) => {
-        if (mapId.toLowerCase().includes(q)) {
-          const map = GAME_MAPS[mapId];
+        const map = GAME_MAPS[mapId];
+        const matchName = (map.name || '').toLowerCase().includes(q);
+        const matchId = mapId.toLowerCase().includes(q);
+        if (matchName || matchId) {
           all.push({
             id: `map:${mapId}`,
             type: 'map',
             title: map.name || mapId,
-            subtitle: `World Map (${map.width}x${map.height}) · Warp`,
+            subtitle: `World Map (${map.width}x${map.height}) · Click to Warp`,
             bookmarkable: true,
             onSelect: async () => {
               try {
@@ -218,19 +192,69 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
           });
         }
       });
+
+      // 2. Search Items DB
+      Object.entries(ITEM_DB).forEach(([itemId, item]) => {
+        if (item.name.toLowerCase().includes(q) || itemId.toLowerCase().includes(q)) {
+          all.push({
+            id: `item:${itemId}`,
+            type: 'item',
+            title: item.name,
+            subtitle: `${item.type || 'Item'} · ${item.description || 'Game Item'}`,
+            bookmarkable: true,
+            onSelect: () => {
+              useEditorStore.getState().openPanel('items');
+              showToast(`Item: ${item.name}`);
+            },
+          });
+        }
+      });
+
+      // 3. Search Creatures / Saints Dex
+      Object.entries(SAINTS_DEX).forEach(([cId, creature]) => {
+        if (creature.name.toLowerCase().includes(q) || cId.toLowerCase().includes(q)) {
+          all.push({
+            id: `creature:${cId}`,
+            type: 'creature',
+            title: creature.name,
+            subtitle: `${creature.type_primary || 'Creature'} · HP ${creature.stat_profile?.HP || 50} / ATK ${creature.stat_profile?.ATK || 10}`,
+            bookmarkable: true,
+            onSelect: () => {
+              useEditorStore.getState().openPanel('creature');
+              showToast(`Creature: ${creature.name}`);
+            },
+          });
+        }
+      });
+
+      // 4. Search Quests
+      Object.entries(SAINTS_TAMER_QUESTS).forEach(([qId, quest]) => {
+        const title = quest.title || quest.name || qId;
+        const summary = quest.summary || quest.description || 'Campaign Objective';
+        if (title.toLowerCase().includes(q) || qId.toLowerCase().includes(q) || summary.toLowerCase().includes(q)) {
+          all.push({
+            id: `quest:${qId}`,
+            type: 'quest',
+            title,
+            subtitle: `Quest · ${summary}`,
+            bookmarkable: true,
+            onSelect: () => {
+              useEditorStore.getState().openPanel('quest');
+              showToast(`Quest: ${title}`);
+            },
+          });
+        }
+      });
     }
 
-    // Add API results
-    all.push(...apiResults);
-
-    // Add quick actions (filter by query)
+    // 5. Add matching quick actions and docks
     const filteredActions = q
       ? quickActions.filter((a) => a.title.toLowerCase().includes(q) || a.subtitle?.toLowerCase().includes(q))
-      : quickActions.slice(0, 5); // Show top 5 actions when no query
+      : quickActions.slice(0, 6);
     all.push(...filteredActions);
 
     return all;
-  }, [query, apiResults, quickActions, bookmarks, showToast]);
+  }, [query, quickActions, bookmarks, showToast]);
 
   // Keyboard nav
   useEffect(() => {
@@ -267,110 +291,109 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
   return (
     <div className="fixed inset-0 z-[200] pointer-events-auto flex items-start justify-center pt-[15vh]">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Palette */}
-      <div className="relative w-full max-w-xl rounded-2xl border border-[#806f47]/50 bg-[#050b14]/98 shadow-[0_25px_80px_rgba(0,0,0,0.8)] backdrop-blur-xl overflow-hidden">
-        {/* Search Input */}
-        <div className="flex items-center gap-3 border-b border-[#806f47]/30 px-4 py-3">
+      {/* Palette dialog */}
+      <div className="relative w-full max-w-xl bg-[#0a101d] border border-[#806f47]/40 rounded-xl shadow-2xl overflow-hidden font-mono text-sm">
+        {/* Search input bar */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#050b14]/90">
           <Search className="w-5 h-5 text-[#cbb26a] shrink-0" />
           <input
             ref={inputRef}
+            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search maps, items, quests, creatures, or type a command..."
-            className="flex-1 bg-transparent text-white text-sm font-mono placeholder-slate-500 outline-none"
+            placeholder="Search maps, items, creatures, quests, or commands..."
+            className="flex-1 bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none"
           />
-          {loading && (
-            <div className="w-4 h-4 border-2 border-[#cbb26a]/30 border-t-[#cbb26a] rounded-full animate-spin" />
+          {query && (
+            <button onClick={() => setQuery('')} className="text-slate-500 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
           )}
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+          <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+            ESC to close
+          </span>
         </div>
 
-        {/* Results */}
-        <div ref={listRef} className="max-h-[50vh] overflow-y-auto py-1">
-          {results.length === 0 && query.length >= 2 && !loading && (
-            <div className="px-4 py-6 text-center text-slate-500 text-sm font-mono">
-              No results for &ldquo;{query}&rdquo;
+        {/* Results list */}
+        <div ref={listRef} className="max-h-[380px] overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+          {results.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-xs">
+              No matching assets or commands found.
             </div>
-          )}
+          ) : (
+            results.map((r, idx) => {
+              const isSelected = idx === selectedIdx;
+              const bookmarked = r.bookmarkable && isBookmarked(r.id);
 
-          {results.length === 0 && query.length < 2 && bookmarks.length === 0 && (
-            <div className="px-4 py-6 text-center text-slate-500 text-sm font-mono">
-              Type to search or use ↑↓ to browse actions
-            </div>
-          )}
+              return (
+                <div
+                  key={r.id}
+                  onClick={() => {
+                    r.onSelect();
+                    onClose();
+                  }}
+                  onMouseEnter={() => setSelectedIdx(idx)}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                    isSelected ? 'bg-[#806f47]/25 text-white' : 'text-slate-300 hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`shrink-0 ${TYPE_COLORS[r.type]}`}>
+                      {TYPE_ICONS[r.type]}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-xs truncate flex items-center gap-1.5">
+                        <span>{r.title}</span>
+                        <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-white/5 text-slate-400 border border-white/5">
+                          {r.type}
+                        </span>
+                      </div>
+                      {r.subtitle && (
+                        <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                          {r.subtitle}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-          {results.map((result, idx) => {
-            const isSelected = idx === selectedIdx;
-            const bookmarked = result.bookmarkable && isBookmarked(result.id);
-            return (
-              <div
-                key={result.id}
-                onMouseEnter={() => setSelectedIdx(idx)}
-                onClick={() => { result.onSelect(); onClose(); }}
-                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
-                  isSelected
-                    ? 'bg-[#806f47]/15 border-l-2 border-[#cbb26a]'
-                    : 'border-l-2 border-transparent hover:bg-white/5'
-                }`}
-              >
-                <span className={`shrink-0 ${TYPE_COLORS[result.type] || 'text-slate-400'}`}>
-                  {result.icon || TYPE_ICONS[result.type]}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white font-mono truncate">{result.title}</div>
-                  {result.subtitle && (
-                    <div className="text-[10px] text-slate-500 font-mono truncate">{result.subtitle}</div>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {r.bookmarkable && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleBookmark({ id: r.id, type: r.type, title: r.title });
+                        }}
+                        className="text-slate-500 hover:text-yellow-400 p-1"
+                        title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
+                      >
+                        {bookmarked ? (
+                          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                        ) : (
+                          <StarOff className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                    {isSelected && (
+                      <CornerDownLeft className="w-3.5 h-3.5 text-[#cbb26a] animate-pulse" />
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[9px] font-mono uppercase tracking-wider text-slate-600 bg-slate-800/50 px-1.5 py-0.5 rounded">
-                    {result.type}
-                  </span>
-                  {result.bookmarkable && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleBookmark({
-                          id: result.id,
-                          type: result.type,
-                          title: result.title,
-                        });
-                      }}
-                      className={`p-1 rounded transition-colors ${
-                        bookmarked
-                          ? 'text-[#cbb26a] hover:text-[#cbb26a]/70'
-                          : 'text-slate-600 hover:text-[#cbb26a]'
-                      }`}
-                      title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
-                    >
-                      {bookmarked ? <Star className="w-3.5 h-3.5 fill-current" /> : <StarOff className="w-3.5 h-3.5" />}
-                    </button>
-                  )}
-                  {isSelected && (
-                    <CornerDownLeft className="w-3.5 h-3.5 text-slate-500" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-[#806f47]/20 px-4 py-2 text-[10px] font-mono text-slate-600">
+        {/* Footer info strip */}
+        <div className="flex items-center justify-between px-4 py-2 border-t border-white/5 bg-[#050b14]/50 text-[10px] text-slate-500">
           <div className="flex items-center gap-3">
-            <span>↑↓ navigate</span>
-            <span>↵ select</span>
-            <span>esc close</span>
+            <span>↑↓ Navigate</span>
+            <span>↵ Select</span>
+            <span>ESC Close</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Bookmark className="w-3 h-3" />
-            <span>{bookmarks.length} bookmarked</span>
-          </div>
+          <span>{results.length} result{results.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
     </div>
