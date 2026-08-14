@@ -1,3 +1,7 @@
+## [2.1.181] - 2026-08-14
+### Added
+- **Starter Hero Configured Starting Inventory Integration (`character-creator.tsx`)**: The character creation pipeline now merges custom starting inventory payloads defined on Starter Hero records into new MMO player state profiles upon creation.
+
 ## [2.1.180] - 2026-08-14
 ### Added
 - **Global Map Save Event Dispatch (`studioEvents.ts`, `StudioEditorShell.tsx`, `WorldBuilderPanel.tsx`, `StudioMenuBar.tsx`)**: Wired `STUDIO_TRIGGER_SAVE_MAP_EVENT` globally to `Ctrl+S` shortcuts and top menu actions, ensuring level edits are persistently synced to the Go MMO backend from any active Studio dock.
