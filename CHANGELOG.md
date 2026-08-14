@@ -1,3 +1,7 @@
+## [2.1.204] - 2026-08-14
+### Added
+- **MMO Multi-Entity Target Picking & Resolution (`GameCanvasBabylon.tsx`)**: Unified target identification across `creature_`, `mob_`, `wild_`, and online multiplayer peer sockets, providing accurate HP initialization and behavior states on mesh click.
+
 ## [2.1.203] - 2026-08-14
 ### Added
 - **MMO Game Options Graphics, Audio & Gameplay Expansion (`GameOptionsMenu.tsx`)**: Replaced placeholder panels with interactive settings for Master/SFX/Music volume sliders, Mute toggle, Graphics Quality presets, Framerate targeting, Damage numbers, and Multiplayer shard player visibility settings.
