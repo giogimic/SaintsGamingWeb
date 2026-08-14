@@ -1,3 +1,7 @@
+## [2.1.207] - 2026-08-14
+### Fixed
+- **MMO Defeat Respawn Coordinates & Map Sync (`gameplay.go`, `index.tsx`)**: Aligned Go MMO `EvPlayerDefeated` payload with client expectation by sending `mapId`, `instanceId`, and spawn coordinates `(x, y)` on combat blackout. Hardened client handler with fallback bounds and default safe maps.
+
 ## [2.1.206] - 2026-08-14
 ### Added
 - **MMO Real-Time Multiplayer PvP & Monster Combat Calculations (`combat.ts`, `combat.test.ts`)**: Added `calculateCombatHitDamage` featuring critical strikes, diminishing mitigation curves, damage variance, and full dynamic equipment scanning.
