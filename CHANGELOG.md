@@ -1,3 +1,7 @@
+## [2.1.187] - 2026-08-14
+### Added
+- **Studio Status Bar Save Dispatch (`StudioStatusBar.tsx`)**: Bound the bottom status bar Save action directly to `STUDIO_TRIGGER_SAVE_MAP_EVENT`, enabling one-click map saves and Go MMO live reloading from the status bar.
+
 ## [2.1.186] - 2026-08-14
 ### Added
 - **Dynamic Touch/Mobile Viewport Lifecycle (`MobileControls.tsx`)**: Added window resize listeners to `isTouchDevice` detection, ensuring mobile controls and floating joystick overlays reactively mount/unmount across viewport transitions without page reload.

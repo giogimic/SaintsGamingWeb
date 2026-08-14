@@ -12,6 +12,7 @@ import {
   setActiveWorldProfile,
 } from '@/app/actions/world-profiles';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
+import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { useSession } from 'next-auth/react';
 
 export function StudioStatusBar() {
@@ -181,9 +182,15 @@ export function StudioStatusBar() {
 
         <div className="flex items-center gap-2 pl-2">
           <button
+            onClick={() => {
+              if (mapDirty || defsDirtyCount > 0) {
+                window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+              }
+            }}
+            disabled={!mapDirty && defsDirtyCount === 0}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
               mapDirty || defsDirtyCount > 0 
-                ? 'bg-[#cbb26a] text-[#050b14] hover:bg-[#d4c38d] shadow-[0_0_10px_rgba(203,178,106,0.3)]' 
+                ? 'bg-[#cbb26a] text-[#050b14] hover:bg-[#d4c38d] shadow-[0_0_10px_rgba(203,178,106,0.3)] cursor-pointer' 
                 : 'bg-[#1a2333] text-[#5c6370] cursor-not-allowed'
             }`}
             title="Save Map & Defs (Ctrl+S)"
