@@ -923,6 +923,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.updateSelectionRing(combatTarget?.entityId ?? null);
   }, [combatTarget]);
 
+  // Studio Center Camera Event Listener
+  useEffect(() => {
+    const handleCenterCamera = (e: Event) => {
+      const customEv = e as CustomEvent<{ r: number; c: number }>;
+      const { r, c } = customEv.detail || {};
+      if (typeof r === 'number' && typeof c === 'number' && engineRef.current) {
+        engineRef.current.panEditorCameraToTile(r, c);
+      }
+    };
+    window.addEventListener('studio_center_camera', handleCenterCamera);
+    return () => window.removeEventListener('studio_center_camera', handleCenterCamera);
+  }, []);
+
   // Handle Combat Projectile & HP Events
   useEffect(() => {
     const handleCombatUpdate = (e: Event) => {
