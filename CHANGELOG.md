@@ -1,3 +1,7 @@
+## [2.1.195] - 2026-08-14
+### Added
+- **MMO Grand Trade Center (GTC) Reliability & Empty State Validation (`gtc-overlay.tsx`)**: Added manual market listing refresh polling via `RefreshCw`, reactive inventory item auto-selection for trade listings, empty backpack validation notices, and informative confirmation toasts on trade post.
+
 ## [2.1.194] - 2026-08-14
 ### Added
 - **MMO Quest Journal & Objectives Presentation (`quest-log-overlay.tsx`)**: Upgraded Quest Log Overlay to support custom campaign tasks and dynamic Studio quests without omission, rendering granular objective checkpoints with target counters and flexible rewards calculation.

@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import RpgPanel from './rpg-panel';
 import { useGameStore } from './store';
 import { getItem } from './data/items';
-import { Search, PlusCircle, Loader2 } from 'lucide-react';
+import { Search, PlusCircle, Loader2, RefreshCw } from 'lucide-react';
 
 interface TradeListing {
   id: string;
@@ -101,7 +101,17 @@ export default function GtcOverlay() {
       price: sellPrice,
       itemId: selectedItemId
     });
+    showToast(`Posting ${itemObj?.name || selectedItemId} for ${sellPrice} Credits...`);
   };
+
+  const sellableItems = Object.entries(inventory).filter(([_, qty]) => qty > 0);
+
+  // Keep selected item valid
+  React.useEffect(() => {
+    if (sellableItems.length > 0 && !inventory[selectedItemId]) {
+      setSelectedItemId(sellableItems[0][0]);
+    }
+  }, [inventory, selectedItemId, sellableItems]);
 
   return (
     <RpgPanel title="GLOBAL TRADE CENTER (GTC)" onClose={() => setGameMode('EXPLORING')}>
@@ -155,6 +165,14 @@ export default function GtcOverlay() {
                 <option value="EQUIPMENT">Equipment</option>
                 <option value="MATERIAL">Materials</option>
               </select>
+              <button
+                onClick={() => fetchListings()}
+                disabled={isLoading}
+                title="Refresh market listings"
+                className="px-2.5 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-[#cbb26a] rounded border border-[#806f47]/40 transition-colors disabled:opacity-50 flex items-center justify-center cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
             </div>
 
             {/* Trade Grid */}
@@ -192,7 +210,7 @@ export default function GtcOverlay() {
 
                     <button
                       onClick={() => handleBuyout(listing)}
-                      className="px-4 py-2 bg-[#806f47] hover:bg-[#cbb26a] text-white font-bold text-xs rounded transition-colors flex items-center gap-1 shadow"
+                      className="px-4 py-2 bg-[#806f47] hover:bg-[#cbb26a] text-white font-bold text-xs rounded transition-colors flex items-center gap-1 shadow cursor-pointer"
                     >
                       <span>BUYOUT</span>
                       <span className="text-[#050b14] font-mono">({listing.price} C)</span>
@@ -209,57 +227,63 @@ export default function GtcOverlay() {
           <div className="p-4 bg-[#0b1320]/60 border border-[#806f47]/40 rounded-lg space-y-4">
             <h3 className="text-xs font-bold text-[#eab308] uppercase tracking-wider">CREATE NEW MARKET TRADE</h3>
             
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-slate-300 block mb-1">Listing Type</label>
-                <select
-                  value={sellType}
-                  onChange={e => setSellType(e.target.value as 'EQUIPMENT' | 'MATERIAL')}
-                  className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
+            {sellableItems.length === 0 ? (
+              <div className="p-8 border border-dashed rounded text-center text-slate-400 italic text-xs">
+                You do not have any tradeable items or materials in your backpack.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Listing Type</label>
+                  <select
+                    value={sellType}
+                    onChange={e => setSellType(e.target.value as 'EQUIPMENT' | 'MATERIAL')}
+                    className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
+                  >
+                    <option value="MATERIAL">Material</option>
+                    <option value="EQUIPMENT">Equipment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Select Item from Inventory</label>
+                  <select
+                    value={selectedItemId}
+                    onChange={e => setSelectedItemId(e.target.value)}
+                    className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
+                  >
+                    {sellableItems.map(([id, qty]) => {
+                      const info = getItem(id);
+                      return (
+                        <option key={id} value={id}>
+                          {info?.name || id} (Owned: x{qty})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-slate-300 block mb-1">Listing Price (Credits)</label>
+                  <input
+                    type="number"
+                    min={10}
+                    step={50}
+                    value={sellPrice}
+                    onChange={e => setSellPrice(parseInt(e.target.value) || 0)}
+                    className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
+                  />
+                </div>
+
+                <button
+                  onClick={handlePostListing}
+                  disabled={sellableItems.length === 0 || sellPrice <= 0}
+                  className="w-full py-2.5 bg-[#806f47] hover:bg-[#cbb26a] disabled:opacity-50 text-white font-bold text-xs rounded transition-colors uppercase tracking-wider cursor-pointer"
                 >
-                  <option value="MATERIAL">Material</option>
-                  <option value="EQUIPMENT">Equipment</option>
-                </select>
+                  POST TRADE TO GTC
+                </button>
               </div>
-
-              <div>
-                <label className="text-xs text-slate-300 block mb-1">Select Item from Inventory</label>
-                <select
-                  value={selectedItemId}
-                  onChange={e => setSelectedItemId(e.target.value)}
-                  className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
-                >
-                  {Object.entries(inventory).map(([id, qty]) => {
-                    if (qty <= 0) return null;
-                    const info = getItem(id);
-                    return (
-                      <option key={id} value={id}>
-                        {info?.name || id} (Owned: x{qty})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs text-slate-300 block mb-1">Listing Price (Credits)</label>
-                <input
-                  type="number"
-                  min={10}
-                  step={50}
-                  value={sellPrice}
-                  onChange={e => setSellPrice(parseInt(e.target.value) || 0)}
-                  className="w-full bg-[#050b14]/80 border border-[#806f47]/40 rounded p-2 text-xs text-[#e2d5b3]"
-                />
-              </div>
-
-              <button
-                onClick={handlePostListing}
-                className="w-full py-2.5 bg-[#806f47] hover:bg-[#cbb26a] text-white font-bold text-xs rounded transition-colors uppercase tracking-wider"
-              >
-                POST TRADE TO GTC
-              </button>
-            </div>
+            )}
           </div>
         )}
 
