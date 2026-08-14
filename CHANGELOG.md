@@ -1,3 +1,7 @@
+## [2.1.186] - 2026-08-14
+### Added
+- **Dynamic Touch/Mobile Viewport Lifecycle (`MobileControls.tsx`)**: Added window resize listeners to `isTouchDevice` detection, ensuring mobile controls and floating joystick overlays reactively mount/unmount across viewport transitions without page reload.
+
 ## [2.1.185] - 2026-08-14
 ### Added
 - **Studio Drag-and-Drop Palette Tile Painting (`TilesetPicker.tsx`, `GameCanvasBabylon.tsx`)**: Made tileset picker sheets draggable with `STUDIO_TILE_DROP` payloads, allowing creators to drag specific tiles from the palette directly onto 2.5D map coordinates to paint terrain seamlessly.
