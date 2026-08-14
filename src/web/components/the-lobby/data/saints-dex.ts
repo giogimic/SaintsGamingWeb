@@ -7,7 +7,7 @@ import {
   creatureAssetUrl,
   type CreatureDefData,
   type CreatureElementType,
-} from "@/shared/game/creatureCatalog";
+} from "../../../../shared/game/creatureCatalog";
 
 export type ElementType = CreatureElementType;
 
