@@ -1,3 +1,7 @@
+## [2.1.208] - 2026-08-14
+### Fixed
+- **MMO 3D Player Mesh Target Resolution (`GameCanvasBabylon.tsx`)**: Fixed targeting when clicking other online tamers in the 3D viewport by stripping the internal `multiplayer_` mesh prefix, ensuring instantaneous target frame initialization and whisper/invite readiness.
+
 ## [2.1.207] - 2026-08-14
 ### Fixed
 - **MMO Defeat Respawn Coordinates & Map Sync (`gameplay.go`, `index.tsx`)**: Aligned Go MMO `EvPlayerDefeated` payload with client expectation by sending `mapId`, `instanceId`, and spawn coordinates `(x, y)` on combat blackout. Hardened client handler with fallback bounds and default safe maps.
