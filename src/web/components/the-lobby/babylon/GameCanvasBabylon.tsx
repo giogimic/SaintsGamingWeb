@@ -255,14 +255,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      const spawn = gate.targetSpawn || { x: 6, y: 2 };
+      const spawn = { ...(gate.targetSpawn || { x: 6, y: 2 }) };
       const targetBase = toBaseMapId(gate.targetMapId);
-      // Public lobby stays on DEMO_SANDBOX so peers share a multiplayer shard.
-      // Studio / playtest may warp to any map.
-      if (!getIsEditorMode() && targetBase !== LOBBY_MULTIPLAYER_MAP) {
-        showToast(`Multiplayer stays on ${LOBBY_MULTIPLAYER_MAP} — open Studio to visit other maps.`);
-        return;
-      }
       const finishWarp = () => {
         let loadedGrid: number[][] | undefined = undefined;
         // Load destination document before flipping ids — never leave stale
@@ -281,12 +275,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             useGameStore.getState().setCurrentMapId(gate.targetMapId);
           })
           .finally(() => {
-            if (spawn.x === -1 && loadedGrid && loadedGrid.length > 0) {
-              spawn.x = loadedGrid[0].length - 1;
+            const finalW = loadedGrid?.[0]?.length || 20;
+            const finalH = loadedGrid?.length || 20;
+            if (spawn.x === -1) {
+              spawn.x = finalW - 1;
             }
-            if (spawn.y === -1 && loadedGrid) {
-              spawn.y = loadedGrid.length - 1;
+            if (spawn.y === -1) {
+              spawn.y = finalH - 1;
             }
+            // Clamp spawn safely within destination bounds
+            spawn.x = Math.max(0, Math.min(finalW - 1, spawn.x));
+            spawn.y = Math.max(0, Math.min(finalH - 1, spawn.y));
+
             setPlayerPosition(spawn);
             const p = useGameStore.getState().player;
             const inStudio = getIsEditorMode();
@@ -303,7 +303,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               name: p.name || 'Player',
               spriteId: p.spriteId || 'adventurer',
             });
-            showToast(`Warped to ${gate.targetMapId}`);
+            showToast(`Warped to ${gate.targetMapId.replace(/_/g, ' ')}`);
           });
       };
       if (isDevEditorOpen) {
@@ -1127,6 +1127,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               store.pushPaintOp(ops);
               store.markMapDirty();
             }
+            return;
+          }
+
+          if (brushMode === 'gate') {
+            useEditorStore.getState().setClickedTile({ r, c });
+            useEditorStore.getState().setShowWarpOverlays(true);
+            if (onMapClick) onMapClick(r, c);
+            showToast(`Warp Gate selected at [${r}, ${c}]. Configure in Properties or World Builder.`);
             return;
           }
 

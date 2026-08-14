@@ -171,8 +171,9 @@ func (e *Engine) netTick() {
 			"name":      p.Name,
 			"spriteId":  p.SpriteID,
 		}
-		// Broadcast to AOI 3x3 — Hub expands neighbor rooms.
+		// Broadcast to AOI 3x3 neighbor rooms and map instance room.
 		e.emit.EmitToRoom(aoiBroadcastKey(p.MapID, p.ZoneX, p.ZoneY), protocol.EvPlayerMoved, payload)
+		e.emit.EmitToRoom(p.MapID, protocol.EvPlayerMoved, payload)
 	}
 	if e.creatures != nil {
 		for _, c := range e.creatures.DrainDirty() {

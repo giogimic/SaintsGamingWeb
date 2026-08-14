@@ -200,6 +200,22 @@ export function StudioPaintHud() {
           >
             <Box className="h-3.5 w-3.5" />
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setBrushMode('gate');
+              setShowWarpOverlays(true);
+            }}
+            className={`p-1.5 rounded-full transition-colors ${
+              brushMode === 'gate'
+                ? 'bg-purple-600 text-white font-bold shadow ring-1 ring-purple-300'
+                : 'text-slate-400 hover:text-purple-300 hover:bg-white/10'
+            }`}
+            title="Warp Gate Tool (Click tile to place/configure gates)"
+          >
+            <DoorOpen className="h-3.5 w-3.5" />
+          </button>
         </div>
 
         {/* Undo / Redo Quick Actions */}

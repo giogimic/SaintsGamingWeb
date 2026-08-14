@@ -5,13 +5,15 @@ import { useGameStore } from '../../store';
 import { searchMapIndex, registerNewMap } from '../../data/map-index';
 import { invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
-import { Compass, Plus, Search, Layers, Grid, Save, Shield, Eraser } from 'lucide-react';
+import { Compass, Plus, Search, Layers, Grid, Save, Shield, Eraser, DoorOpen, MapPin, Trash2, ExternalLink } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
+import { normalizeGatesToArray } from '@/shared/game/mapGates';
+import { normalizeGates, removeWarpGateAt, upsertWarpGate } from '@/shared/game/logicComponents';
 import {
   buildNewStudioMap,
   formatMapWriteError,
@@ -451,92 +453,196 @@ export const WorldBuilderPanel: React.FC = () => {
           </div>
         )}
 
-        {/* CONNECTIONS UI */}
-        <div className="mt-2 space-y-2">
-          <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-            <Compass className="w-3.5 h-3.5" /> Map Connections
+        {/* CONNECTIONS & WARP GATES UI */}
+        <div className="mt-2 space-y-3">
+          <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-1">
+            <div className="flex items-center gap-1.5 font-bold text-[#cbb26a]">
+              <Compass className="w-3.5 h-3.5" /> Edge Connections & Warp Gates
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                useEditorStore.getState().setBrushMode('gate');
+                useEditorStore.getState().setShowWarpOverlays(true);
+                showToast('Warp Gate tool active: Click any tile on the map to place a gate.');
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/50 text-[10px] text-purple-200 hover:bg-purple-900/80 font-bold transition-all"
+            >
+              <DoorOpen className="w-3 h-3 text-purple-400" /> Gate Tool
+            </button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-[10px] text-slate-400">North</label>
-              <input
-                type="text"
-                placeholder="Map ID"
-                value={activeMapData?.connections?.north || ''}
-                onChange={(e) => {
-                  if (activeMapData) {
-                    useGameStore.setState({
-                      activeMapData: {
-                        ...activeMapData,
-                        connections: { ...activeMapData.connections, north: e.target.value || undefined }
-                      }
-                    });
-                    useEditorStore.setState({ mapDirty: true });
-                  }
-                }}
-                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
-              />
+
+          {/* 4 Cardinal Edge Connections */}
+          <div className="space-y-1">
+            <span className="text-[10px] text-slate-400 font-semibold block">Continuous Edge Transitions</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[9px] text-slate-400">North Edge (y &lt; 0)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ROUTE_1"
+                  value={activeMapData?.connections?.north || ''}
+                  onChange={(e) => {
+                    if (activeMapData) {
+                      useGameStore.setState({
+                        activeMapData: {
+                          ...activeMapData,
+                          connections: { ...activeMapData.connections, north: e.target.value || undefined }
+                        }
+                      });
+                      useEditorStore.setState({ mapDirty: true });
+                    }
+                  }}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] text-slate-400">South Edge (y &gt;= H)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. SAINTS_TOWN"
+                  value={activeMapData?.connections?.south || ''}
+                  onChange={(e) => {
+                    if (activeMapData) {
+                      useGameStore.setState({
+                        activeMapData: {
+                          ...activeMapData,
+                          connections: { ...activeMapData.connections, south: e.target.value || undefined }
+                        }
+                      });
+                      useEditorStore.setState({ mapDirty: true });
+                    }
+                  }}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] text-slate-400">East Edge (x &gt;= W)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CAVE_ENTRANCE"
+                  value={activeMapData?.connections?.east || ''}
+                  onChange={(e) => {
+                    if (activeMapData) {
+                      useGameStore.setState({
+                        activeMapData: {
+                          ...activeMapData,
+                          connections: { ...activeMapData.connections, east: e.target.value || undefined }
+                        }
+                      });
+                      useEditorStore.setState({ mapDirty: true });
+                    }
+                  }}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] text-slate-400">West Edge (x &lt; 0)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. PROFESSOR_LAB"
+                  value={activeMapData?.connections?.west || ''}
+                  onChange={(e) => {
+                    if (activeMapData) {
+                      useGameStore.setState({
+                        activeMapData: {
+                          ...activeMapData,
+                          connections: { ...activeMapData.connections, west: e.target.value || undefined }
+                        }
+                      });
+                      useEditorStore.setState({ mapDirty: true });
+                    }
+                  }}
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] text-slate-400">South</label>
-              <input
-                type="text"
-                placeholder="Map ID"
-                value={activeMapData?.connections?.south || ''}
-                onChange={(e) => {
-                  if (activeMapData) {
-                    useGameStore.setState({
-                      activeMapData: {
-                        ...activeMapData,
-                        connections: { ...activeMapData.connections, south: e.target.value || undefined }
-                      }
-                    });
-                    useEditorStore.setState({ mapDirty: true });
-                  }
+          </div>
+
+          {/* Specific Warp Gates List */}
+          <div className="space-y-1 pt-1 border-t border-[#806f47]/20">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-purple-400" /> Placed Warp Gates ({normalizeGates(activeMapData?.gates).length})
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const clicked = useEditorStore.getState().clickedTile;
+                  const x = clicked ? clicked.c : 5;
+                  const y = clicked ? clicked.r : 5;
+                  if (!activeMapData) return;
+                  const newGate = {
+                    id: `gate_${x}_${y}`,
+                    position: { x, y },
+                    targetMapId: 'DEMO_SANDBOX',
+                    spawnPoint: { x: 6, y: 2 }
+                  };
+                  const updatedGates = upsertWarpGate(activeMapData.gates, newGate);
+                  useGameStore.setState({
+                    activeMapData: { ...activeMapData, gates: updatedGates }
+                  });
+                  useEditorStore.setState({ mapDirty: true });
+                  useEditorStore.getState().setShowWarpOverlays(true);
+                  showToast(`Added warp gate at [${x}, ${y}] → DEMO_SANDBOX`);
                 }}
-                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
-              />
+                className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-200"
+              >
+                + Add Gate At Selection
+              </button>
             </div>
-            <div>
-              <label className="block text-[10px] text-slate-400">East</label>
-              <input
-                type="text"
-                placeholder="Map ID"
-                value={activeMapData?.connections?.east || ''}
-                onChange={(e) => {
-                  if (activeMapData) {
-                    useGameStore.setState({
-                      activeMapData: {
-                        ...activeMapData,
-                        connections: { ...activeMapData.connections, east: e.target.value || undefined }
-                      }
-                    });
-                    useEditorStore.setState({ mapDirty: true });
-                  }
-                }}
-                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400">West</label>
-              <input
-                type="text"
-                placeholder="Map ID"
-                value={activeMapData?.connections?.west || ''}
-                onChange={(e) => {
-                  if (activeMapData) {
-                    useGameStore.setState({
-                      activeMapData: {
-                        ...activeMapData,
-                        connections: { ...activeMapData.connections, west: e.target.value || undefined }
-                      }
-                    });
-                    useEditorStore.setState({ mapDirty: true });
-                  }
-                }}
-                className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs"
-              />
-            </div>
+
+            {normalizeGates(activeMapData?.gates).length === 0 ? (
+              <p className="text-[9px] text-slate-500 italic py-1">
+                No warp gates placed yet. Select a tile on the map or click Gate Tool above to add one.
+              </p>
+            ) : (
+              <div className="max-h-32 space-y-1 overflow-y-auto custom-scrollbar">
+                {normalizeGates(activeMapData?.gates).map((gate, idx) => (
+                  <div
+                    key={`${gate.id || idx}_${gate.position.x}_${gate.position.y}`}
+                    className="flex items-center justify-between gap-1 p-1 rounded bg-[#050b14] border border-slate-800 text-[10px]"
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="font-mono text-purple-300 font-bold">
+                        ({gate.position.x},{gate.position.y})
+                      </span>
+                      <span className="text-slate-500">→</span>
+                      <input
+                        type="text"
+                        value={gate.targetMapId}
+                        onChange={(e) => {
+                          if (!activeMapData) return;
+                          const updated = { ...gate, targetMapId: e.target.value };
+                          const nextGates = upsertWarpGate(activeMapData.gates, updated);
+                          useGameStore.setState({
+                            activeMapData: { ...activeMapData, gates: nextGates }
+                          });
+                          useEditorStore.setState({ mapDirty: true });
+                        }}
+                        className="bg-transparent border-b border-slate-700 text-slate-200 text-[10px] px-1 w-28 focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!activeMapData) return;
+                        const nextGates = removeWarpGateAt(activeMapData.gates, gate.position.x, gate.position.y);
+                        useGameStore.setState({
+                          activeMapData: { ...activeMapData, gates: nextGates }
+                        });
+                        useEditorStore.setState({ mapDirty: true });
+                        showToast(`Removed gate at (${gate.position.x}, ${gate.position.y})`);
+                      }}
+                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      title="Remove gate"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
