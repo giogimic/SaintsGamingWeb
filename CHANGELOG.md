@@ -1,3 +1,7 @@
+## [2.1.193] - 2026-08-14
+### Added
+- **Studio Map Diagnostics & Spawner Validator (`StudioProblemsPanel.tsx`)**: Extended map problem scanning to include encounter & monster spawner collision checks (flagging solid tile overlap and out-of-bounds placements), styled `SPAWN` badge category tags, and introduced a manual "Scan Map" button with animation state.
+
 ## [2.1.192] - 2026-08-14
 ### Added
 - **Studio Monster Spawner Dirty State Sync (`MonsterSpawnerPanel.tsx`)**: Integrated mapDirty synchronization on spawner placement, mutation, and deletion, ensuring the editor workspace and global level persistence pipeline reflect pending encounter changes.
