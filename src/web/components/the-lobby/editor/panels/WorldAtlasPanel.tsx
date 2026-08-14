@@ -53,8 +53,18 @@ export const WorldAtlasPanel: React.FC = () => {
         
         if (atlasRes.ok) {
           const data = await atlasRes.json();
-          setAtlasData(typeof data.atlas.atlasData === 'string' ? JSON.parse(data.atlas.atlasData) : data.atlas.atlasData);
-          setLobbyMapId(data.atlas.lobbyMapId || 'LOBBY');
+          if (data?.atlas) {
+            let parsedAtlas = data.atlas.atlasData;
+            if (typeof parsedAtlas === 'string') {
+              try {
+                parsedAtlas = JSON.parse(parsedAtlas);
+              } catch {
+                parsedAtlas = { nodes: [], edges: [] };
+              }
+            }
+            setAtlasData(parsedAtlas || { nodes: [], edges: [] });
+            setLobbyMapId(data.atlas.lobbyMapId || 'LOBBY');
+          }
         }
         
         if (mapsRes.ok) {
@@ -85,10 +95,11 @@ export const WorldAtlasPanel: React.FC = () => {
           atlasData,
         })
       });
-      if (res.ok) {
+      const result = await res.json();
+      if (res.ok && result.ok) {
         showToast('Atlas saved successfully.');
       } else {
-        showToast('Failed to save atlas.');
+        showToast(result.error || 'Failed to save atlas.');
       }
     } catch (e) {
       console.error(e);

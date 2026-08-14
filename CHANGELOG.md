@@ -1,3 +1,7 @@
+## [2.1.174] - 2026-08-13
+### Fixed
+- **World Atlas Persistence Fallback (`app/api/world/atlas/route.ts`, `WorldAtlasPanel.tsx`)**: Hardened World Atlas endpoints against un-migrated tables with automatic `SiteSetting` key-value mirror fallback, preventing 500 errors on remote production hosts.
+
 ## [2.1.173] - 2026-08-13
 ### Added
 - **Diagnostic Navigation Jump (`GameCanvasBabylon.tsx`, `StudioProblemsPanel.tsx`)**: Wired `studio_center_camera` event handling to `panEditorCameraToTile`, allowing one-click spatial teleportation to problem coordinates directly from the Diagnostics & Problems panel.
