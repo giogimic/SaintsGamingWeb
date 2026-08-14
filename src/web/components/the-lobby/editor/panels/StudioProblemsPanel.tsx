@@ -144,8 +144,46 @@ export function StudioProblemsPanel() {
       }
     }
 
+    // 5. Check Spawners
+    const spawners = (mapData as any).spawners || (mapData as any).logicComponents?.filter((c: any) => c.kind === 'monster_spawner') || [];
+    spawners.forEach((spawner: any, idx: number) => {
+      const x = spawner.position?.x ?? spawner.x;
+      const y = spawner.position?.y ?? spawner.y;
+      if (typeof x === 'number' && typeof y === 'number') {
+        if (y < 0 || y >= rows || x < 0 || x >= cols) {
+          list.push({
+            id: `spawner_oob_${idx}`,
+            type: 'ERROR',
+            category: 'SPAWN',
+            message: `Spawner "${spawner.name || spawner.id || 'Monster Spawner'}" is outside map boundaries at [${y}, ${x}].`,
+            coordinate: { r: y, c: x },
+            entityId: spawner.id,
+          });
+        } else {
+          const tileVal = grid[y]?.[x];
+          const isSolid = tileVal === 1 || logicTiles[tileVal]?.isSolid;
+          if (isSolid) {
+            list.push({
+              id: `spawner_solid_${idx}`,
+              type: 'WARNING',
+              category: 'SPAWN',
+              message: `Spawner "${spawner.name || spawner.id || 'Monster Spawner'}" is placed on a solid collision tile at [${y}, ${x}].`,
+              coordinate: { r: y, c: x },
+              entityId: spawner.id,
+            });
+          }
+        }
+      }
+    });
+
     return list;
   }, [mapData, mapEntities, logicTiles]);
+
+  const [isScanning, setIsScanning] = React.useState(false);
+  const handleScan = () => {
+    setIsScanning(true);
+    setTimeout(() => setIsScanning(false), 400);
+  };
 
   const errorCount = problems.filter((p) => p.type === 'ERROR').length;
   const warningCount = problems.filter((p) => p.type === 'WARNING').length;
@@ -184,9 +222,20 @@ export function StudioProblemsPanel() {
           </div>
         </div>
 
-        <span className="text-[10px] text-[#e2d5b3]/60 uppercase">
-          Map: {baseMapId}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleScan}
+            className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-[#1a2333] hover:bg-[#253247] text-[#cbb26a] rounded border border-[#806f47]/30 transition-all cursor-pointer"
+            title="Scan map for issues"
+          >
+            <RefreshCw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} />
+            <span>Scan</span>
+          </button>
+          <span className="text-[10px] text-[#e2d5b3]/60 uppercase">
+            Map: {baseMapId}
+          </span>
+        </div>
       </div>
 
       {/* PROBLEMS LIST */}
@@ -196,7 +245,7 @@ export function StudioProblemsPanel() {
             <CheckCircle2 className="w-8 h-8 text-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
             <span className="font-bold text-sm">No map validation issues found</span>
             <span className="text-[11px] text-slate-400 max-w-xs">
-              All gates, entity placements, and layer bounds conform to engine specifications.
+              All gates, entity placements, spawners, and layer bounds conform to engine specifications.
             </span>
           </div>
         ) : (
@@ -233,6 +282,8 @@ export function StudioProblemsPanel() {
                             ? 'bg-amber-900/60 text-amber-300'
                             : prob.category === 'ENTITY'
                             ? 'bg-cyan-900/60 text-cyan-300'
+                            : prob.category === 'SPAWN'
+                            ? 'bg-rose-900/60 text-rose-300'
                             : 'bg-slate-800 text-slate-300'
                         }`}
                       >
