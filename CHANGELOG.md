@@ -1,3 +1,7 @@
+## [2.1.184] - 2026-08-14
+### Added
+- **Studio Drag-and-Drop Viewport Sprite Placement (`SpriteBrowser.tsx`, `GameCanvasBabylon.tsx`, `BabylonEngine.ts`)**: Made sprite browser thumbnails draggable with structured metadata payloads, projection coordinates via `pickTileAtScreenCoord`, and canvas drop listeners targeting live map coordinates.
+
 ## [2.1.183] - 2026-08-14
 ### Added
 - **NPC Dialogue Portrait Visualizer (`dialog-overlay.tsx`)**: Replaced generic placeholder icons with dynamically resolved NPC pixelated sprite portraits extracted from active dialog metadata and live map entities.
