@@ -115,6 +115,7 @@ export const WorldAtlasPanel: React.FC = () => {
       });
       const result = await res.json();
       if (res.ok && result.ok) {
+        useEditorStore.getState().clearMapDirty();
         showToast('Atlas saved successfully.');
       } else {
         showToast(result.error || 'Failed to save atlas.');
@@ -144,6 +145,7 @@ export const WorldAtlasPanel: React.FC = () => {
       setAtlasData({ ...atlasData, nodes: newNodes });
       setSelectedMapIdToPlace(null);
       setSelectedNode({ mapId: selectedMapIdToPlace, x, y });
+      useEditorStore.getState().markMapDirty();
     } else if (existingNode) {
       setSelectedNode(existingNode);
     } else {
@@ -309,6 +311,7 @@ export const WorldAtlasPanel: React.FC = () => {
                 <button
                   onClick={() => {
                     setLobbyMapId(selectedNode.mapId);
+                    useEditorStore.getState().markMapDirty();
                     showToast(`Set ${selectedNode.mapId} as spawn hub`);
                   }}
                   className="px-2.5 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-emerald-300 font-bold rounded border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
@@ -322,6 +325,7 @@ export const WorldAtlasPanel: React.FC = () => {
                     const newNodes = atlasData.nodes.filter(n => !(n.x === selectedNode.x && n.y === selectedNode.y));
                     setAtlasData({ ...atlasData, nodes: newNodes });
                     setSelectedNode(null);
+                    useEditorStore.getState().markMapDirty();
                     showToast(`Removed ${selectedNode.mapId} from atlas`);
                   }}
                   className="px-2.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-bold rounded border border-rose-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"

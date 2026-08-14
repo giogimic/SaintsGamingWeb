@@ -1,3 +1,7 @@
+## [2.1.197] - 2026-08-14
+### Added
+- **Studio World Atlas Dirty State Sync (`WorldAtlasPanel.tsx`)**: Integrated `markMapDirty()` and `clearMapDirty()` across macro grid placement, spawn hub assignment, node deletion, and atlas save workflows.
+
 ## [2.1.196] - 2026-08-14
 ### Added
 - **Studio Tile Layer Addition Dirty State Sync (`WorldBuilderPanel.tsx`)**: Wired `markMapDirty()` to `handleAddLayer`, ensuring that adding a new visual/logic tile layer marks the workspace dirty and lights up the save indicators.
