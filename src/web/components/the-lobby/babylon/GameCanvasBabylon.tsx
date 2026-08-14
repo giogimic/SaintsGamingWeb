@@ -250,6 +250,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const seq = store.incrementMoveSeq();
       store.addPendingMove({ seq, direction: result.direction, predictedPos: currentPos });
       emitSocketEvent?.('input', { type: "MOVE", direction: result.direction, sequence: seq, timestamp: Date.now() });
+      emitSocketEvent?.('player_move', { x: currentPos.x, y: currentPos.y, direction: result.direction, moving: false, seq });
       return;
     }
 
@@ -333,6 +334,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const seq = store.incrementMoveSeq();
       store.addPendingMove({ seq, direction: dir, predictedPos: { x: targetX, y: targetY } });
       emitSocketEvent?.('input', { type: "MOVE", direction: dir, sequence: seq, timestamp: Date.now() });
+      emitSocketEvent?.('player_move', { x: targetX, y: targetY, direction: dir, moving: true, seq });
 
       // Handle Step Actions (suppressed during Studio create tools — bible 17)
       if (result.stepAction && !suppressGameplay) {

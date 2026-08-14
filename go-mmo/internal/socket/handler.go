@@ -145,6 +145,12 @@ func (h *Hub) onConnect(client *socket.Socket) {
 			h.handleAttack(accountID, in.TargetID)
 		}
 	})
+	client.On("move", func(datas ...any) {
+		h.handleDirectMove(accountID, datas)
+	})
+	client.On("player_move", func(datas ...any) {
+		h.handleDirectMove(accountID, datas)
+	})
 	client.On(protocol.EvCombatAction, func(datas ...any) {
 		h.handleCombatAction(accountID, datas)
 	})
@@ -794,4 +800,42 @@ func atoi(s string) int {
 		return -n
 	}
 	return n
+}
+
+func (h *Hub) handleDirectMove(accountID string, datas []any) {
+	if len(datas) == 0 {
+		return
+	}
+	var req struct {
+		X         *float64 `json:"x"`
+		Y         *float64 `json:"y"`
+		Direction string   `json:"direction"`
+		Moving    bool     `json:"moving"`
+		Seq       uint64   `json:"seq"`
+	}
+	b, err := json.Marshal(datas[0])
+	if err != nil {
+		return
+	}
+	if err := json.Unmarshal(b, &req); err != nil {
+		return
+	}
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil {
+		return
+	}
+	nx, ny := p.X, p.Y
+	if req.X != nil {
+		nx = *req.X
+	}
+	if req.Y != nil {
+		ny = *req.Y
+	}
+	dir := req.Direction
+	if dir == "" {
+		dir = p.Direction
+	}
+	if h.eng.World().IsWalkable(p.BaseMapID, int(nx), int(ny)) {
+		h.eng.Players().ApplyMove(accountID, nx, ny, dir, int64(req.Seq))
+	}
 }

@@ -2,7 +2,6 @@ package world
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"
@@ -91,7 +90,14 @@ func (m *Manager) JoinMap(baseMapID, accountID string, isPrivate, pie bool) (*In
 		if baseMapID == protocol.DemoMapID {
 			m.defs[baseMapID] = BuildDemoMapDef()
 		} else {
-			return nil, fmt.Errorf("unknown map: %s", baseMapID)
+			m.defs[baseMapID] = &MapDef{
+				ID:     baseMapID,
+				Name:   baseMapID,
+				Width:  128,
+				Height: 128,
+				SpawnX: float64(protocol.DefaultSpawnX),
+				SpawnY: float64(protocol.DefaultSpawnY),
+			}
 		}
 	}
 
@@ -171,13 +177,22 @@ func (m *Manager) IsWalkable(baseMapID string, x, y int) bool {
 	defer m.mu.RUnlock()
 	def, ok := m.defs[baseMapID]
 	if !ok || def == nil {
+		return x >= 0 && y >= 0 && x < 256 && y < 256
+	}
+	if x < 0 || y < 0 {
 		return false
 	}
-	if x < 0 || y < 0 || x >= def.Width || y >= def.Height {
+	if def.Width > 0 && x >= def.Width {
 		return false
 	}
-	tile := def.Grid[y][x]
-	return tile != protocol.TileWall
+	if def.Height > 0 && y >= def.Height {
+		return false
+	}
+	if y < len(def.Grid) && x < len(def.Grid[y]) {
+		tile := def.Grid[y][x]
+		return tile != protocol.TileWall
+	}
+	return true
 }
 
 // BuildDemoMapDef creates an in-memory DEMO_SANDBOX (30x30 grass, border walls).

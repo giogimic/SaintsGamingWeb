@@ -156,12 +156,23 @@ export class LobbySocketHandler {
       });
 
       // --- MOVEMENT ---
-      socket.on(RealtimeEvents.MOVE, (data: any) => {
+      const handleMove = (data: any) => {
         try {
-          const x = typeof data?.x === "number" ? data.x : 0;
-          const y = typeof data?.y === "number" ? data.y : 0;
-          const direction = typeof data?.direction === "string" ? data.direction : "down";
-          const moving = Boolean(data?.moving);
+          const current = this.shards.getPlayer(socket.id);
+          let x = typeof data?.x === "number" ? data.x : (current?.x ?? 0);
+          let y = typeof data?.y === "number" ? data.y : (current?.y ?? 0);
+          let direction = typeof data?.direction === "string" ? data.direction : (current?.direction || "down");
+          let moving = data?.moving !== undefined ? Boolean(data?.moving) : true;
+
+          // If payload is { type: "MOVE", direction: "...", sequence: ... }
+          if (data?.type === "MOVE" && data?.direction) {
+            direction = data.direction;
+            const dx = direction === "left" ? -1 : direction === "right" ? 1 : 0;
+            const dy = direction === "up" ? -1 : direction === "down" ? 1 : 0;
+            x = (current?.x ?? 0) + dx;
+            y = (current?.y ?? 0) + dy;
+            moving = true;
+          }
 
           const player = this.shards.updatePlayerPosition(socket.id, x, y, direction, moving);
           if (!player) return;
@@ -172,19 +183,23 @@ export class LobbySocketHandler {
             y: player.y,
             direction: player.direction,
             moving: player.moving,
-            seq: data?.seq,
+            seq: data?.seq || data?.sequence,
           });
 
           socket.emit(RealtimeEvents.MOVE_ACK, {
             x: player.x,
             y: player.y,
-            seq: data?.seq,
+            seq: data?.seq || data?.sequence,
             requestId: data?.requestId,
           });
         } catch (err) {
           console.error("[LobbySocket] move error:", err);
         }
-      });
+      };
+
+      socket.on(RealtimeEvents.MOVE, handleMove);
+      socket.on("player_move", handleMove);
+      socket.on("input", handleMove);
 
       // --- CHAT: LOCAL ---
       socket.on(RealtimeEvents.CHAT_MESSAGE, (text: unknown) => {

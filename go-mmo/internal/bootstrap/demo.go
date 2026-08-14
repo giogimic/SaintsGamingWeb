@@ -64,24 +64,38 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 }
 
 func loadExisting(db *sql.DB, wm *world.Manager) error {
-	var id, name, gridData string
-	err := db.QueryRow(`SELECT id, name, gridData FROM WorldMap WHERE id = ?`, protocol.DemoMapID).Scan(&id, &name, &gridData)
+	rows, err := db.Query(`SELECT id, name, gridData, npcsData FROM WorldMap`)
 	if err != nil {
 		return nil
 	}
-	grid, err := world.ParseGridJSON(gridData)
-	if err != nil || len(grid) == 0 {
-		return nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, name, gridData, npcsData string
+		if err := rows.Scan(&id, &name, &gridData, &npcsData); err != nil {
+			continue
+		}
+		grid, _ := world.ParseGridJSON(gridData)
+		h := len(grid)
+		w := 0
+		if h > 0 {
+			w = len(grid[0])
+		}
+		if w == 0 {
+			w = 64
+		}
+		if h == 0 {
+			h = 64
+		}
+		var npcs []world.NPCDef
+		if npcsData != "" && npcsData != "[]" {
+			_ = json.Unmarshal([]byte(npcsData), &npcs)
+		}
+		wm.RegisterDef(&world.MapDef{
+			ID: id, Name: name, Width: w, Height: h, Grid: grid, NPCs: npcs,
+			SpawnX: float64(protocol.DefaultSpawnX), SpawnY: float64(protocol.DefaultSpawnY),
+		})
 	}
-	h := len(grid)
-	w := 0
-	if h > 0 {
-		w = len(grid[0])
-	}
-	wm.RegisterDef(&world.MapDef{
-		ID: id, Name: name, Width: w, Height: h, Grid: grid,
-		SpawnX: float64(protocol.DefaultSpawnX), SpawnY: float64(protocol.DefaultSpawnY),
-	})
 	return nil
 }
 
