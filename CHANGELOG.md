@@ -1,3 +1,7 @@
+## [2.1.200] - 2026-08-14
+### Added
+- **MMO Staff Floating Menu Multiplayer Teleportation (`StaffFloatingMenu.tsx`)**: Added `tpToPlayer` capability and navigation icons allowing staff/moderators/developers to instantly teleport directly to visible tamers across active map instances.
+
 ## [2.1.199] - 2026-08-14
 ### Added
 - **MMO Target Frame Classification & Party Co-Op Enhancements (`target-frame.tsx`, `party-overlay.tsx`)**: Added entity classification badges (`PLAYER`, `WILD`, `NPC`) and target dismiss button to `TargetFrame`. Enhanced `PartyOverlay` with live backend socket invitation dispatch (`party_invite_send`), quick nearby peer invite chips, and clean party leave workflows.
