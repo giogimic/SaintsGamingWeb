@@ -211,6 +211,16 @@ export const PropertiesPanel: React.FC = () => {
                 <span className="text-purple-200/70 block text-[9px]">Target: {mapGates.find(g => g.position.x === clickedTile.c && g.position.y === clickedTile.r)?.targetMapId}</span>
               </div>
             )}
+
+            {/* NPC Entities at coordinate */}
+            {currentMapData?.npcs?.filter((n: any) => n.position?.x === clickedTile.c && n.position?.y === clickedTile.r).map((npc: any) => (
+              <div key={npc.id} className="bg-emerald-950/30 border border-emerald-500/40 p-2 rounded flex items-center justify-between">
+                <div>
+                  <span className="text-emerald-300 font-bold block">{npc.name}</span>
+                  <span className="text-[9px] text-slate-400">Sprite: {npc.spriteId} · {npc.dialogId ? `Dialog: ${npc.dialogId}` : 'No Dialog'}</span>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-slate-500 italic py-2 text-center text-[10px]">

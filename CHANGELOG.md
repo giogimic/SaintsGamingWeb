@@ -1,3 +1,7 @@
+## [2.1.172] - 2026-08-13
+### Added
+- **NPC & Entity Inspection in Inspector (`PropertiesPanel.tsx`)**: Clicking any tile in Studio Viewport now displays comprehensive metadata for all entities located at that coordinate, including NPC name, sprite, dialog binding, logic triggers, and warp gates.
+
 ## [2.1.171] - 2026-08-13
 ### Changed
 - **Studio Command Center Header (`StudioMenuBar.tsx`)**: Transformed Studio top bar into a 3-zone command center with active map indicator, unsaved dirty state, prominent Mode Transition Switcher (`[ ✏️ EDIT ]` ⇄ `[ ▶ PLAY TEST ]`), and quick global actions.
