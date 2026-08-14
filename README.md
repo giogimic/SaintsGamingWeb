@@ -3,7 +3,7 @@
   <url>https://SaintsGaming.net</url>
   <p><em>A modern, full-stack community management system and 2.5D MMO game engine.</em></p>
   <p>
-    <img src="https://img.shields.io/badge/Version-v2.1.207-purple?style=flat-square" alt="Version" />
+    <img src="https://img.shields.io/badge/Version-v2.1.208-purple?style=flat-square" alt="Version" />
     <img src="https://img.shields.io/badge/Next.js-15+-black?style=flat-square&logo=next.js" alt="Next.js" />
     <img src="https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Babylon.js-2.5D-orange?style=flat-square&logo=babylonjs" alt="Babylon.js" />

@@ -663,10 +663,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           behavior: 'HOSTILE',
         });
         return;
-      } else if (state.otherPlayers?.[entityId]) {
-        targetName = state.otherPlayers[entityId].name || 'Tamer';
+      } else if (entityId.startsWith('multiplayer_') || state.otherPlayers?.[entityId]) {
+        const rawSocketId = entityId.startsWith('multiplayer_') ? entityId.replace(/^multiplayer_/, '') : entityId;
+        const peer = state.otherPlayers?.[rawSocketId] || state.otherPlayers?.[entityId];
+        targetName = peer?.name || 'Tamer';
         state.setCombatTarget({
-          entityId,
+          entityId: rawSocketId,
           name: targetName,
           hp: 100,
           maxHp: 100,
