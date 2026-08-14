@@ -1453,6 +1453,9 @@ export default function TheLobby({
   }, [hasEnteredMobile, isMobile, viewportReady]);
 
   useEffect(() => {
+    const handleOpenOptionsEvent = () => setIsOptionsOpen(true);
+    window.addEventListener('open_game_options', handleOpenOptionsEvent);
+
     // Standard game hotkeys (I, K, P, D, B) + ESC for Options / exit Viewfinder
     const handleGlobalHotkeys = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -1497,8 +1500,12 @@ export default function TheLobby({
       else if (key === 'n') socketRef.current?.emit('party_invite_decline');
     };
     window.addEventListener('keydown', handleGlobalHotkeys);
-    return () => window.removeEventListener('keydown', handleGlobalHotkeys);
+    return () => {
+      window.removeEventListener('open_game_options', handleOpenOptionsEvent);
+      window.removeEventListener('keydown', handleGlobalHotkeys);
+    };
   }, [enableStudio, canStudio]);
+
 
   if (isInitializing) {
     return <div className="w-full h-full flex items-center justify-center text-emerald-500 font-mono">INITIALIZING TERMINAL...</div>;
@@ -1602,65 +1609,7 @@ export default function TheLobby({
             but gate the shell on the client too if this mounts elsewhere. */}
         {enableStudio && canStudio && <StudioEditorShell />}
 
-        {isStaff && gameMode === 'EXPLORING' && showGameplayHud && (
-          <StaffFloatingMenu
-            permissionLevel={permissionLevel}
-            isStudioRoute={enableStudio}
-          />
-        )}
 
-
-        {/* In-world chrome only — title/login have their own Leave control */}
-        {(gameMode === 'EXPLORING' || studioToolsOpen) && (
-          <div
-            className="pointer-events-none absolute z-40 flex items-center gap-1.5 md:top-3 md:right-3 md:gap-2"
-            style={{
-              top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
-              right: 'max(0.5rem, env(safe-area-inset-right, 0px))',
-            }}
-          >
-            {enableStudio && canStudio && (
-              <button
-                onClick={() => useEditorStore.getState().toggleCreationMode()}
-                className={`pointer-events-auto flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] font-medium shadow-lg transition-all active:scale-95 md:gap-2 md:px-3
-                  ${studioToolsOpen 
-                    ? 'border-[#806f47] bg-[#cbb26a] text-black shadow-[0_0_15px_rgba(203,178,106,0.3)] hover:bg-amber-500' 
-                    : 'border-[#806f47]/50 bg-black/60 text-[#cbb26a] backdrop-blur-md hover:border-[#cbb26a] hover:bg-white/10'
-                  }`}
-              >
-                <span className="text-sm leading-none">🔨</span>
-                <span className="hidden sm:inline">{studioToolsOpen ? 'PLAY (Ctrl+E)' : 'EDIT (Ctrl+E)'}</span>
-              </button>
-            )}
-            {!enableStudio && canStudio && (
-              <a
-                href="/studio"
-                className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[#806f47]/50 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-[#cbb26a] shadow-lg backdrop-blur-md transition-all hover:border-[#cbb26a] hover:bg-white/10 md:gap-2 md:px-3"
-              >
-                <span className="text-sm leading-none">🔨</span>
-                <span className="hidden sm:inline">OPEN STUDIO</span>
-              </a>
-            )}
-            <button
-              onClick={() => setIsOptionsOpen(true)}
-              className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/60 px-2.5 py-1.5 font-mono text-[11px] font-medium text-slate-300 shadow-lg backdrop-blur-md transition-all hover:bg-white/10 hover:text-white active:scale-95 md:gap-2 md:px-3"
-            >
-              <span className="text-sm leading-none">⚙️</span>
-              <span className="hidden sm:inline">OPTIONS (ESC)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = '/';
-              }}
-              className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-950/70 px-2.5 py-1.5 font-mono text-[11px] font-medium text-rose-200 shadow-lg backdrop-blur-md transition-all hover:bg-rose-900/80 hover:text-white active:scale-95 md:gap-2 md:px-3"
-              title="Return to the Saints Gaming website"
-            >
-              <span className="text-sm leading-none">⎋</span>
-              <span>LEAVE</span>
-            </button>
-          </div>
-        )}
 
         <GameOptionsMenu 
           isOpen={isOptionsOpen}

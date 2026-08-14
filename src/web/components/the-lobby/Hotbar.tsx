@@ -2,7 +2,7 @@
 
 import { useGameStore } from './store';
 import { useEffect, useState, useMemo } from 'react';
-import { GamePanelShell } from './ui/GamePanelShell';
+import { HudPanelShell } from './hud/HudPanelShell';
 import { isForbiddenRtCaptureAbility } from '@/shared/game/combatAbilities';
 
 type HotbarAbility = {
@@ -19,7 +19,7 @@ export default function Hotbar() {
   const [globalCooldown, setGlobalCooldown] = useState(0);
   const [now, setNow] = useState(Date.now());
 
-  // Force re-render for smooth cooldown animation countdown
+  // Force re-render for smooth cooldown countdown
   useEffect(() => {
     let frame: number;
     const loop = () => {
@@ -58,17 +58,20 @@ export default function Hotbar() {
     return list.filter((a) => !isForbiddenRtCaptureAbility(a.id));
   }, [player.combatStyle]);
 
-  const slots = useMemo(() => [
-    { key: '1', action: 'ability', ability: abilities[0] },
-    { key: '2', action: 'ability', ability: abilities[1] },
-    { key: '3', action: 'ability', ability: abilities[2] },
-    { key: '4', action: 'ability', ability: abilities[3] },
-    { key: '5', action: 'item', ability: { id: 'potion', name: 'Health Potion', icon: '❤️', cooldownMs: 1000 } as HotbarAbility },
-    { key: '6', action: 'none', ability: null as HotbarAbility | null },
-    { key: '7', action: 'none', ability: null as HotbarAbility | null },
-    { key: '8', action: 'none', ability: null as HotbarAbility | null },
-    { key: '9', action: 'none', ability: null as HotbarAbility | null },
-  ], [abilities]);
+  const slots = useMemo(
+    () => [
+      { key: '1', action: 'ability', ability: abilities[0] },
+      { key: '2', action: 'ability', ability: abilities[1] },
+      { key: '3', action: 'ability', ability: abilities[2] },
+      { key: '4', action: 'ability', ability: abilities[3] },
+      {
+        key: '5',
+        action: 'item',
+        ability: { id: 'potion', name: 'Health Potion', icon: '❤️', cooldownMs: 1000 } as HotbarAbility,
+      },
+    ],
+    [abilities]
+  );
 
   // Hotbar is RT-only — hidden during turn-based creature battles
   if (gameMode !== 'EXPLORING') {
@@ -78,7 +81,7 @@ export default function Hotbar() {
   const handleCast = (slot: (typeof slots)[number]) => {
     const timeNow = Date.now();
     if (timeNow < globalCooldown) return; // GCD active
-    
+
     if (slot.action === 'none' || !slot.ability) return;
 
     const abilityCd = cooldowns[slot.ability.id] || 0;
@@ -93,11 +96,11 @@ export default function Hotbar() {
         useGameStore.getState().showToast('You need a target to cast that!');
         return;
       }
-      
+
       // Send cast to server
-      emitSocketEvent?.('combat_cast', { 
-        abilityId: slot.ability.id, 
-        targetId: combatTarget?.entityId 
+      emitSocketEvent?.('combat_cast', {
+        abilityId: slot.ability.id,
+        targetId: combatTarget?.entityId,
       });
 
       // Set individual cooldown & GCD
@@ -106,7 +109,11 @@ export default function Hotbar() {
     } else if (slot.action === 'item') {
       const inv = useGameStore.getState().player.inventory;
       const potionKey = Object.keys(inv).find(
-        (k) => (k.toLowerCase().includes('potion') || k.toLowerCase().includes('herb') || k.toLowerCase().includes('food')) && (inv[k] ?? 0) > 0
+        (k) =>
+          (k.toLowerCase().includes('potion') ||
+            k.toLowerCase().includes('herb') ||
+            k.toLowerCase().includes('food')) &&
+          (inv[k] ?? 0) > 0
       );
       if (potionKey) {
         useGameStore.getState().modifyHp(25);
@@ -120,12 +127,16 @@ export default function Hotbar() {
     }
   };
 
-  // Keyboard shortcut listener mapped to keys 1-9
+  // Keyboard shortcut listener mapped to keys 1-5
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-      
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      )
+        return;
+
       const key = e.key;
       const slotIndex = parseInt(key) - 1;
       if (slotIndex >= 0 && slotIndex < slots.length) {
@@ -139,63 +150,64 @@ export default function Hotbar() {
   const gcdActive = now < globalCooldown;
   const gcdPercent = gcdActive ? Math.max(0, ((globalCooldown - now) / 1200) * 100) : 0;
 
-  // Phones: keep 5 combat slots above the touch controls; hide empty + slots.
-  const visibleSlots = slots.filter((s, i) => i < 5 || s.ability);
-
   return (
-    <GamePanelShell neonAccent="cyan" className="pointer-events-auto flex gap-1.5 p-1.5 max-md:gap-1 max-md:p-1 md:gap-2 md:p-2 select-none">
-      {visibleSlots.map((slot, i) => {
-        const ability = slot.ability;
-        const abilityCdEnd = ability ? cooldowns[ability.id] || 0 : 0;
-        const abilityCdRemaining = Math.max(0, abilityCdEnd - now);
-        const abilityCdActive = abilityCdRemaining > 0;
-        const abilityCdPercent = ability ? Math.min(100, (abilityCdRemaining / ability.cooldownMs) * 100) : 0;
+    <HudPanelShell className="pointer-events-auto select-none">
+      <div className="flex items-center gap-1.5 md:gap-2">
+        {slots.map((slot, i) => {
+          const ability = slot.ability;
+          const abilityCdEnd = ability ? cooldowns[ability.id] || 0 : 0;
+          const abilityCdRemaining = Math.max(0, abilityCdEnd - now);
+          const abilityCdActive = abilityCdRemaining > 0;
+          const abilityCdPercent = ability
+            ? Math.min(100, (abilityCdRemaining / ability.cooldownMs) * 100)
+            : 0;
 
-        const isLocked = gcdActive || abilityCdActive;
-        const showPercent = abilityCdActive ? abilityCdPercent : gcdPercent;
+          const isLocked = gcdActive || abilityCdActive;
+          const showPercent = abilityCdActive ? abilityCdPercent : gcdPercent;
 
-        return (
-          <button
-            key={slot.key || i}
-            type="button"
-            onClick={() => handleCast(slot)}
-            className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border border-[#22d3ee]/30 bg-[#050b14]/80 shadow-[inset_0_0_10px_rgba(34,211,238,0.05)] transition-all hover:border-[#22d3ee]/80 hover:bg-[#22d3ee]/20 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] active:scale-95 max-md:h-10 max-md:w-10 md:h-12 md:w-12 text-left"
-            title={ability ? `${ability.name} (Key: ${slot.key})` : undefined}
-          >
-            {/* Keybind Badge */}
-            <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-cyan-200/60 transition-colors group-hover:text-cyan-300 md:top-1 md:left-1.5 md:text-[10px]">
-              {slot.key}
-            </span>
+          return (
+            <button
+              key={slot.key || i}
+              type="button"
+              onClick={() => handleCast(slot)}
+              className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded border border-teal-500/30 bg-[#061017] shadow-inner transition-all hover:border-teal-400 hover:bg-teal-950/40 active:scale-95 md:h-12 md:w-12 text-left"
+              title={ability ? `${ability.name} (Key: ${slot.key})` : undefined}
+            >
+              {/* Keybind Badge */}
+              <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-teal-300/70 transition-colors group-hover:text-teal-200 md:top-1 md:left-1.5 md:text-[10px]">
+                {slot.key}
+              </span>
 
-            {ability ? (
-              <>
-                <span className="z-10 text-xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] md:text-2xl">
-                  {ability.icon}
-                </span>
+              {ability ? (
+                <>
+                  <span className="z-10 text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] md:text-xl transition-transform group-hover:scale-110">
+                    {ability.icon}
+                  </span>
 
-                {/* Cooldown Dark Sweep Overlay */}
-                {isLocked && (
-                  <div
-                    className="absolute bottom-0 left-0 z-20 w-full bg-black/85 backdrop-blur-[2px] transition-all duration-75 ease-linear border-t border-cyan-400/50"
-                    style={{ height: `${showPercent}%` }}
-                  />
-                )}
+                  {/* Cooldown Sweep Overlay */}
+                  {isLocked && (
+                    <div
+                      className="absolute bottom-0 left-0 z-20 w-full bg-black/85 backdrop-blur-[1px] transition-all duration-75 ease-linear border-t border-teal-400/50"
+                      style={{ height: `${showPercent}%` }}
+                    />
+                  )}
 
-                {/* Cooldown Numeric Text */}
-                {abilityCdActive && (
-                  <div className="absolute inset-0 z-30 flex items-center justify-center font-mono font-extrabold text-[11px] md:text-xs text-cyan-200 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">
-                    {abilityCdRemaining >= 1000
-                      ? `${(abilityCdRemaining / 1000).toFixed(0)}s`
-                      : `${(abilityCdRemaining / 1000).toFixed(1)}s`}
-                  </div>
-                )}
-              </>
-            ) : (
-              <span className="text-lg font-bold text-cyan-500/20 md:text-xl">+</span>
-            )}
-          </button>
-        );
-      })}
-    </GamePanelShell>
+                  {/* Cooldown Numeric Text */}
+                  {abilityCdActive && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center font-mono font-extrabold text-[10px] md:text-[11px] text-teal-200 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">
+                      {abilityCdRemaining >= 1000
+                        ? `${(abilityCdRemaining / 1000).toFixed(0)}s`
+                        : `${(abilityCdRemaining / 1000).toFixed(1)}s`}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span className="text-base font-bold text-teal-500/20 md:text-lg">+</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </HudPanelShell>
   );
 }
