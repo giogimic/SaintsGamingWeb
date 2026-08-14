@@ -1,3 +1,7 @@
+## [2.1.179] - 2026-08-14
+### Added
+- **Real-Time Tileset Sheet Hover Previews (`TilesetPicker.tsx`)**: Hovering tiles across the tileset palette now draws a live highlight rectangle and displays the computed tile GID before clicking, providing precise visual feedback during level design.
+
 ## [2.1.178] - 2026-08-14
 ### Added
 - **Global Studio Sprite Picker Dispatch (`EntityEditorPanel.tsx`, `StarterHeroEditorPanel.tsx`)**: Wired `studio_sprite_picked` event listeners to Entity Editor and Starter Hero Editor panels, enabling one-click sprite assignment directly from Sprite Browser into active entity or hero forms.
