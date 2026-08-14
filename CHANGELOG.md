@@ -1,3 +1,7 @@
+## [2.1.189] - 2026-08-14
+### Fixed
+- **MMO Inventory Equip/Unequip Toggle Reliability (`inventory-overlay.tsx`)**: Fixed equipment action handling so inspecting an already equipped item correctly issues slot unequip rather than redundant re-equips.
+
 ## [2.1.188] - 2026-08-14
 ### Added
 - **Studio Quick Dock Panel Complete Matrix (`StudioEditorShell.tsx`)**: Added dedicated `spawner` (Monster Spawner) and `problems` (Map Diagnostics) dock buttons to the bottom Studio launch strip, with intelligent left/right dock column target routing.

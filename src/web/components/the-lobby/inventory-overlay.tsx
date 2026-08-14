@@ -52,8 +52,14 @@ export default function InventoryOverlay() {
 
   const handleItemAction = (itemId: string, itemInfo: any) => {
     if (['HEAD', 'CHEST', 'LEGS', 'WEAPON'].includes(itemInfo.type)) {
-      equipItem(itemInfo.type.toLowerCase() as any, itemId);
-      useGameStore.getState().showToast(`Equipped ${itemInfo.name}`);
+      const slot = itemInfo.type.toLowerCase() as 'head' | 'chest' | 'legs' | 'weapon';
+      if (equipment[slot] === itemId) {
+        equipItem(slot, null);
+        useGameStore.getState().showToast(`Unequipped ${itemInfo.name}`);
+      } else {
+        equipItem(slot, itemId);
+        useGameStore.getState().showToast(`Equipped ${itemInfo.name}`);
+      }
     } else if (itemInfo.type === 'FOOD' || itemInfo.type === 'CONSUMABLE') {
       if (itemInfo.stats?.hp) {
         useGameStore.getState().modifyHp(itemInfo.stats.hp);
