@@ -31,6 +31,19 @@ export default function GameOptionsMenu({
   const mobileControlMode = useGameStore((state) => state.mobileControlMode);
   const setMobileControlMode = useGameStore((state) => state.setMobileControlMode);
 
+  const [masterVolume, setMasterVolume] = useState(80);
+  const [sfxVolume, setSfxVolume] = useState(90);
+  const [musicVolume, setMusicVolume] = useState(70);
+  const [isMuted, setIsMuted] = useState(false);
+
+  const [graphicsQuality, setGraphicsQuality] = useState<'low' | 'medium' | 'high'>('high');
+  const [targetFps, setTargetFps] = useState<'60' | '120' | 'uncapped'>('60');
+  const [showDamageNumbers, setShowDamageNumbers] = useState(true);
+
+  const [showPeerNameplates, setShowPeerNameplates] = useState(true);
+  const [autoAcceptFriendParty, setAutoAcceptFriendParty] = useState(false);
+  const [combatAutoTarget, setCombatAutoTarget] = useState(true);
+
   const enterViewfinderEdit = () => {
     setIsEditingInterface(true);
     onClose(); // Auto-close options so the HUD is immediately editable
@@ -214,11 +227,216 @@ export default function GameOptionsMenu({
               </div>
             )}
 
-            {/* Placeholders for other tabs */}
-            {(activeTab === 'GRAPHICS' || activeTab === 'AUDIO' || activeTab === 'GAMEPLAY') && (
-              <div className="flex flex-col items-center justify-center h-48 text-cyan-200/30">
-                <Settings2 className="w-16 h-16 mb-4 opacity-50" />
-                <p className="font-extrabold text-lg">Coming Soon</p>
+            {/* GRAPHICS TAB */}
+            {activeTab === 'GRAPHICS' && (
+              <div className="space-y-6">
+                <div className="bg-black/40 border border-[#22d3ee]/20 p-6 rounded-3xl shadow-inner space-y-5">
+                  <h4 className="text-sm font-extrabold text-cyan-200/50 uppercase tracking-widest">
+                    Visual Fidelity
+                  </h4>
+                  <div>
+                    <div className="text-cyan-50 font-extrabold text-lg mb-1">Quality Preset</div>
+                    <div className="text-slate-400 text-sm mb-4 font-medium">
+                      Adjust shadow resolution, lighting reflections, and particle density.
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {(['low', 'medium', 'high'] as const).map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => setGraphicsQuality(q)}
+                          className={`px-4 py-3 rounded-2xl font-extrabold text-xs uppercase tracking-wider border transition-all cursor-pointer ${
+                            graphicsQuality === q
+                              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-[inset_0_0_12px_rgba(34,211,238,0.3)]'
+                              : 'bg-black/60 text-slate-400 border-white/10 hover:bg-white/5'
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-cyan-50 font-extrabold text-base">Target Framerate</div>
+                      <div className="text-slate-400 text-xs font-medium mt-0.5">Sync game loop refresh rate to monitor.</div>
+                    </div>
+                    <div className="flex gap-2">
+                      {(['60', '120', 'uncapped'] as const).map((fps) => (
+                        <button
+                          key={fps}
+                          onClick={() => setTargetFps(fps)}
+                          className={`px-3 py-1.5 rounded-xl font-mono text-xs font-bold border transition-all cursor-pointer ${
+                            targetFps === fps
+                              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400'
+                              : 'bg-black/60 text-slate-400 border-white/10 hover:bg-white/5'
+                          }`}
+                        >
+                          {fps === 'uncapped' ? 'Max' : `${fps} FPS`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-cyan-50 font-extrabold text-base">Floating Combat Text</div>
+                      <div className="text-slate-400 text-xs font-medium mt-0.5">Show damage and capture numbers above entities.</div>
+                    </div>
+                    <button
+                      onClick={() => setShowDamageNumbers((v) => !v)}
+                      className={`w-12 h-6 rounded-full relative transition-colors border cursor-pointer ${
+                        showDamageNumbers ? 'bg-cyan-500/20 border-cyan-400' : 'bg-black/60 border-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 bottom-0.5 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all ${
+                        showDamageNumbers ? 'left-[24px]' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* AUDIO TAB */}
+            {activeTab === 'AUDIO' && (
+              <div className="space-y-6">
+                <div className="bg-black/40 border border-[#22d3ee]/20 p-6 rounded-3xl shadow-inner space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-extrabold text-cyan-200/50 uppercase tracking-widest">
+                      Volume Controls
+                    </h4>
+                    <button
+                      onClick={() => setIsMuted((v) => !v)}
+                      className={`px-3 py-1 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer ${
+                        isMuted
+                          ? 'bg-rose-950/60 text-rose-300 border-rose-500/50'
+                          : 'bg-emerald-950/60 text-emerald-300 border-emerald-500/50'
+                      }`}
+                    >
+                      {isMuted ? 'MUTED' : 'UNMUTED'}
+                    </button>
+                  </div>
+
+                  {/* Master Volume */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-cyan-50 font-bold">Master Volume</span>
+                      <span className="font-mono text-cyan-300">{isMuted ? 0 : masterVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={isMuted ? 0 : masterVolume}
+                      onChange={(e) => {
+                        setMasterVolume(Number(e.target.value));
+                        if (isMuted) setIsMuted(false);
+                      }}
+                      className="w-full accent-cyan-400 h-1.5 bg-black/60 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* SFX Volume */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-cyan-50 font-bold">Sound Effects (SFX)</span>
+                      <span className="font-mono text-cyan-300">{isMuted ? 0 : sfxVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={isMuted ? 0 : sfxVolume}
+                      onChange={(e) => {
+                        setSfxVolume(Number(e.target.value));
+                        if (isMuted) setIsMuted(false);
+                      }}
+                      className="w-full accent-cyan-400 h-1.5 bg-black/60 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Music Volume */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-cyan-50 font-bold">Music & Ambience</span>
+                      <span className="font-mono text-cyan-300">{isMuted ? 0 : musicVolume}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={isMuted ? 0 : musicVolume}
+                      onChange={(e) => {
+                        setMusicVolume(Number(e.target.value));
+                        if (isMuted) setIsMuted(false);
+                      }}
+                      className="w-full accent-cyan-400 h-1.5 bg-black/60 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* GAMEPLAY TAB */}
+            {activeTab === 'GAMEPLAY' && (
+              <div className="space-y-6">
+                <div className="bg-black/40 border border-[#22d3ee]/20 p-6 rounded-3xl shadow-inner space-y-5">
+                  <h4 className="text-sm font-extrabold text-cyan-200/50 uppercase tracking-widest">
+                    Multiplayer & Combat
+                  </h4>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-cyan-50 font-extrabold text-base">Show Nearby Tamers</div>
+                      <div className="text-slate-400 text-xs font-medium mt-0.5">Render online players and nameplates in your shard.</div>
+                    </div>
+                    <button
+                      onClick={() => setShowPeerNameplates((v) => !v)}
+                      className={`w-12 h-6 rounded-full relative transition-colors border cursor-pointer ${
+                        showPeerNameplates ? 'bg-cyan-500/20 border-cyan-400' : 'bg-black/60 border-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 bottom-0.5 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all ${
+                        showPeerNameplates ? 'left-[24px]' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-cyan-50 font-extrabold text-base">Combat Auto-Targeting</div>
+                      <div className="text-slate-400 text-xs font-medium mt-0.5">Automatically select hostile monsters when attacked.</div>
+                    </div>
+                    <button
+                      onClick={() => setCombatAutoTarget((v) => !v)}
+                      className={`w-12 h-6 rounded-full relative transition-colors border cursor-pointer ${
+                        combatAutoTarget ? 'bg-cyan-500/20 border-cyan-400' : 'bg-black/60 border-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 bottom-0.5 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all ${
+                        combatAutoTarget ? 'left-[24px]' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                    <div>
+                      <div className="text-cyan-50 font-extrabold text-base">Auto-Accept Friend Party Invites</div>
+                      <div className="text-slate-400 text-xs font-medium mt-0.5">Automatically accept invitations sent by friends.</div>
+                    </div>
+                    <button
+                      onClick={() => setAutoAcceptFriendParty((v) => !v)}
+                      className={`w-12 h-6 rounded-full relative transition-colors border cursor-pointer ${
+                        autoAcceptFriendParty ? 'bg-cyan-500/20 border-cyan-400' : 'bg-black/60 border-slate-600'
+                      }`}
+                    >
+                      <div className={`absolute top-0.5 bottom-0.5 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all ${
+                        autoAcceptFriendParty ? 'left-[24px]' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
             
