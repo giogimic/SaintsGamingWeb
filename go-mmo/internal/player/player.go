@@ -103,6 +103,16 @@ func (m *Manager) SocketIDForAccount(accountID string) string {
 	return ""
 }
 
+func (m *Manager) ForEach(fn func(*State)) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, p := range m.byAccount {
+		if p != nil {
+			fn(p)
+		}
+	}
+}
+
 // Create registers a new seat. Caller handles session_replaced for prior socket.
 func (m *Manager) Create(accountID, socketID, name, spriteID, instanceID, baseMapID string, x, y float64) *State {
 	m.mu.Lock()

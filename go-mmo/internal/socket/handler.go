@@ -158,16 +158,24 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		h.broadcastChat(accountID, asString(datas, 0), false)
 	})
 	client.On(protocol.EvPartyInvite, func(datas ...any) {
-		h.handlePartyInvite(accountID, asString(datas, 0))
+		h.handlePartyInvite(accountID, datas)
+	})
+	client.On("party_invite_send", func(datas ...any) {
+		h.handlePartyInvite(accountID, datas)
 	})
 	client.On(protocol.EvPartyInviteAccept, func(datas ...any) {
+		h.handlePartyAccept(accountID)
+	})
+	client.On("party_invite_accept", func(datas ...any) {
 		h.handlePartyAccept(accountID)
 	})
 	client.On(protocol.EvPartyInviteDecline, func(datas ...any) {
 		h.deps.Parties.Decline(accountID)
 	})
+	client.On("party_invite_decline", func(datas ...any) {
+		h.deps.Parties.Decline(accountID)
+	})
 	client.On(protocol.EvPartyJoin, func(datas ...any) {
-		// Treat as invite-accept toward named leader
 		leader := asString(datas, 0)
 		if leader != "" {
 			h.deps.Parties.Invite(leader, accountID)
@@ -175,8 +183,16 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		}
 	})
 	client.On(protocol.EvPartyLeave, func(datas ...any) {
-		h.deps.Parties.Leave(accountID)
-		h.EmitToSocket(sid, protocol.EvPartyUpdate, map[string]any{"members": []string{}})
+		h.handlePartyLeave(accountID)
+	})
+	client.On("party_leave", func(datas ...any) {
+		h.handlePartyLeave(accountID)
+	})
+	client.On("battle_invite_send", func(datas ...any) {
+		h.handleBattleInvite(accountID, datas)
+	})
+	client.On("accept_battle", func(datas ...any) {
+		h.handleAcceptBattle(accountID, datas)
 	})
 	client.On(protocol.EvNPCInteract, func(datas ...any) {
 		h.handleNPCInteractFull(accountID, datas)
@@ -501,24 +517,47 @@ func (h *Hub) broadcastChat(accountID, msg string, global bool) {
 	}
 }
 
-func (h *Hub) handlePartyInvite(leader, targetName string) {
-	h.mu.RLock()
-	accounts := make([]string, 0, len(h.userOf))
-	for _, aid := range h.userOf {
-		accounts = append(accounts, aid)
-	}
-	h.mu.RUnlock()
-	for _, aid := range accounts {
-		st := h.eng.Players().GetByAccount(aid)
-		if st == nil {
-			continue
+func (h *Hub) handlePartyInvite(leader string, datas []any) {
+	targetName := ""
+	if len(datas) > 0 {
+		if s, ok := datas[0].(string); ok {
+			targetName = s
+		} else {
+			b, _ := json.Marshal(datas[0])
+			var m map[string]any
+			if json.Unmarshal(b, &m) == nil {
+				if v, ok := m["targetName"].(string); ok && v != "" {
+					targetName = v
+				}
+				if v, ok := m["targetId"].(string); ok && targetName == "" {
+					targetName = v
+				}
+			}
 		}
-		if st.Name == targetName || aid == targetName {
-			h.deps.Parties.Invite(leader, aid)
-			h.EmitToSocket(st.SocketID, protocol.EvPartyInviteEvt, map[string]string{"from": leader})
-			return
-		}
 	}
+	if targetName == "" {
+		return
+	}
+	sender := h.eng.Players().GetByAccount(leader)
+	if sender == nil {
+		return
+	}
+	var targetPlayer *player.State
+	h.eng.Players().ForEach(func(st *player.State) {
+		if strings.EqualFold(st.Name, targetName) || st.AccountID == targetName || st.SocketID == targetName {
+			targetPlayer = st
+		}
+	})
+	if targetPlayer == nil || targetPlayer.AccountID == leader {
+		h.EmitToSocket(sender.SocketID, protocol.EvShowToast, map[string]string{"message": "Player not found or offline."})
+		return
+	}
+	h.deps.Parties.Invite(leader, targetPlayer.AccountID)
+	h.EmitToSocket(targetPlayer.SocketID, protocol.EvPartyInviteEvt, map[string]any{
+		"fromName": sender.Name,
+		"fromAccountId": leader,
+	})
+	h.EmitToSocket(sender.SocketID, protocol.EvShowToast, map[string]string{"message": "Sent party invitation to " + targetPlayer.Name})
 }
 
 func (h *Hub) handlePartyAccept(accountID string) {
@@ -529,10 +568,88 @@ func (h *Hub) handlePartyAccept(accountID string) {
 	for _, mid := range p.Members {
 		if st := h.eng.Players().GetByAccount(mid); st != nil {
 			h.EmitToSocket(st.SocketID, protocol.EvPartyUpdate, map[string]any{
-				"leaderId": p.LeaderID, "members": p.Members,
+				"type": "UPDATE",
+				"leaderId": p.LeaderID,
+				"members": p.Members,
 			})
+			h.EmitToSocket(st.SocketID, protocol.EvShowToast, map[string]string{"message": "Party updated"})
 		}
 	}
+}
+
+func (h *Hub) handlePartyLeave(accountID string) {
+	p := h.deps.Parties.Get(accountID)
+	h.deps.Parties.Leave(accountID)
+	if p != nil {
+		for _, mid := range p.Members {
+			if st := h.eng.Players().GetByAccount(mid); st != nil {
+				h.EmitToSocket(st.SocketID, protocol.EvPartyUpdate, map[string]any{
+					"type": "LEFT",
+					"members": []string{},
+				})
+			}
+		}
+	}
+}
+
+func (h *Hub) handleBattleInvite(accountID string, datas []any) {
+	targetName := ""
+	if len(datas) > 0 {
+		if s, ok := datas[0].(string); ok {
+			targetName = s
+		} else {
+			b, _ := json.Marshal(datas[0])
+			var m map[string]any
+			if json.Unmarshal(b, &m) == nil {
+				if v, ok := m["targetName"].(string); ok && v != "" {
+					targetName = v
+				}
+				if v, ok := m["targetId"].(string); ok && targetName == "" {
+					targetName = v
+				}
+			}
+		}
+	}
+	sender := h.eng.Players().GetByAccount(accountID)
+	if sender == nil || targetName == "" {
+		return
+	}
+	var targetPlayer *player.State
+	h.eng.Players().ForEach(func(st *player.State) {
+		if strings.EqualFold(st.Name, targetName) || st.AccountID == targetName || st.SocketID == targetName {
+			targetPlayer = st
+		}
+	})
+	if targetPlayer == nil || targetPlayer.AccountID == accountID {
+		h.EmitToSocket(sender.SocketID, protocol.EvShowToast, map[string]string{"message": "Tamer not found or offline."})
+		return
+	}
+	h.EmitToSocket(targetPlayer.SocketID, "battle_invite_received", map[string]any{
+		"from": accountID,
+		"name": sender.Name,
+	})
+	h.EmitToSocket(sender.SocketID, protocol.EvShowToast, map[string]string{"message": "Challenged " + targetPlayer.Name + " to a battle!"})
+}
+
+func (h *Hub) handleAcceptBattle(accountID string, datas []any) {
+	challengerID := asString(datas, 0)
+	if challengerID == "" {
+		return
+	}
+	p1 := h.eng.Players().GetByAccount(accountID)
+	p2 := h.eng.Players().GetByAccount(challengerID)
+	if p1 == nil || p2 == nil {
+		return
+	}
+	sess := h.deps.Combat.StartTB(challengerID, accountID, p1.MapID, p2.HP, p1.HP)
+	h.EmitToSocket(p1.SocketID, protocol.EvBattleStarted, map[string]any{
+		"combatId": sess.ID, "mode": "tb", "creatureId": challengerID, "opponentName": p2.Name,
+		"hp": p1.HP, "maxHp": p1.MaxHP, "opponentHp": p2.HP, "opponentMaxHp": p2.MaxHP,
+	})
+	h.EmitToSocket(p2.SocketID, protocol.EvBattleStarted, map[string]any{
+		"combatId": sess.ID, "mode": "tb", "creatureId": accountID, "opponentName": p1.Name,
+		"hp": p2.HP, "maxHp": p2.MaxHP, "opponentHp": p1.HP, "opponentMaxHp": p1.MaxHP,
+	})
 }
 
 func (h *Hub) EmitToSocket(socketID, event string, payload any) {
