@@ -1,3 +1,7 @@
+## [2.1.175] - 2026-08-14
+### Changed
+- **WebGL Chunk Mesh Initialization (`BabylonEngine.ts`)**: Cleaned up empty array vertex buffer initialization on chunk mesh creation to eliminate Babylon.js 9+ console vertex warnings.
+
 ## [2.1.174] - 2026-08-13
 ### Fixed
 - **World Atlas Persistence Fallback (`app/api/world/atlas/route.ts`, `WorldAtlasPanel.tsx`)**: Hardened World Atlas endpoints against un-migrated tables with automatic `SiteSetting` key-value mirror fallback, preventing 500 errors on remote production hosts.
