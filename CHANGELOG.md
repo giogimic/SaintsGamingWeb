@@ -1,3 +1,7 @@
+## [2.1.173] - 2026-08-13
+### Added
+- **Diagnostic Navigation Jump (`GameCanvasBabylon.tsx`, `StudioProblemsPanel.tsx`)**: Wired `studio_center_camera` event handling to `panEditorCameraToTile`, allowing one-click spatial teleportation to problem coordinates directly from the Diagnostics & Problems panel.
+
 ## [2.1.172] - 2026-08-13
 ### Added
 - **NPC & Entity Inspection in Inspector (`PropertiesPanel.tsx`)**: Clicking any tile in Studio Viewport now displays comprehensive metadata for all entities located at that coordinate, including NPC name, sprite, dialog binding, logic triggers, and warp gates.
