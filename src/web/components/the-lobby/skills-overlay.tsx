@@ -61,11 +61,27 @@ export default function SkillsOverlay() {
     return requiredXp;
   };
 
+  const allSkillNames = Object.values(SKILL_CATEGORIES).flat();
+  const totalLevel = allSkillNames.reduce((acc, skill) => acc + skillLookup(skills, skill).level, 0);
+  const totalXp = allSkillNames.reduce((acc, skill) => acc + skillLookup(skills, skill).xp, 0);
+
   return (
     <RpgPanel title="SAINT SKILLS" onClose={() => setGameMode('EXPLORING')}>
+      {/* Total Level & XP Summary Strip */}
+      <div className="mb-3 px-3 py-2 bg-[#050b14]/90 border border-[#806f47]/50 rounded-sm flex items-center justify-between text-xs shadow-inner">
+        <div>
+          <span className="text-[#806f47] font-bold uppercase tracking-wider text-[10px]">Total Level: </span>
+          <span className="text-[#eab308] font-bold font-mono text-sm drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]">{totalLevel}</span>
+        </div>
+        <div>
+          <span className="text-[#806f47] font-bold uppercase tracking-wider text-[10px]">Total XP: </span>
+          <span className="text-[#e2d5b3] font-mono font-medium">{Math.floor(totalXp).toLocaleString()}</span>
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
         {Object.entries(SKILL_CATEGORIES).map(([category, skillList]) => (
-          <div key={category} className="mb-4">
+          <div key={category} className="mb-3">
             <h3 className="text-[#e2d5b3] font-bold mb-1 border-b border-[#806f47]/50 pb-1 uppercase tracking-wide text-xs drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]">
               {category}
             </h3>
@@ -73,6 +89,9 @@ export default function SkillsOverlay() {
               {skillList.map((skill) => {
                 const data = skillLookup(skills, skill);
                 const nextLevelXp = getXpForNextLevel(skill, data.level, data.xp);
+                const prevLevelXp = data.level > 1 ? getXpForNextLevel(skill, data.level - 1, 0) : 0;
+                const xpSpan = Math.max(1, nextLevelXp - prevLevelXp);
+                const currentProgress = Math.min(100, Math.max(0, ((data.xp - prevLevelXp) / xpSpan) * 100));
                 const combatHint =
                   isCombatSkillTyping(normalizeSkillSlug(skill)) && data.xp === 0
                     ? calculateCombatLevelFromXp(0)
@@ -81,16 +100,26 @@ export default function SkillsOverlay() {
                 return (
                   <div
                     key={skill}
-                    className="group relative bg-[#0b1320]/60 border border-[#806f47]/40 p-1 flex items-center justify-between hover:border-[#cbb26a] hover:bg-[#162238]/80 transition-colors cursor-help h-[36px] rounded-sm"
+                    className="group relative bg-[#0b1320]/60 border border-[#806f47]/40 p-1 flex flex-col justify-between hover:border-[#cbb26a] hover:bg-[#162238]/80 transition-colors cursor-help h-[40px] rounded-sm overflow-hidden"
                   >
-                    <div className="w-5 h-5 bg-[#050b14]/80 rounded-full flex items-center justify-center border border-[#806f47]/50 shadow-inner">
-                      <span className="text-[#e2d5b3] text-[10px] font-bold uppercase">
-                        {skill.substring(0, 2)}
+                    <div className="flex items-center justify-between w-full">
+                      <div className="w-4 h-4 bg-[#050b14]/80 rounded-full flex items-center justify-center border border-[#806f47]/50 shadow-inner">
+                        <span className="text-[#e2d5b3] text-[9px] font-bold uppercase">
+                          {skill.substring(0, 2)}
+                        </span>
+                      </div>
+                      <span className="text-[#eab308] font-bold text-[13px] font-mono drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]">
+                        {data.level}
                       </span>
                     </div>
-                    <span className="text-[#eab308] font-bold text-[13px] font-mono drop-shadow-[1px_1px_2px_rgba(0,0,0,0.8)]">
-                      {data.level}
-                    </span>
+
+                    {/* Progress Bar Under Skill */}
+                    <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden border border-white/5 mt-0.5">
+                      <div 
+                        className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all duration-300"
+                        style={{ width: `${currentProgress}%` }}
+                      />
+                    </div>
 
                     <div className="hidden group-hover:flex absolute top-[-40px] left-1/2 -translate-x-1/2 bg-[#050b14]/95 border border-[#cbb26a] p-1.5 flex-col whitespace-nowrap z-50 text-[10px] text-[#e2d5b3] shadow-lg rounded-sm">
                       <span className="text-white font-bold">{skill} XP:</span>

@@ -1,3 +1,7 @@
+## [2.1.170] - 2026-08-13
+### Added
+- **Skills Overlay Polish & Progress Bars (`skills-overlay.tsx`)**: Added Total Level and Total XP summary strip at the top of the skills panel, along with gold progress bars indicating percentage to next level under each skill tile.
+
 ## [2.1.169] - 2026-08-13
 ### Added
 - **NPC Dialogue Full Keyboard Integration (`dialog-overlay.tsx`)**: Added keyboard controls to dialogue interaction (`Space`, `Enter`, `E` to skip typewriter or advance, `Escape` to close, and numeric keys `1-9` with visual `[N]` badges to select branch options).
