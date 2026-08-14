@@ -1557,6 +1557,16 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 })
               );
               showToast(`Sprite "${data.key}" targeted at [${picked.r}, ${picked.c}]`);
+            } else if (data.type === 'STUDIO_TILE_DROP') {
+              const gid = typeof data.gid === 'number' ? data.gid : activeBrushTileId;
+              useEditorStore.getState().setActiveBrushTileId(gid);
+              if (typeof data.layerIdx === 'number') {
+                useEditorStore.getState().setActiveLayerIdx(data.layerIdx);
+              }
+              if (onMapClick) {
+                onMapClick(picked.r, picked.c);
+              }
+              showToast(`Painted tile GID ${gid} at [${picked.r}, ${picked.c}]`);
             }
           } catch {}
         }}

@@ -1,3 +1,7 @@
+## [2.1.185] - 2026-08-14
+### Added
+- **Studio Drag-and-Drop Palette Tile Painting (`TilesetPicker.tsx`, `GameCanvasBabylon.tsx`)**: Made tileset picker sheets draggable with `STUDIO_TILE_DROP` payloads, allowing creators to drag specific tiles from the palette directly onto 2.5D map coordinates to paint terrain seamlessly.
+
 ## [2.1.184] - 2026-08-14
 ### Added
 - **Studio Drag-and-Drop Viewport Sprite Placement (`SpriteBrowser.tsx`, `GameCanvasBabylon.tsx`, `BabylonEngine.ts`)**: Made sprite browser thumbnails draggable with structured metadata payloads, projection coordinates via `pickTileAtScreenCoord`, and canvas drop listeners targeting live map coordinates.

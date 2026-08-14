@@ -146,6 +146,19 @@ export default function TilesetPicker({
                }
                alt={ts.imageSource}
                onClick={handleImageClick}
+               draggable
+               onDragStart={(e) => {
+                 const gid = hoveredTile?.gid || activeBrushTileId;
+                 e.dataTransfer.setData(
+                   'application/json',
+                   JSON.stringify({
+                     type: 'STUDIO_TILE_DROP',
+                     gid,
+                     layerIdx: activeLayerIdx,
+                   })
+                 );
+                 e.dataTransfer.effectAllowed = 'copy';
+               }}
                onMouseMove={handleMouseMove}
                onMouseLeave={() => setHoveredTile(null)}
                onLoad={(e) => {
