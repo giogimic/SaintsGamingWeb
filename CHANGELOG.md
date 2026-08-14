@@ -1,3 +1,7 @@
+## [2.1.211] - 2026-08-14
+### Fixed
+- **MMO Turn-Based Battle Payload Normalization (`index.tsx`)**: Normalized `battle_started` and `battle_update` socket payloads to ensure `TurnBattleOverlay` always receives valid creature instances (`wildCreature`, `playerCreature`), phase transitions, combat logging, and HP synchronizations across wild encounters, trainer battles, and player PvP duels.
+
 ## [2.1.210] - 2026-08-14
 ### Added
 - **Go MMO Real-Time Party & PvP Challenge Synchronization (`handler.go`, `party.go`, `party_test.go`)**: Implemented full lifecycle multiplayer party invitations (`party_invite_send`, `EvPartyInvite`), acceptance (`party_invite_accept`), leaving (`party_leave`), and real-time PvP duel challenges (`battle_invite_send`, `accept_battle`) in the Go MMO backend with synchronized party toasts, member updates, and comprehensive test suite coverage.
