@@ -954,13 +954,15 @@ export default function TheLobby({
     socket.on('player_defeated', (data) => {
       const state = useGameStore.getState();
       state.showToast("You blacked out... Respawning at Safe Zone");
-      state.setInstanceId(data.instanceId);
-      const defeatMap = toBaseMapId(String(data.mapId || 'LOBBY'));
+      if (data?.instanceId) state.setInstanceId(data.instanceId);
+      const defeatMap = toBaseMapId(String(data?.mapId || state.currentMapId || 'DEMO_SANDBOX'));
       state.setCurrentMapId(defeatMap);
       void loadMap(defeatMap).then((m) => {
         useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
       });
-      state.setPlayerPosition({ x: data.x, y: data.y }, 'down', false);
+      const spawnX = typeof data?.x === 'number' ? data.x : 10;
+      const spawnY = typeof data?.y === 'number' ? data.y : 10;
+      state.setPlayerPosition({ x: spawnX, y: spawnY }, 'down', false);
       state.modifyHp(9999); // Full heal (clamped to maxHp by modifyHp)
     });
 

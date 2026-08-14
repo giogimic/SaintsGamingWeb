@@ -157,7 +157,21 @@ func (h *Hub) finishCombat(accountID, sid, instanceID, creatureID, winner string
 			h.EmitToRoom(instanceID, protocol.EvLootSpawned, drop)
 		}
 	} else if winner != "flee" {
-		h.EmitToSocket(sid, protocol.EvPlayerDefeated, map[string]any{"reason": "combat"})
+		p := h.eng.Players().GetByAccount(accountID)
+		spawnX, spawnY := 10.0, 10.0
+		mapID := protocol.DemoMapID
+		instID := instanceID
+		if p != nil {
+			mapID = p.BaseMapID
+			instID = p.MapID
+		}
+		h.EmitToSocket(sid, protocol.EvPlayerDefeated, map[string]any{
+			"reason":     "combat",
+			"mapId":      mapID,
+			"instanceId": instID,
+			"x":          spawnX,
+			"y":          spawnY,
+		})
 		creatureLvl := 3
 		if sess := h.deps.Combat.GetByPlayer(accountID); sess != nil {
 			creatureLvl = sess.CreatureStats.Level
