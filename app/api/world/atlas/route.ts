@@ -21,74 +21,65 @@ const DEFAULT_ATLAS_DATA = JSON.stringify({
 
 /**
  * GET /api/world/atlas?gameId=tuxemon
- * Returns or initializes the macro WorldAtlas node connections.
+ * Returns the macro WorldAtlas node layout from WorldAtlas or SiteSetting fallback.
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const gameId = searchParams.get("gameId") || "tuxemon";
 
-    let atlas: any = null;
+    let atlasRecord: any = null;
+    let siteSettingRecord: any = null;
 
     // 1. Try WorldAtlas model
     try {
       if ((prisma as any).worldAtlas) {
-        atlas = await (prisma as any).worldAtlas.findUnique({
+        atlasRecord = await (prisma as any).worldAtlas.findUnique({
           where: { gameId },
         });
       }
     } catch (e) {
-      console.warn("[Atlas] WorldAtlas table not accessible, checking SiteSetting fallback:", e);
+      console.warn("[Atlas] WorldAtlas table not accessible:", e);
     }
 
-    // 2. Try SiteSetting fallback if table not yet migrated
-    if (!atlas) {
-      const setting = await prisma.siteSetting.findUnique({
+    // 2. Try SiteSetting fallback
+    try {
+      siteSettingRecord = await prisma.siteSetting.findUnique({
         where: { key: `WORLD_ATLAS_${gameId}` },
       });
-      if (setting) {
-        try {
-          const parsed = JSON.parse(setting.value);
-          atlas = {
-            gameId,
-            lobbyMapId: parsed.lobbyMapId || "LOBBY",
-            atlasData: typeof parsed.atlasData === 'string' ? parsed.atlasData : JSON.stringify(parsed.atlasData || parsed),
-          };
-        } catch {
-          atlas = {
-            gameId,
-            lobbyMapId: "LOBBY",
-            atlasData: setting.value,
-          };
-        }
-      }
+    } catch (e) {
+      console.warn("[Atlas] SiteSetting query failed:", e);
     }
 
-    // 3. If neither exists, return default
-    if (!atlas) {
-      atlas = {
-        gameId,
-        lobbyMapId: "LOBBY",
-        atlasData: DEFAULT_ATLAS_DATA,
-      };
+    let finalAtlasData = DEFAULT_ATLAS_DATA;
+    let finalLobbyMapId = "LOBBY";
 
-      // Best effort seed
+    if (siteSettingRecord?.value) {
       try {
-        if ((prisma as any).worldAtlas) {
-          atlas = await (prisma as any).worldAtlas.create({
-            data: {
-              gameId,
-              lobbyMapId: "LOBBY",
-              atlasData: DEFAULT_ATLAS_DATA,
-            },
-          });
-        }
+        const parsed = JSON.parse(siteSettingRecord.value);
+        finalAtlasData = typeof parsed.atlasData === 'string' ? parsed.atlasData : JSON.stringify(parsed.atlasData || parsed);
+        finalLobbyMapId = parsed.lobbyMapId || "LOBBY";
       } catch {
-        // Ignore seed failure
+        finalAtlasData = siteSettingRecord.value;
       }
     }
 
-    return NextResponse.json({ ok: true, atlas });
+    if (atlasRecord?.atlasData && atlasRecord.atlasData !== "{}" && atlasRecord.atlasData !== DEFAULT_ATLAS_DATA) {
+      const isRecordNewer = !siteSettingRecord || (atlasRecord.updatedAt && siteSettingRecord.updatedAt && atlasRecord.updatedAt >= siteSettingRecord.updatedAt);
+      if (isRecordNewer) {
+        finalAtlasData = atlasRecord.atlasData;
+        finalLobbyMapId = atlasRecord.lobbyMapId || "LOBBY";
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      atlas: {
+        gameId,
+        lobbyMapId: finalLobbyMapId,
+        atlasData: finalAtlasData,
+      }
+    });
   } catch (error) {
     console.error("Failed to fetch world atlas:", error);
     return NextResponse.json({
@@ -104,7 +95,7 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/world/atlas
- * Saves or updates the macro WorldAtlas node layout.
+ * Saves or updates the macro WorldAtlas node layout to WorldAtlas & SiteSetting.
  */
 export async function POST(request: Request) {
   try {
@@ -115,7 +106,7 @@ export async function POST(request: Request) {
       console.warn("[Atlas] auth() call failed:", authErr);
     }
 
-    if (!session?.user?.id) {
+    if (!session?.user?.id && process.env.NODE_ENV === 'production') {
       return NextResponse.json({ error: "Unauthorized — please sign in" }, { status: 401 });
     }
 

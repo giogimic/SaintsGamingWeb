@@ -12,7 +12,7 @@ export default async function StudioPage(props: {
   const params = await props.searchParams;
 
   return (
-    <div className="w-full bg-[#0a0a0f] overflow-hidden relative h-[100dvh]">
+    <div className="fixed inset-0 w-screen h-screen bg-[#0a0a0f] overflow-hidden z-50">
       <StudioLobby
         characterId={params.characterId}
         forceCreate={params.create === 'true'}
