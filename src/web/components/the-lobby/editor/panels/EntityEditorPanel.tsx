@@ -92,6 +92,18 @@ export const EntityEditorPanel: React.FC = () => {
     }
   }, [clickedTile, selectedId]);
 
+  useEffect(() => {
+    const handleSpritePicked = (e: Event) => {
+      const customEv = e as CustomEvent<{ key: string; source: string }>;
+      if (customEv.detail?.key) {
+        setEntityProps((prev) => ({ ...prev, spriteId: customEv.detail.key }));
+        showToast(`Assigned sprite: ${customEv.detail.key}`);
+      }
+    };
+    window.addEventListener('studio_sprite_picked', handleSpritePicked);
+    return () => window.removeEventListener('studio_sprite_picked', handleSpritePicked);
+  }, [showToast]);
+
   const onFieldChange = (key: string, value: unknown) => {
     setEntityProps((prev) => ({ ...prev, [key]: value }));
   };
