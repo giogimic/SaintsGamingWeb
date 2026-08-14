@@ -35,9 +35,8 @@ const (
 	EvEncounterCheck    = "encounter_check"
 	EvBattleSubmit      = "battle_submit_action"
 	
-	// Deprecated (replaced by canonical content_reload via redis or internal sync)
-	// EvAdminSaveMap      = "admin_save_map"
-	// EvAdminReloadMap    = "admin_reload_map"
+	EvAdminSaveMap      = "admin_save_map"
+	EvAdminReloadMap    = "admin_reload_map"
 
 	EvStudioSpawnNPC    = "studio_spawn_npc"
 	EvStudioDespawnNPC  = "studio_despawn_npc"

@@ -3,6 +3,7 @@ package socket
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/creature"
 	"github.com/giogimic/SaintsGamingWeb/go-mmo/internal/protocol"

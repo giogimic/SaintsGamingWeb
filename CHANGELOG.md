@@ -1,3 +1,7 @@
+## [2.1.210] - 2026-08-14
+### Added
+- **Go MMO Real-Time Party & PvP Challenge Synchronization (`handler.go`, `party.go`, `party_test.go`)**: Implemented full lifecycle multiplayer party invitations (`party_invite_send`, `EvPartyInvite`), acceptance (`party_invite_accept`), leaving (`party_leave`), and real-time PvP duel challenges (`battle_invite_send`, `accept_battle`) in the Go MMO backend with synchronized party toasts, member updates, and comprehensive test suite coverage.
+
 ## [2.1.209] - 2026-08-14
 ### Added
 - **MMO Target Frame Direct PvP Duel Action (`target-frame.tsx`)**: Added interactive PvP Duel Challenge trigger to TargetFrame when targeting online players, allowing instant dispatch of `battle_invite_send` challenges.
