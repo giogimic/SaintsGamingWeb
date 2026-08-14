@@ -19,6 +19,7 @@ import {
   resizeStudioMap
 } from '@/shared/game/studioMapCreate';
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
+import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 
 
 export const WorldBuilderPanel: React.FC = () => {
@@ -181,6 +182,14 @@ export const WorldBuilderPanel: React.FC = () => {
       setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const onTriggerSave = () => {
+      void handleSaveMap();
+    };
+    window.addEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
+    return () => window.removeEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
+  }, [baseMapId]);
 
   const handleCreateNewMapSubmit = async () => {
     const built = buildNewStudioMap({

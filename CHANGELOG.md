@@ -1,3 +1,7 @@
+## [2.1.180] - 2026-08-14
+### Added
+- **Global Map Save Event Dispatch (`studioEvents.ts`, `StudioEditorShell.tsx`, `WorldBuilderPanel.tsx`, `StudioMenuBar.tsx`)**: Wired `STUDIO_TRIGGER_SAVE_MAP_EVENT` globally to `Ctrl+S` shortcuts and top menu actions, ensuring level edits are persistently synced to the Go MMO backend from any active Studio dock.
+
 ## [2.1.179] - 2026-08-14
 ### Added
 - **Real-Time Tileset Sheet Hover Previews (`TilesetPicker.tsx`)**: Hovering tiles across the tileset palette now draws a live highlight rectangle and displays the computed tile GID before clicking, providing precise visual feedback during level design.

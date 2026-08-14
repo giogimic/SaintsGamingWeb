@@ -8,6 +8,7 @@ import {
   Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle
 } from 'lucide-react';
 import { STUDIO_MODE_META, type StudioMode } from '@/shared/game/studioModes';
+import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 
 type MenuState = string | null;
 
@@ -134,8 +135,8 @@ export function StudioMenuBar() {
               }}
             />
             <MenuItem divider />
-            <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} disabled={!mapDirty} onClick={() => {
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
+            <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} onClick={() => {
+              window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
             }} />
             <MenuItem divider />
             <MenuItem label="Export JSON (Advanced)" disabled />
