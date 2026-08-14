@@ -1,3 +1,7 @@
+## [2.1.191] - 2026-08-14
+### Added
+- **MMO Hotbar Consumable & Potion Action Pipeline (`hotbar.tsx`)**: Wired slot action handling for item slots (slot 5), automatically scanning player inventory for usable potions/consumables, applying health modifications, consuming inventory units, and initiating item cooldowns.
+
 ## [2.1.190] - 2026-08-14
 ### Fixed
 - **MMO Skills Overlay Tooltip Clipping (`skills-overlay.tsx`)**: Removed parent overflow clipping and attached `pointer-events-none` on hover tooltips, allowing skill XP breakdown cards to cleanly display level curves without border clipping.
