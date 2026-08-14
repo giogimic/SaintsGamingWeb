@@ -1,3 +1,10 @@
+## [2.1.213] - 2026-08-14
+### Fixed
+- **Multiplayer Movement Input & Walkability Boundary Desynchronization (`manager.go`, `demo.go`, `handler.go`, `LobbySocketHandler.ts`, `GameCanvasBabylon.tsx`)**:
+  - Fixed map grid boundary check in Go MMO `IsWalkable` and dynamic `JoinMap` registration so maps larger than 30x30 (such as the 64x64 `LOBBY` / `DEMO_SANDBOX` at `X 31, Y 32`) do not incorrectly drop player movement inputs as out-of-bounds wall collisions.
+  - Implemented `LoadAllMaps` in Go MMO startup bootstrap to register all world definitions directly from SQLite `WorldMap`.
+  - Added dual event synchronization (`input` + `player_move`) across both Go MMO and Next.js Socket fallback handlers for instantaneous cross-client position and direction replication.
+
 ## [2.1.212] - 2026-08-14
 ### Fixed
 - **Multiplayer Movement & Walking Animation Synchronization (`BabylonEngine.ts`, `engine.go`)**: Restored smooth continuous position interpolation and walking animation cycling for online players, ensuring other players do not snap or appear frozen in place. Expanded Go MMO `EvPlayerMoved` broadcast directly to map instances.
