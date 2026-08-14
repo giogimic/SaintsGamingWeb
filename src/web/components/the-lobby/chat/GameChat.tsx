@@ -120,6 +120,33 @@ export function GameChat() {
       }
     }
 
+    if (text === '/help' || text === '/commands') {
+      setMessages((prev) =>
+        [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            sender: 'System',
+            text: 'Commands: /w [player] [msg], /invite [player], /p leave, /p join [leader]' + (isModerator ? ', /announce [msg], /tp [player]' : ''),
+            timestamp: Date.now(),
+            type: 'SYSTEM' as const,
+          },
+        ].slice(-100)
+      );
+      setChatInput('');
+      return;
+    }
+
+    if (text.startsWith('/invite ') || text.startsWith('/p invite ') || text.startsWith('/party invite ')) {
+      const targetName = text.replace(/^\/(?:p\s+invite|party\s+invite|invite)\s+/i, '').trim();
+      if (targetName) {
+        emitSocketEvent?.('party_invite_send', { targetName });
+        useGameStore.getState().showToast(`Sent party invitation to ${targetName}!`);
+      }
+      setChatInput('');
+      return;
+    }
+
     if (text.startsWith('/p join ')) {
       const leaderName = text.replace('/p join ', '').trim();
       emitSocketEvent?.('party_join', leaderName);
@@ -134,6 +161,20 @@ export function GameChat() {
     if (isModerator && text.startsWith('/announce ')) {
       const msg = text.replace('/announce ', '').trim();
       if (msg) emitSocketEvent?.('staff_announce', msg);
+      setChatInput('');
+      return;
+    }
+    if (isModerator && (text.startsWith('/tp ') || text.startsWith('/goto '))) {
+      const targetName = text.replace(/^\/(?:tp|goto)\s+/i, '').trim().toLowerCase();
+      const otherPlayers = useGameStore.getState().otherPlayers;
+      const target = Object.values(otherPlayers || {}).find(p => p && p.name && p.name.toLowerCase() === targetName);
+      if (target) {
+        useGameStore.getState().setPlayerPosition({ x: target.x, y: target.y }, target.direction || 'down', false);
+        emitSocketEvent?.('player_move', { x: target.x, y: target.y, direction: target.direction || 'down' });
+        useGameStore.getState().showToast(`Teleported to ${target.name}`);
+      } else {
+        useGameStore.getState().showToast(`Player "${targetName}" not found on this map.`);
+      }
       setChatInput('');
       return;
     }
