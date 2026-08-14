@@ -1,3 +1,7 @@
+## [2.1.209] - 2026-08-14
+### Added
+- **MMO Target Frame Direct PvP Duel Action (`target-frame.tsx`)**: Added interactive PvP Duel Challenge trigger to TargetFrame when targeting online players, allowing instant dispatch of `battle_invite_send` challenges.
+
 ## [2.1.208] - 2026-08-14
 ### Fixed
 - **MMO 3D Player Mesh Target Resolution (`GameCanvasBabylon.tsx`)**: Fixed targeting when clicking other online tamers in the 3D viewport by stripping the internal `multiplayer_` mesh prefix, ensuring instantaneous target frame initialization and whisper/invite readiness.
