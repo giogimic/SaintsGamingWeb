@@ -1,3 +1,7 @@
+## [2.1.182] - 2026-08-14
+### Added
+- **Resilient Map Diagnostics & Ground Zero Detection (`StudioProblemsPanel.tsx`)**: Replaced raw gates array assumption with `normalizeGatesToArray` for robust array/record payload validation. Added automated warnings for uninitialized Ground tile layers filled with all zero tiles.
+
 ## [2.1.181] - 2026-08-14
 ### Added
 - **Starter Hero Configured Starting Inventory Integration (`character-creator.tsx`)**: The character creation pipeline now merges custom starting inventory payloads defined on Starter Hero records into new MMO player state profiles upon creation.

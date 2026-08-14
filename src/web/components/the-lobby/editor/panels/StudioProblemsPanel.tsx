@@ -17,6 +17,7 @@ import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import { GAME_MAPS } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
+import { normalizeGatesToArray } from '@/shared/game/mapGates';
 
 export interface MapProblem {
   id: string;
@@ -65,16 +66,16 @@ export function StudioProblemsPanel() {
     }
 
     // 2. Check Gates / Warps
-    const gates = mapData.gates || [];
-    gates.forEach((gate: any, idx: number) => {
-      const targetMap = gate.targetMapId || gate.targetMap;
+    const gates = normalizeGatesToArray(mapData.gates);
+    gates.forEach((gate, idx) => {
+      const targetMap = gate.targetMapId;
       if (!targetMap) {
         list.push({
           id: `gate_no_target_${idx}`,
           type: 'ERROR',
           category: 'GATE',
-          message: `Gate at [${gate.y}, ${gate.x}] is missing target map ID.`,
-          coordinate: { r: gate.y, c: gate.x },
+          message: `Gate at [${gate.position.y}, ${gate.position.x}] is missing target map ID.`,
+          coordinate: { r: gate.position.y, c: gate.position.x },
         });
       } else if (!GAME_MAPS[targetMap] && !targetMap.startsWith('TEST_') && !targetMap.startsWith('DEMO_')) {
         list.push({
@@ -82,7 +83,7 @@ export function StudioProblemsPanel() {
           type: 'WARNING',
           category: 'GATE',
           message: `Gate targets map "${targetMap}" which is not pre-registered in standard atlas.`,
-          coordinate: { r: gate.y, c: gate.x },
+          coordinate: { r: gate.position.y, c: gate.position.x },
         });
       }
     });
@@ -128,6 +129,19 @@ export function StudioProblemsPanel() {
         category: 'LAYER',
         message: 'Map is operating in pure logic-mode without visual tileset layers.',
       });
+    } else if (layers.length > 0) {
+      const groundLayer = (layers as any[]).find((l: any) => l.name?.toLowerCase() === 'ground') || (layers as any[])[0];
+      if (groundLayer?.grid && Array.isArray(groundLayer.grid)) {
+        const isAllZeros = groundLayer.grid.every((row: any[]) => Array.isArray(row) && row.every((val: any) => val === 0));
+        if (isAllZeros) {
+          list.push({
+            id: 'ground_all_zeros',
+            type: 'WARNING',
+            category: 'LAYER',
+            message: 'Ground tile layer contains only empty zero tiles (may render black void).',
+          });
+        }
+      }
     }
 
     return list;
