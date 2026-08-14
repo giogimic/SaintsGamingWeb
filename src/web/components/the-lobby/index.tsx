@@ -841,7 +841,33 @@ export default function TheLobby({
       if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
         return;
       }
-      state.setActiveBattle(data);
+
+      const formattedBattle = {
+        id: data?.id || data?.combatId || `battle_${Date.now()}`,
+        accountId: data?.accountId || state.player?.accountId || '',
+        phase: (data?.phase || (data?.turn === 'player' ? 'WAITING_FOR_INPUT' : 'RESOLUTION') || 'WAITING_FOR_INPUT') as any,
+        isTrainer: !!data?.isTrainer || !!data?.opponentName,
+        trainerName: data?.trainerName || data?.opponentName,
+        wildCreature: data?.wildCreature || {
+          id: data?.creatureId || 'wild_foe',
+          name: data?.opponentName || data?.creatureName || (data?.creatureId?.startsWith?.('mob_') ? 'Wild Daemon' : 'Wild Creature'),
+          hp: data?.creatureHp !== undefined ? data.creatureHp : (data?.opponentHp !== undefined ? data.opponentHp : (data?.hp || 50)),
+          maxHp: data?.creatureMaxHp !== undefined ? data.creatureMaxHp : (data?.opponentMaxHp !== undefined ? data.opponentMaxHp : (data?.maxHp || 50)),
+          level: data?.level || 5,
+          spriteKey: data?.spriteKey || '/assets/sprites/creatures/brushpup.png',
+        },
+        playerCreature: data?.playerCreature || {
+          id: state.player?.accountId || 'player_creature',
+          name: state.player?.name || 'Tamer',
+          hp: data?.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
+          maxHp: data?.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
+          level: state.player?.level || 5,
+          spriteKey: state.player?.spriteId ? `/assets/sprites/player/${state.player.spriteId}.png` : '/assets/sprites/creatures/budaye.png',
+        },
+        log: data?.log || ['Battle commenced!'],
+      };
+
+      state.setActiveBattle(formattedBattle);
       state.setGameMode('BATTLE');
     });
 
@@ -850,13 +876,61 @@ export default function TheLobby({
       if (data?.accountId && state.player?.accountId && data.accountId !== state.player.accountId) {
         return;
       }
-      if (!state.activeBattle && data?.id) {
-        state.setActiveBattle(data);
+      const current = state.activeBattle;
+      if (!current) {
+        if (data?.id || data?.combatId) {
+          const formattedBattle = {
+            id: data.id || data.combatId,
+            accountId: data.accountId || state.player?.accountId || '',
+            phase: (data.phase || (data.turn === 'player' ? 'WAITING_FOR_INPUT' : 'RESOLUTION') || 'WAITING_FOR_INPUT') as any,
+            isTrainer: !!data.isTrainer || !!data.opponentName,
+            trainerName: data.trainerName || data.opponentName,
+            wildCreature: data.wildCreature || {
+              id: data.creatureId || 'wild_foe',
+              name: data.opponentName || data.creatureName || 'Opponent',
+              hp: data.creatureHp !== undefined ? data.creatureHp : (data.opponentHp !== undefined ? data.opponentHp : (data.hp || 50)),
+              maxHp: data.creatureMaxHp !== undefined ? data.creatureMaxHp : (data.opponentMaxHp !== undefined ? data.opponentMaxHp : (data.maxHp || 50)),
+              level: data.level || 5,
+              spriteKey: data.spriteKey || '/assets/sprites/creatures/brushpup.png',
+            },
+            playerCreature: data.playerCreature || {
+              id: state.player?.accountId || 'player_creature',
+              name: state.player?.name || 'Tamer',
+              hp: data.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
+              maxHp: data.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
+              level: state.player?.level || 5,
+              spriteKey: state.player?.spriteId ? `/assets/sprites/player/${state.player.spriteId}.png` : '/assets/sprites/creatures/budaye.png',
+            },
+            log: data.log || ['Battle updated.'],
+          };
+          state.setActiveBattle(formattedBattle);
+        }
         return;
       }
+
+      const updatedWild = {
+        ...current.wildCreature,
+        ...(data.wildCreature || {}),
+        hp: data.creatureHp !== undefined ? data.creatureHp : (data.opponentHp !== undefined ? data.opponentHp : current.wildCreature.hp),
+      };
+      const updatedPlayer = {
+        ...current.playerCreature,
+        ...(data.playerCreature || {}),
+        hp: data.playerHp !== undefined ? data.playerHp : current.playerCreature.hp,
+      };
+
+      const newLogs = [...(current.log || [])];
+      if (data.damage) {
+        newLogs.push(`Hit landed for ${data.damage} damage!${data.crit ? ' (Critical Hit!)' : ''}`);
+      }
+
       state.setActiveBattle({
-        ...state.activeBattle!,
-        ...data
+        ...current,
+        id: data.id || data.combatId || current.id,
+        phase: (data.phase || (data.turn === 'player' ? 'WAITING_FOR_INPUT' : 'RESOLUTION') || current.phase) as any,
+        wildCreature: updatedWild,
+        playerCreature: updatedPlayer,
+        log: data.log || newLogs,
       });
     });
     
