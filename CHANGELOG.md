@@ -1,3 +1,7 @@
+## [2.1.199] - 2026-08-14
+### Added
+- **MMO Target Frame Classification & Party Co-Op Enhancements (`target-frame.tsx`, `party-overlay.tsx`)**: Added entity classification badges (`PLAYER`, `WILD`, `NPC`) and target dismiss button to `TargetFrame`. Enhanced `PartyOverlay` with live backend socket invitation dispatch (`party_invite_send`), quick nearby peer invite chips, and clean party leave workflows.
+
 ## [2.1.198] - 2026-08-14
 ### Added
 - **Studio Entity & NPC Mutex Dirty State Sync (`EntityEditorPanel.tsx`)**: Synchronized `markMapDirty()` across NPC updates, level placements, and deletions, guaranteeing consistent state tracking between the UI dock and persistent world documents.

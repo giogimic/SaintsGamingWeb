@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useGameStore } from './store';
 import { GamePanelShell } from './hud/GamePanelShell';
 import { getCreatureById } from './data/saints-dex';
+import { UserPlus, LogOut, Users } from 'lucide-react';
 
 export default function PartyOverlay() {
   const [activeTab, setActiveTab] = useState<'BEASTS' | 'MULTIPLAYER'>('BEASTS');
@@ -13,20 +14,33 @@ export default function PartyOverlay() {
   const caughtDaemons = useGameStore(state => state.player.caughtDaemons);
   const activeDaemonId = useGameStore(state => state.player.activeDaemonId);
   const party = useGameStore(state => state.player.party) || [];
+  const otherPlayers = useGameStore(state => state.otherPlayers);
   const setGameMode = useGameStore(state => state.setGameMode);
   const showToast = useGameStore(state => state.showToast);
 
-  const handleSendInvite = () => {
-    if (!inviteInput.trim()) return;
-    showToast(`Sent party invitation to ${inviteInput.trim()}!`);
-    setInviteInput('');
+  const nearbyPlayers = Object.values(otherPlayers || {}).filter(p => p && p.name);
+
+  const handleSendInvite = (targetName?: string) => {
+    const name = (targetName || inviteInput).trim();
+    if (!name) return;
+    const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+    emitSocketEvent?.('party_invite_send', { targetName: name });
+    showToast(`Sent party invitation to ${name}!`);
+    if (!targetName) setInviteInput('');
+  };
+
+  const handleLeaveParty = () => {
+    const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+    emitSocketEvent?.('party_leave', {});
+    useGameStore.setState(state => { state.player.party = []; });
+    showToast('Left party.');
   };
 
   return (
     <GamePanelShell neonAccent="cyan" className="pointer-events-auto z-40 flex w-[min(95vw,100%)] max-w-full flex-col overflow-hidden sm:w-[600px] h-[75vh]">
       <div className="flex justify-between items-center bg-black/40 p-2 border-b border-[#22d3ee]/20 backdrop-blur-md">
         <h2 className="font-extrabold text-cyan-50 tracking-widest text-sm drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">PARTY & CO-OP MANAGEMENT</h2>
-        <button onClick={() => setGameMode('EXPLORING')} className="text-cyan-200/50 hover:text-cyan-100 transition-colors font-mono">
+        <button onClick={() => setGameMode('EXPLORING')} className="text-cyan-200/50 hover:text-cyan-100 transition-colors font-mono cursor-pointer">
           ✕
         </button>
       </div>
@@ -37,7 +51,7 @@ export default function PartyOverlay() {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('BEASTS')}
-              className={`px-3 py-1.5 rounded font-bold transition-colors ${
+              className={`px-3 py-1.5 rounded font-bold transition-colors cursor-pointer ${
                 activeTab === 'BEASTS' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -45,7 +59,7 @@ export default function PartyOverlay() {
             </button>
             <button
               onClick={() => setActiveTab('MULTIPLAYER')}
-              className={`px-3 py-1.5 rounded font-bold transition-colors ${
+              className={`px-3 py-1.5 rounded font-bold transition-colors cursor-pointer ${
                 activeTab === 'MULTIPLAYER' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -69,7 +83,7 @@ export default function PartyOverlay() {
                 </p>
                 <button
                   onClick={() => setGameMode('PROFESSOR_LAB')}
-                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded cursor-pointer"
                 >
                   Open Lab — Choose Starter
                 </button>
@@ -109,7 +123,7 @@ export default function PartyOverlay() {
                       {!isActive && (
                         <button 
                           onClick={() => useGameStore.setState(state => { state.player.activeDaemonId = id })}
-                          className="px-4 py-2 bg-[#4e342e] hover:bg-[#5d4037] text-white text-sm font-bold rounded border border-[#3e2723] transition-colors"
+                          className="px-4 py-2 bg-[#4e342e] hover:bg-[#5d4037] text-white text-sm font-bold rounded border border-[#3e2723] transition-colors cursor-pointer"
                         >
                           EQUIP
                         </button>
@@ -124,22 +138,42 @@ export default function PartyOverlay() {
 
         {/* TAB 2: MULTIPLAYER CO-OP PARTY */}
         {activeTab === 'MULTIPLAYER' && (
-          <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+          <div className="flex-1 flex flex-col gap-3 overflow-hidden">
             {/* Invite Form */}
-            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg flex gap-2">
-              <input
-                type="text"
-                value={inviteInput}
-                onChange={e => setInviteInput(e.target.value)}
-                placeholder="Enter player name to invite to Party..."
-                className="flex-1 bg-black/60 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
-              />
-              <button
-                onClick={handleSendInvite}
-                className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded transition-colors"
-              >
-                INVITE
-              </button>
+            <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-lg flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={inviteInput}
+                  onChange={e => setInviteInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSendInvite(); }}
+                  placeholder="Enter player name to invite to Party..."
+                  className="flex-1 bg-black/60 border border-slate-700 rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                />
+                <button
+                  onClick={() => handleSendInvite()}
+                  className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> INVITE
+                </button>
+              </div>
+
+              {/* Nearby online players quick invite */}
+              {nearbyPlayers.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 items-center pt-1 border-t border-slate-800/80">
+                  <span className="text-[10px] text-slate-400">Nearby in Realm:</span>
+                  {nearbyPlayers.map((peer) => (
+                    <button
+                      key={peer.name}
+                      onClick={() => handleSendInvite(peer.name)}
+                      className="px-2 py-0.5 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-700/50 text-cyan-300 text-[10px] rounded transition-colors flex items-center gap-1 cursor-pointer"
+                      title={`Invite ${peer.name} to Party`}
+                    >
+                      <UserPlus className="w-2.5 h-2.5" /> {peer.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Party Roster */}
@@ -155,9 +189,20 @@ export default function PartyOverlay() {
                     <span className="text-[10px] text-cyan-400 font-mono">PARTY LEADER</span>
                   </div>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-bold uppercase">
-                  ONLINE
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 rounded font-bold uppercase">
+                    ONLINE
+                  </span>
+                  {party.length > 0 && (
+                    <button
+                      onClick={handleLeaveParty}
+                      className="px-2 py-0.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-700/50 text-rose-300 text-[10px] rounded font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Leave current party"
+                    >
+                      <LogOut className="w-3 h-3" /> LEAVE
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Members */}
@@ -167,7 +212,7 @@ export default function PartyOverlay() {
                 </div>
               ) : (
                 party.map((m: any) => (
-                  <div key={m.userId} className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex items-center justify-between">
+                  <div key={m.userId || m.name} className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-black rounded-lg border border-slate-700 flex items-center justify-center font-bold text-slate-300">
                         🛡️
@@ -188,8 +233,6 @@ export default function PartyOverlay() {
         )}
 
       </div>
-
-
     </GamePanelShell>
   );
 }
