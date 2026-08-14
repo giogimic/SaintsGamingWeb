@@ -2,26 +2,58 @@
 
 import React from 'react';
 import { useGameStore } from './store';
-import { Flame, AlertTriangle, Wind } from 'lucide-react';
+import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare } from 'lucide-react';
 import { GamePanelShell } from './ui/GamePanelShell';
 
 export default function TargetFrame() {
   const combatTarget = useGameStore(state => state.combatTarget);
+  const setCombatTarget = useGameStore(state => state.setCombatTarget);
+  const otherPlayers = useGameStore(state => state.otherPlayers);
   
   if (!combatTarget) return null;
 
   const target = combatTarget;
   const hpPercent = Math.max(0, Math.min(100, (target.hp / target.maxHp) * 100));
+  const isPlayer = !!(otherPlayers && otherPlayers[target.entityId]);
+  const isCreature = target.entityId.startsWith('creature_') || target.entityId.startsWith('mob_');
+  const isNpc = target.entityId.startsWith('npc_');
 
   return (
-    <div className="pointer-events-none flex flex-col items-center">
-      <GamePanelShell neonAccent="magenta" className="pointer-events-auto px-4 py-2.5 min-w-[240px] md:min-w-[280px]">
-        <div className="flex justify-between items-center mb-1.5">
-          <div className="font-extrabold text-white text-[13px] tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-            {target.name}
+    <div className="pointer-events-none flex flex-col items-center" data-testid="target-frame">
+      <GamePanelShell neonAccent={isPlayer ? 'cyan' : 'magenta'} className="pointer-events-auto px-4 py-2.5 min-w-[240px] md:min-w-[280px] relative">
+        <div className="flex justify-between items-center mb-1.5 gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {isPlayer && (
+              <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/50 shrink-0">
+                <User className="w-2.5 h-2.5" /> PLAYER
+              </span>
+            )}
+            {isCreature && (
+              <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-950 text-purple-300 border border-purple-700/50 shrink-0">
+                <Skull className="w-2.5 h-2.5" /> WILD
+              </span>
+            )}
+            {isNpc && (
+              <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-700/50 shrink-0">
+                <MessageSquare className="w-2.5 h-2.5" /> NPC
+              </span>
+            )}
+            <div className="font-extrabold text-white text-[13px] tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate">
+              {target.name}
+            </div>
           </div>
-          <div className="text-[11px] text-red-200/80 font-mono tracking-tighter">
-            {Math.ceil(target.hp)} <span className="text-red-400/50">/ {target.maxHp}</span>
+          
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="text-[11px] text-red-200/80 font-mono tracking-tighter">
+              {Math.ceil(target.hp)} <span className="text-red-400/50">/ {target.maxHp}</span>
+            </div>
+            <button
+              onClick={() => setCombatTarget(null)}
+              className="text-slate-400 hover:text-white p-0.5 rounded hover:bg-white/10 transition-colors cursor-pointer"
+              title="Clear Target"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
         </div>
         
