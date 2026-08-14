@@ -90,21 +90,25 @@ export default function MiniMapRadar() {
       }
     });
 
-    // Multiplayer peers — amber dots (distinct from NPC blue)
+    // Multiplayer peers — amber dots (or cyan for party members)
+    const partyMembers = useGameStore.getState().player.party || [];
+    const partyNames = new Set(partyMembers.map((m: any) => m.name));
+
     Object.values(otherPlayers || {}).forEach((peer) => {
       if (typeof peer.x !== 'number' || typeof peer.y !== 'number') return;
-      ctx.fillStyle = '#fbbf24';
+      const isParty = partyNames.has(peer.name);
+      ctx.fillStyle = isParty ? '#22d3ee' : '#fbbf24';
       ctx.beginPath();
       ctx.arc(
         peer.x * cellW + cellW / 2,
         peer.y * cellH + cellH / 2,
-        Math.max(2, cellW * 1.1),
+        Math.max(2, cellW * (isParty ? 1.3 : 1.1)),
         0,
         Math.PI * 2
       );
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = isParty ? 'rgba(34, 211, 238, 0.9)' : 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = isParty ? 1.5 : 1;
       ctx.stroke();
     });
 
@@ -145,7 +149,7 @@ export default function MiniMapRadar() {
       0, Math.PI * 2
     );
     ctx.fill();
-  }, [currentMapId, playerPos, mapEntities, otherPlayers]);
+  }, [currentMapId, playerPos, mapEntities, otherPlayers, activeMapData]);
 
   // Animate minimap at ~20fps for pulse effect
   useEffect(() => {
@@ -159,7 +163,7 @@ export default function MiniMapRadar() {
     return () => cancelAnimationFrame(frameId);
   }, [draw]);
 
-  const mapData = GAME_MAPS[currentMapId];
+  const mapData = activeMapData || GAME_MAPS[currentMapId];
   let mapName = mapData?.name || currentMapId;
   
   // Extract channel from instanceId (e.g. SAINTS_VILLAGE_ch1 -> "Ch. 1")
