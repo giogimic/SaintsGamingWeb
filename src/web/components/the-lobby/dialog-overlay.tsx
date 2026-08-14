@@ -13,6 +13,19 @@ export default function DialogOverlay() {
 
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(true);
+  const mapEntities = useGameStore((state) => state.mapEntities);
+  const activeMapData = useGameStore((state) => state.activeMapData);
+
+  const foundNpc =
+    mapEntities?.find((e) => e.id === activeDialog?.npcId || e.name === activeDialog?.npcName) ||
+    (activeMapData?.npcs as any[])?.find((n) => n.id === activeDialog?.npcId || n.name === activeDialog?.npcName);
+
+  const spriteKey =
+    (activeDialog as any)?.npcSprite ||
+    (activeDialog as any)?.spriteId ||
+    foundNpc?.spriteKey ||
+    foundNpc?.sprite ||
+    'adventurer';
 
   const npcDisplayName =
     activeDialog?.npcName ||
@@ -126,12 +139,26 @@ export default function DialogOverlay() {
         <div className="flex gap-4 p-4 sm:gap-6 sm:p-6">
           <div className="hidden w-24 shrink-0 flex-col items-center gap-2 sm:flex">
             <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-lobby-border-strong bg-lobby-panel-soft p-1.5 shadow-[inset_0_0_16px_rgba(167,139,250,0.2)]">
-              <div className="relative flex h-full w-full items-center justify-center rounded-md bg-black/40">
-                <MessageSquare className="h-6 w-6 text-lobby-soul opacity-80" />
+              <div className="relative flex h-full w-full items-center justify-center rounded-md bg-black/40 overflow-hidden">
+                {spriteKey && spriteKey !== 'none' ? (
+                  <div
+                    className="pixelated bg-no-repeat transition-transform duration-300"
+                    style={{
+                      backgroundImage: `url('/game-assets/npc/${spriteKey}.png')`,
+                      backgroundPosition: '0px -64px',
+                      backgroundSize: '96px 128px',
+                      width: '32px',
+                      height: '32px',
+                      transform: 'scale(1.8)',
+                    }}
+                  />
+                ) : (
+                  <MessageSquare className="h-6 w-6 text-lobby-soul opacity-80" />
+                )}
               </div>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-lobby-ash">
-              Exposure
+              NPC
             </span>
           </div>
 

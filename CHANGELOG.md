@@ -1,3 +1,7 @@
+## [2.1.183] - 2026-08-14
+### Added
+- **NPC Dialogue Portrait Visualizer (`dialog-overlay.tsx`)**: Replaced generic placeholder icons with dynamically resolved NPC pixelated sprite portraits extracted from active dialog metadata and live map entities.
+
 ## [2.1.182] - 2026-08-14
 ### Added
 - **Resilient Map Diagnostics & Ground Zero Detection (`StudioProblemsPanel.tsx`)**: Replaced raw gates array assumption with `normalizeGatesToArray` for robust array/record payload validation. Added automated warnings for uninitialized Ground tile layers filled with all zero tiles.
