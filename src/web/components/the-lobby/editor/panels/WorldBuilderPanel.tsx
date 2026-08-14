@@ -260,6 +260,7 @@ export const WorldBuilderPanel: React.FC = () => {
     const next = { ...base, tileLayers: layers };
     useGameStore.getState().setActiveMapData(next);
     setActiveLayerIdx(nextIdx);
+    useEditorStore.getState().markMapDirty();
     showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
   };
 

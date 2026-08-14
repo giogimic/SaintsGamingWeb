@@ -1,3 +1,7 @@
+## [2.1.196] - 2026-08-14
+### Added
+- **Studio Tile Layer Addition Dirty State Sync (`WorldBuilderPanel.tsx`)**: Wired `markMapDirty()` to `handleAddLayer`, ensuring that adding a new visual/logic tile layer marks the workspace dirty and lights up the save indicators.
+
 ## [2.1.195] - 2026-08-14
 ### Added
 - **MMO Grand Trade Center (GTC) Reliability & Empty State Validation (`gtc-overlay.tsx`)**: Added manual market listing refresh polling via `RefreshCw`, reactive inventory item auto-selection for trade listings, empty backpack validation notices, and informative confirmation toasts on trade post.
