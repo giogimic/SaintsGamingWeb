@@ -1,3 +1,7 @@
+## [2.1.190] - 2026-08-14
+### Fixed
+- **MMO Skills Overlay Tooltip Clipping (`skills-overlay.tsx`)**: Removed parent overflow clipping and attached `pointer-events-none` on hover tooltips, allowing skill XP breakdown cards to cleanly display level curves without border clipping.
+
 ## [2.1.189] - 2026-08-14
 ### Fixed
 - **MMO Inventory Equip/Unequip Toggle Reliability (`inventory-overlay.tsx`)**: Fixed equipment action handling so inspecting an already equipped item correctly issues slot unequip rather than redundant re-equips.
