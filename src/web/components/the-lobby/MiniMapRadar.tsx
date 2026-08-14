@@ -3,7 +3,10 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from './store';
 import { GAME_MAPS } from './data/maps';
-import { Compass, Map } from 'lucide-react';
+import { Compass, Map, Settings, Hammer, LogOut } from 'lucide-react';
+import { HudPanelShell } from './hud/HudPanelShell';
+import { useEditorStore } from './editor/editor-store';
+import { canEnterStudio } from '@/shared/game/studioPermissions';
 
 const TILE_COLORS: Record<number, string> = {
   0: '#1a3520',  // Safe walkable — dark forest green
@@ -20,15 +23,21 @@ const TILE_COLORS: Record<number, string> = {
   12: '#1e1b4b', // Terminal
 };
 
-export default function MiniMapRadar() {
+interface MiniMapRadarProps {
+  onOpenOptions?: () => void;
+  enableStudio?: boolean;
+}
+
+export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: MiniMapRadarProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
-  const currentMapId = useGameStore(state => state.currentMapId);
-  const instanceId = useGameStore(state => state.instanceId);
-  const playerPos = useGameStore(state => state.player.position);
-  const mapEntities = useGameStore(state => state.mapEntities);
-  const activeMapData = useGameStore(state => state.activeMapData);
-  const otherPlayers = useGameStore(state => state.otherPlayers);
+  const currentMapId = useGameStore((state) => state.currentMapId);
+  const instanceId = useGameStore((state) => state.instanceId);
+  const playerPos = useGameStore((state) => state.player.position);
+  const mapEntities = useGameStore((state) => state.mapEntities);
+  const activeMapData = useGameStore((state) => state.activeMapData);
+  const otherPlayers = useGameStore((state) => state.otherPlayers);
+  const studioToolsOpen = useEditorStore((s) => s.isCreationMode);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -52,7 +61,7 @@ export default function MiniMapRadar() {
     ctx.clearRect(0, 0, cw, ch);
 
     // Background
-    ctx.fillStyle = '#050a10';
+    ctx.fillStyle = '#04090e';
     ctx.fillRect(0, 0, cw, ch);
 
     // Draw tiles
@@ -69,14 +78,14 @@ export default function MiniMapRadar() {
       }
     }
 
-    // Scan-line overlay for retro effect
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    // Scan-line overlay for retro cyber HUD effect
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
     for (let y = 0; y < ch; y += 3) {
       ctx.fillRect(0, y, cw, 1);
     }
 
-    // Draw NPCs — blue dots
-    mapEntities.forEach(ent => {
+    // Draw NPCs — blue/cyan dots
+    mapEntities.forEach((ent) => {
       if (!ent.mapId || ent.mapId === currentMapId) {
         ctx.fillStyle = '#38bdf8';
         ctx.beginPath();
@@ -84,7 +93,8 @@ export default function MiniMapRadar() {
           ent.position.x * cellW + cellW / 2,
           ent.position.y * cellH + cellH / 2,
           Math.max(1.5, cellW * 0.9),
-          0, Math.PI * 2
+          0,
+          Math.PI * 2
         );
         ctx.fill();
       }
@@ -112,30 +122,32 @@ export default function MiniMapRadar() {
       ctx.stroke();
     });
 
-    // Player pulsing dot (animate)
+    // Player pulsing emerald indicator
     const now = Date.now();
     const pulse = Math.abs(Math.sin(now * 0.004));
     const r = Math.max(2, cellW * 1.5);
 
     // Glow ring
-    ctx.fillStyle = `rgba(16, 185, 129, ${0.2 + pulse * 0.25})`;
+    ctx.fillStyle = `rgba(20, 184, 166, ${0.2 + pulse * 0.25})`;
     ctx.beginPath();
     ctx.arc(
       playerPos.x * cellW + cellW / 2,
       playerPos.y * cellH + cellH / 2,
       r * 2,
-      0, Math.PI * 2
+      0,
+      Math.PI * 2
     );
     ctx.fill();
 
     // Core dot
-    ctx.fillStyle = `rgba(52, 211, 153, ${0.85 + pulse * 0.15})`;
+    ctx.fillStyle = `rgba(45, 212, 191, ${0.85 + pulse * 0.15})`;
     ctx.beginPath();
     ctx.arc(
       playerPos.x * cellW + cellW / 2,
       playerPos.y * cellH + cellH / 2,
       r,
-      0, Math.PI * 2
+      0,
+      Math.PI * 2
     );
     ctx.fill();
 
@@ -146,7 +158,8 @@ export default function MiniMapRadar() {
       playerPos.x * cellW + cellW / 2,
       playerPos.y * cellH + cellH / 2,
       Math.max(1, r * 0.4),
-      0, Math.PI * 2
+      0,
+      Math.PI * 2
     );
     ctx.fill();
   }, [currentMapId, playerPos, mapEntities, otherPlayers, activeMapData]);
@@ -164,50 +177,105 @@ export default function MiniMapRadar() {
   }, [draw]);
 
   const mapData = activeMapData || GAME_MAPS[currentMapId];
-  let mapName = mapData?.name || currentMapId;
-  
+  const mapName = mapData?.name || currentMapId;
+
   // Extract channel from instanceId (e.g. SAINTS_VILLAGE_ch1 -> "Ch. 1")
-  let channelText = "";
-  if (instanceId && instanceId.includes("_ch")) {
+  let channelText = '';
+  if (instanceId && instanceId.includes('_ch')) {
     const chMatch = instanceId.match(/_ch(\d+)$/);
     if (chMatch) channelText = ` (Ch. ${chMatch[1]})`;
-  } else if (instanceId && instanceId.includes("_acc")) {
-    channelText = " (Private)";
+  } else if (instanceId && instanceId.includes('_acc')) {
+    channelText = ' (Private)';
   }
 
+  const handleOpenOptionsClick = () => {
+    if (onOpenOptions) {
+      onOpenOptions();
+    } else {
+      window.dispatchEvent(new CustomEvent('open_game_options'));
+    }
+  };
+
   return (
-    <div
-      className="pointer-events-none z-20 flex select-none flex-col items-end gap-2 font-mono"
-    >
-      <div className="relative h-24 w-24 overflow-hidden rounded-xl border border-[#22d3ee]/40 bg-[#050b14]/90 shadow-[0_0_20px_rgba(34,211,238,0.2)] md:h-32 md:w-32 backdrop-blur-md">
-        <canvas ref={canvasRef} width={128} height={128} className="absolute inset-0 h-full w-full opacity-80" />
-        
-        {/* Neon Corners */}
-        <div className="absolute top-0 left-0 h-3 w-3 border-t-2 border-l-2 border-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-        <div className="absolute top-0 right-0 h-3 w-3 border-t-2 border-r-2 border-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-        <div className="absolute bottom-0 left-0 h-3 w-3 border-b-2 border-l-2 border-magenta-500 shadow-[0_0_8px_rgba(217,70,239,0.8)] border-[#d946ef]" />
-        <div className="absolute bottom-0 right-0 h-3 w-3 border-b-2 border-r-2 border-magenta-500 shadow-[0_0_8px_rgba(217,70,239,0.8)] border-[#d946ef]" />
-        
-        <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-extrabold tracking-widest text-cyan-200/50 drop-shadow-md">
+    <HudPanelShell className="pointer-events-auto w-[min(92vw,176px)]">
+      {/* 1. Header Action Row: Quick Buttons */}
+      <div className="flex items-center justify-between gap-1 pb-1.5 mb-1.5 border-b border-teal-500/20">
+        <button
+          type="button"
+          onClick={handleOpenOptionsClick}
+          className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/5 hover:bg-white/10 text-teal-300 hover:text-white text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+          title="Game Settings (ESC)"
+        >
+          <Settings className="w-3 h-3 text-teal-400" />
+          <span>Options</span>
+        </button>
+
+        {enableStudio ? (
+          <button
+            type="button"
+            onClick={() => useEditorStore.getState().toggleCreationMode()}
+            className={`flex items-center gap-1 px-1.5 py-1 rounded text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              studioToolsOpen
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white'
+            }`}
+            title="Toggle Studio Editor (Ctrl+E)"
+          >
+            <Hammer className="w-3 h-3 text-amber-400" />
+            <span>{studioToolsOpen ? 'Play' : 'Edit'}</span>
+          </button>
+        ) : (
+          <a
+            href="/studio"
+            className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/5 hover:bg-white/10 text-amber-300/80 hover:text-amber-200 text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            title="Open Studio Map Editor"
+          >
+            <Hammer className="w-3 h-3 text-amber-400" />
+            <span>Studio</span>
+          </a>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = '/';
+          }}
+          className="flex items-center justify-center p-1 rounded bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-rose-200 transition-colors cursor-pointer"
+          title="Leave Game (Return to Website)"
+        >
+          <LogOut className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* 2. Middle Section: Radar Thumbnail */}
+      <div className="relative h-28 w-full overflow-hidden rounded border border-teal-500/30 bg-[#02060a] shadow-inner mb-1.5">
+        <canvas ref={canvasRef} width={160} height={120} className="absolute inset-0 h-full w-full opacity-85" />
+        <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-black/70 text-[8px] font-mono font-black uppercase tracking-widest text-teal-400/70 border border-teal-500/20">
           RADAR
         </div>
       </div>
 
-      <div className="flex max-w-[8rem] items-center gap-1.5 overflow-hidden rounded-full border border-[#22d3ee]/30 bg-black/60 px-2.5 py-1 text-[10px] text-cyan-50 shadow-[0_0_10px_rgba(34,211,238,0.1)] md:max-w-[10rem] backdrop-blur-sm">
-        <Map className="h-3 w-3 shrink-0 text-cyan-400" />
-        <span className="truncate font-bold">
-          {mapName}
-          {channelText}
-        </span>
-      </div>
+      {/* 3. Footer Line: Location Label & Coordinates Readout */}
+      <div className="flex flex-col gap-0.5 pt-1 border-t border-teal-500/20 font-mono">
+        <div className="flex items-center gap-1 text-[10px] text-slate-200 font-bold truncate">
+          <Map className="h-3 w-3 shrink-0 text-teal-400" />
+          <span className="truncate">
+            {mapName}
+            {channelText}
+          </span>
+        </div>
 
-      <div className="hidden items-center gap-1.5 rounded-full border border-[#d946ef]/30 bg-black/60 px-2.5 py-1 text-[10px] font-bold text-cyan-50 md:flex shadow-[0_0_10px_rgba(217,70,239,0.1)] backdrop-blur-sm">
-        <Compass className="h-3 w-3 text-[#d946ef]" />
-        <span className="text-cyan-200/50">X</span>
-        <span className="text-cyan-50 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">{playerPos.x}</span>
-        <span className="ml-1 text-cyan-200/50">Y</span>
-        <span className="text-cyan-50 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]">{playerPos.y}</span>
+        <div className="flex items-center justify-between text-[9px] text-teal-300/60 font-medium">
+          <div className="flex items-center gap-1">
+            <Compass className="h-2.5 w-2.5 text-teal-400" />
+            <span>POS</span>
+          </div>
+          <div className="text-teal-100 font-mono font-bold text-[10px] tracking-wide">
+            <span className="text-teal-400/60">X:</span> {playerPos.x}{' '}
+            <span className="text-teal-400/60 ml-1">Y:</span> {playerPos.y}
+          </div>
+        </div>
       </div>
-    </div>
+    </HudPanelShell>
   );
 }

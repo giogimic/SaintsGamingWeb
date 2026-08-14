@@ -50,10 +50,11 @@ export function DockZone({ zoneId, children, className = '' }: DockZoneProps) {
   // Convert default orientation into layout flex classes
   const orientationClasses =
     zoneDef.defaultOrientation === 'horizontal'
-      ? 'flex flex-row flex-wrap items-end gap-2'
+      ? 'flex flex-row flex-wrap items-end gap-4'
       : zoneDef.defaultOrientation === 'tabbed'
-      ? 'flex flex-col gap-2'
-      : 'flex flex-col gap-2';
+      ? 'flex flex-col gap-4'
+      : 'flex flex-col gap-4';
+
 
   return (
     <div

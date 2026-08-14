@@ -1,4 +1,16 @@
+## [2.1.215] - 2026-08-14
+### Added & Improved
+- **Unified Chamfered HUD Visual System & Panel Consolidation (`HudPanelShell.tsx`, `MiniMapRadar.tsx`, `Hotbar.tsx`, `ClassicPanel.tsx`, `GameChat.tsx`, `quest-tracker-overlay.tsx`, `PlayerVitalsHud.tsx`, `index.tsx`)**:
+  - **Unified Visual Language**: Built `HudPanelShell` with 8px chamfered corners (cut top-left & bottom-right), near-black 95% opacity teal-tinted fill, 1px consistent bright teal border at rest, and fluid 150-200ms ease transitions. Reserved neon accents for active and alert states only.
+  - **Consolidated Top-Right Command Panel**: Merged the 5 separate floating elements (Options button, Studio button, Radar canvas, Location label, and Coordinates readout) into ONE structured chamfered panel with quick action header, canvas thumbnail, and location footer.
+  - **Horizontal Bottom-Center Hotbar**: Converted vertical right-edge action strip into a horizontal 1-5 action bar anchored bottom-center with clear hotkey numbers, cooldown sweep overlays, and countdown timers.
+  - **Dedicated Bottom-Right Utility Dock**: Sized the bottom-right dock strictly to its utility icons (Bag, Skills, Equipment, Quests, GTC), opening into an expanded chamfered tabbed panel in place.
+  - **Integrated Staff Tag & Comms Panel**: Grouped the loose `[STAFF]` badge directly inside the `GameChat` header as an attached drawer, eliminating free-floating badges.
+  - **Dismissible Quest Tracker Toast**: Converted the quest tracker into a collapsible chamfered toast anchored near the top-right command panel with a 1-click dismiss button and quick re-open pill.
+  - **Single-Panel Player Vitals**: Merged camera/avatar plate, player name/level, and HP/MP/EXP stat bars into ONE grouped top-left panel with strict typographic hierarchy.
+
 ## [2.1.214] - 2026-08-14
+
 ### Added
 - **Modular HUD Dock Zone Architecture (RuneScape 3 & WoW Edit Mode Style) (`dock-types.ts`, `default-presets.ts`, `DockZone.tsx`, `DockableWidget.tsx`, `LobbyHudDockLayout.tsx`, `UiEditToolbar.tsx`, `store.ts`, `index.tsx`)**:
   - Replaced unconstrained pixel dragging with a fixed 8-zone screen dock matrix (`top-left`, `top-center`, `top-right`, `mid-left`, `mid-right`, `bottom-left`, `bottom-center`, `bottom-right`) for resolution-independent HUD layouts.

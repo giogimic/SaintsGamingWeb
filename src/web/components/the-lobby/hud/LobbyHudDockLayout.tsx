@@ -55,7 +55,8 @@ export function LobbyHudDockLayout({ enableStudio = false }: LobbyHudDockLayoutP
       case HUD_WIDGET_IDS.TARGET_FRAME:
         return <TargetFrame />;
       case HUD_WIDGET_IDS.MINIMAP:
-        return <MiniMapRadar />;
+        return <MiniMapRadar enableStudio={enableStudio} />;
+
       case HUD_WIDGET_IDS.QUEST_TRACKER:
         return <QuestTrackerOverlay />;
       case HUD_WIDGET_IDS.CHAT:

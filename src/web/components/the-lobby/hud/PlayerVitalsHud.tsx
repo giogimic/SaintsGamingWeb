@@ -3,59 +3,61 @@
 import React from 'react';
 import { useGameStore } from '../store';
 import { Heart, Sparkles, Camera } from 'lucide-react';
-import { GamePanelShell } from '../ui/GamePanelShell';
+import { HudPanelShell } from './HudPanelShell';
 
-function StatBar({ 
-  label, 
-  value, 
-  max, 
-  percent, 
-  fillClass, 
-  icon, 
+function StatBar({
+  label,
+  value,
+  max,
+  percent,
+  fillClass,
+  icon,
   accentClass,
   ticksCount,
-  hideHeader
-}: { 
-  label: string; 
-  value: number; 
-  max: number; 
-  percent: number; 
-  fillClass: string; 
+  hideHeader,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  percent: number;
+  fillClass: string;
   icon?: React.ReactNode;
   accentClass?: string;
   ticksCount?: number;
   hideHeader?: boolean;
 }) {
   return (
-    <div className={`flex flex-col gap-1 w-full ${hideHeader ? 'mt-[-4px]' : ''}`}>
+    <div className={`flex flex-col gap-0.5 w-full ${hideHeader ? 'mt-0.5' : ''}`}>
       {!hideHeader && (
-        <div className="flex items-center justify-between px-0.5">
-          <div className="flex items-center gap-1.5">
-            <span className={`flex h-5 w-5 items-center justify-center rounded-sm ${accentClass}`}>
+        <div className="flex items-center justify-between font-mono">
+          <div className="flex items-center gap-1">
+            <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm ${accentClass}`}>
               {icon}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-lobby-fog">
+            <span className="text-[9px] font-black uppercase tracking-[0.16em] text-teal-300/70">
               {label}
             </span>
           </div>
-          <span className="font-mono text-[11px] tabular-nums text-lobby-mist/90">
+          <span className="text-[10px] font-bold tabular-nums text-slate-100">
             {value}
-            <span className="text-lobby-ash"> / {max}</span>
+            <span className="text-slate-500 font-normal">/{max}</span>
           </span>
         </div>
       )}
-      <div className={`lobby-stat-track relative w-full overflow-hidden rounded-sm ${hideHeader ? 'h-1.5' : 'h-2.5'}`}>
+      <div className={`relative w-full overflow-hidden rounded bg-black/60 border border-teal-500/20 ${hideHeader ? 'h-1' : 'h-2'}`}>
         <div
           className={`absolute inset-y-0 left-0 transition-all duration-300 ${fillClass}`}
           style={{ width: `${percent}%` }}
         />
-        {ticksCount && ticksCount > 0 ? Array.from({ length: ticksCount - 1 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute top-0 bottom-0 w-px bg-black/60 z-10 mix-blend-overlay"
-            style={{ left: `${((i + 1) / ticksCount) * 100}%` }}
-          />
-        )) : null}
+        {ticksCount && ticksCount > 0
+          ? Array.from({ length: ticksCount - 1 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute top-0 bottom-0 w-px bg-black/50 z-10"
+                style={{ left: `${((i + 1) / ticksCount) * 100}%` }}
+              />
+            ))
+          : null}
       </div>
     </div>
   );
@@ -81,42 +83,40 @@ export const PlayerVitalsHud: React.FC = () => {
   const xpProgress = Math.min(100, Math.max(0, Math.floor((xpIntoLevel / xpSpan) * 100)));
 
   return (
-    <div
-      className="pointer-events-none absolute z-30 flex w-[min(240px,46vw)] select-none flex-col gap-2 max-md:w-[min(168px,42vw)] max-md:gap-1.5 md:left-5 md:top-5 md:w-[240px] md:gap-3"
-      style={{
-        top: 'max(0.5rem, env(safe-area-inset-top, 0px))',
-        left: 'max(0.5rem, env(safe-area-inset-left, 0px))',
-      }}
-    >
-      {/* Identity — soul-camera plate */}
-      <GamePanelShell neonAccent="magenta" className="pointer-events-auto p-2 md:p-2.5">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-lobby-border-strong bg-lobby-panel-soft shadow-[inset_0_0_12px_rgba(167,139,250,0.25)] md:h-11 md:w-11">
-            <Camera className="h-4 w-4 text-lobby-soul md:h-5 md:w-5" strokeWidth={1.75} />
-            <span className="absolute -right-1 -bottom-1 h-2 w-2 rounded-full bg-lobby-film shadow-[0_0_8px_rgba(110,231,183,0.8)] md:h-2.5 md:w-2.5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xs font-semibold tracking-wide text-lobby-mist md:text-sm">
-              {player.name || 'Tamer'}
-            </h2>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-lobby-fog md:gap-2 md:text-[10px] md:tracking-[0.2em]">
-              <span className="text-lobby-film">Lv {level}</span>
-              <span className="text-lobby-ash">·</span>
-              <span className="text-lobby-soul">Film</span>
-            </div>
+    <HudPanelShell className="pointer-events-auto w-[min(92vw,220px)] md:w-[240px] select-none shadow-lg">
+      {/* 1. Identity Header: Camera/Avatar + Name + Level */}
+      <div className="flex items-center gap-2 pb-2 mb-2 border-b border-teal-500/20">
+        <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded border border-teal-500/40 bg-[#02060a] shadow-inner">
+          <Camera className="h-4 w-4 text-teal-300" />
+          <span className="absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full bg-teal-400 shadow-[0_0_6px_rgba(20,184,166,0.8)]" />
+        </div>
+        <div className="min-w-0 flex-1 font-mono">
+          <h2 className="truncate text-xs font-bold tracking-wide text-slate-100">
+            {player.name || 'Tamer'}
+          </h2>
+          <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-teal-300/70">
+            <span className="text-teal-300 font-bold">Lv {level}</span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-400">Film</span>
           </div>
         </div>
-      </GamePanelShell>
+      </div>
 
-      {/* Separate HP / MP / EXP */}
-      <GamePanelShell neonAccent="cyan" className="pointer-events-auto flex flex-col gap-2 p-2 md:gap-3 md:p-3">
+      {/* 2. Stat Bars: HP, MP, and EXP Progress */}
+      <div className="flex flex-col gap-2">
         <StatBar
           label="HP"
           value={hp}
           max={maxHp}
           percent={hpPercent}
-          fillClass={hpPercent > 50 ? 'bg-[#bef264] shadow-[0_0_8px_rgba(190,242,100,0.6)]' : hpPercent > 20 ? 'bg-[#fbbf24] shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.6)]'}
-          accentClass="bg-lobby-film/15 text-[#bef264]"
+          fillClass={
+            hpPercent > 50
+              ? 'bg-teal-400 shadow-[0_0_8px_rgba(20,184,166,0.6)]'
+              : hpPercent > 20
+              ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+              : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+          }
+          accentClass="text-teal-400"
           icon={<Heart className="h-3 w-3" fill="currentColor" />}
           ticksCount={4}
         />
@@ -125,8 +125,8 @@ export const PlayerVitalsHud: React.FC = () => {
           value={mp}
           max={maxMp}
           percent={mpPercent}
-          fillClass="bg-[#22d3ee] shadow-[0_0_8px_rgba(34,211,238,0.6)]"
-          accentClass="bg-lobby-soul/15 text-[#22d3ee]"
+          fillClass="bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]"
+          accentClass="text-cyan-400"
           icon={<Sparkles className="h-3 w-3" fill="currentColor" />}
           ticksCount={4}
         />
@@ -135,12 +135,12 @@ export const PlayerVitalsHud: React.FC = () => {
           value={xpIntoLevel}
           max={xpSpan}
           percent={xpProgress}
-          fillClass="bg-[#f472b6] shadow-[0_0_8px_rgba(244,114,182,0.4)]"
+          fillClass="bg-fuchsia-400 shadow-[0_0_8px_rgba(232,121,249,0.5)]"
           ticksCount={4}
           hideHeader={true}
         />
-      </GamePanelShell>
-    </div>
+      </div>
+    </HudPanelShell>
   );
 };
 

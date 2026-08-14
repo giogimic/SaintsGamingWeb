@@ -12,8 +12,9 @@ import {
   Shield,
   ScrollText,
   Store,
+  X,
 } from 'lucide-react';
-import { GamePanelShell } from './hud/GamePanelShell';
+import { HudPanelShell } from './hud/HudPanelShell';
 
 export default function ClassicPanel() {
   const { gameMode, setGameMode } = useGameStore();
@@ -22,130 +23,153 @@ export default function ClassicPanel() {
   const isOpen = panelModes.includes(gameMode);
 
   const tabClass = (mode: string) => `
-    flex-1 flex justify-center items-center py-2.5 cursor-pointer
-    transition-all duration-200 border-t-2
+    flex items-center justify-center p-2 rounded cursor-pointer transition-all duration-150
     ${
       gameMode === mode
-        ? 'bg-lobby-soul/15 border-t-lobby-soul text-lobby-mist shadow-[inset_0_4px_12px_rgba(0,0,0,0.35)]'
-        : 'bg-black/20 border-t-transparent text-lobby-fog hover:bg-white/5 hover:text-lobby-mist'
+        ? 'bg-teal-500/25 text-teal-200 shadow-[inset_0_0_8px_rgba(20,184,166,0.3)] border border-teal-400/50'
+        : 'text-slate-400 hover:text-teal-200 hover:bg-white/5 border border-transparent'
     }
-    ${mode !== 'GTC' ? 'border-r border-r-lobby-border/60' : ''}
   `;
 
-  // Closed tab strip fights mobile ActionCluster — hide until a panel is open on phones.
+  // Closed utility dock — sized tightly to its actual icon contents
   if (!isOpen) {
     return (
-      <GamePanelShell neonAccent="cyan" className="pointer-events-auto z-40 hidden flex-col overflow-hidden md:flex shadow-xl border-[#22d3ee]/40">
-        <div className="flex overflow-hidden bg-[#050b14]/90 backdrop-blur-md">
-          <div
+      <HudPanelShell className="pointer-events-auto shrink-0 shadow-lg">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
             className={tabClass('INVENTORY')}
             onClick={() => setGameMode('INVENTORY')}
             title="Inventory [I]"
           >
-            <Backpack className="h-5 w-5" />
-          </div>
-          <div
+            <Backpack className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             className={tabClass('SKILLS')}
             onClick={() => setGameMode('SKILLS')}
             title="Skills [K]"
           >
-            <Sword className="h-5 w-5" />
-          </div>
-          <div
+            <Sword className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             className={tabClass('EQUIPMENT')}
             onClick={() => setGameMode('EQUIPMENT')}
             title="Equipment"
           >
-            <Shield className="h-5 w-5" />
-          </div>
-          <div
+            <Shield className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             className={tabClass('QUESTS')}
             onClick={() => setGameMode('QUESTS')}
-            title="Quests"
+            title="Quest Log"
           >
-            <ScrollText className="h-5 w-5" />
-          </div>
-          <div
+            <ScrollText className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             className={tabClass('GTC')}
             onClick={() => setGameMode('GTC')}
             title="Global Trade Center"
           >
-            <Store className="h-5 w-5" />
-          </div>
+            <Store className="h-4 w-4" />
+          </button>
         </div>
-      </GamePanelShell>
+      </HudPanelShell>
     );
   }
 
+  // Expanded panel view
   return (
-    <GamePanelShell neonAccent="cyan" className="pointer-events-auto z-40 flex w-[min(95vw,400px)] max-w-full flex-col overflow-hidden max-md:fixed max-md:inset-x-2 max-md:bottom-[calc(5.5rem+env(safe-area-inset-bottom))] max-md:top-14 max-md:z-[60] shadow-2xl border-[#22d3ee]/50">
-      <div className="flex overflow-hidden border-b border-white/10 bg-[#050b14]/90 backdrop-blur-md">
-        <div
-          className={tabClass('INVENTORY')}
-          onClick={() => setGameMode(gameMode === 'INVENTORY' ? 'EXPLORING' : 'INVENTORY')}
-          title="Inventory [I]"
-        >
-          <Backpack className="h-5 w-5" />
+    <HudPanelShell
+      className="pointer-events-auto flex w-[min(95vw,380px)] max-w-full flex-col overflow-hidden shadow-2xl"
+      noPadding
+    >
+      {/* Header Tab Bar */}
+      <div className="flex items-center justify-between border-b border-teal-500/20 bg-black/40 px-2 py-1">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className={tabClass('INVENTORY')}
+            onClick={() => setGameMode(gameMode === 'INVENTORY' ? 'EXPLORING' : 'INVENTORY')}
+            title="Inventory [I]"
+          >
+            <Backpack className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={tabClass('SKILLS')}
+            onClick={() => setGameMode(gameMode === 'SKILLS' ? 'EXPLORING' : 'SKILLS')}
+            title="Skills [K]"
+          >
+            <Sword className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={tabClass('EQUIPMENT')}
+            onClick={() => setGameMode(gameMode === 'EQUIPMENT' ? 'EXPLORING' : 'EQUIPMENT')}
+            title="Equipment"
+          >
+            <Shield className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={tabClass('QUESTS')}
+            onClick={() => setGameMode(gameMode === 'QUESTS' ? 'EXPLORING' : 'QUESTS')}
+            title="Quest Log"
+          >
+            <ScrollText className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={tabClass('GTC')}
+            onClick={() => setGameMode(gameMode === 'GTC' ? 'EXPLORING' : 'GTC')}
+            title="Global Trade Center"
+          >
+            <Store className="h-4 w-4" />
+          </button>
         </div>
-        <div
-          className={tabClass('SKILLS')}
-          onClick={() => setGameMode(gameMode === 'SKILLS' ? 'EXPLORING' : 'SKILLS')}
-          title="Skills [K]"
+
+        <button
+          type="button"
+          onClick={() => setGameMode('EXPLORING')}
+          className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+          title="Close Panel"
         >
-          <Sword className="h-5 w-5" />
-        </div>
-        <div
-          className={tabClass('EQUIPMENT')}
-          onClick={() => setGameMode(gameMode === 'EQUIPMENT' ? 'EXPLORING' : 'EQUIPMENT')}
-          title="Equipment"
-        >
-          <Shield className="h-5 w-5" />
-        </div>
-        <div
-          className={tabClass('QUESTS')}
-          onClick={() => setGameMode(gameMode === 'QUESTS' ? 'EXPLORING' : 'QUESTS')}
-          title="Quests"
-        >
-          <ScrollText className="h-5 w-5" />
-        </div>
-        <div
-          className={tabClass('GTC')}
-          onClick={() => setGameMode(gameMode === 'GTC' ? 'EXPLORING' : 'GTC')}
-          title="Global Trade Center"
-        >
-          <Store className="h-5 w-5" />
-        </div>
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
-      {isOpen && (
-        <div className="relative m-1.5 h-[60vh] min-h-[280px] max-h-[750px] flex-1 overflow-hidden rounded-lg border border-lobby-border bg-black/25 max-md:min-h-0 max-md:h-auto">
-          {gameMode === 'INVENTORY' && (
-            <div className="scale-wrapper absolute inset-0 overflow-auto">
-              <InventoryOverlay />
-            </div>
-          )}
-          {gameMode === 'SKILLS' && (
-            <div className="scale-wrapper absolute inset-0 overflow-auto">
-              <SkillsOverlay />
-            </div>
-          )}
-          {gameMode === 'EQUIPMENT' && (
-            <div className="scale-wrapper absolute inset-0 overflow-auto">
-              <EquipmentOverlay />
-            </div>
-          )}
-          {gameMode === 'QUESTS' && (
-            <div className="scale-wrapper absolute inset-0 overflow-auto">
-              <QuestLogOverlay />
-            </div>
-          )}
-          {gameMode === 'GTC' && (
-            <div className="scale-wrapper absolute inset-0 overflow-auto">
-              <GtcOverlay />
-            </div>
-          )}
-        </div>
-      )}
+      {/* Tab Body */}
+      <div className="relative m-1.5 h-[50vh] min-h-[260px] max-h-[600px] flex-1 overflow-hidden rounded bg-black/40 border border-teal-500/20">
+        {gameMode === 'INVENTORY' && (
+          <div className="scale-wrapper absolute inset-0 overflow-auto">
+            <InventoryOverlay />
+          </div>
+        )}
+        {gameMode === 'SKILLS' && (
+          <div className="scale-wrapper absolute inset-0 overflow-auto">
+            <SkillsOverlay />
+          </div>
+        )}
+        {gameMode === 'EQUIPMENT' && (
+          <div className="scale-wrapper absolute inset-0 overflow-auto">
+            <EquipmentOverlay />
+          </div>
+        )}
+        {gameMode === 'QUESTS' && (
+          <div className="scale-wrapper absolute inset-0 overflow-auto">
+            <QuestLogOverlay />
+          </div>
+        )}
+        {gameMode === 'GTC' && (
+          <div className="scale-wrapper absolute inset-0 overflow-auto">
+            <GtcOverlay />
+          </div>
+        )}
+      </div>
 
       <style
         dangerouslySetInnerHTML={{
@@ -165,6 +189,6 @@ export default function ClassicPanel() {
       `,
         }}
       />
-    </GamePanelShell>
+    </HudPanelShell>
   );
 }
