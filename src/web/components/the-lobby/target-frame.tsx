@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useGameStore } from './store';
-import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare, UserPlus } from 'lucide-react';
+import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare, UserPlus, Swords } from 'lucide-react';
 import { GamePanelShell } from './ui/GamePanelShell';
 
 export default function TargetFrame() {
@@ -24,6 +24,13 @@ export default function TargetFrame() {
     const emitSocketEvent = useGameStore.getState().emitSocketEvent;
     emitSocketEvent?.('party_invite_send', { targetName: target.name });
     showToast(`Sent party invitation to ${target.name}!`);
+  };
+
+  const handleDuelChallenge = () => {
+    if (!target.name) return;
+    const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+    emitSocketEvent?.('battle_invite_send', { targetId: target.entityId, targetName: target.name });
+    showToast(`Challenged ${target.name} to a Saints Buddy Battle!`);
   };
 
   const handleWhisper = () => {
@@ -125,6 +132,13 @@ export default function TargetFrame() {
               title={`Invite ${target.name} to Party`}
             >
               <UserPlus className="w-3 h-3" /> Invite
+            </button>
+            <button
+              onClick={handleDuelChallenge}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-950/80 hover:bg-amber-900 border border-amber-700/60 text-amber-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+              title={`Challenge ${target.name} to Duel`}
+            >
+              <Swords className="w-3 h-3" /> Duel
             </button>
             <button
               onClick={handleWhisper}
