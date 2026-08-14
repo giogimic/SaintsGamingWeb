@@ -315,6 +315,18 @@ export function StarterHeroEditorPanel() {
     setSelected(null);
   }, [load, activeGameId]);
 
+  useEffect(() => {
+    const handleSpritePicked = (e: Event) => {
+      const customEv = e as CustomEvent<{ key: string; source: string }>;
+      if (customEv.detail?.key) {
+        setForm((prev) => ({ ...prev, spriteKey: customEv.detail.key }));
+        showStatus('success', `Assigned hero sprite: ${customEv.detail.key}`);
+      }
+    };
+    window.addEventListener('studio_sprite_picked', handleSpritePicked);
+    return () => window.removeEventListener('studio_sprite_picked', handleSpritePicked);
+  }, []);
+
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
     setTimeout(() => setStatus(null), 3500);

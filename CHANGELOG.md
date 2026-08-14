@@ -1,3 +1,7 @@
+## [2.1.178] - 2026-08-14
+### Added
+- **Global Studio Sprite Picker Dispatch (`EntityEditorPanel.tsx`, `StarterHeroEditorPanel.tsx`)**: Wired `studio_sprite_picked` event listeners to Entity Editor and Starter Hero Editor panels, enabling one-click sprite assignment directly from Sprite Browser into active entity or hero forms.
+
 ## [2.1.177] - 2026-08-14
 ### Added
 - **Macro Atlas Interactive Context Toolbar (`WorldAtlasPanel.tsx`)**: Selected atlas nodes now present an in-place action bar with `Open in Viewport`, `Set as Spawn Hub`, and safe node deletion. Added double-click to immediately warp to any placed map.
