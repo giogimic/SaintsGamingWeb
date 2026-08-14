@@ -10,6 +10,7 @@ import {
   UserX,
   X,
   ChevronUp,
+  MapPin,
 } from 'lucide-react';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
@@ -53,6 +54,14 @@ export function StaffFloatingMenu({
     setAnnounce('');
   };
 
+  const tpToPlayer = (socketId: string, name: string) => {
+    const peer = (otherPlayers || {})[socketId];
+    if (!peer) return;
+    useGameStore.getState().setPlayerPosition({ x: peer.x, y: peer.y }, peer.direction || 'down', false);
+    emitSocketEvent?.('player_move', { x: peer.x, y: peer.y, direction: peer.direction || 'down' });
+    showToast(`Teleported to ${name}`);
+  };
+
   const kickPlayer = (socketId: string, name: string) => {
     if (!isAdmin) return;
     if (!confirm(`Remove ${name} from the map?`)) return;
@@ -71,7 +80,7 @@ export function StaffFloatingMenu({
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/5"
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -92,7 +101,7 @@ export function StaffFloatingMenu({
                 />
                 <button
                   onClick={sendAnnounce}
-                  className="px-3 py-2 rounded-xl bg-[#cbb26a]/20 border border-[#cbb26a]/40 text-[#e8d5a3] text-xs font-bold hover:bg-[#cbb26a]/30"
+                  className="px-3 py-2 rounded-xl bg-[#cbb26a]/20 border border-[#cbb26a]/40 text-[#e8d5a3] text-xs font-bold hover:bg-[#cbb26a]/30 cursor-pointer"
                 >
                   Send
                 </button>
@@ -113,15 +122,24 @@ export function StaffFloatingMenu({
                       className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/5"
                     >
                       <span className="text-sm text-slate-200 truncate">{p.name}</span>
-                      {isAdmin && (
+                      <div className="flex items-center gap-1">
                         <button
-                          onClick={() => kickPlayer(p.socketId, p.name)}
-                          className="p-1.5 rounded-md text-rose-300 hover:bg-rose-500/20"
-                          title="Remove from map"
+                          onClick={() => tpToPlayer(p.socketId, p.name)}
+                          className="p-1.5 rounded-md text-cyan-300 hover:bg-cyan-500/20 cursor-pointer"
+                          title={`Teleport to ${p.name}`}
                         >
-                          <UserX className="w-3.5 h-3.5" />
+                          <MapPin className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => kickPlayer(p.socketId, p.name)}
+                            className="p-1.5 rounded-md text-rose-300 hover:bg-rose-500/20 cursor-pointer"
+                            title="Remove from map"
+                          >
+                            <UserX className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>
