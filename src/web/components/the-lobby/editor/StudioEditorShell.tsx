@@ -80,7 +80,7 @@ const initialLayout: IJsonModel = {
         weight: 20,
         id: "left-dock",
         children: [
-          { type: "tab", name: "World Builder", component: "build" }
+          { type: "tab", id: "build", name: "World Builder", component: "build" }
         ]
       },
       {
@@ -92,6 +92,7 @@ const initialLayout: IJsonModel = {
         children: [
           {
             type: "tab",
+            id: "viewport",
             name: "Viewport",
             component: "viewport",
             enableClose: false,
@@ -106,7 +107,7 @@ const initialLayout: IJsonModel = {
         weight: 20,
         id: "right-dock",
         children: [
-          { type: "tab", name: "Properties", component: "properties" }
+          { type: "tab", id: "properties", name: "Properties", component: "properties" }
         ]
       }
     ]
@@ -117,8 +118,8 @@ const initialLayout: IJsonModel = {
       location: "bottom",
       size: 300,
       children: [
-        { type: "tab", name: "Assets", component: "assets" },
-        { type: "tab", name: "Dev Tools", component: "dev" }
+        { type: "tab", id: "assets", name: "Assets", component: "assets" },
+        { type: "tab", id: "dev", name: "Dev Tools", component: "dev" }
       ]
     }
   ]
@@ -149,6 +150,46 @@ export const StudioEditorShell: React.FC = () => {
     useEditorStore.getState().hydratePanelLayouts();
     enterDevelopmentMode();
   }, [enterDevelopmentMode]);
+
+  // Handle dynamic dock panel opening (from menus, shortcuts, omnisearch)
+  useEffect(() => {
+    const handleOpenDock = (e: Event) => {
+      const customEv = e as CustomEvent<{ panelId: PanelId }>;
+      const panelId = customEv.detail?.panelId;
+      if (!panelId || !model) return;
+
+      const meta = STUDIO_DOCK_META[panelId];
+      if (!meta) return;
+
+      const existingNode = model.getNodeById(panelId);
+      if (existingNode) {
+        model.doAction(Actions.selectTab(panelId));
+      } else {
+        const isRightDock = panelId === 'properties' || panelId === 'problems';
+        const targetTabsetId = isRightDock ? 'right-dock' : 'left-dock';
+        
+        try {
+          model.doAction(Actions.addNode({
+            type: "tab",
+            id: panelId,
+            name: meta.label,
+            component: panelId,
+          }, targetTabsetId, DockLocation.CENTER, -1));
+        } catch {
+          // Fallback to active tabset
+          model.doAction(Actions.addNode({
+            type: "tab",
+            id: panelId,
+            name: meta.label,
+            component: panelId,
+          }, "left-dock", DockLocation.CENTER, -1));
+        }
+      }
+    };
+
+    window.addEventListener('studio_open_dock', handleOpenDock);
+    return () => window.removeEventListener('studio_open_dock', handleOpenDock);
+  }, [model]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

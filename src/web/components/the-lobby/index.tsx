@@ -1273,6 +1273,19 @@ export default function TheLobby({
       if (!socket?.connected || !accountId) return;
       const state = useGameStore.getState();
       if (state.gameMode !== 'EXPLORING' && state.gameMode !== 'BATTLE') return;
+
+      if (pie && !activeCharacterId && state.player.level <= 1) {
+        state.hydratePlayer({
+          name: 'Dev Explorer',
+          level: 50,
+          hp: 1000,
+          maxHp: 1000,
+          mp: 500,
+          maxMp: 500,
+          credits: 50000,
+        });
+      }
+
       socket.emit('join_map', {
         accountId,
         mapId: toBaseMapId(state.currentMapId || 'LOBBY'),
@@ -1281,10 +1294,10 @@ export default function TheLobby({
         pie,
         x: state.player.position?.x ?? 14,
         y: state.player.position?.y ?? 15,
-        name: state.player.name || 'Studio Author',
+        name: state.player.name || (pie ? 'Dev Explorer' : 'Studio Author'),
         spriteId: state.player.spriteId || 'adventurer',
       });
-      state.showToast(pie ? 'PIE — private playtest shard' : 'Editor — private author shard');
+      state.showToast(pie ? 'PIE — Playtest runtime active (Test Character)' : 'Editor — World authoring runtime');
     };
     window.addEventListener(STUDIO_PIE_CHANGED_EVENT, onPieChanged as EventListener);
     return () => window.removeEventListener(STUDIO_PIE_CHANGED_EVENT, onPieChanged as EventListener);

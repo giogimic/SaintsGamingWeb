@@ -1,3 +1,10 @@
+## [2.1.171] - 2026-08-13
+### Changed
+- **Studio Command Center Header (`StudioMenuBar.tsx`)**: Transformed Studio top bar into a 3-zone command center with active map indicator, unsaved dirty state, prominent Mode Transition Switcher (`[ ✏️ EDIT ]` ⇄ `[ ▶ PLAY TEST ]`), and quick global actions.
+- **Dock & Window Manager Resiliency (`StudioEditorShell.tsx`, `editor-store.ts`)**: Fixed closed window reopen bug by wiring dynamic `studio_open_dock` event dispatching and FlexLayout tab node selection.
+- **World Atlas Flexbox Layout (`WorldAtlasPanel.tsx`)**: Expanded World Atlas panel into a full-height, responsive dock layout with zero dead space and responsive map palette.
+- **Deterministic Studio Test Character (`index.tsx`)**: Hydrates a dedicated `Dev Explorer` test character (Lv 50, full stats) upon entering Playtest mode without requiring character selection.
+
 ## [2.1.170] - 2026-08-13
 ### Added
 - **Skills Overlay Polish & Progress Bars (`skills-overlay.tsx`)**: Added Total Level and Total XP summary strip at the top of the skills panel, along with gold progress bars indicating percentage to next level under each skill tile.

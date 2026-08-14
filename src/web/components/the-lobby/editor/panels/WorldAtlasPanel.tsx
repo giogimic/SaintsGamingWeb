@@ -131,51 +131,48 @@ export const WorldAtlasPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full text-xs font-mono space-y-4">
-      <div className="flex-none p-3 border-b border-[#806f47]/30 bg-[#0b1320]/60 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="font-bold text-[#cbb26a] flex items-center gap-1.5">
-            <MapIcon className="w-4 h-4" />
+    <div className="flex flex-col h-full w-full min-h-0 text-xs font-mono bg-[#070d18] select-none">
+      <div className="flex-none p-3 border-b border-[#806f47]/30 bg-[#0b1320]/80 flex flex-wrap items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-4">
+          <div className="font-bold text-[#cbb26a] flex items-center gap-1.5 text-sm">
+            <MapIcon className="w-4 h-4 text-[#eab308]" />
             Macro World Atlas
           </div>
-          <button
-            onClick={() => void handleSaveAtlas()}
-            disabled={isSaving}
-            className="px-3 py-1 bg-[#cbb26a] text-black font-bold rounded flex items-center gap-1 hover:bg-[#d8c078] disabled:opacity-50"
-          >
-            <Save className="w-3.5 h-3.5" />
-            {isSaving ? 'Saving...' : 'Save Atlas'}
-          </button>
+          <div className="flex items-center gap-2">
+            <label className="text-slate-400 text-[11px]">Spawn / Hub Map:</label>
+            <select 
+              value={lobbyMapId}
+              onChange={(e) => setLobbyMapId(e.target.value)}
+              className="bg-[#050b14] border border-[#806f47]/40 rounded px-2 py-1 text-slate-200 text-[11px] focus:outline-none focus:border-[#cbb26a]"
+            >
+              {allMaps.map(m => (
+                <option key={m.id} value={m.id}>{m.name || m.id}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-slate-400">Lobby Map ID:</label>
-          <select 
-            value={lobbyMapId}
-            onChange={(e) => setLobbyMapId(e.target.value)}
-            className="bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-slate-200"
-          >
-            {allMaps.map(m => (
-              <option key={m.id} value={m.id}>{m.id}</option>
-            ))}
-          </select>
-          <span className="text-[10px] text-slate-500 ml-2 flex items-center gap-1">
-            <HelpCircle className="w-3 h-3" />
-            Players spawn here initially
-          </span>
-        </div>
+        <button
+          onClick={() => void handleSaveAtlas()}
+          disabled={isSaving}
+          className="px-3 py-1.5 bg-[#cbb26a] text-black font-bold rounded flex items-center gap-1.5 hover:bg-[#d8c078] active:scale-95 transition-all shadow-md disabled:opacity-50"
+        >
+          <Save className="w-3.5 h-3.5" />
+          {isSaving ? 'Saving...' : 'Save Atlas'}
+        </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar: Map Palette */}
-        <div className="w-64 flex-none border-r border-[#806f47]/30 bg-[#0b1320]/40 flex flex-col">
-          <div className="p-2 border-b border-[#806f47]/30 font-bold text-slate-300">
-            Available Maps
+        <div className="w-64 flex-none border-r border-[#806f47]/30 bg-[#0b1320]/50 flex flex-col min-h-0">
+          <div className="p-2.5 border-b border-[#806f47]/30 font-bold text-slate-200 flex items-center justify-between">
+            <span>Available Maps</span>
+            <span className="text-[10px] text-slate-500 font-normal">{allMaps.length} maps</span>
           </div>
-          <div className="p-2 text-[10px] text-slate-500">
-            Select a map, then click on the grid to place it.
+          <div className="p-2 text-[10px] text-slate-400 bg-black/20 border-b border-white/5">
+            Select a map below, then click a grid cell to connect it.
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
             {allMaps.map(m => {
               const isSelected = selectedMapIdToPlace === m.id;
               const isPlaced = atlasData.nodes.some(n => n.mapId === m.id);
@@ -183,16 +180,23 @@ export const WorldAtlasPanel: React.FC = () => {
                 <button
                   key={m.id}
                   onClick={() => setSelectedMapIdToPlace(isSelected ? null : m.id)}
-                  className={`w-full text-left px-2 py-1.5 rounded border ${
+                  className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all ${
                     isSelected 
-                      ? 'bg-[#cbb26a]/20 border-[#cbb26a] text-[#cbb26a]' 
-                      : 'border-slate-800 text-slate-400 hover:bg-white/5'
+                      ? 'bg-[#cbb26a]/25 border-[#cbb26a] text-white shadow-lg' 
+                      : isPlaced
+                      ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-950/40'
+                      : 'border-slate-800/80 bg-black/20 text-slate-400 hover:bg-white/5 hover:text-slate-200'
                   }`}
                 >
                   <div className="flex justify-between items-center">
-                    <span>{m.id}</span>
-                    {isPlaced && <span className="text-[9px] text-emerald-500">Placed</span>}
+                    <span className="font-semibold text-xs truncate">{m.name || m.id}</span>
+                    {isPlaced && (
+                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                        Placed
+                      </span>
+                    )}
                   </div>
+                  <div className="text-[10px] text-slate-500 mt-0.5 truncate">{m.id}</div>
                 </button>
               );
             })}
@@ -200,14 +204,14 @@ export const WorldAtlasPanel: React.FC = () => {
         </div>
 
         {/* Main Grid Area */}
-        <div className="flex-1 overflow-auto bg-[#050b14] p-4 relative custom-scrollbar">
+        <div className="flex-1 min-h-0 overflow-auto bg-[#050b14] p-6 relative custom-scrollbar">
           <div 
-            className="relative" 
+            className="relative rounded border border-[#806f47]/30 shadow-2xl" 
             style={{ 
-              width: GRID_SIZE * 64, 
-              height: GRID_SIZE * 64,
+              width: GRID_SIZE * 72, 
+              height: GRID_SIZE * 72,
               backgroundImage: 'linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)',
-              backgroundSize: '64px 64px'
+              backgroundSize: '72px 72px'
             }}
           >
             {/* Grid cells hitboxes */}
@@ -216,10 +220,10 @@ export const WorldAtlasPanel: React.FC = () => {
                 <div
                   key={`${x}-${y}`}
                   onClick={() => handleGridClick(x, y)}
-                  className={`absolute w-[64px] h-[64px] border border-transparent hover:border-slate-500 cursor-pointer ${
-                    selectedMapIdToPlace ? 'hover:bg-[#cbb26a]/10' : ''
+                  className={`absolute w-[72px] h-[72px] border border-transparent hover:border-amber-400/50 cursor-pointer transition-colors ${
+                    selectedMapIdToPlace ? 'hover:bg-[#cbb26a]/15' : ''
                   }`}
-                  style={{ left: x * 64, top: y * 64 }}
+                  style={{ left: x * 72, top: y * 72 }}
                 />
               ))
             )}
@@ -229,15 +233,18 @@ export const WorldAtlasPanel: React.FC = () => {
               <div
                 key={node.mapId}
                 onClick={() => handleGridClick(node.x, node.y)}
-                className="absolute w-[62px] h-[62px] m-[1px] bg-[#1e293b] border-2 border-[#806f47] rounded flex items-center justify-center p-1 text-center hover:border-rose-500 cursor-pointer"
-                style={{ left: node.x * 64, top: node.y * 64 }}
-                title="Click to remove"
+                className="absolute w-[70px] h-[70px] m-[1px] bg-[#0f172a]/95 border-2 border-[#cbb26a] rounded-lg flex flex-col items-center justify-center p-1.5 text-center hover:border-rose-500 hover:bg-rose-950/40 cursor-pointer shadow-xl transition-all group"
+                style={{ left: node.x * 72, top: node.y * 72 }}
+                title="Click to remove or edit location"
               >
-                <span className="text-[9px] text-slate-200 break-all leading-tight">
+                <MapIcon className="w-4 h-4 text-[#cbb26a] group-hover:text-rose-400 mb-0.5" />
+                <span className="text-[9px] text-slate-200 break-all leading-tight font-bold group-hover:text-rose-200">
                   {node.mapId}
                 </span>
                 {node.mapId === lobbyMapId && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-black" title="Lobby Map" />
+                  <div className="absolute -top-1 -right-1 px-1 py-0.2 text-[8px] bg-emerald-500 text-black font-extrabold rounded-full border border-black" title="Spawn Hub">
+                    HUB
+                  </div>
                 )}
               </div>
             ))}
