@@ -1,3 +1,7 @@
+## [2.1.203] - 2026-08-14
+### Added
+- **MMO Game Options Graphics, Audio & Gameplay Expansion (`GameOptionsMenu.tsx`)**: Replaced placeholder panels with interactive settings for Master/SFX/Music volume sliders, Mute toggle, Graphics Quality presets, Framerate targeting, Damage numbers, and Multiplayer shard player visibility settings.
+
 ## [2.1.202] - 2026-08-14
 ### Added
 - **MMO Peer Presence Targeting & Quick Action Bar (`PeerPresenceHud.tsx`, `target-frame.tsx`)**: Made peer presence hud tamer name tags interactive to rapidly target nearby players, integrated ping latency metrics, and equipped `TargetFrame` with one-click party invite and whisper triggers when targeting players.
