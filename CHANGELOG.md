@@ -1,3 +1,9 @@
+## [2.1.168] - 2026-08-13
+### Fixed
+- **Multiplayer Socket Automatic Fallback (`index.tsx`)**: Added intelligent connection fallback when the remote Go MMO backend encounters CORS errors or 502 Bad Gateway responses, automatically connecting directly to the same-origin Next.js / Socket.io server without client freeze.
+- **Studio Asset Omnisearch (`StudioOmnisearch.tsx`)**: Fixed Studio search opening website forum threads by migrating the search engine to index game maps, items, creatures, quests, logic tags, and editor actions.
+- **World Atlas Persistence API (`app/api/world/atlas/route.ts`)**: Implemented the missing `/api/world/atlas` GET & POST endpoints to load and save macro connected map layouts to Prisma `WorldAtlas`.
+
 ## [2.1.167] - 2026-08-13
 ### Added
 - **Turn-Based Battle Keyboard Controls (`TurnBattleOverlay.tsx`)**: Added keyboard shortcuts for creature battle actions (`1` for Fight / Ability 1, `2` for Expose Film / Item, `3` for Switch Creatures, `4` for Run / Flee, and `Escape` for Back).

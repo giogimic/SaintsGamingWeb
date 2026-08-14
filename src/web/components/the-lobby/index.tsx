@@ -421,79 +421,100 @@ export default function TheLobby({
     // Phase 10: Require active NextAuth session before connecting to the socket
     if (typeof window === 'undefined' || status !== 'authenticated' || !session?.user?.id) return;
 
-    // Soft-reconnect stays in-world (does not dump to title/login menu).
+    let activeSocket: any = null;
     let hadLobbyDisconnect = false;
-    useGameStore.getState().setConnectionStatus('connecting');
-    const { url: goUrl, options: socketOpts } = lobbySocketConnect(session.user.id);
-    const socket = goUrl ? io(goUrl, socketOpts) : io(socketOpts);
-    socketRef.current = socket;
+    let fallbackTriggered = false;
+    let pingInterval: any = null;
 
-    // Periodic ping/pong for diagnostics & latency RTT
-    const pingInterval = setInterval(() => {
-      if (socket.connected) {
-        const start = performance.now();
-        socket.emit('ping', { clientTime: Date.now() });
-        socket.once('pong', () => {
-          const rtt = Math.round(performance.now() - start);
-          useGameStore.getState().setLatencyMs(rtt);
+    useGameStore.getState().setConnectionStatus('connecting');
+    const { url: configuredGoUrl, options: socketOpts } = lobbySocketConnect(session.user.id);
+
+    const setupSocket = (targetUrl?: string) => {
+      const opts = {
+        ...socketOpts,
+        reconnectionAttempts: targetUrl ? 2 : Infinity,
+        timeout: targetUrl ? 3500 : 20000,
+      };
+
+      const socket = targetUrl ? io(targetUrl, opts) : io(opts);
+      activeSocket = socket;
+      socketRef.current = socket;
+
+      if (targetUrl) {
+        socket.on('connect_error', (err) => {
+          console.warn('[lobby] Remote Go socket unreachable, falling back to same-origin socket:', err?.message || err);
+          if (!fallbackTriggered) {
+            fallbackTriggered = true;
+            socket.disconnect();
+            if (pingInterval) clearInterval(pingInterval);
+            setupSocket(undefined);
+          }
         });
       }
-    }, 5000);
-    
-    socket.on('connect', () => {
-      const state = useGameStore.getState();
-      state.setConnectionStatus('connected');
-      state.setEmitSocketEvent((event, data) => {
-        socket.emit(event, data);
-      });
 
-      if (hadLobbyDisconnect) {
-        state.showToast('Reconnected to lobby.');
-        hadLobbyDisconnect = false;
-      }
-
-      const effectiveAccountId = session.user.id || state.player.accountId;
-      // Do not join a public shard from the title/character-select screen —
-      // wait until EXPLORING (character load / Studio author session).
-      const inWorld =
-        state.gameMode === 'EXPLORING' || state.gameMode === 'BATTLE';
-      if (effectiveAccountId && inWorld) {
-        if (!state.player.accountId || state.player.accountId !== session.user.id) {
-          useGameStore.getState().hydratePlayer({ accountId: session.user.id });
+      // Periodic ping/pong for diagnostics & latency RTT
+      if (pingInterval) clearInterval(pingInterval);
+      pingInterval = setInterval(() => {
+        if (socket.connected) {
+          const start = performance.now();
+          socket.emit('ping', { clientTime: Date.now() });
+          socket.once('pong', () => {
+            const rtt = Math.round(performance.now() - start);
+            useGameStore.getState().setLatencyMs(rtt);
+          });
         }
-        const joinPayload = {
-          accountId: effectiveAccountId,
-          // Lobby multiplayer always rejoins the current valid base map (LOBBY or fallback).
-          mapId: enableStudio
-            ? toBaseMapId(state.currentMapId || 'LOBBY')
-            : toBaseMapId(state.currentMapId || 'LOBBY'),
-          lobby: !enableStudio,
-          isPrivate: enableStudio,
-          pie: enableStudio && !useEditorStore.getState().isCreationMode,
-          x: state.player.position?.x ?? 14,
-          y: state.player.position?.y ?? 15,
-          name: state.player.name || 'Player',
-          spriteId: state.player.spriteId || 'adventurer',
-        };
-        // Reconnect always joins (lastJoinKey cleared on disconnect).
-        lastJoinKeyRef.current = buildJoinKey(joinPayload);
-        socket.emit('join_map', joinPayload);
-        if (!enableStudio) {
-          const cur = toBaseMapId(state.currentMapId || '');
-          if (cur !== 'LOBBY' && cur !== 'DEMO_SANDBOX') {
-            const fallback = cur || 'LOBBY';
-            state.setCurrentMapId(fallback);
-            void loadMap(fallback).then((m) => {
-              useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
-              preloadAdjacentMaps(fallback).catch(console.error);
-            }).catch(() => {
-               state.setCurrentMapId('LOBBY');
-               void loadMap('LOBBY').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
-            });
+      }, 5000);
+      
+      socket.on('connect', () => {
+        const state = useGameStore.getState();
+        state.setConnectionStatus('connected');
+        state.setEmitSocketEvent((event, data) => {
+          socket.emit(event, data);
+        });
+
+        if (hadLobbyDisconnect) {
+          state.showToast('Reconnected to lobby.');
+          hadLobbyDisconnect = false;
+        }
+
+        const effectiveAccountId = session.user.id || state.player.accountId;
+        const inWorld =
+          state.gameMode === 'EXPLORING' || state.gameMode === 'BATTLE';
+        if (effectiveAccountId && inWorld) {
+          if (!state.player.accountId || state.player.accountId !== session.user.id) {
+            useGameStore.getState().hydratePlayer({ accountId: session.user.id });
+          }
+          const joinPayload = {
+            accountId: effectiveAccountId,
+            mapId: enableStudio
+              ? toBaseMapId(state.currentMapId || 'LOBBY')
+              : toBaseMapId(state.currentMapId || 'LOBBY'),
+            lobby: !enableStudio,
+            isPrivate: enableStudio,
+            pie: enableStudio && !useEditorStore.getState().isCreationMode,
+            x: state.player.position?.x ?? 14,
+            y: state.player.position?.y ?? 15,
+            name: state.player.name || 'Player',
+            spriteId: state.player.spriteId || 'adventurer',
+          };
+          lastJoinKeyRef.current = buildJoinKey(joinPayload);
+          socket.emit('join_map', joinPayload);
+          if (!enableStudio) {
+            const cur = toBaseMapId(state.currentMapId || '');
+            if (cur !== 'LOBBY' && cur !== 'DEMO_SANDBOX') {
+              const fallback = cur || 'LOBBY';
+              state.setCurrentMapId(fallback);
+              void loadMap(fallback).then((m) => {
+                useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+                preloadAdjacentMaps(fallback).catch(console.error);
+              }).catch(() => {
+                 state.setCurrentMapId('LOBBY');
+                 void loadMap('LOBBY').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
+              });
+            }
           }
         }
-      }
-    });
+      });
 
     socket.io.on('reconnect_attempt', () => {
       useGameStore.getState().setConnectionStatus('reconnecting');
@@ -1187,16 +1208,16 @@ export default function TheLobby({
         });
       }
     });
+  };
 
-    // Depend on stable session user id only — NOT `session` object identity
-    // (NextAuth refetches) and NOT `activeCharacterId` (character select would
-    // tear down the socket, clear otherPlayers, and hide peers). Re-join on
-    // character change is handled by selectAndLoadCharacter's join_map emit.
-    return () => {
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, [status, session?.user?.id, enableStudio]);
+  setupSocket(configuredGoUrl);
+
+  return () => {
+    if (pingInterval) clearInterval(pingInterval);
+    activeSocket?.disconnect();
+    socketRef.current = null;
+  };
+}, [status, session?.user?.id, enableStudio]);
 
   // If character becomes available after socket connect, ensure we are on-map.
   // Skip when already seated on the public lobby shard (avoids join storms).
