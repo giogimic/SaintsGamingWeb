@@ -1522,6 +1522,44 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         className={`w-full h-full outline-none touch-none ${canvasCursor}`}
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (!canvasRef.current || !engineRef.current) return;
+          const rect = canvasRef.current.getBoundingClientRect();
+          const screenX = e.clientX - rect.left;
+          const screenY = e.clientY - rect.top;
+          const picked = engineRef.current.pickTileAtScreenCoord(screenX, screenY);
+          if (!picked) return;
+
+          try {
+            const raw = e.dataTransfer.getData('application/json');
+            if (!raw) return;
+            const data = JSON.parse(raw);
+            if (data.type === 'STUDIO_SPRITE_DROP') {
+              useEditorStore.getState().setClickedTile({ r: picked.r, c: picked.c });
+              window.dispatchEvent(
+                new CustomEvent('studio_sprite_picked', {
+                  detail: { key: data.key, source: data.source },
+                })
+              );
+              window.dispatchEvent(
+                new CustomEvent('studio_sprite_dropped', {
+                  detail: {
+                    key: data.key,
+                    source: data.source,
+                    r: picked.r,
+                    c: picked.c,
+                  },
+                })
+              );
+              showToast(`Sprite "${data.key}" targeted at [${picked.r}, ${picked.c}]`);
+            }
+          } catch {}
+        }}
       />
       
       {/* Quest Tracker (single instance) */}

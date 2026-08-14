@@ -1941,6 +1941,17 @@ private resolveTilePick(
     return { r: tile.r, c: tile.c, layerIdx: -1 };
   }
 
+  /** Screen pixel to tile coordinate projection for drag-and-drop or viewport picking. */
+  public pickTileAtScreenCoord(screenX: number, screenY: number): { r: number; c: number; layerIdx: number } | null {
+    if (!this.scene) return null;
+    const pickResult = this.scene.pick(
+      screenX,
+      screenY,
+      (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
+    );
+    return this.resolveTilePick(pickResult);
+  }
+
   /**
    * Enable click (+ optional drag) paint / move picking.
    * Drag re-picks under the cursor so authors can stroke tiles continuously.

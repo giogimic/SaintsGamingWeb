@@ -343,6 +343,14 @@ interface SpriteThumbnailCardProps {
   onClick: () => void;
 }
 
+function spriteKeyFromAsset(asset: GameAssetItem): string {
+  const src = asset.source || '';
+  const m = src.match(/\/game-assets\/npc\/([^/]+?)(?:\.png)?(?:$|\?)/i);
+  if (m?.[1]) return m[1].replace(/-ow$/i, '');
+  const base = src.split('/').pop() || src;
+  return base.replace(/\.png$/i, '');
+}
+
 const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
   asset,
   gridSize,
@@ -382,6 +390,20 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
   return (
     <div
       onClick={onClick}
+      draggable
+      onDragStart={(e) => {
+        const key = spriteKeyFromAsset(asset);
+        e.dataTransfer.setData(
+          'application/json',
+          JSON.stringify({
+            type: 'STUDIO_SPRITE_DROP',
+            key,
+            source: asset.source,
+            id: asset.id,
+          })
+        );
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       className={`relative group flex flex-col items-center justify-center p-2 rounded-lg border transition cursor-pointer select-none bg-[#0b1320]/80 ${
