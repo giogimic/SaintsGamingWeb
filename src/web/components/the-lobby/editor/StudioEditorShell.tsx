@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
-import { STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
+import { STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { StudioPaintHud } from './StudioPaintHud';
 import { StudioMenuBar } from './StudioMenuBar';
 import { StudioOmnisearch } from './StudioOmnisearch';
@@ -258,7 +258,7 @@ export const StudioEditorShell: React.FC = () => {
       // Ctrl+S Save
       if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        showToast('Save triggered');
+        window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
         return;
       }
 

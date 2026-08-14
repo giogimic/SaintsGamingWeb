@@ -8,6 +8,9 @@ export const STUDIO_MAP_HOT_RELOAD_EVENT = 'studio:map-hot-reload';
 /** Playtest entered/exited — client should re-join map with pie isolation. */
 export const STUDIO_PIE_CHANGED_EVENT = 'studio:pie-changed';
 
+/** Global shortcut or menu trigger to save the active studio map document. */
+export const STUDIO_TRIGGER_SAVE_MAP_EVENT = 'studio:trigger-save-map';
+
 export type StudioMapCellsChangedDetail = {
   cells: Array<{ r: number; c: number; layerIdx: number; value: number }>;
 };
