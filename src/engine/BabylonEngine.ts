@@ -1437,10 +1437,6 @@ export class BabylonEngine {
       this.configureTilesetMaterial(mat, mat.diffuseTexture as Texture);
     }
     mesh.material = mat;
-    mesh.setVerticesData(VertexBuffer.PositionKind, [], true);
-    mesh.setVerticesData(VertexBuffer.UVKind, [], true);
-    mesh.setVerticesData(VertexBuffer.NormalKind, [], true);
-    mesh.setIndices([]);
     this.tileMeshes.push(mesh);
     this.tilesetMeshBySource.set(chunkKey, mesh);
     return mesh;
