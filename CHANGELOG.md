@@ -1,3 +1,7 @@
+## [2.1.201] - 2026-08-14
+### Added
+- **MMO Game Chat Slash Commands & Teleportation (`GameChat.tsx`)**: Expanded game chat command processing to include `/invite [player]`, `/p invite`, `/help`, `/commands`, and `/tp [player]` moderator navigation directly within the chat console.
+
 ## [2.1.200] - 2026-08-14
 ### Added
 - **MMO Staff Floating Menu Multiplayer Teleportation (`StaffFloatingMenu.tsx`)**: Added `tpToPlayer` capability and navigation icons allowing staff/moderators/developers to instantly teleport directly to visible tamers across active map instances.
