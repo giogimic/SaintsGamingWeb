@@ -301,10 +301,15 @@ export default function MobileControls({
   const mode = useGameStore((s) => s.mobileControlMode);
 
   useEffect(() => {
-    setIsTouchDevice(
-      'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 768
-    );
+    const checkTouch = () => {
+      setIsTouchDevice(
+        'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) || window.innerWidth < 768
+      );
+    };
+    checkTouch();
+    window.addEventListener('resize', checkTouch);
     useGameStore.getState().hydrateMobileControlMode();
+    return () => window.removeEventListener('resize', checkTouch);
   }, []);
 
   if (!isTouchDevice) return null;
