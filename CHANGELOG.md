@@ -1,4 +1,14 @@
+## [2.1.214] - 2026-08-14
+### Added
+- **Modular HUD Dock Zone Architecture (RuneScape 3 & WoW Edit Mode Style) (`dock-types.ts`, `default-presets.ts`, `DockZone.tsx`, `DockableWidget.tsx`, `LobbyHudDockLayout.tsx`, `UiEditToolbar.tsx`, `store.ts`, `index.tsx`)**:
+  - Replaced unconstrained pixel dragging with a fixed 8-zone screen dock matrix (`top-left`, `top-center`, `top-right`, `mid-left`, `mid-right`, `bottom-left`, `bottom-center`, `bottom-right`) for resolution-independent HUD layouts.
+  - Implemented 4 standard built-in layout presets: **Modern MMO (Default)**, **Classic RuneScape (Right Dock)**, **WoW Action Combat (Centered)**, and **Minimalist Streamer**.
+  - Built a compact Base64 layout encoder/decoder codec (`SG-HUD:v1:...`) enabling 1-click preset exporting, importing, and instant sharing to the social feed.
+  - Upgraded Viewfinder Edit Mode with live drop-zone highlights, widget size variant tokens (`compact`, `standard`, `expanded`), visibility toggles, and custom layout saving/deleting.
+  - Unified lobby overlay mounting under `LobbyHudDockLayout` with full pointer-events canvas protection.
+
 ## [2.1.213] - 2026-08-14
+
 ### Fixed
 - **Multiplayer Movement Input & Walkability Boundary Desynchronization (`manager.go`, `demo.go`, `handler.go`, `LobbySocketHandler.ts`, `GameCanvasBabylon.tsx`)**:
   - Fixed map grid boundary check in Go MMO `IsWalkable` and dynamic `JoinMap` registration so maps larger than 30x30 (such as the 64x64 `LOBBY` / `DEMO_SANDBOX` at `X 31, Y 32`) do not incorrectly drop player movement inputs as out-of-bounds wall collisions.

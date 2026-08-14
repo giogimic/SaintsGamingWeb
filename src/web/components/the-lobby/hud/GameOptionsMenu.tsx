@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useGameStore } from '../store';
-import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut } from 'lucide-react';
+import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Check, RotateCcw, Sparkles } from 'lucide-react';
+import { BUILTIN_HUD_PRESETS } from './default-presets';
+
 
 interface GameOptionsMenuProps {
   isOpen: boolean;
@@ -30,6 +32,12 @@ export default function GameOptionsMenu({
   const setIsEditingInterface = useGameStore((state) => state.setIsEditingInterface);
   const mobileControlMode = useGameStore((state) => state.mobileControlMode);
   const setMobileControlMode = useGameStore((state) => state.setMobileControlMode);
+  const activeHudPreset = useGameStore((state) => state.activeHudPreset);
+  const customHudPresets = useGameStore((state) => state.customHudPresets);
+  const setActiveHudPreset = useGameStore((state) => state.setActiveHudPreset);
+  const resetHudPresetToDefault = useGameStore((state) => state.resetHudPresetToDefault);
+  const showToast = useGameStore((state) => state.showToast);
+
 
   const [masterVolume, setMasterVolume] = useState(80);
   const [sfxVolume, setSfxVolume] = useState(90);
@@ -142,41 +150,148 @@ export default function GameOptionsMenu({
             
             {activeTab === 'INTERFACE' && (
               <div className="space-y-6">
-                <div className="bg-black/40 border border-[#22d3ee]/20 p-6 rounded-3xl shadow-inner">
-                  <h4 className="text-sm font-extrabold text-cyan-200/50 mb-4 uppercase tracking-widest">Customization</h4>
-                  
-                  {isAdminUser && (
-                    <div className="flex items-center justify-between p-4 bg-amber-950/40 border border-amber-500/50 rounded-2xl mb-6 shadow-[inset_0_0_12px_rgba(245,158,11,0.15)]">
-                      <span className="text-amber-400 font-extrabold text-sm uppercase">Development Mode (Ctrl+E)</span>
-                      <button 
-                        onClick={onToggleDevEditor}
-                        className={`w-12 h-6 rounded-full relative transition-colors border ${isCreationMode ? 'bg-amber-500/20 border-amber-400' : 'bg-black/60 border-slate-600'}`}
-                      >
-                        <div className={`absolute top-0.5 bottom-0.5 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all ${isCreationMode ? 'left-[24px]' : 'left-0.5'}`} />
-                      </button>
+                <div className="bg-black/40 border border-[#22d3ee]/20 p-6 rounded-3xl shadow-inner space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-extrabold text-cyan-200/50 uppercase tracking-widest">
+                      HUD Layout Presets
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Reset HUD layout to Modern MMO defaults?')) {
+                          resetHudPresetToDefault();
+                          showToast('Layout reset to default.');
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-bold text-slate-300 hover:border-white/20 hover:text-white transition"
+                    >
+                      <RotateCcw className="h-3 w-3 text-yellow-400" />
+                      Reset to Default
+                    </button>
+                  </div>
+
+                  {/* Preset Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {BUILTIN_HUD_PRESETS.map((preset) => {
+                      const isSelected = activeHudPreset?.id === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveHudPreset(preset.id);
+                            showToast(`Applied "${preset.name}".`);
+                          }}
+                          className={`flex flex-col text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400 shadow-[inset_0_0_15px_rgba(34,211,238,0.25)]'
+                              : 'bg-black/60 text-slate-400 border-white/10 hover:bg-white/5 hover:border-white/20'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-extrabold text-sm text-cyan-50">
+                              {preset.name}
+                            </span>
+                            {isSelected && (
+                              <span className="flex items-center gap-1 rounded-full bg-cyan-400/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                                <Check className="h-3 w-3" /> Active
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 line-clamp-2">
+                            {preset.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Presets if any */}
+                  {customHudPresets.length > 0 && (
+                    <div className="pt-2 border-t border-white/5 space-y-2">
+                      <span className="text-xs font-bold text-cyan-200/50 uppercase tracking-widest">
+                        Custom Presets
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {customHudPresets.map((preset) => {
+                          const isSelected = activeHudPreset?.id === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => {
+                                setActiveHudPreset(preset.id);
+                                showToast(`Applied "${preset.name}".`);
+                              }}
+                              className={`flex flex-col text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-purple-500/20 text-purple-200 border-purple-400 shadow-[inset_0_0_15px_rgba(168,85,247,0.25)]'
+                                  : 'bg-black/60 text-slate-400 border-white/10 hover:bg-white/5'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-extrabold text-sm text-white">
+                                  {preset.name}
+                                </span>
+                                {isSelected && (
+                                  <span className="flex items-center gap-1 rounded-full bg-purple-400/20 px-2 py-0.5 text-[10px] font-bold text-purple-300">
+                                    <Check className="h-3 w-3" /> Active
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between mb-2 gap-4">
+                  {/* Edit Interface Live Mode */}
+                  <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                      <div className="text-cyan-50 font-extrabold text-lg">Edit Interface</div>
-                      <div className="text-slate-400 text-sm mt-1 font-medium">
-                        Opens Viewfinder Edit Mode — this menu closes so you can drag the HUD.
+                      <div className="text-cyan-50 font-extrabold text-lg flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-emerald-400" />
+                        Interactive Edit Mode
+                      </div>
+                      <div className="text-slate-400 text-sm mt-0.5 font-medium">
+                        Enter Viewfinder mode to drag, drop, and resize widgets across screen dock zones.
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={enterViewfinderEdit}
                       disabled={isEditingInterface}
-                      className="px-6 py-3 rounded-xl font-extrabold transition-all active:scale-95 bg-[#10B981]/20 text-[#34d399] border border-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:bg-[#10B981]/30 hover:translate-y-[2px] disabled:opacity-60"
+                      className="shrink-0 px-6 py-3 rounded-xl font-extrabold transition-all active:scale-95 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:brightness-110 disabled:opacity-60"
                     >
                       Edit Interface
                     </button>
                   </div>
-                  
+
+                  {isAdminUser && (
+                    <div className="flex items-center justify-between p-4 bg-amber-950/40 border border-amber-500/50 rounded-2xl shadow-[inset_0_0_12px_rgba(245,158,11,0.15)]">
+                      <span className="text-amber-400 font-extrabold text-sm uppercase">
+                        Studio Editor Mode (Ctrl+E)
+                      </span>
+                      <button
+                        onClick={onToggleDevEditor}
+                        className={`w-12 h-6 rounded-full relative transition-colors border ${
+                          isCreationMode
+                            ? 'bg-amber-500/20 border-amber-400'
+                            : 'bg-black/60 border-slate-600'
+                        }`}
+                      >
+                        <div
+                          className={`absolute top-0.5 bottom-0.5 w-4 h-4 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] transition-all ${
+                            isCreationMode ? 'left-[24px]' : 'left-0.5'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
+
 
             {activeTab === 'CONTROLS' && (
               <div className="space-y-6">

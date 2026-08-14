@@ -22,6 +22,10 @@ const PlayerVitalsHud = dynamic(() => import('./hud/PlayerVitalsHud'));
 const ClassicPanel = dynamic(() => import('./ClassicPanel'));
 const Hotbar = dynamic(() => import('./Hotbar'));
 const DraggablePanel = dynamic(() => import('./DraggablePanel'));
+const LobbyHudDockLayout = dynamic(
+  () => import('./hud/LobbyHudDockLayout').then((m) => m.LobbyHudDockLayout),
+  { ssr: false }
+);
 const GameTitleScreen = dynamic(() => import('./GameTitleScreen'));
 const GameLogin = dynamic(() => import('./GameLogin'));
 const ServerSelect = dynamic(() => import('./ServerSelect'));
@@ -132,6 +136,8 @@ export default function TheLobby({
     isEditorMode: enableStudio,
     isCreationMode: studioToolsOpen,
   });
+  const isEditingInterface = useGameStore((s) => s.isEditingInterface || s.isUiEditMode);
+
 
   // Bible 17 — Studio sets global isEditorMode for clean gameplay gating.
   // Lobby must clear create-mode so shared editor-store never blocks walk/avatar.
@@ -1678,12 +1684,8 @@ export default function TheLobby({
         {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
         {gameMode === 'LOGIN' && <GameLogin />}
         {gameMode === 'SERVER_SELECT' && <ServerSelect />}
-
-        <DraggablePanel id="classic-panel" anchor="br" className="pointer-events-none max-md:static max-md:inset-auto">
-          <ClassicPanel />
-        </DraggablePanel>
-        
         <GameToastStack />
+
 
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           {gameMode === 'CRAFTING' && <CraftingOverlay />}
@@ -1704,39 +1706,12 @@ export default function TheLobby({
           className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
         />
 
-        {gameMode === 'EXPLORING' && showGameplayHud && !enableStudio && (
-          <DraggablePanel id="peer-presence" anchor="tc">
-            <PeerPresenceHud />
-          </DraggablePanel>
-        )}
-        {gameMode === 'EXPLORING' && showGameplayHud && (
-          <DraggablePanel id="minimap" anchor="tr">
-            <MiniMapRadar />
-          </DraggablePanel>
-        )}
-        {gameMode === 'EXPLORING' && showGameplayHud && (
-          <DraggablePanel id="orbs" anchor="tl">
-            <PlayerVitalsHud />
-          </DraggablePanel>
-        )}
-
-        {gameMode === 'EXPLORING' && showGameplayHud && (
-          <>
-            <DraggablePanel id="hotbar" anchor="bc">
-              <Hotbar />
-            </DraggablePanel>
-            <DraggablePanel id="chat" anchor="bl">
-              <GameChat />
-            </DraggablePanel>
-            <DraggablePanel id="target-frame" anchor="tc">
-              <TargetFrame />
-            </DraggablePanel>
-            <DraggablePanel id="quest-tracker" anchor="tr">
-              <QuestTrackerOverlay />
-            </DraggablePanel>
-          </>
+        {/* Modular Dock-Based In-Game HUD (RuneScape / WoW Edit Mode) */}
+        {((gameMode === 'EXPLORING' && showGameplayHud) || isEditingInterface) && (
+          <LobbyHudDockLayout enableStudio={enableStudio} />
         )}
       </div>
+
     </div>
   );
 }
