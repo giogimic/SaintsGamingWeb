@@ -100,7 +100,7 @@ export default function SkillsOverlay() {
                 return (
                   <div
                     key={skill}
-                    className="group relative bg-[#0b1320]/60 border border-[#806f47]/40 p-1 flex flex-col justify-between hover:border-[#cbb26a] hover:bg-[#162238]/80 transition-colors cursor-help h-[40px] rounded-sm overflow-hidden"
+                    className="group relative bg-[#0b1320]/60 border border-[#806f47]/40 p-1 flex flex-col justify-between hover:border-[#cbb26a] hover:bg-[#162238]/80 transition-colors cursor-help h-[40px] rounded-sm"
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="w-4 h-4 bg-[#050b14]/80 rounded-full flex items-center justify-center border border-[#806f47]/50 shadow-inner">
@@ -121,7 +121,7 @@ export default function SkillsOverlay() {
                       />
                     </div>
 
-                    <div className="hidden group-hover:flex absolute top-[-40px] left-1/2 -translate-x-1/2 bg-[#050b14]/95 border border-[#cbb26a] p-1.5 flex-col whitespace-nowrap z-50 text-[10px] text-[#e2d5b3] shadow-lg rounded-sm">
+                    <div className="hidden group-hover:flex absolute -top-10 left-1/2 -translate-x-1/2 bg-[#050b14]/95 border border-[#cbb26a] p-1.5 flex-col whitespace-nowrap z-50 text-[10px] text-[#e2d5b3] shadow-lg rounded-sm pointer-events-none">
                       <span className="text-white font-bold">{skill} XP:</span>
                       <span>
                         {Math.floor(data.xp).toLocaleString()} / {nextLevelXp.toLocaleString()}
