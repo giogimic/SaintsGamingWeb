@@ -103,6 +103,20 @@ export default function Hotbar() {
       // Set individual cooldown & GCD
       setCooldown(slot.ability.id, timeNow + slot.ability.cooldownMs);
       setGlobalCooldown(timeNow + 1200);
+    } else if (slot.action === 'item') {
+      const inv = useGameStore.getState().player.inventory;
+      const potionKey = Object.keys(inv).find(
+        (k) => (k.toLowerCase().includes('potion') || k.toLowerCase().includes('herb') || k.toLowerCase().includes('food')) && (inv[k] ?? 0) > 0
+      );
+      if (potionKey) {
+        useGameStore.getState().modifyHp(25);
+        useGameStore.getState().modifyInventory(potionKey, -1);
+        useGameStore.getState().showToast(`Used Consumable (+25 HP)`);
+        setCooldown(slot.ability.id, timeNow + slot.ability.cooldownMs);
+        setGlobalCooldown(timeNow + 1000);
+      } else {
+        useGameStore.getState().showToast('No health potion or consumable available in inventory!');
+      }
     }
   };
 
