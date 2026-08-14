@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
-import { Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle } from 'lucide-react';
-import { MapIndexEntry } from '../../data/maps';
+import { Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio } from 'lucide-react';
+import { MapIndexEntry, loadMap } from '../../data/maps';
+import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 
 export interface AtlasNode {
   mapId: string;
@@ -36,6 +37,7 @@ export const WorldAtlasPanel: React.FC = () => {
   
   const [allMaps, setAllMaps] = useState<MapIndexEntry[]>([]);
   const [selectedMapIdToPlace, setSelectedMapIdToPlace] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<AtlasNode | null>(null);
 
   // 20x20 grid
   const GRID_SIZE = 20;
@@ -82,6 +84,22 @@ export const WorldAtlasPanel: React.FC = () => {
     return () => { active = false; };
   }, [activeGameId, showToast]);
 
+  const handleWarpToMap = async (targetMapId: string) => {
+    try {
+      const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
+      const mw = loaded.grid?.[0]?.length || loaded.width || 24;
+      const mh = loaded.grid?.length || loaded.height || 24;
+      const cx = Math.max(1, Math.min(mw - 2, Math.floor(mw / 2)));
+      const cy = Math.max(1, Math.min(mh - 2, Math.floor(mh / 2)));
+      useGameStore.setState({ currentMapId: targetMapId, activeMapData: loaded });
+      useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
+      showToast(`Warped to map: ${targetMapId}`);
+    } catch {
+      useGameStore.setState({ currentMapId: targetMapId });
+      showToast(`Warped to map: ${targetMapId} (loading…)`);
+    }
+  };
+
   const handleSaveAtlas = async () => {
     if (!atlasData) return;
     setIsSaving(true);
@@ -112,11 +130,11 @@ export const WorldAtlasPanel: React.FC = () => {
   const handleGridClick = (x: number, y: number) => {
     if (!atlasData) return;
     
-    // Check if cell is occupied
-    const existingNodeIdx = atlasData.nodes.findIndex(n => n.x === x && n.y === y);
+    const existingNode = atlasData.nodes.find(n => n.x === x && n.y === y);
     
     // If placing
     if (selectedMapIdToPlace) {
+      const existingNodeIdx = atlasData.nodes.findIndex(n => n.x === x && n.y === y);
       const newNodes = [...atlasData.nodes];
       if (existingNodeIdx >= 0) {
         newNodes[existingNodeIdx] = { mapId: selectedMapIdToPlace, x, y };
@@ -125,15 +143,11 @@ export const WorldAtlasPanel: React.FC = () => {
       }
       setAtlasData({ ...atlasData, nodes: newNodes });
       setSelectedMapIdToPlace(null);
+      setSelectedNode({ mapId: selectedMapIdToPlace, x, y });
+    } else if (existingNode) {
+      setSelectedNode(existingNode);
     } else {
-      // If clicking existing without placement selected, we could remove it or select it
-      if (existingNodeIdx >= 0) {
-        if (confirm(`Remove map ${atlasData.nodes[existingNodeIdx].mapId} from atlas?`)) {
-          const newNodes = [...atlasData.nodes];
-          newNodes.splice(existingNodeIdx, 1);
-          setAtlasData({ ...atlasData, nodes: newNodes });
-        }
-      }
+      setSelectedNode(null);
     }
   };
 
@@ -146,7 +160,7 @@ export const WorldAtlasPanel: React.FC = () => {
       <div className="flex-none p-3 border-b border-[#806f47]/30 bg-[#0b1320]/80 flex flex-wrap items-center justify-between gap-3 shadow-md">
         <div className="flex items-center gap-4">
           <div className="font-bold text-[#cbb26a] flex items-center gap-1.5 text-sm">
-            <MapIcon className="w-4 h-4 text-[#eab308]" />
+            <Compass className="w-4 h-4 text-[#eab308]" />
             Macro World Atlas
           </div>
           <div className="flex items-center gap-2">
@@ -166,7 +180,7 @@ export const WorldAtlasPanel: React.FC = () => {
         <button
           onClick={() => void handleSaveAtlas()}
           disabled={isSaving}
-          className="px-3 py-1.5 bg-[#cbb26a] text-black font-bold rounded flex items-center gap-1.5 hover:bg-[#d8c078] active:scale-95 transition-all shadow-md disabled:opacity-50"
+          className="px-3 py-1.5 bg-[#cbb26a] text-black font-bold rounded flex items-center gap-1.5 hover:bg-[#d8c078] active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
         >
           <Save className="w-3.5 h-3.5" />
           {isSaving ? 'Saving...' : 'Save Atlas'}
@@ -181,7 +195,7 @@ export const WorldAtlasPanel: React.FC = () => {
             <span className="text-[10px] text-slate-500 font-normal">{allMaps.length} maps</span>
           </div>
           <div className="p-2 text-[10px] text-slate-400 bg-black/20 border-b border-white/5">
-            Select a map below, then click a grid cell to connect it.
+            Select a map below, then click a grid cell to place it. Double-click placed nodes to warp.
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
             {allMaps.map(m => {
@@ -191,7 +205,7 @@ export const WorldAtlasPanel: React.FC = () => {
                 <button
                   key={m.id}
                   onClick={() => setSelectedMapIdToPlace(isSelected ? null : m.id)}
-                  className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all ${
+                  className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all cursor-pointer ${
                     isSelected 
                       ? 'bg-[#cbb26a]/25 border-[#cbb26a] text-white shadow-lg' 
                       : isPlaced
@@ -215,51 +229,110 @@ export const WorldAtlasPanel: React.FC = () => {
         </div>
 
         {/* Main Grid Area */}
-        <div className="flex-1 min-h-0 overflow-auto bg-[#050b14] p-6 relative custom-scrollbar">
-          <div 
-            className="relative rounded border border-[#806f47]/30 shadow-2xl" 
-            style={{ 
-              width: GRID_SIZE * 72, 
-              height: GRID_SIZE * 72,
-              backgroundImage: 'linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)',
-              backgroundSize: '72px 72px'
-            }}
-          >
-            {/* Grid cells hitboxes */}
-            {Array.from({ length: GRID_SIZE }).map((_, y) => 
-              Array.from({ length: GRID_SIZE }).map((_, x) => (
-                <div
-                  key={`${x}-${y}`}
-                  onClick={() => handleGridClick(x, y)}
-                  className={`absolute w-[72px] h-[72px] border border-transparent hover:border-amber-400/50 cursor-pointer transition-colors ${
-                    selectedMapIdToPlace ? 'hover:bg-[#cbb26a]/15' : ''
-                  }`}
-                  style={{ left: x * 72, top: y * 72 }}
-                />
-              ))
-            )}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#050b14]">
+          <div className="flex-1 min-h-0 overflow-auto p-6 relative custom-scrollbar">
+            <div 
+              className="relative rounded border border-[#806f47]/30 shadow-2xl" 
+              style={{ 
+                width: GRID_SIZE * 72, 
+                height: GRID_SIZE * 72,
+                backgroundImage: 'linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)',
+                backgroundSize: '72px 72px'
+              }}
+            >
+              {/* Grid cells hitboxes */}
+              {Array.from({ length: GRID_SIZE }).map((_, y) => 
+                Array.from({ length: GRID_SIZE }).map((_, x) => (
+                  <div
+                    key={`${x}-${y}`}
+                    onClick={() => handleGridClick(x, y)}
+                    className={`absolute w-[72px] h-[72px] border border-transparent hover:border-amber-400/50 cursor-pointer transition-colors ${
+                      selectedMapIdToPlace ? 'hover:bg-[#cbb26a]/15' : ''
+                    }`}
+                    style={{ left: x * 72, top: y * 72 }}
+                  />
+                ))
+              )}
 
-            {/* Placed Nodes */}
-            {atlasData.nodes.map((node) => (
-              <div
-                key={node.mapId}
-                onClick={() => handleGridClick(node.x, node.y)}
-                className="absolute w-[70px] h-[70px] m-[1px] bg-[#0f172a]/95 border-2 border-[#cbb26a] rounded-lg flex flex-col items-center justify-center p-1.5 text-center hover:border-rose-500 hover:bg-rose-950/40 cursor-pointer shadow-xl transition-all group"
-                style={{ left: node.x * 72, top: node.y * 72 }}
-                title="Click to remove or edit location"
-              >
-                <MapIcon className="w-4 h-4 text-[#cbb26a] group-hover:text-rose-400 mb-0.5" />
-                <span className="text-[9px] text-slate-200 break-all leading-tight font-bold group-hover:text-rose-200">
-                  {node.mapId}
-                </span>
-                {node.mapId === lobbyMapId && (
-                  <div className="absolute -top-1 -right-1 px-1 py-0.2 text-[8px] bg-emerald-500 text-black font-extrabold rounded-full border border-black" title="Spawn Hub">
-                    HUB
+              {/* Placed Nodes */}
+              {atlasData.nodes.map((node) => {
+                const isSelected = selectedNode?.x === node.x && selectedNode?.y === node.y;
+                return (
+                  <div
+                    key={node.mapId}
+                    onClick={() => handleGridClick(node.x, node.y)}
+                    onDoubleClick={() => handleWarpToMap(node.mapId)}
+                    className={`absolute w-[70px] h-[70px] m-[1px] rounded-lg flex flex-col items-center justify-center p-1.5 text-center cursor-pointer shadow-xl transition-all group ${
+                      isSelected
+                        ? 'bg-amber-950/80 border-2 border-amber-400 scale-105 z-10 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
+                        : 'bg-[#0f172a]/95 border-2 border-[#cbb26a] hover:border-amber-300'
+                    }`}
+                    style={{ left: node.x * 72, top: node.y * 72 }}
+                    title="Click to select actions · Double-click to warp"
+                  >
+                    <MapIcon className={`w-4 h-4 mb-0.5 ${isSelected ? 'text-amber-300' : 'text-[#cbb26a]'}`} />
+                    <span className="text-[9px] text-slate-200 break-all leading-tight font-bold">
+                      {node.mapId}
+                    </span>
+                    {node.mapId === lobbyMapId && (
+                      <div className="absolute -top-1 -right-1 px-1 py-0.2 text-[8px] bg-emerald-500 text-black font-extrabold rounded-full border border-black" title="Spawn Hub">
+                        HUB
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
+
+          {/* Context Action Bar when a node is selected */}
+          {selectedNode && (
+            <div className="flex-none p-3 bg-[#0b1320] border-t border-[#806f47]/40 flex items-center justify-between gap-3 text-xs shadow-2xl">
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-[#cbb26a] flex items-center gap-1.5">
+                  <MapIcon className="w-4 h-4 text-[#cbb26a]" />
+                  Selected Node: <span className="text-white">{selectedNode.mapId}</span>
+                </span>
+                <span className="text-slate-400 text-[11px]">
+                  Grid Position: [{selectedNode.y}, {selectedNode.x}]
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleWarpToMap(selectedNode.mapId)}
+                  className="px-2.5 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-cyan-300 font-bold rounded border border-cyan-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  title="Warp to this map in Viewport"
+                >
+                  <Crosshair className="w-3.5 h-3.5" />
+                  <span>Open in Viewport</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setLobbyMapId(selectedNode.mapId);
+                    showToast(`Set ${selectedNode.mapId} as spawn hub`);
+                  }}
+                  className="px-2.5 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-emerald-300 font-bold rounded border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  title="Designate as primary server spawn hub"
+                >
+                  <Radio className="w-3.5 h-3.5" />
+                  <span>Set as Spawn Hub</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const newNodes = atlasData.nodes.filter(n => !(n.x === selectedNode.x && n.y === selectedNode.y));
+                    setAtlasData({ ...atlasData, nodes: newNodes });
+                    setSelectedNode(null);
+                    showToast(`Removed ${selectedNode.mapId} from atlas`);
+                  }}
+                  className="px-2.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-bold rounded border border-rose-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  title="Remove this node from the atlas"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove Node</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

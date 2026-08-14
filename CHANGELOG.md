@@ -1,3 +1,7 @@
+## [2.1.177] - 2026-08-14
+### Added
+- **Macro Atlas Interactive Context Toolbar (`WorldAtlasPanel.tsx`)**: Selected atlas nodes now present an in-place action bar with `Open in Viewport`, `Set as Spawn Hub`, and safe node deletion. Added double-click to immediately warp to any placed map.
+
 ## [2.1.176] - 2026-08-14
 ### Fixed
 - **Full-Screen Viewport Edge-to-Edge (`app/(main)/lobby/page.tsx`, `app/(main)/studio/page.tsx`)**: Upgraded Lobby and Studio viewport containers to `fixed inset-0 w-screen h-screen z-50`, eliminating empty bottom space, navbar padding offsets, and parent layout constraints for an immersive desktop MMO presentation.
