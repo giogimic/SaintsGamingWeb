@@ -28,6 +28,8 @@ import {
   UserRound,
   Package,
   Globe,
+  AlertCircle,
+  Flame,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -426,9 +428,11 @@ export const StudioEditorShell: React.FC = () => {
           )}
           <DockButton id="characters" layoutRef={layoutRef} model={model} icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="creature" layoutRef={layoutRef} model={model} icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="spawner" layoutRef={layoutRef} model={model} icon={<Flame className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="loot" layoutRef={layoutRef} model={model} icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="items" layoutRef={layoutRef} model={model} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <DockButton id="classes" layoutRef={layoutRef} model={model} icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
+          <DockButton id="problems" layoutRef={layoutRef} model={model} icon={<AlertCircle className="w-5 h-5" />} permissionLevel={permissionLevel} />
           <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
           <button
             type="button"
@@ -484,13 +488,23 @@ const DockButton: React.FC<{
         if (nodes) {
           model.doAction(Actions.selectTab(id));
         } else {
-          // Add tab to the left dock by default
-          model.doAction(Actions.addNode({
-            type: "tab",
-            id: id,
-            name: meta.label,
-            component: id,
-          }, "left-dock", DockLocation.CENTER, -1));
+          const isRightDock = id === 'properties' || id === 'problems';
+          const targetTabsetId = isRightDock ? 'right-dock' : 'left-dock';
+          try {
+            model.doAction(Actions.addNode({
+              type: "tab",
+              id: id,
+              name: meta.label,
+              component: id,
+            }, targetTabsetId, DockLocation.CENTER, -1));
+          } catch {
+            model.doAction(Actions.addNode({
+              type: "tab",
+              id: id,
+              name: meta.label,
+              component: id,
+            }, "left-dock", DockLocation.CENTER, -1));
+          }
         }
       }}
       className={`
