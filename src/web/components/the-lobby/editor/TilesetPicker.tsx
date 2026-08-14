@@ -21,6 +21,7 @@ export default function TilesetPicker({
 }: TilesetPickerProps) {
   const [activeTsIdx, setActiveTsIdx] = useState(0);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
+  const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number } | null>(null);
   const ts = tilesets[activeTsIdx];
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -63,6 +64,36 @@ export default function TilesetPicker({
     onBrushSelect(gid);
   };
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!ts || !imgRef.current || !natural.w || !natural.h) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const scaleX = imgRef.current.naturalWidth / rect.width;
+    const scaleY = imgRef.current.naturalHeight / rect.height;
+    
+    const nativeX = Math.floor(x * scaleX);
+    const nativeY = Math.floor(y * scaleY);
+    
+    const col = Math.floor(nativeX / ts.tilewidth);
+    const row = Math.floor(nativeY / ts.tileheight);
+
+    if (col < 0 || row < 0 || col >= ts.columns || nativeY >= imgRef.current.naturalHeight) {
+      setHoveredTile(null);
+      return;
+    }
+    
+    const gid = ts.firstgid + (row * ts.columns) + col;
+    setHoveredTile({
+      leftPct: (col / ts.columns) * 100,
+      topPct: ((row * ts.tileheight) / natural.h) * 100,
+      widthPct: (1 / ts.columns) * 100,
+      heightPct: (ts.tileheight / natural.h) * 100,
+      gid,
+    });
+  };
+
   return (
     <div className="flex flex-col gap-2 font-mono">
       <p className="text-[10px] leading-relaxed text-slate-400">
@@ -72,14 +103,14 @@ export default function TilesetPicker({
       <div className="flex flex-col gap-1 bg-black/40 p-2 rounded border border-slate-800">
         <div className="flex justify-between items-center mb-1">
            <span className="text-[10px] font-bold text-slate-400">TILE LAYERS</span>
-           <button type="button" onClick={onAddLayer} className="text-[10px] bg-amber-700 hover:bg-[#806f47] text-white px-1.5 rounded transition-colors">+ Layer</button>
+           <button type="button" onClick={onAddLayer} className="text-[10px] bg-amber-700 hover:bg-[#806f47] text-white px-1.5 rounded transition-colors cursor-pointer">+ Layer</button>
         </div>
         {tileLayers.map((layer, idx) => (
           <button 
             key={idx}
             type="button"
             onClick={() => onLayerChange(idx)}
-            className={`text-left text-xs px-2 py-1 rounded transition-colors ${activeLayerIdx === idx ? 'bg-[#806f47] text-white font-bold' : 'bg-[#0b1320] text-slate-400 hover:bg-slate-800'}`}
+            className={`text-left text-xs px-2 py-1 rounded transition-colors cursor-pointer ${activeLayerIdx === idx ? 'bg-[#806f47] text-white font-bold' : 'bg-[#0b1320] text-slate-400 hover:bg-slate-800'}`}
           >
             L{idx}: {layer.name}
           </button>
@@ -93,8 +124,9 @@ export default function TilesetPicker({
           onChange={(e) => {
             setActiveTsIdx(parseInt(e.target.value));
             setNatural({ w: 0, h: 0 });
+            setHoveredTile(null);
           }}
-          className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px]"
+          className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-[#cbb26a]"
         >
           {tilesets.map((t, i) => (
             <option key={i} value={i}>{t.imageSource}</option>
@@ -114,6 +146,8 @@ export default function TilesetPicker({
                }
                alt={ts.imageSource}
                onClick={handleImageClick}
+               onMouseMove={handleMouseMove}
+               onMouseLeave={() => setHoveredTile(null)}
                onLoad={(e) => {
                  const el = e.currentTarget;
                  setNatural({ w: el.naturalWidth, h: el.naturalHeight });
@@ -128,9 +162,20 @@ export default function TilesetPicker({
                  }
                }}
              />
+             {hoveredTile && (
+               <div
+                 className="pointer-events-none absolute border border-cyan-400/80 bg-cyan-400/20 transition-all duration-75"
+                 style={{
+                   left: `${hoveredTile.leftPct}%`,
+                   top: `${hoveredTile.topPct}%`,
+                   width: `${hoveredTile.widthPct}%`,
+                   height: `${hoveredTile.heightPct}%`,
+                 }}
+               />
+             )}
              {selection && (
                <div
-                 className="pointer-events-none absolute border-2 border-[#cbb26a] bg-[#cbb26a]/15 shadow-[0_0_0_1px_rgba(0,0,0,0.75)]"
+                 className="pointer-events-none absolute border-2 border-[#cbb26a] bg-[#cbb26a]/20 shadow-[0_0_0_1px_rgba(0,0,0,0.75)] z-10"
                  style={{
                    left: `${selection.leftPct}%`,
                    top: `${selection.topPct}%`,
@@ -146,7 +191,12 @@ export default function TilesetPicker({
       
       <div className="flex justify-between items-center text-[10px] text-[#e2d5b3] bg-[#0b1320] border border-slate-800 p-1.5 rounded">
         <span>Active Brush GID:</span>
-        <span className="font-bold text-white bg-[#050b14] px-2 py-0.5 rounded">{activeBrushTileId}</span>
+        <div className="flex items-center gap-2">
+          {hoveredTile && (
+            <span className="text-[10px] text-cyan-400">Hover: GID {hoveredTile.gid}</span>
+          )}
+          <span className="font-bold text-white bg-[#050b14] px-2 py-0.5 rounded border border-[#806f47]/40">{activeBrushTileId}</span>
+        </div>
       </div>
     </div>
   );
