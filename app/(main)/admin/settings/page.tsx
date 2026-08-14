@@ -23,8 +23,9 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.213";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.214";
   const maxCharacters = configMap["ucp_max_characters"] || "3";
+
   const startingCash = configMap["ucp_starting_cash"] || "5000";
   const startingBank = configMap["ucp_starting_bank"] || "10000";
   const registrationEnabled = configMap["ucp_registration_enabled"] || "true";

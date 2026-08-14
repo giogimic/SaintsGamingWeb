@@ -3,6 +3,19 @@ import { setAutoFreeze } from 'immer';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { buildInitialSkills } from '../../../shared/game/skillTypings';
+import {
+  HudLayoutPreset,
+  DockZoneId,
+  WidgetSize,
+  encodeHudPresetString,
+  decodeHudPresetString,
+} from './hud/dock-types';
+import {
+  DEFAULT_PRESET_MODERN,
+  BUILTIN_HUD_PRESETS,
+  ensureCompletePreset,
+} from './hud/default-presets';
+
 
 /**
  * `activeMapData` is handed straight to Babylon and mutated in place by Studio
@@ -38,6 +51,9 @@ export type Point = { x: number; y: number };
 export type MobileControlMode = 'floating' | 'dpad';
 
 const MOBILE_CONTROL_STORAGE_KEY = 'saints-mobile-control-mode';
+export const HUD_PRESET_STORAGE_KEY = 'saints-hud-layout-v2';
+export const CUSTOM_PRESETS_STORAGE_KEY = 'saints-hud-custom-presets';
+
 
 export interface MapEntity {
   id: string;
@@ -237,7 +253,7 @@ export interface GameState {
   clearPendingMovesUpTo: (seq: number, serverX?: number, serverY?: number) => void;
   applyServerCorrection: (x: number, y: number, direction: 'up' | 'down' | 'left' | 'right') => void;
   
-  // UI Customization — Viewfinder Edit Mode
+  // UI Customization — Viewfinder Edit Mode & Modular Dock Presets
   /** @deprecated Prefer isEditingInterface — kept for existing subscribers */
   isUiEditMode: boolean;
   /** Viewfinder Edit Mode: HUD unlocked for drag/scale */
@@ -249,10 +265,28 @@ export interface GameState {
   updateUiSetting: (id: string, setting: Partial<{ x: number; y: number; scale: number }>) => void;
   loadUiPreset: (presetData: Record<string, { x: number; y: number; scale: number }>) => void;
   resetUiLayout: () => void;
+
+  // Modular HUD Dock Presets
+  activeHudPreset: HudLayoutPreset;
+  customHudPresets: HudLayoutPreset[];
+  setActiveHudPreset: (presetOrId: HudLayoutPreset | string) => void;
+  moveWidgetToZone: (widgetId: string, targetZone: DockZoneId, targetOrder?: number) => void;
+  setWidgetSize: (widgetId: string, size: WidgetSize) => void;
+  setWidgetVisibility: (widgetId: string, visible: boolean) => void;
+  setWidgetCollapsed: (widgetId: string, collapsed: boolean) => void;
+  setWidgetTabGroup: (widgetId: string, tabGroup?: string) => void;
+  saveCurrentHudPresetAs: (name: string) => HudLayoutPreset;
+  deleteCustomHudPreset: (id: string) => void;
+  resetHudPresetToDefault: () => void;
+  exportHudPresetString: () => string;
+  importHudPresetString: (encoded: string) => boolean;
+  hydrateHudPresets: () => void;
+
   /** Mobile touch movement style — persisted separately from panel uiSettings */
   mobileControlMode: MobileControlMode;
   setMobileControlMode: (mode: MobileControlMode) => void;
   hydrateMobileControlMode: () => void;
+
   
   // Game Data
   fetchLogicTiles: () => Promise<void>;
@@ -315,8 +349,9 @@ export const INITIAL_SKILLS: Record<string, SkillData> = buildInitialSkills();
 
 export const useGameStore = create<GameState>()(
   subscribeWithSelector(
-    immer((set) => ({
+    immer((set, get) => ({
       logicTiles: {},
+
       gameMode: 'TITLE_SCREEN',
       player: {
         spriteId: 'adventurer',
@@ -369,6 +404,8 @@ export const useGameStore = create<GameState>()(
       isEditingInterface: false,
       uiSettings: {},
       uiLayoutEpoch: 0,
+      activeHudPreset: DEFAULT_PRESET_MODERN,
+      customHudPresets: [],
       mobileControlMode: 'floating' as MobileControlMode,
 
       setMobileControlMode: (mode) => set((state) => {
@@ -384,6 +421,205 @@ export const useGameStore = create<GameState>()(
           set((state) => { state.mobileControlMode = stored; });
         }
       },
+
+      setActiveHudPreset: (presetOrId) => set((state) => {
+        if (typeof presetOrId === 'string') {
+          const foundBuiltin = BUILTIN_HUD_PRESETS.find((p) => p.id === presetOrId);
+          const foundCustom = state.customHudPresets.find((p) => p.id === presetOrId);
+          const target = foundBuiltin || foundCustom;
+          if (target) {
+            state.activeHudPreset = ensureCompletePreset(target);
+          }
+        } else {
+          state.activeHudPreset = ensureCompletePreset(presetOrId);
+        }
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+        }
+      }),
+
+      moveWidgetToZone: (widgetId, targetZone, targetOrder) => set((state) => {
+        if (!state.activeHudPreset.widgets[widgetId]) {
+          state.activeHudPreset.widgets[widgetId] = {
+            widgetId,
+            zoneId: targetZone,
+            order: 0,
+            sizeVariant: 'standard',
+            visible: true,
+            collapsed: false,
+          };
+        } else {
+          state.activeHudPreset.widgets[widgetId].zoneId = targetZone;
+          if (typeof targetOrder === 'number') {
+            state.activeHudPreset.widgets[widgetId].order = targetOrder;
+          } else {
+            const sameZoneCount = Object.values(state.activeHudPreset.widgets).filter(
+              (w) => w.zoneId === targetZone && w.widgetId !== widgetId
+            ).length;
+            state.activeHudPreset.widgets[widgetId].order = sameZoneCount;
+          }
+        }
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+        }
+      }),
+
+      setWidgetSize: (widgetId, size) => set((state) => {
+        if (!state.activeHudPreset.widgets[widgetId]) {
+          state.activeHudPreset.widgets[widgetId] = {
+            widgetId,
+            zoneId: 'top-left',
+            order: 0,
+            sizeVariant: size,
+            visible: true,
+            collapsed: false,
+          };
+        } else {
+          state.activeHudPreset.widgets[widgetId].sizeVariant = size;
+        }
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+        }
+      }),
+
+      setWidgetVisibility: (widgetId, visible) => set((state) => {
+        if (!state.activeHudPreset.widgets[widgetId]) {
+          state.activeHudPreset.widgets[widgetId] = {
+            widgetId,
+            zoneId: 'top-left',
+            order: 0,
+            sizeVariant: 'standard',
+            visible,
+            collapsed: false,
+          };
+        } else {
+          state.activeHudPreset.widgets[widgetId].visible = visible;
+        }
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+        }
+      }),
+
+      setWidgetCollapsed: (widgetId, collapsed) => set((state) => {
+        if (state.activeHudPreset.widgets[widgetId]) {
+          state.activeHudPreset.widgets[widgetId].collapsed = collapsed;
+          state.uiLayoutEpoch += 1;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+          }
+        }
+      }),
+
+      setWidgetTabGroup: (widgetId, tabGroup) => set((state) => {
+        if (state.activeHudPreset.widgets[widgetId]) {
+          state.activeHudPreset.widgets[widgetId].tabGroup = tabGroup;
+          state.uiLayoutEpoch += 1;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+          }
+        }
+      }),
+
+      saveCurrentHudPresetAs: (name) => {
+        let createdPreset: HudLayoutPreset = DEFAULT_PRESET_MODERN;
+        set((state) => {
+          const newPreset: HudLayoutPreset = {
+            id: `custom-${Date.now()}`,
+            name: name.trim() || `Custom Layout ${state.customHudPresets.length + 1}`,
+            version: 1,
+            widgets: JSON.parse(JSON.stringify(state.activeHudPreset.widgets)),
+          };
+          state.customHudPresets.push(newPreset);
+          state.activeHudPreset = newPreset;
+          state.uiLayoutEpoch += 1;
+          createdPreset = newPreset;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(CUSTOM_PRESETS_STORAGE_KEY, JSON.stringify(state.customHudPresets));
+            localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(newPreset));
+          }
+        });
+        return createdPreset;
+      },
+
+      deleteCustomHudPreset: (id) => set((state) => {
+        state.customHudPresets = state.customHudPresets.filter((p) => p.id !== id);
+        if (state.activeHudPreset.id === id) {
+          state.activeHudPreset = JSON.parse(JSON.stringify(DEFAULT_PRESET_MODERN));
+        }
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CUSTOM_PRESETS_STORAGE_KEY, JSON.stringify(state.customHudPresets));
+          localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(state.activeHudPreset));
+        }
+      }),
+
+      resetHudPresetToDefault: () => set((state) => {
+        state.activeHudPreset = JSON.parse(JSON.stringify(DEFAULT_PRESET_MODERN));
+        state.uiSettings = {};
+        state.uiLayoutEpoch += 1;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(HUD_PRESET_STORAGE_KEY);
+          const keys: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('saints-ui-')) keys.push(k);
+          }
+          keys.forEach((k) => localStorage.removeItem(k));
+        }
+      }),
+
+      exportHudPresetString: () => {
+        return encodeHudPresetString(get().activeHudPreset);
+      },
+
+      importHudPresetString: (encoded) => {
+        const decoded = decodeHudPresetString(encoded);
+        if (!decoded) return false;
+        const complete = ensureCompletePreset(decoded);
+        set((state) => {
+          state.activeHudPreset = complete;
+          state.customHudPresets.push(complete);
+          state.uiLayoutEpoch += 1;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(HUD_PRESET_STORAGE_KEY, JSON.stringify(complete));
+            localStorage.setItem(CUSTOM_PRESETS_STORAGE_KEY, JSON.stringify(state.customHudPresets));
+          }
+        });
+        return true;
+      },
+
+      hydrateHudPresets: () => {
+        if (typeof window === 'undefined') return;
+        try {
+          const rawCustom = localStorage.getItem(CUSTOM_PRESETS_STORAGE_KEY);
+          let loadedCustom: HudLayoutPreset[] = [];
+          if (rawCustom) {
+            const parsed = JSON.parse(rawCustom);
+            if (Array.isArray(parsed)) {
+              loadedCustom = parsed.map((p) => ensureCompletePreset(p));
+            }
+          }
+
+          const rawActive = localStorage.getItem(HUD_PRESET_STORAGE_KEY);
+          let loadedActive: HudLayoutPreset = DEFAULT_PRESET_MODERN;
+          if (rawActive) {
+            const parsed = JSON.parse(rawActive);
+            loadedActive = ensureCompletePreset(parsed);
+          }
+
+          set((state) => {
+            state.customHudPresets = loadedCustom;
+            state.activeHudPreset = loadedActive;
+          });
+        } catch (err) {
+          console.error('[HUD Store] Failed to hydrate presets from localStorage:', err);
+        }
+      },
+
 
       // Server Reconciliation (Phase 2)
       incrementMoveSeq: () => {
