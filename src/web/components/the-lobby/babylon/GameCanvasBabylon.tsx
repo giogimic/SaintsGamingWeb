@@ -652,25 +652,33 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         });
         state.setGameMode('DIALOG');
         return;
-      } else if (entityId.startsWith('creature_')) {
+      } else if (entityId.startsWith('creature_') || entityId.startsWith('mob_') || entityId.startsWith('wild_')) {
         const mapEnt = state.mapEntities.find((e) => e.id === entityId);
         targetName = mapEnt?.name || 'Wild Creature';
         state.setCombatTarget({
           entityId,
           name: targetName,
-          hp: 80,
-          maxHp: 80,
+          hp: (mapEnt as any)?.hp || 80,
+          maxHp: (mapEnt as any)?.maxHp || 80,
           behavior: 'HOSTILE',
         });
         return;
       } else if (state.otherPlayers?.[entityId]) {
-        targetName = state.otherPlayers[entityId].name;
+        targetName = state.otherPlayers[entityId].name || 'Tamer';
+        state.setCombatTarget({
+          entityId,
+          name: targetName,
+          hp: 100,
+          maxHp: 100,
+          behavior: 'CALM',
+        });
+        return;
       }
 
       state.setCombatTarget({
         entityId,
         name: targetName,
-        hp: 100, // TODO: Sync from server
+        hp: 100,
         maxHp: 100,
         behavior: 'CALM'
       });
