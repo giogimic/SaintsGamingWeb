@@ -1,3 +1,7 @@
+## [2.1.169] - 2026-08-13
+### Added
+- **NPC Dialogue Full Keyboard Integration (`dialog-overlay.tsx`)**: Added keyboard controls to dialogue interaction (`Space`, `Enter`, `E` to skip typewriter or advance, `Escape` to close, and numeric keys `1-9` with visual `[N]` badges to select branch options).
+
 ## [2.1.168] - 2026-08-13
 ### Fixed
 - **Multiplayer Socket Automatic Fallback (`index.tsx`)**: Added intelligent connection fallback when the remote Go MMO backend encounters CORS errors or 502 Bad Gateway responses, automatically connecting directly to the same-origin Next.js / Socket.io server without client freeze.

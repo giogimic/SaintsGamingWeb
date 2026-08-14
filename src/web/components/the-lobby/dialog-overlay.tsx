@@ -52,8 +52,50 @@ export default function DialogOverlay() {
     if (isTyping) {
       setDisplayedText(currentText);
       setIsTyping(false);
+    } else if (!activeDialog?.options || activeDialog.options.length === 0) {
+      handleClose();
     }
   };
+
+  // Keyboard navigation for dialogue (Space, Enter, E, 1-9, Escape)
+  useEffect(() => {
+    if (!activeDialog) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+
+      if (isTyping) {
+        if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'e') {
+          e.preventDefault();
+          skipTypewriter();
+        }
+        return;
+      }
+
+      if (!activeDialog.options || activeDialog.options.length === 0) {
+        if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'e') {
+          e.preventDefault();
+          handleClose();
+        }
+      } else {
+        const optionIdx = parseInt(e.key) - 1;
+        if (optionIdx >= 0 && optionIdx < activeDialog.options.length) {
+          e.preventDefault();
+          handleOptionClick(activeDialog.options[optionIdx]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeDialog, isTyping, currentText]);
 
   const handleOptionClick = (opt: any) => {
     if (!emitSocketEvent) {
@@ -128,12 +170,17 @@ export default function DialogOverlay() {
                       e.stopPropagation();
                       handleOptionClick(opt);
                     }}
-                    className="group relative w-full rounded-md border border-lobby-border bg-black/30 px-4 py-2 text-left text-sm font-medium text-lobby-mist transition-all duration-200 hover:border-lobby-film/50 hover:bg-lobby-film/10"
+                    className="group relative w-full flex items-center justify-between rounded-md border border-lobby-border bg-black/30 px-4 py-2 text-left text-sm font-medium text-lobby-mist transition-all duration-200 hover:border-lobby-film/50 hover:bg-lobby-film/10"
                   >
-                    <span className="absolute left-2 text-lobby-soul opacity-0 transition-opacity group-hover:opacity-100">
-                      &gt;
+                    <span className="flex items-center gap-2">
+                      <span className="text-lobby-soul opacity-0 transition-opacity group-hover:opacity-100">
+                        &gt;
+                      </span>
+                      <span>{opt.label}</span>
                     </span>
-                    <span className="transition-all group-hover:pl-4">{opt.label}</span>
+                    <span className="text-[10px] font-mono text-lobby-ash px-1.5 py-0.5 rounded bg-white/5 border border-white/5">
+                      [{i + 1}]
+                    </span>
                   </button>
                 ))}
               </div>
