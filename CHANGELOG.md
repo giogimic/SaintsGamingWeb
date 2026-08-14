@@ -1,3 +1,7 @@
+## [2.1.205] - 2026-08-14
+### Added
+- **MMO Minimap Radar Co-Op Party Highlighting (`MiniMapRadar.tsx`)**: Added distinctive cyan double-ring highlights for party teammates on the radar screen and resolved active Studio map names during map editing/playtest sessions.
+
 ## [2.1.204] - 2026-08-14
 ### Added
 - **MMO Multi-Entity Target Picking & Resolution (`GameCanvasBabylon.tsx`)**: Unified target identification across `creature_`, `mob_`, `wild_`, and online multiplayer peer sockets, providing accurate HP initialization and behavior states on mesh click.
