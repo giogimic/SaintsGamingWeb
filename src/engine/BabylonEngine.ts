@@ -568,14 +568,14 @@ export class BabylonEngine {
         if (!state) return;
 
         // 1. Movement Interpolation
-        if (state.isEditor) {
+        const dist = Vector3.Distance(mesh.position, state.targetPos);
+        if (state.isEditor && !state.isPlayer && !state.isCreature) {
           mesh.position = state.targetPos;
         } else {
-          const dist = Vector3.Distance(mesh.position, state.targetPos);
           if (dist > 0.005) {
-            // Speed = 4 tiles per second (250ms per tile to match GameCanvasBabylon setTimeout)
-            // If distance is large (> 1.5 tiles), rubber-band rapidly at 3x speed
-            const speed = dist > 1.5 ? 12.0 : 4.0; 
+            // Speed = 4.5 tiles per second
+            // If distance is large (> 1.5 tiles), catch up faster
+            const speed = dist > 1.5 ? 12.0 : 4.5; 
             const moveStep = speed * deltaTime;
             if (moveStep >= dist) {
               mesh.position = state.targetPos;
@@ -601,7 +601,9 @@ export class BabylonEngine {
             const dir = state.direction || 'down';
             const rowIdx = config.directions[dir] ?? config.directions.down;
             let col = config.idleFrame;
-            if (state.isMoving) {
+            // Animate walking if moving flag is true OR if the mesh is still actively interpolating to targetPos
+            const isEntityWalking = state.isMoving || dist > 0.05;
+            if (isEntityWalking) {
               state.animTime += deltaTime * config.walkSpeed;
               const frameSeq = config.walkCycle;
               col = frameSeq[Math.floor(state.animTime) % frameSeq.length];

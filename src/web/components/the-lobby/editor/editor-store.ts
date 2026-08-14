@@ -136,7 +136,7 @@ interface EditorState {
   activeLogicTileId: number;
   activeLayerIdx: number;
   brushRadius: number;
-  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate';
   activePrefabId: string | null;
   prefabs: any[];
   selectionStart: { r: number; c: number } | null;
@@ -182,7 +182,7 @@ interface EditorState {
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
-  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab') => void;
+  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
   setSelectionStart: (tile: { r: number; c: number } | null) => void;

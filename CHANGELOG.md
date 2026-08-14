@@ -1,3 +1,9 @@
+## [2.1.212] - 2026-08-14
+### Fixed
+- **Multiplayer Movement & Walking Animation Synchronization (`BabylonEngine.ts`, `engine.go`)**: Restored smooth continuous position interpolation and walking animation cycling for online players, ensuring other players do not snap or appear frozen in place. Expanded Go MMO `EvPlayerMoved` broadcast directly to map instances.
+- **Continuous Map Edge Transitions & Warp Gates (`GameCanvasBabylon.tsx`)**: Removed restrictive map-locking checks on edge connections (North, South, East, West) and warp gates, enabling seamless transition across world maps with normalized and clamped destination spawn coordinates.
+- **Studio Warp Gate Placement Tool & Manager (`StudioPaintHud.tsx`, `WorldBuilderPanel.tsx`, `editor-store.ts`)**: Added dedicated `Gate` tool button (`DoorOpen` icon) in Studio quick tools and a comprehensive Warp Gates & Edge Connections manager in World Builder with 1-click tile placement, coordinate jumping, and gate editing.
+
 ## [2.1.211] - 2026-08-14
 ### Fixed
 - **MMO Turn-Based Battle Payload Normalization (`index.tsx`)**: Normalized `battle_started` and `battle_update` socket payloads to ensure `TurnBattleOverlay` always receives valid creature instances (`wildCreature`, `playerCreature`), phase transitions, combat logging, and HP synchronizations across wild encounters, trainer battles, and player PvP duels.
