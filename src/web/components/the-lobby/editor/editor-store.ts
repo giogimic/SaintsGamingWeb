@@ -560,13 +560,19 @@ export const useEditorStore = create<EditorState>()(
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
         }),
 
-      openPanel: (id) =>
+      openPanel: (id) => {
         set((state) => {
-          state.panels[id].isOpen = true;
-          state.highestZIndex += 1;
-          state.panels[id].zIndex = state.highestZIndex;
-          state.activePanel = id;
-        }),
+          if (state.panels[id]) {
+            state.panels[id].isOpen = true;
+            state.highestZIndex += 1;
+            state.panels[id].zIndex = state.highestZIndex;
+            state.activePanel = id;
+          }
+        });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('studio_open_dock', { detail: { panelId: id } }));
+        }
+      },
 
       closePanel: (id) =>
         set((state) => {
