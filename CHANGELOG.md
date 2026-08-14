@@ -1,3 +1,7 @@
+## [2.1.194] - 2026-08-14
+### Added
+- **MMO Quest Journal & Objectives Presentation (`quest-log-overlay.tsx`)**: Upgraded Quest Log Overlay to support custom campaign tasks and dynamic Studio quests without omission, rendering granular objective checkpoints with target counters and flexible rewards calculation.
+
 ## [2.1.193] - 2026-08-14
 ### Added
 - **Studio Map Diagnostics & Spawner Validator (`StudioProblemsPanel.tsx`)**: Extended map problem scanning to include encounter & monster spawner collision checks (flagging solid tile overlap and out-of-bounds placements), styled `SPAWN` badge category tags, and introduced a manual "Scan Map" button with animation state.
