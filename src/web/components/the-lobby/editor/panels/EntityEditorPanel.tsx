@@ -177,6 +177,7 @@ export const EntityEditorPanel: React.FC = () => {
       setSaving(false);
       if (res.success && res.npc) {
         liveResync(res.npc, 'replace');
+        useEditorStore.getState().markMapDirty();
         showToast(`Updated ${npcName} — live resync.`);
         await reloadList();
       } else {
@@ -198,6 +199,7 @@ export const EntityEditorPanel: React.FC = () => {
     if (res.success && res.npc) {
       liveResync(res.npc, 'spawn');
       setSelectedId(res.npc.id);
+      useEditorStore.getState().markMapDirty();
       showToast(`Placed ${npcName} on ${mapId} (${res.count} NPCs) — live spawn.`);
       await reloadList();
     } else {
@@ -217,6 +219,7 @@ export const EntityEditorPanel: React.FC = () => {
       if (despawn) {
         useGameStore.getState().emitSocketEvent?.('studio_despawn_npc', despawn);
       }
+      useEditorStore.getState().markMapDirty();
       showToast(`Deleted ${selectedId} — live despawn.`);
       handleNew();
       await reloadList();

@@ -1,3 +1,7 @@
+## [2.1.198] - 2026-08-14
+### Added
+- **Studio Entity & NPC Mutex Dirty State Sync (`EntityEditorPanel.tsx`)**: Synchronized `markMapDirty()` across NPC updates, level placements, and deletions, guaranteeing consistent state tracking between the UI dock and persistent world documents.
+
 ## [2.1.197] - 2026-08-14
 ### Added
 - **Studio World Atlas Dirty State Sync (`WorldAtlasPanel.tsx`)**: Integrated `markMapDirty()` and `clearMapDirty()` across macro grid placement, spawn hub assignment, node deletion, and atlas save workflows.
