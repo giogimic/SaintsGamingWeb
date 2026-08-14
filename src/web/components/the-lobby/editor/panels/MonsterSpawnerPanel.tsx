@@ -124,6 +124,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
       const res = await updateMapSpawner({ ...payload, spawnerId: selectedId });
       setSaving(false);
       if (res.success && res.spawner) {
+        useEditorStore.getState().markMapDirty();
         showToast(`Updated ${name}. Reload map to apply.`);
         await reloadList();
       } else {
@@ -136,6 +137,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
     setSaving(false);
     if (res.success && res.spawner) {
       setSelectedId(res.spawner.id);
+      useEditorStore.getState().markMapDirty();
       showToast(`Placed ${name} on ${mapId} (${res.count} spawners). Reload map to apply.`);
       await reloadList();
     } else {
@@ -150,6 +152,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
     const res = await deleteMapSpawner({ mapId, spawnerId: selectedId });
     setSaving(false);
     if (res.success) {
+      useEditorStore.getState().markMapDirty();
       showToast(`Deleted ${selectedId}`);
       setSelectedId(null);
       await reloadList();

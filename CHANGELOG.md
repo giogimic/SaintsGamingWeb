@@ -1,3 +1,7 @@
+## [2.1.192] - 2026-08-14
+### Added
+- **Studio Monster Spawner Dirty State Sync (`MonsterSpawnerPanel.tsx`)**: Integrated mapDirty synchronization on spawner placement, mutation, and deletion, ensuring the editor workspace and global level persistence pipeline reflect pending encounter changes.
+
 ## [2.1.191] - 2026-08-14
 ### Added
 - **MMO Hotbar Consumable & Potion Action Pipeline (`hotbar.tsx`)**: Wired slot action handling for item slots (slot 5), automatically scanning player inventory for usable potions/consumables, applying health modifications, consuming inventory units, and initiating item cooldowns.
