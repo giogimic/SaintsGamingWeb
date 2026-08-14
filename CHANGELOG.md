@@ -1,3 +1,7 @@
+## [2.1.202] - 2026-08-14
+### Added
+- **MMO Peer Presence Targeting & Quick Action Bar (`PeerPresenceHud.tsx`, `target-frame.tsx`)**: Made peer presence hud tamer name tags interactive to rapidly target nearby players, integrated ping latency metrics, and equipped `TargetFrame` with one-click party invite and whisper triggers when targeting players.
+
 ## [2.1.201] - 2026-08-14
 ### Added
 - **MMO Game Chat Slash Commands & Teleportation (`GameChat.tsx`)**: Expanded game chat command processing to include `/invite [player]`, `/p invite`, `/help`, `/commands`, and `/tp [player]` moderator navigation directly within the chat console.

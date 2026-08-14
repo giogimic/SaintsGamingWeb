@@ -2,13 +2,14 @@
 
 import React from 'react';
 import { useGameStore } from './store';
-import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare } from 'lucide-react';
+import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare, UserPlus } from 'lucide-react';
 import { GamePanelShell } from './ui/GamePanelShell';
 
 export default function TargetFrame() {
   const combatTarget = useGameStore(state => state.combatTarget);
   const setCombatTarget = useGameStore(state => state.setCombatTarget);
   const otherPlayers = useGameStore(state => state.otherPlayers);
+  const showToast = useGameStore(state => state.showToast);
   
   if (!combatTarget) return null;
 
@@ -17,6 +18,28 @@ export default function TargetFrame() {
   const isPlayer = !!(otherPlayers && otherPlayers[target.entityId]);
   const isCreature = target.entityId.startsWith('creature_') || target.entityId.startsWith('mob_');
   const isNpc = target.entityId.startsWith('npc_');
+
+  const handlePartyInvite = () => {
+    if (!target.name) return;
+    const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+    emitSocketEvent?.('party_invite_send', { targetName: target.name });
+    showToast(`Sent party invitation to ${target.name}!`);
+  };
+
+  const handleWhisper = () => {
+    if (!target.name) return;
+    window.dispatchEvent(
+      new CustomEvent('game_chat_msg', {
+        detail: {
+          id: Date.now().toString(),
+          sender: 'System',
+          text: `Press Enter to chat: /w ${target.name} [message]`,
+          timestamp: Date.now(),
+          type: 'SYSTEM',
+        },
+      })
+    );
+  };
 
   return (
     <div className="pointer-events-none flex flex-col items-center" data-testid="target-frame">
@@ -91,6 +114,25 @@ export default function TargetFrame() {
         {target.isCasting && target.castName && (
           <div className="mt-1.5 text-[10px] text-orange-400 font-mono text-center animate-pulse uppercase tracking-widest font-bold">
             [{target.castName}]
+          </div>
+        )}
+
+        {isPlayer && (
+          <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-cyan-900/40 justify-end">
+            <button
+              onClick={handlePartyInvite}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+              title={`Invite ${target.name} to Party`}
+            >
+              <UserPlus className="w-3 h-3" /> Invite
+            </button>
+            <button
+              onClick={handleWhisper}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-700/60 text-purple-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
+              title={`Whisper ${target.name}`}
+            >
+              <MessageSquare className="w-3 h-3" /> Whisper
+            </button>
           </div>
         )}
       </GamePanelShell>
