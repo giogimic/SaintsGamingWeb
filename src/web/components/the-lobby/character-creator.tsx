@@ -71,6 +71,7 @@ type DbHero = {
   startingMap?: string;
   startingX?: number;
   startingY?: number;
+  startingInventory?: string | null;
 };
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
@@ -257,9 +258,20 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       maxHp: hpBase + hpFromSkills,
       credits: 1000,
       // Server capture uses Prisma inventory (Guide grant on quest accept). Client bag hint only.
-      inventory: isSpyder
-        ? { patch_kit: 5, film_standard: 5, soul_camera: 1 }
-        : { patch_kit: 5 },
+      inventory: (() => {
+        const base = isSpyder
+          ? { patch_kit: 5, film_standard: 5, soul_camera: 1 }
+          : { patch_kit: 5 };
+        let custom: Record<string, number> = {};
+        if (hero?.startingInventory) {
+          try {
+            custom = typeof hero.startingInventory === 'string'
+              ? JSON.parse(hero.startingInventory)
+              : hero.startingInventory;
+          } catch {}
+        }
+        return { ...base, ...custom };
+      })(),
       skills: initialSkills,
       classStats: sheet,
       equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
