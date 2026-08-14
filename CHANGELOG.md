@@ -1,3 +1,8 @@
+## [2.1.176] - 2026-08-14
+### Fixed
+- **Full-Screen Viewport Edge-to-Edge (`app/(main)/lobby/page.tsx`, `app/(main)/studio/page.tsx`)**: Upgraded Lobby and Studio viewport containers to `fixed inset-0 w-screen h-screen z-50`, eliminating empty bottom space, navbar padding offsets, and parent layout constraints for an immersive desktop MMO presentation.
+- **World Atlas Bi-Directional Synchronization (`app/api/world/atlas/route.ts`)**: Enhanced World Atlas GET/POST handlers to prioritize newest saved layouts across `WorldAtlas` table and `SiteSetting` storage with dev-mode creator persistence.
+
 ## [2.1.175] - 2026-08-14
 ### Changed
 - **WebGL Chunk Mesh Initialization (`BabylonEngine.ts`)**: Cleaned up empty array vertex buffer initialization on chunk mesh creation to eliminate Babylon.js 9+ console vertex warnings.
