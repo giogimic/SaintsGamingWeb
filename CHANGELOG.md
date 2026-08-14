@@ -1,3 +1,7 @@
+## [2.1.206] - 2026-08-14
+### Added
+- **MMO Real-Time Multiplayer PvP & Monster Combat Calculations (`combat.ts`, `combat.test.ts`)**: Added `calculateCombatHitDamage` featuring critical strikes, diminishing mitigation curves, damage variance, and full dynamic equipment scanning.
+
 ## [2.1.205] - 2026-08-14
 ### Added
 - **MMO Minimap Radar Co-Op Party Highlighting (`MiniMapRadar.tsx`)**: Added distinctive cyan double-ring highlights for party teammates on the radar screen and resolved active Studio map names during map editing/playtest sessions.
