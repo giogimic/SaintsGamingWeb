@@ -1,3 +1,7 @@
+## [2.1.188] - 2026-08-14
+### Added
+- **Studio Quick Dock Panel Complete Matrix (`StudioEditorShell.tsx`)**: Added dedicated `spawner` (Monster Spawner) and `problems` (Map Diagnostics) dock buttons to the bottom Studio launch strip, with intelligent left/right dock column target routing.
+
 ## [2.1.187] - 2026-08-14
 ### Added
 - **Studio Status Bar Save Dispatch (`StudioStatusBar.tsx`)**: Bound the bottom status bar Save action directly to `STUDIO_TRIGGER_SAVE_MAP_EVENT`, enabling one-click map saves and Go MMO live reloading from the status bar.
