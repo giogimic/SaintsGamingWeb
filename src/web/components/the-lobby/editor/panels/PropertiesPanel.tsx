@@ -49,6 +49,7 @@ export const PropertiesPanel: React.FC = () => {
   const [showAdvancedJson, setShowAdvancedJson] = useState(false);
 
   const [warpTarget, setWarpTarget] = useState('DEMO_SANDBOX');
+  const [warpCategory, setWarpCategory] = useState<'ATLAS_NORTH' | 'ATLAS_EAST' | 'ATLAS_SOUTH' | 'ATLAS_WEST' | 'DUNGEON' | 'RAID' | 'EVENT' | 'MINE' | 'DEEP_FOREST' | 'PORTAL' | 'CUSTOM'>('CUSTOM');
   const [warpSpawnX, setWarpSpawnX] = useState(14);
   const [warpSpawnY, setWarpSpawnY] = useState(15);
 
@@ -135,22 +136,37 @@ export const PropertiesPanel: React.FC = () => {
     }
     const x = clickedTile.c;
     const y = clickedTile.r;
+
+    // Determine appropriate logic tile ID based on gate category
+    let tileBrush = 3;
+    if (warpCategory === 'ATLAS_NORTH') tileBrush = 14;
+    else if (warpCategory === 'ATLAS_EAST') tileBrush = 15;
+    else if (warpCategory === 'ATLAS_SOUTH') tileBrush = 16;
+    else if (warpCategory === 'ATLAS_WEST') tileBrush = 17;
+    else if (warpCategory === 'DUNGEON') tileBrush = 18;
+    else if (warpCategory === 'RAID') tileBrush = 19;
+    else if (warpCategory === 'EVENT') tileBrush = 20;
+    else if (warpCategory === 'MINE') tileBrush = 21;
+    else if (warpCategory === 'DEEP_FOREST') tileBrush = 22;
+    else if (warpCategory === 'PORTAL') tileBrush = 23;
+
     const gate = {
       id: `gate_${x}_${y}`,
       position: { x, y },
       targetMapId: warpTarget.trim().toUpperCase() || 'DEMO_SANDBOX',
       spawnPoint: { x: warpSpawnX, y: warpSpawnY },
+      category: warpCategory,
     };
     const nextGates = upsertWarpGate(currentMapData.gates, gate);
     const nextGrid = (currentMapData.grid || []).map((row: number[], ri: number) =>
-      row.map((cell: number, ci: number) => (ri === y && ci === x ? 3 : cell))
+      row.map((cell: number, ci: number) => (ri === y && ci === x ? tileBrush : cell))
     );
     const next = { ...currentMapData, gates: nextGates, grid: nextGrid };
     useGameStore.setState({ activeMapData: next });
     setLayer(-1);
-    setBrush(3);
+    setBrush(tileBrush);
     useEditorStore.getState().markMapDirty();
-    showToast(`Warp @ (${x},${y}) → ${gate.targetMapId} — Save Map to persist`);
+    showToast(`Placed ${warpCategory} Gate @ (${x},${y}) → ${gate.targetMapId}`);
   };
 
   const handleRemoveWarp = () => {
@@ -309,6 +325,27 @@ export const PropertiesPanel: React.FC = () => {
             <span className="italic">none — click map</span>
           )}
         </div>
+        <div className="space-y-1">
+          <label className="block text-[10px] text-slate-400">Gate Type / Category</label>
+          <select
+            value={warpCategory}
+            onChange={(e) => setWarpCategory(e.target.value as any)}
+            className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-slate-200 text-[10px]"
+          >
+            <option value="CUSTOM">Custom Warp (Classic)</option>
+            <option value="ATLAS_NORTH">🧭 Atlas North Gate (Northern Map Boundary)</option>
+            <option value="ATLAS_EAST">🧭 Atlas East Gate (Eastern Map Boundary)</option>
+            <option value="ATLAS_SOUTH">🧭 Atlas South Gate (Southern Map Boundary)</option>
+            <option value="ATLAS_WEST">🧭 Atlas West Gate (Western Map Boundary)</option>
+            <option value="DUNGEON">🏰 Dungeon Gate (Instanced / Open)</option>
+            <option value="RAID">⚔️ Raid Gate (High-Tier Boss Raid)</option>
+            <option value="EVENT">🎉 Event Gate (Seasonal / Community)</option>
+            <option value="MINE">⛏️ Mine Entrance Gate (Shafts & Caves)</option>
+            <option value="DEEP_FOREST">🌲 Deep Forest Gate (Wilderness Zone)</option>
+            <option value="PORTAL">🌀 Mystic Realm Portal</option>
+          </select>
+        </div>
+
         <label className="block text-[10px] text-slate-400">Target map id</label>
         <input
           type="text"
