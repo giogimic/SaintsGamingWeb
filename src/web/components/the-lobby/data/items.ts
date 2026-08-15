@@ -272,6 +272,12 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'abyssal_lich_vestment': { id: 'abyssal_lich_vestment', name: 'Abyssal Lich Sovereign Vestment', description: 'Ethereal robe woven with tortured wraith fibers granting massive necrotic critical damage.', type: 'CHEST', value: 48000, reqSkill: 'Necromancy', reqLevel: 85, stats: { atk: 45, def: 35, hp: 120 } },
   'celestial_reaper_death_scythe': { id: 'celestial_reaper_death_scythe', name: 'Celestial Reaper Death Overlord Scythe', description: 'Mythic starmetal war scythe harvesting cosmic souls, commanding endless undead legions with instant execution surges.', type: 'WEAPON', value: 120000, reqSkill: 'Necromancy', reqLevel: 99, stats: { atk: 98, def: 30, hp: 180 } },
 
+  // Global Mastery & Max Proficiency Achievements (All 27 Skills Capstones)
+  'cape_of_max': { id: 'cape_of_max', name: 'Max Cape of the Grandmaster', description: 'Prestigious mythic cloak awarded to champions who have maxed all 27 skill proficiencies. Grants teleports to the Max Sanctum and retains all 27 skill cape perks.', type: 'CHEST', value: 2700000, stats: { atk: 110, def: 110, hp: 450 } },
+  'hood_of_max': { id: 'hood_of_max', name: 'Max Hood of the Grandmaster', description: 'Cowl woven from threads of pure cosmic mastery, matching the Max Cape.', type: 'HEAD', value: 990000, stats: { atk: 65, def: 65, hp: 200 } },
+  'master_totem_relic': { id: 'master_totem_relic', name: 'Sanctum Master Totem Relic', description: 'Sacred relic placed upon the Sanctum Totem pedestal granting permanent +10% bonus XP across all 27 skills.', type: 'MATERIAL', value: 5000000 },
+  'completionist_cape': { id: 'completionist_cape', name: 'Grandmaster Completionist Cape', description: 'Transcendent starlight cloak bestowed only upon players who have unlocked all 270 battlepass reward tiers and achieved true 100% world completion.', type: 'CHEST', value: 10000000, stats: { atk: 150, def: 150, hp: 600 } },
+
   // Equipment - Melee Weapons (Attack Skill Tier Progression)
   'bronze_sword': { id: 'bronze_sword', name: 'Bronze Sword', description: 'A basic melee weapon forged from bronze.', type: 'WEAPON', value: 150, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 5 } },
   'bronze_dagger': { id: 'bronze_dagger', name: 'Bronze Dagger', description: 'A lightweight fast bronze stabbing dagger.', type: 'WEAPON', value: 80, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 3 } },

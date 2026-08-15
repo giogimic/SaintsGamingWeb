@@ -1,3 +1,11 @@
+## [2.1.264] - 2026-08-15
+### Added & Improved
+- **Global Extras 1/7: Max Cape of the Grandmaster & Master Totem System (`skillTypings.ts`, `items.ts`, `skills-overlay.tsx`)**:
+  - Implemented `ALL_SKILL_SLUGS` constant uniting all 27 skill proficiencies across Combat (9), Gathering (5), Artisan (8), and Support (5).
+  - Added mathematical Total Level & Total XP calculator helpers (`calculateTotalLevel`, `calculateTotalXp`, `isMaxCapeEligible`, `getMaxProgress`).
+  - Added Grandmaster Capstones to `ITEM_DB`: `Max Cape of the Grandmaster`, `Max Hood of the Grandmaster`, `Sanctum Master Totem Relic` (+10% global XP across all 27 skills), and `Grandmaster Completionist Cape` (all 270 battlepass reward tiers).
+  - Enhanced Lobby Skills Overlay with a live animated Max Cape & Master Totem progression bar, percentage gauge, maxed skill counter, and dynamic `👑 MAXED GRANDMASTER` crown badge.
+
 ## [2.1.263] - 2026-08-15
 ### Added & Improved
 - **Skill 27/27: Necromancy Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
