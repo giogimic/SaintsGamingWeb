@@ -1,3 +1,17 @@
+## [2.1.218] - 2026-08-15
+### Added & Improved
+- **Saints Buddy Battles Encounter UI & Type Badging (`TurnBattleOverlay.tsx`)**:
+  - Elevated turn-based creature battle overlay to the unified cyber chamfered HUD standard (`HudPanelShell`).
+  - Added elemental typing badges (Fire, Water, Grass, Electric, Ice, Ground, Wood, Metal) with color-coded power chips and icons.
+  - Implemented creature binding crystal pulse animation with audio feedback (`soundSynth.playCrystalCapture()`).
+  - Added full keyboard shortcut accessibility ([1] FIGHT, [2] BIND CRYSTAL, [3] SWITCH, [4] FLEE, [ESC] BACK).
+- **Hero Battles Overworld ARPG Combat Feedback (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`)**:
+  - Implemented dynamic sprite hit-flash emissive color feedback on damaged monster meshes.
+  - Formatted floating combat text with bold critical strike tags (`! 245 !`), miss notifications (`MISS`), and floating upward alpha fades.
+  - Integrated combat sound synthesis (`soundSynth.playCombatHit()`, `soundSynth.playCriticalHit()`) into real-time attack results.
+- **Audio Synthesizer Expansion (`sound-synth.ts`)**:
+  - Added synthesized WebAudio sound generation for standard combat hits, critical strikes, and creature crystal capture pulses.
+
 ## [2.1.217] - 2026-08-15
 ### Added & Improved
 - **Macro World Atlas & 4-Way Adjacency Transitions (`WorldAtlasPanel.tsx`, `route.ts`, `WorldSimulation.ts`)**:

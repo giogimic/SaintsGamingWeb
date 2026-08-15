@@ -498,6 +498,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         // Also show floating damage text via Babylon Engine
         if (!data.isMiss && data.damage > 0) {
           engineRef.current.renderDamageText(data.targetId, data.damage, data.isCrit);
+          if (data.isCrit) {
+            soundSynth?.playCriticalHit?.();
+          } else {
+            soundSynth?.playCombatHit?.();
+          }
         } else if (data.isMiss) {
           engineRef.current.renderDamageText(data.targetId, "MISS", false);
         }
@@ -961,6 +966,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         // Show damage text slightly delayed to match projectile impact
         setTimeout(() => {
           engine.renderDamageText(data.targetId, data.damage, data.isCrit);
+          if (data.isCrit) {
+            soundSynth?.playCriticalHit?.();
+          } else if (data.damage > 0) {
+            soundSynth?.playCombatHit?.();
+          }
         }, 500);
       }
     };

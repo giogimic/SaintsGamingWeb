@@ -2790,32 +2790,46 @@ private resolveTilePick(
     const targetMesh = this.entityMeshes.get(targetId);
     if (!targetMesh) return;
 
-    // Create a plane for the text
-    const plane = MeshBuilder.CreatePlane(`dmgTxt_${Date.now()}`, { width: 2, height: 1 }, this.scene);
+    // Sprite Hit Flash Effect
+    const originalMat = targetMesh.material as StandardMaterial;
+    if (originalMat && originalMat.emissiveColor) {
+      const prevEmissive = originalMat.emissiveColor.clone();
+      originalMat.emissiveColor = isCrit ? new Color3(1, 0.9, 0.2) : new Color3(1, 0.3, 0.3);
+      setTimeout(() => {
+        if (targetMesh && targetMesh.material) {
+          (targetMesh.material as StandardMaterial).emissiveColor = prevEmissive;
+        }
+      }, 150);
+    }
+
+    // Create a billboard plane for floating combat text
+    const plane = MeshBuilder.CreatePlane(`dmgTxt_${Date.now()}_${Math.random()}`, { width: 2.4, height: 1.2 }, this.scene);
     plane.position = targetMesh.position.clone();
-    plane.position.y += 2.5; // Start above head
-    plane.billboardMode = Mesh.BILLBOARDMODE_ALL; // Always face camera
+    plane.position.y += 2.6; // Position directly above target head
+    plane.billboardMode = Mesh.BILLBOARDMODE_ALL; // Always face orthographic camera
 
     // Create dynamic texture
-    const dt = new DynamicTexture(`dt_${Date.now()}`, { width: 256, height: 128 }, this.scene, false);
+    const dt = new DynamicTexture(`dt_${Date.now()}_${Math.random()}`, { width: 256, height: 128 }, this.scene, false);
     dt.hasAlpha = true;
     
-    const mat = new StandardMaterial(`mat_${Date.now()}`, this.scene);
+    const mat = new StandardMaterial(`mat_${Date.now()}_${Math.random()}`, this.scene);
     mat.diffuseTexture = dt;
     mat.emissiveColor = new Color3(1, 1, 1);
     mat.backFaceCulling = false;
     mat.disableLighting = true;
     plane.material = mat;
 
-    const font = isCrit ? "bold 64px Arial" : "bold 48px Arial";
-    const color = isCrit ? "yellow" : "white";
+    const isMiss = String(damage).toUpperCase() === 'MISS';
+    const textStr = isMiss ? 'MISS' : isCrit ? `! ${damage} !` : String(damage);
+    const font = isCrit ? "900 48px monospace" : isMiss ? "700 36px monospace" : "800 40px monospace";
+    const color = isMiss ? "#94a3b8" : isCrit ? "#facc15" : "#f87171";
     
-    // Draw text
-    dt.drawText(damage.toString(), null, null, font, color, "transparent", true);
+    // Draw text centered on canvas
+    dt.drawText(textStr, null, null, font, color, "transparent", true);
 
-    // Animate: float up and fade out over 1.5s
+    // Animate: float upwards and fade out
     const startTime = performance.now();
-    const durationMs = 1500;
+    const durationMs = isCrit ? 1600 : 1200;
     
     const observer = this.scene.onBeforeRenderObservable.add(() => {
       const progress = (performance.now() - startTime) / durationMs;
@@ -2827,7 +2841,7 @@ private resolveTilePick(
         return;
       }
       
-      plane.position.y += 0.02; // Float up
+      plane.position.y += isCrit ? 0.025 : 0.018; // Float up
       mat.alpha = 1.0 - progress; // Fade out
     });
   }

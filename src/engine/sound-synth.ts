@@ -185,6 +185,89 @@ class SoundSynthEngine {
       // Ignore audio errors
     }
   }
+
+  // Play Combat Hit Strike Sound
+  public playCombatHit() {
+    try {
+      const ctx = this.getContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } catch {
+      // Ignore audio errors
+    }
+  }
+
+  // Play Critical Hit Impact Fanfare
+  public playCriticalHit() {
+    try {
+      const ctx = this.getContext();
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(880, ctx.currentTime);
+      osc1.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.15);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(440, ctx.currentTime);
+      osc2.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.15);
+
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start();
+      osc2.start();
+      osc1.stop(ctx.currentTime + 0.15);
+      osc2.stop(ctx.currentTime + 0.15);
+    } catch {
+      // Ignore audio errors
+    }
+  }
+
+  // Play Creature Crystal Capture Pulse
+  public playCrystalCapture() {
+    try {
+      const ctx = this.getContext();
+      const notes = [587.33, 739.99, 880.00, 1174.66]; // D5, F#5, A5, D6
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+
+        gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.08);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + idx * 0.08 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.2);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(ctx.currentTime + idx * 0.08);
+        osc.stop(ctx.currentTime + idx * 0.08 + 0.2);
+      });
+    } catch {
+      // Ignore audio errors
+    }
+  }
 }
 
 export const soundSynth = new SoundSynthEngine();
