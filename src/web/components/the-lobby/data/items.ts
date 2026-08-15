@@ -205,6 +205,18 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'rune_soul': { id: 'rune_soul', name: 'Soul Transcendence Rune', description: 'Ethereal spirit rune powering god-tier reality-warping incantations.', type: 'MATERIAL', value: 2500, reqSkill: 'Runecrafting', reqLevel: 95, stats: { atk: 60 } },
   'celestial_astral_keystone': { id: 'celestial_astral_keystone', name: 'Celestial Astral Keystone Crown', description: 'Mythic cosmic keystone channeling infinite elemental and catalytic runes simultaneously.', type: 'HEAD', value: 120000, reqSkill: 'Runecrafting', reqLevel: 99, stats: { atk: 75, def: 35, hp: 200 } },
 
+  // Smelted Metal Bars, Forging Tools & Masterwork Armor (Smithing Skill Tier Progression)
+  'bronze_bar': { id: 'bronze_bar', name: 'Smelted Bronze Ingot', description: 'Smelted alloy of copper and tin ore ready for anvil smithing.', type: 'MATERIAL', value: 20, reqSkill: 'Smithing', reqLevel: 1 },
+  'smithing_hammer': { id: 'smithing_hammer', name: 'Tempered Ball-Peen Hammer', description: 'Essential blacksmith tool used on anvils to shape hot metal bars.', type: 'MATERIAL', value: 15, reqSkill: 'Smithing', reqLevel: 1 },
+  'iron_bar': { id: 'iron_bar', name: 'Smelted Iron Ingot', description: 'Purified iron bar smelted in intense blast heat.', type: 'MATERIAL', value: 80, reqSkill: 'Smithing', reqLevel: 15 },
+  'steel_bar': { id: 'steel_bar', name: 'High-Carbon Steel Ingot', description: 'Durable steel alloy smelted from iron ore and coal.', type: 'MATERIAL', value: 250, reqSkill: 'Smithing', reqLevel: 30 },
+  'steel_nails': { id: 'steel_nails', name: 'Forged Steel Structural Nails', description: 'Box of heavy forged nails used in high-grade estate construction.', type: 'MATERIAL', value: 10, reqSkill: 'Smithing', reqLevel: 34 },
+  'mithril_bar': { id: 'mithril_bar', name: 'Azure Mithril Ingot', description: 'Lightweight, ultra-strong azure metal bar for high-tier smithing.', type: 'MATERIAL', value: 700, reqSkill: 'Smithing', reqLevel: 50 },
+  'adamant_bar': { id: 'adamant_bar', name: 'Adamantine Ingot', description: 'Dense emerald-tinted adamantine bar for heavy armor forging.', type: 'MATERIAL', value: 2000, reqSkill: 'Smithing', reqLevel: 70 },
+  'runite_bar': { id: 'runite_bar', name: 'Cyan Runite Ingot', description: 'Precious luminescent runite bar imbued with dense magical alloy.', type: 'MATERIAL', value: 6500, reqSkill: 'Smithing', reqLevel: 85 },
+  'masterwork_alloy_bar': { id: 'masterwork_alloy_bar', name: 'Masterwork Alloy Ingot', description: 'Folded multi-metal bar heated and hammered 1,000 times for supreme resilience.', type: 'MATERIAL', value: 18000, reqSkill: 'Smithing', reqLevel: 92 },
+  'celestial_forgemaster_hammer': { id: 'celestial_forgemaster_hammer', name: 'Celestial Forgemaster Anvil Hammer', description: 'Legendary starmetal warhammer that smites foes with supernova shockwaves while forging flawless masterwork gear.', type: 'WEAPON', value: 120000, reqSkill: 'Smithing', reqLevel: 99, stats: { atk: 85, def: 40, hp: 150 } },
+
   // Equipment - Melee Weapons (Attack Skill Tier Progression)
   'bronze_sword': { id: 'bronze_sword', name: 'Bronze Sword', description: 'A basic melee weapon forged from bronze.', type: 'WEAPON', value: 150, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 5 } },
   'bronze_dagger': { id: 'bronze_dagger', name: 'Bronze Dagger', description: 'A lightweight fast bronze stabbing dagger.', type: 'WEAPON', value: 80, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 3 } },

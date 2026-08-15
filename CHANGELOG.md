@@ -1,3 +1,10 @@
+## [2.1.258] - 2026-08-15
+### Added & Improved
+- **Skill 22/27: Smithing Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete metal bar smelting, forging hammer tools, structural nails, heavy armor plates, blades, masterwork folded alloy ingots, and celestial forgemaster anvil warhammers progression (Smelted Bronze Ingots, Tempered Ball-Peen Hammers, Smelted Iron Ingots, High-Carbon Steel Ingots, Forged Steel Structural Nails, Azure Mithril Ingots, Adamantine Ingots, Cyan Runite Ingots, Masterwork Alloy Ingots, and Celestial Forgemaster Anvil Hammers) with explicit Smithing level requirements (`reqSkill: 'Smithing'`, `reqLevel: number`), faster anvil hammering speeds, extra double-bar smelting chances, and masterwork item stat amplifiers.
+  - Dynamically aggregated metal smelting, anvil hammering, and masterwork alloy folding for the Smithing handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Smithing spanning Lv 10 to Lv 99 (Novice Blacksmith, Master Forgemaster, Colossus Smith titles, Anvil Heavy Strike emote, White-Hot Furnace Hearth, Orbiting Molten Ember Halo, Solar Forge Supernova Corona auras, Heavy Blacksmith Apron cosmetic, and Cape of Smithing).
+
 ## [2.1.257] - 2026-08-15
 ### Added & Improved
 - **Skill 21/27: Runecrafting Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
