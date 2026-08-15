@@ -1,3 +1,10 @@
+## [2.1.248] - 2026-08-15
+### Added & Improved
+- **Skill 12/27: Hunter Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete wildlife tracking traps, critters, pelts, and camouflage suits progression (Standard Bird Snares, Crimson Finch Plumes, Oak Deadfall Rigs, Spotted Kebbit Furs, Spring-Loaded Box Traps, Red Carnivorous Chinchompas, Woodland Ghillie Tunics, Sabretooth Kyatt Pelts, Black Abyssal Chinchompas, and Celestial Solar Phoenix Plumes) with explicit Hunter level requirements (`reqSkill: 'Hunter'`, `reqLevel: number`) and stealth concealment bonuses.
+  - Dynamically aggregated wild critter traps, bird snares, and animal pelts for the Hunter handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Hunter spanning Lv 10 to Lv 99 (Novice Trapper, Wilderness Tracker, Apex Predator titles, Autumn Camo Leaves, Hunting Horn Call, Primal Spirit Beast Halo auras, Camo Ghillie Hood cosmetic, and Cape of Hunter).
+
 ## [2.1.247] - 2026-08-15
 ### Added & Improved
 - **Skill 11/27: Fishing Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
