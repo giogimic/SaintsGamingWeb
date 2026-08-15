@@ -1,3 +1,13 @@
+## [2.1.224] - 2026-08-15
+### Added & Improved
+- **Real-time Combat Action Hotbar (`Hotbar.tsx`)**:
+  - Upgraded to modern `HudPanelShell` cyber slot layout with typing color themes (Damage, Heal, Buff, Utility).
+  - Added smooth SVG cooldown sweeps, numeric countdowns, and WebAudio action synthesis (`soundSynth.playActionSound()`).
+- **On-Screen Campaign Objective Tracker (`quest-tracker-overlay.tsx`)**:
+  - Pinned cyber HUD objective card with multi-stage progress meters, checkmarks, sound-synthesized collapse/expand toggles.
+- **Multiplayer Shard & Operative Presence HUD (`PeerPresenceHud.tsx`)**:
+  - Real-time shard channel telemetry with low-latency live ping indicator and interactive nearby operative target chips.
+
 ## [2.1.223] - 2026-08-15
 ### Added & Improved
 - **Community Achievements & Platform Badges (`achievements-overlay.tsx`)**:
