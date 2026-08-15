@@ -1,3 +1,10 @@
+## [2.1.256] - 2026-08-15
+### Added & Improved
+- **Skill 20/27: Herblore Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete vials of spring water, herb cleaning, secondary catalysts, combat boost potions (Attack, Strength, Defence), energy elixirs, vitality restoration brews, multi-stat overloads, and celestial philosopher ambrosia progression (Vials of Pure Spring Water, Apprentice Attack Draughts, Herbal Antipoison Tonics, Warrior Strength Infusions, Stat Restoration Draughts, Stamina Energy Tonics, Sacred Ranarr Prayer Brews, Super Attack Elixirs, Super Strength Elixirs, Super Defence Fortifications, Sacred Vitality Restorative Brews, Supreme Overload Concoctions, and Celestial Philosopher Ambrosia) with explicit Herblore level requirements (`reqSkill: 'Herblore'`, `reqLevel: number`), potion duration boosts, and combat overheal buffs.
+  - Dynamically aggregated herb cleaning, potion brewing, and alchemical transmutation for the Herblore handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Herblore spanning Lv 10 to Lv 99 (Novice Apothecary, Master Alchemist, Grand Transmuter titles, Pestle & Mortar Grind emote, Emerald Cauldron Mists, Orbiting Potion Flask Halo, Philosopher Stone Corona auras, Apothecary Bandolier cosmetic, and Cape of Herblore).
+
 ## [2.1.255] - 2026-08-15
 ### Added & Improved
 - **Skill 19/27: Fletching Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
