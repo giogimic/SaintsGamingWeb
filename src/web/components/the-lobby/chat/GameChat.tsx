@@ -6,8 +6,9 @@ import { FriendsList } from '@/web/components/messenger/friends-list';
 import { ChatWindow } from '@/web/components/messenger/chat-window';
 import { useMessenger } from '@/web/components/messenger/messenger-provider';
 import { useAuth } from '@/shared/hooks/use-auth';
-import { Radio, Shield, Megaphone, Users, ExternalLink, Hammer, UserX, MapPin, X } from 'lucide-react';
+import { Radio, Shield, Megaphone, Users, ExternalLink, Hammer, UserX, MapPin, X, Send } from 'lucide-react';
 import { HudPanelShell } from '../hud/HudPanelShell';
+import { soundSynth } from '@/engine/sound-synth';
 
 type TabType = 'LOCAL' | 'GLOBAL' | 'PARTY' | 'FRIENDS';
 
@@ -124,6 +125,7 @@ export function GameChat() {
       const match = text.match(/^\/(?:w|whisper)\s+(\S+)\s+(.+)$/i);
       if (match) {
         const [, targetName, whisperBody] = match;
+        soundSynth?.playActionSound?.();
         emitSocketEvent?.('whisper', { toPlayerName: targetName, message: whisperBody });
         setMessages((prev) =>
           [
@@ -205,6 +207,7 @@ export function GameChat() {
       return;
     }
 
+    soundSynth?.playUiClick?.();
     if (activeTab === 'LOCAL') {
       emitSocketEvent?.('chat_message', text);
       useGameStore.getState().setPlayerChat(text);
@@ -544,10 +547,13 @@ export function GameChat() {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setActiveTab(t.id)}
-                    className={`flex-1 rounded py-1 text-[9px] font-mono font-black uppercase tracking-wider transition-all ${
+                    onClick={() => {
+                      soundSynth?.playSelectSound?.();
+                      setActiveTab(t.id);
+                    }}
+                    className={`flex-1 rounded-lg py-1 text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-teal-500/25 text-teal-200 border border-teal-400/50 shadow-inner'
+                        ? 'bg-cyan-950/80 text-cyan-200 border border-cyan-500/50 shadow-inner'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
                     }`}
                   >

@@ -1,3 +1,12 @@
+## [2.1.226] - 2026-08-15
+### Added & Improved
+- **In-Game Comms & Transmissions Channel (`GameChat.tsx`)**:
+  - Upgraded channel tabs (Local, Global, Party, Friends) to cyber chamfered badges with WebAudio sound synthesis on whispers, broadcasts, and channel selection (`soundSynth.playActionSound()`, `soundSynth.playSelectSound()`).
+- **Game Login & Authentication Gateway (`GameLogin.tsx`)**:
+  - Elevate game login with cyber chamfered glass card, subtle backdrop blur, and interactive sound synthesis.
+- **Cinematic Title Screen & Credits Showcase (`GameTitleScreen.tsx`)**:
+  - Elevate action buttons and credits showcase with chamfered geometry, responsive hover sweeps, and sound cues.
+
 ## [2.1.225] - 2026-08-15
 ### Added & Improved
 - **Staff & Admin Floating Controller (`StaffFloatingMenu.tsx`)**:
