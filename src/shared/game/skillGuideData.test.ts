@@ -41,7 +41,15 @@ describe('skillGuideData Registry', () => {
 
     const attackUnlocks = getAllSkillUnlocks('attack');
     expect(attackUnlocks.length).toBeGreaterThan(0);
-    expect(attackUnlocks.some((u) => u.title.includes('Weaponry') || u.title.includes('Slash'))).toBe(true);
+    expect(attackUnlocks.some((u) => u.title.includes('Sword') || u.title.includes('Slash') || u.title.includes('Weaponry'))).toBe(true);
+    expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
+  });
+
+  it('contains complete Attack battlepass tier rewards from Lv 5 to Lv 50', () => {
+    const attackGuide = getSkillGuide('attack')!;
+    expect(attackGuide.battlepassTiers.length).toBe(10);
+    expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
+    expect(attackGuide.battlepassTiers[9].rewardName).toContain('Cape of Attack');
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {

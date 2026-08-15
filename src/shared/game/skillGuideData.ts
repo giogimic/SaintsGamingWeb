@@ -1005,7 +1005,22 @@ export function resolveDynamicSkillUnlocks(slugOrLabel: string): SkillUnlockMile
     }
   }
 
-  // 2. Dynamic Combat abilities
+  // 2. Dynamic Equipment Requirements from ITEM_DB
+  if (ITEM_DB) {
+    for (const item of Object.values(ITEM_DB)) {
+      if (item.reqSkill && (item.reqSkill.toLowerCase() === slug || item.reqSkill === label)) {
+        const statStr = item.stats?.atk ? ` (Atk +${item.stats.atk})` : item.stats?.def ? ` (Def +${item.stats.def})` : '';
+        results.push({
+          level: item.reqLevel || 1,
+          title: item.name,
+          description: `Equip ${item.name}${statStr} — ${item.description}`,
+          type: 'EQUIPMENT',
+        });
+      }
+    }
+  }
+
+  // 3. Dynamic Combat abilities
   if (COMBAT_ABILITIES) {
     for (const ability of Object.values(COMBAT_ABILITIES)) {
       if (!ability) continue;

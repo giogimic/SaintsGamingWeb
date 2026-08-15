@@ -1,3 +1,10 @@
+## [2.1.236] - 2026-08-15
+### Added & Improved
+- **Skill 1/27: Attack Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded full weapon tier progression (Bronze, Iron, Steel, Mithril, Adamant, Rune, Saintly, Celestial) with explicit Attack skill level requirements (`reqSkill: 'Attack'`, `reqLevel: number`) and attack power stats.
+  - Dynamically aggregated equipment unlocks and abilities for the Attack handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Attack (Novice Swordsman, Blademaster, Warmaster titles, Crimson particle auras, and Cape of Attack).
+
 ## [2.1.235] - 2026-08-15
 ### Added & Improved
 - **27-Skill Progression Guide Data & Unlocks Registry (`skillGuideData.ts`)**:
