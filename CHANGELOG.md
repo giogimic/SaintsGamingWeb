@@ -1,3 +1,12 @@
+## [2.1.223] - 2026-08-15
+### Added & Improved
+- **Community Achievements & Platform Badges (`achievements-overlay.tsx`)**:
+  - Upgraded to modern `HudPanelShell` cyber layout with reward preview chips (+Coins & Platform XP) and WebAudio fanfare synthesis on claim.
+- **27-Skill Progression Matrix (`skills-overlay.tsx`)**:
+  - Elevated Skills Matrix to unified cyber HUD standard categorized into Combat, Gathering, Artisan, and Support with XP gauges, hover inspect tooltips, and total level telemetry.
+- **Saints Dex & Animist Codex (`SaintsDexOverlay.tsx`)**:
+  - Implemented elemental affinity filtering, discovered/undiscovered species states, and full combat stat inspect drawer with Pin-to-Profile and Feed Share triggers.
+
 ## [2.1.222] - 2026-08-15
 ### Added & Improved
 - **Party & Co-Op Management Suite (`party-overlay.tsx`)**:
