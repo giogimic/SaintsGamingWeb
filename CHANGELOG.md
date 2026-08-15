@@ -1,3 +1,10 @@
+## [2.1.233] - 2026-08-15
+### Added & Improved
+- **Studio Asset Pack & Resource Browser (`AssetEditor.tsx`)**:
+  - Upgraded asset management suite with pack categorization filters, quick tags, gameplay flags, and WebAudio sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`, `soundSynth.playUiClick()`).
+- **Sprite Browser & Animated Preview Modal (`SpriteBrowser.tsx`)**:
+  - Modernized sprite selection grid with class filters, preview frame controls, and audio cues (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`).
+
 ## [2.1.232] - 2026-08-15
 ### Added & Improved
 - **Studio Omnisearch Fuzzy Command Palette (`StudioOmnisearch.tsx`)**:

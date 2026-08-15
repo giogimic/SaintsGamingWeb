@@ -10,9 +10,11 @@ import {
   Folder,
   CheckSquare,
   Square,
+  Sparkles,
 } from 'lucide-react';
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
+import { soundSynth } from '@/engine/sound-synth';
 
 export interface AssetEditorProps {
   onAssetSelect?: (asset: GameAssetItem) => void;
@@ -79,6 +81,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   };
 
   const toggleSelectAsset = (id: string) => {
+    soundSynth?.playUiClick?.();
     const updated = new Set(selectedAssetIds);
     if (updated.has(id)) {
       updated.delete(id);
@@ -89,6 +92,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   };
 
   const selectAll = () => {
+    soundSynth?.playUiClick?.();
     if (selectedAssetIds.size === assets.length) {
       setSelectedAssetIds(new Set());
     } else {
@@ -99,6 +103,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   const handleAddTag = async () => {
     if (!activeAsset || !newTagInput.trim()) return;
     try {
+      soundSynth?.playActionSound?.();
       const manager = AssetManager.getInstance();
       await manager.addTag(activeAsset.id, newTagInput.trim().toLowerCase());
       setNewTagInput('');
@@ -111,6 +116,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   const handleRemoveTag = async (tagToRemove: string) => {
     if (!activeAsset) return;
     try {
+      soundSynth?.playUiClick?.();
       const manager = AssetManager.getInstance();
       await manager.removeTag(activeAsset.id, tagToRemove);
       void fetchAssets(0, false);
@@ -125,6 +131,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
     const cats = reclassifyCategories.split(',').map((c) => c.trim()).filter(Boolean);
 
     try {
+      soundSynth?.playActionSound?.();
       const manager = AssetManager.getInstance();
       for (const id of idsToReclassify) {
         await manager.reclassifyAsset(id, reclassifyType, cats);
@@ -140,6 +147,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
     if (!activeAsset) return;
     setSavingFlags(true);
     try {
+      soundSynth?.playActionSound?.();
       const manager = AssetManager.getInstance();
       const updated = await manager.updateGameplayFlags(activeAsset.id, { [flag]: value });
       setActiveAsset(updated);
@@ -153,25 +161,28 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-100 font-mono rounded-lg overflow-hidden border border-slate-800">
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-100 font-mono rounded-xl overflow-hidden border border-amber-500/30">
       {/* Top Action Toolbar */}
-      <div className="flex items-center justify-between p-3 bg-[#0b1320] border-b border-slate-800 gap-3">
+      <div className="flex items-center justify-between p-3 bg-[#0b1320] border-b border-amber-500/20 gap-3">
         <div className="flex items-center gap-2 flex-1">
           <div className="relative flex-1 max-w-xs">
-            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-amber-400" />
             <input
               type="text"
               placeholder="Search assets, paths, tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/60 border border-slate-700 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
+              className="w-full bg-black/60 border border-amber-500/30 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400"
             />
           </div>
 
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="bg-black/60 border border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setTypeFilter(e.target.value);
+            }}
+            className="bg-black/60 border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
           >
             <option value="ALL">All Types</option>
             <option value="SPRITE">Sprites (NPC / Player)</option>
@@ -184,9 +195,12 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
 
           <select
             value={packFilter}
-            onChange={(e) => setPackFilter(e.target.value as AssetPackId | 'ALL')}
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setPackFilter(e.target.value as AssetPackId | 'ALL');
+            }}
             title="Approved packs (bible 16 §7)"
-            className="bg-black/60 border border-slate-700 rounded-md px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47]"
+            className="bg-black/60 border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
           >
             <option value="ALL">All packs</option>
             {ASSET_PACKS.map((p) => (
@@ -197,9 +211,15 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
           </select>
 
           {selectedTag && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#050b14] border border-[#806f47]/50 text-[#e2d5b3] rounded text-xs">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-950/60 border border-amber-500/50 text-amber-200 rounded-lg text-xs font-bold">
               Tag: #{selectedTag}
-              <button onClick={() => setSelectedTag(null)} className="hover:text-red-400 font-bold ml-1">
+              <button
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setSelectedTag(null);
+                }}
+                className="hover:text-rose-400 font-bold ml-1 cursor-pointer"
+              >
                 ×
               </button>
             </span>
@@ -209,23 +229,32 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit }: AssetEditorP
         <div className="flex items-center gap-2">
           {selectedAssetIds.size > 0 && (
             <button
-              onClick={() => setReclassifyModalOpen(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded text-xs font-bold transition-all shadow-md"
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setReclassifyModalOpen(true);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Reclassify ({selectedAssetIds.size})
             </button>
           )}
 
-          <div className="flex items-center border border-slate-700 rounded bg-black/40">
+          <div className="flex items-center border border-amber-500/30 rounded-lg bg-black/60 overflow-hidden">
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 ${viewMode === 'grid' ? 'bg-[#806f47] text-white' : 'text-slate-400 hover:text-white'}`}
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setViewMode('grid');
+              }}
+              className={`p-1.5 cursor-pointer ${viewMode === 'grid' ? 'bg-amber-400 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
             >
               <Grid className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 ${viewMode === 'list' ? 'bg-[#806f47] text-white' : 'text-slate-400 hover:text-white'}`}
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setViewMode('list');
+              }}
+              className={`p-1.5 cursor-pointer ${viewMode === 'list' ? 'bg-amber-400 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
             >
               <List className="w-3.5 h-3.5" />
             </button>
