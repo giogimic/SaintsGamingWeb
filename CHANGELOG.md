@@ -1,3 +1,10 @@
+## [2.1.238] - 2026-08-15
+### Added & Improved
+- **Skill 3/27: Defence Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete protective armor & shield tier progression (Bronze, Iron, Steel, Mithril, Adamant, Rune full sets, Saintly Bastion Aegis, Celestial Cosmos Bulwark) with explicit Defence skill level requirements (`reqSkill: 'Defence'`, `reqLevel: number`) and defense mitigation stats.
+  - Dynamically aggregated shields, full helms, platebodies, and platelegs for the Defence handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Defence (Shieldbearer, Iron Wall Sentinel, Immortal Bastion titles, Sapphire Barrier and Prismatic Ward dome auras, and Cape of Defence).
+
 ## [2.1.237] - 2026-08-15
 ### Added & Improved
 - **Skill 2/27: Strength Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:

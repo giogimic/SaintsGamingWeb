@@ -69,11 +69,42 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   // Equipment - Ranged Weapons
   'wooden_bow': { id: 'wooden_bow', name: 'Wooden Bow', description: 'A basic ranged weapon.', type: 'WEAPON', value: 100, reqSkill: 'Ranged', reqLevel: 1, stats: { atk: 4 } },
 
-  // Equipment - Armor (Defence Skill Tier Progression)
-  'bronze_helm': { id: 'bronze_helm', name: 'Bronze Helm', description: 'Basic head protection.', type: 'HEAD', value: 80, reqSkill: 'Defence', reqLevel: 1, stats: { def: 2 } },
-  'bronze_chest': { id: 'bronze_chest', name: 'Bronze Platebody', description: 'Basic chest protection.', type: 'CHEST', value: 200, reqSkill: 'Defence', reqLevel: 1, stats: { def: 5 } },
-  'bronze_legs': { id: 'bronze_legs', name: 'Bronze Platelegs', description: 'Basic leg protection.', type: 'LEGS', value: 120, reqSkill: 'Defence', reqLevel: 1, stats: { def: 3 } },
-  'mithril_chest': { id: 'mithril_chest', name: 'Mithril Platebody', description: 'Superior mithril chest protection.', type: 'CHEST', value: 1800, reqSkill: 'Defence', reqLevel: 25, stats: { def: 18 } },
+  // Equipment - Armor & Shields (Defence Skill Tier Progression)
+  'bronze_shield': { id: 'bronze_shield', name: 'Bronze Kiteshield', description: 'Basic bronze shield providing reliable frontal deflection.', type: 'LEGS', value: 100, reqSkill: 'Defence', reqLevel: 1, stats: { def: 4 } },
+  'bronze_helm': { id: 'bronze_helm', name: 'Bronze Full Helm', description: 'Basic bronze head protection.', type: 'HEAD', value: 80, reqSkill: 'Defence', reqLevel: 1, stats: { def: 2 } },
+  'bronze_chest': { id: 'bronze_chest', name: 'Bronze Platebody', description: 'Basic hammered bronze chest protection.', type: 'CHEST', value: 200, reqSkill: 'Defence', reqLevel: 1, stats: { def: 5 } },
+  'bronze_legs': { id: 'bronze_legs', name: 'Bronze Platelegs', description: 'Basic bronze leg protection.', type: 'LEGS', value: 120, reqSkill: 'Defence', reqLevel: 1, stats: { def: 3 } },
+
+  'iron_shield': { id: 'iron_shield', name: 'Iron Kiteshield', description: 'Sturdy iron shield capable of absorbing heavy strikes.', type: 'LEGS', value: 300, reqSkill: 'Defence', reqLevel: 10, stats: { def: 8 } },
+  'iron_helm': { id: 'iron_helm', name: 'Iron Full Helm', description: 'Riveted iron helmet with protective face visor.', type: 'HEAD', value: 250, reqSkill: 'Defence', reqLevel: 10, stats: { def: 5 } },
+  'iron_chest': { id: 'iron_chest', name: 'Iron Platebody', description: 'Interlocking iron cuirass with solid rib reinforcement.', type: 'CHEST', value: 550, reqSkill: 'Defence', reqLevel: 10, stats: { def: 12 } },
+  'iron_legs': { id: 'iron_legs', name: 'Iron Platelegs', description: 'Heavy iron greaves and cuisses.', type: 'LEGS', value: 350, reqSkill: 'Defence', reqLevel: 10, stats: { def: 8 } },
+
+  'steel_shield': { id: 'steel_shield', name: 'Steel Tower Shield', description: 'Reinforced carbon steel tower shield for total body warding.', type: 'LEGS', value: 700, reqSkill: 'Defence', reqLevel: 20, stats: { def: 14 } },
+  'steel_helm': { id: 'steel_helm', name: 'Steel Full Helm', description: 'Tempered steel helmet deflecting crushing blows.', type: 'HEAD', value: 600, reqSkill: 'Defence', reqLevel: 20, stats: { def: 9 } },
+  'steel_chest': { id: 'steel_chest', name: 'Steel Platebody', description: 'Tempered steel breastplate offering balanced physical deflection.', type: 'CHEST', value: 1200, reqSkill: 'Defence', reqLevel: 20, stats: { def: 20 } },
+  'steel_legs': { id: 'steel_legs', name: 'Steel Platelegs', description: 'Articulated steel leg armor allowing full combat mobility.', type: 'LEGS', value: 850, reqSkill: 'Defence', reqLevel: 20, stats: { def: 14 } },
+
+  'mithril_shield': { id: 'mithril_shield', name: 'Mithril Kiteshield', description: 'Lightweight azure mithril shield granting rapid parry responses.', type: 'LEGS', value: 1400, reqSkill: 'Defence', reqLevel: 25, stats: { def: 20 } },
+  'mithril_helm': { id: 'mithril_helm', name: 'Mithril Full Helm', description: 'Gleaming blue mithril helmet with reinforced crown.', type: 'HEAD', value: 1100, reqSkill: 'Defence', reqLevel: 25, stats: { def: 14 } },
+  'mithril_chest': { id: 'mithril_chest', name: 'Mithril Platebody', description: 'Superior mithril chestplate balancing featherweight agility with high defense.', type: 'CHEST', value: 2400, reqSkill: 'Defence', reqLevel: 25, stats: { def: 28 } },
+  'mithril_legs': { id: 'mithril_legs', name: 'Mithril Platelegs', description: 'Resilient azure platelegs forged from refined mithril.', type: 'LEGS', value: 1600, reqSkill: 'Defence', reqLevel: 25, stats: { def: 20 } },
+
+  'adamant_shield': { id: 'adamant_shield', name: 'Adamant Tower Shield', description: 'Impenetrable emerald-hued adamantine tower shield.', type: 'LEGS', value: 3200, reqSkill: 'Defence', reqLevel: 35, stats: { def: 30 } },
+  'adamant_helm': { id: 'adamant_helm', name: 'Adamant Full Helm', description: 'Heavy adamantine visor designed for front-line siege warfare.', type: 'HEAD', value: 2600, reqSkill: 'Defence', reqLevel: 35, stats: { def: 22 } },
+  'adamant_chest': { id: 'adamant_chest', name: 'Adamant Platebody', description: 'Dense adamantine platebody capable of turning aside ballista bolts.', type: 'CHEST', value: 5500, reqSkill: 'Defence', reqLevel: 35, stats: { def: 40 } },
+  'adamant_legs': { id: 'adamant_legs', name: 'Adamant Platelegs', description: 'Monolithic adamantine greaves providing unshakeable stability.', type: 'LEGS', value: 3800, reqSkill: 'Defence', reqLevel: 35, stats: { def: 30 } },
+
+  'rune_shield': { id: 'rune_shield', name: 'Rune Kiteshield', description: 'Legendary cyan runite kiteshield engraved with protection wards.', type: 'LEGS', value: 7500, reqSkill: 'Defence', reqLevel: 40, stats: { def: 42 } },
+  'rune_helm': { id: 'rune_helm', name: 'Rune Full Helm', description: 'Masterwork runite full helm radiating faint defensive wards.', type: 'HEAD', value: 6200, reqSkill: 'Defence', reqLevel: 40, stats: { def: 32 } },
+  'rune_chest': { id: 'rune_chest', name: 'Rune Platebody', description: 'Immaculate runite cuirass forged by master armorsmiths.', type: 'CHEST', value: 12000, reqSkill: 'Defence', reqLevel: 40, stats: { def: 55 } },
+  'rune_legs': { id: 'rune_legs', name: 'Rune Platelegs', description: 'Runite platelegs providing top-tier battle resistance.', type: 'LEGS', value: 8500, reqSkill: 'Defence', reqLevel: 40, stats: { def: 42 } },
+
+  'saintly_aegis': { id: 'saintly_aegis', name: 'Saintly Bastion Aegis', description: 'Consecrated golden bastion shield that emanates holy defensive warding.', type: 'LEGS', value: 22000, reqSkill: 'Defence', reqLevel: 45, stats: { def: 60, hp: 40 } },
+  'saintly_plate': { id: 'saintly_plate', name: 'Saintly Radiant Cuirass', description: 'Divine golden armor forged in sacred fires, blessing the wearer with immense resilience.', type: 'CHEST', value: 35000, reqSkill: 'Defence', reqLevel: 45, stats: { def: 75, hp: 60 } },
+
+  'celestial_bulwark': { id: 'celestial_bulwark', name: 'Celestial Cosmos Bulwark', description: 'Transcendent starmetal greatshield reflecting hostile reality itself.', type: 'LEGS', value: 60000, reqSkill: 'Defence', reqLevel: 50, stats: { def: 85, hp: 80 } },
+  'celestial_plate': { id: 'celestial_plate', name: 'Celestial Vanguard Fortress Plate', description: 'Ultimate armor forged from dying stars, rendering the wearer an immovable bastion.', type: 'CHEST', value: 95000, reqSkill: 'Defence', reqLevel: 50, stats: { def: 110, hp: 100 } },
 
   // Creature Capturing & Battle Items
   'capture_device': { id: 'capture_device', name: 'Capture Device', description: 'Standard device used to capture wild Creature.', type: 'CONSUMABLE', value: 200 },
