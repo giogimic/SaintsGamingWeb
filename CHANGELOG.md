@@ -1,3 +1,10 @@
+## [2.1.265] - 2026-08-15
+### Added & Improved
+- **Global Extras 2/7: Skill Cape Emotes & Visual FX System (`skillCapeEmotes.ts`, `SkillGuideModal.tsx`)**:
+  - Created centralized Skill Cape Emotes & Visual FX Registry (`skillCapeEmotes.ts`) defining 29 unique cape emotes across all 27 skill proficiencies plus the Max Cape of the Grandmaster and Grandmaster Completionist Cape.
+  - Added interactive Emote FX preview player to `SkillGuideModal.tsx` for tier rewards and header quick-preview with synthesized WebAudio feedback and pulsing visual FX banners.
+  - Added comprehensive Vitest suite in `src/shared/game/skillCapeEmotes.test.ts` asserting all 29 cape emote definitions, slug lookups, and visual particle configurations.
+
 ## [2.1.264] - 2026-08-15
 ### Added & Improved
 - **Global Extras 1/7: Max Cape of the Grandmaster & Master Totem System (`skillTypings.ts`, `items.ts`, `skills-overlay.tsx`)**:

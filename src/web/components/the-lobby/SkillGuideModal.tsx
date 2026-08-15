@@ -11,6 +11,7 @@ import {
   SkillGuideEntry,
 } from '@/shared/game/skillGuideData';
 import { normalizeSkillSlug, calculateCombatLevelFromXp, isCombatSkillTyping } from '@/shared/game/skillTypings';
+import { getSkillCapeEmote, SkillCapeEmoteDef } from '@/shared/game/skillCapeEmotes';
 import {
   Sword,
   Shield,
@@ -48,6 +49,8 @@ import {
   Crown,
   Layers,
   Dumbbell,
+  Play,
+  Volume2,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -106,6 +109,9 @@ interface SkillGuideModalProps {
 export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onClose }) => {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'UNLOCKS' | 'BATTLEPASS'>('OVERVIEW');
   const [filterType, setFilterType] = useState<string>('ALL');
+  const [activeEmotePreview, setActiveEmotePreview] = useState<SkillCapeEmoteDef | null>(null);
+
+  const capeEmoteDef = useMemo(() => getSkillCapeEmote(skillSlug), [skillSlug]);
 
   const skills = useGameStore((state) => state.player.skills);
   const guide = useMemo(() => getSkillGuide(skillSlug), [skillSlug]);
@@ -407,15 +413,59 @@ export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onC
               {/* TAB 3: BATTLEPASS COSMETIC TRACK */}
               {activeTab === 'BATTLEPASS' && (
                 <div className="space-y-4 py-1">
-                  <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl text-[11px] text-amber-200">
-                    Level up <strong className="text-white">{guide.name}</strong> to unlock exclusive nameplate
-                    titles, particle auras, emotes, and master capes at tiered milestones!
+                  <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl text-[11px] text-amber-200 flex items-center justify-between">
+                    <span>
+                      Level up <strong className="text-white">{guide.name}</strong> to unlock exclusive nameplate
+                      titles, particle auras, emotes, and master capes at tiered milestones!
+                    </span>
+                    {capeEmoteDef && (
+                      <button
+                        onClick={() => {
+                          soundSynth?.playLevelUpSound?.();
+                          setActiveEmotePreview(capeEmoteDef);
+                        }}
+                        className="flex-none px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm"
+                        title="Preview Cape Emote Visual FX"
+                      >
+                        <Play className="w-3 h-3 fill-current" /> Preview Cape FX
+                      </button>
+                    )}
                   </div>
+
+                  {/* Active Emote FX Player Banner */}
+                  {activeEmotePreview && (
+                    <div className="p-3 bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-amber-400 rounded-xl flex items-center justify-between gap-3 animate-pulse shadow-lg">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-amber-300 animate-spin" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] uppercase font-black text-amber-400 bg-amber-950 px-1.5 py-0.2 rounded border border-amber-500/50">
+                              EMOTE FX ACTIVE
+                            </span>
+                            <span className="text-white font-bold text-xs">{activeEmotePreview.emoteName}</span>
+                          </div>
+                          <p className="text-[10px] text-amber-200/90 mt-0.5 max-w-md leading-tight">
+                            {activeEmotePreview.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setActiveEmotePreview(null)}
+                        className="flex-none px-2 py-0.5 rounded bg-black/60 hover:bg-red-950 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-red-300 text-[10px] font-bold cursor-pointer"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
 
                   <div className="space-y-2.5">
                     {guide.battlepassTiers.map((tier) => {
                       const isUnlocked = currentLevel >= tier.level;
                       const rarity = RARITY_COLORS[tier.rarity] || RARITY_COLORS.COMMON;
+                      const isEmoteOrCape = tier.rewardType === 'CAPE' || tier.rewardType === 'EMOTE';
 
                       return (
                         <div
@@ -453,7 +503,20 @@ export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onC
                             </div>
                           </div>
 
-                          <div className="flex-none">
+                          <div className="flex items-center gap-2 flex-none">
+                            {isEmoteOrCape && capeEmoteDef && (
+                              <button
+                                onClick={() => {
+                                  soundSynth?.playLevelUpSound?.();
+                                  setActiveEmotePreview(capeEmoteDef);
+                                }}
+                                className="px-2 py-1 rounded bg-black/60 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-300 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                                title="Preview Emote"
+                              >
+                                <Play className="w-2.5 h-2.5 fill-current" /> FX
+                              </button>
+                            )}
+
                             {isUnlocked ? (
                               <span className="flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/40">
                                 <Award className="w-3.5 h-3.5 text-amber-400" />
@@ -462,7 +525,7 @@ export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onC
                             ) : (
                               <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-black/60 px-2.5 py-1 rounded-lg border border-slate-800">
                                 <Lock className="w-3.5 h-3.5 text-slate-600" />
-                                UNLOCKS AT LV {tier.level}
+                                LV {tier.level}
                               </span>
                             )}
                           </div>
