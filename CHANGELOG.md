@@ -1,3 +1,10 @@
+## [2.1.246] - 2026-08-15
+### Added & Improved
+- **Skill 10/27: Farming Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete agricultural crop seeds, supercompost, enchanted watering cans, and botanical harvest trees progression (Potato Allotment Seeds, Guam Herb Seeds, Supercompost Soil Pails, Sweetcorn Allotment Seeds, Ranarr Herb Seeds, Watermelon Seeds, Enchanted Bottomless Cans, Magic Tree Saplings, Spirit Tree Acorns, and Celestial Starflower Bulbs) with explicit Farming level requirements (`reqSkill: 'Farming'`, `reqLevel: number`) and crop yield bonuses.
+  - Dynamically aggregated farming seeds, composting items, and agricultural milestones for the Farming handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Farming spanning Lv 10 to Lv 99 (Novice Planter, Green Thumb, Master Botanist titles, Sprouting Seedling Steps, Enchanted Flora Swarm, Demeter Blossom Halo auras, Sunflower Straw Hat cosmetic, and Cape of Farming).
+
 ## [2.1.245] - 2026-08-15
 ### Added & Improved
 - **Skill 9/27: Intelligence Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:

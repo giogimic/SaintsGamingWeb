@@ -16,13 +16,17 @@ export interface ItemSchema {
 }
 
 export const ITEM_DB: Record<string, ItemSchema> = {
-  // Materials
-  'wood_logs': { id: 'wood_logs', name: 'Wood Logs', description: 'Basic logs chopped from a tree.', type: 'MATERIAL', value: 2 },
-  'wood_log': { id: 'wood_log', name: 'Wood Log', description: 'Basic timber. Craft ingredient for Standard Film.', type: 'MATERIAL', value: 5 },
-  'crystal_dust': { id: 'crystal_dust', name: 'Crystal Dust', description: 'Raw dust used to craft Standard Film.', type: 'MATERIAL', value: 25 },
-  'ore_copper': { id: 'ore_copper', name: 'Copper Ore', description: 'Raw copper ore from SE rocks (Q1).', type: 'MATERIAL', value: 5 },
-  'copper_ore': { id: 'copper_ore', name: 'Copper Ore (legacy)', description: 'Legacy slug — prefer ore_copper.', type: 'MATERIAL', value: 5 },
-  'tin_ore': { id: 'tin_ore', name: 'Tin Ore', description: 'Raw tin ore. Combine with copper for bronze.', type: 'MATERIAL', value: 5 },
+  // Materials & Farming Crops (Farming Skill Tier Progression)
+  'seed_potato': { id: 'seed_potato', name: 'Potato Allotment Seed', description: 'Fast-growing potato seeds for beginner farming plots.', type: 'MATERIAL', value: 4, reqSkill: 'Farming', reqLevel: 1 },
+  'seed_guam': { id: 'seed_guam', name: 'Guam Herb Seed', description: 'Aromatic herb seeds used in basic restorative herblore potions.', type: 'MATERIAL', value: 15, reqSkill: 'Farming', reqLevel: 9 },
+  'supercompost_bucket': { id: 'supercompost_bucket', name: 'Supercompost Soil Pail', description: 'Enriched organic compost granting complete disease protection and +20% harvest yield.', type: 'CONSUMABLE', value: 80, reqSkill: 'Farming', reqLevel: 15 },
+  'sweetcorn_seed': { id: 'sweetcorn_seed', name: 'Sweetcorn Allotment Seed', description: 'Hearty golden sweetcorn seeds yielding nutritious cobs.', type: 'MATERIAL', value: 45, reqSkill: 'Farming', reqLevel: 20 },
+  'ranarr_seed': { id: 'ranarr_seed', name: 'Ranarr Herb Seed', description: 'Coveted prayer herb seeds used in sacred restoration draughts.', type: 'MATERIAL', value: 180, reqSkill: 'Farming', reqLevel: 32 },
+  'watermelon_seed': { id: 'watermelon_seed', name: 'Watermelon Vine Seed', description: 'Rich juicy melon seeds delivering succulent combat food and supercompost material.', type: 'MATERIAL', value: 400, reqSkill: 'Farming', reqLevel: 47 },
+  'magic_watering_can': { id: 'magic_watering_can', name: 'Enchanted Bottomless Can', description: 'Infinite wellspring watering can that halves crop growth timer intervals.', type: 'HEAD', value: 3500, reqSkill: 'Farming', reqLevel: 50, stats: { hp: 30 } },
+  'magic_sapling': { id: 'magic_sapling', name: 'Magic Tree Sapling', description: 'Potted glowing sapling maturing into majestic magic timber trees.', type: 'MATERIAL', value: 3000, reqSkill: 'Farming', reqLevel: 75 },
+  'spirit_tree_seed': { id: 'spirit_tree_seed', name: 'Spirit Tree Acorn', description: 'Sentient tree seed allowing worldwide fast-travel teleportation roots.', type: 'MATERIAL', value: 10000, reqSkill: 'Farming', reqLevel: 83 },
+  'celestial_starflower_seed': { id: 'celestial_starflower_seed', name: 'Celestial Starflower Bulb', description: 'Mythic cosmic flower blooming in starlight and yielding immortal nectar.', type: 'MATERIAL', value: 45000, reqSkill: 'Farming', reqLevel: 99 },
   
   // Consumables & Vitality Rations (Hitpoints Skill Tier Progression)
   'bread_loaf': { id: 'bread_loaf', name: 'Fresh Loaf', description: 'Freshly baked wheat bread.', type: 'FOOD', value: 5, reqSkill: 'Hitpoints', reqLevel: 1, stats: { hp: 15 } },
