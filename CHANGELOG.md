@@ -1,3 +1,14 @@
+## [2.1.221] - 2026-08-15
+### Added & Improved
+- **Professor Oakwood's Research Sanctuary (`ProfessorLabOverlay.tsx`)**:
+  - Upgraded starter companion showcase to modern cyber chamfered cards with elemental glowing borders.
+  - Added base stat comparison meters (HP, Power, Defense, Tempo) and bonding audio synthesis (`soundSynth.playLevelUpSound()`).
+- **Dynamic Overworld Target Frame (`target-frame.tsx`)**:
+  - Integrated `HudPanelShell` with responsive styling and distinct cyber neon color themes for Players (cyan), Wild Monsters (magenta/rose), and NPCs (amber).
+  - Added interactive quick-action buttons (Party Invite, Buddy Battle Duel Challenge, Whisper) with sound synthesis.
+- **MiniMap Radar & Navigation Compass (`MiniMapRadar.tsx`)**:
+  - Added cardinal direction markers (N, S, E, W) overlay on radar bezel and synthesized audio feedback on navigation actions.
+
 ## [2.1.220] - 2026-08-15
 ### Added & Improved
 - **Village Merchant & Trade Post System (`shop-overlay.tsx`)**:

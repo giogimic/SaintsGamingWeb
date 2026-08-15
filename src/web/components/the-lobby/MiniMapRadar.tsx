@@ -6,7 +6,7 @@ import { GAME_MAPS } from './data/maps';
 import { Compass, Map, Settings, Hammer, LogOut } from 'lucide-react';
 import { HudPanelShell } from './hud/HudPanelShell';
 import { useEditorStore } from './editor/editor-store';
-import { canEnterStudio } from '@/shared/game/studioPermissions';
+import { soundSynth } from '@/engine/sound-synth';
 
 const TILE_COLORS: Record<number, string> = {
   0: '#1a3520',  // Safe walkable — dark forest green
@@ -164,7 +164,6 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     ctx.fill();
   }, [currentMapId, playerPos, mapEntities, otherPlayers, activeMapData]);
 
-  // Animate minimap at ~20fps for pulse effect
   useEffect(() => {
     let frameId: number;
     const loop = () => {
@@ -179,7 +178,6 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
   const mapData = activeMapData || GAME_MAPS[currentMapId];
   const mapName = mapData?.name || currentMapId;
 
-  // Extract channel from instanceId (e.g. SAINTS_VILLAGE_ch1 -> "Ch. 1")
   let channelText = '';
   if (instanceId && instanceId.includes('_ch')) {
     const chMatch = instanceId.match(/_ch(\d+)$/);
@@ -189,6 +187,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
   }
 
   const handleOpenOptionsClick = () => {
+    soundSynth?.playSelectSound?.();
     if (onOpenOptions) {
       onOpenOptions();
     } else {
@@ -213,7 +212,10 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         {enableStudio ? (
           <button
             type="button"
-            onClick={() => useEditorStore.getState().toggleCreationMode()}
+            onClick={() => {
+              soundSynth?.playSelectSound?.();
+              useEditorStore.getState().toggleCreationMode();
+            }}
             className={`flex items-center gap-1 px-1.5 py-1 rounded text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
               studioToolsOpen
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
@@ -227,6 +229,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         ) : (
           <a
             href="/studio"
+            onClick={() => soundSynth?.playSelectSound?.()}
             className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/5 hover:bg-white/10 text-amber-300/80 hover:text-amber-200 text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
             title="Open Studio Map Editor"
           >
@@ -238,6 +241,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         <button
           type="button"
           onClick={() => {
+            soundSynth?.playSelectSound?.();
             window.location.href = '/';
           }}
           className="flex items-center justify-center p-1 rounded bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-rose-200 transition-colors cursor-pointer"
@@ -247,9 +251,16 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         </button>
       </div>
 
-      {/* 2. Middle Section: Radar Thumbnail */}
+      {/* 2. Middle Section: Radar Thumbnail with Compass Ticks */}
       <div className="relative h-28 w-full overflow-hidden rounded border border-teal-500/30 bg-[#02060a] shadow-inner mb-1.5">
         <canvas ref={canvasRef} width={160} height={120} className="absolute inset-0 h-full w-full opacity-85" />
+        
+        {/* Compass Cardinal Overlays */}
+        <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">N</span>
+        <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-cyan-400/40 pointer-events-none">S</span>
+        <span className="absolute top-1/2 left-0.5 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/40 pointer-events-none">W</span>
+        <span className="absolute top-1/2 right-0.5 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/40 pointer-events-none">E</span>
+
         <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-black/70 text-[8px] font-mono font-black uppercase tracking-widest text-teal-400/70 border border-teal-500/20">
           RADAR
         </div>
@@ -279,3 +290,4 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     </HudPanelShell>
   );
 }
+
