@@ -1,3 +1,10 @@
+## [2.1.250] - 2026-08-15
+### Added & Improved
+- **Skill 14/27: Woodcutting Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete forestry hatchets, timber logs, and starlight boughs progression (Bronze, Iron, Steel, Mithril, Adamant, Rune, Saintly Amberwood, and Celestial World-Tree Hatchets, Regular, Oak, Willow, Teak, Maple, Yew, Magic, Redwood Titan Logs, and Celestial World-Tree Boughs) with explicit Woodcutting level requirements (`reqSkill: 'Woodcutting'`, `reqLevel: number`) and tree chopping swing speed multipliers.
+  - Dynamically aggregated hatchets, timber logs, and forestry harvesting for the Woodcutting handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Woodcutting spanning Lv 10 to Lv 99 (Novice Lumberjack, Master Forester, Timber Lord titles, Swirling Emerald Leaves, Forest Dryad Wisps, Sylvan Warden Canopy Halo auras, Flannel Lumberjack Beanie cosmetic, and Cape of Woodcutting).
+
 ## [2.1.249] - 2026-08-15
 ### Added & Improved
 - **Skill 13/27: Mining Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
