@@ -1,3 +1,10 @@
+## [2.1.260] - 2026-08-15
+### Added & Improved
+- **Skill 24/27: Summoning Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete spirit shard currency, elemental soul charms (Gold, Green, Crimson, Blue), beast of burden familiars (Spirit Terrorbird 12-slot, War Tortoise 18-slot, Pack Yak 30-slot), combat healing familiars (Bunyip), war machine familiars (Steel Titan), and celestial apex chimera crowns progression (Resonant Spirit Shards, Gold Summoning Charms, Spirit Wolf Summoning Pouches, Green Summoning Charms, Desert Wyrm Summoning Pouches, Crimson Summoning Charms, Spirit Terrorbird Pouches, Blue Summoning Charms, War Tortoise Summoning Pouches, Bunyip Aquatic Pouches, Pack Yak Summoning Pouches, Steel Titan Summoning Pouches, and Celestial Apex Chimera Crowns) with explicit Summoning level requirements (`reqSkill: 'Summoning'`, `reqLevel: number`), beast of burden inventory capacities, combat passive health regen, and artillery strikes.
+  - Dynamically aggregated soul charm binding, obelisk infusions, and familiar beasts for the Summoning handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Summoning spanning Lv 10 to Lv 99 (Novice Beastmaster, Spirit Whisperer, Titan Caller titles, Familiar Roar emote, Primal Beast Mists, Orbiting Spirit Shard Shimmer Halo, Astral Chimera Supernova Corona auras, Shaman Totem Staff cosmetic, and Cape of Summoning).
+
 ## [2.1.259] - 2026-08-15
 ### Added & Improved
 - **Skill 23/27: Thieving Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
