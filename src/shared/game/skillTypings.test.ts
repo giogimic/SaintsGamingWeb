@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_SKILL_SLUGS,
+  TOTAL_SKILLS_COUNT,
   applySkillDeltas,
   buildInitialSkills,
   calculateCombatLevelFromXp,
+  calculateTotalLevel,
+  calculateTotalXp,
+  getMaxProgress,
   isCombatSkillTyping,
+  isMaxCapeEligible,
   normalizeSkillSlug,
 } from "./skillTypings";
 import {
@@ -53,5 +59,32 @@ describe("combat skill typings", () => {
   it("applySkillDeltas clamps", () => {
     const next = applySkillDeltas({ attack: { level: 1, xp: 0 } }, { attack: 100 });
     expect(next.attack.level).toBe(50);
+  });
+
+  it("accurately handles ALL_SKILL_SLUGS, Total Level, and Max Cape progress for all 27 skills", () => {
+    expect(ALL_SKILL_SLUGS.length).toBe(27);
+    expect(TOTAL_SKILLS_COUNT).toBe(27);
+
+    const initial = buildInitialSkills();
+    expect(calculateTotalLevel(initial)).toBe(27);
+    expect(calculateTotalXp(initial)).toBe(0);
+    expect(isMaxCapeEligible(initial)).toBe(false);
+
+    const progress = getMaxProgress(initial);
+    expect(progress.totalSkillsCount).toBe(27);
+    expect(progress.totalLevel).toBe(27);
+    expect(progress.isMaxed).toBe(false);
+    expect(progress.maxedSkillsCount).toBe(0);
+
+    // Maxed mock character
+    const maxedSkills: Record<string, { level: number; xp: number }> = {};
+    for (const slug of ALL_SKILL_SLUGS) {
+      maxedSkills[slug] = { level: 99, xp: 13034431 };
+    }
+    expect(isMaxCapeEligible(maxedSkills)).toBe(true);
+    const maxedProgress = getMaxProgress(maxedSkills);
+    expect(maxedProgress.isMaxed).toBe(true);
+    expect(maxedProgress.maxedSkillsCount).toBe(27);
+    expect(maxedProgress.percentComplete).toBe(100);
   });
 });

@@ -3,13 +3,14 @@
 import React, { useState } from 'react';
 import { useGameStore } from './store';
 import { HudPanelShell } from './hud/HudPanelShell';
-import { calculateCombatLevelFromXp, isCombatSkillTyping, normalizeSkillSlug } from '@/shared/game/skillTypings';
+import { calculateCombatLevelFromXp, isCombatSkillTyping, normalizeSkillSlug, getMaxProgress, isMaxCapeEligible } from '@/shared/game/skillTypings';
 import { getSkillGuide } from '@/shared/game/skillGuideData';
 import { SkillGuideModal } from './SkillGuideModal';
 import {
   Zap,
   Sparkles,
   Trophy,
+  Crown,
   Sword,
   Pickaxe,
   Hammer,
@@ -127,8 +128,8 @@ export default function SkillsOverlay() {
   };
 
   const allSkillNames = Object.values(SKILL_CATEGORIES).flat();
-  const totalLevel = allSkillNames.reduce((acc, skill) => acc + skillLookup(skills, skill).level, 0);
-  const totalXp = allSkillNames.reduce((acc, skill) => acc + skillLookup(skills, skill).xp, 0);
+  const maxProgress = getMaxProgress(skills);
+  const isMaxed = maxProgress.isMaxed || isMaxCapeEligible(skills);
 
   return (
     <div className="pointer-events-auto z-40 flex w-[min(95vw,640px)] max-w-full flex-col font-mono text-xs select-none">
@@ -137,26 +138,57 @@ export default function SkillsOverlay() {
         icon={<Zap className="w-4 h-4 text-amber-400" />}
         onClose={() => setGameMode('EXPLORING')}
         headerRight={
-          <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/40 uppercase">
-            27 PROFICIENCIES
-          </span>
+          <div className="flex items-center gap-1.5">
+            {isMaxed ? (
+              <span className="text-[9px] font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-400/60 uppercase flex items-center gap-1 shadow-sm">
+                <Crown className="w-3 h-3 text-amber-400 inline" /> MAXED GRANDMASTER
+              </span>
+            ) : (
+              <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/40 uppercase">
+                {maxProgress.maxedSkillsCount} / 27 MAXED
+              </span>
+            )}
+          </div>
         }
       >
         <div className="flex flex-col gap-3 h-[68vh] p-3">
-          {/* Total Level & XP Summary Strip */}
-          <div className="p-3 bg-black/60 border border-amber-500/30 rounded-xl flex items-center justify-between shadow-inner">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-                <Trophy className="w-4 h-4 text-amber-400" />
+          {/* Total Level & XP Summary Strip with Max Cape Progress */}
+          <div className="p-3 bg-black/60 border border-amber-500/30 rounded-xl flex flex-col gap-2 shadow-inner">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL LEVEL</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-amber-400 font-black text-base">{maxProgress.totalLevel}</span>
+                    <span className="text-[10px] text-slate-500 font-semibold">/ {maxProgress.maxTotalLevel}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL LEVEL</span>
-                <span className="text-amber-400 font-black text-base">{totalLevel}</span>
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL EXPERIENCE</span>
+                <span className="text-cyan-300 font-bold text-sm">{Math.floor(maxProgress.totalXp).toLocaleString()} XP</span>
               </div>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL EXPERIENCE</span>
-              <span className="text-cyan-300 font-bold text-sm">{Math.floor(totalXp).toLocaleString()} XP</span>
+
+            {/* Max Cape / Master Totem Milestone Bar */}
+            <div className="space-y-1 pt-1 border-t border-slate-800/80">
+              <div className="flex items-center justify-between text-[9px]">
+                <span className="text-amber-300/80 flex items-center gap-1 font-semibold uppercase">
+                  <Crown className="w-2.5 h-2.5 text-amber-400 inline" /> Max Cape Progress
+                </span>
+                <span className="text-slate-400 font-bold">
+                  {maxProgress.percentComplete}% ({maxProgress.maxedSkillsCount}/27 Skills)
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-black/80 rounded-full overflow-hidden border border-slate-800">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-yellow-300 rounded-full transition-all duration-500"
+                  style={{ width: `${Math.max(2, maxProgress.percentComplete)}%` }}
+                />
+              </div>
             </div>
           </div>
 

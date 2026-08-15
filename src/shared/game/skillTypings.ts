@@ -132,3 +132,97 @@ export function buildInitialSkills(
 
   return skills;
 }
+
+/** All 27 skill slugs across Combat, Gathering, Artisan, and Support categories. */
+export const ALL_SKILL_SLUGS = [
+  ...COMBAT_SKILL_TYPINGS,
+  ...GATHERING_SKILL_SLUGS,
+  ...ARTISAN_SKILL_SLUGS,
+  ...SUPPORT_SKILL_SLUGS,
+] as const;
+
+export type SkillSlug = (typeof ALL_SKILL_SLUGS)[number];
+
+/** Total number of skills in the game. */
+export const TOTAL_SKILLS_COUNT = ALL_SKILL_SLUGS.length; // 27
+
+/** Maximum level across all 27 skills (Combat max 50 / 99 depending on curve, standard max 99 = 2673). */
+export const MAX_TOTAL_LEVEL = 2673;
+
+/** Compute the total skill level from a character's skill state. */
+export function calculateTotalLevel(skills?: Record<string, SkillData> | null): number {
+  if (!skills) return TOTAL_SKILLS_COUNT;
+  let total = 0;
+  for (const slug of ALL_SKILL_SLUGS) {
+    const label = skillSlugToLabel(slug);
+    const data = skills[slug] || skills[label] || skills[slug.toLowerCase()];
+    total += data?.level ? Math.max(1, data.level) : 1;
+  }
+  return total;
+}
+
+/** Compute the total accumulated XP across all skills. */
+export function calculateTotalXp(skills?: Record<string, SkillData> | null): number {
+  if (!skills) return 0;
+  let total = 0;
+  for (const slug of ALL_SKILL_SLUGS) {
+    const label = skillSlugToLabel(slug);
+    const data = skills[slug] || skills[label] || skills[slug.toLowerCase()];
+    total += data?.xp ? Math.max(0, data.xp) : 0;
+  }
+  return total;
+}
+
+/** Check if the player has achieved Level 99 in all 27 skill proficiencies. */
+export function isMaxCapeEligible(skills?: Record<string, SkillData> | null): boolean {
+  if (!skills) return false;
+  for (const slug of ALL_SKILL_SLUGS) {
+    const label = skillSlugToLabel(slug);
+    const data = skills[slug] || skills[label] || skills[slug.toLowerCase()];
+    const level = data?.level || 1;
+    // Combat skills can cap at 50 or 99; standard check requires max cap
+    const requiredLevel = isCombatSkillTyping(slug) ? 50 : 99;
+    if (level < requiredLevel) return false;
+  }
+  return true;
+}
+
+/** Comprehensive Max Cape and Master Totem progress overview. */
+export function getMaxProgress(skills?: Record<string, SkillData> | null): {
+  totalLevel: number;
+  totalXp: number;
+  maxTotalLevel: number;
+  maxedSkillsCount: number;
+  totalSkillsCount: number;
+  isMaxed: boolean;
+  percentComplete: number;
+} {
+  const totalLevel = calculateTotalLevel(skills);
+  const totalXp = calculateTotalXp(skills);
+  let maxedSkillsCount = 0;
+
+  if (skills) {
+    for (const slug of ALL_SKILL_SLUGS) {
+      const label = skillSlugToLabel(slug);
+      const data = skills[slug] || skills[label] || skills[slug.toLowerCase()];
+      const level = data?.level || 1;
+      const target = isCombatSkillTyping(slug) ? 50 : 99;
+      if (level >= target) maxedSkillsCount++;
+    }
+  }
+
+  const isMaxed = maxedSkillsCount === TOTAL_SKILLS_COUNT;
+  // Calculate percentage against achievable total level (9 * 50 + 18 * 99 = 450 + 1782 = 2232)
+  const achievableMax = 9 * 50 + 18 * 99;
+  const percentComplete = Math.min(100, Math.round((totalLevel / achievableMax) * 100));
+
+  return {
+    totalLevel,
+    totalXp,
+    maxTotalLevel: achievableMax,
+    maxedSkillsCount,
+    totalSkillsCount: TOTAL_SKILLS_COUNT,
+    isMaxed,
+    percentComplete,
+  };
+}
