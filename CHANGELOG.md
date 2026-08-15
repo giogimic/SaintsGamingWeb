@@ -1,3 +1,10 @@
+## [2.1.257] - 2026-08-15
+### Added & Improved
+- **Skill 21/27: Runecrafting Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete dense pure rune essence, runic tiaras, essence storage pouches (Small, Medium, Large, Giant, Colossal), catalytic and elemental runes (Air, Mind, Water, Earth, Fire, Chaos, Nature, Law, Death, Blood, Soul), and celestial astral keystones progression (Dense Pure Rune Essence, Air Elemental Runes, Small Essence Pouches, Air Runic Tiaras, Mind Catalytic Runes, Water Elemental Runes, Earth Elemental Runes, Medium Essence Pouches, Fire Elemental Runes, Chaos Destruction Runes, Large Essence Pouches, Nature Alchemy Runes, Law Teleportation Runes, Giant Essence Pouches, Death Oblivion Runes, Blood Sanguine Runes, Soul Transcendence Runes, and Celestial Astral Keystone Crowns) with explicit Runecrafting level requirements (`reqSkill: 'Runecrafting'`, `reqLevel: number`), essence pouch capacities, and multi-rune elemental casting power.
+  - Dynamically aggregated rune binding, essence extraction, and altar ruins infusion for the Runecrafting handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Runecrafting spanning Lv 10 to Lv 99 (Novice Runesmith, Glyph Crafter, Arch-Runemaster titles, Runic Glyph Scribe emote, Rift Warp Shimmer, Orbiting Tri-Element Rune Halo, Radiant Astral Glyph Corona auras, Runecrafter Satchel cosmetic, and Cape of Runecrafting).
+
 ## [2.1.256] - 2026-08-15
 ### Added & Improved
 - **Skill 20/27: Herblore Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
