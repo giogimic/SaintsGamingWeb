@@ -1,3 +1,10 @@
+## [2.1.261] - 2026-08-15
+### Added & Improved
+- **Skill 25/27: Magic Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete apprentice wands, gale air battle staves, mystic indigo robes, pyromancer burning battle staves, ancient Zarosian grimoires, infinity prismatic silk robes, limitless 4-element catalysts, and celestial archmage singularity staves progression (Apprentice Carved Wands, Gale Air Battlestaves, Mystic Indigo Robe Tops, Pyromancer Battlestaves, Zarosian Ancient Grimoires, Infinity Prismatic Robes, Staff of Limitless Elements, and Celestial Archmage Singularity Staves) with explicit Magic level requirements (`reqSkill: 'Magic'`, `reqLevel: number`), elemental damage multipliers, magic accuracy buffs, and miniature black hole singularities.
+  - Dynamically aggregated elemental strikes, high alchemy, continental teleports, and ancient barrages for the Magic handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Magic spanning Lv 10 to Lv 99 (Novice Mage, Elemental Sorcerer, Archmage Primus titles, Arcane Spellcast emote, Mystic Leyline Shimmer, Orbiting Arcane Rune Shimmer Halo, Celestial Hypernova Corona auras, Archmage Wizard Hat cosmetic, and Cape of Magic).
+
 ## [2.1.260] - 2026-08-15
 ### Added & Improved
 - **Skill 24/27: Summoning Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:

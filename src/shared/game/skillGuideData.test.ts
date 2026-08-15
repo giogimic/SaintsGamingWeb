@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, Herblore, Runecrafting, Smithing, Thieving, & Summoning battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, Herblore, Runecrafting, Smithing, Thieving, Summoning, & Magic battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -165,9 +165,14 @@ describe('skillGuideData Registry', () => {
     expect(summonGuide.battlepassTiers.length).toBe(10);
     expect(summonGuide.battlepassTiers[0].rewardName).toContain('Novice Beastmaster');
     expect(summonGuide.battlepassTiers[9].rewardName).toContain('Cape of Summoning');
+
+    const magicGuide = getSkillGuide('magic')!;
+    expect(magicGuide.battlepassTiers.length).toBe(10);
+    expect(magicGuide.battlepassTiers[0].rewardName).toContain('Novice Mage');
+    expect(magicGuide.battlepassTiers[9].rewardName).toContain('Cape of Magic');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, lockpicks/masks/cloaks for Thieving, and charms/pouches/matrices for Summoning in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, lockpicks/masks/cloaks for Thieving, charms/pouches/matrices for Summoning, and staves/robes/grimoires for Magic in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -282,6 +287,11 @@ describe('skillGuideData Registry', () => {
     expect(summonUnlocks.length).toBeGreaterThan(0);
     expect(summonUnlocks.some((u) => u.title.includes('Shard') || u.title.includes('Charm') || u.title.includes('Pouch') || u.title.includes('Crown') || u.title.includes('Chimera'))).toBe(true);
     expect(summonUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const magicUnlocks = getAllSkillUnlocks('magic');
+    expect(magicUnlocks.length).toBeGreaterThan(0);
+    expect(magicUnlocks.some((u) => u.title.includes('Staff') || u.title.includes('Robe') || u.title.includes('Wand') || u.title.includes('Grimoire') || u.title.includes('Singularity'))).toBe(true);
+    expect(magicUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
