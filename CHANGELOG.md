@@ -1,3 +1,22 @@
+## [2.1.217] - 2026-08-15
+### Added & Improved
+- **Macro World Atlas & 4-Way Adjacency Transitions (`WorldAtlasPanel.tsx`, `route.ts`, `WorldSimulation.ts`)**:
+  - Implemented automatic 4-way adjacent neighbor connection computation (`north`, `south`, `east`, `west`) in the World Builder Atlas canvas.
+  - Added visual directional neighbor connection indicator pips (cyan bars) and adjacency status info bar.
+  - Synchronized and persisted map boundary transitions to `gatesData` on each `WorldMap` record during Atlas save.
+  - Verified and tested boundary edge warping in `WorldSimulation.ts` and `GameCanvasBabylon.tsx`.
+- **Multiplayer Entity Replication Normalization (`protocol.go`, `manager.go`, `index.tsx`)**:
+  - Normalized Go MMO `CreatureSpawn` JSON tags to symmetrically supply `entityId`, `templateId`, `spriteKey`, and `entityType`.
+  - Normalized client-side entity event listeners (`creature_spawned`, `creature_despawned`, `creature_hp_update`) in `the-lobby/index.tsx` to accept both key variants seamlessly.
+  - Eliminated conflicting subsystems and ensured Go MMO authority remains primary for live multiplayer entity streaming.
+- **Unified Chamfered UIX Suite & SVG Iconography (`rpg-panel.tsx`, `SaintsDexOverlay.tsx`, `quest-log-overlay.tsx`, `leaderboard-overlay.tsx`, `achievements-overlay.tsx`, `skills-overlay.tsx`)**:
+  - Re-architected `RpgPanel` to wrap `HudPanelShell` with chamfered cyber polygon borders, dark backdrop blur, and SVG iconography (`lucide-react`).
+  - Standardized in-game feature modals to the unified design language.
+- **Cinematic Character Select & Character Forge Flow (`character-selector.tsx`, `character-creator.tsx`, `GameTitleScreen.tsx`, `ServerSelect.tsx`)**:
+  - Replaced basic selector cards with high-end Hero Pedestals featuring animated auras, level crests, stats summary (HP, pouch credits, class perk), and glowing "Enter Realm" triggers.
+  - Elevated Character Creator into a PC MMO Character Forge with sound synthesis integration (`soundSynth.playActionSound()`, `soundSynth.playSelectSound()`), responsive layout, and archetype statistics.
+  - Added interactive audio feedback and refined transitions on Title and Server Select screens.
+
 ## [2.1.216] - 2026-08-14
 ### Fixed & Improved
 - **Menu Overlay Mounting & Gameplay HUD State (`index.tsx`, `Hotbar.tsx`, `quest-tracker-overlay.tsx`)**:

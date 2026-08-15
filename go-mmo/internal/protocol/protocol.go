@@ -158,17 +158,21 @@ type MapJoinedPayload struct {
 
 // CreatureSpawn is creature_spawned payload.
 type CreatureSpawn struct {
-	ID       string  `json:"id"`
-	Species  string  `json:"species"`
-	Name     string  `json:"name"`
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	HP       int     `json:"hp"`
-	MaxHP    int     `json:"maxHp"`
-	Level    int     `json:"level"`
-	Sprite   string  `json:"sprite"`
-	MapID    string  `json:"mapId"`
-	Hostile  bool    `json:"hostile"`
+	ID         string  `json:"id"`
+	EntityID   string  `json:"entityId,omitempty"`
+	Species    string  `json:"species"`
+	TemplateID string  `json:"templateId,omitempty"`
+	Name       string  `json:"name"`
+	X          float64 `json:"x"`
+	Y          float64 `json:"y"`
+	HP         int     `json:"hp"`
+	MaxHP      int     `json:"maxHp"`
+	Level      int     `json:"level"`
+	Sprite     string  `json:"sprite"`
+	SpriteKey  string  `json:"spriteKey,omitempty"`
+	MapID      string  `json:"mapId"`
+	Hostile    bool    `json:"hostile"`
+	EntityType string  `json:"entityType,omitempty"`
 }
 
 // ToBaseMapID strips _chN and private suffixes that are instance ids.

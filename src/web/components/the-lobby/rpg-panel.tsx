@@ -1,36 +1,44 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { HudPanelShell } from './hud/HudPanelShell';
+import { X, Sparkles } from 'lucide-react';
 
 interface RpgPanelProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  icon?: ReactNode;
+  headerRight?: ReactNode;
+  className?: string;
+  bodyClassName?: string;
 }
 
-export default function RpgPanel({ title, onClose, children }: RpgPanelProps) {
+export default function RpgPanel({
+  title,
+  onClose,
+  children,
+  icon,
+  headerRight,
+  className = '',
+  bodyClassName = '',
+}: RpgPanelProps) {
   return (
-    <div className="pointer-events-auto absolute inset-2 z-30 flex animate-in fade-in zoom-in-95 duration-200 flex-col md:inset-8">
-      <div className="lobby-panel relative flex h-full w-full flex-col overflow-hidden rounded-xl">
-        <div className="lobby-hairline h-px w-full opacity-80" />
-
-        <div className="lobby-panel-header z-10 flex items-center justify-between px-4 py-3">
-          <h2 className="text-base font-semibold uppercase tracking-[0.22em] text-lobby-mist md:text-lg">
-            {title}
-          </h2>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-lobby-border bg-black/30 text-sm text-lobby-fog transition-colors hover:border-lobby-soul/50 hover:text-lobby-mist"
-            aria-label="Close"
-          >
-            ✕
-          </button>
+    <div className={`pointer-events-auto absolute inset-2 z-30 flex animate-in fade-in zoom-in-95 duration-200 flex-col md:inset-8 ${className}`}>
+      <HudPanelShell
+        className="w-full h-full shadow-2xl flex flex-col min-h-0"
+        bodyClassName={`flex-1 min-h-0 overflow-hidden flex flex-col p-3 md:p-5 ${bodyClassName}`}
+        title={title}
+        icon={icon || <Sparkles className="w-4 h-4 text-cyan-400" />}
+        headerRight={headerRight}
+        onClose={onClose}
+        noPadding
+      >
+        <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden text-slate-200">
+          {children}
         </div>
-
-        <div className="relative flex-1 overflow-hidden bg-gradient-to-b from-transparent to-black/40">
-          <div className="relative z-10 flex h-full w-full flex-col p-4">{children}</div>
-        </div>
-      </div>
+      </HudPanelShell>
     </div>
   );
 }
+

@@ -8,6 +8,7 @@ import { ensureWorldProfiles } from "@/app/actions/world-profiles";
 import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, Heart, ChevronRight, Loader2, Crosshair, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 import { INITIAL_SKILLS, useGameStore } from "./store";
+import { soundSynth } from "@/engine/sound-synth";
 import {
   ClassDefData,
   FALLBACK_CLASS_DEFS,
@@ -85,26 +86,23 @@ function StepHeader({
     <div className="flex items-center justify-between mb-8">
       {onBack ? (
         <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-sm transition-all"
-          style={{
-            background: 'rgba(128,111,71,0.12)',
-            border: '1px solid rgba(128,111,71,0.35)',
-            color: 'rgba(226,213,179,0.75)',
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            onBack();
           }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-cyan-300 border border-cyan-500/30 transition-all active:scale-95 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={2.5} />
           Back
         </button>
       ) : <div />}
       <h2
-        className="text-3xl font-black tracking-wider"
+        className="text-3xl font-black tracking-widest font-mono uppercase"
         style={{
-          fontFamily: 'Georgia, serif',
-          background: 'linear-gradient(180deg, #e2d5b3 0%, #cbb26a 100%)',
+          background: 'linear-gradient(180deg, #ffffff 0%, #22d3ee 70%, #0891b2 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
+          filter: 'drop-shadow(0 0 15px rgba(34,211,238,0.4))',
         }}
       >
         {label}
@@ -119,13 +117,11 @@ function NextButton({ label, onClick, disabled }: { label: string; onClick: () =
     <div className="flex justify-end mt-8">
       <button
         disabled={disabled}
-        onClick={onClick}
-        className="flex items-center gap-3 px-8 py-3.5 rounded-xl font-black text-base tracking-wider uppercase transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, #806f47 0%, #cbb26a 50%, #a8924e 100%)',
-          boxShadow: '0 0 20px rgba(203,178,106,0.25), 0 4px 15px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)',
-          color: '#050b14',
+        onClick={() => {
+          soundSynth?.playActionSound?.();
+          onClick();
         }}
+        className="flex items-center gap-3 px-8 py-3.5 rounded-xl font-mono font-black text-sm tracking-widest uppercase transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-400/60 shadow-[0_0_20px_rgba(34,211,238,0.3)] cursor-pointer"
       >
         {label}
         <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
@@ -218,6 +214,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const progressPct = ((currentNum - 1) / 4) * 100;
 
   const handleHeroPick = (hero: DbHero) => {
+    soundSynth?.playSelectSound?.();
     setSpriteId(hero.spriteKey);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
