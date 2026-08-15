@@ -155,6 +155,21 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'sunfire_beacon_catalyst': { id: 'sunfire_beacon_catalyst', name: 'Sunfire Beacon Catalyst', description: 'Concentrated solar core used to ignite server-wide regional beacon towers.', type: 'MATERIAL', value: 25000, reqSkill: 'Firemaking', reqLevel: 85, stats: { atk: 30, hp: 100 } },
   'celestial_sunfire_matrix': { id: 'celestial_sunfire_matrix', name: 'Celestial Sunfire Matrix', description: 'Cosmic solar crown radiating perpetual starlight and radiant healing heat.', type: 'HEAD', value: 100000, reqSkill: 'Firemaking', reqLevel: 99, stats: { atk: 45, def: 30, hp: 200 } },
 
+  // Arrows, Bolts, Darts & Crafted Bows (Fletching Skill Tier Progression)
+  'arrow_shafts': { id: 'arrow_shafts', name: 'Whittled Arrow Shafts', description: 'Bundle of smooth wooden shafts ready for flight feathering.', type: 'MATERIAL', value: 2, reqSkill: 'Fletching', reqLevel: 1 },
+  'bronze_arrows': { id: 'bronze_arrows', name: 'Bronze Broadhead Arrows', description: 'Standard feathered arrows tipped with sharpened bronze points.', type: 'MATERIAL', value: 5, reqSkill: 'Fletching', reqLevel: 1, stats: { atk: 2 } },
+  'oak_shortbow_u': { id: 'oak_shortbow_u', name: 'Unstrung Oak Shortbow', description: 'Carved oak bow stave ready to be strung with braided bowstring.', type: 'MATERIAL', value: 120, reqSkill: 'Fletching', reqLevel: 20 },
+  'iron_broadhead_arrows': { id: 'iron_broadhead_arrows', name: 'Iron Broadhead Arrows', description: 'Heavy iron tipped arrows with aerodynamic crimson finch plumes.', type: 'MATERIAL', value: 25, reqSkill: 'Fletching', reqLevel: 25, stats: { atk: 6 } },
+  'willow_longbow_u': { id: 'willow_longbow_u', name: 'Unstrung Willow Longbow', description: 'Shaped willow timber stave delivering supple recurve tension.', type: 'MATERIAL', value: 350, reqSkill: 'Fletching', reqLevel: 35 },
+  'steel_tipped_bolts': { id: 'steel_tipped_bolts', name: 'Steel Crossbow Bolts', description: 'Solid steel quarrel bolts forged for heavy arbalests.', type: 'MATERIAL', value: 60, reqSkill: 'Fletching', reqLevel: 40, stats: { atk: 12 } },
+  'maple_shortbow_u': { id: 'maple_shortbow_u', name: 'Unstrung Maple Shortbow', description: 'Dense golden maple stave ready for bowstring lacing.', type: 'MATERIAL', value: 800, reqSkill: 'Fletching', reqLevel: 50 },
+  'mithril_dart_spikes': { id: 'mithril_dart_spikes', name: 'Mithril Dart Spikes', description: 'Lightweight feathered throwing spikes with rapid velocity.', type: 'MATERIAL', value: 150, reqSkill: 'Fletching', reqLevel: 60, stats: { atk: 18 } },
+  'yew_composite_bow_u': { id: 'yew_composite_bow_u', name: 'Unstrung Yew Longbow', description: 'Sacred yew stave carved for precision high-damage archers.', type: 'MATERIAL', value: 2500, reqSkill: 'Fletching', reqLevel: 70 },
+  'rune_piercing_arrows': { id: 'rune_piercing_arrows', name: 'Rune Piercing Arrows', description: 'Cyan runite tipped arrows punching through heavy metal armor.', type: 'MATERIAL', value: 450, reqSkill: 'Fletching', reqLevel: 80, stats: { atk: 28 } },
+  'magic_recurve_bow_u': { id: 'magic_recurve_bow_u', name: 'Unstrung Magic Shortbow', description: 'Luminescent arcane timber stave humming with latent energy.', type: 'MATERIAL', value: 6000, reqSkill: 'Fletching', reqLevel: 85 },
+  'dragonfire_broadhead_bolts': { id: 'dragonfire_broadhead_bolts', name: 'Dragonfire Tipped Bolts', description: 'Enchanted dragon gem tipped bolts that detonate on impact.', type: 'MATERIAL', value: 1200, reqSkill: 'Fletching', reqLevel: 92, stats: { atk: 45 } },
+  'celestial_hyperion_bow': { id: 'celestial_hyperion_bow', name: 'Celestial Hyperion Star Bow', description: 'Mythic bow carved from world-tree boughs firing pure cosmic starlight beams.', type: 'WEAPON', value: 120000, reqSkill: 'Fletching', reqLevel: 99, stats: { atk: 95 } },
+
   // Equipment - Melee Weapons (Attack Skill Tier Progression)
   'bronze_sword': { id: 'bronze_sword', name: 'Bronze Sword', description: 'A basic melee weapon forged from bronze.', type: 'WEAPON', value: 150, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 5 } },
   'bronze_dagger': { id: 'bronze_dagger', name: 'Bronze Dagger', description: 'A lightweight fast bronze stabbing dagger.', type: 'WEAPON', value: 80, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 3 } },

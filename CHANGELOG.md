@@ -1,3 +1,10 @@
+## [2.1.255] - 2026-08-15
+### Added & Improved
+- **Skill 19/27: Fletching Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete arrow shafts, metal broadhead arrows (Bronze, Iron, Mithril, Rune), unstrung carved bows (Oak, Willow, Maple, Yew, Magic), crossbow bolts, throwing dart spikes, and celestial hyperion bows progression (Whittled Arrow Shafts, Bronze Broadhead Arrows, Unstrung Oak Shortbows, Iron Broadhead Arrows, Unstrung Willow Longbows, Steel Crossbow Bolts, Unstrung Maple Shortbows, Mithril Dart Spikes, Unstrung Yew Longbows, Rune Piercing Arrows, Unstrung Magic Shortbows, Dragonfire Tipped Bolts, and Celestial Hyperion Star Bows) with explicit Fletching level requirements (`reqSkill: 'Fletching'`, `reqLevel: number`), projectile speed bonuses, and armor-penetrating critical damage.
+  - Dynamically aggregated bow carving, arrow fletching, and bolt tipping for the Fletching handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Fletching spanning Lv 10 to Lv 99 (Novice Fletcher, Master Bowyer, Hyperion Fletcher titles, Whittling Knife Flip emote, Fluttering Feather Drift, Orbiting Fletched Arrow Halo, Gale Wind Vortex Corona auras, Windfeather Quiver cosmetic, and Cape of Fletching).
+
 ## [2.1.254] - 2026-08-15
 ### Added & Improved
 - **Skill 18/27: Firemaking Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
