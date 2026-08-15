@@ -1,4 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { soundSynth } from '@/engine/sound-synth';
+import { Layers, Plus, Grid } from 'lucide-react';
 
 interface TilesetPickerProps {
   tilesets: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
@@ -61,6 +63,7 @@ export default function TilesetPicker({
     if (nativeY >= imgRef.current.naturalHeight) return;
     
     const gid = ts.firstgid + (row * ts.columns) + col;
+    soundSynth?.playSelectSound?.();
     onBrushSelect(gid);
   };
 
@@ -100,33 +103,58 @@ export default function TilesetPicker({
         Click a tile below to set your brush, then click or drag on the map. Prefer solid grass (GID 17) for ground fills.
       </p>
 
-      <div className="flex flex-col gap-1 bg-black/40 p-2 rounded border border-slate-800">
+      <div className="flex flex-col gap-1 bg-black/60 p-2 rounded-xl border border-amber-500/20">
         <div className="flex justify-between items-center mb-1">
-           <span className="text-[10px] font-bold text-slate-400">TILE LAYERS</span>
-           <button type="button" onClick={onAddLayer} className="text-[10px] bg-amber-700 hover:bg-[#806f47] text-white px-1.5 rounded transition-colors cursor-pointer">+ Layer</button>
+           <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1.5">
+             <Layers className="w-3.5 h-3.5" />
+             TILE LAYERS
+           </span>
+           <button
+             type="button"
+             onClick={() => {
+               soundSynth?.playActionSound?.();
+               onAddLayer();
+             }}
+             className="text-[10px] bg-amber-600 hover:bg-amber-500 text-black font-bold px-2 py-0.5 rounded transition-colors cursor-pointer flex items-center gap-1"
+           >
+             <Plus className="w-3 h-3" />
+             Layer
+           </button>
         </div>
         {tileLayers.map((layer, idx) => (
           <button 
             key={idx}
             type="button"
-            onClick={() => onLayerChange(idx)}
-            className={`text-left text-xs px-2 py-1 rounded transition-colors cursor-pointer ${activeLayerIdx === idx ? 'bg-[#806f47] text-white font-bold' : 'bg-[#0b1320] text-slate-400 hover:bg-slate-800'}`}
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              onLayerChange(idx);
+            }}
+            className={`text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+              activeLayerIdx === idx
+                ? 'bg-amber-500/20 text-amber-200 border border-amber-500/40 font-bold'
+                : 'bg-[#0b1320] text-slate-400 hover:bg-white/5 border border-transparent'
+            }`}
           >
-            L{idx}: {layer.name}
+            <span>L{idx}: {layer.name}</span>
+            {activeLayerIdx === idx && <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-500/20 text-amber-300">ACTIVE</span>}
           </button>
         ))}
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-bold text-slate-400">ACTIVE TILESET</label>
+        <label className="text-[10px] font-bold text-amber-400/80 flex items-center gap-1.5">
+          <Grid className="w-3 h-3 text-amber-400" />
+          ACTIVE TILESET
+        </label>
         <select 
           value={activeTsIdx} 
           onChange={(e) => {
+            soundSynth?.playUiClick?.();
             setActiveTsIdx(parseInt(e.target.value));
             setNatural({ w: 0, h: 0 });
             setHoveredTile(null);
           }}
-          className="w-full bg-[#050b14] border border-slate-800 rounded px-2 py-1 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-[#cbb26a]"
+          className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-amber-400 cursor-pointer"
         >
           {tilesets.map((t, i) => (
             <option key={i} value={i}>{t.imageSource}</option>
@@ -135,7 +163,7 @@ export default function TilesetPicker({
       </div>
 
       {ts && (
-        <div className="bg-black/60 rounded border border-slate-700 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
+        <div className="bg-black/80 rounded-xl border border-amber-500/30 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
            <div className="relative inline-block min-w-full">
              <img 
                ref={imgRef}
@@ -188,7 +216,7 @@ export default function TilesetPicker({
              )}
              {selection && (
                <div
-                 className="pointer-events-none absolute border-2 border-[#cbb26a] bg-[#cbb26a]/20 shadow-[0_0_0_1px_rgba(0,0,0,0.75)] z-10"
+                 className="pointer-events-none absolute border-2 border-amber-400 bg-amber-400/20 shadow-[0_0_0_1px_rgba(0,0,0,0.75)] z-10"
                  style={{
                    left: `${selection.leftPct}%`,
                    top: `${selection.topPct}%`,
@@ -202,15 +230,16 @@ export default function TilesetPicker({
         </div>
       )}
       
-      <div className="flex justify-between items-center text-[10px] text-[#e2d5b3] bg-[#0b1320] border border-slate-800 p-1.5 rounded">
-        <span>Active Brush GID:</span>
+      <div className="flex justify-between items-center text-[10px] text-amber-200 bg-[#0b1320] border border-amber-500/20 p-2 rounded-lg">
+        <span className="font-bold">Active Brush GID:</span>
         <div className="flex items-center gap-2">
           {hoveredTile && (
-            <span className="text-[10px] text-cyan-400">Hover: GID {hoveredTile.gid}</span>
+            <span className="text-[10px] text-cyan-400 font-bold">Hover: GID {hoveredTile.gid}</span>
           )}
-          <span className="font-bold text-white bg-[#050b14] px-2 py-0.5 rounded border border-[#806f47]/40">{activeBrushTileId}</span>
+          <span className="font-bold text-black bg-amber-400 px-2 py-0.5 rounded shadow">{activeBrushTileId}</span>
         </div>
       </div>
     </div>
   );
 }
+

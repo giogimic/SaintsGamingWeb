@@ -1,7 +1,3 @@
-/**
- * Studio Omnisearch — Ctrl+K command palette for definitions, maps, and actions.
- * Searches maps, items, quests, creatures, docks, and quick actions.
- */
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -17,6 +13,7 @@ import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap
 import { ITEM_DB } from '../data/items';
 import { SAINTS_DEX } from '../data/saints-dex';
 import { SAINTS_TAMER_QUESTS } from '../data/quests';
+import { soundSynth } from '@/engine/sound-synth';
 
 /* ── Types ────────────────────────────────────────── */
 
@@ -264,16 +261,20 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      soundSynth?.playSelectSound?.();
       setSelectedIdx((prev) => Math.min(prev + 1, results.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
+      soundSynth?.playSelectSound?.();
       setSelectedIdx((prev) => Math.max(prev - 1, 0));
     } else if (e.key === 'Enter' && results[selectedIdx]) {
       e.preventDefault();
+      soundSynth?.playActionSound?.();
       results[selectedIdx].onSelect();
       onClose();
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      soundSynth?.playSelectSound?.();
       onClose();
     }
   }, [results, selectedIdx, onClose]);
@@ -291,13 +292,18 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
   return (
     <div className="fixed inset-0 z-[200] pointer-events-auto flex items-start justify-center pt-[15vh]">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Palette dialog */}
-      <div className="relative w-full max-w-xl bg-[#0a101d] border border-[#806f47]/40 rounded-xl shadow-2xl overflow-hidden font-mono text-sm">
+      <div
+        className="relative w-full max-w-xl bg-[#0a101d] border border-amber-500/40 rounded-2xl shadow-[0_0_40px_rgba(245,158,11,0.2)] overflow-hidden font-mono text-sm"
+        style={{
+          clipPath: 'polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)',
+        }}
+      >
         {/* Search input bar */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#050b14]/90">
-          <Search className="w-5 h-5 text-[#cbb26a] shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-amber-500/20 bg-[#050b14]/95">
+          <Search className="w-5 h-5 text-amber-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -308,11 +314,17 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
             className="flex-1 bg-transparent text-white placeholder-slate-500 text-sm focus:outline-none"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-slate-500 hover:text-white">
+            <button
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setQuery('');
+              }}
+              className="text-slate-500 hover:text-white cursor-pointer"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
-          <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+          <span className="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-bold">
             ESC to close
           </span>
         </div>
@@ -332,12 +344,15 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
                 <div
                   key={r.id}
                   onClick={() => {
+                    soundSynth?.playActionSound?.();
                     r.onSelect();
                     onClose();
                   }}
                   onMouseEnter={() => setSelectedIdx(idx)}
                   className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                    isSelected ? 'bg-[#806f47]/25 text-white' : 'text-slate-300 hover:bg-white/5'
+                    isSelected
+                      ? 'bg-amber-500/20 text-amber-100 border border-amber-500/30'
+                      : 'text-slate-300 hover:bg-white/5 border border-transparent'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -346,8 +361,8 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
                     </span>
                     <div className="min-w-0">
                       <div className="font-semibold text-xs truncate flex items-center gap-1.5">
-                        <span>{r.title}</span>
-                        <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-white/5 text-slate-400 border border-white/5">
+                        <span className="font-bold">{r.title}</span>
+                        <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-white/5 text-amber-400/80 border border-amber-500/20 font-bold">
                           {r.type}
                         </span>
                       </div>
@@ -364,20 +379,21 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          soundSynth?.playUiClick?.();
                           toggleBookmark({ id: r.id, type: r.type, title: r.title });
                         }}
-                        className="text-slate-500 hover:text-yellow-400 p-1"
+                        className="text-slate-500 hover:text-amber-400 p-1 cursor-pointer"
                         title={bookmarked ? 'Remove bookmark' : 'Bookmark'}
                       >
                         {bookmarked ? (
-                          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                         ) : (
                           <StarOff className="w-3.5 h-3.5" />
                         )}
                       </button>
                     )}
                     {isSelected && (
-                      <CornerDownLeft className="w-3.5 h-3.5 text-[#cbb26a] animate-pulse" />
+                      <CornerDownLeft className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                     )}
                   </div>
                 </div>
@@ -387,15 +403,16 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
         </div>
 
         {/* Footer info strip */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-white/5 bg-[#050b14]/50 text-[10px] text-slate-500">
+        <div className="flex items-center justify-between px-4 py-2 border-t border-amber-500/20 bg-[#050b14]/70 text-[10px] text-slate-400 font-bold">
           <div className="flex items-center gap-3">
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
             <span>ESC Close</span>
           </div>
-          <span>{results.length} result{results.length !== 1 ? 's' : ''}</span>
+          <span className="text-amber-400">{results.length} result{results.length !== 1 ? 's' : ''}</span>
         </div>
       </div>
     </div>
   );
 }
+
