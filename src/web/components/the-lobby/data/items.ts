@@ -16,6 +16,24 @@ export interface ItemSchema {
 }
 
 export const ITEM_DB: Record<string, ItemSchema> = {
+  // Mining Pickaxes & Ore Strata (Mining Skill Tier Progression)
+  'pickaxe_bronze': { id: 'pickaxe_bronze', name: 'Bronze Mining Pickaxe', description: 'Basic bronze pickaxe used to extract copper and tin ore veins.', type: 'WEAPON', value: 40, reqSkill: 'Mining', reqLevel: 1, stats: { atk: 3 } },
+  'ore_copper': { id: 'ore_copper', name: 'Copper Ore', description: 'Raw copper mineral extracted from surface rock veins.', type: 'MATERIAL', value: 5, reqSkill: 'Mining', reqLevel: 1 },
+  'tin_ore': { id: 'tin_ore', name: 'Tin Ore', description: 'Raw tin mineral. Combine with copper to smelt bronze bars.', type: 'MATERIAL', value: 5, reqSkill: 'Mining', reqLevel: 1 },
+  'pickaxe_iron': { id: 'pickaxe_iron', name: 'Iron Mining Pickaxe', description: 'Sturdy iron pickaxe offering +15% faster mineral extraction.', type: 'WEAPON', value: 150, reqSkill: 'Mining', reqLevel: 10, stats: { atk: 6 } },
+  'ore_iron': { id: 'ore_iron', name: 'Iron Ore', description: 'Dense ferrous mineral extracted from deep rock quarries.', type: 'MATERIAL', value: 18, reqSkill: 'Mining', reqLevel: 15 },
+  'pickaxe_steel': { id: 'pickaxe_steel', name: 'Steel Mining Pickaxe', description: 'Tempered steel pickaxe splitting tough rock strata.', type: 'WEAPON', value: 500, reqSkill: 'Mining', reqLevel: 20, stats: { atk: 10 } },
+  'mineral_coal': { id: 'mineral_coal', name: 'Mineral Coal Chunk', description: 'Combustible black coal used as smelting fuel in blast furnaces.', type: 'MATERIAL', value: 45, reqSkill: 'Mining', reqLevel: 30 },
+  'pickaxe_mithril': { id: 'pickaxe_mithril', name: 'Mithril Mining Pickaxe', description: 'Lightweight sky-blue pickaxe with increased swing velocity.', type: 'WEAPON', value: 1600, reqSkill: 'Mining', reqLevel: 30, stats: { atk: 15 } },
+  'pickaxe_adamant': { id: 'pickaxe_adamant', name: 'Adamant Mining Pickaxe', description: 'Heavy green pickaxe cleaving dense subterranean bedrock.', type: 'WEAPON', value: 4500, reqSkill: 'Mining', reqLevel: 40, stats: { atk: 22 } },
+  'pickaxe_rune': { id: 'pickaxe_rune', name: 'Rune Mining Pickaxe', description: 'Azure rune pickaxe mining high-hardness mineral veins rapidly.', type: 'WEAPON', value: 18000, reqSkill: 'Mining', reqLevel: 50, stats: { atk: 32 } },
+  'ore_mithril': { id: 'ore_mithril', name: 'Mithril Ore', description: 'Precious lightweight blue mineral vein.', type: 'MATERIAL', value: 120, reqSkill: 'Mining', reqLevel: 55 },
+  'ore_adamantite': { id: 'ore_adamantite', name: 'Adamantite Ore', description: 'Extremely dense greenish mineral rock.', type: 'MATERIAL', value: 350, reqSkill: 'Mining', reqLevel: 70 },
+  'pickaxe_saintly': { id: 'pickaxe_saintly', name: 'Saintly Lumite Pickaxe', description: 'Golden consecrated pickaxe extracting double ores with holy resonance.', type: 'WEAPON', value: 45000, reqSkill: 'Mining', reqLevel: 75, stats: { atk: 45 } },
+  'ore_runite': { id: 'ore_runite', name: 'Runite Ore', description: 'Rare glowing cyan ore guarded by subterranean beasts.', type: 'MATERIAL', value: 1500, reqSkill: 'Mining', reqLevel: 85 },
+  'pickaxe_celestial': { id: 'pickaxe_celestial', name: 'Celestial Starfall Pickaxe', description: 'Mythic pickaxe forged from fallen meteorites instantly shattering bedrock.', type: 'WEAPON', value: 100000, reqSkill: 'Mining', reqLevel: 99, stats: { atk: 65 } },
+  'celestial_asteroid_shard': { id: 'celestial_asteroid_shard', name: 'Celestial Asteroid Core', description: 'Hyper-dense cosmic asteroid shard mined from fallen star crash sites.', type: 'MATERIAL', value: 50000, reqSkill: 'Mining', reqLevel: 99 },
+
   // Materials & Farming Crops (Farming Skill Tier Progression)
   'seed_potato': { id: 'seed_potato', name: 'Potato Allotment Seed', description: 'Fast-growing potato seeds for beginner farming plots.', type: 'MATERIAL', value: 4, reqSkill: 'Farming', reqLevel: 1 },
   'seed_guam': { id: 'seed_guam', name: 'Guam Herb Seed', description: 'Aromatic herb seeds used in basic restorative herblore potions.', type: 'MATERIAL', value: 15, reqSkill: 'Farming', reqLevel: 9 },
@@ -69,7 +87,6 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'binding_crystal': { id: 'binding_crystal', name: 'Standard Film (legacy)', description: 'Legacy slug — prefer film_standard.', type: 'CONSUMABLE', value: 100 },
   'capture_script': { id: 'capture_script', name: 'Film (legacy)', description: 'Legacy slug. Prefer film_standard.', type: 'CONSUMABLE', value: 100 },
   'axe_bronze': { id: 'axe_bronze', name: 'Rook Hatchet', description: 'Woodcutting tool (demo starter kit).', type: 'WEAPON', value: 40, reqSkill: 'Attack', reqLevel: 1 },
-  'pickaxe_bronze': { id: 'pickaxe_bronze', name: 'Crude Pickaxe', description: 'Mining tool (demo starter kit).', type: 'WEAPON', value: 40, reqSkill: 'Attack', reqLevel: 1 },
 
   // Equipment - Melee Weapons (Attack Skill Tier Progression)
   'bronze_sword': { id: 'bronze_sword', name: 'Bronze Sword', description: 'A basic melee weapon forged from bronze.', type: 'WEAPON', value: 150, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 5 } },

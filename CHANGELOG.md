@@ -1,3 +1,10 @@
+## [2.1.249] - 2026-08-15
+### Added & Improved
+- **Skill 13/27: Mining Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete mining pickaxes, metal ore strata, coal fuel, and cosmic asteroid cores progression (Bronze, Iron, Steel, Mithril, Adamant, Rune, Saintly Lumite, and Celestial Starfall Pickaxes, Copper, Tin, Iron, Coal, Mithril, Adamantite, Runite Ores, and Celestial Asteroid Cores) with explicit Mining level requirements (`reqSkill: 'Mining'`, `reqLevel: number`) and mineral extraction speed multipliers.
+  - Dynamically aggregated pickaxes, ores, and geological quarrying nodes for the Mining handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Mining spanning Lv 10 to Lv 99 (Novice Miner, Veteran Prospector, Earth Shaker titles, Ore Dust Sparks, Orbiting Geode Ring, Seismic Magma Corona auras, Hardhat Mining Lamp cosmetic, and Cape of Mining).
+
 ## [2.1.248] - 2026-08-15
 ### Added & Improved
 - **Skill 12/27: Hunter Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
