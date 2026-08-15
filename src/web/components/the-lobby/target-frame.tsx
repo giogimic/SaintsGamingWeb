@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { useGameStore } from './store';
-import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare, UserPlus, Swords } from 'lucide-react';
-import { GamePanelShell } from './ui/GamePanelShell';
+import { Flame, AlertTriangle, Wind, X, User, Skull, MessageSquare, UserPlus, Swords, Crosshair } from 'lucide-react';
+import { HudPanelShell } from './hud/HudPanelShell';
+import { soundSynth } from '@/engine/sound-synth';
 
 export default function TargetFrame() {
   const combatTarget = useGameStore(state => state.combatTarget);
@@ -21,6 +22,7 @@ export default function TargetFrame() {
 
   const handlePartyInvite = () => {
     if (!target.name) return;
+    soundSynth?.playActionSound?.();
     const emitSocketEvent = useGameStore.getState().emitSocketEvent;
     emitSocketEvent?.('party_invite_send', { targetName: target.name });
     showToast(`Sent party invitation to ${target.name}!`);
@@ -28,6 +30,7 @@ export default function TargetFrame() {
 
   const handleDuelChallenge = () => {
     if (!target.name) return;
+    soundSynth?.playActionSound?.();
     const emitSocketEvent = useGameStore.getState().emitSocketEvent;
     emitSocketEvent?.('battle_invite_send', { targetId: target.entityId, targetName: target.name });
     showToast(`Challenged ${target.name} to a Saints Buddy Battle!`);
@@ -35,6 +38,7 @@ export default function TargetFrame() {
 
   const handleWhisper = () => {
     if (!target.name) return;
+    soundSynth?.playSelectSound?.();
     window.dispatchEvent(
       new CustomEvent('game_chat_msg', {
         detail: {
@@ -50,106 +54,113 @@ export default function TargetFrame() {
 
   return (
     <div className="pointer-events-none flex flex-col items-center" data-testid="target-frame">
-      <GamePanelShell neonAccent={isPlayer ? 'cyan' : 'magenta'} className="pointer-events-auto px-4 py-2.5 min-w-[240px] md:min-w-[280px] relative">
-        <div className="flex justify-between items-center mb-1.5 gap-2">
-          <div className="flex items-center gap-1.5 min-w-0">
+      <HudPanelShell 
+        accentState={isPlayer ? 'active' : isCreature ? 'alert' : 'none'} 
+        className="pointer-events-auto min-w-[260px] md:min-w-[300px] shadow-[0_0_20px_rgba(0,0,0,0.8)]"
+        title={target.name}
+        icon={<Crosshair className={`w-3.5 h-3.5 ${isPlayer ? 'text-cyan-400' : isCreature ? 'text-rose-400' : 'text-amber-400'}`} />}
+        headerRight={
+          <div className="flex items-center gap-1.5">
             {isPlayer && (
-              <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/50 shrink-0">
-                <User className="w-2.5 h-2.5" /> PLAYER
+              <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 uppercase">
+                PLAYER
               </span>
             )}
             {isCreature && (
-              <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-purple-950 text-purple-300 border border-purple-700/50 shrink-0">
-                <Skull className="w-2.5 h-2.5" /> WILD
+              <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-500/40 uppercase">
+                WILD
               </span>
             )}
             {isNpc && (
-              <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-700/50 shrink-0">
-                <MessageSquare className="w-2.5 h-2.5" /> NPC
+              <span className="text-[8px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-500/40 uppercase">
+                NPC
               </span>
             )}
-            <div className="font-extrabold text-white text-[13px] tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] truncate">
-              {target.name}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="text-[11px] text-red-200/80 font-mono tracking-tighter">
-              {Math.ceil(target.hp)} <span className="text-red-400/50">/ {target.maxHp}</span>
-            </div>
             <button
-              onClick={() => setCombatTarget(null)}
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setCombatTarget(null);
+              }}
               className="text-slate-400 hover:text-white p-0.5 rounded hover:bg-white/10 transition-colors cursor-pointer"
               title="Clear Target"
             >
               <X className="w-3 h-3" />
             </button>
           </div>
-        </div>
-        
-        <div className="relative w-full h-1.5 bg-black/60 overflow-hidden rounded-sm border border-red-500/20">
-          <div 
-            className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${target.behavior === 'ENRAGED' ? 'bg-[#f97316] shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'bg-[#ef4444] shadow-[0_0_8px_rgba(239,68,68,0.6)]'}`}
-            style={{ width: `${hpPercent}%` }}
-          />
-          {/* Tick marks */}
-          <div className="absolute top-0 bottom-0 w-px bg-black/60 z-10 mix-blend-overlay left-[25%]" />
-          <div className="absolute top-0 bottom-0 w-px bg-black/60 z-10 mix-blend-overlay left-[50%]" />
-          <div className="absolute top-0 bottom-0 w-px bg-black/60 z-10 mix-blend-overlay left-[75%]" />
-        </div>
-        
-        {target.behavior && target.behavior !== 'CALM' && (
-          <div className="absolute -top-2.5 -right-2.5 z-20">
-            {target.behavior === 'ENRAGED' && (
-              <div className="bg-[#050b14]/90 backdrop-blur-sm border border-orange-500 p-1.5 rounded-md shadow-[0_0_15px_rgba(249,115,22,0.4)] animate-pulse">
-                <Flame size={14} className="text-orange-400" />
-              </div>
-            )}
-            {target.behavior === 'ALERT' && (
-              <div className="bg-[#050b14]/90 backdrop-blur-sm border border-yellow-400 p-1.5 rounded-md shadow-[0_0_15px_rgba(250,204,21,0.4)]">
-                <AlertTriangle size={14} className="text-yellow-400" />
-              </div>
-            )}
-            {target.behavior === 'FLEEING' && (
-              <div className="bg-[#050b14]/90 backdrop-blur-sm border border-cyan-400 p-1.5 rounded-md shadow-[0_0_15px_rgba(34,211,238,0.4)] animate-bounce">
-                <Wind size={14} className="text-cyan-400" />
-              </div>
-            )}
-          </div>
-        )}
-        
-        {target.isCasting && target.castName && (
-          <div className="mt-1.5 text-[10px] text-orange-400 font-mono text-center animate-pulse uppercase tracking-widest font-bold">
-            [{target.castName}]
-          </div>
-        )}
+        }
+      >
+        <div className="flex flex-col gap-2 p-1 font-mono text-xs">
+          {/* Health Gauge Bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[10px]">
+              <span className="text-slate-400 font-bold uppercase">TARGET VITALITY</span>
+              <span className="font-bold text-rose-300">
+                {Math.ceil(target.hp)} <span className="text-slate-500">/ {target.maxHp}</span>
+              </span>
+            </div>
 
-        {isPlayer && (
-          <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-cyan-900/40 justify-end">
-            <button
-              onClick={handlePartyInvite}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-700/60 text-cyan-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-              title={`Invite ${target.name} to Party`}
-            >
-              <UserPlus className="w-3 h-3" /> Invite
-            </button>
-            <button
-              onClick={handleDuelChallenge}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-950/80 hover:bg-amber-900 border border-amber-700/60 text-amber-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-              title={`Challenge ${target.name} to Duel`}
-            >
-              <Swords className="w-3 h-3" /> Duel
-            </button>
-            <button
-              onClick={handleWhisper}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/80 hover:bg-purple-900 border border-purple-700/60 text-purple-300 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-              title={`Whisper ${target.name}`}
-            >
-              <MessageSquare className="w-3 h-3" /> Whisper
-            </button>
+            <div className="relative w-full h-2 bg-black/80 overflow-hidden rounded border border-rose-500/30">
+              <div 
+                className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${
+                  target.behavior === 'ENRAGED' 
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-400 shadow-[0_0_10px_rgba(249,115,22,0.8)]' 
+                    : 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.6)]'
+                }`}
+                style={{ width: `${hpPercent}%` }}
+              />
+              <div className="absolute top-0 bottom-0 w-px bg-black/60 z-10 left-[25%]" />
+              <div className="absolute top-0 bottom-0 w-px bg-black/60 z-10 left-[50%]" />
+              <div className="absolute top-0 bottom-0 w-px bg-black/60 z-10 left-[75%]" />
+            </div>
           </div>
-        )}
-      </GamePanelShell>
+
+          {/* Behavior Alert Icon */}
+          {target.behavior && target.behavior !== 'CALM' && (
+            <div className="flex items-center justify-between text-[10px] px-2 py-1 rounded bg-black/40 border border-slate-800">
+              <span className="text-slate-400">STATE:</span>
+              <span className={`font-bold uppercase ${
+                target.behavior === 'ENRAGED' ? 'text-orange-400 animate-pulse' : 'text-amber-300'
+              }`}>
+                {target.behavior}
+              </span>
+            </div>
+          )}
+          
+          {target.isCasting && target.castName && (
+            <div className="text-[10px] text-amber-300 font-mono text-center animate-pulse uppercase tracking-widest font-black py-0.5 bg-amber-950/30 rounded border border-amber-500/30">
+              [{target.castName}]
+            </div>
+          )}
+
+          {/* Player Quick Actions */}
+          {isPlayer && (
+            <div className="flex items-center gap-1.5 pt-1.5 border-t border-cyan-500/20 justify-end">
+              <button
+                onClick={handlePartyInvite}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-200 text-[10px] font-mono font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+                title={`Invite ${target.name} to Party`}
+              >
+                <UserPlus className="w-3 h-3" /> Invite
+              </button>
+              <button
+                onClick={handleDuelChallenge}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+                title={`Challenge ${target.name} to Duel`}
+              >
+                <Swords className="w-3 h-3" /> Duel
+              </button>
+              <button
+                onClick={handleWhisper}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 text-purple-200 text-[10px] font-mono font-bold transition-all active:scale-95 cursor-pointer shadow-sm"
+                title={`Whisper ${target.name}`}
+              >
+                <MessageSquare className="w-3 h-3" /> Msg
+              </button>
+            </div>
+          )}
+        </div>
+      </HudPanelShell>
     </div>
   );
 }
+
