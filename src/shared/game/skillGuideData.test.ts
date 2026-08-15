@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, & Wisdom battlepass tier rewards from Lv 5 to Lv 50', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, & Intelligence battlepass tier rewards from Lv 5 to Lv 50', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -85,9 +85,14 @@ describe('skillGuideData Registry', () => {
     expect(wisdomGuide.battlepassTiers.length).toBe(10);
     expect(wisdomGuide.battlepassTiers[0].rewardName).toContain('Novice Acolyte');
     expect(wisdomGuide.battlepassTiers[9].rewardName).toContain('Cape of Wisdom');
+
+    const intGuide = getSkillGuide('intelligence')!;
+    expect(intGuide.battlepassTiers.length).toBe(10);
+    expect(intGuide.battlepassTiers[0].rewardName).toContain('Novice Evoker');
+    expect(intGuide.battlepassTiers[9].rewardName).toContain('Cape of Intelligence');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, and relics for Wisdom in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, and wands for Intelligence in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -122,6 +127,11 @@ describe('skillGuideData Registry', () => {
     expect(wisdomUnlocks.length).toBeGreaterThan(0);
     expect(wisdomUnlocks.some((u) => u.title.includes('Talisman') || u.title.includes('Mana') || u.title.includes('Scripture') || u.title.includes('Buckler') || u.title.includes('Aegis') || u.title.includes('Sanctuary'))).toBe(true);
     expect(wisdomUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
+
+    const intUnlocks = getAllSkillUnlocks('intelligence');
+    expect(intUnlocks.length).toBeGreaterThan(0);
+    expect(intUnlocks.some((u) => u.title.includes('Wand') || u.title.includes('Staff') || u.title.includes('Orb') || u.title.includes('Grimoire') || u.title.includes('Scepter') || u.title.includes('Singularity'))).toBe(true);
+    expect(intUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {

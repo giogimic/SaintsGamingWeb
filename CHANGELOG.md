@@ -1,3 +1,10 @@
+## [2.1.245] - 2026-08-15
+### Added & Improved
+- **Skill 9/27: Intelligence Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete spellcasting wands, arcane staves, and catalysts progression (Apprentice Ash Wands, Sparking Quartz Wands, Pyromancer Ash Staves, Glacial Cryo Orbs, Thunderstrike Grimoires, Voidwalker Arch-Staves, Saintly Sunfire Scepters, and Celestial Singularity Batons) with explicit Intelligence level requirements (`reqSkill: 'Intelligence'`, `reqLevel: number`) and spell attack power/haste stats.
+  - Dynamically aggregated arcane wands, staves, and destructive elemental abilities for the Intelligence handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Intelligence (Novice Evoker, Pyromancer Adept, Grand Archmage titles, Magenta Rune Glyphs, Lightning Arc Storm, Cosmic Plasma Corona auras, Floating Grimoire Pet, and Cape of Intelligence).
+
 ## [2.1.244] - 2026-08-15
 ### Added & Improved
 - **Skill 8/27: Wisdom Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
