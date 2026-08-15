@@ -1,3 +1,10 @@
+## [2.1.252] - 2026-08-15
+### Added & Improved
+- **Skill 16/27: Cooking Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete culinary dishes, baked pies, seafood feasts, chef attire, and celestial ambrosia progression (Cooked Coastal Shrimp, Fresh Oven Bread Loaves, Master Chef Toques & Aprons, Pan-Seared Rainbow Trout, Deep-Dish Venison Meat Pies, Grilled Salmon Fillets, Butter-Steamed Ocean Lobsters, Charbroiled Swordfish Steaks, Glazed Summer Berry Pies, Charred Apex Shark Cutlets, Royal Grand Banquet Roasts, and Celestial Ambrosia of the Saints) with explicit Cooking level requirements (`reqSkill: 'Cooking'`, `reqLevel: number`), food burning reductions, and massive health/stat restorations.
+  - Dynamically aggregated kitchen ranges, campfire recipes, and banquet roasts for the Cooking handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Cooking spanning Lv 10 to Lv 99 (Novice Cook, Banquet Chef, Culinary Master titles, Flambé Frying Pan emote, Sizzling Ember Steam, Orbiting Roast Feast Halo, Saintly Golden Feast Corona auras, Golden Chef Hat & Cleaver cosmetic, and Cape of Cooking).
+
 ## [2.1.251] - 2026-08-15
 ### Added & Improved
 - **Skill 15/27: Construction Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:

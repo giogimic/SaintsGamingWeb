@@ -59,6 +59,21 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'spirit_tree_seed': { id: 'spirit_tree_seed', name: 'Spirit Tree Acorn', description: 'Sentient tree seed allowing worldwide fast-travel teleportation roots.', type: 'MATERIAL', value: 10000, reqSkill: 'Farming', reqLevel: 83 },
   'celestial_starflower_seed': { id: 'celestial_starflower_seed', name: 'Celestial Starflower Bulb', description: 'Mythic cosmic flower blooming in starlight and yielding immortal nectar.', type: 'MATERIAL', value: 45000, reqSkill: 'Farming', reqLevel: 99 },
   
+  // Consumables & Culinary Dishes (Cooking Skill Tier Progression)
+  'cooked_shrimp': { id: 'cooked_shrimp', name: 'Cooked Coastal Shrimp', description: 'Crisp pan-fried shrimp restoring immediate beginner health.', type: 'FOOD', value: 8, reqSkill: 'Cooking', reqLevel: 1, stats: { hp: 15 } },
+  'bread_loaf': { id: 'bread_loaf', name: 'Fresh Oven Bread Loaf', description: 'Golden baked bread loaf offering nourishing sustenance.', type: 'FOOD', value: 15, reqSkill: 'Cooking', reqLevel: 5, stats: { hp: 30 } },
+  'chefs_hat': { id: 'chefs_hat', name: 'Master Chef Toque', description: 'Crisp white chef hat granting -20% food burning chance.', type: 'HEAD', value: 120, reqSkill: 'Cooking', reqLevel: 10, stats: { hp: 10, def: 2 } },
+  'chefs_apron': { id: 'chefs_apron', name: 'Master Chef Apron', description: 'Stain-resistant cooking apron offering heat insulation.', type: 'CHEST', value: 150, reqSkill: 'Cooking', reqLevel: 10, stats: { hp: 15, def: 4 } },
+  'cooked_trout_dish': { id: 'cooked_trout_dish', name: 'Pan-Seared Rainbow Trout', description: 'Herb-crusted river trout restoring good combat vitality.', type: 'FOOD', value: 50, reqSkill: 'Cooking', reqLevel: 15, stats: { hp: 65 } },
+  'meat_pie': { id: 'meat_pie', name: 'Deep-Dish Venison Meat Pie', description: 'Two-bite savory meat pie packed with rich gravy and vegetables.', type: 'FOOD', value: 90, reqSkill: 'Cooking', reqLevel: 20, stats: { hp: 95 } },
+  'cooked_salmon_fillet': { id: 'cooked_salmon_fillet', name: 'Grilled Salmon Fillet', description: 'Rich omega-dense salmon fillet healing significant battle wounds.', type: 'FOOD', value: 180, reqSkill: 'Cooking', reqLevel: 25, stats: { hp: 135 } },
+  'cooked_lobster_pot': { id: 'cooked_lobster_pot', name: 'Butter-Steamed Ocean Lobster', description: 'Succulent steamed lobster meat dipped in melted garlic butter.', type: 'FOOD', value: 450, reqSkill: 'Cooking', reqLevel: 40, stats: { hp: 210 } },
+  'cooked_swordfish_steak': { id: 'cooked_swordfish_steak', name: 'Charbroiled Swordfish Steak', description: 'Tender bladed swordfish steak packed with restorative protein.', type: 'FOOD', value: 850, reqSkill: 'Cooking', reqLevel: 50, stats: { hp: 280 } },
+  'summer_berry_pie': { id: 'summer_berry_pie', name: 'Glazed Summer Berry Pie', description: 'Sweet berry pie providing rapid health and stamina restoration.', type: 'FOOD', value: 1400, reqSkill: 'Cooking', reqLevel: 65, stats: { hp: 350 } },
+  'cooked_shark_ration': { id: 'cooked_shark_ration', name: 'Charred Apex Shark Cutlet', description: 'Supreme predator steak delivering elite burst combat recovery.', type: 'FOOD', value: 2600, reqSkill: 'Cooking', reqLevel: 80, stats: { hp: 440 } },
+  'royal_banquet_roast': { id: 'royal_banquet_roast', name: 'Royal Grand Banquet Roast', description: 'Multi-course holiday roast boosting max health and granting +10% party damage.', type: 'FOOD', value: 6500, reqSkill: 'Cooking', reqLevel: 90, stats: { hp: 600, atk: 10 } },
+  'celestial_ambrosia_dish': { id: 'celestial_ambrosia_dish', name: 'Celestial Ambrosia of the Saints', description: 'Mythic dish of the gods granting immortality aura and massive stat boosts.', type: 'FOOD', value: 50000, reqSkill: 'Cooking', reqLevel: 99, stats: { hp: 1200, atk: 15, def: 15 } },
+
   // Consumables & Raw Seafood Catches (Fishing Skill Tier Progression)
   'small_fishing_net': { id: 'small_fishing_net', name: 'Small Hand Fishing Net', description: 'Woven mesh net used to scoop freshwater shrimp and minnows.', type: 'MATERIAL', value: 20, reqSkill: 'Fishing', reqLevel: 1 },
   'raw_shrimp': { id: 'raw_shrimp', name: 'Raw Coastal Shrimp', description: 'Freshly netted shrimp ready for cooking.', type: 'FOOD', value: 4, reqSkill: 'Fishing', reqLevel: 1 },
