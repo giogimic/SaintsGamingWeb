@@ -11,9 +11,12 @@ import {
   X,
   ChevronUp,
   MapPin,
+  Send,
 } from 'lucide-react';
 import { useGameStore } from './store';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
+import { HudPanelShell } from './hud/HudPanelShell';
+import { soundSynth } from '@/engine/sound-synth';
 
 interface StaffFloatingMenuProps {
   permissionLevel: number;
@@ -49,6 +52,7 @@ export function StaffFloatingMenu({
   const sendAnnounce = () => {
     const text = announce.trim();
     if (!text) return;
+    soundSynth?.playActionSound?.();
     emitSocketEvent?.('staff_announce', text);
     showToast('Announcement sent to this map');
     setAnnounce('');
@@ -57,6 +61,7 @@ export function StaffFloatingMenu({
   const tpToPlayer = (socketId: string, name: string) => {
     const peer = (otherPlayers || {})[socketId];
     if (!peer) return;
+    soundSynth?.playActionSound?.();
     useGameStore.getState().setPlayerPosition({ x: peer.x, y: peer.y }, peer.direction || 'down', false);
     emitSocketEvent?.('player_move', { x: peer.x, y: peer.y, direction: peer.direction || 'down' });
     showToast(`Teleported to ${name}`);
@@ -65,118 +70,129 @@ export function StaffFloatingMenu({
   const kickPlayer = (socketId: string, name: string) => {
     if (!isAdmin) return;
     if (!confirm(`Remove ${name} from the map?`)) return;
+    soundSynth?.playActionSound?.();
     emitSocketEvent?.('staff_kick', socketId);
     showToast(`Kick requested for ${name}`);
   };
 
   return (
-    <div className="fixed bottom-24 left-4 z-[80] pointer-events-auto sm:bottom-8 sm:left-8">
+    <div className="fixed bottom-24 left-4 z-[80] pointer-events-auto sm:bottom-8 sm:left-8 select-none font-mono">
       {open && (
-        <div className="mb-3 w-[min(92vw,320px)] rounded-2xl border border-[#cbb26a]/40 bg-[#0c1220]/95 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.45)] overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#cbb26a]/20">
-            <div className="flex items-center gap-2 text-[#e8d5a3] font-mono text-xs uppercase tracking-widest">
-              <Shield className="w-4 h-4" />
-              Staff Commands
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+        <div className="mb-3 w-[min(92vw,340px)] animate-in fade-in slide-in-from-bottom-2">
+          <HudPanelShell
+            title="STAFF CONTROLS"
+            icon={<Shield className="w-4 h-4 text-amber-400" />}
+            onClose={() => {
+              soundSynth?.playSelectSound?.();
+              setOpen(false);
+            }}
+            headerRight={
+              <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/40 uppercase">
+                {isAdmin ? 'ADMIN' : 'MOD'}
+              </span>
+            }
+          >
+            <div className="p-3 space-y-3 max-h-[50vh] overflow-y-auto custom-scrollbar">
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 flex items-center gap-1.5">
+                  <Megaphone className="w-3.5 h-3.5 text-amber-400" /> Map Announce
+                </div>
+                <div className="flex gap-1.5">
+                  <input
+                    value={announce}
+                    onChange={(e) => setAnnounce(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && sendAnnounce()}
+                    placeholder="Message to players on this map…"
+                    className="flex-1 bg-black/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
+                  />
+                  <button
+                    onClick={sendAnnounce}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <Send className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
 
-          <div className="p-3 space-y-3 max-h-[50vh] overflow-y-auto">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mb-2 flex items-center gap-1">
-                <Megaphone className="w-3 h-3" /> Map Announce
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={announce}
-                  onChange={(e) => setAnnounce(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendAnnounce()}
-                  placeholder="Message to players on this map…"
-                  className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-slate-600 outline-none focus:border-[#cbb26a]/50"
-                />
-                <button
-                  onClick={sendAnnounce}
-                  className="px-3 py-2 rounded-xl bg-[#cbb26a]/20 border border-[#cbb26a]/40 text-[#e8d5a3] text-xs font-bold hover:bg-[#cbb26a]/30 cursor-pointer"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mb-2 flex items-center gap-1">
-                <Users className="w-3 h-3" /> Nearby ({nearby.length})
-              </div>
-              {nearby.length === 0 ? (
-                <p className="text-xs text-slate-500 px-1">No other players visible on this map.</p>
-              ) : (
-                <ul className="space-y-1">
-                  {nearby.map((p) => (
-                    <li
-                      key={p.socketId}
-                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/5"
-                    >
-                      <span className="text-sm text-slate-200 truncate">{p.name}</span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => tpToPlayer(p.socketId, p.name)}
-                          className="p-1.5 rounded-md text-cyan-300 hover:bg-cyan-500/20 cursor-pointer"
-                          title={`Teleport to ${p.name}`}
-                        >
-                          <MapPin className="w-3.5 h-3.5" />
-                        </button>
-                        {isAdmin && (
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-cyan-400" /> Nearby Operatives ({nearby.length})
+                </div>
+                {nearby.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic p-2 bg-black/40 rounded-lg border border-slate-800">
+                    No other operatives visible on this map.
+                  </p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {nearby.map((p) => (
+                      <li
+                        key={p.socketId}
+                        className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-800"
+                      >
+                        <span className="text-xs text-slate-200 font-bold truncate">{p.name}</span>
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => kickPlayer(p.socketId, p.name)}
-                            className="p-1.5 rounded-md text-rose-300 hover:bg-rose-500/20 cursor-pointer"
-                            title="Remove from map"
+                            onClick={() => tpToPlayer(p.socketId, p.name)}
+                            className="p-1 rounded-md bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 transition-colors cursor-pointer"
+                            title={`Teleport to ${p.name}`}
                           >
-                            <UserX className="w-3.5 h-3.5" />
+                            <MapPin className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+                          {isAdmin && (
+                            <button
+                              onClick={() => kickPlayer(p.socketId, p.name)}
+                              className="p-1 rounded-md bg-rose-950/60 hover:bg-rose-900 border border-rose-500/30 text-rose-300 transition-colors cursor-pointer"
+                              title="Remove from map"
+                            >
+                              <UserX className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
-            <div className="grid grid-cols-1 gap-2 pt-1">
-              <a
-                href="/admin"
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 text-xs font-semibold hover:bg-white/10"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-[#cbb26a]" />
-                Open Admin Panel
-              </a>
-              {isDev && !isStudioRoute && (
+              <div className="grid grid-cols-1 gap-1.5 pt-1 border-t border-slate-800">
                 <a
-                  href="/studio"
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#cbb26a]/15 border border-[#cbb26a]/40 text-[#e8d5a3] text-xs font-semibold hover:bg-[#cbb26a]/25"
+                  href="/admin"
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-black/60 border border-slate-700 text-slate-200 text-xs font-bold hover:bg-slate-900 transition-colors"
                 >
-                  <Hammer className="w-3.5 h-3.5" />
-                  Open Studio
+                  <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                  Open Admin Dashboard
                 </a>
-              )}
+                {isDev && !isStudioRoute && (
+                  <a
+                    href="/studio"
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 text-xs font-bold hover:bg-amber-900/60 transition-colors"
+                  >
+                    <Hammer className="w-3.5 h-3.5 text-amber-400" />
+                    Open Saints Studio
+                  </a>
+                )}
+              </div>
             </div>
-          </div>
+          </HudPanelShell>
         </div>
       )}
 
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-[#0c1220]/90 border border-[#cbb26a]/45 text-[#e8d5a3] shadow-[0_0_25px_rgba(203,178,106,0.2)] backdrop-blur-md hover:bg-[#cbb26a]/15 active:scale-95 transition-all font-mono text-xs uppercase tracking-wider"
+        onClick={() => {
+          soundSynth?.playSelectSound?.();
+          setOpen((v) => !v)}
+        }
+        className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-black/80 border border-amber-500/40 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.2)] backdrop-blur-md hover:bg-amber-950/40 active:scale-95 transition-all font-mono text-xs uppercase font-bold cursor-pointer"
         title="Staff commands"
+        style={{
+          clipPath: 'polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px)',
+        }}
       >
-        <Shield className="w-4 h-4" />
+        <Shield className="w-4 h-4 text-amber-400" />
         <span>Staff</span>
         <ChevronUp className={`w-3.5 h-3.5 transition-transform ${open ? '' : 'rotate-180'}`} />
       </button>
     </div>
   );
 }
+
