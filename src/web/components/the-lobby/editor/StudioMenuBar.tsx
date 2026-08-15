@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { STUDIO_MODE_META, type StudioMode } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
+import { soundSynth } from '@/engine/sound-synth';
 
 type MenuState = string | null;
 
@@ -38,10 +39,12 @@ export function StudioMenuBar() {
   }, [activeMenu]);
 
   const handleMenuClick = (menuId: string) => {
+    soundSynth?.playSelectSound?.();
     setActiveMenu((prev) => (prev === menuId ? null : menuId));
   };
 
   const handleItemClick = (action: () => void) => {
+    soundSynth?.playActionSound?.();
     setActiveMenu(null);
     action();
   };
@@ -55,14 +58,14 @@ export function StudioMenuBar() {
           onMouseEnter={() => {
             if (activeMenu && activeMenu !== id) setActiveMenu(id);
           }}
-          className={`px-2.5 py-1 text-[11px] font-bold tracking-wider uppercase font-mono rounded transition-colors ${
-            isActive ? 'bg-[#cbb26a]/20 text-[#cbb26a]' : 'text-slate-400 hover:text-[#cbb26a] hover:bg-[#806f47]/10'
+          className={`px-2.5 py-1 text-[11px] font-bold tracking-wider uppercase font-mono rounded transition-colors cursor-pointer ${
+            isActive ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10'
           }`}
         >
           {label}
         </button>
         {isActive && (
-          <div className="absolute top-full left-0 mt-1 min-w-[220px] bg-[#050b14]/95 border border-[#806f47]/40 shadow-2xl rounded-lg py-1 backdrop-blur-xl z-[150] flex flex-col pointer-events-auto">
+          <div className="absolute top-full left-0 mt-1 min-w-[220px] bg-[#050b14]/95 border border-amber-500/40 shadow-2xl rounded-lg py-1 backdrop-blur-xl z-[150] flex flex-col pointer-events-auto font-mono">
             {children}
           </div>
         )}
@@ -72,18 +75,18 @@ export function StudioMenuBar() {
 
   const MenuItem = ({ label, shortcut, icon: Icon, onClick, disabled, divider }: any) => {
     if (divider) {
-      return <div className="h-px w-full bg-[#806f47]/20 my-1" />;
+      return <div className="h-px w-full bg-amber-500/20 my-1" />;
     }
     return (
       <button
         onClick={() => handleItemClick(onClick)}
         disabled={disabled}
-        className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between group transition-colors ${
-          disabled ? 'opacity-40 cursor-not-allowed text-slate-500' : 'text-slate-300 hover:bg-[#806f47]/20 hover:text-white'
+        className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between group transition-colors cursor-pointer ${
+          disabled ? 'opacity-40 cursor-not-allowed text-slate-500' : 'text-slate-300 hover:bg-amber-500/20 hover:text-white'
         }`}
       >
         <div className="flex items-center gap-2">
-          {Icon ? <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#cbb26a]" /> : <div className="w-3.5 h-3.5" />}
+          {Icon ? <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-300" /> : <div className="w-3.5 h-3.5" />}
           <span>{label}</span>
         </div>
         {shortcut && <span className="text-slate-500 text-[10px]">{shortcut}</span>}
@@ -94,14 +97,14 @@ export function StudioMenuBar() {
   return (
     <div 
       ref={menuRef}
-      className="pointer-events-auto absolute top-0 left-0 right-0 h-9 z-[110] bg-[#050b14]/95 border-b border-[#806f47]/30 flex items-center justify-between px-3 select-none backdrop-blur-md shadow-md"
+      className="pointer-events-auto absolute top-0 left-0 right-0 h-9 z-[110] bg-[#050b14]/95 border-b border-amber-500/30 flex items-center justify-between px-3 select-none backdrop-blur-md shadow-md font-mono"
     >
       {/* Zone 1: Left - Identity & Menus */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 pr-2 border-r border-[#806f47]/30">
-          <span className="font-mono font-black text-xs tracking-wider text-[#cbb26a]">STUDIO</span>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-[#806f47]/30 text-[10px] font-mono text-slate-300">
-            <Globe className="w-3 h-3 text-[#cbb26a]" />
+        <div className="flex items-center gap-2 pr-2 border-r border-amber-500/30">
+          <span className="font-mono font-black text-xs tracking-wider text-amber-400">STUDIO</span>
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 border border-amber-500/30 text-[10px] font-mono text-slate-300">
+            <Globe className="w-3 h-3 text-amber-400" />
             <span>{currentMapId || 'LOBBY'}</span>
             {mapDirty && (
               <span className="text-amber-400 font-bold" title="Unsaved changes">*</span>
@@ -209,12 +212,13 @@ export function StudioMenuBar() {
       </div>
 
       {/* Zone 2: Center - Mode Transition Switcher */}
-      <div className="flex items-center bg-[#000000]/80 p-0.5 rounded-lg border border-[#806f47]/40 shadow-inner">
+      <div className="flex items-center bg-black/80 p-0.5 rounded-lg border border-amber-500/40 shadow-inner">
         <button
           onClick={() => {
+            soundSynth?.playActionSound?.();
             if (!isCreationMode) toggleCreationMode();
           }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
             isCreationMode
               ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
@@ -226,9 +230,10 @@ export function StudioMenuBar() {
         </button>
         <button
           onClick={() => {
+            soundSynth?.playActionSound?.();
             if (isCreationMode) toggleCreationMode();
           }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
             !isCreationMode
               ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
@@ -244,24 +249,26 @@ export function StudioMenuBar() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => {
+            soundSynth?.playUiClick?.();
             const map = useGameStore.getState().activeMapData;
             if (!map) return;
             const res = useEditorStore.getState().triggerUndo(map);
             if (res.ok) showToast('Undo');
           }}
-          className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+          className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
           title="Undo (Ctrl+Z)"
         >
           <Undo className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => {
+            soundSynth?.playUiClick?.();
             const map = useGameStore.getState().activeMapData;
             if (!map) return;
             const res = useEditorStore.getState().triggerRedo(map);
             if (res.ok) showToast('Redo');
           }}
-          className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+          className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
           title="Redo (Ctrl+Y)"
         >
           <Redo className="w-3.5 h-3.5" />
@@ -269,11 +276,12 @@ export function StudioMenuBar() {
 
         <button 
           onClick={() => {
+            soundSynth?.playSelectSound?.();
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
           }} 
-          className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#806f47]/15 text-slate-300 hover:text-white hover:bg-[#806f47]/30 transition-colors text-[10px] font-mono border border-[#806f47]/40 shadow-sm"
+          className="flex items-center gap-2 px-2.5 py-1 rounded bg-amber-500/15 text-slate-300 hover:text-white hover:bg-amber-500/30 transition-colors text-[10px] font-mono border border-amber-500/40 shadow-sm cursor-pointer"
         >
-          <Search className="w-3 h-3 text-[#cbb26a]" />
+          <Search className="w-3 h-3 text-amber-400" />
           <span>Omnisearch</span>
           <span className="bg-black/60 px-1 rounded text-slate-400 text-[9px]">Ctrl+K</span>
         </button>
@@ -281,3 +289,4 @@ export function StudioMenuBar() {
     </div>
   );
 }
+

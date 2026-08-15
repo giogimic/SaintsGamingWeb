@@ -14,6 +14,7 @@ import {
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { useSession } from 'next-auth/react';
+import { soundSynth } from '@/engine/sound-synth';
 
 export function StudioStatusBar() {
   const { data: session } = useSession();
@@ -77,6 +78,7 @@ export function StudioStatusBar() {
   }, []);
 
   const onSwitch = async (id: string) => {
+    soundSynth?.playSelectSound?.();
     setBusy(true);
     setActiveGameId(id);
     await setActiveWorldProfile(id);
@@ -85,42 +87,42 @@ export function StudioStatusBar() {
 
   const getModeIcon = () => {
     switch (studioMode) {
-      case 'develop': return <PenTool className="w-3.5 h-3.5" />;
-      case 'npc': return <Target className="w-3.5 h-3.5" />;
-      case 'test': return <Navigation className="w-3.5 h-3.5" />;
-      default: return <MousePointer2 className="w-3.5 h-3.5" />;
+      case 'develop': return <PenTool className="w-3.5 h-3.5 text-amber-400" />;
+      case 'npc': return <Target className="w-3.5 h-3.5 text-cyan-400" />;
+      case 'test': return <Navigation className="w-3.5 h-3.5 text-emerald-400" />;
+      default: return <MousePointer2 className="w-3.5 h-3.5 text-purple-400" />;
     }
   };
 
   const hasSoftLocks = Object.keys(activeLocks).length > 0;
 
   return (
-    <div className="pointer-events-auto absolute bottom-0 left-0 right-0 h-8 z-[110] bg-[#050b14]/95 border-t border-[#806f47]/30 flex items-center justify-between px-2 text-[11px] font-mono text-[#a59981] select-none shadow-[0_-4px_20px_rgba(0,0,0,0.5)] backdrop-blur-md">
+    <div className="pointer-events-auto absolute bottom-0 left-0 right-0 h-8 z-[110] bg-[#050b14]/95 border-t border-amber-500/30 flex items-center justify-between px-2 text-[11px] font-mono text-[#a59981] select-none shadow-[0_-4px_20px_rgba(0,0,0,0.5)] backdrop-blur-md">
       
       {/* LEFT: Dirty States & Tool Status */}
       <div className="flex items-center gap-4 h-full">
-        <div className="flex items-center gap-2 border-r border-[#806f47]/20 pr-4 h-full">
-          <span className={`font-bold ${mapDirty ? 'text-[#e5c07b]' : 'text-[#5c6370]'}`}>
+        <div className="flex items-center gap-2 border-r border-amber-500/20 pr-4 h-full">
+          <span className={`font-bold ${mapDirty ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
             Map{mapDirty ? '*' : ''}
           </span>
-          <span className={`font-bold ${defsDirtyCount > 0 ? 'text-[#e5c07b]' : 'text-[#5c6370]'}`}>
+          <span className={`font-bold ${defsDirtyCount > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
             Defs ({defsDirtyCount}){defsDirtyCount > 0 ? '*' : ''}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 border-r border-[#806f47]/20 pr-4 h-full">
-          <div className="flex items-center gap-1.5 text-[#e2d5b3]">
+        <div className="flex items-center gap-3 border-r border-amber-500/20 pr-4 h-full">
+          <div className="flex items-center gap-1.5 text-amber-200 font-bold">
             {getModeIcon()} <span className="uppercase">{studioMode}</span>
           </div>
           <div className="flex items-center gap-1.5 opacity-80">
-            <Brush className="w-3.5 h-3.5" /> Size: {brushRadius}
+            <Brush className="w-3.5 h-3.5 text-amber-400" /> Size: {brushRadius}
           </div>
           <div className="opacity-80">
             {clickedTile ? `[${clickedTile.r}, ${clickedTile.c}]` : '[-, -]'}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-r border-[#806f47]/20 pr-4 h-full">
+        <div className="flex items-center gap-2 border-r border-amber-500/20 pr-4 h-full">
           <div
             className={`w-2 h-2 rounded-full ${
               connectionStatus === 'connected'
@@ -131,7 +133,7 @@ export function StudioStatusBar() {
             }`}
             title={`Realtime: ${connectionStatus} (${latencyMs}ms)`}
           />
-          <span className="text-[10px] text-[#e2d5b3]/90 font-bold uppercase tracking-wider">
+          <span className="text-[10px] text-amber-200/90 font-bold uppercase tracking-wider">
             {connectionStatus === 'connected' ? `${latencyMs}ms` : connectionStatus}
           </span>
           {peerCount > 0 && (
@@ -141,7 +143,7 @@ export function StudioStatusBar() {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-[#98c379]">
+        <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
           <CheckCircle2 className="w-3.5 h-3.5" /> OK
         </div>
       </div>
@@ -149,33 +151,33 @@ export function StudioStatusBar() {
       {/* RIGHT: Project, Save, FPS */}
       <div className="flex items-center gap-4 h-full">
         {hasSoftLocks && (
-          <div className="flex items-center gap-1.5 text-[#e06c75] bg-[#e06c75]/10 px-2 py-0.5 rounded border border-[#e06c75]/30">
+          <div className="flex items-center gap-1.5 text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-500/30">
             <AlertCircle className="w-3 h-3" />
             <span>{Object.keys(activeLocks).length} Lock(s)</span>
           </div>
         )}
 
-        <div className="flex items-center gap-1.5 opacity-60" title="Frames Per Second">
+        <div className="flex items-center gap-1.5 opacity-70 text-slate-400" title="Frames Per Second">
           {fps} FPS
         </div>
 
-        <div className="flex items-center gap-2 border-l border-[#806f47]/20 pl-4 h-full">
-          <Globe2 className="w-3.5 h-3.5 opacity-70" />
+        <div className="flex items-center gap-2 border-l border-amber-500/20 pl-4 h-full">
+          <Globe2 className="w-3.5 h-3.5 text-amber-400" />
           <select
             disabled={busy}
             value={activeGameId}
             onChange={(e) => void onSwitch(e.target.value)}
-            className="bg-transparent border-none text-[#e2d5b3] outline-none cursor-pointer"
+            className="bg-transparent border-none text-amber-200 outline-none cursor-pointer font-mono text-[11px]"
           >
             {profiles.map((p) => (
-              <option key={p.id} value={p.id} className="bg-[#0b1320]">{p.name || p.id}</option>
+              <option key={p.id} value={p.id} className="bg-[#0b1320] text-slate-200">{p.name || p.id}</option>
             ))}
           </select>
         </div>
 
-        <div className="flex items-center gap-2 border-l border-[#806f47]/20 pl-4 h-full">
+        <div className="flex items-center gap-2 border-l border-amber-500/20 pl-4 h-full">
           <span className="uppercase opacity-70">{role}</span>
-          <span className="bg-[#cbb26a]/20 text-[#cbb26a] px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider">
+          <span className="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider border border-amber-500/30">
             v{activeMapData?.version || 1}
           </span>
         </div>
@@ -184,14 +186,15 @@ export function StudioStatusBar() {
           <button
             onClick={() => {
               if (mapDirty || defsDirtyCount > 0) {
+                soundSynth?.playActionSound?.();
                 window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
               }
             }}
             disabled={!mapDirty && defsDirtyCount === 0}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
               mapDirty || defsDirtyCount > 0 
-                ? 'bg-[#cbb26a] text-[#050b14] hover:bg-[#d4c38d] shadow-[0_0_10px_rgba(203,178,106,0.3)] cursor-pointer' 
-                : 'bg-[#1a2333] text-[#5c6370] cursor-not-allowed'
+                ? 'bg-amber-400 text-black font-bold hover:bg-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.4)] cursor-pointer' 
+                : 'bg-slate-900 text-slate-600 cursor-not-allowed'
             }`}
             title="Save Map & Defs (Ctrl+S)"
           >
@@ -202,3 +205,4 @@ export function StudioStatusBar() {
     </div>
   );
 }
+

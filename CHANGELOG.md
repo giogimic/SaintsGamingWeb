@@ -1,3 +1,10 @@
+## [2.1.230] - 2026-08-15
+### Added & Improved
+- **Studio Menu Bar & Tool Controller (`StudioMenuBar.tsx`)**:
+  - Upgraded top-level menus, mode switcher (Edit/Playtest), and hotkeys with cyber chamfered badges and WebAudio sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`).
+- **Studio Status Bar & Realtime Telemetry (`StudioStatusBar.tsx`)**:
+  - Modernized telemetry chips with latency metrics, FPS counter, brush size displays, and sound cues.
+
 ## [2.1.229] - 2026-08-15
 ### Added & Improved
 - **Interactive HUD Docking Architecture & Drop Zones (`DockZone.tsx`)**:
