@@ -1,3 +1,10 @@
+## [2.1.234] - 2026-08-15
+### Added & Improved
+- **World Atlas & Macro Region Connectivity Panel (`WorldAtlasPanel.tsx`)**:
+  - Upgraded macro world atlas matrix with adjacency indicator pips, node inspector, spawn hub assigner, and WebAudio sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`, `soundSynth.playUiClick()`).
+- **World Builder & Multi-Layer Map Creator Panel (`WorldBuilderPanel.tsx`)**:
+  - Modernized map manager with slug creator, resize dimension controls, layer manager, and audio feedback.
+
 ## [2.1.233] - 2026-08-15
 ### Added & Improved
 - **Studio Asset Pack & Resource Browser (`AssetEditor.tsx`)**:

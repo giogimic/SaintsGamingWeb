@@ -22,6 +22,7 @@ import {
 } from '@/shared/game/studioMapCreate';
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
+import { soundSynth } from '@/engine/sound-synth';
 
 
 export const WorldBuilderPanel: React.FC = () => {
@@ -118,6 +119,7 @@ export const WorldBuilderPanel: React.FC = () => {
 
   const handleWarpToMap = async (targetMapId: string) => {
     try {
+      soundSynth?.playActionSound?.();
       const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
       const mw = loaded.grid?.[0]?.length || loaded.width || 24;
       const mh = loaded.grid?.length || loaded.height || 24;
@@ -139,6 +141,7 @@ export const WorldBuilderPanel: React.FC = () => {
       showToast('No map loaded to save.');
       return;
     }
+    soundSynth?.playActionSound?.();
     // Never persist GAME_MAPS / empty shell — only the live Studio document.
     const live = useGameStore.getState().activeMapData;
     if (!live?.grid) {

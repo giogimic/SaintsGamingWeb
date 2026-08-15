@@ -6,6 +6,7 @@ import { useGameStore } from '../../store';
 import { Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio } from 'lucide-react';
 import { MapIndexEntry, loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { soundSynth } from '@/engine/sound-synth';
 
 export interface AtlasNode {
   mapId: string;
@@ -99,6 +100,7 @@ export const WorldAtlasPanel: React.FC = () => {
 
   const handleWarpToMap = async (targetMapId: string) => {
     try {
+      soundSynth?.playActionSound?.();
       const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
       const mw = loaded.grid?.[0]?.length || loaded.width || 24;
       const mh = loaded.grid?.length || loaded.height || 24;
@@ -117,6 +119,7 @@ export const WorldAtlasPanel: React.FC = () => {
     if (!atlasData) return;
     setIsSaving(true);
     try {
+      soundSynth?.playActionSound?.();
       const connectionsByMap = computeConnections(atlasData.nodes);
       const res = await fetch('/api/world/atlas', {
         method: 'POST',
@@ -150,6 +153,7 @@ export const WorldAtlasPanel: React.FC = () => {
     
     // If placing
     if (selectedMapIdToPlace) {
+      soundSynth?.playActionSound?.();
       const existingNodeIdx = atlasData.nodes.findIndex(n => n.x === x && n.y === y);
       const newNodes = [...atlasData.nodes];
       if (existingNodeIdx >= 0) {
@@ -162,6 +166,7 @@ export const WorldAtlasPanel: React.FC = () => {
       setSelectedNode({ mapId: selectedMapIdToPlace, x, y });
       useEditorStore.getState().markMapDirty();
     } else if (existingNode) {
+      soundSynth?.playSelectSound?.();
       setSelectedNode(existingNode);
     } else {
       setSelectedNode(null);
@@ -175,19 +180,22 @@ export const WorldAtlasPanel: React.FC = () => {
   const activeConnections = selectedNode ? computeConnections(atlasData.nodes)[selectedNode.mapId] : null;
 
   return (
-    <div className="flex flex-col h-full w-full min-h-0 text-xs font-mono bg-[#070d18] select-none">
-      <div className="flex-none p-3 border-b border-[#806f47]/30 bg-[#0b1320]/80 flex flex-wrap items-center justify-between gap-3 shadow-md">
+    <div className="flex flex-col h-full w-full min-h-0 text-xs font-mono bg-[#070d18] select-none border border-amber-500/30 rounded-xl overflow-hidden shadow-2xl">
+      <div className="flex-none p-3 border-b border-amber-500/20 bg-[#0b1320] flex flex-wrap items-center justify-between gap-3 shadow-md">
         <div className="flex items-center gap-4">
-          <div className="font-bold text-[#cbb26a] flex items-center gap-1.5 text-sm">
-            <Compass className="w-4 h-4 text-[#eab308]" />
+          <div className="font-bold text-amber-400 flex items-center gap-1.5 text-sm">
+            <Compass className="w-4 h-4 text-amber-400" />
             Macro World Atlas
           </div>
           <div className="flex items-center gap-2">
             <label className="text-slate-400 text-[11px]">Spawn / Hub Map:</label>
             <select 
               value={lobbyMapId}
-              onChange={(e) => setLobbyMapId(e.target.value)}
-              className="bg-[#050b14] border border-[#806f47]/40 rounded px-2 py-1 text-slate-200 text-[11px] focus:outline-none focus:border-[#cbb26a]"
+              onChange={(e) => {
+                soundSynth?.playUiClick?.();
+                setLobbyMapId(e.target.value);
+              }}
+              className="bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1 text-slate-200 text-[11px] focus:outline-none focus:border-amber-400 cursor-pointer"
             >
               {allMaps.map(m => (
                 <option key={m.id} value={m.id}>{m.name || m.id}</option>
@@ -199,7 +207,7 @@ export const WorldAtlasPanel: React.FC = () => {
         <button
           onClick={() => void handleSaveAtlas()}
           disabled={isSaving}
-          className="px-3 py-1.5 bg-[#cbb26a] text-black font-bold rounded flex items-center gap-1.5 hover:bg-[#d8c078] active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+          className="px-3.5 py-1.5 bg-amber-400 text-black font-bold rounded-lg flex items-center gap-1.5 hover:bg-amber-300 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
         >
           <Save className="w-3.5 h-3.5" />
           {isSaving ? 'Saving...' : 'Save Atlas & Sync Edge Seams'}
@@ -208,12 +216,12 @@ export const WorldAtlasPanel: React.FC = () => {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar: Map Palette */}
-        <div className="w-64 flex-none border-r border-[#806f47]/30 bg-[#0b1320]/50 flex flex-col min-h-0">
-          <div className="p-2.5 border-b border-[#806f47]/30 font-bold text-slate-200 flex items-center justify-between">
-            <span>Available Maps</span>
+        <div className="w-64 flex-none border-r border-amber-500/20 bg-[#0b1320]/60 flex flex-col min-h-0">
+          <div className="p-2.5 border-b border-amber-500/20 font-bold text-slate-200 flex items-center justify-between">
+            <span className="text-amber-400">Available Maps</span>
             <span className="text-[10px] text-slate-500 font-normal">{allMaps.length} maps</span>
           </div>
-          <div className="p-2 text-[10px] text-slate-400 bg-black/20 border-b border-white/5">
+          <div className="p-2 text-[10px] text-slate-400 bg-black/40 border-b border-amber-500/10">
             Select a map below, then click a grid cell to place it. Adjacent cells auto-wire 4-way border transitions.
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
@@ -223,13 +231,16 @@ export const WorldAtlasPanel: React.FC = () => {
               return (
                 <button
                   key={m.id}
-                  onClick={() => setSelectedMapIdToPlace(isSelected ? null : m.id)}
+                  onClick={() => {
+                    soundSynth?.playSelectSound?.();
+                    setSelectedMapIdToPlace(isSelected ? null : m.id);
+                  }}
                   className={`w-full text-left px-2.5 py-2 rounded-lg border transition-all cursor-pointer ${
                     isSelected 
-                      ? 'bg-[#cbb26a]/25 border-[#cbb26a] text-white shadow-lg' 
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg' 
                       : isPlaced
-                      ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-950/40'
-                      : 'border-slate-800/80 bg-black/20 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                      ? 'border-emerald-500/30 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-950/50'
+                      : 'border-slate-800/80 bg-black/40 text-slate-400 hover:bg-white/5 hover:text-slate-200'
                   }`}
                 >
                   <div className="flex justify-between items-center">
@@ -251,7 +262,7 @@ export const WorldAtlasPanel: React.FC = () => {
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-[#050b14]">
           <div className="flex-1 min-h-0 overflow-auto p-6 relative custom-scrollbar">
             <div 
-              className="relative rounded border border-[#806f47]/30 shadow-2xl" 
+              className="relative rounded-xl border border-amber-500/30 shadow-2xl" 
               style={{ 
                 width: GRID_SIZE * 72, 
                 height: GRID_SIZE * 72,
@@ -266,7 +277,7 @@ export const WorldAtlasPanel: React.FC = () => {
                     key={`${x}-${y}`}
                     onClick={() => handleGridClick(x, y)}
                     className={`absolute w-[72px] h-[72px] border border-transparent hover:border-amber-400/50 cursor-pointer transition-colors ${
-                      selectedMapIdToPlace ? 'hover:bg-[#cbb26a]/15' : ''
+                      selectedMapIdToPlace ? 'hover:bg-amber-500/15' : ''
                     }`}
                     style={{ left: x * 72, top: y * 72 }}
                   />
@@ -288,8 +299,8 @@ export const WorldAtlasPanel: React.FC = () => {
                     onDoubleClick={() => handleWarpToMap(node.mapId)}
                     className={`absolute w-[70px] h-[70px] m-[1px] rounded-lg flex flex-col items-center justify-center p-1.5 text-center cursor-pointer shadow-xl transition-all group ${
                       isSelected
-                        ? 'bg-amber-950/80 border-2 border-amber-400 scale-105 z-10 shadow-[0_0_15px_rgba(251,191,36,0.3)]'
-                        : 'bg-[#0f172a]/95 border-2 border-[#cbb26a] hover:border-amber-300'
+                        ? 'bg-amber-950/90 border-2 border-amber-400 scale-105 z-10 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
+                        : 'bg-[#0f172a]/95 border-2 border-amber-500/40 hover:border-amber-400'
                     }`}
                     style={{ left: node.x * 72, top: node.y * 72 }}
                     title="Click to select actions · Double-click to warp"
@@ -300,7 +311,7 @@ export const WorldAtlasPanel: React.FC = () => {
                     {hasWest && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="West Connected" />}
                     {hasEast && <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="East Connected" />}
 
-                    <MapIcon className={`w-4 h-4 mb-0.5 ${isSelected ? 'text-amber-300' : 'text-[#cbb26a]'}`} />
+                    <MapIcon className={`w-4 h-4 mb-0.5 ${isSelected ? 'text-amber-300' : 'text-amber-400'}`} />
                     <span className="text-[9px] text-slate-200 break-all leading-tight font-bold">
                       {node.mapId}
                     </span>
@@ -317,18 +328,18 @@ export const WorldAtlasPanel: React.FC = () => {
 
           {/* Context Action Bar when a node is selected */}
           {selectedNode && (
-            <div className="flex-none p-3 bg-[#0b1320] border-t border-[#806f47]/40 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xl">
+            <div className="flex-none p-3 bg-[#0b1320] border-t border-amber-500/30 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xl">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="font-bold text-[#cbb26a] flex items-center gap-1.5">
-                  <MapIcon className="w-4 h-4 text-[#cbb26a]" />
+                <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                  <MapIcon className="w-4 h-4 text-amber-400" />
                   Selected Node: <span className="text-white">{selectedNode.mapId}</span>
                 </span>
                 <span className="text-slate-400 text-[11px]">
                   Grid Position: [{selectedNode.y}, {selectedNode.x}]
                 </span>
                 {activeConnections && (
-                  <div className="flex items-center gap-2 bg-black/40 px-2 py-0.5 rounded border border-white/5 text-[10px]">
-                    <span className="text-slate-500">Adjacency:</span>
+                  <div className="flex items-center gap-2 bg-black/60 px-2.5 py-1 rounded-lg border border-amber-500/20 text-[10px]">
+                    <span className="text-slate-400 font-bold">Adjacency:</span>
                     <span className={activeConnections.north ? 'text-cyan-300 font-bold' : 'text-slate-600'}>N: {activeConnections.north || '—'}</span>
                     <span className={activeConnections.east ? 'text-cyan-300 font-bold' : 'text-slate-600'}>E: {activeConnections.east || '—'}</span>
                     <span className={activeConnections.south ? 'text-cyan-300 font-bold' : 'text-slate-600'}>S: {activeConnections.south || '—'}</span>
@@ -339,7 +350,7 @@ export const WorldAtlasPanel: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleWarpToMap(selectedNode.mapId)}
-                  className="px-2.5 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-cyan-300 font-bold rounded border border-cyan-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  className="px-3 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-cyan-300 font-bold rounded-lg border border-cyan-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   title="Warp to this map in Viewport"
                 >
                   <Crosshair className="w-3.5 h-3.5" />
@@ -347,11 +358,12 @@ export const WorldAtlasPanel: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
+                    soundSynth?.playActionSound?.();
                     setLobbyMapId(selectedNode.mapId);
                     useEditorStore.getState().markMapDirty();
                     showToast(`Set ${selectedNode.mapId} as spawn hub`);
                   }}
-                  className="px-2.5 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-emerald-300 font-bold rounded border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  className="px-3 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-emerald-300 font-bold rounded-lg border border-emerald-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   title="Designate as primary server spawn hub"
                 >
                   <Radio className="w-3.5 h-3.5" />
@@ -359,13 +371,14 @@ export const WorldAtlasPanel: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
+                    soundSynth?.playUiClick?.();
                     const newNodes = atlasData.nodes.filter(n => !(n.x === selectedNode.x && n.y === selectedNode.y));
                     setAtlasData({ ...atlasData, nodes: newNodes });
                     setSelectedNode(null);
                     useEditorStore.getState().markMapDirty();
                     showToast(`Removed ${selectedNode.mapId} from atlas`);
                   }}
-                  className="px-2.5 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-bold rounded border border-rose-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                  className="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold rounded-lg border border-rose-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                   title="Remove this node from the atlas"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -379,3 +392,4 @@ export const WorldAtlasPanel: React.FC = () => {
     </div>
   );
 };
+
