@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, & Hunter battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, & Mining battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -105,9 +105,14 @@ describe('skillGuideData Registry', () => {
     expect(hunterGuide.battlepassTiers.length).toBe(10);
     expect(hunterGuide.battlepassTiers[0].rewardName).toContain('Novice Trapper');
     expect(hunterGuide.battlepassTiers[9].rewardName).toContain('Cape of Hunter');
+
+    const miningGuide = getSkillGuide('mining')!;
+    expect(miningGuide.battlepassTiers.length).toBe(10);
+    expect(miningGuide.battlepassTiers[0].rewardName).toContain('Novice Miner');
+    expect(miningGuide.battlepassTiers[9].rewardName).toContain('Cape of Mining');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, and traps for Hunter in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, and pickaxes for Mining in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -162,6 +167,11 @@ describe('skillGuideData Registry', () => {
     expect(hunterUnlocks.length).toBeGreaterThan(0);
     expect(hunterUnlocks.some((u) => u.title.includes('Snare') || u.title.includes('Finch') || u.title.includes('Trap') || u.title.includes('Kebbit') || u.title.includes('Chinchompa') || u.title.includes('Kyatt') || u.title.includes('Phoenix'))).toBe(true);
     expect(hunterUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const miningUnlocks = getAllSkillUnlocks('mining');
+    expect(miningUnlocks.length).toBeGreaterThan(0);
+    expect(miningUnlocks.some((u) => u.title.includes('Pickaxe') || u.title.includes('Copper') || u.title.includes('Iron') || u.title.includes('Coal') || u.title.includes('Mithril') || u.title.includes('Adamant') || u.title.includes('Runite') || u.title.includes('Asteroid'))).toBe(true);
+    expect(miningUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
