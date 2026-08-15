@@ -1,4 +1,15 @@
+## [2.1.216] - 2026-08-14
+### Fixed & Improved
+- **Menu Overlay Mounting & Gameplay HUD State (`index.tsx`, `Hotbar.tsx`, `quest-tracker-overlay.tsx`)**:
+  - Fixed a critical bug where opening the Backpack (Inventory), Skills, Equipment, Quest Log, or GTC caused `LobbyHudDockLayout` to unmount because it was strictly gating on `gameMode === 'EXPLORING'`.
+  - Expanded the HUD mount gate to all playable exploration states (`EXPLORING`, `INVENTORY`, `SKILLS`, `EQUIPMENT`, `QUESTS`, `GTC`, `DIALOG`), allowing the utility dock to open and switch tabs seamlessly.
+  - Kept the action hotbar and quest tracker toast active during inventory/skill management.
+- **Native Saints Gaming Layout Preset Names (`default-presets.ts`)**:
+  - Replaced third-party game references with custom Saints Gaming preset identities: **Command Center (Default)**, **Sidebar Focus**, **Action Combat**, and **Minimalist**.
+  - Maintained backward-compatible aliases and legacy preset ID resolution.
+
 ## [2.1.215] - 2026-08-14
+
 ### Added & Improved
 - **Unified Chamfered HUD Visual System & Panel Consolidation (`HudPanelShell.tsx`, `MiniMapRadar.tsx`, `Hotbar.tsx`, `ClassicPanel.tsx`, `GameChat.tsx`, `quest-tracker-overlay.tsx`, `PlayerVitalsHud.tsx`, `index.tsx`)**:
   - **Unified Visual Language**: Built `HudPanelShell` with 8px chamfered corners (cut top-left & bottom-right), near-black 95% opacity teal-tinted fill, 1px consistent bright teal border at rest, and fluid 150-200ms ease transitions. Reserved neon accents for active and alert states only.

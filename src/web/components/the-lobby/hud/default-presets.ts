@@ -13,7 +13,7 @@ export const HUD_WIDGET_IDS = {
 
 export const WIDGET_METADATA: Record<string, { label: string; defaultZone: string; icon: string }> = {
   [HUD_WIDGET_IDS.ORBS]: {
-    label: 'Player Vitals & Orbs',
+    label: 'Player Vitals & Identity',
     defaultZone: 'top-left',
     icon: 'Heart',
   },
@@ -28,17 +28,17 @@ export const WIDGET_METADATA: Record<string, { label: string; defaultZone: strin
     icon: 'Users',
   },
   [HUD_WIDGET_IDS.MINIMAP]: {
-    label: 'Minimap Radar',
+    label: 'Command Center & Radar',
     defaultZone: 'top-right',
     icon: 'MapPin',
   },
   [HUD_WIDGET_IDS.QUEST_TRACKER]: {
-    label: 'Quest Objective Tracker',
+    label: 'Quest Objective Toast',
     defaultZone: 'mid-right',
     icon: 'ScrollText',
   },
   [HUD_WIDGET_IDS.CHAT]: {
-    label: 'Game Chat & Channels',
+    label: 'Game Comms & Chat',
     defaultZone: 'bottom-left',
     icon: 'MessageSquare',
   },
@@ -48,21 +48,21 @@ export const WIDGET_METADATA: Record<string, { label: string; defaultZone: strin
     icon: 'LayoutGrid',
   },
   [HUD_WIDGET_IDS.CLASSIC_PANEL]: {
-    label: 'Classic Utility Panel (Bag/Skills)',
+    label: 'Utility Dock (Bag/Skills)',
     defaultZone: 'bottom-right',
     icon: 'Briefcase',
   },
 };
 
 /**
- * 1. Default Modern MMO Layout
- * Balanced, ergonomic layout for standard 1080p/1440p screens
+ * 1. Command Center Layout (Default)
+ * Balanced, ergonomic layout for standard screens
  */
-export const DEFAULT_PRESET_MODERN: HudLayoutPreset = {
-  id: 'preset-modern',
-  name: 'Modern MMO (Default)',
+export const DEFAULT_PRESET_COMMAND: HudLayoutPreset = {
+  id: 'preset-command',
+  name: 'Command Center (Default)',
   version: 1,
-  description: 'Balanced layout with vitals top-left, target top-center, minimap top-right, and bottom controls.',
+  description: 'Balanced layout with vitals top-left, target top-center, radar top-right, and bottom hotbar.',
   isDefault: true,
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
@@ -125,14 +125,14 @@ export const DEFAULT_PRESET_MODERN: HudLayoutPreset = {
 };
 
 /**
- * 2. Classic RuneScape Layout
- * Right-side utility concentration with minimap, quest tracker, and inventory all docked on the right
+ * 2. Sidebar Focus Layout
+ * Right-side utility concentration with radar, quest tracker, and utility dock
  */
-export const DEFAULT_PRESET_RUNESCAPE: HudLayoutPreset = {
-  id: 'preset-runescape',
-  name: 'Classic RuneScape',
+export const DEFAULT_PRESET_SIDEBAR: HudLayoutPreset = {
+  id: 'preset-sidebar',
+  name: 'Sidebar Focus',
   version: 1,
-  description: 'Minimap, quest log, and bag tabs grouped together on the right edge, RuneScape style.',
+  description: 'Radar, quest tracker, and utility bag tabs grouped along the right screen edge.',
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -194,12 +194,12 @@ export const DEFAULT_PRESET_RUNESCAPE: HudLayoutPreset = {
 };
 
 /**
- * 3. WoW Action / Combat Focused Layout
- * Centralized focus with target & player frames flanking center, larger hotbar
+ * 3. Action Combat Layout
+ * Centralized focus with target & player frames flanking center, prominent hotbar
  */
-export const DEFAULT_PRESET_WOW: HudLayoutPreset = {
-  id: 'preset-wow',
-  name: 'WoW Action Combat',
+export const DEFAULT_PRESET_ACTION: HudLayoutPreset = {
+  id: 'preset-action',
+  name: 'Action Combat',
   version: 1,
   description: 'Centralized combat focus with target frame near center and expanded action hotbar.',
   widgets: {
@@ -263,14 +263,14 @@ export const DEFAULT_PRESET_WOW: HudLayoutPreset = {
 };
 
 /**
- * 4. Minimalist Streamer Layout
+ * 4. Minimalist Layout
  * Clean, unobstructed 3D view with compact widgets tucked into corners
  */
 export const DEFAULT_PRESET_MINIMAL: HudLayoutPreset = {
   id: 'preset-minimal',
-  name: 'Minimalist Streamer',
+  name: 'Minimalist',
   version: 1,
-  description: 'Unobstructed viewport with compact widgets tucked cleanly in corners.',
+  description: 'Unobstructed viewport with compact widgets tucked cleanly in screen corners.',
   widgets: {
     [HUD_WIDGET_IDS.ORBS]: {
       widgetId: HUD_WIDGET_IDS.ORBS,
@@ -331,10 +331,15 @@ export const DEFAULT_PRESET_MINIMAL: HudLayoutPreset = {
   },
 };
 
+// Aliases for backwards compatibility
+export const DEFAULT_PRESET_MODERN = DEFAULT_PRESET_COMMAND;
+export const DEFAULT_PRESET_RUNESCAPE = DEFAULT_PRESET_SIDEBAR;
+export const DEFAULT_PRESET_WOW = DEFAULT_PRESET_ACTION;
+
 export const BUILTIN_HUD_PRESETS: HudLayoutPreset[] = [
-  DEFAULT_PRESET_MODERN,
-  DEFAULT_PRESET_RUNESCAPE,
-  DEFAULT_PRESET_WOW,
+  DEFAULT_PRESET_COMMAND,
+  DEFAULT_PRESET_SIDEBAR,
+  DEFAULT_PRESET_ACTION,
   DEFAULT_PRESET_MINIMAL,
 ];
 
@@ -342,25 +347,39 @@ export const BUILTIN_HUD_PRESETS: HudLayoutPreset[] = [
  * Validates and merges an incoming preset with default widgets to guarantee no widgets are missing
  */
 export function ensureCompletePreset(preset: Partial<HudLayoutPreset> | null | undefined): HudLayoutPreset {
-  const base = JSON.parse(JSON.stringify(DEFAULT_PRESET_MODERN)) as HudLayoutPreset;
+  const base = JSON.parse(JSON.stringify(DEFAULT_PRESET_COMMAND)) as HudLayoutPreset;
   if (!preset) return base;
 
+  // Resolve legacy IDs
+  let id = preset.id || `preset-${Date.now()}`;
+  let name = preset.name || 'Custom Layout';
+  if (id === 'preset-modern') {
+    id = 'preset-command';
+    name = DEFAULT_PRESET_COMMAND.name;
+  } else if (id === 'preset-runescape') {
+    id = 'preset-sidebar';
+    name = DEFAULT_PRESET_SIDEBAR.name;
+  } else if (id === 'preset-wow') {
+    id = 'preset-action';
+    name = DEFAULT_PRESET_ACTION.name;
+  }
+
   const result: HudLayoutPreset = {
-    id: preset.id || `preset-${Date.now()}`,
-    name: preset.name || 'Custom Layout',
+    id,
+    name,
     version: preset.version || 1,
     description: preset.description,
-    isDefault: false,
+    isDefault: id === 'preset-command' || id === 'preset-modern',
     widgets: { ...base.widgets },
   };
 
   if (preset.widgets) {
-    for (const [id, cfg] of Object.entries(preset.widgets)) {
+    for (const [wId, cfg] of Object.entries(preset.widgets)) {
       if (cfg && cfg.zoneId) {
-        result.widgets[id] = {
-          ...base.widgets[id],
+        result.widgets[wId] = {
+          ...base.widgets[wId],
           ...cfg,
-          widgetId: id,
+          widgetId: wId,
         };
       }
     }
