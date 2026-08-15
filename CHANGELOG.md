@@ -1,3 +1,10 @@
+## [2.1.242] - 2026-08-15
+### Added & Improved
+- **Skill 6/27: Agility Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete agility footwear, weight-reducing clothing, and stamina elixirs progression (Leather Hiking Boots, Nimble Track Runners, Graceful Wind Cloaks, Shadow Shinobi Tabi, Zephyr Windwalkers, Cyclone Striders, Saintly Winged Sandals, Celestial Starstrider Greaves, and Grand Stamina Elixirs) with explicit Agility level requirements (`reqSkill: 'Agility'`, `reqLevel: number`) and mobility/defense stats.
+  - Dynamically aggregated agility footwear, stamina restore potions, and shortcut techniques for the Agility handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Agility (Novice Acrobat, Swift Shadow, Zephyr Ghost titles, Cyan Gust Streamers and Cyclone Dash Trails auras, Wind-Dancer Sash, and Cape of Agility).
+
 ## [2.1.241] - 2026-08-15
 ### Added & Improved
 - **Skill 5/27: Ranged Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
