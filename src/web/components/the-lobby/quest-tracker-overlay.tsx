@@ -64,7 +64,8 @@ export default function QuestTrackerOverlay() {
     fetchQuests();
   }, [refreshQuestsCounter]);
 
-  if (gameMode !== 'EXPLORING' && gameMode !== 'DIALOG') return null;
+  if (!['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode)) return null;
+
 
   // Minimized / Dismissed state toast pill
   if (isDismissed) {

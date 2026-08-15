@@ -1655,10 +1655,11 @@ export default function TheLobby({
           className={`pointer-events-none fixed inset-0 z-[9999] bg-black transition-opacity duration-300 ${isMapTransitioning ? 'opacity-100' : 'opacity-0'}`} 
         />
 
-        {/* Modular Dock-Based In-Game HUD (RuneScape / WoW Edit Mode) */}
-        {((gameMode === 'EXPLORING' && showGameplayHud) || isEditingInterface) && (
+        {/* Modular Dock-Based In-Game HUD */}
+        {((['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode) && showGameplayHud) || isEditingInterface) && (
           <LobbyHudDockLayout enableStudio={enableStudio} />
         )}
+
       </div>
 
     </div>

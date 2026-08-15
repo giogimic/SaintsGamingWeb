@@ -73,10 +73,12 @@ export default function Hotbar() {
     [abilities]
   );
 
-  // Hotbar is RT-only — hidden during turn-based creature battles
-  if (gameMode !== 'EXPLORING') {
+  // Hotbar is RT-only — hidden during turn-based creature battles or full-screen screens
+  const isPlayable = ['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode);
+  if (!isPlayable) {
     return null;
   }
+
 
   const handleCast = (slot: (typeof slots)[number]) => {
     const timeNow = Date.now();
