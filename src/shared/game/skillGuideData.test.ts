@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, & Construction battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, & Cooking battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -120,9 +120,14 @@ describe('skillGuideData Registry', () => {
     expect(conGuide.battlepassTiers.length).toBe(10);
     expect(conGuide.battlepassTiers[0].rewardName).toContain('Novice Builder');
     expect(conGuide.battlepassTiers[9].rewardName).toContain('Cape of Construction');
+
+    const cookGuide = getSkillGuide('cooking')!;
+    expect(cookGuide.battlepassTiers.length).toBe(10);
+    expect(cookGuide.battlepassTiers[0].rewardName).toContain('Novice Cook');
+    expect(cookGuide.battlepassTiers[9].rewardName).toContain('Cape of Cooking');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, and planks/altars for Construction in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, and dishes/recipes for Cooking in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -192,6 +197,11 @@ describe('skillGuideData Registry', () => {
     expect(conUnlocks.length).toBeGreaterThan(0);
     expect(conUnlocks.some((u) => u.title.includes('Plank') || u.title.includes('Estate') || u.title.includes('Table') || u.title.includes('Bench') || u.title.includes('Portal') || u.title.includes('Altar') || u.title.includes('Throne') || u.title.includes('Palace'))).toBe(true);
     expect(conUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const cookUnlocks = getAllSkillUnlocks('cooking');
+    expect(cookUnlocks.length).toBeGreaterThan(0);
+    expect(cookUnlocks.some((u) => u.title.includes('Shrimp') || u.title.includes('Bread') || u.title.includes('Trout') || u.title.includes('Pie') || u.title.includes('Salmon') || u.title.includes('Lobster') || u.title.includes('Swordfish') || u.title.includes('Shark') || u.title.includes('Roast') || u.title.includes('Ambrosia'))).toBe(true);
+    expect(cookUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
