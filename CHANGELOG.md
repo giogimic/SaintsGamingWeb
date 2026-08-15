@@ -1,3 +1,12 @@
+## [2.1.229] - 2026-08-15
+### Added & Improved
+- **Interactive HUD Docking Architecture & Drop Zones (`DockZone.tsx`)**:
+  - Upgraded dock zones with cyber chamfered badges, glowing border animations, and audio drop feedback (`soundSynth.playActionSound()`).
+- **Dockable Widget Drag Handles & Controls (`DockableWidget.tsx`)**:
+  - Modernized drag header, size cycling (compact/standard/expanded), visibility toggle, and collapse buttons with sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playUiClick()`).
+- **Viewfinder Calibration Overlay (`ViewfinderOverlay.tsx`)**:
+  - Modernized camera calibration grid with cyber reticles and chamfered corner brackets.
+
 ## [2.1.228] - 2026-08-15
 ### Added & Improved
 - **Game Options & Settings Matrix (`GameOptionsMenu.tsx`)**:
