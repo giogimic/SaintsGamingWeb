@@ -1634,7 +1634,25 @@ export default function TheLobby({
         <ViewfinderOverlay />
         <UiEditToolbar />
 
-        {gameMode === 'TITLE_SCREEN' && <GameTitleScreen />}
+        {gameMode === 'TITLE_SCREEN' && (
+          <GameTitleScreen
+            characters={userCharacters}
+            activeCharacterId={activeCharacterId}
+            onSelectCharacter={(id) => selectAndLoadCharacter(id)}
+            onCreateCharacter={() => {
+              useGameStore.getState().setGameMode('CHARACTER_CREATOR');
+              setShowCreator(true);
+            }}
+            onOpenCharacterSelect={() => {
+              useGameStore.getState().setGameMode('CHARACTER_SELECT');
+              setShowSelector(true);
+            }}
+            onOpenServerSelect={() => {
+              useGameStore.getState().setGameMode('SERVER_SELECT');
+            }}
+            onRefreshCharacters={() => loadCharactersList()}
+          />
+        )}
         {gameMode === 'LOGIN' && <GameLogin />}
         {gameMode === 'SERVER_SELECT' && <ServerSelect />}
         <GameToastStack />

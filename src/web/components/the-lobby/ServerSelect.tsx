@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useGameStore } from './store';
 import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
-import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power, Shield } from 'lucide-react';
+import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { soundSynth } from '@/engine/sound-synth';
+import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
+import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
 
 interface ServerInfo {
   id: string;
@@ -23,8 +25,8 @@ function PingDots({ status }: { status: 'online' | 'offline' }) {
   }
   return (
     <span className="relative flex h-2 w-2">
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
-      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00f5d4] opacity-50" />
+      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00f5d4]" />
     </span>
   );
 }
@@ -40,8 +42,6 @@ export default function ServerSelect() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isStartingServer, setIsStartingServer] = useState(false);
 
-  // Start Realm is Admin+ only (POST /api/game/server-status). Never show to
-  // logged-out users or regular players — the button would 401/403.
   const canStartRealm =
     authStatus === 'authenticated' &&
     canUseStudioServerControls(session?.user?.permissionLevel);
@@ -124,22 +124,32 @@ export default function ServerSelect() {
   const fillPct = server ? Math.round((server.players / server.capacity) * 100) : 0;
   const fillColor =
     fillPct > 80 ? '#ef4444' :
-    fillPct > 50 ? '#f59e0b' :
-    '#10b981';
+    fillPct > 50 ? '#ffbe0b' :
+    '#00f5d4';
 
   return (
     <div
-      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500 select-none font-mono"
-      style={{ background: 'rgba(5,0,15,0.95)', backdropFilter: 'blur(16px)' }}
+      className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500 select-none font-sans"
+      style={{ backgroundColor: '#0d0221' }}
     >
-      {/* Background glow */}
-      <div
-        className="absolute w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)',
-          top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        }}
-      />
+      {/* Synthwave Horizon Grid Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute top-0 w-full h-[60vh]"
+          style={{ background: 'linear-gradient(to bottom, #0d0221 0%, #3a0ca3 45%, #f20089 100%)', opacity: 0.8 }}
+        />
+        <div
+          className="absolute bottom-0 w-full h-[40vh] origin-top opacity-50"
+          style={{
+            backgroundImage:
+              'linear-gradient(transparent 65%, #f20089 100%), repeating-linear-gradient(0deg, transparent, transparent 19px, #f20089 20px), repeating-linear-gradient(90deg, transparent, transparent 39px, #f20089 40px)',
+            transform: 'perspective(500px) rotateX(60deg)',
+          }}
+        />
+      </div>
+
+      <DigitalSnowV5 />
+      <PalmCanopyVignetteV5 />
 
       {/* Back button */}
       <button
@@ -147,30 +157,28 @@ export default function ServerSelect() {
           soundSynth?.playSelectSound?.();
           setGameMode('TITLE_SCREEN');
         }}
-        className="absolute top-6 left-6 flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-violet-500/30 text-violet-300 hover:border-violet-400 hover:bg-violet-950/40 cursor-pointer shadow-lg active:scale-98"
+        className="absolute top-6 left-6 z-30 flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-pink-500/40 text-pink-300 hover:text-white hover:border-[#00f5d4] hover:bg-pink-950/40 cursor-pointer shadow-lg active:scale-95"
       >
-        <ArrowLeft size={15} strokeWidth={2.5} />
-        Back
+        <ArrowLeft size={14} strokeWidth={2.5} />
+        Back to Gateway
       </button>
 
       {/* Header */}
-      <div className="relative z-10 text-center mb-8">
+      <div className="relative z-10 text-center mb-8 font-mono">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <Globe size={16} className="text-violet-400" />
-          <h1 className="text-xs font-bold tracking-[0.4em] uppercase text-violet-400">
+          <Globe size={16} className="text-[#00f5d4]" />
+          <h1 className="text-xs font-bold tracking-[0.4em] uppercase text-cyan-300/80">
             REALM SELECTION
           </h1>
-          <Globe size={16} className="text-violet-400" />
+          <Globe size={16} className="text-[#00f5d4]" />
         </div>
         <h2
-          className="text-4xl font-black tracking-wider"
+          className="text-4xl font-black tracking-wider uppercase"
           style={{
-            fontFamily: 'serif',
-            background: 'linear-gradient(180deg, #e8d5ff 0%, #a855f7 100%)',
+            background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            filter: 'drop-shadow(0 0 15px rgba(139,92,246,0.4))',
+            filter: 'drop-shadow(0 0 20px rgba(242,0,137,0.6))',
           }}
         >
           World Gateways
@@ -180,24 +188,22 @@ export default function ServerSelect() {
       {/* Server card */}
       <div className="relative z-10 w-full max-w-lg mx-4 animate-in fade-in zoom-in-95 duration-300">
         <div
-          className="rounded-2xl border border-violet-500/30 bg-black/90 shadow-[0_0_60px_rgba(139,92,246,0.25)] overflow-hidden"
+          className="rounded-2xl border border-pink-500/40 bg-[#0a0318]/95 shadow-[0_0_60px_rgba(242,0,137,0.3)] overflow-hidden"
           style={{
-            clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
+            clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
           }}
         >
-          <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-violet-500/60 to-transparent" />
+          <div className="absolute top-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-[#00f5d4] to-transparent" />
 
           {/* Offline warning notification */}
           {!isServerOnline && (
-            <div
-              className="px-5 py-2.5 flex items-center justify-between border-b border-rose-500/30 bg-rose-950/40"
-            >
-              <div className="flex items-center gap-2 text-rose-300 text-xs font-mono">
+            <div className="px-5 py-2.5 flex items-center justify-between border-b border-rose-500/30 bg-rose-950/40 font-mono">
+              <div className="flex items-center gap-2 text-rose-300 text-xs">
                 <AlertTriangle size={14} className="text-rose-400 shrink-0" />
                 <span>
                   {canStartRealm
-                    ? 'Realm is currently offline. Start server to enter.'
-                    : 'Realm is currently offline. Please try again later.'}
+                    ? 'Realm is offline. Start server to enter.'
+                    : 'Realm is offline. Please try again later.'}
                 </span>
               </div>
               {canStartRealm && (
@@ -214,7 +220,7 @@ export default function ServerSelect() {
           )}
 
           {/* Server list */}
-          <div className="p-5 space-y-3">
+          <div className="p-5 space-y-3 font-mono">
             {servers.map(s => {
               const isSelected = selectedServer === s.id;
               const isOnline = s.status === 'online';
@@ -229,9 +235,9 @@ export default function ServerSelect() {
                   }}
                   className={`relative rounded-xl p-4 transition-all duration-200 border ${
                     isSelected
-                      ? 'bg-violet-950/40 border-violet-500/60 shadow-[0_0_20px_rgba(139,92,246,0.3)]'
+                      ? 'bg-pink-950/40 border-pink-500/60 shadow-[0_0_20px_rgba(242,0,137,0.3)]'
                       : isOnline
-                      ? 'bg-black/60 border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-950/20 cursor-pointer'
+                      ? 'bg-black/60 border-pink-500/20 hover:border-cyan-400 hover:bg-pink-950/20 cursor-pointer'
                       : 'bg-black/40 border-slate-800 opacity-50 cursor-not-allowed'
                   }`}
                 >
@@ -240,7 +246,7 @@ export default function ServerSelect() {
                     <div
                       className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
                         isOnline
-                          ? 'bg-violet-950/60 border-violet-500/40 text-violet-300'
+                          ? 'bg-pink-950/60 border-pink-500/40 text-[#00f5d4]'
                           : 'bg-black/40 border-slate-800 text-slate-600'
                       }`}
                     >
@@ -251,8 +257,8 @@ export default function ServerSelect() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
                         <PingDots status={s.status} />
-                        <h3 className="font-bold text-violet-100 text-sm">{s.name}</h3>
-                        <span className="text-[10px] font-mono text-violet-400/60 uppercase tracking-widest">
+                        <h3 className="font-bold text-white text-sm">{s.name}</h3>
+                        <span className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-widest">
                           {s.region}
                         </span>
                       </div>
@@ -266,9 +272,9 @@ export default function ServerSelect() {
                           />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Users size={11} className="text-violet-400/60" />
-                          <span className="text-[11px] font-mono text-violet-300/80 font-bold">
-                            {s.players}<span className="text-violet-500/40">/{s.capacity}</span>
+                          <Users size={11} className="text-cyan-400/70" />
+                          <span className="text-[11px] font-mono text-cyan-200 font-bold">
+                            {s.players}<span className="text-slate-500">/{s.capacity}</span>
                           </span>
                         </div>
                       </div>
@@ -291,10 +297,10 @@ export default function ServerSelect() {
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-3.5 flex items-center justify-between border-t border-violet-900/40 bg-black/40">
+          <div className="px-5 py-3.5 flex items-center justify-between border-t border-pink-500/20 bg-black/40 font-mono">
             <div className="flex items-center gap-2">
-              <Wifi size={14} className="text-violet-400/50" />
-              <span className="text-[11px] font-mono text-violet-400/50">
+              <Wifi size={14} className="text-[#00f5d4]" />
+              <span className="text-[11px] text-cyan-300/70">
                 Telemetry 4s heartbeat
               </span>
             </div>
@@ -302,10 +308,10 @@ export default function ServerSelect() {
             <button
               disabled={!selectedServer || !isServerOnline || isConnecting}
               onClick={handleConnect}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs tracking-wider uppercase transition-all bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.4)] disabled:opacity-40 disabled:pointer-events-none cursor-pointer active:scale-98"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs tracking-wider uppercase transition-all bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(242,0,137,0.4)] disabled:opacity-40 disabled:pointer-events-none cursor-pointer active:scale-98"
             >
               {isConnecting ? (
-                <span className="font-mono animate-pulse">Connecting...</span>
+                <span className="animate-pulse">Connecting...</span>
               ) : (
                 <>
                   <Play size={14} fill="currentColor" />
@@ -317,11 +323,9 @@ export default function ServerSelect() {
         </div>
       </div>
 
-      {/* Flavour text */}
-      <p className="relative z-10 mt-6 text-violet-500/40 text-[11px] font-mono tracking-widest">
-        ᚠ &nbsp; Saints Online Live Shard &nbsp; ᚠ
+      <p className="relative z-10 mt-6 text-pink-500/40 text-[11px] font-mono tracking-widest uppercase">
+        ⚔ Saints Online Live Shard Network ⚔
       </p>
     </div>
   );
 }
-

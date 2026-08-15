@@ -24,9 +24,21 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'copper_ore': { id: 'copper_ore', name: 'Copper Ore (legacy)', description: 'Legacy slug — prefer ore_copper.', type: 'MATERIAL', value: 5 },
   'tin_ore': { id: 'tin_ore', name: 'Tin Ore', description: 'Raw tin ore. Combine with copper for bronze.', type: 'MATERIAL', value: 5 },
   
-  // Consumables
+  // Consumables & Vitality Rations (Hitpoints Skill Tier Progression)
+  'bread_loaf': { id: 'bread_loaf', name: 'Fresh Loaf', description: 'Freshly baked wheat bread.', type: 'FOOD', value: 5, reqSkill: 'Hitpoints', reqLevel: 1, stats: { hp: 15 } },
   'raw_fish': { id: 'raw_fish', name: 'Raw Fish', description: 'Needs to be cooked.', type: 'FOOD', value: 3 },
-  'cooked_fish': { id: 'cooked_fish', name: 'Cooked Fish', description: 'Heals 20 HP.', type: 'FOOD', value: 10, stats: { hp: 20 } },
+  'cooked_fish': { id: 'cooked_fish', name: 'Cooked Fish', description: 'Freshly grilled river fish.', type: 'FOOD', value: 10, reqSkill: 'Hitpoints', reqLevel: 1, stats: { hp: 20 } },
+  'patch_kit': { id: 'patch_kit', name: 'Field Dressing Kit', description: 'Quick-acting field bandage.', type: 'CONSUMABLE', value: 30, reqSkill: 'Hitpoints', reqLevel: 5, stats: { hp: 40 } },
+  'cooked_trout': { id: 'cooked_trout', name: 'Grilled Rainbow Trout', description: 'Crisp trout offering hearty vitality.', type: 'FOOD', value: 45, reqSkill: 'Hitpoints', reqLevel: 10, stats: { hp: 60 } },
+  'vitality_draught': { id: 'vitality_draught', name: 'Vitality Draught', description: 'Invigorating herbal tonic that rapidly restores health.', type: 'CONSUMABLE', value: 120, reqSkill: 'Hitpoints', reqLevel: 15, stats: { hp: 90 } },
+  'cooked_salmon': { id: 'cooked_salmon', name: 'Poached Crimson Salmon', description: 'Nutrient-rich salmon that strengthens life force.', type: 'FOOD', value: 180, reqSkill: 'Hitpoints', reqLevel: 20, stats: { hp: 130 } },
+  'heartstone_talisman': { id: 'heartstone_talisman', name: 'Heartstone Amulet', description: 'Crystalline pendant radiating enduring vigor.', type: 'HEAD', value: 800, reqSkill: 'Hitpoints', reqLevel: 25, stats: { hp: 50, def: 5 } },
+  'cooked_lobster': { id: 'cooked_lobster', name: 'Butter-Seared Lobster', description: 'Delicacy providing sustained life regeneration in battle.', type: 'FOOD', value: 450, reqSkill: 'Hitpoints', reqLevel: 30, stats: { hp: 200 } },
+  'super_vitality_potion': { id: 'super_vitality_potion', name: 'Elixir of Rapid Mending', description: 'Potent alchemical concoction that restores critical health.', type: 'CONSUMABLE', value: 1100, reqSkill: 'Hitpoints', reqLevel: 35, stats: { hp: 300 } },
+  'cooked_shark': { id: 'cooked_shark', name: 'Great Apex Shark Steak', description: 'Apex predator ration delivering massive regenerative energy.', type: 'FOOD', value: 2500, reqSkill: 'Hitpoints', reqLevel: 40, stats: { hp: 420 } },
+  'saintly_ambrosia': { id: 'saintly_ambrosia', name: 'Saintly Ambrosia Flask', description: 'Nectar of the saints restoring immense health and max HP pool.', type: 'CONSUMABLE', value: 6500, reqSkill: 'Hitpoints', reqLevel: 45, stats: { hp: 650 } },
+  'phoenix_elixir': { id: 'phoenix_elixir', name: 'Phoenix Rebirth Heart Vial', description: 'Legendary life essence granting complete recovery and a temporary life ward.', type: 'CONSUMABLE', value: 20000, reqSkill: 'Hitpoints', reqLevel: 50, stats: { hp: 1000 } },
+
   'film_standard': { id: 'film_standard', name: 'Standard Film', description: 'Soul-sensitive film for turn-based capture.', type: 'CONSUMABLE', value: 100 },
   'film_fine': { id: 'film_fine', name: 'Fine Grain Film', description: '2× catch rate film stock.', type: 'CONSUMABLE', value: 250 },
   'soul_camera': { id: 'soul_camera', name: 'Soul Camera', description: 'Exposes film to bind a creature soul.', type: 'CONSUMABLE', value: 50 },
@@ -34,7 +46,6 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'capture_script': { id: 'capture_script', name: 'Film (legacy)', description: 'Legacy slug. Prefer film_standard.', type: 'CONSUMABLE', value: 100 },
   'axe_bronze': { id: 'axe_bronze', name: 'Rook Hatchet', description: 'Woodcutting tool (demo starter kit).', type: 'WEAPON', value: 40, reqSkill: 'Attack', reqLevel: 1 },
   'pickaxe_bronze': { id: 'pickaxe_bronze', name: 'Crude Pickaxe', description: 'Mining tool (demo starter kit).', type: 'WEAPON', value: 40, reqSkill: 'Attack', reqLevel: 1 },
-  'patch_kit': { id: 'patch_kit', name: 'Healing Salve', description: 'Heals 50 HP.', type: 'CONSUMABLE', value: 50, stats: { hp: 50 } },
 
   // Equipment - Melee Weapons (Attack Skill Tier Progression)
   'bronze_sword': { id: 'bronze_sword', name: 'Bronze Sword', description: 'A basic melee weapon forged from bronze.', type: 'WEAPON', value: 150, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 5 } },
