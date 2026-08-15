@@ -1,3 +1,13 @@
+## [2.1.222] - 2026-08-15
+### Added & Improved
+- **Party & Co-Op Management Suite (`party-overlay.tsx`)**:
+  - Upgraded to modern `HudPanelShell` cyber layout with Beast Squad companion switching and active creature summoning.
+  - Added Co-Op Party roster, +25% Shared XP bonus badge, nearby operative quick invites, and WebAudio sound cues.
+- **Campaign Quest Journal (`quest-log-overlay.tsx`)**:
+  - Elevated Quest Log to unified cyber HUD standard with multi-stage objective trackers, reward summaries (XP & Credits), and tab sound synthesis.
+- **Global Operative Leaderboards (`leaderboard-overlay.tsx`)**:
+  - Implemented gold, silver, and bronze podium cards with user badge verification (Founder, VIP, Trusted) and live refresh triggers.
+
 ## [2.1.221] - 2026-08-15
 ### Added & Improved
 - **Professor Oakwood's Research Sanctuary (`ProfessorLabOverlay.tsx`)**:
