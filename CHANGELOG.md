@@ -1,3 +1,10 @@
+## [2.1.228] - 2026-08-15
+### Added & Improved
+- **Game Options & Settings Matrix (`GameOptionsMenu.tsx`)**:
+  - Upgraded settings tabs (Game, Graphics, Audio, Controls, Interface, Gameplay) with cyber chamfered badges and WebAudio sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`).
+- **Operative Vitals & Stat Gauge HUD (`PlayerVitalsHud.tsx`)**:
+  - Modernized operative avatar badge, segmented HP/MP/EXP gauges, and low-HP critical alert pulse state.
+
 ## [2.1.227] - 2026-08-15
 ### Added & Improved
 - **Realm & World Select Gateway (`ServerSelect.tsx`)**:
