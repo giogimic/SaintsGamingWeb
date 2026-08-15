@@ -5,6 +5,7 @@ import { useGameStore } from '../store';
 import { Move, Eye, EyeOff, Minimize2, Maximize2, ChevronDown, ChevronUp } from 'lucide-react';
 import { WidgetSize } from './dock-types';
 import { WIDGET_METADATA } from './default-presets';
+import { soundSynth } from '@/engine/sound-synth';
 
 interface DockableWidgetProps {
   id: string;
@@ -59,6 +60,7 @@ export function DockableWidget({
   };
 
   const cycleSize = () => {
+    soundSynth?.playSelectSound?.();
     const current = config.sizeVariant || 'standard';
     const next: WidgetSize =
       current === 'standard' ? 'compact' : current === 'compact' ? 'expanded' : 'standard';
@@ -66,10 +68,12 @@ export function DockableWidget({
   };
 
   const toggleVisibility = () => {
+    soundSynth?.playUiClick?.();
     setWidgetVisibility(id, !config.visible);
   };
 
   const toggleCollapsed = () => {
+    soundSynth?.playUiClick?.();
     setWidgetCollapsed(id, !config.collapsed);
   };
 
@@ -93,22 +97,22 @@ export function DockableWidget({
               !config.visible
                 ? 'border-red-500/50 bg-red-950/20 opacity-60'
                 : isDraggingLocal
-                ? 'border-cyan-400 bg-cyan-950/40 opacity-40 shadow-[0_0_20px_rgba(34,211,238,0.4)]'
-                : 'border-emerald-500/70 bg-black/40 shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:border-emerald-400'
+                ? 'border-cyan-400 bg-cyan-950/40 opacity-40 shadow-[0_0_20px_rgba(6,182,212,0.5)]'
+                : 'border-emerald-500/70 bg-black/60 shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:border-emerald-400'
             } p-1`
           : ''
       }`}
     >
       {/* Edit Mode Header Overlay */}
       {isEditing && (
-        <div className="mb-1 flex items-center justify-between gap-1.5 rounded-md border border-white/10 bg-[#0A0B10]/95 px-2 py-1 text-xs font-semibold text-white shadow-lg backdrop-blur-md">
+        <div className="mb-1 flex items-center justify-between gap-1.5 rounded border border-cyan-500/30 bg-black/95 px-2 py-1 text-xs font-semibold text-white shadow-lg backdrop-blur-md font-mono">
           {/* Drag Handle */}
           <div
-            className="flex cursor-grab items-center gap-1.5 rounded px-1 py-0.5 text-emerald-400 hover:bg-white/10 active:cursor-grabbing"
+            className="flex cursor-grab items-center gap-1.5 rounded px-1 py-0.5 text-emerald-400 hover:bg-emerald-950/40 active:cursor-grabbing"
             title="Drag to another Dock Zone"
           >
             <Move className="h-3.5 w-3.5" />
-            <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-300">
+            <span className="text-[10px] uppercase tracking-wider text-emerald-300 font-bold">
               {displayTitle}
             </span>
           </div>
@@ -120,10 +124,10 @@ export function DockableWidget({
               type="button"
               onClick={cycleSize}
               title={`Size: ${config.sizeVariant || 'standard'} (Click to cycle)`}
-              className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10 hover:text-white"
+              className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white/80 hover:bg-cyan-950/60 hover:text-cyan-300 border border-transparent hover:border-cyan-500/30 cursor-pointer"
             >
               {config.sizeVariant === 'compact' ? (
-                <Minimize2 className="h-3 w-3 text-yellow-400" />
+                <Minimize2 className="h-3 w-3 text-amber-400" />
               ) : config.sizeVariant === 'expanded' ? (
                 <Maximize2 className="h-3 w-3 text-purple-400" />
               ) : (
@@ -138,7 +142,7 @@ export function DockableWidget({
                 type="button"
                 onClick={toggleCollapsed}
                 title={config.collapsed ? 'Expand Widget' : 'Collapse Widget'}
-                className="rounded p-1 text-white/60 hover:bg-white/10 hover:text-white"
+                className="rounded p-1 text-white/60 hover:bg-white/10 hover:text-white cursor-pointer"
               >
                 {config.collapsed ? (
                   <ChevronDown className="h-3.5 w-3.5" />
@@ -153,10 +157,10 @@ export function DockableWidget({
               type="button"
               onClick={toggleVisibility}
               title={config.visible ? 'Hide Widget' : 'Show Widget'}
-              className={`rounded p-1 transition ${
+              className={`rounded p-1 transition cursor-pointer ${
                 config.visible
-                  ? 'text-emerald-400 hover:bg-white/10'
-                  : 'text-red-400 hover:bg-white/10'
+                  ? 'text-emerald-400 hover:bg-emerald-950/50'
+                  : 'text-red-400 hover:bg-red-950/50'
               }`}
             >
               {config.visible ? (
