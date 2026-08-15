@@ -50,6 +50,22 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'saintly_blade': { id: 'saintly_blade', name: 'Saintly Sunblade', description: 'Consecrated golden blade humming with divine energy.', type: 'WEAPON', value: 12000, reqSkill: 'Attack', reqLevel: 45, stats: { atk: 72 } },
   'celestial_blade': { id: 'celestial_blade', name: 'Celestial Vanguard Blade', description: 'Transcendent starmetal blade forged in the cosmic abyss.', type: 'WEAPON', value: 30000, reqSkill: 'Attack', reqLevel: 50, stats: { atk: 95 } },
 
+  // Equipment - Heavy & Crushing Weapons (Strength Skill Tier Progression)
+  'bronze_battleaxe': { id: 'bronze_battleaxe', name: 'Bronze Battleaxe', description: 'A hefty bronze battleaxe with broad cleave edge.', type: 'WEAPON', value: 180, reqSkill: 'Strength', reqLevel: 1, stats: { atk: 7 } },
+  'bronze_warhammer': { id: 'bronze_warhammer', name: 'Bronze Warhammer', description: 'Heavy bludgeoning hammer that shatters light armor.', type: 'WEAPON', value: 200, reqSkill: 'Strength', reqLevel: 1, stats: { atk: 8 } },
+  'iron_battleaxe': { id: 'iron_battleaxe', name: 'Iron Battleaxe', description: 'Weighted iron battleaxe designed for crushing blows.', type: 'WEAPON', value: 500, reqSkill: 'Strength', reqLevel: 10, stats: { atk: 15 } },
+  'iron_warhammer': { id: 'iron_warhammer', name: 'Iron Warhammer', description: 'Solid iron warhammer delivering punishing impact.', type: 'WEAPON', value: 550, reqSkill: 'Strength', reqLevel: 10, stats: { atk: 18 } },
+  'steel_battleaxe': { id: 'steel_battleaxe', name: 'Steel Battleaxe', description: 'Hardened steel axe designed for brutal overhead strikes.', type: 'WEAPON', value: 900, reqSkill: 'Strength', reqLevel: 20, stats: { atk: 25 } },
+  'steel_warhammer': { id: 'steel_warhammer', name: 'Steel Warhammer', description: 'A massive steel maul capable of denting plate armor.', type: 'WEAPON', value: 1050, reqSkill: 'Strength', reqLevel: 20, stats: { atk: 30 } },
+  'mithril_battleaxe': { id: 'mithril_battleaxe', name: 'Mithril Battleaxe', description: 'High-balance mithril greataxe delivering swift, heavy cuts.', type: 'WEAPON', value: 1500, reqSkill: 'Strength', reqLevel: 25, stats: { atk: 35 } },
+  'mithril_warhammer': { id: 'mithril_warhammer', name: 'Mithril Warhammer', description: 'Resonant azure warhammer dealing severe shockwaves.', type: 'WEAPON', value: 1750, reqSkill: 'Strength', reqLevel: 25, stats: { atk: 42 } },
+  'adamant_battleaxe': { id: 'adamant_battleaxe', name: 'Adamant Battleaxe', description: 'Monolithic adamantine battleaxe with immense cleaving force.', type: 'WEAPON', value: 3000, reqSkill: 'Strength', reqLevel: 35, stats: { atk: 50 } },
+  'adamant_2h': { id: 'adamant_2h', name: 'Adamant 2H Greatsword', description: 'A gargantuan two-handed sword swinging with unstoppable momentum.', type: 'WEAPON', value: 3800, reqSkill: 'Strength', reqLevel: 35, stats: { atk: 62 } },
+  'rune_battleaxe': { id: 'rune_battleaxe', name: 'Rune Battleaxe', description: 'Masterwork runite axe infused with devastating momentum.', type: 'WEAPON', value: 6500, reqSkill: 'Strength', reqLevel: 40, stats: { atk: 68 } },
+  'rune_2h': { id: 'rune_2h', name: 'Rune 2H Greatsword', description: 'Legendary two-handed runite blade that cleaves entire swarms.', type: 'WEAPON', value: 8500, reqSkill: 'Strength', reqLevel: 40, stats: { atk: 80 } },
+  'colossus_maul': { id: 'colossus_maul', name: 'Colossus Earthshaker Maul', description: 'An ancient titan stone maul that causes localized tectonic rifts.', type: 'WEAPON', value: 18000, reqSkill: 'Strength', reqLevel: 45, stats: { atk: 98 } },
+  'titan_crusher': { id: 'titan_crusher', name: 'Titan Worldbreaker Hammer', description: 'A cataclysmic cosmic warhammer capable of shattering continental plates.', type: 'WEAPON', value: 45000, reqSkill: 'Strength', reqLevel: 50, stats: { atk: 125 } },
+
   // Equipment - Ranged Weapons
   'wooden_bow': { id: 'wooden_bow', name: 'Wooden Bow', description: 'A basic ranged weapon.', type: 'WEAPON', value: 100, reqSkill: 'Ranged', reqLevel: 1, stats: { atk: 4 } },
 

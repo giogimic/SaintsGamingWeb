@@ -45,11 +45,23 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack battlepass tier rewards from Lv 5 to Lv 50', () => {
+  it('contains complete Attack & Strength battlepass tier rewards from Lv 5 to Lv 50', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
     expect(attackGuide.battlepassTiers[9].rewardName).toContain('Cape of Attack');
+
+    const strengthGuide = getSkillGuide('strength')!;
+    expect(strengthGuide.battlepassTiers.length).toBe(10);
+    expect(strengthGuide.battlepassTiers[0].rewardName).toContain('Novice Brawler');
+    expect(strengthGuide.battlepassTiers[9].rewardName).toContain('Cape of Strength');
+  });
+
+  it('accurately resolves heavy weapon unlocks for Strength in dynamic lookups', () => {
+    const strengthUnlocks = getAllSkillUnlocks('strength');
+    expect(strengthUnlocks.length).toBeGreaterThan(0);
+    expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
+    expect(strengthUnlocks.some((u) => u.level === 50 && u.title.includes('Titan'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {

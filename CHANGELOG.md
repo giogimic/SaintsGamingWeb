@@ -1,3 +1,10 @@
+## [2.1.237] - 2026-08-15
+### Added & Improved
+- **Skill 2/27: Strength Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded full heavy & crushing weapon tier progression (Bronze, Iron, Steel, Mithril, Adamant, Rune Battleaxes/Warhammers, Colossus Mauls, Titan Crushers) with explicit Strength skill level requirements (`reqSkill: 'Strength'`, `reqLevel: number`) and crushing damage stats.
+  - Dynamically aggregated equipment unlocks and heavy combat abilities for the Strength handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Strength (Novice Brawler, Colossus of Iron, Unstoppable Juggernaut titles, Earth Tremor and Molten Impact auras, and Cape of Strength).
+
 ## [2.1.236] - 2026-08-15
 ### Added & Improved
 - **Skill 1/27: Attack Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
