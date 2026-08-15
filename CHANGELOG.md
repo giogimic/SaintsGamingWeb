@@ -1,3 +1,12 @@
+## [2.1.225] - 2026-08-15
+### Added & Improved
+- **Staff & Admin Floating Controller (`StaffFloatingMenu.tsx`)**:
+  - Upgraded to modern `HudPanelShell` cyber layout with gold/amber staff badge, map broadcast announcements, nearby operative controls (Teleport, Kick, Inspect), and audio feedback.
+- **Virtual Touch Controller & Action Pad (`MobileControls.tsx`)**:
+  - Modernized static DPad, floating joystick, and tactile action cluster with chamfered cyber geometry and audio click synthesis (`soundSynth.playUiClick()`).
+- **Cyber Toast Notification Stack (`GameToastStack.tsx`)**:
+  - Upgraded in-game toast notifications to chamfered cyber pills with distinct status styling (Success/Emerald, Alert/Rose, Warning/Amber, Info/Cyan) and backdrop blur.
+
 ## [2.1.224] - 2026-08-15
 ### Added & Improved
 - **Real-time Combat Action Hotbar (`Hotbar.tsx`)**:

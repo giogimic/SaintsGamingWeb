@@ -14,6 +14,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useGameStore, type MobileControlMode } from './store';
+import { soundSynth } from '@/engine/sound-synth';
 
 /** Dispatched so GameCanvasBabylon can run the authoritative tryMoveDirection path. */
 export const LOBBY_TOUCH_MOVE_EVENT = 'lobby_touch_move';
@@ -24,6 +25,7 @@ function emitMove(dx: number, dy: number) {
 }
 
 function emitInteract() {
+  soundSynth?.playActionSound?.();
   window.dispatchEvent(new CustomEvent(LOBBY_TOUCH_INTERACT_EVENT));
 }
 
@@ -31,6 +33,7 @@ function StaticDPad() {
   const moveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startContinuousMove = (dx: number, dy: number) => {
+    soundSynth?.playUiClick?.();
     emitMove(dx, dy);
     if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
     moveIntervalRef.current = setInterval(() => emitMove(dx, dy), 180);
@@ -46,12 +49,12 @@ function StaticDPad() {
   useEffect(() => () => stopContinuousMove(), []);
 
   const btn =
-    'w-14 h-14 bg-[#0c1220]/85 border border-[#cbb26a]/35 rounded-2xl flex items-center justify-center text-[#e8d5a3] hover:bg-[#cbb26a]/15 active:bg-[#cbb26a]/30 active:scale-95 transition-all backdrop-blur-md';
+    'w-14 h-14 bg-black/80 border border-cyan-500/40 rounded-xl flex items-center justify-center text-cyan-300 hover:bg-cyan-950/40 active:bg-cyan-800/60 active:scale-95 transition-all backdrop-blur-md cursor-pointer shadow-lg';
 
   return (
     <div
       className="fixed bottom-6 left-6 z-50 flex flex-col items-center gap-1.5 pointer-events-auto select-none touch-none"
-      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.8))' }}
     >
       <button
         className={btn}
@@ -63,7 +66,7 @@ function StaticDPad() {
         onPointerLeave={stopContinuousMove}
         onPointerCancel={stopContinuousMove}
       >
-        <ArrowUp className="w-7 h-7" />
+        <ArrowUp className="w-6 h-6" />
       </button>
       <div className="flex gap-1.5">
         <button
@@ -76,10 +79,10 @@ function StaticDPad() {
           onPointerLeave={stopContinuousMove}
           onPointerCancel={stopContinuousMove}
         >
-          <ArrowLeft className="w-7 h-7" />
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <div className="w-14 h-14 rounded-2xl bg-black/40 backdrop-blur-md border border-[#cbb26a]/20 flex items-center justify-center shadow-inner">
-          <div className="w-4 h-4 rounded-full bg-[#cbb26a]/35" />
+        <div className="w-14 h-14 rounded-xl bg-black/60 backdrop-blur-md border border-cyan-500/20 flex items-center justify-center shadow-inner">
+          <div className="w-4 h-4 rounded-full bg-cyan-500/40" />
         </div>
         <button
           className={btn}
@@ -91,7 +94,7 @@ function StaticDPad() {
           onPointerLeave={stopContinuousMove}
           onPointerCancel={stopContinuousMove}
         >
-          <ArrowRight className="w-7 h-7" />
+          <ArrowRight className="w-6 h-6" />
         </button>
       </div>
       <button
@@ -104,7 +107,7 @@ function StaticDPad() {
         onPointerLeave={stopContinuousMove}
         onPointerCancel={stopContinuousMove}
       >
-        <ArrowDown className="w-7 h-7" />
+        <ArrowDown className="w-6 h-6" />
       </button>
     </div>
   );
@@ -155,6 +158,7 @@ function FloatingJoystick() {
   };
 
   const startAt = (clientX: number, clientY: number) => {
+    soundSynth?.playUiClick?.();
     setOrigin({ x: clientX, y: clientY });
     setKnob({ x: 0, y: 0 });
     setActive(true);
@@ -173,11 +177,9 @@ function FloatingJoystick() {
       ref={zoneRef}
       className="fixed inset-0 z-40 pointer-events-auto touch-none select-none md:hidden"
       style={{
-        // Leave right action cluster + top UI clickable: only left 55% captures joystick
         clipPath: 'inset(0 45% 0 0)',
       }}
       onPointerDown={(e) => {
-        // Ignore if interacting with a button (actions live outside clip on the right)
         if ((e.target as HTMLElement).closest('button')) return;
         e.preventDefault();
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -193,20 +195,20 @@ function FloatingJoystick() {
     >
       {active && (
         <div
-          className="absolute w-32 h-32 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#cbb26a]/40 bg-black/45 backdrop-blur-md shadow-[0_0_30px_rgba(203,178,106,0.2)] pointer-events-none"
+          className="absolute w-32 h-32 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-500/50 bg-black/60 backdrop-blur-md shadow-[0_0_30px_rgba(6,182,212,0.3)] pointer-events-none"
           style={{ left: origin.x, top: origin.y }}
         >
-          <div className="absolute inset-3 rounded-full border border-white/10" />
+          <div className="absolute inset-3 rounded-full border border-cyan-400/20" />
           <div
-            className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-[#e8d5a3] to-[#806f47] border border-white/30 shadow-lg"
+            className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-700 border border-cyan-200/50 shadow-lg"
             style={{ left: `calc(50% + ${knob.x}px)`, top: `calc(50% + ${knob.y}px)` }}
           />
         </div>
       )}
 
       {!active && (
-        <div className="fixed bottom-8 left-8 w-20 h-20 rounded-full border border-[#cbb26a]/25 bg-black/30 backdrop-blur-sm flex items-center justify-center pointer-events-none opacity-70">
-          <div className="w-8 h-8 rounded-full bg-[#cbb26a]/25 border border-[#cbb26a]/40" />
+        <div className="fixed bottom-8 left-8 w-20 h-20 rounded-full border border-cyan-500/30 bg-black/40 backdrop-blur-sm flex items-center justify-center pointer-events-none opacity-70">
+          <div className="w-8 h-8 rounded-full bg-cyan-500/30 border border-cyan-400/40" />
         </div>
       )}
     </div>
@@ -223,11 +225,13 @@ function ActionCluster({
   onLeaveGame?: () => void;
 }) {
   const toggleInventory = () => {
+    soundSynth?.playSelectSound?.();
     const state = useGameStore.getState();
     state.setGameMode(state.gameMode === 'INVENTORY' ? 'EXPLORING' : 'INVENTORY');
   };
 
   const toggleSkills = () => {
+    soundSynth?.playSelectSound?.();
     const state = useGameStore.getState();
     state.setGameMode(state.gameMode === 'SKILLS' ? 'EXPLORING' : 'SKILLS');
   };
@@ -235,42 +239,51 @@ function ActionCluster({
   return (
     <div
       className="fixed bottom-6 right-6 z-50 flex items-end gap-3 pointer-events-auto select-none"
-      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.8))' }}
     >
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={toggleInventory}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-amber-500/40 rounded-xl flex flex-col items-center justify-center text-amber-300 active:bg-amber-600 active:text-white transition-all backdrop-blur-md"
+          className="w-11 h-11 bg-black/80 border border-amber-500/40 rounded-xl flex flex-col items-center justify-center text-amber-300 active:bg-amber-600 active:text-white transition-all backdrop-blur-md cursor-pointer shadow-md"
           title="Inventory"
         >
           <Backpack className="w-5 h-5" />
         </button>
         <button
           onClick={toggleSkills}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-emerald-300 active:bg-emerald-600 active:text-white transition-all backdrop-blur-md"
+          className="w-11 h-11 bg-black/80 border border-emerald-500/40 rounded-xl flex flex-col items-center justify-center text-emerald-300 active:bg-emerald-600 active:text-white transition-all backdrop-blur-md cursor-pointer shadow-md"
           title="Skills"
         >
           <Sword className="w-5 h-5" />
         </button>
         <button
-          onClick={() => onToggleOptions?.()}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-slate-500/40 rounded-xl flex flex-col items-center justify-center text-slate-300 active:bg-slate-700 active:text-white transition-all backdrop-blur-md"
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            onToggleOptions?.();
+          }}
+          className="w-11 h-11 bg-black/80 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-300 active:bg-slate-700 active:text-white transition-all backdrop-blur-md cursor-pointer shadow-md"
           title="Options"
         >
           <Settings className="w-5 h-5" />
         </button>
         <button
-          onClick={() => onToggleFullscreen?.()}
-          className="w-11 h-11 bg-[#0c1220]/85 border border-[#cbb26a]/40 rounded-xl flex flex-col items-center justify-center text-[#e8d5a3] active:bg-[#cbb26a]/40 active:text-white transition-all backdrop-blur-md"
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            onToggleFullscreen?.();
+          }}
+          className="w-11 h-11 bg-black/80 border border-cyan-500/40 rounded-xl flex flex-col items-center justify-center text-cyan-300 active:bg-cyan-600 active:text-white transition-all backdrop-blur-md cursor-pointer shadow-md"
           title="Fullscreen"
         >
           <Maximize2 className="w-5 h-5" />
         </button>
         <button
           type="button"
-          onClick={() => onLeaveGame?.()}
-          className="col-span-2 w-full h-11 bg-rose-950/85 border border-rose-500/50 rounded-xl flex items-center justify-center gap-2 text-rose-200 active:bg-rose-800 active:text-white transition-all backdrop-blur-md font-mono text-[10px] font-bold uppercase tracking-wider"
-          title="Leave Game — return to website"
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            onLeaveGame?.();
+          }}
+          className="col-span-2 w-full h-10 bg-rose-950/80 border border-rose-500/50 rounded-xl flex items-center justify-center gap-2 text-rose-200 active:bg-rose-800 active:text-white transition-all backdrop-blur-md font-mono text-[10px] font-bold uppercase tracking-wider cursor-pointer shadow-md"
+          title="Leave Game"
         >
           <LogOut className="w-4 h-4" />
           Leave
@@ -279,10 +292,13 @@ function ActionCluster({
 
       <button
         onClick={emitInteract}
-        className="w-20 h-20 bg-gradient-to-br from-[#806f47] to-[#3d3420] border-2 border-[#cbb26a]/70 rounded-3xl flex flex-col items-center justify-center text-white active:scale-95 shadow-[0_0_20px_rgba(203,178,106,0.35)] transition-all font-bold text-xs"
+        className="w-20 h-20 bg-gradient-to-br from-amber-600 to-amber-800 border-2 border-amber-400/80 rounded-2xl flex flex-col items-center justify-center text-white active:scale-95 shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all font-bold text-xs cursor-pointer"
+        style={{
+          clipPath: 'polygon(8px 0%, 100% 0%, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0% 100%, 0% 8px)',
+        }}
       >
-        <Zap className="w-8 h-8 text-amber-300 fill-amber-300 mb-0.5" />
-        <span className="text-[10px] tracking-wider uppercase font-mono">Action</span>
+        <Zap className="w-7 h-7 text-amber-200 fill-amber-200 mb-0.5" />
+        <span className="text-[10px] tracking-wider uppercase font-mono font-black">Action</span>
       </button>
     </div>
   );
@@ -327,3 +343,4 @@ export default function MobileControls({
     </>
   );
 }
+
