@@ -1,3 +1,10 @@
+## [2.1.241] - 2026-08-15
+### Added & Improved
+- **Skill 5/27: Ranged Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete bow, crossbow, and ranger armor tier progression (Starter Wood, Oak, Willow, Maple, Yew, Magic Shortbow, Darkveil Ballista, Celestial Sunstriker Greatbow, and Wyrmhide tunics) with explicit Ranged level requirements (`reqSkill: 'Ranged'`, `reqLevel: number`) and ranged attack power stats.
+  - Dynamically aggregated shortbows, longbows, crossbows, and leather armors for the Ranged handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Ranged (Novice Marksman, Windstrider, Deadeye Sniper titles, Gale Wind and Phantom Arrow Trails auras, Feathered Quiver, and Cape of Ranged).
+
 ## [2.1.240] - 2026-08-15
 ### Added & Improved
 - **MMO Gateway Hub & Pre-Game Entrance Redesign (`GameTitleScreen.tsx`, `character-selector.tsx`, `ServerSelect.tsx`, `GameLogin.tsx`, `index.tsx`)**:

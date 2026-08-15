@@ -77,8 +77,20 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'colossus_maul': { id: 'colossus_maul', name: 'Colossus Earthshaker Maul', description: 'An ancient titan stone maul that causes localized tectonic rifts.', type: 'WEAPON', value: 18000, reqSkill: 'Strength', reqLevel: 45, stats: { atk: 98 } },
   'titan_crusher': { id: 'titan_crusher', name: 'Titan Worldbreaker Hammer', description: 'A cataclysmic cosmic warhammer capable of shattering continental plates.', type: 'WEAPON', value: 45000, reqSkill: 'Strength', reqLevel: 50, stats: { atk: 125 } },
 
-  // Equipment - Ranged Weapons
-  'wooden_bow': { id: 'wooden_bow', name: 'Wooden Bow', description: 'A basic ranged weapon.', type: 'WEAPON', value: 100, reqSkill: 'Ranged', reqLevel: 1, stats: { atk: 4 } },
+  // Equipment - Ranged Weapons & Armor (Ranged Skill Tier Progression)
+  'wooden_bow': { id: 'wooden_bow', name: 'Starter Wooden Shortbow', description: 'A flexible starter wood bow for target practice.', type: 'WEAPON', value: 100, reqSkill: 'Ranged', reqLevel: 1, stats: { atk: 4 } },
+  'leather_chaps': { id: 'leather_chaps', name: 'Tanned Leather Chaps', description: 'Supple leather leggings offering freedom of movement for archers.', type: 'LEGS', value: 80, reqSkill: 'Ranged', reqLevel: 1, stats: { def: 2 } },
+  'oak_bow': { id: 'oak_bow', name: 'Oak Recurve Bow', description: 'Stout oak bow delivering heightened arrow velocity.', type: 'WEAPON', value: 350, reqSkill: 'Ranged', reqLevel: 10, stats: { atk: 10 } },
+  'studded_leather_tunic': { id: 'studded_leather_tunic', name: 'Studded Leather Tunic', description: 'Reinforced leather vest studded with steel rivets.', type: 'CHEST', value: 450, reqSkill: 'Ranged', reqLevel: 15, stats: { def: 10, atk: 5 } },
+  'willow_composite_bow': { id: 'willow_composite_bow', name: 'Willow Composite Bow', description: 'Laminated willow bow granting rapid fire cycles.', type: 'WEAPON', value: 750, reqSkill: 'Ranged', reqLevel: 20, stats: { atk: 18 } },
+  'maple_recurve_bow': { id: 'maple_recurve_bow', name: 'Maple War Bow', description: 'Heavy tension maple war bow with superior effective range.', type: 'WEAPON', value: 1300, reqSkill: 'Ranged', reqLevel: 25, stats: { atk: 26 } },
+  'ranger_dragonhide_tunic': { id: 'ranger_dragonhide_tunic', name: 'Emerald Wyrmhide Tunic', description: 'Supple wyrmhide providing superb projectile protection and arrow focus.', type: 'CHEST', value: 2400, reqSkill: 'Ranged', reqLevel: 30, stats: { def: 25, atk: 12 } },
+  'yew_longbow': { id: 'yew_longbow', name: 'Yew Sniper Longbow', description: 'Masterwork yew longbow dealing devastating single-shot impact.', type: 'WEAPON', value: 3200, reqSkill: 'Ranged', reqLevel: 35, stats: { atk: 38 } },
+  'magic_shortbow': { id: 'magic_shortbow', name: 'Enchanted Magic Shortbow', description: 'Glows with arcane runes, allowing rapid double-shot special volleys.', type: 'WEAPON', value: 6500, reqSkill: 'Ranged', reqLevel: 40, stats: { atk: 52 } },
+  'darkveil_heavy_crossbow': { id: 'darkveil_heavy_crossbow', name: 'Darkveil Siege Crossbow', description: 'Heavy mechanical ballista firing armor-penetrating titanium bolts.', type: 'WEAPON', value: 16000, reqSkill: 'Ranged', reqLevel: 45, stats: { atk: 70 } },
+  'saintly_scout_garb': { id: 'saintly_scout_garb', name: 'Saintly Sunstrider Garb', description: 'Consecrated golden ranger tunic humming with divine accuracy.', type: 'CHEST', value: 28000, reqSkill: 'Ranged', reqLevel: 45, stats: { def: 45, atk: 20 } },
+  'celestial_sunstriker_bow': { id: 'celestial_sunstriker_bow', name: 'Celestial Sunstriker Greatbow', description: 'Ultimate cosmic bow firing concentrated stellar plasma arrows across infinite range.', type: 'WEAPON', value: 55000, reqSkill: 'Ranged', reqLevel: 50, stats: { atk: 92 } },
+  'celestial_starcaster_vest': { id: 'celestial_starcaster_vest', name: 'Celestial Voidstalker Hauberk', description: 'Woven from celestial stardust, granting unmatched stealth and projectile deflection.', type: 'CHEST', value: 85000, reqSkill: 'Ranged', reqLevel: 50, stats: { def: 65, atk: 30 } },
 
   // Equipment - Armor & Shields (Defence Skill Tier Progression)
   'bronze_shield': { id: 'bronze_shield', name: 'Bronze Kiteshield', description: 'Basic bronze shield providing reliable frontal deflection.', type: 'LEGS', value: 100, reqSkill: 'Defence', reqLevel: 1, stats: { def: 4 } },

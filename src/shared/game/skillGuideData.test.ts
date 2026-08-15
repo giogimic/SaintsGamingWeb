@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, & Hitpoints battlepass tier rewards from Lv 5 to Lv 50', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, & Ranged battlepass tier rewards from Lv 5 to Lv 50', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -65,9 +65,14 @@ describe('skillGuideData Registry', () => {
     expect(hitpointsGuide.battlepassTiers.length).toBe(10);
     expect(hitpointsGuide.battlepassTiers[0].rewardName).toContain('Novice Vitalist');
     expect(hitpointsGuide.battlepassTiers[9].rewardName).toContain('Cape of Hitpoints');
+
+    const rangedGuide = getSkillGuide('ranged')!;
+    expect(rangedGuide.battlepassTiers.length).toBe(10);
+    expect(rangedGuide.battlepassTiers[0].rewardName).toContain('Novice Marksman');
+    expect(rangedGuide.battlepassTiers[9].rewardName).toContain('Cape of Ranged');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, and vitality for Hitpoints in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, and bows for Ranged in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -82,6 +87,11 @@ describe('skillGuideData Registry', () => {
     expect(hpUnlocks.length).toBeGreaterThan(0);
     expect(hpUnlocks.some((u) => u.title.includes('Fish') || u.title.includes('Shark') || u.title.includes('Vitality') || u.title.includes('Heart'))).toBe(true);
     expect(hpUnlocks.some((u) => u.level === 50 && u.title.includes('Phoenix'))).toBe(true);
+
+    const rangedUnlocks = getAllSkillUnlocks('ranged');
+    expect(rangedUnlocks.length).toBeGreaterThan(0);
+    expect(rangedUnlocks.some((u) => u.title.includes('Bow') || u.title.includes('Longbow') || u.title.includes('Crossbow') || u.title.includes('Tunic'))).toBe(true);
+    expect(rangedUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
