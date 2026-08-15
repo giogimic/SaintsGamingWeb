@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, Herblore, Runecrafting, Smithing, Thieving, Summoning, & Magic battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, Herblore, Runecrafting, Smithing, Thieving, Summoning, Magic, & Prayer battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -170,9 +170,14 @@ describe('skillGuideData Registry', () => {
     expect(magicGuide.battlepassTiers.length).toBe(10);
     expect(magicGuide.battlepassTiers[0].rewardName).toContain('Novice Mage');
     expect(magicGuide.battlepassTiers[9].rewardName).toContain('Cape of Magic');
+
+    const prayerGuide = getSkillGuide('prayer')!;
+    expect(prayerGuide.battlepassTiers.length).toBe(10);
+    expect(prayerGuide.battlepassTiers[0].rewardName).toContain('Novice Acolyte');
+    expect(prayerGuide.battlepassTiers[9].rewardName).toContain('Cape of Prayer');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, lockpicks/masks/cloaks for Thieving, charms/pouches/matrices for Summoning, and staves/robes/grimoires for Magic in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, lockpicks/masks/cloaks for Thieving, charms/pouches/matrices for Summoning, staves/robes/grimoires for Magic, and bones/symbols/vestments for Prayer in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -292,6 +297,11 @@ describe('skillGuideData Registry', () => {
     expect(magicUnlocks.length).toBeGreaterThan(0);
     expect(magicUnlocks.some((u) => u.title.includes('Staff') || u.title.includes('Robe') || u.title.includes('Wand') || u.title.includes('Grimoire') || u.title.includes('Singularity'))).toBe(true);
     expect(magicUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const prayerUnlocks = getAllSkillUnlocks('prayer');
+    expect(prayerUnlocks.length).toBeGreaterThan(0);
+    expect(prayerUnlocks.some((u) => u.title.includes('Bones') || u.title.includes('Symbol') || u.title.includes('Robe') || u.title.includes('Crown') || u.title.includes('Ashes') || u.title.includes('Protect'))).toBe(true);
+    expect(prayerUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {

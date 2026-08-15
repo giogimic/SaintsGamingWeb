@@ -1,3 +1,10 @@
+## [2.1.262] - 2026-08-15
+### Added & Improved
+- **Skill 26/27: Prayer Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete animal bones, blessed holy symbols, giant beast bones, sanctified monk vestments, ancient dragon bones, demonic infernal ashes, sanctified templar robes, and celestial hierophant halo crowns progression (Clean Animal Bones, Blessed Silver Holy Symbols, Giant Beast Bones, Sanctified Monk Vestments, Ancient Dragon Bones, Demonic Infernal Ashes, Sanctified Templar Robes, and Celestial Hierophant Halo Crowns) with explicit Prayer level requirements (`reqSkill: 'Prayer'`, `reqLevel: number`), prayer point drain reduction, overhead 100% protection wards (Magic, Missiles, Melee), Smite faith siphon, and Piety/Rigour/Augury divine seals.
+  - Dynamically aggregated bone offerings, church altar consecrations, overhead protections, and holy knight seals for the Prayer handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Prayer spanning Lv 10 to Lv 99 (Novice Acolyte, Templar Crusader, High Inquisitor titles, Consecrate Altar emote, Seraphic Golden Shimmer, Orbiting Holy Light Halo, Solar Archangel Supernova Corona auras, Sanctified Monk Vestments cosmetic, and Cape of Prayer).
+
 ## [2.1.261] - 2026-08-15
 ### Added & Improved
 - **Skill 25/27: Magic Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
