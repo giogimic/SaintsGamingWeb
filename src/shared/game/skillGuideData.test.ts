@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, & Agility battlepass tier rewards from Lv 5 to Lv 50', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, & Perception battlepass tier rewards from Lv 5 to Lv 50', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -75,9 +75,14 @@ describe('skillGuideData Registry', () => {
     expect(agilityGuide.battlepassTiers.length).toBe(10);
     expect(agilityGuide.battlepassTiers[0].rewardName).toContain('Novice Acrobat');
     expect(agilityGuide.battlepassTiers[9].rewardName).toContain('Cape of Agility');
+
+    const perceptionGuide = getSkillGuide('perception')!;
+    expect(perceptionGuide.battlepassTiers.length).toBe(10);
+    expect(perceptionGuide.battlepassTiers[0].rewardName).toContain('Novice Tracker');
+    expect(perceptionGuide.battlepassTiers[9].rewardName).toContain('Cape of Perception');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, and boots for Agility in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, and optics for Perception in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -102,6 +107,11 @@ describe('skillGuideData Registry', () => {
     expect(agilityUnlocks.length).toBeGreaterThan(0);
     expect(agilityUnlocks.some((u) => u.title.includes('Boots') || u.title.includes('Runners') || u.title.includes('Stamina') || u.title.includes('Greaves'))).toBe(true);
     expect(agilityUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
+
+    const perceptionUnlocks = getAllSkillUnlocks('perception');
+    expect(perceptionUnlocks.length).toBeGreaterThan(0);
+    expect(perceptionUnlocks.some((u) => u.title.includes('Spyglass') || u.title.includes('Monocle') || u.title.includes('Goggles') || u.title.includes('Lens') || u.title.includes('Oculus'))).toBe(true);
+    expect(perceptionUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {

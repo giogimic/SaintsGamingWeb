@@ -1,3 +1,10 @@
+## [2.1.243] - 2026-08-15
+### Added & Improved
+- **Skill 7/27: Perception Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete optical spyglasses, tactical monocles, radar lenses, and divination crowns progression (Brass Spyglasses, Hunter Tracking Charms, Scout Monocles, True-Sight Clarifying Elixirs, Hawkeye Sniper Goggles, Crystalline Prism Lenses, Shadow-Seer Night Visors, Oracle All-Seeing Oculus, Saintly Divination Circlets, and Celestial Omniscient Crowns) with explicit Perception level requirements (`reqSkill: 'Perception'`, `reqLevel: number`) and critical strike/radar vision stats.
+  - Dynamically aggregated optical eyepieces, true-sight potions, and weak-point analysis skills for the Perception handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Perception (Novice Tracker, Keen Eye, Shadow Hunter titles, Violet Scanlines and Mystic Third Eye auras, Astral Monocle, and Cape of Perception).
+
 ## [2.1.242] - 2026-08-15
 ### Added & Improved
 - **Skill 6/27: Agility Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
