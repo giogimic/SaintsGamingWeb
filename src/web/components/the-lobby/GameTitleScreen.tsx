@@ -150,8 +150,11 @@ function CreditsModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <button
-            onClick={onClose}
-            className="mt-8 px-8 py-2.5 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/40 rounded-xl text-violet-200 text-sm font-bold tracking-wider transition-all hover:border-violet-400/60"
+            onClick={() => {
+              soundSynth?.playSelectSound?.();
+              onClose();
+            }}
+            className="mt-8 px-8 py-2.5 bg-violet-600/40 hover:bg-violet-600/60 border border-violet-500/50 rounded-xl text-violet-200 text-sm font-bold tracking-wider transition-all hover:border-violet-400/80 cursor-pointer shadow-lg"
           >
             Close
           </button>
@@ -293,17 +296,18 @@ export default function GameTitleScreen() {
           {/* Primary CTA */}
           <button
             onClick={handleStart}
-            className="group relative w-full py-4 overflow-hidden rounded-2xl font-black text-lg tracking-widest uppercase transition-all duration-200 hover:scale-[1.03] active:scale-[0.98]"
+            className="group relative w-full py-4 overflow-hidden rounded-2xl font-black text-lg tracking-widest uppercase transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer shadow-2xl"
             style={{
               background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #9333ea 100%)',
-              boxShadow: '0 0 30px rgba(139,92,246,0.5), 0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)',
+              boxShadow: '0 0 35px rgba(139,92,246,0.6), 0 4px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.2)',
+              clipPath: 'polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)',
             }}
           >
             {/* Shimmer sweep */}
             <div
               className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
               style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)',
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
               }}
             />
             <span className="relative flex items-center justify-center gap-3 text-white">
@@ -315,42 +319,26 @@ export default function GameTitleScreen() {
           {/* Secondary buttons */}
           <div className="flex gap-3 w-full">
             <button
-              onClick={() => setShowCredits(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-[0.98]"
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setShowCredits(true);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer bg-black/80 border border-violet-500/30 text-violet-200 hover:border-violet-400 hover:bg-violet-950/40"
               style={{
-                background: 'rgba(30,10,60,0.7)',
-                border: '1px solid rgba(139,92,246,0.25)',
-                color: 'rgba(196, 181, 253, 0.7)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.5)';
-                (e.currentTarget as HTMLElement).style.color = 'rgba(221,214,254,0.9)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.25)';
-                (e.currentTarget as HTMLElement).style.color = 'rgba(196,181,253,0.7)';
+                boxShadow: '0 0 15px rgba(139,92,246,0.15)',
               }}
             >
               <ScrollText size={15} />
               Credits
             </button>
             <button
-              onClick={() => setShowOptions(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-[0.98]"
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setShowOptions(true);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm tracking-wider uppercase transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer bg-black/80 border border-violet-500/30 text-violet-200 hover:border-violet-400 hover:bg-violet-950/40"
               style={{
-                background: 'rgba(30,10,60,0.7)',
-                border: '1px solid rgba(139,92,246,0.25)',
-                color: 'rgba(196, 181, 253, 0.7)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.5)';
-                (e.currentTarget as HTMLElement).style.color = 'rgba(221,214,254,0.9)';
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.25)';
-                (e.currentTarget as HTMLElement).style.color = 'rgba(196,181,253,0.7)';
+                boxShadow: '0 0 15px rgba(139,92,246,0.15)',
               }}
             >
               <Settings size={15} />
