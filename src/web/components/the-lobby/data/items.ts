@@ -145,6 +145,16 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'hatchet_celestial': { id: 'hatchet_celestial', name: 'Celestial World-Tree Hatchet', description: 'Mythic cosmic hatchet forged from starlight capable of felling world trees.', type: 'WEAPON', value: 100000, reqSkill: 'Woodcutting', reqLevel: 99, stats: { atk: 65 } },
   'celestial_world_tree_branch': { id: 'celestial_world_tree_branch', name: 'Celestial World-Tree Bough', description: 'Living starlight bough harvested from the cosmic world tree.', type: 'MATERIAL', value: 50000, reqSkill: 'Woodcutting', reqLevel: 99 },
 
+  // Torches, Lanterns & Thermal Pyres (Firemaking Skill Tier Progression)
+  'tinderbox_flint': { id: 'tinderbox_flint', name: 'Flint & Steel Tinderbox', description: 'Essential flint strike tool used to spark fires from timber logs.', type: 'MATERIAL', value: 15, reqSkill: 'Firemaking', reqLevel: 1 },
+  'torch_wooden': { id: 'torch_wooden', name: 'Pitch-Dipped Hand Torch', description: 'Handheld wooden torch illuminating pitch-black caverns and dungeons.', type: 'WEAPON', value: 35, reqSkill: 'Firemaking', reqLevel: 5, stats: { atk: 3 } },
+  'lantern_bullseye': { id: 'lantern_bullseye', name: 'Brass Bullseye Lantern', description: 'Focused lens lantern penetrating heavy dungeon fog and gloom.', type: 'HEAD', value: 250, reqSkill: 'Firemaking', reqLevel: 20, stats: { def: 4, hp: 15 } },
+  'oil_lantern_steel': { id: 'oil_lantern_steel', name: 'Refined Steel Oil Lantern', description: 'Heavy oil lantern providing sustained thermal warmth and cavern visibility.', type: 'HEAD', value: 650, reqSkill: 'Firemaking', reqLevel: 35, stats: { def: 8, hp: 30 } },
+  'miner_acetylene_torch': { id: 'miner_acetylene_torch', name: 'Acetylene Pressure Torch', description: 'Intense blue-flame cutting torch burning with scorching heat.', type: 'WEAPON', value: 2000, reqSkill: 'Firemaking', reqLevel: 50, stats: { atk: 15, def: 5 } },
+  'pyrelord_lantern': { id: 'pyrelord_lantern', name: 'Pyrelord Obsidian Lantern', description: 'Enchanted volcanic lantern empowering nearby party fire abilities.', type: 'HEAD', value: 8500, reqSkill: 'Firemaking', reqLevel: 70, stats: { atk: 20, def: 15, hp: 60 } },
+  'sunfire_beacon_catalyst': { id: 'sunfire_beacon_catalyst', name: 'Sunfire Beacon Catalyst', description: 'Concentrated solar core used to ignite server-wide regional beacon towers.', type: 'MATERIAL', value: 25000, reqSkill: 'Firemaking', reqLevel: 85, stats: { atk: 30, hp: 100 } },
+  'celestial_sunfire_matrix': { id: 'celestial_sunfire_matrix', name: 'Celestial Sunfire Matrix', description: 'Cosmic solar crown radiating perpetual starlight and radiant healing heat.', type: 'HEAD', value: 100000, reqSkill: 'Firemaking', reqLevel: 99, stats: { atk: 45, def: 30, hp: 200 } },
+
   // Equipment - Melee Weapons (Attack Skill Tier Progression)
   'bronze_sword': { id: 'bronze_sword', name: 'Bronze Sword', description: 'A basic melee weapon forged from bronze.', type: 'WEAPON', value: 150, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 5 } },
   'bronze_dagger': { id: 'bronze_dagger', name: 'Bronze Dagger', description: 'A lightweight fast bronze stabbing dagger.', type: 'WEAPON', value: 80, reqSkill: 'Attack', reqLevel: 1, stats: { atk: 3 } },
