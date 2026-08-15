@@ -1,17 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useGameStore } from './store';
 import { HudPanelShell } from './hud/HudPanelShell';
-import {
-  getSkillGuide,
-  getAllSkillUnlocks,
-  SkillUnlockMilestone,
-  BattlepassTier,
-  SkillGuideEntry,
-} from '@/shared/game/skillGuideData';
-import { normalizeSkillSlug, calculateCombatLevelFromXp, isCombatSkillTyping } from '@/shared/game/skillTypings';
-import { getSkillCapeEmote, SkillCapeEmoteDef } from '@/shared/game/skillCapeEmotes';
+import { getSkillGuide, getAllSkillUnlocks } from '@/shared/game/skillGuideData';
+import { normalizeSkillSlug, isCombatSkillTyping } from '@/shared/game/skillTypings';
 import {
   Sword,
   Shield,
@@ -43,48 +36,18 @@ import {
   CheckCircle2,
   Lock,
   ChevronRight,
-  Trophy,
   Zap,
-  Info,
   Crown,
-  Layers,
   Dumbbell,
-  Play,
-  Volume2,
+  BookMarked,
 } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
-// Icon mapping dictionary for dynamic lookup
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
-  Sword,
-  Dumbbell,
-  Shield,
-  Heart,
-  Crosshair,
-  Wind,
-  Eye,
-  BookOpen,
-  Cpu,
-  Sprout,
-  Fish,
-  Target,
-  Pickaxe,
-  Axe,
-  Home,
-  UtensilsCrossed,
-  Hammer,
-  Flame,
-  Feather,
-  FlaskConical,
-  Sparkle,
-  Anvil,
-  Key,
-  Sparkles,
-  Wand2,
-  Sun,
-  Skull,
-  Award,
-  Crown,
+  Sword, Dumbbell, Shield, Heart, Crosshair, Wind, Eye, BookOpen, Cpu,
+  Sprout, Fish, Target, Pickaxe, Axe, Home, UtensilsCrossed, Hammer,
+  Flame, Feather, FlaskConical, Sparkle, Anvil, Key, Sparkles, Wand2,
+  Sun, Skull, Award, Crown,
 };
 
 function renderSkillIcon(iconName: string, className?: string) {
@@ -92,27 +55,23 @@ function renderSkillIcon(iconName: string, className?: string) {
   return <IconComponent className={className || 'w-5 h-5'} />;
 }
 
-const RARITY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  COMMON: { bg: 'bg-slate-800/40', border: 'border-slate-700', text: 'text-slate-300' },
-  UNCOMMON: { bg: 'bg-emerald-950/40', border: 'border-emerald-500/40', text: 'text-emerald-300' },
-  RARE: { bg: 'bg-cyan-950/40', border: 'border-cyan-500/40', text: 'text-cyan-300' },
-  EPIC: { bg: 'bg-purple-950/40', border: 'border-purple-500/40', text: 'text-purple-300' },
-  LEGENDARY: { bg: 'bg-amber-950/40', border: 'border-amber-500/40', text: 'text-amber-300' },
-  MYTHIC: { bg: 'bg-rose-950/40', border: 'border-rose-500/40', text: 'text-rose-300' },
-};
-
-interface SkillGuideModalProps {
+interface SkillInspectPanelProps {
   skillSlug: string;
   onClose: () => void;
+  onOpenGuide: (slug: string) => void;
 }
 
-export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'UNLOCKS' | 'BATTLEPASS'>('OVERVIEW');
-  const [filterType, setFilterType] = useState<string>('ALL');
-  const [activeEmotePreview, setActiveEmotePreview] = useState<SkillCapeEmoteDef | null>(null);
-
-  const capeEmoteDef = useMemo(() => getSkillCapeEmote(skillSlug), [skillSlug]);
-
+/**
+ * Level 2 — Inspect: Compact skill detail panel.
+ *
+ * Shows focused contextual information for a single skill:
+ * icon, name, level, XP, summary, condensed perks, next unlock,
+ * and a VIEW IN GUIDE button to escalate to the full guide (Level 3).
+ *
+ * This replaces the old full-screen SkillGuideModal for the initial
+ * click interaction. No scrolling required — all content fits in view.
+ */
+export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInspectPanelProps) {
   const skills = useGameStore((state) => state.player.skills);
   const guide = useMemo(() => getSkillGuide(skillSlug), [skillSlug]);
 
@@ -124,15 +83,15 @@ export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onC
 
   const allUnlocks = useMemo(() => getAllSkillUnlocks(skillSlug), [skillSlug]);
 
-  if (!guide) {
-    return null;
-  }
+  if (!guide) return null;
 
   const currentLevel = skillData.level || 1;
   const currentXp = Math.floor(skillData.xp || 0);
 
-  // Compute next level XP requirements
   const isCombat = isCombatSkillTyping(guide.slug);
+  const maxLevel = guide.maxLevel;
+  const isMaxed = currentLevel >= maxLevel;
+
   const nextLevelXp = isCombat
     ? currentLevel >= 50
       ? currentXp
@@ -158,387 +117,140 @@ export const SkillGuideModal: React.FC<SkillGuideModalProps> = ({ skillSlug, onC
   const xpSpan = Math.max(1, nextLevelXp - prevLevelXp);
   const progressPercent = Math.min(100, Math.max(0, ((currentXp - prevLevelXp) / xpSpan) * 100));
 
-  const filteredUnlocks = allUnlocks.filter((u) => {
-    if (filterType === 'ALL') return true;
-    return u.type === filterType;
-  });
+  // Find the next locked milestone
+  const nextUnlock = allUnlocks.find((u) => u.level > currentLevel);
+  // Find the most recently unlocked milestone
+  const lastUnlocked = [...allUnlocks].reverse().find((u) => u.level <= currentLevel);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md font-mono select-none">
-      <div className="w-[min(95vw,780px)] max-w-full flex flex-col pointer-events-auto">
-        <HudPanelShell
-          title={`${guide.name.toUpperCase()} PROFICIENCY GUIDE`}
-          icon={renderSkillIcon(guide.iconName, 'w-4 h-4 text-amber-400')}
-          onClose={onClose}
-          headerRight={
-            <div className="flex items-center gap-2">
-              <span
-                className="px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider"
-                style={{
-                  backgroundColor: `${guide.themeColor}15`,
-                  borderColor: `${guide.themeColor}40`,
-                  color: guide.themeColor,
-                }}
-              >
-                {guide.category} • LEVEL {currentLevel}/{guide.maxLevel}
+    <HudPanelShell
+      title={`${guide.name.toUpperCase()} — INSPECT`}
+      icon={renderSkillIcon(guide.iconName, 'w-4 h-4')}
+      onClose={onClose}
+      headerRight={
+        <span
+          className="px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase"
+          style={{
+            backgroundColor: `${guide.themeColor}15`,
+            borderColor: `${guide.themeColor}40`,
+            color: guide.themeColor,
+          }}
+        >
+          {guide.category}
+        </span>
+      }
+      className="w-full"
+    >
+      <div className="flex flex-col gap-2.5 p-2.5 font-mono text-xs">
+        {/* Skill Identity Row */}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center border-2 shadow-inner shrink-0"
+            style={{
+              backgroundColor: `${guide.themeColor}20`,
+              borderColor: guide.themeColor,
+              boxShadow: `0 0 12px ${guide.themeColor}30`,
+            }}
+          >
+            {renderSkillIcon(guide.iconName, 'w-5 h-5 text-white')}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <span className="text-white font-black text-sm">{guide.name}</span>
+              <span className="text-amber-400 font-black text-sm">
+                {isMaxed ? (
+                  <span className="flex items-center gap-1">
+                    <Crown className="w-3 h-3 text-amber-400 inline" />
+                    {currentLevel}
+                  </span>
+                ) : (
+                  `${currentLevel} / ${maxLevel}`
+                )}
               </span>
             </div>
-          }
-        >
-          <div className="flex flex-col gap-3 h-[72vh] p-4 text-xs">
-            {/* Header Hero Strip */}
+            <p className="text-[10px] text-slate-400 line-clamp-2 leading-snug mt-0.5">{guide.summary}</p>
+          </div>
+        </div>
+
+        {/* XP Progress */}
+        <div className="bg-black/50 p-2 rounded-lg border border-slate-800">
+          <div className="flex justify-between items-center text-[9px] mb-1">
+            <span className="text-slate-400 font-bold">EXPERIENCE</span>
+            <span className="text-amber-300 font-black">
+              {isMaxed ? (
+                'MASTERED'
+              ) : (
+                <>{currentXp.toLocaleString()} / {Math.floor(nextLevelXp).toLocaleString()} XP</>
+              )}
+            </span>
+          </div>
+          <div className="w-full h-1.5 bg-black/80 rounded-full overflow-hidden border border-slate-800">
             <div
-              className={`p-3.5 rounded-xl border flex flex-col md:flex-row items-center justify-between gap-4 bg-gradient-to-r ${guide.bgGradient} border-amber-500/30 shadow-lg`}
-            >
-              <div className="flex items-center gap-3.5">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center border-2 shadow-inner"
-                  style={{
-                    backgroundColor: `${guide.themeColor}20`,
-                    borderColor: guide.themeColor,
-                    boxShadow: `0 0 15px ${guide.themeColor}30`,
-                  }}
-                >
-                  {renderSkillIcon(guide.iconName, 'w-6 h-6 text-white')}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-base font-black text-white">{guide.name}</h2>
-                    <span className="text-[10px] text-slate-400">({guide.tagline})</span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 line-clamp-1 max-w-md">{guide.summary}</p>
-                </div>
-              </div>
+              className="h-full transition-all duration-500 rounded-full"
+              style={{
+                width: `${isMaxed ? 100 : progressPercent}%`,
+                backgroundColor: guide.themeColor,
+                boxShadow: `0 0 6px ${guide.themeColor}`,
+              }}
+            />
+          </div>
+        </div>
 
-              {/* Level & XP Gauge */}
-              <div className="flex-none w-full md:w-56 bg-black/60 p-2.5 rounded-lg border border-white/10 flex flex-col gap-1">
-                <div className="flex justify-between items-center text-[10px]">
-                  <span className="text-slate-400 font-bold">XP PROGRESS</span>
-                  <span className="text-amber-300 font-black">
-                    {currentXp.toLocaleString()} / {Math.floor(nextLevelXp).toLocaleString()} XP
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-black/80 rounded-full overflow-hidden border border-slate-800">
-                  <div
-                    className="h-full transition-all duration-500 rounded-full"
-                    style={{
-                      width: `${progressPercent}%`,
-                      backgroundColor: guide.themeColor,
-                      boxShadow: `0 0 10px ${guide.themeColor}`,
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-[9px] text-slate-500 font-bold">
-                  <span>Lv {currentLevel}</span>
-                  <span>{Math.round(progressPercent)}%</span>
-                  <span>Lv {Math.min(guide.maxLevel, currentLevel + 1)}</span>
-                </div>
-              </div>
+        {/* Condensed Per-Level Effects (max 3) */}
+        <div className="space-y-1">
+          {guide.perLevelPerks.slice(0, 3).map((perk, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-[10px]">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-none mt-0.5" />
+              <span className="text-slate-300 leading-snug">{perk}</span>
             </div>
+          ))}
+        </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-amber-500/20 pb-2">
-              <button
-                onClick={() => {
-                  soundSynth?.playSelectSound?.();
-                  setActiveTab('OVERVIEW');
-                }}
-                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-xs cursor-pointer ${
-                  activeTab === 'OVERVIEW'
-                    ? 'bg-amber-400 text-black shadow-md'
-                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                <Info className="w-3.5 h-3.5" />
-                <span>Skill Overview</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  soundSynth?.playSelectSound?.();
-                  setActiveTab('UNLOCKS');
-                }}
-                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-xs cursor-pointer ${
-                  activeTab === 'UNLOCKS'
-                    ? 'bg-amber-400 text-black shadow-md'
-                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Milestone Unlocks ({allUnlocks.length})</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  soundSynth?.playSelectSound?.();
-                  setActiveTab('BATTLEPASS');
-                }}
-                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all text-xs cursor-pointer ${
-                  activeTab === 'BATTLEPASS'
-                    ? 'bg-amber-400 text-black shadow-md'
-                    : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                <Crown className="w-3.5 h-3.5" />
-                <span>Battlepass Tiers ({guide.battlepassTiers.length})</span>
-              </button>
+        {/* Next Unlock / Last Unlocked */}
+        {nextUnlock ? (
+          <div className="bg-black/50 p-2 rounded-lg border border-amber-500/20 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0">
+              <Lock className="w-3.5 h-3.5 text-amber-400" />
             </div>
-
-            {/* Tab Body */}
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
-              {/* TAB 1: OVERVIEW */}
-              {activeTab === 'OVERVIEW' && (
-                <div className="space-y-4 py-1">
-                  {/* Per-Level Perks Matrix */}
-                  <div className="p-3.5 bg-black/40 border border-amber-500/20 rounded-xl space-y-2">
-                    <h3 className="text-amber-400 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" />
-                      What Every Level Grants
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {guide.perLevelPerks.map((perk, i) => (
-                        <div
-                          key={i}
-                          className="flex items-start gap-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-none mt-0.5" />
-                          <span className="text-slate-200 text-[11px] leading-relaxed">{perk}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Training Methods */}
-                  <div className="p-3.5 bg-black/40 border border-amber-500/20 rounded-xl space-y-2">
-                    <h3 className="text-cyan-400 font-bold uppercase tracking-wider text-xs flex items-center gap-1.5">
-                      <Target className="w-3.5 h-3.5 text-cyan-400" />
-                      Recommended Training Methods
-                    </h3>
-                    <div className="space-y-1.5">
-                      {guide.trainingMethods.map((method, i) => (
-                        <div
-                          key={i}
-                          className="flex items-start gap-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5 text-cyan-400 flex-none mt-0.5" />
-                          <span className="text-slate-300 text-[11px] leading-relaxed">{method}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: MILESTONE UNLOCKS */}
-              {activeTab === 'UNLOCKS' && (
-                <div className="space-y-3 py-1">
-                  {/* Category Filter Pills */}
-                  <div className="flex flex-wrap items-center gap-1.5 pb-1">
-                    {['ALL', 'EQUIPMENT', 'ABILITY', 'RECIPE', 'GATHER', 'PASSIVE', 'ZONE'].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          soundSynth?.playUiClick?.();
-                          setFilterType(type);
-                        }}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                          filterType === type
-                            ? 'bg-amber-400 text-black'
-                            : 'bg-black/40 text-slate-400 hover:text-white border border-slate-800'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Unlocks List */}
-                  <div className="space-y-2">
-                    {filteredUnlocks.map((milestone, idx) => {
-                      const isUnlocked = currentLevel >= milestone.level;
-                      return (
-                        <div
-                          key={idx}
-                          className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                            isUnlocked
-                              ? 'bg-emerald-950/20 border-emerald-500/30 text-slate-200'
-                              : 'bg-black/40 border-slate-800/80 text-slate-500 opacity-70'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center font-black text-xs border ${
-                                isUnlocked
-                                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                                  : 'bg-slate-900 text-slate-600 border-slate-800'
-                              }`}
-                            >
-                              {milestone.level}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`font-bold text-xs ${isUnlocked ? 'text-white' : 'text-slate-400'}`}
-                                >
-                                  {milestone.title}
-                                </span>
-                                <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-black/40 border border-white/10 text-slate-400">
-                                  {milestone.type}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-400 mt-0.5">{milestone.description}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex-none">
-                            {isUnlocked ? (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                                <CheckCircle2 className="w-3 h-3" />
-                                UNLOCKED
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-black/40 px-2 py-0.5 rounded border border-slate-800">
-                                <Lock className="w-3 h-3" />
-                                LV {milestone.level}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: BATTLEPASS COSMETIC TRACK */}
-              {activeTab === 'BATTLEPASS' && (
-                <div className="space-y-4 py-1">
-                  <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl text-[11px] text-amber-200 flex items-center justify-between">
-                    <span>
-                      Level up <strong className="text-white">{guide.name}</strong> to unlock exclusive nameplate
-                      titles, particle auras, emotes, and master capes at tiered milestones!
-                    </span>
-                    {capeEmoteDef && (
-                      <button
-                        onClick={() => {
-                          soundSynth?.playLevelUpSound?.();
-                          setActiveEmotePreview(capeEmoteDef);
-                        }}
-                        className="flex-none px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-sm"
-                        title="Preview Cape Emote Visual FX"
-                      >
-                        <Play className="w-3 h-3 fill-current" /> Preview Cape FX
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Active Emote FX Player Banner */}
-                  {activeEmotePreview && (
-                    <div className="p-3 bg-gradient-to-r from-amber-950/80 via-black to-amber-950/80 border-2 border-amber-400 rounded-xl flex items-center justify-between gap-3 animate-pulse shadow-lg">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-400 flex items-center justify-center">
-                          <Sparkles className="w-5 h-5 text-amber-300 animate-spin" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] uppercase font-black text-amber-400 bg-amber-950 px-1.5 py-0.2 rounded border border-amber-500/50">
-                              EMOTE FX ACTIVE
-                            </span>
-                            <span className="text-white font-bold text-xs">{activeEmotePreview.emoteName}</span>
-                          </div>
-                          <p className="text-[10px] text-amber-200/90 mt-0.5 max-w-md leading-tight">
-                            {activeEmotePreview.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => setActiveEmotePreview(null)}
-                        className="flex-none px-2 py-0.5 rounded bg-black/60 hover:bg-red-950 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-red-300 text-[10px] font-bold cursor-pointer"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="space-y-2.5">
-                    {guide.battlepassTiers.map((tier) => {
-                      const isUnlocked = currentLevel >= tier.level;
-                      const rarity = RARITY_COLORS[tier.rarity] || RARITY_COLORS.COMMON;
-                      const isEmoteOrCape = tier.rewardType === 'CAPE' || tier.rewardType === 'EMOTE';
-
-                      return (
-                        <div
-                          key={tier.tier}
-                          className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                            isUnlocked
-                              ? `${rarity.bg} ${rarity.border} shadow-md`
-                              : 'bg-black/40 border-slate-800/80 opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center border-2 ${
-                                isUnlocked ? `${rarity.border} bg-black/60` : 'border-slate-800 bg-slate-950'
-                              }`}
-                            >
-                              {renderSkillIcon(
-                                tier.iconName,
-                                `w-5 h-5 ${isUnlocked ? rarity.text : 'text-slate-600'}`
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className={`font-black text-xs ${isUnlocked ? 'text-white' : 'text-slate-400'}`}>
-                                  {tier.rewardName}
-                                </span>
-                                <span
-                                  className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-bold border ${rarity.border} ${rarity.text} bg-black/40`}
-                                >
-                                  {tier.rarity}
-                                </span>
-                                <span className="text-[9px] uppercase text-slate-500">[{tier.rewardType}]</span>
-                              </div>
-                              <p className="text-[11px] text-slate-400 mt-0.5">{tier.description}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 flex-none">
-                            {isEmoteOrCape && capeEmoteDef && (
-                              <button
-                                onClick={() => {
-                                  soundSynth?.playLevelUpSound?.();
-                                  setActiveEmotePreview(capeEmoteDef);
-                                }}
-                                className="px-2 py-1 rounded bg-black/60 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-amber-300 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-all active:scale-95"
-                                title="Preview Emote"
-                              >
-                                <Play className="w-2.5 h-2.5 fill-current" /> FX
-                              </button>
-                            )}
-
-                            {isUnlocked ? (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/40">
-                                <Award className="w-3.5 h-3.5 text-amber-400" />
-                                CLAIMED
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-black/60 px-2.5 py-1 rounded-lg border border-slate-800">
-                                <Lock className="w-3.5 h-3.5 text-slate-600" />
-                                LV {tier.level}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-amber-400 font-bold uppercase">NEXT UNLOCK — LV {nextUnlock.level}</span>
+                <span className="text-[8px] uppercase px-1 rounded bg-black/40 border border-white/10 text-slate-500">
+                  {nextUnlock.type}
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-200 font-bold truncate block">{nextUnlock.title}</span>
             </div>
           </div>
-        </HudPanelShell>
+        ) : lastUnlocked ? (
+          <div className="bg-black/50 p-2 rounded-lg border border-emerald-500/20 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-emerald-400 font-bold uppercase">LATEST — LV {lastUnlocked.level}</span>
+              </div>
+              <span className="text-[10px] text-slate-200 font-bold truncate block">{lastUnlocked.title}</span>
+            </div>
+          </div>
+        ) : null}
+
+        {/* VIEW IN GUIDE Button */}
+        <button
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            onOpenGuide(skillSlug);
+          }}
+          className="w-full py-2 bg-gradient-to-r from-amber-600/80 to-amber-500/80 hover:from-amber-500 hover:to-amber-400 text-white rounded-lg font-black text-[11px] uppercase tracking-wider transition-all active:scale-95 shadow-md border border-amber-400/50 cursor-pointer flex items-center justify-center gap-2"
+        >
+          <BookMarked className="w-3.5 h-3.5" />
+          VIEW IN GUIDE
+        </button>
       </div>
-    </div>
+    </HudPanelShell>
   );
-};
+}
+
+// Keep default export for backwards compatibility during migration
+export default SkillInspectPanel;
