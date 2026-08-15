@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, & Defence battlepass tier rewards from Lv 5 to Lv 50', () => {
+  it('contains complete Attack, Strength, Defence, & Hitpoints battlepass tier rewards from Lv 5 to Lv 50', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -60,9 +60,14 @@ describe('skillGuideData Registry', () => {
     expect(defenceGuide.battlepassTiers.length).toBe(10);
     expect(defenceGuide.battlepassTiers[0].rewardName).toContain('Shieldbearer');
     expect(defenceGuide.battlepassTiers[9].rewardName).toContain('Cape of Defence');
+
+    const hitpointsGuide = getSkillGuide('hitpoints')!;
+    expect(hitpointsGuide.battlepassTiers.length).toBe(10);
+    expect(hitpointsGuide.battlepassTiers[0].rewardName).toContain('Novice Vitalist');
+    expect(hitpointsGuide.battlepassTiers[9].rewardName).toContain('Cape of Hitpoints');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength and armor for Defence in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, and vitality for Hitpoints in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -72,6 +77,11 @@ describe('skillGuideData Registry', () => {
     expect(defenceUnlocks.length).toBeGreaterThan(0);
     expect(defenceUnlocks.some((u) => u.title.includes('Platebody') || u.title.includes('Kiteshield') || u.title.includes('Bulwark'))).toBe(true);
     expect(defenceUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
+
+    const hpUnlocks = getAllSkillUnlocks('hitpoints');
+    expect(hpUnlocks.length).toBeGreaterThan(0);
+    expect(hpUnlocks.some((u) => u.title.includes('Fish') || u.title.includes('Shark') || u.title.includes('Vitality') || u.title.includes('Heart'))).toBe(true);
+    expect(hpUnlocks.some((u) => u.level === 50 && u.title.includes('Phoenix'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {

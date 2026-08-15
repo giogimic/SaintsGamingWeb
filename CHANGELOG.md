@@ -1,3 +1,20 @@
+## [2.1.240] - 2026-08-15
+### Added & Improved
+- **MMO Gateway Hub & Pre-Game Entrance Redesign (`GameTitleScreen.tsx`, `character-selector.tsx`, `ServerSelect.tsx`, `GameLogin.tsx`, `index.tsx`)**:
+  - Rebuilt `/lobby` initial entry screen into an authentic Diablo II and RuneScape style 3-column MMO Gateway Hub.
+  - Infused the visual atmosphere and color palette from the Saints Landing Page (synthwave horizon grid floor, sunset glow, digital snow particles, palm canopy vignette, CRT scanlines) with zero modifications to the landing page or Skill UI.
+  - **Operative Stage (Left)**: Active hero animated pedestal showcase with class badges, glowing runic aura, HP & gold counters, quick character carousel cycler, and primary `ENTER REALM` CTA.
+  - **Global Lobby Chat (Center)**: Live in-lobby pre-game chat channel supporting global chat, broadcast announcements, system notifications, and realtime socket dispatch.
+  - **Realm Gateway & Hall of Champions (Right)**: Live server telemetry (heartbeat, latency, population bar, dev controls) and Top 5 Operatives leaderboard ranking preview with live sync.
+  - Re-themed `character-selector.tsx`, `ServerSelect.tsx`, and `GameLogin.tsx` to match the synthwave MMO command deck design.
+
+## [2.1.239] - 2026-08-15
+### Added & Improved
+- **Skill 4/27: Hitpoints Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete vitality consumables and food progression (Fresh Loaf, Grilled Trout, Crimson Salmon, Butter Lobster, Apex Shark, Saintly Ambrosia, Phoenix Rebirth Heart) with explicit Hitpoints level requirements (`reqSkill: 'Hitpoints'`, `reqLevel: number`) and HP restore stats.
+  - Dynamically aggregated vitality rations, recovery potions, and talisman accessories for the Hitpoints handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Hitpoints (Novice Vitalist, Resilient Soul, Living Phoenix titles, Emerald Heartbeat Pulse and Petal Swarm auras, and Cape of Hitpoints).
+
 ## [2.1.238] - 2026-08-15
 ### Added & Improved
 - **Skill 3/27: Defence Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
