@@ -1,3 +1,10 @@
+## [2.1.231] - 2026-08-15
+### Added & Improved
+- **Studio Paint & Tool HUD Controller (`StudioPaintHud.tsx`)**:
+  - Upgraded paint tool pill with cyber chamfered badges, glowing active indicators, and WebAudio sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playUiClick()`).
+- **Studio Favorites Quick Strip (`StudioFavoritesStrip.tsx`)**:
+  - Modernized bookmark strip with sound synthesis on pin opening and removal.
+
 ## [2.1.230] - 2026-08-15
 ### Added & Improved
 - **Studio Menu Bar & Tool Controller (`StudioMenuBar.tsx`)**:
