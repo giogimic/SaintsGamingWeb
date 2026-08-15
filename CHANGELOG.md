@@ -1,3 +1,10 @@
+## [2.1.254] - 2026-08-15
+### Added & Improved
+- **Skill 18/27: Firemaking Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete torches, bullseye/oil/obsidian lanterns, tinderboxes, timber log pyres (Regular, Oak, Willow, Maple, Yew, Magic, Redwood), and celestial sunfire beacon progression (Flint & Steel Tinderboxes, Pitch-Dipped Hand Torches, Brass Bullseye Lanterns, Oak Hearth Pyres, Willow Ember Fires, Refined Steel Oil Lanterns, Maple Bonfire Gatherings, Acetylene Pressure Torches, Yew Flame Spirit Pyres, Pyrelord Obsidian Lanterns, Magic Arcane Pyre Beacons, Sunfire Beacon Catalysts, Redwood Colossal Bonfires, and Celestial Sunfire Matrices) with explicit Firemaking level requirements (`reqSkill: 'Firemaking'`, `reqLevel: number`), party bonfire HP regeneration auras, dungeon darkness illumination, and thermal flame damage buffs.
+  - Dynamically aggregated timber fires, lanterns, and regional sunfire beacons for the Firemaking handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Firemaking spanning Lv 10 to Lv 99 (Novice Igniter, Pyromancer, Firelord titles, Fire Juggle emote, Sizzling Ember Steps, Orbiting Will-o'-the-Wisp Halo, Radiant Sunfire Flare Corona auras, Gilded Flame Torch cosmetic, and Cape of Firemaking).
+
 ## [2.1.253] - 2026-08-15
 ### Added & Improved
 - **Skill 17/27: Crafting Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
