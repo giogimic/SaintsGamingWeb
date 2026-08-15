@@ -1,3 +1,15 @@
+## [2.1.220] - 2026-08-15
+### Added & Improved
+- **Village Merchant & Trade Post System (`shop-overlay.tsx`)**:
+  - Replaced legacy yellow shop panels with modern cyber chamfered glass containers, inventory count chips, and real-time fund tracking.
+  - Added synthesized audio feedback on purchasing, selling, and crafting (`soundSynth.playActionSound()`, `soundSynth.playSelectSound()`).
+- **Equipment Paperdoll Matrix (`equipment-overlay.tsx`)**:
+  - Implemented glowing chamfered gear pedestals with dedicated slot iconography (Helmet, Weapon, Armor, Off-Hand, Greaves).
+  - Added live total combat stat cards (Attack Power, Defense Rating, Crit Chance, Speed Tier) and unequip sound cues.
+- **Cinematic NPC Dialogue Engine (`dialog-overlay.tsx`)**:
+  - Elevated the bottom-third dialogue modal to unified cyber HUD specifications with glowing NPC speaker pedestal and transmission badge.
+  - Added typewriter sound effect ticks (`soundSynth.playUiClick()`) and keyboard choice indicators ([1-4], [SPACE], [ESC]).
+
 ## [2.1.219] - 2026-08-15
 ### Added & Improved
 - **Base Sanctuary Automation & Facility Assignment (`base-overlay.tsx`)**:

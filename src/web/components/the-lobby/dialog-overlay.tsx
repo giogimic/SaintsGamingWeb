@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from './store';
-import { MessageSquare, XCircle, ChevronRight } from 'lucide-react';
+import { soundSynth } from '@/engine/sound-synth';
+import { MessageSquare, X, ChevronRight, Sparkles, Terminal } from 'lucide-react';
 
 export default function DialogOverlay() {
   const activeDialog = useGameStore((state) => state.activeDialog);
@@ -46,17 +47,21 @@ export default function DialogOverlay() {
     const interval = setInterval(() => {
       idx++;
       setDisplayedText(currentText.slice(0, idx));
+      if (idx % 3 === 0) {
+        soundSynth?.playUiClick?.();
+      }
       if (idx >= currentText.length) {
         clearInterval(interval);
         setIsTyping(false);
       }
-    }, 22);
+    }, 20);
     return () => clearInterval(interval);
   }, [currentText]);
 
   if (!activeDialog) return null;
 
   const handleClose = () => {
+    soundSynth?.playSelectSound?.();
     setActiveDialog(null);
     setGameMode('EXPLORING');
   };
@@ -116,6 +121,7 @@ export default function DialogOverlay() {
       return;
     }
 
+    soundSynth?.playActionSound?.();
     setDisplayedText('');
     setIsTyping(true);
 
@@ -129,67 +135,82 @@ export default function DialogOverlay() {
   };
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 pb-8 sm:px-8 sm:pb-12">
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center px-4 pb-6 sm:px-8 sm:pb-10 select-none">
       <div
-        className="lobby-panel pointer-events-auto relative w-full max-w-4xl animate-in slide-in-from-bottom-8 fade-in overflow-hidden rounded-xl duration-300"
+        className="pointer-events-auto relative w-full max-w-3xl animate-in slide-in-from-bottom-6 fade-in duration-200 p-[1px] bg-gradient-to-r from-cyan-500/60 via-teal-500/40 to-cyan-500/60 shadow-[0_0_25px_rgba(6,182,212,0.25)]"
+        style={{
+          clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
+        }}
         onClick={skipTypewriter}
       >
-        <div className="lobby-hairline absolute top-0 right-0 left-0 h-px opacity-90" />
-
-        <div className="flex gap-4 p-4 sm:gap-6 sm:p-6">
-          <div className="hidden w-24 shrink-0 flex-col items-center gap-2 sm:flex">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-lobby-border-strong bg-lobby-panel-soft p-1.5 shadow-[inset_0_0_16px_rgba(167,139,250,0.2)]">
-              <div className="relative flex h-full w-full items-center justify-center rounded-md bg-black/40 overflow-hidden">
-                {spriteKey && spriteKey !== 'none' ? (
-                  <div
-                    className="pixelated bg-no-repeat transition-transform duration-300"
-                    style={{
-                      backgroundImage: `url('/game-assets/npc/${spriteKey}.png')`,
-                      backgroundPosition: '0px -64px',
-                      backgroundSize: '96px 128px',
-                      width: '32px',
-                      height: '32px',
-                      transform: 'scale(1.8)',
-                    }}
-                  />
-                ) : (
-                  <MessageSquare className="h-6 w-6 text-lobby-soul opacity-80" />
-                )}
-              </div>
+        <div 
+          className="w-full h-full bg-[#04090e]/95 backdrop-blur-md p-4 sm:p-5 flex gap-4 sm:gap-6 items-start font-mono"
+          style={{
+            clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
+          }}
+        >
+          {/* NPC Speaker Pedestal */}
+          <div className="hidden sm:flex shrink-0 flex-col items-center gap-2">
+            <div className="w-20 h-20 rounded-xl bg-black/80 border border-cyan-500/40 p-1 flex items-center justify-center shadow-[inset_0_0_15px_rgba(6,182,212,0.25)] overflow-hidden">
+              {spriteKey && spriteKey !== 'none' ? (
+                <div
+                  className="pixelated bg-no-repeat transition-transform duration-300"
+                  style={{
+                    backgroundImage: `url('/game-assets/npc/${spriteKey}.png')`,
+                    backgroundPosition: '0px -64px',
+                    backgroundSize: '96px 128px',
+                    width: '32px',
+                    height: '32px',
+                    transform: 'scale(1.9)',
+                  }}
+                />
+              ) : (
+                <MessageSquare className="h-7 w-7 text-cyan-400 opacity-80" />
+              )}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-lobby-ash">
-              NPC
+            <span className="text-[9px] font-bold uppercase tracking-widest text-cyan-300/70 border border-cyan-500/20 px-1.5 py-0.5 rounded bg-cyan-950/40">
+              SPEAKER
             </span>
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col justify-between">
+          {/* Dialogue Text & Branch Choices */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
             <div>
-              <div className="mb-1.5 flex items-baseline gap-3">
-                <h3 className="font-serif text-xl font-bold tracking-wide text-lobby-mist uppercase sm:text-2xl">
-                  {npcDisplayName}
-                </h3>
-                <span className="hidden text-[10px] font-bold uppercase tracking-[0.2em] text-lobby-film sm:inline">
-                  Soul Dialog
-                </span>
+              {/* Header Title */}
+              <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-cyan-400" />
+                  <h3 className="font-bold text-base text-white uppercase tracking-wider">
+                    {npcDisplayName}
+                  </h3>
+                  <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/30 text-cyan-300">
+                    TRANSMISSION
+                  </span>
+                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClose();
+                  }}
+                  className="text-slate-400 hover:text-white p-1 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              <div className="relative min-h-[72px] sm:min-h-[88px]">
-                <p className="pr-8 font-serif text-base leading-relaxed whitespace-pre-wrap text-lobby-fog sm:text-lg">
-                  {displayedText}
-                  {isTyping && (
-                    <span className="ml-1 inline-block h-4 w-2 animate-pulse bg-lobby-soul" />
-                  )}
-                </p>
-                {!isTyping && (!activeDialog.options || activeDialog.options.length === 0) && (
-                  <div className="absolute right-0 bottom-0 animate-bounce text-lobby-film">
-                    <ChevronRight className="h-6 w-6" />
-                  </div>
+              {/* Typewriter Text Box */}
+              <div className="min-h-[64px] text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
+                {displayedText}
+                {isTyping && (
+                  <span className="inline-block w-2 h-4 bg-cyan-400 ml-1 animate-pulse" />
                 )}
               </div>
             </div>
 
+            {/* Branch Choices */}
             {!isTyping && activeDialog.options && activeDialog.options.length > 0 && (
-              <div className="mt-3 flex flex-col gap-2 border-t border-lobby-border pt-3">
+              <div className="mt-3.5 space-y-1.5 pt-3 border-t border-cyan-500/20">
                 {activeDialog.options.map((opt, i) => (
                   <button
                     key={i}
@@ -197,34 +218,31 @@ export default function DialogOverlay() {
                       e.stopPropagation();
                       handleOptionClick(opt);
                     }}
-                    className="group relative w-full flex items-center justify-between rounded-md border border-lobby-border bg-black/30 px-4 py-2 text-left text-sm font-medium text-lobby-mist transition-all duration-200 hover:border-lobby-film/50 hover:bg-lobby-film/10"
+                    className="w-full p-2.5 rounded-lg bg-cyan-950/20 border border-cyan-500/30 hover:border-cyan-400 hover:bg-cyan-900/30 text-left text-xs font-bold text-cyan-100 flex items-center justify-between transition-all cursor-pointer shadow-sm group"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="text-lobby-soul opacity-0 transition-opacity group-hover:opacity-100">
-                        &gt;
-                      </span>
+                      <span className="text-cyan-400 group-hover:translate-x-0.5 transition-transform">&gt;</span>
                       <span>{opt.label}</span>
                     </span>
-                    <span className="text-[10px] font-mono text-lobby-ash px-1.5 py-0.5 rounded bg-white/5 border border-white/5">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-black/60 border border-cyan-500/40 text-cyan-300">
                       [{i + 1}]
                     </span>
                   </button>
                 ))}
               </div>
             )}
+
+            {/* Advance Prompt */}
+            {!isTyping && (!activeDialog.options || activeDialog.options.length === 0) && (
+              <div className="mt-2 flex items-center justify-end gap-1.5 text-[10px] text-cyan-300 font-bold tracking-wider animate-pulse">
+                <span>[CLICK OR SPACE TO CONTINUE]</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </div>
+            )}
           </div>
         </div>
-
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleClose();
-          }}
-          className="absolute top-4 right-4 p-1 text-lobby-ash transition-colors hover:text-lobby-mist"
-        >
-          <XCircle className="h-6 w-6" />
-        </button>
       </div>
     </div>
   );
 }
+
