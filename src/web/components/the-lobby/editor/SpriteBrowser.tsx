@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
+import { soundSynth } from '@/engine/sound-synth';
 
 /** Optional class filter for sprite browser (Catalog / ClassEditorPanel). */
 export type SpriteClassFilter = {
@@ -144,6 +145,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   };
 
   const handleToggleSelect = (asset: GameAssetItem) => {
+    soundSynth?.playSelectSound?.();
     if (!multiSelect) {
       onSelect([asset]);
       return;
@@ -158,31 +160,35 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   };
 
   const handleConfirmMultiSelect = () => {
+    soundSynth?.playActionSound?.();
     const chosen = sprites.filter((s) => selectedIds.has(s.id));
     onSelect(chosen);
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+    <div className="flex flex-col h-full bg-[#050b14] border border-amber-500/30 rounded-xl overflow-hidden shadow-2xl font-mono">
       {/* Top Controls Toolbar */}
-      <div className="p-3 bg-[#0b1320]/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+      <div className="p-3 bg-[#0b1320] border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-2">
         {/* Search Input */}
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search sprites by name or tag..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#050b14] border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-[#806f47] font-mono"
+            className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono"
           />
         </div>
 
         <select
           value={packFilter}
-          onChange={(e) => setPackFilter(e.target.value as AssetPackId | 'ALL')}
+          onChange={(e) => {
+            soundSynth?.playUiClick?.();
+            setPackFilter(e.target.value as AssetPackId | 'ALL');
+          }}
           title="Approved packs"
-          className="bg-[#050b14] border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-[#806f47]"
+          className="bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-400 cursor-pointer"
         >
           <option value="ALL">All packs</option>
           {ASSET_PACKS.map((p) => (
@@ -195,10 +201,13 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         {/* Class Filter Toggle */}
         {classDef && (
           <button
-            onClick={() => setActiveClassFilter(!activeClassFilter)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setActiveClassFilter(!activeClassFilter);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition cursor-pointer ${
               activeClassFilter
-                ? 'bg-[#806f47]/30 text-[#e2d5b3] border border-[#806f47]/50 shadow-sm'
+                ? 'bg-amber-500/20 text-amber-200 border border-amber-500/40 shadow-sm'
                 : 'bg-[#050b14] text-slate-400 border border-slate-800 hover:text-slate-200'
             }`}
           >
@@ -208,13 +217,16 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         )}
 
         {/* Grid Size Toggle */}
-        <div className="flex items-center gap-1 bg-[#050b14] p-1 rounded-lg border border-slate-800">
+        <div className="flex items-center gap-1 bg-[#050b14] p-1 rounded-lg border border-amber-500/30">
           {(['small', 'medium', 'large'] as const).map((size) => (
             <button
               key={size}
-              onClick={() => setGridSize(size)}
-              className={`px-2 py-0.5 text-[10px] font-mono capitalize rounded ${
-                gridSize === size ? 'bg-amber-700 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setGridSize(size);
+              }}
+              className={`px-2 py-0.5 text-[10px] font-mono capitalize rounded cursor-pointer ${
+                gridSize === size ? 'bg-amber-400 text-black font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               {size}
