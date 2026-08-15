@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, & Farming battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, & Fishing battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -95,9 +95,14 @@ describe('skillGuideData Registry', () => {
     expect(farmGuide.battlepassTiers.length).toBe(10);
     expect(farmGuide.battlepassTiers[0].rewardName).toContain('Novice Planter');
     expect(farmGuide.battlepassTiers[9].rewardName).toContain('Cape of Farming');
+
+    const fishGuide = getSkillGuide('fishing')!;
+    expect(fishGuide.battlepassTiers.length).toBe(10);
+    expect(fishGuide.battlepassTiers[0].rewardName).toContain('Novice Angler');
+    expect(fishGuide.battlepassTiers[9].rewardName).toContain('Cape of Fishing');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, and crops for Farming in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, and seafood for Fishing in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -142,6 +147,11 @@ describe('skillGuideData Registry', () => {
     expect(farmUnlocks.length).toBeGreaterThan(0);
     expect(farmUnlocks.some((u) => u.title.includes('Seed') || u.title.includes('Compost') || u.title.includes('Watering Can') || u.title.includes('Sapling') || u.title.includes('Starflower'))).toBe(true);
     expect(farmUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const fishUnlocks = getAllSkillUnlocks('fishing');
+    expect(fishUnlocks.length).toBeGreaterThan(0);
+    expect(fishUnlocks.some((u) => u.title.includes('Net') || u.title.includes('Shrimp') || u.title.includes('Trout') || u.title.includes('Lobster') || u.title.includes('Swordfish') || u.title.includes('Shark') || u.title.includes('Leviathan'))).toBe(true);
+    expect(fishUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
