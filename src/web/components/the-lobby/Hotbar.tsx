@@ -4,6 +4,8 @@ import { useGameStore } from './store';
 import { useEffect, useState, useMemo } from 'react';
 import { HudPanelShell } from './hud/HudPanelShell';
 import { isForbiddenRtCaptureAbility } from '@/shared/game/combatAbilities';
+import { soundSynth } from '@/engine/sound-synth';
+import { Flame, Wind, Shield, Zap, Sparkles, Heart, Crosshair } from 'lucide-react';
 
 type HotbarAbility = {
   id: string;
@@ -67,7 +69,7 @@ export default function Hotbar() {
       {
         key: '5',
         action: 'item',
-        ability: { id: 'potion', name: 'Health Potion', icon: '❤️', cooldownMs: 1000 } as HotbarAbility,
+        ability: { id: 'potion', name: 'Health Potion', icon: '🧪', type: 'heal', cooldownMs: 1000 } as HotbarAbility,
       },
     ],
     [abilities]
@@ -78,7 +80,6 @@ export default function Hotbar() {
   if (!isPlayable) {
     return null;
   }
-
 
   const handleCast = (slot: (typeof slots)[number]) => {
     const timeNow = Date.now();
@@ -99,6 +100,9 @@ export default function Hotbar() {
         return;
       }
 
+      // Play cast sound
+      soundSynth?.playActionSound?.();
+
       // Send cast to server
       emitSocketEvent?.('combat_cast', {
         abilityId: slot.ability.id,
@@ -118,6 +122,7 @@ export default function Hotbar() {
           (inv[k] ?? 0) > 0
       );
       if (potionKey) {
+        soundSynth?.playLevelUpSound?.();
         useGameStore.getState().modifyHp(25);
         useGameStore.getState().modifyInventory(potionKey, -1);
         useGameStore.getState().showToast(`Used Consumable (+25 HP)`);
@@ -153,63 +158,78 @@ export default function Hotbar() {
   const gcdPercent = gcdActive ? Math.max(0, ((globalCooldown - now) / 1200) * 100) : 0;
 
   return (
-    <HudPanelShell className="pointer-events-auto select-none">
-      <div className="flex items-center gap-1.5 md:gap-2">
-        {slots.map((slot, i) => {
-          const ability = slot.ability;
-          const abilityCdEnd = ability ? cooldowns[ability.id] || 0 : 0;
-          const abilityCdRemaining = Math.max(0, abilityCdEnd - now);
-          const abilityCdActive = abilityCdRemaining > 0;
-          const abilityCdPercent = ability
-            ? Math.min(100, (abilityCdRemaining / ability.cooldownMs) * 100)
-            : 0;
+    <div className="pointer-events-auto select-none">
+      <HudPanelShell noPadding className="p-1.5 bg-black/80 border-cyan-500/40 shadow-2xl backdrop-blur-md">
+        <div className="flex items-center gap-1.5 md:gap-2">
+          {slots.map((slot, i) => {
+            const ability = slot.ability;
+            const abilityCdEnd = ability ? cooldowns[ability.id] || 0 : 0;
+            const abilityCdRemaining = Math.max(0, abilityCdEnd - now);
+            const abilityCdActive = abilityCdRemaining > 0;
+            const abilityCdPercent = ability
+              ? Math.min(100, (abilityCdRemaining / ability.cooldownMs) * 100)
+              : 0;
 
-          const isLocked = gcdActive || abilityCdActive;
-          const showPercent = abilityCdActive ? abilityCdPercent : gcdPercent;
+            const isLocked = gcdActive || abilityCdActive;
+            const showPercent = abilityCdActive ? abilityCdPercent : gcdPercent;
 
-          return (
-            <button
-              key={slot.key || i}
-              type="button"
-              onClick={() => handleCast(slot)}
-              className="group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden rounded border border-teal-500/30 bg-[#061017] shadow-inner transition-all hover:border-teal-400 hover:bg-teal-950/40 active:scale-95 md:h-12 md:w-12 text-left"
-              title={ability ? `${ability.name} (Key: ${slot.key})` : undefined}
-            >
-              {/* Keybind Badge */}
-              <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-teal-300/70 transition-colors group-hover:text-teal-200 md:top-1 md:left-1.5 md:text-[10px]">
-                {slot.key}
-              </span>
+            const typeColor = 
+              ability?.type === 'damage'
+                ? 'border-rose-500/50 hover:border-rose-400 bg-rose-950/20 text-rose-300'
+                : ability?.type === 'heal'
+                ? 'border-emerald-500/50 hover:border-emerald-400 bg-emerald-950/20 text-emerald-300'
+                : ability?.type === 'buff'
+                ? 'border-amber-500/50 hover:border-amber-400 bg-amber-950/20 text-amber-300'
+                : 'border-cyan-500/50 hover:border-cyan-400 bg-cyan-950/20 text-cyan-300';
 
-              {ability ? (
-                <>
-                  <span className="z-10 text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] md:text-xl transition-transform group-hover:scale-110">
-                    {ability.icon}
-                  </span>
+            return (
+              <button
+                key={slot.key || i}
+                type="button"
+                onClick={() => handleCast(slot)}
+                className={`group relative flex h-11 w-11 cursor-pointer flex-col items-center justify-center overflow-hidden border shadow-inner transition-all active:scale-95 md:h-12 md:w-12 text-left rounded-lg ${typeColor}`}
+                style={{
+                  clipPath: 'polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px)',
+                }}
+                title={ability ? `${ability.name} (Key: ${slot.key})` : undefined}
+              >
+                {/* Keybind Badge */}
+                <span className="absolute top-0.5 left-1 z-10 font-mono text-[9px] font-bold text-white/70 transition-colors group-hover:text-white md:top-1 md:left-1.5 md:text-[10px]">
+                  {slot.key}
+                </span>
 
-                  {/* Cooldown Sweep Overlay */}
-                  {isLocked && (
-                    <div
-                      className="absolute bottom-0 left-0 z-20 w-full bg-black/85 backdrop-blur-[1px] transition-all duration-75 ease-linear border-t border-teal-400/50"
-                      style={{ height: `${showPercent}%` }}
-                    />
-                  )}
+                {ability ? (
+                  <>
+                    <span className="z-10 text-lg drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] md:text-xl transition-transform group-hover:scale-110">
+                      {ability.icon}
+                    </span>
 
-                  {/* Cooldown Numeric Text */}
-                  {abilityCdActive && (
-                    <div className="absolute inset-0 z-30 flex items-center justify-center font-mono font-extrabold text-[10px] md:text-[11px] text-teal-200 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">
-                      {abilityCdRemaining >= 1000
-                        ? `${(abilityCdRemaining / 1000).toFixed(0)}s`
-                        : `${(abilityCdRemaining / 1000).toFixed(1)}s`}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <span className="text-base font-bold text-teal-500/20 md:text-lg">+</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </HudPanelShell>
+                    {/* Cooldown Sweep Overlay */}
+                    {isLocked && (
+                      <div
+                        className="absolute bottom-0 left-0 z-20 w-full bg-black/85 backdrop-blur-[1px] transition-all duration-75 ease-linear border-t border-cyan-400/50"
+                        style={{ height: `${showPercent}%` }}
+                      />
+                    )}
+
+                    {/* Cooldown Numeric Text */}
+                    {abilityCdActive && (
+                      <div className="absolute inset-0 z-30 flex items-center justify-center font-mono font-extrabold text-[10px] md:text-[11px] text-cyan-200 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">
+                        {abilityCdRemaining >= 1000
+                          ? `${(abilityCdRemaining / 1000).toFixed(0)}s`
+                          : `${(abilityCdRemaining / 1000).toFixed(1)}s`}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-base font-bold text-cyan-500/20 md:text-lg">+</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </HudPanelShell>
+    </div>
   );
 }
+
