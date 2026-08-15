@@ -52,42 +52,45 @@ export function LogicTagPalette() {
       </div>
 
       {quickPresets.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          <button
-            type="button"
-            onClick={() => {
-              setLayer(-1);
-              setBrush(0);
-              showToast('Brush: Clear — erasing logic');
-            }}
-            className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-              brushId === 0
-                ? 'border-rose-400 bg-rose-900/50 text-rose-100'
-                : 'border-slate-700 bg-[#050b14] text-slate-400 hover:border-[#806f47]/50'
-            }`}
-            title="Clear / Passable (0)"
-          >
-            Clear (0)
-          </button>
-          {quickPresets.slice(0, 8).map((p) => (
+        <div className="space-y-1.5">
+          <div className="text-[10px] font-semibold text-slate-300">Quick Brush Presets:</div>
+          <div className="flex flex-wrap gap-1">
             <button
-              key={p.kind}
               type="button"
               onClick={() => {
                 setLayer(-1);
-                setBrush(p.paintTileId!);
-                showToast(`Brush: ${p.label} — paint, then Walk to test`);
+                setBrush(0);
+                showToast('Brush: Clear — erasing logic');
               }}
               className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                brushId === p.paintTileId
-                  ? 'border-[#cbb26a] bg-[#806f47]/30 text-[#e2d5b3]'
+                brushId === 0
+                  ? 'border-rose-400 bg-rose-900/50 text-rose-100'
                   : 'border-slate-700 bg-[#050b14] text-slate-400 hover:border-[#806f47]/50'
               }`}
-              title={p.description}
+              title="Clear / Passable (0)"
             >
-              {p.tag}
+              Clear (0)
             </button>
-          ))}
+            {quickPresets.map((p) => (
+              <button
+                key={p.kind}
+                type="button"
+                onClick={() => {
+                  setLayer(-1);
+                  setBrush(p.paintTileId!);
+                  showToast(`Brush: ${p.label} — paint, then Walk to test`);
+                }}
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  brushId === p.paintTileId
+                    ? 'border-[#cbb26a] bg-[#806f47]/30 text-[#e2d5b3]'
+                    : 'border-slate-700 bg-[#050b14] text-slate-400 hover:border-[#806f47]/50'
+                }`}
+                title={p.description}
+              >
+                {p.tag}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

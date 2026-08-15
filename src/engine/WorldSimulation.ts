@@ -112,6 +112,23 @@ export class WorldSimulation {
       } catch (e) {
         stepPayload = {};
       }
+
+      // If the logic tile is an explicit warp/gate action (e.g. WARP, GATE_NORTH, DUNGEON_GATE, etc.)
+      if (stepAction && (stepAction === 'WARP' || stepAction.endsWith('_GATE') || stepAction.startsWith('WARP_'))) {
+        const targetMapId = stepPayload.targetMapId || stepPayload.targetMap;
+        if (targetMapId) {
+          const targetSpawn = stepPayload.targetSpawn || stepPayload.spawnPoint || { x: Number(stepPayload.spawnX) || 6, y: Number(stepPayload.spawnY) || 2 };
+          return {
+            type: 'WARP',
+            gate: {
+              targetMapId,
+              targetSpawn,
+              spawnPoint: targetSpawn,
+              category: stepPayload.category || stepAction
+            }
+          };
+        }
+      }
     }
 
     return { 
