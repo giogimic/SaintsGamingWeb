@@ -1,3 +1,10 @@
+## [2.1.263] - 2026-08-15
+### Added & Improved
+- **Skill 27/27: Necromancy Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete initiate necrotic bone wands, earthen soul urns, death guard plate-shrouds, spectral spirit lanterns, deathdealer heavy scythes, abyssal lich sovereign vestments, and celestial reaper death overlord scythes progression (Initiate Necrotic Bone Wands, Earthen Soul Urns, Death Guard Plate-Shrouds, Spectral Spirit Lanterns, Deathdealer Heavy Scythes, Abyssal Lich Sovereign Vestments, and Celestial Reaper Death Overlord Scythes) with explicit Necromancy level requirements (`reqSkill: 'Necromancy'`, `reqLevel: number`), soul harvesting rituals, lifesteal siphons, undead thrall summons (Skeleton Warriors, Putrid Zombies, Vengeful Ghosts), and execute thresholds.
+  - Completed the full 27-skill proficiency matrix across all 4 categories (Combat: 9, Gathering: 5, Artisan: 8, Support: 5) with full dynamic equipment aggregation and level unlock lookups.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Necromancy spanning Lv 10 to Lv 99 (Novice Necromancer, Soul Harvester, Dread Lich titles, Spectral Soul Siphon emote, Necrotic Crypt Mists, Orbiting Soul Flame Wisp Halo, Abyssal Reaper Supernova Corona auras, Obsidian Skull Crown cosmetic, and Cape of Necromancy).
+
 ## [2.1.262] - 2026-08-15
 ### Added & Improved
 - **Skill 26/27: Prayer Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:

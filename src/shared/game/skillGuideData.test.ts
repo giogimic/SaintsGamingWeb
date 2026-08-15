@@ -175,9 +175,14 @@ describe('skillGuideData Registry', () => {
     expect(prayerGuide.battlepassTiers.length).toBe(10);
     expect(prayerGuide.battlepassTiers[0].rewardName).toContain('Novice Acolyte');
     expect(prayerGuide.battlepassTiers[9].rewardName).toContain('Cape of Prayer');
+
+    const necroGuide = getSkillGuide('necromancy')!;
+    expect(necroGuide.battlepassTiers.length).toBe(10);
+    expect(necroGuide.battlepassTiers[0].rewardName).toContain('Novice Necromancer');
+    expect(necroGuide.battlepassTiers[9].rewardName).toContain('Cape of Necromancy');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, lockpicks/masks/cloaks for Thieving, charms/pouches/matrices for Summoning, staves/robes/grimoires for Magic, and bones/symbols/vestments for Prayer in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, lockpicks/masks/cloaks for Thieving, charms/pouches/matrices for Summoning, staves/robes/grimoires for Magic, bones/symbols/vestments for Prayer, and conduits/wands/scythes for Necromancy in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -302,6 +307,11 @@ describe('skillGuideData Registry', () => {
     expect(prayerUnlocks.length).toBeGreaterThan(0);
     expect(prayerUnlocks.some((u) => u.title.includes('Bones') || u.title.includes('Symbol') || u.title.includes('Robe') || u.title.includes('Crown') || u.title.includes('Ashes') || u.title.includes('Protect'))).toBe(true);
     expect(prayerUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const necroUnlocks = getAllSkillUnlocks('necromancy');
+    expect(necroUnlocks.length).toBeGreaterThan(0);
+    expect(necroUnlocks.some((u) => u.title.includes('Bone') || u.title.includes('Soul') || u.title.includes('Scythe') || u.title.includes('Robes') || u.title.includes('Shroud') || u.title.includes('Reaper') || u.title.includes('Skeleton'))).toBe(true);
+    expect(necroUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
