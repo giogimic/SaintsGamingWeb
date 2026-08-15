@@ -1,3 +1,10 @@
+## [2.1.227] - 2026-08-15
+### Added & Improved
+- **Realm & World Select Gateway (`ServerSelect.tsx`)**:
+  - Upgraded realm selector to cyber chamfered cards with real-time ping indicator, population capacity meters, and audio synthesis (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`).
+- **Touch Edition Mobile Game Launcher (`MobileGameLauncher.tsx`)**:
+  - Modernized mobile touch entrance with operative status badge, landscape orientation advisory, fullscreen launch button, and WebAudio feedback.
+
 ## [2.1.226] - 2026-08-15
 ### Added & Improved
 - **In-Game Comms & Transmissions Channel (`GameChat.tsx`)**:
