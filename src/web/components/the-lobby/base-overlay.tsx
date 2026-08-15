@@ -5,12 +5,20 @@ import { useGameStore } from './store';
 import RpgPanel from './rpg-panel';
 import { getCreatureById } from './data/saints-dex';
 import { useEffect, useState, useRef } from 'react';
+import { soundSynth } from '@/engine/sound-synth';
+import { Flame, Mountain, Trees, Sprout, Fish, Plus, CheckCircle2, RefreshCw, Sparkles, Home } from 'lucide-react';
+
+const FACILITY_META = {
+  lumber_mill: { icon: Trees, color: '#22c55e', yieldItem: 'Wood Log', affinity: 'Wood / Grass' },
+  quarry: { icon: Mountain, color: '#f59e0b', yieldItem: 'Raw Ore', affinity: 'Ground / Metal' },
+  furnace: { icon: Flame, color: '#ef4444', yieldItem: 'Metal Bar', affinity: 'Fire' },
+  farm: { icon: Sprout, color: '#10b981', yieldItem: 'Grimy Herb', affinity: 'Grass / Water' },
+  fishing_hut: { icon: Fish, color: '#38bdf8', yieldItem: 'Raw Fish', affinity: 'Water / Ice' },
+};
 
 // --- VISUAL SANCTUARY COMPONENT ---
 function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string, string | null> }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Keep track of beast positions in the sanctuary
   const [beastPositions] = useState<Record<string, { x: number, y: number, tx: number, ty: number, flip: boolean }>>({});
 
   useEffect(() => {
@@ -21,7 +29,6 @@ function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string
 
     let animationId: number;
 
-    // Initialize positions for new beasts
     Object.values(assignedBeasts).forEach(id => {
       if (id && !beastPositions[id]) {
         beastPositions[id] = { 
@@ -37,11 +44,11 @@ function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw Sanctuary Background (Grass pattern)
-      ctx.fillStyle = '#166534';
+      // Draw Sanctuary Atmosphere
+      ctx.fillStyle = '#061a14';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#14532d';
-      for (let i=0; i<10; i++) {
+      ctx.fillStyle = '#0b2e24';
+      for (let i = 0; i < 10; i++) {
         ctx.fillRect((Math.sin(Date.now() / 1000 + i) * 100 + 150) % canvas.width, (i * 20) % canvas.height, 8, 8);
       }
 
@@ -52,30 +59,26 @@ function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string
         const pos = beastPositions[id];
         if (!daemon || !pos) return;
 
-        // Move towards target
         const dx = pos.tx - pos.x;
         const dy = pos.ty - pos.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         
         if (dist < 5) {
-          // Pick new target
           if (Math.random() < 0.02) {
             pos.tx = Math.random() * 260 + 20;
             pos.ty = Math.random() * 80 + 20;
           }
         } else {
-          pos.x += (dx / dist) * 0.3;
-          pos.y += (dy / dist) * 0.3;
+          pos.x += (dx / dist) * 0.35;
+          pos.y += (dy / dist) * 0.35;
           pos.flip = dx < 0;
         }
 
-        // Draw shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.beginPath();
         ctx.ellipse(pos.x, pos.y + 14, 10, 4, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw sprite
         if (daemon.assetPath) {
           const img = new Image();
           img.src = daemon.assetPath;
@@ -85,13 +88,11 @@ function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string
             if (pos.flip) {
               ctx.scale(-1, 1);
             }
-            // Bounce effect based on movement
             const bounceY = dist > 5 ? Math.abs(Math.sin(Date.now() / 100)) * 4 : 0;
             ctx.drawImage(img, -16, -16 - bounceY, 32, 32);
             ctx.restore();
           } else {
-            // Draw placeholder if image not loaded yet
-            ctx.fillStyle = '#ca8a04';
+            ctx.fillStyle = '#22d3ee';
             ctx.fillRect(pos.x - 8, pos.y - 8, 16, 16);
           }
         }
@@ -101,21 +102,19 @@ function BaseSanctuaryVisual({ assignedBeasts }: { assignedBeasts: Record<string
     };
 
     render();
-
     return () => cancelAnimationFrame(animationId);
   }, [assignedBeasts, beastPositions]);
 
   return (
-    <div className="w-full h-32 bg-black border-2 border-[#ca8a04] rounded-lg mb-4 relative overflow-hidden shadow-inner">
+    <div className="w-full h-32 bg-black border border-cyan-500/30 rounded-xl mb-4 relative overflow-hidden shadow-inner">
       <canvas ref={canvasRef} width={300} height={120} className="w-full h-full object-cover pixelated" />
-      <div className="absolute top-1 left-1 bg-black/70 px-2 py-0.5 rounded border border-[#14532d] text-[10px] text-green-400 font-mono font-bold tracking-widest z-10">
-        LIVE SANCTUARY FEED
+      <div className="absolute top-2 left-2 bg-black/80 px-2.5 py-0.5 rounded border border-cyan-500/40 text-[10px] text-cyan-300 font-mono font-bold tracking-widest z-10 flex items-center gap-1.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+        SANCTUARY TELEMETRY
       </div>
     </div>
   );
 }
-// ------------------------------------
-
 
 export default function BaseOverlay() {
   const player = useGameStore(state => state.player);
@@ -126,68 +125,93 @@ export default function BaseOverlay() {
 
   const [assigningTo, setAssigningTo] = useState<'lumber_mill' | 'quarry' | 'furnace' | 'farm' | 'fishing_hut' | null>(null);
 
-  // Auto collect when opening the base
   useEffect(() => {
     collectBaseResources();
   }, [collectBaseResources]);
 
   const handleAssign = (daemonId: string) => {
     if (assigningTo) {
+      soundSynth?.playActionSound?.();
       assignBeast(assigningTo, daemonId);
       setAssigningTo(null);
     }
   };
 
-  const renderFacility = (id: 'lumber_mill' | 'quarry' | 'furnace' | 'farm' | 'fishing_hut', title: string, description: string, resource: string) => {
-    const assignedId = player.assignedBeasts[id];
+  const renderFacility = (id: 'lumber_mill' | 'quarry' | 'furnace' | 'farm' | 'fishing_hut', title: string, description: string) => {
+    const assignedId = player.assignedBeasts?.[id];
     const daemon = assignedId ? getCreatureById(assignedId) : null;
+    const meta = FACILITY_META[id];
+    const Icon = meta.icon;
 
     return (
-      <div className="bg-[#1a1a1a]/80 border-2 border-[#3e2723] rounded-lg p-4 flex flex-col md:flex-row gap-4 mb-4 shadow-inner relative overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-r from-black/0 to-[#ca8a04]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        {/* Facility Info */}
-        <div className="flex-1 relative z-10">
-          <h3 className="text-[#ca8a04] font-bold text-lg tracking-wider uppercase drop-shadow-md">{title}</h3>
-          <p className="text-slate-400 text-xs italic mb-2">{description}</p>
-          <div className="text-[10px] text-emerald-400 font-mono font-bold bg-[#14532d]/50 p-1 rounded border border-[#166534] inline-block shadow-inner">
-            YIELD: 1 {resource} / 10s
+      <div 
+        key={id}
+        className="p-4 rounded-xl mb-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden transition-all duration-200"
+        style={{
+          clipPath: 'polygon(10px 0%, 100% 0%, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0% 100%, 0% 10px)',
+          background: 'linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(10,15,30,0.9) 100%)',
+          border: '1px solid rgba(6,182,212,0.25)',
+        }}
+      >
+        {/* Facility Details */}
+        <div className="flex items-start gap-3">
+          <div 
+            className="p-2.5 rounded-xl shrink-0 flex items-center justify-center"
+            style={{ background: `${meta.color}20`, border: `1px solid ${meta.color}50` }}
+          >
+            <Icon className="w-5 h-5" style={{ color: meta.color }} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-white font-mono font-black text-sm uppercase tracking-wider">{title}</h3>
+              <span className="text-[9px] px-2 py-0.5 rounded font-mono font-bold bg-white/5 border border-white/10 text-slate-300">
+                {meta.affinity} Boost
+              </span>
+            </div>
+            <p className="text-slate-400 text-xs font-mono mt-0.5">{description}</p>
+            <div className="text-[10px] text-emerald-400 font-mono font-bold mt-1.5 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              YIELD: 1 {meta.yieldItem} / 10s
+            </div>
           </div>
         </div>
 
-        {/* Assigned Daemon */}
-        <div className="flex-shrink-0 flex flex-col items-center justify-center bg-black/60 border border-[#3e2723] rounded p-2 min-w-[120px] relative z-10 transition-transform group-hover:scale-105">
+        {/* Assigned Daemon Slot */}
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end pt-2 md:pt-0 border-t md:border-t-0 border-white/5">
           {daemon ? (
-            <>
-              <div className="w-12 h-12 mb-1 bg-black rounded overflow-hidden flex items-center justify-center border border-[#3e2723] shadow-[0_0_10px_rgba(202,138,4,0.1)]">
+            <div className="flex items-center gap-3 bg-black/60 border border-cyan-500/30 rounded-xl p-2 pr-3">
+              <div className="w-10 h-10 bg-black rounded-lg overflow-hidden flex items-center justify-center border border-cyan-500/40 shrink-0">
                 {daemon.assetPath ? (
-                  <img src={daemon.assetPath} alt={daemon.name} className="w-full h-full object-cover pixelated animate-pulse" style={{ imageRendering: 'pixelated', animationDuration: '3s' }} />
+                  <img src={daemon.assetPath} alt={daemon.name} className="w-full h-full object-cover pixelated" />
                 ) : (
-                  <span className="text-[#5d4037] text-xl font-mono">?</span>
+                  <span className="text-cyan-400 font-mono text-sm">?</span>
                 )}
               </div>
-              <span className="text-white text-xs font-bold tracking-wide">{daemon.name}</span>
-              <span className="text-[9px] text-[#ca8a04] font-mono mt-0.5 border border-[#ca8a04]/30 px-1 rounded">{daemon.type_primary}</span>
+              <div className="flex flex-col">
+                <span className="text-white text-xs font-mono font-bold truncate max-w-[100px]">{daemon.name}</span>
+                <span className="text-[9px] text-cyan-300 font-mono uppercase">{daemon.type_primary}</span>
+              </div>
               <button 
-                onClick={() => assignBeast(id, null)}
-                className="mt-2 text-[10px] bg-red-900/50 hover:bg-red-700/80 text-red-300 px-3 py-1 rounded shadow-lg border border-red-900/50 transition-all active:scale-95 font-bold"
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  assignBeast(id, null);
+                }}
+                className="text-[10px] bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 px-2.5 py-1 rounded border border-rose-500/40 transition-all active:scale-95 font-mono font-bold cursor-pointer"
               >
                 UNASSIGN
               </button>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="w-12 h-12 mb-1 bg-[#1a1a1a] rounded flex items-center justify-center border-2 border-dashed border-[#3e2723] group-hover:border-[#ca8a04]/50 transition-colors">
-                <span className="text-[#3e2723] group-hover:text-[#ca8a04]/50 text-2xl font-mono transition-colors">+</span>
-              </div>
-              <span className="text-[#5d4037] text-xs font-bold italic group-hover:text-slate-400 transition-colors">Unassigned</span>
-              <button 
-                onClick={() => setAssigningTo(id)}
-                className="mt-2 text-[10px] bg-[#4e342e] hover:bg-[#ca8a04] text-[#e0e0e0] hover:text-black hover:font-bold px-4 py-1 rounded shadow-lg transition-all active:scale-95"
-              >
-                ASSIGN
-              </button>
-            </>
+            <button 
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setAssigningTo(id);
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-black uppercase tracking-wider bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 transition-all active:scale-95 cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.15)]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              ASSIGN COMPANION
+            </button>
           )}
         </div>
       </div>
@@ -195,85 +219,98 @@ export default function BaseOverlay() {
   };
 
   return (
-    <RpgPanel title="BASE MANAGEMENT" onClose={() => setGameMode('EXPLORING')}>
-      
+    <RpgPanel 
+      title="SANCTUARY BASE AUTOMATION" 
+      icon={<Home className="w-4 h-4 text-cyan-400" />}
+      onClose={() => setGameMode('EXPLORING')}
+    >
       {assigningTo ? (
-        <div className="flex flex-col h-full">
-          <div className="flex justify-between items-center mb-4 border-b border-[#3e2723] pb-2">
-            <h3 className="text-[#ca8a04] font-bold">Select a Beast for the {assigningTo.replace('_', ' ')}</h3>
-            <button onClick={() => setAssigningTo(null)} className="text-slate-400 text-xs hover:text-white">Cancel</button>
+        <div className="flex flex-col h-full font-mono text-xs">
+          <div className="flex justify-between items-center mb-4 border-b border-cyan-500/20 pb-2">
+            <h3 className="text-cyan-300 font-bold uppercase tracking-wider">
+              Select Beast for {assigningTo.replace('_', ' ')}
+            </h3>
+            <button 
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setAssigningTo(null);
+              }} 
+              className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              [CANCEL]
+            </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 gap-3 pr-2">
+          <div className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pr-1">
             {player.caughtDaemons.length === 0 && (
-              <div className="col-span-full text-center text-slate-500 italic mt-8 font-mono text-sm">
-                You have not captured any Beasts yet.
+              <div className="col-span-full text-center text-slate-500 italic mt-8">
+                No companions captured yet. Encounter wild beasts in the field to tame them!
               </div>
             )}
             {player.caughtDaemons.map(id => {
               const daemon = getCreatureById(id);
               if (!daemon) return null;
               
-              // Prevent assigning a beast that is already working
               const isWorking = Object.values(player.assignedBeasts).includes(id);
 
               return (
                 <div 
                   key={id}
                   onClick={() => !isWorking && handleAssign(id)}
-                  className={`bg-black/60 border rounded p-2 flex flex-col items-center transition-colors ${
+                  className={`p-3 rounded-xl flex flex-col items-center justify-between border transition-all ${
                     isWorking 
-                      ? 'border-[#333] opacity-50 cursor-not-allowed' 
-                      : 'border-[#3e2723] hover:border-[#ca8a04] cursor-pointer shadow-inner'
+                      ? 'border-slate-800 bg-black/40 opacity-40 cursor-not-allowed' 
+                      : 'border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/40 hover:border-cyan-400 cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.1)]'
                   }`}
                 >
-                  <div className="w-10 h-10 mb-1 bg-black rounded overflow-hidden flex items-center justify-center">
+                  <div className="w-12 h-12 mb-2 bg-black rounded-lg overflow-hidden flex items-center justify-center border border-slate-700">
                     {daemon.assetPath ? (
-                      <img src={daemon.assetPath} alt={daemon.name} className="w-full h-full object-cover pixelated" style={{ imageRendering: 'pixelated' }} />
+                      <img src={daemon.assetPath} alt={daemon.name} className="w-full h-full object-cover pixelated" />
                     ) : (
-                      <span className="text-[#5d4037] text-lg font-mono">?</span>
+                      <span className="text-slate-600 font-mono text-sm">?</span>
                     )}
                   </div>
-                  <span className="text-white text-[10px] font-bold text-center break-all leading-tight">{daemon.name}</span>
-                  {isWorking && <span className="text-[8px] text-red-400 font-bold mt-1">WORKING</span>}
+                  <span className="text-white font-bold text-center truncate w-full text-xs">{daemon.name}</span>
+                  <span className="text-[9px] text-cyan-300 uppercase mt-0.5">{daemon.type_primary}</span>
+                  {isWorking && <span className="text-[8px] text-amber-400 font-bold mt-1">ASSIGNED</span>}
                 </div>
               );
             })}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col h-full">
-          {/* THE NEW SANCTUARY VISUAL */}
+        <div className="flex flex-col h-full font-mono text-xs">
           <BaseSanctuaryVisual assignedBeasts={player.assignedBeasts} />
 
-          <div className="bg-black/50 border border-[#ca8a04]/50 rounded p-3 mb-4 text-center shadow-inner">
-            <p className="text-slate-300 text-xs font-mono leading-relaxed mb-2">
-              Assigned Beasts will generate resources passively while you are online and offline!
-            </p>
+          {/* Quick Collection Strip */}
+          <div className="p-3 mb-3 rounded-xl bg-cyan-950/20 border border-cyan-500/30 flex items-center justify-between">
+            <div>
+              <span className="font-bold text-white text-xs">PASSIVE BASE GENERATION</span>
+              <p className="text-[10px] text-slate-400">Assigned companions generate resources continuously online and offline.</p>
+            </div>
             <button 
-              onClick={() => { collectBaseResources(); showToast('Collected base yields!'); }}
-              className="px-6 py-2 bg-[#166534] hover:bg-[#15803d] text-white text-xs font-bold rounded shadow-lg transition-colors border-2 border-[#14532d] active:scale-95"
+              onClick={() => {
+                soundSynth?.playActionSound?.();
+                collectBaseResources();
+                showToast('Collected all passive base yields!');
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600/30 hover:bg-emerald-500/50 text-emerald-200 border border-emerald-500/50 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.25)]"
             >
-              FORCE COLLECT NOW
+              <RefreshCw className="w-3.5 h-3.5" />
+              COLLECT YIELDS
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-10">
-            {renderFacility('lumber_mill', 'Lumber Mill', 'Generates Wood Logs passively over time.', 'Wood Log')}
-            {renderFacility('quarry', 'Quarry', 'Mines Ore from the earth passively.', 'Ore')}
-            {renderFacility('furnace', 'Furnace', 'Smelts Ores into Metal Bars passively.', 'Metal Bar')}
-            {renderFacility('farm', 'Herb Farm', 'Grows medicinal Herbs passively.', 'Grimy Herb')}
-            {renderFacility('fishing_hut', 'Fishing Hut', 'Catches Fresh Fish passively.', 'Raw Fish')}
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+            {renderFacility('lumber_mill', 'Lumber Mill', 'Harvests sturdy wood timber for construction.')}
+            {renderFacility('quarry', 'Sanctuary Quarry', 'Excavates raw ores and heavy stone from mineral veins.')}
+            {renderFacility('furnace', 'Smelting Furnace', 'Refines raw ores into purified metal ingots.')}
+            {renderFacility('farm', 'Medicinal Herb Farm', 'Cultivates potent herbs for potion brewing.')}
+            {renderFacility('fishing_hut', 'Sanctuary Pier', 'Harvests aquatic catches and scaling materials.')}
           </div>
         </div>
       )}
-
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4e342e; border-radius: 4px; border: 1px solid #3e2723; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #5d4037; }
-      `}} />
     </RpgPanel>
   );
 }
+

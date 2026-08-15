@@ -1,3 +1,16 @@
+## [2.1.219] - 2026-08-15
+### Added & Improved
+- **Base Sanctuary Automation & Facility Assignment (`base-overlay.tsx`)**:
+  - Upgraded Base Sanctuary into modern chamfered cyber aesthetic with facility cards (Lumber Mill, Sanctuary Quarry, Smelting Furnace, Medicinal Herb Farm, Sanctuary Pier).
+  - Added element affinity yield bonuses (Fire, Water, Grass, Ground, Metal, Wood) and companion assignment slot controls with audio synthesis (`soundSynth.playActionSound()`, `soundSynth.playSelectSound()`).
+  - Added Live Sanctuary Telemetry viewport with animated roaming companions and custom pasture rendering.
+- **Crafting Station & Recipe Forging (`crafting-overlay.tsx`)**:
+  - Elevated Crafting Station to `HudPanelShell` chamfered HUD with trade skill filter tabs (All, Smithing, Crafting, Fletching, Alchemy).
+  - Integrated real-time forging progression with periodic synthesized anvil clinks and level-up completion tones (`soundSynth.playMiningSound()`, `soundSynth.playLevelUpSound()`).
+- **Grand Trade Center (GTC Marketplace & Player Exchange) (`gtc-overlay.tsx`)**:
+  - Modernized GTC Marketplace with cyber chamfered styling, category chips, and live exchange tax calculator (5% fee preview).
+  - Integrated synthesized audio feedback for browsing, purchasing, and listing items.
+
 ## [2.1.218] - 2026-08-15
 ### Added & Improved
 - **Saints Buddy Battles Encounter UI & Type Badging (`TurnBattleOverlay.tsx`)**:
