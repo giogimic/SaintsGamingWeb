@@ -1,3 +1,10 @@
+## [2.1.259] - 2026-08-15
+### Added & Improved
+- **Skill 23/27: Thieving Support Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete lockpick tension sets, black silk disguises, charcoal smoke bombs, flash powder, muffled rogue footwear, shadow vestments, master diamond vault keycards, ambient darkness cloaks, and celestial eclipse shadow stilettos progression (Tempered Steel Lockpicks, Black Silk Bandit Masks, Dense Charcoal Smoke Bombs, Nitrogen Flash Smoke Powder, Muffled Rogue Boots, Midnight Rogue Vestments, Royal Diamond Safe Keycards, Shadow Infiltration Cloaks, and Celestial Eclipse Shadow Stilettos) with explicit Thieving level requirements (`reqSkill: 'Thieving'`, `reqLevel: number`), pickpocket success rate buffs, stun recovery acceleration, and guaranteed critical backstabs.
+  - Dynamically aggregated lockpicking, pocket picking, and fortress vault cracking for the Thieving handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Thieving spanning Lv 10 to Lv 99 (Novice Cutpurse, Shadow Infiltrator, Phantom Burglar titles, Coin Pouch Sleight emote, Nightfall Mist Shimmer, Orbiting Shadow Smoke Orb Halo, Eclipse Shadow Corona auras, Shadow Rogue Cowl cosmetic, and Cape of Thieving).
+
 ## [2.1.258] - 2026-08-15
 ### Added & Improved
 - **Skill 22/27: Smithing Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:

@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, Herblore, Runecrafting, & Smithing battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, Herblore, Runecrafting, Smithing, & Thieving battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -155,9 +155,14 @@ describe('skillGuideData Registry', () => {
     expect(smithGuide.battlepassTiers.length).toBe(10);
     expect(smithGuide.battlepassTiers[0].rewardName).toContain('Novice Blacksmith');
     expect(smithGuide.battlepassTiers[9].rewardName).toContain('Cape of Smithing');
+
+    const thiefGuide = getSkillGuide('thieving')!;
+    expect(thiefGuide.battlepassTiers.length).toBe(10);
+    expect(thiefGuide.battlepassTiers[0].rewardName).toContain('Novice Cutpurse');
+    expect(thiefGuide.battlepassTiers[9].rewardName).toContain('Cape of Thieving');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, and bars/hammers for Smithing in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, potions/brews for Herblore, runes/pouches for Runecrafting, bars/hammers for Smithing, and lockpicks/masks/cloaks for Thieving in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -262,6 +267,11 @@ describe('skillGuideData Registry', () => {
     expect(smithUnlocks.length).toBeGreaterThan(0);
     expect(smithUnlocks.some((u) => u.title.includes('Bar') || u.title.includes('Hammer') || u.title.includes('Ingot') || u.title.includes('Nails') || u.title.includes('Masterwork'))).toBe(true);
     expect(smithUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const thiefUnlocks = getAllSkillUnlocks('thieving');
+    expect(thiefUnlocks.length).toBeGreaterThan(0);
+    expect(thiefUnlocks.some((u) => u.title.includes('Lockpick') || u.title.includes('Mask') || u.title.includes('Smoke') || u.title.includes('Boots') || u.title.includes('Keycard') || u.title.includes('Cloak') || u.title.includes('Stiletto'))).toBe(true);
+    expect(thiefUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
