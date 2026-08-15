@@ -3,7 +3,7 @@
   <url>https://SaintsGaming.net</url>
   <p><em>A modern, full-stack community management system and 2.5D MMO game engine.</em></p>
   <p>
-    <img src="https://img.shields.io/badge/Version-v2.1.231-purple?style=flat-square" alt="Version" />
+    <img src="https://img.shields.io/badge/Version-v2.1.232-purple?style=flat-square" alt="Version" />
 
 
 

@@ -1,3 +1,10 @@
+## [2.1.232] - 2026-08-15
+### Added & Improved
+- **Studio Omnisearch Fuzzy Command Palette (`StudioOmnisearch.tsx`)**:
+  - Upgraded global search modal with cyber chamfered glass card, live search categories, keyboard shortcut badges, and WebAudio sound synthesis (`soundSynth.playSelectSound()`, `soundSynth.playActionSound()`).
+- **Visual Tileset Palette & Brush Picker (`TilesetPicker.tsx`)**:
+  - Modernized layer manager, brush selector, and tileset switcher with chamfered geometry and audio feedback (`soundSynth.playSelectSound()`, `soundSynth.playUiClick()`).
+
 ## [2.1.231] - 2026-08-15
 ### Added & Improved
 - **Studio Paint & Tool HUD Controller (`StudioPaintHud.tsx`)**:
