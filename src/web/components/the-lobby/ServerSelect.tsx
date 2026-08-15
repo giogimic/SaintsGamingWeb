@@ -6,6 +6,7 @@ import { useGameStore } from './store';
 import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
+import { soundSynth } from '@/engine/sound-synth';
 
 interface ServerInfo {
   id: string;
@@ -109,6 +110,7 @@ export default function ServerSelect() {
   const handleConnect = () => {
     const s = servers.find(srv => srv.id === selectedServer);
     if (!selectedServer || s?.status !== 'online') return;
+    soundSynth?.playActionSound?.();
     setIsConnecting(true);
     setTimeout(() => {
       setIsConnecting(false);

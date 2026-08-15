@@ -76,9 +76,10 @@ func (m *Manager) List(instanceID string) []protocol.CreatureSpawn {
 	out := make([]protocol.CreatureSpawn, 0)
 	for _, e := range m.byMap[instanceID] {
 		out = append(out, protocol.CreatureSpawn{
-			ID: e.ID, Species: e.Species, Name: e.Name,
+			ID: e.ID, EntityID: e.ID, Species: e.Species, TemplateID: e.Species, Name: e.Name,
 			X: e.X, Y: e.Y, HP: e.HP, MaxHP: e.MaxHP,
-			Level: e.Level, Sprite: e.Sprite, MapID: e.MapID, Hostile: e.Hostile,
+			Level: e.Level, Sprite: e.Sprite, SpriteKey: e.Sprite, MapID: e.MapID, Hostile: e.Hostile,
+			EntityType: "MONSTER",
 		})
 	}
 	return out
@@ -97,9 +98,10 @@ func (m *Manager) DrainDirty() []protocol.CreatureSpawn {
 		for _, e := range bucket {
 			if e.Dirty {
 				out = append(out, protocol.CreatureSpawn{
-					ID: e.ID, Species: e.Species, Name: e.Name,
+					ID: e.ID, EntityID: e.ID, Species: e.Species, TemplateID: e.Species, Name: e.Name,
 					X: e.X, Y: e.Y, HP: e.HP, MaxHP: e.MaxHP,
-					Level: e.Level, Sprite: e.Sprite, MapID: e.MapID, Hostile: e.Hostile,
+					Level: e.Level, Sprite: e.Sprite, SpriteKey: e.Sprite, MapID: e.MapID, Hostile: e.Hostile,
+					EntityType: "MONSTER",
 				})
 				e.Dirty = false
 			}

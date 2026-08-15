@@ -1225,12 +1225,13 @@ export default function TheLobby({
     });
 
     socket.on('creature_spawned', (data) => {
-      if (!data?.entityId) return;
-      const isNpc = data.entityType === 'NPC';
+      const entityId = data?.entityId || data?.id;
+      if (!entityId) return;
+      const isNpc = data.entityType === 'NPC' || String(data.type || '').toUpperCase() === 'NPC';
       useGameStore.setState((state) => {
-        const idx = state.mapEntities.findIndex((e) => e.id === data.entityId);
-        const templateId = String(data.templateId || '');
-        const rawSprite = data.spriteKey || templateId || (isNpc ? 'adventurer' : 'rockitten');
+        const idx = state.mapEntities.findIndex((e) => e.id === entityId);
+        const templateId = String(data.templateId || data.species || '');
+        const rawSprite = data.spriteKey || data.sprite || templateId || (isNpc ? 'adventurer' : 'rockitten');
         // Vance keeps classic walk-sheet adventurer; always store resolvable /game-assets URLs.
         // (Prevent bare slugs / battle-sheet keys from rendering as wrong in-world icons.)
         const spriteKey =
@@ -1247,17 +1248,17 @@ export default function TheLobby({
               : `npc_${templateId.replace(/^npc_/, '')}`
             : undefined);
         const ent = {
-          id: data.entityId,
+          id: entityId,
           type: (isNpc ? 'NPC' : 'MONSTER') as 'NPC' | 'MONSTER',
           spriteKey,
-          position: { x: data.x, y: data.y },
+          position: { x: typeof data.x === 'number' ? data.x : 0, y: typeof data.y === 'number' ? data.y : 0 },
           isMoving: !!data.isMoving,
           facing: (String(data.direction || 'down').toUpperCase() as 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'),
           mapId: data.mapId,
           name:
             isNpc && templateId.includes('vance')
               ? 'Warden Vance'
-              : (data.name || templateId),
+              : (data.name || templateId || 'Creature'),
           dialogueKey,
         };
         if (idx >= 0) state.mapEntities[idx] = ent;
@@ -1266,19 +1267,22 @@ export default function TheLobby({
     });
 
     socket.on('creature_despawned', (data) => {
-      if (!data?.entityId) return;
+      const entityId = data?.entityId || data?.id || (typeof data === 'string' ? data : null);
+      if (!entityId) return;
       useGameStore.setState((state) => {
-        state.mapEntities = state.mapEntities.filter((e) => e.id !== data.entityId);
-        if (state.combatTarget?.entityId === data.entityId) {
+        state.mapEntities = state.mapEntities.filter((e) => e.id !== entityId);
+        if (state.combatTarget?.entityId === entityId) {
           state.combatTarget = null;
         }
       });
     });
 
     socket.on('creature_hp_update', (data) => {
-      if (!data?.entityId) return;
+      const entityId = data?.entityId || data?.id;
+      if (!entityId) return;
       const target = useGameStore.getState().combatTarget;
-      if (target && target.entityId === data.entityId && typeof data.hpPercent === 'number') {
+      if (target && target.entityId === entityId) {
+        const hpPercent = typeof data.hpPercent === 'number' ? data.hpPercent : (typeof data.hp === 'number' && typeof data.maxHp === 'number' && data.maxHp > 0 ? data.hp / data.maxHp : 1);
         useGameStore.getState().setCombatTarget({
           entityId: target.entityId,
           name: target.name,
@@ -1286,7 +1290,7 @@ export default function TheLobby({
           isCasting: target.isCasting,
           castName: target.castName,
           behavior: target.behavior,
-          hp: Math.max(0, Math.round(target.maxHp * data.hpPercent)),
+          hp: Math.max(0, Math.round(target.maxHp * hpPercent)),
         });
       }
     });

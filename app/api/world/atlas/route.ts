@@ -116,6 +116,7 @@ export async function POST(request: Request) {
     const atlasData = typeof body.atlasData === 'string'
       ? body.atlasData
       : JSON.stringify(body.atlasData || { nodes: [], edges: [] });
+    const connectionsByMap = body.connectionsByMap as Record<string, { north?: string; south?: string; east?: string; west?: string }> | undefined;
 
     let atlasResult: any = null;
 
@@ -145,14 +146,39 @@ export async function POST(request: Request) {
         where: { key: `WORLD_ATLAS_${gameId}` },
         create: {
           key: `WORLD_ATLAS_${gameId}`,
-          value: JSON.stringify({ lobbyMapId, atlasData }),
+          value: JSON.stringify({ lobbyMapId, atlasData, connectionsByMap }),
         },
         update: {
-          value: JSON.stringify({ lobbyMapId, atlasData }),
+          value: JSON.stringify({ lobbyMapId, atlasData, connectionsByMap }),
         },
       });
     } catch (siteErr) {
       console.warn("[Atlas] SiteSetting mirror failed:", siteErr);
+    }
+
+    // 3. If adjacency connections are provided, sync them to WorldMap records
+    if (connectionsByMap && typeof connectionsByMap === 'object') {
+      try {
+        for (const [mapId, conns] of Object.entries(connectionsByMap)) {
+          const existing = await prisma.worldMap.findUnique({ where: { id: mapId } });
+          if (existing) {
+            let currentGates: any = {};
+            try {
+              currentGates = JSON.parse(existing.gatesData || "{}");
+            } catch {}
+            const mergedGates = Array.isArray(currentGates)
+              ? { gates: currentGates, connections: conns }
+              : { ...currentGates, connections: conns };
+
+            await prisma.worldMap.update({
+              where: { id: mapId },
+              data: { gatesData: JSON.stringify(mergedGates) }
+            });
+          }
+        }
+      } catch (connErr) {
+        console.warn("[Atlas] Failed to sync map adjacency connections:", connErr);
+      }
     }
 
     if (!atlasResult) {

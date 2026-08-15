@@ -6,6 +6,7 @@ import { Play, ScrollText, Settings, Volume2, VolumeX, LogOut } from 'lucide-rea
 import { useSession } from 'next-auth/react';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { useEditorStore } from './editor/editor-store';
+import { soundSynth } from '@/engine/sound-synth';
 
 // Simple animated canvas background — floating runic particles
 function TitleBackground() {
@@ -174,6 +175,7 @@ export default function GameTitleScreen() {
   }, []);
 
   const handleStart = () => {
+    soundSynth?.playActionSound?.();
     if (status === 'authenticated') {
       setGameMode('SERVER_SELECT');
     } else {

@@ -84,6 +84,19 @@ export const WorldAtlasPanel: React.FC = () => {
     return () => { active = false; };
   }, [activeGameId, showToast]);
 
+  // Compute 4-way adjacent connections for every placed node
+  const computeConnections = (nodes: AtlasNode[]) => {
+    const connectionsByMap: Record<string, { north?: string; south?: string; east?: string; west?: string }> = {};
+    for (const node of nodes) {
+      const north = nodes.find(n => n.x === node.x && n.y === node.y - 1)?.mapId;
+      const south = nodes.find(n => n.x === node.x && n.y === node.y + 1)?.mapId;
+      const west = nodes.find(n => n.x === node.x - 1 && n.y === node.y)?.mapId;
+      const east = nodes.find(n => n.x === node.x + 1 && n.y === node.y)?.mapId;
+      connectionsByMap[node.mapId] = { north, south, west, east };
+    }
+    return connectionsByMap;
+  };
+
   const handleWarpToMap = async (targetMapId: string) => {
     try {
       const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
@@ -104,6 +117,7 @@ export const WorldAtlasPanel: React.FC = () => {
     if (!atlasData) return;
     setIsSaving(true);
     try {
+      const connectionsByMap = computeConnections(atlasData.nodes);
       const res = await fetch('/api/world/atlas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,12 +125,13 @@ export const WorldAtlasPanel: React.FC = () => {
           gameId: activeGameId,
           lobbyMapId,
           atlasData,
+          connectionsByMap,
         })
       });
       const result = await res.json();
       if (res.ok && result.ok) {
         useEditorStore.getState().clearMapDirty();
-        showToast('Atlas saved successfully.');
+        showToast('Atlas saved & 4-way map connections synchronized.');
       } else {
         showToast(result.error || 'Failed to save atlas.');
       }
@@ -157,6 +172,8 @@ export const WorldAtlasPanel: React.FC = () => {
     return <div className="p-4 text-xs text-slate-400">Loading World Atlas...</div>;
   }
 
+  const activeConnections = selectedNode ? computeConnections(atlasData.nodes)[selectedNode.mapId] : null;
+
   return (
     <div className="flex flex-col h-full w-full min-h-0 text-xs font-mono bg-[#070d18] select-none">
       <div className="flex-none p-3 border-b border-[#806f47]/30 bg-[#0b1320]/80 flex flex-wrap items-center justify-between gap-3 shadow-md">
@@ -185,7 +202,7 @@ export const WorldAtlasPanel: React.FC = () => {
           className="px-3 py-1.5 bg-[#cbb26a] text-black font-bold rounded flex items-center gap-1.5 hover:bg-[#d8c078] active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
         >
           <Save className="w-3.5 h-3.5" />
-          {isSaving ? 'Saving...' : 'Save Atlas'}
+          {isSaving ? 'Saving...' : 'Save Atlas & Sync Edge Seams'}
         </button>
       </div>
 
@@ -197,7 +214,7 @@ export const WorldAtlasPanel: React.FC = () => {
             <span className="text-[10px] text-slate-500 font-normal">{allMaps.length} maps</span>
           </div>
           <div className="p-2 text-[10px] text-slate-400 bg-black/20 border-b border-white/5">
-            Select a map below, then click a grid cell to place it. Double-click placed nodes to warp.
+            Select a map below, then click a grid cell to place it. Adjacent cells auto-wire 4-way border transitions.
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
             {allMaps.map(m => {
@@ -259,6 +276,11 @@ export const WorldAtlasPanel: React.FC = () => {
               {/* Placed Nodes */}
               {atlasData.nodes.map((node) => {
                 const isSelected = selectedNode?.x === node.x && selectedNode?.y === node.y;
+                const hasNorth = atlasData.nodes.some(n => n.x === node.x && n.y === node.y - 1);
+                const hasSouth = atlasData.nodes.some(n => n.x === node.x && n.y === node.y + 1);
+                const hasWest = atlasData.nodes.some(n => n.x === node.x - 1 && n.y === node.y);
+                const hasEast = atlasData.nodes.some(n => n.x === node.x + 1 && n.y === node.y);
+
                 return (
                   <div
                     key={node.mapId}
@@ -272,6 +294,12 @@ export const WorldAtlasPanel: React.FC = () => {
                     style={{ left: node.x * 72, top: node.y * 72 }}
                     title="Click to select actions · Double-click to warp"
                   >
+                    {/* Neighbor edge indicator pips */}
+                    {hasNorth && <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-1 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="North Connected" />}
+                    {hasSouth && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-1 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="South Connected" />}
+                    {hasWest && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="West Connected" />}
+                    {hasEast && <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="East Connected" />}
+
                     <MapIcon className={`w-4 h-4 mb-0.5 ${isSelected ? 'text-amber-300' : 'text-[#cbb26a]'}`} />
                     <span className="text-[9px] text-slate-200 break-all leading-tight font-bold">
                       {node.mapId}
@@ -289,8 +317,8 @@ export const WorldAtlasPanel: React.FC = () => {
 
           {/* Context Action Bar when a node is selected */}
           {selectedNode && (
-            <div className="flex-none p-3 bg-[#0b1320] border-t border-[#806f47]/40 flex items-center justify-between gap-3 text-xs shadow-2xl">
-              <div className="flex items-center gap-3">
+            <div className="flex-none p-3 bg-[#0b1320] border-t border-[#806f47]/40 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xl">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="font-bold text-[#cbb26a] flex items-center gap-1.5">
                   <MapIcon className="w-4 h-4 text-[#cbb26a]" />
                   Selected Node: <span className="text-white">{selectedNode.mapId}</span>
@@ -298,6 +326,15 @@ export const WorldAtlasPanel: React.FC = () => {
                 <span className="text-slate-400 text-[11px]">
                   Grid Position: [{selectedNode.y}, {selectedNode.x}]
                 </span>
+                {activeConnections && (
+                  <div className="flex items-center gap-2 bg-black/40 px-2 py-0.5 rounded border border-white/5 text-[10px]">
+                    <span className="text-slate-500">Adjacency:</span>
+                    <span className={activeConnections.north ? 'text-cyan-300 font-bold' : 'text-slate-600'}>N: {activeConnections.north || '—'}</span>
+                    <span className={activeConnections.east ? 'text-cyan-300 font-bold' : 'text-slate-600'}>E: {activeConnections.east || '—'}</span>
+                    <span className={activeConnections.south ? 'text-cyan-300 font-bold' : 'text-slate-600'}>S: {activeConnections.south || '—'}</span>
+                    <span className={activeConnections.west ? 'text-cyan-300 font-bold' : 'text-slate-600'}>W: {activeConnections.west || '—'}</span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
