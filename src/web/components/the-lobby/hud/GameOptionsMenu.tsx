@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useGameStore } from '../store';
 import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Check, RotateCcw, Sparkles } from 'lucide-react';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
+import { soundSynth } from '@/engine/sound-synth';
 
 
 interface GameOptionsMenuProps {
@@ -89,8 +90,11 @@ export default function GameOptionsMenu({
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all md:w-full md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-sm ${
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  setActiveTab(tab.id);
+                }}
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition-all md:w-full md:gap-3 md:rounded-xl md:px-4 md:py-3 md:text-sm cursor-pointer ${
                   activeTab === tab.id
                     ? 'bg-cyan-500/20 text-cyan-300 shadow-[inset_0_0_12px_rgba(34,211,238,0.2)] border border-cyan-400/50'
                     : 'text-slate-400 hover:text-cyan-100 hover:bg-white/5 border border-transparent'
@@ -138,8 +142,11 @@ export default function GameOptionsMenu({
                       <div className="mt-1 text-sm font-medium text-slate-400">Best on phones when the browser allows it (iOS may block).</div>
                     </div>
                     <button
-                      onClick={onToggleFullscreen}
-                      className="shrink-0 rounded-xl bg-cyan-600 px-5 py-3 font-extrabold text-white shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all hover:bg-cyan-500 hover:translate-y-[2px] hover:shadow-[0_0_10px_rgba(34,211,238,0.6)] active:scale-95 border border-cyan-400"
+                      onClick={() => {
+                        soundSynth?.playActionSound?.();
+                        onToggleFullscreen();
+                      }}
+                      className="shrink-0 rounded-xl bg-cyan-600 px-5 py-3 font-extrabold text-white shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all hover:bg-cyan-500 hover:translate-y-[2px] hover:shadow-[0_0_10px_rgba(34,211,238,0.6)] active:scale-95 border border-cyan-400 cursor-pointer"
                     >
                       {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
                     </button>
@@ -179,6 +186,7 @@ export default function GameOptionsMenu({
                           key={preset.id}
                           type="button"
                           onClick={() => {
+                            soundSynth?.playActionSound?.();
                             setActiveHudPreset(preset.id);
                             showToast(`Applied "${preset.name}".`);
                           }}
