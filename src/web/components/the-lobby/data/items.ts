@@ -16,6 +16,19 @@ export interface ItemSchema {
 }
 
 export const ITEM_DB: Record<string, ItemSchema> = {
+  // Construction Estate Materials & Blueprints (Construction Skill Tier Progression)
+  'estate_deed': { id: 'estate_deed', name: 'Sanctuary Estate Deed', description: 'Deed of land ownership enabling personal Sanctuary estate construction.', type: 'MATERIAL', value: 1000, reqSkill: 'Construction', reqLevel: 1 },
+  'plank_regular': { id: 'plank_regular', name: 'Sawmill Wood Plank', description: 'Smooth planed timber plank used for beginner estate furniture.', type: 'MATERIAL', value: 20, reqSkill: 'Construction', reqLevel: 1 },
+  'oak_plank': { id: 'oak_plank', name: 'Cured Oak Plank', description: 'Sturdy oak lumber plank for workshop benches, larders, and dining tables.', type: 'MATERIAL', value: 60, reqSkill: 'Construction', reqLevel: 15 },
+  'oak_flatpack_table': { id: 'oak_flatpack_table', name: 'Oak Dining Table Flatpack', description: 'Pre-assembled flatpack table ready for estate dining halls.', type: 'MATERIAL', value: 350, reqSkill: 'Construction', reqLevel: 22 },
+  'teak_plank': { id: 'teak_plank', name: 'Tropical Teak Plank', description: 'Polished teak plank used in luxury estate parlor furniture and trophy mounts.', type: 'MATERIAL', value: 200, reqSkill: 'Construction', reqLevel: 35 },
+  'teak_dining_bench': { id: 'teak_dining_bench', name: 'Teak Dining Bench Flatpack', description: 'Mastercrafted teak bench accommodating party banquet guests.', type: 'MATERIAL', value: 1200, reqSkill: 'Construction', reqLevel: 45 },
+  'crystal_portal_frame': { id: 'crystal_portal_frame', name: 'Crystal Portal Nexus Frame', description: 'Attuned teleportation frame linking Sanctuary estate to global cities.', type: 'MATERIAL', value: 8000, reqSkill: 'Construction', reqLevel: 50 },
+  'mahogany_plank': { id: 'mahogany_plank', name: 'Fine Mahogany Plank', description: 'Rich deep-grain mahogany used for grand beds and demon thrones.', type: 'MATERIAL', value: 600, reqSkill: 'Construction', reqLevel: 52 },
+  'gilded_altar_fixture': { id: 'gilded_altar_fixture', name: 'Gilded Sanctuary Altar', description: 'Sacred gold-leaf altar fixture granting +350% prayer bonus when lit with incense.', type: 'MATERIAL', value: 35000, reqSkill: 'Construction', reqLevel: 75 },
+  'demonic_throne_plan': { id: 'demonic_throne_plan', name: 'Demonic Mahogany Throne', description: 'Imposing skull-carved mahogany throne for estate dungeon lords.', type: 'MATERIAL', value: 80000, reqSkill: 'Construction', reqLevel: 85 },
+  'celestial_palace_keystone': { id: 'celestial_palace_keystone', name: 'Celestial Palace Keystone', description: 'Mythic floating keystone elevating your estate into an orbital cosmic palace.', type: 'MATERIAL', value: 250000, reqSkill: 'Construction', reqLevel: 99 },
+
   // Mining Pickaxes & Ore Strata (Mining Skill Tier Progression)
   'pickaxe_bronze': { id: 'pickaxe_bronze', name: 'Bronze Mining Pickaxe', description: 'Basic bronze pickaxe used to extract copper and tin ore veins.', type: 'WEAPON', value: 40, reqSkill: 'Mining', reqLevel: 1, stats: { atk: 3 } },
   'ore_copper': { id: 'ore_copper', name: 'Copper Ore', description: 'Raw copper mineral extracted from surface rock veins.', type: 'MATERIAL', value: 5, reqSkill: 'Mining', reqLevel: 1 },

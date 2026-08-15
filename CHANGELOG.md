@@ -1,3 +1,10 @@
+## [2.1.251] - 2026-08-15
+### Added & Improved
+- **Skill 15/27: Construction Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete Sanctuary estate deeds, planks, flatpacks, crystal portals, gilded prayer altars, demon thrones, and celestial citadel keystones progression (Sanctuary Estate Deeds, Sawmill Wood Planks, Cured Oak Planks, Oak Dining Table Flatpacks, Tropical Teak Planks, Teak Dining Bench Flatpacks, Crystal Portal Nexus Frames, Fine Mahogany Planks, Gilded Sanctuary Altars, Demonic Mahogany Thrones, and Celestial Palace Keystones) with explicit Construction level requirements (`reqSkill: 'Construction'`, `reqLevel: number`).
+  - Dynamically aggregated estate fixtures, blueprints, and furniture flatpacks for the Construction handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Construction spanning Lv 10 to Lv 99 (Novice Builder, Master Carpenter, Grand Architect titles, Golden Hammer Tap emote, Blueprint Drafting Glyphs, Golden Chandelier Glow, Floating Celestial Citadel Halo auras, Architect Drafting Compass Belt cosmetic, and Cape of Construction).
+
 ## [2.1.250] - 2026-08-15
 ### Added & Improved
 - **Skill 14/27: Woodcutting Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
