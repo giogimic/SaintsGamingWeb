@@ -28,9 +28,18 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'spirit_tree_seed': { id: 'spirit_tree_seed', name: 'Spirit Tree Acorn', description: 'Sentient tree seed allowing worldwide fast-travel teleportation roots.', type: 'MATERIAL', value: 10000, reqSkill: 'Farming', reqLevel: 83 },
   'celestial_starflower_seed': { id: 'celestial_starflower_seed', name: 'Celestial Starflower Bulb', description: 'Mythic cosmic flower blooming in starlight and yielding immortal nectar.', type: 'MATERIAL', value: 45000, reqSkill: 'Farming', reqLevel: 99 },
   
-  // Consumables & Vitality Rations (Hitpoints Skill Tier Progression)
-  'bread_loaf': { id: 'bread_loaf', name: 'Fresh Loaf', description: 'Freshly baked wheat bread.', type: 'FOOD', value: 5, reqSkill: 'Hitpoints', reqLevel: 1, stats: { hp: 15 } },
-  'raw_fish': { id: 'raw_fish', name: 'Raw Fish', description: 'Needs to be cooked.', type: 'FOOD', value: 3 },
+  // Consumables & Raw Seafood Catches (Fishing Skill Tier Progression)
+  'small_fishing_net': { id: 'small_fishing_net', name: 'Small Hand Fishing Net', description: 'Woven mesh net used to scoop freshwater shrimp and minnows.', type: 'MATERIAL', value: 20, reqSkill: 'Fishing', reqLevel: 1 },
+  'raw_shrimp': { id: 'raw_shrimp', name: 'Raw Coastal Shrimp', description: 'Freshly netted shrimp ready for cooking.', type: 'FOOD', value: 4, reqSkill: 'Fishing', reqLevel: 1 },
+  'raw_fish': { id: 'raw_fish', name: 'Raw Fish', description: 'Needs to be cooked.', type: 'FOOD', value: 3, reqSkill: 'Fishing', reqLevel: 1 },
+  'raw_trout': { id: 'raw_trout', name: 'Raw Rainbow Trout', description: 'Firm freshwater trout caught from rushing rivers.', type: 'FOOD', value: 25, reqSkill: 'Fishing', reqLevel: 20 },
+  'raw_salmon': { id: 'raw_salmon', name: 'Raw Crimson Salmon', description: 'Strong upstream salmon brimming with nutritious oil.', type: 'FOOD', value: 65, reqSkill: 'Fishing', reqLevel: 30 },
+  'lobster_cage': { id: 'lobster_cage', name: 'Wicker Lobster Pot', description: 'Submerged wicker cage trapping heavy saltwater lobsters.', type: 'MATERIAL', value: 250, reqSkill: 'Fishing', reqLevel: 40 },
+  'raw_lobster': { id: 'raw_lobster', name: 'Raw Ocean Lobster', description: 'Armored sea crustacean prized by gourmet chefs.', type: 'FOOD', value: 150, reqSkill: 'Fishing', reqLevel: 40 },
+  'raw_swordfish': { id: 'raw_swordfish', name: 'Raw Bladed Swordfish', description: 'Deep-water predatory fish offering great cooking XP.', type: 'FOOD', value: 350, reqSkill: 'Fishing', reqLevel: 50 },
+  'raw_shark': { id: 'raw_shark', name: 'Raw Great Apex Shark', description: 'Massive apex ocean predator yielding supreme combat rations.', type: 'FOOD', value: 1200, reqSkill: 'Fishing', reqLevel: 76 },
+  'raw_manta_ray': { id: 'raw_manta_ray', name: 'Raw Abyssal Manta Ray', description: 'Enormous deep-ocean ray delivering extraordinary culinary sustenance.', type: 'FOOD', value: 3000, reqSkill: 'Fishing', reqLevel: 85 },
+  'celestial_leviathan_scale': { id: 'celestial_leviathan_scale', name: 'Celestial Leviathan Scale', description: 'Iridescent glowing scale fished from mythic starlight whirlpools.', type: 'MATERIAL', value: 40000, reqSkill: 'Fishing', reqLevel: 99 },
   'cooked_fish': { id: 'cooked_fish', name: 'Cooked Fish', description: 'Freshly grilled river fish.', type: 'FOOD', value: 10, reqSkill: 'Hitpoints', reqLevel: 1, stats: { hp: 20 } },
   'patch_kit': { id: 'patch_kit', name: 'Field Dressing Kit', description: 'Quick-acting field bandage.', type: 'CONSUMABLE', value: 30, reqSkill: 'Hitpoints', reqLevel: 5, stats: { hp: 40 } },
   'cooked_trout': { id: 'cooked_trout', name: 'Grilled Rainbow Trout', description: 'Crisp trout offering hearty vitality.', type: 'FOOD', value: 45, reqSkill: 'Hitpoints', reqLevel: 10, stats: { hp: 60 } },

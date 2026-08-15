@@ -1,3 +1,10 @@
+## [2.1.247] - 2026-08-15
+### Added & Improved
+- **Skill 11/27: Fishing Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete raw seafood catches, tackle, and deep-ocean harpoon progression (Small Hand Fishing Nets, Raw Coastal Shrimp, Raw Rainbow Trout, Raw Crimson Salmon, Wicker Lobster Pots, Raw Ocean Lobsters, Raw Bladed Swordfish, Raw Great Apex Sharks, Raw Abyssal Manta Rays, and Celestial Leviathan Scales) with explicit Fishing level requirements (`reqSkill: 'Fishing'`, `reqLevel: number`) and double-catch multipliers.
+  - Dynamically aggregated raw seafood, nets, and tackle for the Fishing handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Fishing spanning Lv 10 to Lv 99 (Novice Angler, River Trawler, Master of the Deep titles, Aqua Splash Rings, Bioluminescent School, Oceanic Whirlpool Halo auras, Sea Captain Bicorn Hat cosmetic, and Cape of Fishing).
+
 ## [2.1.246] - 2026-08-15
 ### Added & Improved
 - **Skill 10/27: Farming Gathering Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
