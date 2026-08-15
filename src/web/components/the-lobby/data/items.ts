@@ -109,8 +109,19 @@ export const ITEM_DB: Record<string, ItemSchema> = {
   'saintly_ambrosia': { id: 'saintly_ambrosia', name: 'Saintly Ambrosia Flask', description: 'Nectar of the saints restoring immense health and max HP pool.', type: 'CONSUMABLE', value: 6500, reqSkill: 'Hitpoints', reqLevel: 45, stats: { hp: 650 } },
   'phoenix_elixir': { id: 'phoenix_elixir', name: 'Phoenix Rebirth Heart Vial', description: 'Legendary life essence granting complete recovery and a temporary life ward.', type: 'CONSUMABLE', value: 20000, reqSkill: 'Hitpoints', reqLevel: 50, stats: { hp: 1000 } },
 
-  'film_standard': { id: 'film_standard', name: 'Standard Film', description: 'Soul-sensitive film for turn-based capture.', type: 'CONSUMABLE', value: 100 },
-  'film_fine': { id: 'film_fine', name: 'Fine Grain Film', description: '2× catch rate film stock.', type: 'CONSUMABLE', value: 250 },
+  // Crafting Gemstones, Capture Film & Operative Apparel (Crafting Skill Tier Progression)
+  'leather_gloves': { id: 'leather_gloves', name: 'Stitched Leather Gloves', description: 'Handmade calfskin gloves providing basic finger protection.', type: 'LEGS', value: 20, reqSkill: 'Crafting', reqLevel: 1, stats: { def: 2 } },
+  'cut_sapphire_ring': { id: 'cut_sapphire_ring', name: 'Polished Sapphire Ring', description: 'Glinting azure gemstone ring channeling subtle mental acuity.', type: 'HEAD', value: 250, reqSkill: 'Crafting', reqLevel: 20, stats: { atk: 4, def: 2 } },
+  'film_standard': { id: 'film_standard', name: 'Standard Film Roll', description: 'Soul-sensitive 35mm capture film for standard creature binding.', type: 'CONSUMABLE', value: 100, reqSkill: 'Crafting', reqLevel: 25 },
+  'cut_emerald_amulet': { id: 'cut_emerald_amulet', name: 'Strung Emerald Amulet', description: 'Vibrant green gemstone amulet granting defensive wards.', type: 'HEAD', value: 600, reqSkill: 'Crafting', reqLevel: 31, stats: { def: 8, hp: 20 } },
+  'film_fine': { id: 'film_fine', name: 'Fine Grain Film Roll', description: 'High-sensitivity 2× catch rate film stock for elusive rare creatures.', type: 'CONSUMABLE', value: 250, reqSkill: 'Crafting', reqLevel: 45 },
+  'cut_ruby_necklace': { id: 'cut_ruby_necklace', name: 'Ornate Ruby Necklace', description: 'Deep red gemstone necklace radiating offensive battle fury.', type: 'HEAD', value: 1500, reqSkill: 'Crafting', reqLevel: 50, stats: { atk: 12, hp: 40 } },
+  'green_dhide_body': { id: 'green_dhide_body', name: 'Green Dragonhide Tunic', description: 'Supple scaled dragonhide armor offering exceptional magic & ranged defence.', type: 'CHEST', value: 3500, reqSkill: 'Crafting', reqLevel: 57, stats: { def: 35, atk: 10 } },
+  'cut_diamond_bracelet': { id: 'cut_diamond_bracelet', name: 'Cut Diamond Bangle', description: 'Flawless diamond bracelet catching the light with dazzling brilliance.', type: 'HEAD', value: 5000, reqSkill: 'Crafting', reqLevel: 66, stats: { atk: 18, def: 12 } },
+  'film_quantum': { id: 'film_quantum', name: 'Quantum Master Film Roll', description: 'Apex 4× catch rate quantum-coated capture film for legendary boss bindings.', type: 'CONSUMABLE', value: 1200, reqSkill: 'Crafting', reqLevel: 75 },
+  'onyx_fury_amulet': { id: 'onyx_fury_amulet', name: 'Onyx Amulet of Supreme Fury', description: 'Dark obsidian gemstone amulet imparting devastating all-around combat power.', type: 'HEAD', value: 35000, reqSkill: 'Crafting', reqLevel: 90, stats: { atk: 25, def: 25, hp: 80 } },
+  'celestial_prism_matrix': { id: 'celestial_prism_matrix', name: 'Celestial Singularity Prism Matrix', description: 'Mythic geometric crystal matrix refracting cosmic light into boundless energy.', type: 'HEAD', value: 120000, reqSkill: 'Crafting', reqLevel: 99, stats: { atk: 40, def: 40, hp: 150 } },
+
   'soul_camera': { id: 'soul_camera', name: 'Soul Camera', description: 'Exposes film to bind a creature soul.', type: 'CONSUMABLE', value: 50 },
   'binding_crystal': { id: 'binding_crystal', name: 'Standard Film (legacy)', description: 'Legacy slug — prefer film_standard.', type: 'CONSUMABLE', value: 100 },
   // Woodcutting Hatchets & Timber Logs (Woodcutting Skill Tier Progression)

@@ -1,3 +1,10 @@
+## [2.1.253] - 2026-08-15
+### Added & Improved
+- **Skill 17/27: Crafting Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete leathercraft, gemstone jewelry (Sapphire, Emerald, Ruby, Diamond, Onyx), soul capture film rolls (Standard, Fine Grain, Quantum Master), and celestial singularity prism matrices progression (Stitched Leather Gloves, Polished Sapphire Rings, Standard Film Rolls, Strung Emerald Amulets, Fine Grain Film Rolls, Ornate Ruby Necklaces, Green Dragonhide Tunics, Cut Diamond Bangles, Quantum Master Film Rolls, Onyx Amulet of Supreme Fury, and Celestial Singularity Prism Matrices) with explicit Crafting level requirements (`reqSkill: 'Crafting'`, `reqLevel: number`), catch-rate multipliers, and combat crit/defence bonuses.
+  - Dynamically aggregated jewelcrafting, film manufacturing, and operative dragonhide tailoring for the Crafting handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Crafting spanning Lv 10 to Lv 99 (Novice Artisan, Master Gemologist, Matrix Artificer titles, Gem Chisel Spark emote, Orbiting Diamond Facets, Gilded Gemstone Ring Halo, Prismatic Laser Matrix Corona auras, Jeweler Magnifier Monocle cosmetic, and Cape of Crafting).
+
 ## [2.1.252] - 2026-08-15
 ### Added & Improved
 - **Skill 16/27: Cooking Artisan Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
