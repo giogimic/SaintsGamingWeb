@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, & Fletching battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, Woodcutting, Construction, Cooking, Crafting, Firemaking, Fletching, & Herblore battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -140,9 +140,14 @@ describe('skillGuideData Registry', () => {
     expect(fletchGuide.battlepassTiers.length).toBe(10);
     expect(fletchGuide.battlepassTiers[0].rewardName).toContain('Novice Fletcher');
     expect(fletchGuide.battlepassTiers[9].rewardName).toContain('Cape of Fletching');
+
+    const herbGuide = getSkillGuide('herblore')!;
+    expect(herbGuide.battlepassTiers.length).toBe(10);
+    expect(herbGuide.battlepassTiers[0].rewardName).toContain('Novice Apothecary');
+    expect(herbGuide.battlepassTiers[9].rewardName).toContain('Cape of Herblore');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, and arrows/bolts/bows for Fletching in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, hatchets/logs for Woodcutting, planks/altars for Construction, dishes/recipes for Cooking, films/jewelry for Crafting, torches/lanterns/pyres for Firemaking, arrows/bolts/bows for Fletching, and potions/brews for Herblore in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -232,6 +237,11 @@ describe('skillGuideData Registry', () => {
     expect(fletchUnlocks.length).toBeGreaterThan(0);
     expect(fletchUnlocks.some((u) => u.title.includes('Shaft') || u.title.includes('Arrow') || u.title.includes('Bow') || u.title.includes('Bolt') || u.title.includes('Dart') || u.title.includes('Hyperion'))).toBe(true);
     expect(fletchUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const herbUnlocks = getAllSkillUnlocks('herblore');
+    expect(herbUnlocks.length).toBeGreaterThan(0);
+    expect(herbUnlocks.some((u) => u.title.includes('Vial') || u.title.includes('Draught') || u.title.includes('Tonic') || u.title.includes('Infusion') || u.title.includes('Potion') || u.title.includes('Brew') || u.title.includes('Elixir') || u.title.includes('Overload') || u.title.includes('Ambrosia'))).toBe(true);
+    expect(herbUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
