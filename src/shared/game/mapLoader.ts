@@ -68,7 +68,9 @@ export async function loadMapData(mapId: string): Promise<MapData> {
     if (worldMap) {
       const grid = JSON.parse(worldMap.gridData || "[]");
       const npcs = JSON.parse(worldMap.npcsData || "[]");
-      const gates = JSON.parse(worldMap.gatesData || "{}");
+      const rawGates = JSON.parse(worldMap.gatesData || "{}");
+      const connections = rawGates.connections || undefined;
+      const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
       const encounters = JSON.parse(worldMap.encountersData || "[]");
       const height = Array.isArray(grid) ? grid.length : 20;
       const width = Array.isArray(grid?.[0]) ? grid[0].length : 20;
@@ -77,7 +79,8 @@ export async function loadMapData(mapId: string): Promise<MapData> {
         id: worldMap.id,
         name: worldMap.name,
         grid,
-        gates,
+        gates: actualGates,
+        connections: connections,
         npcs,
         encountersData: encounters,
         tileLayers: JSON.parse(worldMap.tileLayersData || "[]"),

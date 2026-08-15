@@ -18,6 +18,9 @@ async function loadMapPayload(slug: string) {
     const tileLayers = JSON.parse(worldMap.tileLayersData || "[]");
     const tilesets = JSON.parse(worldMap.tilesetsData || "[]");
     const dims = resolveMapDimensions({ grid, tileLayers });
+    const rawGates = JSON.parse(worldMap.gatesData || "{}");
+    const connections = rawGates.connections || undefined;
+    const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
     return {
       id: worldMap.id,
       gameId: worldMap.gameId,
@@ -25,7 +28,8 @@ async function loadMapPayload(slug: string) {
       width: dims.width,
       height: dims.height,
       grid: grid,
-      gates: JSON.parse(worldMap.gatesData || "{}"),
+      gates: actualGates,
+      connections: connections,
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
       tileLayers,

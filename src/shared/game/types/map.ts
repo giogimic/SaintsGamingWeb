@@ -55,6 +55,12 @@ export interface MapData {
   lightingPreset?: string | null;
   biome?: string | null;
   description?: string | null;
+  connections?: {
+    north?: string;
+    south?: string;
+    east?: string;
+    west?: string;
+  };
 }
 
 export interface LogicTile {

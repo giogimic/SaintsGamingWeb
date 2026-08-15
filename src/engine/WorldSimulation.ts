@@ -74,6 +74,13 @@ export class WorldSimulation {
       return { type: 'BLOCKED', direction: dir, reason: 'BOUNDS' };
     }
 
+    // Warp Gate Check (array or legacy record shapes)
+    const gates = normalizeGatesToArray(state.gates);
+    const gate = gates.find((g) => g.position.x === targetX && g.position.y === targetY);
+    if (gate?.targetMapId) {
+      return { type: 'WARP', gate };
+    }
+
     // Logic Grid Collision Check
     const targetTileId = mapGrid[targetY]?.[targetX];
     const logicTile = logicTiles[targetTileId];
@@ -92,13 +99,6 @@ export class WorldSimulation {
     
     if (isStaticNpc || isDynamicNpc) {
       return { type: 'BLOCKED', direction: dir, reason: 'NPC' };
-    }
-
-    // Warp Gate Check (array or legacy record shapes)
-    const gates = normalizeGatesToArray(state.gates);
-    const gate = gates.find((g) => g.position.x === targetX && g.position.y === targetY);
-    if (gate?.targetMapId) {
-      return { type: 'WARP', gate };
     }
 
     // Valid Move
