@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, & Mining battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, Farming, Fishing, Hunter, Mining, & Woodcutting battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -110,9 +110,14 @@ describe('skillGuideData Registry', () => {
     expect(miningGuide.battlepassTiers.length).toBe(10);
     expect(miningGuide.battlepassTiers[0].rewardName).toContain('Novice Miner');
     expect(miningGuide.battlepassTiers[9].rewardName).toContain('Cape of Mining');
+
+    const wcGuide = getSkillGuide('woodcutting')!;
+    expect(wcGuide.battlepassTiers.length).toBe(10);
+    expect(wcGuide.battlepassTiers[0].rewardName).toContain('Novice Lumberjack');
+    expect(wcGuide.battlepassTiers[9].rewardName).toContain('Cape of Woodcutting');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, and pickaxes for Mining in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, crops for Farming, seafood for Fishing, traps for Hunter, pickaxes for Mining, and hatchets/logs for Woodcutting in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -172,6 +177,11 @@ describe('skillGuideData Registry', () => {
     expect(miningUnlocks.length).toBeGreaterThan(0);
     expect(miningUnlocks.some((u) => u.title.includes('Pickaxe') || u.title.includes('Copper') || u.title.includes('Iron') || u.title.includes('Coal') || u.title.includes('Mithril') || u.title.includes('Adamant') || u.title.includes('Runite') || u.title.includes('Asteroid'))).toBe(true);
     expect(miningUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
+
+    const wcUnlocks = getAllSkillUnlocks('woodcutting');
+    expect(wcUnlocks.length).toBeGreaterThan(0);
+    expect(wcUnlocks.some((u) => u.title.includes('Hatchet') || u.title.includes('Oak') || u.title.includes('Willow') || u.title.includes('Teak') || u.title.includes('Maple') || u.title.includes('Yew') || u.title.includes('Magic') || u.title.includes('Redwood') || u.title.includes('World-Tree'))).toBe(true);
+    expect(wcUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
