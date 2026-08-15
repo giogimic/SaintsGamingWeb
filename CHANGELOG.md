@@ -1,3 +1,10 @@
+## [2.1.244] - 2026-08-15
+### Added & Improved
+- **Skill 8/27: Wisdom Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
+  - Expanded complete spiritual ward shields, mana restoring elixirs, sacred incense, and divine robes progression (Apprentice Spirit Talismans, Distilled Mana Draughts, Willow Prayer Scriptures, Sacred Cleansing Incense, Spirit Ward Bucklers, Grand Mana Elixirs, Archon Spirit Aegis, Sanctified Hierophant Robes, Saintly Seraph Vestments, and Celestial Sovereign Sanctuaries) with explicit Wisdom level requirements (`reqSkill: 'Wisdom'`, `reqLevel: number`) and MP restoration/healing power stats.
+  - Dynamically aggregated spirit wards, mana elixirs, and restorative support abilities for the Wisdom handbook.
+  - Fleshed out 10-tier Battlepass cosmetic reward track for Wisdom (Novice Acolyte, Enlightened Mystic, Hierophant titles, Indigo Halo, Sacred Lotus Mandala, Celestial Seraph Wings auras, and Cape of Wisdom).
+
 ## [2.1.243] - 2026-08-15
 ### Added & Improved
 - **Skill 7/27: Perception Proficiency Deep-Dive (`skillGuideData.ts`, `items.ts`)**:
