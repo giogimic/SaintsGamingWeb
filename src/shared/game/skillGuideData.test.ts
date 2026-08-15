@@ -45,7 +45,7 @@ describe('skillGuideData Registry', () => {
     expect(attackUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
   });
 
-  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, & Intelligence battlepass tier rewards from Lv 5 to Lv 50', () => {
+  it('contains complete Attack, Strength, Defence, Hitpoints, Ranged, Agility, Perception, Wisdom, Intelligence, & Farming battlepass tier rewards from Lv 5/10 to Lv 50/99', () => {
     const attackGuide = getSkillGuide('attack')!;
     expect(attackGuide.battlepassTiers.length).toBe(10);
     expect(attackGuide.battlepassTiers[0].rewardName).toContain('Novice Swordsman');
@@ -90,9 +90,14 @@ describe('skillGuideData Registry', () => {
     expect(intGuide.battlepassTiers.length).toBe(10);
     expect(intGuide.battlepassTiers[0].rewardName).toContain('Novice Evoker');
     expect(intGuide.battlepassTiers[9].rewardName).toContain('Cape of Intelligence');
+
+    const farmGuide = getSkillGuide('farming')!;
+    expect(farmGuide.battlepassTiers.length).toBe(10);
+    expect(farmGuide.battlepassTiers[0].rewardName).toContain('Novice Planter');
+    expect(farmGuide.battlepassTiers[9].rewardName).toContain('Cape of Farming');
   });
 
-  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, and wands for Intelligence in dynamic lookups', () => {
+  it('accurately resolves heavy weapon unlocks for Strength, armor for Defence, vitality for Hitpoints, bows for Ranged, boots for Agility, optics for Perception, relics for Wisdom, wands for Intelligence, and crops for Farming in dynamic lookups', () => {
     const strengthUnlocks = getAllSkillUnlocks('strength');
     expect(strengthUnlocks.length).toBeGreaterThan(0);
     expect(strengthUnlocks.some((u) => u.title.includes('Battleaxe') || u.title.includes('Warhammer'))).toBe(true);
@@ -132,6 +137,11 @@ describe('skillGuideData Registry', () => {
     expect(intUnlocks.length).toBeGreaterThan(0);
     expect(intUnlocks.some((u) => u.title.includes('Wand') || u.title.includes('Staff') || u.title.includes('Orb') || u.title.includes('Grimoire') || u.title.includes('Scepter') || u.title.includes('Singularity'))).toBe(true);
     expect(intUnlocks.some((u) => u.level === 50 && u.title.includes('Celestial'))).toBe(true);
+
+    const farmUnlocks = getAllSkillUnlocks('farming');
+    expect(farmUnlocks.length).toBeGreaterThan(0);
+    expect(farmUnlocks.some((u) => u.title.includes('Seed') || u.title.includes('Compost') || u.title.includes('Watering Can') || u.title.includes('Sapling') || u.title.includes('Starflower'))).toBe(true);
+    expect(farmUnlocks.some((u) => u.level === 99 && u.title.includes('Celestial'))).toBe(true);
   });
 
   it('orders battlepass tiers and milestone levels sequentially', () => {
