@@ -1,3 +1,12 @@
+## [2.1.235] - 2026-08-15
+### Added & Improved
+- **27-Skill Progression Guide Data & Unlocks Registry (`skillGuideData.ts`)**:
+  - Implemented the master 27-skill proficiency registry with per-level perk formulas, milestone level unlocks, dynamic item/recipe/ability aggregators, and battlepass-style cosmetic reward tracks.
+- **Interactive Skill Guide Handbook Modal (`SkillGuideModal.tsx`)**:
+  - Built a comprehensive handbook inspection modal with overview metrics, filterable level unlock tables, and multi-tier battlepass cosmetic progression tracks with audio cues.
+- **Skills Matrix Overlay Integration (`skills-overlay.tsx`)**:
+  - Upgraded all 27 skill cards with individual SVG vector icons, animated level progress bars, and click-to-open handbook triggers.
+
 ## [2.1.234] - 2026-08-15
 ### Added & Improved
 - **World Atlas & Macro Region Connectivity Panel (`WorldAtlasPanel.tsx`)**:

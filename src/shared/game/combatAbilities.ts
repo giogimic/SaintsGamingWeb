@@ -44,7 +44,7 @@ export function isForbiddenRtCaptureAbility(abilityId: string | undefined | null
   );
 }
 
-const ABILITIES: Record<string, CombatAbility> = {
+export const COMBAT_ABILITIES: Record<string, CombatAbility> = {
   strike: { id: "strike", name: "Strike", power: 40, category: "physical", cooldownMs: 1500, rangeTiles: 1, element: "None" },
   cleave: { id: "cleave", name: "Cleave", power: 55, category: "physical", cooldownMs: 4000, rangeTiles: 1, element: "None" },
   dash: { id: "dash", name: "Dash", power: 0, category: "utility", cooldownMs: 8000, rangeTiles: 3, element: "None" },
@@ -61,7 +61,7 @@ const ABILITIES: Record<string, CombatAbility> = {
 
 export function getCombatAbility(abilityId: string): CombatAbility | null {
   if (isForbiddenRtCaptureAbility(abilityId)) return null;
-  return ABILITIES[abilityId] ?? null;
+  return COMBAT_ABILITIES[abilityId] ?? null;
 }
 
 /** Capture chance helpers for turn-based encounters (bible 11). */

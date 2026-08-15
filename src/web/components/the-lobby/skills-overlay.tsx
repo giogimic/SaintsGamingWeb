@@ -1,10 +1,73 @@
 'use client';
 
+import React, { useState } from 'react';
 import { useGameStore } from './store';
 import { HudPanelShell } from './hud/HudPanelShell';
 import { calculateCombatLevelFromXp, isCombatSkillTyping, normalizeSkillSlug } from '@/shared/game/skillTypings';
-import { Zap, Sparkles, Trophy, Sword, Pickaxe, Hammer, Shield } from 'lucide-react';
+import { getSkillGuide } from '@/shared/game/skillGuideData';
+import { SkillGuideModal } from './SkillGuideModal';
+import {
+  Zap,
+  Sparkles,
+  Trophy,
+  Sword,
+  Pickaxe,
+  Hammer,
+  Shield,
+  Dumbbell,
+  Heart,
+  Crosshair,
+  Wind,
+  Eye,
+  BookOpen,
+  Cpu,
+  Sprout,
+  Fish,
+  Target,
+  Axe,
+  Home,
+  UtensilsCrossed,
+  Flame,
+  Feather,
+  FlaskConical,
+  Sparkle,
+  Anvil,
+  Key,
+  Wand2,
+  Sun,
+  Skull,
+} from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+
+const SKILL_ICONS: Record<string, React.FC<{ className?: string; style?: React.CSSProperties }>> = {
+  attack: Sword,
+  strength: Dumbbell,
+  defence: Shield,
+  hitpoints: Heart,
+  ranged: Crosshair,
+  agility: Wind,
+  perception: Eye,
+  wisdom: BookOpen,
+  intelligence: Cpu,
+  farming: Sprout,
+  fishing: Fish,
+  hunter: Target,
+  mining: Pickaxe,
+  woodcutting: Axe,
+  construction: Home,
+  cooking: UtensilsCrossed,
+  crafting: Hammer,
+  firemaking: Flame,
+  fletching: Feather,
+  herblore: FlaskConical,
+  runecrafting: Sparkle,
+  smithing: Anvil,
+  thieving: Key,
+  summoning: Sparkles,
+  magic: Wand2,
+  prayer: Sun,
+  necromancy: Skull,
+};
 
 const SKILL_CATEGORIES = {
   Combat: [
@@ -47,6 +110,7 @@ function skillLookup(
 export default function SkillsOverlay() {
   const skills = useGameStore((state) => state.player.skills);
   const setGameMode = useGameStore((state) => state.setGameMode);
+  const [selectedGuideSkill, setSelectedGuideSkill] = useState<string | null>(null);
 
   const getXpForNextLevel = (skillLabel: string, level: number, xp: number) => {
     const slug = normalizeSkillSlug(skillLabel);
@@ -67,7 +131,7 @@ export default function SkillsOverlay() {
   const totalXp = allSkillNames.reduce((acc, skill) => acc + skillLookup(skills, skill).xp, 0);
 
   return (
-    <div className="pointer-events-auto z-40 flex w-[min(95vw,620px)] max-w-full flex-col font-mono text-xs select-none">
+    <div className="pointer-events-auto z-40 flex w-[min(95vw,640px)] max-w-full flex-col font-mono text-xs select-none">
       <HudPanelShell 
         title="SAINT SKILLS & PROFICIENCY" 
         icon={<Zap className="w-4 h-4 text-amber-400" />}
@@ -111,28 +175,43 @@ export default function SkillsOverlay() {
 
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
                   {skillList.map((skill) => {
+                    const slug = normalizeSkillSlug(skill);
+                    const guide = getSkillGuide(slug);
                     const data = skillLookup(skills, skill);
                     const nextLevelXp = getXpForNextLevel(skill, data.level, data.xp);
                     const prevLevelXp = data.level > 1 ? getXpForNextLevel(skill, data.level - 1, 0) : 0;
                     const xpSpan = Math.max(1, nextLevelXp - prevLevelXp);
                     const currentProgress = Math.min(100, Math.max(0, ((data.xp - prevLevelXp) / xpSpan) * 100));
                     const combatHint =
-                      isCombatSkillTyping(normalizeSkillSlug(skill)) && data.xp === 0
+                      isCombatSkillTyping(slug) && data.xp === 0
                         ? calculateCombatLevelFromXp(0)
                         : null;
+
+                    const IconComp = SKILL_ICONS[slug] || Zap;
 
                     return (
                       <div
                         key={skill}
-                        className="group relative bg-black/50 border border-slate-800 p-2 flex flex-col justify-between hover:border-amber-500/60 hover:bg-amber-950/20 transition-all rounded-lg cursor-pointer"
+                        onClick={() => {
+                          soundSynth?.playSelectSound?.();
+                          setSelectedGuideSkill(slug);
+                        }}
+                        className="group relative bg-black/60 border border-slate-800 p-2 flex flex-col justify-between hover:border-amber-400 hover:bg-amber-950/30 transition-all rounded-lg cursor-pointer active:scale-95 shadow-md"
                         style={{
                           clipPath: 'polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px)',
                         }}
+                        title={`Click to open ${skill} Handbook & Battlepass`}
                       >
                         <div className="flex items-center justify-between w-full">
-                          <span className="text-[10px] text-slate-300 font-bold uppercase truncate max-w-[50px]">
-                            {skill}
-                          </span>
+                          <div className="flex items-center gap-1 min-w-0">
+                            <IconComp
+                              className="w-3.5 h-3.5 flex-none"
+                              style={{ color: guide?.themeColor || '#fbbf24' }}
+                            />
+                            <span className="text-[10px] text-slate-300 font-bold uppercase truncate">
+                              {skill}
+                            </span>
+                          </div>
                           <span className="text-amber-400 font-black text-xs">
                             {data.level}
                           </span>
@@ -141,16 +220,19 @@ export default function SkillsOverlay() {
                         {/* Progress Bar Under Skill */}
                         <div className="w-full h-1 bg-black/80 rounded-full overflow-hidden border border-slate-800 mt-1.5">
                           <div 
-                            className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 transition-all duration-300"
-                            style={{ width: `${currentProgress}%` }}
+                            className="h-full transition-all duration-300 rounded-full"
+                            style={{
+                              width: `${currentProgress}%`,
+                              backgroundColor: guide?.themeColor || '#eab308',
+                            }}
                           />
                         </div>
 
                         {/* Hover Tooltip */}
                         <div className="hidden group-hover:flex absolute -top-10 left-1/2 -translate-x-1/2 bg-black/95 border border-amber-500/60 p-1.5 flex-col whitespace-nowrap z-50 text-[10px] text-amber-200 shadow-xl rounded-md pointer-events-none">
-                          <span className="text-white font-bold">{skill} XP:</span>
+                          <span className="text-white font-bold">{skill} (Click for Guide):</span>
                           <span>
-                            {Math.floor(data.xp).toLocaleString()} / {nextLevelXp.toLocaleString()}
+                            {Math.floor(data.xp).toLocaleString()} / {nextLevelXp.toLocaleString()} XP
                             {combatHint !== null ? ' (combat curve)' : ''}
                           </span>
                         </div>
@@ -164,6 +246,14 @@ export default function SkillsOverlay() {
 
         </div>
       </HudPanelShell>
+
+      {/* Individual Skill Guide Modal */}
+      {selectedGuideSkill && (
+        <SkillGuideModal
+          skillSlug={selectedGuideSkill}
+          onClose={() => setSelectedGuideSkill(null)}
+        />
+      )}
     </div>
   );
 }
