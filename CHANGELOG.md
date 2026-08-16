@@ -1,3 +1,10 @@
+## [2.1.289] - 2026-08-16
+### Added
+- **Solak: The Grove Guardian & Blight Corrupted Roots Engine (Bible 24 & Bible 27):**
+  - `solakPhaseEngine.ts`: 4-Phase tree progression (Phase 1 limb destruction to expose Blight Core, Phase 2 Anima Storm, Phase 3 Merethiel Elf Mind realm corruption cleansing, and Phase 4 Manifestation execute with compounding 2.5% max HP stacking bleed).
+  - `solakMechanics.ts`: Root Cage entrapment rescue check and Merethiel's Nature Blessing golden dome with 100% storm damage immunity (vs 1,200/tick outside).
+  - `solakLootEngine.ts`: Erebus Grimoire pocket slot item (+12% crit rate & 15k damage cap expansion), torn grimoire page recharging (45 mins/page), Tier 92 Blightbound Crossbows (50% bolt conservation chance), and Solly pet drop matrix.
+
 ## [2.1.288] - 2026-08-16
 ### Added
 - **Telos: Warden of the Telosian Core & Font Anima Mechanics Engine (Bible 24 & Bible 27):**
