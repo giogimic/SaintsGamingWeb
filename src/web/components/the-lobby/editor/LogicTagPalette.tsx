@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
 import { Tag, MousePointerClick } from 'lucide-react';

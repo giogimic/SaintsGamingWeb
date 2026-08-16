@@ -83,12 +83,12 @@ export default function InventoryOverlay() {
     const equipSlots = ['HEAD', 'CHEST', 'LEGS', 'WEAPON', 'OFFHAND', 'GLOVES', 'BOOTS', 'RING', 'AMULET', 'CAPE'];
 
     if (equipSlots.includes(typeUpper)) {
-      const slot = typeUpper.toLowerCase() as keyof typeof equipment;
-      if (equipment[slot] === itemId) {
-        equipItem(slot, null);
+      const slot = typeUpper.toLowerCase();
+      if ((equipment as Record<string, string | null | undefined>)[slot] === itemId) {
+        equipItem(slot as any, null);
         useGameStore.getState().showToast(`Unequipped ${itemInfo.name}`);
       } else {
-        equipItem(slot, itemId);
+        equipItem(slot as any, itemId);
         useGameStore.getState().showToast(`Equipped ${itemInfo.name}`);
       }
     } else if (typeUpper === 'FOOD' || typeUpper === 'CONSUMABLE') {
@@ -139,8 +139,8 @@ export default function InventoryOverlay() {
       entries.sort(([a], [b]) => (ITEM_DB[a]?.name || a).localeCompare(ITEM_DB[b]?.name || b));
     } else if (sortOption === 'RARITY') {
       entries.sort(([a], [b]) => {
-        const rA = RARITY_ORDER[(ITEM_DB[a]?.rarity || 'COMMON').toUpperCase()] || 0;
-        const rB = RARITY_ORDER[(ITEM_DB[b]?.rarity || 'COMMON').toUpperCase()] || 0;
+        const rA = RARITY_ORDER[((ITEM_DB[a] as any)?.rarity || 'COMMON').toUpperCase()] || 0;
+        const rB = RARITY_ORDER[((ITEM_DB[b] as any)?.rarity || 'COMMON').toUpperCase()] || 0;
         return rB - rA;
       });
     } else if (sortOption === 'QUANTITY') {
