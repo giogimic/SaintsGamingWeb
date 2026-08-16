@@ -1,3 +1,10 @@
+## [2.1.285] - 2026-08-16
+### Added
+- **Fortis Colosseum, Wave Modifiers & Sol Heredit Engine (Bible 24 & Bible 27):**
+  - `colosseumWaveEngine.ts`: 12-wave arena spawner matrix, 8 stackable handicap modifiers (Doom, Mantimayhem, Solar Flare, Relentless, Myopia, Red Flag, Bees, Dynamic Duo) with 3-tier drafting, Doom 3-stack instant fatality, and glory multiplier scaling.
+  - `solHereditEngine.ts`: Sol Heredit 3-phase fight progression, Phase 2 Shield Parry frontal reflection (15 dmg) with rear/flank vulnerability, Triple Laser lane avoidance, and Sand Trap knockback eruptions.
+  - `quiverUpgradeEngine.ts`: Dizana's Quiver item mechanics, Sunfire Splinter charging (10 charges/splinter), permanent blessing (150,000 splinters + sacrifice quiver), +1 Sunfire Ranged Max Hit, and Dual Ammo Slot auto-resolution (Bows vs Crossbows).
+
 ## [2.1.284] - 2026-08-16
 ### Added
 - **Raids, Chambers of Xeric & Boss Mechanics Matrix Engine (Bible 24 & Bible 27):**
