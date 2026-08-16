@@ -52,6 +52,7 @@ export const PropertiesPanel: React.FC = () => {
   const [warpCategory, setWarpCategory] = useState<'ATLAS_NORTH' | 'ATLAS_EAST' | 'ATLAS_SOUTH' | 'ATLAS_WEST' | 'DUNGEON' | 'RAID' | 'EVENT' | 'MINE' | 'DEEP_FOREST' | 'PORTAL' | 'CUSTOM'>('CUSTOM');
   const [warpSpawnX, setWarpSpawnX] = useState(14);
   const [warpSpawnY, setWarpSpawnY] = useState(15);
+  const [isPickingTarget, setIsPickingTarget] = useState(false);
 
   const [encounterPool, setEncounterPool] = useState<
     Array<{ speciesId: string; minLevel: number; maxLevel: number; weight: number; timeOfDay?: 'any'|'day'|'night' }>
@@ -76,6 +77,15 @@ export const PropertiesPanel: React.FC = () => {
   // Auto-sync gate properties when clicking an existing gate tile
   useEffect(() => {
     if (!clickedTile) return;
+
+    if (isPickingTarget) {
+      setWarpSpawnX(clickedTile.c);
+      setWarpSpawnY(clickedTile.r);
+      setIsPickingTarget(false);
+      showToast(`Gate target set to (${clickedTile.c}, ${clickedTile.r})`);
+      return;
+    }
+
     const currentGates = normalizeGates(currentMapData.gates);
     const existingGate = currentGates.find(
       (g) => g.position.x === clickedTile.c && g.position.y === clickedTile.r
@@ -370,25 +380,39 @@ export const PropertiesPanel: React.FC = () => {
           onChange={(e) => setWarpTarget(e.target.value)}
           className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
         />
-        <div className="grid grid-cols-2 gap-1">
-          <div>
-            <label className="block text-[10px] text-slate-400">Spawn X</label>
-            <input
-              type="number"
-              value={warpSpawnX}
-              onChange={(e) => setWarpSpawnX(Number(e.target.value))}
-              className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
-            />
+        <div className="flex items-end gap-1">
+          <div className="flex-1 grid grid-cols-2 gap-1">
+            <div>
+              <label className="block text-[10px] text-slate-400">Spawn X</label>
+              <input
+                type="number"
+                value={warpSpawnX}
+                onChange={(e) => setWarpSpawnX(Number(e.target.value))}
+                className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-slate-400">Spawn Y</label>
+              <input
+                type="number"
+                value={warpSpawnY}
+                onChange={(e) => setWarpSpawnY(Number(e.target.value))}
+                className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-[10px] text-slate-400">Spawn Y</label>
-            <input
-              type="number"
-              value={warpSpawnY}
-              onChange={(e) => setWarpSpawnY(Number(e.target.value))}
-              className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsPickingTarget(!isPickingTarget)}
+            className={`px-2 py-1 h-[26px] rounded border transition-colors ${
+              isPickingTarget 
+                ? 'bg-[#cbb26a] text-black border-[#cbb26a] font-bold' 
+                : 'bg-[#806f47]/20 border-[#806f47]/40 text-[#cbb26a] hover:bg-[#806f47]/40'
+            }`}
+            title="Click to pick spawn coordinates on the map"
+          >
+            <MapPin size={14} />
+          </button>
         </div>
         <div className="flex gap-1">
           <button

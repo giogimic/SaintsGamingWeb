@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import AssetEditor from '../AssetEditor';
 import SpriteBrowser from '../SpriteBrowser';
-import { ImageIcon, Layers } from 'lucide-react';
+import { ImageIcon, Layers, Upload, Scissors } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
+import { AssetUploadView } from '../AssetUploadView';
+import { SpritesheetSlicer } from '../SpritesheetSlicer';
 
 function spriteKeyFromAsset(asset: GameAssetItem): string {
   const src = asset.source || '';
@@ -19,9 +21,10 @@ function spriteKeyFromAsset(asset: GameAssetItem): string {
 export const AssetBrowserPanel: React.FC = () => {
   const studioMode = useEditorStore((s) => s.studioMode);
   const showToast = useGameStore((s) => s.showToast);
-  const [activeTab, setActiveTab] = useState<'manager' | 'sprites'>(
+  const [activeTab, setActiveTab] = useState<'manager' | 'sprites' | 'upload' | 'slicer'>(
     studioMode === 'npc' ? 'sprites' : 'manager'
   );
+  const [slicerSource, setSlicerSource] = useState<{ id: string; filename: string; storagePath: string } | undefined>(undefined);
 
   useEffect(() => {
     if (studioMode === 'npc') setActiveTab('sprites');
@@ -52,7 +55,7 @@ export const AssetBrowserPanel: React.FC = () => {
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
-          <Layers className="w-3 h-3" /> Asset Manager
+          <Layers className="w-3 h-3" /> Catalog
         </button>
         <button
           onClick={() => setActiveTab('sprites')}
@@ -62,7 +65,27 @@ export const AssetBrowserPanel: React.FC = () => {
               : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
-          <ImageIcon className="w-3 h-3" /> Sprite Browser
+          <ImageIcon className="w-3 h-3" /> Sprites
+        </button>
+        <button
+          onClick={() => setActiveTab('upload')}
+          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
+            activeTab === 'upload'
+              ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow' 
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Upload className="w-3 h-3" /> Upload
+        </button>
+        <button
+          onClick={() => setActiveTab('slicer')}
+          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
+            activeTab === 'slicer'
+              ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow' 
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Scissors className="w-3 h-3" /> Slicer
         </button>
       </div>
 
@@ -80,6 +103,24 @@ export const AssetBrowserPanel: React.FC = () => {
             filterTags={studioMode === 'npc' ? ['npc'] : []}
             filterType="SPRITE"
             onSelect={handleSpriteSelect}
+          />
+        )}
+        {activeTab === 'upload' && (
+          <AssetUploadView
+            onUploadComplete={(result) => {
+              if (result.sourceAsset) {
+                setSlicerSource(result.sourceAsset);
+              }
+              setActiveTab('manager');
+            }}
+          />
+        )}
+        {activeTab === 'slicer' && (
+          <SpritesheetSlicer
+            sourceAsset={slicerSource}
+            onSliceComplete={() => {
+              setActiveTab('manager');
+            }}
           />
         )}
       </div>

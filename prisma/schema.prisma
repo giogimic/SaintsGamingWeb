@@ -166,6 +166,8 @@ model User {
   achievements          UserAchievement[]
   uiPresets             UiPreset[]
   mapPrefabs            MapPrefab[]
+  sourceAssets          SourceAsset[]          @relation("SourceAssetsUploaded")
+  usableAssets          UsableAsset[]          @relation("UsableAssetsCreated")
 
   @@index([createdAt])
 }
@@ -765,6 +767,7 @@ model WorldMap {
   gatesData      String // JSON
   npcsData       String // JSON for NPC dialogues/teams
   encountersData String   @default("[]") // JSON for wild beast encounters
+  entitiesData   String   @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
   tileLayersData String   @default("[]") // JSON for TMX tile layers
   tilesetsData   String   @default("[]") // JSON for tilesets metadata
   version        Int      @default(1)
@@ -1785,3 +1788,77 @@ model WorldAtlas {
 
   @@index([gameId])
 }
+
+// ─── Phase 9: Bible 35 Asset Ingestion & Organization Pipeline ──────
+
+model SourceAsset {
+  id              String        @id @default(cuid())
+  filename        String
+  mimeType        String
+  width           Int           @default(0)
+  height          Int           @default(0)
+  fileSize        Int           @default(0)
+  storagePath     String        // local path or S3 key
+  uploadedById    String
+  uploadedBy      User          @relation("SourceAssetsUploaded", fields: [uploadedById], references: [id], onDelete: Cascade)
+  version         Int           @default(1)
+  metadata        String        @default("{}") // JSON string: { originalName, hash, tags, etc. }
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  usableAssets    UsableAsset[]
+
+  @@index([uploadedById])
+  @@index([mimeType])
+}
+
+model UsableAsset {
+  id                String       @id @default(cuid())
+  sourceAssetId     String?      // Optional: null for direct single uploads, set for sliced sprites
+  sourceAsset       SourceAsset? @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
+  name              String
+  type              String       @default("OBJECT") // CHARACTER, CREATURE, TERRAIN, TILE, ITEM, OBJECT, UI, EFFECT, MODEL, ANIMATION, AUDIO
+  category          String?      // Sub-classification e.g. "chair", "sword", "tree"
+  tags              String       @default("[]") // JSON array of string tags
+  width             Int          @default(16)
+  height            Int          @default(16)
+  
+  // Slicing region from SourceAsset (null if direct individual asset)
+  sourceRegion      String?      // JSON string: { "x": 0, "y": 0, "w": 32, "h": 32 }
+  
+  // Directional & Animation Metadata
+  facing            String?      // "N", "S", "E", "W", "NE", "NW", "SE", "SW"
+  animationState    String?      // "idle", "walk", "attack", "hurt"
+  animationFrames   Int          @default(1)
+  frameDurationMs   Int          @default(100)
+  
+  // Ownership, Community & Moderation (Bible 35 §7)
+  createdById       String
+  createdBy         User         @relation("UsableAssetsCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  gameId            String?      @default("tuxemon") // World profile or game ID
+  visibility        String       @default("COMMUNITY") // "PERSONAL", "PROJECT", "COMMUNITY", "PUBLIC"
+  moderationStatus  String       @default("APPROVED")  // "PENDING", "APPROVED", "REJECTED"
+  license           String?      @default("CC0")
+  
+  // Asset Versioning & Lifecycle (Bible 35 §3)
+  version           Int          @default(1)
+  replacedById      String?
+  replacedBy        UsableAsset? @relation("AssetRevisions", fields: [replacedById], references: [id], onDelete: SetNull)
+  revisions         UsableAsset[] @relation("AssetRevisions")
+  
+  // Presentation
+  thumbnailPath     String?
+  cdnUrl            String?
+  usageCount        Int          @default(0)
+  isActive          Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([type])
+  @@index([gameId])
+  @@index([createdById])
+  @@index([visibility])
+  @@index([moderationStatus])
+  @@index([sourceAssetId])
+}
+

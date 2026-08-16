@@ -1,0 +1,113 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
+import { prisma } from "@/web/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+export interface SlicedRegionInput {
+  name: string;
+  type?: string;
+  category?: string;
+  tags?: string[];
+  sourceRegion: { x: number; y: number; w: number; h: number };
+  facing?: string;
+  animationState?: string;
+  animationFrames?: number;
+  frameDurationMs?: number;
+  visibility?: string;
+}
+
+/**
+ * POST /api/assets/slice — Batch create UsableAssets from a SourceAsset
+ * Body: {
+ *   sourceAssetId: string;
+ *   gameId?: string;
+ *   regions: SlicedRegionInput[];
+ * }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized — sign in required to slice assets." },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { sourceAssetId, gameId = "tuxemon", regions } = body;
+
+    if (!sourceAssetId) {
+      return NextResponse.json(
+        { success: false, error: "Missing sourceAssetId." },
+        { status: 400 }
+      );
+    }
+
+    if (!Array.isArray(regions) || regions.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No slicing regions provided." },
+        { status: 400 }
+      );
+    }
+
+    // Verify source asset exists
+    const sourceAsset = await prisma.sourceAsset.findUnique({
+      where: { id: sourceAssetId },
+    });
+
+    if (!sourceAsset) {
+      return NextResponse.json(
+        { success: false, error: "Source asset not found." },
+        { status: 404 }
+      );
+    }
+
+    // Create UsableAsset records in batch transaction
+    const createdAssets = await prisma.$transaction(
+      regions.map((r: SlicedRegionInput) => {
+        const assetName = r.name || `${sourceAsset.filename}_slice_${r.sourceRegion.x}_${r.sourceRegion.y}`;
+        const assetType = (r.type || "CHARACTER").toUpperCase();
+        const tagsJson = JSON.stringify(r.tags || [gameId, assetType.toLowerCase()]);
+        const regionJson = JSON.stringify(r.sourceRegion);
+
+        return prisma.usableAsset.create({
+          data: {
+            sourceAssetId: sourceAsset.id,
+            name: assetName,
+            type: assetType,
+            category: r.category || null,
+            tags: tagsJson,
+            width: r.sourceRegion.w,
+            height: r.sourceRegion.h,
+            sourceRegion: regionJson,
+            facing: r.facing || null,
+            animationState: r.animationState || null,
+            animationFrames: r.animationFrames || 1,
+            frameDurationMs: r.frameDurationMs || 100,
+            createdById: session.user.id,
+            gameId,
+            visibility: r.visibility || "COMMUNITY",
+            moderationStatus: "APPROVED",
+            version: 1,
+            cdnUrl: sourceAsset.storagePath,
+            thumbnailPath: sourceAsset.storagePath,
+          },
+        });
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      count: createdAssets.length,
+      assets: createdAssets,
+    });
+  } catch (error: any) {
+    console.error("[api/assets/slice] Error creating sliced usable assets:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Internal server error." },
+      { status: 500 }
+    );
+  }
+}

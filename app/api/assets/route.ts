@@ -1,119 +1,98 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
-import { ASSET_PACKS, packSourceMatchers, packTag, type AssetPackId } from "@/shared/game/assetPacks";
 
-function formatAsset(raw: {
-  id: string;
-  gameId: string | null;
-  type: string;
-  source: string;
-  atlasSource: string | null;
-  atlasFrame: string | null;
-  tags: string;
-  categories: string;
-  metadata: string;
-  customLabels: string | null;
-  isActive: boolean;
-  usageCount: number;
-  fileSize: number;
-  cdnUrl: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    ...raw,
-    atlasFrame: raw.atlasFrame ? JSON.parse(raw.atlasFrame) : null,
-    tags: typeof raw.tags === "string" ? JSON.parse(raw.tags || "[]") : raw.tags || [],
-    categories:
-      typeof raw.categories === "string" ? JSON.parse(raw.categories || "[]") : raw.categories || [],
-    metadata:
-      typeof raw.metadata === "string" ? JSON.parse(raw.metadata || "{}") : raw.metadata || {},
-    customLabels: raw.customLabels
-      ? typeof raw.customLabels === "string"
-        ? JSON.parse(raw.customLabels)
-        : raw.customLabels
-      : null,
-  };
-}
+export const dynamic = "force-dynamic";
 
 /**
- * GET /api/assets — list GameAsset rows for Studio browsers (client-safe; no Prisma in browser).
- * Query: type, query, gameId, page, limit, tags (comma), categories (comma), pack, sortBy, sortOrder
+ * GET /api/assets — Browse usable asset catalog
+ * Query params:
+ *  - type: string (e.g. "CHARACTER", "OBJECT", "TILE", "AUDIO", "ALL")
+ *  - gameId: string
+ *  - search: string
+ *  - category: string
+ *  - limit: number (default 50)
+ *  - offset: number (default 0)
  */
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type") || undefined;
-    const query = searchParams.get("query") || undefined;
-    const gameId = searchParams.get("gameId") || undefined;
-    const page = Math.max(0, parseInt(searchParams.get("page") || "0", 10) || 0);
-    const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || "50", 10) || 50));
-    const tags = (searchParams.get("tags") || "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const categories = (searchParams.get("categories") || "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const packRaw = (searchParams.get("pack") || "").toLowerCase();
-    const pack = (ASSET_PACKS as readonly string[]).includes(packRaw)
-      ? (packRaw as AssetPackId)
-      : undefined;
-    const sortByRaw = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
-    const allowedSort = new Set(["source", "createdAt", "fileSize", "usageCount"]);
-    const sortBy = allowedSort.has(sortByRaw) ? sortByRaw : "createdAt";
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type");
+    const gameId = searchParams.get("gameId");
+    const search = searchParams.get("search");
+    const category = searchParams.get("category");
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 50));
+    const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
 
-    const where: Record<string, unknown> = { isActive: true };
-    if (type) where.type = type;
-    if (gameId) where.gameId = gameId;
-    if (query) where.source = { contains: query };
-    // SQLite stores tags/categories as JSON strings — match via contains.
-    const and: Record<string, unknown>[] = [];
-    for (const t of tags) {
-      and.push({ tags: { contains: `"${t}"` } });
-    }
-    for (const c of categories) {
-      and.push({ categories: { contains: `"${c}"` } });
+    const whereClause: any = {
+      isActive: true,
+    };
+
+    if (type && type !== "ALL") {
+      whereClause.type = type.toUpperCase();
     }
 
-    if (pack === "studio") {
-      for (const needle of ["/npc/", "/monster/", "/creatures/", "/world-monsters/", "/tilesets/"]) {
-        and.push({ NOT: { source: { contains: needle } } });
-      }
-    } else if (pack) {
-      const matchers = packSourceMatchers(pack);
-      and.push({
-        OR: [
-          { tags: { contains: `"${packTag(pack)}"` } },
-          ...matchers.map((m) => ({ source: { contains: m } })),
-        ],
-      });
+    if (gameId) {
+      whereClause.OR = [
+        { gameId },
+        { gameId: null },
+      ];
     }
 
-    if (and.length) where.AND = and;
+    if (category) {
+      whereClause.category = category;
+    }
 
-    const [rawItems, total] = await Promise.all([
-      prisma.gameAsset.findMany({
-        where,
-        skip: page * limit,
+    if (search && search.trim()) {
+      whereClause.name = {
+        contains: search.trim(),
+      };
+    }
+
+    const [assets, total] = await Promise.all([
+      prisma.usableAsset.findMany({
+        where: whereClause,
+        include: {
+          sourceAsset: {
+            select: {
+              id: true,
+              filename: true,
+              storagePath: true,
+              width: true,
+              height: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        skip: offset,
       }),
-      prisma.gameAsset.count({ where }),
+      prisma.usableAsset.count({ where: whereClause }),
     ]);
-    const items = rawItems.map(formatAsset);
 
     return NextResponse.json({
-      items,
-      total,
-      page,
-      limit,
-      hasMore: (page + 1) * limit < total,
+      success: true,
+      assets,
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: offset + limit < total,
+      },
     });
-  } catch (error) {
-    console.error("Failed to list assets:", error);
-    return NextResponse.json({ error: "Failed to list assets" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[api/assets] Failed to query assets:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch assets catalog." },
+      { status: 500 }
+    );
   }
 }
