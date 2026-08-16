@@ -96,6 +96,10 @@ export const AssetBrowserPanel: React.FC = () => {
               const key = spriteKeyFromAsset(asset);
               showToast(`Asset selected: ${key || asset.source}`);
             }}
+            onOpenSlicer={(asset) => {
+              setSlicerSource(asset);
+              setActiveTab('slicer');
+            }}
           />
         )}
         {activeTab === 'sprites' && (

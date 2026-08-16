@@ -278,13 +278,27 @@ export default function TheLobby({
       useGameStore.getState().setActiveMapData(loaded);
       preloadAdjacentMaps(validMapId).catch(console.error);
     } catch {
-      validMapId = 'DEMO_SANDBOX';
-      validPosition = { ...LOBBY_SPAWN };
+      validMapId = 'STARTING_MAP';
+      validPosition = { x: 15, y: 15 };
       try {
-        const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
-        useGameStore.getState().setActiveMapData(loaded);
+        const loadedFallback = ensureMapHasStudioTilesets(await loadMap('DEMO_SANDBOX'));
+        useGameStore.getState().setActiveMapData(loadedFallback);
+        validMapId = 'DEMO_SANDBOX';
       } catch {
-        /* map API may be down — canvas still mounts empty */
+        // Pristine realm fallback (0 maps in DB) — provide an interactive blank canvas
+        const blankMap = ensureMapHasStudioTilesets({
+          id: 'STARTING_MAP',
+          name: 'Starting Realm Map',
+          width: 30,
+          height: 30,
+          grid: Array(30).fill(0).map(() => Array(30).fill(0)),
+          tileLayers: [],
+          tilesets: [],
+          gates: {},
+          npcs: [],
+          encounters: [],
+        });
+        useGameStore.getState().setActiveMapData(blankMap);
       }
     }
 

@@ -38,12 +38,16 @@ export async function POST(req: Request) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const totalUsers = await prisma.user.count();
+    const isFirstUser = totalUsers === 0;
+
     const newUser = await prisma.user.create({
       data: {
         email,
         username,
         passwordHash,
-        permissionLevel: 20, // Default to USER (matches PERMISSION_LEVELS.USER)
+        permissionLevel: isFirstUser ? 100 : 20, // First user is Admin/Owner (100), subsequent default to USER (20)
+        isFounder: isFirstUser,
       },
     });
 

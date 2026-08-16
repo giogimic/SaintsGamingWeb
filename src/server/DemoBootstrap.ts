@@ -25,6 +25,7 @@ import {
 } from "./demoMapSeed";
 import { SAINTS_TRAIL_GAME_ID, SAINTS_TRAIL_NPCS, SAINTS_TRAIL_QUEST_CHAIN, SAINTS_TRAIL_DIALOGUES } from "./saintsTrailQuests";
 import { EXPANSION_QUESTS } from "./expansionQuests";
+import { getSystemSetupStatus } from "@/shared/game/setup/setupDetection";
 
 import { invalidateLogicTilesCache } from "@/shared/game/mapCache";
 
@@ -707,6 +708,17 @@ export async function ensureStudioMapFoundation(): Promise<{
       errStr = (e as Error).message;
       console.warn("[DemoBootstrap] Logic tiles seed skipped:", errStr);
     }
+
+    const force = process.env.FORCE_DEMO_MAP === "1";
+    const setupStatus = await getSystemSetupStatus(prisma);
+
+    // On fresh install, do not auto-seed demo maps unless explicitly forced.
+    // The Setup Wizard and Studio first-map workflow will handle map creation.
+    if (!force && setupStatus.isFreshInstall) {
+      console.log("[DemoBootstrap] Fresh install detected (0 maps) — awaiting Setup Wizard in Studio/Setup.");
+      return { logicTiles, demoMap: false, error: undefined };
+    }
+
     try {
       await seedDemoMap();
       await seedLobbyMap();

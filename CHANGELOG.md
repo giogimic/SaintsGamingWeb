@@ -1,3 +1,21 @@
+## [2.1.291] - 2026-08-16
+### Added
+- **Studio Asset Repository Upgrades & Starter Pack Integration (Bible 16 §7 & Bible 35):**
+  - Expanded approved asset pack registry with **Saints Official Bundle** (`saints`), ensuring starter bundle tilesets, sprite sheets, items, and audio soundscapes are recognized and categorized.
+  - Upgraded `AssetEditor.tsx` with a modern pack navigator, classification chips (`Sprites`, `Tilesets`, `Monsters`, `Items`, `Audio`, `UI`), pixel-art rendering with checkered canvas preview background, zoom controls (`1x`, `2x`, `4x`), one-click path and key copy, and Slicer integration.
+  - Linked `FullScreenAssetBrowser` and `AssetBrowserPanel` directly to `SpritesheetSlicer` for 1-click slicing from the inspector.
+
+## [2.1.290] - 2026-08-16
+### Added
+- **Fresh Install Setup Wizard & Prepackaged World Asset Management System (Bible 17 & Bible 35):**
+  - `setupDetection.ts`: Robust fresh install vs server update state evaluation (`evaluateSetupStatus`, `getSystemSetupStatus`), checking `SiteSetting.SETUP_COMPLETED` and `WorldMap` counts to protect existing live game worlds from accidental re-seeding.
+  - `prepackagedPacks.ts`: Modular starter pack bundler and manifest importer (`getCommunityStarterPackManifest`, `importStarterPackToDb`), enabling 1-click importing of the 8-map Official Saints Starter Realm (Haven, Meadows, Quarry, Arena, Dungeons, Quests, Items, Recipes) or starting with a clean Blank Canvas.
+  - `FirstTimeSetupWizard.tsx`: Multi-step creator onboarding wizard for realm identity configuration, starter bundle selection with feature cards, and 1-click Studio launch.
+  - `app/(main)/setup/page.tsx`: Dedicated Setup Wizard route with access guards for fresh installations.
+  - `app/api/setup/status`, `app/api/setup/import`, `app/api/setup/complete`: Dedicated backend API endpoints for checking setup permissions, importing packs, and finalizing realm startup.
+  - **First-User Admin Promotion**: Automatically promotes the first registered account on a pristine database to `permissionLevel: 100` (Owner/Admin) and `isFounder: true`.
+  - **Studio 0-Map Graceful Fallback**: Added interactive blank canvas state to `/studio` and `/lobby` when no world maps exist, preventing empty void crashes.
+
 ## [2.1.289] - 2026-08-16
 ### Added
 - **Solak: The Grove Guardian & Blight Corrupted Roots Engine (Bible 24 & Bible 27):**

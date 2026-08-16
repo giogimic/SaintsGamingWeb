@@ -3,10 +3,11 @@
  * Prefer curated packs (Tuxemon / LPC / Studio registry) over raw uploads.
  */
 
-export const ASSET_PACKS = ["tuxemon", "lpc", "studio"] as const;
+export const ASSET_PACKS = ["saints", "tuxemon", "lpc", "studio"] as const;
 export type AssetPackId = (typeof ASSET_PACKS)[number];
 
 export const ASSET_PACK_LABELS: Record<AssetPackId, string> = {
+  saints: "Saints Official Bundle",
   tuxemon: "Tuxemon",
   lpc: "LPC",
   studio: "Studio registry",
@@ -19,6 +20,15 @@ export function packTag(pack: AssetPackId): string {
 /** Infer pack from a `/game-assets/...` path or relative path under public/game-assets. */
 export function inferAssetPack(sourceOrRel: string): AssetPackId {
   const lower = sourceOrRel.toLowerCase().replace(/\\/g, "/");
+
+  if (
+    lower.includes("/packs/") ||
+    lower.includes("saints") ||
+    lower.includes("george") ||
+    lower.includes("terrain_by_george")
+  ) {
+    return "saints";
+  }
 
   if (
     lower.includes("/npc/") ||
@@ -45,6 +55,8 @@ export function inferAssetPack(sourceOrRel: string): AssetPackId {
 /** Prisma/SQLite-friendly source substring matchers for a pack (pagination-safe). */
 export function packSourceMatchers(pack: AssetPackId): string[] {
   switch (pack) {
+    case "saints":
+      return ["/packs/", "george", "saints"];
     case "lpc":
       return ["/npc/"];
     case "tuxemon":
