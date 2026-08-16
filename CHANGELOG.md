@@ -1,3 +1,8 @@
+## [2.1.293] - 2026-08-16
+### Fixed
+- **Setup Script Discord OAuth Verification (`scripts/setup.sh`):**
+  - Added `-H "Content-Type: application/x-www-form-urlencoded"` and `-d "scope=identify"` to the Discord API credentials test call in `scripts/setup.sh`. Discord API v10 requires an explicit scope parameter on `grant_type=client_credentials` requests; without it, valid keys were returning `invalid_request: A scope is required`.
+
 ## [2.1.292] - 2026-08-16
 ### Fixed & Improved
 - **Lobby Setup Delivery & Admin Authorization (Bible 17 & Bible 35):**

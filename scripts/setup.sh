@@ -331,7 +331,9 @@ if whiptail --title "Discord Integration" --yesno "Do you want to configure Disc
 
         whiptail --title "Verifying" --infobox "Verifying Discord credentials with Discord API..." 8 50
         DISCORD_CHECK=$(curl -s -X POST https://discord.com/api/v10/oauth2/token \
+          -H "Content-Type: application/x-www-form-urlencoded" \
           -d "grant_type=client_credentials" \
+          -d "scope=identify" \
           -d "client_id=${DISCORD_ID}" \
           -d "client_secret=${DISCORD_SECRET}")
 
