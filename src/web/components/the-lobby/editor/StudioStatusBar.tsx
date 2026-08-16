@@ -13,6 +13,7 @@ import {
 } from '@/app/actions/world-profiles';
 import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
+import { STUDIO_MODE_META } from '@/shared/game/studioModes';
 import { useSession } from 'next-auth/react';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -26,7 +27,7 @@ export function StudioStatusBar() {
   const mapDirty = useEditorStore((s) => s.mapDirty);
   const definitionStack = useEditorStore((s) => s.definitionOpStack);
   const brushRadius = useEditorStore((s) => s.brushRadius);
-  const clickedTile = useEditorStore((s) => s.clickedTile);
+  const hoveredTile = useEditorStore((s) => s.hoveredTile);
   const activeLocks = useEditorStore((s) => s.activeLocks);
   const activeMapData = useGameStore((s) => s.activeMapData);
   const connectionStatus = useGameStore((s) => s.connectionStatus);
@@ -111,14 +112,20 @@ export function StudioStatusBar() {
         </div>
 
         <div className="flex items-center gap-3 border-r border-amber-500/20 pr-4 h-full">
-          <div className="flex items-center gap-1.5 text-amber-200 font-bold">
-            {getModeIcon()} <span className="uppercase">{studioMode}</span>
+          <div
+            className="flex items-center gap-1.5 text-amber-200 font-bold"
+            title={STUDIO_MODE_META[studioMode]?.blurb || `Active Mode: ${studioMode}`}
+          >
+            {getModeIcon()}{' '}
+            <span className="uppercase tracking-wider">
+              {STUDIO_MODE_META[studioMode]?.label || studioMode}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 opacity-80">
             <Brush className="w-3.5 h-3.5 text-amber-400" /> Size: {brushRadius}
           </div>
           <div className="opacity-80">
-            {clickedTile ? `[${clickedTile.r}, ${clickedTile.c}]` : '[-, -]'}
+            {hoveredTile ? `[${hoveredTile.r}, ${hoveredTile.c}]` : '[-, -]'}
           </div>
         </div>
 

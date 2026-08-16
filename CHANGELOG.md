@@ -1,3 +1,120 @@
+## [2.1.281] - 2026-08-16
+### Added
+- **Creature Breeding, Genetic Inheritance & Pet Growth Engine (Bible 12 & Bible 23):**
+  - `breedingEngine.ts`: Parent gender and egg group validation, maternal species inheritance, 3 parent IV stat alleles + 3 random IVs, Shiny Charm rolls, and incubation step countdowns.
+  - `petLoyaltyEngine.ts`: 5 mood classifications (Joyful, Content, Hungry, Lonely, Neglected), dietary preferences with favorite food boosts, progressive trick unlocks (Sit, Dance, Cheer, Sniff), and time-based needs decay.
+  - `evolutionEngine.ts`: Level-up thresholds (Flame Lizard -> Inferno Dragon), elemental stone infusions (Thunder, Fire, Water stones), friendship affinity with biome catalysts (Saints Espeon), and combat stat multiplier upgrades.
+- **Grand Exchange Economy & Player Marketplace Engine (Bible 15 & Bible 31):**
+  - `exchangeEngine.ts`: Buy/sell limit order matching, 1% GE tax sink on seller proceeds, buyer escrow difference refunds, and order cancellation.
+  - `marketPriceEngine.ts`: Traded volume aggregation, intraday high/low tracking, volume-weighted average pricing (VWAP), market trend indicators (`RISING`, `FALLING`, `STABLE`), and ±5% daily swing guardrails.
+  - `bankEngine.ts`: 4-digit bank PIN security with 3-attempt lockout protection, 800-slot vault storage, 5 category tabs, unnoting on deposit, and banknote certificate withdrawal conversions.
+
+## [2.1.280] - 2026-08-16
+### Added
+- **Resource Gathering Nodes & Depletion Engine (Bible 08 & Bible 14):**
+  - `miningEngine.ts`: 10 rock vein tiers (Copper through Runite & Saint's Gold), pickaxe speed modifiers, prospecting text inspection, and rare uncut gem discoveries (Sapphire, Emerald, Ruby, Diamond).
+  - `woodcuttingEngine.ts`: 7 tree species (Normal, Oak, Willow, Maple, Yew, Magic, Elder Redwood), hatchet speed tiers, stump respawn cooldowns, and random bird's nest loot drops.
+  - `fishingEngine.ts`: 5 fishing spot methods (Small Net, Bait Rod, Fly Rod, Lobster Pot, Harpoon), bait consumption, level-scaled catch weight formulas, and sea casket discovery rolls.
+- **Clue Scrolls, Treasure Trails & Puzzle Box Engine (Bible 18 & Bible 25):**
+  - `clueEngine.ts`: Easy through Master clue scrolls, spade coordinate digging, tile distance calculations, NPC riddles, and tiered reward casket handoffs.
+  - `puzzleEngine.ts`: 3x3 and 4x4 sliding tile puzzles, mathematical permutation inversion parity checks (`isPuzzleSolvable()`), tile slide movement, Caesar ciphers, and anagram resolution.
+  - `casketRewardEngine.ts`: Easy through Master reward caskets (2–7 loot rolls), trimmed armor pieces (g/t), Ranger Boots, Robin Hood Hat, and 3rd Age mega-rare artifacts.
+- **Audio Synthesis, Environmental Ambience & Soundscape Engine (Bible 28 & Bible 33):**
+  - `soundscapeEngine.ts`: 6 biome acoustic soundscapes (Town, Forest, Dungeon, Coastal, Mountain, Volcanic), day/night sound variation layers, rain/storm/snow weather blending, and smooth cross-fade volume transitions.
+  - `spatialAudioEngine.ts`: Positional 3D audio mechanics with Euclidean distance attenuation falloff curves, camera yaw orientation stereo panning (`-1.0` to `+1.0`), and combat impact / UI fanfare sound lookup maps.
+  - `jukeboxEngine.ts`: Regional background music track unlocks (Saints Harmony, Whispering Pines, Forge of the Ancients, Depths of Despair, New Beginnings, Grand Coronation), playlist queues, loop, and shuffle modes.
+- **Minigames & Arena Encounters (Bible 24 & Bible 27):**
+  - `waveArenaEngine.ts`: TzTok-Jad Overlord and arena monsters with radial perimeter spawn coordinates, wave combat advancement, Tokkul rewards, and Fire Cape distribution.
+  - `barrowsEngine.ts`: 6 Barrows brothers (Dharok, Ahrim, Guthan, Karil, Torag, Verac), secret labyrinth tunnel sarcophagus routing, and central chest loot calculations.
+  - `agilityCourseEngine.ts`: Rooftop courses across Gnome Stronghold, Draynor, Varrock, and Seers' Village with level-scaled obstacle success checks, fail damage, lap XP bonuses, and Mark of Grace spawners.
+
+## [2.1.279] - 2026-08-16
+### Added
+- **Real-Time Party System, Social Hub & Guilds (Bible 04 & Bible 05):**
+  - `partyEngine.ts`: Dynamic multi-player parties, leader delegation, invite/kick lifecycles, and `ROUND_ROBIN`, `FREE_FOR_ALL`, and `LEADER_DISTRIBUTED` loot allocation.
+  - `partyAuraEngine.ts`: Shared combat XP distribution with party synergy multipliers (+10% per nearby member within 20 tiles) and the "Fellowship of Saints" proximity aura (+5% speed, +5% defence).
+  - `guildEngine.ts`: Guild clan roster management with strict rank hierarchy validation (`LEADER` > `OFFICER` > `VETERAN` > `MEMBER` > `RECRUIT`), treasury contributions, and level milestone perks.
+- **Player Housing, Sanctuary Estate & Farming Plots (Bible 08 & Bible 13):**
+  - `estateEngine.ts`: 5x5 Sanctuary estate plots, Construction level room prerequisites (Garden, Parlour, Kitchen, Workshop, Portal Chamber, Altar, Throne Room), and 2D bounding-box furniture placement collision detection.
+  - `farmingEngine.ts`: Agricultural crop lifecycles (`ALLOTMENT`, `HERB`, `FLOWER`, `TREE`), weed clearing (`rakePatch`), compost tiers (`COMPOST`, `SUPERCOMPOST`, `ULTRACOMPOST`), growth timer ticking, and level-scaled harvest yields.
+  - `portalNexus.ts`: Housing portal chamber frame attunement, global destination coordinates (`DEMO_SANDBOX`, `WILD_MEADOWS`, `QUARRY_MINE`, `WHISPERING_FOREST`), unlock prerequisites, and Magic level requirement enforcement.
+- **Player Achievements, Titles & Mastery Milestones (Bible 25 & Bible 26):**
+  - `achievementEngine.ts`: Multi-category milestone progression (`COMBAT`, `SKILLING`, `EXPLORATION`, `COLLECTION`, `QUESTS`), threshold unlock events, and achievement point aggregation.
+  - `titleDispatcher.ts`: Prefix and Suffix title formatting (`Novice`, `the Monster Slayer`, `Master Angler`, `the Grandmaster`) with rarity styling colors and unlock validation.
+  - `highscoreEngine.ts`: Authoritative 1–126 Combat Level formula (Attack, Strength, Defence, HP, Prayer, Ranged, Magic), Total Level, Total XP, and hierarchical highscore leaderboard ranking.
+- **Artisan Crafting Matrices & Smithing Engine (Bible 14 & Bible 22):**
+  - `smithingEngine.ts`: 7 metal tiers (`BRONZE`, `IRON`, `STEEL`, `MITHRIL`, `ADAMANT`, `RUNE`, `SAINTS_GOLD`), furnace ore smelting recipes, hammer validation, and anvil forging matrices.
+  - `cookingEngine.ts`: Dynamic burn curves across Fires, Ranges, and Chef Ranges, stop-burn mastery thresholds (`0.0%` burn rate), and food healing values.
+  - `potionBrewEngine.ts`: Unfinished potion mixing with secondary reagents, dynamic flat + percentage stat boost calculations, and 1–4 dose flask decanting with vial recovery.
+- **Magic Spellbook & Prayer Aura Engine (Bible 10 & Bible 14):**
+  - `spellbookEngine.ts`: Elemental combat spellbook (Wind Strike, Fire Bolt, Ice Burst, Fire Wave, Saint's Holy Blast), rune inventory validation, infinite elemental staff catalyst waivers, and magic damage scaling.
+  - `prayerEngine.ts`: Multiplier blessings, overhead protection prayers (Protect from Melee, Missiles, Magic) with exclusivity rules and gear drain resistance ticks.
+  - `enchantEngine.ts`: Lvl 1–6 jewelry enchantment (Sapphire Recoil, Emerald Dueling with 8 charges, Ruby Strength, Diamond Power, Dragonstone Glory with 4 charges, Onyx Fury) with cosmic rune formulas and Magic XP awards.
+
+## [2.1.278] - 2026-08-16
+### Added
+- **Terrain & Environmental Mechanics (Bible 34 §5 & Bible 08):**
+  - `waterMechanics.ts`: Wading speed multipliers (`0.65x` in shallow water), deep-water swim/fly capability checks, and shore fishing query resolver.
+  - `elevationMechanics.ts`: Multi-level terrain transitions, climb requirements, and one-way single-tier ledge hops.
+  - `weatherEngine.ts`: Dynamic weather system resolving ambient lighting, sun intensity, fog density, particle presets (`rain_drops`, `snow_flakes`, `fog_mist`, `storm_lightning`), and elemental damage/defense affinity modifiers.
+- **Creature Collection & Turn-Based Buddy Battle Engine (Bible 07 & Bible 11):**
+  - `buddyBattleEngine.ts`: Turn-based move damage calculation with STAB (1.25x), type chart multipliers, and capture probability formulas with master film guarantees.
+  - `encounterGenerator.ts`: Wild encounter spawner with diurnal/nocturnal time-of-day weighting, weather synergy multipliers, and shiny roll determination.
+  - `companionParty.ts`: 6-slot party manager (1 lead + 5 reserve), slot swapping, leveling thresholds (`getXpForLevel`), and level-up stat growth curves.
+- **Seamless World Atlas & Spatial Border Links (Bible 23 & Bible 24):**
+  - `spatialAtlas.ts`: 4-directional spatial adjacency lookups and cross-map coordinate alignment.
+  - `borderWarp.ts`: Dynamic player step intent interceptor seamlessly warping players across map borders into adjacent zones.
+  - `atlasLinter.ts`: Automated world linter diagnosing broken map gates, out-of-bounds spawn points, solid tile spawn traps, duplicate Atlas slots, and one-way gate warnings.
+- **Studio Omnisearch & Command Palette (Bible 19 & Bible 29):**
+  - `studioOmnisearchEngine.ts`: Headless multi-domain search index with prefix scoring and domain query filters (`@map`, `@npc`, `@creature`, `@item`, `@dock`, `@action`).
+  - `omnisearchDispatcher.ts`: Dynamic jump dispatcher loading maps, centering camera over NPC coordinates, and opening relevant editor docks.
+  - `studioCommands.ts`: Creator action registry supporting hotkeys (`Ctrl+1` through `Ctrl+5` mode switching, `Ctrl+E` playtest, `Ctrl+S` map save, `Ctrl+N` new map).
+- **Inventory, Equipment & Action Hotbar (Bible 12 & Bible 14):**
+  - `equipmentEngine.ts`: 8 equipment slots, skill level requirement validation (`canEquipItem`), and aggregate offensive/defensive stat computation.
+  - `hotbarDispatcher.ts`: Action hotbar dispatcher (keys 1-8) for food/consumable healing, tool swapping, abilities, and emotes.
+  - `inventoryEngine.ts`: Fixed 28-slot MMO inventory grid with smart stack merging, cross-stack removal, drag-and-drop slot swapping, and capacity overflow protection.
+- **Combat Targeting, Threat Aggro & Enemy AI Engine (Bible 09 & Bible 10):**
+  - `aggroEngine.ts`: Multi-player threat tables, proximity vision aggro, and leash distance boundary enforcement.
+  - `monsterStateMachine.ts`: Real-time AI state machine (`IDLE`, `PATROL`, `CHASE`, `ATTACK`, `FLEE` on critical HP, `RETURN_LEASH` on leash breach, `DEAD`).
+  - `targetFrameResolver.ts`: Relationship evaluation (`FRIENDLY`, `HOSTILE`, `NEUTRAL`), Euclidean distance & in-range casting validation (`isInRange`), and contextual action triggers (`PARTY_INVITE`, `WHISPER`, `DUEL`, `ATTACK`, `CAPTURE`, `TALK`).
+- **Creator Bookmarks & Navigation History (Bible 19 & Bible 27):**
+  - `studioBookmarksEngine.ts`: Multi-domain bookmark storage with folder organization, tag filters, search, and JSON export/import.
+  - `navigationHistory.ts`: Map navigation history stack with back/forward traversal, new branch forward-stack truncation, and dynamic breadcrumbs (`getBreadcrumbs`).
+  - `creatorRecents.ts`: Most-Recently-Used (MRU) tracking for recently modified maps, entities, and assets with auto-eviction.
+- **Quest Progression, Scripting & Dialogue Tree Engine (Bible 15 & Bible 16):**
+  - `dialogueEngine.ts`: Multi-branch NPC conversation trees, conditional prerequisite verification (`reqQuestId`, `reqItemId`, `reqSkillLevel`), and action execution triggers.
+  - `questEngine.ts`: Multi-step quest objective tracking (`TALK`, `KILL`, `GATHER`, `DISCOVER`), sequential stage advancement, and completion reward disbursement.
+  - `dialogueLinter.ts`: BFS graph validator diagnosing broken nextNode targets (`MISSING_TARGET_NODE`), unreachable orphan conversation nodes (`UNREACHABLE_NODE`), dead-end options, and duplicate IDs.
+
+## [2.1.277] - 2026-08-16
+### Added
+- **Shared Entity Runtime Factory (Bible 20 §20 E4):** Created `buildRuntimeEntities()` extracting simulation actors, warp gates, harvestable nodes, spawners, and wild encounter zones from `EntityInstanceV1` records.
+- **Context-Sensitive Interaction Engine (Bible 34 §4):** Implemented `queryInteractions()` evaluating dynamic entity capabilities, distance, and player skills; strictly enforced constitutional creature capture rules (capture disabled in overworld exploring, enabled in Turn-Based Buddy Battles).
+- **Pluggable Movement Controller System (Bible 34 §7-8):** Built `GridMovementController` and `FreeMovementController` supporting traversal capabilities (`walk`, `swim`, `fly`, `climb`) and terrain movement cost scaling.
+- **Shared Gameplay Domain Event Bus (Bible 34 §16):** Built typed, error-contained `gameEvents` singleton connecting creature capture, resource gathering, combat completion, crafting, and quest progress.
+- **Dual-Write WorldMap Entities (Bible 20 §20 E2):** Added `entitiesData` column to `WorldMap` in `prisma/schema.prisma` and updated map persistence pipeline.
+
+## [2.1.276] - 2026-08-16
+### Added
+- **Bible 35 Asset Pipeline & Ingestion System**:
+  - Implemented `SourceAsset` and `UsableAsset` models in `prisma/schema.prisma` with SQLite database synchronization and Prisma client bindings.
+  - Implemented `ingestAsset()` helper (`src/web/lib/assetUpload.ts`) and `POST /api/assets/upload` endpoint supporting file storage, automatic metadata extraction, and library registration.
+  - Created `AssetUploadView.tsx` drag-and-drop ingestion interface in Studio with live preview, classification types, tag editing, and visibility controls.
+  - Created interactive HTML5 canvas `SpritesheetSlicer.tsx` supporting auto-grid slicing, free rectangular bounding box selection, direction/facing assignment, and batch slicing endpoint `POST /api/assets/slice`.
+  - Implemented Community Governance & Permissions (`src/shared/game/assetPermissions.ts`, `app/api/assets/moderate/route.ts`) supporting scoping (`PERSONAL`, `PROJECT`, `COMMUNITY`, `PUBLIC`), moderator review queues, and automatic creator attribution.
+  - Added unit test suites `assetUpload.test.ts`, `assetSlice.test.ts`, and `assetModeration.test.ts`.
+
+## [2.1.275] - 2026-08-16
+### Fixed & Improved
+- **Chat Socket Deduplication (`index.tsx`)**:
+  - Added socket ID deduplication checks to `global_chat_msg` and `party_chat_msg` listeners to prevent the local client from duplicating optimistic chat messages.
+- **Studio Coordinate Tracking & Gate Picking (`StudioStatusBar.tsx`, `PropertiesPanel.tsx`)**:
+  - Switched Studio status bar coordinate display from `clickedTile` to `hoveredTile` for smooth real-time cursor tracking.
+  - Added interactive "Pick on Map" mode in Properties Panel for gate target spawn point (`spawnPoint.x`, `spawnPoint.y`) configuration.
+- **Architecture & Pipeline Audit (`001-world-entity-loading.md`, Bible 35)**:
+  - Added Bible 35 (`35-asset-ingestion-community-management.md`) defining the full source-vs-derivative asset ingestion pipeline and community management.
+  - Audited full-stack map/entity loading pipeline, verifying zero data-loss resilience, dimension resolution, and shard base ID normalization.
+
 ## [2.1.274] - 2026-08-16
 ### Fixed
 - **Canonical Starter Map & Initial Spawn Restored (`index.tsx`)**:

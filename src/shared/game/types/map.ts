@@ -69,6 +69,16 @@ export interface LogicTile {
   color?: string | null;
   isSolid: boolean;
   interactable: boolean;
+
+  // Rich Simulation Semantics (Bible 34 §5)
+  terrainType?: 'grass' | 'dirt' | 'stone' | 'sand' | 'water' | 'snow' | 'swamp' | 'wood' | 'lava' | 'road';
+  movementCost?: number;
+  elevation?: number;
+  passableBy?: Array<'walk' | 'swim' | 'fly' | 'climb'>;
+  environmentalEffect?: string | null;
+  weatherReactive?: boolean;
+  destructible?: boolean;
+
   onInteractAction?: string | null;
   onInteractPayload?: string | null;
   onStepAction?: string | null;

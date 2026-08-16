@@ -50,6 +50,7 @@ export type EntitySchema = {
 /** NPC property categories from the Studio architecture brief. */
 export const NPC_PROPERTY_CATEGORIES = [
   "General",
+  "Capabilities",
   "Appearance",
   "Behaviour",
   "AI",
@@ -74,6 +75,14 @@ const NPC_FIELDS: SchemaField[] = [
   { key: "id", label: "Internal ID", type: "string", category: "General" },
   { key: "displayName", label: "Display Name", type: "string", category: "General", defaultValue: "New NPC" },
   { key: "tags", label: "Tags", type: "string", category: "General", description: "Comma-separated tags" },
+  // Capabilities (Bible 34 §3)
+  { key: "hostile", label: "Hostile", type: "boolean", category: "Capabilities", defaultValue: false, description: "Engages in aggressive combat with players" },
+  { key: "capturable", label: "Capturable", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can be captured in Turn-Based battles (Bible 07/11)" },
+  { key: "tameable", label: "Tameable", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can be assigned as worker to player base structures" },
+  { key: "mountable", label: "Mountable", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can be ridden as a mount for speed" },
+  { key: "harvestable", label: "Harvestable", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can be gathered with gathering tools/skills" },
+  { key: "destructible", label: "Destructible", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can take damage and break in real-time" },
+  { key: "interactable", label: "Interactable", type: "boolean", category: "Capabilities", defaultValue: true, description: "Responds to interact key / click" },
   { key: "spriteId", label: "Sprite", type: "string", category: "Appearance", defaultValue: "adventurer" },
   { key: "scale", label: "Scale", type: "number", category: "Appearance", defaultValue: 1, min: 0.25, max: 4 },
   {
@@ -97,7 +106,6 @@ const NPC_FIELDS: SchemaField[] = [
     defaultValue: "passive",
     advanced: true,
   },
-  { key: "hostile", label: "Hostile", type: "boolean", category: "Combat", defaultValue: false },
   { key: "level", label: "Level", type: "number", category: "Stats", defaultValue: 1, min: 1, max: 200 },
   { key: "wanderRadius", label: "Wander Radius", type: "number", category: "Movement", defaultValue: 0, min: 0 },
   { key: "dialogueId", label: "Dialogue ID", type: "string", category: "Dialogue" },
@@ -221,9 +229,9 @@ export const ENTITY_SCHEMAS: Record<EntitySchemaKind, EntitySchema> = {
     kind: "monster",
     label: "Monster",
     description: "Hostile or neutral combat entities.",
-    categories: ["General", "Appearance", "Combat", "Stats", "AI", "Loot", "Spawn Rules", "Debug"],
+    categories: ["General", "Capabilities", "Appearance", "Stats", "AI", "Loot", "Spawn Rules", "Debug"],
     fields: NPC_FIELDS.filter((f) =>
-      ["General", "Appearance", "Combat", "Stats", "AI", "Loot", "Spawn Rules", "Debug"].includes(f.category)
+      ["General", "Capabilities", "Appearance", "Stats", "AI", "Loot", "Spawn Rules", "Debug"].includes(f.category)
     ),
   },
   resource_node: {

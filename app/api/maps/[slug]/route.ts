@@ -8,6 +8,7 @@ import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
 import { notifyGoMapSynced } from "@/server/goMmoNotify";
 import { DEMO_MAP_ID } from "@/server/demoMapSeed";
 import { resolveMapDimensions } from "@/shared/game/mapDocVisual";
+import { npcToEntity } from "@/shared/game/entities";
 
 export const dynamic = 'force-dynamic';
 
@@ -176,6 +177,11 @@ export async function POST(
         tilesets: [],
       });
 
+    // Dual-write entitiesData (Bible 20 §20 E2)
+    const entitiesPayload = Array.isArray(body.entities)
+      ? body.entities
+      : (body.npcs || []).map((npc: any) => npcToEntity(npc));
+
     const worldMap = await prisma.worldMap.upsert({
       where: { id: slug },
       update: {
@@ -185,6 +191,7 @@ export async function POST(
         ...(body.gates ? { gatesData: JSON.stringify(body.gates) } : {}),
         ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
         ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
+        entitiesData: JSON.stringify(entitiesPayload),
         ...(visualsForWrite
           ? {
               tileLayersData: JSON.stringify(visualsForWrite.tileLayers || []),
@@ -201,6 +208,7 @@ export async function POST(
         gatesData: JSON.stringify(body.gates || {}),
         npcsData: JSON.stringify(body.npcs || []),
         encountersData: JSON.stringify(body.encounterPool || []),
+        entitiesData: JSON.stringify(entitiesPayload),
         tileLayersData: JSON.stringify(visualsForCreate.tileLayers || []),
         tilesetsData: JSON.stringify(visualsForCreate.tilesets || []),
       },

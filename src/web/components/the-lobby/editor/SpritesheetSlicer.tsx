@@ -1,0 +1,559 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Scissors, Grid, Square, Plus, Trash2, CheckCircle2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { useGameStore } from '../store';
+import { soundSynth } from '@/engine/sound-synth';
+
+export interface SlicedRegion {
+  id: string;
+  name: string;
+  type: string;
+  category: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  facing: string;
+  animationState: string;
+  animationFrames: number;
+}
+
+export interface SpritesheetSlicerProps {
+  sourceAsset?: {
+    id: string;
+    filename: string;
+    storagePath: string;
+    width?: number;
+    height?: number;
+  };
+  onSliceComplete?: (assets: any[]) => void;
+}
+
+export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetSlicerProps) {
+  const showToast = useGameStore((s) => s.showToast);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [imageUrl, setImageUrl] = useState<string>(sourceAsset?.storagePath || '');
+  const [sourceId, setSourceId] = useState<string>(sourceAsset?.id || '');
+  const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+
+  // Slicing Mode
+  const [sliceMode, setSliceMode] = useState<'grid' | 'box'>('grid');
+  const [gridSize, setGridSize] = useState<number>(32);
+  const [scale, setScale] = useState<number>(2);
+
+  // Region Selection State
+  const [regions, setRegions] = useState<SlicedRegion[]>([]);
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [currentBox, setCurrentBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successCount, setSuccessCount] = useState<number | null>(null);
+
+  // Load image
+  useEffect(() => {
+    if (!imageUrl) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      setImageElement(img);
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // Render Canvas with Image, Grid, and Slicing Boxes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imageElement) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = imageElement.naturalWidth;
+    const h = imageElement.naturalHeight;
+
+    canvas.width = w * scale;
+    canvas.height = h * scale;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw base spritesheet
+    ctx.drawImage(imageElement, 0, 0, w * scale, h * scale);
+
+    // Draw Grid Overlay
+    if (sliceMode === 'grid') {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x * scale, 0);
+        ctx.lineTo(x * scale, h * scale);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * scale);
+        ctx.lineTo(w * scale, y * scale);
+        ctx.stroke();
+      }
+    }
+
+    // Draw Defined Regions
+    regions.forEach((r) => {
+      const isSelected = r.id === selectedRegionId;
+      ctx.strokeStyle = isSelected ? '#f59e0b' : '#38bdf8';
+      ctx.lineWidth = isSelected ? 2 : 1;
+      ctx.fillStyle = isSelected ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.15)';
+
+      ctx.fillRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
+      ctx.strokeRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
+
+      // Label
+      ctx.fillStyle = isSelected ? '#fbbf24' : '#bae6fd';
+      ctx.font = '10px monospace';
+      ctx.fillText(r.name || r.id, r.x * scale + 4, r.y * scale + 12);
+    });
+
+    // Draw Active Drag Box
+    if (currentBox) {
+      ctx.strokeStyle = '#ec4899';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = 'rgba(236, 72, 153, 0.3)';
+      ctx.fillRect(currentBox.x * scale, currentBox.y * scale, currentBox.w * scale, currentBox.h * scale);
+      ctx.strokeRect(currentBox.x * scale, currentBox.y * scale, currentBox.w * scale, currentBox.h * scale);
+    }
+  }, [imageElement, scale, sliceMode, gridSize, regions, selectedRegionId, currentBox]);
+
+  // Canvas Mouse Events for Selecting/Drawing Regions
+  const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imageElement) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const clickX = Math.floor((e.clientX - rect.left) / scale);
+    const clickY = Math.floor((e.clientY - rect.top) / scale);
+
+    if (sliceMode === 'grid') {
+      const cellX = Math.floor(clickX / gridSize) * gridSize;
+      const cellY = Math.floor(clickY / gridSize) * gridSize;
+
+      // Check if clicking existing region
+      const existing = regions.find((r) => r.x === cellX && r.y === cellY && r.w === gridSize && r.h === gridSize);
+      if (existing) {
+        setSelectedRegionId(existing.id);
+        soundSynth?.playUiClick?.();
+      } else {
+        // Add new cell
+        const newRegion: SlicedRegion = {
+          id: `slice_${Date.now() % 10000}`,
+          name: `cell_${cellX}_${cellY}`,
+          type: 'CHARACTER',
+          category: 'sprite',
+          x: cellX,
+          y: cellY,
+          w: gridSize,
+          h: gridSize,
+          facing: 'S',
+          animationState: 'idle',
+          animationFrames: 1,
+        };
+        soundSynth?.playSelectSound?.();
+        setRegions((prev) => [...prev, newRegion]);
+        setSelectedRegionId(newRegion.id);
+      }
+    } else {
+      // Box Drag Mode
+      setIsDragging(true);
+      setDragStart({ x: clickX, y: clickY });
+      setCurrentBox({ x: clickX, y: clickY, w: 0, h: 0 });
+    }
+  };
+
+  const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging || !dragStart || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const curX = Math.floor((e.clientX - rect.left) / scale);
+    const curY = Math.floor((e.clientY - rect.top) / scale);
+
+    const x = Math.min(dragStart.x, curX);
+    const y = Math.min(dragStart.y, curY);
+    const w = Math.abs(curX - dragStart.x);
+    const h = Math.abs(curY - dragStart.y);
+
+    setCurrentBox({ x, y, w, h });
+  };
+
+  const handleCanvasMouseUp = () => {
+    if (!isDragging || !currentBox) return;
+    setIsDragging(false);
+
+    if (currentBox.w > 4 && currentBox.h > 4) {
+      const newRegion: SlicedRegion = {
+        id: `box_${Date.now() % 10000}`,
+        name: `region_${currentBox.x}_${currentBox.y}`,
+        type: 'OBJECT',
+        category: 'prop',
+        x: currentBox.x,
+        y: currentBox.y,
+        w: currentBox.w,
+        h: currentBox.h,
+        facing: 'S',
+        animationState: 'idle',
+        animationFrames: 1,
+      };
+      soundSynth?.playSelectSound?.();
+      setRegions((prev) => [...prev, newRegion]);
+      setSelectedRegionId(newRegion.id);
+    }
+    setCurrentBox(null);
+    setDragStart(null);
+  };
+
+  const removeRegion = (id: string) => {
+    soundSynth?.playUiClick?.();
+    setRegions((prev) => prev.filter((r) => r.id !== id));
+    if (selectedRegionId === id) setSelectedRegionId(null);
+  };
+
+  const autoSliceAllCells = () => {
+    if (!imageElement) return;
+    soundSynth?.playSelectSound?.();
+    const w = imageElement.naturalWidth;
+    const h = imageElement.naturalHeight;
+    const newRegions: SlicedRegion[] = [];
+
+    let count = 0;
+    for (let y = 0; y < h; y += gridSize) {
+      for (let x = 0; x < w; x += gridSize) {
+        newRegions.push({
+          id: `cell_${count++}`,
+          name: `frame_${count}`,
+          type: 'CHARACTER',
+          category: 'sprite',
+          x,
+          y,
+          w: Math.min(gridSize, w - x),
+          h: Math.min(gridSize, h - y),
+          facing: 'S',
+          animationState: 'walk',
+          animationFrames: 1,
+        });
+      }
+    }
+    setRegions(newRegions);
+    showToast(`Generated ${newRegions.length} grid cells!`);
+  };
+
+  const handleBatchSliceSubmit = async () => {
+    if (!sourceId) {
+      setErrorMessage('Please provide or select a valid SourceAsset ID.');
+      return;
+    }
+    if (regions.length === 0) {
+      setErrorMessage('Please slice at least one region on the spritesheet.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const payload = {
+        sourceAssetId: sourceId,
+        regions: regions.map((r) => ({
+          name: r.name,
+          type: r.type,
+          category: r.category,
+          sourceRegion: { x: r.x, y: r.y, w: r.w, h: r.h },
+          facing: r.facing,
+          animationState: r.animationState,
+          animationFrames: r.animationFrames,
+        })),
+      };
+
+      const res = await fetch('/api/assets/slice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to slice and register assets');
+      }
+
+      soundSynth?.playSelectSound?.();
+      setSuccessCount(data.count);
+      showToast(`Successfully registered ${data.count} usable assets!`);
+      if (onSliceComplete) onSliceComplete(data.assets);
+    } catch (err: any) {
+      console.error('Slicing error:', err);
+      setErrorMessage(err.message || 'Failed to batch slice assets.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 text-xs font-mono text-slate-300">
+      {/* HEADER */}
+      <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded p-3 space-y-1">
+        <div className="flex items-center gap-1.5 text-[#e2d5b3] font-bold text-sm">
+          <Scissors className="w-4 h-4 text-amber-400" /> Visual Spritesheet Slicer (Bible 35 §2.1)
+        </div>
+        <p className="text-[11px] text-slate-400">
+          Slice multi-frame sprite sheets and atlases into categorized Usable Assets with directional metadata.
+        </p>
+      </div>
+
+      {successCount !== null ? (
+        <div className="bg-emerald-950/40 border border-emerald-500/40 rounded p-4 text-center space-y-3">
+          <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
+          <div className="text-emerald-200 font-bold text-sm">
+            {successCount} Usable Assets Created & Linked!
+          </div>
+          <p className="text-[11px] text-slate-300">
+            Assets are now available in the Asset Catalog for map building, NPC placement, and combat entities.
+          </p>
+          <button
+            onClick={() => {
+              setSuccessCount(null);
+              setRegions([]);
+            }}
+            className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all shadow"
+          >
+            Slice Another Sheet
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* SOURCE ASSET CONFIG */}
+          <div className="bg-[#050b14] border border-slate-800 rounded p-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Source Image URL / Path</label>
+                <input
+                  type="text"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="/uploads/... or /game-assets/..."
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Source Asset ID</label>
+                <input
+                  type="text"
+                  value={sourceId}
+                  onChange={(e) => setSourceId(e.target.value)}
+                  placeholder="CUID from SourceAsset table"
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
+                />
+              </div>
+            </div>
+
+            {/* CONTROLS */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSliceMode('grid')}
+                  className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-bold ${
+                    sliceMode === 'grid' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Grid className="w-3 h-3" /> Grid Mode
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSliceMode('box')}
+                  className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-bold ${
+                    sliceMode === 'box' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Square className="w-3 h-3" /> Free Box
+                </button>
+              </div>
+
+              {sliceMode === 'grid' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-400">Cell Size:</span>
+                  {[16, 24, 32, 48, 64].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setGridSize(size)}
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        gridSize === size ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {size}px
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={autoSliceAllCells}
+                    className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-amber-300 rounded text-[10px] font-bold"
+                  >
+                    Slice All
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400">Zoom:</span>
+                {[1, 2, 3, 4].map((z) => (
+                  <button
+                    key={z}
+                    type="button"
+                    onClick={() => setScale(z)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      scale === z ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {z}x
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* INTERACTIVE CANVAS VIEW */}
+          <div className="border border-slate-800 rounded bg-black/60 p-2 overflow-auto max-h-[350px] flex items-center justify-center">
+            {imageUrl ? (
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleCanvasMouseDown}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                className="cursor-crosshair border border-slate-700/50 shadow-lg"
+              />
+            ) : (
+              <div className="py-8 text-center text-slate-500 text-xs">
+                Enter an image URL or pick an uploaded SourceAsset to start slicing.
+              </div>
+            )}
+          </div>
+
+          {/* SLICED REGIONS LIST & PROPERTY CONFIG */}
+          {regions.length > 0 && (
+            <div className="bg-[#050b14] border border-slate-800 rounded p-3 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+                <span>Defined Slices ({regions.length})</span>
+                <button
+                  type="button"
+                  onClick={() => setRegions([])}
+                  className="text-rose-400 hover:text-rose-300 text-[10px]"
+                >
+                  Clear All
+                </button>
+              </div>
+
+              <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                {regions.map((r) => {
+                  const isSelected = r.id === selectedRegionId;
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => setSelectedRegionId(r.id)}
+                      className={`flex items-center gap-2 p-1.5 rounded border text-[11px] cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-amber-500 bg-amber-950/20 text-white'
+                          : 'border-slate-800 bg-[#0b1320]/60 text-slate-300 hover:border-slate-700'
+                      }`}
+                    >
+                      <span className="text-[10px] text-amber-400 font-bold shrink-0">
+                        [{r.x},{r.y} {r.w}x{r.h}]
+                      </span>
+                      <input
+                        type="text"
+                        value={r.name}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRegions((prev) => prev.map((item) => (item.id === r.id ? { ...item, name: val } : item)));
+                        }}
+                        className="bg-transparent border-b border-slate-700 px-1 text-white text-[11px] flex-1"
+                        placeholder="Slice Name"
+                      />
+                      <select
+                        value={r.facing}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRegions((prev) => prev.map((item) => (item.id === r.id ? { ...item, facing: val } : item)));
+                        }}
+                        className="bg-[#050b14] border border-slate-700 rounded px-1 text-[10px] text-slate-200"
+                      >
+                        <option value="S">South (Down)</option>
+                        <option value="N">North (Up)</option>
+                        <option value="E">East (Right)</option>
+                        <option value="W">West (Left)</option>
+                      </select>
+                      <select
+                        value={r.animationState}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRegions((prev) =>
+                            prev.map((item) => (item.id === r.id ? { ...item, animationState: val } : item))
+                          );
+                        }}
+                        className="bg-[#050b14] border border-slate-700 rounded px-1 text-[10px] text-slate-200"
+                      >
+                        <option value="idle">Idle</option>
+                        <option value="walk">Walk</option>
+                        <option value="attack">Attack</option>
+                        <option value="hurt">Hurt</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeRegion(r.id);
+                        }}
+                        className="text-slate-500 hover:text-rose-400 p-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="bg-rose-950/40 border border-rose-500/40 rounded p-2 text-rose-300 text-[11px] flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleBatchSliceSubmit}
+            disabled={isSubmitting || regions.length === 0}
+            className={`w-full py-2 rounded font-bold flex items-center justify-center gap-2 transition-all ${
+              isSubmitting || regions.length === 0
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)]'
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Batch Slicing Assets...
+              </>
+            ) : (
+              <>
+                <Scissors className="w-4 h-4" /> Slice & Register {regions.length} Usable Assets
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

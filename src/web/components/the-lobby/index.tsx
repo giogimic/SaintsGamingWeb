@@ -709,6 +709,7 @@ export default function TheLobby({
     });
 
     socket.on('global_chat_msg', (data) => {
+      if (data.socketId === socket.id) return; // Prevent echoing own message
       const msgEvent = new CustomEvent('game_chat_msg', {
         detail: {
           id: Date.now().toString() + Math.random(),
@@ -722,6 +723,7 @@ export default function TheLobby({
     });
 
     socket.on('party_chat_msg', (data) => {
+      if (data.socketId === socket.id) return; // Prevent echoing own message
       const msgEvent = new CustomEvent('game_chat_msg', {
         detail: {
           id: Date.now().toString() + Math.random(),
