@@ -1,3 +1,10 @@
+## [2.1.286] - 2026-08-16
+### Added
+- **Player-Owned Ports, Naval Exploration & Voyage Management Engine (Bible 18 & Bible 31):**
+  - `portFleetEngine.ts`: Player fleet vessel management (Hulls, Deck Cannons, Figureheads), Captain and Crew recruitment with Combat, Morale, Seafaring stats, traits (Tactician, Leader, Navigator, Daredevil, Sturdy), level advancement, and injury debuffs.
+  - `portVoyageEngine.ts`: 7 Progressive Archipelago Regions (Arc, Skull, Hook, Scythe, Bowl, Pincers, Shield), multi-stat requirement success probability calculations, voyage departures, and high-seas random encounters (Kraken Attack, Maelstrom, Siren Song, Treasure Drift).
+  - `portCraftingEngine.ts`: Port Trade Goods economy (Bamboo, Slate, Cherrywood, Gunpowder, Lacquer, Chi, Ancient Bones, Plate, Chimes), 4-fragment scroll recipe unlocking, and Ancient Tier 85 armor crafting (Superior Tetsu, Death Lotus, Seasinger) and Combat Scrimshaws.
+
 ## [2.1.285] - 2026-08-16
 ### Added
 - **Fortis Colosseum, Wave Modifiers & Sol Heredit Engine (Bible 24 & Bible 27):**
