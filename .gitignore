@@ -62,9 +62,7 @@ docker-compose.yml
 /go-mmo/logs/
 # Internal knowledge base (bibles, CONTINUE, system docs) — use .docs/
 /info/
-# Developer docs beyond public attribution — use .docs/public-docs/
-/docs/**
-!/docs/TUXEMON_ATTRIBUTION.md
+# Private developer & agent docs
 /.agents/
 /.tools/
 /.docs/
