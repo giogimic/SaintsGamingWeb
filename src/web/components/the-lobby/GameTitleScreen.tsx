@@ -307,6 +307,38 @@ export default function GameTitleScreen({
     },
   ]);
 
+  // Listen for incoming global/lobby chat messages from other players via socket bridge
+  useEffect(() => {
+    const handleIncoming = (e: CustomEvent) => {
+      const msg = e.detail;
+      if (!msg || !msg.text) return;
+
+      setChatMessages((prev) => {
+        // Deduplicate: avoid appending own optimistic messages twice
+        const isDuplicate = prev.some(
+          (m) =>
+            m.sender === msg.sender &&
+            m.text === msg.text &&
+            Math.abs((m.timestamp || 0) - (msg.timestamp || 0)) < 3000
+        );
+        if (isDuplicate) return prev;
+
+        const incomingItem: ChatItem = {
+          id: msg.id || `${Date.now()}-${Math.random()}`,
+          sender: msg.sender || 'Operative',
+          text: msg.text,
+          timestamp: msg.timestamp || Date.now(),
+          type: msg.type || 'GLOBAL',
+          badge: msg.badge,
+        };
+        return [...prev, incomingItem].slice(-100);
+      });
+    };
+
+    window.addEventListener('game_chat_msg' as any, handleIncoming as any);
+    return () => window.removeEventListener('game_chat_msg' as any, handleIncoming as any);
+  }, []);
+
   // Load characters if not passed as prop
   useEffect(() => {
     if (initialCharacters && initialCharacters.length > 0) {

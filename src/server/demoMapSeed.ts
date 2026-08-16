@@ -319,3 +319,190 @@ export function buildCrystalCavernsGrid(): number[][] {
   }
   return grid;
 }
+
+/** SAINTS_HAVEN — Central 40x40 Town & Portal Gateway */
+export function buildSaintsHavenGrid(): number[][] {
+  const w = 40;
+  const h = 40;
+  const grid: number[][] = [];
+
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 0; // Walkable ground
+
+      // Border walls
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) {
+        tile = 1;
+      }
+      // Cardinal Gate Openings
+      else if (y === 1 && (x >= 19 && x <= 21)) tile = 14; // North Gate
+      else if (x === w - 2 && (y >= 19 && y <= 21)) tile = 15; // East Gate
+      else if (y === h - 2 && (x >= 19 && x <= 21)) tile = 16; // South Gate
+      else if (x === 1 && (y >= 19 && y <= 21)) tile = 18; // West Dungeon Gate
+      // Central Portal to Lobby
+      else if (x === 20 && y === 15) tile = 23; // Realm Portal
+      // Plaza Facilities
+      else if (x === 16 && y === 18) tile = 7; // General Store
+      else if (x === 16 && y === 22) tile = 8; // Clinic / Infirmary
+      else if (x === 24 && y === 18) tile = 9; // Forge / Crafting
+      else if (x === 24 && y === 22) tile = 12; // Base Hub
+      // Park trees and pond
+      else if (x >= 6 && x <= 10 && y >= 6 && y <= 10) {
+        tile = (x + y) % 2 === 0 ? 5 : 0;
+      }
+      else if (x >= 30 && x <= 34 && y >= 30 && y <= 34) {
+        tile = (x + y) % 2 === 0 ? 6 : 0;
+      }
+
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+/** WILD_MEADOWS — 36x36 Wildlife & Gathering Zone */
+export function buildWildMeadowsGrid(): number[][] {
+  const w = 36;
+  const h = 36;
+  const grid: number[][] = [];
+
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 0;
+
+      // Outer border
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) {
+        tile = 1;
+      }
+      // South return gate to Saints Haven
+      else if (y === h - 2 && (x >= 17 && x <= 19)) {
+        tile = 16;
+      }
+      // Quadrant 1: Tall Grass NW (Bio/Solar wildlings)
+      else if (x >= 4 && x <= 14 && y >= 4 && y <= 14) {
+        tile = 2;
+      }
+      // Quadrant 2: Tall Grass NE (Volt/Cryo wildlings)
+      else if (x >= 22 && x <= 32 && y >= 4 && y <= 14) {
+        tile = 2;
+      }
+      // Quadrant 3: Woodcutting Grove SW
+      else if (x >= 4 && x <= 14 && y >= 22 && y <= 30) {
+        tile = (x * y) % 3 === 0 ? 5 : 0;
+      }
+      // Quadrant 4: Fishing Stream & Brambles SE
+      else if (x >= 22 && x <= 30 && y >= 22 && y <= 30) {
+        tile = (x + y) % 4 === 0 ? 10 : (x + y) % 5 === 0 ? 11 : 0;
+      }
+
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+/** QUARRY_MINE — 32x32 Industrial Mining & Monster Spawner Zone */
+export function buildQuarryMineGrid(): number[][] {
+  const w = 32;
+  const h = 32;
+  const grid: number[][] = [];
+
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 1; // Default solid canyon wall
+
+      // Carved mining chambers
+      if ((x >= 2 && x <= 30 && y >= 14 && y <= 18) || (y >= 2 && y <= 30 && x >= 14 && x <= 18)) {
+        tile = 0; // Central crossroads
+      } else if (x >= 4 && x <= 12 && y >= 4 && y <= 12) {
+        tile = (x + y) % 2 === 0 ? 6 : 0; // Ore deposit chamber NW
+      } else if (x >= 20 && x <= 28 && y >= 4 && y <= 12) {
+        tile = (x * y) % 3 === 0 ? 13 : 0; // Monster Spawner zone NE
+      } else if (x >= 20 && x <= 28 && y >= 20 && y <= 28) {
+        tile = (x + y) % 2 === 0 ? 6 : 9; // Forge & deep ore SE
+      }
+
+      // West Gate return to Saints Haven
+      if (x === 1 && (y >= 15 && y <= 17)) {
+        tile = 17;
+      }
+      // Mine shaft passage to deep caves
+      if (x === 30 && (y >= 15 && y <= 17)) {
+        tile = 21;
+      }
+
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+/** TRAINING_ARENA — 30x30 Hero Battles & Dueling Colosseum */
+export function buildTrainingArenaGrid(): number[][] {
+  const w = 30;
+  const h = 30;
+  const grid: number[][] = [];
+
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 1;
+
+      // Colosseum inner circle
+      const dx = x - 15;
+      const dy = y - 15;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist <= 12) {
+        tile = 0; // Arena sand
+      }
+      if (dist <= 4) {
+        tile = 13; // Center duel / boss spawner ring
+      }
+
+      // North Gate return to Saints Haven
+      if (y === 1 && (x >= 14 && x <= 16)) {
+        tile = 14;
+      }
+
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+/** DUNGEON_CRYPTS — 32x32 Shadow Crypts & Boss Chamber */
+export function buildDungeonCryptsGrid(): number[][] {
+  const w = 32;
+  const h = 32;
+  const grid: number[][] = [];
+
+  for (let y = 0; y < h; y++) {
+    const row: number[] = [];
+    for (let x = 0; x < w; x++) {
+      let tile = 1; // Solid stone wall
+
+      // Main crypt chambers
+      if (x >= 12 && x <= 20 && y >= 20 && y <= 28) tile = 0; // Entry hall
+      else if (x >= 8 && x <= 24 && y >= 6 && y <= 18) tile = 0; // Grand Boss Hall
+      else if (x >= 14 && x <= 18 && y >= 18 && y <= 20) tile = 0; // Connecting corridor
+
+      // Boss spawner center
+      if (x === 16 && y === 12) tile = 13;
+
+      // Exit Gate south to Saints Haven
+      if (y === 29 && (x >= 15 && x <= 17)) tile = 16;
+
+      row.push(tile);
+    }
+    grid.push(row);
+  }
+  return grid;
+}

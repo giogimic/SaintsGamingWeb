@@ -1,3 +1,57 @@
+## [2.1.273] - 2026-08-16
+### Added & Improved
+- **Starter Testing Realm Suite (`demoMapSeed.ts`, `DemoBootstrap.ts`, `starterMaps.test.ts`)**:
+  - Implemented and seeded 5 canonical starter testing maps with full logic components, visual layers, and bidirectional World Atlas gates:
+    - `SAINTS_HAVEN` (40×40): Central town plaza, Warden Vance, Professor Oakwood's Lab, General Store, Clinic, Equipment Forge, Base Hub, and 4 Cardinal Gates.
+    - `WILD_MEADOWS` (36×36): 4 wildlife quadrants spanning 8 elements (`nutria`, `flowrunt`, `squidoodle`, `rockitten`), Woodcutting groves, and Fishing streams.
+    - `QUARRY_MINE` (32×32): Copper and Iron ore veins, Smelting Forge, and aggressive Rock Spider monster spawners for Hero Battles.
+    - `TRAINING_ARENA` (30×30): Colosseum sparring ring for Armor Class (AC) and d20 weapon strike testing.
+    - `DUNGEON_CRYPTS` (32×32): Level 5 entry gate, shadow corridors, and high-tier Boss Spawner with elevated Willpower DC.
+- **Floating Window System Polish (`FloatingWindow.tsx`)**:
+  - Added dynamic z-index focus stacking so clicking any window immediately brings it to the top.
+  - Added double-click title bar collapse/expand toggle.
+  - Added window resize event listener to automatically clamp floating windows within screen viewport boundaries.
+- **Inventory UX Quick Actions (`inventory-overlay.tsx`)**:
+  - Added double-click fast action on inventory item slots to instantly equip armor/weapons or consume food.
+- **D20 Engine Safeguards (`d20Engine.ts`, `heroCombatD20.ts`)**:
+  - Added boundary clamping for `hpRatio` and non-negative defense input guards to prevent edge-case arithmetic anomalies.
+
+## [2.1.272] - 2026-08-16
+### Added & Improved
+- **Pre-Game Gateway & Lobby Chat Sync (`GameTitleScreen.tsx`)**:
+  - Subscribed `GameTitleScreen` to incoming global/lobby chat broadcasts (`game_chat_msg`), fixing the issue where pre-world lobby messages sent by other players were not displayed.
+  - Implemented deduplication and auto-scroll retention for seamless multi-player chatter before entering world shards.
+- **Tuxemon Open Source Attribution Scoping (`docs/TUXEMON_ATTRIBUTION.md`, `tuxemonElementMap.ts`)**:
+  - Scoped open-source copyleft notice strictly to CC-BY-SA 4.0 visual monster sprites and LPC character assets.
+  - Formally documented that 100% of game engine source code, Go MMO networking, 27-skill proficiency curves, d20 resolution math, and map architectures are proprietary Saints Gaming IP.
+- **Tabletop D20 Resolution & Capture Engine (`d20Engine.ts`, `heroCombatD20.ts`)**:
+  - Implemented a tabletop d20 resolution engine for creature captures (`d20 + Tamer Proficiency + Tool Tier vs Creature Willpower DC`), featuring Advantage/Disadvantage, Natural 20 Critical Resonance, and Natural 1 Fumble handling.
+  - Preserved Pokemon/Tuxemon-style turn-based combat for creature battles (`TurnBattleOverlay.tsx`), enhanced with live d20 capture dice animations and DC check summaries.
+  - Built D20 combat resolution for Player vs Monster Hero Battles (`heroCombatD20.ts`) with Armor Class (AC), weapon proficiency bonuses, and elemental saving throws.
+- **Layered Floating Windows & Enhanced Inventory UI (`FloatingWindow.tsx`, `inventory-overlay.tsx`)**:
+  - Created a reusable, draggable `FloatingWindow` shell with chamfered styling, z-index elevation, and boundary locking.
+  - Overhauled Inventory Overlay with category filter tabs (All, Equipment, Consumables, Materials, Quest), multi-attribute sort options (Name, Rarity, Quantity), and full MMO paperdoll slot support (`head`, `chest`, `legs`, `weapon`, `offhand`, `gloves`, `boots`, `ring`, `amulet`, `cape`).
+- **Version & Manifest Synchronization**:
+  - Bumped project version to `v2.1.272` across `package.json`, `settings.ts`, admin settings, `layout.tsx`, `navbar.tsx`, and documentation badges.
+
+## [2.1.271] - 2026-08-16
+### Added & Improved
+- **Tile Highlight & Cursor Raycast Alignment (`BabylonEngine.ts`, `tileBatchHelpers.ts`)**:
+  - Fixed a diagonal half-tile offset bug in `renderBrushPreview()` and `setSelectionPreview()` by aligning preview quad centers with actual ground tile quads (`posX = (c - w/2)*s`, `posZ = (h/2 - r)*s`).
+  - Unified coordinate snapping between cursor pointer, hover reticle, selection boxes, author overlays, and batched mesh tiles.
+- **Studio Gateways & Realm Connections Overhaul (`WorldBuilderPanel.tsx`, `LogicTagPalette.tsx`)**:
+  - Upgraded Gateways and Edge Connections into an integrated Realm Connections hub with quick gate presets (Cardinal Atlas N/E/S/W, Dungeon, Raid, Event, Mine), target spawn coordinates, map selector, and in-world pin toggles.
+  - Enhanced `LogicTagPalette.tsx` with instant category filter tabs (Collision, Gateways, Gathering, Services), 1-click preset brushes, and live color badges matching in-world logic overlays.
+- **Skills UI & Inspection Window Decoupling (`skills-overlay.tsx`)**:
+  - Overhauled Saint Skills proficiency grid into a spacious 4-5 column responsive layout, eliminating text clipping (`A...1`, `S...1`) and category label squash.
+  - Decoupled the Skill Quick-Inspect panel into an independent floating modal card, preserving the full grid view when inspecting skills.
+  - Decoupled the Skill Guide into an independent top-level overlay that can be opened without tearing down the underlying skills panel.
+- **Equipment Menu & Speed Tier Overhaul (`equipment-overlay.tsx`, `store.ts`)**:
+  - Redesigned Combat Metrics header with dedicated Speed Tier pill badge (`⚡ Fast (1.25x)`, `🛡️ Normal (1.00x)`, `🐢 Slow (0.85x)`), fixing column overflow.
+  - Expanded paperdoll layout to support full MMO equipment slots (Helmet, Amulet, Chest, Main Hand, Off-Hand, Gauntlets, Greaves, Boots, Ring, Cloak) with item inspect tooltips and weight load indicators.
+- **Version & Manifest Synchronization**:
+  - Bumped project version to `v2.1.271` across `package.json`, `settings.ts`, `layout.tsx`, `navbar.tsx`, and documentation badges.
+
 ## [2.1.270] - 2026-08-15
 ### Added & Improved
 - **Visual Branding & Documentation Polish (`README.md`, `docs/README.md`)**:

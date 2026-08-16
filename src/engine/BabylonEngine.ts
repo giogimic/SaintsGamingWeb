@@ -2155,8 +2155,8 @@ private resolveTilePick(
     for (let r = minR; r <= maxR; r++) {
       for (let c = minC; c <= maxC; c++) {
         if (r < 0 || r >= h || c < 0 || c >= w) continue;
-        const posX = (c - w / 2) * s + s * 0.5;
-        const posZ = (h / 2 - r) * s - s * 0.5;
+        const posX = (c - w / 2) * s;
+        const posZ = (h / 2 - r) * s;
         const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.95 }, this.scene);
         plane.rotation.x = Math.PI / 2;
         plane.position.x = posX;
@@ -2189,8 +2189,8 @@ private resolveTilePick(
 
     if (this.brushRadius <= 1) {
       if (centerR < 0 || centerR >= h || centerC < 0 || centerC >= w) return;
-      const posX = (centerC - w / 2) * s + s * 0.5;
-      const posZ = (h / 2 - centerR) * s - s * 0.5;
+      const posX = (centerC - w / 2) * s;
+      const posZ = (h / 2 - centerR) * s;
       const plane = MeshBuilder.CreatePlane(`brush_preview_${centerR}_${centerC}`, { size: s * 0.96 }, this.scene);
       plane.rotation.x = Math.PI / 2;
       plane.position = new Vector3(posX, 0.16, posZ);
@@ -2207,8 +2207,8 @@ private resolveTilePick(
         const nr = centerR + dr;
         const nc = centerC + dc;
         if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
-        const posX = (nc - w / 2) * s + s * 0.5;
-        const posZ = (h / 2 - nr) * s - s * 0.5;
+        const posX = (nc - w / 2) * s;
+        const posZ = (h / 2 - nr) * s;
         const plane = MeshBuilder.CreatePlane(`brush_preview_${nr}_${nc}`, { size: s * 0.95 }, this.scene);
         plane.rotation.x = Math.PI / 2;
         plane.position = new Vector3(posX, 0.16, posZ);

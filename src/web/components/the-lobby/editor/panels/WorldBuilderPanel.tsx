@@ -460,24 +460,80 @@ export const WorldBuilderPanel: React.FC = () => {
         <div className="mt-2 space-y-3">
           <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-1">
             <div className="flex items-center gap-1.5 font-bold text-[#cbb26a]">
-              <Compass className="w-3.5 h-3.5" /> Edge Connections & Warp Gates
+              <Compass className="w-3.5 h-3.5" /> Gateways & Realm Connections
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                useEditorStore.getState().setBrushMode('gate');
-                useEditorStore.getState().setShowWarpOverlays(true);
-                showToast('Warp Gate tool active: Click any tile on the map to place a gate.');
-              }}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/50 text-[10px] text-purple-200 hover:bg-purple-900/80 font-bold transition-all"
-            >
-              <DoorOpen className="w-3 h-3 text-purple-400" /> Gate Tool
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const current = useEditorStore.getState().showWarpOverlays;
+                  useEditorStore.getState().setShowWarpOverlays(!current);
+                }}
+                className="px-1.5 py-0.5 rounded bg-black/40 border border-slate-700 text-[9px] text-slate-300 hover:text-white"
+                title="Toggle visual gate markers on map"
+              >
+                Pins {useEditorStore((s) => s.showWarpOverlays) ? 'On' : 'Off'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  useEditorStore.getState().setBrushMode('gate');
+                  useEditorStore.getState().setShowWarpOverlays(true);
+                  showToast('Gate Tool Active: Click any tile on map to place/inspect warp.');
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/50 text-[10px] text-purple-200 hover:bg-purple-900/80 font-bold transition-all"
+              >
+                <DoorOpen className="w-3 h-3 text-purple-400" /> Gate Tool
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Gate Type Presets */}
+          <div className="space-y-1 bg-black/30 p-2 rounded border border-purple-950/40">
+            <span className="text-[10px] text-slate-300 font-semibold block">Quick Gate Presets:</span>
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                { label: 'Atlas (North)', target: 'ROUTE_NORTH', sx: -1, sy: 0, cat: 'ATLAS_NORTH' },
+                { label: 'Atlas (South)', target: 'ROUTE_SOUTH', sx: -1, sy: -1, cat: 'ATLAS_SOUTH' },
+                { label: 'Atlas (East)', target: 'ROUTE_EAST', sx: 0, sy: -1, cat: 'ATLAS_EAST' },
+                { label: 'Atlas (West)', target: 'ROUTE_WEST', sx: -1, sy: -1, cat: 'ATLAS_WEST' },
+                { label: 'Dungeon Entrance', target: 'DUNGEON_1', sx: 6, sy: 2, cat: 'DUNGEON' },
+                { label: 'Raid Portal', target: 'RAID_VALLEY', sx: 10, sy: 10, cat: 'RAID' },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => {
+                    const clicked = useEditorStore.getState().clickedTile;
+                    const x = clicked ? clicked.c : 5;
+                    const y = clicked ? clicked.r : 5;
+                    if (!activeMapData) return;
+                    const newGate = {
+                      id: `gate_${x}_${y}`,
+                      position: { x, y },
+                      targetMapId: p.target,
+                      spawnPoint: { x: p.sx, y: p.sy },
+                      category: p.cat
+                    };
+                    const updatedGates = upsertWarpGate(activeMapData.gates, newGate);
+                    useGameStore.setState({
+                      activeMapData: { ...activeMapData, gates: updatedGates }
+                    });
+                    useEditorStore.setState({ mapDirty: true });
+                    useEditorStore.getState().setShowWarpOverlays(true);
+                    showToast(`Placed ${p.label} at [${x}, ${y}] → ${p.target}`);
+                  }}
+                  className="rounded bg-[#050b14] border border-slate-800 hover:border-purple-500/50 hover:bg-purple-950/20 px-1 py-1 text-[9px] text-slate-300 text-left truncate transition-colors"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 4 Cardinal Edge Connections */}
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-semibold block">Continuous Edge Transitions</span>
+            <span className="text-[10px] text-slate-400 font-semibold block">Continuous Edge Transitions (Atlas Map Streaming)</span>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[9px] text-slate-400">North Edge (y &lt; 0)</label>
@@ -566,7 +622,7 @@ export const WorldBuilderPanel: React.FC = () => {
           <div className="space-y-1 pt-1 border-t border-[#806f47]/20">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-purple-400" /> Placed Warp Gates ({normalizeGates(activeMapData?.gates).length})
+                <MapPin className="w-3 h-3 text-purple-400" /> Active Warp Gates ({normalizeGates(activeMapData?.gates).length})
               </span>
               <button
                 type="button"
@@ -589,7 +645,7 @@ export const WorldBuilderPanel: React.FC = () => {
                   useEditorStore.getState().setShowWarpOverlays(true);
                   showToast(`Added warp gate at [${x}, ${y}] → DEMO_SANDBOX`);
                 }}
-                className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-200"
+                className="text-[9px] px-1.5 py-0.5 rounded bg-purple-900/60 border border-purple-500/40 hover:bg-purple-800 text-purple-100 font-bold"
               >
                 + Add Gate At Selection
               </button>
@@ -597,51 +653,96 @@ export const WorldBuilderPanel: React.FC = () => {
 
             {normalizeGates(activeMapData?.gates).length === 0 ? (
               <p className="text-[9px] text-slate-500 italic py-1">
-                No warp gates placed yet. Select a tile on the map or click Gate Tool above to add one.
+                No warp gates placed yet. Select a tile on the map or click Gate Tool above to place one.
               </p>
             ) : (
-              <div className="max-h-32 space-y-1 overflow-y-auto custom-scrollbar">
+              <div className="max-h-40 space-y-1.5 overflow-y-auto custom-scrollbar pr-0.5">
                 {normalizeGates(activeMapData?.gates).map((gate, idx) => (
                   <div
                     key={`${gate.id || idx}_${gate.position.x}_${gate.position.y}`}
-                    className="flex items-center justify-between gap-1 p-1 rounded bg-[#050b14] border border-slate-800 text-[10px]"
+                    className="p-1.5 rounded bg-[#050b14] border border-slate-800 text-[10px] space-y-1"
                   >
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="font-mono text-purple-300 font-bold">
-                        ({gate.position.x},{gate.position.y})
-                      </span>
-                      <span className="text-slate-500">→</span>
-                      <input
-                        type="text"
-                        value={gate.targetMapId}
-                        onChange={(e) => {
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <span className="font-mono text-purple-300">
+                          Gate [{gate.position.x}, {gate.position.y}]
+                        </span>
+                        <span className="text-slate-500">→</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
                           if (!activeMapData) return;
-                          const updated = { ...gate, targetMapId: e.target.value };
-                          const nextGates = upsertWarpGate(activeMapData.gates, updated);
+                          const nextGates = removeWarpGateAt(activeMapData.gates, gate.position.x, gate.position.y);
                           useGameStore.setState({
                             activeMapData: { ...activeMapData, gates: nextGates }
                           });
                           useEditorStore.setState({ mapDirty: true });
+                          showToast(`Removed gate at (${gate.position.x}, ${gate.position.y})`);
                         }}
-                        className="bg-transparent border-b border-slate-700 text-slate-200 text-[10px] px-1 w-28 focus:outline-none focus:border-purple-400"
-                      />
+                        className="p-0.5 text-slate-500 hover:text-red-400 transition-colors"
+                        title="Remove gate"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!activeMapData) return;
-                        const nextGates = removeWarpGateAt(activeMapData.gates, gate.position.x, gate.position.y);
-                        useGameStore.setState({
-                          activeMapData: { ...activeMapData, gates: nextGates }
-                        });
-                        useEditorStore.setState({ mapDirty: true });
-                        showToast(`Removed gate at (${gate.position.x}, ${gate.position.y})`);
-                      }}
-                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
-                      title="Remove gate"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div>
+                        <label className="block text-[8px] text-slate-500 uppercase">Target Map ID</label>
+                        <input
+                          type="text"
+                          value={gate.targetMapId}
+                          onChange={(e) => {
+                            if (!activeMapData) return;
+                            const updated = { ...gate, targetMapId: e.target.value };
+                            const nextGates = upsertWarpGate(activeMapData.gates, updated);
+                            useGameStore.setState({
+                              activeMapData: { ...activeMapData, gates: nextGates }
+                            });
+                            useEditorStore.setState({ mapDirty: true });
+                          }}
+                          className="w-full bg-[#0b1320] border border-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded focus:outline-none focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[8px] text-slate-500 uppercase">Target Spawn (X, Y)</label>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            placeholder="X"
+                            value={gate.spawnPoint?.x ?? 0}
+                            onChange={(e) => {
+                              if (!activeMapData) return;
+                              const updated = {
+                                ...gate,
+                                spawnPoint: { x: Number(e.target.value), y: gate.spawnPoint?.y ?? 0 }
+                              };
+                              const nextGates = upsertWarpGate(activeMapData.gates, updated);
+                              useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
+                              useEditorStore.setState({ mapDirty: true });
+                            }}
+                            className="w-full bg-[#0b1320] border border-slate-700 text-slate-200 text-[10px] px-1 py-0.5 rounded"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Y"
+                            value={gate.spawnPoint?.y ?? 0}
+                            onChange={(e) => {
+                              if (!activeMapData) return;
+                              const updated = {
+                                ...gate,
+                                spawnPoint: { x: gate.spawnPoint?.x ?? 0, y: Number(e.target.value) }
+                              };
+                              const nextGates = upsertWarpGate(activeMapData.gates, updated);
+                              useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
+                              useEditorStore.setState({ mapDirty: true });
+                            }}
+                            className="w-full bg-[#0b1320] border border-slate-700 text-slate-200 text-[10px] px-1 py-0.5 rounded"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

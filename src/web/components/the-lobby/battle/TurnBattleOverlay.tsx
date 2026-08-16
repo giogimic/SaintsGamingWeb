@@ -37,6 +37,7 @@ export function TurnBattleOverlay() {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const [showMoves, setShowMoves] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [captureRollPreview, setCaptureRollPreview] = useState<{ d20: number; dc: number; total: number } | null>(null);
 
   const wildCreature = activeBattle?.wildCreature;
   const playerCreature = activeBattle?.playerCreature;
@@ -135,8 +136,15 @@ export function TurnBattleOverlay() {
     }
     
     if (action === 'ITEM') {
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const dc = 12;
+      const total = roll + 3;
+      setCaptureRollPreview({ d20: roll, dc, total });
       setIsCapturing(true);
-      setTimeout(() => setIsCapturing(false), 1800);
+      setTimeout(() => {
+        setIsCapturing(false);
+        setCaptureRollPreview(null);
+      }, 2200);
     }
 
     soundSynth?.playActionSound?.();
@@ -153,6 +161,50 @@ export function TurnBattleOverlay() {
 
   return (
     <div className="pointer-events-auto absolute inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-xl select-none">
+      {/* Visual D20 Capture Modal */}
+      {isCapturing && captureRollPreview && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="p-6 rounded-2xl bg-gradient-to-b from-[#0c1a2e] to-[#050b14] border-2 border-cyan-400/80 shadow-[0_0_50px_rgba(6,182,212,0.6)] flex flex-col items-center text-center font-mono max-w-sm w-full mx-4">
+            <div className="text-cyan-300 font-bold text-xs uppercase tracking-widest mb-1 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" /> Soul Capture Check
+            </div>
+            
+            {/* D20 Dice Representation */}
+            <div className="w-24 h-24 my-4 relative flex items-center justify-center">
+              <div className="absolute inset-0 rounded-2xl bg-cyan-500/20 animate-ping" />
+              <div 
+                className={cn(
+                  "w-20 h-20 rounded-xl border-2 flex items-center justify-center font-black text-3xl shadow-2xl transition-all",
+                  captureRollPreview.d20 === 20 ? "bg-amber-500/30 border-amber-400 text-amber-300 shadow-amber-500/50" :
+                  captureRollPreview.d20 === 1 ? "bg-rose-500/30 border-rose-400 text-rose-300 shadow-rose-500/50" :
+                  "bg-cyan-950/90 border-cyan-400 text-cyan-200 shadow-cyan-500/50"
+                )}
+                style={{
+                  clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                }}
+              >
+                {captureRollPreview.d20}
+              </div>
+            </div>
+
+            <div className="text-sm font-bold text-white mb-2">
+              {captureRollPreview.d20 === 20 ? (
+                <span className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]">NATURAL 20! CRITICAL RESONANCE</span>
+              ) : captureRollPreview.d20 === 1 ? (
+                <span className="text-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]">NATURAL 1! CRITICAL FUMBLE</span>
+              ) : (
+                <>Rolled <span className="text-cyan-300 font-black">{captureRollPreview.d20}</span> + Modifiers</>
+              )}
+            </div>
+
+            <div className="w-full bg-black/60 rounded-lg p-2.5 border border-cyan-500/20 text-xs flex justify-between text-slate-300">
+              <span>Willpower DC: <strong className="text-cyan-300">{captureRollPreview.dc}</strong></span>
+              <span>Total Check: <strong className="text-emerald-400">{captureRollPreview.total}</strong></span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Background Ambience Pattern */}
       <div 
         className="absolute inset-0 pointer-events-none opacity-20"

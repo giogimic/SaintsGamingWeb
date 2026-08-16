@@ -176,6 +176,13 @@ export interface PlayerState {
     chest: string | null;
     legs: string | null;
     weapon: string | null;
+    offhand?: string | null;
+    gloves?: string | null;
+    boots?: string | null;
+    ring?: string | null;
+    amulet?: string | null;
+    cape?: string | null;
+    [key: string]: string | null | undefined;
   };
   customization?: {
     skinTone: string;
@@ -320,7 +327,7 @@ export interface GameState {
   modifyCredits: (amount: number) => void;
   modifyInventory: (itemId: string, amount: number) => void;
   gainSkillXp: (skillName: string, amount: number) => void;
-  equipItem: (slot: 'head' | 'chest' | 'legs' | 'weapon', itemId: string | null) => void;
+  equipItem: (slot: string, itemId: string | null) => void;
   setCombatStyle: (style: 'MELEE' | 'RANGED' | 'MAGIC') => void;
   assignBeast: (facility: 'furnace' | 'farm' | 'fishing_hut' | 'lumber_mill' | 'quarry', beastId: string | null) => void;
   collectBaseResources: () => void;

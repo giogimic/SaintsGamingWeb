@@ -147,70 +147,69 @@ export default function SkillsOverlay() {
   const hasInspect = !!selectedSkill;
 
   return (
-    <div className="pointer-events-auto z-40 flex w-[min(95vw,640px)] max-w-full flex-col font-mono text-xs select-none">
-      <HudPanelShell 
-        title="SAINT SKILLS & PROFICIENCY" 
-        icon={<Zap className="w-4 h-4 text-amber-400" />}
-        onClose={() => setGameMode('EXPLORING')}
-        headerRight={
-          <div className="flex items-center gap-1.5">
-            {isMaxed ? (
-              <span className="text-[9px] font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-400/60 uppercase flex items-center gap-1 shadow-sm">
-                <Crown className="w-3 h-3 text-amber-400 inline" /> MAXED GRANDMASTER
-              </span>
-            ) : (
-              <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/40 uppercase">
-                {maxProgress.maxedSkillsCount} / 27 MAXED
-              </span>
-            )}
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-3 h-[68vh] p-3">
-          {/* Total Level & XP Summary Strip with Max Cape Progress */}
-          <div className="p-3 bg-black/60 border border-amber-500/30 rounded-xl flex flex-col gap-2 shadow-inner shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-                  <Trophy className="w-4 h-4 text-amber-400" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL LEVEL</span>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-amber-400 font-black text-base">{maxProgress.totalLevel}</span>
-                    <span className="text-[10px] text-slate-500 font-semibold">/ {maxProgress.maxTotalLevel}</span>
+    <>
+      <div className="pointer-events-auto z-40 flex w-[min(96vw,820px)] max-w-full flex-col font-mono text-xs select-none relative">
+        <HudPanelShell 
+          title="SAINT SKILLS & PROFICIENCY" 
+          icon={<Zap className="w-4 h-4 text-amber-400" />}
+          onClose={() => setGameMode('EXPLORING')}
+          headerRight={
+            <div className="flex items-center gap-1.5">
+              {isMaxed ? (
+                <span className="text-[9px] font-black text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-400/60 uppercase flex items-center gap-1 shadow-sm">
+                  <Crown className="w-3 h-3 text-amber-400 inline" /> MAXED GRANDMASTER
+                </span>
+              ) : (
+                <span className="text-[9px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/40 uppercase">
+                  {maxProgress.maxedSkillsCount} / 27 MAXED
+                </span>
+              )}
+            </div>
+          }
+        >
+          <div className="flex flex-col gap-3 h-[72vh] p-3">
+            {/* Total Level & XP Summary Strip with Max Cape Progress */}
+            <div className="p-3 bg-black/60 border border-amber-500/30 rounded-xl flex flex-col gap-2 shadow-inner shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL LEVEL</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-amber-400 font-black text-base">{maxProgress.totalLevel}</span>
+                      <span className="text-[10px] text-slate-500 font-semibold">/ {maxProgress.maxTotalLevel}</span>
+                    </div>
                   </div>
                 </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL EXPERIENCE</span>
+                  <span className="text-cyan-300 font-bold text-sm">{Math.floor(maxProgress.totalXp).toLocaleString()} XP</span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block">TOTAL EXPERIENCE</span>
-                <span className="text-cyan-300 font-bold text-sm">{Math.floor(maxProgress.totalXp).toLocaleString()} XP</span>
+
+              {/* Max Cape / Master Totem Milestone Bar */}
+              <div className="space-y-1 pt-1 border-t border-slate-800/80">
+                <div className="flex items-center justify-between text-[9px]">
+                  <span className="text-amber-300/80 flex items-center gap-1 font-semibold uppercase">
+                    <Crown className="w-2.5 h-2.5 text-amber-400 inline" /> Max Cape Progress
+                  </span>
+                  <span className="text-slate-400 font-bold">
+                    {maxProgress.percentComplete}% ({maxProgress.maxedSkillsCount}/27 Skills)
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-black/80 rounded-full overflow-hidden border border-slate-800">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-yellow-300 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(2, maxProgress.percentComplete)}%` }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Max Cape / Master Totem Milestone Bar */}
-            <div className="space-y-1 pt-1 border-t border-slate-800/80">
-              <div className="flex items-center justify-between text-[9px]">
-                <span className="text-amber-300/80 flex items-center gap-1 font-semibold uppercase">
-                  <Crown className="w-2.5 h-2.5 text-amber-400 inline" /> Max Cape Progress
-                </span>
-                <span className="text-slate-400 font-bold">
-                  {maxProgress.percentComplete}% ({maxProgress.maxedSkillsCount}/27 Skills)
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-black/80 rounded-full overflow-hidden border border-slate-800">
-                <div 
-                  className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-yellow-300 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.max(2, maxProgress.percentComplete)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content: Grid + Optional Inspect Panel */}
-          <div className={`flex-1 min-h-0 flex ${hasInspect ? 'gap-3' : ''}`}>
-            {/* Skills Grid */}
-            <div className={`${hasInspect ? 'flex-1 min-w-0' : 'w-full'} overflow-y-auto pr-1 custom-scrollbar space-y-3`}>
+            {/* Main Content: Full-Width 4-5 Column Grid */}
+            <div className="flex-1 min-h-0 w-full overflow-y-auto pr-1 custom-scrollbar space-y-3">
               {Object.entries(SKILL_CATEGORIES).map(([category, skillList]) => (
                 <div key={category} className="space-y-1.5">
                   <div className="flex items-center gap-2 border-b border-amber-500/20 pb-1">
@@ -223,7 +222,7 @@ export default function SkillsOverlay() {
                     </h3>
                   </div>
 
-                  <div className={`grid ${hasInspect ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5'} gap-1.5`}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                     {skillList.map((skill) => {
                       const slug = normalizeSkillSlug(skill);
                       const guide = getSkillGuide(slug);
@@ -247,9 +246,9 @@ export default function SkillsOverlay() {
                             soundSynth?.playSelectSound?.();
                             setSelectedSkill(isSelected ? null : slug);
                           }}
-                          className={`group relative bg-black/60 border p-2 flex flex-col justify-between hover:border-amber-400 hover:bg-amber-950/30 transition-all rounded-lg cursor-pointer active:scale-95 shadow-md ${
+                          className={`group relative bg-black/60 border p-2 flex flex-col justify-between hover:border-amber-400 hover:bg-amber-950/30 transition-all rounded-lg cursor-pointer active:scale-95 shadow-md min-h-[52px] ${
                             isSelected
-                              ? 'border-amber-400 bg-amber-950/30 ring-1 ring-amber-400/30'
+                              ? 'border-amber-400 bg-amber-950/30 ring-1 ring-amber-400/30 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
                               : 'border-slate-800'
                           }`}
                           style={{
@@ -257,17 +256,17 @@ export default function SkillsOverlay() {
                           }}
                           title={`Click to inspect ${skill}`}
                         >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center gap-1 min-w-0">
+                          <div className="flex items-center justify-between w-full gap-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <IconComp
                                 className="w-3.5 h-3.5 flex-none"
                                 style={{ color: guide?.themeColor || '#fbbf24' }}
                               />
-                              <span className="text-[10px] text-slate-300 font-bold uppercase truncate">
+                              <span className="text-[11px] text-slate-200 font-bold uppercase truncate">
                                 {skill}
                               </span>
                             </div>
-                            <span className="text-amber-400 font-black text-xs">
+                            <span className="text-amber-400 font-black text-xs shrink-0 font-mono">
                               {data.level}
                             </span>
                           </div>
@@ -285,7 +284,7 @@ export default function SkillsOverlay() {
 
                           {/* Hover Tooltip */}
                           <div className="hidden group-hover:flex absolute -top-10 left-1/2 -translate-x-1/2 bg-black/95 border border-amber-500/60 p-1.5 flex-col whitespace-nowrap z-50 text-[10px] text-amber-200 shadow-xl rounded-md pointer-events-none">
-                            <span className="text-white font-bold">{skill} — Click to Inspect:</span>
+                            <span className="text-white font-bold">{skill} — Click to Inspect</span>
                             <span>
                               {Math.floor(data.xp).toLocaleString()} / {nextLevelXp.toLocaleString()} XP
                               {combatHint !== null ? ' (combat curve)' : ''}
@@ -298,24 +297,37 @@ export default function SkillsOverlay() {
                 </div>
               ))}
             </div>
-
-            {/* Inspect Panel (Level 2) — shown when a skill is selected */}
-            {hasInspect && selectedSkill && (
-              <div className="w-[240px] shrink-0 animate-in slide-in-from-right-4 fade-in duration-200">
-                <SkillInspectPanel
-                  skillSlug={selectedSkill}
-                  onClose={() => setSelectedSkill(null)}
-                  onOpenGuide={(slug) => {
-                    setSelectedSkill(null);
-                    setGuideSkill(slug);
-                  }}
-                />
-              </div>
-            )}
           </div>
+        </HudPanelShell>
 
+        {/* Independent Inspect Window Overlay */}
+        {hasInspect && selectedSkill && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+            <div className="w-[min(92vw,360px)] max-h-[85vh] animate-in zoom-in-95 duration-150 shadow-2xl">
+              <SkillInspectPanel
+                skillSlug={selectedSkill}
+                onClose={() => setSelectedSkill(null)}
+                onOpenGuide={(slug) => {
+                  setSelectedSkill(null);
+                  setGuideSkill(slug);
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Independent Full Skill Guide Window Overlay */}
+      {guideSkill && (
+        <div className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-[min(95vw,680px)] max-h-[90vh] overflow-hidden">
+            <SkillGuideFull
+              skillSlug={guideSkill}
+              onClose={() => setGuideSkill(null)}
+            />
+          </div>
         </div>
-      </HudPanelShell>
-    </div>
+      )}
+    </>
   );
 }

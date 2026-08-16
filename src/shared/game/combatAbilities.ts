@@ -64,7 +64,20 @@ export function getCombatAbility(abilityId: string): CombatAbility | null {
   return COMBAT_ABILITIES[abilityId] ?? null;
 }
 
-/** Capture chance helpers for turn-based encounters (bible 11). */
+export {
+  attemptCapture,
+  rollD20,
+  rollD20Advantage,
+  getCreatureWillpowerDC,
+  getCaptureModifiers,
+  type CaptureAttemptOptions,
+  type CaptureResult,
+} from "./d20Engine";
+
+/**
+ * Capture chance helpers for turn-based encounters.
+ * Uses native d20 resolution engine (d20 + tamer bonus + tool tier vs creature DC).
+ */
 export function computeCaptureChance(opts: {
   maxHp: number;
   currentHp: number;
