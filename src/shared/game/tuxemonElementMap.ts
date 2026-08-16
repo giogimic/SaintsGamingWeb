@@ -1,4 +1,8 @@
-/** Tuxemon type slug → Saints element. */
+/**
+ * Legacy Sprite-Tag Import Mapping.
+ * Maps legacy sprite tags into native Saints elements.
+ * All combat damage math, matchups, and mechanics are natively defined in elementMatchups.ts.
+ */
 export const TUXEMON_TO_SAINTS_ELEMENT: Record<string, string> = {
   fire: "Solar",
   water: "Hydro",

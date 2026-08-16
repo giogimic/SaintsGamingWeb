@@ -67,3 +67,13 @@ export function calculateCombatHitDamage(
   };
 }
 
+export {
+  computeArmorClass,
+  rollHeroAttack,
+  rollElementalSave,
+  rollInspirationDie,
+  type HeroAttackOptions,
+  type HeroAttackResult,
+} from "../../../shared/game/heroCombatD20";
+
+

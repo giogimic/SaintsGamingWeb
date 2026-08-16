@@ -13,6 +13,11 @@ import {
   buildLobbyGrid,
   buildTrainingGroundsGrid,
   buildCrystalCavernsGrid,
+  buildSaintsHavenGrid,
+  buildWildMeadowsGrid,
+  buildQuarryMineGrid,
+  buildTrainingArenaGrid,
+  buildDungeonCryptsGrid,
   buildDefaultGroundLayer,
   fillZeroGidsInLayers,
   upgradeLegacyGroundGids,
@@ -361,10 +366,176 @@ async function seedLobbyMap() {
 }
 
 async function seedExpansionMaps() {
+  const force = process.env.FORCE_DEMO_MAP === "1";
+
+  // 1. SAINTS_HAVEN — Central 40x40 Hub & Portal Gateway
+  const havenGrid = buildSaintsHavenGrid();
+  const existingHaven = await prisma.worldMap.findUnique({ where: { id: "SAINTS_HAVEN" } });
+  if (!existingHaven || force) {
+    const havenData = {
+      gameId: SAINTS_TRAIL_GAME_ID,
+      name: "Saints Haven",
+      gridData: JSON.stringify(havenGrid),
+      gatesData: JSON.stringify([
+        { id: "gate_north", position: { x: 20, y: 1 }, targetMapId: "WILD_MEADOWS", spawnPoint: { x: 18, y: 33 }, category: "ATLAS_NORTH" },
+        { id: "gate_east", position: { x: 38, y: 20 }, targetMapId: "QUARRY_MINE", spawnPoint: { x: 2, y: 16 }, category: "ATLAS_EAST" },
+        { id: "gate_south", position: { x: 20, y: 38 }, targetMapId: "TRAINING_ARENA", spawnPoint: { x: 15, y: 2 }, category: "ATLAS_SOUTH" },
+        { id: "gate_west", position: { x: 1, y: 20 }, targetMapId: "DUNGEON_CRYPTS", spawnPoint: { x: 16, y: 28 }, category: "DUNGEON" },
+        { id: "gate_portal", position: { x: 20, y: 15 }, targetMapId: "DEMO_SANDBOX", spawnPoint: { x: 14, y: 15 }, category: "PORTAL" },
+      ]),
+      npcsData: JSON.stringify([
+        { id: "haven_vance", name: "Warden Vance", x: 20, y: 18, sprite: "adventurer", dialogue: ["Welcome to Saints Haven! Explore the 4 realms via the cardinal gates."] },
+        { id: "haven_oakwood", name: "Prof. Oakwood", x: 16, y: 20, sprite: "alchemist", dialogue: ["Choose your starter companion at the lab, then venture north into the Wild Meadows."] },
+      ]),
+      encountersData: JSON.stringify([]),
+      tileLayersData: JSON.stringify([buildDefaultGroundLayer(havenGrid)]),
+      tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+      biome: "town",
+      weatherType: "clear",
+      recommendedLevel: 1,
+      lightingPreset: "day",
+      description: "The grand central hub of Saints Realm. Connects to all four cardinal territories.",
+    };
+    if (!existingHaven) {
+      await prisma.worldMap.create({ data: { id: "SAINTS_HAVEN", ...havenData } });
+    } else {
+      await prisma.worldMap.update({ where: { id: "SAINTS_HAVEN" }, data: havenData });
+    }
+  }
+
+  // 2. WILD_MEADOWS — 36x36 Wildlife & Gathering Zone
+  const meadowsGrid = buildWildMeadowsGrid();
+  const existingMeadows = await prisma.worldMap.findUnique({ where: { id: "WILD_MEADOWS" } });
+  if (!existingMeadows || force) {
+    const meadowsData = {
+      gameId: SAINTS_TRAIL_GAME_ID,
+      name: "Wild Meadows",
+      gridData: JSON.stringify(meadowsGrid),
+      gatesData: JSON.stringify([
+        { id: "gate_south", position: { x: 18, y: 34 }, targetMapId: "SAINTS_HAVEN", spawnPoint: { x: 20, y: 2 }, category: "ATLAS_SOUTH" },
+      ]),
+      npcsData: JSON.stringify([
+        { id: "meadow_ranger", name: "Ranger Lyra", x: 18, y: 30, sprite: "heroine", dialogue: ["Tall grass is teeming with wild souls. Use standard film and weaken them before capturing!"] },
+      ]),
+      encountersData: JSON.stringify([
+        { speciesSlug: "nutria", weight: 35, minLevel: 1, maxLevel: 4 },
+        { speciesSlug: "flowrunt", weight: 30, minLevel: 1, maxLevel: 4 },
+        { speciesSlug: "squidoodle", weight: 20, minLevel: 3, maxLevel: 6 },
+        { speciesSlug: "rockitten", weight: 15, minLevel: 5, maxLevel: 8 },
+      ]),
+      tileLayersData: JSON.stringify([buildDefaultGroundLayer(meadowsGrid)]),
+      tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+      biome: "forest",
+      weatherType: "rain_gentle",
+      recommendedLevel: 1,
+      lightingPreset: "day",
+      description: "Lush grasslands and ancient groves rich with diverse wild companion species.",
+    };
+    if (!existingMeadows) {
+      await prisma.worldMap.create({ data: { id: "WILD_MEADOWS", ...meadowsData } });
+    } else {
+      await prisma.worldMap.update({ where: { id: "WILD_MEADOWS" }, data: meadowsData });
+    }
+  }
+
+  // 3. QUARRY_MINE — 32x32 Industrial Mining & Hero Spawner Zone
+  const quarryGrid = buildQuarryMineGrid();
+  const existingQuarry = await prisma.worldMap.findUnique({ where: { id: "QUARRY_MINE" } });
+  if (!existingQuarry || force) {
+    const quarryData = {
+      gameId: SAINTS_TRAIL_GAME_ID,
+      name: "Quarry Mine",
+      gridData: JSON.stringify(quarryGrid),
+      gatesData: JSON.stringify([
+        { id: "gate_west", position: { x: 1, y: 16 }, targetMapId: "SAINTS_HAVEN", spawnPoint: { x: 37, y: 20 }, category: "ATLAS_WEST" },
+        { id: "gate_shaft", position: { x: 30, y: 16 }, targetMapId: "CRYSTAL_CAVERNS", spawnPoint: { x: 12, y: 6 }, category: "MINE" },
+      ]),
+      npcsData: JSON.stringify([
+        { id: "quarry_foreman", name: "Foreman Stone", x: 6, y: 16, sprite: "warrior", dialogue: ["Strike the copper and iron veins with your pickaxe. Watch out for rock spiders in the north shafts!"] },
+      ]),
+      encountersData: JSON.stringify([
+        { speciesSlug: "rockitten", weight: 80, minLevel: 4, maxLevel: 9 },
+      ]),
+      tileLayersData: JSON.stringify([buildDefaultGroundLayer(quarryGrid)]),
+      tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+      biome: "cave",
+      weatherType: "clear",
+      recommendedLevel: 3,
+      lightingPreset: "cave",
+      description: "A bustling canyon quarry with rich mineral veins and cavern passages.",
+    };
+    if (!existingQuarry) {
+      await prisma.worldMap.create({ data: { id: "QUARRY_MINE", ...quarryData } });
+    } else {
+      await prisma.worldMap.update({ where: { id: "QUARRY_MINE" }, data: quarryData });
+    }
+  }
+
+  // 4. TRAINING_ARENA — 30x30 Hero Battles & Dueling Colosseum
+  const arenaGrid = buildTrainingArenaGrid();
+  const existingArena = await prisma.worldMap.findUnique({ where: { id: "TRAINING_ARENA" } });
+  if (!existingArena || force) {
+    const arenaData = {
+      gameId: SAINTS_TRAIL_GAME_ID,
+      name: "Training Arena",
+      gridData: JSON.stringify(arenaGrid),
+      gatesData: JSON.stringify([
+        { id: "gate_north", position: { x: 15, y: 1 }, targetMapId: "SAINTS_HAVEN", spawnPoint: { x: 20, y: 37 }, category: "ATLAS_NORTH" },
+      ]),
+      npcsData: JSON.stringify([
+        { id: "arena_master", name: "Grandmaster Jax", x: 15, y: 8, sprite: "dragonrider", dialogue: ["Step into the ring to test your Armor Class (AC) and d20 weapon strikes!"] },
+      ]),
+      encountersData: JSON.stringify([]),
+      tileLayersData: JSON.stringify([buildDefaultGroundLayer(arenaGrid)]),
+      tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+      biome: "desert",
+      weatherType: "clear",
+      recommendedLevel: 2,
+      lightingPreset: "day",
+      description: "A sun-baked arena for practicing d20 combat rolls and companion sparring.",
+    };
+    if (!existingArena) {
+      await prisma.worldMap.create({ data: { id: "TRAINING_ARENA", ...arenaData } });
+    } else {
+      await prisma.worldMap.update({ where: { id: "TRAINING_ARENA" }, data: arenaData });
+    }
+  }
+
+  // 5. DUNGEON_CRYPTS — 32x32 Shadow Crypts & Boss Chamber
+  const cryptsGrid = buildDungeonCryptsGrid();
+  const existingCrypts = await prisma.worldMap.findUnique({ where: { id: "DUNGEON_CRYPTS" } });
+  if (!existingCrypts || force) {
+    const cryptsData = {
+      gameId: SAINTS_TRAIL_GAME_ID,
+      name: "Dungeon Crypts",
+      gridData: JSON.stringify(cryptsGrid),
+      gatesData: JSON.stringify([
+        { id: "gate_exit", position: { x: 16, y: 29 }, targetMapId: "SAINTS_HAVEN", spawnPoint: { x: 2, y: 20 }, category: "DUNGEON" },
+      ]),
+      npcsData: JSON.stringify([]),
+      encountersData: JSON.stringify([
+        { speciesSlug: "rockitten", weight: 50, minLevel: 6, maxLevel: 12 },
+        { speciesSlug: "squidoodle", weight: 50, minLevel: 6, maxLevel: 12 },
+      ]),
+      tileLayersData: JSON.stringify([buildDefaultGroundLayer(cryptsGrid)]),
+      tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+      biome: "dungeon",
+      weatherType: "clear",
+      recommendedLevel: 5,
+      lightingPreset: "night",
+      description: "Ancient subterranean crypts harboring high-tier boss monsters and relic rewards.",
+      entryRequirements: JSON.stringify({ minLevel: 5 }),
+    };
+    if (!existingCrypts) {
+      await prisma.worldMap.create({ data: { id: "DUNGEON_CRYPTS", ...cryptsData } });
+    } else {
+      await prisma.worldMap.update({ where: { id: "DUNGEON_CRYPTS" }, data: cryptsData });
+    }
+  }
+
+  // Legacy expansion maps
   const tgGrid = buildTrainingGroundsGrid();
   const ccGrid = buildCrystalCavernsGrid();
-
-  // 1. TRAINING_GROUNDS
   const existingTg = await prisma.worldMap.findUnique({ where: { id: "TRAINING_GROUNDS" } });
   if (!existingTg) {
     await prisma.worldMap.create({
@@ -387,7 +558,6 @@ async function seedExpansionMaps() {
     });
   }
 
-  // 2. CRYSTAL_CAVERNS
   const existingCc = await prisma.worldMap.findUnique({ where: { id: "CRYSTAL_CAVERNS" } });
   if (!existingCc) {
     await prisma.worldMap.create({

@@ -73,6 +73,23 @@ export const PropertiesPanel: React.FC = () => {
     setTemplateName(preset.name);
   }, [preset]);
 
+  // Auto-sync gate properties when clicking an existing gate tile
+  useEffect(() => {
+    if (!clickedTile) return;
+    const currentGates = normalizeGates(currentMapData.gates);
+    const existingGate = currentGates.find(
+      (g) => g.position.x === clickedTile.c && g.position.y === clickedTile.r
+    );
+    if (existingGate) {
+      setWarpTarget(existingGate.targetMapId || 'DEMO_SANDBOX');
+      setWarpSpawnX(existingGate.spawnPoint?.x ?? 14);
+      setWarpSpawnY(existingGate.spawnPoint?.y ?? 15);
+      if (existingGate.category) {
+        setWarpCategory(existingGate.category as any);
+      }
+    }
+  }, [clickedTile, currentMapData.gates]);
+
   const applyPresetBrush = (p: LogicComponentPreset) => {
     if (p.paintTileId == null) {
       showToast('No seeded tile for this component — register a template first.');
