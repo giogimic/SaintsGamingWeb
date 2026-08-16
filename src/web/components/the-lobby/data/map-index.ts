@@ -72,3 +72,8 @@ export function getMapMetadata(mapId: string): MapIndexEntry | undefined {
 export function registerNewMap(newMap: GameMapData) {
   GAME_MAPS[newMap.id] = newMap;
 }
+
+export function unregisterMap(mapId: string) {
+  delete GAME_MAPS[mapId];
+}
+

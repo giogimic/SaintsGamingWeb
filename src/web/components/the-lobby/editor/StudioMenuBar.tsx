@@ -13,7 +13,12 @@ import { soundSynth } from '@/engine/sound-synth';
 
 type MenuState = string | null;
 
-export function StudioMenuBar() {
+interface StudioMenuBarProps {
+  onOpenMapBrowser?: () => void;
+  onOpenAssetBrowser?: () => void;
+}
+
+export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMenuBarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuState>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   
@@ -115,6 +120,15 @@ export function StudioMenuBar() {
         <div className="flex items-center gap-0.5">
           <TopLevelMenu id="file" label="File">
             <MenuItem
+              label="Browse All Maps..."
+              shortcut="Ctrl+Shift+M"
+              icon={Globe}
+              onClick={() => {
+                if (onOpenMapBrowser) onOpenMapBrowser();
+                else useEditorStore.getState().openPanel('atlas');
+              }}
+            />
+            <MenuItem
               label="New Map..."
               icon={Folder}
               onClick={() => {
@@ -125,7 +139,7 @@ export function StudioMenuBar() {
             <MenuItem
               label="Open Map / Quick Search..."
               shortcut="Ctrl+K"
-              icon={Globe}
+              icon={Search}
               onClick={() => {
                 window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }));
               }}
@@ -141,9 +155,6 @@ export function StudioMenuBar() {
             <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} onClick={() => {
               window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
             }} />
-            <MenuItem divider />
-            <MenuItem label="Export JSON (Advanced)" disabled />
-            <MenuItem label="Publish..." disabled />
           </TopLevelMenu>
 
           <TopLevelMenu id="edit" label="Edit">
@@ -178,6 +189,25 @@ export function StudioMenuBar() {
           </TopLevelMenu>
 
           <TopLevelMenu id="view" label="View">
+            <MenuItem
+              label="Full-Screen Map Explorer"
+              shortcut="Ctrl+Shift+M"
+              icon={Globe}
+              onClick={() => {
+                if (onOpenMapBrowser) onOpenMapBrowser();
+                else useEditorStore.getState().openPanel('atlas');
+              }}
+            />
+            <MenuItem
+              label="Master Asset Library"
+              shortcut="Ctrl+Shift+A"
+              icon={Box}
+              onClick={() => {
+                if (onOpenAssetBrowser) onOpenAssetBrowser();
+                else useEditorStore.getState().openPanel('assets');
+              }}
+            />
+            <MenuItem divider />
             <MenuItem label="World Atlas" shortcut="Ctrl+Shift+P" icon={Globe} onClick={() => useEditorStore.getState().openPanel('atlas')} />
             <MenuItem label="Inspector" onClick={() => useEditorStore.getState().openPanel('properties')} />
             <MenuItem label="World Builder" onClick={() => useEditorStore.getState().openPanel('build')} />
@@ -189,6 +219,7 @@ export function StudioMenuBar() {
               window.location.reload();
             }} />
           </TopLevelMenu>
+
 
           <TopLevelMenu id="mode" label="Mode">
             {Object.entries(STUDIO_MODE_META).map(([key, meta]) => {
