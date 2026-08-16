@@ -1,3 +1,10 @@
+## [2.1.296] - 2026-08-16
+### Fixed
+- **Setup Script Fixes (`scripts/setup.sh`):**
+  - Fixed syntax error with extra `fi` in proxy/web server block on line 621.
+  - Fixed Caddy service reload failure when inactive (`sudo systemctl unmask/enable/restart/start caddy`).
+  - Silenced `fuser -k` port killer stdout/stderr to avoid dirtying terminal output.
+
 ## [2.1.295] - 2026-08-16
 ### Added & Enhanced
 - **Setup Gateway & Nuclear Reinstall Mode (`scripts/setup.sh`):**
