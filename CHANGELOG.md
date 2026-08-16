@@ -1,3 +1,13 @@
+## [2.1.295] - 2026-08-16
+### Added & Enhanced
+- **Setup Gateway & Nuclear Reinstall Mode (`scripts/setup.sh`):**
+  - Added a clean top-level **Deployment Gateway Menu** on the very first screen of `./scripts/setup.sh` offering:
+    1. `✨ FIRST-TIME SETUP` (Interactive guided clean deployment)
+    2. `🔄 UPDATE DEPLOYMENT` (Pulls latest code, migrates DB & restarts stack)
+    3. `🌐 UPDATE DOMAINS / PROXY` (Configure Caddy, subdomains & SSL)
+    4. `☢️ NUCLEAR REINSTALL` (Wipe database, containers, .env & fresh deploy)
+  - **Nuclear Reinstall Flow**: Prompts a single *"Are you sure?"* confirmation dialog. Upon confirmation, it force-stops/removes old containers, wipes `./mysql_data`, deletes SQLite `dev.db`, purges `.env`, and bypasses all redundant, repetitive warning/prompt boxes across the setup script for a clean, prompt-free fresh install.
+
 ## [2.1.294] - 2026-08-16
 ### Added & Fixed
 - **Mandatory First-Run Setup Gate & Disconnect Invalidation Policy (Bible 17 & Bible 35):**
