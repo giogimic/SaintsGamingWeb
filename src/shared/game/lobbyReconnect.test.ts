@@ -1,9 +1,28 @@
 import { describe, expect, it } from "vitest";
 import {
+  isSessionConnectionStale,
   mergeMapDocumentInPlace,
   shouldApplyMapReload,
   shouldClearPeersOnDisconnect,
 } from "./lobbyReconnect";
+
+describe("isSessionConnectionStale", () => {
+  it("returns false when not disconnected", () => {
+    expect(isSessionConnectionStale(null)).toBe(false);
+    expect(isSessionConnectionStale(0)).toBe(false);
+  });
+
+  it("returns false when disconnect is under 25 seconds", () => {
+    const disconnectedAt = 100000;
+    expect(isSessionConnectionStale(disconnectedAt, 120000)).toBe(false); // 20s
+  });
+
+  it("returns true when disconnect exceeds 25 seconds", () => {
+    const disconnectedAt = 100000;
+    expect(isSessionConnectionStale(disconnectedAt, 126000)).toBe(true); // 26s
+    expect(isSessionConnectionStale(disconnectedAt, 130000)).toBe(true); // 30s
+  });
+});
 
 describe("shouldClearPeersOnDisconnect", () => {
   it("keeps peers on soft transport disconnect", () => {

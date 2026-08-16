@@ -4,6 +4,21 @@
 
 import { isSameBaseMap } from "../net/mapIds";
 
+/** Maximum allowed disconnect timeout before session expires and forces title return (20-30s policy). */
+export const MAX_DISCONNECT_RECONNECT_WINDOW_MS = 25000; // 25 seconds
+
+/**
+ * Returns true if a connection has been lost for longer than the reconnect window.
+ */
+export function isSessionConnectionStale(
+  disconnectedAt: number | null | undefined,
+  now = Date.now(),
+  maxWindowMs = MAX_DISCONNECT_RECONNECT_WINDOW_MS
+): boolean {
+  if (!disconnectedAt || disconnectedAt <= 0) return false;
+  return now - disconnectedAt >= maxWindowMs;
+}
+
 /** Soft transport blips keep peer sprites until `map_players` refreshes. */
 export function shouldClearPeersOnDisconnect(reason: string): boolean {
   return reason === "io server disconnect";

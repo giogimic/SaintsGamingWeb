@@ -1,3 +1,9 @@
+## [2.1.294] - 2026-08-16
+### Added & Fixed
+- **Mandatory First-Run Setup Gate & Disconnect Invalidation Policy (Bible 17 & Bible 35):**
+  - **Mandatory Setup Gate**: Hard-gated `/lobby` and `/studio` server-side (`LobbyPage` & `StudioLayout`) and client-side (`initData`). Access to the MMO world, character selector, and editor is blocked and immediately routed to `/setup` if setup has not been run or 0 maps exist.
+  - **25-Second Connection Loss Expiration Policy**: Implemented `MAX_DISCONNECT_RECONNECT_WINDOW_MS` (25s) and `isSessionConnectionStale`. If a player's realm socket connection is lost for more than 25 seconds, the session is expired, active socket is disconnected, in-memory tokens are cleared, and the client is returned to the Title Screen / Gateway with an expiration notice, preventing stale link hijacking.
+
 ## [2.1.293] - 2026-08-16
 ### Fixed
 - **Setup Script Discord OAuth Verification (`scripts/setup.sh`):**
