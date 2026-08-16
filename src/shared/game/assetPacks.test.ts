@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { inferAssetPack, packTag } from "./assetPacks";
 
 describe("inferAssetPack", () => {
+  it("classifies Saints official pack assets", () => {
+    expect(inferAssetPack("/assets/packs/starter_realm.png")).toBe("saints");
+    expect(inferAssetPack("/game-assets/tilesets/Terrain_by_George.png")).toBe("saints");
+  });
+
   it("classifies LPC overworld NPCs", () => {
     expect(inferAssetPack("/game-assets/npc/37707_female.png")).toBe("lpc");
     expect(inferAssetPack("npc/adventurer_beige.png")).toBe("lpc");

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { ensureStudioMapFoundation } from "@/server/DemoBootstrap";
+import { getSystemSetupStatus } from "@/shared/game/setup/setupDetection";
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/maps?gameId=tuxemon
  * Lists WorldMap index rows for lobby/editor map pickers.
- * Empty index triggers lazy DemoBootstrap so production hosts without a
+ * On existing servers (not fresh install), empty index triggers lazy DemoBootstrap so production hosts without a
  * successful boot seed still get DEMO_SANDBOX.
  */
 export async function GET(request: Request) {
@@ -28,21 +29,24 @@ export async function GET(request: Request) {
     });
 
     if (maps.length === 0) {
-      const ensured = await ensureStudioMapFoundation();
-      if (ensured.demoMap) {
-        maps = await prisma.worldMap.findMany({
-          where: gameId ? { gameId } : undefined,
-          select: {
-            id: true,
-            name: true,
-            gameId: true,
-            version: true,
-            updatedAt: true,
-          },
-          orderBy: { name: "asc" },
-        });
-      } else if (ensured.error) {
-        console.error("[api/maps] empty-index ensure failed:", ensured.error);
+      const setupStatus = await getSystemSetupStatus(prisma);
+      if (!setupStatus.isFreshInstall) {
+        const ensured = await ensureStudioMapFoundation();
+        if (ensured.demoMap) {
+          maps = await prisma.worldMap.findMany({
+            where: gameId ? { gameId } : undefined,
+            select: {
+              id: true,
+              name: true,
+              gameId: true,
+              version: true,
+              updatedAt: true,
+            },
+            orderBy: { name: "asc" },
+          });
+        } else if (ensured.error) {
+          console.error("[api/maps] empty-index ensure failed:", ensured.error);
+        }
       }
     }
 

@@ -113,6 +113,10 @@ export const FullScreenAssetBrowser: React.FC<FullScreenAssetBrowserProps> = ({
             onAssetSelect={(asset) => {
               showToast(`Asset selected: ${asset.id || asset.source}`);
             }}
+            onOpenSlicer={(asset) => {
+              setSlicerSource(asset);
+              setActiveTab('slicer');
+            }}
           />
         )}
         {activeTab === 'sprites' && (
