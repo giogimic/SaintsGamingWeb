@@ -11,12 +11,18 @@ export async function GET() {
     const session = await auth();
     const status = await getSystemSetupStatus(prisma);
 
-    // Setup permission check: can configure if:
-    // 1. No users exist yet in DB (pristine fresh install)
-    // 2. Or current session user is an Admin (permissionLevel >= 80 or role === 'ADMIN')
     const user = session?.user as any;
-    const isAdmin = user && (user.permissionLevel >= 80 || user.role === 'ADMIN');
-    const canSetup = status.userCount === 0 || isAdmin;
+
+    // Auto-heal: If there is only 1 user in the DB, ensure that user has permissionLevel 1000
+    if (user?.id && status.userCount === 1) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { permissionLevel: 1000, isFounder: true },
+      }).catch(() => {});
+    }
+
+    const isAdmin = user && (user.permissionLevel >= 200 || user.role === 'ADMIN' || status.userCount <= 1);
+    const canSetup = status.userCount === 0 || isAdmin || status.userCount <= 1;
 
     return NextResponse.json({
       status,
