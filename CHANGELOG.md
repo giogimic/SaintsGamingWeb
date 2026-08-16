@@ -1,3 +1,10 @@
+## [2.1.284] - 2026-08-16
+### Added
+- **Raids, Chambers of Xeric & Boss Mechanics Matrix Engine (Bible 24 & Bible 27):**
+  - `raidRoomGenerator.ts`: Procedural 3-floor raid dungeon layouts (Combat, Puzzle, Scavenge, Boss rooms), party size HP multiplier $1 + (N-1) \times 0.75$, defence scaling, Challenge Mode +50% HP / +20% def boosts, and room clear contribution point distribution.
+  - `olmBossEngine.ts`: The Great Olm 3-phase fight progression (Left Hand, Right Hand, Head), Phase 3 enrage & head vulnerability unlock, Crystal Burst spike avoidance, Teleport Pairs proximity resolution, and Burn status effect contagion loops.
+  - `raidLootEngine.ts`: Party point scaling and unique drop probability calculations (8,675 points per 1% chance, capped at 65%), 40% personal death penalty, and unique chest drops (Twisted Bow, Ancestral Robes, Elder Maul, Kodai Insignia, Prayer Scrolls, Olmlet pet, CM Metamorphic Dust).
+
 ## [2.1.283] - 2026-08-16
 ### Added
 - **Slayer Assignment System, Superior Monsters & Slayer Master Engine (Bible 09 & Bible 21):**
