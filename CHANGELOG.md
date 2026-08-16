@@ -1,3 +1,10 @@
+## [2.1.283] - 2026-08-16
+### Added
+- **Slayer Assignment System, Superior Monsters & Slayer Master Engine (Bible 09 & Bible 21):**
+  - `slayerTaskEngine.ts`: 6 canonical Slayer Masters (Turael, Mazchna, Vannaka, Chaeldar, Nieve, Duradel), weighted assignment based on combat and slayer level prerequisites, streak milestone multipliers (10th=5x, 50th=15x, 100th=25x, 250th=35x, 1000th=50x), task kill tracking, and Turael streak reset mechanics.
+  - `superiorSlayerEngine.ts`: 1/200 superior spawn rolls for 15 monster variants (Marble Gargoyle, King Kurask, Insatiable Bloodveld, Greater Abyssal Demon) with 10x Slayer XP, tiered unique relic drop table (Imbued Heart, Eternal Gem, Dust & Mist Battlestaffs), and +1 + 10% Magic boost calculation.
+  - `slayerShopEngine.ts`: Slayer Reward Shop unlock matrix (Bigger and Badder, Malevolent Masquerade, Ring Bling, Broader Fletching, Task Extensions), task blocking with Quest Point scaling (up to 6 slots), task cancelling for 30 points, and on-task combat bonuses (+16.67% melee, +15% ranged/magic for imbued slayer helm).
+
 ## [2.1.282] - 2026-08-16
 ### Added
 - **Studio UI & Full-Screen Editor Architecture Overhaul:**
