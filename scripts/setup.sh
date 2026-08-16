@@ -73,53 +73,106 @@ fi
 
 chmod +x *.sh 2>/dev/null || true
 
-# --- Data Loss Prevention: MySQL Volume Check ---
-MUST_REUSE_ENV=0
-if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
-    echo -e "${RED}${BOLD}[!] WARNING: Existing Database Volume Detected!${NC}"
-    echo -e "${YELLOW}    The directory ./mysql_data contains data. If you proceed with a fresh setup,${NC}"
-    echo -e "${YELLOW}    new passwords will be generated, which may cause a credential mismatch with${NC}"
-    echo -e "${YELLOW}    your existing database, locking you out of your data!${NC}"
-    if whiptail --title "Data Loss Warning!" --yesno "An existing database volume (mysql_data) was found.\n\nAre you absolutely sure you want to run setup? This may lock you out of your existing data.\n\n(Select NO to abort, or YES if you are wiping everything)" 12 70; then
-        if whiptail --title "Wipe Database?" --yesno "Would you like to DELETE the existing database volume to start completely fresh?\n\nWARNING: THIS CANNOT BE UNDONE!" 10 60; then
-            echo -e "${RED}[*] Wiping existing database volume...${NC}"
-            sudo rm -rf ./mysql_data
-        else
-            echo -e "${YELLOW}[!] Keeping existing database volume...${NC}"
-            MUST_REUSE_ENV=1
-        fi
+# --- Top-Level Setup Action Selector ---
+IS_NUCLEAR_MODE=0
+SETUP_ACTION=$(whiptail --title "Saints Gaming Deployment Gateway" --menu \
+"Select setup operation to perform:\n" 18 78 4 \
+"1" "✨ FIRST-TIME SETUP (Interactive guided fresh installation)" \
+"2" "🔄 UPDATE DEPLOYMENT (Pulls updates, migrates DB & restarts stack)" \
+"3" "🌐 UPDATE DOMAINS / PROXY (Configure Caddy, subdomains & SSL)" \
+"4" "☢️  NUCLEAR REINSTALL (Wipe database, containers, .env & fresh deploy)" \
+3>&1 1>&2 2>&3) || exit 0
+
+if [ "$SETUP_ACTION" = "2" ]; then
+    echo -e "${CYAN}[*] Handing off to Update Script...${NC}"
+    if [ -f "./update.sh" ]; then
+        chmod +x ./update.sh
+        exec ./update.sh
     else
-        echo -e "${GREEN}[*] Setup aborted. Your data is safe.${NC}"
-        echo -e "${YELLOW}    Use ./update.sh to update an existing deployment without overwriting credentials.${NC}"
+        git pull && npm run setup && docker-compose up -d --build
         exit 0
     fi
+elif [ "$SETUP_ACTION" = "3" ]; then
+    echo -e "${CYAN}[*] Handing off to Domain & Proxy Manager...${NC}"
+    DEV_PROXY_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dev-proxy.sh"
+    if [ -f "$DEV_PROXY_SCRIPT" ]; then
+        chmod +x "$DEV_PROXY_SCRIPT"
+        exec "$DEV_PROXY_SCRIPT" ask
+    else
+        echo -e "${RED}[!] dev-proxy.sh not found.${NC}"
+        exit 1
+    fi
+elif [ "$SETUP_ACTION" = "4" ]; then
+    if ! whiptail --title "☢️ CONFIRM NUCLEAR REINSTALL ☢️" --yesno \
+"Are you ABSOLUTELY sure you want to perform a NUCLEAR REINSTALL?\n\nThis will:\n• FORCE STOP and REMOVE all Saints Gaming containers & volumes\n• WIPE ./mysql_data and SQLite dev.db completely\n• RESET .env and regenerate all cryptographic secrets\n• Bypass all repetitive confirmation & warning prompts\n\nWARNING: THIS CANNOT BE UNDONE!" 16 75; then
+        echo -e "${GREEN}[*] Nuclear reinstall cancelled.${NC}"
+        exit 0
+    fi
+
+    echo -e "${RED}${BOLD}[☢️] EXECUTING NUCLEAR REINSTALL...${NC}"
+    IS_NUCLEAR_MODE=1
+
+    # Force-stop & purge running containers
+    command -v docker &>/dev/null && docker rm -f saints-gaming-web saints-gaming-db go-mmo 2>/dev/null || true
+    command -v docker-compose &>/dev/null && docker-compose down -v 2>/dev/null || true
+
+    # Wipe database volumes & reset environment
+    sudo rm -rf ./mysql_data ./data ./uploads/scratch 2>/dev/null || true
+    rm -f ./prisma/db/dev.db ./prisma/db/dev.db-journal .env
+    mkdir -p ./data ./uploads ./mysql_data
+    chmod -R 777 ./data ./uploads ./mysql_data 2>/dev/null || true
+    echo -e "${GREEN}[✓] Data and containers completely purged.${NC}"
 fi
 
-# --- Guard: Must be a fresh install ---
-REUSE_ENV=0
-if [ -f .env ]; then
-    echo -e "${YELLOW}[!] A .env file already exists — this looks like an existing installation.${NC}"
-    if whiptail --title "Existing Install Detected" --yesno "A .env file already exists.\n\nDo you want to continue and overwrite settings?\n\n(Select NO to cancel and run ./update.sh instead)" 12 65; then
-        if [ "$MUST_REUSE_ENV" = "1" ]; then
-            echo -e "${CYAN}[*] Forcing credential preservation because mysql_data was kept.${NC}"
-            REUSE_ENV=1
-            OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-            OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+# --- Data Loss Prevention: MySQL Volume Check ---
+MUST_REUSE_ENV=0
+if [ "$IS_NUCLEAR_MODE" != "1" ]; then
+    if [ -d "./mysql_data" ] && [ "$(ls -A ./mysql_data 2>/dev/null)" ]; then
+        echo -e "${RED}${BOLD}[!] WARNING: Existing Database Volume Detected!${NC}"
+        echo -e "${YELLOW}    The directory ./mysql_data contains data. If you proceed with a fresh setup,${NC}"
+        echo -e "${YELLOW}    new passwords will be generated, which may cause a credential mismatch with${NC}"
+        echo -e "${YELLOW}    your existing database, locking you out of your data!${NC}"
+        if whiptail --title "Data Loss Warning!" --yesno "An existing database volume (mysql_data) was found.\n\nAre you absolutely sure you want to run setup? This may lock you out of your existing data.\n\n(Select NO to abort, or YES if you are wiping everything)" 12 70; then
+            if whiptail --title "Wipe Database?" --yesno "Would you like to DELETE the existing database volume to start completely fresh?\n\nWARNING: THIS CANNOT BE UNDONE!" 10 60; then
+                echo -e "${RED}[*] Wiping existing database volume...${NC}"
+                sudo rm -rf ./mysql_data
+            else
+                echo -e "${YELLOW}[!] Keeping existing database volume...${NC}"
+                MUST_REUSE_ENV=1
+            fi
         else
-            if whiptail --title "Preserve Credentials" --yesno "Would you like to KEEP the existing database credentials from the current .env file?" 10 65; then
+            echo -e "${GREEN}[*] Setup aborted. Your data is safe.${NC}"
+            echo -e "${YELLOW}    Use ./update.sh to update an existing deployment without overwriting credentials.${NC}"
+            exit 0
+        fi
+    fi
+
+    # --- Guard: Must be a fresh install ---
+    REUSE_ENV=0
+    if [ -f .env ]; then
+        echo -e "${YELLOW}[!] A .env file already exists — this looks like an existing installation.${NC}"
+        if whiptail --title "Existing Install Detected" --yesno "A .env file already exists.\n\nDo you want to continue and overwrite settings?\n\n(Select NO to cancel and run ./update.sh instead)" 12 65; then
+            if [ "$MUST_REUSE_ENV" = "1" ]; then
+                echo -e "${CYAN}[*] Forcing credential preservation because mysql_data was kept.${NC}"
                 REUSE_ENV=1
                 OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
                 OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+            else
+                if whiptail --title "Preserve Credentials" --yesno "Would you like to KEEP the existing database credentials from the current .env file?" 10 65; then
+                    REUSE_ENV=1
+                    OLD_DB_PASS=$(grep '^DATABASE_URL=' .env | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+                    OLD_AUTH_SECRET=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2-)
+                fi
             fi
+        else
+            exit 0
         fi
-    else
-        exit 0
+    elif [ "$MUST_REUSE_ENV" = "1" ]; then
+        echo -e "${RED}[!] Error: mysql_data exists but .env is missing!${NC}"
+        echo -e "${YELLOW}    We cannot safely generate new passwords without locking the database!${NC}"
+        echo -e "${YELLOW}    Please wipe mysql_data or run setup.sh again and choose to wipe it.${NC}"
+        exit 1
     fi
-elif [ "$MUST_REUSE_ENV" = "1" ]; then
-    echo -e "${RED}[!] Error: mysql_data exists but .env is missing!${NC}"
-    echo -e "${YELLOW}    We cannot safely generate new passwords without locking the database!${NC}"
-    echo -e "${YELLOW}    Please wipe mysql_data or run setup.sh again and choose to wipe it.${NC}"
-    exit 1
 fi
 
 # --- Helpers: unique Docker names (base, then base1, base2, …) ---
@@ -153,38 +206,40 @@ DEV_PROXY_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dev-proxy.sh"
 
 # --- Detect already-running stack / Caddy (ask before changing anything) ---
 EXISTING_HINTS=""
-if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
-    EXISTING_HINTS="${EXISTING_HINTS}• Caddy install detected\n"
-fi
-if command -v systemctl &>/dev/null && systemctl is-active --quiet caddy 2>/dev/null; then
-    EXISTING_HINTS="${EXISTING_HINTS}• Caddy service is RUNNING\n"
-fi
-if container_name_in_use "saints-gaming-web"; then
-    EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-web exists\n"
-fi
-if container_name_in_use "saints-gaming-db"; then
-    EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-db exists\n"
-fi
+if [ "$IS_NUCLEAR_MODE" != "1" ]; then
+    if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+        EXISTING_HINTS="${EXISTING_HINTS}• Caddy install detected\n"
+    fi
+    if command -v systemctl &>/dev/null && systemctl is-active --quiet caddy 2>/dev/null; then
+        EXISTING_HINTS="${EXISTING_HINTS}• Caddy service is RUNNING\n"
+    fi
+    if container_name_in_use "saints-gaming-web"; then
+        EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-web exists\n"
+    fi
+    if container_name_in_use "saints-gaming-db"; then
+        EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-db exists\n"
+    fi
 
-if [ -n "$EXISTING_HINTS" ]; then
-    EXIST_OPT=$(whiptail --title "Existing Server Detected" --menu "Something is already set up on this host:\n\n${EXISTING_HINTS}\nWhat should setup do?" 20 78 4 \
-    "1" "Add subdomain only (keep primary Caddy/site — recommended for reruns)" \
-    "2" "Continue full setup beside it (unique container names + free ports)" \
-    "3" "Abort (use ./update.sh or ./scripts/dev-proxy.sh instead)" \
-    "4" "Continue and allow killing conflicting ports (destructive)" 3>&1 1>&2 2>&3) || exit 1
+    if [ -n "$EXISTING_HINTS" ]; then
+        EXIST_OPT=$(whiptail --title "Existing Server Detected" --menu "Something is already set up on this host:\n\n${EXISTING_HINTS}\nWhat should setup do?" 20 78 4 \
+        "1" "Add subdomain only (keep primary Caddy/site — recommended for reruns)" \
+        "2" "Continue full setup beside it (unique container names + free ports)" \
+        "3" "Abort (use ./update.sh or ./scripts/dev-proxy.sh instead)" \
+        "4" "Continue and allow killing conflicting ports (destructive)" 3>&1 1>&2 2>&3) || exit 1
 
-    if [ "$EXIST_OPT" = "1" ]; then
-        EXISTING_CADDY_ADDITIVE=1
-        REVERSE_PROXY_MODE=1
-        echo -e "${GREEN}[*] Additive mode: will not rewrite primary Caddy; only upsert a subdomain via dev-proxy.${NC}"
-    elif [ "$EXIST_OPT" = "3" ]; then
-        echo -e "${GREEN}[*] Aborted. For subdomain-only: ./scripts/dev-proxy.sh ask${NC}"
-        exit 0
-    elif [ "$EXIST_OPT" = "4" ]; then
-        echo -e "${YELLOW}[*] Destructive path allowed for this run.${NC}"
-        ALLOW_KILL_PORTS=1
-    else
-        ALLOW_KILL_PORTS=0
+        if [ "$EXIST_OPT" = "1" ]; then
+            EXISTING_CADDY_ADDITIVE=1
+            REVERSE_PROXY_MODE=1
+            echo -e "${GREEN}[*] Additive mode: will not rewrite primary Caddy; only upsert a subdomain via dev-proxy.${NC}"
+        elif [ "$EXIST_OPT" = "3" ]; then
+            echo -e "${GREEN}[*] Aborted. For subdomain-only: ./scripts/dev-proxy.sh ask${NC}"
+            exit 0
+        elif [ "$EXIST_OPT" = "4" ]; then
+            echo -e "${YELLOW}[*] Destructive path allowed for this run.${NC}"
+            ALLOW_KILL_PORTS=1
+        else
+            ALLOW_KILL_PORTS=0
+        fi
     fi
 fi
 
@@ -196,56 +251,64 @@ REVERSE_PROXY_MODE=${REVERSE_PROXY_MODE:-0}
 ALLOW_KILL_PORTS=${ALLOW_KILL_PORTS:-0}
 CONFLICTS=""
 
-if ss -tuln | grep -q ":80 "; then CONFLICTS="$CONFLICTS Port 80\n"; fi
-if ss -tuln | grep -q ":443 "; then CONFLICTS="$CONFLICTS Port 443\n"; fi
-if ss -tuln | grep -q ":3000 "; then CONFLICTS="$CONFLICTS Port 3000\n"; fi
+if [ "$IS_NUCLEAR_MODE" = "1" ]; then
+    ALLOW_KILL_PORTS=1
+    if ss -tuln | grep -qE ":(80|443|3000) "; then
+        echo -e "${CYAN}[*] Nuclear mode: Clearing conflicting ports 80/443/3000...${NC}"
+        sudo apt-get update -qq && sudo apt-get install -y -qq psmisc 2>/dev/null || true
+        sudo fuser -k 80/tcp 443/tcp 3000/tcp 2>/dev/null || true
+        sleep 1
+    fi
+else
+    if ss -tuln | grep -q ":80 "; then CONFLICTS="$CONFLICTS Port 80\n"; fi
+    if ss -tuln | grep -q ":443 "; then CONFLICTS="$CONFLICTS Port 443\n"; fi
+    if ss -tuln | grep -q ":3000 "; then CONFLICTS="$CONFLICTS Port 3000\n"; fi
 
-if [ "$EXISTING_CADDY_ADDITIVE" = "1" ]; then
-    # Sit behind the already-running proxy: pick a free app port, never bind 80/443.
-    REVERSE_PROXY_MODE=1
-    HTTP_PORT=""
-    HTTPS_PORT=""
-    while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
-    whiptail --title "Behind Existing Proxy" --msgbox "Additive / behind-proxy mode.\n\nApp will listen on: $WEB_PORT\nPrimary Caddy site will NOT be rewritten.\nYou will be asked for a subdomain to add." 12 70
-elif [ -n "$CONFLICTS" ]; then
-    PORT_OPT=$(whiptail --title "Port Conflicts Detected" --menu "The following ports are already in use:\n$CONFLICTS\nHow do you want to resolve this?" 18 75 4 \
-    "1" "Behind existing / reverse proxy (skip 80/443, free app port)" \
-    "2" "Use alternative ports" \
-    "3" "Abort — do not change anything" \
-    "4" "KILL conflicting services (destructive)" 3>&1 1>&2 2>&3) || exit 1
-
-    if [ "$PORT_OPT" = "1" ]; then
+    if [ "$EXISTING_CADDY_ADDITIVE" = "1" ]; then
         REVERSE_PROXY_MODE=1
         HTTP_PORT=""
         HTTPS_PORT=""
         while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
-        # Prefer attaching to existing Caddy when present.
-        if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
-            EXISTING_CADDY_ADDITIVE=1
-            whiptail --title "Reverse Proxy Mode" --msgbox "Existing Caddy detected.\n\nApp port: $WEB_PORT\nSetup will ADD a subdomain only (primary site untouched).\nOr use: ./scripts/dev-proxy.sh ask" 13 70
-        else
-            whiptail --title "Reverse Proxy Mode" --msgbox "Reverse Proxy Mode Enabled.\n\nApp port: $WEB_PORT\nPoint your external proxy at http://127.0.0.1:$WEB_PORT" 12 65
-        fi
-    elif [ "$PORT_OPT" = "2" ]; then
-        while ss -tuln | grep -q ":$HTTP_PORT "; do HTTP_PORT=$((HTTP_PORT+1)); done
-        while ss -tuln | grep -q ":$HTTPS_PORT "; do HTTPS_PORT=$((HTTPS_PORT+1)); done
-        while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
-        whiptail --title "New Ports Selected" --msgbox "Selected new available ports:\n\nHTTP: $HTTP_PORT\nHTTPS: $HTTPS_PORT\nWeb App: $WEB_PORT" 12 50
-    elif [ "$PORT_OPT" = "3" ]; then
-        echo -e "${GREEN}[*] Aborted with no changes.${NC}"
-        exit 0
-    elif [ "$PORT_OPT" = "4" ]; then
-        if [ "$ALLOW_KILL_PORTS" != "1" ]; then
-            if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/3000?" 10 55; then
-                exit 1
+        whiptail --title "Behind Existing Proxy" --msgbox "Additive / behind-proxy mode.\n\nApp will listen on: $WEB_PORT\nPrimary Caddy site will NOT be rewritten.\nYou will be asked for a subdomain to add." 12 70
+    elif [ -n "$CONFLICTS" ]; then
+        PORT_OPT=$(whiptail --title "Port Conflicts Detected" --menu "The following ports are already in use:\n$CONFLICTS\nHow do you want to resolve this?" 18 75 4 \
+        "1" "Behind existing / reverse proxy (skip 80/443, free app port)" \
+        "2" "Use alternative ports" \
+        "3" "Abort — do not change anything" \
+        "4" "KILL conflicting services (destructive)" 3>&1 1>&2 2>&3) || exit 1
+
+        if [ "$PORT_OPT" = "1" ]; then
+            REVERSE_PROXY_MODE=1
+            HTTP_PORT=""
+            HTTPS_PORT=""
+            while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
+            if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+                EXISTING_CADDY_ADDITIVE=1
+                whiptail --title "Reverse Proxy Mode" --msgbox "Existing Caddy detected.\n\nApp port: $WEB_PORT\nSetup will ADD a subdomain only (primary site untouched).\nOr use: ./scripts/dev-proxy.sh ask" 13 70
+            else
+                whiptail --title "Reverse Proxy Mode" --msgbox "Reverse Proxy Mode Enabled.\n\nApp port: $WEB_PORT\nPoint your external proxy at http://127.0.0.1:$WEB_PORT" 12 65
             fi
+        elif [ "$PORT_OPT" = "2" ]; then
+            while ss -tuln | grep -q ":$HTTP_PORT "; do HTTP_PORT=$((HTTP_PORT+1)); done
+            while ss -tuln | grep -q ":$HTTPS_PORT "; do HTTPS_PORT=$((HTTPS_PORT+1)); done
+            while ss -tuln | grep -q ":$WEB_PORT "; do WEB_PORT=$((WEB_PORT+1)); done
+            whiptail --title "New Ports Selected" --msgbox "Selected new available ports:\n\nHTTP: $HTTP_PORT\nHTTPS: $HTTPS_PORT\nWeb App: $WEB_PORT" 12 50
+        elif [ "$PORT_OPT" = "3" ]; then
+            echo -e "${GREEN}[*] Aborted with no changes.${NC}"
+            exit 0
+        elif [ "$PORT_OPT" = "4" ]; then
+            if [ "$ALLOW_KILL_PORTS" != "1" ]; then
+                if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/3000?" 10 55; then
+                    exit 1
+                fi
+            fi
+            echo -e "${CYAN}Killing processes on conflicting ports...${NC}"
+            sudo apt-get update && sudo apt-get install -y psmisc
+            sudo fuser -k 80/tcp 443/tcp 3000/tcp || true
+            sleep 2
+        else
+            exit 1
         fi
-        echo -e "${CYAN}Killing processes on conflicting ports...${NC}"
-        sudo apt-get update && sudo apt-get install -y psmisc
-        sudo fuser -k 80/tcp 443/tcp 3000/tcp || true
-        sleep 2
-    else
-        exit 1
     fi
 fi
 
@@ -469,7 +532,9 @@ elif [ "$REVERSE_PROXY_MODE" = "1" ]; then
         fi
     fi
 else
-    if command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+    if [ "$IS_NUCLEAR_MODE" = "1" ]; then
+        USE_CADDY=1
+    elif command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
         if whiptail --title "Existing Caddy" --yesno "Caddy is already installed.\n\nYES = add this site as a subdomain only (safe rerun)\nNO  = manage Caddy as a fresh primary install (may overwrite Caddyfile)" 13 72 3>&1 1>&2 2>&3; then
             EXISTING_CADDY_ADDITIVE=1
             SSL_CHOICE="Existing Caddy (subdomain only)"
@@ -480,18 +545,19 @@ else
         fi
     fi
 
-    if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
-    if command -v nginx &>/dev/null; then
-        if whiptail --title "Web Server Upgrade" --yesno "Nginx is currently installed.\n\nWould you like to REMOVE Nginx and install Caddy instead?\n(Caddy handles SSL automatically — no Certbot needed)" 12 70 3>&1 1>&2 2>&3; then
-            echo -e "${RED}[!] Stopping and purging Nginx...${NC}"
-            sudo systemctl stop nginx || true
-            sudo apt-get purge -y nginx nginx-common
-            sudo apt-get autoremove -y
-            USE_CADDY=1
-        fi
-    else
-        if whiptail --title "Web Server Selection" --yesno "Would you like to install Caddy? (Recommended — automatic SSL)\n\nIf NO, Nginx will be installed instead." 12 70 3>&1 1>&2 2>&3; then
-            USE_CADDY=1
+    if [ "$EXISTING_CADDY_ADDITIVE" != "1" ] && [ "$IS_NUCLEAR_MODE" != "1" ]; then
+        if command -v nginx &>/dev/null; then
+            if whiptail --title "Web Server Upgrade" --yesno "Nginx is currently installed.\n\nWould you like to REMOVE Nginx and install Caddy instead?\n(Caddy handles SSL automatically — no Certbot needed)" 12 70 3>&1 1>&2 2>&3; then
+                echo -e "${RED}[!] Stopping and purging Nginx...${NC}"
+                sudo systemctl stop nginx || true
+                sudo apt-get purge -y nginx nginx-common
+                sudo apt-get autoremove -y
+                USE_CADDY=1
+            fi
+        else
+            if whiptail --title "Web Server Selection" --yesno "Would you like to install Caddy? (Recommended — automatic SSL)\n\nIf NO, Nginx will be installed instead." 12 70 3>&1 1>&2 2>&3; then
+                USE_CADDY=1
+            fi
         fi
     fi
 
@@ -557,7 +623,7 @@ fi
 
 # --- Additional Subdomain Proxies (additive via dev-proxy when Caddy) ---
 EXTRA_SUBDOMAINS=()
-if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ]; then
+if [ "$IS_NUCLEAR_MODE" != "1" ] && { [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ]; }; then
     while whiptail --title "Additional Subdomain Proxy" --yesno "Add another subdomain proxy for a side service?\n(uses ./scripts/dev-proxy.sh — primary site untouched)" 11 70 3>&1 1>&2 2>&3; do
         SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. panel.$DOMAIN):" 10 60 "panel.$DOMAIN" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$SUBDOMAIN" ]; then break; fi
@@ -596,7 +662,7 @@ fi
 
 # --- Go MMO (destination realtime for lobby / Studio) ---
 # Next keeps site APIs + /api/maps; game sockets move to Go when enabled.
-ENABLE_GO_MMO=0
+ENABLE_GO_MMO=1
 GO_MMO_PORT=3001
 GO_MMO_PUBLIC_URL=""
 GO_MMO_SUBDOMAIN_CHOSEN=""
@@ -606,8 +672,10 @@ if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
     GO_MMO_SETUP_SCRIPT="$(pwd)/go-mmo/scripts/setup-go-mmo.sh"
 fi
 
-if whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nREQUIRED — this is the sole supported backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :3001 + NEXT_PUBLIC_GO_MMO_URL\nNO  = Emergency TS fallback only" 16 74; then
-    ENABLE_GO_MMO=1
+if [ "$IS_NUCLEAR_MODE" != "1" ]; then
+    if ! whiptail --title "Go MMO Backend" --yesno "Enable Go MMO for lobby + Studio game sockets?\n\nREQUIRED — this is the sole supported backend for game/Studio realtime.\nNext keeps the site, auth, and /api/maps (Prisma).\n\nYES = Go on :3001 + NEXT_PUBLIC_GO_MMO_URL\nNO  = Emergency TS fallback only" 16 74; then
+        ENABLE_GO_MMO=0
+    fi
 fi
 
 if [ "$ENABLE_GO_MMO" = "1" ]; then
