@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         email,
         username,
         passwordHash,
-        permissionLevel: isFirstUser ? 100 : 20, // First user is Admin/Owner (100), subsequent default to USER (20)
+        permissionLevel: isFirstUser ? 1000 : 20, // First user is Developer/Owner (1000), subsequent default to USER (20)
         isFounder: isFirstUser,
       },
     });
@@ -63,6 +63,7 @@ export async function POST(req: Request) {
           username: newUser.username,
           email: newUser.email,
         },
+        redirectTo: isFirstUser ? "/setup" : undefined,
         message: "User created successfully",
       },
       { status: 201 }

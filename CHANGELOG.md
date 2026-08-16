@@ -1,3 +1,11 @@
+## [2.1.292] - 2026-08-16
+### Fixed & Improved
+- **Lobby Setup Delivery & Admin Authorization (Bible 17 & Bible 35):**
+  - Upgraded first-time user registration to automatically grant `permissionLevel: 1000` (Developer / Owner) and auto-heals single-user dev databases to Developer permissions.
+  - Added glowing **Realm Setup Required** banner to the Game Title Screen when fresh install or setup is pending.
+  - Added dedicated **Realm Setup Wizard** shortcut in the Title Screen Realm Gateway widget and in the Main Website Navbar Admin dropdown.
+  - Added auto-redirection to `/setup` upon login or clicking Play when no maps exist or setup is pending.
+
 ## [2.1.291] - 2026-08-16
 ### Added
 - **Studio Asset Repository Upgrades & Starter Pack Integration (Bible 16 §7 & Bible 35):**

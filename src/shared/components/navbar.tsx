@@ -22,7 +22,7 @@ import { NotificationsMenu } from "@/shared/components/notifications-menu";
 import { ThemeSwitcher } from "@/shared/components/theme-switcher";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/shared/ui/sheet";
 import { signOut } from "next-auth/react";
-import { User as UserIcon, LogOut, Settings, Gamepad2 } from "lucide-react";
+import { User as UserIcon, LogOut, Settings, Gamepad2, Sparkles } from "lucide-react";
 import packageJson from '../../../package.json';
 import {
   DropdownMenu,
@@ -46,7 +46,7 @@ const NAV_ITEMS = [
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion: _siteVersion = "2.1.291" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion: _siteVersion = "2.1.292" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -154,10 +154,16 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                     </DropdownMenuItem>
                   )}
                   {isAdmin && (
-                    <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer" />}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem render={<Link href="/setup" className="cursor-pointer text-amber-400 font-semibold" />}>
+                        <Sparkles className="mr-2 h-4 w-4 text-amber-400" />
+                        Setup Wizard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer" />}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Admin Dashboard
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-400/10" onClick={() => signOut({ callbackUrl: '/' })}>
@@ -344,7 +350,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.291"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.292"}</span>
           </div>
 
         </div>

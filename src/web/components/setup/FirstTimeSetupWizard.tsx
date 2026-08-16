@@ -208,9 +208,9 @@ export function FirstTimeSetupWizard() {
               <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">
                 <div className="text-slate-300 font-semibold flex items-center gap-2">
                   <Sparkle className="w-3.5 h-3.5 text-amber-400" />
-                  Pristine Database State
+                  Database State
                 </div>
-                <div>World Maps in DB: <span className="text-amber-300 font-mono">0 (Clean)</span></div>
+                <div>World Maps in DB: <span className="text-amber-300 font-mono">{setupStatus?.mapCount ?? 0} {setupStatus?.mapCount === 0 ? '(Clean Canvas)' : 'Active Maps'}</span></div>
                 <div>Admin Session: <span className="text-emerald-300 font-mono">{authenticatedUser?.username || 'Owner'}</span></div>
               </div>
             </div>
