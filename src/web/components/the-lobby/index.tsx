@@ -46,6 +46,7 @@ import {
   mergeMapDocumentInPlace,
   shouldApplyMapReload,
   shouldClearPeersOnDisconnect,
+  MAX_DISCONNECT_RECONNECT_WINDOW_MS,
 } from '@/shared/game/lobbyReconnect';
 import {
   buildJoinKey,
@@ -346,6 +347,17 @@ export default function TheLobby({
 
   useEffect(() => {
     async function initData() {
+      try {
+        const setupRes = await fetch('/api/setup/status');
+        if (setupRes.ok) {
+          const setupJson = await setupRes.json();
+          if (setupJson.status && (!setupJson.status.isSetupCompleted || setupJson.status.mapCount === 0)) {
+            window.location.href = '/setup';
+            return;
+          }
+        }
+      } catch {}
+
       useGameStore.getState().hydrateMobileControlMode();
       await useGameStore.getState().fetchLogicTiles();
 
@@ -449,6 +461,8 @@ export default function TheLobby({
     useGameStore.getState().setConnectionStatus('connecting');
     const { url: configuredGoUrl, options: socketOpts } = lobbySocketConnect(session.user.id);
 
+    let disconnectTimeout: any = null;
+
     const setupSocket = (targetUrl?: string) => {
       const opts = {
         ...socketOpts,
@@ -486,6 +500,11 @@ export default function TheLobby({
       }, 5000);
       
       socket.on('connect', () => {
+        if (disconnectTimeout) {
+          clearTimeout(disconnectTimeout);
+          disconnectTimeout = null;
+        }
+
         const state = useGameStore.getState();
         state.setConnectionStatus('connected');
         state.setEmitSocketEvent((event, data) => {
@@ -539,20 +558,34 @@ export default function TheLobby({
     });
 
     socket.on('disconnect', (reason) => {
-      // Stay in EXPLORING — do not dump to menu. Peers get player_left server-side.
       hadLobbyDisconnect = true;
       lastJoinKeyRef.current = null;
       useGameStore.getState().setConnectionStatus('disconnected');
-      // Soft blips keep peer sprites until map_players refreshes after reconnect.
       if (shouldClearPeersOnDisconnect(reason)) {
         useGameStore.getState().setOtherPlayers({});
       }
       if (reason === 'io server disconnect') {
-        // Server forced disconnect (kick); do not auto-reconnect.
         useGameStore.getState().showToast('Disconnected from lobby.');
         return;
       }
       useGameStore.getState().showToast('Connection lost — reconnecting…');
+
+      // Enforce 20-30s disconnect policy (25s): If connection is lost for over 25s,
+      // expire session and return to title screen to prevent stale link hijacking.
+      if (disconnectTimeout) clearTimeout(disconnectTimeout);
+      disconnectTimeout = setTimeout(() => {
+        if (!activeSocket?.connected) {
+          console.warn('[lobby] Connection lost for over 25s — expiring game session.');
+          try {
+            activeSocket?.disconnect();
+          } catch {}
+          lastJoinKeyRef.current = null;
+          setActiveCharacterId(undefined);
+          useGameStore.getState().setGameMode('TITLE_SCREEN');
+          useGameStore.getState().setConnectionStatus('disconnected');
+          useGameStore.getState().showToast('Session Expired: Lost connection to realm for over 25 seconds. Please re-enter from gateway.');
+        }
+      }, MAX_DISCONNECT_RECONNECT_WINDOW_MS);
     });
     
     socket.on('map_joined', (data) => {
@@ -1313,6 +1346,7 @@ export default function TheLobby({
   setupSocket(configuredGoUrl);
 
   return () => {
+    if (disconnectTimeout) clearTimeout(disconnectTimeout);
     if (pingInterval) clearInterval(pingInterval);
     activeSocket?.disconnect();
     socketRef.current = null;

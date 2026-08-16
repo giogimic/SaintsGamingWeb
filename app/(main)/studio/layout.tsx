@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/web/lib/prisma';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
+import { getSystemSetupStatus } from '@/shared/game/setup/setupDetection';
 
 export const metadata: Metadata = {
   title: 'Studio | Saints Gaming',
@@ -13,6 +14,11 @@ export default async function StudioLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const setupStatus = await getSystemSetupStatus(prisma);
+  if (!setupStatus.isSetupCompleted || setupStatus.mapCount === 0) {
+    redirect('/setup');
+  }
+
   const session = await auth();
   if (!session?.user?.id) redirect('/login?callbackUrl=/studio');
 
