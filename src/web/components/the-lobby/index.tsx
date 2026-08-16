@@ -176,17 +176,17 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Player lobby always starts on LOBBY (fallback to DEMO_SANDBOX if not created yet).
-      const TARGET_MAP = 'LOBBY';
-      const FALLBACK_MAP = 'LOBBY';
+      // Player lobby always starts on DEMO_SANDBOX (fallback if map not found).
+      const TARGET_MAP = 'DEMO_SANDBOX';
+      const FALLBACK_MAP = 'DEMO_SANDBOX';
       const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
         .replace(/_ch\d+$/, '');
       let validMapId = TARGET_MAP;
-      let validPosition = { ...LOBBY_SPAWN };
+      let validPosition = { ...DEMO_SPAWN };
 
-      if (enableStudio && savedMap && savedMap !== 'SAINTS_VILLAGE') {
+      if (savedMap && savedMap !== 'SAINTS_VILLAGE' && savedMap !== 'LOBBY') {
         validMapId = savedMap;
-        validPosition = parsedState.position || { ...LOBBY_SPAWN };
+        validPosition = parsedState.position || { ...DEMO_SPAWN };
       }
 
       try {
@@ -492,9 +492,7 @@ export default function TheLobby({
           }
           const joinPayload = {
             accountId: effectiveAccountId,
-            mapId: enableStudio
-              ? toBaseMapId(state.currentMapId || 'LOBBY')
-              : toBaseMapId(state.currentMapId || 'LOBBY'),
+            mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
             lobby: !enableStudio,
             isPrivate: enableStudio,
             pie: enableStudio && !useEditorStore.getState().isCreationMode,
@@ -506,16 +504,16 @@ export default function TheLobby({
           lastJoinKeyRef.current = buildJoinKey(joinPayload);
           socket.emit('join_map', joinPayload);
           if (!enableStudio) {
-            const cur = toBaseMapId(state.currentMapId || '');
-            if (cur !== 'LOBBY' && cur !== 'DEMO_SANDBOX') {
-              const fallback = cur || 'LOBBY';
+            const cur = toBaseMapId(state.currentMapId || 'DEMO_SANDBOX');
+            if (cur !== 'DEMO_SANDBOX') {
+              const fallback = cur || 'DEMO_SANDBOX';
               state.setCurrentMapId(fallback);
               void loadMap(fallback).then((m) => {
                 useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
                 preloadAdjacentMaps(fallback).catch(console.error);
               }).catch(() => {
-                 state.setCurrentMapId('LOBBY');
-                 void loadMap('LOBBY').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
+                 state.setCurrentMapId('DEMO_SANDBOX');
+                 void loadMap('DEMO_SANDBOX').then(m => useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m)));
               });
             }
           }
@@ -1313,12 +1311,11 @@ export default function TheLobby({
     if (!socket?.connected) return;
     const state = useGameStore.getState();
     if (state.gameMode !== 'EXPLORING') return;
-    const mapId = enableStudio
-      ? toBaseMapId(state.currentMapId || 'LOBBY')
-      : 'LOBBY';
-    if (!enableStudio && toBaseMapId(state.currentMapId || '') !== 'LOBBY') {
-      state.setCurrentMapId('LOBBY');
-      void loadMap('LOBBY').then((m) => {
+    const curMap = toBaseMapId(state.currentMapId || 'DEMO_SANDBOX');
+    const mapId = curMap;
+    if (!enableStudio && toBaseMapId(state.currentMapId || '') === 'LOBBY') {
+      state.setCurrentMapId('DEMO_SANDBOX');
+      void loadMap('DEMO_SANDBOX').then((m) => {
         useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
       });
     }
@@ -1328,8 +1325,8 @@ export default function TheLobby({
       lobby: !enableStudio,
       isPrivate: enableStudio,
       pie: enableStudio && !useEditorStore.getState().isCreationMode,
-      x: state.player.position?.x ?? 32,
-      y: state.player.position?.y ?? 32,
+      x: state.player.position?.x ?? 14,
+      y: state.player.position?.y ?? 15,
       name: state.player.name || 'Player',
       spriteId: state.player.spriteId || 'adventurer',
     };
