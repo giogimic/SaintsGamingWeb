@@ -1,3 +1,9 @@
+## [2.1.297] - 2026-08-16
+### Enhanced
+- **Subdomain Setup Prompt (`scripts/setup.sh`):**
+  - Integrated optional subdomain configuration across all setup modes (First-Time Setup and Nuclear Reinstall).
+  - Explicitly asks the user if they wish to add/reverse-proxy subdomains (e.g. `mmo.domain.com`, `dev.domain.com`, `panel.domain.com`, `bot.domain.com`) with automated port & target IP wiring.
+
 ## [2.1.296] - 2026-08-16
 ### Fixed
 - **Setup Script Fixes (`scripts/setup.sh`):**

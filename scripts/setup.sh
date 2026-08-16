@@ -622,13 +622,13 @@ NGINXEOF
     fi
 fi
 
-# --- Additional Subdomain Proxies (additive via dev-proxy when Caddy) ---
+# --- Subdomain Proxies (Additive via dev-proxy when Caddy / Nginx) ---
 EXTRA_SUBDOMAINS=()
-if [ "$IS_NUCLEAR_MODE" != "1" ] && { [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ]; }; then
-    while whiptail --title "Additional Subdomain Proxy" --yesno "Add another subdomain proxy for a side service?\n(uses ./scripts/dev-proxy.sh — primary site untouched)" 11 70 3>&1 1>&2 2>&3; do
-        SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. panel.$DOMAIN):" 10 60 "panel.$DOMAIN" 3>&1 1>&2 2>&3)
+if [ "$EXISTING_CADDY_ADDITIVE" = "1" ] || [ "$USE_CADDY" = "1" ] || [ "$REVERSE_PROXY_MODE" = "1" ] || command -v caddy &>/dev/null || [ -f /etc/caddy/Caddyfile ]; then
+    while whiptail --title "Subdomain Setup" --yesno "Do you have any subdomains you want to add or reverse proxy on this server?\n\n(Examples: mmo.$DOMAIN, dev.$DOMAIN, panel.$DOMAIN, bot.$DOMAIN)\n\nYES = Add a subdomain proxy\nNO  = Continue setup" 14 74 3>&1 1>&2 2>&3; do
+        SUBDOMAIN=$(whiptail --title "Subdomain" --inputbox "Enter the full subdomain (e.g. mmo.$DOMAIN):" 10 60 "mmo.$DOMAIN" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$SUBDOMAIN" ]; then break; fi
-        PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the local port this service runs on:" 10 60 "8080" 3>&1 1>&2 2>&3)
+        PROXY_PORT=$(whiptail --title "Local Port" --inputbox "Enter the internal port this subdomain forwards to:" 10 60 "3001" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$PROXY_PORT" ]; then break; fi
         PROXY_IP=$(whiptail --title "Target IP" --inputbox "Enter the internal target IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ] || [ -z "$PROXY_IP" ]; then break; fi
@@ -657,7 +657,7 @@ NGINXEOF
             sudo systemctl reload nginx || sudo systemctl restart nginx
         fi
         EXTRA_SUBDOMAINS+=("$SUBDOMAIN")
-        whiptail --title "Success" --msgbox "Subdomain $SUBDOMAIN -> $PROXY_IP:$PROXY_PORT configured!" 8 60
+        whiptail --title "Subdomain Added" --msgbox "Subdomain $SUBDOMAIN -> $PROXY_IP:$PROXY_PORT has been configured!" 8 65
     done
 fi
 
