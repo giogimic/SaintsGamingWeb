@@ -1,77 +1,106 @@
-<div align="center">
-  <h1>✨ Saints Gaming Engine ✨</h1>
-  <url>https://SaintsGaming.net</url>
-  <p><em>A modern, full-stack community management system and 2.5D MMO game engine.</em></p>
-  <p>
-    <img src="https://img.shields.io/badge/Version-v2.1.265-purple?style=flat-square" alt="Version" />
+# ⚜️ SAINTS GAMING ⚜️
+### *Web Community Platform & 2.5D Sandbox RPG*
 
+🌐 **Live Realm:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Creator:** **GioGimic** &nbsp;•&nbsp; 💬 **Discord:** [Join Community](https://discord.saintsgaming.net)
 
+```
+   _____       _       _          _____                 _             
+  / ____|     (_)     | |        / ____|               (_)            
+ | (___   __ _ _ _ __ | |_ ___  | |  __  __ _ _ __ ___  _ _ __   __ _ 
+  \___ \ / _` | | '_ \| __/ __| | | |_ |/ _` | '_ ` _ \| | '_ \ / _` |
+  ____) | (_| | | | | | |_\__ \ | |__| | (_| | | | | | | | | | | (_| |
+ |_____/ \__,_|_|_| |_|\__|___/  \_____|\__,_|_| |_| |_|_|_| |_|\__, |
+                                                                  __/ |
+                                                                 |___/ 
+```
 
-    <img src="https://img.shields.io/badge/Next.js-15+-black?style=flat-square&logo=next.js" alt="Next.js" />
-    <img src="https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/Babylon.js-2.5D-orange?style=flat-square&logo=babylonjs" alt="Babylon.js" />
-    <img src="https://img.shields.io/badge/Prisma-SQLite%2FMariaDB-white?style=flat-square&logo=prisma" alt="Prisma" />
-  </p>
-</div>
+![Version](https://img.shields.io/badge/Release-v2.1.270-purple?style=for-the-badge&logo=gamemaker)
+![Live Site](https://img.shields.io/badge/Live_Site-SaintsGaming.net-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js_15-React_19-black?style=for-the-badge&logo=next.js)
+![Go MMO](https://img.shields.io/badge/Go_MMO-3001-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Babylon.js](https://img.shields.io/badge/Babylon.js-2.5D_WebGL-F58025?style=for-the-badge&logo=babylonjs&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-SQLite%2FMariaDB-5A67D8?style=for-the-badge&logo=prisma&logoColor=white)
 
-<br />
+*A hands-on indie project by **GioGimic** — a sandbox environment for testing game systems, real-time multiplayer networking, and full-stack web community tooling.*
 
-## What is Saints?
-Saints Gaming is an ambitious web platform combining community management (forums, user control panel, support desk) with an embedded, real-time multiplayer 2.5D MMO engine. The game features strict server authority, dynamic sharding, creature turn-based encounters, a real-time overworld combat engine, and an integrated in-game Studio Map & Hero Editor.
+---
 
-## Core Features
-- **Authoritative MMO Server:** Real-time socket communication via Socket.io with dynamic sharding, player reconciliation, line-of-sight calculation, and automatic pre-join entity cleanup.
-- **2.5D WebGL Renderer:** Custom Babylon.js orthographic renderer with standard 96x128px LPC/Tuxemon 4-directional sprite sheet projection, damage numbers, and floating health bars.
-- **Mobile Touch Game Mode & Fullscreen Launcher:** Dedicated `MobileGameLauncher.tsx` overlay triggering device `requestFullscreen()` with continuous D-Pad movement (bottom-left) and a multi-action Touch Pad (`[⚡ INTERACT]`, `[🎒 BAG]`, `[⚔️ SKILLS]`, `[💬 CHAT]`, `[⚙️ MENU]`, `[⛶ FULLSCREEN]`).
-- **Saints Studio Starter Hero Editor:** Live Studio dock panel for creating, previewing, generating archetypes, and managing starter hero configurations persisted directly to the database.
-- **Real-Time Local & Global Chat:** Multi-channel chat UI (Public, Global, Clan/Party, Friends) with server-side broadcasting and overhead chat bubbles.
-- **Active Studio Server Controls:** In-Studio dashboard tab for starting/stopping realm server processes and monitoring live player metrics.
-- **Dual Combat System:** Real-Time overworld combat with skill progression, seamlessly transitioning to Instanced Turn-Based Creature Encounters.
+## 🌟 What is Saints Gaming?
 
-## Tech Stack
-- **Framework:** Next.js 15+ (App Router) & React 19
-- **Language:** TypeScript (Next.js) & **Go** (Realtime MMO under `go-mmo/`)
-- **Styling:** Tailwind CSS & Vanilla CSS Design Tokens
-- **Database:** Prisma ORM (SQLite / MariaDB)
-- **Game Engine:** Custom Babylon.js 2.5D Wrapper (`BabylonEngine.ts`)
-- **Multiplayer:** Socket.io — **Go** on `:3001` (Required). Next `server.ts` is retained only as an emergency fallback (`ENABLE_TS_GAME_ENGINE=1`).
+**Saints Gaming** ([SaintsGaming.net](https://SaintsGaming.net)) is an all-in-one web platform and gaming sandbox. It connects a modern web community (forums, user control panel, achievements, social feed) with an embedded **2.5D multiplayer top-down RPG** and a built-in game editor (**Saints Studio**).
 
-## Deployment & Setup
+It is an active personal sandbox project by **GioGimic**, built to experiment with custom WebGL rendering, authoritative socket networking, deep skill systems, and live in-browser world authoring.
 
-**IMPORTANT**: To manage the production environment safely, **use the provided automation scripts**. They handle Node.js environments, dependencies, database backups, and reverse proxies (Caddy) using Docker. Do not manually run `npm install` on your production server.
+---
 
-### 1. Initial Setup
-Run the interactive setup script to configure credentials and launch the environment:
+## 🎮 Key Systems at a Glance
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             SAINTS GAMING ECOSYSTEM                         │
+├──────────────────────────────┬──────────────────────────────┬───────────────┤
+│        🌐 WEB PLATFORM       │        🕹️ GAME CLIENT        │   🛠️ STUDIO   │
+│  • SaintsGaming.net Portal   │  • Babylon 2.5D WebGL        │  • Tile Paint │
+│  • Community Forums & News   │  • 27-Skill Progression      │  • NPC Placer │
+│  • Profile Showcases & UCP   │  • Dual-Combat Engine        │  • Catalogs   │
+│  • Realtime Social Feeds     │  • Mobile Touch / Joystick   │  • PIE Tester │
+└──────────────────────────────┴──────────────────────────────┴───────────────┘
+```
+
+- ⚔️ **27-Skill Matrix & Progression:** Full 1–99 skill trees across Combat (9), Gathering (5), Artisan (8), and Support (5) with Grandmaster Capstones (Max Cape, Master Totem Relic).
+- 👾 **Dual-Combat Mechanics:** Seamless real-time overworld mob combat featuring hotbar abilities, combined with instanced turn-based creature battles and capture crystals.
+- 🗺️ **Saints Studio (`/studio`):** Built-in level editor with dual-grid visual GID and collision logic painting, entity spawners, dialogue node editors, and Play-In-Editor (PIE) testing.
+- ⚡ **Hybrid Realtime Backend:** High-performance standalone Go MMO socket server (`go-mmo/`) on `:3001` with Area-of-Interest (AOI) spatial sharding and SQLite persistence.
+- 📱 **Adaptive Mobile Controls:** Virtual joystick, quick action pad, and fullscreen launcher for mobile and tablet web browsers.
+- 📚 **In-Depth Documentation Wiki:** Full system breakdown available in [`docs/README.md`](docs/README.md).
+
+---
+
+## 🧭 Project Navigation & Documentation
+
+| Section | Description | Link |
+| :--- | :--- | :--- |
+| 🌐 **Live Portal** | Official Saints Gaming web community | [**SaintsGaming.net**](https://SaintsGaming.net) |
+| 📚 **Complete Wiki** | Index of all game & studio system documentation | [`docs/README.md`](docs/README.md) |
+| 🎮 **Game Systems** | Loop, 27 skills, combat, networking & economy | [`docs/game-systems/README.md`](docs/game-systems/README.md) |
+| 🛠️ **Studio Manual** | Editor architecture, tile painting, NPCs & catalogs | [`docs/studio/README.md`](docs/studio/README.md) |
+| 📜 **Changelog** | Version history and milestone release logs | [`CHANGELOG.md`](CHANGELOG.md) |
+| 🎨 **Attribution** | Tuxemon & Liberated Pixel Cup (LPC) licenses | [`docs/TUXEMON_ATTRIBUTION.md`](docs/TUXEMON_ATTRIBUTION.md) |
+
+---
+
+## 💻 Tech Stack
+
+- **Frontend & Web Core:** Next.js 15+ (App Router), React 19, TypeScript
+- **Styling & UI:** Tailwind CSS, Custom `sg-*` Design Tokens, Lucide Icons
+- **Database & ORM:** Prisma ORM with SQLite (dev/embedded) and MariaDB (prod)
+- **Game Engine & Rendering:** Babylon.js 2.5D Orthographic Engine (`BabylonEngine.ts`)
+- **Realtime Networking:** Go MMO service (`go-mmo/`) on `:3001` + Node.js socket fallback (`server.ts`)
+- **Audio & FX:** WebAudio API synthesized audio effects and particle emitters
+
+---
+
+## 🚀 Quickstart & Server Deployment
+
 ```bash
+# 1. Interactive environment setup & dependency provisioning
 ./scripts/setup.sh
-```
 
-### 2. Updating the Server
-To pull the latest code, backup the database, rebuild containers, and restart gracefully:
-```bash
-./scripts/update.sh
-```
+# 2. Start development server (Next.js + Socket Engine)
+npm run dev
 
-### 3. Go MMO (Live Production Server)
-`./scripts/setup.sh` automatically configures the Go MMO backend. This is required for realtime play. It sets `NEXT_PUBLIC_GO_MMO_URL`, starts the high-performance Go socket server on `:3001`, and optionally adds a `go.` Caddy subdomain.
-
-```bash
-# Standalone / re-run
+# 3. Launch Go MMO backend (Required for realtime multiplayer on :3001)
 ./go-mmo/scripts/setup-go-mmo.sh --full
-# Existing Caddy only: ./scripts/dev-proxy.sh add go.yourdomain 3001
+
+# 4. Run automated test suite (Vitest)
+npm test
 ```
 
-**Note**: The Go MMO backend is now the fully featured, production-ready live server handling all character persistence (SQLite), socket networking, dynamic encounters, dialogue trees, combat formulas, and real-time multiplayer states. The Next.js API continues to serve as the Studio editor persistence layer (`/api/maps`), which automatically hot-reloads via internal webhooks to Go.
+For production deployment and automated Caddy reverse proxy management, refer to `./scripts/setup.sh` and `./scripts/update.sh`.
 
-*(Local install notes and internal architecture docs live in the private `.docs/` tree on developer machines — not published to this repo.)*
+---
 
-## Documentation
-- **[Changelog](CHANGELOG.md)** — release history  
-- **[Asset attribution](docs/TUXEMON_ATTRIBUTION.md)** — Tuxemon / LPC licensing  
-- Package READMEs (e.g. `go-mmo/README.md`) for optional subsystems  
+## 📄 License & Credits
 
-Gameplay bibles, Studio contracts, and day-to-day handoff notes are **local-only** under `.docs/` (gitignored).
-
-## License
-- **Code:** Private / proprietary until stated otherwise.
-- **Assets:** Tuxemon assets and LPC sprites are licensed under GPL-3.0 / CC BY-SA 4.0. See `docs/TUXEMON_ATTRIBUTION.md` for details.
+- **Platform & Engine Code:** Private / Proprietary by GioGimic.
+- **Game Assets:** Tuxemon assets and LPC sprites are licensed under GPL-3.0 / CC BY-SA 4.0. See [`docs/TUXEMON_ATTRIBUTION.md`](docs/TUXEMON_ATTRIBUTION.md) for full license details.

@@ -1,3 +1,27 @@
+## [2.1.270] - 2026-08-15
+### Added & Improved
+- **Visual Branding & Documentation Polish (`README.md`, `docs/README.md`)**:
+  - Upgraded project `README.md` with stylized ASCII banner, custom Badges (`SaintsGaming.net`, `Release v2.1.270`, `Go MMO 3001`, `Babylon 2.5D`), and clear links to the live platform.
+  - Prominently positioned [**SaintsGaming.net**](https://SaintsGaming.net) across all public documentation headers and indices.
+  - Formatted a clean 3-column ecosystem layout connecting Web Platform, Game Client, and Saints Studio.
+  - Bumped project version to `v2.1.270` across `package.json`, `settings.ts`, and admin pages.
+
+## [2.1.269] - 2026-08-15
+### Added & Improved
+- **Comprehensive Systems Wiki & Documentation Architecture (`docs/`)**:
+  - Structured documentation tree into two clear subdirectories: **`docs/game-systems/`** and **`docs/studio/`** indexed via **`docs/README.md`**.
+  - **Game Systems Wiki**: Authored comprehensive architectural guides covering [Client Architecture & Loop](docs/game-systems/architecture-and-loop.md), [27-Skill Progression & Grandmaster Capstones](docs/game-systems/skills-and-progression.md), [Dual Combat & Encounters](docs/game-systems/combat-and-encounters.md), [Go MMO Networking & AOI Sharding](docs/game-systems/networking-and-multiplayer.md), [Item Schemas & Loot](docs/game-systems/items-and-economy.md), and [Mobile Touch Mode & UI Docks](docs/game-systems/mobile-and-ui.md).
+  - **Studio Editor Wiki**: Authored detailed creator guides covering [Studio Architecture & Modes](docs/studio/studio-architecture.md), [Dual-Grid Tile Painting & Remeshing](docs/studio/tile-painting-and-maps.md), [Entities, Spawners & NPCs](docs/studio/entities-and-npcs.md), [Catalogs & Definition Editors](docs/studio/catalogs-and-definitions.md), and [Validation, Webhook Sync & PIE Playtesting](docs/studio/validation-sync-playtest.md).
+  - Synchronized project version number across all manifests (`package.json`, `settings.ts`, admin settings, `README.md`).
+
+## [2.1.268] - 2026-08-15
+### Added & Improved
+- **Project Vision & Documentation Audit (`README.md`, `.docs/public-docs/vision/`, `.docs/info/vision/`)**:
+  - Re-calibrated public and private documentation to accurately reflect the project scope as an indie sandbox project by **GioGimic**.
+  - Toned down marketing claims across public README and vision documents to present features simply, clearly, and honestly.
+  - Documented recent completion of the 27-skill proficiency matrix, 270-tier Battlepass cosmetic tracks, Grandmaster capstone capes (Max Cape, Completionist Cape, Master Totem), and 29 Skill Cape Emotes with WebAudio soundscapes and visual FX.
+  - Synchronized and verified version constants across `package.json`, `app/actions/settings.ts`, and admin configurations.
+
 ## [2.1.265] - 2026-08-15
 ### Added & Improved
 - **Global Extras 2/7: Skill Cape Emotes & Visual FX System (`skillCapeEmotes.ts`, `SkillGuideModal.tsx`)**:
