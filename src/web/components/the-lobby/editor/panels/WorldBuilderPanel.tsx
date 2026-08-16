@@ -2,17 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store';
-import { searchMapIndex, registerNewMap } from '../../data/map-index';
-import { invalidateMapCache, loadMap, type MapIndexEntry } from '../../data/maps';
+import { searchMapIndex, registerNewMap, unregisterMap, type MapIndexEntry } from '../../data/map-index';
+import { invalidateMapCache, loadMap } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
-import { Compass, Plus, Search, Layers, Grid, Save, Shield, Eraser, DoorOpen, MapPin, Trash2, ExternalLink } from 'lucide-react';
+import {
+  Compass, Plus, Search, Layers, Grid, Save, Shield, Eraser, DoorOpen,
+  MapPin, Trash2, ChevronDown, ChevronRight, AlertTriangle, CheckCircle2,
+  Circle, Globe, Maximize2
+} from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
 import { LogicTagPalette } from '../LogicTagPalette';
-import { CheckCircle2, Circle } from 'lucide-react';
 import { ensureMapHasStudioTilesets, DEFAULT_STUDIO_GROUND_GID } from '@/shared/game/studioTilesetBootstrap';
 import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
-import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import { normalizeGates, removeWarpGateAt, upsertWarpGate } from '@/shared/game/logicComponents';
 import {
   buildNewStudioMap,
@@ -23,14 +25,31 @@ import {
 import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
-
+import { useSession } from 'next-auth/react';
+import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 
 export const WorldBuilderPanel: React.FC = () => {
+  const { data: session } = useSession();
+  const userPermission = session?.user?.permissionLevel ?? 0;
+  const canEdit = canWriteStudioContent(userPermission);
+
   const currentMapId = useGameStore((state) => state.currentMapId);
   const activeMapData = useGameStore((state) => state.activeMapData);
-  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
   const showToast = useGameStore((state) => state.showToast);
   const activeGameId = useEditorStore((state) => state.activeGameId);
+
+  // Accordion section collapse state
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    overview: true,
+    maps: true,
+    layers: true,
+    palette: true,
+    gates: false,
+  });
+
+  const toggleSection = (key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [isCreatingNewMap, setIsCreatingNewMap] = useState(false);
@@ -42,6 +61,10 @@ export const WorldBuilderPanel: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
   
+  // Delete map confirmation modal state
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [isResizingMap, setIsResizingMap] = useState(false);
   const [resizeW, setResizeW] = useState(64);
   const [resizeH, setResizeH] = useState(64);
@@ -54,43 +77,38 @@ export const WorldBuilderPanel: React.FC = () => {
   const isDevEditorOpen = useEditorStore((state) => state.isCreationMode);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
 
+  const fetchRemoteMaps = async () => {
+    try {
+      const res = await fetch('/api/maps');
+      if (!res.ok) return;
+      const data = await res.json();
+      const entries: MapIndexEntry[] = (data.maps || []).map((m: any) => ({
+        id: m.id,
+        name: m.name || m.id,
+        category: 'Special' as const,
+        recommendedLevel: 1,
+        width: m.width || 24,
+        height: m.height || 24,
+        npcCount: m.npcCount || 0,
+        gateCount: m.gateCount || 0,
+        hasEncounters: false,
+      }));
+      setRemoteMaps(entries);
+    } catch {
+      /* ignore */
+    }
+  };
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/maps');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        const entries: MapIndexEntry[] = (data.maps || []).map((m: any) => ({
-          id: m.id,
-          name: m.name || m.id,
-          category: 'Special' as const,
-          recommendedLevel: 1,
-          width: 24,
-          height: 24,
-          npcCount: 0,
-          gateCount: 0,
-          hasEncounters: false,
-        }));
-        setRemoteMaps(entries);
-      } catch {
-        /* ignore — local index still works */
-      }
-    })();
-    return () => { cancelled = true; };
+    void fetchRemoteMaps();
   }, [isCreating, isSaving]);
 
-  // Legacy DEMO_SANDBOX (and similar) may load with tileLayers:[], tilesets:[].
-  // Inject defaults in-memory so TilesetPicker + paint overlays work before Save.
+  // Legacy DEMO_SANDBOX tileset bootstrap
   useEffect(() => {
     if (!activeMapData) return;
     const ensured = ensureMapHasStudioTilesets(activeMapData);
     if (ensured === activeMapData) return;
-    // Leave activeLayerIdx alone: forcing it to 0 here used to silently drag the
-    // creator off Logic (−1) mid-edit, so their next clicks painted GIDs.
     useGameStore.getState().setActiveMapData(ensured);
-    // Do NOT force layer away from Logic (−1) — authors may be painting tags.
   }, [activeMapData]);
 
   const localIndex = searchMapIndex(mapSearchQuery);
@@ -104,8 +122,6 @@ export const WorldBuilderPanel: React.FC = () => {
     ...remoteFiltered.filter((m) => !seen.has(m.id)),
   ];
   const baseMapId = toBaseMapId(String(currentMapId || ''));
-  // UI chrome (layer list / picker) may show an empty shell while loading —
-  // Save Map never uses this shell; it requires activeMapData (live edits).
   const currentMapData = ensureMapHasStudioTilesets(
     activeMapData || {
       id: baseMapId,
@@ -142,20 +158,17 @@ export const WorldBuilderPanel: React.FC = () => {
       return;
     }
     soundSynth?.playActionSound?.();
-    // Never persist GAME_MAPS / empty shell — only the live Studio document.
     const live = useGameStore.getState().activeMapData;
     if (!live?.grid) {
       showToast('Map data not loaded yet — wait for the world to appear, then Save.');
       return;
     }
     const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(live));
-    // Keep store aligned with what we persist (repaired Ground/tilesets).
     if (saveDoc !== live) {
       useGameStore.getState().setActiveMapData(saveDoc);
     }
     setIsSaving(true);
     try {
-      // Bible 17: never persist Studio-only overlay keys into runtime map JSON.
       const payload = stripEditorOverlaysFromMapPayload({
         name: saveDoc.name || baseMapId,
         gameId: saveDoc.gameId,
@@ -181,10 +194,35 @@ export const WorldBuilderPanel: React.FC = () => {
       const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
       showToast(`Saved map ${baseMapId} (Synced to ${backendUsed})`);
     } catch (e: any) {
-      console.error('[Studio] Save map failed', e);
       showToast(e?.message || 'Save failed — network error.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteMap = async (mapId: string) => {
+    if (!canEdit) {
+      showToast('Admin permission required to delete maps.');
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/maps/${encodeURIComponent(mapId)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.error || 'Failed to delete map');
+        return;
+      }
+      unregisterMap(mapId);
+      setDeleteTargetId(null);
+      showToast(`Deleted map: ${mapId}`);
+      void fetchRemoteMaps();
+    } catch (e: any) {
+      showToast(e?.message || 'Error deleting map');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -243,7 +281,6 @@ export const WorldBuilderPanel: React.FC = () => {
       const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
       showToast(`Created & saved map: ${newMapData.id} (Synced to ${backendUsed})`);
     } catch (e: any) {
-      console.error('[Studio] Create map failed', e);
       showToast(e?.message || 'Create failed — network error.');
     } finally {
       setIsCreating(false);
@@ -294,580 +331,376 @@ export const WorldBuilderPanel: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 text-xs font-mono">
-      <div className="rounded border border-[#806f47]/35 bg-[#0b1320]/70 p-2.5 text-[10px] leading-relaxed text-slate-400">
-        <p className="font-bold uppercase tracking-wider text-[#cbb26a]">World Builder</p>
-        <p className="mt-1">
-          Pick a map → choose <span className="text-[#e2d5b3]">Logic</span> or a visual layer → select a brush →{' '}
-          <span className="text-[#e2d5b3]">click or drag</span> on the ground →{' '}
-          <span className="text-[#e2d5b3]">Save Map</span>. Use Play to playtest.
-        </p>
-      </div>
-
-      {/* MAP SELECTOR */}
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
-        <div className="flex items-center justify-between text-[#cbb26a]">
-          <span className="flex items-center gap-1.5 font-bold"><Compass className="w-3.5 h-3.5" /> World:</span>
-          <span className="text-white px-2 py-0.5 rounded border border-[#806f47]/30 bg-[#050b14]">{baseMapId || currentMapId}</span>
-        </div>
-
+    <div className="space-y-3 text-xs font-mono select-none">
+      
+      {/* SECTION 1: Active Realm Overview */}
+      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
         <button
           type="button"
-          onClick={() => void handleSaveMap()}
-          disabled={isSaving || !activeMapData}
-          className="w-full py-1.5 bg-[#cbb26a]/90 hover:bg-[#cbb26a] disabled:opacity-50 text-[#0a0a0f] rounded font-bold flex items-center justify-center gap-1.5"
-          title={!activeMapData ? 'Wait for the map to load' : 'Persist grid, layers, and tilesets'}
+          onClick={() => toggleSection('overview')}
+          className="w-full flex items-center justify-between p-2.5 bg-black/40 text-[#cbb26a] font-bold text-left hover:bg-black/60 transition-colors cursor-pointer"
         >
-          <Save className="w-3.5 h-3.5" />
-          {isSaving ? 'Saving…' : 'Save Map'}
+          <span className="flex items-center gap-1.5">
+            <Compass className="w-4 h-4 text-amber-400" /> Active Realm: {baseMapId || currentMapId}
+          </span>
+          {openSections.overview ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </button>
 
-        <div className="relative">
-          <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-slate-400" />
-          <input
-            type="text"
-            value={mapSearchQuery}
-            onChange={(e) => setMapSearchQuery(e.target.value)}
-            placeholder="Search map..."
-            className="w-full pl-7 pr-2 py-1 bg-[#050b14]/90 border border-slate-700/80 rounded text-slate-200 focus:outline-none focus:border-[#cbb26a]"
-          />
-        </div>
-        <div className="max-h-32 overflow-y-auto bg-[#050b14] border border-slate-700 rounded divide-y divide-slate-800 custom-scrollbar mt-2">
-          {mapIndex.length === 0 ? (
-            <div className="p-2 text-xs text-slate-500 text-center">No maps found</div>
-          ) : (
-            mapIndex.map((m) => (
-              <div
-                key={m.id}
-                onClick={() => void handleWarpToMap(m.id)}
-                className="px-2 py-1 hover:bg-white/10 cursor-pointer flex justify-between items-center"
-              >
-                <span>{m.name}</span>
-                <span className="text-[9px] text-[#cbb26a]">{"category" in m && m.category ? String(m.category) : (m.id || "")}</span>
-              </div>
-            ))
-          )}
-        </div>
-
-        <button
-          onClick={() => setIsCreatingNewMap(!isCreatingNewMap)}
-          className="w-full py-1 border border-dashed border-[#806f47]/50 hover:bg-[#806f47]/20 text-slate-300 rounded flex items-center justify-center gap-1"
-        >
-          <Plus className="w-3 h-3" /> Create New Map
-        </button>
-
-        {isCreatingNewMap && (
-          <div className="p-2 bg-[#050b14] border border-[#806f47]/40 rounded space-y-2 mt-2">
-            <input
-              type="text"
-              value={newMapSlug}
-              onChange={(e) => setNewMapSlug(e.target.value)}
-              placeholder="MAP_ID"
-              className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
-            />
-            <input
-              type="text"
-              value={newMapName}
-              onChange={(e) => setNewMapName(e.target.value)}
-              placeholder="Display Name"
-              className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
-            />
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-[10px] text-slate-400">W</label>
-                <input
-                  type="number"
-                  min={8}
-                  max={128}
-                  value={newMapWidth}
-                  onChange={(e) => setNewMapWidth(parseInt(e.target.value, 10) || 64)}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[10px] text-slate-400">H</label>
-                <input
-                  type="number"
-                  min={8}
-                  max={128}
-                  value={newMapHeight}
-                  onChange={(e) => setNewMapHeight(parseInt(e.target.value, 10) || 64)}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
-                />
-              </div>
-            </div>
-            <button
-              onClick={() => void handleCreateNewMapSubmit()}
-              disabled={isCreating}
-              className="w-full py-1 bg-green-600/80 hover:bg-green-500 disabled:opacity-50 text-white rounded font-bold"
-            >
-              {isCreating ? 'Creating…' : 'Generate'}
-            </button>
-          </div>
-        )}
-
-        {/* RESIZE UI */}
-        <button
-          onClick={() => {
-            setIsResizingMap(!isResizingMap);
-            if (!isResizingMap && activeMapData?.grid) {
-              setResizeW(activeMapData.grid[0]?.length || 64);
-              setResizeH(activeMapData.grid.length || 64);
-            }
-          }}
-          disabled={!activeMapData}
-          className="w-full py-1 border border-dashed border-sky-500/30 hover:bg-sky-500/20 text-slate-300 disabled:opacity-50 rounded flex items-center justify-center gap-1 mt-2"
-        >
-          <Grid className="w-3 h-3" /> Resize Map
-        </button>
-
-        {isResizingMap && (
-          <div className="p-2 bg-[#050b14] border border-sky-500/30 rounded space-y-2 mt-2">
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-[10px] text-slate-400">New W</label>
-                <input
-                  type="number"
-                  min={8}
-                  max={128}
-                  value={resizeW}
-                  onChange={(e) => setResizeW(parseInt(e.target.value, 10) || 64)}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-[10px] text-slate-400">New H</label>
-                <input
-                  type="number"
-                  min={8}
-                  max={128}
-                  value={resizeH}
-                  onChange={(e) => setResizeH(parseInt(e.target.value, 10) || 64)}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleResizeMapSubmit}
-              className="w-full py-1 bg-sky-600/80 hover:bg-sky-500 text-white rounded font-bold"
-            >
-              Apply Resize
-            </button>
-          </div>
-        )}
-
-        {/* CONNECTIONS & WARP GATES UI */}
-        <div className="mt-2 space-y-3">
-          <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-1">
-            <div className="flex items-center gap-1.5 font-bold text-[#cbb26a]">
-              <Compass className="w-3.5 h-3.5" /> Gateways & Realm Connections
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  const current = useEditorStore.getState().showWarpOverlays;
-                  useEditorStore.getState().setShowWarpOverlays(!current);
-                }}
-                className="px-1.5 py-0.5 rounded bg-black/40 border border-slate-700 text-[9px] text-slate-300 hover:text-white"
-                title="Toggle visual gate markers on map"
-              >
-                Pins {useEditorStore((s) => s.showWarpOverlays) ? 'On' : 'Off'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  useEditorStore.getState().setBrushMode('gate');
-                  useEditorStore.getState().setShowWarpOverlays(true);
-                  showToast('Gate Tool Active: Click any tile on map to place/inspect warp.');
-                }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/50 text-[10px] text-purple-200 hover:bg-purple-900/80 font-bold transition-all"
-              >
-                <DoorOpen className="w-3 h-3 text-purple-400" /> Gate Tool
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Gate Type Presets */}
-          <div className="space-y-1 bg-black/30 p-2 rounded border border-purple-950/40">
-            <span className="text-[10px] text-slate-300 font-semibold block">Quick Gate Presets:</span>
-            <div className="grid grid-cols-3 gap-1">
-              {[
-                { label: 'Atlas (North)', target: 'ROUTE_NORTH', sx: -1, sy: 0, cat: 'ATLAS_NORTH' },
-                { label: 'Atlas (South)', target: 'ROUTE_SOUTH', sx: -1, sy: -1, cat: 'ATLAS_SOUTH' },
-                { label: 'Atlas (East)', target: 'ROUTE_EAST', sx: 0, sy: -1, cat: 'ATLAS_EAST' },
-                { label: 'Atlas (West)', target: 'ROUTE_WEST', sx: -1, sy: -1, cat: 'ATLAS_WEST' },
-                { label: 'Dungeon Entrance', target: 'DUNGEON_1', sx: 6, sy: 2, cat: 'DUNGEON' },
-                { label: 'Raid Portal', target: 'RAID_VALLEY', sx: 10, sy: 10, cat: 'RAID' },
-              ].map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => {
-                    const clicked = useEditorStore.getState().clickedTile;
-                    const x = clicked ? clicked.c : 5;
-                    const y = clicked ? clicked.r : 5;
-                    if (!activeMapData) return;
-                    const newGate = {
-                      id: `gate_${x}_${y}`,
-                      position: { x, y },
-                      targetMapId: p.target,
-                      spawnPoint: { x: p.sx, y: p.sy },
-                      category: p.cat
-                    };
-                    const updatedGates = upsertWarpGate(activeMapData.gates, newGate);
-                    useGameStore.setState({
-                      activeMapData: { ...activeMapData, gates: updatedGates }
-                    });
-                    useEditorStore.setState({ mapDirty: true });
-                    useEditorStore.getState().setShowWarpOverlays(true);
-                    showToast(`Placed ${p.label} at [${x}, ${y}] → ${p.target}`);
-                  }}
-                  className="rounded bg-[#050b14] border border-slate-800 hover:border-purple-500/50 hover:bg-purple-950/20 px-1 py-1 text-[9px] text-slate-300 text-left truncate transition-colors"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 4 Cardinal Edge Connections */}
-          <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 font-semibold block">Continuous Edge Transitions (Atlas Map Streaming)</span>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[9px] text-slate-400">North Edge (y &lt; 0)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. ROUTE_1"
-                  value={activeMapData?.connections?.north || ''}
-                  onChange={(e) => {
-                    if (activeMapData) {
-                      useGameStore.setState({
-                        activeMapData: {
-                          ...activeMapData,
-                          connections: { ...activeMapData.connections, north: e.target.value || undefined }
-                        }
-                      });
-                      useEditorStore.setState({ mapDirty: true });
-                    }
-                  }}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] text-slate-400">South Edge (y &gt;= H)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. SAINTS_TOWN"
-                  value={activeMapData?.connections?.south || ''}
-                  onChange={(e) => {
-                    if (activeMapData) {
-                      useGameStore.setState({
-                        activeMapData: {
-                          ...activeMapData,
-                          connections: { ...activeMapData.connections, south: e.target.value || undefined }
-                        }
-                      });
-                      useEditorStore.setState({ mapDirty: true });
-                    }
-                  }}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] text-slate-400">East Edge (x &gt;= W)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. CAVE_ENTRANCE"
-                  value={activeMapData?.connections?.east || ''}
-                  onChange={(e) => {
-                    if (activeMapData) {
-                      useGameStore.setState({
-                        activeMapData: {
-                          ...activeMapData,
-                          connections: { ...activeMapData.connections, east: e.target.value || undefined }
-                        }
-                      });
-                      useEditorStore.setState({ mapDirty: true });
-                    }
-                  }}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
-                />
-              </div>
-              <div>
-                <label className="block text-[9px] text-slate-400">West Edge (x &lt; 0)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. PROFESSOR_LAB"
-                  value={activeMapData?.connections?.west || ''}
-                  onChange={(e) => {
-                    if (activeMapData) {
-                      useGameStore.setState({
-                        activeMapData: {
-                          ...activeMapData,
-                          connections: { ...activeMapData.connections, west: e.target.value || undefined }
-                        }
-                      });
-                      useEditorStore.setState({ mapDirty: true });
-                    }
-                  }}
-                  className="w-full bg-[#0b1320] border border-slate-800 rounded px-2 py-1 text-xs text-cyan-100"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Specific Warp Gates List */}
-          <div className="space-y-1 pt-1 border-t border-[#806f47]/20">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-purple-400" /> Active Warp Gates ({normalizeGates(activeMapData?.gates).length})
+        {openSections.overview && (
+          <div className="p-3 space-y-2.5 border-t border-[#806f47]/20 bg-[#050b14]/50">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Dimensions:</span>
+              <span className="text-white font-bold bg-black/60 px-2 py-0.5 rounded border border-slate-800">
+                {currentMapData.grid?.[0]?.length || 24} × {currentMapData.grid?.length || 24} tiles
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  const clicked = useEditorStore.getState().clickedTile;
-                  const x = clicked ? clicked.c : 5;
-                  const y = clicked ? clicked.r : 5;
-                  if (!activeMapData) return;
-                  const newGate = {
-                    id: `gate_${x}_${y}`,
-                    position: { x, y },
-                    targetMapId: 'DEMO_SANDBOX',
-                    spawnPoint: { x: 6, y: 2 }
-                  };
-                  const updatedGates = upsertWarpGate(activeMapData.gates, newGate);
-                  useGameStore.setState({
-                    activeMapData: { ...activeMapData, gates: updatedGates }
-                  });
-                  useEditorStore.setState({ mapDirty: true });
-                  useEditorStore.getState().setShowWarpOverlays(true);
-                  showToast(`Added warp gate at [${x}, ${y}] → DEMO_SANDBOX`);
-                }}
-                className="text-[9px] px-1.5 py-0.5 rounded bg-purple-900/60 border border-purple-500/40 hover:bg-purple-800 text-purple-100 font-bold"
-              >
-                + Add Gate At Selection
-              </button>
             </div>
 
-            {normalizeGates(activeMapData?.gates).length === 0 ? (
-              <p className="text-[9px] text-slate-500 italic py-1">
-                No warp gates placed yet. Select a tile on the map or click Gate Tool above to place one.
-              </p>
-            ) : (
-              <div className="max-h-40 space-y-1.5 overflow-y-auto custom-scrollbar pr-0.5">
-                {normalizeGates(activeMapData?.gates).map((gate, idx) => (
-                  <div
-                    key={`${gate.id || idx}_${gate.position.x}_${gate.position.y}`}
-                    className="p-1.5 rounded bg-[#050b14] border border-slate-800 text-[10px] space-y-1"
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <span className="font-mono text-purple-300">
-                          Gate [{gate.position.x}, {gate.position.y}]
-                        </span>
-                        <span className="text-slate-500">→</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!activeMapData) return;
-                          const nextGates = removeWarpGateAt(activeMapData.gates, gate.position.x, gate.position.y);
-                          useGameStore.setState({
-                            activeMapData: { ...activeMapData, gates: nextGates }
-                          });
-                          useEditorStore.setState({ mapDirty: true });
-                          showToast(`Removed gate at (${gate.position.x}, ${gate.position.y})`);
-                        }}
-                        className="p-0.5 text-slate-500 hover:text-red-400 transition-colors"
-                        title="Remove gate"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
+            <button
+              type="button"
+              onClick={() => void handleSaveMap()}
+              disabled={isSaving || !activeMapData}
+              className={`w-full py-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
+                isMapDirty
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-black shadow-lg shadow-amber-950/50 cursor-pointer'
+                  : 'bg-[#cbb26a]/20 text-amber-300 border border-amber-500/30 hover:bg-[#cbb26a]/30'
+              }`}
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{isSaving ? 'Saving…' : isMapDirty ? 'Save Changes*' : 'Map Saved'}</span>
+            </button>
 
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <div>
-                        <label className="block text-[8px] text-slate-500 uppercase">Target Map ID</label>
-                        <input
-                          type="text"
-                          value={gate.targetMapId}
-                          onChange={(e) => {
-                            if (!activeMapData) return;
-                            const updated = { ...gate, targetMapId: e.target.value };
-                            const nextGates = upsertWarpGate(activeMapData.gates, updated);
-                            useGameStore.setState({
-                              activeMapData: { ...activeMapData, gates: nextGates }
-                            });
-                            useEditorStore.setState({ mapDirty: true });
-                          }}
-                          className="w-full bg-[#0b1320] border border-slate-700 text-slate-200 text-[10px] px-1.5 py-0.5 rounded focus:outline-none focus:border-purple-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[8px] text-slate-500 uppercase">Target Spawn (X, Y)</label>
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            placeholder="X"
-                            value={gate.spawnPoint?.x ?? 0}
-                            onChange={(e) => {
-                              if (!activeMapData) return;
-                              const updated = {
-                                ...gate,
-                                spawnPoint: { x: Number(e.target.value), y: gate.spawnPoint?.y ?? 0 }
-                              };
-                              const nextGates = upsertWarpGate(activeMapData.gates, updated);
-                              useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
-                              useEditorStore.setState({ mapDirty: true });
-                            }}
-                            className="w-full bg-[#0b1320] border border-slate-700 text-slate-200 text-[10px] px-1 py-0.5 rounded"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Y"
-                            value={gate.spawnPoint?.y ?? 0}
-                            onChange={(e) => {
-                              if (!activeMapData) return;
-                              const updated = {
-                                ...gate,
-                                spawnPoint: { x: gate.spawnPoint?.x ?? 0, y: Number(e.target.value) }
-                              };
-                              const nextGates = upsertWarpGate(activeMapData.gates, updated);
-                              useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
-                              useEditorStore.setState({ mapDirty: true });
-                            }}
-                            className="w-full bg-[#0b1320] border border-slate-700 text-slate-200 text-[10px] px-1 py-0.5 rounded"
-                          />
-                        </div>
-                      </div>
-                    </div>
+            {/* Resize Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsResizingMap(!isResizingMap);
+                if (!isResizingMap && activeMapData?.grid) {
+                  setResizeW(activeMapData.grid[0]?.length || 64);
+                  setResizeH(activeMapData.grid.length || 64);
+                }
+              }}
+              disabled={!activeMapData}
+              className="w-full py-1.5 border border-dashed border-sky-500/40 hover:bg-sky-500/20 text-sky-200 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Grid className="w-3.5 h-3.5 text-sky-400" />
+              <span>{isResizingMap ? 'Close Resize' : 'Resize Map Dimensions'}</span>
+            </button>
+
+            {isResizingMap && (
+              <div className="p-3 bg-[#050b14] border border-sky-500/40 rounded-xl space-y-2 shadow-inner">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-slate-400">New W</label>
+                    <input
+                      type="number"
+                      min={8}
+                      max={128}
+                      value={resizeW}
+                      onChange={(e) => setResizeW(parseInt(e.target.value, 10) || 64)}
+                      className="w-full bg-[#0b1320] border border-slate-700 rounded-lg px-2 py-1 text-slate-200"
+                    />
                   </div>
-                ))}
+                  <div>
+                    <label className="block text-[10px] text-slate-400">New H</label>
+                    <input
+                      type="number"
+                      min={8}
+                      max={128}
+                      value={resizeH}
+                      onChange={(e) => setResizeH(parseInt(e.target.value, 10) || 64)}
+                      className="w-full bg-[#0b1320] border border-slate-700 rounded-lg px-2 py-1 text-slate-200"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResizeMapSubmit}
+                  className="w-full py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold transition-colors cursor-pointer"
+                >
+                  Apply Resize
+                </button>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* LAYER SELECTOR */}
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
-        <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-          <Layers className="w-3.5 h-3.5" /> What are you painting?
-        </div>
-        <p className="text-[10px] text-slate-500 leading-relaxed">
-          <span className="text-rose-200">Logic</span> = collision & gameplay tags (colored overlay).{' '}
-          <span className="text-[#e2d5b3]">Ground / layers</span> = visible tileset art.
-        </p>
-        <div className="flex gap-1 overflow-x-auto custom-scrollbar pb-1">
-          <button
-            type="button"
-            onClick={() => setActiveLayerIdx(-1)}
-            className={`px-2 py-1 rounded border min-w-max transition-all flex items-center gap-1 ${
-              activeLayerIdx === -1
-                ? 'bg-rose-900/40 border-rose-400 text-rose-100'
-                : 'border-transparent text-slate-400 hover:bg-white/5'
-            }`}
-            title="Collision / authority grid (bible layer −1)"
-          >
-            <Shield className="w-3 h-3" /> Logic (−1)
-          </button>
-          {currentMapData.tileLayers?.map((layer: { name?: string }, idx: number) => (
-            <button
-              key={idx}
-              onClick={() => setActiveLayerIdx(idx)}
-              className={`px-2 py-1 rounded border min-w-max transition-all ${
-                activeLayerIdx === idx
-                  ? 'bg-[#806f47]/30 border-[#cbb26a] text-white'
-                  : 'border-transparent text-slate-400 hover:bg-white/5'
-              }`}
-            >
-              {layer.name} ({idx})
-            </button>
-          ))}
-        </div>
+      {/* SECTION 2: Map Explorer & Quick Switch */}
+      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
+        <button
+          type="button"
+          onClick={() => toggleSection('maps')}
+          className="w-full flex items-center justify-between p-2.5 bg-black/40 text-[#cbb26a] font-bold text-left hover:bg-black/60 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-1.5">
+            <Globe className="w-4 h-4 text-sky-400" /> Realms & Maps ({mapIndex.length})
+          </span>
+          {openSections.maps ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </button>
+
+        {openSections.maps && (
+          <div className="p-3 space-y-2 border-t border-[#806f47]/20 bg-[#050b14]/50">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                type="text"
+                value={mapSearchQuery}
+                onChange={(e) => setMapSearchQuery(e.target.value)}
+                placeholder="Search map by name/ID..."
+                className="w-full pl-8 pr-2.5 py-1.5 bg-[#050b14] border border-slate-700 rounded-xl text-slate-200 focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            <div className="max-h-40 overflow-y-auto bg-[#050b14] border border-slate-800 rounded-xl divide-y divide-slate-800/80 custom-scrollbar">
+              {mapIndex.length === 0 ? (
+                <div className="p-3 text-slate-500 text-center">No maps found</div>
+              ) : (
+                mapIndex.map((m) => {
+                  const isCurrent = m.id === baseMapId;
+                  return (
+                    <div
+                      key={m.id}
+                      className={`group px-2.5 py-1.5 flex items-center justify-between transition-colors ${
+                        isCurrent ? 'bg-amber-500/20 text-amber-300' : 'hover:bg-white/5 text-slate-300'
+                      }`}
+                    >
+                      <div
+                        onClick={() => void handleWarpToMap(m.id)}
+                        className="flex-1 cursor-pointer truncate"
+                      >
+                        <span className="font-bold">{m.name || m.id}</span>
+                        <span className="text-[9px] text-slate-500 ml-1.5 font-mono">({m.id})</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {canEdit && m.id !== 'DEMO_SANDBOX' && m.id !== 'LOBBY' && (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTargetId(m.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-all cursor-pointer"
+                            title="Delete map"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                        <span className="text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-black/60 border border-slate-800 text-slate-400">
+                          {m.category || 'Map'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsCreatingNewMap(!isCreatingNewMap)}
+                className="w-full py-1.5 border border-dashed border-[#806f47]/50 hover:bg-[#806f47]/20 text-amber-200 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{isCreatingNewMap ? 'Cancel' : 'Create New Map'}</span>
+              </button>
+            )}
+
+            {isCreatingNewMap && (
+              <div className="p-3 bg-[#050b14] border border-[#806f47]/40 rounded-xl space-y-2 mt-2 shadow-inner">
+                <input
+                  type="text"
+                  value={newMapSlug}
+                  onChange={(e) => setNewMapSlug(e.target.value.toUpperCase())}
+                  placeholder="MAP_SLUG (e.g. MOUNTAIN_PASS)"
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200"
+                />
+                <input
+                  type="text"
+                  value={newMapName}
+                  onChange={(e) => setNewMapName(e.target.value)}
+                  placeholder="Display Name (e.g. Mountain Pass)"
+                  className="w-full bg-[#0b1320] border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[9px] text-slate-400">W</label>
+                    <input
+                      type="number"
+                      min={8}
+                      max={128}
+                      value={newMapWidth}
+                      onChange={(e) => setNewMapWidth(parseInt(e.target.value, 10) || 64)}
+                      className="w-full bg-[#0b1320] border border-slate-800 rounded-lg px-2 py-1 text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] text-slate-400">H</label>
+                    <input
+                      type="number"
+                      min={8}
+                      max={128}
+                      value={newMapHeight}
+                      onChange={(e) => setNewMapHeight(parseInt(e.target.value, 10) || 64)}
+                      className="w-full bg-[#0b1320] border border-slate-800 rounded-lg px-2 py-1 text-slate-200"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCreateNewMapSubmit()}
+                  disabled={isCreating || !newMapSlug.trim()}
+                  className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg font-bold transition-colors cursor-pointer"
+                >
+                  {isCreating ? 'Creating…' : 'Generate Map'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* TILESET / LOGIC TAG PICKER */}
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
-        <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-          <Grid className="w-3.5 h-3.5" />
-          {activeLayerIdx === -1 ? 'Logic Tags' : 'Asset Picker'}
-        </div>
+      {/* SECTION 3: Visual Tile Layers */}
+      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
+        <button
+          type="button"
+          onClick={() => toggleSection('layers')}
+          className="w-full flex items-center justify-between p-2.5 bg-black/40 text-[#cbb26a] font-bold text-left hover:bg-black/60 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-1.5">
+            <Layers className="w-4 h-4 text-purple-400" /> Active Painting Layer
+          </span>
+          {openSections.layers ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </button>
 
-        {activeLayerIdx === -1 && (
-          <div className="rounded border border-rose-900/50 bg-rose-950/20 p-2 text-[10px] space-y-1">
-            <div className="font-bold text-rose-200 border-b border-rose-900/30 pb-1 mb-1">Smoke Checklist</div>
-            <div className="flex flex-col gap-1 text-slate-300">
-              <div className="flex items-center gap-1.5">
-                {activeLayerIdx === -1 ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
-                <span className={activeLayerIdx === -1 ? "text-emerald-400" : ""}>Layer is Logic (−1)</span>
+        {openSections.layers && (
+          <div className="p-3 space-y-2 border-t border-[#806f47]/20 bg-[#050b14]/50">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveLayerIdx(-1)}
+                className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  activeLayerIdx === -1
+                    ? 'bg-rose-950/60 border-rose-400 text-rose-200 shadow-md'
+                    : 'bg-black/40 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Shield className="w-4 h-4 text-rose-400" />
+                <span className="font-bold text-[10px]">Logic (−1)</span>
+                <span className="text-[8px] text-slate-500">Collision & Gates</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveLayerIdx(0)}
+                className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                  activeLayerIdx >= 0
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-md'
+                    : 'bg-black/40 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Grid className="w-4 h-4 text-amber-400" />
+                <span className="font-bold text-[10px]">Visual Layers</span>
+                <span className="text-[8px] text-slate-500">Tilesets & Art</span>
+              </button>
+            </div>
+
+            {activeLayerIdx >= 0 && (
+              <div className="flex gap-1 overflow-x-auto custom-scrollbar pt-1">
+                {currentMapData.tileLayers?.map((layer: { name?: string }, idx: number) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveLayerIdx(idx)}
+                    className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold min-w-max transition-all cursor-pointer ${
+                      activeLayerIdx === idx
+                        ? 'bg-[#806f47]/40 border-[#cbb26a] text-white'
+                        : 'border-slate-800 text-slate-400 hover:bg-white/5'
+                    }`}
+                  >
+                    {layer.name} ({idx})
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddLayer}
+                  className="px-2 py-1 rounded-lg border border-dashed border-slate-700 text-slate-400 hover:text-white text-[10px] cursor-pointer"
+                  title="Add new visual layer"
+                >
+                  + Add Layer
+                </button>
               </div>
-              <div className="flex items-center gap-1.5">
-                {activeLogicTileId ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
-                <span className={activeLogicTileId ? "text-emerald-400" : ""}>Logic Tag selected</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {activeLayerIdx === -1 ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
-                <span className={activeLayerIdx === -1 ? "text-emerald-400" : ""}>Overlay is ON</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {isDevEditorOpen ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
-                <span className={isDevEditorOpen ? "text-emerald-400" : ""}>Tools toggle ON</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {!isMapDirty ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <Circle className="w-3 h-3 text-slate-600" />}
-                <span className={!isMapDirty ? "text-emerald-400" : ""}>Map Saved</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 4: Palette (Tileset Picker or Logic Tag Palette) */}
+      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
+        <button
+          type="button"
+          onClick={() => toggleSection('palette')}
+          className="w-full flex items-center justify-between p-2.5 bg-black/40 text-[#cbb26a] font-bold text-left hover:bg-black/60 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-1.5">
+            <Grid className="w-4 h-4 text-emerald-400" />
+            {activeLayerIdx === -1 ? 'Logic Tag Palette' : 'Tileset & Brush Picker'}
+          </span>
+          {openSections.palette ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </button>
+
+        {openSections.palette && (
+          <div className="p-3 border-t border-[#806f47]/20 bg-[#050b14]/50">
+            {activeLayerIdx === -1 ? (
+              <LogicTagPalette />
+            ) : (
+              <TilesetPicker
+                tilesets={currentMapData.tilesets || []}
+                activeBrushTileId={brushTileId}
+                onBrushSelect={handleBrushSelect}
+                activeLayerIdx={activeLayerIdx}
+                onLayerChange={setActiveLayerIdx}
+                tileLayers={currentMapData.tileLayers || []}
+                onAddLayer={handleAddLayer}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-rose-500/50 bg-[#050b14] p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <div>
+                <h3 className="font-bold text-sm">Delete Map &ldquo;{deleteTargetId}&rdquo;?</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  This will permanently delete the map record from the database.
+                </p>
               </div>
             </div>
-          </div>
-        )}
 
-        {activeLayerIdx >= 0 && (
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setBrushTileId(0)}
-              className={`flex-1 py-1 rounded border flex items-center justify-center gap-1 ${
-                brushTileId === 0
-                  ? 'bg-rose-900/50 border-rose-400 text-rose-100'
-                  : 'border-slate-700 text-slate-400 hover:bg-white/5'
-              }`}
-              title="Erase visual tile (GID 0)"
-            >
-              <Eraser className="w-3 h-3" /> Erase
-            </button>
-            <button
-              type="button"
-              onClick={() => setBrushTileId(DEFAULT_STUDIO_GROUND_GID)}
-              className={`flex-1 py-1 rounded border text-[10px] ${
-                brushTileId === DEFAULT_STUDIO_GROUND_GID
-                  ? 'bg-[#806f47]/40 border-[#cbb26a] text-[#e2d5b3]'
-                  : 'border-slate-700 text-slate-400 hover:bg-white/5'
-              }`}
-              title="Solid grass GID 17"
-            >
-              Grass ({DEFAULT_STUDIO_GROUND_GID})
-            </button>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                className="px-3 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => handleDeleteMap(deleteTargetId)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
           </div>
-        )}
-        <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-          {activeLayerIdx === -1 ? (
-            <LogicTagPalette />
-          ) : (
-            <TilesetPicker
-              tilesets={currentMapData.tilesets || []}
-              activeBrushTileId={brushTileId}
-              onBrushSelect={handleBrushSelect}
-              activeLayerIdx={activeLayerIdx}
-              onLayerChange={setActiveLayerIdx}
-              tileLayers={currentMapData.tileLayers || []}
-              onAddLayer={handleAddLayer}
-            />
-          )}
         </div>
-      </div>
+      )}
+
     </div>
   );
 };

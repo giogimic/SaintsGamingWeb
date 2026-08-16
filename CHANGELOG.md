@@ -1,3 +1,13 @@
+## [2.1.282] - 2026-08-16
+### Added
+- **Studio UI & Full-Screen Editor Architecture Overhaul:**
+  - `StudioBottomToolbar.tsx`: Unified bottom IDE toolbar consolidating brush/erase/eyedropper/pan/select/prefab/gate tools, active layer toggle chips, size steppers, overlay toggles (XY coords, warp gates, NPC spawns), categorized dock panel launchers, latency/FPS telemetry, playtest mode transition, and dirty map/definition save triggers.
+  - `FullScreenMapBrowser.tsx`: Full-screen modal overlay for map discovery with search filtering by name/slug/category, world dimensions readout, NPC/gate counters, one-click teleport/warp, new map creator, and map deletion with safety confirmations.
+  - `FullScreenAssetBrowser.tsx`: Full-screen asset library modal featuring Catalog management, Sprite browser, texture upload, and spritesheet slicer tabs.
+  - `StudioContextMenu.tsx`: Viewport right-click context menu supporting tile sampling (eyedropper), one-click warp gate placement, player avatar teleportation, whole-layer fill, and tile erasure.
+  - `DELETE /api/maps/[slug]`: Secured administrative map deletion endpoint with WorldMap and GameMap cascading cleanup and Go MMO sync notifications.
+  - `WorldBuilderPanel.tsx`: Redesigned collapsible accordion layout dividing Active Realm Overview, Map Index & Quick Switch with row-level map deletion, Painting Layers, and Tileset/Logic palettes.
+
 ## [2.1.281] - 2026-08-16
 ### Added
 - **Creature Breeding, Genetic Inheritance & Pet Growth Engine (Bible 12 & Bible 23):**

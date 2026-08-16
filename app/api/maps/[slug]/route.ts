@@ -257,3 +257,59 @@ export async function POST(
     );
   }
 }
+
+/**
+ * DELETE /api/maps/[slug] — Delete a map from WorldMap and GameMap tables. Admin/dev only.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized — sign in required to delete maps." },
+        { status: 401 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { permissionLevel: true },
+    });
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
+      return NextResponse.json(
+        { error: "Forbidden — Admin+ (permission level 400) required to delete maps." },
+        { status: 403 }
+      );
+    }
+
+    const { slug } = await params;
+    const normalizedSlug = slug.trim();
+
+    if (!normalizedSlug) {
+      return NextResponse.json({ error: "Invalid map identifier" }, { status: 400 });
+    }
+
+    if (normalizedSlug.toUpperCase() === DEMO_MAP_ID || normalizedSlug.toUpperCase() === 'LOBBY') {
+      return NextResponse.json(
+        { error: "Cannot delete the default root hub map." },
+        { status: 400 }
+      );
+    }
+
+    await prisma.worldMap.deleteMany({ where: { id: normalizedSlug } });
+    await prisma.gameMap.deleteMany({ where: { id: normalizedSlug } });
+
+    return NextResponse.json({ success: true, deleted: normalizedSlug });
+  } catch (error) {
+    console.error("Failed to delete map:", error);
+    const message = error instanceof Error ? error.message : "Failed to delete map";
+    return NextResponse.json(
+      { error: "Failed to delete map", details: [message] },
+      { status: 500 }
+    );
+  }
+}
+

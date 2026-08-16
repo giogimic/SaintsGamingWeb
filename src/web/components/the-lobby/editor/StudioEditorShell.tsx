@@ -34,10 +34,13 @@ import {
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
 import { STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
-import { StudioPaintHud } from './StudioPaintHud';
 import { StudioMenuBar } from './StudioMenuBar';
 import { StudioOmnisearch } from './StudioOmnisearch';
 import { StudioFavoritesStrip } from './StudioFavoritesStrip';
+import { StudioBottomToolbar } from './StudioBottomToolbar';
+import { FullScreenMapBrowser } from './FullScreenMapBrowser';
+import { FullScreenAssetBrowser } from './FullScreenAssetBrowser';
+import { StudioContextMenu } from './StudioContextMenu';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
 import { PropertiesPanel } from './panels/PropertiesPanel';
@@ -55,18 +58,6 @@ import { MonsterSpawnerPanel } from './panels/MonsterSpawnerPanel';
 import { PrefabBuilderPanel } from './panels/PrefabBuilderPanel';
 import { WorldAtlasPanel } from './panels/WorldAtlasPanel';
 import { StudioProblemsPanel } from './panels/StudioProblemsPanel';
-import { StudioStatusBar } from './StudioStatusBar';
-
-const MODE_BUTTONS: Array<{
-  id: StudioMode;
-  icon: React.ReactNode;
-}> = [
-  { id: 'develop', icon: <Wrench className="w-4 h-4" /> },
-  { id: 'npc', icon: <Users className="w-4 h-4" /> },
-  { id: 'quest', icon: <ScrollText className="w-4 h-4" /> },
-  { id: 'creature', icon: <PawPrint className="w-4 h-4" /> },
-  { id: 'test', icon: <Footprints className="w-4 h-4" /> },
-];
 
 const initialLayout: IJsonModel = {
   global: {
@@ -99,7 +90,6 @@ const initialLayout: IJsonModel = {
             component: "viewport",
             enableClose: false,
             className: "sg-viewport-tab",
-            // Applied to parent tabset when this is the sole stretched tab.
             tabsetClassName: "sg-viewport-tabset",
           }
         ]
@@ -146,6 +136,9 @@ export const StudioEditorShell: React.FC = () => {
   const layoutRef = useRef<any>(null);
   const [model] = useState(() => Model.fromJson(initialLayout));
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
+  const [mapBrowserOpen, setMapBrowserOpen] = useState(false);
+  const [assetBrowserOpen, setAssetBrowserOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 
   useEffect(() => {
     // Restore dock geometry, then enter Development Mode (tools on by default).
@@ -193,6 +186,31 @@ export const StudioEditorShell: React.FC = () => {
     return () => window.removeEventListener('studio_open_dock', handleOpenDock);
   }, [model]);
 
+  // Context menu on right click in canvas / viewport area
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      if (!useEditorStore.getState().isCreationMode) return;
+      
+      const target = e.target as HTMLElement;
+      // Only trigger if clicking on canvas or viewport container
+      const isCanvasOrViewport = target.tagName === 'CANVAS' || target.closest('.sg-viewport-tab') || target.closest('.sg-viewport-container');
+      if (!isCanvasOrViewport) return;
+
+      e.preventDefault();
+      const state = useEditorStore.getState();
+      const tile = state.hoveredTile || state.clickedTile || { r: 0, c: 0 };
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        tileR: tile.r,
+        tileC: tile.c,
+      });
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu);
+    return () => window.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -226,11 +244,17 @@ export const StudioEditorShell: React.FC = () => {
         return;
       }
 
-      // Ctrl+Shift+P opens World Atlas / Project Browser
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+      // Ctrl+Shift+M or Ctrl+Shift+P opens Full-Screen World Atlas / Map Browser
+      if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'm' || e.key.toLowerCase() === 'p')) {
         e.preventDefault();
-        useEditorStore.getState().openPanel('atlas');
-        showToast('Opened World Atlas');
+        setMapBrowserOpen((prev) => !prev);
+        return;
+      }
+
+      // Ctrl+Shift+A opens Full-Screen Asset Browser
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setAssetBrowserOpen((prev) => !prev);
         return;
       }
 
@@ -261,13 +285,6 @@ export const StudioEditorShell: React.FC = () => {
       if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
-        return;
-      }
-
-      // Ctrl+Shift+S Save All
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        showToast('Save All triggered');
         return;
       }
 
@@ -353,7 +370,7 @@ export const StudioEditorShell: React.FC = () => {
         <button
           type="button"
           onClick={() => useEditorStore.getState().exitPlaytest()}
-          className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/50 bg-[#050b14]/95 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20"
+          className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/50 bg-[#050b14]/95 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20 cursor-pointer"
           title="Return to Editor (Ctrl+E)"
         >
           <Wrench className="h-4 w-4" />
@@ -389,19 +406,34 @@ export const StudioEditorShell: React.FC = () => {
   };
 
   const handleAction = (action: Action) => {
-    // If a user clicks a dock button, we can dispatch actions to FlexLayout
     return action;
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-8">
-      <StudioMenuBar />
+    <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10">
+      <StudioMenuBar
+        onOpenMapBrowser={() => setMapBrowserOpen(true)}
+        onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
+      />
       <StudioFavoritesStrip />
       <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
-      <StudioStatusBar />
-      <StudioPaintHud />
+      
+      {/* Full-Screen Overlay Modals */}
+      <FullScreenMapBrowser isOpen={mapBrowserOpen} onClose={() => setMapBrowserOpen(false)} />
+      <FullScreenAssetBrowser isOpen={assetBrowserOpen} onClose={() => setAssetBrowserOpen(false)} />
 
-      {/* FlexLayout Container */}
+      {/* Context Menu */}
+      {contextMenu && (
+        <StudioContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          tileR={contextMenu.tileR}
+          tileC={contextMenu.tileC}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* FlexLayout Workspace Container */}
       <div className="flex-1 relative pointer-events-none">
         <Layout 
           ref={layoutRef} 
@@ -411,108 +443,13 @@ export const StudioEditorShell: React.FC = () => {
         />
       </div>
 
-      {/* Legacy Mode strip + dock - keep for quick launching panels into flexlayout */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 pointer-events-auto flex flex-col items-center gap-2 max-w-[95vw]">
-        <div className="sg-glass bg-[#050b14]/90 border border-[#806f47]/40 rounded-full px-3 py-2 flex items-center gap-1.5 sm:gap-2 shadow-2xl overflow-x-auto max-w-full">
-          <DockButton id="build" layoutRef={layoutRef} model={model} icon={<Hammer className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="atlas" layoutRef={layoutRef} model={model} icon={<Globe className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="properties" layoutRef={layoutRef} model={model} icon={<Settings2 className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="prefab" layoutRef={layoutRef} model={model} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="assets" layoutRef={layoutRef} model={model} icon={<ImageIcon className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="npc" layoutRef={layoutRef} model={model} icon={<Users className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="quest" layoutRef={layoutRef} model={model} icon={<ScrollText className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="dialogue" layoutRef={layoutRef} model={model} icon={<MessageSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
-          {canDev && (
-            <DockButton id="dev" layoutRef={layoutRef} model={model} icon={<TerminalSquare className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          )}
-          <DockButton id="characters" layoutRef={layoutRef} model={model} icon={<Sword className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="creature" layoutRef={layoutRef} model={model} icon={<PawPrint className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="spawner" layoutRef={layoutRef} model={model} icon={<Flame className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="loot" layoutRef={layoutRef} model={model} icon={<Coins className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="items" layoutRef={layoutRef} model={model} icon={<Package className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="classes" layoutRef={layoutRef} model={model} icon={<UserCheck className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <DockButton id="problems" layoutRef={layoutRef} model={model} icon={<AlertCircle className="w-5 h-5" />} permissionLevel={permissionLevel} />
-          <div className="w-px h-6 bg-[#806f47]/30 mx-0.5 shrink-0" />
-          <button
-            type="button"
-            onClick={() => {
-              useGameStore.getState().setGameMode('CHARACTER_SELECT');
-              showToast('Load a character for Playtest');
-            }}
-            className="flex flex-col items-center gap-0.5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors min-w-[64px]"
-            title="Load a game character (optional)"
-          >
-            <UserRound className="w-4 h-4" />
-            <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Hero</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              useEditorStore.getState().enterPlaytest();
-              showToast('Playtest — gameplay systems on');
-            }}
-            className="flex flex-col items-center gap-0.5 p-2 rounded-xl text-emerald-400 hover:bg-emerald-500/10 transition-colors min-w-[64px]"
-            title={STUDIO_MODE_META.test.blurb}
-          >
-            <Play className="w-4 h-4" />
-            <span className="font-bold text-[9px] uppercase font-mono tracking-wider">Play</span>
-          </button>
-        </div>
-      </div>
+      {/* Unified Bottom Studio Toolbar */}
+      <StudioBottomToolbar
+        layoutRef={layoutRef}
+        model={model}
+        onOpenMapBrowser={() => setMapBrowserOpen(true)}
+        onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
+      />
     </div>
-  );
-};
-
-const DockButton: React.FC<{
-  id: PanelId;
-  icon: React.ReactNode;
-  permissionLevel: number;
-  layoutRef: React.RefObject<any>;
-  model: Model;
-}> = ({ id, icon, permissionLevel, layoutRef, model }) => {
-  const showToast = useGameStore((state) => state.showToast);
-  const meta = STUDIO_DOCK_META[id];
-
-  if (!canUseStudioDock(permissionLevel, id)) return null;
-
-  return (
-    <button
-      type="button"
-      title={`${meta.label} — ${meta.blurb}`}
-      onClick={() => {
-        if (!layoutRef.current) return;
-        
-        // Check if tab already exists
-        const nodes = model.getNodeById(id);
-        if (nodes) {
-          model.doAction(Actions.selectTab(id));
-        } else {
-          const isRightDock = id === 'properties' || id === 'problems';
-          const targetTabsetId = isRightDock ? 'right-dock' : 'left-dock';
-          try {
-            model.doAction(Actions.addNode({
-              type: "tab",
-              id: id,
-              name: meta.label,
-              component: id,
-            }, targetTabsetId, DockLocation.CENTER, -1));
-          } catch {
-            model.doAction(Actions.addNode({
-              type: "tab",
-              id: id,
-              name: meta.label,
-              component: id,
-            }, "left-dock", DockLocation.CENTER, -1));
-          }
-        }
-      }}
-      className={`
-        flex flex-col items-center gap-1 p-2 rounded-xl transition-all min-w-[56px] text-slate-400 hover:text-white hover:bg-white/5
-      `}
-    >
-      {icon}
-      <span className="font-bold text-[9px] uppercase font-mono tracking-wider">{meta.label}</span>
-    </button>
   );
 };
