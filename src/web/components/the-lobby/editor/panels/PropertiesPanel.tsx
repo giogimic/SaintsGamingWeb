@@ -84,8 +84,8 @@ export const PropertiesPanel: React.FC = () => {
       setWarpTarget(existingGate.targetMapId || 'DEMO_SANDBOX');
       setWarpSpawnX(existingGate.spawnPoint?.x ?? 14);
       setWarpSpawnY(existingGate.spawnPoint?.y ?? 15);
-      if (existingGate.category) {
-        setWarpCategory(existingGate.category as any);
+      if ((existingGate as any).category) {
+        setWarpCategory((existingGate as any).category as any);
       }
     }
   }, [clickedTile, currentMapData.gates]);

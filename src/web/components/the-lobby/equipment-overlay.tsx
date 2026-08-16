@@ -30,7 +30,7 @@ export default function EquipmentOverlay() {
   const stats = calculatePlayerCombatStats(player);
 
   // Determine speed tier rating and styling
-  const speedTier = stats.speedTier || 'NORMAL';
+  const speedTier = (stats as any).speedTier || 'NORMAL';
   const speedMultiplier = speedTier === 'FAST' ? '1.25x' : speedTier === 'SLOW' ? '0.85x' : '1.00x';
   const speedBadgeStyle =
     speedTier === 'FAST'
@@ -45,14 +45,14 @@ export default function EquipmentOverlay() {
       soundSynth?.playSelectSound?.();
       const itemName = ITEM_DB[currentId]?.name || 'Item';
       showToast(`Unequipped ${itemName}`);
-      equipItem(slot, null);
+      equipItem(slot as any, null);
     }
   };
 
   const renderSlot = (
     slot: string,
     label: string,
-    Icon: React.ElementType,
+    Icon: React.ComponentType<any>,
     subLabel?: string
   ) => {
     const itemId = (equipment as Record<string, string | null | undefined>)[slot];
@@ -94,7 +94,7 @@ export default function EquipmentOverlay() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center text-slate-600 group-hover:text-cyan-500/60 transition-colors my-auto">
-            <Icon className="w-5 h-5 stroke-[1.5] mb-0.5" />
+            <Icon className="w-5 h-5 mb-0.5" strokeWidth={1.5} />
             <span className="text-[8px] font-mono uppercase tracking-wider text-slate-500">
               {subLabel || 'Empty'}
             </span>
