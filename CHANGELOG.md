@@ -1,3 +1,10 @@
+## [2.1.288] - 2026-08-16
+### Added
+- **Telos: Warden of the Telosian Core & Font Anima Mechanics Engine (Bible 24 & Bible 27):**
+  - `telosPhaseEngine.ts`: 0% to 4,000% Enrage scaling matrix for boss HP and damage, 5-phase arena transitions, Phase 5 100%+ Enrage unlock, Green/Black/Red Anima Beam mechanics with player blocking, and equilibrium balance bar.
+  - `telosSpecialAttacks.ts`: "Hold still, invader!" heavy crush slam with Resonance heal / Barricade / Freedom stun mitigation, Grasping Anima Tendrils burst DPS check, and "Soaria" Anima Bomb font shield absorption.
+  - `telosLootEngine.ts`: Dynamic unique drop rate scaling ($10000 / (10 + 0.25E + 3S)$ down to 1/9 at 4000% Enrage / 150 Streak), Volcanic/Pure/Corrupted Anima Orbs, Dormant Staff of Sliske, Zaros Godsword, Seren Godbow, Reprisal codex, and Tier 92 God Weapon assembly matrix.
+
 ## [2.1.287] - 2026-08-16
 ### Added
 - **Nex: Angel of Death, Ancient Elementals & Praesul Codex Engine (Bible 24 & Bible 27):**
