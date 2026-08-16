@@ -256,7 +256,7 @@ if [ "$IS_NUCLEAR_MODE" = "1" ]; then
     if ss -tuln | grep -qE ":(80|443|3000) "; then
         echo -e "${CYAN}[*] Nuclear mode: Clearing conflicting ports 80/443/3000...${NC}"
         sudo apt-get update -qq && sudo apt-get install -y -qq psmisc 2>/dev/null || true
-        sudo fuser -k 80/tcp 443/tcp 3000/tcp 2>/dev/null || true
+        sudo fuser -k 80/tcp 443/tcp 3000/tcp &>/dev/null || true
         sleep 1
     fi
 else
@@ -580,7 +580,9 @@ $DOMAIN, www.$DOMAIN {
 # SAINTS_PROXY_LIST_BEGIN
 # SAINTS_PROXY_LIST_END
 CADDYEOF
-        sudo systemctl reload caddy || sudo systemctl restart caddy
+        sudo systemctl unmask caddy 2>/dev/null || true
+        sudo systemctl enable caddy 2>/dev/null || true
+        sudo systemctl restart caddy || sudo systemctl start caddy || true
     else
         if ! command -v nginx &>/dev/null || ! command -v certbot &>/dev/null; then
             echo -e "${YELLOW}[*] Installing Nginx and Certbot...${NC}"
@@ -617,7 +619,6 @@ NGINXEOF
         if [ "$SSL_CHOICE" = "Nginx (Let's Encrypt / Certbot)" ] && [ "$HTTP_PORT" = "80" ]; then
             RUN_CERTBOT=1
         fi
-    fi
     fi
 fi
 
