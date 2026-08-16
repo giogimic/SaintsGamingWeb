@@ -1,3 +1,10 @@
+## [2.1.274] - 2026-08-16
+### Fixed
+- **Canonical Starter Map & Initial Spawn Restored (`index.tsx`)**:
+  - Restored `DEMO_SANDBOX` as the canonical starter realm on character creation and load (spawning at walkable plaza `(14, 15)` in front of Professor Oakwood's Lab and starter shops).
+  - Fixed an issue where new characters were being redirected to an unseeded placeholder map (`LOBBY`), which caused a 404 fallback to a small empty grid where players spawned on border wall collision and could not move.
+  - Re-enabled support for character-saved maps so players who have progressed to other zones (e.g. `WILD_MEADOWS`, `QUARRY_MINE`) restore seamlessly into their saved locations.
+
 ## [2.1.273] - 2026-08-16
 ### Added & Improved
 - **Starter Testing Realm Suite (`demoMapSeed.ts`, `DemoBootstrap.ts`, `starterMaps.test.ts`)**:
