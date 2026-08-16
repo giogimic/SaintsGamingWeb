@@ -1,3 +1,10 @@
+## [2.1.287] - 2026-08-16
+### Added
+- **Nex: Angel of Death, Ancient Elementals & Praesul Codex Engine (Bible 24 & Bible 27):**
+  - `nexPhaseEngine.ts`: 5-Phase combat progression (Smoke, Shadow, Blood, Ice, Zaros Enrage), 4-quadrant positioning matrix, Blood Siphon damage-reversal heal, Blood Sacrifice 7-tile distance escape (80% HP & 33% prayer penalty), and Ice Prison breakout mechanics.
+  - `nexMinionMechanics.ts`: 4 Elemental Minions (Fumus, Umbra, Cruor, Glacies), Blood Reaver minion pathing & 250,000 HP absorption heal, and Zarosian Wrath 5-tick channeled 8-tile radius instant-wipe death explosion.
+  - `nexLootEngine.ts`: Praesul Codex consumption unlocking Tier 99 Ancient Curses (Malevolence, Desolation, Affliction with +12% accuracy, +12% damage, +10% defence), Tier 92 Wand of the Praesul & Imperium Core, and Torva/Pernix/Virtus armor drop distribution.
+
 ## [2.1.286] - 2026-08-16
 ### Added
 - **Player-Owned Ports, Naval Exploration & Voyage Management Engine (Bible 18 & Bible 31):**
