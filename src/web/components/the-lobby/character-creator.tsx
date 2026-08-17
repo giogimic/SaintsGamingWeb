@@ -141,6 +141,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [heroesLoading, setHeroesLoading] = useState(true);
   const [activeWorld, setActiveWorld] = useState<{ id: string; name: string } | null>(null);
   const [worldOptions, setWorldOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [setupDefaultMapId, setSetupDefaultMapId] = useState<string | null>(null);
 
   const loadForWorld = async (gameId?: string) => {
     setHeroesLoading(true);
@@ -176,6 +177,19 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       }
     })();
     void loadForWorld(preferredGameId);
+
+    // Pull setup status once so new character spawn honors the configured realm default map.
+    void (async () => {
+      try {
+        const res = await fetch('/api/setup/status', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const mapId = typeof data?.status?.defaultMapId === 'string' ? data.status.defaultMapId.trim() : '';
+        setSetupDefaultMapId(mapId || null);
+      } catch {
+        setSetupDefaultMapId(null);
+      }
+    })();
   }, []);
 
   const onPickWorld = (id: string) => {
@@ -254,6 +268,15 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
         const mapData = await mapListRes.json();
         const maps = mapData.maps || [];
         if (maps.length > 0) {
+          const setupDefaultExists =
+            setupDefaultMapId &&
+            setupDefaultMapId !== 'STARTING_MAP' &&
+            maps.some((m: any) => m.id === setupDefaultMapId);
+
+          if (!startMap && setupDefaultExists) {
+            startMap = setupDefaultMapId as string;
+          }
+
           if (!startMap) {
             // Find designated hub map (SAINTS_HAVEN, LOBBY, or map matching haven/lobby/hub)
             const hubMap = maps.find((m: any) => 
@@ -265,13 +288,18 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
             ) || maps[0];
             startMap = hubMap.id;
           }
+        } else if (setupDefaultMapId === 'STARTING_MAP') {
+          startMap = 'STARTING_MAP';
         }
       }
     } catch {
       /* fallback below */
     }
 
-    if (!startMap) startMap = 'SAINTS_HAVEN';
+    if (!startMap) {
+      if (setupDefaultMapId === 'STARTING_MAP') startMap = 'STARTING_MAP';
+      else startMap = setupDefaultMapId || 'SAINTS_HAVEN';
+    }
 
     // Query map's configured spawn point if hero didn't specify custom coordinates
     if (startX === undefined || startY === undefined) {
