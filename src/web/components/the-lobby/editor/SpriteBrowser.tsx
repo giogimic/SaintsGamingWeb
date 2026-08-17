@@ -12,6 +12,11 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
+import {
+  classifyCreatureAsset,
+  CREATURE_SUBCATEGORY_LABELS,
+  type CreatureAssetSubcategory,
+} from '@/shared/game/creatureCatalog';
 import { soundSynth } from '@/engine/sound-synth';
 
 /** Optional class filter for sprite browser (Catalog / ClassEditorPanel). */
@@ -78,6 +83,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [creatureSubFilter, setCreatureSubFilter] = useState<string>('ALL');
   const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
   const [activeClassFilter, setActiveClassFilter] = useState<boolean>(!!classDef);
   const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
@@ -87,7 +93,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   useEffect(() => {
     setPage(0);
     void fetchSprites(0, false);
-  }, [searchQuery, selectedTag, activeClassFilter, classDef, packFilter]);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, classDef, packFilter]);
 
   const fetchSprites = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
@@ -104,11 +110,16 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         more = false;
         count = result.length;
       } else {
+        const tagsToQuery = [
+          ...(selectedTag ? [selectedTag] : []),
+          ...(creatureSubFilter !== 'ALL' ? [creatureSubFilter] : []),
+          ...(filterTags.length > 0 ? filterTags : []),
+        ];
         const res = await manager.searchAssets(
           {
             type: filterType,
             query: searchQuery || undefined,
-            tags: selectedTag ? [selectedTag] : filterTags.length > 0 ? filterTags : undefined,
+            tags: tagsToQuery.length > 0 ? tagsToQuery : undefined,
             pack: packFilter === 'ALL' ? undefined : packFilter,
             sortBy: 'source',
             sortOrder: 'asc',
@@ -196,6 +207,26 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
               {ASSET_PACK_LABELS[p]}
             </option>
           ))}
+        </select>
+
+        {/* Creature Subcategory Filter */}
+        <select
+          value={creatureSubFilter}
+          onChange={(e) => {
+            soundSynth?.playUiClick?.();
+            setCreatureSubFilter(e.target.value);
+          }}
+          title="Subcategory Filter"
+          className="bg-[#050b14] border border-purple-500/40 rounded-lg px-2.5 py-1.5 text-xs text-purple-200 font-mono focus:outline-none focus:border-purple-400 cursor-pointer"
+        >
+          <option value="ALL">All Sub-Categories</option>
+          <option value="battle_sheet">Battle Sheets</option>
+          <option value="front_sprite">Front Sprites</option>
+          <option value="back_sprite">Back Sprites</option>
+          <option value="face_portrait">Face Portraits</option>
+          <option value="overworld">Overworld Sprites</option>
+          <option value="npc_walk">NPC Walk</option>
+          <option value="hero_walk">Hero Walk</option>
         </select>
 
         {/* Class Filter Toggle */}
@@ -454,10 +485,21 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
         )}
       </div>
 
-      {/* Label */}
-      <span className="text-[9px] font-mono text-slate-400 truncate w-full text-center mt-1 group-hover:text-[#e2d5b3]">
-        {asset.source.split('/').pop()?.replace('.png', '')}
-      </span>
+      {/* Label & Subcategory Badge */}
+      <div className="flex items-center justify-center gap-1 w-full mt-1">
+        {(() => {
+          const sub = (asset.metadata?.subcategory as CreatureAssetSubcategory) || classifyCreatureAsset(asset.source);
+          if (!sub) return null;
+          return (
+            <span className="text-[7px] font-bold uppercase px-1 py-0.2 rounded bg-purple-950/90 border border-purple-500/40 text-purple-300">
+              {CREATURE_SUBCATEGORY_LABELS[sub]?.replace(' Sprites', '').replace(' Sheets', '') || sub}
+            </span>
+          );
+        })()}
+        <span className="text-[9px] font-mono text-slate-400 truncate text-center group-hover:text-[#e2d5b3]">
+          {asset.source.split('/').pop()?.replace('.png', '')}
+        </span>
+      </div>
     </div>
   );
 };

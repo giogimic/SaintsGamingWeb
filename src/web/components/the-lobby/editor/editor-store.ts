@@ -25,7 +25,20 @@ import {
   type EditorOpStack,
   type PaintedCell,
 } from '@/shared/game/editorOps';
-import type { PaintableMap } from '@/shared/game/tilePaint';
+import { eraseTilesInRegion, type PaintableMap } from '@/shared/game/tilePaint';
+import {
+  extractSubgridFromMap,
+  stampClipboardOntoMap,
+  type TileClipboardData,
+  type PasteMode,
+} from '@/shared/game/subgridStamp';
+import {
+  type StampTransform,
+  DEFAULT_STAMP_TRANSFORM,
+  rotateCW,
+  rotateCCW,
+  transformClipboard,
+} from '@/shared/game/stampTransform';
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
 import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
@@ -118,6 +131,10 @@ interface EditorState {
   panelLayoutsHydrated: boolean;
   /** Unsaved paint / map edits since last Save Map. */
   mapDirty: boolean;
+  /** Synonym for mapDirty, tracks unsaved studio level/definition changes. */
+  hasUnsavedChanges: boolean;
+  /** True while async map save POST request is in flight. */
+  isSavingMap: boolean;
   /** Map-scope undo/redo (bible 30). */
   opStack: EditorOpStack;
   /** Definition-form undo/redo (bible 30 — separate from map ops). */
@@ -137,9 +154,12 @@ interface EditorState {
   activeLogicTileId: number;
   activeLayerIdx: number;
   brushRadius: number;
-  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate';
+  brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
   activePrefabId: string | null;
   prefabs: any[];
+  tileClipboard: TileClipboardData | null;
+  pasteMode: PasteMode;
+  isPasting: boolean;
   selectionStart: { r: number; c: number } | null;
   selectionEnd: { r: number; c: number } | null;
   clickedTile: { r: number; c: number } | null;
@@ -183,19 +203,53 @@ interface EditorState {
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
-  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate') => void;
+  setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
+  setPasteMode: (mode: PasteMode) => void;
+  setIsPasting: (pasting: boolean) => void;
   setSelectionStart: (tile: { r: number; c: number } | null) => void;
   setSelectionEnd: (tile: { r: number; c: number } | null) => void;
   markMapDirty: () => void;
   clearMapDirty: () => void;
+  setHasUnsavedChanges: (val: boolean) => void;
+  setIsSavingMap: (val: boolean) => void;
   pushPaintOp: (cells: PaintedCell[]) => void;
   undoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   redoLastOp: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   triggerUndo: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
   triggerRedo: (map: PaintableMap) => { ok: boolean; op: EditorOp | null; error?: string };
+  deleteSelectionTiles: (
+    map: any,
+    engine?: any,
+    targetLayerIdx?: number
+  ) => { count: number; layerIdx: number; error?: string };
+  copySelection: (
+    map: any,
+    layerIdx?: number
+  ) => { ok: boolean; width?: number; height?: number; error?: string };
+  cutSelection: (
+    map: any,
+    engine?: any,
+    layerIdx?: number
+  ) => { ok: boolean; width?: number; height?: number; count?: number; error?: string };
+  pasteClipboard: (
+    map: any,
+    engine?: any,
+    targetR?: number,
+    targetC?: number,
+    mode?: PasteMode
+  ) => { ok: boolean; count?: number; error?: string };
+  cancelPaste: () => void;
   clearOpStack: () => void;
+
+  /** Stamp & Brush Transform Actions (Phase 5A) */
+  stampTransform: StampTransform;
+  flipStampH: () => void;
+  flipStampV: () => void;
+  rotateStampCW: () => void;
+  rotateStampCCW: () => void;
+  resetStampTransform: () => void;
 
   setPieOption: <K extends keyof PieOptions>(key: K, value: PieOptions[K]) => void;
   recordDefinitionChange: (resourceKey: string, before: unknown, after: unknown) => void;
@@ -461,6 +515,8 @@ export const useEditorStore = create<EditorState>()(
       highestZIndex: 10,
       panelLayoutsHydrated: false,
       mapDirty: false,
+      hasUnsavedChanges: false,
+      isSavingMap: false,
       opStack: emptyEditorOpStack(),
       definitionOpStack: emptyDefinitionOpStack(),
       pieOptions: { ...DEFAULT_PIE_OPTIONS },
@@ -475,6 +531,10 @@ export const useEditorStore = create<EditorState>()(
       brushMode: 'paint',
       activePrefabId: null,
       prefabs: [],
+      tileClipboard: null,
+      stampTransform: { ...DEFAULT_STAMP_TRANSFORM },
+      pasteMode: 'overlay',
+      isPasting: false,
       selectionStart: null,
       selectionEnd: null,
       clickedTile: null,
@@ -636,6 +696,7 @@ export const useEditorStore = create<EditorState>()(
                 cells: deduplicated,
               });
               state.mapDirty = true;
+              state.hasUnsavedChanges = true;
             }
           }
           state.paintTransaction = null;
@@ -749,6 +810,14 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           state.prefabs = prefabs;
         }),
+      setPasteMode: (mode) =>
+        set((state) => {
+          state.pasteMode = mode;
+        }),
+      setIsPasting: (pasting) =>
+        set((state) => {
+          state.isPasting = pasting;
+        }),
       setSelectionStart: (tile) =>
         set((state) => {
           state.selectionStart = tile;
@@ -760,10 +829,21 @@ export const useEditorStore = create<EditorState>()(
       markMapDirty: () =>
         set((state) => {
           state.mapDirty = true;
+          state.hasUnsavedChanges = true;
         }),
       clearMapDirty: () =>
         set((state) => {
           state.mapDirty = false;
+          state.hasUnsavedChanges = false;
+        }),
+      setHasUnsavedChanges: (val) =>
+        set((state) => {
+          state.hasUnsavedChanges = val;
+          state.mapDirty = val;
+        }),
+      setIsSavingMap: (val) =>
+        set((state) => {
+          state.isSavingMap = val;
         }),
 
       pushPaintOp: (cells) =>
@@ -778,6 +858,7 @@ export const useEditorStore = create<EditorState>()(
                 cells: deduplicated,
               });
               state.mapDirty = true;
+              state.hasUnsavedChanges = true;
             }
           }
         }),
@@ -844,6 +925,246 @@ export const useEditorStore = create<EditorState>()(
           );
         }
         return res;
+      },
+
+      deleteSelectionTiles: (map, engine, targetLayerIdx) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const start = get().selectionStart;
+        const end = get().selectionEnd;
+        const hovered = get().hoveredTile;
+
+        let minR: number, maxR: number, minC: number, maxC: number;
+        if (start && end) {
+          minR = Math.min(start.r, end.r);
+          maxR = Math.max(start.r, end.r);
+          minC = Math.min(start.c, end.c);
+          maxC = Math.max(start.c, end.c);
+        } else if (hovered) {
+          minR = hovered.r;
+          maxR = hovered.r;
+          minC = hovered.c;
+          maxC = hovered.c;
+        } else {
+          return { count: 0, layerIdx, error: 'No selection or tile to delete.' };
+        }
+
+        if (!map) return { count: 0, layerIdx, error: 'No active map.' };
+
+        const eraseResult = eraseTilesInRegion({
+          map,
+          layerIdx,
+          minR,
+          maxR,
+          minC,
+          maxC,
+        });
+
+        if (!eraseResult.ok) {
+          return { count: 0, layerIdx, error: eraseResult.reason };
+        }
+
+        const erasedCells = eraseResult.cells;
+        if (erasedCells.length > 0) {
+          set((state) => {
+            state.opStack = pushEditorOp(state.opStack, {
+              kind: 'paint_cells',
+              cells: erasedCells,
+            });
+            state.mapDirty = true;
+            state.hasUnsavedChanges = true;
+            state.selectionStart = null;
+            state.selectionEnd = null;
+          });
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+                detail: {
+                  cells: erasedCells.map((c) => ({
+                    layerIdx: c.layerIdx,
+                    r: c.r,
+                    c: c.c,
+                    value: 0,
+                  })),
+                },
+              })
+            );
+          }
+        } else {
+          set((state) => {
+            state.selectionStart = null;
+            state.selectionEnd = null;
+          });
+        }
+
+        const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+        if (activeEng?.clearSelectionPreview) {
+          activeEng.clearSelectionPreview();
+        }
+
+        return { count: erasedCells.length, layerIdx };
+      },
+
+      copySelection: (map, targetLayerIdx) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const start = get().selectionStart;
+        const end = get().selectionEnd;
+        const hovered = get().hoveredTile;
+
+        let minR: number, maxR: number, minC: number, maxC: number;
+        if (start && end) {
+          minR = Math.min(start.r, end.r);
+          maxR = Math.max(start.r, end.r);
+          minC = Math.min(start.c, end.c);
+          maxC = Math.max(start.c, end.c);
+        } else if (hovered) {
+          minR = hovered.r;
+          maxR = hovered.r;
+          minC = hovered.c;
+          maxC = hovered.c;
+        } else {
+          return { ok: false, error: 'Select an area or hover a tile first.' };
+        }
+
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        const clipboard = extractSubgridFromMap({
+          map,
+          minR,
+          maxR,
+          minC,
+          maxC,
+          activeLayerIdx: layerIdx,
+        });
+
+        if (!clipboard) return { ok: false, error: 'Failed to extract selection.' };
+
+        set((state) => {
+          state.tileClipboard = clipboard;
+        });
+
+        return { ok: true, width: clipboard.width, height: clipboard.height };
+      },
+
+      cutSelection: (map, engine, targetLayerIdx) => {
+        const copyRes = get().copySelection(map, targetLayerIdx);
+        if (!copyRes.ok) return copyRes;
+
+        const delRes = get().deleteSelectionTiles(map, engine, targetLayerIdx);
+        return {
+          ok: true,
+          width: copyRes.width,
+          height: copyRes.height,
+          count: delRes.count,
+          error: delRes.error,
+        };
+      },
+
+      pasteClipboard: (map, engine, targetR, targetC, customMode) => {
+        const clip = get().tileClipboard;
+        if (!clip) return { ok: false, error: 'Clipboard is empty. Copy tiles first (Ctrl+C).' };
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        let activeClip = clip;
+        const transform = get().stampTransform;
+        if (transform && (transform.flipH || transform.flipV || transform.rotation !== 0)) {
+          activeClip = transformClipboard(clip, transform);
+        }
+
+        const mode = customMode ?? get().pasteMode ?? 'overlay';
+        const r = targetR ?? get().hoveredTile?.r ?? activeClip.sourceOrigin.r ?? 0;
+        const c = targetC ?? get().hoveredTile?.c ?? activeClip.sourceOrigin.c ?? 0;
+        const activeLayer = get().activeLayerIdx;
+
+        const stampRes = stampClipboardOntoMap({
+          map,
+          clipboard: activeClip,
+          targetR: r,
+          targetC: c,
+          mode,
+          activeLayerIdx: activeLayer,
+        });
+
+        if (!stampRes.ok || stampRes.cells.length === 0) {
+          return { ok: false, error: stampRes.error || 'Nothing pasted.' };
+        }
+
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_cells',
+            cells: stampRes.cells,
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
+          if (stampRes.newLayerCreated && typeof stampRes.newLayerIdx === 'number') {
+            state.activeLayerIdx = stampRes.newLayerIdx;
+          }
+        });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: stampRes.cells.map((cell) => ({
+                  layerIdx: cell.layerIdx,
+                  r: cell.r,
+                  c: cell.c,
+                  value: cell.after,
+                })),
+              },
+            })
+          );
+        }
+
+        const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+        if (activeEng?.clearSelectionPreview) {
+          activeEng.clearSelectionPreview();
+        }
+
+        return { ok: true, count: stampRes.cells.length };
+      },
+
+      cancelPaste: () => {
+        set((state) => {
+          state.isPasting = false;
+          if (state.brushMode === 'paste') {
+            state.brushMode = 'paint';
+          }
+        });
+        const activeEng = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+        if (activeEng?.clearSelectionPreview) {
+          activeEng.clearSelectionPreview();
+        }
+      },
+
+      flipStampH: () => {
+        set((state) => {
+          state.stampTransform.flipH = !state.stampTransform.flipH;
+        });
+      },
+
+      flipStampV: () => {
+        set((state) => {
+          state.stampTransform.flipV = !state.stampTransform.flipV;
+        });
+      },
+
+      rotateStampCW: () => {
+        set((state) => {
+          state.stampTransform.rotation = rotateCW(state.stampTransform.rotation);
+        });
+      },
+
+      rotateStampCCW: () => {
+        set((state) => {
+          state.stampTransform.rotation = rotateCCW(state.stampTransform.rotation);
+        });
+      },
+
+      resetStampTransform: () => {
+        set((state) => {
+          state.stampTransform = { ...DEFAULT_STAMP_TRANSFORM };
+        });
       },
 
       clearOpStack: () =>

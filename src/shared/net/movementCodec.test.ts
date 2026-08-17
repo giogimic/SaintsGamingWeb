@@ -17,7 +17,7 @@ describe("movementCodec", () => {
       isMoving: true,
       hp: 80,
       maxHp: 100,
-      name: "Tamer",
+      name: "Saint",
       spriteId: "adventurer",
     };
     const encoded = encodePlayerMoved(original);

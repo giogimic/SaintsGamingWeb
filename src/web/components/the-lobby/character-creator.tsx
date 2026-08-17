@@ -22,7 +22,7 @@ const PERKS = [
   { id: "SWIFT_TRAVELER", name: "Swift Traveler", desc: "+25% Movement Speed across all maps.", icon: Zap, color: '#fbbf24' },
   { id: "ACROBAT", name: "Acrobat", desc: "Perform 2-tile Double Jumps over obstacles.", icon: Feather, color: '#34d399' },
   { id: "PACK_MULE", name: "Pack Mule", desc: "+50% Inventory Carry Weight Capacity.", icon: Shield, color: '#60a5fa' },
-  { id: "MASTER_TAMER", name: "Master Tamer", desc: "+15% Catch Rate boost for wild Beasts.", icon: User, color: '#cbb26a' },
+  { id: "MASTER_TAMER", name: "Master Saint", desc: "+15% Catch Rate boost for wild Beasts.", icon: User, color: '#cbb26a' },
   { id: "STAMINA_SURGE", name: "Stamina Surge", desc: "+30 Max Health & accelerated health regen.", icon: Sparkles, color: '#e2d5b3' },
 ];
 
@@ -245,26 +245,55 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
 
     // Dynamic spawn resolution: Use hero starting map if specified, otherwise query available maps index.
     let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' ? hero.startingMap : '';
-    let startX = hero?.startingX ?? 15;
-    let startY = hero?.startingY ?? 15;
+    let startX = hero?.startingX;
+    let startY = hero?.startingY;
 
-    if (!startMap) {
+    try {
+      const mapListRes = await fetch('/api/maps');
+      if (mapListRes.ok) {
+        const mapData = await mapListRes.json();
+        const maps = mapData.maps || [];
+        if (maps.length > 0) {
+          if (!startMap) {
+            // Find designated hub map (SAINTS_HAVEN, LOBBY, or map matching haven/lobby/hub)
+            const hubMap = maps.find((m: any) => 
+              m.id === 'SAINTS_HAVEN' || 
+              m.id === 'LOBBY' || 
+              m.id?.toLowerCase().includes('haven') ||
+              m.id?.toLowerCase().includes('lobby') || 
+              m.id?.toLowerCase().includes('hub')
+            ) || maps[0];
+            startMap = hubMap.id;
+          }
+        }
+      }
+    } catch {
+      /* fallback below */
+    }
+
+    if (!startMap) startMap = 'SAINTS_HAVEN';
+
+    // Query map's configured spawn point if hero didn't specify custom coordinates
+    if (startX === undefined || startY === undefined) {
       try {
-        const mapListRes = await fetch('/api/maps');
-        if (mapListRes.ok) {
-          const mapData = await mapListRes.json();
-          const maps = mapData.maps || [];
-          if (maps.length > 0) {
-            // Find map designated as lobby or fallback to first available map
-            const lobbyMap = maps.find((m: any) => m.id === 'LOBBY' || m.id.toLowerCase().includes('lobby') || m.id.toLowerCase().includes('hub')) || maps[0];
-            startMap = lobbyMap.id;
+        const mapRes = await fetch(`/api/maps/${startMap}`);
+        if (mapRes.ok) {
+          const mapInfo = await mapRes.json();
+          if (mapInfo?.spawnPoint && typeof mapInfo.spawnPoint.x === 'number') {
+            startX = mapInfo.spawnPoint.x;
+            startY = mapInfo.spawnPoint.y;
+          } else if (mapInfo?.width && mapInfo?.height) {
+            startX = Math.floor(mapInfo.width / 2);
+            startY = Math.floor(mapInfo.height / 2);
           }
         }
       } catch {
         /* fallback below */
       }
     }
-    if (!startMap) startMap = 'LOBBY';
+
+    if (startX === undefined) startX = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'LOBBY' ? 32 : 15;
+    if (startY === undefined) startY = startMap === 'SAINTS_HAVEN' ? 20 : startMap === 'LOBBY' ? 32 : 15;
 
     const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {

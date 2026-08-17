@@ -189,7 +189,7 @@ export class WorldSimulation {
         type: 'NPC_DIALOGUE', 
         npcId: nearbyNpc.id, 
         npcName: nearbyNpc.name || 'Stranger',
-        text: nearbyNpc.dialogueKey || 'Greetings, Tamer! Welcome to the grounds.'
+        text: nearbyNpc.dialogueKey || 'Greetings, Saint! Welcome to the grounds.'
       };
     }
 

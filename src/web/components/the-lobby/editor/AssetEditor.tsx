@@ -24,9 +24,12 @@ import {
   ZoomIn,
   ZoomOut,
   SlidersHorizontal,
+  Plus,
+  LayoutGrid,
 } from 'lucide-react';
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
-import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId } from '@/shared/game/assetPacks';
+import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId, inferAssetPack } from '@/shared/game/assetPacks';
+import { classifyCreatureAsset, CREATURE_SUBCATEGORY_LABELS, type CreatureAssetSubcategory } from '@/shared/game/creatureCatalog';
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from '../store';
 
@@ -47,6 +50,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [subcategoryFilter, setSubcategoryFilter] = useState<string>('ALL');
   const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -65,18 +69,24 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   useEffect(() => {
     setPage(0);
     void fetchAssets(0, false);
-  }, [typeFilter, searchQuery, selectedTag, packFilter]);
+  }, [typeFilter, subcategoryFilter, searchQuery, selectedTag, packFilter]);
 
   const fetchAssets = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
     try {
       const manager = AssetManager.getInstance();
+      const isSheetFilter = typeFilter === 'SHEET';
+      const tagsToQuery = [
+        ...(selectedTag ? [selectedTag] : []),
+        ...(subcategoryFilter !== 'ALL' ? [subcategoryFilter] : []),
+        ...(isSheetFilter ? ['sheet'] : []),
+      ];
       const res = await manager.searchAssets(
         {
-          type: typeFilter === 'ALL' ? undefined : typeFilter,
+          type: isSheetFilter ? undefined : (typeFilter === 'ALL' ? undefined : typeFilter),
           query: searchQuery || undefined,
-          tags: selectedTag ? [selectedTag] : undefined,
+          tags: tagsToQuery.length > 0 ? tagsToQuery : undefined,
           pack: packFilter === 'ALL' ? undefined : packFilter,
           sortBy: 'source',
           sortOrder: 'asc',
@@ -226,12 +236,33 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
             className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
           >
             <option value="ALL">All Asset Types</option>
+            <option value="SHEET">Spritesheets & Grids</option>
             <option value="SPRITE">Sprites (NPC / Player)</option>
             <option value="TILESET">Tilesets & Terrains</option>
             <option value="ITEM_ICON">Item & Tool Icons</option>
             <option value="MONSTER">Monsters & Souls</option>
             <option value="AUDIO">Audio & SFX</option>
             <option value="UI_ELEMENT">UI Elements</option>
+          </select>
+
+          {/* Subcategory Filter */}
+          <select
+            value={subcategoryFilter}
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setSubcategoryFilter(e.target.value);
+            }}
+            title="Subcategory Filter"
+            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            <option value="ALL">All Sub-Categories</option>
+            <option value="battle_sheet">Battle Sheets</option>
+            <option value="front_sprite">Front Sprites</option>
+            <option value="back_sprite">Back Sprites</option>
+            <option value="face_portrait">Face Portraits</option>
+            <option value="overworld">Overworld Sprites</option>
+            <option value="npc_walk">NPC Walk</option>
+            <option value="hero_walk">Hero Walk</option>
           </select>
 
           {/* Pack Filter */}
@@ -355,6 +386,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
             <div className="flex flex-col gap-1 text-xs">
               {[
                 { id: 'ALL', label: 'All Types', icon: Layers },
+                { id: 'SHEET', label: 'Spritesheets & Grids', icon: LayoutGrid },
                 { id: 'SPRITE', label: 'Sprites & Heroes', icon: ImageIcon },
                 { id: 'TILESET', label: 'Tilesets & Ground', icon: Grid },
                 { id: 'MONSTER', label: 'Monsters & Souls', icon: PawPrint },
@@ -459,10 +491,62 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                       )}
                     </button>
 
-                    {/* Format Badge */}
-                    <span className="absolute top-1.5 right-1.5 text-[8px] uppercase tracking-wider px-1 py-0.2 rounded bg-black/80 border border-slate-700 text-slate-400">
-                      {asset.type.substring(0, 4)}
-                    </span>
+                    {/* Format, Pack Origin & Sheet Badges */}
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                      {/* Pack Origin Badge */}
+                      {(() => {
+                        const packId = asset.metadata?.pack || inferAssetPack(asset.source);
+                        const packLabel = ASSET_PACK_LABELS[packId as AssetPackId] || packId;
+                        const isTux = packId === 'tuxemon';
+                        const isLpc = packId === 'lpc' || packId === 'npc' || packId === 'heroes';
+                        return (
+                          <span
+                            className={`text-[7px] font-bold uppercase tracking-wider px-1 py-0.2 rounded border ${
+                              isTux
+                                ? 'bg-sky-950/90 border-sky-500/40 text-sky-300'
+                                : isLpc
+                                ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
+                                : 'bg-amber-950/90 border-amber-500/40 text-amber-300'
+                            }`}
+                          >
+                            {packLabel}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Subcategory Badge */}
+                      {(() => {
+                        const sub = (asset.metadata?.subcategory as CreatureAssetSubcategory) || classifyCreatureAsset(asset.source);
+                        if (!sub) return null;
+                        const label = CREATURE_SUBCATEGORY_LABELS[sub] || sub;
+                        return (
+                          <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-purple-950/90 border border-purple-500/40 text-purple-300">
+                            {label}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Frame Count / Sheet Indicator */}
+                      {(() => {
+                        const framesCount = Array.isArray(asset.metadata?.frames) ? asset.metadata.frames.length : null;
+                        const isSheet = asset.type === 'SHEET' || asset.tags?.includes('sheet') || asset.source.includes('-sheet');
+                        if (framesCount) {
+                          return (
+                            <span className="text-[7px] font-bold px-1 py-0.2 rounded bg-indigo-950/90 border border-indigo-500/40 text-indigo-300">
+                              {framesCount}f
+                            </span>
+                          );
+                        }
+                        if (isSheet) {
+                          return (
+                            <span className="text-[7px] font-bold px-1 py-0.2 rounded bg-indigo-950/90 border border-indigo-500/40 text-indigo-300">
+                              Sheet
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
 
                     {/* Image Preview with Checkered Canvas Background */}
                     <div className="w-full flex-1 flex items-center justify-center overflow-hidden my-1 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:8px_8px] rounded-lg p-1">
@@ -491,6 +575,10 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
               {assets.map((asset) => {
                 const isActive = activeAsset?.id === asset.id;
                 const fileName = asset.source.split('/').pop() || asset.id;
+                const sub = (asset.metadata?.subcategory as CreatureAssetSubcategory) || classifyCreatureAsset(asset.source);
+                const packId = asset.metadata?.pack || inferAssetPack(asset.source);
+                const packLabel = ASSET_PACK_LABELS[packId as AssetPackId] || packId;
+                const isSheet = asset.type === 'SHEET' || asset.tags?.includes('sheet') || asset.source.includes('-sheet');
                 return (
                   <div
                     key={asset.id}
@@ -514,7 +602,22 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                         />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-slate-200 truncate">{fileName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-200 truncate">{fileName}</span>
+                          <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-black/60 border border-slate-700 text-amber-300">
+                            {packLabel}
+                          </span>
+                          {sub && (
+                            <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-purple-950/80 border border-purple-500/40 text-purple-300">
+                              {CREATURE_SUBCATEGORY_LABELS[sub] || sub}
+                            </span>
+                          )}
+                          {isSheet && (
+                            <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-indigo-950/80 border border-indigo-500/40 text-indigo-300">
+                              Sheet
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-slate-400 truncate">
                           {asset.source} • <strong className="text-amber-300">{asset.type}</strong>
                         </span>
@@ -617,6 +720,24 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                   </button>
                 )}
               </div>
+
+              {/* Use as Tileset in Active Map Button (Phase 4C) */}
+              {(activeAsset.type === 'TILESET' || activeAsset.source.includes('/tilesets/')) && (
+                <button
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    window.dispatchEvent(
+                      new CustomEvent('studio_add_tileset', {
+                        detail: { source: activeAsset.source },
+                      })
+                    );
+                    showToast(`Added ${activeAsset.source.split('/').pop()} to active map tilesets`);
+                  }}
+                  className="w-full py-1.5 px-3 bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow cursor-pointer mt-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Use as Map Tileset
+                </button>
+              )}
             </div>
 
             {/* Info Table */}

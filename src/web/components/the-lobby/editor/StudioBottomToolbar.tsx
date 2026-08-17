@@ -99,6 +99,19 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
     })();
   }, []);
 
+  const [zoomPercent, setZoomPercent] = useState<number>(100);
+
+  useEffect(() => {
+    const handleZoomChanged = (e: Event) => {
+      const custom = e as CustomEvent<{ ortho: number; percent: number }>;
+      if (custom.detail?.percent) {
+        setZoomPercent(custom.detail.percent);
+      }
+    };
+    window.addEventListener('studio_zoom_changed', handleZoomChanged);
+    return () => window.removeEventListener('studio_zoom_changed', handleZoomChanged);
+  }, []);
+
   const onSwitchProfile = async (id: string) => {
     soundSynth?.playSelectSound?.();
     setBusy(true);
@@ -125,15 +138,25 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
 
   const handleFitMap = () => {
     soundSynth?.playSelectSound?.();
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Home' }));
+    window.dispatchEvent(new CustomEvent('studio_fit_map'));
   };
 
-  const handleZoom = (factor: number) => {
+  const handleSetPresetZoom = (percent: number) => {
     soundSynth?.playUiClick?.();
-    const canvas = document.querySelector('canvas');
-    if (canvas) {
-      canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: factor > 1 ? 100 : -100 }));
-    }
+    setZoomPercent(percent);
+    window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent } }));
+  };
+
+  const handleZoomIn = () => {
+    soundSynth?.playUiClick?.();
+    const next = Math.min(400, Math.round(zoomPercent * 1.25));
+    handleSetPresetZoom(next);
+  };
+
+  const handleZoomOut = () => {
+    soundSynth?.playUiClick?.();
+    const next = Math.max(25, Math.round(zoomPercent * 0.8));
+    handleSetPresetZoom(next);
   };
 
   const openDockTab = (id: PanelId) => {
@@ -442,11 +465,11 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           </button>
         </div>
 
-        {/* Zoom */}
-        <div className="flex items-center gap-0.5 bg-black/60 rounded-xl p-0.5 border border-amber-500/20">
+        {/* Zoom Controls & Presets (Phase 2B) */}
+        <div className="flex items-center gap-1 bg-black/60 rounded-xl p-1 border border-amber-500/20">
           <button
             type="button"
-            onClick={() => handleZoom(0.8)}
+            onClick={handleZoomIn}
             className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             title="Zoom In"
           >
@@ -454,17 +477,35 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleZoom(1.2)}
+            onClick={handleZoomOut}
             className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             title="Zoom Out"
           >
             <ZoomOut className="h-3 w-3" />
           </button>
+          
+          {/* Zoom Percentage Dropdown */}
+          <select
+            value={zoomPercent}
+            onChange={(e) => handleSetPresetZoom(parseInt(e.target.value, 10))}
+            className="bg-[#050b14] border border-amber-500/30 rounded-lg px-1.5 py-0.5 text-[10px] text-amber-200 font-mono focus:outline-none focus:border-amber-400 cursor-pointer text-center"
+            title="Zoom Presets (Ctrl+0 to Reset)"
+          >
+            <option value={25}>25%</option>
+            <option value={50}>50%</option>
+            <option value={100}>100%</option>
+            <option value={200}>200%</option>
+            <option value={400}>400%</option>
+            {![25, 50, 100, 200, 400].includes(zoomPercent) && (
+              <option value={zoomPercent}>{zoomPercent}%</option>
+            )}
+          </select>
+
           <button
             type="button"
             onClick={handleFitMap}
             className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            title="Fit Map (Home)"
+            title="Fit Map in View (Home)"
           >
             <Maximize2 className="h-3 w-3" />
           </button>

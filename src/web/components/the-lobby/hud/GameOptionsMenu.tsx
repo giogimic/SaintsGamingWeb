@@ -604,7 +604,7 @@ export default function GameOptionsMenu({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-cyan-50 font-extrabold text-base">Show Nearby Tamers</div>
+                      <div className="text-cyan-50 font-extrabold text-base">Show Nearby Saints</div>
                       <div className="text-slate-400 text-xs font-medium mt-0.5">Render online players and nameplates in your shard.</div>
                     </div>
                     <button

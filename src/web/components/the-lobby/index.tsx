@@ -754,7 +754,7 @@ export default function TheLobby({
       window.dispatchEvent(new CustomEvent('game_chat_msg', {
         detail: {
           id: Date.now().toString() + Math.random(),
-          sender: data.sender || op?.name || 'Tamer',
+          sender: data.sender || op?.name || 'Saint',
           text: data.message,
           timestamp: Date.now(),
           type: isStaffMsg ? 'SYSTEM' : 'LOCAL'
@@ -772,10 +772,11 @@ export default function TheLobby({
 
     socket.on('global_chat_msg', (data) => {
       if (data.socketId === socket.id) return; // Prevent echoing own message
+      if (data.accountId && session?.user?.id && String(data.accountId) === String(session.user.id)) return;
       const msgEvent = new CustomEvent('game_chat_msg', {
         detail: {
           id: Date.now().toString() + Math.random(),
-          sender: data.sender || 'Tamer',
+          sender: data.sender || data.name || 'Saint',
           text: data.message,
           timestamp: data.timestamp || Date.now(),
           type: 'GLOBAL'
@@ -786,10 +787,11 @@ export default function TheLobby({
 
     socket.on('party_chat_msg', (data) => {
       if (data.socketId === socket.id) return; // Prevent echoing own message
+      if (data.accountId && session?.user?.id && String(data.accountId) === String(session.user.id)) return;
       const msgEvent = new CustomEvent('game_chat_msg', {
         detail: {
           id: Date.now().toString() + Math.random(),
-          sender: data.sender || 'Tamer',
+          sender: data.sender || data.name || 'Saint',
           text: data.message,
           timestamp: data.timestamp || Date.now(),
           type: 'PARTY'
@@ -802,7 +804,7 @@ export default function TheLobby({
       const msgEvent = new CustomEvent('game_chat_msg', {
         detail: {
           id: Date.now().toString() + Math.random(),
-          sender: data.sender || 'Tamer',
+          sender: data.sender || 'Saint',
           text: data.message,
           timestamp: data.timestamp || Date.now(),
           type: 'WHISPER',
@@ -926,7 +928,7 @@ export default function TheLobby({
         },
         playerCreature: data?.playerCreature || {
           id: state.player?.accountId || 'player_creature',
-          name: state.player?.name || 'Tamer',
+          name: state.player?.name || 'Saint',
           hp: data?.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
           maxHp: data?.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
           level: state.player?.level || 5,
@@ -963,7 +965,7 @@ export default function TheLobby({
             },
             playerCreature: data.playerCreature || {
               id: state.player?.accountId || 'player_creature',
-              name: state.player?.name || 'Tamer',
+              name: state.player?.name || 'Saint',
               hp: data.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
               maxHp: data.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
               level: state.player?.level || 5,

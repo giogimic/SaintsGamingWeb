@@ -158,10 +158,10 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		h.handleEncounter(accountID)
 	})
 	client.On(protocol.EvGlobalChat, func(datas ...any) {
-		h.broadcastChat(accountID, asString(datas, 0), true)
+		h.broadcastChat(accountID, sid, asString(datas, 0), true)
 	})
 	client.On(protocol.EvChatMessage, func(datas ...any) {
-		h.broadcastChat(accountID, asString(datas, 0), false)
+		h.broadcastChat(accountID, sid, asString(datas, 0), false)
 	})
 	client.On(protocol.EvPartyInvite, func(datas ...any) {
 		h.handlePartyInvite(accountID, datas)
@@ -503,16 +503,23 @@ func (h *Hub) leaveAOI(sid string, p *player.State) {
 	h.LeaveRoom(sid, aoi.RoomName(p.MapID, p.ZoneX, p.ZoneY))
 }
 
-func (h *Hub) broadcastChat(accountID, msg string, global bool) {
+func (h *Hub) broadcastChat(accountID, sid, msg string, global bool) {
 	msg = strings.TrimSpace(msg)
 	if msg == "" {
 		return
 	}
 	p := h.eng.Players().GetByAccount(accountID)
-	payload := map[string]any{"accountId": accountID, "message": msg}
+	payload := map[string]any{
+		"accountId": accountID,
+		"message":   msg,
+		"socketId":  sid,
+	}
 	if p != nil {
 		payload["name"] = p.Name
-		payload["socketId"] = p.SocketID
+		payload["sender"] = p.Name
+		if p.SocketID != "" {
+			payload["socketId"] = p.SocketID
+		}
 	}
 	if global {
 		h.broadcastAll(protocol.EvGlobalChatMsg, payload)

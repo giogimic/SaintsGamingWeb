@@ -314,10 +314,9 @@ export default function GameTitleScreen({
       if (!msg || !msg.text) return;
 
       setChatMessages((prev) => {
-        // Deduplicate: avoid appending own optimistic messages twice
+        // Deduplicate: avoid appending own optimistic messages twice (sender-agnostic text + timestamp window)
         const isDuplicate = prev.some(
           (m) =>
-            m.sender === msg.sender &&
             m.text === msg.text &&
             Math.abs((m.timestamp || 0) - (msg.timestamp || 0)) < 3000
         );

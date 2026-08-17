@@ -337,20 +337,71 @@ export class BabylonEngine {
     // Window Resize Handler
     window.addEventListener('resize', this.onResize);
 
-    // Camera Mouse Wheel Zoom Handler
+    // Camera Mouse Wheel Zoom Handler (Cursor-Anchored in Editor)
     this.canvas.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const currentOrtho = this.camera.orthoTop || 10;
-      // Editor mode allows much further zoom-out for large maps.
-      const maxZoom = this.editorCameraMode ? 60 : 22;
+      // Editor mode: max 40 (keeps ~20 tiles), Game mode: max 16 (keeps ~8 tiles), Min: 3
+      const maxZoom = this.editorCameraMode ? 40 : 16;
       const newOrtho = Math.max(3, Math.min(maxZoom, currentOrtho * zoomFactor));
-      const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
+      if (newOrtho === currentOrtho) return;
+
+      const renderW = Math.max(1, this.engine.getRenderWidth());
+      const renderH = Math.max(1, this.engine.getRenderHeight());
+      const aspect = renderW / renderH;
+
+      // In editor mode, anchor zoom around the mouse cursor to prevent viewport drifting
+      if (this.editorCameraMode && this.canvas) {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (rect.width > 0 && rect.height > 0) {
+          const ndcX = (mouseX / rect.width) * 2 - 1;
+          const ndcY = 1 - (mouseY / rect.height) * 2;
+
+          const deltaX = ndcX * (currentOrtho - newOrtho) * aspect;
+          const deltaZ = ndcY * (currentOrtho - newOrtho);
+
+          this.cameraTargetX += deltaX;
+          this.cameraTargetZ += deltaZ;
+          this.snapCameraTo(this.cameraTargetX, this.cameraTargetZ);
+        }
+      }
+
       this.camera.orthoLeft = -newOrtho * aspect;
       this.camera.orthoRight = newOrtho * aspect;
       this.camera.orthoTop = newOrtho;
       this.camera.orthoBottom = -newOrtho;
+
+      // Notify UI of zoom change
+      const zoomPercent = Math.round((10 / newOrtho) * 100);
+      window.dispatchEvent(
+        new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
+      );
     }, { passive: false });
+
+    // Programmatic Zoom & Fit Map Events
+    window.addEventListener('studio_set_zoom', (e: Event) => {
+      const custom = e as CustomEvent<{ percent?: number; ortho?: number }>;
+      const maxZoom = this.editorCameraMode ? 40 : 16;
+      let newOrtho = 10;
+      if (custom.detail?.percent !== undefined) {
+        newOrtho = Math.max(3, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
+      } else if (custom.detail?.ortho !== undefined) {
+        newOrtho = Math.max(3, Math.min(maxZoom, custom.detail.ortho));
+      }
+      this.updateCameraAspect(newOrtho);
+      const zoomPercent = Math.round((10 / newOrtho) * 100);
+      window.dispatchEvent(
+        new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
+      );
+    });
+
+    window.addEventListener('studio_fit_map', () => {
+      this.fitMapInView();
+    });
 
     // Entity Pointer Interaction
     this.scene.onPointerObservable.add((pointerInfo) => {
@@ -989,7 +1040,8 @@ export class BabylonEngine {
 
         let mat = this.tilesetMaterialCache.get(imageSource);
         if (!mat) {
-          mat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
+          const newMat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
+          mat = newMat;
           let tex = this.tilesetTextureCache.get(imageSource);
           if (!tex) {
             let rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
@@ -1008,8 +1060,18 @@ export class BabylonEngine {
             // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
             const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
             console.log(`[BabylonEngine] Requesting texture: ${tilesetPath}`);
-            tex = new Texture(tilesetPath, this.scene, true, false, 1);
-            tex.onLoadObservable.add(() => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`));
+            tex = new Texture(
+              tilesetPath,
+              this.scene,
+              true,
+              false,
+              1,
+              () => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`),
+              (message) => {
+                console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
+                newMat.diffuseColor = new Color3(0.2, 0.45, 0.2);
+              }
+            );
             tex.hasAlpha = true;
             this.tilesetTextureCache.set(imageSource, tex);
           }
@@ -1423,12 +1485,24 @@ export class BabylonEngine {
 
     let mat = this.tilesetMaterialCache.get(imageSource);
     if (!mat) {
-      mat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
+      const newMat = new StandardMaterial(`tileset_${imageSource}`, this.scene);
+      mat = newMat;
       let tex = this.tilesetTextureCache.get(imageSource);
       if (!tex) {
         const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
         const tilesetPath = `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
-        tex = new Texture(tilesetPath, this.scene, true, false, 1);
+        tex = new Texture(
+          tilesetPath,
+          this.scene,
+          true,
+          false,
+          1,
+          undefined,
+          (message) => {
+            console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
+            newMat.diffuseColor = new Color3(0.2, 0.45, 0.2);
+          }
+        );
         tex.hasAlpha = true;
         this.tilesetTextureCache.set(imageSource, tex);
       }
@@ -2220,12 +2294,71 @@ private resolveTilePick(
     }
   }
 
+  private layerIsolationActive: boolean = false;
+  private isolatedLayerIdx: number = 0;
+
+  /**
+   * Layer isolation / highlight (H key) - Phase 5C
+   * Dims non-active layers to 0.35 opacity to highlight the currently active layer.
+   */
+  public highlightCurrentLayer(layerIdx: number) {
+    this.layerIsolationActive = true;
+    this.isolatedLayerIdx = layerIdx;
+    this.applyLayerIsolation();
+  }
+
+  public restoreLayerIsolation() {
+    this.layerIsolationActive = false;
+    this.applyLayerIsolation();
+  }
+
+  public toggleLayerIsolation(layerIdx?: number): boolean {
+    if (this.layerIsolationActive) {
+      this.restoreLayerIsolation();
+    } else {
+      this.highlightCurrentLayer(layerIdx ?? 0);
+    }
+    return this.layerIsolationActive;
+  }
+
+  private applyLayerIsolation() {
+    const dimAlpha = 0.35;
+    this.tileMeshes.forEach((mesh) => {
+      mesh.visibility = this.layerIsolationActive ? dimAlpha : 1.0;
+    });
+
+    this.logicOverlayMeshes.forEach((mesh) => {
+      mesh.visibility = this.layerIsolationActive && this.isolatedLayerIdx !== -1 ? dimAlpha : 1.0;
+    });
+
+    window.dispatchEvent(
+      new CustomEvent('studio_layer_isolation_changed', {
+        detail: { active: this.layerIsolationActive, layerIdx: this.isolatedLayerIdx },
+      })
+    );
+  }
+
   /** Zoom the camera by a fractional multiplier factor (e.g. 0.85 = zoom in, 1.15 = zoom out). */
   public zoomCamera(factor: number) {
     const currentOrtho = this.camera.orthoTop || 10;
-    const maxZoom = this.editorCameraMode ? 60 : 22;
+    const maxZoom = this.editorCameraMode ? 40 : 16;
     const newOrtho = Math.max(3, Math.min(maxZoom, currentOrtho * factor));
     this.updateCameraAspect(newOrtho);
+    const zoomPercent = Math.round((10 / newOrtho) * 100);
+    window.dispatchEvent(
+      new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
+    );
+  }
+
+  /** Set camera zoom directly by display percentage (e.g. 100% = ortho 10). */
+  public setZoomPercent(percent: number) {
+    const maxZoom = this.editorCameraMode ? 40 : 16;
+    const newOrtho = Math.max(3, Math.min(maxZoom, 10 / (Math.max(10, percent) / 100)));
+    this.updateCameraAspect(newOrtho);
+    const zoomPercent = Math.round((10 / newOrtho) * 100);
+    window.dispatchEvent(
+      new CustomEvent('studio_zoom_changed', { detail: { ortho: newOrtho, percent: zoomPercent } })
+    );
   }
 
   /** Fit the entire map in the editor viewport. */
@@ -2233,16 +2366,21 @@ private resolveTilePick(
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
     const s = this.currentTileSize || 1;
-    if (!w || !h) return;
+    if (!w || !h || !this.engine) return;
     const aspect = this.engine.getRenderWidth() / Math.max(1, this.engine.getRenderHeight());
     // The orthographic size needed to fit the larger dimension.
     const orthoH = (h * s) / 2 + 2;
-    const orthoW = (w * s) / (2 * aspect) + 2;
+    const orthoW = (w * s) / (2 * Math.max(0.1, aspect)) + 2;
+    const maxZoom = this.editorCameraMode ? 40 : 16;
     const ortho = Math.max(orthoH, orthoW);
-    const clamped = Math.max(3, Math.min(128, ortho));
+    const clamped = Math.max(3, Math.min(maxZoom, ortho));
     this.updateCameraAspect(clamped);
     // Center camera on map center.
     this.snapCameraTo(0, 0);
+    const zoomPercent = Math.round((10 / clamped) * 100);
+    window.dispatchEvent(
+      new CustomEvent('studio_zoom_changed', { detail: { ortho: clamped, percent: zoomPercent } })
+    );
   }
 
   /** Jump editor camera to a specific tile coordinate. */

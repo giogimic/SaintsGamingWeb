@@ -46,8 +46,8 @@ export const SAINTS_TAMER_QUESTS: Record<string, GameQuest> = {
   QUEST_STARTER_JOURNEY: {
     id: 'QUEST_STARTER_JOURNEY',
     npcId: 'npc_mom',
-    title: 'The Tamer Awakening',
-    name: 'The Tamer Awakening',
+    title: 'The Saint Awakening',
+    name: 'The Saint Awakening',
     summary: 'Awaken in your bedroom, speak to Mom downstairs, and head to Professor Oakwood in Paper Town to choose your first companion beast.',
     requiredLevel: 1,
     category: 'MAIN_STORY',
@@ -56,10 +56,10 @@ export const SAINTS_TAMER_QUESTS: Record<string, GameQuest> = {
     rewardItems: { binding_crystal: 5, potion: 3 },
     requirements: { level: 1 },
     dialogs: {
-      intro: ['Awaken young Tamer! Speak to Mom downstairs to begin your journey.'],
+      intro: ['Awaken young Saint! Speak to Mom downstairs to begin your journey.'],
       in_progress: ['Meet Prof. Oakwood in Paper Town to claim your starter beast.'],
       inProgress: ['Meet Prof. Oakwood in Paper Town to claim your starter beast.'],
-      start: ['Awaken young Tamer! Speak to Mom downstairs to begin your journey.'],
+      start: ['Awaken young Saint! Speak to Mom downstairs to begin your journey.'],
       complete: ['You have chosen your starter beast!']
     },
     rewards: {

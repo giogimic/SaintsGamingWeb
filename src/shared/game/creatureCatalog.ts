@@ -91,21 +91,58 @@ const DEFAULT_SHINY_FIELDS = {
   shinySpriteBack: null as string | null,
 };
 
+/** Creature asset subcategories for granular studio filtering (Phase 4B). */
+export type CreatureAssetSubcategory =
+  | "battle_sheet"
+  | "front_sprite"
+  | "back_sprite"
+  | "face_portrait"
+  | "overworld";
+
+export const CREATURE_SUBCATEGORY_LABELS: Record<CreatureAssetSubcategory, string> = {
+  battle_sheet: "Battle Sheets",
+  front_sprite: "Front Sprites",
+  back_sprite: "Back Sprites",
+  face_portrait: "Face Portraits",
+  overworld: "Overworld Sprites",
+};
+
+/** Classify a path, filename, or asset key into a creature sub-category. */
+export function classifyCreatureAsset(pathOrKey: string): CreatureAssetSubcategory | null {
+  const lower = pathOrKey.toLowerCase().replace(/\\/g, "/");
+  if (lower.includes("-front") || lower.includes("_front") || /front\d*\.png$/i.test(lower)) {
+    return "front_sprite";
+  }
+  if (lower.includes("-back") || lower.includes("_back") || /back\d*\.png$/i.test(lower)) {
+    return "back_sprite";
+  }
+  if (lower.includes("-face") || lower.includes("_face") || /face\d*\.png$/i.test(lower)) {
+    return "face_portrait";
+  }
+  if (lower.includes("-sheet") || lower.includes("/battle/") || lower.includes("battle-sheet")) {
+    return "battle_sheet";
+  }
+  if (lower.includes("-ow") || lower.includes("_ow") || lower.includes("/creatures/") || lower.includes("/world-monsters/")) {
+    return "overworld";
+  }
+  return null;
+}
+
 /** Curated asset keys for Studio picker (battle sheets + overworld). */
-export const CREATURE_ASSET_OPTIONS: { key: string; label: string; kind: "overworld" | "battle" }[] = [
-  { key: "npc/rockitten", label: "Rockitten (overworld)", kind: "overworld" },
-  { key: "npc/conileaf", label: "Conileaf (overworld)", kind: "overworld" },
-  { key: "monster/battle/agnite-sheet", label: "Agnite battle sheet", kind: "battle" },
-  { key: "monster/battle/budaye-sheet", label: "Budaye battle sheet", kind: "battle" },
-  { key: "monster/battle/dollfin-sheet", label: "Dollfin battle sheet", kind: "battle" },
-  { key: "monster/battle/rockitten-sheet", label: "Rockitten battle sheet", kind: "battle" },
-  { key: "monster/battle/foxfire-sheet", label: "Foxfire battle sheet", kind: "battle" },
-  { key: "monster/battle/ignibus-sheet", label: "Ignibus battle sheet", kind: "battle" },
-  { key: "monster/battle/lambert-sheet", label: "Lambert battle sheet", kind: "battle" },
-  { key: "monster/battle/cardiling-sheet", label: "Cardiling battle sheet", kind: "battle" },
-  { key: "daemon_data", label: "Daemon Data placeholder", kind: "battle" },
-  { key: "daemon_vaccine", label: "Daemon Vaccine placeholder", kind: "battle" },
-  { key: "daemon_virus", label: "Daemon Virus placeholder", kind: "battle" },
+export const CREATURE_ASSET_OPTIONS: { key: string; label: string; kind: "overworld" | "battle"; subcategory?: CreatureAssetSubcategory }[] = [
+  { key: "npc/rockitten", label: "Rockitten (overworld)", kind: "overworld", subcategory: "overworld" },
+  { key: "npc/conileaf", label: "Conileaf (overworld)", kind: "overworld", subcategory: "overworld" },
+  { key: "monster/battle/agnite-sheet", label: "Agnite battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/budaye-sheet", label: "Budaye battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/dollfin-sheet", label: "Dollfin battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/rockitten-sheet", label: "Rockitten battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/foxfire-sheet", label: "Foxfire battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/ignibus-sheet", label: "Ignibus battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/lambert-sheet", label: "Lambert battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "monster/battle/cardiling-sheet", label: "Cardiling battle sheet", kind: "battle", subcategory: "battle_sheet" },
+  { key: "daemon_data", label: "Daemon Data placeholder", kind: "battle", subcategory: "battle_sheet" },
+  { key: "daemon_vaccine", label: "Daemon Vaccine placeholder", kind: "battle", subcategory: "battle_sheet" },
+  { key: "daemon_virus", label: "Daemon Virus placeholder", kind: "battle", subcategory: "battle_sheet" },
 ];
 
 export function creatureAssetUrl(key: string | null | undefined): string {

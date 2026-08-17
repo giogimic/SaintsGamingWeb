@@ -214,9 +214,15 @@ export class LobbySocketHandler {
           if (!result.ok || !result.payload) return;
 
           if (player?.instanceId) {
-            this.io.to(player.instanceId).emit(RealtimeEvents.PLAYER_CHAT, result.payload);
+            this.io.to(player.instanceId).emit(RealtimeEvents.PLAYER_CHAT, {
+              ...result.payload,
+              accountId: player.accountId || accountId || undefined,
+            });
           } else {
-            socket.emit(RealtimeEvents.PLAYER_CHAT, result.payload);
+            socket.emit(RealtimeEvents.PLAYER_CHAT, {
+              ...result.payload,
+              accountId: player?.accountId || accountId || undefined,
+            });
           }
         } catch (err) {
           console.error("[LobbySocket] chat_message error:", err);
@@ -237,6 +243,7 @@ export class LobbySocketHandler {
 
           this.io.emit(RealtimeEvents.GLOBAL_CHAT_MSG, {
             socketId: socket.id,
+            accountId: player?.accountId || accountId || undefined,
             sender: result.payload.sender,
             message: result.payload.message,
             timestamp: result.payload.timestamp,

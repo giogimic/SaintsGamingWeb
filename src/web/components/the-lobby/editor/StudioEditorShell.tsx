@@ -34,7 +34,15 @@ import {
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
 import { STUDIO_MAP_CELLS_CHANGED_EVENT, STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
+import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
+import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
+import { invalidateMapCache } from '@/shared/game/mapCache';
+import { normalizeStudioMapVisuals, formatMapWriteError } from '@/shared/game/studioMapCreate';
+import { isGoMmoSocketEnabled } from '@/shared/net/goMmoSocket';
+import { toBaseMapId } from '@/shared/net/mapIds';
+import { soundSynth } from '@/engine/sound-synth';
 import { StudioMenuBar } from './StudioMenuBar';
+import { PasteOptionsToolbar } from './PasteOptionsToolbar';
 import { StudioOmnisearch } from './StudioOmnisearch';
 import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 import { StudioBottomToolbar } from './StudioBottomToolbar';
@@ -211,10 +219,76 @@ export const StudioEditorShell: React.FC = () => {
     return () => window.removeEventListener('contextmenu', handleContextMenu);
   }, []);
 
+  const performSave = async () => {
+    const currentMapId = useGameStore.getState().currentMapId;
+    const baseMapId = currentMapId ? toBaseMapId(currentMapId) : null;
+    if (!baseMapId) {
+      showToast('No map loaded to save.');
+      return;
+    }
+    soundSynth?.playActionSound?.();
+    const live = useGameStore.getState().activeMapData;
+    if (!live?.grid) {
+      showToast('Map data not loaded yet — wait for the world to appear, then Save.');
+      return;
+    }
+    const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(live));
+    if (saveDoc !== live) {
+      useGameStore.getState().setActiveMapData(saveDoc);
+    }
+    useEditorStore.getState().setIsSavingMap(true);
+    try {
+      const payload = stripEditorOverlaysFromMapPayload({
+        name: saveDoc.name || baseMapId,
+        gameId: saveDoc.gameId,
+        grid: saveDoc.grid,
+        gates: saveDoc.gates || {},
+        npcs: saveDoc.npcs || [],
+        encounterPool: saveDoc.encounterPool || [],
+        tileLayers: saveDoc.tileLayers || [],
+        tilesets: saveDoc.tilesets || [],
+      });
+      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(formatMapWriteError(res.status, err));
+        return;
+      }
+      invalidateMapCache(baseMapId);
+      useEditorStore.getState().clearMapDirty();
+      const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
+      showToast(`Saved map ${baseMapId} (Synced to ${backendUsed})`);
+    } catch (e: any) {
+      showToast(e?.message || 'Save failed — network error.');
+    } finally {
+      useEditorStore.getState().setIsSavingMap(false);
+    }
+  };
+
+  useEffect(() => {
+    const onTriggerSave = () => {
+      void performSave();
+    };
+    window.addEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
+    return () => window.removeEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
+  }, [showToast]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      // Ctrl+Shift+Q Save & Exit to Character Select
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+        setTimeout(() => { window.location.href = '/lobby'; }, 500);
         return;
       }
 
@@ -223,6 +297,15 @@ export const StudioEditorShell: React.FC = () => {
         e.preventDefault();
         const mode = useGameStore.getState().gameMode;
         if (mode !== 'EXPLORING' && mode !== 'BATTLE') return;
+        const isCreation = useEditorStore.getState().isCreationMode;
+        if (isCreation) {
+          const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
+          if (hasUnsaved) {
+            if (confirm('You have unsaved changes. They will be lost if the map reloads during playtesting. Save before playing?')) {
+              void performSave();
+            }
+          }
+        }
         toggleCreationMode();
         return;
       }
@@ -306,6 +389,241 @@ export const StudioEditorShell: React.FC = () => {
         if (!map) return;
         const result = useEditorStore.getState().triggerRedo(map);
         if (result.ok) showToast('Redo');
+        return;
+      }
+
+      // Delete / Backspace — erase selected tiles or hovered tile
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && (e.key === 'Delete' || e.key === 'Backspace')) {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const map = useGameStore.getState().activeMapData;
+        if (!map) return;
+        const result = useEditorStore.getState().deleteSelectionTiles(map);
+        if (result.error) {
+          showToast(result.error);
+        } else if (result.count > 0) {
+          const layerName = result.layerIdx === -1 ? 'Logic (−1)' : `Layer ${result.layerIdx}`;
+          showToast(`Deleted ${result.count} tile${result.count === 1 ? '' : 's'} on ${layerName}`);
+        } else {
+          showToast('No tiles to delete.');
+        }
+        return;
+      }
+
+      // Ctrl+A — Select All tiles on active map (Phase 5C)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'a') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        const map = useGameStore.getState().activeMapData;
+        if (!map) return;
+        const h = map.grid?.length || 0;
+        const w = map.grid?.[0]?.length || 0;
+        if (h > 0 && w > 0) {
+          e.preventDefault();
+          useEditorStore.getState().setSelectionStart({ r: 0, c: 0 });
+          useEditorStore.getState().setSelectionEnd({ r: h - 1, c: w - 1 });
+          const activeEng = (window as any).__babylonEngine;
+          if (activeEng?.setSelectionPreview) {
+            activeEng.setSelectionPreview(0, 0, h - 1, w - 1);
+          }
+          showToast(`Selected entire map (${w}×${h})`);
+          return;
+        }
+      }
+
+      // Ctrl+D — Deselect / clear selection (Phase 5C)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'd') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        useEditorStore.getState().setSelectionStart(null);
+        useEditorStore.getState().setSelectionEnd(null);
+        const activeEng = (window as any).__babylonEngine;
+        if (activeEng?.clearSelectionPreview) {
+          activeEng.clearSelectionPreview();
+        }
+        showToast('Deselected (Ctrl+D)');
+        return;
+      }
+
+      // Ctrl+C — Copy selection
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'c') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const map = useGameStore.getState().activeMapData;
+        if (!map) return;
+        const res = useEditorStore.getState().copySelection(map);
+        if (res.ok) {
+          showToast(`Copied ${res.width}×${res.height} tiles to clipboard`);
+        } else {
+          showToast(res.error || 'Copy failed');
+        }
+        return;
+      }
+
+      // Ctrl+X — Cut selection
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'x') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const map = useGameStore.getState().activeMapData;
+        if (!map) return;
+        const res = useEditorStore.getState().cutSelection(map);
+        if (res.ok) {
+          showToast(`Cut ${res.width}×${res.height} tiles (${res.count} cleared)`);
+        } else {
+          showToast(res.error || 'Cut failed');
+        }
+        return;
+      }
+
+      // Ctrl+Shift+V — Paste in Place
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'v') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const map = useGameStore.getState().activeMapData;
+        const clip = useEditorStore.getState().tileClipboard;
+        if (!map || !clip) {
+          showToast('Clipboard is empty. Copy tiles first (Ctrl+C).');
+          return;
+        }
+        const res = useEditorStore.getState().pasteClipboard(
+          map,
+          null,
+          clip.sourceOrigin.r,
+          clip.sourceOrigin.c
+        );
+        if (res.ok) {
+          showToast(`Pasted in place at [${clip.sourceOrigin.c}, ${clip.sourceOrigin.r}]`);
+        } else {
+          showToast(res.error || 'Paste failed');
+        }
+        return;
+      }
+
+      // Ctrl+V — Initiate Paste Mode
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'v') {
+        if (!useEditorStore.getState().isCreationMode) return;
+        e.preventDefault();
+        const clip = useEditorStore.getState().tileClipboard;
+        if (!clip) {
+          showToast('Clipboard is empty. Copy tiles first (Ctrl+C).');
+          return;
+        }
+        useEditorStore.getState().setIsPasting(true);
+        useEditorStore.getState().setBrushMode('paste');
+        showToast(`Paste active (${clip.width}×${clip.height}) — click to place`);
+        return;
+      }
+
+      // Ctrl+0 / Cmd+0 — Reset Zoom to 100% (Phase 2B)
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0')) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('studio_set_zoom', { detail: { percent: 100 } }));
+        showToast('Zoom reset to 100%');
+        return;
+      }
+
+      // Home — Fit entire map in view
+      if (e.key === 'Home' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('studio_fit_map'));
+        showToast('Fit map in view');
+        return;
+      }
+
+      // Stamp Transform Shortcuts (Phase 5A) — X (Flip H), Y (Flip V), Z (Rotate CW), Shift+Z (Rotate CCW)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && useEditorStore.getState().isCreationMode) {
+        if (e.key.toLowerCase() === 'x') {
+          e.preventDefault();
+          useEditorStore.getState().flipStampH();
+          const t = useEditorStore.getState().stampTransform;
+          showToast(`Stamp Flip H: ${t.flipH ? 'ON' : 'OFF'} (X)`);
+          return;
+        }
+
+        if (e.key.toLowerCase() === 'y') {
+          e.preventDefault();
+          useEditorStore.getState().flipStampV();
+          const t = useEditorStore.getState().stampTransform;
+          showToast(`Stamp Flip V: ${t.flipV ? 'ON' : 'OFF'} (Y)`);
+          return;
+        }
+
+        if (e.key.toLowerCase() === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) {
+            useEditorStore.getState().rotateStampCCW();
+            const t = useEditorStore.getState().stampTransform;
+            showToast(`Stamp Rotate: ${t.rotation}° (Shift+Z)`);
+          } else {
+            useEditorStore.getState().rotateStampCW();
+            const t = useEditorStore.getState().stampTransform;
+            showToast(`Stamp Rotate: ${t.rotation}° (Z)`);
+          }
+          return;
+        }
+      }
+
+      // Single-key Tool Mode Shortcuts (Phase 5B) — B (Brush/Paint), E (Eraser), I (Eyedropper), M (Marquee Select), G (Prefab/Stamp), H (Layer Isolation)
+      if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && useEditorStore.getState().isCreationMode) {
+        if (!document.querySelector('[role="dialog"]')) {
+          const key = e.key.toLowerCase();
+          if (key === 'b') {
+            e.preventDefault();
+            useEditorStore.getState().setBrushMode('paint');
+            showToast('Paint Brush (B)');
+            return;
+          }
+          if (key === 'e') {
+            e.preventDefault();
+            useEditorStore.getState().setBrushMode('erase');
+            showToast('Eraser (E)');
+            return;
+          }
+          if (key === 'i') {
+            e.preventDefault();
+            useEditorStore.getState().setBrushMode('eyedropper');
+            showToast('Eyedropper (I)');
+            return;
+          }
+          if (key === 'm') {
+            e.preventDefault();
+            useEditorStore.getState().setBrushMode('select');
+            showToast('Marquee Selection (M)');
+            return;
+          }
+          if (key === 'g') {
+            e.preventDefault();
+            useEditorStore.getState().setBrushMode('prefab');
+            showToast('Prefab Stamp (G)');
+            return;
+          }
+          if (key === 'h') {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent('studio_toggle_layer_dim'));
+            showToast('Layer Isolation (H)');
+            return;
+          }
+        }
+      }
+
+      // Escape — Cancel paste or selection
+      if (e.key === 'Escape') {
+        const store = useEditorStore.getState();
+        if (store.isPasting || store.brushMode === 'paste') {
+          e.preventDefault();
+          store.cancelPaste();
+          showToast('Paste cancelled.');
+          return;
+        }
+        if (store.selectionStart || store.selectionEnd) {
+          e.preventDefault();
+          store.setSelectionStart(null);
+          store.setSelectionEnd(null);
+          const activeEng = (window as any).__babylonEngine;
+          if (activeEng?.clearSelectionPreview) {
+            activeEng.clearSelectionPreview();
+          }
+          showToast('Selection cleared.');
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -415,6 +733,7 @@ export const StudioEditorShell: React.FC = () => {
         onOpenMapBrowser={() => setMapBrowserOpen(true)}
         onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
       />
+      <PasteOptionsToolbar />
       <StudioFavoritesStrip />
       <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
       

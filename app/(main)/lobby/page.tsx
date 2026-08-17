@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default async function LobbyPage(props: { searchParams: Promise<{ characterId?: string, create?: string }> }) {
   const setupStatus = await getSystemSetupStatus(prisma);
-  if (!setupStatus.isSetupCompleted || setupStatus.mapCount === 0) {
+  if (!setupStatus.isSetupCompleted) {
     redirect('/setup');
   }
 

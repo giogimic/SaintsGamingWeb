@@ -5,6 +5,7 @@ import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import { Plus, Trash2, BoxSelect, Droplet, LayoutGrid } from 'lucide-react';
 import { listPrefabs, savePrefab, deletePrefab, seedBasicPrefabs, type PrefabTileData, type PrefabLogicData } from '@/app/actions/prefabs';
+import { extractSubgridFromMap } from '@/shared/game/subgridStamp';
 import type { MapPrefab } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 
@@ -45,56 +46,26 @@ export const PrefabBuilderPanel: React.FC = () => {
       return;
     }
 
-    const minR = Math.min(selectionStart.r, selectionEnd.r);
-    const maxR = Math.max(selectionStart.r, selectionEnd.r);
-    const minC = Math.min(selectionStart.c, selectionEnd.c);
-    const maxC = Math.max(selectionStart.c, selectionEnd.c);
-
-    const width = maxC - minC + 1;
-    const height = maxR - minR + 1;
-
-    const visualData: PrefabTileData[] = [];
-    const logicData: PrefabLogicData[] = [];
-
-    // Extract visual layers
-    activeMapData.tileLayers?.forEach((layer: any, layerIdx: number) => {
-      if (!layer.grid) return;
-      for (let r = minR; r <= maxR; r++) {
-        for (let c = minC; c <= maxC; c++) {
-          if (layer.grid[r] && layer.grid[r][c]) {
-            visualData.push({
-              layerOffset: layerIdx,
-              r: r - minR,
-              c: c - minC,
-              tileId: layer.grid[r][c],
-            });
-          }
-        }
-      }
+    const subgrid = extractSubgridFromMap({
+      map: activeMapData,
+      minR: selectionStart.r,
+      maxR: selectionEnd.r,
+      minC: selectionStart.c,
+      maxC: selectionEnd.c,
     });
 
-    // Extract logic grid
-    if (activeMapData.grid) {
-      for (let r = minR; r <= maxR; r++) {
-        for (let c = minC; c <= maxC; c++) {
-          if (activeMapData.grid[r] && activeMapData.grid[r][c]) {
-            logicData.push({
-              r: r - minR,
-              c: c - minC,
-              tileId: activeMapData.grid[r][c],
-            });
-          }
-        }
-      }
+    if (!subgrid) {
+      showToast('Failed to extract tiles from selection.');
+      return;
     }
 
     const res = await savePrefab({
       name: newPrefabName,
       category: 'decor',
-      width,
-      height,
-      visualData,
-      logicData,
+      width: subgrid.width,
+      height: subgrid.height,
+      visualData: subgrid.visualData as PrefabTileData[],
+      logicData: subgrid.logicData as PrefabLogicData[],
     });
 
     if (res.success) {

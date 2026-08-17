@@ -1,25 +1,30 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Clipboard,
-  Layers,
+  Copy,
+  Scissors,
+  ClipboardPaste,
+  Pin,
+  Pipette,
+  PaintBucket,
+  Trash2,
+  Zap,
   DoorOpen,
   MapPin,
-  Pipette,
   UserRound,
-  Trash2,
-  PaintBucket,
-  SquareDashed,
+  Package,
   Sparkles,
-  Copy,
-  Info
+  MessageSquare,
+  Scan,
+  XCircle,
+  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
-import { useEditorStore } from './editor-store';
+import { useEditorStore, type PanelId } from './editor-store';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 import { upsertWarpGate } from '@/shared/game/logicComponents';
-import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 
 export interface StudioContextMenuProps {
   x: number;
@@ -37,12 +42,20 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   onClose,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const isCreationMode = useEditorStore((s) => s.isCreationMode);
   const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
   const activeLogicTileId = useEditorStore((s) => s.activeLogicTileId);
+  const selectionStart = useEditorStore((s) => s.selectionStart);
+  const selectionEnd = useEditorStore((s) => s.selectionEnd);
+  const tileClipboard = useEditorStore((s) => s.tileClipboard);
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
+
+  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const [isSelectingGateType, setIsSelectingGateType] = useState(false);
+
+  const hasSelection = !!(selectionStart && selectionEnd);
+  const hasClipboard = !!tileClipboard;
 
   // Close on outside click or Escape
   useEffect(() => {
@@ -63,8 +76,8 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   }, [onClose]);
 
   // Adjust menu position so it stays in viewport
-  const menuWidth = 240;
-  const menuHeight = 320;
+  const menuWidth = 260;
+  const menuHeight = 420;
   const clampedX = typeof window !== 'undefined' ? Math.min(x, window.innerWidth - menuWidth - 16) : x;
   const clampedY = typeof window !== 'undefined' ? Math.min(y, window.innerHeight - menuHeight - 16) : y;
 
@@ -74,6 +87,69 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     onClose();
   };
 
+  // --- Clipboard Actions ---
+  const handleCopy = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    if (!store.selectionStart || !store.selectionEnd) {
+      store.setSelectionStart({ r: tileR, c: tileC });
+      store.setSelectionEnd({ r: tileR, c: tileC });
+    }
+    const res = store.copySelection(activeMapData, activeLayerIdx);
+    if (res.ok) {
+      showToast(`Copied ${res.width}x${res.height} selection to clipboard`);
+    } else {
+      showToast(res.error || 'Failed to copy selection');
+    }
+  };
+
+  const handleCut = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    if (!store.selectionStart || !store.selectionEnd) {
+      store.setSelectionStart({ r: tileR, c: tileC });
+      store.setSelectionEnd({ r: tileR, c: tileC });
+    }
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = store.cutSelection(activeMapData, engine, activeLayerIdx);
+    if (res.ok) {
+      showToast(`Cut ${res.width}x${res.height} selection (${res.count} tiles)`);
+    } else {
+      showToast(res.error || 'Failed to cut selection');
+    }
+  };
+
+  const handlePaste = () => {
+    if (!activeMapData) return;
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = useEditorStore.getState().pasteClipboard(activeMapData, engine, tileR, tileC);
+    if (res.ok) {
+      showToast(`Pasted ${res.count} tiles at [${tileC}, ${tileR}]`);
+    } else {
+      showToast(res.error || 'Clipboard is empty');
+    }
+  };
+
+  const handlePasteInPlace = () => {
+    if (!activeMapData || !tileClipboard) {
+      showToast('Clipboard is empty');
+      return;
+    }
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = useEditorStore.getState().pasteClipboard(
+      activeMapData,
+      engine,
+      tileClipboard.sourceOrigin.r,
+      tileClipboard.sourceOrigin.c
+    );
+    if (res.ok) {
+      showToast(`Pasted in place at [${tileClipboard.sourceOrigin.c}, ${tileClipboard.sourceOrigin.r}]`);
+    } else {
+      showToast(res.error || 'Failed to paste in place');
+    }
+  };
+
+  // --- Tile & Layer Operations ---
   const handleSampleTile = () => {
     if (!activeMapData) return;
     if (activeLayerIdx === -1) {
@@ -90,8 +166,46 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     }
   };
 
-  const [isSelectingGateType, setIsSelectingGateType] = React.useState(false);
+  const handleFillLayerWithBrush = () => {
+    if (!activeMapData) return;
+    const gridH = activeMapData.grid?.length || 24;
+    const gridW = activeMapData.grid?.[0]?.length || 24;
+    
+    if (activeLayerIdx === -1) {
+      const filled = Array(gridH).fill(0).map(() => Array(gridW).fill(activeLogicTileId));
+      useGameStore.getState().setActiveMapData({ ...activeMapData, grid: filled });
+      useEditorStore.getState().markMapDirty();
+      showToast(`Filled Logic layer with tag #${activeLogicTileId}`);
+    } else {
+      const tileLayers = [...(activeMapData.tileLayers || [])];
+      if (!tileLayers[activeLayerIdx]) return;
+      const filled = Array(gridH).fill(0).map(() => Array(gridW).fill(activeBrushTileId));
+      tileLayers[activeLayerIdx] = { ...tileLayers[activeLayerIdx], grid: filled };
+      useGameStore.getState().setActiveMapData({ ...activeMapData, tileLayers });
+      useEditorStore.getState().markMapDirty();
+      showToast(`Filled Layer ${activeLayerIdx} with GID ${activeBrushTileId}`);
+    }
+  };
 
+  const handleClearTile = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    if (!store.selectionStart || !store.selectionEnd) {
+      store.setHoveredTile({ r: tileR, c: tileC });
+    }
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const result = store.deleteSelectionTiles(activeMapData, engine, activeLayerIdx);
+    if (result.error) {
+      showToast(result.error);
+    } else if (result.count > 0) {
+      const layerName = result.layerIdx === -1 ? 'Logic (−1)' : `Layer ${result.layerIdx}`;
+      showToast(`Cleared ${result.count} tile${result.count === 1 ? '' : 's'} on ${layerName}`);
+    } else {
+      showToast('Tile already empty.');
+    }
+  };
+
+  // --- Quick Create Actions ---
   const handleSetPlayerSpawn = () => {
     useGameStore.getState().setPlayerPosition({ x: tileC, y: tileR }, 'down', false);
     showToast(`Teleported author avatar to [${tileC}, ${tileR}]`);
@@ -133,168 +247,319 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     showToast(`Placed ${gatePreset.name} at [${tileC}, ${tileR}]`);
   };
 
-  const handleFillLayerWithBrush = () => {
+  const handlePlaceLogicTag = (tagId: number, label: string, panelToOpen?: PanelId) => {
     if (!activeMapData) return;
-    const gridH = activeMapData.grid?.length || 24;
-    const gridW = activeMapData.grid?.[0]?.length || 24;
-    
-    if (activeLayerIdx === -1) {
-      const filled = Array(gridH).fill(0).map(() => Array(gridW).fill(activeLogicTileId));
-      useGameStore.getState().setActiveMapData({ ...activeMapData, grid: filled });
-      useEditorStore.getState().markMapDirty();
-      showToast(`Filled Logic layer with tag #${activeLogicTileId}`);
-    } else {
-      const tileLayers = [...(activeMapData.tileLayers || [])];
-      if (!tileLayers[activeLayerIdx]) return;
-      const filled = Array(gridH).fill(0).map(() => Array(gridW).fill(activeBrushTileId));
-      tileLayers[activeLayerIdx] = { ...tileLayers[activeLayerIdx], grid: filled };
-      useGameStore.getState().setActiveMapData({ ...activeMapData, tileLayers });
-      useEditorStore.getState().markMapDirty();
-      showToast(`Filled Layer ${activeLayerIdx} with GID ${activeBrushTileId}`);
+    const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
+      row.map((cell: number, ci: number) => (ri === tileR && ci === tileC ? tagId : cell))
+    );
+    const next = { ...activeMapData, grid: nextGrid };
+    useGameStore.getState().setActiveMapData(next);
+    useEditorStore.getState().markMapDirty();
+    if (panelToOpen) {
+      useEditorStore.getState().openPanel(panelToOpen);
     }
+    showToast(`Placed ${label} (#${tagId}) at [${tileC}, ${tileR}]`);
   };
 
-  const handleClearTile = () => {
+  // --- Selection Actions ---
+  const handleSelectAll = () => {
     if (!activeMapData) return;
-    if (activeLayerIdx === -1) {
-      const newGrid = activeMapData.grid.map((r: number[], ri: number) =>
-        r.map((c: number, ci: number) => (ri === tileR && ci === tileC ? 0 : c))
-      );
-      useGameStore.getState().setActiveMapData({ ...activeMapData, grid: newGrid });
-      useEditorStore.getState().markMapDirty();
-      showToast(`Cleared logic tile at [${tileC}, ${tileR}]`);
-    } else {
-      const tileLayers = [...(activeMapData.tileLayers || [])];
-      if (!tileLayers[activeLayerIdx]) return;
-      const targetGrid = tileLayers[activeLayerIdx].grid.map((r: number[], ri: number) =>
-        r.map((c: number, ci: number) => (ri === tileR && ci === tileC ? 0 : c))
-      );
-      tileLayers[activeLayerIdx] = { ...tileLayers[activeLayerIdx], grid: targetGrid };
-      useGameStore.getState().setActiveMapData({ ...activeMapData, tileLayers });
-      useEditorStore.getState().markMapDirty();
-      showToast(`Cleared layer tile at [${tileC}, ${tileR}]`);
+    const h = activeMapData.grid?.length || (activeMapData.tileLayers?.[0]?.grid?.length ?? 24);
+    const w = activeMapData.grid?.[0]?.length || (activeMapData.tileLayers?.[0]?.grid?.[0]?.length ?? 24);
+    useEditorStore.getState().setSelectionStart({ r: 0, c: 0 });
+    useEditorStore.getState().setSelectionEnd({ r: h - 1, c: w - 1 });
+    if (typeof window !== 'undefined') {
+      (window as any).__babylonEngine?.setSelectionPreview?.(0, 0, h - 1, w - 1);
     }
+    showToast(`Selected entire map (${w}x${h})`);
+  };
+
+  const handleClearSelection = () => {
+    useEditorStore.getState().setSelectionStart(null);
+    useEditorStore.getState().setSelectionEnd(null);
+    if (typeof window !== 'undefined') {
+      (window as any).__babylonEngine?.clearSelectionPreview?.();
+    }
+    showToast('Selection cleared');
   };
 
   return (
     <div
       ref={menuRef}
       style={{ left: clampedX, top: clampedY }}
-      className="fixed z-[250] min-w-[220px] rounded-xl border border-amber-500/40 bg-[#050b14]/95 p-1.5 font-mono text-xs text-slate-200 shadow-2xl backdrop-blur-xl pointer-events-auto select-none"
+      className="fixed z-[250] min-w-[240px] max-w-[280px] rounded-xl border border-amber-500/40 bg-[#050b14]/95 p-1.5 font-mono text-xs text-slate-200 shadow-2xl backdrop-blur-xl pointer-events-auto select-none max-h-[85vh] overflow-y-auto custom-scrollbar"
     >
       {/* Header Info */}
       <div className="flex items-center justify-between border-b border-amber-500/20 px-2.5 py-1.5 text-[10px] text-amber-300">
-        <span className="font-bold uppercase tracking-wider">Tile Actions</span>
-        <span className="rounded bg-black/60 px-1.5 py-0.5 text-slate-400 border border-amber-500/20">
-          [{tileC}, {tileR}]
+        <span className="font-bold uppercase tracking-wider">
+          Tile [{tileC}, {tileR}]
+        </span>
+        <span className="rounded bg-black/60 px-1.5 py-0.5 text-slate-400 border border-amber-500/20 text-[9px]">
+          {activeLayerIdx === -1 ? 'Logic (−1)' : `Layer ${activeLayerIdx}`}
         </span>
       </div>
 
       <div className="py-1 space-y-0.5">
-        {/* Sample Tile */}
+        {/* --- Clipboard Section --- */}
         <button
           type="button"
-          onClick={() => handleAction(handleSampleTile)}
-          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+          onClick={() => handleAction(handleCopy)}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
         >
-          <Pipette className="h-3.5 w-3.5 text-amber-400" />
-          <span>Sample Tile (Eyedropper)</span>
-        </button>
-
-        {/* Warp Gate Placement Menu */}
-        {!isSelectingGateType ? (
-          <button
-            type="button"
-            onClick={() => setIsSelectingGateType(true)}
-            className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-purple-950/40 hover:text-white transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <DoorOpen className="h-3.5 w-3.5 text-purple-400" />
-              <span>Add Gate...</span>
-            </div>
-            <span className="text-[9px] text-purple-300/70 font-semibold uppercase tracking-wider">Choose Type ▸</span>
-          </button>
-        ) : (
-          <div className="rounded-lg border border-purple-500/30 bg-purple-950/20 p-1.5 space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-purple-300 font-bold px-1 border-b border-purple-500/20 pb-0.5">
-              <span>Select Gate Type</span>
-              <button
-                type="button"
-                onClick={() => setIsSelectingGateType(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-0.5 max-h-40 overflow-y-auto pr-1">
-              {[
-                { name: 'Standard Warp Gate', category: 'CUSTOM', tileBrush: 3, targetMapId: activeMapData?.id || 'DEMO_SANDBOX' },
-                { name: '🧭 Atlas North Gate', category: 'ATLAS_NORTH', tileBrush: 14, targetMapId: '' },
-                { name: '🧭 Atlas East Gate', category: 'ATLAS_EAST', tileBrush: 15, targetMapId: '' },
-                { name: '🧭 Atlas South Gate', category: 'ATLAS_SOUTH', tileBrush: 16, targetMapId: '' },
-                { name: '🧭 Atlas West Gate', category: 'ATLAS_WEST', tileBrush: 17, targetMapId: '' },
-                { name: '🏰 Dungeon Gate', category: 'DUNGEON', tileBrush: 18, targetMapId: 'DEMO_SANDBOX' },
-                { name: '⚔️ Raid Entrance Gate', category: 'RAID', tileBrush: 19, targetMapId: 'DEMO_SANDBOX' },
-                { name: '🎉 Event Gate', category: 'EVENT', tileBrush: 20, targetMapId: 'DEMO_SANDBOX' },
-                { name: '⛏️ Mine Entrance Gate', category: 'MINE', tileBrush: 21, targetMapId: 'DEMO_SANDBOX' },
-                { name: '🌲 Deep Forest Gate', category: 'DEEP_FOREST', tileBrush: 22, targetMapId: 'DEMO_SANDBOX' },
-                { name: '🌀 Realm Portal Gate', category: 'PORTAL', tileBrush: 23, targetMapId: 'DEMO_SANDBOX' },
-              ].map((g) => (
-                <button
-                  key={g.name}
-                  type="button"
-                  onClick={() => handleAction(() => handlePlaceSpecificGate(g))}
-                  className="w-full text-left px-2 py-1 rounded text-[10px] text-purple-200 hover:bg-purple-600/30 hover:text-white transition flex items-center justify-between"
-                >
-                  <span className="truncate">{g.name}</span>
-                  <span className="text-[8px] text-purple-400/60 font-mono">#{g.tileBrush}</span>
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center gap-2">
+            <Copy className="h-3.5 w-3.5 text-amber-400" />
+            <span>Copy {hasSelection ? 'Selection' : 'Tile'}</span>
           </div>
-        )}
-
-        {/* Set Default Player Spawn */}
-        <button
-          type="button"
-          onClick={() => handleAction(handleSetDefaultMapSpawn)}
-          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
-        >
-          <MapPin className="h-3.5 w-3.5 text-amber-400" />
-          <span>Set Default Player Spawn Here</span>
+          <span className="text-[9px] text-slate-500 font-mono">Ctrl+C</span>
         </button>
 
-        {/* Teleport / Player Spawn */}
         <button
           type="button"
-          onClick={() => handleAction(handleSetPlayerSpawn)}
-          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-emerald-950/40 hover:text-emerald-200 transition-colors cursor-pointer"
+          onClick={() => handleAction(handleCut)}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
         >
-          <UserRound className="h-3.5 w-3.5 text-emerald-400" />
-          <span>Warp Avatar Here</span>
+          <div className="flex items-center gap-2">
+            <Scissors className="h-3.5 w-3.5 text-amber-400" />
+            <span>Cut {hasSelection ? 'Selection' : 'Tile'}</span>
+          </div>
+          <span className="text-[9px] text-slate-500 font-mono">Ctrl+X</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleAction(handlePaste)}
+          disabled={!hasClipboard}
+          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+            hasClipboard
+              ? 'text-slate-300 hover:bg-amber-500/20 hover:text-white cursor-pointer'
+              : 'text-slate-600 cursor-not-allowed opacity-50'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <ClipboardPaste className="h-3.5 w-3.5 text-amber-400" />
+            <span>Paste</span>
+          </div>
+          <span className="text-[9px] text-slate-500 font-mono">Ctrl+V</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleAction(handlePasteInPlace)}
+          disabled={!hasClipboard}
+          className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+            hasClipboard
+              ? 'text-slate-300 hover:bg-amber-500/20 hover:text-white cursor-pointer'
+              : 'text-slate-600 cursor-not-allowed opacity-50'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Pin className="h-3.5 w-3.5 text-amber-400" />
+            <span>Paste in Place</span>
+          </div>
+          <span className="text-[9px] text-slate-500 font-mono">Ctrl+Shift+V</span>
         </button>
 
         <div className="my-1 h-px bg-amber-500/20" />
 
-        {/* Fill Layer */}
+        {/* --- Tile & Layer Operations Section --- */}
+        <button
+          type="button"
+          onClick={() => handleAction(handleSampleTile)}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Pipette className="h-3.5 w-3.5 text-cyan-400" />
+            <span>Eyedropper (Sample)</span>
+          </div>
+          <span className="text-[9px] text-slate-500 font-mono">I</span>
+        </button>
+
         <button
           type="button"
           onClick={() => handleAction(handleFillLayerWithBrush)}
           className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
         >
           <PaintBucket className="h-3.5 w-3.5 text-sky-400" />
-          <span>Fill Entire Layer</span>
+          <span>Fill Layer with Brush</span>
         </button>
 
-        {/* Clear Tile */}
         <button
           type="button"
           onClick={() => handleAction(handleClearTile)}
-          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-rose-300 hover:bg-rose-950/50 hover:text-rose-100 transition-colors cursor-pointer"
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-rose-300 hover:bg-rose-950/50 hover:text-rose-100 transition-colors cursor-pointer"
         >
-          <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-          <span>Erase Tile (Zero)</span>
+          <div className="flex items-center gap-2">
+            <Trash2 className="h-3.5 w-3.5 text-rose-400" />
+            <span>Erase {hasSelection ? 'Selection' : 'Tile'}</span>
+          </div>
+          <span className="text-[9px] text-rose-400/60 font-mono">Del</span>
         </button>
+
+        <div className="my-1 h-px bg-amber-500/20" />
+
+        {/* --- Quick Create Section --- */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsQuickCreateOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-amber-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <Zap className="h-3.5 w-3.5 text-amber-400" />
+              <span className="font-bold">Quick Create</span>
+            </div>
+            {isQuickCreateOpen ? (
+              <ChevronDown className="h-3.5 w-3.5 text-amber-400" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-amber-400" />
+            )}
+          </button>
+
+          {isQuickCreateOpen && (
+            <div className="mt-1 ml-2 pl-2 border-l border-amber-500/30 space-y-0.5 animate-in slide-in-from-top-1 duration-150">
+              {/* Warp Gate Placement */}
+              {!isSelectingGateType ? (
+                <button
+                  type="button"
+                  onClick={() => setIsSelectingGateType(true)}
+                  className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-slate-300 hover:bg-purple-950/40 hover:text-white transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <DoorOpen className="h-3 w-3 text-purple-400" />
+                    <span>Warp Gate...</span>
+                  </div>
+                  <span className="text-[8px] text-purple-300/70 font-semibold uppercase">Pick Type ▸</span>
+                </button>
+              ) : (
+                <div className="rounded-lg border border-purple-500/30 bg-purple-950/30 p-1.5 space-y-1">
+                  <div className="flex items-center justify-between text-[10px] text-purple-300 font-bold px-1 border-b border-purple-500/20 pb-0.5">
+                    <span>Select Gate Type</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSelectingGateType(false)}
+                      className="text-slate-400 hover:text-white text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-0.5 max-h-36 overflow-y-auto pr-1">
+                    {[
+                      { name: 'Standard Warp Gate', category: 'CUSTOM', tileBrush: 3, targetMapId: activeMapData?.id || 'DEMO_SANDBOX' },
+                      { name: '🧭 Atlas North Gate', category: 'ATLAS_NORTH', tileBrush: 14, targetMapId: '' },
+                      { name: '🧭 Atlas East Gate', category: 'ATLAS_EAST', tileBrush: 15, targetMapId: '' },
+                      { name: '🧭 Atlas South Gate', category: 'ATLAS_SOUTH', tileBrush: 16, targetMapId: '' },
+                      { name: '🧭 Atlas West Gate', category: 'ATLAS_WEST', tileBrush: 17, targetMapId: '' },
+                      { name: '🏰 Dungeon Gate', category: 'DUNGEON', tileBrush: 18, targetMapId: 'DEMO_SANDBOX' },
+                      { name: '⚔️ Raid Entrance Gate', category: 'RAID', tileBrush: 19, targetMapId: 'DEMO_SANDBOX' },
+                      { name: '🎉 Event Gate', category: 'EVENT', tileBrush: 20, targetMapId: 'DEMO_SANDBOX' },
+                      { name: '⛏️ Mine Entrance Gate', category: 'MINE', tileBrush: 21, targetMapId: 'DEMO_SANDBOX' },
+                      { name: '🌲 Deep Forest Gate', category: 'DEEP_FOREST', tileBrush: 22, targetMapId: 'DEMO_SANDBOX' },
+                      { name: '🌀 Realm Portal Gate', category: 'PORTAL', tileBrush: 23, targetMapId: 'DEMO_SANDBOX' },
+                    ].map((g) => (
+                      <button
+                        key={g.name}
+                        type="button"
+                        onClick={() => handleAction(() => handlePlaceSpecificGate(g))}
+                        className="w-full text-left px-1.5 py-0.5 rounded text-[9px] text-purple-200 hover:bg-purple-600/30 hover:text-white transition flex items-center justify-between"
+                      >
+                        <span className="truncate">{g.name}</span>
+                        <span className="text-[8px] text-purple-400/60 font-mono">#{g.tileBrush}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Set Default Player Spawn */}
+              <button
+                type="button"
+                onClick={() => handleAction(handleSetDefaultMapSpawn)}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+              >
+                <MapPin className="h-3 w-3 text-amber-400" />
+                <span>Set Default Map Spawn</span>
+              </button>
+
+              {/* Teleport Author Avatar */}
+              <button
+                type="button"
+                onClick={() => handleAction(handleSetPlayerSpawn)}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-slate-300 hover:bg-emerald-950/40 hover:text-emerald-200 transition-colors cursor-pointer"
+              >
+                <UserRound className="h-3 w-3 text-emerald-400" />
+                <span>Teleport Author Here</span>
+              </button>
+
+              {/* Loot Container */}
+              <button
+                type="button"
+                onClick={() => handleAction(() => handlePlaceLogicTag(4, 'Loot Container', 'loot'))}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-slate-300 hover:bg-amber-950/40 hover:text-amber-200 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Package className="h-3 w-3 text-amber-400" />
+                  <span>Loot Container</span>
+                </div>
+                <span className="text-[8px] text-amber-400/60 font-mono">#4</span>
+              </button>
+
+              {/* Encounter Zone */}
+              <button
+                type="button"
+                onClick={() => handleAction(() => handlePlaceLogicTag(6, 'Encounter Zone', 'creature'))}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-slate-300 hover:bg-rose-950/40 hover:text-rose-200 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3 w-3 text-rose-400" />
+                  <span>Encounter Zone</span>
+                </div>
+                <span className="text-[8px] text-rose-400/60 font-mono">#6</span>
+              </button>
+
+              {/* NPC Trigger */}
+              <button
+                type="button"
+                onClick={() => handleAction(() => handlePlaceLogicTag(8, 'NPC Trigger', 'npc'))}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-slate-300 hover:bg-sky-950/40 hover:text-sky-200 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-3 w-3 text-sky-400" />
+                  <span>NPC Trigger</span>
+                </div>
+                <span className="text-[8px] text-sky-400/60 font-mono">#8</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="my-1 h-px bg-amber-500/20" />
+
+        {/* --- Selection Section --- */}
+        <button
+          type="button"
+          onClick={() => handleAction(handleSelectAll)}
+          className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Scan className="h-3.5 w-3.5 text-amber-400" />
+            <span>Select All</span>
+          </div>
+          <span className="text-[9px] text-slate-500 font-mono">Ctrl+A</span>
+        </button>
+
+        {hasSelection && (
+          <button
+            type="button"
+            onClick={() => handleAction(handleClearSelection)}
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-400 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <XCircle className="h-3.5 w-3.5 text-slate-400" />
+              <span>Clear Selection</span>
+            </div>
+            <span className="text-[9px] text-slate-500 font-mono">Escape</span>
+          </button>
+        )}
       </div>
     </div>
   );

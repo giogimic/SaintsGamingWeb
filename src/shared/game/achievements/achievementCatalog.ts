@@ -106,7 +106,7 @@ export const CANONICAL_ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     category: 'COLLECTION',
     points: 10,
     targetCount: 1,
-    rewardTitleId: 'title_tamer',
+    rewardTitleId: 'title_saint',
   },
   ach_dex_collector: {
     id: 'ach_dex_collector',

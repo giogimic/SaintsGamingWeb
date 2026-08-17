@@ -122,3 +122,73 @@ export function isTilePickTarget(meshName: string | null | undefined): boolean {
   );
 }
 
+export interface EraseRegionParams {
+  map: PaintableMap | null | undefined;
+  layerIdx: number;
+  minR: number;
+  maxR: number;
+  minC: number;
+  maxC: number;
+}
+
+export interface ErasedCell {
+  layerIdx: number;
+  r: number;
+  c: number;
+  before: number;
+  after: 0;
+}
+
+export type EraseRegionResult =
+  | { ok: true; cells: ErasedCell[] }
+  | { ok: false; reason: string };
+
+/**
+ * Erase all non-zero tiles within a bounding box [minR..maxR, minC..maxC] on
+ * the target layer (logic or visual), mutating the grid in-place and returning
+ * the list of changed cells for undo tracking and visual engine sync.
+ */
+export function eraseTilesInRegion(params: EraseRegionParams): EraseRegionResult {
+  const { map, layerIdx, minR, maxR, minC, maxC } = params;
+  if (!map) return { ok: false, reason: "Map data missing." };
+
+  const target = resolvePaintTarget(map, layerIdx);
+  if (target.kind === "unavailable") return { ok: false, reason: target.reason };
+
+  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  if (!Array.isArray(grid)) {
+    return {
+      ok: false,
+      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+    };
+  }
+
+  const r0 = Math.max(0, Math.min(minR, maxR));
+  const r1 = Math.max(minR, maxR);
+  const c0 = Math.max(0, Math.min(minC, maxC));
+  const c1 = Math.max(minC, maxC);
+
+  const erased: ErasedCell[] = [];
+
+  for (let r = r0; r <= r1; r++) {
+    const row = grid[r];
+    if (!Array.isArray(row) || Object.isFrozen(row)) continue;
+    for (let c = c0; c <= c1; c++) {
+      if (c >= row.length) continue;
+      const prev = row[c] ?? 0;
+      if (prev !== 0) {
+        row[c] = 0;
+        erased.push({
+          layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+          r,
+          c,
+          before: prev,
+          after: 0,
+        });
+      }
+    }
+  }
+
+  return { ok: true, cells: erased };
+}
+

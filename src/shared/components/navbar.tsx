@@ -46,7 +46,7 @@ const NAV_ITEMS = [
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion: _siteVersion = "2.1.297" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion: _siteVersion = "2.1.343" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -83,21 +83,24 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-1">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            if (href === "/lobby" && !user) return null;
             const isActive = pathname === href || pathname?.startsWith(href + "/");
+            const isLobby = href === "/lobby";
+            const displayLabel = isLobby && !user ? "Enter Game" : label;
             return (
               <Link key={href} href={href} prefetch={true}>
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
                   size="sm"
                   className={`gap-2 transition-all duration-200 ${
-                    isActive
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-muted-foreground hover:text-foreground hover:scale-105"
+                    isLobby
+                      ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 hover:from-amber-500 hover:to-emerald-500 hover:text-black font-bold shadow-sm hover:scale-105"
+                      : isActive
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "text-muted-foreground hover:text-foreground hover:scale-105"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {label}
+                  {displayLabel}
                 </Button>
               </Link>
             );
@@ -211,12 +214,24 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                 <div className="flex-1 py-6 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Navigation</span>
                   {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                    if (href === "/lobby" && !user) return null;
                     const isActive = pathname === href || pathname?.startsWith(href + "/");
+                    const isLobby = href === "/lobby";
+                    const displayLabel = isLobby && !user ? "Enter Game" : label;
                     return (
-                      <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"}`}>
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                          isLobby
+                            ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 shadow-sm"
+                            : isActive
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        }`}
+                      >
                         <Icon className="h-4 w-4" />
-                        {label}
+                        {displayLabel}
                       </Link>
                     );
                   })}
@@ -350,7 +365,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.297"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.343"}</span>
           </div>
 
         </div>

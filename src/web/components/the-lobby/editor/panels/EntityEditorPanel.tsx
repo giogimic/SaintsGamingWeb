@@ -59,7 +59,7 @@ export const EntityEditorPanel: React.FC = () => {
     displayName: 'New Entity',
     spriteId: 'chest',
   }));
-  const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Tamer!');
+  const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Saint!');
   const [questSlug, setQuestSlug] = useState('');
   const [saving, setSaving] = useState(false);
   const [list, setList] = useState<MapNpcData[]>([]);
@@ -115,7 +115,7 @@ export const EntityEditorPanel: React.FC = () => {
       displayName: 'New ' + kind,
       spriteId: kind === 'npc' ? 'heroine' : 'chest',
     });
-    setNpcDialogue('Welcome to the animist grounds, Tamer!');
+    setNpcDialogue('Welcome to the animist grounds, Saint!');
     setQuestSlug('');
   };
 
