@@ -1,3 +1,9 @@
+## [2.1.315] - 2026-08-17
+### Added & Documented
+- **Server Content Cache Facade (`src/server/studio/contentCache.ts`):**
+  - Implemented the master ServerContentCache facade (Gameplay Bible 28 §2 & §3) with in-memory TTL caching and real-time invalidation pipelines across single resources, entire domains, and global cache flushes.
+  - Added unit test suite in `contentCache.test.ts`.
+
 ## [2.1.314] - 2026-08-17
 ### Added & Documented
 - **Canonical Studio Localization & Audit Logging Engine (`localizationAuditEngine.ts`):**
