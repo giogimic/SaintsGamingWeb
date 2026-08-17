@@ -1,3 +1,10 @@
+## [2.1.299] - 2026-08-17
+### Enhanced & Integrated
+- **Achievements Overlay Overhaul (`achievements-overlay.tsx`):**
+  - Connected the Lobby HUD Achievements overlay directly to the canonical `CANONICAL_ACHIEVEMENTS` registry.
+  - Added interactive category filter tabs (`ALL`, `COMBAT`, `SKILLING`, `EXPLORATION`, `COLLECTION`, `QUESTS`) with distinct icons and theme colors.
+  - Added live display of achievement point rewards, platform XP, coin payouts, and unlockable title indicators.
+
 ## [2.1.298] - 2026-08-17
 ### Added & Documented
 - **Canonical Achievement Catalog (`achievementCatalog.ts`):**
