@@ -1,3 +1,10 @@
+## [2.1.303] - 2026-08-17
+### Added & Documented
+- **Canonical SkillDef & XpCurveDef Registry Engine (`skillRegistry.ts`):**
+  - Implemented the master 27-skill definition registry and XP curve formulas (`combat_curve_50` and `standard_curve_99`) as defined in Gameplay Bible 25 §3.3 & §3.4.
+  - Added deterministic level-from-XP and XP-for-level helper algorithms.
+  - Added automated unit test suite in `skillRegistry.test.ts`.
+
 ## [2.1.302] - 2026-08-17
 ### Added & Documented
 - **Canonical Ability Registry & Domain Engine (`abilityRegistry.ts`):**
