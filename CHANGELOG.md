@@ -1,3 +1,9 @@
+## [2.1.314] - 2026-08-17
+### Added & Documented
+- **Canonical Studio Localization & Audit Logging Engine (`localizationAuditEngine.ts`):**
+  - Implemented the production tooling engine (Gameplay Bible 27 §3.11 & §3.12) providing dictionary translation lookups with language fallbacks and mutation audit trail schemas.
+  - Added automated unit test suite in `localizationAuditEngine.test.ts`.
+
 ## [2.1.313] - 2026-08-17
 ### Added & Documented
 - **Canonical Studio Task & Dependency Graph Engine (`taskEngine.ts`):**
