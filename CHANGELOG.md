@@ -1,3 +1,9 @@
+## [2.1.317] - 2026-08-17
+### Added & Documented
+- **Canonical Studio Glossary & Resource Definitions (`studioGlossary.ts`):**
+  - Implemented the normative vocabulary (Gameplay Bible 29) establishing the 6 canonical UI modes (`walk`, `paint`, `place`, `populate`, `script`, `catalog`), legacy alias adapters, and `CanonicalResourceRef` scoping keys.
+  - Added automated unit test suite in `studioGlossary.test.ts`.
+
 ## [2.1.316] - 2026-08-17
 ### Added & Documented
 - **Studio Backend Services Suite (`src/server/studio/studioServices.ts`):**
