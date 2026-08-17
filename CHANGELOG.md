@@ -1,3 +1,8 @@
+## [2.1.308] - 2026-08-17
+### Added & Documented
+- **Studio Gameplay Panels Hub (`GameplayStudioPanels.tsx`):**
+  - Implemented the unified Studio Gameplay Editor panel (Gameplay Bible 25) with tabbed dock views for Abilities, Status Conditions, 27-Skill Matrix, Professions, and the 100x Monte Carlo Combat Balance Simulator.
+
 ## [2.1.307] - 2026-08-17
 ### Added & Documented
 - **Canonical Type Chart Engine (`typeChartEngine.ts`):**
