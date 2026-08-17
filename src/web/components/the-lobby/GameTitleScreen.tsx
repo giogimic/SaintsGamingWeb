@@ -453,7 +453,7 @@ export default function GameTitleScreen({
       return;
     }
 
-    if (setupStatus && (!setupStatus.isSetupCompleted || setupStatus.mapCount === 0)) {
+    if (setupStatus && !setupStatus.isSetupCompleted) {
       window.location.href = '/setup';
       return;
     }

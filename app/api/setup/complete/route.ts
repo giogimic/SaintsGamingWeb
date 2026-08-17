@@ -20,7 +20,7 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const realmName = typeof body?.realmName === 'string' ? body.realmName.trim() : 'Saints Realm';
-    const defaultMapId = typeof body?.defaultMapId === 'string' ? body.defaultMapId.trim() : undefined;
+    const requestedDefaultMapId = typeof body?.defaultMapId === 'string' ? body.defaultMapId.trim() : undefined;
 
     // Save Realm Name
     if (realmName) {
@@ -31,23 +31,40 @@ export async function POST(req: Request) {
       });
     }
 
-    // Save Default Map ID if supplied or find first map in DB
-    if (defaultMapId) {
-      await prisma.siteSetting.upsert({
-        where: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID },
-        create: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: defaultMapId },
-        update: { value: defaultMapId },
+    // Save Default Map ID deterministically.
+    // If caller provided a map, require it to exist (except STARTING_MAP placeholder for blank-canvas flow).
+    let persistedDefaultMapId: string | null = null;
+    if (requestedDefaultMapId && requestedDefaultMapId !== 'STARTING_MAP') {
+      const mapExists = await prisma.worldMap.findUnique({
+        where: { id: requestedDefaultMapId },
+        select: { id: true },
       });
+      if (!mapExists) {
+        return NextResponse.json(
+          { error: `Requested default map does not exist: ${requestedDefaultMapId}` },
+          { status: 400 }
+        );
+      }
+      persistedDefaultMapId = requestedDefaultMapId;
+    } else if (requestedDefaultMapId === 'STARTING_MAP') {
+      // Blank-canvas setup can intentionally complete before any authored map exists.
+      persistedDefaultMapId = 'STARTING_MAP';
     } else {
-      const firstMap = await prisma.worldMap.findFirst({ select: { id: true } });
-      if (firstMap) {
-        await prisma.siteSetting.upsert({
-          where: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID },
-          create: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: firstMap.id },
-          update: { value: firstMap.id },
-        });
+      // Backward-compatible fallback for callers not passing defaultMapId.
+      const preferred = await prisma.worldMap.findUnique({ where: { id: 'SAINTS_HAVEN' }, select: { id: true } });
+      if (preferred) {
+        persistedDefaultMapId = preferred.id;
+      } else {
+        const firstMap = await prisma.worldMap.findFirst({ select: { id: true } });
+        persistedDefaultMapId = firstMap?.id || 'STARTING_MAP';
       }
     }
+
+    await prisma.siteSetting.upsert({
+      where: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID },
+      create: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID, value: persistedDefaultMapId },
+      update: { value: persistedDefaultMapId },
+    });
 
     // Mark Setup Completed
     await prisma.siteSetting.upsert({
@@ -65,6 +82,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       realmName,
+      defaultMapId: persistedDefaultMapId,
       message: 'Setup marked complete. Realm is ready for play and creation!',
     });
   } catch (error: any) {

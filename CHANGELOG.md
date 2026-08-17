@@ -1,3 +1,17 @@
+## [2.1.344] - 2026-08-17
+### Added & Fixed
+- **Setup Completion Determinism & Fresh-Install Loop Fixes:**
+  - **Deterministic default map persistence (`app/api/setup/complete/route.ts`)**: Setup completion now validates and persists explicit `defaultMapId` values instead of silently relying on nondeterministic DB-first map fallback.
+  - **Wizard completion contract (`FirstTimeSetupWizard.tsx`)**: Setup finalization now submits `defaultMapId` by selected starter path (`SAINTS_HAVEN` for community starter, `STARTING_MAP` placeholder for blank-canvas flow).
+  - **Post-complete verification guard (`FirstTimeSetupWizard.tsx`)**: Added immediate setup-status verification before route handoff to reduce stale-state bouncebacks.
+- **Blank-Canvas Studio Start Path Hardening:**
+  - **Studio author entry defaults (`src/web/components/the-lobby/index.tsx`)**: Studio author sessions now prefer `STARTING_MAP` blank-canvas behavior and avoid demo-biased fallback during fresh world creation.
+  - **Setup gate correction (`GameTitleScreen.tsx`, `index.tsx`)**: Setup redirects now trigger only when setup is incomplete, preventing completed blank-canvas installs (`mapCount === 0`) from being forced back to setup.
+- **Studio UI Viewport Safety:**
+  - **Realm Settings modal containment (`RealmSettingsModal.tsx`)**: Added viewport-bounded modal height and internal scrolling to prevent controls from rendering off-screen.
+- **Character-Select Chat Duplicate Mitigation:**
+  - **Chat bridge dedupe (`src/web/components/the-lobby/index.tsx`)**: Added canonical event dispatch + short-lived dedupe key cache across chat channels (`player_chat`, `global_chat_msg`, `chat_message`) to reduce duplicate feed lines.
+
 ## [2.1.343] - 2026-08-17
 ### Added & Fixed
 - **Selection Enhancements & Shift+Click Line Painting (Phase 5C):**

@@ -31,7 +31,6 @@ const GameLogin = dynamic(() => import('./GameLogin'));
 const ServerSelect = dynamic(() => import('./ServerSelect'));
 import { TurnBattleOverlay } from './battle/TurnBattleOverlay';
 import { useGameStore } from './store';
-import { StaffFloatingMenu } from './StaffFloatingMenu';
 import { hasPermission, PERMISSION_LEVELS } from '@/web/lib/permissions';
 import { canEnterStudio } from '@/shared/game/studioPermissions';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
@@ -59,7 +58,7 @@ import {
   type StudioMapHotReloadDetail,
   type StudioPieChangedDetail,
 } from '@/shared/game/studioEvents';
-import { resolveSafePlayerSpawn, DEFAULT_FALLBACK_SPAWN } from '@/shared/game/worldSpawns';
+import { resolveSafePlayerSpawn } from '@/shared/game/worldSpawns';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -75,7 +74,6 @@ import { useSession } from 'next-auth/react';
 import { decodeCreatureMoved, decodePlayerMoved, normalizeBinaryPayload } from '@/shared/net/movementCodec';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
-import { GameChat } from './chat/GameChat';
 import GameToastStack from './GameToastStack';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
@@ -111,6 +109,7 @@ export default function TheLobby({
   const socketRef = useRef<Socket | null>(null);
   /** Last successful lobby/studio join contract — used to coalesce join storms. */
   const lastJoinKeyRef = useRef<string | null>(null);
+  const recentChatEventKeysRef = useRef<Map<string, number>>(new Map());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
@@ -159,6 +158,49 @@ export default function TheLobby({
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const isStaff = hasPermission(permissionLevel, PERMISSION_LEVELS.MODERATOR);
   const canStudio = canEnterStudio(permissionLevel);
+
+  const dispatchChatEvent = (detail: {
+    id?: string;
+    sender?: string;
+    text?: string;
+    timestamp?: number;
+    type?: string;
+    recipient?: string;
+    accountId?: string;
+    socketId?: string;
+  }) => {
+    const text = String(detail.text || '').trim();
+    if (!text) return;
+    const type = String(detail.type || 'GLOBAL').toUpperCase();
+    const sender = String(detail.sender || 'Saint');
+    const account = String(detail.accountId || '');
+    const socket = String(detail.socketId || '');
+    const bucketTs = Math.floor((detail.timestamp || Date.now()) / 1000);
+    const dedupeKey = `${type}|${sender}|${text}|${account}|${socket}|${bucketTs}`;
+
+    const now = Date.now();
+    const seenAt = recentChatEventKeysRef.current.get(dedupeKey);
+    if (seenAt && now - seenAt < 6000) return;
+    recentChatEventKeysRef.current.set(dedupeKey, now);
+
+    // Keep the dedupe map bounded.
+    if (recentChatEventKeysRef.current.size > 300) {
+      for (const [k, t] of recentChatEventKeysRef.current) {
+        if (now - t > 60000) recentChatEventKeysRef.current.delete(k);
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('game_chat_msg', {
+      detail: {
+        id: detail.id || `${Date.now()}-${Math.random()}`,
+        sender,
+        text,
+        timestamp: detail.timestamp || Date.now(),
+        type,
+        recipient: detail.recipient,
+      }
+    }));
+  };
 
   const loadCharactersList = async () => {
     const charsRes = await getUserCharacters();
@@ -280,7 +322,7 @@ export default function TheLobby({
   const enterStudioAuthorSession = async (mapId: string = 'LOBBY') => {
     if (!enableStudio) return;
     setIsInitializing(true);
-    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? 'LOBBY' : mapId.replace(/_ch\d+$/, '');
+    let validMapId = mapId === 'SAINTS_VILLAGE' || !mapId ? 'STARTING_MAP' : mapId.replace(/_ch\d+$/, '');
     let validPosition = { ...DEMO_SPAWN };
 
     try {
@@ -294,12 +336,12 @@ export default function TheLobby({
       useGameStore.getState().setActiveMapData(loaded);
       preloadAdjacentMaps(validMapId).catch(console.error);
     } catch {
-      validMapId = 'STARTING_MAP';
+          validMapId = 'LOBBY';
       validPosition = { x: 15, y: 15 };
       try {
-        const loadedFallback = ensureMapHasStudioTilesets(await loadMap('DEMO_SANDBOX'));
-        useGameStore.getState().setActiveMapData(loadedFallback);
-        validMapId = 'DEMO_SANDBOX';
+            const loadedFallback = ensureMapHasStudioTilesets(await loadMap('STARTING_MAP'));
+            useGameStore.getState().setActiveMapData(loadedFallback);
+            validMapId = 'STARTING_MAP';
       } catch {
         // Pristine realm fallback (0 maps in DB) — provide an interactive blank canvas
         const blankMap = ensureMapHasStudioTilesets({
@@ -366,7 +408,7 @@ export default function TheLobby({
         const setupRes = await fetch('/api/setup/status');
         if (setupRes.ok) {
           const setupJson = await setupRes.json();
-          if (setupJson.status && (!setupJson.status.isSetupCompleted || setupJson.status.mapCount === 0)) {
+          if (setupJson.status && !setupJson.status.isSetupCompleted) {
             window.location.href = '/setup';
             return;
           }
@@ -440,7 +482,7 @@ export default function TheLobby({
           // Studio: avatar-free author session by default (no character required).
           // Pass ?characterId= to load a real character for Playtest instead.
           if (enableStudio) {
-            void enterStudioAuthorSession('LOBBY');
+            void enterStudioAuthorSession('STARTING_MAP');
           } else {
             setIsInitializing(false);
           }
@@ -751,15 +793,15 @@ export default function TheLobby({
 
       const state = useGameStore.getState();
       const op = data.socketId ? state.otherPlayers[data.socketId] : undefined;
-      window.dispatchEvent(new CustomEvent('game_chat_msg', {
-        detail: {
-          id: Date.now().toString() + Math.random(),
-          sender: data.sender || op?.name || 'Saint',
-          text: data.message,
-          timestamp: Date.now(),
-          type: isStaffMsg ? 'SYSTEM' : 'LOCAL'
-        }
-      }));
+      dispatchChatEvent({
+        id: Date.now().toString() + Math.random(),
+        sender: data.sender || op?.name || 'Saint',
+        text: data.message,
+        timestamp: Date.now(),
+        type: isStaffMsg ? 'SYSTEM' : 'LOCAL',
+        accountId: data.accountId,
+        socketId: data.socketId,
+      });
     });
 
     socket.on('force_disconnect', (data: { reason?: string }) => {
@@ -773,45 +815,42 @@ export default function TheLobby({
     socket.on('global_chat_msg', (data) => {
       if (data.socketId === socket.id) return; // Prevent echoing own message
       if (data.accountId && session?.user?.id && String(data.accountId) === String(session.user.id)) return;
-      const msgEvent = new CustomEvent('game_chat_msg', {
-        detail: {
-          id: Date.now().toString() + Math.random(),
-          sender: data.sender || data.name || 'Saint',
-          text: data.message,
-          timestamp: data.timestamp || Date.now(),
-          type: 'GLOBAL'
-        }
+      dispatchChatEvent({
+        id: Date.now().toString() + Math.random(),
+        sender: data.sender || data.name || 'Saint',
+        text: data.message,
+        timestamp: data.timestamp || Date.now(),
+        type: 'GLOBAL',
+        accountId: data.accountId,
+        socketId: data.socketId,
       });
-      window.dispatchEvent(msgEvent);
     });
 
     socket.on('party_chat_msg', (data) => {
       if (data.socketId === socket.id) return; // Prevent echoing own message
       if (data.accountId && session?.user?.id && String(data.accountId) === String(session.user.id)) return;
-      const msgEvent = new CustomEvent('game_chat_msg', {
-        detail: {
-          id: Date.now().toString() + Math.random(),
-          sender: data.sender || data.name || 'Saint',
-          text: data.message,
-          timestamp: data.timestamp || Date.now(),
-          type: 'PARTY'
-        }
+      dispatchChatEvent({
+        id: Date.now().toString() + Math.random(),
+        sender: data.sender || data.name || 'Saint',
+        text: data.message,
+        timestamp: data.timestamp || Date.now(),
+        type: 'PARTY',
+        accountId: data.accountId,
+        socketId: data.socketId,
       });
-      window.dispatchEvent(msgEvent);
     });
 
     socket.on('whisper_msg', (data) => {
-      const msgEvent = new CustomEvent('game_chat_msg', {
-        detail: {
-          id: Date.now().toString() + Math.random(),
-          sender: data.sender || 'Saint',
-          text: data.message,
-          timestamp: data.timestamp || Date.now(),
-          type: 'WHISPER',
-          recipient: data.recipient,
-        }
+      dispatchChatEvent({
+        id: Date.now().toString() + Math.random(),
+        sender: data.sender || 'Saint',
+        text: data.message,
+        timestamp: data.timestamp || Date.now(),
+        type: 'WHISPER',
+        recipient: data.recipient,
+        accountId: data.accountId,
+        socketId: data.socketId,
       });
-      window.dispatchEvent(msgEvent);
     });
 
     // Economy / party system lines arrive as chat_message (channel SYSTEM|PARTY).
@@ -821,15 +860,15 @@ export default function TheLobby({
         channel === 'PARTY' ? 'PARTY' :
         channel === 'GLOBAL' ? 'GLOBAL' :
         'SYSTEM';
-      window.dispatchEvent(new CustomEvent('game_chat_msg', {
-        detail: {
-          id: Date.now().toString() + Math.random(),
-          sender: data?.senderName || data?.sender || 'Server',
-          text: data?.message || '',
-          timestamp: data?.timestamp || Date.now(),
-          type,
-        }
-      }));
+      dispatchChatEvent({
+        id: Date.now().toString() + Math.random(),
+        sender: data?.senderName || data?.sender || 'Server',
+        text: data?.message || '',
+        timestamp: data?.timestamp || Date.now(),
+        type,
+        accountId: data?.accountId,
+        socketId: data?.socketId,
+      });
     });
 
     // CC1: Soft Locks and Presence
@@ -1145,17 +1184,13 @@ export default function TheLobby({
     socket.on('party_invite', (data: { fromName?: string; fromAccountId?: string }) => {
       const from = data?.fromName || 'A tamer';
       useGameStore.getState().showToast(`${from} invited you to a party (Y/N)`);
-      window.dispatchEvent(
-        new CustomEvent('game_chat_msg', {
-          detail: {
-            id: Date.now().toString() + Math.random(),
-            sender: 'Server',
-            text: `${from} invited you to a party. Press Y to accept or N to decline.`,
-            timestamp: Date.now(),
-            type: 'SYSTEM',
-          },
-        })
-      );
+      dispatchChatEvent({
+        id: Date.now().toString() + Math.random(),
+        sender: 'Server',
+        text: `${from} invited you to a party. Press Y to accept or N to decline.`,
+        timestamp: Date.now(),
+        type: 'SYSTEM',
+      });
     });
 
     socket.on('party_update', (data: { type?: string; members?: string[] }) => {
