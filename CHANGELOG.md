@@ -1,3 +1,10 @@
+## [2.1.301] - 2026-08-17
+### Added & Documented
+- **Canonical Combat Status Effects Registry (`statusRegistry.ts`):**
+  - Integrated full StatusDef registry as specified in Gameplay Bible 25 §3.2 (`burn`, `poison`, `frostbite`, `stun`, `regen`, `might`).
+  - Added support for real-time and turn-based duration ticks, capture chance multipliers, stat delta modifiers, and tag categorization.
+  - Added unit test suite in `statusRegistry.test.ts`.
+
 ## [2.1.300] - 2026-08-17
 ### Enhanced & Refactored
 - **Quest Journal Glance → Inspect Hierarchy (`quest-log-overlay.tsx`):**
