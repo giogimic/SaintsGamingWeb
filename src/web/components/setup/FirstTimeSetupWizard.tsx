@@ -6,14 +6,12 @@ import {
   Sparkles,
   Compass,
   Layers,
-  Wrench,
   CheckCircle2,
   ArrowRight,
   Loader2,
   Globe2,
   Boxes,
   ShieldAlert,
-  FolderOpen,
   Gamepad2,
   Sparkle,
   Hammer,
@@ -148,14 +146,33 @@ export function FirstTimeSetupWizard() {
     try {
       setCompleting(true);
       setErrorMessage(null);
+      const defaultMapId = selectedPackId === 'saints-community-starter' ? 'SAINTS_HAVEN' : 'STARTING_MAP';
       const res = await fetch('/api/setup/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ realmName }),
+        body: JSON.stringify({ realmName, defaultMapId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to finalize setup');
-      router.push(targetRoute);
+
+      // Verify completion status once to avoid stale setup-gate loops after finalization.
+      try {
+        const statusRes = await fetch('/api/setup/status', { cache: 'no-store' });
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (!statusData?.status?.isSetupCompleted) {
+            throw new Error('Setup completion not persisted yet. Please try again.');
+          }
+        }
+      } catch (verifyErr: any) {
+        throw new Error(verifyErr?.message || 'Failed to verify setup completion state');
+      }
+
+      if (targetRoute === '/studio' && selectedPackId === 'blank-canvas') {
+        router.push('/studio?create=true');
+      } else {
+        router.push(targetRoute);
+      }
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to complete setup');
       setCompleting(false);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Globe, Save, Check, ShieldAlert, Sparkles } from 'lucide-react';
+import { X, Globe, Save } from 'lucide-react';
 import { useGameStore } from '../store';
 import { DEFAULT_REALM_SETTINGS, getPlayerClassName, type RealmSettingsConfig } from '@/shared/game/realmSettings';
 
@@ -53,8 +53,9 @@ export const RealmSettingsModal: React.FC<RealmSettingsModalProps> = ({ isOpen, 
   const PRESET_IDENTITIES = ['Saint', 'Tamer', 'Operative', 'Hero', 'Hunter', 'Adventurer'];
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-md pointer-events-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl border border-amber-500/40 bg-[#070e1b] p-6 shadow-2xl space-y-6 text-slate-200 font-sans">
+    <div className="fixed inset-0 z-[200] overflow-y-auto bg-black/80 backdrop-blur-md pointer-events-auto animate-in fade-in duration-200">
+      <div className="flex min-h-full items-start justify-center p-4 sm:items-center sm:p-6">
+      <div className="w-full max-w-lg max-h-[calc(100vh-2rem)] rounded-2xl border border-amber-500/40 bg-[#070e1b] p-6 shadow-2xl space-y-6 text-slate-200 font-sans overflow-y-auto sm:max-h-[calc(100vh-3rem)]">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
@@ -160,6 +161,7 @@ export const RealmSettingsModal: React.FC<RealmSettingsModalProps> = ({ isOpen, 
             Save Realm Settings
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
