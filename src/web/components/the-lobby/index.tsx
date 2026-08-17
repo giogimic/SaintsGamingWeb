@@ -59,6 +59,7 @@ import {
   type StudioMapHotReloadDetail,
   type StudioPieChangedDetail,
 } from '@/shared/game/studioEvents';
+import { resolveSafePlayerSpawn, DEFAULT_FALLBACK_SPAWN } from '@/shared/game/worldSpawns';
 
 import { loadGameCharacter, saveGameState, getUserCharacters } from '@/app/actions/game';
 import { fetchAllMaps } from '@/app/actions/game-admin';
@@ -177,32 +178,46 @@ export default function TheLobby({
     if (res.success && res.data) {
       const parsedState = JSON.parse(res.data.stateData);
 
-      // Player lobby always starts on DEMO_SANDBOX (fallback if map not found).
-      const TARGET_MAP = 'DEMO_SANDBOX';
-      const FALLBACK_MAP = 'DEMO_SANDBOX';
       const savedMap = String(parsedState.currentMapId || parsedState.mapId || '')
         .replace(/_ch\d+$/, '');
-      let validMapId = TARGET_MAP;
-      let validPosition = { ...DEMO_SPAWN };
+      let validMapId = savedMap || 'LOBBY';
+      let validPosition = parsedState.position || { ...LOBBY_SPAWN };
 
-      if (savedMap && savedMap !== 'SAINTS_VILLAGE' && savedMap !== 'LOBBY') {
-        validMapId = savedMap;
-        validPosition = parsedState.position || { ...DEMO_SPAWN };
+      // Query available world maps to verify map existence
+      let availableMapIds: string[] = [];
+      try {
+        const mapListRes = await fetch('/api/maps');
+        if (mapListRes.ok) {
+          const mapData = await mapListRes.json();
+          availableMapIds = (mapData.maps || []).map((m: any) => m.id);
+        }
+      } catch {
+        /* ignore */
       }
+
+      const safeSpawn = resolveSafePlayerSpawn({
+        savedMapId: savedMap,
+        savedX: parsedState.position?.x,
+        savedY: parsedState.position?.y,
+        availableMapIds,
+      });
+
+      validMapId = safeSpawn.mapId;
+      validPosition = { x: safeSpawn.x, y: safeSpawn.y };
 
       try {
         const loaded = ensureMapHasStudioTilesets(await loadMap(validMapId));
         const mw = loaded.grid?.[0]?.length || 30;
         const mh = loaded.grid?.length || 30;
         validPosition = {
-          x: Math.max(1, Math.min(mw - 2, validPosition.x ?? DEMO_SPAWN.x)),
-          y: Math.max(1, Math.min(mh - 2, validPosition.y ?? DEMO_SPAWN.y)),
+          x: Math.max(1, Math.min(mw - 2, validPosition.x ?? 15)),
+          y: Math.max(1, Math.min(mh - 2, validPosition.y ?? 15)),
         };
         useGameStore.getState().setActiveMapData(loaded);
         preloadAdjacentMaps(validMapId).catch(console.error);
       } catch {
-        validMapId = FALLBACK_MAP;
-        validPosition = { ...DEMO_SPAWN };
+        validMapId = availableMapIds[0] || 'LOBBY';
+        validPosition = { ...LOBBY_SPAWN };
         try {
           const loadedFallback = ensureMapHasStudioTilesets(await loadMap(validMapId));
           useGameStore.getState().setActiveMapData(loadedFallback);

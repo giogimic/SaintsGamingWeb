@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store';
-import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Check, RotateCcw, Sparkles } from 'lucide-react';
+import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Check, RotateCcw, Sparkles, LifeBuoy } from 'lucide-react';
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { soundSynth } from '@/engine/sound-synth';
+import { canCastUnstuck, UNSTUCK_COOLDOWN_MS, UNSTUCK_CAST_DURATION_MS } from '@/shared/game/worldSpawns';
 
 
 interface GameOptionsMenuProps {
@@ -39,6 +40,73 @@ export default function GameOptionsMenu({
   const resetHudPresetToDefault = useGameStore((state) => state.resetHudPresetToDefault);
   const showToast = useGameStore((state) => state.showToast);
 
+  // Unstuck System
+  const [isCastingUnstuck, setIsCastingUnstuck] = useState(false);
+  const [unstuckTimer, setUnstuckTimer] = useState(5);
+  const [unstuckRemainingCooldown, setUnstuckRemainingCooldown] = useState(0);
+  const unstuckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const checkCooldown = () => {
+      try {
+        const last = Number(localStorage.getItem('saints.lastUnstuckTimestamp') || '0');
+        const check = canCastUnstuck(last || null);
+        setUnstuckRemainingCooldown(check.remainingCooldownMs);
+      } catch {
+        setUnstuckRemainingCooldown(0);
+      }
+    };
+    checkCooldown();
+    const timer = setInterval(checkCooldown, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleStartUnstuck = () => {
+    const check = canCastUnstuck(Number(localStorage.getItem('saints.lastUnstuckTimestamp') || '0') || null);
+    if (!check.canCast) {
+      showToast(`Unstuck on cooldown: ${Math.ceil(check.remainingCooldownMs / 1000)}s remaining.`);
+      return;
+    }
+
+    setIsCastingUnstuck(true);
+    setUnstuckTimer(5);
+    soundSynth?.playActionSound?.();
+    showToast('Unstuck initiated... Channeling for 5 seconds.');
+
+    let count = 5;
+    if (unstuckIntervalRef.current) clearInterval(unstuckIntervalRef.current);
+
+    unstuckIntervalRef.current = setInterval(async () => {
+      count -= 1;
+      setUnstuckTimer(count);
+      if (count <= 0) {
+        if (unstuckIntervalRef.current) clearInterval(unstuckIntervalRef.current);
+        setIsCastingUnstuck(false);
+        try {
+          localStorage.setItem('saints.lastUnstuckTimestamp', String(Date.now()));
+        } catch {}
+
+        // Query available maps and send to safe world spawn
+        let targetMapId = 'LOBBY';
+        try {
+          const mapListRes = await fetch('/api/maps');
+          if (mapListRes.ok) {
+            const data = await mapListRes.json();
+            const maps = data.maps || [];
+            if (maps.length > 0) {
+              const lobbyMap = maps.find((m: any) => m.id === 'LOBBY' || m.id.toLowerCase().includes('lobby')) || maps[0];
+              targetMapId = lobbyMap.id;
+            }
+          }
+        } catch {}
+
+        useGameStore.getState().setPlayerPosition({ x: 32, y: 32 }, 'down', false);
+        useGameStore.getState().setCurrentMapId(targetMapId);
+        showToast(`Unstuck successful! Transported to ${targetMapId} spawn.`);
+        onClose();
+      }
+    }, 1000);
+  };
 
   const [masterVolume, setMasterVolume] = useState(80);
   const [sfxVolume, setSfxVolume] = useState(90);
@@ -134,6 +202,31 @@ export default function GameOptionsMenu({
             
             {activeTab === 'GAME' && (
               <div className="space-y-6">
+                {/* Character Actions: Unstuck Teleport */}
+                <div className="rounded-3xl border border-[#22d3ee]/20 bg-black/40 p-4 sm:p-6 shadow-inner">
+                  <h4 className="mb-4 text-sm font-extrabold uppercase tracking-widest text-cyan-200/50">Character Recovery</h4>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="text-lg font-extrabold text-cyan-50">Unstuck Teleport</div>
+                      <div className="mt-1 text-sm font-medium text-slate-400">
+                        Trapped in terrain or an invalid map? Channel for 5s to return to the world hub. (5m cooldown)
+                      </div>
+                    </div>
+                    <button
+                      disabled={isCastingUnstuck || unstuckRemainingCooldown > 0}
+                      onClick={handleStartUnstuck}
+                      className="shrink-0 rounded-xl bg-amber-600 px-5 py-3 font-extrabold text-white shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all hover:bg-amber-500 hover:translate-y-[2px] disabled:opacity-50 disabled:pointer-events-none active:scale-95 border border-amber-400 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <LifeBuoy className="w-4 h-4" />
+                      {isCastingUnstuck
+                        ? `Channeling (${unstuckTimer}s)...`
+                        : unstuckRemainingCooldown > 0
+                        ? `Cooldown (${Math.ceil(unstuckRemainingCooldown / 1000)}s)`
+                        : 'Use Unstuck'}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="rounded-3xl border border-[#22d3ee]/20 bg-black/40 p-4 sm:p-6 shadow-inner">
                   <h4 className="mb-4 text-sm font-extrabold uppercase tracking-widest text-cyan-200/50">Display</h4>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

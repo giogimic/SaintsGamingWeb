@@ -201,6 +201,14 @@ async function seedDemoMap() {
   const tilesetsJson = JSON.stringify(DEFAULT_STUDIO_TILESETS);
 
   if (!existing) {
+    // If other maps exist in the database (i.e. author created custom maps and deleted DEMO_SANDBOX),
+    // do not force-recreate DEMO_SANDBOX unless FORCE_DEMO_MAP is explicitly enabled.
+    const totalMapsCount = await prisma.worldMap.count();
+    if (totalMapsCount > 0 && !forceMap) {
+      console.log("[DemoBootstrap] Custom maps exist; skipping DEMO_SANDBOX recreate.");
+      return;
+    }
+
     await prisma.worldMap.create({
       data: {
         id: DEMO_MAP_ID,
