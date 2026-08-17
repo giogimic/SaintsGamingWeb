@@ -1,3 +1,8 @@
+## [2.1.311] - 2026-08-17
+### Added & Documented
+- **Canonical Content Reload Bus Expansion (`contentReloadBus.ts`):**
+  - Expanded `ContentReloadType` to support hot-reloads across all canonical gameplay categories: `ability`, `status`, `skill`, `class`, `profession`, `recipe`, and global cache invalidation (`flush_all_caches`) as defined in Gameplay Bible 26 §3.1.
+
 ## [2.1.310] - 2026-08-17
 ### Added & Documented
 - **Canonical Gameplay Integrity & Validation Engine (`gameplayValidator.ts`):**
