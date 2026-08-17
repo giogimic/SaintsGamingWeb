@@ -1,3 +1,11 @@
+## [2.1.298] - 2026-08-17
+### Added & Documented
+- **Canonical Achievement Catalog (`achievementCatalog.ts`):**
+  - Integrated structured achievement definitions across Combat, Skilling, Exploration, Collection, and Quests with reward titles and progression milestones.
+  - Added full automated test coverage in `achievementCatalog.test.ts`.
+- **27-Skill Progression Matrix Bible Sync (`09-progression-27-skills.md`):**
+  - Aligned the gameplay bible with the 27 Saint Proficiencies, dual level curves (Lv 50 Combat vs Lv 99 Skilling/Artisan/Support), and Glance → Inspect → Learn menu architecture.
+
 ## [2.1.297] - 2026-08-16
 ### Enhanced
 - **Subdomain Setup Prompt (`scripts/setup.sh`):**
