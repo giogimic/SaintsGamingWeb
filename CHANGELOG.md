@@ -1,3 +1,10 @@
+## [2.1.305] - 2026-08-17
+### Added & Documented
+- **Canonical Combat Balancing & Simulation Engine (`combatBalanceEngine.ts`):**
+  - Implemented the deterministic balance simulation engine (Gameplay Bible 25 §3.7 & §3.8) computing average damage, DPS, time-to-kill (TTK), and XP-per-hour projections.
+  - Added support for player combat tuning multipliers, armor mitigation formulas, and health scaling thresholds.
+  - Added automated unit test suite in `combatBalanceEngine.test.ts`.
+
 ## [2.1.304] - 2026-08-17
 ### Added & Documented
 - **Canonical Profession Registry Engine (`professionRegistry.ts`):**
