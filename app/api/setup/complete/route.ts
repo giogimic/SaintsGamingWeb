@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     // Save Default Map ID deterministically.
     // If caller provided a map, require it to exist (except STARTING_MAP placeholder for blank-canvas flow).
-    let persistedDefaultMapId: string | null = null;
+    let persistedDefaultMapId = 'STARTING_MAP';
     if (requestedDefaultMapId && requestedDefaultMapId !== 'STARTING_MAP') {
       const mapExists = await prisma.worldMap.findUnique({
         where: { id: requestedDefaultMapId },
