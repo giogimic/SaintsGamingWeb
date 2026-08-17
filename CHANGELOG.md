@@ -1,3 +1,10 @@
+## [2.1.302] - 2026-08-17
+### Added & Documented
+- **Canonical Ability Registry & Domain Engine (`abilityRegistry.ts`):**
+  - Implemented the unified `AbilityDef` specification (Gameplay Bible 25 §3.1) supporting Real-Time player combat and Turn-Based creature battles.
+  - Enforced strict domain boundaries keeping creature capture actions isolated to Turn-Based encounters.
+  - Added full automated test coverage in `abilityRegistry.test.ts`.
+
 ## [2.1.301] - 2026-08-17
 ### Added & Documented
 - **Canonical Combat Status Effects Registry (`statusRegistry.ts`):**
