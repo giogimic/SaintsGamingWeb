@@ -1,3 +1,9 @@
+## [2.1.312] - 2026-08-17
+### Added & Documented
+- **Canonical Revision Store & Publishing Lifecycle Engine (`revisionStore.ts`):**
+  - Implemented the master ContentRevision engine (Gameplay Bible 26 §4, §5 & §6) supporting immutable content snapshots, draft-to-live promotions, and non-destructive forward-incrementing rollbacks.
+  - Added automated unit test suite in `revisionStore.test.ts`.
+
 ## [2.1.311] - 2026-08-17
 ### Added & Documented
 - **Canonical Content Reload Bus Expansion (`contentReloadBus.ts`):**
