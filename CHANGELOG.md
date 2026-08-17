@@ -1,3 +1,9 @@
+## [2.1.310] - 2026-08-17
+### Added & Documented
+- **Canonical Gameplay Integrity & Validation Engine (`gameplayValidator.ts`):**
+  - Implemented the automated validation suite (Gameplay Bible 25 §8) enforcing hard rules against RT capture leakage, unknown status effects, unregistered skill slugs, and missing class abilities.
+  - Added automated test coverage in `gameplayValidator.test.ts`.
+
 ## [2.1.309] - 2026-08-17
 ### Added & Documented
 - **Studio Dock Registration & Role Permissions (`studioModes.ts`, `studioPermissions.ts`, `editor-store.ts`):**
