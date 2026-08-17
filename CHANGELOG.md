@@ -1,3 +1,9 @@
+## [2.1.316] - 2026-08-17
+### Added & Documented
+- **Studio Backend Services Suite (`src/server/studio/studioServices.ts`):**
+  - Implemented the unified Studio Services layer (Gameplay Bible 28 §7) providing `StudioAuditService` and `StudioPublishService` for transactional mutation logging, cache invalidation, and content reload broadcasting.
+  - Added unit test suite in `studioServices.test.ts`.
+
 ## [2.1.315] - 2026-08-17
 ### Added & Documented
 - **Server Content Cache Facade (`src/server/studio/contentCache.ts`):**
