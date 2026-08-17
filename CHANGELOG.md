@@ -1,3 +1,9 @@
+## [2.1.313] - 2026-08-17
+### Added & Documented
+- **Canonical Studio Task & Dependency Graph Engine (`taskEngine.ts`):**
+  - Implemented the production tooling engine (Gameplay Bible 27 §3.5 & §3.6) managing development task pipelines, resource references, and bidirectional dependency tracking (hard/soft edges).
+  - Added automated unit test suite in `taskEngine.test.ts`.
+
 ## [2.1.312] - 2026-08-17
 ### Added & Documented
 - **Canonical Revision Store & Publishing Lifecycle Engine (`revisionStore.ts`):**
