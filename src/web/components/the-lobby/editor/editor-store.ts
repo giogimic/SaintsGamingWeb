@@ -67,7 +67,8 @@ export type PanelId =
   | 'spawner'
   | 'prefab'
   | 'atlas'
-  | 'problems';
+  | 'problems'
+  | 'gameplay';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -382,6 +383,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 500,
     width: 600,
     height: 250,
+    zIndex: 10,
+  },
+  gameplay: {
+    id: 'gameplay',
+    title: 'Gameplay Hub',
+    isOpen: false,
+    isCollapsed: false,
+    x: 250,
+    y: 40,
+    width: 860,
+    height: 640,
     zIndex: 10,
   },
 };
