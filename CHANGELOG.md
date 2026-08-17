@@ -1,3 +1,9 @@
+## [2.1.306] - 2026-08-17
+### Added & Documented
+- **Canonical ClassDef Schema Alignment (`classCatalog.ts`):**
+  - Extended `ClassDefData` with `learnableAbilityIds` and `combatStyleDefault` (Gameplay Bible 25 §3.5).
+  - Prepared hotbar abilities and class progression mapping for dynamic editor resolution.
+
 ## [2.1.305] - 2026-08-17
 ### Added & Documented
 - **Canonical Combat Balancing & Simulation Engine (`combatBalanceEngine.ts`):**

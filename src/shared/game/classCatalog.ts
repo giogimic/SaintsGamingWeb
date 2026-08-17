@@ -64,6 +64,10 @@ export type ClassDefData = {
   startingEquipment: string[];
   perks: string[];
   abilities: string[];
+  /** Canonical ability IDs learnable by this class (Bible 25 §3.5) */
+  learnableAbilityIds?: string[];
+  /** Default combat style archetype */
+  combatStyleDefault?: 'MELEE' | 'MAGIC' | 'RANGED' | 'SUPPORT' | 'TECH';
   isPlayable: boolean;
   sortOrder: number;
 };
