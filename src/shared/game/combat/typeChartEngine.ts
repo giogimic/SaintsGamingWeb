@@ -1,0 +1,110 @@
+/**
+ * Saints Gaming — Canonical Elemental Type Chart Engine (Bible 25 §3.7)
+ * Defines the canonical attacker -> defender multiplier matrix for elemental combat and creature battles.
+ */
+
+export type ElementType =
+  | 'normal'
+  | 'fire'
+  | 'water'
+  | 'grass'
+  | 'electric'
+  | 'ice'
+  | 'earth'
+  | 'wind'
+  | 'shadow'
+  | 'holy';
+
+export interface TypeChartDef {
+  id: string;
+  name: string;
+  matrix: Record<string, Record<string, number>>;
+}
+
+export const CANONICAL_TYPE_CHART: TypeChartDef = {
+  id: 'standard_elemental_v1',
+  name: 'Standard 10-Element Matrix',
+  matrix: {
+    fire: {
+      grass: 2.0,
+      ice: 2.0,
+      water: 0.5,
+      fire: 0.5,
+    },
+    water: {
+      fire: 2.0,
+      earth: 2.0,
+      grass: 0.5,
+      water: 0.5,
+    },
+    grass: {
+      water: 2.0,
+      earth: 2.0,
+      fire: 0.5,
+      grass: 0.5,
+    },
+    electric: {
+      water: 2.0,
+      wind: 2.0,
+      earth: 0.0,
+      electric: 0.5,
+    },
+    ice: {
+      grass: 2.0,
+      earth: 2.0,
+      wind: 2.0,
+      fire: 0.5,
+      ice: 0.5,
+    },
+    earth: {
+      fire: 2.0,
+      electric: 2.0,
+      wind: 0.5,
+      grass: 0.5,
+    },
+    wind: {
+      grass: 2.0,
+      earth: 1.5,
+      electric: 0.5,
+    },
+    shadow: {
+      holy: 2.0,
+      shadow: 0.5,
+      normal: 1.2,
+    },
+    holy: {
+      shadow: 2.0,
+      holy: 0.5,
+    },
+    normal: {
+      shadow: 0.8,
+    },
+  },
+};
+
+/**
+ * Calculates the elemental damage multiplier given attacking type and defending type(s).
+ */
+export function getElementalMultiplier(
+  attackType: string,
+  defendTypes: string | string[],
+  typeChart: TypeChartDef = CANONICAL_TYPE_CHART
+): number {
+  const atk = attackType.toLowerCase();
+  const defs = Array.isArray(defendTypes)
+    ? defendTypes.map((d) => d.toLowerCase())
+    : [defendTypes.toLowerCase()];
+
+  let multiplier = 1.0;
+  const atkRow = typeChart.matrix[atk];
+
+  if (!atkRow) return 1.0;
+
+  for (const def of defs) {
+    if (def in atkRow) {
+      multiplier *= atkRow[def];
+    }
+  }
+
+  return multiplier;
+}
