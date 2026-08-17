@@ -1,3 +1,10 @@
+## [2.1.300] - 2026-08-17
+### Enhanced & Refactored
+- **Quest Journal Glance → Inspect Hierarchy (`quest-log-overlay.tsx`):**
+  - Refactored the Quest Log into the canonical **Glance → Inspect** UX model.
+  - Active quest view now renders compact mission status cards with 1-click Inspect triggers.
+  - Added dedicated full-detail Quest Inspect overlay displaying complete multi-stage objectives, objective target trackers, and rewards without vertical scroll strain.
+
 ## [2.1.299] - 2026-08-17
 ### Enhanced & Integrated
 - **Achievements Overlay Overhaul (`achievements-overlay.tsx`):**
