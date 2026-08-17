@@ -1,3 +1,10 @@
+## [2.1.307] - 2026-08-17
+### Added & Documented
+- **Canonical Type Chart Engine (`typeChartEngine.ts`):**
+  - Implemented the 10-element type advantage matrix and multiplier calculator (Gameplay Bible 25 §3.7).
+  - Added support for compound dual-typing defensive resistances, super-effective boosts (2.0x / 4.0x), and immunities (0.0x).
+  - Added automated test suite in `typeChartEngine.test.ts`.
+
 ## [2.1.306] - 2026-08-17
 ### Added & Documented
 - **Canonical ClassDef Schema Alignment (`classCatalog.ts`):**
