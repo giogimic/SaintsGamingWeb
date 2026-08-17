@@ -1,3 +1,8 @@
+## [2.1.318] - 2026-08-17
+### Added & Documented
+- **Canonical CatalogEditorShell Standard (`CatalogEditorShell.tsx`):**
+  - Implemented the unified CatalogEditorShell component (Gameplay Bible 30 §2) providing standard master-detail panels, live search/filtering, dirty-state badges, footer validation chips, and revert/save callbacks across all Studio definition registries.
+
 ## [2.1.317] - 2026-08-17
 ### Added & Documented
 - **Canonical Studio Glossary & Resource Definitions (`studioGlossary.ts`):**
