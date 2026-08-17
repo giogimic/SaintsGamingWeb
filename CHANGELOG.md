@@ -1,3 +1,9 @@
+## [2.1.320] - 2026-08-17
+### Added & Documented
+- **Canonical Studio SoftLock & Presence Engine (`softLockEngine.ts`):**
+  - Implemented the collaboration and soft-lock engine (Gameplay Bible 32 §1) supporting multi-user edit locks, automatic heartbeat renewals, administrator takeover, and project presence tracking.
+  - Added automated unit test suite in `softLockEngine.test.ts`.
+
 ## [2.1.319] - 2026-08-17
 ### Added & Documented
 - **Canonical RewardBundle Engine (`rewards.ts`):**
