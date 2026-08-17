@@ -1,3 +1,9 @@
+## [2.1.319] - 2026-08-17
+### Added & Documented
+- **Canonical RewardBundle Engine (`rewards.ts`):**
+  - Implemented the unified RewardBundle definition, validation, and aggregation engine (Gameplay Bible 31 §1 & §2) consolidating credits, item grants, skill XP, faction reputation, and titles across quests, dialogues, and loot tables.
+  - Added automated unit test suite in `rewards.test.ts`.
+
 ## [2.1.318] - 2026-08-17
 ### Added & Documented
 - **Canonical CatalogEditorShell Standard (`CatalogEditorShell.tsx`):**
