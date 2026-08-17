@@ -524,6 +524,7 @@ export type StudioWarpGate = {
   position: { x: number; y: number };
   targetMapId: string;
   spawnPoint: { x: number; y: number };
+  category?: string;
   errorMessage?: string;
 };
 

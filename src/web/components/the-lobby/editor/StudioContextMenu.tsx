@@ -90,24 +90,47 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     }
   };
 
+  const [isSelectingGateType, setIsSelectingGateType] = React.useState(false);
+
   const handleSetPlayerSpawn = () => {
     useGameStore.getState().setPlayerPosition({ x: tileC, y: tileR }, 'down', false);
     showToast(`Teleported author avatar to [${tileC}, ${tileR}]`);
   };
 
-  const handlePlaceGateHere = () => {
+  const handleSetDefaultMapSpawn = () => {
+    if (!activeMapData) return;
+    const next = {
+      ...activeMapData,
+      defaultSpawn: { x: tileC, y: tileR },
+      spawnPoint: { x: tileC, y: tileR },
+    };
+    useGameStore.getState().setActiveMapData(next);
+    useEditorStore.getState().markMapDirty();
+    showToast(`Set default map spawn point to [${tileC}, ${tileR}]`);
+  };
+
+  const handlePlaceSpecificGate = (gatePreset: {
+    name: string;
+    targetMapId: string;
+    tileBrush: number;
+    category?: string;
+  }) => {
     if (!activeMapData) return;
     const nextGates = upsertWarpGate(activeMapData.gates, {
       id: `gate_${tileC}_${tileR}`,
       position: { x: tileC, y: tileR },
-      targetMapId: activeMapData.id,
+      targetMapId: gatePreset.targetMapId,
       spawnPoint: { x: tileC, y: tileR },
+      category: gatePreset.category,
     });
-    const next = { ...activeMapData, gates: nextGates };
+    const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
+      row.map((cell: number, ci: number) => (ri === tileR && ci === tileC ? gatePreset.tileBrush : cell))
+    );
+    const next = { ...activeMapData, gates: nextGates, grid: nextGrid };
     useGameStore.getState().setActiveMapData(next);
     useEditorStore.getState().markMapDirty();
     useEditorStore.getState().setShowWarpOverlays(true);
-    showToast(`Placed warp gate at [${tileC}, ${tileR}]`);
+    showToast(`Placed ${gatePreset.name} at [${tileC}, ${tileR}]`);
   };
 
   const handleFillLayerWithBrush = () => {
@@ -178,21 +201,74 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           <span>Sample Tile (Eyedropper)</span>
         </button>
 
-        {/* Warp Gate Placement */}
+        {/* Warp Gate Placement Menu */}
+        {!isSelectingGateType ? (
+          <button
+            type="button"
+            onClick={() => setIsSelectingGateType(true)}
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-purple-950/40 hover:text-white transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <DoorOpen className="h-3.5 w-3.5 text-purple-400" />
+              <span>Add Gate...</span>
+            </div>
+            <span className="text-[9px] text-purple-300/70 font-semibold uppercase tracking-wider">Choose Type ▸</span>
+          </button>
+        ) : (
+          <div className="rounded-lg border border-purple-500/30 bg-purple-950/20 p-1.5 space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-purple-300 font-bold px-1 border-b border-purple-500/20 pb-0.5">
+              <span>Select Gate Type</span>
+              <button
+                type="button"
+                onClick={() => setIsSelectingGateType(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-0.5 max-h-40 overflow-y-auto pr-1">
+              {[
+                { name: 'Standard Warp Gate', category: 'CUSTOM', tileBrush: 3, targetMapId: activeMapData?.id || 'DEMO_SANDBOX' },
+                { name: '🧭 Atlas North Gate', category: 'ATLAS_NORTH', tileBrush: 14, targetMapId: '' },
+                { name: '🧭 Atlas East Gate', category: 'ATLAS_EAST', tileBrush: 15, targetMapId: '' },
+                { name: '🧭 Atlas South Gate', category: 'ATLAS_SOUTH', tileBrush: 16, targetMapId: '' },
+                { name: '🧭 Atlas West Gate', category: 'ATLAS_WEST', tileBrush: 17, targetMapId: '' },
+                { name: '🏰 Dungeon Gate', category: 'DUNGEON', tileBrush: 18, targetMapId: 'DEMO_SANDBOX' },
+                { name: '⚔️ Raid Entrance Gate', category: 'RAID', tileBrush: 19, targetMapId: 'DEMO_SANDBOX' },
+                { name: '🎉 Event Gate', category: 'EVENT', tileBrush: 20, targetMapId: 'DEMO_SANDBOX' },
+                { name: '⛏️ Mine Entrance Gate', category: 'MINE', tileBrush: 21, targetMapId: 'DEMO_SANDBOX' },
+                { name: '🌲 Deep Forest Gate', category: 'DEEP_FOREST', tileBrush: 22, targetMapId: 'DEMO_SANDBOX' },
+                { name: '🌀 Realm Portal Gate', category: 'PORTAL', tileBrush: 23, targetMapId: 'DEMO_SANDBOX' },
+              ].map((g) => (
+                <button
+                  key={g.name}
+                  type="button"
+                  onClick={() => handleAction(() => handlePlaceSpecificGate(g))}
+                  className="w-full text-left px-2 py-1 rounded text-[10px] text-purple-200 hover:bg-purple-600/30 hover:text-white transition flex items-center justify-between"
+                >
+                  <span className="truncate">{g.name}</span>
+                  <span className="text-[8px] text-purple-400/60 font-mono">#{g.tileBrush}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Set Default Player Spawn */}
         <button
           type="button"
-          onClick={() => handleAction(handlePlaceGateHere)}
+          onClick={() => handleAction(handleSetDefaultMapSpawn)}
           className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
         >
-          <DoorOpen className="h-3.5 w-3.5 text-purple-400" />
-          <span>Place Warp Gate Here</span>
+          <MapPin className="h-3.5 w-3.5 text-amber-400" />
+          <span>Set Default Player Spawn Here</span>
         </button>
 
         {/* Teleport / Player Spawn */}
         <button
           type="button"
           onClick={() => handleAction(handleSetPlayerSpawn)}
-          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-emerald-950/40 hover:text-emerald-200 transition-colors cursor-pointer"
         >
           <UserRound className="h-3.5 w-3.5 text-emerald-400" />
           <span>Warp Avatar Here</span>

@@ -1,3 +1,10 @@
+## [2.1.321] - 2026-08-17
+### Added & Documented
+- **World Management & Gate Placement Enhancements (`StudioContextMenu.tsx`, `api/maps/[slug]/route.ts`):**
+  - Removed deletion restrictions on `DEMO_SANDBOX` so authors/admins can delete the demo sandbox map once custom maps exist.
+  - Added an interactive **"Add Gate..."** selector in the Studio right-click context menu, prompting authors to choose between standard warps, Atlas north/east/south/west boundary gates, dungeons, raids, seasonal events, mines, and realm portals.
+  - Added **"Set Default Player Spawn Here"** to the context menu to configure default map entry coordinates with one click.
+
 ## [2.1.320] - 2026-08-17
 ### Added & Documented
 - **Canonical Studio SoftLock & Presence Engine (`softLockEngine.ts`):**

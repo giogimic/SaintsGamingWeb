@@ -292,7 +292,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid map identifier" }, { status: 400 });
     }
 
-    if (normalizedSlug.toUpperCase() === DEMO_MAP_ID || normalizedSlug.toUpperCase() === 'LOBBY') {
+    if (normalizedSlug.toUpperCase() === 'LOBBY') {
       return NextResponse.json(
         { error: "Cannot delete the default root hub map." },
         { status: 400 }
