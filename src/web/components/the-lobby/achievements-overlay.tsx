@@ -4,33 +4,25 @@ import React, { useState } from 'react';
 import { HudPanelShell } from './hud/HudPanelShell';
 import { useGameStore } from './store';
 import { unlockGameAchievement } from '@/app/actions/game';
-import { Award, CheckCircle2, Lock, Coins, Sparkles, Trophy } from 'lucide-react';
+import { CANONICAL_ACHIEVEMENTS, getAllAchievements } from '@/shared/game/achievements/achievementCatalog';
+import { Award, CheckCircle2, Lock, Coins, Sparkles, Trophy, Filter, Sword, Pickaxe, Compass, BookOpen, HeartHandshake } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
 
-interface AchievementDef {
-  id: string;
-  title: string;
-  desc: string;
-  rewardCoins: number;
-  rewardXp: number;
-  category: string;
-}
-
-const GAME_ACHIEVEMENTS: AchievementDef[] = [
-  { id: 'first_capture', title: 'First Companion Bound', desc: 'Capture or claim your first Creature beast companion.', rewardCoins: 50, rewardXp: 100, category: 'Taming' },
-  { id: 'campaign_explorer', title: 'Campaign Explorer', desc: 'Warp through 5 different campaign region maps.', rewardCoins: 100, rewardXp: 250, category: 'Exploration' },
-  { id: 'master_crafter', title: 'Master Weapon Crafter', desc: 'Craft a weapon with ARPG stat affixes at the Crafting Station.', rewardCoins: 75, rewardXp: 150, category: 'Crafting' },
-  { id: 'keeper_conqueror', title: 'Keeper Conqueror', desc: 'Defeat a trainer Keeper in Phase 2 ARPG combat.', rewardCoins: 150, rewardXp: 300, category: 'Combat' },
-  { id: 'base_tycoon', title: 'Sanctuary Base Tycoon', desc: 'Assign 3 beasts to base automation facilities.', rewardCoins: 120, rewardXp: 200, category: 'Automation' }
-];
+type CategoryFilter = 'ALL' | 'COMBAT' | 'SKILLING' | 'EXPLORATION' | 'COLLECTION' | 'QUESTS';
 
 export default function AchievementsOverlay() {
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('ALL');
   const [claimedIds, setClaimedIds] = useState<string[]>([]);
   const [claimingId, setClaimingId] = useState<string | null>(null);
 
   const player = useGameStore(state => state.player);
   const setGameMode = useGameStore(state => state.setGameMode);
   const showToast = useGameStore(state => state.showToast);
+
+  const allAchievements = getAllAchievements();
+  const filteredAchievements = selectedCategory === 'ALL' 
+    ? allAchievements 
+    : allAchievements.filter(a => a.category === selectedCategory);
 
   const handleClaim = async (badgeId: string) => {
     setClaimingId(badgeId);
@@ -81,11 +73,38 @@ export default function AchievementsOverlay() {
             )}
           </div>
 
+          {/* Category Filter Chips */}
+          <div className="flex flex-wrap gap-1.5 p-1 bg-black/40 rounded-xl border border-purple-500/20">
+            {(['ALL', 'COMBAT', 'SKILLING', 'EXPLORATION', 'COLLECTION', 'QUESTS'] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  setSelectedCategory(cat);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1 cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-purple-600 text-white shadow-md border border-purple-400'
+                    : 'bg-black/60 text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+              >
+                {cat === 'COMBAT' && <Sword className="w-2.5 h-2.5 text-rose-400" />}
+                {cat === 'SKILLING' && <Pickaxe className="w-2.5 h-2.5 text-amber-400" />}
+                {cat === 'EXPLORATION' && <Compass className="w-2.5 h-2.5 text-emerald-400" />}
+                {cat === 'COLLECTION' && <HeartHandshake className="w-2.5 h-2.5 text-cyan-400" />}
+                {cat === 'QUESTS' && <BookOpen className="w-2.5 h-2.5 text-indigo-400" />}
+                {cat}
+              </button>
+            ))}
+          </div>
+
           {/* Achievement List */}
           <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
-            {GAME_ACHIEVEMENTS.map(ach => {
+            {filteredAchievements.map(ach => {
               const isClaimed = claimedIds.includes(ach.id);
               const isClaiming = claimingId === ach.id;
+              const rewardCoins = ach.points * 2;
+              const rewardXp = ach.points * 10;
 
               return (
                 <div
@@ -101,16 +120,24 @@ export default function AchievementsOverlay() {
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-white">{ach.title}</span>
-                      <span className="text-[9px] px-2 py-0.5 bg-black/60 text-cyan-300 border border-cyan-500/30 rounded uppercase font-bold">
+                      <span className="font-bold text-sm text-white">{ach.name}</span>
+                      <span className="text-[9px] px-2 py-0.5 bg-black/60 text-purple-300 border border-purple-500/30 rounded uppercase font-bold">
                         {ach.category}
                       </span>
+                      <span className="text-[9px] px-1.5 py-0.2 bg-amber-950/60 text-amber-300 border border-amber-500/30 rounded font-bold">
+                        +{ach.points} PTS
+                      </span>
                     </div>
-                    <p className="text-xs text-slate-300">{ach.desc}</p>
+                    <p className="text-xs text-slate-300">{ach.description}</p>
 
-                    <div className="flex gap-3 text-[10px] font-bold text-amber-300 mt-1">
-                      <span className="flex items-center gap-1"><Coins className="w-3 h-3 text-amber-400" /> +{ach.rewardCoins} Coins</span>
-                      <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-purple-400" /> +{ach.rewardXp} Platform XP</span>
+                    <div className="flex flex-wrap gap-3 text-[10px] font-bold text-amber-300 mt-1">
+                      <span className="flex items-center gap-1"><Coins className="w-3 h-3 text-amber-400" /> +{rewardCoins} Coins</span>
+                      <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-purple-400" /> +{rewardXp} Platform XP</span>
+                      {ach.rewardTitleId && (
+                        <span className="text-cyan-300 flex items-center gap-1">
+                          <Award className="w-3 h-3 text-cyan-400" /> Unlocks Title
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -120,7 +147,7 @@ export default function AchievementsOverlay() {
                     className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                       isClaimed
                         ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-600/50 cursor-default'
-                        : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-md border border-amber-400/50 active:scale-95'
+                        : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-md border border-purple-400/50 active:scale-95'
                     }`}
                   >
                     {isClaimed ? (
