@@ -5,11 +5,27 @@
 
 import { RealtimeEvents } from './protocol';
 
-export type ContentReloadType = 'map' | 'loot' | 'creatures' | 'items' | 'atlas' | 'prefabs' | 'quests';
+export type ContentReloadType =
+  | 'map'
+  | 'map_entities'
+  | 'loot'
+  | 'creatures'
+  | 'items'
+  | 'atlas'
+  | 'prefabs'
+  | 'quests'
+  | 'dialogue'
+  | 'ability'
+  | 'status'
+  | 'skill'
+  | 'class'
+  | 'profession'
+  | 'recipe'
+  | 'flush_all_caches';
 
 export interface ContentReloadPayload {
   type: ContentReloadType;
-  id: string;
+  id?: string;
   version?: number;
   authorId?: string;
   timestamp?: number;
