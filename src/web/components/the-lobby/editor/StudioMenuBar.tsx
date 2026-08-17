@@ -5,8 +5,10 @@ import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 import {
   FileText, Edit, Eye, Folder, Box, Globe, PlayCircle, Users, HelpCircle,
-  Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle
+  Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle,
+  Scissors, Copy, Clipboard, Pin, Layers, Settings
 } from 'lucide-react';
+import { RealmSettingsModal } from './RealmSettingsModal';
 import { STUDIO_MODE_META, type StudioMode } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
@@ -20,6 +22,7 @@ interface StudioMenuBarProps {
 
 export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMenuBarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuState>(null);
+  const [realmSettingsOpen, setRealmSettingsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
@@ -151,10 +154,41 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                 useEditorStore.getState().openPanel('problems');
               }}
             />
+            <MenuItem
+              label="Realm Settings & Identity..."
+              icon={Settings}
+              onClick={() => {
+                setRealmSettingsOpen(true);
+              }}
+            />
             <MenuItem divider />
             <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} onClick={() => {
               window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
             }} />
+            <MenuItem divider />
+            <MenuItem
+              label="Save & Exit to Character Select"
+              shortcut="Ctrl+Shift+Q"
+              icon={LogOut}
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+                setTimeout(() => { window.location.href = '/lobby'; }, 500);
+              }}
+            />
+            <MenuItem
+              label="Exit to Character Select"
+              icon={LogOut}
+              onClick={() => {
+                const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
+                if (hasUnsaved) {
+                  if (confirm('You have unsaved changes. Exit without saving?')) {
+                    window.location.href = '/lobby';
+                  }
+                } else {
+                  window.location.href = '/lobby';
+                }
+              }}
+            />
           </TopLevelMenu>
 
           <TopLevelMenu id="edit" label="Edit">
@@ -183,9 +217,90 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               }} 
             />
             <MenuItem divider />
-            <MenuItem label="Cut" shortcut="Ctrl+X" disabled />
-            <MenuItem label="Copy" shortcut="Ctrl+C" disabled />
-            <MenuItem label="Paste" shortcut="Ctrl+V" disabled />
+            <MenuItem
+              label="Cut"
+              shortcut="Ctrl+X"
+              icon={Scissors}
+              onClick={() => {
+                const map = useGameStore.getState().activeMapData;
+                if (!map) return;
+                const res = useEditorStore.getState().cutSelection(map);
+                if (res.ok) {
+                  showToast(`Cut ${res.width}×${res.height} tiles (${res.count} cleared)`);
+                } else {
+                  showToast(res.error || 'Cut failed');
+                }
+              }}
+            />
+            <MenuItem
+              label="Copy"
+              shortcut="Ctrl+C"
+              icon={Copy}
+              onClick={() => {
+                const map = useGameStore.getState().activeMapData;
+                if (!map) return;
+                const res = useEditorStore.getState().copySelection(map);
+                if (res.ok) {
+                  showToast(`Copied ${res.width}×${res.height} tiles to clipboard`);
+                } else {
+                  showToast(res.error || 'Copy failed');
+                }
+              }}
+            />
+            <MenuItem
+              label="Paste"
+              shortcut="Ctrl+V"
+              icon={Clipboard}
+              onClick={() => {
+                const clip = useEditorStore.getState().tileClipboard;
+                if (!clip) {
+                  showToast('Clipboard is empty. Copy tiles first (Ctrl+C).');
+                  return;
+                }
+                useEditorStore.getState().setIsPasting(true);
+                useEditorStore.getState().setBrushMode('paste');
+                showToast(`Paste active (${clip.width}×${clip.height}) — click to place`);
+              }}
+            />
+            <MenuItem
+              label="Paste in Place"
+              shortcut="Ctrl+Shift+V"
+              icon={Pin}
+              onClick={() => {
+                const map = useGameStore.getState().activeMapData;
+                const clip = useEditorStore.getState().tileClipboard;
+                if (!map || !clip) {
+                  showToast('Clipboard is empty.');
+                  return;
+                }
+                const res = useEditorStore.getState().pasteClipboard(
+                  map,
+                  null,
+                  clip.sourceOrigin.r,
+                  clip.sourceOrigin.c
+                );
+                if (res.ok) {
+                  showToast(`Pasted in place at [${clip.sourceOrigin.c}, ${clip.sourceOrigin.r}]`);
+                } else {
+                  showToast(res.error || 'Paste failed');
+                }
+              }}
+            />
+            <MenuItem
+              label="Paste to New Layer"
+              icon={Layers}
+              onClick={() => {
+                const clip = useEditorStore.getState().tileClipboard;
+                if (!clip) {
+                  showToast('Clipboard is empty.');
+                  return;
+                }
+                useEditorStore.getState().setPasteMode('new_layer');
+                useEditorStore.getState().setIsPasting(true);
+                useEditorStore.getState().setBrushMode('paste');
+                showToast('Pasting onto a New Layer — click to place');
+              }}
+            />
           </TopLevelMenu>
 
           <TopLevelMenu id="view" label="View">
@@ -260,9 +375,18 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <span>Edit</span>
         </button>
         <button
-          onClick={() => {
+          onClick={async () => {
             soundSynth?.playActionSound?.();
-            if (isCreationMode) toggleCreationMode();
+            if (isCreationMode) {
+              const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
+              if (hasUnsaved) {
+                if (confirm('You have unsaved changes. They will be lost if the map reloads during playtesting. Save before playing?')) {
+                  window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+                  await new Promise((r) => setTimeout(r, 400));
+                }
+              }
+              toggleCreationMode();
+            }
           }}
           className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
             !isCreationMode
@@ -317,6 +441,11 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <span className="bg-black/60 px-1 rounded text-slate-400 text-[9px]">Ctrl+K</span>
         </button>
       </div>
+
+      <RealmSettingsModal
+        isOpen={realmSettingsOpen}
+        onClose={() => setRealmSettingsOpen(false)}
+      />
     </div>
   );
 }

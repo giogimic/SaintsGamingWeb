@@ -63,6 +63,13 @@ export const CANONICAL_TITLES: Record<string, PlayerTitleDefinition> = {
     rarity: 'GRANDMASTER',
     colorHex: '#eab308',
   },
+  title_saint: {
+    id: 'title_saint',
+    text: 'the Saint',
+    position: 'SUFFIX',
+    rarity: 'RARE',
+    colorHex: '#38bdf8',
+  },
 };
 
 /**

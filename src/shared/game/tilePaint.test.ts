@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   LOGIC_LAYER_IDX,
+  eraseTilesInRegion,
   isPaintableLogicId,
   isTilePickTarget,
   paintCell,
@@ -165,5 +166,77 @@ describe("isTilePickTarget", () => {
     ]) {
       expect(isTilePickTarget(name)).toBe(false);
     }
+  });
+});
+
+describe("eraseTilesInRegion", () => {
+  it("erases selected region on visual layer and records changed cells", () => {
+    const map = demoMap();
+    const result = eraseTilesInRegion({
+      map,
+      layerIdx: 0,
+      minR: 0,
+      maxR: 1,
+      minC: 1,
+      maxC: 2,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.cells.length).toBe(4);
+    expect(result.cells).toContainEqual({ layerIdx: 0, r: 0, c: 1, before: 17, after: 0 });
+    expect(result.cells).toContainEqual({ layerIdx: 0, r: 0, c: 2, before: 17, after: 0 });
+    expect(result.cells).toContainEqual({ layerIdx: 0, r: 1, c: 1, before: 17, after: 0 });
+    expect(result.cells).toContainEqual({ layerIdx: 0, r: 1, c: 2, before: 17, after: 0 });
+
+    // Grid mutated in-place
+    expect(map.tileLayers?.[0].grid?.[0]).toEqual([17, 0, 0]);
+    expect(map.tileLayers?.[0].grid?.[1]).toEqual([17, 0, 0]);
+    expect(map.tileLayers?.[0].grid?.[2]).toEqual([17, 17, 17]);
+  });
+
+  it("erases selected region on logic layer (-1)", () => {
+    const map = demoMap();
+    const result = eraseTilesInRegion({
+      map,
+      layerIdx: LOGIC_LAYER_IDX,
+      minR: 0,
+      maxR: 2,
+      minC: 0,
+      maxC: 2,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    // Only non-zero cell in logic grid was [1, 1] with value 1
+    expect(result.cells).toEqual([
+      { layerIdx: -1, r: 1, c: 1, before: 1, after: 0 },
+    ]);
+    expect(map.grid?.[1][1]).toBe(0);
+  });
+
+  it("handles reversed coordinates gracefully (minR > maxR)", () => {
+    const map = demoMap();
+    const result = eraseTilesInRegion({
+      map,
+      layerIdx: 0,
+      minR: 2,
+      maxR: 0,
+      minC: 2,
+      maxC: 0,
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.cells.length).toBe(9);
+  });
+
+  it("refuses when map is missing", () => {
+    const result = eraseTilesInRegion({
+      map: null,
+      layerIdx: 0,
+      minR: 0,
+      maxR: 1,
+      minC: 0,
+      maxC: 1,
+    });
+    expect(result.ok).toBe(false);
   });
 });

@@ -23,6 +23,15 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   {
+    icon: Gamepad2,
+    title: "Saints MMO / The Lobby",
+    description: "Step into our 2.5D online multiplayer realm. Capture companion spirits, level 27 skills, build worlds, and explore shards together.",
+    href: "/lobby",
+    color: "text-amber-400",
+    badge: "Live Game",
+    highlight: true,
+  },
+  {
     icon: Newspaper,
     title: "News & Opinions",
     description: "Gaming takes, updates, and community news from our writers.",
@@ -83,21 +92,30 @@ export default function HomePage() {
         <p className="mt-4 text-base text-muted-foreground max-w-xl mx-auto">
           We&apos;ve had Minecraft modpack servers, SA-MP servers, survival
           games — you name it. Whether you&apos;re into competitive play,
-          modded Minecraft, or just vibing, there&apos;s a spot for you here.
-          We&apos;re building something and you&apos;re welcome to be part of
-          it.
+          modded Minecraft, or exploring our embedded 2.5D MMO, there&apos;s a spot for you here.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+          <Link
+            href="/lobby"
+            className={buttonVariants({
+              size: "lg",
+              className:
+                "bg-gradient-to-r from-amber-500 via-emerald-500 to-cyan-500 text-black font-extrabold hover:opacity-90 px-8 rounded-xl shadow-xl shadow-amber-500/20 hover:shadow-amber-500/40 transition-all hover:scale-105 cursor-pointer",
+            })}
+          >
+            <Gamepad2 className="mr-2 h-5 w-5 fill-current" />
+            Play Saints MMO
+          </Link>
           <Link 
             href="/forum"
-            className={buttonVariants({ size: "lg", className: "bg-primary text-primary-foreground hover:bg-primary/90 px-8 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all sg-pulse-btn" })}
+            className={buttonVariants({ size: "lg", variant: "secondary", className: "px-8 rounded-xl shadow-md border border-border/50 hover:bg-muted transition-all" })}
           >
             <MessageSquare className="mr-2 h-5 w-5" />
             Join the Forum
           </Link>
           <a
-            href={process.env.NEXT_PUBLIC_DISCORD_INVITE || "#"}
+            href={process.env.NEXT_PUBLIC_DISCORD_INVITE || "https://discord.saintsgaming.net"}
             target="_blank"
             rel="noopener noreferrer"
             className={buttonVariants({ variant: "outline", size: "lg", className: "border-border/60 hover:border-primary/50 px-8 rounded-xl" })}
@@ -116,15 +134,22 @@ export default function HomePage() {
           What&apos;s Here
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FEATURES.map(({ icon: Icon, title, description, href, color }) => (
-            <Link key={href} href={href} className="group">
-              <Card className="h-full sg-3d-card bg-card/50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {FEATURES.map(({ icon: Icon, title, description, href, color, badge, highlight }) => (
+            <Link key={href} href={href} className={`group ${highlight ? "sm:col-span-2 lg:col-span-2" : ""}`}>
+              <Card className={`h-full sg-3d-card transition-all ${highlight ? "bg-gradient-to-br from-amber-950/30 via-slate-900/60 to-emerald-950/30 border-amber-500/40 shadow-xl hover:border-amber-400" : "bg-card/50"}`}>
                 <CardHeader className="pb-3">
-                  <div
-                    className={`${color} mb-2 transition-transform group-hover:scale-110`}
-                  >
-                    <Icon className="h-8 w-8" />
+                  <div className="flex items-center justify-between">
+                    <div
+                      className={`${color} mb-2 transition-transform group-hover:scale-110`}
+                    >
+                      <Icon className="h-8 w-8" />
+                    </div>
+                    {badge && (
+                      <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 font-mono text-xs">
+                        {badge}
+                      </Badge>
+                    )}
                   </div>
                   <CardTitle className="text-lg flex items-center gap-2">
                     {title}
@@ -132,7 +157,7 @@ export default function HomePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">{description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
                 </CardContent>
               </Card>
             </Link>

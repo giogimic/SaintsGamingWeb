@@ -25,6 +25,7 @@ export function StudioStatusBar() {
   const setActiveGameId = useEditorStore((s) => s.setActiveGameId);
   const studioMode = useEditorStore((s) => s.studioMode);
   const mapDirty = useEditorStore((s) => s.mapDirty);
+  const isSavingMap = useEditorStore((s) => s.isSavingMap);
   const definitionStack = useEditorStore((s) => s.definitionOpStack);
   const brushRadius = useEditorStore((s) => s.brushRadius);
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
@@ -192,12 +193,12 @@ export function StudioStatusBar() {
         <div className="flex items-center gap-2 pl-2">
           <button
             onClick={() => {
-              if (mapDirty || defsDirtyCount > 0) {
+              if (!isSavingMap && (mapDirty || defsDirtyCount > 0)) {
                 soundSynth?.playActionSound?.();
                 window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
               }
             }}
-            disabled={!mapDirty && defsDirtyCount === 0}
+            disabled={isSavingMap || (!mapDirty && defsDirtyCount === 0)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded transition-colors ${
               mapDirty || defsDirtyCount > 0 
                 ? 'bg-amber-400 text-black font-bold hover:bg-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.4)] cursor-pointer' 
@@ -205,7 +206,7 @@ export function StudioStatusBar() {
             }`}
             title="Save Map & Defs (Ctrl+S)"
           >
-            <Save className="w-3.5 h-3.5" /> Save
+            <Save className={`w-3.5 h-3.5 ${isSavingMap ? 'animate-spin' : ''}`} /> {isSavingMap ? 'Saving…' : 'Save'}
           </button>
         </div>
       </div>

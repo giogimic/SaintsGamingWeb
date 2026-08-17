@@ -15,7 +15,7 @@ export default async function StudioLayout({
   children: React.ReactNode;
 }) {
   const setupStatus = await getSystemSetupStatus(prisma);
-  if (!setupStatus.isSetupCompleted || setupStatus.mapCount === 0) {
+  if (!setupStatus.isSetupCompleted) {
     redirect('/setup');
   }
 

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useGameStore } from './store';
-import RpgPanel from './rpg-panel';
+import { FloatingWindow } from './hud/FloatingWindow';
 import {
   getSkillGuide,
   getAllSkillUnlocks,
@@ -82,6 +82,11 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'UNLOCKS' | 'BATTLEPASS'>('OVERVIEW');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [activeEmotePreview, setActiveEmotePreview] = useState<SkillCapeEmoteDef | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [skillSlug, activeTab]);
 
   const capeEmoteDef = useMemo(() => getSkillCapeEmote(skillSlug), [skillSlug]);
 
@@ -133,10 +138,16 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
   });
 
   return (
-    <RpgPanel
+    <FloatingWindow
+      id={`skill-guide-full-${guide.slug}`}
       title={`${guide.name.toUpperCase()} — PROFICIENCY GUIDE`}
       icon={renderSkillIcon(guide.iconName, 'w-4 h-4 text-amber-400')}
+      isOpen={true}
       onClose={onClose}
+      defaultWidth={720}
+      defaultHeight={620}
+      minWidth={480}
+      minHeight={380}
       headerRight={
         <span
           className="px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider"
@@ -149,8 +160,10 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
           {guide.category} • LEVEL {currentLevel}/{guide.maxLevel}
         </span>
       }
+      className="border border-amber-500/40 shadow-2xl"
+      bodyClassName="h-[calc(100%-44px)] flex flex-col"
     >
-      <div className="flex flex-col gap-3 h-full font-mono text-xs">
+      <div ref={contentRef} className="flex flex-col gap-3 h-full overflow-y-auto p-3 font-mono text-xs custom-scrollbar select-none">
         {/* Compact Hero Strip */}
         <div
           className={`p-3 rounded-xl border flex items-center justify-between gap-3 bg-gradient-to-r ${guide.bgGradient} border-amber-500/30 shadow-lg shrink-0`}
@@ -459,6 +472,6 @@ export default function SkillGuideFull({ skillSlug, onClose }: SkillGuideFullPro
           )}
         </div>
       </div>
-    </RpgPanel>
+    </FloatingWindow>
   );
 }

@@ -133,22 +133,12 @@ export default function SkillsOverlay() {
   const maxProgress = getMaxProgress(skills);
   const isMaxed = maxProgress.isMaxed || isMaxCapeEligible(skills);
 
-  // If the full guide is open, render it as a top-level RpgPanel overlay
-  if (guideSkill) {
-    return (
-      <SkillGuideFull
-        skillSlug={guideSkill}
-        onClose={() => setGuideSkill(null)}
-      />
-    );
-  }
-
   // Whether a skill is selected for inspect
   const hasInspect = !!selectedSkill;
 
   return (
     <>
-      <div className="pointer-events-auto z-40 flex w-[min(96vw,820px)] max-w-full flex-col font-mono text-xs select-none relative">
+      <div className="pointer-events-auto z-40 flex w-[min(96vw,860px)] max-w-full flex-col font-mono text-xs select-none relative">
         <HudPanelShell 
           title="SAINT SKILLS & PROFICIENCY" 
           icon={<Zap className="w-4 h-4 text-amber-400" />}
@@ -208,21 +198,21 @@ export default function SkillsOverlay() {
               </div>
             </div>
 
-            {/* Main Content: Full-Width 4-5 Column Grid */}
-            <div className="flex-1 min-h-0 w-full overflow-y-auto pr-1 custom-scrollbar space-y-3">
+            {/* Main Content: Full-Width Responsive Grid */}
+            <div className="flex-1 min-h-0 w-full overflow-y-auto pr-1 custom-scrollbar space-y-4">
               {Object.entries(SKILL_CATEGORIES).map(([category, skillList]) => (
-                <div key={category} className="space-y-1.5">
-                  <div className="flex items-center gap-2 border-b border-amber-500/20 pb-1">
-                    {category === 'Combat' && <Sword className="w-3.5 h-3.5 text-rose-400" />}
-                    {category === 'Gathering' && <Pickaxe className="w-3.5 h-3.5 text-emerald-400" />}
-                    {category === 'Artisan' && <Hammer className="w-3.5 h-3.5 text-amber-400" />}
-                    {category === 'Support' && <Shield className="w-3.5 h-3.5 text-sky-400" />}
+                <div key={category} className="space-y-2">
+                  <div className="flex items-center gap-2 border-b border-amber-500/20 pb-1.5">
+                    {category === 'Combat' && <Sword className="w-4 h-4 text-rose-400" />}
+                    {category === 'Gathering' && <Pickaxe className="w-4 h-4 text-emerald-400" />}
+                    {category === 'Artisan' && <Hammer className="w-4 h-4 text-amber-400" />}
+                    {category === 'Support' && <Shield className="w-4 h-4 text-sky-400" />}
                     <h3 className="text-white font-bold uppercase tracking-wider text-xs">
                       {category} Skills
                     </h3>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3">
                     {skillList.map((skill) => {
                       const slug = normalizeSkillSlug(skill);
                       const guide = getSkillGuide(slug);
@@ -246,33 +236,43 @@ export default function SkillsOverlay() {
                             soundSynth?.playSelectSound?.();
                             setSelectedSkill(isSelected ? null : slug);
                           }}
-                          className={`group relative bg-black/60 border p-2 flex flex-col justify-between hover:border-amber-400 hover:bg-amber-950/30 transition-all rounded-lg cursor-pointer active:scale-95 shadow-md min-h-[52px] ${
+                          className={`group relative bg-black/60 border p-2.5 sm:p-3 flex flex-col justify-between hover:border-amber-400 hover:bg-amber-950/30 transition-all rounded-xl cursor-pointer active:scale-95 shadow-md min-h-[64px] ${
                             isSelected
                               ? 'border-amber-400 bg-amber-950/30 ring-1 ring-amber-400/30 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
                               : 'border-slate-800'
                           }`}
-                          style={{
-                            clipPath: 'polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px)',
-                          }}
                           title={`Click to inspect ${skill}`}
                         >
-                          <div className="flex items-center justify-between w-full gap-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <IconComp
-                                className="w-3.5 h-3.5 flex-none"
-                                style={{ color: guide?.themeColor || '#fbbf24' }}
-                              />
-                              <span className="text-[11px] text-slate-200 font-bold uppercase truncate">
-                                {skill}
-                              </span>
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center border shrink-0 transition-transform group-hover:scale-105"
+                                style={{
+                                  backgroundColor: `${guide?.themeColor || '#fbbf24'}15`,
+                                  borderColor: `${guide?.themeColor || '#fbbf24'}40`,
+                                }}
+                              >
+                                <IconComp
+                                  className="w-4 h-4 sm:w-4.5 sm:h-4.5 flex-none"
+                                  style={{ color: guide?.themeColor || '#fbbf24' }}
+                                />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] sm:text-xs text-slate-200 font-bold uppercase truncate">
+                                  {skill}
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-mono">
+                                  LV {data.level}
+                                </span>
+                              </div>
                             </div>
-                            <span className="text-amber-400 font-black text-xs shrink-0 font-mono">
+                            <span className="text-amber-400 font-black text-sm shrink-0 font-mono">
                               {data.level}
                             </span>
                           </div>
 
                           {/* Progress Bar Under Skill */}
-                          <div className="w-full h-1 bg-black/80 rounded-full overflow-hidden border border-slate-800 mt-1.5">
+                          <div className="w-full h-1.5 bg-black/80 rounded-full overflow-hidden border border-slate-800 mt-2">
                             <div 
                               className="h-full transition-all duration-300 rounded-full"
                               style={{
@@ -299,34 +299,26 @@ export default function SkillsOverlay() {
             </div>
           </div>
         </HudPanelShell>
-
-        {/* Independent Inspect Window Overlay */}
-        {hasInspect && selectedSkill && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-            <div className="w-[min(92vw,360px)] max-h-[85vh] animate-in zoom-in-95 duration-150 shadow-2xl">
-              <SkillInspectPanel
-                skillSlug={selectedSkill}
-                onClose={() => setSelectedSkill(null)}
-                onOpenGuide={(slug) => {
-                  setSelectedSkill(null);
-                  setGuideSkill(slug);
-                }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Independent Full Skill Guide Window Overlay */}
+      {/* Floating Inspect Window */}
+      {hasInspect && selectedSkill && (
+        <SkillInspectPanel
+          skillSlug={selectedSkill}
+          onClose={() => setSelectedSkill(null)}
+          onOpenGuide={(slug) => {
+            setSelectedSkill(null);
+            setGuideSkill(slug);
+          }}
+        />
+      )}
+
+      {/* Floating Full Skill Guide Window */}
       {guideSkill && (
-        <div className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-[min(95vw,680px)] max-h-[90vh] overflow-hidden">
-            <SkillGuideFull
-              skillSlug={guideSkill}
-              onClose={() => setGuideSkill(null)}
-            />
-          </div>
-        </div>
+        <SkillGuideFull
+          skillSlug={guideSkill}
+          onClose={() => setGuideSkill(null)}
+        />
       )}
     </>
   );

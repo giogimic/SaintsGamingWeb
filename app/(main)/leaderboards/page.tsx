@@ -7,7 +7,7 @@ import { Trophy, Crown, BadgeCheck, ShieldCheck, User, Sparkles } from 'lucide-r
 
 export const metadata: Metadata = {
   title: 'Global Operatives Leaderboards | Saints Gaming',
-  description: 'View the top ranked Saints Tamer operatives, rich list economy rankings, and master beast tamers across the community.',
+  description: 'View the top ranked Saints operatives, rich list economy rankings, and master Saints across the community.',
 };
 
 export default async function LeaderboardsPage() {
@@ -17,7 +17,7 @@ export default async function LeaderboardsPage() {
   // Sortings for tabs
   const topLevel = [...operatives].sort((a, b) => (b.level * 100000 + b.totalXp) - (a.level * 100000 + a.totalXp));
   const richList = [...operatives].sort((a, b) => b.credits - a.credits);
-  const masterTamers = [...operatives].sort((a, b) => b.caughtCount - a.caughtCount);
+  const masterSaints = [...operatives].sort((a, b) => b.caughtCount - a.caughtCount);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8 animate-in fade-in duration-500 font-sans">
@@ -25,7 +25,7 @@ export default async function LeaderboardsPage() {
       {/* Header Banner */}
       <div className="text-center space-y-4 bg-gradient-to-r from-purple-900/40 via-emerald-900/40 to-slate-900/40 border border-emerald-500/30 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
         <div className="flex items-center justify-center gap-2 text-emerald-400 font-mono text-sm font-bold uppercase tracking-widest">
-          <Trophy className="w-5 h-5" /> SAINTS TAMER GLOBAL RANKINGS
+          <Trophy className="w-5 h-5" /> SAINTS GLOBAL RANKINGS
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-400 bg-clip-text text-transparent">
           OPERATIVE LEADERBOARDS

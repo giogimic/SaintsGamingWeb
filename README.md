@@ -14,7 +14,7 @@
                                                                  |___/ 
 ```
 
-![Version](https://img.shields.io/badge/Release-v2.1.297-purple?style=for-the-badge&logo=gamemaker)
+![Version](https://img.shields.io/badge/Release-v2.1.343-purple?style=for-the-badge&logo=gamemaker)
 ![Live Site](https://img.shields.io/badge/Live_Site-SaintsGaming.net-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js_15-React_19-black?style=for-the-badge&logo=next.js)
 ![Go MMO](https://img.shields.io/badge/Go_MMO-3001-00ADD8?style=for-the-badge&logo=go&logoColor=white)

@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useGameStore } from './store';
-import { HudPanelShell } from './hud/HudPanelShell';
+import { FloatingWindow } from './hud/FloatingWindow';
 import { getSkillGuide, getAllSkillUnlocks } from '@/shared/game/skillGuideData';
 import { normalizeSkillSlug, isCombatSkillTyping } from '@/shared/game/skillTypings';
 import {
@@ -123,13 +123,18 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
   const lastUnlocked = [...allUnlocks].reverse().find((u) => u.level <= currentLevel);
 
   return (
-    <HudPanelShell
+    <FloatingWindow
+      id={`skill-inspect-${guide.slug}`}
       title={`${guide.name.toUpperCase()} — INSPECT`}
-      icon={renderSkillIcon(guide.iconName, 'w-4 h-4')}
+      icon={renderSkillIcon(guide.iconName, 'w-4 h-4 text-amber-400')}
+      isOpen={true}
       onClose={onClose}
+      defaultWidth={360}
+      defaultHeight="auto"
+      minWidth={300}
       headerRight={
         <span
-          className="px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase"
+          className="px-1.5 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider"
           style={{
             backgroundColor: `${guide.themeColor}15`,
             borderColor: `${guide.themeColor}40`,
@@ -139,9 +144,9 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
           {guide.category}
         </span>
       }
-      className="w-full"
+      className="border border-amber-500/40 shadow-2xl"
     >
-      <div className="flex flex-col gap-2.5 p-2.5 font-mono text-xs">
+      <div className="flex flex-col gap-2.5 p-3 font-mono text-xs select-none">
         {/* Skill Identity Row */}
         <div className="flex items-center gap-3">
           <div
@@ -248,7 +253,7 @@ export function SkillInspectPanel({ skillSlug, onClose, onOpenGuide }: SkillInsp
           VIEW IN GUIDE
         </button>
       </div>
-    </HudPanelShell>
+    </FloatingWindow>
   );
 }
 

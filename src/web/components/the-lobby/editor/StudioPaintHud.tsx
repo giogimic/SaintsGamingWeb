@@ -17,6 +17,9 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  FlipHorizontal,
+  FlipVertical,
+  RotateCw,
 } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
@@ -45,6 +48,11 @@ export function StudioPaintHud() {
   const setBrushRadius = useEditorStore((s) => s.setBrushRadius);
   const brushMode = useEditorStore((s) => s.brushMode);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
+  const stampTransform = useEditorStore((s) => s.stampTransform);
+  const flipStampH = useEditorStore((s) => s.flipStampH);
+  const flipStampV = useEditorStore((s) => s.flipStampV);
+  const rotateStampCW = useEditorStore((s) => s.rotateStampCW);
+  const resetStampTransform = useEditorStore((s) => s.resetStampTransform);
   const logicTiles = useGameStore((s) => s.logicTiles);
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
@@ -141,7 +149,7 @@ export function StudioPaintHud() {
                 ? 'bg-amber-400 text-black font-bold shadow'
                 : 'text-slate-400 hover:text-white hover:bg-white/10'
             }`}
-            title="Paint Brush (Left Click)"
+            title="Paint Brush (B)"
           >
             <Brush className="h-3.5 w-3.5" />
           </button>
@@ -154,7 +162,7 @@ export function StudioPaintHud() {
                 ? 'bg-rose-500 text-white font-bold shadow'
                 : 'text-slate-400 hover:text-white hover:bg-white/10'
             }`}
-            title="Eraser (Erase to Empty / 0)"
+            title="Eraser (E)"
           >
             <Eraser className="h-3.5 w-3.5" />
           </button>
@@ -167,7 +175,7 @@ export function StudioPaintHud() {
                 ? 'bg-sky-500 text-white font-bold shadow'
                 : 'text-slate-400 hover:text-white hover:bg-white/10'
             }`}
-            title="Eyedropper / Sample Tile"
+            title="Eyedropper / Sample Tile (I)"
           >
             <Pipette className="h-3.5 w-3.5" />
           </button>
@@ -180,7 +188,7 @@ export function StudioPaintHud() {
                 ? 'bg-emerald-500 text-white font-bold shadow'
                 : 'text-slate-400 hover:text-white hover:bg-white/10'
             }`}
-            title="Pan Hand Tool (Drag to Move Viewport)"
+            title="Pan Tool (Middle Drag / Space + Drag)"
           >
             <Hand className="h-3.5 w-3.5" />
           </button>
@@ -193,7 +201,7 @@ export function StudioPaintHud() {
                 ? 'bg-purple-500 text-white font-bold shadow'
                 : 'text-slate-400 hover:text-white hover:bg-white/10'
             }`}
-            title="Box Select Tool"
+            title="Box Select Tool (M)"
           >
             <SquareDashed className="h-3.5 w-3.5" />
           </button>
@@ -206,7 +214,7 @@ export function StudioPaintHud() {
                 ? 'bg-amber-500 text-black font-bold shadow'
                 : 'text-slate-400 hover:text-white hover:bg-white/10'
             }`}
-            title="Prefab Stamp Tool"
+            title="Prefab Stamp Tool (G)"
           >
             <Box className="h-3.5 w-3.5" />
           </button>
@@ -246,6 +254,60 @@ export function StudioPaintHud() {
             title="Redo (Ctrl+Y)"
           >
             <Redo2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        {/* Stamp Transform Controls (Phase 5A) */}
+        <div className="flex items-center gap-1 bg-black/60 rounded-full p-0.5 border border-amber-500/20">
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              flipStampH();
+              showToast(`Stamp Flip H: ${!stampTransform.flipH ? 'ON' : 'OFF'} (X)`);
+            }}
+            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+              stampTransform.flipH
+                ? 'bg-amber-400 text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Flip Stamp Horizontally (X)"
+          >
+            <FlipHorizontal className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              flipStampV();
+              showToast(`Stamp Flip V: ${!stampTransform.flipV ? 'ON' : 'OFF'} (Y)`);
+            }}
+            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+              stampTransform.flipV
+                ? 'bg-amber-400 text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Flip Stamp Vertically (Y)"
+          >
+            <FlipVertical className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              rotateStampCW();
+              const nextRot = (stampTransform.rotation + 90) % 360;
+              showToast(`Stamp Rotate: ${nextRot}° (Z)`);
+            }}
+            className={`flex items-center gap-0.5 px-2 py-1 rounded-full text-[10px] font-bold transition-colors cursor-pointer ${
+              stampTransform.rotation !== 0
+                ? 'bg-amber-400 text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Rotate Stamp 90° Clockwise (Z / Shift+Z)"
+          >
+            <RotateCw className="h-3.5 w-3.5" />
+            <span>{stampTransform.rotation}°</span>
           </button>
         </div>
 

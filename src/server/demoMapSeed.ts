@@ -3,6 +3,9 @@
  * 0 walkable, 1 wall, 2 tall grass, 5 tree, 6 ore, 7 shop, 9 craft, 11 bramble
  */
 
+import fs from "fs";
+import path from "path";
+
 export const DEMO_MAP_ID = "DEMO_SANDBOX";
 export const DEMO_MAP_W = 30;
 export const DEMO_MAP_H = 30;
@@ -28,6 +31,35 @@ export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
   { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
   { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
 ];
+
+export function checkTilesetExistsOnDisk(filename: string): boolean {
+  if (typeof window !== "undefined") return true;
+  try {
+    const raw = filename.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+    const fullPath = path.join(process.cwd(), "public", "game-assets", "tilesets", raw);
+    return fs.existsSync(fullPath);
+  } catch {
+    return false;
+  }
+}
+
+export function hasBundledTilesetsOnDisk(): boolean {
+  if (typeof window !== "undefined") return true;
+  try {
+    const dir = path.join(process.cwd(), "public", "game-assets", "tilesets");
+    if (!fs.existsSync(dir)) return false;
+    const list = fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith(".png"));
+    return list.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function getAvailableStudioTilesets(): StudioTilesetMeta[] {
+  if (!hasBundledTilesetsOnDisk()) return [];
+  const matched = DEFAULT_STUDIO_TILESETS.filter(ts => checkTilesetExistsOnDisk(ts.imageSource));
+  return matched.length > 0 ? matched : DEFAULT_STUDIO_TILESETS;
+}
 
 /**
  * Solid grass on Terrain_by_George (localId 16 → GID 17).
@@ -137,6 +169,9 @@ export function needsStudioTilesetBootstrap(
   tileLayersData: string | null | undefined,
   tilesetsData: string | null | undefined
 ): boolean {
+  if (!hasBundledTilesetsOnDisk()) {
+    return false;
+  }
   let layers: Array<{ name?: string; grid?: number[][] }> = [];
   let tilesets: unknown[] = [];
   try {

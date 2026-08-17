@@ -1,3 +1,175 @@
+## [2.1.343] - 2026-08-17
+### Added & Fixed
+- **Selection Enhancements & Shift+Click Line Painting (Phase 5C):**
+  - **Select All & Deselect Shortcuts (`StudioEditorShell.tsx`)**: Added `Ctrl+A` / `Cmd+A` (Select All map tiles) and `Ctrl+D` / `Cmd+D` (Deselect / Clear selection), syncing with Babylon viewport overlay.
+  - **Shift+Click Straight-Line Painting (`GameCanvasBabylon.tsx`)**: Holding `Shift` while clicking in Paint or Erase mode rasterizes and paints all tiles along a straight line from `lastPaintedTile` to current target coordinate using Bresenham's algorithm.
+  - **Layer Isolation & Dimming Engine (`BabylonEngine.ts`)**: Added `highlightCurrentLayer(layerIdx)`, `restoreLayerIsolation()`, and `toggleLayerIsolation(layerIdx)` methods in Babylon engine. Toggling `H` dims non-active layers and paint overlays to 0.35 opacity.
+  - **Bresenham Line Rasterizer (`lineRaster.ts`, `lineRaster.test.ts`)**: Pure line rasterization utility with unit tests for horizontal, vertical, diagonal, and arbitrary slope lines.
+
+## [2.1.342] - 2026-08-17
+### Added & Fixed
+- **Tool Mode Shortcuts (Phase 5B):**
+  - **Tool Mode Key Bindings (`StudioEditorShell.tsx`)**: Added single-key shortcuts for rapid tool switching in Editor runtime:
+    - `B`: Paint Brush (`setBrushMode('paint')`)
+    - `E`: Eraser (`setBrushMode('erase')`)
+    - `I`: Eyedropper / Tile Sample (`setBrushMode('eyedropper')`)
+    - `M`: Marquee Selection (`setBrushMode('select')`)
+    - `G`: Prefab Stamp (`setBrushMode('prefab')`)
+    - `H`: Layer Isolation Toggle (`studio_toggle_layer_dim`)
+  - **Interactive Input & Dialog Guard**: Ensured single-key shortcuts only execute when not typing in inputs/textareas and no dialog modals are open.
+  - **Tooltips & HUD Hints (`StudioPaintHud.tsx`)**: Updated tooltips across all toolbar buttons with their corresponding hotkey hints.
+  - **Tool Shortcuts Engine & Tests (`studioShortcuts.ts`, `studioShortcuts.test.ts`)**: Created pure resolver engine with comprehensive unit tests.
+
+## [2.1.341] - 2026-08-17
+### Added & Fixed
+- **Stamp & Brush Transform Shortcuts (Phase 5A):**
+  - **Transform Shortcuts (`StudioEditorShell.tsx`)**: Added Tiled-standard key bindings: `X` (Flip Stamp Horizontally), `Y` (Flip Stamp Vertically), `Z` (Rotate Stamp 90° Clockwise), and `Shift+Z` (Rotate Stamp 90° Counter-Clockwise).
+  - **HUD Visual Indicators (`StudioPaintHud.tsx`)**: Added persistent visual transform chips and quick-action buttons with active state highlighting and rotation angle readouts (`0°`, `90°`, `180°`, `270°`).
+  - **Transform Mathematics Engine (`stampTransform.ts`, `stampTransform.test.ts`)**: Built 2D matrix transformation pipeline for horizontal/vertical flipping and 90°/180°/270° clockwise rotations.
+  - **Transformed Clipboard Pasting (`editor-store.ts`)**: Integrated active `stampTransform` state into `pasteClipboard` to automatically transform multi-tile clipboard layers prior to canvas stamping.
+
+## [2.1.340] - 2026-08-17
+### Added & Fixed
+- **Bundled Assets as Optional Asset Packs (Phase 3B):**
+  - **CLI Asset Pack Installer (`scripts/install-asset-pack.ts`, `npm run assets:install`)**: Added command-line utility to selectively install and register asset packs (e.g. `--pack=tilesets`, `--pack=creatures`, `--pack=all`).
+  - **Selective Asset Pack API (`/api/assets/install-pack`)**: Added dedicated REST endpoint with elevate/admin permission checking to install single or multiple packs on demand.
+  - **In-Studio Asset Pack Installer (`AssetPackInstaller.tsx`)**: Created modular pack installer UI with pack overview cards, preview strips, asset count estimates, and instant sync actions.
+  - **Full-Screen Asset Browser Integration (`FullScreenAssetBrowser.tsx`)**: Added dedicated "Asset Packs" tab for effortless asset pack discovery and installation directly from Studio.
+
+## [2.1.339] - 2026-08-17
+### Added & Fixed
+- **"Sheets" Category & Spritesheet Asset Management (Phase 4A):**
+  - **Dedicated "Sheets" Category (`AssetEditor.tsx`)**: Added `SHEET` as a first-class asset filter option in the sidebar and type selector dropdown, automatically querying multi-frame sheets.
+  - **Asset Card Badges & Metadata**: Added pack origin badges (`Saints`, `Tuxemon`, `LPC`), frame counts (`16f`, etc.), and sheet markers across Grid and List views.
+  - **Sheet Asset Ingestion (`sync-local-assets.ts`, `assetPackInstaller.ts`)**: Auto-tagged battle animation sheets, NPC walk cycles, and hero sprites with `sheet` and `spritesheet` taxonomy.
+  - **Spritesheet Helper Utilities (`assetSheets.ts`)**: Added helper functions and unit tests for spritesheet classification and multi-frame grid dimension calculations.
+
+## [2.1.338] - 2026-08-17
+### Added & Fixed
+- **Zoom Presets, Percentage Display & Navigation Aids (Phase 2B):**
+  - **Live Zoom Percentage & Presets (`StudioBottomToolbar.tsx`)**: Added zoom percentage readout and dropdown presets (`25%`, `50%`, `100%`, `200%`, `400%`) synchronized with Babylon camera orthographic size.
+  - **Keyboard Shortcuts (`StudioEditorShell.tsx`)**: Added `Ctrl+0` / `Cmd+0` shortcut to instantly reset zoom to 100% and wired `Home` to `studio_fit_map`.
+  - **Camera Fit & Zoom Dispatch (`BabylonEngine.ts`)**: Added `fitMapInView()`, `setZoomPercent()`, and global event listeners for `studio_set_zoom` and `studio_fit_map` with two-way `studio_zoom_changed` event notifications.
+  - **Zoom Calculations & Math (`zoomMath.ts`)**: Added utility functions and unit tests for ortho/percentage conversions and aspect-ratio-aware fit-map framing.
+
+## [2.1.337] - 2026-08-17
+### Added & Fixed
+- **Unified Tileset Browser & Asset Integration (Phase 4C):**
+  - **Dynamic Tileset Management (`TilesetPicker.tsx`)**: Upgraded Tileset Picker with an integrated "+ Add Tileset" modal searching `type: 'TILESET'` assets in the Asset Catalog and calculating automatic `firstgid` offsets.
+  - **Map Tileset Removal & Search**: Added quick filtering across map tilesets and one-click removal with confirmation.
+  - **Asset Catalog Integration (`AssetEditor.tsx`, `WorldBuilderPanel.tsx`)**: Added "Use as Map Tileset" action to Asset Inspector and linked `onUpdateTilesets` state updates to mark maps dirty.
+  - **Tileset Calculations (`tilesetCalculations.ts`)**: Added unit-tested helper utilities for `firstgid` progression and bi-directional GID/coordinate translations.
+
+## [2.1.336] - 2026-08-17
+### Added & Fixed
+- **Creature Asset Sub-Categories & Fine-Grained Filtering (Phase 4B):**
+  - **Creature Classification Suite (`creatureCatalog.ts`)**: Defined `CreatureAssetSubcategory` types (`battle_sheet`, `front_sprite`, `back_sprite`, `face_portrait`, `overworld`) and pattern classifier `classifyCreatureAsset()`.
+  - **Asset Tagging in Ingestion Pipelines (`sync-local-assets.ts`, `assetPackInstaller.ts`)**: Auto-tagging all imported game assets with specific sub-categories and `creature:<subcat>` tags.
+  - **Asset Manager Filtering & Badges (`AssetEditor.tsx`, `SpriteBrowser.tsx`)**: Added subcategory dropdown selectors and colorful badges on grid/list cards for creature front/back sprites, face portraits, and battle sheets.
+
+## [2.1.335] - 2026-08-17
+### Added & Fixed
+- **Setup Flow Polish & Asset Import Stage (Phase 7B):**
+  - **Bundled Asset Pack Installer (`src/server/assetPackInstaller.ts`)**: Built structured asset installer for selective registration of 8 core asset libraries (Tilesets, Creature Sheets, Portraits, LPC NPCs, Hero Sprites, Items, Objects, and UI).
+  - **First-Time Setup Asset Screen (`FirstTimeSetupWizard.tsx`)**: Added Step 3 for interactive multi-select asset pack installation with live progress, count metrics, and quick-skip support.
+  - **Studio-First Launch Flow**: Replaced equal-weight landing buttons with a prominent primary "Launch World Studio" action.
+  - **Setup Assets API (`app/api/setup/assets/route.ts`)**: Added authenticated API route to query available bundled asset packs and trigger batch installations.
+
+## [2.1.334] - 2026-08-17
+### Added & Fixed
+- **Zero-Asset Setup & Resilient Tileset Loading (Phase 3A.1):**
+  - **Tileset Disk Introspection (`demoMapSeed.ts`)**: Added `checkTilesetExistsOnDisk()`, `hasBundledTilesetsOnDisk()`, and `getAvailableStudioTilesets()` to protect map bootstrap from missing image crashes in zero-asset environments.
+  - **Graceful Babylon Texture Fallbacks (`BabylonEngine.ts`)**: Added texture load error interception with solid fallback material coloring (`mat.diffuseColor = new Color3(0.2, 0.45, 0.2)`) and warning logs rather than throwing rendering errors.
+  - **TilesetPicker Empty & Error States (`TilesetPicker.tsx`)**: Replaced broken hardcoded secondary image fallback with a clean onboarding empty state and direct button to open the Asset Browser when zero tilesets exist.
+
+## [2.1.333] - 2026-08-17
+### Added & Fixed
+- **Studio Context Menu Restructure & Quick-Create Suite (Phase 1C):**
+  - **Structured GIMP/Tiled Layout**: Organized right-click context menu into 4 distinct functional blocks: Clipboard, Tile & Layer Operations, Quick Create, and Selection.
+  - **Clipboard Actions**: Added Copy (`Ctrl+C`), Cut (`Ctrl+X`), Paste (`Ctrl+V`), and Paste in Place (`Ctrl+Shift+V`) directly to context menu with dynamic disabled states and keyboard hints.
+  - **Quick Create Menu**: Added expandable quick-creation suite with 11 Warp Gate types, Default Map Spawn configuration, Author avatar teleportation, Loot Containers (#4), Encounter Zones (#6), and NPC Triggers (#8).
+  - **Selection Controls**: Added Select All (`Ctrl+A`) with visual 3D preview bounds and contextual Clear Selection (`Escape`).
+
+## [2.1.332] - 2026-08-17
+### Added & Fixed
+- **Character Spawn Alignment & Hub Metadata Resolution (Phase 6E):**
+  - **Dynamic Map Spawn Resolution (`character-creator.tsx`)**: Replaced generic fallback coordinates with dynamic map `spawnPoint` metadata lookups.
+  - **Map Payload SpawnPoint Support (`app/api/maps/[slug]/route.ts`)**: Added automatic resolution and extraction of designated spawn points and center-grid fallbacks in map payload endpoints.
+  - **Hub Prioritization**: Prioritized canonical hub worlds (`SAINTS_HAVEN` at `(20, 20)`, `LOBBY` at `(32, 32)`) over arbitrary off-grid positions when creating new Saint operatives.
+
+## [2.1.331] - 2026-08-17
+### Added & Fixed
+- **Skills Floating Windows & UX Polish (Phase 6C):**
+  - **Floating Inspect & Full Guide Windows (`SkillGuideModal.tsx`, `SkillGuideFull.tsx`, `skills-overlay.tsx`)**: Replaced modal blur backdrops with independent draggable `FloatingWindow` instances featuring minimize, dragging, custom z-index elevation, and viewport bounds clamping.
+  - **Auto Scroll-to-Top on Skill Navigation (`SkillGuideFull.tsx`)**: Added `contentRef` and `useEffect` lifecycle hook ensuring the proficiency guide smoothly scrolls to the top whenever opened or when changing skills/tabs.
+  - **Enhanced Skill Card Sizing & Typography (`skills-overlay.tsx`)**: Increased card padding, minimum height (64px), and icon sizing (`w-4 h-4 sm:w-4.5 sm:h-4.5` in dedicated themed badges), with explicit `LV {level}` displays and responsive grid spacing.
+
+## [2.1.330] - 2026-08-17
+### Added & Fixed
+- **Camera & Zoom Limits Optimization (Phase 2A):**
+  - **Tightened Game & Studio Zoom Bounds (`BabylonEngine.ts`)**: Reduced maximum zoom-out limit in Game/Lobby mode from `22` → `16` (maintains clear character visibility ~8 tiles radius) and in Studio Editor mode from `60` → `40` (prevents extreme bird's-eye distortion where tiles become dots).
+  - **Cursor-Anchored Wheel Zooming (`BabylonEngine.ts`)**: Implemented mouse-cursor anchored zoom calculations in the canvas wheel event handler for Studio Editor mode, keeping the tile beneath the cursor statically pinned while zooming in or out.
+
+## [2.1.329] - 2026-08-17
+### Added & Fixed
+- **Home Page Game Showcase & Navbar Guest Visibility (Phase 6D):**
+  - **Navbar Game Link for Guests (`navbar.tsx`)**: Removed the `!user` hide restriction so unauthenticated guests can discover and access the MMO; displays "Enter Game" for guests and "Play Now" for logged-in players with high-visibility cyber-gold/emerald styling in both desktop and mobile drawer navigation.
+  - **Home Page Live Game Showcase (`app/(main)/home/page.tsx`)**: Added a prominent "Play Saints MMO" primary action button to the Hero section and an enriched premier feature showcase card for "Saints MMO / The Lobby" with live game badge and cyberpunk-gradient styling.
+
+## [2.1.328] - 2026-08-17
+### Added & Fixed
+- **Canonical "Saint" Player Identity & Realm Settings (Phase 6B):**
+  - **Realm Settings Module (`realmSettings.ts`, `realmSettings.test.ts`)**: Established `DEFAULT_PLAYER_IDENTITY = "Saint"`, `getPlayerClassName()`, and `formatPlayerIdentity()` for configurable server identity conventions.
+  - **Studio Realm Settings Modal (`RealmSettingsModal.tsx`, `StudioMenuBar.tsx`)**: Added a dedicated Realm Settings modal under the File menu in Studio to allow admins to customize the Player Class Name, Realm Display Name, and MOTD.
+  - **Replaced "Tamer" Fallbacks Across Game Systems**:
+    - Updated chat handler fallbacks in `the-lobby/index.tsx` (local, global, party, whisper, and battle presence).
+    - Updated 3D Babylon peer name resolution in `GameCanvasBabylon.tsx` and `PeerPresenceHud.tsx`.
+    - Updated character creator perk title to **Master Saint** (`character-creator.tsx`).
+    - Updated leaderboard titles and descriptions (`app/(main)/leaderboards/page.tsx`).
+    - Updated default NPC dialogues (`EntityEditorPanel.tsx`, `WorldSimulation.ts`, `data/quests.ts` - "The Saint Awakening").
+    - Added `title_saint` to achievement dispatcher and updated `ach_first_companion` in `achievementCatalog.ts`.
+    - Updated Section 9 of `.agents/AGENTS.md` and `01-gameplay-bible.md` to establish "Saint" as the canonical player identity term.
+
+## [2.1.327] - 2026-08-17
+### Added & Fixed
+- **Studio In-Memory Tile Clipboard — Cut / Copy / Paste (`Ctrl+X`, `Ctrl+C`, `Ctrl+V`, `Ctrl+Shift+V`):**
+  - **Shared Subgrid Extraction & Stamping Engine (`subgridStamp.ts`, `subgridStamp.test.ts`)**: Built reusable subgrid extraction and stamping algorithms supporting **Overlay** (transparent merge), **Replace** (full footprint overwrite), and **New Layer** (paste directly to an auto-created layer) modes.
+  - **Prefab Builder Integration (`PrefabBuilderPanel.tsx`)**: Replaced duplicate selection extraction in Prefab Builder with the shared `extractSubgridFromMap` engine.
+  - **Clipboard State & Undo Actions (`editor-store.ts`)**: Added `copySelection`, `cutSelection`, `pasteClipboard`, and `cancelPaste` actions to `useEditorStore` with full undo stack tracking (`Ctrl+Z` / `Ctrl+Y`) and Babylon mesh event syncing (`STUDIO_MAP_CELLS_CHANGED_EVENT`).
+  - **Interactive Paste Floating Toolbar (`PasteOptionsToolbar.tsx`)**: Added a floating modal toolbar when paste mode is initiated, displaying clipboard tile dimensions, mode selectors (Overlay, Replace, New Layer), Apply, and Paste in Place buttons.
+  - **Canvas Hover Preview & Click-to-Place (`GameCanvasBabylon.tsx`)**: Renders translucent bounding box previews at the author's cursor during paste mode and commits the paste on click.
+  - **Studio Shortcuts & Menu Bar (`StudioMenuBar.tsx`, `StudioEditorShell.tsx`)**: Enabled Cut/Copy/Paste/Paste in Place/Paste to New Layer in the File Edit menu and registered global shortcuts (`Ctrl+C`, `Ctrl+X`, `Ctrl+V`, `Ctrl+Shift+V`, `Escape`).
+
+## [2.1.326] - 2026-08-17
+### Added & Fixed
+- **Studio Selection Deletion (`Del` / `Backspace` keys, context menu, & batch erase):**
+  - **Tile Deletion Engine (`tilePaint.ts`, `tilePaint.test.ts`)**: Implemented `eraseTilesInRegion` pure bounding box eraser with boundary protection, supporting both logic (`-1`) and visual (`0..N`) layers.
+  - **Delete Action & State Management (`editor-store.ts`)**: Added `deleteSelectionTiles(map, engine, layerIdx)` action to `useEditorStore` that records undoable batch operations via `opStack`, syncs `mapDirty` / `hasUnsavedChanges`, and dispatches `STUDIO_MAP_CELLS_CHANGED_EVENT`.
+  - **Keyboard Shortcuts (`StudioEditorShell.tsx`)**: Bound `Delete` and `Backspace` keys in Studio creation mode to delete selected marquee regions or the currently hovered tile with active toast feedback.
+  - **Context Menu Integration (`StudioContextMenu.tsx`)**: Replaced raw cell zeroing in the right-click "Erase Tile" action with `deleteSelectionTiles`, bringing undo/redo tracking and live 3D mesh sync to context menu erasing.
+
+## [2.1.325] - 2026-08-17
+### Added & Fixed
+- **Studio Exit Navigation, Save & Exit, and Global Save Architecture (`StudioMenuBar.tsx`, `StudioEditorShell.tsx`, `StudioStatusBar.tsx`, `editor-store.ts`):**
+  - **Save & Exit Menu Actions**: Added **"Save & Exit to Character Select"** (`Ctrl+Shift+Q`) and **"Exit to Character Select"** options to the Studio File menu in `StudioMenuBar.tsx`, with unsaved changes verification.
+  - **Global Map Save Listener (`StudioEditorShell.tsx`)**: Replaced dock-dependent save listeners with a globally mounted handler in `StudioEditorShell.tsx`, guaranteeing map saves (`Ctrl+S`, menu item, status bar) always execute regardless of which dock or panel is active.
+  - **Pre-Playtest Save Prompt**: When switching to Playtest mode (`Ctrl+E` or mode switcher) with unsaved changes, authors are prompted to save before testing to prevent map reload overwrites.
+  - **Global Saving Status Indicator (`StudioStatusBar.tsx`, `editor-store.ts`)**: Added `isSavingMap` and `hasUnsavedChanges` reactive state tracking to the editor store, updating the status bar Save button with an animated spinner and active feedback while map saves are in flight.
+
+## [2.1.324] - 2026-08-17
+### Fixed
+- **Character Select & Lobby Chat Double Message Echo Bug (`handler.go`, `LobbySocketHandler.ts`, `the-lobby/index.tsx`, `GameTitleScreen.tsx`):**
+  - **Go MMO Socket Hub (`handler.go`)**: Included client connection `socketId` and `accountId` on pre-map join chat broadcasts (`broadcastChat`).
+  - **TS Fallback Socket Handler (`LobbySocketHandler.ts`)**: Included `accountId` in global and local chat broadcasts.
+  - **Lobby Socket Bridge (`the-lobby/index.tsx`)**: Added account-level self-echo filtering (`data.accountId === session.user.id`) in addition to socket ID filtering on global and party chat messages.
+  - **Title & Character Select Screen (`GameTitleScreen.tsx`)**: Made incoming chat deduplication sender-agnostic within the timestamp window, preventing optimistic messages from duplicating if sender display name differs from server-broadcast fallback.
+
+## [2.1.323] - 2026-08-17
+### Fixed
+- **Setup Wizard Blank Canvas Infinite Redirect Loop (`app/(main)/studio/layout.tsx`, `app/(main)/lobby/page.tsx`):**
+  - Removed `setupStatus.mapCount === 0` check from the route guards on `/studio` and `/lobby`.
+  - Fixes the critical bug where choosing a "Blank Canvas" (0 maps) realm during onboarding redirected infinitely back to `/setup`, locking authors out of Studio and preventing them from creating their first map.
+
 ## [2.1.322] - 2026-08-17
 ### Added & Documented
 - **Dynamic World Hub & Unstuck Teleport System (`worldSpawns.ts`, `GameOptionsMenu.tsx`, `the-lobby/index.tsx`, `character-creator.tsx`):**

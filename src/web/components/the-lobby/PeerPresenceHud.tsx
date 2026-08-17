@@ -29,7 +29,7 @@ export default function PeerPresenceHud() {
     soundSynth?.playSelectSound?.();
     setCombatTarget({
       entityId: socketId,
-      name: peer.name || 'Tamer',
+      name: peer.name || 'Saint',
       hp: 100,
       maxHp: 100,
       behavior: 'friendly',

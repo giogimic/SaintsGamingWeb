@@ -145,6 +145,7 @@ export interface MoveAckPayload {
 // ─── Chat Payloads ────────────────────────────────────────────────────────────
 export interface ChatBroadcastPayload {
   socketId: string;
+  accountId?: string;
   sender: string;
   message: string;
   channel: "LOCAL" | "GLOBAL" | "PARTY" | "WHISPER" | "SYSTEM";

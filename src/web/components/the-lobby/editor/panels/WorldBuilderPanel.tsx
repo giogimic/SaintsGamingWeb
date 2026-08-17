@@ -37,6 +37,7 @@ export const WorldBuilderPanel: React.FC = () => {
   const activeMapData = useGameStore((state) => state.activeMapData);
   const showToast = useGameStore((state) => state.showToast);
   const activeGameId = useEditorStore((state) => state.activeGameId);
+  const isSaving = useEditorStore((state) => state.isSavingMap);
 
   // Accordion section collapse state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -57,7 +58,6 @@ export const WorldBuilderPanel: React.FC = () => {
   const [newMapName, setNewMapName] = useState('');
   const [newMapWidth, setNewMapWidth] = useState(64);
   const [newMapHeight, setNewMapHeight] = useState(64);
-  const [isSaving, setIsSaving] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [remoteMaps, setRemoteMaps] = useState<MapIndexEntry[]>([]);
   
@@ -152,53 +152,7 @@ export const WorldBuilderPanel: React.FC = () => {
     }
   };
 
-  const handleSaveMap = async () => {
-    if (!baseMapId) {
-      showToast('No map loaded to save.');
-      return;
-    }
-    soundSynth?.playActionSound?.();
-    const live = useGameStore.getState().activeMapData;
-    if (!live?.grid) {
-      showToast('Map data not loaded yet — wait for the world to appear, then Save.');
-      return;
-    }
-    const saveDoc = normalizeStudioMapVisuals(ensureMapHasStudioTilesets(live));
-    if (saveDoc !== live) {
-      useGameStore.getState().setActiveMapData(saveDoc);
-    }
-    setIsSaving(true);
-    try {
-      const payload = stripEditorOverlaysFromMapPayload({
-        name: saveDoc.name || baseMapId,
-        gameId: saveDoc.gameId,
-        grid: saveDoc.grid,
-        gates: saveDoc.gates || {},
-        npcs: saveDoc.npcs || [],
-        encounterPool: saveDoc.encounterPool || [],
-        tileLayers: saveDoc.tileLayers || [],
-        tilesets: saveDoc.tilesets || [],
-      });
-      const res = await fetch(`/api/maps/${encodeURIComponent(baseMapId)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        showToast(formatMapWriteError(res.status, err));
-        return;
-      }
-      invalidateMapCache(baseMapId);
-      useEditorStore.getState().clearMapDirty();
-      const backendUsed = isGoMmoSocketEnabled() ? 'Go MMO' : 'TS Server';
-      showToast(`Saved map ${baseMapId} (Synced to ${backendUsed})`);
-    } catch (e: any) {
-      showToast(e?.message || 'Save failed — network error.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
 
   const handleDeleteMap = async (mapId: string) => {
     if (!canEdit) {
@@ -226,13 +180,7 @@ export const WorldBuilderPanel: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const onTriggerSave = () => {
-      void handleSaveMap();
-    };
-    window.addEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
-    return () => window.removeEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
-  }, [baseMapId]);
+
 
   const handleCreateNewMapSubmit = async () => {
     const built = buildNewStudioMap({
@@ -330,6 +278,17 @@ export const WorldBuilderPanel: React.FC = () => {
     }
   };
 
+  const handleUpdateTilesets = (newTilesets: any[]) => {
+    if (!activeMapData) return;
+    const updated = {
+      ...activeMapData,
+      tilesets: newTilesets,
+    };
+    useGameStore.getState().setActiveMapData(updated);
+    useEditorStore.getState().markMapDirty();
+    showToast(`Tilesets updated (${newTilesets.length} total) — Save Map to persist.`);
+  };
+
   return (
     <div className="space-y-3 text-xs font-mono select-none">
       
@@ -357,7 +316,11 @@ export const WorldBuilderPanel: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => void handleSaveMap()}
+              onClick={() => {
+                if (!isSaving && activeMapData) {
+                  window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
+                }
+              }}
               disabled={isSaving || !activeMapData}
               className={`w-full py-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
                 isMapDirty
@@ -660,6 +623,7 @@ export const WorldBuilderPanel: React.FC = () => {
                 onLayerChange={setActiveLayerIdx}
                 tileLayers={currentMapData.tileLayers || []}
                 onAddLayer={handleAddLayer}
+                onUpdateTilesets={handleUpdateTilesets}
               />
             )}
           </div>

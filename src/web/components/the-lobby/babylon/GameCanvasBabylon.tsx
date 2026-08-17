@@ -23,6 +23,7 @@ import {
   isPaintableLogicId,
   resolvePaintTarget,
 } from '@/shared/game/tilePaint';
+import { rasterizeLine } from '@/shared/game/lineRaster';
 import { paintWorldCell } from '@/shared/game/worldDocument';
 import {
   STUDIO_MAP_CELLS_CHANGED_EVENT,
@@ -77,6 +78,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [isSpaceHeld, setIsSpaceHeld] = useState(false);
   const isSpaceHeldRef = useRef(false);
   isSpaceHeldRef.current = isSpaceHeld;
+  const [isShiftHeld, setIsShiftHeld] = useState(false);
+  const isShiftHeldRef = useRef(false);
+  isShiftHeldRef.current = isShiftHeld;
 
   useEffect(() => {
     if (!isDevEditorOpen) return;
@@ -86,19 +90,34 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (e.code === 'Space' && !e.repeat) {
         setIsSpaceHeld(true);
       }
+      if ((e.key === 'Shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) {
+        setIsShiftHeld(true);
+      }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         setIsSpaceHeld(false);
       }
+      if (e.key === 'Shift' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+        setIsShiftHeld(false);
+      }
+    };
+    const handleToggleLayerDim = () => {
+      if (engineRef.current) {
+        const store = useEditorStore.getState();
+        const active = engineRef.current.toggleLayerIsolation(store.activeLayerIdx);
+        showToast(active ? `Layer Isolation Active (Layer ${store.activeLayerIdx})` : 'Layer Isolation Off');
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('studio_toggle_layer_dim', handleToggleLayerDim);
     };
-  }, [isDevEditorOpen]);
+  }, [isDevEditorOpen, showToast]);
 
   // Entity interpolation buffer: socketId -> { fromX, fromY, toX, toY, startTime, duration }
   const interpBufferRef = useRef<Record<string, { fromX: number; fromY: number; toX: number; toY: number; startTime: number; duration: number }>>({});
@@ -613,6 +632,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Initialize 2.5D Babylon Engine
     const babylonEngine = new BabylonEngine(canvasRef.current);
     engineRef.current = babylonEngine;
+    if (typeof window !== 'undefined') {
+      (window as any).__babylonEngine = babylonEngine;
+    }
     setIsEngineReady(true);
 
     if (onCanvasReady) {
@@ -673,7 +695,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       } else if (entityId.startsWith('multiplayer_') || state.otherPlayers?.[entityId]) {
         const rawSocketId = entityId.startsWith('multiplayer_') ? entityId.replace(/^multiplayer_/, '') : entityId;
         const peer = state.otherPlayers?.[rawSocketId] || state.otherPlayers?.[entityId];
-        targetName = peer?.name || 'Tamer';
+        targetName = peer?.name || 'Saint';
         state.setCombatTarget({
           entityId: rawSocketId,
           name: targetName,
@@ -795,7 +817,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
-            name: other.name || 'Tamer',
+            name: other.name || 'Saint',
             x: ox,
             y: oz,
             spriteUrl: resolveEntitySpriteUrl(other.spriteId, {
@@ -1017,6 +1039,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener('combat_update_event', handleCombatUpdate);
       window.removeEventListener('loot_dropped_event', handleLootDropped);
       window.removeEventListener('loot_despawned_event', handleLootDespawned);
+      if (typeof window !== 'undefined' && (window as any).__babylonEngine === engineRef.current) {
+        (window as any).__babylonEngine = null;
+      }
     };
   }, [activeMap]);
 
@@ -1098,6 +1123,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             return;
           }
 
+          if (brushMode === 'paste' || store.isPasting) {
+            if (eventType !== 'down') return;
+            const res = store.pasteClipboard(map, engine, r, c, store.pasteMode);
+            if (res.ok) {
+              showToast(`Pasted ${res.count} tiles (${store.pasteMode})`);
+              store.cancelPaste();
+            } else {
+              showToast(res.error || 'Paste failed.');
+            }
+            return;
+          }
+
           if (brushMode === 'prefab') {
             if (eventType !== 'down') return;
             const prefab = store.prefabs.find((p) => p.id === activePrefabId);
@@ -1157,6 +1194,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           if (onMapClick) onMapClick(r, c);
+
+          // Shift+Click straight line rasterization (Phase 5C)
+          const isShiftLine = isShiftHeldRef.current && eventType === 'down' && Boolean(store.lastPaintedTile);
+          const coordsToPaint = isShiftLine && store.lastPaintedTile
+            ? rasterizeLine(store.lastPaintedTile.r, store.lastPaintedTile.c, r, c)
+            : [{ r, c }];
+
           useEditorStore.getState().setLastPaintedTile({ r, c });
 
           // In erase mode, write 0 (clear tile)
@@ -1169,16 +1213,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               showToast(`Logic tile #${logicId} is not registered — pick a tag in Logic Tags first.`);
               return;
             }
-            const painted = paintWorldCell(map, LOGIC_LAYER_IDX, r, c, logicId, worldSync);
-            if ('error' in painted) {
-              showToast(painted.error);
-              return;
+            const paintedOps: any[] = [];
+            for (const pt of coordsToPaint) {
+              const painted = paintWorldCell(map, LOGIC_LAYER_IDX, pt.r, pt.c, logicId, worldSync);
+              if (!('error' in painted)) {
+                paintedOps.push(painted.cell);
+                // A missing overlay means the engine was rebuilt under us; rebuild and retry.
+                if (!engine.updateLogicTile(pt.r, pt.c, logicId)) {
+                  engine.enableLogicGridOverlay(map.grid || []);
+                  engine.updateLogicTile(pt.r, pt.c, logicId);
+                }
+              }
             }
-            useEditorStore.getState().pushPaintOp([painted.cell]);
-            // A missing overlay means the engine was rebuilt under us; rebuild and retry.
-            if (!engine.updateLogicTile(r, c, logicId)) {
-              engine.enableLogicGridOverlay(map.grid || []);
-              engine.updateLogicTile(r, c, logicId);
+            if (paintedOps.length > 0) {
+              useEditorStore.getState().pushPaintOp(paintedOps);
             }
             return;
           }
@@ -1190,20 +1238,24 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
           }
 
-          const painted = paintWorldCell(
-            map,
-            target.layerIdx,
-            r,
-            c,
-            paintValue,
-            worldSync
-          );
-          if ('error' in painted) {
-            showToast(painted.error);
-            return;
+          const paintedOps: any[] = [];
+          for (const pt of coordsToPaint) {
+            const painted = paintWorldCell(
+              map,
+              target.layerIdx,
+              pt.r,
+              pt.c,
+              paintValue,
+              worldSync
+            );
+            if (!('error' in painted)) {
+              paintedOps.push(painted.cell);
+              engine.updateSingleTile(pt.r, pt.c, paintValue, target.layerIdx, map.tilesets);
+            }
           }
-          useEditorStore.getState().pushPaintOp([painted.cell]);
-          engine.updateSingleTile(r, c, paintValue, target.layerIdx, map.tilesets);
+          if (paintedOps.length > 0) {
+            useEditorStore.getState().pushPaintOp(paintedOps);
+          }
         }, {
           drag: true,
           isPanActive: () => useEditorStore.getState().brushMode === 'pan' || isSpaceHeldRef.current,
@@ -1217,7 +1269,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           onTileHover: (r, c) => {
             const store = useEditorStore.getState();
             store.setHoveredTile({ r, c });
-            if (store.brushMode === 'prefab' && store.activePrefabId) {
+            if ((store.brushMode === 'paste' || store.isPasting) && store.tileClipboard) {
+              const clip = store.tileClipboard;
+              engine.setSelectionPreview(r, c, r + clip.height - 1, c + clip.width - 1);
+            } else if (store.brushMode === 'prefab' && store.activePrefabId) {
               const prefab = store.prefabs.find((p) => p.id === store.activePrefabId);
               if (prefab) {
                 engine.setSelectionPreview(r, c, r + prefab.height - 1, c + prefab.width - 1);

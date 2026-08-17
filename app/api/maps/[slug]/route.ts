@@ -22,6 +22,7 @@ async function loadMapPayload(slug: string) {
     const rawGates = JSON.parse(worldMap.gatesData || "{}");
     const connections = rawGates.connections || undefined;
     const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
+    const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(dims.width / 2), y: Math.floor(dims.height / 2) };
     return {
       id: worldMap.id,
       gameId: worldMap.gameId,
@@ -31,6 +32,7 @@ async function loadMapPayload(slug: string) {
       grid: grid,
       gates: actualGates,
       connections: connections,
+      spawnPoint,
       npcs: JSON.parse(worldMap.npcsData || "[]"),
       encounterPool: JSON.parse(worldMap.encountersData || "[]"),
       tileLayers,
@@ -42,13 +44,17 @@ async function loadMapPayload(slug: string) {
 
   const gameMap = await prisma.gameMap.findUnique({ where: { id: slug } });
   if (gameMap) {
+    const rawGates = JSON.parse(gameMap.gates || "{}");
+    const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
+    const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(gameMap.width / 2), y: Math.floor(gameMap.height / 2) };
     return {
       id: gameMap.id,
       name: gameMap.name,
       width: gameMap.width,
       height: gameMap.height,
       grid: JSON.parse(gameMap.tilesetData || "[]"),
-      gates: JSON.parse(gameMap.gates || "{}"),
+      gates: actualGates,
+      spawnPoint,
       npcs: JSON.parse(gameMap.npcs || "[]"),
       encounterPool: JSON.parse(gameMap.encounters || "[]"),
       tileLayers: [],

@@ -1,15 +1,25 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { soundSynth } from '@/engine/sound-synth';
-import { Layers, Plus, Grid } from 'lucide-react';
+import { Layers, Plus, Grid, Trash2, Search, ImageIcon, X, Check, Info } from 'lucide-react';
+import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
+
+export interface TilesetMeta {
+  firstgid: number;
+  imageSource: string;
+  columns: number;
+  tilewidth: number;
+  tileheight: number;
+}
 
 interface TilesetPickerProps {
-  tilesets: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
+  tilesets: TilesetMeta[];
   activeBrushTileId: number;
   onBrushSelect: (gid: number) => void;
   activeLayerIdx: number;
   onLayerChange: (idx: number) => void;
   tileLayers: Array<{ name: string; grid: number[][] }>;
   onAddLayer: () => void;
+  onUpdateTilesets?: (tilesets: TilesetMeta[]) => void;
 }
 
 export default function TilesetPicker({
@@ -19,16 +29,120 @@ export default function TilesetPicker({
   activeLayerIdx,
   onLayerChange,
   tileLayers,
-  onAddLayer
+  onAddLayer,
+  onUpdateTilesets,
 }: TilesetPickerProps) {
   const [activeTsIdx, setActiveTsIdx] = useState(0);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
+  const [imgError, setImgError] = useState(false);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number } | null>(null);
-  const ts = tilesets[activeTsIdx];
+  const [tilesetSearch, setTilesetSearch] = useState('');
+  
+  // Asset Manager Add Tileset Modal
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [availableTilesetAssets, setAvailableTilesetAssets] = useState<GameAssetItem[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  const [assetSearchQuery, setAssetSearchQuery] = useState('');
+
+  const ts = tilesets && tilesets.length > 0 ? tilesets[Math.min(activeTsIdx, tilesets.length - 1)] : null;
   const imgRef = useRef<HTMLImageElement>(null);
 
+  // Listen for studio_add_tileset event from Asset Browser or other panels
+  useEffect(() => {
+    const handleAddEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ source: string; filename?: string }>;
+      if (customEvent.detail?.source) {
+        handleAddTilesetFromSource(customEvent.detail.source);
+      }
+    };
+    window.addEventListener('studio_add_tileset', handleAddEvent);
+    return () => window.removeEventListener('studio_add_tileset', handleAddEvent);
+  }, [tilesets, onUpdateTilesets]);
+
+  const fetchAvailableTilesetAssets = async () => {
+    setLoadingAssets(true);
+    try {
+      const manager = AssetManager.getInstance();
+      const res = await manager.searchAssets({
+        type: 'TILESET',
+        query: assetSearchQuery || undefined,
+        sortBy: 'source',
+        sortOrder: 'asc',
+      });
+      setAvailableTilesetAssets(res.items);
+    } catch (err) {
+      console.error('Failed to query tileset assets:', err);
+    } finally {
+      setLoadingAssets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAddModalOpen) {
+      void fetchAvailableTilesetAssets();
+    }
+  }, [isAddModalOpen, assetSearchQuery]);
+
+  const handleAddTilesetFromSource = (rawSource: string) => {
+    let normalized = rawSource.replace(/^\/game-assets\/tilesets\//i, '').replace(/^tilesets\//i, '');
+    if (normalized.startsWith('/')) normalized = normalized.substring(1);
+
+    // Check if already in active tilesets
+    const existingIdx = tilesets.findIndex((t) => t.imageSource.toLowerCase().includes(normalized.toLowerCase()));
+    if (existingIdx !== -1) {
+      setActiveTsIdx(existingIdx);
+      setIsAddModalOpen(false);
+      return;
+    }
+
+    // Calculate firstgid
+    let nextFirstGid = 1;
+    if (tilesets.length > 0) {
+      const last = tilesets[tilesets.length - 1];
+      const estimatedCount = (last.columns || 8) * 32;
+      nextFirstGid = last.firstgid + estimatedCount;
+    }
+
+    const newTileset: TilesetMeta = {
+      firstgid: nextFirstGid,
+      imageSource: normalized,
+      columns: 8,
+      tilewidth: 16,
+      tileheight: 16,
+    };
+
+    const updated = [...tilesets, newTileset];
+    onUpdateTilesets?.(updated);
+    setActiveTsIdx(updated.length - 1);
+    setNatural({ w: 0, h: 0 });
+    setImgError(false);
+    setIsAddModalOpen(false);
+    soundSynth?.playActionSound?.();
+  };
+
+  const handleRemoveTileset = (idx: number) => {
+    if (!tilesets[idx]) return;
+    const name = tilesets[idx].imageSource;
+    if (confirm(`Remove tileset "${name}" from this map? Tiles painted with this tileset will need to be repainted.`)) {
+      soundSynth?.playActionSound?.();
+      const updated = tilesets.filter((_, i) => i !== idx);
+      onUpdateTilesets?.(updated);
+      setActiveTsIdx(Math.max(0, idx - 1));
+      setNatural({ w: 0, h: 0 });
+      setImgError(false);
+    }
+  };
+
+  const filteredTilesets = useMemo(() => {
+    if (!tilesetSearch.trim()) return tilesets.map((t, idx) => ({ t, originalIdx: idx }));
+    const q = tilesetSearch.toLowerCase();
+    return tilesets
+      .map((t, idx) => ({ t, originalIdx: idx }))
+      .filter(({ t }) => t.imageSource.toLowerCase().includes(q));
+  }, [tilesets, tilesetSearch]);
+
   const selection = useMemo(() => {
-    if (!ts || !natural.w || !natural.h) return null;
+    if (!ts || imgError || !natural.w || !natural.h) return null;
     const local = activeBrushTileId - ts.firstgid;
     if (local < 0) return null;
     const maxLocal = Math.floor(natural.h / ts.tileheight) * ts.columns;
@@ -42,10 +156,10 @@ export default function TilesetPicker({
       heightPct: (ts.tileheight / natural.h) * 100,
       local,
     };
-  }, [ts, activeBrushTileId, natural]);
+  }, [ts, activeBrushTileId, natural, imgError]);
 
   const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    if (!ts || !imgRef.current) return;
+    if (!ts || imgError || !imgRef.current) return;
     const rect = imgRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -68,7 +182,7 @@ export default function TilesetPicker({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
-    if (!ts || !imgRef.current || !natural.w || !natural.h) return;
+    if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
     const rect = imgRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -103,23 +217,24 @@ export default function TilesetPicker({
         Click a tile below to set your brush, then click or drag on the map. Prefer solid grass (GID 17) for ground fills.
       </p>
 
+      {/* TILE LAYERS */}
       <div className="flex flex-col gap-1 bg-black/60 p-2 rounded-xl border border-amber-500/20">
         <div className="flex justify-between items-center mb-1">
-           <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1.5">
-             <Layers className="w-3.5 h-3.5" />
-             TILE LAYERS
-           </span>
-           <button
-             type="button"
-             onClick={() => {
-               soundSynth?.playActionSound?.();
-               onAddLayer();
-             }}
-             className="text-[10px] bg-amber-600 hover:bg-amber-500 text-black font-bold px-2 py-0.5 rounded transition-colors cursor-pointer flex items-center gap-1"
-           >
-             <Plus className="w-3 h-3" />
-             Layer
-           </button>
+          <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5" />
+            TILE LAYERS
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playActionSound?.();
+              onAddLayer();
+            }}
+            className="text-[10px] bg-amber-600 hover:bg-amber-500 text-black font-bold px-2 py-0.5 rounded transition-colors cursor-pointer flex items-center gap-1"
+          >
+            <Plus className="w-3 h-3" />
+            Layer
+          </button>
         </div>
         {tileLayers.map((layer, idx) => (
           <button 
@@ -141,28 +256,88 @@ export default function TilesetPicker({
         ))}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-[10px] font-bold text-amber-400/80 flex items-center gap-1.5">
-          <Grid className="w-3 h-3 text-amber-400" />
-          ACTIVE TILESET
-        </label>
-        <select 
-          value={activeTsIdx} 
-          onChange={(e) => {
-            soundSynth?.playUiClick?.();
-            setActiveTsIdx(parseInt(e.target.value));
-            setNatural({ w: 0, h: 0 });
-            setHoveredTile(null);
-          }}
-          className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-amber-400 cursor-pointer"
-        >
-          {tilesets.map((t, i) => (
-            <option key={i} value={i}>{t.imageSource}</option>
-          ))}
-        </select>
+      {/* ACTIVE TILESET HEADER & CONTROLS */}
+      <div className="flex flex-col gap-1 bg-black/60 p-2 rounded-xl border border-amber-500/20">
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-[10px] font-bold text-amber-400/80 flex items-center gap-1.5">
+            <Grid className="w-3 h-3 text-amber-400" />
+            ACTIVE TILESETS ({tilesets.length})
+          </label>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playActionSound?.();
+                setIsAddModalOpen(true);
+              }}
+              className="text-[10px] bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 font-bold px-2 py-0.5 rounded flex items-center gap-1 transition cursor-pointer"
+              title="Add Tileset from Asset Catalog"
+            >
+              <Plus className="w-3 h-3" /> Add Tileset
+            </button>
+            {ts && (
+              <button
+                type="button"
+                onClick={() => handleRemoveTileset(activeTsIdx)}
+                className="text-[10px] text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/20 p-1 rounded transition cursor-pointer"
+                title="Remove current tileset from map"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Search */}
+        {tilesets.length > 3 && (
+          <div className="relative mb-1">
+            <Search className="w-3 h-3 absolute left-2 top-2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search tilesets in map..."
+              value={tilesetSearch}
+              onChange={(e) => setTilesetSearch(e.target.value)}
+              className="w-full bg-[#050b14] border border-slate-700 rounded-lg pl-6 pr-2 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-amber-400"
+            />
+          </div>
+        )}
+
+        {filteredTilesets.length > 0 ? (
+          <select 
+            value={activeTsIdx} 
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setActiveTsIdx(parseInt(e.target.value));
+              setNatural({ w: 0, h: 0 });
+              setHoveredTile(null);
+              setImgError(false);
+            }}
+            className="w-full bg-[#050b14] border border-amber-500/30 rounded-lg px-2.5 py-1.5 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            {filteredTilesets.map(({ t, originalIdx }) => (
+              <option key={originalIdx} value={originalIdx}>
+                {t.imageSource} (GID {t.firstgid}+)
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="text-[11px] text-amber-300/70 italic px-2 py-1.5 bg-black/40 border border-amber-500/20 rounded-lg flex items-center justify-between">
+            <span>{tilesets.length === 0 ? 'No tilesets in active map' : 'No matching tilesets'}</span>
+            {tilesets.length === 0 && (
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(true)}
+                className="text-[10px] font-bold text-amber-400 underline cursor-pointer"
+              >
+                + Add One
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {ts && (
+      {/* PIXEL CANVAS / PREVIEW */}
+      {ts && !imgError ? (
         <div className="bg-black/80 rounded-xl border border-amber-500/30 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
            <div className="relative inline-block min-w-full">
              <img 
@@ -192,15 +367,12 @@ export default function TilesetPicker({
                onLoad={(e) => {
                  const el = e.currentTarget;
                  setNatural({ w: el.naturalWidth, h: el.naturalHeight });
+                 setImgError(false);
                }}
                className="cursor-crosshair w-full"
                style={{ imageRendering: 'pixelated', minWidth: `${ts.columns * ts.tilewidth}px` }}
-               onError={(e) => {
-                 const el = e.currentTarget;
-                 if (!el.dataset.fallback) {
-                   el.dataset.fallback = '1';
-                   el.src = `/game-assets/tilesets/Terrain_by_George.png`;
-                 }
+               onError={() => {
+                 setImgError(true);
                }}
              />
              {hoveredTile && (
@@ -228,18 +400,146 @@ export default function TilesetPicker({
              )}
            </div>
         </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-amber-500/20 bg-black/40 text-center gap-2 mt-1">
+          <p className="text-xs text-amber-200/90 font-bold">
+            {tilesets && tilesets.length > 0 ? 'Tileset Image Unavailable' : 'No Tilesets Installed'}
+          </p>
+          <p className="text-[10px] text-slate-400 leading-relaxed max-w-[220px]">
+            {tilesets && tilesets.length > 0
+              ? `Could not load ${ts?.imageSource || 'image'}. Upload or install assets to paint visual tiles.`
+              : 'This realm currently has 0 tilesets. Install bundled assets or upload custom sheets from Asset Browser.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="mt-1 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition cursor-pointer"
+          >
+            Browse & Add Tilesets
+          </button>
+        </div>
+      )}
+
+      {/* METADATA STRIP */}
+      {ts && natural.w > 0 && (
+        <div className="flex items-center justify-between text-[9px] text-slate-400 px-2 py-1 bg-black/40 rounded border border-slate-800">
+          <span>{natural.w}×{natural.h}px ({ts.columns} cols)</span>
+          <span>GID {ts.firstgid}..{ts.firstgid + Math.floor(natural.h / ts.tileheight) * ts.columns - 1}</span>
+        </div>
       )}
       
+      {/* ACTIVE BRUSH FOOTER */}
       <div className="flex justify-between items-center text-[10px] text-amber-200 bg-[#0b1320] border border-amber-500/20 p-2 rounded-lg">
         <span className="font-bold">Active Brush GID:</span>
         <div className="flex items-center gap-2">
-          {hoveredTile && (
+          {hoveredTile && !imgError && (
             <span className="text-[10px] text-cyan-400 font-bold">Hover: GID {hoveredTile.gid}</span>
           )}
           <span className="font-bold text-black bg-amber-400 px-2 py-0.5 rounded shadow">{activeBrushTileId}</span>
         </div>
       </div>
+
+      {/* ADD TILESET FROM ASSET CATALOG MODAL */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-purple-500/40 bg-[#050b14] p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
+                <ImageIcon className="w-4 h-4 text-purple-400" />
+                <span>Add Tileset to Active Map</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search filter in catalog */}
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search tileset assets..."
+                value={assetSearchQuery}
+                onChange={(e) => setAssetSearchQuery(e.target.value)}
+                className="w-full bg-[#0b1320] border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+
+            {/* Asset List Grid */}
+            <div className="flex-1 overflow-y-auto space-y-2 max-h-[350px] pr-1 custom-scrollbar">
+              {loadingAssets ? (
+                <div className="text-center py-8 text-xs text-slate-500">Querying asset manager...</div>
+              ) : availableTilesetAssets.length === 0 ? (
+                <div className="text-center py-8 text-xs text-slate-400 space-y-2">
+                  <p>No tileset assets match your search.</p>
+                  <p className="text-[10px] text-slate-500">Upload new tilesets in Asset Manager or install bundled packs in Setup.</p>
+                </div>
+              ) : (
+                availableTilesetAssets.map((asset) => {
+                  const filename = asset.source.split('/').pop() || asset.id;
+                  const isAlreadyAdded = tilesets.some((t) => t.imageSource.toLowerCase().includes(filename.toLowerCase()));
+                  return (
+                    <div
+                      key={asset.id}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between transition ${
+                        isAlreadyAdded
+                          ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-200'
+                          : 'bg-[#0b1320] border-slate-800 hover:border-amber-500/40 hover:bg-black/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-black/60 border border-slate-800 flex items-center justify-center p-1 shrink-0">
+                          <img
+                            src={asset.source}
+                            alt=""
+                            className="max-w-full max-h-full object-contain"
+                            style={{ imageRendering: 'pixelated' }}
+                          />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-white truncate">{filename}</span>
+                          <span className="text-[10px] text-slate-400 truncate">{asset.source}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        {isAlreadyAdded ? (
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-500/40 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> In Map
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleAddTilesetFromSource(asset.source)}
+                            className="text-xs font-bold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black px-3 py-1.5 rounded-lg shadow transition cursor-pointer"
+                          >
+                            + Add to Map
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400">
+              <span>{availableTilesetAssets.length} tilesets available in library</span>
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-3 py-1 text-xs text-slate-300 hover:text-white"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
