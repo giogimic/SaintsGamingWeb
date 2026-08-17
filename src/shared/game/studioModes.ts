@@ -34,7 +34,8 @@ export type StudioDockId =
   | 'spawner'
   | 'prefab'
   | 'atlas'
-  | 'problems';
+  | 'problems'
+  | 'gameplay';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -160,5 +161,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   problems: {
     label: 'Problems',
     blurb: 'Live validation diagnostics, broken warps, and entity collision checks.',
+  },
+  gameplay: {
+    label: 'Gameplay Hub',
+    blurb: 'Abilities, status conditions, 27-skill matrix, professions, and combat balance simulations.',
   },
 };

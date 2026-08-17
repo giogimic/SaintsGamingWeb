@@ -1,3 +1,8 @@
+## [2.1.309] - 2026-08-17
+### Added & Documented
+- **Studio Dock Registration & Role Permissions (`studioModes.ts`, `studioPermissions.ts`, `editor-store.ts`):**
+  - Fully wired the `gameplay` dock into the Studio workspace modes, floating panel geometry store, and role-permission matrices.
+
 ## [2.1.308] - 2026-08-17
 ### Added & Documented
 - **Studio Gameplay Panels Hub (`GameplayStudioPanels.tsx`):**
