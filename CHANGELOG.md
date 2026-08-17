@@ -1,3 +1,10 @@
+## [2.1.304] - 2026-08-17
+### Added & Documented
+- **Canonical Profession Registry Engine (`professionRegistry.ts`):**
+  - Implemented the master `ProfessionDef` schema and mapping engine (Gameplay Bible 25 §3.6) covering Blacksmithing, Culinary Arts, Artisan Crafting, Apothecary, Lumber Harvesting, Geology/Mining, Angling, and Agronomy.
+  - Linked gathering and crafting professions to primary skills, world station tags (`anvil`, `furnace`, `range`, `workbench`, `alchemy_table`), and recipe domains.
+  - Added automated unit test suite in `professionRegistry.test.ts`.
+
 ## [2.1.303] - 2026-08-17
 ### Added & Documented
 - **Canonical SkillDef & XpCurveDef Registry Engine (`skillRegistry.ts`):**
