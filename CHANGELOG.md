@@ -11,6 +11,8 @@
   - **Realm Settings modal containment (`RealmSettingsModal.tsx`)**: Added viewport-bounded modal height and internal scrolling to prevent controls from rendering off-screen.
 - **Character-Select Chat Duplicate Mitigation:**
   - **Chat bridge dedupe (`src/web/components/the-lobby/index.tsx`)**: Added canonical event dispatch + short-lived dedupe key cache across chat channels (`player_chat`, `global_chat_msg`, `chat_message`) to reduce duplicate feed lines.
+- **Character Creation Setup-Default Map Alignment:**
+  - **Spawn map resolution (`character-creator.tsx`)**: New characters now respect setup's persisted `defaultMapId` from `/api/setup/status` (including `STARTING_MAP` blank-canvas intent) before hub fallback heuristics, preventing unintended demo-map starts on fresh installs.
 
 ## [2.1.343] - 2026-08-17
 ### Added & Fixed
