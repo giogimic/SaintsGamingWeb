@@ -1,3 +1,11 @@
+## [2.1.322] - 2026-08-17
+### Added & Documented
+- **Dynamic World Hub & Unstuck Teleport System (`worldSpawns.ts`, `GameOptionsMenu.tsx`, `the-lobby/index.tsx`, `character-creator.tsx`):**
+  - **Dynamic New Character Spawns**: New characters now dynamically query the active world maps index and spawn on the active lobby hub instead of defaulting to `DEMO_SANDBOX`.
+  - **Automatic Hub Recovery for Deleted Maps**: When a saved map is deleted or removed from the database, characters logging in from that map are automatically routed to the current world lobby hub with safe coordinates.
+  - **Unstuck Teleport Feature**: Added an **Unstuck Teleport** option in the ESC / Game Options Menu (`GameOptionsMenu.tsx`) featuring a 5-second channeling timer, 5-minute cooldown between uses, and instant relocation to the world lobby spawn.
+  - **Demo Auto-Seeding Guard**: Updated `DemoBootstrap.ts` to skip re-creating `DEMO_SANDBOX` on startup if custom world maps exist in the database.
+
 ## [2.1.321] - 2026-08-17
 ### Added & Documented
 - **World Management & Gate Placement Enhancements (`StudioContextMenu.tsx`, `api/maps/[slug]/route.ts`):**

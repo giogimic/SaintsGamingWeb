@@ -242,9 +242,29 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     const hero =
       starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
       starterHeroes.find((h) => h.classId === classId && h.spriteKey === spriteId);
-    const startMap = hero?.startingMap || 'DEMO_SANDBOX';
-    const startX = hero?.startingX ?? 14;
-    const startY = hero?.startingY ?? 15;
+
+    // Dynamic spawn resolution: Use hero starting map if specified, otherwise query available maps index.
+    let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' ? hero.startingMap : '';
+    let startX = hero?.startingX ?? 15;
+    let startY = hero?.startingY ?? 15;
+
+    if (!startMap) {
+      try {
+        const mapListRes = await fetch('/api/maps');
+        if (mapListRes.ok) {
+          const mapData = await mapListRes.json();
+          const maps = mapData.maps || [];
+          if (maps.length > 0) {
+            // Find map designated as lobby or fallback to first available map
+            const lobbyMap = maps.find((m: any) => m.id === 'LOBBY' || m.id.toLowerCase().includes('lobby') || m.id.toLowerCase().includes('hub')) || maps[0];
+            startMap = lobbyMap.id;
+          }
+        }
+      } catch {
+        /* fallback below */
+      }
+    }
+    if (!startMap) startMap = 'LOBBY';
 
     const isSpyder = selectedHeroSlug === 'spyder_tamer' || startMap === 'AZURE_TOWN';
     const initialState = {
