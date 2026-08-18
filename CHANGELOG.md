@@ -13,6 +13,9 @@
   - **Chat bridge dedupe (`src/web/components/the-lobby/index.tsx`)**: Added canonical event dispatch + short-lived dedupe key cache across chat channels (`player_chat`, `global_chat_msg`, `chat_message`) to reduce duplicate feed lines.
 - **Character Creation Setup-Default Map Alignment:**
   - **Spawn map resolution (`character-creator.tsx`)**: New characters now respect setup's persisted `defaultMapId` from `/api/setup/status` (including `STARTING_MAP` blank-canvas intent) before hub fallback heuristics, preventing unintended demo-map starts on fresh installs.
+- **Setup Access Authentication Lock:**
+  - **Setup page gate (`app/(main)/setup/page.tsx`)**: Setup wizard now requires an authenticated session and redirects unauthenticated users to login with `callbackUrl=/setup`.
+  - **Setup mutation API gates (`app/api/setup/import/route.ts`, `app/api/setup/complete/route.ts`, `app/api/setup/assets/route.ts`)**: Added explicit `401 Unauthorized` responses when no authenticated session exists, preventing pre-login setup execution.
 
 ## [2.1.343] - 2026-08-17
 ### Added & Fixed
