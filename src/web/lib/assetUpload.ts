@@ -7,6 +7,14 @@
 
 import { prisma } from "@/web/lib/prisma";
 import { uploadFile } from "@/web/lib/upload";
+import {
+  AssetImportProfileId,
+  getDefaultSlotRole,
+  inferCategoryForRole,
+  inferTypeForProfile,
+  isValidAssetImportProfile,
+  isValidSlotRole,
+} from "@/shared/game/assetImportProfiles";
 
 export interface AssetIngestOptions {
   userId: string;
@@ -20,6 +28,10 @@ export interface AssetIngestOptions {
   width?: number;
   height?: number;
   visibility?: 'PERSONAL' | 'PROJECT' | 'COMMUNITY' | 'PUBLIC';
+  importProfile?: string;
+  slotRole?: string;
+  bundleId?: string;
+  sourceMode?: "single" | "multi" | "spritesheet";
 }
 
 export interface AssetIngestResult {
@@ -47,6 +59,27 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
     const mimeType = uploadRes.mimeType || file.type || "application/octet-stream";
     const width = options.width || 32;
     const height = options.height || 32;
+    const sourceMode = options.sourceMode || "single";
+
+    let importProfile: AssetImportProfileId | null = null;
+    if (options.importProfile?.trim()) {
+      const requestedProfile = options.importProfile.trim().toLowerCase();
+      if (!isValidAssetImportProfile(requestedProfile)) {
+        return { success: false, error: `Unsupported import profile: ${options.importProfile}` };
+      }
+      importProfile = requestedProfile;
+    }
+
+    let slotRole: string | null = null;
+    if (importProfile) {
+      slotRole = options.slotRole?.trim() || getDefaultSlotRole(importProfile);
+      if (!isValidSlotRole(importProfile, slotRole)) {
+        return {
+          success: false,
+          error: `Role \"${slotRole}\" is not valid for profile \"${importProfile}\".`,
+        };
+      }
+    }
 
     // 1. Create SourceAsset record
     const sourceAsset = await prisma.sourceAsset.create({
@@ -63,6 +96,10 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
           originalName: file.name,
           uploadedAt: new Date().toISOString(),
           storage: uploadRes.storage || "local",
+          importProfile,
+          slotRole,
+          bundleId: options.bundleId || null,
+          sourceMode,
         }),
       },
     });
@@ -72,15 +109,33 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
     // 2. Optionally create default UsableAsset if requested (for single asset uploads)
     if (createUsable) {
       const assetName = options.name || filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-      const assetType = options.type || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT");
-      const tagsJson = JSON.stringify(options.tags || [gameId, assetType.toLowerCase()]);
+      const inferredType = importProfile ? inferTypeForProfile(importProfile) : null;
+      const assetType = (options.type || inferredType || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT")).toUpperCase();
+      const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
+      const assetCategory = options.category || inferredCategory || null;
+
+      const baseTags = options.tags || [];
+      const enrichedTags = Array.from(
+        new Set(
+          [
+            ...baseTags,
+            gameId,
+            assetType.toLowerCase(),
+            importProfile ? `profile:${importProfile}` : "",
+            slotRole ? `role:${slotRole}` : "",
+            options.bundleId ? `bundle:${options.bundleId}` : "",
+            `source:${sourceMode}`,
+          ].filter(Boolean)
+        )
+      );
+      const tagsJson = JSON.stringify(enrichedTags);
 
       usableAsset = await prisma.usableAsset.create({
         data: {
           sourceAssetId: sourceAsset.id,
           name: assetName,
           type: assetType.toUpperCase(),
-          category: options.category || null,
+          category: assetCategory,
           tags: tagsJson,
           width,
           height,

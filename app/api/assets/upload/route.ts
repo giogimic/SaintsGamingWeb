@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/web/lib/prisma";
 import { ingestAsset } from "@/web/lib/assetUpload";
+import {
+  AssetImportProfileId,
+  getMissingRequiredRoles,
+  isValidAssetImportProfile,
+  isValidSlotRole,
+} from "@/shared/game/assetImportProfiles";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +59,74 @@ export async function POST(req: NextRequest) {
     const visibility = (formData.get("visibility") as any) || "COMMUNITY";
     const width = Number(formData.get("width")) || undefined;
     const height = Number(formData.get("height")) || undefined;
+    const importProfileRaw = (formData.get("importProfile") as string | null)?.trim().toLowerCase() || "";
+    const slotRoleRaw = (formData.get("slotRole") as string | null)?.trim() || "";
+    const bundleId = (formData.get("bundleId") as string | null)?.trim() || undefined;
+    const sourceModeRaw = (formData.get("sourceMode") as string | null)?.trim().toLowerCase();
+    const strictRequiredRoles = formData.get("strictRequiredRoles") === "true";
+    const roleAssignmentsRaw = (formData.get("roleAssignments") as string | null)?.trim();
+
+    let assignedRoles: string[] = [];
+    if (slotRoleRaw) {
+      assignedRoles.push(slotRoleRaw);
+    }
+    if (roleAssignmentsRaw) {
+      try {
+        const parsed = JSON.parse(roleAssignmentsRaw);
+        if (Array.isArray(parsed)) {
+          assignedRoles = assignedRoles.concat(
+            parsed
+              .map((entry) => {
+                if (typeof entry === "string") {
+                  return entry;
+                }
+                if (entry && typeof entry === "object" && typeof entry.slotRole === "string") {
+                  return entry.slotRole;
+                }
+                return "";
+              })
+              .filter(Boolean)
+          );
+        }
+      } catch {
+        // Ignore malformed role assignment blobs to preserve backward compatibility.
+      }
+    }
+
+    let importProfile: AssetImportProfileId | null = null;
+    if (importProfileRaw) {
+      if (!isValidAssetImportProfile(importProfileRaw)) {
+        return NextResponse.json(
+          { success: false, error: `Unsupported import profile: ${importProfileRaw}` },
+          { status: 400 }
+        );
+      }
+      importProfile = importProfileRaw;
+    }
+
+    if (importProfile && slotRoleRaw && !isValidSlotRole(importProfile, slotRoleRaw)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Role \"${slotRoleRaw}\" is not valid for profile \"${importProfile}\".`,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (importProfile && strictRequiredRoles) {
+      const missingRoles = getMissingRequiredRoles(importProfile, assignedRoles);
+      if (missingRoles.length > 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Missing required roles for profile \"${importProfile}\": ${missingRoles.join(", ")}`,
+            missingRoles,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const result = await ingestAsset({
       userId: session.user.id,
@@ -67,6 +140,13 @@ export async function POST(req: NextRequest) {
       visibility,
       width,
       height,
+      importProfile: importProfile || undefined,
+      slotRole: slotRoleRaw || undefined,
+      bundleId,
+      sourceMode:
+        sourceModeRaw === "multi" || sourceModeRaw === "spritesheet" || sourceModeRaw === "single"
+          ? sourceModeRaw
+          : undefined,
     });
 
     if (!result.success) {
