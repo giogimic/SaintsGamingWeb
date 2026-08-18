@@ -1,15 +1,26 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Scissors, Grid, Square, Plus, Trash2, CheckCircle2, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Scissors, Grid, Square, Trash2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
+import {
+  ASSET_IMPORT_PROFILE_META,
+  AssetImportProfileId,
+  getDefaultSlotRole,
+  inferCategoryForRole,
+  inferTypeForProfile,
+  listAssetImportProfiles,
+  listSlotRolesForProfile,
+} from '@/shared/game/assetImportProfiles';
 
 export interface SlicedRegion {
   id: string;
   name: string;
   type: string;
   category: string;
+  importProfile: AssetImportProfileId | '';
+  slotRole: string;
   x: number;
   y: number;
   w: number;
@@ -42,6 +53,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
   const [sliceMode, setSliceMode] = useState<'grid' | 'box'>('grid');
   const [gridSize, setGridSize] = useState<number>(32);
   const [scale, setScale] = useState<number>(2);
+  const [importProfile, setImportProfile] = useState<AssetImportProfileId>('character');
 
   // Region Selection State
   const [regions, setRegions] = useState<SlicedRegion[]>([]);
@@ -53,6 +65,16 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState<number | null>(null);
+
+  const getProfileDefaults = (profile: AssetImportProfileId) => {
+    const role = getDefaultSlotRole(profile);
+    return {
+      importProfile: profile,
+      slotRole: role,
+      type: inferTypeForProfile(profile),
+      category: inferCategoryForRole(role) || 'sprite',
+    };
+  };
 
   // Load image
   useEffect(() => {
@@ -152,8 +174,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
         const newRegion: SlicedRegion = {
           id: `slice_${Date.now() % 10000}`,
           name: `cell_${cellX}_${cellY}`,
-          type: 'CHARACTER',
-          category: 'sprite',
+          ...getProfileDefaults(importProfile),
           x: cellX,
           y: cellY,
           w: gridSize,
@@ -196,8 +217,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
       const newRegion: SlicedRegion = {
         id: `box_${Date.now() % 10000}`,
         name: `region_${currentBox.x}_${currentBox.y}`,
-        type: 'OBJECT',
-        category: 'prop',
+        ...getProfileDefaults(importProfile),
         x: currentBox.x,
         y: currentBox.y,
         w: currentBox.w,
@@ -233,8 +253,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
         newRegions.push({
           id: `cell_${count++}`,
           name: `frame_${count}`,
-          type: 'CHARACTER',
-          category: 'sprite',
+          ...getProfileDefaults(importProfile),
           x,
           y,
           w: Math.min(gridSize, w - x),
@@ -265,10 +284,16 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
     try {
       const payload = {
         sourceAssetId: sourceId,
+        importProfile,
+        mode: 'spritesheet',
+        strictRequiredRoles: false,
         regions: regions.map((r) => ({
           name: r.name,
           type: r.type,
           category: r.category,
+          importProfile: r.importProfile || importProfile,
+          slotRole: r.slotRole,
+          sourceMode: 'spritesheet',
           sourceRegion: { x: r.x, y: r.y, w: r.w, h: r.h },
           facing: r.facing,
           animationState: r.animationState,
@@ -354,6 +379,23 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                   placeholder="CUID from SourceAsset table"
                   className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
                 />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Import Profile</label>
+                <select
+                  value={importProfile}
+                  onChange={(e) => {
+                    const nextProfile = e.target.value as AssetImportProfileId;
+                    setImportProfile(nextProfile);
+                  }}
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                >
+                  {listAssetImportProfiles().map((profile) => (
+                    <option key={profile} value={profile}>
+                      {ASSET_IMPORT_PROFILE_META[profile].label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -480,6 +522,33 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                         className="bg-transparent border-b border-slate-700 px-1 text-white text-[11px] flex-1"
                         placeholder="Slice Name"
                       />
+                      <select
+                        value={r.slotRole}
+                        onChange={(e) => {
+                          const nextRole = e.target.value;
+                          setRegions((prev) =>
+                            prev.map((item) => {
+                              if (item.id !== r.id) {
+                                return item;
+                              }
+
+                              const inferredCategory = inferCategoryForRole(nextRole);
+                              return {
+                                ...item,
+                                slotRole: nextRole,
+                                category: inferredCategory || item.category,
+                              };
+                            })
+                          );
+                        }}
+                        className="bg-[#050b14] border border-slate-700 rounded px-1 text-[10px] text-slate-200"
+                      >
+                        {listSlotRolesForProfile((r.importProfile || importProfile) as AssetImportProfileId).map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </select>
                       <select
                         value={r.facing}
                         onChange={(e) => {

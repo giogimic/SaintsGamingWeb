@@ -1,3 +1,20 @@
+## [2.1.345] - 2026-08-18
+### Added & Fixed
+- **Profile-Driven Asset Import Foundation (Phase 1 Implementation Start):**
+  - **Shared import profile contract (`src/shared/game/assetImportProfiles.ts`)**: Added canonical profile metadata (`character`, `creature`, `item`, `tile`, `ui`, `effect`) with required/optional slot roles plus deterministic helper APIs for profile/role validation and type/category inference.
+  - **Required-slot validation utility (`assetImportProfiles.ts`)**: Added `getMissingRequiredRoles` helper to support strict role coverage checks in import-critical flows.
+- **Upload Ingestion Role Metadata Wiring:**
+  - **Upload API payload expansion (`app/api/assets/upload/route.ts`)**: Added support for `importProfile`, `slotRole`, `bundleId`, `sourceMode`, optional `roleAssignments`, and strict required-role checks with actionable 400 errors.
+  - **Ingestion normalization (`src/web/lib/assetUpload.ts`)**: Added profile-aware normalization for asset type/category/tags and source metadata (`profile:*`, `role:*`, `bundle:*`, `source:*`) while preserving legacy behavior when profile metadata is omitted.
+- **Spritesheet Slice Pipeline Profile Wiring:**
+  - **Slice API validation & inference (`app/api/assets/slice/route.ts`)**: Added per-region profile-role validation, optional strict required-role enforcement, and inferred type/category/tag enrichment for sliced usable assets.
+  - **Slicer client payload updates (`SpritesheetSlicer.tsx`)**: Region payloads now include `importProfile` and `slotRole` metadata for end-to-end role-aware slicing.
+- **Editor Upload/Slicer UI Profile Controls:**
+  - **Asset uploader profile controls (`AssetUploadView.tsx`)**: Added import profile and slot role selectors with automatic type/category defaults from role metadata.
+  - **Slicer profile defaults (`SpritesheetSlicer.tsx`)**: New slices now seed type/category/role from selected profile and allow per-region role adjustments.
+- **Validation & Test Coverage:**
+  - **Profile helper unit tests (`assetImportProfiles.test.ts`)**: Added coverage for profile validation, slot-role validation, deterministic inference behavior, and required-role gap detection.
+
 ## [2.1.344] - 2026-08-17
 ### Added & Fixed
 - **Setup Completion Determinism & Fresh-Install Loop Fixes:**

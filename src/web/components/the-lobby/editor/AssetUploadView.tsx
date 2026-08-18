@@ -4,6 +4,16 @@ import React, { useState, useRef } from 'react';
 import { Upload, Image as ImageIcon, Music, Box, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
+import {
+  ASSET_IMPORT_PROFILE_META,
+  AssetImportProfileId,
+  getDefaultSlotRole,
+  inferCategoryForRole,
+  inferTypeForProfile,
+  isValidSlotRole,
+  listAssetImportProfiles,
+  listSlotRolesForProfile,
+} from '@/shared/game/assetImportProfiles';
 
 const ASSET_TYPES = [
   { value: 'OBJECT', label: 'Object / Prop (Furniture, Trees, Rocks)', icon: Box },
@@ -29,6 +39,8 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
   const [assetName, setAssetName] = useState('');
   const [assetType, setAssetType] = useState('OBJECT');
   const [category, setCategory] = useState('');
+  const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>('');
+  const [slotRole, setSlotRole] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [visibility, setVisibility] = useState('COMMUNITY');
   const [createUsable, setCreateUsable] = useState(true);
@@ -50,8 +62,8 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
       setAssetName(cleanName);
     }
 
-    // Auto-detect audio vs image
-    if (file.type.startsWith('audio/')) {
+    // Auto-detect audio vs image only when profile is not pinned.
+    if (!importProfile && file.type.startsWith('audio/')) {
       setAssetType('AUDIO');
     }
 
@@ -91,6 +103,9 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
       formData.append('file', selectedFile);
       formData.append('name', assetName.trim() || selectedFile.name);
       formData.append('type', assetType);
+      if (importProfile) formData.append('importProfile', importProfile);
+      if (slotRole) formData.append('slotRole', slotRole);
+      formData.append('sourceMode', 'single');
       if (category.trim()) formData.append('category', category.trim().toLowerCase());
       if (tagsInput.trim()) {
         const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
@@ -125,6 +140,8 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     setSelectedFile(null);
     setPreviewUrl(null);
     setAssetName('');
+    setImportProfile('');
+    setSlotRole('');
     setCategory('');
     setTagsInput('');
     setUploadSuccess(null);
@@ -223,6 +240,68 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
 
             <div className="grid grid-cols-2 gap-2">
               <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Import Profile</label>
+                <select
+                  value={importProfile}
+                  onChange={(e) => {
+                    const nextProfile = e.target.value as AssetImportProfileId | '';
+                    setImportProfile(nextProfile);
+                    if (!nextProfile) {
+                      setSlotRole('');
+                      return;
+                    }
+
+                    const inferredType = inferTypeForProfile(nextProfile);
+                    setAssetType(inferredType);
+                    const nextRole = getDefaultSlotRole(nextProfile);
+                    setSlotRole(nextRole);
+
+                    if (!category.trim()) {
+                      const inferredCategory = inferCategoryForRole(nextRole);
+                      if (inferredCategory) {
+                        setCategory(inferredCategory);
+                      }
+                    }
+                  }}
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                >
+                  <option value="">None (legacy/manual)</option>
+                  {listAssetImportProfiles().map((profile) => (
+                    <option key={profile} value={profile}>
+                      {ASSET_IMPORT_PROFILE_META[profile].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Slot Role</label>
+                <select
+                  value={slotRole}
+                  onChange={(e) => {
+                    const nextRole = e.target.value;
+                    setSlotRole(nextRole);
+                    if (nextRole && !category.trim()) {
+                      const inferredCategory = inferCategoryForRole(nextRole);
+                      if (inferredCategory) {
+                        setCategory(inferredCategory);
+                      }
+                    }
+                  }}
+                  disabled={!importProfile}
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs disabled:opacity-50"
+                >
+                  {!importProfile && <option value="">Select profile first</option>}
+                  {importProfile &&
+                    listSlotRolesForProfile(importProfile).map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-[10px] text-slate-400 mb-1">Asset Classification</label>
                 <select
                   value={assetType}
@@ -246,6 +325,12 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                   placeholder="e.g. vegetation, prop, weapon"
                   className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
                 />
+              </div>
+
+              <div className="col-span-2 text-[10px] text-slate-500">
+                {importProfile && slotRole && isValidSlotRole(importProfile, slotRole)
+                  ? `Mapped role ${slotRole} under ${ASSET_IMPORT_PROFILE_META[importProfile].label}.`
+                  : 'Profile-role mapping is optional; leave blank for legacy freeform uploads.'}
               </div>
             </div>
 
