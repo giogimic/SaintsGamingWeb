@@ -10,10 +10,8 @@ import {
   Folder,
   CheckSquare,
   Square,
-  Sparkles,
   Copy,
   Scissors,
-  ExternalLink,
   Layers,
   ImageIcon,
   Sword,
@@ -21,8 +19,6 @@ import {
   Music,
   Check,
   Package,
-  ZoomIn,
-  ZoomOut,
   SlidersHorizontal,
   Plus,
   LayoutGrid,
@@ -49,6 +45,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [subcategoryFilter, setSubcategoryFilter] = useState<string>('ALL');
   const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
@@ -67,9 +64,16 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   const [newTagInput, setNewTagInput] = useState('');
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setPage(0);
     void fetchAssets(0, false);
-  }, [typeFilter, subcategoryFilter, searchQuery, selectedTag, packFilter]);
+  }, [typeFilter, subcategoryFilter, debouncedSearchQuery, selectedTag, packFilter]);
 
   const fetchAssets = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
@@ -85,7 +89,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
       const res = await manager.searchAssets(
         {
           type: isSheetFilter ? undefined : (typeFilter === 'ALL' ? undefined : typeFilter),
-          query: searchQuery || undefined,
+          query: debouncedSearchQuery || undefined,
           tags: tagsToQuery.length > 0 ? tagsToQuery : undefined,
           pack: packFilter === 'ALL' ? undefined : packFilter,
           sortBy: 'source',

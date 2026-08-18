@@ -3,6 +3,35 @@ import { prisma } from "@/web/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+function normalizeJsonArray(value: string | null): string[] {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeJsonObject(value: string | null): Record<string, unknown> {
+  try {
+    const parsed = JSON.parse(value || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function formatAsset(asset: any) {
+  return {
+    ...asset,
+    tags: normalizeJsonArray(asset.tags),
+    categories: normalizeJsonArray(asset.categories),
+    metadata: normalizeJsonObject(asset.metadata),
+    atlasFrame: asset.atlasFrame ? normalizeJsonObject(asset.atlasFrame) : null,
+    customLabels: asset.customLabels ? normalizeJsonObject(asset.customLabels) : null,
+  };
+}
+
 /**
  * GET /api/assets — Browse usable asset catalog
  * Query params:
@@ -18,10 +47,24 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
     const gameId = searchParams.get("gameId");
-    const search = searchParams.get("search");
-    const category = searchParams.get("category");
+    const query = (searchParams.get("query") || searchParams.get("search") || "").trim();
+    const pack = (searchParams.get("pack") || "").trim();
+    const sortBy = (searchParams.get("sortBy") || "source").trim();
+    const sortOrder = (searchParams.get("sortOrder") || "asc").toLowerCase() === "desc" ? "desc" : "asc";
+    const tags = (searchParams.get("tags") || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const categories = (searchParams.get("categories") || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const pageParam = Number(searchParams.get("page"));
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 50));
-    const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
+    const offsetParam = Number(searchParams.get("offset"));
+    const page = Number.isFinite(pageParam) && pageParam >= 0 ? pageParam : 0;
+    const offset = Number.isFinite(offsetParam) && offsetParam >= 0 ? offsetParam : page * limit;
 
     const whereClause: any = {
       isActive: true,
@@ -38,54 +81,83 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    if (category) {
-      whereClause.category = category;
+    if (query) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { source: { contains: query } },
+            { type: { contains: query } },
+            { tags: { contains: query } },
+            { categories: { contains: query } },
+          ],
+        },
+      ];
     }
 
-    if (search && search.trim()) {
-      whereClause.name = {
-        contains: search.trim(),
-      };
+    if (tags.length) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        ...tags.map((tag) => ({ tags: { contains: `\"${tag}\"` } })),
+      ];
     }
+
+    if (categories.length) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        ...categories.map((cat) => ({ categories: { contains: `\"${cat}\"` } })),
+      ];
+    }
+
+    if (pack) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `\"pack\":\"${pack}\"` } },
+            { source: { contains: `/game-assets/${pack}/` } },
+            { source: { contains: `/${pack}/` } },
+          ],
+        },
+      ];
+    }
+
+    const allowedSort: Record<string, string> = {
+      source: "source",
+      createdAt: "createdAt",
+      fileSize: "fileSize",
+      usageCount: "usageCount",
+    };
+    const sortField = allowedSort[sortBy] || "source";
 
     const [assets, total] = await Promise.all([
-      prisma.usableAsset.findMany({
+      prisma.gameAsset.findMany({
         where: whereClause,
-        include: {
-          sourceAsset: {
-            select: {
-              id: true,
-              filename: true,
-              storagePath: true,
-              width: true,
-              height: true,
-            },
-          },
-          createdBy: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: { [sortField]: sortOrder },
         take: limit,
         skip: offset,
       }),
-      prisma.usableAsset.count({ where: whereClause }),
+      prisma.gameAsset.count({ where: whereClause }),
     ]);
+
+    const items = assets.map((asset) => formatAsset(asset));
+    const hasMore = offset + limit < total;
 
     return NextResponse.json({
       success: true,
-      assets,
+      // Canonical payload for AssetManager
+      items,
+      total,
+      page,
+      limit,
+      hasMore,
+      // Backward-compat payload for older callers
+      assets: items,
       pagination: {
         total,
         limit,
         offset,
-        hasMore: offset + limit < total,
+        hasMore,
       },
     });
   } catch (error: any) {

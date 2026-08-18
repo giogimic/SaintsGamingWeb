@@ -16,6 +16,10 @@
 - **Setup Access Authentication Lock:**
   - **Setup page gate (`app/(main)/setup/page.tsx`)**: Setup wizard now requires an authenticated session and redirects unauthenticated users to login with `callbackUrl=/setup`.
   - **Setup mutation API gates (`app/api/setup/import/route.ts`, `app/api/setup/complete/route.ts`, `app/api/setup/assets/route.ts`)**: Added explicit `401 Unauthorized` responses when no authenticated session exists, preventing pre-login setup execution.
+- **Asset Browser Reliability & Performance Pass:**
+  - **API/Client contract repair (`app/api/assets/route.ts`)**: Switched `/api/assets` browse endpoint to `GameAsset` payload shape expected by `AssetManager` (`items`, `total`, `page`, `hasMore`) with backward-compatible `assets/pagination` fields, restoring catalog visibility and filter behavior.
+  - **Filter/query parity (`app/api/assets/route.ts`)**: Added support for `query`, `tags`, `categories`, `pack`, `page`, and `sortBy/sortOrder` parameters used by Studio asset tools.
+  - **Search debounce (`AssetEditor.tsx`)**: Added debounced search dispatch to reduce per-keystroke request bursts and improve asset browser responsiveness under large catalogs.
 
 ## [2.1.343] - 2026-08-17
 ### Added & Fixed
