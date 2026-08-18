@@ -8,6 +8,10 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
   try {
     const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized: Login required' }, { status: 401 });
+    }
+
     const status = await getSystemSetupStatus(prisma);
 
     const user = session?.user as any;
