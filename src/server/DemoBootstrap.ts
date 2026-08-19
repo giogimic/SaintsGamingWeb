@@ -718,12 +718,10 @@ export async function ensureStudioMapFoundation(): Promise<{
     }
 
     const force = process.env.FORCE_DEMO_MAP === "1";
-    const setupStatus = await getSystemSetupStatus(prisma);
 
-    // On fresh install, do not auto-seed demo maps unless explicitly forced.
-    // The Setup Wizard and Studio first-map workflow will handle map creation.
-    if (!force && setupStatus.isFreshInstall) {
-      console.log("[DemoBootstrap] Fresh install detected (0 maps) — awaiting Setup Wizard in Studio/Setup.");
+    // Demo maps should ONLY seed when explicitly requested via FORCE_DEMO_MAP=1 or explicit Setup Wizard import.
+    // Fresh installs and "no maps just assets" installs must NEVER have demo maps forced into WorldMap.
+    if (!force) {
       return { logicTiles, demoMap: false, error: undefined };
     }
 
