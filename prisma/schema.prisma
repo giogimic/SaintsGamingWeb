@@ -1689,6 +1689,10 @@ model StarterHero {
   name        String                    // Display name on card
   classId     String                    // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
   spriteKey   String                    // Key in GAME_SPRITES (no extension), e.g. "warrior"
+  /// Optional: id of a GameAsset bundle (see AssetIngestOptions.bundleId / lpcPackImporter)
+  /// representing a full modular/composited character sprite. When set, renderers may
+  /// prefer this over spriteKey; spriteKey remains required as the legacy fallback.
+  spriteBundleId String?
   flavor      String                    // Short 1-line description shown on card
   tag         String   @default("Balanced")  // Difficulty/style badge text
   tagColor    String   @default("#a78bfa")   // Hex color for the badge

@@ -11,6 +11,8 @@ export type StarterHeroData = {
   name: string;
   classId: string;
   spriteKey: string;
+  /** Optional GameAsset bundle id for a full modular/composited character sprite (see lpcPackImporter). */
+  spriteBundleId?: string | null;
   flavor: string;
   tag: string;
   tagColor: string;
@@ -90,6 +92,7 @@ export async function upsertStarterHero(data: StarterHeroData) {
         name: data.name,
         classId: data.classId,
         spriteKey: data.spriteKey,
+        spriteBundleId: data.spriteBundleId || null,
         flavor: data.flavor,
         tag: data.tag,
         tagColor: data.tagColor,
@@ -105,6 +108,7 @@ export async function upsertStarterHero(data: StarterHeroData) {
         name: data.name,
         classId: data.classId,
         spriteKey: data.spriteKey,
+        spriteBundleId: data.spriteBundleId || null,
         flavor: data.flavor,
         tag: data.tag,
         tagColor: data.tagColor,

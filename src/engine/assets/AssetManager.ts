@@ -15,6 +15,16 @@ export interface GameAssetItem {
   usageCount: number;
   fileSize: number;
   cdnUrl: string | null;
+  isModularComponent?: boolean;
+  componentCategory?: string | null;
+  componentLayer?: string | null;
+  variantFamily?: string | null;
+  /** Baseline stacking order for compositing modular layers (lower draws first). */
+  zOrderHint?: number | null;
+  /** LPC-style base mesh this component was fitted for (e.g. "male", "child"). */
+  baseBodyType?: string | null;
+  /** componentCategory values this piece hides when equipped (e.g. a closed helm hides "hair"). */
+  hidesComponents?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +35,10 @@ export interface AssetFilters {
   categories?: string[];
   gameId?: string;
   query?: string;
+  modular?: boolean;
+  componentCategory?: string;
+  componentLayer?: string;
+  variantFamily?: string;
   /** Approved pack filter: tuxemon | lpc | studio (bible 16 §7). */
   pack?: string;
   sortBy?: 'source' | 'createdAt' | 'fileSize' | 'usageCount';
@@ -90,6 +104,10 @@ export class AssetManager {
     if (filters.query) params.set('query', filters.query);
     if (filters.tags?.length) params.set('tags', filters.tags.join(','));
     if (filters.categories?.length) params.set('categories', filters.categories.join(','));
+    if (typeof filters.modular === 'boolean') params.set('modular', String(filters.modular));
+    if (filters.componentCategory) params.set('componentCategory', filters.componentCategory);
+    if (filters.componentLayer) params.set('componentLayer', filters.componentLayer);
+    if (filters.variantFamily) params.set('variantFamily', filters.variantFamily);
     if (filters.pack) params.set('pack', filters.pack);
     if (filters.sortBy) params.set('sortBy', filters.sortBy);
     if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);

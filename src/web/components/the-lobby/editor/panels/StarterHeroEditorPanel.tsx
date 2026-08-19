@@ -336,7 +336,7 @@ export function StarterHeroEditorPanel() {
     setSelected(hero);
     setForm({
       slug: hero.slug, gameId: hero.gameId || activeGameId, name: hero.name, classId: hero.classId,
-      spriteKey: hero.spriteKey, flavor: hero.flavor, tag: hero.tag,
+      spriteKey: hero.spriteKey, spriteBundleId: hero.spriteBundleId || '', flavor: hero.flavor, tag: hero.tag,
       tagColor: hero.tagColor, sortOrder: hero.sortOrder, isActive: hero.isActive,
       startingMap: hero.startingMap, startingX: hero.startingX, startingY: hero.startingY,
       startingInventory: hero.startingInventory,
@@ -779,6 +779,21 @@ export function StarterHeroEditorPanel() {
                       Must match PNG asset in <code className="text-violet-700">/public/game-assets/npc/</code>
                     </p>
                   </div>
+                </div>
+
+                {/* Optional modular/composited sprite bundle override */}
+                <div className="mb-2">
+                  <label className={labelCls}>Sprite Bundle ID (optional)</label>
+                  <input
+                    value={form.spriteBundleId || ''}
+                    onChange={e => f('spriteBundleId', e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g. paladin-male-042 (from Asset Browser bundleId)"
+                  />
+                  <p className="text-[8px] text-slate-600 mt-0.5">
+                    Optional: id of an imported modular/composited character asset bundle (Studio Asset Browser).
+                    When set, renderers may prefer this over Sprite Key. Sprite Key remains required as the fallback.
+                  </p>
                 </div>
 
                 {/* Sprite grid */}

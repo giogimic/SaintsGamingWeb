@@ -11,6 +11,13 @@ export interface AssetUserContext {
   gameId?: string;
 }
 
+export interface AssetCreditEntry {
+  fileName?: string;
+  authors?: string[];
+  licenses?: string[];
+  urls?: string[];
+}
+
 export interface AssetEntity {
   id: string;
   createdById: string;
@@ -18,6 +25,8 @@ export interface AssetEntity {
   moderationStatus: AssetModerationStatus | string;
   gameId?: string | null;
   license?: string | null;
+  /** Structured per-layer credit entries (e.g. multi-author LPC packs). Takes precedence over `license` when present. */
+  credits?: AssetCreditEntry[] | null;
   createdBy?: {
     username?: string;
     displayName?: string;
@@ -70,8 +79,21 @@ export function canUserAccessAsset(
 
 /**
  * Builds formatted attribution metadata for display in the asset catalog.
+ * When structured `credits` are present (e.g. an imported multi-author LPC pack),
+ * renders one segment per credited layer instead of the single license string.
  */
 export function getAssetAttribution(asset: AssetEntity): string {
+  if (asset.credits && asset.credits.length > 0) {
+    return asset.credits
+      .map((credit) => {
+        const authors = (credit.authors || []).filter(Boolean).join(", ") || "Unknown author";
+        const licenses = (credit.licenses || []).filter(Boolean).join(", ") || "Unknown license";
+        const label = credit.fileName ? `${credit.fileName}: ` : "";
+        return `${label}${authors} (${licenses})`;
+      })
+      .join(" | ");
+  }
+
   const authorName = asset.createdBy?.displayName || asset.createdBy?.username || 'Community Creator';
   const license = asset.license || 'CC0';
   return `Created by ${authorName} • License: ${license}`;

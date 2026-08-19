@@ -10,9 +10,13 @@ import { uploadFile } from "@/web/lib/upload";
 import {
   AssetImportProfileId,
   getDefaultSlotRole,
+  getDefaultZOrderHint,
   inferCategoryForRole,
+  inferCharacterComponentLayerSlot,
   inferTypeForProfile,
+  isCharacterComponentCategory,
   isValidAssetImportProfile,
+  isValidCharacterBaseBodyType,
   isValidSlotRole,
 } from "@/shared/game/assetImportProfiles";
 
@@ -30,14 +34,28 @@ export interface AssetIngestOptions {
   visibility?: 'PERSONAL' | 'PROJECT' | 'COMMUNITY' | 'PUBLIC';
   importProfile?: string;
   slotRole?: string;
+  componentCategory?: string;
+  componentLayer?: string;
+  variantFamily?: string;
+  isModularComponent?: boolean;
+  /** Baseline stacking order for compositing (lower draws first). */
+  zOrderHint?: number;
+  /** LPC-style base mesh this component was fitted for (e.g. "male", "child"). */
+  baseBodyType?: string;
+  /** componentCategory values this piece hides when equipped (e.g. a closed helm hides "hair"). */
+  hidesComponents?: string[];
+  /** Structured per-layer attribution (e.g. multi-author LPC packs). Stored in asset metadata for getAssetAttribution. */
+  credits?: { fileName?: string; authors?: string[]; licenses?: string[]; urls?: string[] }[];
   bundleId?: string;
   sourceMode?: "single" | "multi" | "spritesheet";
+  moderationStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 export interface AssetIngestResult {
   success: boolean;
   sourceAsset?: any;
   usableAsset?: any;
+  gameAsset?: any;
   error?: string;
 }
 
@@ -55,11 +73,44 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       return { success: false, error: uploadRes.error || "Failed to store asset file." };
     }
 
+    const storedUrl = uploadRes.url;
+
     const filename = uploadRes.filename || file.name || "unnamed_asset";
     const mimeType = uploadRes.mimeType || file.type || "application/octet-stream";
     const width = options.width || 32;
     const height = options.height || 32;
     const sourceMode = options.sourceMode || "single";
+    const isModularComponent = Boolean(options.isModularComponent) || Boolean(options.componentCategory && isCharacterComponentCategory(options.componentCategory));
+    const componentCategory = (options.componentCategory || "").trim().toLowerCase();
+    const componentLayer = (options.componentLayer || inferCharacterComponentLayerSlot(componentCategory) || "").trim().toLowerCase();
+    const variantFamily = (options.variantFamily || "").trim();
+
+    // Compositing rules — only meaningful for modular character components.
+    let zOrderHint: number | null = null;
+    let baseBodyType: string | null = null;
+    let hidesComponents: string[] = [];
+    if (isModularComponent) {
+      zOrderHint = typeof options.zOrderHint === "number" && Number.isFinite(options.zOrderHint)
+        ? options.zOrderHint
+        : getDefaultZOrderHint(componentCategory);
+
+      const requestedBodyType = (options.baseBodyType || "").trim().toLowerCase();
+      if (requestedBodyType) {
+        if (!isValidCharacterBaseBodyType(requestedBodyType)) {
+          return { success: false, error: `Unsupported base body type: ${options.baseBodyType}` };
+        }
+        baseBodyType = requestedBodyType;
+      }
+
+      hidesComponents = Array.from(
+        new Set((options.hidesComponents || []).map((v) => v.trim().toLowerCase()).filter(Boolean))
+      );
+      for (const hidden of hidesComponents) {
+        if (!isCharacterComponentCategory(hidden)) {
+          return { success: false, error: `Unsupported hidesComponents entry: ${hidden}` };
+        }
+      }
+    }
 
     let importProfile: AssetImportProfileId | null = null;
     if (options.importProfile?.trim()) {
@@ -81,79 +132,135 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       }
     }
 
-    // 1. Create SourceAsset record
-    const sourceAsset = await prisma.sourceAsset.create({
-      data: {
-        filename,
-        mimeType,
-        width,
-        height,
-        fileSize: uploadRes.sizeBytes || file.size,
-        storagePath: uploadRes.url,
-        uploadedById: userId,
-        version: 1,
-        metadata: JSON.stringify({
-          originalName: file.name,
-          uploadedAt: new Date().toISOString(),
-          storage: uploadRes.storage || "local",
-          importProfile,
-          slotRole,
-          bundleId: options.bundleId || null,
-          sourceMode,
-        }),
-      },
-    });
+    const normalizedAssetType = (options.type || inferTypeForProfile(importProfile || 'character') || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT")).toUpperCase();
+    const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
+    const assetCategory = options.category || inferredCategory || (isModularComponent ? componentCategory || "other" : null);
+    const moderationStatus = options.moderationStatus || "PENDING";
 
-    let usableAsset = null;
+    const baseTags = options.tags || [];
+    const enrichedTags = Array.from(
+      new Set(
+        [
+          ...baseTags,
+          gameId,
+          normalizedAssetType.toLowerCase(),
+          isModularComponent ? "modular" : "",
+          isModularComponent ? "sprite-component" : "",
+          isModularComponent && componentCategory ? `component:${componentCategory}` : "",
+          isModularComponent && componentLayer ? `layer:${componentLayer}` : "",
+          isModularComponent && variantFamily ? `variant:${variantFamily.toLowerCase()}` : "",
+          importProfile ? `profile:${importProfile}` : "",
+          slotRole ? `role:${slotRole}` : "",
+          options.bundleId ? `bundle:${options.bundleId}` : "",
+          `source:${sourceMode}`,
+        ].filter(Boolean)
+      )
+    );
+    const tagsJson = JSON.stringify(enrichedTags);
 
-    // 2. Optionally create default UsableAsset if requested (for single asset uploads)
-    if (createUsable) {
-      const assetName = options.name || filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-      const inferredType = importProfile ? inferTypeForProfile(importProfile) : null;
-      const assetType = (options.type || inferredType || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT")).toUpperCase();
-      const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
-      const assetCategory = options.category || inferredCategory || null;
+    const assetName = options.name || filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
+    const assetType = (options.type || inferTypeForProfile(importProfile || 'character') || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT")).toUpperCase();
 
-      const baseTags = options.tags || [];
-      const enrichedTags = Array.from(
-        new Set(
-          [
-            ...baseTags,
-            gameId,
-            assetType.toLowerCase(),
-            importProfile ? `profile:${importProfile}` : "",
-            slotRole ? `role:${slotRole}` : "",
-            options.bundleId ? `bundle:${options.bundleId}` : "",
-            `source:${sourceMode}`,
-          ].filter(Boolean)
-        )
-      );
-      const tagsJson = JSON.stringify(enrichedTags);
-
-      usableAsset = await prisma.usableAsset.create({
+    const { sourceAsset, usableAsset, gameAsset } = await prisma.$transaction(async (tx) => {
+      const sourceAsset = await tx.sourceAsset.create({
         data: {
-          sourceAssetId: sourceAsset.id,
-          name: assetName,
-          type: assetType.toUpperCase(),
-          category: assetCategory,
-          tags: tagsJson,
+          filename,
+          mimeType,
           width,
           height,
-          createdById: userId,
-          gameId,
-          visibility: options.visibility || "COMMUNITY",
-          moderationStatus: "APPROVED",
+          fileSize: uploadRes.sizeBytes || file.size,
+          storagePath: storedUrl,
+          uploadedById: userId,
           version: 1,
-          cdnUrl: uploadRes.url,
-          thumbnailPath: uploadRes.url,
+          metadata: JSON.stringify({
+            originalName: file.name,
+            uploadedAt: new Date().toISOString(),
+            storage: uploadRes.storage || "local",
+            importProfile,
+            slotRole,
+            isModularComponent,
+            componentCategory: componentCategory || null,
+            componentLayer: componentLayer || null,
+            variantFamily: variantFamily || null,
+            zOrderHint,
+            baseBodyType,
+            hidesComponents,
+            bundleId: options.bundleId || null,
+            sourceMode,
+          }),
         },
       });
-    }
+
+      const usableAsset = createUsable
+        ? await tx.usableAsset.create({
+            data: {
+              sourceAssetId: sourceAsset.id,
+              name: assetName,
+              type: assetType,
+              category: assetCategory,
+              tags: tagsJson,
+              width,
+              height,
+              createdById: userId,
+              gameId,
+              visibility: options.visibility || "COMMUNITY",
+              moderationStatus,
+              version: 1,
+              cdnUrl: storedUrl,
+              thumbnailPath: storedUrl,
+            },
+          })
+        : null;
+
+      const gameAsset = await tx.gameAsset.create({
+        data: {
+          gameId,
+          type: normalizedAssetType,
+          source: storedUrl,
+          tags: tagsJson,
+          categories: JSON.stringify(
+            Array.from(
+              new Set([
+                assetCategory || "general",
+                ...(componentCategory ? [componentCategory] : []),
+                ...(isModularComponent ? ["modular", "character-component"] : []),
+              ])
+            )
+          ),
+          metadata: JSON.stringify({
+            name: assetName,
+            sourceMode,
+            originalName: file.name,
+            importProfile,
+            slotRole,
+            isModularComponent,
+            componentCategory: componentCategory || null,
+            componentLayer: componentLayer || null,
+            variantFamily: variantFamily || null,
+            zOrderHint,
+            baseBodyType,
+            hidesComponents,
+            width,
+            height,
+            bundleId: options.bundleId || null,
+            credits: options.credits || null,
+            pack: "studio-import",
+          }),
+          isActive: true,
+          usageCount: 0,
+          fileSize: uploadRes.sizeBytes || file.size,
+          cdnUrl: storedUrl,
+        },
+      });
+
+      return { sourceAsset, usableAsset, gameAsset };
+    });
 
     return {
       success: true,
       sourceAsset,
       usableAsset,
+      gameAsset,
     };
   } catch (err: any) {
     console.error("[assetUpload] Error ingesting asset:", err);

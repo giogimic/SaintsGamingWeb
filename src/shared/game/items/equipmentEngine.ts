@@ -3,6 +3,8 @@
  * Manages player equipment slots, stat aggregation, and skill/level prerequisite checks.
  */
 
+import { isCharacterComponentCategory, type CharacterComponentCategory } from "../assetImportProfiles";
+
 export type EquipmentSlot =
   | 'weapon'
   | 'shield'
@@ -26,9 +28,52 @@ export interface EquippableItem {
     speed?: number;
     critChance?: number;
   };
+  /**
+   * Optional link to a GameAsset registered as a modular character sprite
+   * component (see assetImportProfiles.ts / characterLayerCompositor.ts).
+   * Lets a renderer show what's actually equipped instead of only affecting
+   * stats. Purely additive — stat/equip logic below never depends on it.
+   */
+  visualAssetId?: string;
 }
 
 export type PlayerEquipment = Partial<Record<EquipmentSlot, EquippableItem | null>>;
+
+/** Best-effort mapping from a gameplay equipment slot to the visual component category it renders as. Weapon/shield/tool are held items, not clothing layers, so they're intentionally left unmapped. */
+export const EQUIPMENT_SLOT_COMPONENT_CATEGORY: Partial<Record<EquipmentSlot, CharacterComponentCategory>> = {
+  head: "hat",
+  chest: "shirt",
+  legs: "pants",
+  feet: "shoes",
+  accessory: "accessory",
+};
+
+export interface EquippedVisualLayer {
+  slot: EquipmentSlot;
+  visualAssetId: string;
+  componentCategory: CharacterComponentCategory | null;
+}
+
+/**
+ * Extracts the visual asset references for currently equipped items, for a
+ * renderer to resolve into actual sprite layers (e.g. via
+ * characterLayerCompositor.ts). Items without a visualAssetId are skipped —
+ * this keeps the stat/equip logic fully decoupled from asset resolution.
+ */
+export function getVisualLayersForEquipment(equipment: PlayerEquipment): EquippedVisualLayer[] {
+  const layers: EquippedVisualLayer[] = [];
+  for (const slot of Object.keys(equipment) as EquipmentSlot[]) {
+    const item = equipment[slot];
+    if (!item?.visualAssetId) continue;
+    const category = EQUIPMENT_SLOT_COMPONENT_CATEGORY[slot];
+    layers.push({
+      slot,
+      visualAssetId: item.visualAssetId,
+      componentCategory: category && isCharacterComponentCategory(category) ? category : null,
+    });
+  }
+  return layers;
+}
 
 export interface TotalEquipmentStats {
   atk: number;

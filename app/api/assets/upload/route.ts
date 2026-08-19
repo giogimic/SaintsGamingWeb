@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { ingestAsset } from "@/web/lib/assetUpload";
+import { canUserModerateAssets } from "@/shared/game/assetPermissions";
 import {
   AssetImportProfileId,
   getMissingRequiredRoles,
@@ -57,10 +58,33 @@ export async function POST(req: NextRequest) {
 
     const createUsable = formData.get("createUsable") !== "false";
     const visibility = (formData.get("visibility") as any) || "COMMUNITY";
+    const permissionLevel = Number((session.user as any).permissionLevel) || 0;
+    const moderationStatus = canUserModerateAssets({ id: session.user.id, permissionLevel })
+      ? "APPROVED"
+      : "PENDING";
     const width = Number(formData.get("width")) || undefined;
     const height = Number(formData.get("height")) || undefined;
     const importProfileRaw = (formData.get("importProfile") as string | null)?.trim().toLowerCase() || "";
     const slotRoleRaw = (formData.get("slotRole") as string | null)?.trim() || "";
+    const componentCategory = (formData.get("componentCategory") as string | null)?.trim() || undefined;
+    const componentLayer = (formData.get("componentLayer") as string | null)?.trim() || undefined;
+    const variantFamily = (formData.get("variantFamily") as string | null)?.trim() || undefined;
+    const isModularComponent = formData.get("isModularComponent") === "true";
+    const zOrderHintRaw = (formData.get("zOrderHint") as string | null)?.trim();
+    const zOrderHint = zOrderHintRaw && !Number.isNaN(Number(zOrderHintRaw)) ? Number(zOrderHintRaw) : undefined;
+    const baseBodyType = (formData.get("baseBodyType") as string | null)?.trim() || undefined;
+    const hidesComponentsRaw = (formData.get("hidesComponents") as string | null)?.trim();
+    let hidesComponents: string[] | undefined;
+    if (hidesComponentsRaw) {
+      try {
+        const parsed = JSON.parse(hidesComponentsRaw);
+        if (Array.isArray(parsed)) {
+          hidesComponents = parsed.filter((v) => typeof v === "string");
+        }
+      } catch {
+        hidesComponents = hidesComponentsRaw.split(",").map((v) => v.trim()).filter(Boolean);
+      }
+    }
     const bundleId = (formData.get("bundleId") as string | null)?.trim() || undefined;
     const sourceModeRaw = (formData.get("sourceMode") as string | null)?.trim().toLowerCase();
     const strictRequiredRoles = formData.get("strictRequiredRoles") === "true";
@@ -142,7 +166,15 @@ export async function POST(req: NextRequest) {
       height,
       importProfile: importProfile || undefined,
       slotRole: slotRoleRaw || undefined,
+      componentCategory,
+      componentLayer,
+      variantFamily,
+      isModularComponent,
+      zOrderHint,
+      baseBodyType,
+      hidesComponents,
       bundleId,
+      moderationStatus,
       sourceMode:
         sourceModeRaw === "multi" || sourceModeRaw === "spritesheet" || sourceModeRaw === "single"
           ? sourceModeRaw
