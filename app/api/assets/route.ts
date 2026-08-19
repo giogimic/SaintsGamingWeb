@@ -77,7 +77,18 @@ export async function GET(req: NextRequest) {
     };
 
     if (type && type !== "ALL") {
-      whereClause.type = type.toUpperCase();
+      const normalizedType = type.toUpperCase();
+      // CHARACTER and SPRITE are interchangeable aliases — query for both
+      if (normalizedType === "CHARACTER" || normalizedType === "SPRITE") {
+        whereClause.OR = [
+          ...(whereClause.OR || []),
+          { type: "CHARACTER" },
+          { type: "SPRITE" },
+          { tags: { contains: "profile:character" } },
+        ];
+      } else {
+        whereClause.type = normalizedType;
+      }
     }
 
     if (gameId) {

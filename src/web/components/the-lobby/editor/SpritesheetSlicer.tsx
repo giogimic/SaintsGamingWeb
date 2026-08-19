@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
+import { AssetManager } from '@/engine/assets/AssetManager';
 import {
   ASSET_IMPORT_PROFILE_META,
   AssetImportProfileId,
@@ -422,6 +423,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
       soundSynth?.playSelectSound?.();
       setSuccessCount(data.count);
       showToast(`Successfully registered ${data.count} usable assets!`);
+      AssetManager.getInstance().broadcastRefresh();
       if (onSliceComplete) onSliceComplete(data.assets);
     } catch (err: any) {
       console.error('Slicing error:', err);

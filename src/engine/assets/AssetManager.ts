@@ -67,6 +67,19 @@ export class AssetManager {
     return AssetManager.instance;
   }
 
+  /** Wipe the in-memory asset cache so next fetch is fresh from the server. */
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  /** Clear cache AND broadcast a cross-component refresh event. */
+  broadcastRefresh(): void {
+    this.clearCache();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('assets:refreshed'));
+    }
+  }
+
   private hydrate(raw: any): GameAssetItem {
     return {
       ...raw,

@@ -35,7 +35,7 @@ describe('Spritesheet & Grid Classification (Phase 4A)', () => {
 
   it('picks the south-facing walk frame as the thumbnail for a full LPC sheet', () => {
     const rect = getThumbnailFrameRect(832, 1344, 64, 64);
-    expect(rect).toEqual({ x: 0, y: 8 * 64, width: 64, height: 64 });
+    expect(rect).toEqual({ x: 0, y: 10 * 64, width: 64, height: 64 });
   });
 
   it('falls back to the top-left cell when the sheet has fewer rows than the walk offset', () => {

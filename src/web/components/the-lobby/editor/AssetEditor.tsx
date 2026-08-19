@@ -83,6 +83,15 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
     void fetchAssets(0, false);
   }, [typeFilter, subcategoryFilter, modularFilter, componentCategoryFilter, componentLayerFilter, debouncedSearchQuery, selectedTag, packFilter]);
 
+  useEffect(() => {
+    const handleRefreshed = () => {
+      setPage(0);
+      void fetchAssets(0, false);
+    };
+    window.addEventListener('assets:refreshed', handleRefreshed);
+    return () => window.removeEventListener('assets:refreshed', handleRefreshed);
+  }, [typeFilter, subcategoryFilter, modularFilter, componentCategoryFilter, componentLayerFilter, debouncedSearchQuery, selectedTag, packFilter]);
+
   const fetchAssets = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
     else setLoading(true);

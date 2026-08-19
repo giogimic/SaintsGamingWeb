@@ -17,8 +17,10 @@ describe('studio develop mode defaults', () => {
     expect(STUDIO_MODE_META.npc.label).toBe('Populate');
     expect(STUDIO_MODE_META.quest.label).toBe('Script');
     expect(STUDIO_MODE_META.creature.label).toBe('Catalog');
+    expect(STUDIO_MODE_META.assets.label).toBe('Assets');
     expect(STUDIO_MODE_META.test.blurb.toLowerCase()).toContain('playtest');
     expect(STUDIO_MODE_TO_CANONICAL.develop).toBe('paint');
+    expect(STUDIO_MODE_TO_CANONICAL.assets).toBe('assets');
     expect(STUDIO_MODE_TO_CANONICAL.test).toBe('walk');
   });
 });

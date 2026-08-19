@@ -341,6 +341,7 @@ export function AssetUploadView({
 
       soundSynth?.playSelectSound?.();
       showToast(`Asset ingested: ${assetName || selectedFile.name}`);
+      AssetManager.getInstance().broadcastRefresh();
       setUploadSuccess(data);
       if (onUploadComplete) onUploadComplete(data);
     } catch (err: any) {
@@ -407,6 +408,7 @@ export function AssetUploadView({
 
       soundSynth?.playSelectSound?.();
       showToast(`Batch Ingested ${successCount}/${total} Modular LPC Layers!`);
+      AssetManager.getInstance().broadcastRefresh();
       setUploadSuccess({
         message: `Successfully ingested ${successCount} modular character layers into the asset library.`,
       });
