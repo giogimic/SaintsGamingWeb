@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { inferAssetPack, packTag } from "./assetPacks";
 
 describe("inferAssetPack", () => {
-  it("classifies Saints official pack assets", () => {
-    expect(inferAssetPack("/assets/packs/starter_realm.png")).toBe("saints");
-    expect(inferAssetPack("/game-assets/tilesets/Terrain_by_George.png")).toBe("saints");
+  it("classifies legacy Saints official pack assets as tuxemon", () => {
+    expect(inferAssetPack("/assets/packs/starter_realm.png")).toBe("tuxemon");
+    expect(inferAssetPack("/game-assets/tilesets/Terrain_by_George.png")).toBe("tuxemon");
   });
 
   it("classifies LPC overworld NPCs", () => {
@@ -18,9 +18,9 @@ describe("inferAssetPack", () => {
     expect(inferAssetPack("/game-assets/creatures/lumkit-ow.png")).toBe("tuxemon");
   });
 
-  it("classifies Studio registry leftovers", () => {
-    expect(inferAssetPack("/game-assets/ui/icons/sword.png")).toBe("studio");
-    expect(inferAssetPack("/game-assets/items/nu_phone.png")).toBe("studio");
+  it("classifies Studio registry leftovers as tuxemon", () => {
+    expect(inferAssetPack("/game-assets/ui/icons/sword.png")).toBe("tuxemon");
+    expect(inferAssetPack("/game-assets/items/nu_phone.png")).toBe("tuxemon");
   });
 
   it("builds pack tags", () => {

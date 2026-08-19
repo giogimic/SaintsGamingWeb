@@ -139,19 +139,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   mapDataRef.current = mapData;
 
   // Fetch animationProfile when player spriteId changes
+  const playerSpriteId = useGameStore((s) => s.player?.spriteId);
   useEffect(() => {
-    const freshPlayer = useGameStore.getState().player;
-    const spriteId = freshPlayer?.spriteId;
-    
-    if (spriteId && spriteId !== lastSpriteIdRef.current) {
-      lastSpriteIdRef.current = spriteId;
+    if (playerSpriteId && playerSpriteId !== lastSpriteIdRef.current) {
+      lastSpriteIdRef.current = playerSpriteId;
       
       // Fetch animationProfile from asset metadata
-      getAssetAnimationProfile(spriteId).then((profile) => {
+      getAssetAnimationProfile(playerSpriteId).then((profile) => {
         playerAnimationProfileRef.current = profile;
       });
     }
-  }, []);
+  }, [playerSpriteId]);
   /** Last doc whose tile geometry was pushed into Babylon (identity + fingerprint). */
   const lastLoadedMapDataRef = useRef<GameMapData | null>(null);
   const lastVisualFingerprintRef = useRef<string>('');
@@ -837,8 +835,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           // Fetch animationProfile if not cached (non-blocking)
           if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.spriteId) {
+            multiplayerAnimationProfilesRef.current.set(socketId, null);
             getAssetAnimationProfile(other.spriteId).then((profile) => {
-              multiplayerAnimationProfilesRef.current.set(socketId, profile);
+              if (profile) multiplayerAnimationProfilesRef.current.set(socketId, profile);
             });
           }
 
@@ -915,8 +914,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           // Fetch animationProfile if not cached (non-blocking)
           if (!entityAnimationProfilesRef.current.has(ent.id) && ent.spriteKey) {
+            entityAnimationProfilesRef.current.set(ent.id, null);
             getAssetAnimationProfile(ent.spriteKey).then((profile) => {
-              entityAnimationProfilesRef.current.set(ent.id, profile);
+              if (profile) entityAnimationProfilesRef.current.set(ent.id, profile);
             });
           }
 
@@ -1574,8 +1574,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // Fetch animationProfile if not cached (non-blocking)
       const npcId = `mapnpc_${npc.id}`;
       if (!entityAnimationProfilesRef.current.has(npcId) && npc.sprite) {
+        entityAnimationProfilesRef.current.set(npcId, null);
         getAssetAnimationProfile(npc.sprite).then((profile) => {
-          entityAnimationProfilesRef.current.set(npcId, profile);
+          if (profile) entityAnimationProfilesRef.current.set(npcId, profile);
         });
       }
 

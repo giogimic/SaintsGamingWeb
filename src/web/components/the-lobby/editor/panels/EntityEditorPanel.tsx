@@ -148,6 +148,73 @@ export const EntityEditorPanel: React.FC = () => {
     return () => window.removeEventListener('studio_sprite_picked', handleSpritePicked);
   }, [showToast]);
 
+  const handleSelect = useCallback((npc: MapNpcData) => {
+    setSelectedId(npc.id);
+    setEntityProps((prev) => ({
+      ...prev,
+      displayName: npc.name,
+      spriteId: npc.sprite || 'adventurer',
+    }));
+    setSpawnX(npc.x);
+    setSpawnY(npc.y);
+    setNpcDialogue(npc.dialogue?.[0] || '');
+  }, []);
+
+  // Listen for context menu smart actions
+  useEffect(() => {
+    const handleSelectNpc = (e: Event) => {
+      const customEv = e as CustomEvent<{ npcId: string }>;
+      if (customEv.detail?.npcId) {
+        const found = list.find((n) => n.id === customEv.detail.npcId);
+        if (found) {
+          handleSelect(found);
+        } else {
+          void listMapNpcs(mapId).then((res) => {
+            if (res.success && res.data) {
+              setList(res.data);
+              const foundAgain = res.data.find((n: any) => n.id === customEv.detail.npcId);
+              if (foundAgain) {
+                handleSelect(foundAgain);
+              }
+            }
+          });
+        }
+      }
+    };
+
+    const handleOutsideDelete = async (e: Event) => {
+      const customEv = e as CustomEvent<{ npcId: string; name: string }>;
+      if (customEv.detail?.npcId) {
+        if (!confirm(`Delete ${customEv.detail.name || customEv.detail.npcId} from ${mapId}?`)) return;
+        setSaving(true);
+        const res = await deleteMapNpc({ mapId, npcId: customEv.detail.npcId });
+        setSaving(false);
+        if (res.success) {
+          removeNpcFromMapDoc(useGameStore.getState().activeMapData, customEv.detail.npcId);
+          const despawn = buildStudioDespawnNpcEmit(mapId, customEv.detail.npcId);
+          if (despawn) {
+            useGameStore.getState().emitSocketEvent?.('studio_despawn_npc', despawn);
+          }
+          useEditorStore.getState().markMapDirty();
+          showToast(`Deleted ${customEv.detail.npcId} — live despawn.`);
+          if (selectedId === customEv.detail.npcId) {
+            handleNew();
+          }
+          await reloadList();
+        } else {
+          showToast(res.error || 'Failed to delete NPC');
+        }
+      }
+    };
+
+    window.addEventListener('studio_select_npc', handleSelectNpc);
+    window.addEventListener('studio_delete_npc_context', handleOutsideDelete);
+    return () => {
+      window.removeEventListener('studio_select_npc', handleSelectNpc);
+      window.removeEventListener('studio_delete_npc_context', handleOutsideDelete);
+    };
+  }, [list, mapId, handleSelect, selectedId, showToast, reloadList]);
+
   const onFieldChange = (key: string, value: unknown) => {
     setEntityProps((prev) => ({ ...prev, [key]: value }));
   };
@@ -161,18 +228,6 @@ export const EntityEditorPanel: React.FC = () => {
     });
     setNpcDialogue('Welcome to the animist grounds, Saint!');
     setQuestSlug('');
-  };
-
-  const handleSelect = (npc: MapNpcData) => {
-    setSelectedId(npc.id);
-    setEntityProps((prev) => ({
-      ...prev,
-      displayName: npc.name,
-      spriteId: npc.sprite || 'adventurer',
-    }));
-    setSpawnX(npc.x);
-    setSpawnY(npc.y);
-    setNpcDialogue(npc.dialogue?.[0] || '');
   };
 
   const liveResync = (npc: MapNpcData, mode: 'spawn' | 'replace') => {
