@@ -37,6 +37,7 @@ export interface AssetContextMenuProps {
   onDelete: (assets: GameAssetItem[]) => void;
   onToggleFlag: (asset: GameAssetItem, flag: 'solid' | 'interactable' | 'decorative', val: boolean) => void;
   onAddTag: (asset: GameAssetItem, tag: string) => void;
+  onToggleShowInCharacterCreation?: (asset: GameAssetItem, value: boolean) => void;
 }
 
 export const AssetContextMenu: React.FC<AssetContextMenuProps> = ({
@@ -53,6 +54,7 @@ export const AssetContextMenu: React.FC<AssetContextMenuProps> = ({
   onDelete,
   onToggleFlag,
   onAddTag,
+  onToggleShowInCharacterCreation,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const showToast = useGameStore((s) => s.showToast);
@@ -187,6 +189,29 @@ export const AssetContextMenu: React.FC<AssetContextMenuProps> = ({
           >
             <Users className="w-3.5 h-3.5" />
             <span>Make Starter Hero</span>
+          </button>
+        )}
+
+        {/* Set as Starter Character Sprite */}
+        {isCharacter && onToggleShowInCharacterCreation && !isMultiSelected && (
+          <button
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              const newValue = !asset.metadata?.showInCharacterCreation;
+              onToggleShowInCharacterCreation(asset, newValue);
+              showToast(newValue ? 'Added to character creator' : 'Removed from character creator');
+            }}
+            className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-cyan-500/20 hover:text-cyan-300 transition text-left cursor-pointer text-cyan-400"
+          >
+            <span className="flex items-center gap-2">
+              <Users className="w-3.5 h-3.5" />
+              <span>Set as Starter Character Sprite</span>
+            </span>
+            {asset.metadata?.showInCharacterCreation ? (
+              <CheckSquare className="w-3.5 h-3.5 text-cyan-400" />
+            ) : (
+              <Square className="w-3.5 h-3.5 text-slate-600" />
+            )}
           </button>
         )}
 

@@ -16,6 +16,7 @@ import {
   resolveStartingSkills,
 } from "@/shared/game/classCatalog";
 import { CharacterSpritePreview } from "./CharacterSpritePreview";
+import { AssetManager } from "@/engine/assets/AssetManager";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const [activeWorld, setActiveWorld] = useState<{ id: string; name: string } | null>(null);
   const [worldOptions, setWorldOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [setupDefaultMapId, setSetupDefaultMapId] = useState<string | null>(null);
+  const [characterCreationAssets, setCharacterCreationAssets] = useState<any[]>([]);
 
   const loadForWorld = async (gameId?: string) => {
     setHeroesLoading(true);
@@ -163,6 +165,11 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
           worldsRes.profiles.find((p) => p.id === worldsRes.activeId);
         if (active) setActiveWorld({ id: active.id, name: active.name });
       }
+
+      // Load assets flagged for character creation
+      const manager = AssetManager.getInstance();
+      const assetsRes = await manager.searchAssets({ type: 'CHARACTER', showInCharacterCreation: true }, 0, 100);
+      setCharacterCreationAssets(assetsRes.items);
     } catch {
       /* ignore */
     } finally {

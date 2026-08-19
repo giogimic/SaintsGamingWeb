@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
     const componentCategory = (searchParams.get("componentCategory") || "").trim();
     const componentLayer = (searchParams.get("componentLayer") || "").trim();
     const variantFamily = (searchParams.get("variantFamily") || "").trim();
+    const showInCharacterCreationParam = searchParams.get("showInCharacterCreation");
+    const showInCharacterCreation = showInCharacterCreationParam === "true";
     const sortBy = (searchParams.get("sortBy") || "source").trim();
     const sortOrder = (searchParams.get("sortOrder") || "asc").toLowerCase() === "desc" ? "desc" : "asc";
     const tags = (searchParams.get("tags") || "")
@@ -252,6 +254,18 @@ export async function GET(req: NextRequest) {
           OR: [
             { metadata: { contains: `"variantFamily":"${variantFamily}"` } },
             { tags: { contains: `"variant:${variantFamily.toLowerCase()}"` } },
+          ],
+        },
+      ];
+    }
+
+    if (showInCharacterCreation) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: '"showInCharacterCreation":true' } },
+            { metadata: { contains: '"showInCharacterCreation": true' } },
           ],
         },
       ];

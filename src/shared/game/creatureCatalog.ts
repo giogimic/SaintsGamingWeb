@@ -3,6 +3,8 @@
  * Canonical runtime seed; Studio / Prisma CreatureDef can override.
  */
 
+import { AssetManager } from '@/engine/assets/AssetManager';
+
 export const CREATURE_ELEMENT_TYPES = [
   "Solar",
   "Hydro",
@@ -540,4 +542,37 @@ export function emptyCreatureDef(): CreatureDefData {
     sortOrder: 0,
     lootTableRefs: [],
   };
+}
+
+/**
+ * Fetch animationProfile from asset metadata for a given sprite URL/key.
+ * Returns the animationProfile string (e.g., 'lpc-full', 'tuxemon-3x4') or null.
+ * This queries the AssetManager to get stored metadata from upload.
+ */
+export async function getAssetAnimationProfile(
+  spriteUrlOrKey: string | null | undefined
+): Promise<string | null> {
+  if (!spriteUrlOrKey) return null;
+
+  try {
+    const manager = AssetManager.getInstance();
+    // Try to find asset by source URL first
+    const assets = await manager.searchAssets({ query: spriteUrlOrKey }, 0, 10);
+    
+    // Find exact match or closest match
+    const asset = assets.items.find((a) => 
+      a.source === spriteUrlOrKey || 
+      a.source.includes(spriteUrlOrKey) ||
+      spriteUrlOrKey.includes(a.source)
+    );
+
+    if (asset?.metadata?.anim) {
+      return asset.metadata.anim as string;
+    }
+  } catch (err) {
+    // Non-critical: fall back to URL detection
+    console.warn('[getAssetAnimationProfile] Failed to query asset metadata:', err);
+  }
+
+  return null;
 }
