@@ -26,8 +26,13 @@ import {
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId, inferAssetPack } from '@/shared/game/assetPacks';
 import { classifyCreatureAsset, CREATURE_SUBCATEGORY_LABELS, type CreatureAssetSubcategory } from '@/shared/game/creatureCatalog';
+import {
+  CHARACTER_COMPONENT_CATEGORIES,
+  listCharacterComponentCategories,
+} from '@/shared/game/assetImportProfiles';
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from '../store';
+import { SpriteThumbnail } from './SpriteThumbnail';
 
 export interface AssetEditorProps {
   onAssetSelect?: (asset: GameAssetItem) => void;
@@ -48,6 +53,9 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [subcategoryFilter, setSubcategoryFilter] = useState<string>('ALL');
+  const [modularFilter, setModularFilter] = useState<'ALL' | 'MODULAR' | 'FULL'>('ALL');
+  const [componentCategoryFilter, setComponentCategoryFilter] = useState<string>('ALL');
+  const [componentLayerFilter, setComponentLayerFilter] = useState<string>('ALL');
   const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -73,7 +81,7 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   useEffect(() => {
     setPage(0);
     void fetchAssets(0, false);
-  }, [typeFilter, subcategoryFilter, debouncedSearchQuery, selectedTag, packFilter]);
+  }, [typeFilter, subcategoryFilter, modularFilter, componentCategoryFilter, componentLayerFilter, debouncedSearchQuery, selectedTag, packFilter]);
 
   const fetchAssets = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
@@ -86,11 +94,15 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
         ...(subcategoryFilter !== 'ALL' ? [subcategoryFilter] : []),
         ...(isSheetFilter ? ['sheet'] : []),
       ];
+      const assetTypeFilter = isSheetFilter ? undefined : (typeFilter === 'ALL' ? undefined : typeFilter);
       const res = await manager.searchAssets(
         {
-          type: isSheetFilter ? undefined : (typeFilter === 'ALL' ? undefined : typeFilter),
+          type: assetTypeFilter,
           query: debouncedSearchQuery || undefined,
           tags: tagsToQuery.length > 0 ? tagsToQuery : undefined,
+          modular: modularFilter === 'MODULAR' ? true : modularFilter === 'FULL' ? false : undefined,
+          componentCategory: componentCategoryFilter === 'ALL' ? undefined : componentCategoryFilter,
+          componentLayer: componentLayerFilter === 'ALL' ? undefined : componentLayerFilter,
           pack: packFilter === 'ALL' ? undefined : packFilter,
           sortBy: 'source',
           sortOrder: 'asc',
@@ -270,6 +282,54 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
           </select>
 
           {/* Pack Filter */}
+          <select
+            value={modularFilter}
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setModularFilter(e.target.value as 'ALL' | 'MODULAR' | 'FULL');
+            }}
+            title="Asset composition filter"
+            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            <option value="ALL">All Assets</option>
+            <option value="MODULAR">Modular Parts</option>
+            <option value="FULL">Full Sprites</option>
+          </select>
+
+          <select
+            value={componentCategoryFilter}
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setComponentCategoryFilter(e.target.value);
+            }}
+            title="Character component category filter"
+            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            <option value="ALL">All Components</option>
+            {listCharacterComponentCategories().map((category) => (
+              <option key={category} value={category}>
+                {CHARACTER_COMPONENT_CATEGORIES[category].label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={componentLayerFilter}
+            onChange={(e) => {
+              soundSynth?.playUiClick?.();
+              setComponentLayerFilter(e.target.value);
+            }}
+            title="Character component layer filter"
+            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+          >
+            <option value="ALL">All Layers</option>
+            {['head', 'torso', 'legs', 'feet', 'accessory', 'full-body'].map((layer) => (
+              <option key={layer} value={layer}>
+                {layer}
+              </option>
+            ))}
+          </select>
+
           <select
             value={packFilter}
             onChange={(e) => {
@@ -452,6 +512,9 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
               <button
                 onClick={() => {
                   setTypeFilter('ALL');
+                  setModularFilter('ALL');
+                  setComponentCategoryFilter('ALL');
+                  setComponentLayerFilter('ALL');
                   setPackFilter('ALL');
                   setSearchQuery('');
                   setSelectedTag(null);
@@ -467,6 +530,9 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                 const isSelected = selectedAssetIds.has(asset.id);
                 const isActive = activeAsset?.id === asset.id;
                 const fileName = asset.source.split('/').pop() || asset.id;
+                const componentLabel = asset.metadata?.componentCategory || asset.componentCategory || null;
+                const componentLayer = asset.metadata?.componentLayer || asset.componentLayer || null;
+                const isModular = Boolean(asset.isModularComponent || asset.metadata?.isModularComponent || componentLabel);
                 return (
                   <div
                     key={asset.id}
@@ -518,6 +584,13 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                         );
                       })()}
 
+                      {/* Modular asset badge */}
+                      {isModular && (
+                        <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-cyan-950/90 border border-cyan-500/40 text-cyan-300">
+                          Modular
+                        </span>
+                      )}
+
                       {/* Subcategory Badge */}
                       {(() => {
                         const sub = (asset.metadata?.subcategory as CreatureAssetSubcategory) || classifyCreatureAsset(asset.source);
@@ -554,14 +627,10 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
 
                     {/* Image Preview with Checkered Canvas Background */}
                     <div className="w-full flex-1 flex items-center justify-center overflow-hidden my-1 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:8px_8px] rounded-lg p-1">
-                      <img
+                      <SpriteThumbnail
                         src={asset.source}
                         alt={asset.id}
                         className="max-w-full max-h-full object-contain"
-                        style={{ imageRendering: 'pixelated' }}
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
                       />
                     </div>
 
@@ -569,6 +638,11 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                     <span className="text-[10px] text-slate-300 truncate w-full text-center font-medium">
                       {fileName.replace(/\.(png|jpg|webp)$/i, '')}
                     </span>
+                    {componentLabel || componentLayer ? (
+                      <span className="text-[8px] text-cyan-200 truncate w-full text-center uppercase tracking-wide">
+                        {componentLabel ? `${componentLabel}${componentLayer ? ` • ${componentLayer}` : ''}` : componentLayer}
+                      </span>
+                    ) : null}
                   </div>
                 );
               })}
@@ -583,6 +657,9 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                 const packId = asset.metadata?.pack || inferAssetPack(asset.source);
                 const packLabel = ASSET_PACK_LABELS[packId as AssetPackId] || packId;
                 const isSheet = asset.type === 'SHEET' || asset.tags?.includes('sheet') || asset.source.includes('-sheet');
+                const componentLabel = asset.metadata?.componentCategory || asset.componentCategory || null;
+                const componentLayer = asset.metadata?.componentLayer || asset.componentLayer || null;
+                const isModular = Boolean(asset.isModularComponent || asset.metadata?.isModularComponent || componentLabel);
                 return (
                   <div
                     key={asset.id}
@@ -616,6 +693,11 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                               {CREATURE_SUBCATEGORY_LABELS[sub] || sub}
                             </span>
                           )}
+                          {isModular && (
+                            <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300">
+                              Modular
+                            </span>
+                          )}
                           {isSheet && (
                             <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-indigo-950/80 border border-indigo-500/40 text-indigo-300">
                               Sheet
@@ -624,6 +706,12 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                         </div>
                         <span className="text-[10px] text-slate-400 truncate">
                           {asset.source} • <strong className="text-amber-300">{asset.type}</strong>
+                          {componentLabel || componentLayer ? (
+                            <>
+                              {' • '}
+                              <strong className="text-cyan-300 uppercase">{componentLabel || componentLayer}</strong>
+                            </>
+                          ) : null}
                         </span>
                       </div>
                     </div>
@@ -753,6 +841,14 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Categories</span>
                 <span className="text-slate-200">{activeAsset.categories?.join(', ') || 'General'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Component</span>
+                <span className="text-slate-200">{activeAsset.metadata?.componentCategory || activeAsset.componentCategory || '—'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800/60">
+                <span className="text-slate-400">Layer</span>
+                <span className="text-slate-200">{activeAsset.metadata?.componentLayer || activeAsset.componentLayer || '—'}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400">Frames</span>

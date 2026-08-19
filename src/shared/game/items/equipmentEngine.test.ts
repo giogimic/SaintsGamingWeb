@@ -4,6 +4,7 @@ import {
   calculateEquipmentStats,
   equipItem,
   unequipItem,
+  getVisualLayersForEquipment,
   EquippableItem,
   PlayerEquipment,
 } from './equipmentEngine';
@@ -87,5 +88,17 @@ describe('Equipment Slot & Stat Compatibility Engine (Bible 12)', () => {
     const removed = unequipItem(equipment, 'chest');
     expect(removed?.id).toBe('iron_platebody');
     expect(equipment.chest).toBeNull();
+  });
+
+  it('extracts visual layers only for equipped items that declare a visualAssetId', () => {
+    const equipment: PlayerEquipment = {
+      chest: { ...ironPlatebody, visualAssetId: 'asset_iron_platebody_sprite' },
+      tool: runePickaxe, // no visualAssetId — should be skipped
+    };
+
+    const layers = getVisualLayersForEquipment(equipment);
+    expect(layers).toEqual([
+      { slot: 'chest', visualAssetId: 'asset_iron_platebody_sprite', componentCategory: 'shirt' },
+    ]);
   });
 });

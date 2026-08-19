@@ -49,6 +49,12 @@ export async function GET(req: NextRequest) {
     const gameId = searchParams.get("gameId");
     const query = (searchParams.get("query") || searchParams.get("search") || "").trim();
     const pack = (searchParams.get("pack") || "").trim();
+    const modularParam = searchParams.get("modular");
+    const modular = modularParam === "true";
+    const modularExplicitFalse = modularParam === "false";
+    const componentCategory = (searchParams.get("componentCategory") || "").trim();
+    const componentLayer = (searchParams.get("componentLayer") || "").trim();
+    const variantFamily = (searchParams.get("variantFamily") || "").trim();
     const sortBy = (searchParams.get("sortBy") || "source").trim();
     const sortOrder = (searchParams.get("sortOrder") || "asc").toLowerCase() === "desc" ? "desc" : "asc";
     const tags = (searchParams.get("tags") || "")
@@ -90,6 +96,67 @@ export async function GET(req: NextRequest) {
             { type: { contains: query } },
             { tags: { contains: query } },
             { categories: { contains: query } },
+          ],
+        },
+      ];
+    }
+
+    if (modular) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `"isModularComponent":true` } },
+            { tags: { contains: `"modular"` } },
+          ],
+        },
+      ];
+    }
+
+    if (modularExplicitFalse) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { not: { contains: `"isModularComponent":true` } } },
+            { tags: { not: { contains: `"modular"` } } },
+          ],
+        },
+      ];
+    }
+
+    if (componentCategory) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `"componentCategory":"${componentCategory.toLowerCase()}"` } },
+            { categories: { contains: `"${componentCategory.toLowerCase()}"` } },
+            { tags: { contains: `"component:${componentCategory.toLowerCase()}"` } },
+          ],
+        },
+      ];
+    }
+
+    if (componentLayer) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `"componentLayer":"${componentLayer.toLowerCase()}"` } },
+            { tags: { contains: `"layer:${componentLayer.toLowerCase()}"` } },
+          ],
+        },
+      ];
+    }
+
+    if (variantFamily) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `"variantFamily":"${variantFamily}"` } },
+            { tags: { contains: `"variant:${variantFamily.toLowerCase()}"` } },
           ],
         },
       ];

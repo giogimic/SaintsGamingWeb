@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/web/lib/prisma";
+import { canUserModerateAssets } from "@/shared/game/assetPermissions";
 import {
   AssetImportProfileId,
   getDefaultSlotRole,
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    const permissionLevel = Number((session.user as any).permissionLevel) || 0;
+    const canModerate = canUserModerateAssets({ id: session.user.id, permissionLevel });
 
     const body = await req.json();
     const {
@@ -145,12 +149,25 @@ export async function POST(req: NextRequest) {
     // Verify source asset exists
     const sourceAsset = await prisma.sourceAsset.findUnique({
       where: { id: sourceAssetId },
+      select: {
+        id: true,
+        filename: true,
+        storagePath: true,
+        uploadedById: true,
+      },
     });
 
     if (!sourceAsset) {
       return NextResponse.json(
         { success: false, error: "Source asset not found." },
         { status: 404 }
+      );
+    }
+
+    if (!canModerate && sourceAsset.uploadedById !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden — you can only slice assets you uploaded." },
+        { status: 403 }
       );
     }
 
@@ -204,7 +221,7 @@ export async function POST(req: NextRequest) {
             createdById: session.user.id,
             gameId,
             visibility: r.visibility || "COMMUNITY",
-            moderationStatus: "APPROVED",
+            moderationStatus: canModerate ? "APPROVED" : "PENDING",
             version: 1,
             cdnUrl: sourceAsset.storagePath,
             thumbnailPath: sourceAsset.storagePath,

@@ -7,10 +7,15 @@ import { soundSynth } from '@/engine/sound-synth';
 import {
   ASSET_IMPORT_PROFILE_META,
   AssetImportProfileId,
+  CHARACTER_COMPONENT_CATEGORIES,
+  CHARACTER_VIEW_DIRECTIONS,
   getDefaultSlotRole,
   inferCategoryForRole,
+  inferCharacterViewFromFacing,
   inferTypeForProfile,
   listAssetImportProfiles,
+  listCharacterComponentCategories,
+  listCharacterViewDirections,
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
 
@@ -54,6 +59,9 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
   const [gridSize, setGridSize] = useState<number>(32);
   const [scale, setScale] = useState<number>(2);
   const [importProfile, setImportProfile] = useState<AssetImportProfileId>('character');
+  const [assetMode, setAssetMode] = useState<'full-character' | 'modular-component'>('full-character');
+  const [selectedView, setSelectedView] = useState<string>('front');
+  const [selectedComponentCategory, setSelectedComponentCategory] = useState<string>('hat');
 
   // Region Selection State
   const [regions, setRegions] = useState<SlicedRegion[]>([]);
@@ -73,6 +81,26 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
       slotRole: role,
       type: inferTypeForProfile(profile),
       category: inferCategoryForRole(role) || 'sprite',
+    };
+  };
+
+  const applySuggestedRegionMeta = (region: SlicedRegion): SlicedRegion => {
+    const viewFacing = CHARACTER_VIEW_DIRECTIONS[selectedView as keyof typeof CHARACTER_VIEW_DIRECTIONS]?.facing || 'S';
+    const componentCategory = assetMode === 'modular-component' ? selectedComponentCategory : 'clothing';
+    const inferredRole = assetMode === 'modular-component'
+      ? componentCategory
+      : getDefaultSlotRole(importProfile);
+    const inferredCategory = inferCategoryForRole(inferredRole) || componentCategory || 'sprite';
+
+    return {
+      ...region,
+      importProfile,
+      slotRole: inferredRole,
+      category: inferredCategory,
+      facing: viewFacing,
+      name: assetMode === 'modular-component'
+        ? `${componentCategory}_${selectedView}`
+        : `${selectedView}_view`,
     };
   };
 
@@ -171,7 +199,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
         soundSynth?.playUiClick?.();
       } else {
         // Add new cell
-        const newRegion: SlicedRegion = {
+        const newRegion: SlicedRegion = applySuggestedRegionMeta({
           id: `slice_${Date.now() % 10000}`,
           name: `cell_${cellX}_${cellY}`,
           ...getProfileDefaults(importProfile),
@@ -182,7 +210,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
           facing: 'S',
           animationState: 'idle',
           animationFrames: 1,
-        };
+        });
         soundSynth?.playSelectSound?.();
         setRegions((prev) => [...prev, newRegion]);
         setSelectedRegionId(newRegion.id);
@@ -214,7 +242,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
     setIsDragging(false);
 
     if (currentBox.w > 4 && currentBox.h > 4) {
-      const newRegion: SlicedRegion = {
+      const newRegion: SlicedRegion = applySuggestedRegionMeta({
         id: `box_${Date.now() % 10000}`,
         name: `region_${currentBox.x}_${currentBox.y}`,
         ...getProfileDefaults(importProfile),
@@ -225,7 +253,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
         facing: 'S',
         animationState: 'idle',
         animationFrames: 1,
-      };
+      });
       soundSynth?.playSelectSound?.();
       setRegions((prev) => [...prev, newRegion]);
       setSelectedRegionId(newRegion.id);
@@ -250,7 +278,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
     let count = 0;
     for (let y = 0; y < h; y += gridSize) {
       for (let x = 0; x < w; x += gridSize) {
-        newRegions.push({
+        newRegions.push(applySuggestedRegionMeta({
           id: `cell_${count++}`,
           name: `frame_${count}`,
           ...getProfileDefaults(importProfile),
@@ -261,7 +289,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
           facing: 'S',
           animationState: 'walk',
           animationFrames: 1,
-        });
+        }));
       }
     }
     setRegions(newRegions);
@@ -397,6 +425,47 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">Asset Layout</label>
+                <select
+                  value={assetMode}
+                  onChange={(e) => setAssetMode(e.target.value as 'full-character' | 'modular-component')}
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                >
+                  <option value="full-character">Full Character / Full Sprite</option>
+                  <option value="modular-component">Modular Component</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1">View Direction</label>
+                <select
+                  value={selectedView}
+                  onChange={(e) => setSelectedView(e.target.value)}
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                >
+                  {listCharacterViewDirections().map((view) => (
+                    <option key={view} value={view}>
+                      {CHARACTER_VIEW_DIRECTIONS[view].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {assetMode === 'modular-component' && (
+                <div>
+                  <label className="block text-[10px] text-slate-400 mb-1">Component Type</label>
+                  <select
+                    value={selectedComponentCategory}
+                    onChange={(e) => setSelectedComponentCategory(e.target.value)}
+                    className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                  >
+                    {listCharacterComponentCategories().map((category) => (
+                      <option key={category} value={category}>
+                        {CHARACTER_COMPONENT_CATEGORIES[category].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* CONTROLS */}

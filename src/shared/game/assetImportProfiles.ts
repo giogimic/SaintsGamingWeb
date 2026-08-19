@@ -17,7 +17,18 @@ export type AssetCategoryHint =
   | "interface"
   | "vfx"
   | "icon"
-  | "misc";
+  | "misc"
+  | "face"
+  | "hair"
+  | "hat"
+  | "head_accessory"
+  | "clothing"
+  | "shirt"
+  | "jacket"
+  | "pants"
+  | "shoes"
+  | "accessory"
+  | "other";
 
 export type AssetTypeHint =
   | "CHARACTER"
@@ -38,12 +49,91 @@ export interface AssetImportRoleMeta {
   typeHint?: AssetTypeHint;
 }
 
+export type CharacterComponentCategory =
+  | "face"
+  | "hair"
+  | "hat"
+  | "head_accessory"
+  | "clothing"
+  | "shirt"
+  | "jacket"
+  | "pants"
+  | "shoes"
+  | "accessory"
+  | "other";
+
+export type CharacterComponentLayer =
+  | "head"
+  | "torso"
+  | "legs"
+  | "feet"
+  | "accessory"
+  | "full-body";
+
+export type CharacterViewDirection = "front" | "back" | "left" | "right";
+
+/** LPC-style base body/mesh types. A component sized for one may misalign on another. */
+export type CharacterBaseBodyType =
+  | "male"
+  | "female"
+  | "muscular"
+  | "pregnant"
+  | "child"
+  | "teen"
+  | "unspecified";
+
+export const CHARACTER_BASE_BODY_TYPES: Record<CharacterBaseBodyType, { label: string }> = {
+  male: { label: "Male" },
+  female: { label: "Female" },
+  muscular: { label: "Muscular" },
+  pregnant: { label: "Pregnant" },
+  child: { label: "Child" },
+  teen: { label: "Teen" },
+  unspecified: { label: "Unspecified / Any" },
+};
+
+/** Baseline Z-order for stacking modular character layers (lower draws first). */
+export const CHARACTER_COMPONENT_DEFAULT_Z_ORDER: Record<CharacterComponentCategory, number> = {
+  face: 20,
+  hair: 30,
+  hat: 60,
+  head_accessory: 55,
+  clothing: 40,
+  shirt: 40,
+  jacket: 45,
+  pants: 35,
+  shoes: 25,
+  accessory: 50,
+  other: 45,
+};
+
 export interface AssetImportProfileMeta {
   label: string;
   defaultRole: AssetSlotRole;
   profileTypeHint: AssetTypeHint;
   roles: Record<AssetSlotRole, AssetImportRoleMeta>;
 }
+
+export const CHARACTER_COMPONENT_CATEGORIES: Record<CharacterComponentCategory, { label: string; layer: CharacterComponentLayer }> = {
+  face: { label: "Face", layer: "head" },
+  hair: { label: "Hair", layer: "head" },
+  hat: { label: "Hat", layer: "head" },
+  head_accessory: { label: "Head Accessory", layer: "head" },
+  clothing: { label: "Clothing", layer: "torso" },
+  shirt: { label: "Shirt / Top", layer: "torso" },
+  jacket: { label: "Jacket / Outerwear", layer: "torso" },
+  pants: { label: "Pants / Bottoms", layer: "legs" },
+  shoes: { label: "Shoes / Footwear", layer: "feet" },
+  accessory: { label: "Accessory", layer: "accessory" },
+  other: { label: "Other Component", layer: "full-body" },
+};
+
+export const CHARACTER_VIEW_DIRECTIONS: Record<CharacterViewDirection, { label: string; facing: string }> = {
+  front: { label: "Front View", facing: "S" },
+  back: { label: "Back View", facing: "N" },
+  left: { label: "Left Side View", facing: "W" },
+  right: { label: "Right Side View", facing: "E" },
+};
 
 export const ASSET_IMPORT_PROFILE_META: Record<AssetImportProfileId, AssetImportProfileMeta> = {
   character: {
@@ -58,6 +148,17 @@ export const ASSET_IMPORT_PROFILE_META: Record<AssetImportProfileId, AssetImport
       portrait: { required: false, categoryHint: "interface", typeHint: "UI" },
       icon: { required: false, categoryHint: "icon", typeHint: "UI" },
       shadow: { required: false, categoryHint: "misc", typeHint: "EFFECT" },
+      face: { required: false, categoryHint: "face", typeHint: "CHARACTER" },
+      hair: { required: false, categoryHint: "hair", typeHint: "CHARACTER" },
+      hat: { required: false, categoryHint: "hat", typeHint: "CHARACTER" },
+      head_accessory: { required: false, categoryHint: "head_accessory", typeHint: "CHARACTER" },
+      clothing: { required: false, categoryHint: "clothing", typeHint: "CHARACTER" },
+      shirt: { required: false, categoryHint: "shirt", typeHint: "CHARACTER" },
+      jacket: { required: false, categoryHint: "jacket", typeHint: "CHARACTER" },
+      pants: { required: false, categoryHint: "pants", typeHint: "CHARACTER" },
+      shoes: { required: false, categoryHint: "shoes", typeHint: "CHARACTER" },
+      accessory: { required: false, categoryHint: "accessory", typeHint: "CHARACTER" },
+      other: { required: false, categoryHint: "other", typeHint: "CHARACTER" },
     },
   },
   creature: {
@@ -158,10 +259,65 @@ export function inferTypeForProfile(profile: AssetImportProfileId): AssetTypeHin
   return ASSET_IMPORT_PROFILE_META[profile].profileTypeHint;
 }
 
+export function listCharacterComponentCategories(): CharacterComponentCategory[] {
+  return Object.keys(CHARACTER_COMPONENT_CATEGORIES) as CharacterComponentCategory[];
+}
+
+export function listCharacterBaseBodyTypes(): CharacterBaseBodyType[] {
+  return Object.keys(CHARACTER_BASE_BODY_TYPES) as CharacterBaseBodyType[];
+}
+
+export function isValidCharacterBaseBodyType(value: string): value is CharacterBaseBodyType {
+  return value in CHARACTER_BASE_BODY_TYPES;
+}
+
+export function getDefaultZOrderHint(category: string): number | null {
+  const normalized = category.trim().toLowerCase();
+  if (isCharacterComponentCategory(normalized)) {
+    return CHARACTER_COMPONENT_DEFAULT_Z_ORDER[normalized];
+  }
+  return null;
+}
+
+export function listCharacterViewDirections(): CharacterViewDirection[] {
+  return Object.keys(CHARACTER_VIEW_DIRECTIONS) as CharacterViewDirection[];
+}
+
+export function inferCharacterViewFromFacing(facing: string | null | undefined): CharacterViewDirection | null {
+  const normalized = (facing || "").trim().toUpperCase();
+  if (!normalized) return null;
+  if (normalized === "S") return "front";
+  if (normalized === "N") return "back";
+  if (normalized === "W") return "left";
+  if (normalized === "E") return "right";
+  if (normalized === "DOWN") return "front";
+  if (normalized === "UP") return "back";
+  if (normalized === "LEFT") return "left";
+  if (normalized === "RIGHT") return "right";
+  return null;
+}
+
+export function isCharacterComponentCategory(value: string): value is CharacterComponentCategory {
+  return value in CHARACTER_COMPONENT_CATEGORIES;
+}
+
+export function inferCharacterComponentLayerSlot(category: string): CharacterComponentLayer | null {
+  const normalized = category.trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized in CHARACTER_COMPONENT_CATEGORIES) {
+    return CHARACTER_COMPONENT_CATEGORIES[normalized as CharacterComponentCategory].layer;
+  }
+  return null;
+}
+
 export function inferCategoryForRole(role: string): AssetCategoryHint | null {
+  const normalized = role.trim().toLowerCase();
+  if (isCharacterComponentCategory(normalized)) {
+    return normalized;
+  }
   // Deterministic tie-breaker: first match in stable profile order wins.
   for (const profile of PROFILE_IDS) {
-    const roleMeta = ASSET_IMPORT_PROFILE_META[profile].roles[role];
+    const roleMeta = ASSET_IMPORT_PROFILE_META[profile].roles[normalized];
     if (roleMeta?.categoryHint) {
       return roleMeta.categoryHint;
     }

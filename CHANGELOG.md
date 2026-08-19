@@ -1,3 +1,20 @@
+## [2.1.346] - 2026-08-19
+### Added & Fixed
+- **LPC / Modular Character Asset Pipeline Expansion:**
+  - **Shared character layer compositing (`src/shared/game/characterLayerCompositor.ts`)**: Added a pure stacking and hide-resolution engine for modular character components, including body-type mismatch reporting for preview and future runtime reuse.
+  - **Starter hero equipment layering (`src/shared/game/items/equipmentEngine.ts`, `app/actions/starter-heroes.ts`)**: Wired equipped item metadata into component hide rules and layer ordering so starter hero previews reflect modular gear composition correctly.
+  - **LPC import CLI + server importer (`scripts/import-lpc-packs.ts`, `src/server/lpcPackImporter.ts`)**: Added an explicit approved-pack import path that reads staged LPC spritesheets, preserves attribution metadata, and registers them through the standard ingestion flow.
+- **Asset Catalog, Preview, and Upload Workflow Improvements:**
+  - **Asset browser/API contract upgrades (`app/api/assets/route.ts`, `src/engine/assets/AssetManager.ts`)**: Expanded catalog payload support for richer sheet metadata, filtering, and client consumption across Studio tools.
+  - **Representative sheet thumbnails (`src/web/components/the-lobby/editor/SpriteThumbnail.tsx`, `src/shared/game/assetSheets.ts`)**: Added frame-aware thumbnail rendering so multi-row character sheets preview as a readable single frame instead of a compressed full sheet.
+  - **Uploader and slicer UX expansion (`AssetUploadView.tsx`, `SpritesheetSlicer.tsx`, `AssetEditor.tsx`, `StarterHeroEditorPanel.tsx`)**: Extended Studio upload/edit flows with modular asset metadata, smarter defaults, and improved spritesheet slicing/editing controls.
+- **Asset Governance, Persistence, and Schema Hardening:**
+  - **Transactional ingestion (`src/web/lib/assetUpload.ts`)**: SourceAsset, UsableAsset, and GameAsset creation now commits atomically to avoid partial asset records on failure.
+  - **Moderation and ownership enforcement (`app/api/assets/upload/route.ts`, `app/api/assets/slice/route.ts`, `src/shared/game/assetPermissions.ts`)**: Community uploads and slices now default to pending unless performed by moderators, and slice creation is restricted to asset owners or moderators.
+  - **Asset schema/documentation updates (`prisma/schema.prisma`, `docs/README.md`, `docs/TUXEMON_ATTRIBUTION.md`)**: Added supporting schema fields and refreshed attribution/docs to cover the expanded LPC import and modular asset workflow.
+- **Validation & Test Coverage:**
+  - **New shared tests (`assetModeration.test.ts`, `assetSheets.test.ts`, `characterLayerCompositor.test.ts`, `equipmentEngine.test.ts`, `assetImportProfiles.test.ts`)**: Added coverage for moderation policy, sheet thumbnail math, modular compositing, equipment layering, and profile-driven import behavior.
+
 ## [2.1.345] - 2026-08-18
 ### Added & Fixed
 - **Profile-Driven Asset Import Foundation (Phase 1 Implementation Start):**

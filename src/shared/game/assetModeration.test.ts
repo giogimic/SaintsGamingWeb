@@ -62,4 +62,30 @@ describe("Asset Governance & Permissions (Bible 35 §6-7)", () => {
     expect(getAssetAttribution(publicApprovedAsset)).toBe("Created by PixelArtis • License: CC0");
     expect(getAssetAttribution(personalPendingAsset)).toBe("Created by artist_bob • License: MIT");
   });
+
+  it("prefers structured multi-author credits over the single license string when present", () => {
+    const lpcPackAsset: AssetEntity = {
+      id: "asset_4",
+      createdById: "user_importer",
+      visibility: "PUBLIC",
+      moderationStatus: "APPROVED",
+      license: "CC0",
+      credits: [
+        {
+          fileName: "body/bodies/male/walk.png",
+          authors: ["bluecarrot16", "Redshrike"],
+          licenses: ["OGA-BY 3.0", "CC-BY-SA 3.0"],
+        },
+        {
+          fileName: "head/hair/male/walk.png",
+          authors: ["ElizaWy"],
+          licenses: ["OGA-BY 3.0"],
+        },
+      ],
+    };
+
+    expect(getAssetAttribution(lpcPackAsset)).toBe(
+      "body/bodies/male/walk.png: bluecarrot16, Redshrike (OGA-BY 3.0, CC-BY-SA 3.0) | head/hair/male/walk.png: ElizaWy (OGA-BY 3.0)"
+    );
+  });
 });

@@ -1,17 +1,24 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Image as ImageIcon, Music, Box, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
+import { AssetManager } from '@/engine/assets/AssetManager';
 import {
   ASSET_IMPORT_PROFILE_META,
   AssetImportProfileId,
+  CHARACTER_COMPONENT_CATEGORIES,
   getDefaultSlotRole,
+  getDefaultZOrderHint,
   inferCategoryForRole,
+  inferCharacterComponentLayerSlot,
   inferTypeForProfile,
+  isCharacterComponentCategory,
   isValidSlotRole,
   listAssetImportProfiles,
+  listCharacterBaseBodyTypes,
+  listCharacterComponentCategories,
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
 
@@ -39,6 +46,14 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
   const [assetName, setAssetName] = useState('');
   const [assetType, setAssetType] = useState('OBJECT');
   const [category, setCategory] = useState('');
+  const [componentCategory, setComponentCategory] = useState('');
+  const [componentLayer, setComponentLayer] = useState('');
+  const [variantFamily, setVariantFamily] = useState('');
+  const [isModularComponent, setIsModularComponent] = useState(false);
+  const [zOrderHint, setZOrderHint] = useState('');
+  const [baseBodyType, setBaseBodyType] = useState('');
+  const [hidesComponents, setHidesComponents] = useState<string[]>([]);
+  const [bodyTypeWarning, setBodyTypeWarning] = useState<string | null>(null);
   const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>('');
   const [slotRole, setSlotRole] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -47,6 +62,45 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Warn (non-blocking) when this piece's baseBodyType conflicts with other assets
+  // already sharing the same variantFamily — catches mismatched LPC layers before
+  // they get approved/bundled together.
+  useEffect(() => {
+    if (!isModularComponent || !variantFamily.trim() || !baseBodyType) {
+      setBodyTypeWarning(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const manager = AssetManager.getInstance();
+        const { items } = await manager.searchAssets({ variantFamily: variantFamily.trim() }, 0, 25);
+        if (cancelled) return;
+
+        const conflicting = items
+          .map((item) => (item.metadata?.baseBodyType || item.baseBodyType || '').toString().toLowerCase())
+          .filter((bt) => bt && bt !== baseBodyType.toLowerCase());
+
+        if (conflicting.length > 0) {
+          const uniqueTypes = Array.from(new Set(conflicting));
+          setBodyTypeWarning(
+            `⚠️ ${conflicting.length} existing asset(s) tagged "${variantFamily.trim()}" use a different body type (${uniqueTypes.join(', ')}). This piece is "${baseBodyType}" — sprites may not align.`
+          );
+        } else {
+          setBodyTypeWarning(null);
+        }
+      } catch {
+        // Non-critical check; ignore failures silently.
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [isModularComponent, variantFamily, baseBodyType]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,6 +161,22 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
       if (slotRole) formData.append('slotRole', slotRole);
       formData.append('sourceMode', 'single');
       if (category.trim()) formData.append('category', category.trim().toLowerCase());
+      if (isModularComponent) {
+        const normalizedComponentCategory = componentCategory || category || 'other';
+        const normalizedComponentLayer = componentLayer || inferCharacterComponentLayerSlot(normalizedComponentCategory) || 'full-body';
+        formData.append('componentCategory', normalizedComponentCategory.toLowerCase());
+        formData.append('componentLayer', normalizedComponentLayer.toLowerCase());
+        formData.append('isModularComponent', 'true');
+        if (variantFamily.trim()) formData.append('variantFamily', variantFamily.trim());
+        const effectiveZOrder = zOrderHint.trim() !== ''
+          ? Number(zOrderHint)
+          : getDefaultZOrderHint(normalizedComponentCategory);
+        if (effectiveZOrder !== null && effectiveZOrder !== undefined && !Number.isNaN(effectiveZOrder)) {
+          formData.append('zOrderHint', String(effectiveZOrder));
+        }
+        if (baseBodyType) formData.append('baseBodyType', baseBodyType);
+        if (hidesComponents.length > 0) formData.append('hidesComponents', JSON.stringify(hidesComponents));
+      }
       if (tagsInput.trim()) {
         const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
         formData.append('tags', JSON.stringify(tagList));
@@ -143,6 +213,13 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     setImportProfile('');
     setSlotRole('');
     setCategory('');
+    setComponentCategory('');
+    setComponentLayer('');
+    setVariantFamily('');
+    setIsModularComponent(false);
+    setZOrderHint('');
+    setBaseBodyType('');
+    setHidesComponents([]);
     setTagsInput('');
     setUploadSuccess(null);
     setErrorMessage(null);
@@ -239,6 +316,143 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
             </div>
 
             <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2">
+                <label className="flex items-center gap-2 text-[11px] text-slate-300 select-none cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isModularComponent}
+                    onChange={(e) => {
+                      setIsModularComponent(e.target.checked);
+                      if (e.target.checked && !componentCategory && category) {
+                        setComponentCategory(category);
+                      }
+                    }}
+                    className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
+                  />
+                  <span>Upload as modular character sprite component</span>
+                </label>
+              </div>
+
+              {isModularComponent && (
+                <>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] text-slate-400 mb-1">Component Category</label>
+                    <select
+                      value={componentCategory || category || 'hair'}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setComponentCategory(next);
+                        setCategory(next);
+                        setAssetType('CHARACTER');
+                      }}
+                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                    >
+                      {listCharacterComponentCategories().map((component) => (
+                        <option key={component} value={component}>
+                          {CHARACTER_COMPONENT_CATEGORIES[component].label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-[10px] text-slate-400 mb-1">Body Layer</label>
+                    <select
+                      value={componentLayer || inferCharacterComponentLayerSlot(componentCategory || category || 'other') || 'full-body'}
+                      onChange={(e) => setComponentLayer(e.target.value)}
+                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                    >
+                      {['head', 'torso', 'legs', 'feet', 'accessory', 'full-body'].map((layer) => (
+                        <option key={layer} value={layer}>
+                          {layer.replace('-', ' ')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="col-span-2">
+                    <label className="block text-[10px] text-slate-400 mb-1">Variant / Family</label>
+                    <input
+                      type="text"
+                      value={variantFamily}
+                      onChange={(e) => setVariantFamily(e.target.value)}
+                      placeholder="e.g. Long Hair, Red, Wizard Hat"
+                      className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
+                    />
+                  </div>
+
+                  {/* Compositing Rules — how this layer stacks/interacts with other modular components */}
+                  <div className="col-span-2 border-t border-slate-800 pt-2 mt-1 space-y-2">
+                    <div className="text-[10px] text-amber-300/80 font-bold uppercase tracking-wide">Compositing Rules</div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 mb-1">Z-Order (draw order)</label>
+                        <input
+                          type="number"
+                          value={zOrderHint}
+                          onChange={(e) => setZOrderHint(e.target.value)}
+                          placeholder={String(getDefaultZOrderHint(componentCategory || category || 'other') ?? 'auto')}
+                          className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-slate-400 mb-1">Base Body Type</label>
+                        <select
+                          value={baseBodyType}
+                          onChange={(e) => setBaseBodyType(e.target.value)}
+                          className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                        >
+                          <option value="">Unspecified / Any</option>
+                          {listCharacterBaseBodyTypes()
+                            .filter((bodyType) => bodyType !== 'unspecified')
+                            .map((bodyType) => (
+                              <option key={bodyType} value={bodyType}>
+                                {bodyType.charAt(0).toUpperCase() + bodyType.slice(1)}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-1">Hides these layers when equipped</label>
+                      <div className="flex flex-wrap gap-2">
+                        {listCharacterComponentCategories()
+                          .filter((c) => c !== (componentCategory || category))
+                          .map((c) => (
+                            <label
+                              key={c}
+                              className="flex items-center gap-1 text-[10px] text-slate-300 bg-[#0b1320] border border-slate-700 rounded px-2 py-1 cursor-pointer select-none"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={hidesComponents.includes(c)}
+                                onChange={(e) => {
+                                  setHidesComponents((prev) =>
+                                    e.target.checked ? [...prev, c] : prev.filter((v) => v !== c)
+                                  );
+                                }}
+                                className="rounded bg-[#0b1320] border-slate-700 text-amber-500 focus:ring-0"
+                              />
+                              {CHARACTER_COMPONENT_CATEGORIES[c].label}
+                            </label>
+                          ))}
+                      </div>
+                      <div className="text-[10px] text-slate-500 mt-1">e.g. a closed helm hides Hair, Hat, Head Accessory.</div>
+                    </div>
+
+                    {bodyTypeWarning && (
+                      <div className="flex items-start gap-1.5 bg-amber-950/40 border border-amber-500/40 rounded px-2 py-1.5 text-[10px] text-amber-200">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <span>{bodyTypeWarning}</span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-[10px] text-slate-400 mb-1">Import Profile</label>
                 <select

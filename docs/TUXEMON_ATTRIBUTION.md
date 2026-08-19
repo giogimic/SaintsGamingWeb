@@ -1,25 +1,48 @@
-# Open Source Media & Asset Attribution Notice
+# Asset Source & Credit Notice
 
-## Monster & Sprite Artwork Credits
-Visual creature artwork, monster sprites, and overworld character sheets used in this project are created by the **Tuxemon Project contributors** and **OpenGameArt.org contributors**, licensed under [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/).
+This project uses a mix of original project systems and optional source-attributed community art. The important distinction is that imported art packs are not treated as the project’s core default art set.
 
-* **Project Name:** Tuxemon (Art Assets)
+We use external art primarily to test asset import behavior, validate sprite-sheet conventions, and prototype character composition flows. These packs are optional. They are not required for the project to run or for the underlying engine to function.
+
+---
+
+## Community, Tuxemon, and LPC-style source assets
+
+Some sprite resources and reference assets in this project are based on community content from the broader Tuxemon / LPC / OpenGameArt ecosystem. Those sources remain the intellectual property of their original creators and contributors.
+
+When used here, they are treated as attributed, optional, and clearly separate from the project’s own original base content and final game identity.
+
+## Tuxemon sources
+
+* **Project Name:** Tuxemon
 * **Website:** [https://www.tuxemon.org](https://www.tuxemon.org)
 * **GitHub Repository:** [https://github.com/Tuxemon/Tuxemon](https://github.com/Tuxemon/Tuxemon)
 * **License:** Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
 
-### Asset Usage Terms
-1. **Creature Sprites:** Monster graphic designs, overworld walking sprites, and battle sprites derived from Tuxemon are used in accordance with CC BY-SA 4.0 copyleft terms.
-2. **Attribution:** All visual artwork remains the intellectual property of its respective open-source creators and contributors.
+Visual creature art and related sprite references are used in keeping with the project’s attribution obligations and the source license terms.
+
+## LPC / OpenGameArt sources
+
+* **Project Name:** Liberated Pixel Cup (LPC)
+* **Source:** [OpenGameArt.org](https://opengameart.org)
+* **License:** CC BY-SA 3.0 / GPL 3.0 terms apply to the underlying artwork and source material as published by the original contributors.
+
+Character base sprites, modular clothing references, and related prototype art are used for validation and implementation testing. These are not presented as core Saints Gaming original art.
 
 ---
 
-## OpenGameArt & Liberated Pixel Cup (LPC) Credits
-* **LPC Character Base Sprites:** Liberated Pixel Cup contributors ([OpenGameArt.org](https://opengameart.org)). Licensed under CC BY-SA 3.0 / GPL 3.0.
-* **UI Construction Kit:** `rpg-gui-construction-kit-v10` by OpenGameArt contributors (CC BY 3.0).
-* **RPG Item Icons:** `16x16-rpg-items` pack by OpenGameArt contributors (CC BY 3.0 / CC0).
+## Project source and original systems
+
+The game engine source code, rendering pipeline, realtime systems, world editor, combat logic, progression systems, and project-specific tooling are original project work and remain part of Saints Gaming’s custom implementation.
+
+The distinction is simple:
+
+- original project systems = our code and game logic
+- imported sprite packs = attributed, optional reference/test content
+- final project assets = adapted and assembled for custom use within this project
 
 ---
 
-## Saints Gaming Engine & Mechanics Notice
-All game engine source code, Next.js 15 full-stack framework, Go MMO high-throughput tick server, 2.5D Babylon.js WebGL engine, 27-skill proficiency matrix, d20 resolution and capture formulas, dual-combat battle engines, and map architecture are original proprietary systems © Saints Gaming.
+## Practical note
+
+If a generated or imported batch is added to the project, the relevant credits and usage status should be recorded before it is pushed. New packs should be clearly marked as optional source-attributed content so they are not mistaken for the project’s required base art.

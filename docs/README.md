@@ -9,7 +9,9 @@
 
 </div>
 
-Welcome to the comprehensive **Saints Gaming Engine & Platform Documentation**. This documentation is organized into two primary categories to provide a complete understanding of both player-facing game systems and creator-facing studio tooling.
+Welcome to the comprehensive **Saints Gaming Engine & Platform Documentation**. This is the deeper technical reference for the project. The main README is the short front door. This wiki is where the actual systems, tools, and runtime logic live.
+
+Important note: optional community and LPC-style prototype art can be used in the content pipeline for testing and sprite validation, but those assets are not treated as the project’s required base art. They are attributed and kept separate from the game’s original source systems and final project identity.
 
 ---
 
