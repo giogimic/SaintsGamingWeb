@@ -20,6 +20,8 @@ import path from "node:path";
 import { ingestAsset } from "@/web/lib/assetUpload";
 import { isValidCharacterBaseBodyType } from "@/shared/game/assetImportProfiles";
 
+export const DEFAULT_LPC_APPROVED_DIR = path.resolve(process.cwd(), "..", ".assets-gen", "review", "approved");
+
 export interface LpcPackImportOptions {
   /** Absolute path to `.assets-gen/review/approved/` (or equivalent). */
   approvedDir: string;
@@ -31,6 +33,13 @@ export interface LpcPackImportOptions {
 export interface LpcPackImportResult {
   imported: { packId: string; assetId: string }[];
   skipped: { packId: string; reason: string }[];
+}
+
+export interface LpcApprovedPackStatus {
+  approvedDir: string;
+  exists: boolean;
+  packCount: number;
+  packIds: string[];
 }
 
 /** Reads width/height from a PNG's IHDR chunk without any image-processing dependency. */
@@ -52,6 +61,32 @@ function normalizeBodyType(bodyType?: string): string | undefined {
   if (!bodyType) return undefined;
   const lower = bodyType.trim().toLowerCase();
   return isValidCharacterBaseBodyType(lower) ? lower : undefined;
+}
+
+export async function getApprovedLpcPackStatus(approvedDir = DEFAULT_LPC_APPROVED_DIR): Promise<LpcApprovedPackStatus> {
+  let entries: string[] = [];
+  try {
+    entries = await fs.readdir(approvedDir);
+  } catch {
+    return { approvedDir, exists: false, packCount: 0, packIds: [] };
+  }
+
+  const packIds: string[] = [];
+  for (const entry of entries) {
+    const packDir = path.join(approvedDir, entry);
+    const stat = await fs.stat(packDir).catch(() => null);
+    if (stat?.isDirectory()) {
+      packIds.push(entry);
+    }
+  }
+
+  packIds.sort((a, b) => a.localeCompare(b));
+  return {
+    approvedDir,
+    exists: true,
+    packCount: packIds.length,
+    packIds,
+  };
 }
 
 /**

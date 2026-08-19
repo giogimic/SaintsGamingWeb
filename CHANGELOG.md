@@ -1,3 +1,10 @@
+## [2.1.347] - 2026-08-19
+### Added & Fixed
+- **Studio LPC Import Workflow Made Explicit:**
+  - **Dedicated approved-pack API (`app/api/assets/import-lpc/route.ts`)**: Added a Studio-callable endpoint to inspect the external approved LPC review folder and import reviewed packs directly into the asset catalog without dropping to the CLI.
+  - **Shared approved-pack status helpers (`src/server/lpcPackImporter.ts`)**: Added default approved-folder discovery plus pack-count/status inspection so the Studio UI can show whether reviewed LPC packs are actually ready to import.
+  - **Upload tab LPC guidance and actions (`src/web/components/the-lobby/editor/AssetUploadView.tsx`)**: Added a visible "LPC Import Path" panel with one-click approved-pack import, ready-pack counts, approved-folder visibility, and an LPC sheet preset for manual sheet uploads that should continue into the slicer.
+
 ## [2.1.346] - 2026-08-19
 ### Added & Fixed
 - **LPC / Modular Character Asset Pipeline Expansion:**

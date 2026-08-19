@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Music, Box, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Music, Box, CheckCircle2, AlertCircle, Loader2, Package, Wand2 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 import { AssetManager } from '@/engine/assets/AssetManager';
@@ -60,8 +60,43 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
   const [visibility, setVisibility] = useState('COMMUNITY');
   const [createUsable, setCreateUsable] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [lpcStatus, setLpcStatus] = useState<{ approvedDir: string; exists: boolean; packCount: number } | null>(null);
+  const [isLoadingLpcStatus, setIsLoadingLpcStatus] = useState(true);
+  const [isImportingLpc, setIsImportingLpc] = useState(false);
+  const [lpcImportMessage, setLpcImportMessage] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLpcStatus = async () => {
+      setIsLoadingLpcStatus(true);
+      try {
+        const res = await fetch('/api/assets/import-lpc', { cache: 'no-store' });
+        const data = await res.json();
+        if (!cancelled && res.ok && data.success) {
+          setLpcStatus({
+            approvedDir: data.approvedDir,
+            exists: Boolean(data.exists),
+            packCount: Number(data.packCount) || 0,
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setLpcStatus(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingLpcStatus(false);
+        }
+      }
+    };
+
+    void loadLpcStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Warn (non-blocking) when this piece's baseBodyType conflicts with other assets
   // already sharing the same variantFamily — catches mismatched LPC layers before
@@ -226,6 +261,56 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const applyLpcSheetPreset = () => {
+    setImportProfile('character');
+    setSlotRole('walk');
+    setAssetType('CHARACTER');
+    setCategory((prev) => prev.trim() || 'actor');
+    setIsModularComponent(false);
+    setComponentCategory('');
+    setComponentLayer('');
+    setVariantFamily('');
+    setZOrderHint('');
+    setBaseBodyType('');
+    setHidesComponents([]);
+    setTagsInput((prev) => {
+      const tokens = prev.split(',').map((v) => v.trim()).filter(Boolean);
+      const next = Array.from(new Set([...tokens, 'lpc', 'spritesheet', 'character-sheet']));
+      return next.join(', ');
+    });
+    showToast('Applied LPC character sheet preset. Upload the full sheet, then slice it if needed.');
+  };
+
+  const handleImportApprovedLpc = async () => {
+    setIsImportingLpc(true);
+    setLpcImportMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/assets/import-lpc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visibility }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to import approved LPC packs.');
+      }
+
+      const summary = `Imported ${data.importedCount} approved LPC pack(s)` +
+        (data.skippedCount ? `, skipped ${data.skippedCount}.` : '.');
+      setLpcImportMessage(summary);
+      showToast(summary);
+      onUploadComplete?.(data);
+      setLpcStatus((prev) => prev ? { ...prev, packCount: Math.max(prev.packCount - data.importedCount, 0) } : prev);
+    } catch (err: any) {
+      console.error('LPC import error:', err);
+      setErrorMessage(err.message || 'Failed to import approved LPC packs.');
+    } finally {
+      setIsImportingLpc(false);
+    }
+  };
+
   return (
     <div className="space-y-4 text-xs font-mono text-slate-300">
       {/* HEADER & PHILOSOPHY */}
@@ -236,6 +321,69 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
         <p className="text-[11px] text-slate-400 leading-relaxed">
           Upload individual sprites, models, tiles, or audio files into the unified community library.
         </p>
+      </div>
+
+      <div className="bg-[#07111c] border border-emerald-500/30 rounded p-3 space-y-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="space-y-1 max-w-[42rem]">
+            <div className="flex items-center gap-1.5 text-emerald-300 font-bold text-sm">
+              <Package className="w-4 h-4 text-emerald-400" /> LPC Import Path
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Use this for full approved LPC packs from the external review workspace. Use the preset button below when uploading a single LPC sheet manually and then opening the slicer.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={applyLpcSheetPreset}
+              className="px-3 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-bold transition-all flex items-center gap-1.5"
+            >
+              <Wand2 className="w-3.5 h-3.5" /> Use LPC Sheet Preset
+            </button>
+            <button
+              type="button"
+              disabled={isImportingLpc || isLoadingLpcStatus || !lpcStatus?.exists || (lpcStatus?.packCount || 0) === 0}
+              onClick={() => void handleImportApprovedLpc()}
+              className={`px-3 py-1.5 rounded font-bold transition-all flex items-center gap-1.5 ${
+                isImportingLpc || isLoadingLpcStatus || !lpcStatus?.exists || (lpcStatus?.packCount || 0) === 0
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+              }`}
+            >
+              {isImportingLpc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+              Import Approved LPC Packs
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px]">
+          <div className="bg-black/30 border border-slate-800 rounded px-2 py-1.5">
+            <div className="text-slate-500 uppercase tracking-wide">Approved Folder</div>
+            <div className="text-slate-200 break-all">{lpcStatus?.approvedDir || 'Loading...'}</div>
+          </div>
+          <div className="bg-black/30 border border-slate-800 rounded px-2 py-1.5">
+            <div className="text-slate-500 uppercase tracking-wide">Review Queue Status</div>
+            <div className={lpcStatus?.exists ? 'text-emerald-300' : 'text-amber-300'}>
+              {isLoadingLpcStatus ? 'Checking approved packs…' : lpcStatus?.exists ? 'Approved folder detected' : 'Approved folder not found'}
+            </div>
+          </div>
+          <div className="bg-black/30 border border-slate-800 rounded px-2 py-1.5">
+            <div className="text-slate-500 uppercase tracking-wide">Ready Packs</div>
+            <div className="text-amber-300 font-bold">{isLoadingLpcStatus ? '…' : lpcStatus?.packCount ?? 0}</div>
+          </div>
+        </div>
+
+        <div className="text-[10px] text-slate-400 leading-relaxed">
+          Approved-pack import is for reviewed full LPC characters from <span className="text-slate-200">.assets-gen/review/approved</span>. Manual single-file LPC uploads should use the preset, then continue into the slicer for modular extraction.
+        </div>
+
+        {lpcImportMessage && (
+          <div className="bg-emerald-950/30 border border-emerald-500/30 rounded px-2 py-1.5 text-[10px] text-emerald-200">
+            {lpcImportMessage}
+          </div>
+        )}
       </div>
 
       {uploadSuccess ? (
