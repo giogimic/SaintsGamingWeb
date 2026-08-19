@@ -1,3 +1,12 @@
+## [2.1.364] - 2026-08-19
+### Added & Fixed
+- **Asset Browser Context Menu Integration:**
+  - Connected `AssetContextMenu` to `AssetEditor.tsx` grid cards and list rows. Right-clicking an asset triggers a custom context menu at the mouse position with quick actions (Inspect, Use in Canvas, Copy Path, Open Slicer, Make Starter Hero, Use as Map Tileset, direct Gameplay Flag Collision toggles, Quick Tag, Reclassify, and Delete/Archive).
+- **Live Cursor & Dynamic Brush Size Viewport Updates:**
+  - Upgraded `BabylonEngine.ts` and `GameCanvasBabylon.tsx` to track the last hovered tile coordinate (`lastHoveredR` / `lastHoveredC`). Changing the brush size (via `[`/`]`, numbers, or the bottom toolbar) immediately updates and re-renders the brush preview mesh on the canvas in real time without needing mouse movement.
+- **Smart Menu Dismissal & UI Integrity**:
+  - Ensured outside clicks, Escape keys, and action clicks cleanly dismiss the context menus.
+
 ## [2.1.363] - 2026-08-19
 ### Added & Fixed
 - **Asset Studio & Asset Browser Overhaul:**

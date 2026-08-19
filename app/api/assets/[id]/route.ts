@@ -116,3 +116,36 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update asset" }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /api/assets/[id] — soft-delete / deactivate GameAsset (Developer+).
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { permissionLevel: true },
+    });
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { id } = await params;
+    await prisma.gameAsset.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    return NextResponse.json({ success: true, message: "Asset deactivated" });
+  } catch (error) {
+    console.error("Failed to delete asset:", error);
+    return NextResponse.json({ error: "Failed to delete asset" }, { status: 500 });
+  }
+}
