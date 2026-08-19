@@ -65,9 +65,13 @@ function SparklesIcon(props: any) {
 }
 
 export function AssetUploadView({
+  initialAssetType,
+  initialImportProfile,
   onUploadComplete,
   onOpenSlicer,
 }: {
+  initialAssetType?: string;
+  initialImportProfile?: AssetImportProfileId | '';
   onUploadComplete?: (asset: any) => void;
   onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
 }) {
@@ -78,7 +82,7 @@ export function AssetUploadView({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [assetName, setAssetName] = useState('');
-  const [assetType, setAssetType] = useState('OBJECT');
+  const [assetType, setAssetType] = useState(initialAssetType || 'OBJECT');
   const [category, setCategory] = useState('');
   const [componentCategory, setComponentCategory] = useState('');
   const [componentLayer, setComponentLayer] = useState('');
@@ -88,7 +92,15 @@ export function AssetUploadView({
   const [baseBodyType, setBaseBodyType] = useState('');
   const [hidesComponents, setHidesComponents] = useState<string[]>([]);
   const [bodyTypeWarning, setBodyTypeWarning] = useState<string | null>(null);
-  const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>('');
+  const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>(initialImportProfile || '');
+
+  useEffect(() => {
+    if (initialAssetType) setAssetType(initialAssetType);
+  }, [initialAssetType]);
+
+  useEffect(() => {
+    if (initialImportProfile) setImportProfile(initialImportProfile);
+  }, [initialImportProfile]);
   const [slotRole, setSlotRole] = useState('');
   const [animationProfile, setAnimationProfile] = useState<SpriteAnimationProfile | ''>('');
   const [tagsInput, setTagsInput] = useState('');

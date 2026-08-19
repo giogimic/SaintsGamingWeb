@@ -1,3 +1,10 @@
+## [2.1.355] - 2026-08-19
+### Added & Fixed
+- **Sub-Studio Context Handshake & Starter Hero Ingestion:**
+  - **1-Click "Make Starter Hero" Ingestion (`AssetEditor.tsx`, `StarterHeroEditorPanel.tsx`)**: Added action button in the Asset Inspector pane for Character/LPC assets. Clicking instantly transitions to the Starter Hero Editor with name, slug, and sprite asset auto-populated.
+  - **Context-Aware Sub-Studio Handshake (`AssetStudioSuite.tsx`)**: Wired dedicated workspace parameters (e.g. 32px Grid for Items & Tilesets, 64px LPC for Characters & Creatures) directly into `AssetEditor`, `AssetUploadView`, and `SpritesheetSlicer`.
+  - **Default Import Profile Binding (`AssetUploadView.tsx`, `SpritesheetSlicer.tsx`)**: Initialized default asset types (`CHARACTER`, `CREATURE`, `TILE`, `ITEM`, `AUDIO`) and import profile slots tailored per active workspace tab.
+
 ## [2.1.354] - 2026-08-19
 ### Added & Fixed
 - **Asset Management Studio Final Polish:**

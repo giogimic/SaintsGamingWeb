@@ -149,6 +149,51 @@ export function AssetStudioSuite() {
     }
   };
 
+  // ── Import Profile mapping per workspace ──
+  const getImportProfile = (): any => {
+    switch (activeWorkspace) {
+      case 'characters':
+        return 'character';
+      case 'creatures':
+        return 'creature';
+      case 'tilesets':
+        return 'tileset';
+      case 'items':
+        return 'item';
+      default:
+        return undefined;
+    }
+  };
+
+  // ── Default Grid Size mapping per workspace ──
+  const getDefaultGridSize = (): number => {
+    switch (activeWorkspace) {
+      case 'tilesets':
+      case 'items':
+        return 32;
+      default:
+        return 64;
+    }
+  };
+
+  // ── Upload Asset Type mapping per workspace ──
+  const getUploadAssetType = (): string => {
+    switch (activeWorkspace) {
+      case 'characters':
+        return 'CHARACTER';
+      case 'creatures':
+        return 'CREATURE';
+      case 'tilesets':
+        return 'TILE';
+      case 'items':
+        return 'ITEM';
+      case 'audio':
+        return 'AUDIO';
+      default:
+        return 'OBJECT';
+    }
+  };
+
   // ── Sub-tabs per workspace ──
   const getSubTabs = (): { id: SubTab; label: string; icon: LucideIcon }[] => {
     switch (activeWorkspace) {
@@ -213,6 +258,7 @@ export function AssetStudioSuite() {
       case 'browse':
         return (
           <AssetEditor
+            initialTypeFilter={getTypeFilter() || 'ALL'}
             onOpenSlicer={(asset) => {
               setSlicerSource(asset);
               setActiveSubTab('slicer');
@@ -228,9 +274,24 @@ export function AssetStudioSuite() {
           />
         );
       case 'upload':
-        return <AssetUploadView />;
+        return (
+          <AssetUploadView
+            initialAssetType={getUploadAssetType()}
+            initialImportProfile={getImportProfile()}
+            onOpenSlicer={(asset) => {
+              setSlicerSource(asset);
+              setActiveSubTab('slicer');
+            }}
+          />
+        );
       case 'slicer':
-        return <SpritesheetSlicer sourceAsset={slicerSource} />;
+        return (
+          <SpritesheetSlicer
+            sourceAsset={slicerSource}
+            defaultImportProfile={getImportProfile()}
+            defaultGridSize={getDefaultGridSize()}
+          />
+        );
       case 'packs':
         return <AssetPackInstaller />;
       default:
