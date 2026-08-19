@@ -1,7 +1,19 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Scissors, Grid, Square, Trash2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import {
+  Scissors,
+  Grid,
+  Square,
+  Trash2,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+  Wand2,
+  Sparkles,
+  Layers,
+  ArrowRight,
+} from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 import {
@@ -11,13 +23,17 @@ import {
   CHARACTER_VIEW_DIRECTIONS,
   getDefaultSlotRole,
   inferCategoryForRole,
-  inferCharacterViewFromFacing,
   inferTypeForProfile,
   listAssetImportProfiles,
   listCharacterComponentCategories,
   listCharacterViewDirections,
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
+import {
+  detectLpcFormat,
+  getLpcStandardSlices,
+  LpcDetectedFormat,
+} from '@/shared/game/lpcPackage';
 
 export interface SlicedRegion {
   id: string;
@@ -53,10 +69,11 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
   const [imageUrl, setImageUrl] = useState<string>(sourceAsset?.storagePath || '');
   const [sourceId, setSourceId] = useState<string>(sourceAsset?.id || '');
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
+  const [detectedFormat, setDetectedFormat] = useState<LpcDetectedFormat | null>(null);
 
   // Slicing Mode
   const [sliceMode, setSliceMode] = useState<'grid' | 'box'>('grid');
-  const [gridSize, setGridSize] = useState<number>(32);
+  const [gridSize, setGridSize] = useState<number>(64);
   const [scale, setScale] = useState<number>(2);
   const [importProfile, setImportProfile] = useState<AssetImportProfileId>('character');
   const [assetMode, setAssetMode] = useState<'full-character' | 'modular-component'>('full-character');
@@ -73,6 +90,14 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState<number | null>(null);
+
+  // Update image url & source id when props change
+  useEffect(() => {
+    if (sourceAsset) {
+      setImageUrl(sourceAsset.storagePath);
+      setSourceId(sourceAsset.id);
+    }
+  }, [sourceAsset]);
 
   const getProfileDefaults = (profile: AssetImportProfileId) => {
     const role = getDefaultSlotRole(profile);
@@ -106,11 +131,20 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
 
   // Load image
   useEffect(() => {
-    if (!imageUrl) return;
+    if (!imageUrl) {
+      setImageElement(null);
+      setDetectedFormat(null);
+      return;
+    }
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       setImageElement(img);
+      const detected = detectLpcFormat(img.naturalWidth, img.naturalHeight);
+      setDetectedFormat(detected);
+      if (detected.isLpc && detected.frameWidth) {
+        setGridSize(detected.frameWidth);
+      }
     };
     img.src = imageUrl;
   }, [imageUrl]);
@@ -278,22 +312,64 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
     let count = 0;
     for (let y = 0; y < h; y += gridSize) {
       for (let x = 0; x < w; x += gridSize) {
-        newRegions.push(applySuggestedRegionMeta({
-          id: `cell_${count++}`,
-          name: `frame_${count}`,
-          ...getProfileDefaults(importProfile),
-          x,
-          y,
-          w: Math.min(gridSize, w - x),
-          h: Math.min(gridSize, h - y),
-          facing: 'S',
-          animationState: 'walk',
-          animationFrames: 1,
-        }));
+        newRegions.push(
+          applySuggestedRegionMeta({
+            id: `cell_${count++}`,
+            name: `frame_${count}`,
+            ...getProfileDefaults(importProfile),
+            x,
+            y,
+            w: Math.min(gridSize, w - x),
+            h: Math.min(gridSize, h - y),
+            facing: 'S',
+            animationState: 'walk',
+            animationFrames: 1,
+          })
+        );
       }
     }
     setRegions(newRegions);
     showToast(`Generated ${newRegions.length} grid cells!`);
+  };
+
+  /** Applies smart LPC presets (Full Character, Walk Cycle, Saints 2.5D, Idles) */
+  const applyLpcPresetSlices = (preset: 'lpc-full' | 'lpc-walk' | 'saints-2.5d' | 'lpc-idles') => {
+    if (!imageElement) {
+      showToast('Load an image first before applying slicing presets.');
+      return;
+    }
+
+    soundSynth?.playSelectSound?.();
+    const slices = getLpcStandardSlices(preset, {
+      sheetWidth: imageElement.naturalWidth,
+      sheetHeight: imageElement.naturalHeight,
+      prefix: sourceAsset?.filename ? sourceAsset.filename.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ') : '',
+    });
+
+    const mapped: SlicedRegion[] = slices.map((s) => ({
+      id: s.id,
+      name: s.name,
+      type: s.type,
+      category: s.category,
+      importProfile: 'character',
+      slotRole: s.slotRole,
+      x: s.x,
+      y: s.y,
+      w: s.w,
+      h: s.h,
+      facing: s.facing,
+      animationState: s.animationState,
+      animationFrames: s.animationFrames,
+    }));
+
+    setRegions(mapped);
+    const labels = {
+      'lpc-full': 'Full LPC Animation Suite',
+      'lpc-walk': 'LPC 4-Direction Walk Cycle',
+      'saints-2.5d': 'Saints 2.5D MMO 3x4 Grid',
+      'lpc-idles': '4-Direction Standing Idles',
+    };
+    showToast(`Applied ${labels[preset]}: ${mapped.length} slice regions generated!`);
   };
 
   const handleBatchSliceSubmit = async () => {
@@ -357,11 +433,56 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
       {/* HEADER */}
       <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded p-3 space-y-1">
         <div className="flex items-center gap-1.5 text-[#e2d5b3] font-bold text-sm">
-          <Scissors className="w-4 h-4 text-amber-400" /> Visual Spritesheet Slicer (Bible 35 §2.1)
+          <Scissors className="w-4 h-4 text-amber-400" /> Visual Spritesheet Slicer & LPC Animation Extractor
         </div>
         <p className="text-[11px] text-slate-400">
-          Slice multi-frame sprite sheets and atlases into categorized Usable Assets with directional metadata.
+          Slice multi-frame spritesheets into categorized Usable Assets with directional metadata, LPC animation
+          presets, and MMO walk cycles.
         </p>
+      </div>
+
+      {/* LPC AUTO-SLICING TOOLBAR */}
+      <div className="bg-[#07111c] border border-cyan-500/30 rounded p-2.5 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Wand2 className="w-4 h-4 text-cyan-400" />
+          <span className="text-cyan-300 font-bold text-xs">LPC Auto-Slice Presets:</span>
+          {detectedFormat?.isLpc && (
+            <span className="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/40">
+              {detectedFormat.label}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => applyLpcPresetSlices('lpc-full')}
+            className="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded font-bold text-[10px] transition-all flex items-center gap-1 cursor-pointer"
+          >
+            <Sparkles className="w-3 h-3" /> Auto-Slice Full Sheet
+          </button>
+          <button
+            type="button"
+            onClick={() => applyLpcPresetSlices('lpc-walk')}
+            className="px-2.5 py-1 bg-cyan-900/90 hover:bg-cyan-800 text-cyan-200 rounded font-bold text-[10px] transition-all cursor-pointer"
+          >
+            Extract Walk Cycle (4-Dir)
+          </button>
+          <button
+            type="button"
+            onClick={() => applyLpcPresetSlices('saints-2.5d')}
+            className="px-2.5 py-1 bg-amber-700 hover:bg-amber-600 text-white rounded font-bold text-[10px] transition-all cursor-pointer"
+          >
+            Extract Saints 2.5D (3x4)
+          </button>
+          <button
+            type="button"
+            onClick={() => applyLpcPresetSlices('lpc-idles')}
+            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold text-[10px] transition-all cursor-pointer"
+          >
+            Extract Idles (4-Dir)
+          </button>
+        </div>
       </div>
 
       {successCount !== null ? (
@@ -371,14 +492,15 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
             {successCount} Usable Assets Created & Linked!
           </div>
           <p className="text-[11px] text-slate-300">
-            Assets are now available in the Asset Catalog for map building, NPC placement, and combat entities.
+            Assets are now registered with proper direction, role, and animation frames in the Asset Catalog.
           </p>
           <button
+            type="button"
             onClick={() => {
               setSuccessCount(null);
               setRegions([]);
             }}
-            className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all shadow"
+            className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all shadow cursor-pointer"
           >
             Slice Another Sheet
           </button>
@@ -474,7 +596,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                 <button
                   type="button"
                   onClick={() => setSliceMode('grid')}
-                  className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-bold ${
+                  className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-bold cursor-pointer ${
                     sliceMode === 'grid' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                   }`}
                 >
@@ -483,7 +605,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                 <button
                   type="button"
                   onClick={() => setSliceMode('box')}
-                  className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-bold ${
+                  className={`px-2 py-1 rounded flex items-center gap-1 text-[11px] font-bold cursor-pointer ${
                     sliceMode === 'box' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                   }`}
                 >
@@ -499,8 +621,8 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                       key={size}
                       type="button"
                       onClick={() => setGridSize(size)}
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                        gridSize === size ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400'
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                        gridSize === size ? 'bg-amber-500 text-black' : 'bg-slate-800 text-slate-400 hover:text-white'
                       }`}
                     >
                       {size}px
@@ -509,7 +631,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                   <button
                     type="button"
                     onClick={autoSliceAllCells}
-                    className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-amber-300 rounded text-[10px] font-bold"
+                    className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-amber-300 rounded text-[10px] font-bold cursor-pointer"
                   >
                     Slice All
                   </button>
@@ -523,8 +645,8 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                     key={z}
                     type="button"
                     onClick={() => setScale(z)}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      scale === z ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                      scale === z ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     {z}x
@@ -535,7 +657,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
           </div>
 
           {/* INTERACTIVE CANVAS VIEW */}
-          <div className="border border-slate-800 rounded bg-black/60 p-2 overflow-auto max-h-[350px] flex items-center justify-center">
+          <div className="border border-slate-800 rounded bg-black/60 p-2 overflow-auto max-h-[380px] flex items-center justify-center">
             {imageUrl ? (
               <canvas
                 ref={canvasRef}
@@ -546,7 +668,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
               />
             ) : (
               <div className="py-8 text-center text-slate-500 text-xs">
-                Enter an image URL or pick an uploaded SourceAsset to start slicing.
+                Enter an image URL or upload a SourceAsset to start slicing.
               </div>
             )}
           </div>
@@ -559,13 +681,13 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                 <button
                   type="button"
                   onClick={() => setRegions([])}
-                  className="text-rose-400 hover:text-rose-300 text-[10px]"
+                  className="text-rose-400 hover:text-rose-300 text-[10px] cursor-pointer"
                 >
                   Clear All
                 </button>
               </div>
 
-              <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
                 {regions.map((r) => {
                   const isSelected = r.id === selectedRegionId;
                   return (
@@ -612,11 +734,13 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                         }}
                         className="bg-[#050b14] border border-slate-700 rounded px-1 text-[10px] text-slate-200"
                       >
-                        {listSlotRolesForProfile((r.importProfile || importProfile) as AssetImportProfileId).map((role) => (
-                          <option key={role} value={role}>
-                            {role}
-                          </option>
-                        ))}
+                        {listSlotRolesForProfile((r.importProfile || importProfile) as AssetImportProfileId).map(
+                          (role) => (
+                            <option key={role} value={role}>
+                              {role}
+                            </option>
+                          )
+                        )}
                       </select>
                       <select
                         value={r.facing}
@@ -643,7 +767,10 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                       >
                         <option value="idle">Idle</option>
                         <option value="walk">Walk</option>
-                        <option value="attack">Attack</option>
+                        <option value="slash">Slash</option>
+                        <option value="thrust">Thrust</option>
+                        <option value="spellcast">Spellcast</option>
+                        <option value="shoot">Shoot</option>
                         <option value="hurt">Hurt</option>
                       </select>
                       <button
@@ -652,7 +779,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
                           e.stopPropagation();
                           removeRegion(r.id);
                         }}
-                        className="text-slate-500 hover:text-rose-400 p-1"
+                        className="text-slate-500 hover:text-rose-400 p-1 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -674,7 +801,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
             type="button"
             onClick={handleBatchSliceSubmit}
             disabled={isSubmitting || regions.length === 0}
-            className={`w-full py-2 rounded font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`w-full py-2 rounded font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               isSubmitting || regions.length === 0
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)]'

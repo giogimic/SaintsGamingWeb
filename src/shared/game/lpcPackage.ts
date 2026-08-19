@@ -1,0 +1,629 @@
+/**
+ * Saints Gaming — Universal LPC Asset Package & Slicing Helpers
+ *
+ * Provides pure utility functions to detect LPC spritesheet formats, generate
+ * predefined animation slice regions for the Studio Slicer, parse layer
+ * attribution credits, and unpack multi-layer LPC Generator ZIP exports in the browser.
+ */
+
+import JSZip from "jszip";
+import {
+  CharacterComponentCategory,
+  getDefaultZOrderHint,
+  inferCharacterComponentLayerSlot,
+} from "./assetImportProfiles";
+
+export type LpcFormatVariant =
+  | "universal-full"
+  | "lpc-walk"
+  | "saints-2.5d"
+  | "custom-grid";
+
+export interface LpcDetectedFormat {
+  isLpc: boolean;
+  variant: LpcFormatVariant;
+  label: string;
+  description: string;
+  frameWidth: number;
+  frameHeight: number;
+  cols: number;
+  rows: number;
+  totalFrames: number;
+  suggestedPresets: string[];
+}
+
+export interface LpcSliceRegion {
+  id: string;
+  name: string;
+  type: string;
+  category: string;
+  importProfile: string;
+  slotRole: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  facing: "S" | "N" | "W" | "E";
+  animationState: "walk" | "idle" | "slash" | "thrust" | "spellcast" | "shoot" | "hurt";
+  animationFrames: number;
+}
+
+export interface LpcCreditEntry {
+  fileName?: string;
+  authors: string[];
+  licenses: string[];
+  urls: string[];
+}
+
+export interface UnpackedLpcLayer {
+  file: File;
+  name: string;
+  componentCategory: CharacterComponentCategory | "other";
+  componentLayer: string;
+  zOrderHint: number;
+  baseBodyType?: string;
+  previewUrl: string;
+}
+
+export interface UnpackedLpcPackage {
+  compositeFile?: File;
+  compositePreviewUrl?: string;
+  layers: UnpackedLpcLayer[];
+  credits: LpcCreditEntry[];
+  metadata?: Record<string, any>;
+  presetName?: string;
+  baseBodyType?: string;
+}
+
+/**
+ * Universal LPC Standard Row Offsets (0-indexed) on a 64x64 cell grid.
+ * Each 4-direction action uses standard LPC row ordering:
+ * Row + 0: North (Up)
+ * Row + 1: West (Left)
+ * Row + 2: South (Down)
+ * Row + 3: East (Right)
+ */
+export const LPC_ACTION_ROW_OFFSETS: Record<
+  string,
+  { startRow: number; frameCount: number; action: LpcSliceRegion["animationState"] }
+> = {
+  spellcast: { startRow: 0, frameCount: 7, action: "spellcast" },
+  thrust: { startRow: 4, frameCount: 8, action: "thrust" },
+  walk: { startRow: 8, frameCount: 9, action: "walk" },
+  slash: { startRow: 12, frameCount: 6, action: "slash" },
+  shoot: { startRow: 16, frameCount: 13, action: "shoot" },
+  hurt: { startRow: 20, frameCount: 6, action: "hurt" }, // South only (1 row)
+};
+
+/** Direction mapping for standard 4-row LPC action blocks */
+export const LPC_DIRECTION_ROW_MAP: { offset: number; facing: "N" | "W" | "S" | "E"; label: string }[] = [
+  { offset: 0, facing: "N", label: "north" },
+  { offset: 1, facing: "W", label: "west" },
+  { offset: 2, facing: "S", label: "south" },
+  { offset: 3, facing: "E", label: "east" },
+];
+
+/**
+ * Detects if given dimensions match standard LPC spritesheet layouts.
+ */
+export function detectLpcFormat(width: number, height: number): LpcDetectedFormat {
+  if (width <= 0 || height <= 0) {
+    return {
+      isLpc: false,
+      variant: "custom-grid",
+      label: "Unknown Dimensions",
+      description: "Invalid image dimensions",
+      frameWidth: 32,
+      frameHeight: 32,
+      cols: 1,
+      rows: 1,
+      totalFrames: 1,
+      suggestedPresets: [],
+    };
+  }
+
+  // Universal LPC Full Character Spritesheet (832x1344 = 13 cols x 21 rows at 64x64, or 832x1408, or 832x2048)
+  if (width === 832 && (height === 1344 || height === 1408 || height === 2048)) {
+    return {
+      isLpc: true,
+      variant: "universal-full",
+      label: "Universal LPC Character Sheet (Full)",
+      description: "Full LPC spritesheet with 21 rows covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
+      frameWidth: 64,
+      frameHeight: 64,
+      cols: Math.floor(width / 64),
+      rows: Math.floor(height / 64),
+      totalFrames: Math.floor(width / 64) * Math.floor(height / 64),
+      suggestedPresets: ["lpc-full", "lpc-walk", "saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  // Universal LPC 4-Direction Walk Cycle (576x256 = 9 cols x 4 rows at 64x64)
+  if (width === 576 && height === 256) {
+    return {
+      isLpc: true,
+      variant: "lpc-walk",
+      label: "LPC 4-Direction Walk Cycle (64x64)",
+      description: "Standard 4-direction 9-frame walk cycle sheet (North, West, South, East).",
+      frameWidth: 64,
+      frameHeight: 64,
+      cols: 9,
+      rows: 4,
+      totalFrames: 36,
+      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  // Saints / Tuxemon 2.5D Standard 3x4 Walk Grid (96x128 = 3 cols x 4 rows at 32x32)
+  if (width === 96 && height === 128) {
+    return {
+      isLpc: true,
+      variant: "saints-2.5d",
+      label: "Saints 2.5D MMO Walk Grid (3x4)",
+      description: "Standard 3-frame 4-direction walk cycle (South, West, East, North) for the 2.5D game engine.",
+      frameWidth: 32,
+      frameHeight: 32,
+      cols: 3,
+      rows: 4,
+      totalFrames: 12,
+      suggestedPresets: ["saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  // 64x64 grid-aligned spritesheet
+  if (width % 64 === 0 && height % 64 === 0 && width >= 128 && height >= 128) {
+    return {
+      isLpc: true,
+      variant: "custom-grid",
+      label: `LPC-Compatible Grid (${width}x${height})`,
+      description: `64x64 pixel-aligned spritesheet with ${width / 64} cols x ${height / 64} rows.`,
+      frameWidth: 64,
+      frameHeight: 64,
+      cols: width / 64,
+      rows: height / 64,
+      totalFrames: (width / 64) * (height / 64),
+      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  return {
+    isLpc: false,
+    variant: "custom-grid",
+    label: `Custom Spritesheet (${width}x${height})`,
+    description: "Custom dimensions spritesheet.",
+    frameWidth: 32,
+    frameHeight: 32,
+    cols: Math.max(1, Math.floor(width / 32)),
+    rows: Math.max(1, Math.floor(height / 32)),
+    totalFrames: Math.max(1, Math.floor(width / 32) * Math.floor(height / 32)),
+    suggestedPresets: ["saints-2.5d"],
+  };
+}
+
+/**
+ * Generates predefined slice regions for various LPC preset workflows.
+ */
+export function getLpcStandardSlices(
+  preset: "lpc-full" | "lpc-walk" | "saints-2.5d" | "lpc-idles",
+  options: {
+    sheetWidth?: number;
+    sheetHeight?: number;
+    prefix?: string;
+  } = {}
+): LpcSliceRegion[] {
+  const regions: LpcSliceRegion[] = [];
+  const prefix = options.prefix ? `${options.prefix}_` : "";
+  const cellW = 64;
+  const cellH = 64;
+
+  if (preset === "lpc-full") {
+    // 1. Walk Cycles (Rows 8..11)
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = LPC_ACTION_ROW_OFFSETS.walk.startRow + dir.offset;
+      regions.push({
+        id: `slice_walk_${dir.facing.toLowerCase()}`,
+        name: `${prefix}walk_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "walk",
+        x: 0,
+        y: row * cellH,
+        w: 9 * cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "walk",
+        animationFrames: 9,
+      });
+    }
+
+    // 2. Slash Actions (Rows 12..15)
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = LPC_ACTION_ROW_OFFSETS.slash.startRow + dir.offset;
+      regions.push({
+        id: `slice_slash_${dir.facing.toLowerCase()}`,
+        name: `${prefix}slash_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "attack",
+        x: 0,
+        y: row * cellH,
+        w: 6 * cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "slash",
+        animationFrames: 6,
+      });
+    }
+
+    // 3. Thrust Actions (Rows 4..7)
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = LPC_ACTION_ROW_OFFSETS.thrust.startRow + dir.offset;
+      regions.push({
+        id: `slice_thrust_${dir.facing.toLowerCase()}`,
+        name: `${prefix}thrust_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "attack",
+        x: 0,
+        y: row * cellH,
+        w: 8 * cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "thrust",
+        animationFrames: 8,
+      });
+    }
+
+    // 4. Spellcast Actions (Rows 0..3)
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = LPC_ACTION_ROW_OFFSETS.spellcast.startRow + dir.offset;
+      regions.push({
+        id: `slice_spellcast_${dir.facing.toLowerCase()}`,
+        name: `${prefix}spellcast_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "attack",
+        x: 0,
+        y: row * cellH,
+        w: 7 * cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "spellcast",
+        animationFrames: 7,
+      });
+    }
+
+    // 5. Shoot Actions (Rows 16..19)
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = LPC_ACTION_ROW_OFFSETS.shoot.startRow + dir.offset;
+      regions.push({
+        id: `slice_shoot_${dir.facing.toLowerCase()}`,
+        name: `${prefix}shoot_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "attack",
+        x: 0,
+        y: row * cellH,
+        w: 13 * cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "shoot",
+        animationFrames: 13,
+      });
+    }
+
+    // 6. Hurt (Row 20 - South only)
+    regions.push({
+      id: "slice_hurt_south",
+      name: `${prefix}hurt_south`,
+      type: "CHARACTER",
+      category: "actor",
+      importProfile: "character",
+      slotRole: "attack",
+      x: 0,
+      y: LPC_ACTION_ROW_OFFSETS.hurt.startRow * cellH,
+      w: 6 * cellW,
+      h: cellH,
+      facing: "S",
+      animationState: "hurt",
+      animationFrames: 6,
+    });
+
+    // 7. Standing Idles (Frame 0 of each Walk row)
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = LPC_ACTION_ROW_OFFSETS.walk.startRow + dir.offset;
+      regions.push({
+        id: `slice_idle_${dir.facing.toLowerCase()}`,
+        name: `${prefix}idle_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "idle",
+        x: 0,
+        y: row * cellH,
+        w: cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "idle",
+        animationFrames: 1,
+      });
+    }
+  } else if (preset === "lpc-walk") {
+    // 4-Direction Walk Cycle (can start at row 0 if 576x256 or row 8 if full sheet)
+    const isFullSheet = (options.sheetHeight || 0) >= 1344;
+    const startRowOffset = isFullSheet ? LPC_ACTION_ROW_OFFSETS.walk.startRow : 0;
+
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = startRowOffset + dir.offset;
+      regions.push({
+        id: `slice_walk_${dir.facing.toLowerCase()}`,
+        name: `${prefix}walk_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "walk",
+        x: 0,
+        y: row * cellH,
+        w: 9 * cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "walk",
+        animationFrames: 9,
+      });
+    }
+  } else if (preset === "saints-2.5d") {
+    // 3x4 Grid for 2.5D Engine (South, West, East, North)
+    // If standard 96x128 sheet: 32x32 frames
+    const is32Grid = (options.sheetWidth || 0) === 96 || (options.sheetHeight || 0) === 128;
+    const size = is32Grid ? 32 : 64;
+    const rows = [
+      { row: 0, facing: "S" as const, label: "south" },
+      { row: 1, facing: "W" as const, label: "west" },
+      { row: 2, facing: "E" as const, label: "east" },
+      { row: 3, facing: "N" as const, label: "north" },
+    ];
+
+    for (const item of rows) {
+      regions.push({
+        id: `slice_25d_${item.label}`,
+        name: `${prefix}walk_${item.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "walk",
+        x: 0,
+        y: item.row * size,
+        w: 3 * size,
+        h: size,
+        facing: item.facing,
+        animationState: "walk",
+        animationFrames: 3,
+      });
+    }
+  } else if (preset === "lpc-idles") {
+    // 4-Direction Idles
+    const isFullSheet = (options.sheetHeight || 0) >= 1344;
+    const startRowOffset = isFullSheet ? LPC_ACTION_ROW_OFFSETS.walk.startRow : 0;
+
+    for (const dir of LPC_DIRECTION_ROW_MAP) {
+      const row = startRowOffset + dir.offset;
+      regions.push({
+        id: `slice_idle_${dir.facing.toLowerCase()}`,
+        name: `${prefix}idle_${dir.label}`,
+        type: "CHARACTER",
+        category: "actor",
+        importProfile: "character",
+        slotRole: "idle",
+        x: 0,
+        y: row * cellH,
+        w: cellW,
+        h: cellH,
+        facing: dir.facing,
+        animationState: "idle",
+        animationFrames: 1,
+      });
+    }
+  }
+
+  return regions;
+}
+
+/**
+ * Parses raw text from an LPC generator credits.txt file into structured credit entries.
+ */
+export function parseLpcCreditsText(rawText: string): LpcCreditEntry[] {
+  if (!rawText || !rawText.trim()) return [];
+
+  const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const credits: LpcCreditEntry[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("#") || line.startsWith("//") || line.startsWith("---")) continue;
+
+    // Pattern: "filename/path.png by Author Name (License) - http://..."
+    let fileName: string | undefined;
+    let author = "";
+    let license = "";
+    let url = "";
+
+    const byMatch = line.match(/^([^\s:]+)\s+(?:by|credited to)\s+([^(]+)(?:\(([^)]+)\))?(?:\s*[-–]\s*(https?:\/\/[^\s]+))?/i);
+    if (byMatch) {
+      fileName = byMatch[1]?.trim();
+      author = byMatch[2]?.trim() || "";
+      license = byMatch[3]?.trim() || "";
+      url = byMatch[4]?.trim() || "";
+    } else {
+      const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+      if (urlMatch) {
+        url = urlMatch[1];
+      }
+      const licenseMatch = line.match(/\b(CC-BY-SA\s*[\d.]*|CC-BY\s*[\d.]*|CC0|GPL\s*[\d.]*|OGA-BY)\b/i);
+      if (licenseMatch) {
+        license = licenseMatch[1];
+      }
+      author = line.replace(/(https?:\/\/[^\s]+)/g, "").replace(/\([^)]+\)/g, "").trim();
+    }
+
+    if (author || fileName || license || url) {
+      credits.push({
+        fileName,
+        authors: author ? [author] : ["Liberated Pixel Cup Contributors"],
+        licenses: license ? [license] : ["CC-BY-SA 3.0"],
+        urls: url ? [url] : ["https://opengameart.org"],
+      });
+    }
+  }
+
+  return credits;
+}
+
+/**
+ * Infers a Saints Gaming CharacterComponentCategory from a file/folder path in an LPC export.
+ */
+export function inferComponentCategoryFromPath(filePath: string): {
+  category: CharacterComponentCategory | "other";
+  layer: string;
+  zOrder: number;
+  baseBodyType?: string;
+} {
+  const lower = filePath.toLowerCase().replace(/\\/g, "/");
+
+  let baseBodyType: string | undefined;
+  if (lower.includes("/male/") || lower.includes("_male")) baseBodyType = "male";
+  else if (lower.includes("/female/") || lower.includes("_female")) baseBodyType = "female";
+  else if (lower.includes("/muscular/") || lower.includes("_muscular")) baseBodyType = "muscular";
+  else if (lower.includes("/pregnant/") || lower.includes("_pregnant")) baseBodyType = "pregnant";
+  else if (lower.includes("/child/") || lower.includes("_child")) baseBodyType = "child";
+  else if (lower.includes("/teen/") || lower.includes("_teen")) baseBodyType = "teen";
+
+  let category: CharacterComponentCategory | "other" = "other";
+
+  if (lower.includes("hair")) category = "hair";
+  else if (lower.includes("face") || lower.includes("eyes") || lower.includes("beard") || lower.includes("nose")) category = "face";
+  else if (lower.includes("hat") || lower.includes("helmet") || lower.includes("hood") || lower.includes("cap")) category = "hat";
+  else if (lower.includes("head") || lower.includes("mask") || lower.includes("glasses") || lower.includes("earring")) category = "head_accessory";
+  else if (lower.includes("shirt") || lower.includes("top") || lower.includes("tunic") || lower.includes("vest")) category = "shirt";
+  else if (lower.includes("jacket") || lower.includes("robe") || lower.includes("armor") || lower.includes("cape") || lower.includes("coat")) category = "jacket";
+  else if (lower.includes("pant") || lower.includes("leg") || lower.includes("skirt") || lower.includes("shorts")) category = "pants";
+  else if (lower.includes("shoe") || lower.includes("boot") || lower.includes("feet") || lower.includes("sock")) category = "shoes";
+  else if (lower.includes("weapon") || lower.includes("sword") || lower.includes("shield") || lower.includes("staff") || lower.includes("bow") || lower.includes("accessory") || lower.includes("belt")) category = "accessory";
+  else if (lower.includes("cloth") || lower.includes("dress")) category = "clothing";
+
+  const layer = inferCharacterComponentLayerSlot(category) || "full-body";
+  const zOrder = getDefaultZOrderHint(category) ?? 45;
+
+  return { category, layer, zOrder, baseBodyType };
+}
+
+/**
+ * In-browser LPC ZIP Package Unpacker.
+ * Takes a .zip file exported by the Universal LPC Character Generator, extracts
+ * the composite spritesheet image, all layer components, and metadata/credits.
+ */
+export async function unpackLpcZipPackage(zipFile: File): Promise<UnpackedLpcPackage> {
+  const zip = await JSZip.loadAsync(zipFile);
+  const entries = Object.keys(zip.files);
+
+  let compositeFile: File | undefined;
+  let compositePreviewUrl: string | undefined;
+  const layers: UnpackedLpcLayer[] = [];
+  let credits: LpcCreditEntry[] = [];
+  let metadata: Record<string, any> | undefined;
+  let presetName: string | undefined;
+  let baseBodyType: string | undefined;
+
+  // 1. Look for credits or metadata files first
+  for (const path of entries) {
+    const fileEntry = zip.files[path];
+    if (fileEntry.dir) continue;
+    const lower = path.toLowerCase();
+
+    if (lower.endsWith("credits.txt") || lower.endsWith("attribution.txt") || lower.endsWith("credits.md")) {
+      const text = await fileEntry.async("text");
+      credits = parseLpcCreditsText(text);
+    } else if (lower.endsWith("metadata.json") || lower.endsWith("config.json") || lower.endsWith("character.json")) {
+      try {
+        const text = await fileEntry.async("text");
+        metadata = JSON.parse(text);
+        if (metadata?.preset || metadata?.preset_title || metadata?.name) {
+          presetName = metadata.preset_title || metadata.preset || metadata.name;
+        }
+        if (metadata?.bodyType || metadata?.baseBodyType) {
+          baseBodyType = metadata.bodyType || metadata.baseBodyType;
+        }
+        if (Array.isArray(metadata?.credits)) {
+          credits = metadata.credits;
+        }
+      } catch {
+        // Ignore JSON parse errors
+      }
+    }
+  }
+
+  // 2. Extract PNG images
+  const pngPaths = entries.filter(
+    (p) => !zip.files[p].dir && p.toLowerCase().endsWith(".png") && !p.startsWith("__MACOSX")
+  );
+
+  let compositePath = pngPaths.find((p) => {
+    const name = p.split("/").pop()?.toLowerCase() || "";
+    return (
+      name === "spritesheet.png" ||
+      name === "character.png" ||
+      name === "sheet.png" ||
+      name === "full.png" ||
+      name === "preview.png"
+    );
+  });
+
+  if (!compositePath && pngPaths.length === 1) {
+    compositePath = pngPaths[0];
+  }
+
+  for (const path of pngPaths) {
+    const fileEntry = zip.files[path];
+    const blob = await fileEntry.async("blob");
+    const filename = path.split("/").pop() || path;
+    const file = new File([blob], filename, { type: "image/png" });
+    const previewUrl = URL.createObjectURL(blob);
+
+    if (compositePath && path === compositePath) {
+      compositeFile = file;
+      compositePreviewUrl = previewUrl;
+    } else {
+      const { category, layer, zOrder, baseBodyType: inferredBody } = inferComponentCategoryFromPath(path);
+      if (!baseBodyType && inferredBody) {
+        baseBodyType = inferredBody;
+      }
+      layers.push({
+        file,
+        name: filename.replace(/\.png$/i, "").replace(/[_-]/g, " "),
+        componentCategory: category,
+        componentLayer: layer,
+        zOrderHint: zOrder,
+        baseBodyType: inferredBody,
+        previewUrl,
+      });
+    }
+  }
+
+  if (!compositeFile && layers.length > 0) {
+    compositeFile = layers[0].file;
+    compositePreviewUrl = layers[0].previewUrl;
+  }
+
+  return {
+    compositeFile,
+    compositePreviewUrl,
+    layers,
+    credits,
+    metadata,
+    presetName: presetName || zipFile.name.replace(/\.zip$/i, "").replace(/[_-]/g, " "),
+    baseBodyType,
+  };
+}
