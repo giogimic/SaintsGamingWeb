@@ -287,6 +287,18 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     };
   }
 
+  // 4.5 URL Pattern Detection for LPC Characters
+  if (spriteUrl) {
+    const s = spriteUrl.toLowerCase();
+    if (s.includes('good-') || s.includes('evil-') || s.includes('lpc_') || s.includes('_lpc')) {
+      return {
+        ...LPC_FULL_PROFILE,
+        sheetWidth: width || 832,
+        sheetHeight: height || 1344,
+      };
+    }
+  }
+
   // 5. Dimension-Based Fallback Inference
   const w = width || 0;
   const h = height || 0;

@@ -141,6 +141,18 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         count = res.total;
       }
 
+      if (filterType === 'CHARACTER') {
+        result = result.filter((a: any) => {
+          if (a.type === 'CHARACTER' || (a.tags || []).includes('profile:character')) return true;
+          if (a.type === 'SPRITE') {
+            const src = (a.source || '').toLowerCase();
+            return !src.includes('tile') && !src.includes('map') && !src.includes('sheet1_') && !src.includes('wall') && !src.includes('floor');
+          }
+          return false;
+        });
+        count = result.length;
+      }
+
       if (activeClassFilter && searchQuery) {
         const q = searchQuery.toLowerCase();
         result = result.filter(
