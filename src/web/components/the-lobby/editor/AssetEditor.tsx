@@ -842,7 +842,7 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                       })
                     );
                     const store = useEditorStore.getState();
-                    store.setStudioMode('edit');
+                    store.setStudioMode('develop');
                     store.openPanel('characters');
                     showToast(`Opening Starter Hero Editor for ${activeAsset.source.split('/').pop()}`);
                   }}
