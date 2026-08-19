@@ -1,7 +1,22 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Music, Box, CheckCircle2, AlertCircle, Loader2, Package, Wand2 } from 'lucide-react';
+import {
+  Upload,
+  Image as ImageIcon,
+  Music,
+  Box,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Package,
+  Wand2,
+  Scissors,
+  Layers,
+  Sparkles,
+  Info,
+  ExternalLink,
+} from 'lucide-react';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 import { AssetManager } from '@/engine/assets/AssetManager';
@@ -21,6 +36,13 @@ import {
   listCharacterComponentCategories,
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
+import {
+  detectLpcFormat,
+  LpcDetectedFormat,
+  unpackLpcZipPackage,
+  UnpackedLpcPackage,
+  UnpackedLpcLayer,
+} from '@/shared/game/lpcPackage';
 
 const ASSET_TYPES = [
   { value: 'OBJECT', label: 'Object / Prop (Furniture, Trees, Rocks)', icon: Box },
@@ -37,9 +59,16 @@ function SparklesIcon(props: any) {
   return <ImageIcon {...props} />;
 }
 
-export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asset: any) => void }) {
+export function AssetUploadView({
+  onUploadComplete,
+  onOpenSlicer,
+}: {
+  onUploadComplete?: (asset: any) => void;
+  onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
+}) {
   const showToast = useGameStore((s) => s.showToast);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -60,47 +89,16 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
   const [visibility, setVisibility] = useState('COMMUNITY');
   const [createUsable, setCreateUsable] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [lpcStatus, setLpcStatus] = useState<{ approvedDir: string; exists: boolean; packCount: number } | null>(null);
-  const [isLoadingLpcStatus, setIsLoadingLpcStatus] = useState(true);
-  const [isImportingLpc, setIsImportingLpc] = useState(false);
-  const [lpcImportMessage, setLpcImportMessage] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadLpcStatus = async () => {
-      setIsLoadingLpcStatus(true);
-      try {
-        const res = await fetch('/api/assets/import-lpc', { cache: 'no-store' });
-        const data = await res.json();
-        if (!cancelled && res.ok && data.success) {
-          setLpcStatus({
-            approvedDir: data.approvedDir,
-            exists: Boolean(data.exists),
-            packCount: Number(data.packCount) || 0,
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          setLpcStatus(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingLpcStatus(false);
-        }
-      }
-    };
+  // LPC Detection & ZIP Package State
+  const [detectedLpc, setDetectedLpc] = useState<LpcDetectedFormat | null>(null);
+  const [unpackedZip, setUnpackedZip] = useState<UnpackedLpcPackage | null>(null);
+  const [isUnpackingZip, setIsUnpackingZip] = useState(false);
+  const [batchImportProgress, setBatchImportProgress] = useState<{ current: number; total: number } | null>(null);
 
-    void loadLpcStatus();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Warn (non-blocking) when this piece's baseBodyType conflicts with other assets
-  // already sharing the same variantFamily — catches mismatched LPC layers before
-  // they get approved/bundled together.
+  // Warn when baseBodyType conflicts with other assets sharing the same variantFamily
   useEffect(() => {
     if (!isModularComponent || !variantFamily.trim() || !baseBodyType) {
       setBodyTypeWarning(null);
@@ -127,7 +125,7 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
           setBodyTypeWarning(null);
         }
       } catch {
-        // Non-critical check; ignore failures silently.
+        // Non-critical check
       }
     }, 400);
 
@@ -137,13 +135,21 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     };
   }, [isModularComponent, variantFamily, baseBodyType]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setSelectedFile(file);
     setErrorMessage(null);
     setUploadSuccess(null);
+
+    // If a ZIP package is dropped/selected (e.g. from Universal LPC Generator)
+    if (file.name.toLowerCase().endsWith('.zip') || file.type.includes('zip')) {
+      await handleZipUpload(file);
+      return;
+    }
+
+    setSelectedFile(file);
+    setUnpackedZip(null);
 
     // Default asset name from file
     const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
@@ -151,7 +157,7 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
       setAssetName(cleanName);
     }
 
-    // Auto-detect audio vs image only when profile is not pinned.
+    // Auto-detect audio
     if (!importProfile && file.type.startsWith('audio/')) {
       setAssetType('AUDIO');
     }
@@ -159,8 +165,65 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+
+      // Measure dimensions to detect LPC layout
+      const img = new Image();
+      img.onload = () => {
+        const format = detectLpcFormat(img.naturalWidth, img.naturalHeight);
+        if (format.isLpc) {
+          setDetectedLpc(format);
+          if (!importProfile) {
+            setImportProfile('character');
+            setSlotRole('walk');
+            setAssetType('CHARACTER');
+            setCategory('actor');
+          }
+        } else {
+          setDetectedLpc(null);
+        }
+      };
+      img.src = url;
     } else {
       setPreviewUrl(null);
+      setDetectedLpc(null);
+    }
+  };
+
+  const handleZipUpload = async (zipFile: File) => {
+    setIsUnpackingZip(true);
+    setErrorMessage(null);
+    try {
+      const pkg = await unpackLpcZipPackage(zipFile);
+      setUnpackedZip(pkg);
+
+      if (pkg.compositeFile) {
+        setSelectedFile(pkg.compositeFile);
+        setPreviewUrl(pkg.compositePreviewUrl || null);
+        setAssetName(pkg.presetName || zipFile.name.replace(/\.zip$/i, ''));
+        setAssetType('CHARACTER');
+        setImportProfile('character');
+        setSlotRole('walk');
+        setCategory('actor');
+        if (pkg.baseBodyType) {
+          setBaseBodyType(pkg.baseBodyType);
+        }
+
+        const tagList = ['lpc', 'lpc-studio-export', 'spritesheet', 'character'];
+        if (pkg.presetName) tagList.push(pkg.presetName.toLowerCase().replace(/\s+/g, '-'));
+        if (pkg.baseBodyType) tagList.push(`body:${pkg.baseBodyType}`);
+        setTagsInput(tagList.join(', '));
+
+        const detected = detectLpcFormat(832, 1344);
+        setDetectedLpc(detected);
+        showToast(`Unpacked LPC Character Package: ${pkg.layers.length} modular layers found!`);
+      } else {
+        showToast(`Unpacked ZIP: ${pkg.layers.length} layers found.`);
+      }
+    } catch (err: any) {
+      console.error('Failed to unpack LPC ZIP:', err);
+      setErrorMessage(`Failed to unpack LPC ZIP file: ${err.message || 'Invalid archive'}`);
+    } finally {
+      setIsUnpackingZip(false);
     }
   };
 
@@ -173,8 +236,36 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
         dt.items.add(file);
         fileInputRef.current.files = dt.files;
       }
-      handleFileChange({ target: { files: [file] } } as any);
+      void handleFileChange({ target: { files: [file] } } as any);
     }
+  };
+
+  const applyLpcPreset = (preset: 'character' | 'walk' | '2.5d') => {
+    setImportProfile('character');
+    setSlotRole('walk');
+    setAssetType('CHARACTER');
+    setCategory('actor');
+    setIsModularComponent(false);
+    setComponentCategory('');
+    setComponentLayer('');
+    setVariantFamily('');
+    setZOrderHint('');
+
+    const presetTags =
+      preset === 'walk'
+        ? ['lpc', 'walk-cycle', 'spritesheet']
+        : preset === '2.5d'
+        ? ['lpc', 'saints-2.5d', 'walk-grid', 'spritesheet']
+        : ['lpc', 'spritesheet', 'character-sheet', 'full-animation'];
+
+    setTagsInput((prev) => {
+      const tokens = prev.split(',').map((v) => v.trim()).filter(Boolean);
+      const next = Array.from(new Set([...tokens, ...presetTags]));
+      return next.join(', ');
+    });
+
+    soundSynth?.playSelectSound?.();
+    showToast(`Applied ${preset === '2.5d' ? 'Saints 2.5D' : 'LPC'} character preset!`);
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -194,28 +285,31 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
       formData.append('type', assetType);
       if (importProfile) formData.append('importProfile', importProfile);
       if (slotRole) formData.append('slotRole', slotRole);
-      formData.append('sourceMode', 'single');
+      formData.append('sourceMode', detectedLpc?.isLpc ? 'spritesheet' : 'single');
       if (category.trim()) formData.append('category', category.trim().toLowerCase());
+
       if (isModularComponent) {
         const normalizedComponentCategory = componentCategory || category || 'other';
-        const normalizedComponentLayer = componentLayer || inferCharacterComponentLayerSlot(normalizedComponentCategory) || 'full-body';
+        const normalizedComponentLayer =
+          componentLayer || inferCharacterComponentLayerSlot(normalizedComponentCategory) || 'full-body';
         formData.append('componentCategory', normalizedComponentCategory.toLowerCase());
         formData.append('componentLayer', normalizedComponentLayer.toLowerCase());
         formData.append('isModularComponent', 'true');
         if (variantFamily.trim()) formData.append('variantFamily', variantFamily.trim());
-        const effectiveZOrder = zOrderHint.trim() !== ''
-          ? Number(zOrderHint)
-          : getDefaultZOrderHint(normalizedComponentCategory);
+        const effectiveZOrder =
+          zOrderHint.trim() !== '' ? Number(zOrderHint) : getDefaultZOrderHint(normalizedComponentCategory);
         if (effectiveZOrder !== null && effectiveZOrder !== undefined && !Number.isNaN(effectiveZOrder)) {
           formData.append('zOrderHint', String(effectiveZOrder));
         }
         if (baseBodyType) formData.append('baseBodyType', baseBodyType);
         if (hidesComponents.length > 0) formData.append('hidesComponents', JSON.stringify(hidesComponents));
       }
+
       if (tagsInput.trim()) {
         const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
         formData.append('tags', JSON.stringify(tagList));
       }
+
       formData.append('visibility', visibility);
       formData.append('createUsable', String(createUsable));
 
@@ -241,6 +335,72 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     }
   };
 
+  /** Ingests all unpacked modular layers from an LPC ZIP package as modular assets */
+  const handleBatchIngestLayers = async () => {
+    if (!unpackedZip || unpackedZip.layers.length === 0) return;
+
+    setIsUploading(true);
+    setErrorMessage(null);
+    let successCount = 0;
+    const total = unpackedZip.layers.length;
+
+    try {
+      for (let i = 0; i < total; i++) {
+        const layer = unpackedZip.layers[i];
+        setBatchImportProgress({ current: i + 1, total });
+
+        const formData = new FormData();
+        formData.append('file', layer.file);
+        formData.append('name', `${unpackedZip.presetName || 'LPC'} — ${layer.name}`);
+        formData.append('type', 'CHARACTER');
+        formData.append('importProfile', 'character');
+        formData.append('slotRole', layer.componentCategory);
+        formData.append('category', layer.componentCategory);
+        formData.append('componentCategory', layer.componentCategory);
+        formData.append('componentLayer', layer.componentLayer);
+        formData.append('isModularComponent', 'true');
+        formData.append('variantFamily', unpackedZip.presetName || 'LPC Variant');
+        formData.append('zOrderHint', String(layer.zOrderHint));
+        if (layer.baseBodyType || unpackedZip.baseBodyType) {
+          formData.append('baseBodyType', (layer.baseBodyType || unpackedZip.baseBodyType)!);
+        }
+        formData.append(
+          'tags',
+          JSON.stringify([
+            'lpc',
+            'modular',
+            'sprite-component',
+            `component:${layer.componentCategory}`,
+            `layer:${layer.componentLayer}`,
+          ])
+        );
+        formData.append('visibility', visibility);
+        formData.append('createUsable', 'true');
+
+        const res = await fetch('/api/assets/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (res.ok) {
+          successCount++;
+        }
+      }
+
+      soundSynth?.playSelectSound?.();
+      showToast(`Batch Ingested ${successCount}/${total} Modular LPC Layers!`);
+      setUploadSuccess({
+        message: `Successfully ingested ${successCount} modular character layers into the asset library.`,
+      });
+    } catch (err: any) {
+      console.error('Batch layer upload failed:', err);
+      setErrorMessage(`Batch upload error: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+      setBatchImportProgress(null);
+    }
+  };
+
   const resetForm = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
@@ -256,132 +416,142 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
     setBaseBodyType('');
     setHidesComponents([]);
     setTagsInput('');
+    setDetectedLpc(null);
+    setUnpackedZip(null);
     setUploadSuccess(null);
     setErrorMessage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const applyLpcSheetPreset = () => {
-    setImportProfile('character');
-    setSlotRole('walk');
-    setAssetType('CHARACTER');
-    setCategory((prev) => prev.trim() || 'actor');
-    setIsModularComponent(false);
-    setComponentCategory('');
-    setComponentLayer('');
-    setVariantFamily('');
-    setZOrderHint('');
-    setBaseBodyType('');
-    setHidesComponents([]);
-    setTagsInput((prev) => {
-      const tokens = prev.split(',').map((v) => v.trim()).filter(Boolean);
-      const next = Array.from(new Set([...tokens, 'lpc', 'spritesheet', 'character-sheet']));
-      return next.join(', ');
-    });
-    showToast('Applied LPC character sheet preset. Upload the full sheet, then slice it if needed.');
-  };
-
-  const handleImportApprovedLpc = async () => {
-    setIsImportingLpc(true);
-    setLpcImportMessage(null);
-    setErrorMessage(null);
-
-    try {
-      const res = await fetch('/api/assets/import-lpc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ visibility }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to import approved LPC packs.');
-      }
-
-      const summary = `Imported ${data.importedCount} approved LPC pack(s)` +
-        (data.skippedCount ? `, skipped ${data.skippedCount}.` : '.');
-      setLpcImportMessage(summary);
-      showToast(summary);
-      onUploadComplete?.(data);
-      setLpcStatus((prev) => prev ? { ...prev, packCount: Math.max(prev.packCount - data.importedCount, 0) } : prev);
-    } catch (err: any) {
-      console.error('LPC import error:', err);
-      setErrorMessage(err.message || 'Failed to import approved LPC packs.');
-    } finally {
-      setIsImportingLpc(false);
-    }
+    if (zipInputRef.current) zipInputRef.current.value = '';
   };
 
   return (
     <div className="space-y-4 text-xs font-mono text-slate-300">
-      {/* HEADER & PHILOSOPHY */}
+      {/* HEADER */}
       <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded p-3 space-y-1">
         <div className="flex items-center gap-1.5 text-[#e2d5b3] font-bold text-sm">
-          <Upload className="w-4 h-4 text-amber-400" /> Asset Ingestion Pipeline (Bible 35)
+          <Upload className="w-4 h-4 text-amber-400" /> Asset Ingestion & LPC Studio Upload Pipeline
         </div>
         <p className="text-[11px] text-slate-400 leading-relaxed">
-          Upload individual sprites, models, tiles, or audio files into the unified community library.
+          Upload individual sprites, LPC character generator outputs (PNG or ZIP packages with layers & credits),
+          tilesets, or audio files into the unified game library.
         </p>
       </div>
 
-      <div className="bg-[#07111c] border border-emerald-500/30 rounded p-3 space-y-3">
+      {/* LPC SMART DETECTION / PRESETS BANNER */}
+      <div className="bg-[#07111c] border border-cyan-500/30 rounded p-3 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="space-y-1 max-w-[42rem]">
-            <div className="flex items-center gap-1.5 text-emerald-300 font-bold text-sm">
-              <Package className="w-4 h-4 text-emerald-400" /> LPC Import Path
+          <div className="space-y-1 max-w-[44rem]">
+            <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-sm">
+              <Wand2 className="w-4 h-4 text-cyan-400" /> Universal LPC Character Studio Ingestion
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Use this for full approved LPC packs from the external review workspace. Use the preset button below when uploading a single LPC sheet manually and then opening the slicer.
+              Drop any spritesheet PNG or LPC Generator export ZIP. Slices and modular layers are extracted
+              automatically with full author credits intact.
             </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={applyLpcSheetPreset}
-              className="px-3 py-1.5 rounded bg-cyan-700 hover:bg-cyan-600 text-white font-bold transition-all flex items-center gap-1.5"
+              onClick={() => applyLpcPreset('character')}
+              className="px-3 py-1.5 rounded bg-cyan-800 hover:bg-cyan-700 text-white font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <Wand2 className="w-3.5 h-3.5" /> Use LPC Sheet Preset
+              <Wand2 className="w-3.5 h-3.5" /> Full LPC Preset
             </button>
             <button
               type="button"
-              disabled={isImportingLpc || isLoadingLpcStatus || !lpcStatus?.exists || (lpcStatus?.packCount || 0) === 0}
-              onClick={() => void handleImportApprovedLpc()}
-              className={`px-3 py-1.5 rounded font-bold transition-all flex items-center gap-1.5 ${
-                isImportingLpc || isLoadingLpcStatus || !lpcStatus?.exists || (lpcStatus?.packCount || 0) === 0
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-              }`}
+              onClick={() => applyLpcPreset('walk')}
+              className="px-3 py-1.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              {isImportingLpc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
-              Import Approved LPC Packs
+              Walk Cycle (4-Dir)
+            </button>
+            <button
+              type="button"
+              onClick={() => applyLpcPreset('2.5d')}
+              className="px-3 py-1.5 rounded bg-amber-700/80 hover:bg-amber-600 text-amber-100 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              Saints 2.5D (3x4)
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px]">
-          <div className="bg-black/30 border border-slate-800 rounded px-2 py-1.5">
-            <div className="text-slate-500 uppercase tracking-wide">Approved Folder</div>
-            <div className="text-slate-200 break-all">{lpcStatus?.approvedDir || 'Loading...'}</div>
-          </div>
-          <div className="bg-black/30 border border-slate-800 rounded px-2 py-1.5">
-            <div className="text-slate-500 uppercase tracking-wide">Review Queue Status</div>
-            <div className={lpcStatus?.exists ? 'text-emerald-300' : 'text-amber-300'}>
-              {isLoadingLpcStatus ? 'Checking approved packs…' : lpcStatus?.exists ? 'Approved folder detected' : 'Approved folder not found'}
+        {detectedLpc && (
+          <div className="bg-cyan-950/40 border border-cyan-500/40 rounded p-2.5 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+              <div>
+                <div className="text-cyan-200 font-bold text-xs">{detectedLpc.label}</div>
+                <div className="text-[10px] text-slate-400">{detectedLpc.description}</div>
+              </div>
             </div>
-          </div>
-          <div className="bg-black/30 border border-slate-800 rounded px-2 py-1.5">
-            <div className="text-slate-500 uppercase tracking-wide">Ready Packs</div>
-            <div className="text-amber-300 font-bold">{isLoadingLpcStatus ? '…' : lpcStatus?.packCount ?? 0}</div>
-          </div>
-        </div>
 
-        <div className="text-[10px] text-slate-400 leading-relaxed">
-          Approved-pack import is for reviewed full LPC characters from <span className="text-slate-200">.assets-gen/review/approved</span>. Manual single-file LPC uploads should use the preset, then continue into the slicer for modular extraction.
-        </div>
+            {uploadSuccess?.sourceAsset && onOpenSlicer && (
+              <button
+                type="button"
+                onClick={() => onOpenSlicer(uploadSuccess.sourceAsset)}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Scissors className="w-3.5 h-3.5" /> Open in Slicer
+              </button>
+            )}
+          </div>
+        )}
 
-        {lpcImportMessage && (
-          <div className="bg-emerald-950/30 border border-emerald-500/30 rounded px-2 py-1.5 text-[10px] text-emerald-200">
-            {lpcImportMessage}
+        {/* UNPACKED ZIP PACKAGE SUMMARY */}
+        {unpackedZip && (
+          <div className="bg-black/50 border border-emerald-500/40 rounded p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs">
+                <Package className="w-4 h-4 text-emerald-400" />
+                <span>
+                  Unpacked LPC Package: {unpackedZip.presetName} ({unpackedZip.layers.length} modular layers)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleBatchIngestLayers}
+                disabled={isUploading}
+                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" /> Ingesting Layers...
+                  </>
+                ) : (
+                  <>
+                    <Layers className="w-3 h-3" /> Ingest All {unpackedZip.layers.length} Modular Layers
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Layer preview thumbnails */}
+            <div className="flex items-center gap-2 overflow-x-auto py-1">
+              {unpackedZip.layers.map((layer, idx) => (
+                <div
+                  key={idx}
+                  className="bg-[#0b1320] border border-slate-700 rounded p-1.5 shrink-0 flex flex-col items-center gap-1 text-[10px] w-24"
+                >
+                  <img src={layer.previewUrl} alt={layer.name} className="w-12 h-12 object-contain bg-black/40 rounded" />
+                  <span className="truncate w-full text-center text-slate-300">{layer.name}</span>
+                  <span className="text-[9px] text-amber-400 font-bold uppercase">{layer.componentCategory}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Credits preview */}
+            {unpackedZip.credits.length > 0 && (
+              <div className="text-[10px] text-slate-400 border-t border-slate-800/80 pt-2 space-y-1">
+                <div className="text-slate-300 font-bold">Attributions ({unpackedZip.credits.length}):</div>
+                <div className="max-h-20 overflow-y-auto space-y-0.5 pr-1">
+                  {unpackedZip.credits.map((c, i) => (
+                    <div key={i} className="text-[9px] text-slate-400 truncate">
+                      • {c.fileName || 'Layer'}: {c.authors.join(', ')} ({c.licenses.join(', ')})
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -391,18 +561,34 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
           <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
           <div className="text-emerald-200 font-bold text-sm">Asset Successfully Ingested!</div>
           <div className="text-[11px] text-slate-300">
-            Source file recorded as <span className="text-amber-300 font-bold">{uploadSuccess.sourceAsset?.filename}</span>
+            Source file recorded as{' '}
+            <span className="text-amber-300 font-bold">{uploadSuccess.sourceAsset?.filename}</span>
             {uploadSuccess.usableAsset && (
-              <> and registered into the library as <span className="text-amber-300 font-bold">{uploadSuccess.usableAsset?.name}</span> ({uploadSuccess.usableAsset?.type}).</>
+              <>
+                {' '}
+                and registered into library as{' '}
+                <span className="text-amber-300 font-bold">{uploadSuccess.usableAsset?.name}</span> (
+                {uploadSuccess.usableAsset?.type}).
+              </>
             )}
           </div>
-          <div className="pt-2">
+          <div className="flex items-center justify-center gap-2 pt-2">
             <button
+              type="button"
               onClick={resetForm}
-              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all shadow"
+              className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded font-bold transition-all cursor-pointer"
             >
               Upload Another Asset
             </button>
+            {uploadSuccess.sourceAsset && onOpenSlicer && (
+              <button
+                type="button"
+                onClick={() => onOpenSlicer(uploadSuccess.sourceAsset)}
+                className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow"
+              >
+                <Scissors className="w-4 h-4" /> Open in Spritesheet Slicer
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -422,7 +608,7 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
               ref={fileInputRef}
               type="file"
               onChange={handleFileChange}
-              accept="image/png,image/jpeg,image/webp,image/gif,audio/mpeg,audio/wav,audio/ogg"
+              accept="image/png,image/jpeg,image/webp,image/gif,application/zip,.zip,audio/mpeg,audio/wav,audio/ogg"
               className="hidden"
             />
             {previewUrl ? (
@@ -430,9 +616,11 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                 <img
                   src={previewUrl}
                   alt="Preview"
-                  className="max-h-24 max-w-full object-contain rounded border border-slate-700 bg-black/40 p-1"
+                  className="max-h-28 max-w-full object-contain rounded border border-slate-700 bg-black/40 p-1"
                 />
-                <span className="text-[10px] text-amber-300 font-bold">{selectedFile?.name} ({(selectedFile!.size / 1024).toFixed(1)} KB)</span>
+                <span className="text-[10px] text-amber-300 font-bold">
+                  {selectedFile?.name} ({((selectedFile?.size || 0) / 1024).toFixed(1)} KB)
+                </span>
               </div>
             ) : selectedFile ? (
               <div className="flex flex-col items-center gap-1.5">
@@ -443,8 +631,12 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
             ) : (
               <div className="flex flex-col items-center gap-2 py-2">
                 <Upload className="w-6 h-6 text-slate-400" />
-                <div className="text-slate-200 font-bold text-[11px]">Click or drag & drop asset file here</div>
-                <div className="text-[10px] text-slate-500">Supports PNG, WebP, GIF, JPEG, MP3, WAV, OGG</div>
+                <div className="text-slate-200 font-bold text-[11px]">
+                  Click or drag & drop asset file or LPC ZIP export here
+                </div>
+                <div className="text-[10px] text-slate-500">
+                  Supports PNG, LPC Spritesheet ZIP packages, WebP, GIF, MP3, WAV, OGG
+                </div>
               </div>
             )}
           </div>
@@ -457,7 +649,7 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                 type="text"
                 value={assetName}
                 onChange={(e) => setAssetName(e.target.value)}
-                placeholder="e.g. Ancient Oak Tree"
+                placeholder="e.g. Ancient Oak Tree or Paladin Hero"
                 className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
                 required
               />
@@ -506,7 +698,11 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                   <div className="col-span-2">
                     <label className="block text-[10px] text-slate-400 mb-1">Body Layer</label>
                     <select
-                      value={componentLayer || inferCharacterComponentLayerSlot(componentCategory || category || 'other') || 'full-body'}
+                      value={
+                        componentLayer ||
+                        inferCharacterComponentLayerSlot(componentCategory || category || 'other') ||
+                        'full-body'
+                      }
                       onChange={(e) => setComponentLayer(e.target.value)}
                       className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
                     >
@@ -529,9 +725,11 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                     />
                   </div>
 
-                  {/* Compositing Rules — how this layer stacks/interacts with other modular components */}
+                  {/* Compositing Rules */}
                   <div className="col-span-2 border-t border-slate-800 pt-2 mt-1 space-y-2">
-                    <div className="text-[10px] text-amber-300/80 font-bold uppercase tracking-wide">Compositing Rules</div>
+                    <div className="text-[10px] text-amber-300/80 font-bold uppercase tracking-wide">
+                      Compositing Rules
+                    </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -565,7 +763,9 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                     </div>
 
                     <div>
-                      <label className="block text-[10px] text-slate-400 mb-1">Hides these layers when equipped</label>
+                      <label className="block text-[10px] text-slate-400 mb-1">
+                        Hides these layers when equipped
+                      </label>
                       <div className="flex flex-wrap gap-2">
                         {listCharacterComponentCategories()
                           .filter((c) => c !== (componentCategory || category))
@@ -588,7 +788,9 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                             </label>
                           ))}
                       </div>
-                      <div className="text-[10px] text-slate-500 mt-1">e.g. a closed helm hides Hair, Hat, Head Accessory.</div>
+                      <div className="text-[10px] text-slate-500 mt-1">
+                        e.g. a closed helm hides Hair, Hat, Head Accessory.
+                      </div>
                     </div>
 
                     {bodyTypeWarning && (
@@ -684,15 +886,9 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                   type="text"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  placeholder="e.g. vegetation, prop, weapon"
+                  placeholder="e.g. actor, vegetation, prop, weapon"
                   className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
                 />
-              </div>
-
-              <div className="col-span-2 text-[10px] text-slate-500">
-                {importProfile && slotRole && isValidSlotRole(importProfile, slotRole)
-                  ? `Mapped role ${slotRole} under ${ASSET_IMPORT_PROFILE_META[importProfile].label}.`
-                  : 'Profile-role mapping is optional; leave blank for legacy freeform uploads.'}
               </div>
             </div>
 
@@ -702,14 +898,14 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
                 type="text"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="e.g. nature, forest, decor, large"
+                placeholder="e.g. lpc, character, hero, male, armor"
                 className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[10px] text-slate-400 mb-1">Visibility Level (Bible 35 §7)</label>
+                <label className="block text-[10px] text-slate-400 mb-1">Visibility Level</label>
                 <select
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value)}
@@ -746,7 +942,7 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
           <button
             type="submit"
             disabled={isUploading || !selectedFile}
-            className={`w-full py-2 rounded font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`w-full py-2 rounded font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
               isUploading || !selectedFile
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 : 'bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_15px_rgba(217,119,6,0.3)]'
@@ -758,7 +954,7 @@ export function AssetUploadView({ onUploadComplete }: { onUploadComplete?: (asse
               </>
             ) : (
               <>
-                <Upload className="w-4 h-4" /> Ingest Asset to Catalog
+                <Upload className="w-4 h-4" /> Ingest Asset to Library
               </>
             )}
           </button>

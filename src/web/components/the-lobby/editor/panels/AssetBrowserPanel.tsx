@@ -117,6 +117,10 @@ export const AssetBrowserPanel: React.FC = () => {
               }
               setActiveTab('manager');
             }}
+            onOpenSlicer={(asset) => {
+              setSlicerSource(asset);
+              setActiveTab('slicer');
+            }}
           />
         )}
         {activeTab === 'slicer' && (

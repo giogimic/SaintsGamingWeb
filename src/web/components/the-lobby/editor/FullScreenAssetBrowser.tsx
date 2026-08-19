@@ -157,6 +157,10 @@ export const FullScreenAssetBrowser: React.FC<FullScreenAssetBrowserProps> = ({
                 setActiveTab('catalog');
               }
             }}
+            onOpenSlicer={(asset) => {
+              setSlicerSource(asset);
+              setActiveTab('slicer');
+            }}
           />
         )}
         {activeTab === 'slicer' && (

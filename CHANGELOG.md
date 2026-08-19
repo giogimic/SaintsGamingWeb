@@ -1,3 +1,12 @@
+## [2.1.348] - 2026-08-19
+### Added & Fixed
+- **Native Browser Universal LPC Character & Splicer Ingestion Pipeline:**
+  - **Removed Hardcoded Dev-Folder Staging**: Removed local filesystem dev paths (`../.assets-gen/review/approved`), `app/api/assets/import-lpc/route.ts`, and `src/server/lpcPackImporter.ts` so asset ingestion does not depend on local dev folders absent from production.
+  - **In-Browser LPC ZIP Package Unpacker (`src/shared/game/lpcPackage.ts`)**: Added client-side decompression for Universal LPC Character Generator ZIP exports using JSZip. Automatically unpacks composite spritesheet PNG, individual modular layers (body, hair, torso, pants, shoes, hat, weapon), and parses `credits.txt` attributions.
+  - **LPC Format Detection & Presets in Upload View (`AssetUploadView.tsx`)**: Automatic dimension recognition for full LPC sheets (832x1344), 4-direction walk cycles (576x256), and Saints 2.5D walk grids (96x128). One-click presets and batch ingestion for all modular layers or direct handover to Slicer.
+  - **Smart LPC Auto-Slicing Presets in Spritesheet Slicer (`SpritesheetSlicer.tsx`)**: Added one-click auto-slicers for "Auto-Slice LPC Full Sheet" (Walk, Slash, Thrust, Spellcast, Shoot, Hurt), "Extract Walk Cycle (4-Dir)", "Extract Saints 2.5D (3x4 Grid)", and "Extract 4-Direction Idles".
+  - **Comprehensive Unit Tests (`src/shared/game/lpcPackage.test.ts`)**: Added test coverage for LPC format detection, standard animation row slice generation, credit parsing, and component layer inference.
+
 ## [2.1.347] - 2026-08-19
 ### Added & Fixed
 - **Studio LPC Import Workflow Made Explicit:**
