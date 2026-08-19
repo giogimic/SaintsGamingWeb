@@ -42,6 +42,7 @@ import { useEditorStore } from './editor-store';
 import { SpriteThumbnail } from './SpriteThumbnail';
 import type { AssetWorkspaceId } from './AssetStudioSuite';
 import { AssetContextMenu } from './AssetContextMenu';
+import { AssetManager } from '@/engine/assets/AssetManager';
 
 export interface AssetEditorProps {
   workspaceId?: AssetWorkspaceId;
@@ -67,16 +68,6 @@ const BUNDLE_THEMES: Record<AssetPackId | 'ALL', { label: string; activeColor: s
     label: 'LPC (Liberated Pixel Cup)',
     activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/10',
     badgeColor: 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300',
-  },
-  saints: {
-    label: 'Saints Official Bundle',
-    activeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-amber-500/10',
-    badgeColor: 'bg-amber-950/80 border-amber-500/40 text-amber-300',
-  },
-  studio: {
-    label: 'Studio Registry',
-    activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-purple-500/10',
-    badgeColor: 'bg-purple-950/80 border-purple-500/40 text-purple-300',
   },
 };
 
@@ -373,6 +364,17 @@ export default function AssetEditor({
     } catch (err) {
       console.error(err);
       showToast('Failed to add tag');
+    }
+  };
+
+  const handleToggleShowInCharacterCreation = async (asset: GameAssetItem, value: boolean) => {
+    try {
+      const manager = AssetManager.getInstance();
+      await manager.toggleShowInCharacterCreation(asset.id, value);
+      void fetchAssets(0, false);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update character creation flag');
     }
   };
 
@@ -719,7 +721,7 @@ export default function AssetEditor({
                 );
 
                 const packId = asset.metadata?.pack || inferAssetPack(asset.source);
-                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.saints;
+                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.tuxemon;
 
                 return (
                   <div
@@ -815,7 +817,7 @@ export default function AssetEditor({
                   (asset.metadata?.subcategory as CreatureAssetSubcategory) ||
                   classifyCreatureAsset(asset.source);
                 const packId = asset.metadata?.pack || inferAssetPack(asset.source);
-                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.saints;
+                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.tuxemon;
                 const isSheet =
                   asset.type === 'SHEET' ||
                   asset.tags?.includes('sheet') ||
@@ -1258,6 +1260,7 @@ export default function AssetEditor({
           onDelete={handleDeleteAssets}
           onToggleFlag={handleToggleFlagFromMenu}
           onAddTag={handleAddTagFromMenu}
+          onToggleShowInCharacterCreation={handleToggleShowInCharacterCreation}
         />
       )}
     </div>

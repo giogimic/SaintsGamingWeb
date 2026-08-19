@@ -43,6 +43,7 @@ export interface AssetFilters {
   pack?: string;
   sortBy?: 'source' | 'createdAt' | 'fileSize' | 'usageCount';
   sortOrder?: 'asc' | 'desc';
+  showInCharacterCreation?: boolean;
 }
 
 export interface PaginatedResult<T> {
@@ -124,6 +125,7 @@ export class AssetManager {
     if (filters.pack) params.set('pack', filters.pack);
     if (filters.sortBy) params.set('sortBy', filters.sortBy);
     if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+    if (typeof filters.showInCharacterCreation === 'boolean') params.set('showInCharacterCreation', String(filters.showInCharacterCreation));
 
     const res = await fetch(`/api/assets?${params.toString()}`);
     if (!res.ok) {
@@ -216,5 +218,25 @@ export class AssetManager {
       if (!ok) allOk = false;
     }
     return allOk;
+  }
+
+  /** Toggle showInCharacterCreation metadata flag for an asset */
+  async toggleShowInCharacterCreation(assetId: string, value: boolean): Promise<void> {
+    const asset = await this.getAsset(assetId);
+    if (!asset) throw new Error('Asset not found');
+    
+    const currentMetadata = asset.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      showInCharacterCreation: value,
+    };
+
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata: updatedMetadata }),
+    });
+    if (!res.ok) throw new Error('Failed to toggle showInCharacterCreation');
+    this.cache.delete(assetId);
   }
 }

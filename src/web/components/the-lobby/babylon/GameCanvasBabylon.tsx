@@ -15,7 +15,7 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
-import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
+import { resolveEntitySpriteUrl, getAssetAnimationProfile } from '@/shared/game/creatureCatalog';
 import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { normalizeGates } from '@/shared/game/logicComponents';
 import {
@@ -124,6 +124,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const autoWalkPathRef = useRef<{x: number, y: number}[]>([]);
   const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isEngineReady, setIsEngineReady] = useState(false);
+  const playerAnimationProfileRef = useRef<string | null>(null);
+  const lastSpriteIdRef = useRef<string | null>(null);
+  const multiplayerAnimationProfilesRef = useRef<Map<string, string | null>>(new Map());
+  const entityAnimationProfilesRef = useRef<Map<string, string | null>>(new Map());
   const tryMoveDirectionRef = useRef<(dx: number, dy: number) => void>(() => {});
   const handleInteractRef = useRef<() => void>(() => {});
   const editorToolsRef = useRef(isDevEditorOpen);
@@ -133,6 +137,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const [mapData, setMapData] = useState<GameMapData | null>(null);
   const mapDataRef = useRef<GameMapData | null>(null);
   mapDataRef.current = mapData;
+
+  // Fetch animationProfile when player spriteId changes
+  useEffect(() => {
+    const freshPlayer = useGameStore.getState().player;
+    const spriteId = freshPlayer?.spriteId;
+    
+    if (spriteId && spriteId !== lastSpriteIdRef.current) {
+      lastSpriteIdRef.current = spriteId;
+      
+      // Fetch animationProfile from asset metadata
+      getAssetAnimationProfile(spriteId).then((profile) => {
+        playerAnimationProfileRef.current = profile;
+      });
+    }
+  }, []);
   /** Last doc whose tile geometry was pushed into Babylon (identity + fingerprint). */
   const lastLoadedMapDataRef = useRef<GameMapData | null>(null);
   const lastVisualFingerprintRef = useRef<string>('');
@@ -773,6 +792,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             kind: 'player',
             fallback: '/game-assets/npc/adventurer.png',
           }),
+          animationProfile: playerAnimationProfileRef.current || undefined,
           isPlayer: true,
           direction: freshPlayer.direction,
           isMoving: freshPlayer.isMoving,
@@ -806,7 +826,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
         });
 
-        Object.entries(freshOtherPlayers).forEach(([socketId, other]) => {
+        Object.entries(freshOtherPlayers).forEach(async ([socketId, other]) => {
           babylonEngine._renderedSockets.add(socketId);
           // Prefer ?? so tile (0,0) is not remapped to demo defaults.
           const targetX = other.x ?? 6;
@@ -814,6 +834,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           
           const ox = targetX - liveW / 2;
           const oz = liveH / 2 - targetY;
+
+          // Fetch animationProfile if not cached
+          if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.spriteId) {
+            const profile = await getAssetAnimationProfile(other.spriteId);
+            multiplayerAnimationProfilesRef.current.set(socketId, profile);
+          }
           
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
@@ -824,6 +850,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               kind: 'player',
               fallback: '/game-assets/npc/adventurer.png',
             }),
+            animationProfile: multiplayerAnimationProfilesRef.current.get(socketId) || undefined,
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,
@@ -872,7 +899,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       ];
 
       const activeEntities = new Set<string>();
-      merged.forEach((ent) => {
+      merged.forEach(async (ent) => {
         if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
           activeEntities.add(ent.id);
           const ex = ent.position.x - liveW / 2;
@@ -884,12 +911,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 ? 'animal'
                 : 'monster';
           const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
+
+          // Fetch animationProfile if not cached
+          if (!entityAnimationProfilesRef.current.has(ent.id) && ent.spriteKey) {
+            const profile = await getAssetAnimationProfile(ent.spriteKey);
+            entityAnimationProfilesRef.current.set(ent.id, profile);
+          }
+
           babylonEngine.updateEntity({
             id: ent.id,
             name: ent.name || '',
             x: ex,
             y: ez,
             spriteUrl,
+            animationProfile: entityAnimationProfilesRef.current.get(ent.id) || undefined,
             isPlayer: false,
             isNpc: ent.type === 'NPC',
             isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
@@ -1067,8 +1102,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (!engine || !activeMap) return;
     const map = activeMap;
 
-    // Sync brush radius
+    // Sync brush properties
     engine.setBrushRadius(useEditorStore.getState().brushRadius);
+    engine.setActiveBrushTileId(useEditorStore.getState().activeBrushTileId);
+    engine.setActiveLayerIdx(useEditorStore.getState().activeLayerIdx);
+    engine.setBrushMode(useEditorStore.getState().brushMode);
 
     const worldSync = {
       ensureActiveMap: (next: any) => {
@@ -1373,7 +1411,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     };
   }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
 
-    // Sync brush radius separately so we don't re-bind tile picking on every brush size change
+     // Sync brush radius and modes separately so we don't re-bind tile picking on every brush size/mode change
     useEffect(() => {
       const engine = engineRef.current;
       if (!engine) return;
@@ -1381,6 +1419,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         if (state.brushRadius !== prevState.brushRadius) {
           engine.setBrushRadius(state.brushRadius);
           engine.refreshBrushPreview();
+        }
+        if (state.activeBrushTileId !== prevState.activeBrushTileId) {
+          engine.setActiveBrushTileId(state.activeBrushTileId);
+        }
+        if (state.activeLayerIdx !== prevState.activeLayerIdx) {
+          engine.setActiveLayerIdx(state.activeLayerIdx);
+        }
+        if (state.brushMode !== prevState.brushMode) {
+          engine.setBrushMode(state.brushMode);
         }
         if (state.brushMode !== 'select' && prevState.brushMode === 'select') {
           engine.clearSelectionPreview();
@@ -1521,12 +1568,21 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const spriteUrl = resolveEntitySpriteUrl(npc.sprite || 'adventurer', {
         kind: 'npc',
       });
+
+      // Fetch animationProfile if not cached
+      const npcId = `mapnpc_${npc.id}`;
+      if (!entityAnimationProfilesRef.current.has(npcId) && npc.sprite) {
+        const profile = await getAssetAnimationProfile(npc.sprite);
+        entityAnimationProfilesRef.current.set(npcId, profile);
+      }
+
       engine.updateEntity({
-        id: `mapnpc_${npc.id}`,
+        id: npcId,
         name: npc.name || npc.id,
         x: npc.x - liveW / 2,
         y: liveH / 2 - npc.y,
         spriteUrl,
+        animationProfile: entityAnimationProfilesRef.current.get(npcId) || undefined,
         isPlayer: false,
         isNpc: true,
         spriteConfig: isSingleFrameSpriteUrl(spriteUrl)
