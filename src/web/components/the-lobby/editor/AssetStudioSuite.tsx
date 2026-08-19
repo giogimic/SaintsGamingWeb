@@ -258,6 +258,7 @@ export function AssetStudioSuite() {
       case 'browse':
         return (
           <AssetEditor
+            workspaceId={activeWorkspace}
             initialTypeFilter={getTypeFilter() || 'ALL'}
             onOpenSlicer={(asset) => {
               setSlicerSource(asset);

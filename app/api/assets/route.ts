@@ -74,17 +74,101 @@ export async function GET(req: NextRequest) {
 
     const whereClause: any = {
       isActive: true,
+      source: { not: "" },
     };
 
     if (type && type !== "ALL") {
       const normalizedType = type.toUpperCase();
-      // CHARACTER and SPRITE are interchangeable aliases — query for both
       if (normalizedType === "CHARACTER" || normalizedType === "SPRITE") {
-        whereClause.OR = [
-          ...(whereClause.OR || []),
-          { type: "CHARACTER" },
-          { type: "SPRITE" },
-          { tags: { contains: "profile:character" } },
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "CHARACTER" },
+              { type: "SPRITE" },
+              { type: "sprite" },
+              { categories: { contains: "character" } },
+              { categories: { contains: "npcs" } },
+              { tags: { contains: "profile:character" } },
+              { tags: { contains: "character" } },
+              { source: { contains: "/npc/" } },
+              { source: { contains: "/player/" } },
+            ],
+          },
+        ];
+      } else if (normalizedType === "CREATURE" || normalizedType === "MONSTER") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "CREATURE" },
+              { type: "MONSTER" },
+              { type: "monster" },
+              { categories: { contains: "monster" } },
+              { tags: { contains: "monster" } },
+              { tags: { contains: "creature" } },
+              { source: { contains: "/monster/" } },
+              { source: { contains: "/creatures/" } },
+              { source: { contains: "/world-monsters/" } },
+            ],
+          },
+        ];
+      } else if (normalizedType === "TILE" || normalizedType === "TILESET") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "TILE" },
+              { type: "TILESET" },
+              { type: "tileset" },
+              { categories: { contains: "tilesets" } },
+              { tags: { contains: "tileset" } },
+              { source: { contains: "/tilesets/" } },
+              { source: { contains: "/terrain/" } },
+            ],
+          },
+        ];
+      } else if (normalizedType === "ITEM" || normalizedType === "ITEM_ICON" || normalizedType === "OBJECT") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "ITEM" },
+              { type: "ITEM_ICON" },
+              { type: "item" },
+              { type: "OBJECT" },
+              { type: "object" },
+              { categories: { contains: "items" } },
+              { tags: { contains: "item" } },
+              { source: { contains: "/items/" } },
+              { source: { contains: "/objects/" } },
+            ],
+          },
+        ];
+      } else if (normalizedType === "AUDIO") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "AUDIO" },
+              { type: "audio" },
+              { source: { contains: "/audio/" } },
+              { source: { contains: "/sounds/" } },
+              { source: { contains: "/music/" } },
+            ],
+          },
+        ];
+      } else if (normalizedType === "UI" || normalizedType === "UI_ELEMENT") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { type: "UI" },
+              { type: "UI_ELEMENT" },
+              { type: "ui" },
+              { source: { contains: "/ui/" } },
+            ],
+          },
         ];
       } else {
         whereClause.type = normalizedType;
@@ -187,17 +271,75 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    if (pack) {
-      whereClause.AND = [
-        ...(whereClause.AND || []),
-        {
-          OR: [
-            { metadata: { contains: `\"pack\":\"${pack}\"` } },
-            { source: { contains: `/game-assets/${pack}/` } },
-            { source: { contains: `/${pack}/` } },
-          ],
-        },
-      ];
+    if (pack && pack !== "ALL") {
+      const p = pack.toLowerCase();
+      if (p === "tuxemon") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: '"pack":"tuxemon"' } },
+              { tags: { contains: "tuxemon" } },
+              { source: { contains: "tuxemon" } },
+              { source: { contains: "/monster/" } },
+              { source: { contains: "/creatures/" } },
+              { source: { contains: "/world-monsters/" } },
+              { source: { contains: "/tilesets/" } },
+            ],
+          },
+        ];
+      } else if (p === "lpc") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: '"pack":"lpc"' } },
+              { tags: { contains: "lpc" } },
+              { categories: { contains: "lpc" } },
+              { source: { contains: "lpc" } },
+              { source: { contains: "/npc/" } },
+              { source: { contains: "female" } },
+              { source: { contains: "male" } },
+            ],
+          },
+        ];
+      } else if (p === "saints") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: '"pack":"saints"' } },
+              { tags: { contains: "saints" } },
+              { source: { contains: "saints" } },
+              { source: { contains: "/packs/" } },
+              { source: { contains: "george" } },
+            ],
+          },
+        ];
+      } else if (p === "studio") {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: '"pack":"studio"' } },
+              { tags: { contains: "studio" } },
+              { source: { contains: "atlases" } },
+              { source: { contains: "daemon_" } },
+            ],
+          },
+        ];
+      } else {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: `\"pack\":\"${pack}\"` } },
+              { source: { contains: `/game-assets/${pack}/` } },
+              { source: { contains: `/${pack}/` } },
+            ],
+          },
+        ];
+      }
     }
 
     const allowedSort: Record<string, string> = {

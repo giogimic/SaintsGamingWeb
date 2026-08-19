@@ -23,6 +23,11 @@ import {
   Plus,
   LayoutGrid,
   Users,
+  MapPin,
+  Sparkles,
+  Shield,
+  Tag,
+  Filter,
 } from 'lucide-react';
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId, inferAssetPack } from '@/shared/game/assetPacks';
@@ -35,15 +40,53 @@ import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
 import { SpriteThumbnail } from './SpriteThumbnail';
+import type { AssetWorkspaceId } from './AssetStudioSuite';
 
 export interface AssetEditorProps {
+  workspaceId?: AssetWorkspaceId;
   initialTypeFilter?: string;
+  initialPackFilter?: AssetPackId | 'ALL';
   onAssetSelect?: (asset: GameAssetItem) => void;
   onAssetEdit?: (asset: GameAssetItem) => void;
   onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
 }
 
-export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, onAssetEdit, onOpenSlicer }: AssetEditorProps) {
+const BUNDLE_THEMES: Record<AssetPackId | 'ALL', { label: string; activeColor: string; badgeColor: string }> = {
+  ALL: {
+    label: 'All Bundles',
+    activeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-amber-500/10',
+    badgeColor: 'bg-amber-950/80 border-amber-500/40 text-amber-300',
+  },
+  tuxemon: {
+    label: 'Tuxemon',
+    activeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sky-500/10',
+    badgeColor: 'bg-sky-950/80 border-sky-500/40 text-sky-300',
+  },
+  lpc: {
+    label: 'LPC (Liberated Pixel Cup)',
+    activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/10',
+    badgeColor: 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300',
+  },
+  saints: {
+    label: 'Saints Official Bundle',
+    activeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-amber-500/10',
+    badgeColor: 'bg-amber-950/80 border-amber-500/40 text-amber-300',
+  },
+  studio: {
+    label: 'Studio Registry',
+    activeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/50 shadow-purple-500/10',
+    badgeColor: 'bg-purple-950/80 border-purple-500/40 text-purple-300',
+  },
+};
+
+export default function AssetEditor({
+  workspaceId = 'catalog',
+  initialTypeFilter = 'ALL',
+  initialPackFilter = 'ALL',
+  onAssetSelect,
+  onAssetEdit,
+  onOpenSlicer,
+}: AssetEditorProps) {
   const showToast = useGameStore((s) => s.showToast);
 
   const [assets, setAssets] = useState<GameAssetItem[]>([]);
@@ -55,17 +98,11 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>(initialTypeFilter || 'ALL');
-
-  useEffect(() => {
-    if (initialTypeFilter) {
-      setTypeFilter(initialTypeFilter);
-    }
-  }, [initialTypeFilter]);
   const [subcategoryFilter, setSubcategoryFilter] = useState<string>('ALL');
   const [modularFilter, setModularFilter] = useState<'ALL' | 'MODULAR' | 'FULL'>('ALL');
   const [componentCategoryFilter, setComponentCategoryFilter] = useState<string>('ALL');
   const [componentLayerFilter, setComponentLayerFilter] = useState<string>('ALL');
-  const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>('ALL');
+  const [packFilter, setPackFilter] = useState<AssetPackId | 'ALL'>(initialPackFilter || 'ALL');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(new Set());
@@ -80,6 +117,13 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
   const [reclassifyCategories, setReclassifyCategories] = useState('npcs,heroes');
   const [newTagInput, setNewTagInput] = useState('');
 
+  // Sync initial type filter when workspace switches
+  useEffect(() => {
+    if (initialTypeFilter) {
+      setTypeFilter(initialTypeFilter);
+    }
+  }, [initialTypeFilter]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
@@ -90,7 +134,16 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
   useEffect(() => {
     setPage(0);
     void fetchAssets(0, false);
-  }, [typeFilter, subcategoryFilter, modularFilter, componentCategoryFilter, componentLayerFilter, debouncedSearchQuery, selectedTag, packFilter]);
+  }, [
+    typeFilter,
+    subcategoryFilter,
+    modularFilter,
+    componentCategoryFilter,
+    componentLayerFilter,
+    debouncedSearchQuery,
+    selectedTag,
+    packFilter,
+  ]);
 
   useEffect(() => {
     const handleRefreshed = () => {
@@ -99,7 +152,16 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
     };
     window.addEventListener('assets:refreshed', handleRefreshed);
     return () => window.removeEventListener('assets:refreshed', handleRefreshed);
-  }, [typeFilter, subcategoryFilter, modularFilter, componentCategoryFilter, componentLayerFilter, debouncedSearchQuery, selectedTag, packFilter]);
+  }, [
+    typeFilter,
+    subcategoryFilter,
+    modularFilter,
+    componentCategoryFilter,
+    componentLayerFilter,
+    debouncedSearchQuery,
+    selectedTag,
+    packFilter,
+  ]);
 
   const fetchAssets = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
@@ -112,7 +174,12 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
         ...(subcategoryFilter !== 'ALL' ? [subcategoryFilter] : []),
         ...(isSheetFilter ? ['sheet'] : []),
       ];
-      const assetTypeFilter = isSheetFilter ? undefined : (typeFilter === 'ALL' ? undefined : typeFilter);
+      const assetTypeFilter = isSheetFilter
+        ? undefined
+        : typeFilter === 'ALL'
+        ? undefined
+        : typeFilter;
+
       const res = await manager.searchAssets(
         {
           type: assetTypeFilter,
@@ -128,6 +195,7 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
         pageNum,
         50
       );
+
       setAssets((prev) => (append ? [...prev, ...res.items] : res.items));
       setHasMore(res.hasMore);
       setTotal(res.total);
@@ -202,8 +270,12 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
 
   const handleReclassifySubmit = async () => {
     if (selectedAssetIds.size === 0 && !activeAsset) return;
-    const idsToReclassify = selectedAssetIds.size > 0 ? Array.from(selectedAssetIds) : [activeAsset!.id];
-    const cats = reclassifyCategories.split(',').map((c) => c.trim()).filter(Boolean);
+    const idsToReclassify =
+      selectedAssetIds.size > 0 ? Array.from(selectedAssetIds) : [activeAsset!.id];
+    const cats = reclassifyCategories
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
 
     try {
       soundSynth?.playActionSound?.();
@@ -218,7 +290,10 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
     }
   };
 
-  const handleGameplayFlag = async (flag: 'solid' | 'interactable' | 'decorative', value: boolean) => {
+  const handleGameplayFlag = async (
+    flag: 'solid' | 'interactable' | 'decorative',
+    value: boolean
+  ) => {
     if (!activeAsset) return;
     setSavingFlags(true);
     try {
@@ -235,322 +310,331 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
     }
   };
 
+  const isCharactersWorkspace = workspaceId === 'characters' || typeFilter === 'CHARACTER';
+  const isCreaturesWorkspace = workspaceId === 'creatures' || typeFilter === 'CREATURE';
+  const isTilesetsWorkspace = workspaceId === 'tilesets' || typeFilter === 'TILE';
+  const isItemsWorkspace = workspaceId === 'items' || typeFilter === 'ITEM';
+  const isAudioWorkspace = workspaceId === 'audio' || typeFilter === 'AUDIO';
+  const isCatalogWorkspace = workspaceId === 'catalog' || workspaceId === 'packs';
+
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-100 font-mono rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl">
-      {/* Top Action & Filter Toolbar */}
-      <div className="flex flex-wrap items-center justify-between p-3 bg-[#0b1320] border-b border-amber-500/20 gap-3">
-        <div className="flex items-center gap-2 flex-1 flex-wrap">
-          {/* Search Box */}
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-amber-400" />
-            <input
-              type="text"
-              placeholder="Search assets, paths, tags..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/60 border border-amber-500/30 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2 text-slate-500 hover:text-slate-200 text-xs"
-              >
-                ×
-              </button>
-            )}
-          </div>
+    <div className="flex flex-col h-full w-full bg-transparent text-slate-100 font-mono overflow-hidden">
+      {/* ─── Top Unified Toolbar: Search + Bundle Pills + Context Refinements ─── */}
+      <div className="flex flex-col border-b border-slate-800/80 bg-[#070e1a]/95 backdrop-blur-sm z-10 shrink-0">
+        {/* Row 1: Search, Bundles & Actions */}
+        <div className="flex flex-wrap items-center justify-between p-3 gap-3">
+          <div className="flex items-center gap-2.5 flex-1 min-w-[280px]">
+            {/* Search Input */}
+            <div className="relative w-72 max-w-full">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-amber-400/80" />
+              <input
+                type="text"
+                placeholder="Search assets, paths, tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-black/70 border border-slate-700/80 rounded-xl pl-9 pr-7 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400/80 focus:ring-1 focus:ring-amber-400/30 transition shadow-inner"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-200 text-xs font-bold"
+                >
+                  ×
+                </button>
+              )}
+            </div>
 
-          {/* Type Filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              soundSynth?.playUiClick?.();
-              setTypeFilter(e.target.value);
-            }}
-            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="ALL">All Asset Types</option>
-            <option value="SHEET">Spritesheets & Grids</option>
-            <option value="SPRITE">Sprites (NPC / Player)</option>
-            <option value="TILESET">Tilesets & Terrains</option>
-            <option value="ITEM_ICON">Item & Tool Icons</option>
-            <option value="MONSTER">Monsters & Souls</option>
-            <option value="AUDIO">Audio & SFX</option>
-            <option value="UI_ELEMENT">UI Elements</option>
-          </select>
-
-          {/* Subcategory Filter */}
-          <select
-            value={subcategoryFilter}
-            onChange={(e) => {
-              soundSynth?.playUiClick?.();
-              setSubcategoryFilter(e.target.value);
-            }}
-            title="Subcategory Filter"
-            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="ALL">All Sub-Categories</option>
-            <option value="battle_sheet">Battle Sheets</option>
-            <option value="front_sprite">Front Sprites</option>
-            <option value="back_sprite">Back Sprites</option>
-            <option value="face_portrait">Face Portraits</option>
-            <option value="overworld">Overworld Sprites</option>
-            <option value="npc_walk">NPC Walk</option>
-            <option value="hero_walk">Hero Walk</option>
-          </select>
-
-          {/* Pack Filter */}
-          <select
-            value={modularFilter}
-            onChange={(e) => {
-              soundSynth?.playUiClick?.();
-              setModularFilter(e.target.value as 'ALL' | 'MODULAR' | 'FULL');
-            }}
-            title="Asset composition filter"
-            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="ALL">All Assets</option>
-            <option value="MODULAR">Modular Parts</option>
-            <option value="FULL">Full Sprites</option>
-          </select>
-
-          <select
-            value={componentCategoryFilter}
-            onChange={(e) => {
-              soundSynth?.playUiClick?.();
-              setComponentCategoryFilter(e.target.value);
-            }}
-            title="Character component category filter"
-            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="ALL">All Components</option>
-            {listCharacterComponentCategories().map((category) => (
-              <option key={category} value={category}>
-                {CHARACTER_COMPONENT_CATEGORIES[category].label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={componentLayerFilter}
-            onChange={(e) => {
-              soundSynth?.playUiClick?.();
-              setComponentLayerFilter(e.target.value);
-            }}
-            title="Character component layer filter"
-            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="ALL">All Layers</option>
-            {['head', 'torso', 'legs', 'feet', 'accessory', 'full-body'].map((layer) => (
-              <option key={layer} value={layer}>
-                {layer}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={packFilter}
-            onChange={(e) => {
-              soundSynth?.playUiClick?.();
-              setPackFilter(e.target.value as AssetPackId | 'ALL');
-            }}
-            title="Asset Pack Filter"
-            className="bg-black/60 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
-          >
-            <option value="ALL">All Asset Packs</option>
-            {ASSET_PACKS.map((p) => (
-              <option key={p} value={p}>
-                {ASSET_PACK_LABELS[p]}
-              </option>
-            ))}
-          </select>
-
-          {selectedTag && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950/60 border border-amber-500/50 text-amber-200 rounded-xl text-xs font-bold shadow-inner">
-              <span>#{selectedTag}</span>
+            {/* Asset Bundle Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 custom-scrollbar">
               <button
                 onClick={() => {
                   soundSynth?.playUiClick?.();
-                  setSelectedTag(null);
+                  setPackFilter('ALL');
                 }}
-                className="hover:text-rose-400 font-bold ml-0.5 cursor-pointer"
-              >
-                ×
-              </button>
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {selectedAssetIds.size > 0 && (
-            <button
-              onClick={() => {
-                soundSynth?.playSelectSound?.();
-                setReclassifyModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Reclassify ({selectedAssetIds.size})
-            </button>
-          )}
-
-          <div className="flex items-center border border-amber-500/30 rounded-xl bg-black/60 overflow-hidden">
-            <button
-              onClick={() => {
-                soundSynth?.playUiClick?.();
-                setViewMode('grid');
-              }}
-              className={`p-1.5 cursor-pointer transition ${
-                viewMode === 'grid' ? 'bg-amber-400 text-black font-bold' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Grid View"
-            >
-              <Grid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => {
-                soundSynth?.playUiClick?.();
-                setViewMode('list');
-              }}
-              className={`p-1.5 cursor-pointer transition ${
-                viewMode === 'list' ? 'bg-amber-400 text-black font-bold' : 'text-slate-400 hover:text-white'
-              }`}
-              title="List View"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Category & Pack Navigation Sidebar */}
-        <div className="w-60 bg-[#0b1320]/90 border-r border-slate-800/80 p-3.5 flex flex-col gap-5 overflow-y-auto shrink-0">
-          {/* Quick Packs Navigation */}
-          <div>
-            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
-              <Package className="w-3.5 h-3.5" /> Asset Bundles
-            </span>
-            <div className="flex flex-col gap-1 text-xs">
-              <button
-                onClick={() => setPackFilter('ALL')}
-                className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shrink-0 cursor-pointer ${
                   packFilter === 'ALL'
-                    ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
-                    : 'text-slate-300 hover:bg-slate-800/60'
+                    ? BUNDLE_THEMES.ALL.activeColor
+                    : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
+                <Package className="w-3.5 h-3.5" />
                 <span>All Bundles</span>
-                <span className="text-[10px] text-slate-500">{total || ''}</span>
+                <span className="text-[10px] opacity-70 ml-0.5">({total})</span>
               </button>
-              {ASSET_PACKS.map((packKey) => (
-                <button
-                  key={packKey}
-                  onClick={() => setPackFilter(packKey)}
-                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all ${
-                    packFilter === packKey
-                      ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
-                      : 'text-slate-300 hover:bg-slate-800/60'
-                  }`}
-                >
-                  <span className="truncate">{ASSET_PACK_LABELS[packKey]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Asset Classification Categories */}
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-amber-400" /> Categories
-            </span>
-            <div className="flex flex-col gap-1 text-xs">
-              {[
-                { id: 'ALL', label: 'All Types', icon: Layers },
-                { id: 'SHEET', label: 'Spritesheets & Grids', icon: LayoutGrid },
-                { id: 'SPRITE', label: 'Sprites & Heroes', icon: ImageIcon },
-                { id: 'TILESET', label: 'Tilesets & Ground', icon: Grid },
-                { id: 'MONSTER', label: 'Monsters & Souls', icon: PawPrint },
-                { id: 'ITEM_ICON', label: 'Items & Tools', icon: Sword },
-                { id: 'AUDIO', label: 'Audio & Music', icon: Music },
-              ].map((cat) => {
-                const IconComp = cat.icon;
-                const isSelected = typeFilter === cat.id;
+              {ASSET_PACKS.map((packKey) => {
+                const theme = BUNDLE_THEMES[packKey];
+                const isSelected = packFilter === packKey;
                 return (
                   <button
-                    key={cat.id}
-                    onClick={() => setTypeFilter(cat.id)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all ${
+                    key={packKey}
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setPackFilter(packKey);
+                    }}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border shrink-0 cursor-pointer ${
                       isSelected
-                        ? 'bg-purple-950/50 text-amber-300 font-bold border border-purple-500/40'
-                        : 'text-slate-300 hover:bg-slate-800/60'
+                        ? theme.activeColor
+                        : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                     }`}
                   >
-                    <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-slate-500'}`} />
-                    <span>{cat.label}</span>
+                    <span>{ASSET_PACK_LABELS[packKey]}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Quick Tags Filter */}
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Popular Tags</span>
-            <div className="flex flex-wrap gap-1.5">
+          {/* Right Tools: Batch Selection, View Mode & Zoom */}
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedAssetIds.size > 0 && (
+              <button
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  setReclassifyModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Reclassify ({selectedAssetIds.size})
+              </button>
+            )}
+
+            <div className="flex items-center border border-slate-700/80 rounded-xl bg-black/60 overflow-hidden shadow-inner">
+              <button
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setViewMode('grid');
+                }}
+                className={`p-1.5 cursor-pointer transition ${
+                  viewMode === 'grid'
+                    ? 'bg-amber-400 text-black font-bold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Grid View"
+              >
+                <Grid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setViewMode('list');
+                }}
+                className={`p-1.5 cursor-pointer transition ${
+                  viewMode === 'list'
+                    ? 'bg-amber-400 text-black font-bold'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="List View"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Context-Aware Refinement Bar */}
+        <div className="flex flex-wrap items-center justify-between px-3 py-2 bg-[#050b14]/90 border-t border-slate-800/60 gap-2 text-xs">
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {/* Workspace-Specific Filters */}
+            {isCatalogWorkspace && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-amber-400" /> Type:
+                </span>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => {
+                    soundSynth?.playUiClick?.();
+                    setTypeFilter(e.target.value);
+                  }}
+                  className="bg-black/70 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
+                >
+                  <option value="ALL">All Types</option>
+                  <option value="SPRITE">Characters & Sprites</option>
+                  <option value="CREATURE">Creatures & Monsters</option>
+                  <option value="TILE">Tilesets & Terrain</option>
+                  <option value="ITEM">Items & UI Icons</option>
+                  <option value="AUDIO">Audio & SFX</option>
+                  <option value="UI">UI Elements</option>
+                </select>
+              </div>
+            )}
+
+            {isCharactersWorkspace && (
+              <>
+                <div className="flex items-center bg-black/60 border border-slate-700/80 rounded-lg p-0.5 gap-0.5">
+                  {(['ALL', 'FULL', 'MODULAR'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        soundSynth?.playUiClick?.();
+                        setModularFilter(mode);
+                      }}
+                      className={`px-2 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                        modularFilter === mode
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {mode === 'ALL' ? 'All Characters' : mode === 'FULL' ? 'Full Sprites' : 'Modular Layers'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Modular Component Filters */}
+                {modularFilter !== 'FULL' && (
+                  <>
+                    <select
+                      value={componentCategoryFilter}
+                      onChange={(e) => {
+                        soundSynth?.playUiClick?.();
+                        setComponentCategoryFilter(e.target.value);
+                      }}
+                      className="bg-black/70 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                    >
+                      <option value="ALL">All Components</option>
+                      {listCharacterComponentCategories().map((cat) => (
+                        <option key={cat} value={cat}>
+                          {CHARACTER_COMPONENT_CATEGORIES[cat].label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={componentLayerFilter}
+                      onChange={(e) => {
+                        soundSynth?.playUiClick?.();
+                        setComponentLayerFilter(e.target.value);
+                      }}
+                      className="bg-black/70 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                    >
+                      <option value="ALL">All Layers</option>
+                      {['head', 'torso', 'legs', 'feet', 'accessory', 'full-body'].map((layer) => (
+                        <option key={layer} value={layer}>
+                          {layer}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+              </>
+            )}
+
+            {isCreaturesWorkspace && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                  <PawPrint className="w-3 h-3 text-rose-400" /> Form:
+                </span>
+                {[
+                  { id: 'ALL', label: 'All Forms' },
+                  { id: 'battle_sheet', label: 'Battle Sheets' },
+                  { id: 'overworld', label: 'Overworld' },
+                  { id: 'front_sprite', label: 'Front' },
+                  { id: 'back_sprite', label: 'Back' },
+                  { id: 'face_portrait', label: 'Portraits' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setSubcategoryFilter(item.id);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all border cursor-pointer ${
+                      subcategoryFilter === item.id
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Quick Popular Tag Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto py-0.5">
               {['terrain', 'npc', 'hero', 'creature', 'combat', 'civilian', 'tool', 'resource', 'dungeon'].map((t) => (
                 <button
                   key={t}
                   onClick={() => setSelectedTag(t === selectedTag ? null : t)}
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full border transition-all ${
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-all shrink-0 cursor-pointer ${
                     selectedTag === t
                       ? 'bg-amber-400 text-slate-950 font-bold border-amber-400 shadow'
-                      : 'bg-black/40 border-slate-700 text-slate-300 hover:border-amber-400/50'
+                      : 'bg-black/40 border-slate-800 text-slate-400 hover:border-amber-400/50 hover:text-slate-200'
                   }`}
                 >
                   #{t}
                 </button>
               ))}
             </div>
+
+            {selectedTag && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-950/60 border border-amber-500/50 text-amber-200 rounded-lg text-xs font-bold shadow-inner">
+                <span>#{selectedTag}</span>
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className="hover:text-rose-400 font-bold ml-0.5 cursor-pointer"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+          </div>
+
+          <div className="text-[11px] text-slate-400 shrink-0">
+            {assets.length} / <strong className="text-amber-400">{total}</strong> assets
           </div>
         </div>
+      </div>
 
+      {/* ─── Main Content Area: Asset Grid / List + Right Inspector ─── */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Center Grid / List Display */}
-        <div className="flex-1 p-4 overflow-y-auto bg-[#050b14] custom-scrollbar flex flex-col">
+        <div className="flex-1 p-4 overflow-y-auto bg-[#030810]/40 custom-scrollbar flex flex-col">
           {loading ? (
             <div className="flex-1 flex flex-col items-center justify-center text-xs text-slate-400 gap-2">
-              <RefreshCw className="w-5 h-5 text-amber-400 animate-spin" />
-              <span>Querying Asset Catalog...</span>
+              <RefreshCw className="w-6 h-6 text-amber-400 animate-spin" />
+              <span className="font-bold">Querying Asset Catalog…</span>
             </div>
           ) : assets.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-xs text-slate-500 italic p-8 text-center space-y-2">
-              <Folder className="w-8 h-8 text-slate-600 mx-auto" />
-              <p>No assets found matching the selected filter criteria.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-xs text-slate-500 italic p-8 text-center space-y-3">
+              <Folder className="w-10 h-10 text-slate-600 mx-auto opacity-60" />
+              <p className="text-sm font-semibold text-slate-400">No assets match the selected filter criteria.</p>
               <button
                 onClick={() => {
-                  setTypeFilter('ALL');
+                  setTypeFilter(initialTypeFilter || 'ALL');
                   setModularFilter('ALL');
                   setComponentCategoryFilter('ALL');
                   setComponentLayerFilter('ALL');
+                  setSubcategoryFilter('ALL');
                   setPackFilter('ALL');
                   setSearchQuery('');
                   setSelectedTag(null);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs transition"
+                className="px-4 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
               >
-                Clear Filters
+                Reset Filters
               </button>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
               {assets.map((asset) => {
                 const isSelected = selectedAssetIds.has(asset.id);
                 const isActive = activeAsset?.id === asset.id;
                 const fileName = asset.source.split('/').pop() || asset.id;
-                const componentLabel = asset.metadata?.componentCategory || asset.componentCategory || null;
-                const componentLayer = asset.metadata?.componentLayer || asset.componentLayer || null;
-                const isModular = Boolean(asset.isModularComponent || asset.metadata?.isModularComponent || componentLabel);
+                const componentLabel =
+                  asset.metadata?.componentCategory || asset.componentCategory || null;
+                const componentLayer =
+                  asset.metadata?.componentLayer || asset.componentLayer || null;
+                const isModular = Boolean(
+                  asset.isModularComponent ||
+                    asset.metadata?.isModularComponent ||
+                    componentLabel
+                );
+
+                const packId = asset.metadata?.pack || inferAssetPack(asset.source);
+                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.saints;
+
                 return (
                   <div
                     key={asset.id}
@@ -558,7 +642,7 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                       setActiveAsset(asset);
                       if (onAssetSelect) onAssetSelect(asset);
                     }}
-                    className={`group relative aspect-square bg-[#0b1320] border rounded-xl p-2 flex flex-col items-center justify-between cursor-pointer transition-all hover:scale-[1.02] hover:border-amber-400 hover:shadow-lg ${
+                    className={`group relative aspect-square bg-[#070e1a] border rounded-xl p-2 flex flex-col items-center justify-between cursor-pointer transition-all hover:scale-[1.02] hover:border-amber-400 hover:shadow-lg ${
                       isActive
                         ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-950/20'
                         : 'border-slate-800/80 hover:bg-slate-850'
@@ -579,39 +663,24 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                       )}
                     </button>
 
-                    {/* Format, Pack Origin & Sheet Badges */}
+                    {/* Badges: Pack Origin, Modular, Subcategory */}
                     <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
-                      {/* Pack Origin Badge */}
-                      {(() => {
-                        const packId = asset.metadata?.pack || inferAssetPack(asset.source);
-                        const packLabel = ASSET_PACK_LABELS[packId as AssetPackId] || packId;
-                        const isTux = packId === 'tuxemon';
-                        const isLpc = packId === 'lpc' || packId === 'npc' || packId === 'heroes';
-                        return (
-                          <span
-                            className={`text-[7px] font-bold uppercase tracking-wider px-1 py-0.2 rounded border ${
-                              isTux
-                                ? 'bg-sky-950/90 border-sky-500/40 text-sky-300'
-                                : isLpc
-                                ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
-                                : 'bg-amber-950/90 border-amber-500/40 text-amber-300'
-                            }`}
-                          >
-                            {packLabel}
-                          </span>
-                        );
-                      })()}
+                      <span
+                        className={`text-[7px] font-bold uppercase tracking-wider px-1 py-0.2 rounded border ${packTheme.badgeColor}`}
+                      >
+                        {ASSET_PACK_LABELS[packId as AssetPackId] || packId}
+                      </span>
 
-                      {/* Modular asset badge */}
                       {isModular && (
                         <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-cyan-950/90 border border-cyan-500/40 text-cyan-300">
                           Modular
                         </span>
                       )}
 
-                      {/* Subcategory Badge */}
                       {(() => {
-                        const sub = (asset.metadata?.subcategory as CreatureAssetSubcategory) || classifyCreatureAsset(asset.source);
+                        const sub =
+                          (asset.metadata?.subcategory as CreatureAssetSubcategory) ||
+                          classifyCreatureAsset(asset.source);
                         if (!sub) return null;
                         const label = CREATURE_SUBCATEGORY_LABELS[sub] || sub;
                         return (
@@ -619,27 +688,6 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                             {label}
                           </span>
                         );
-                      })()}
-
-                      {/* Frame Count / Sheet Indicator */}
-                      {(() => {
-                        const framesCount = Array.isArray(asset.metadata?.frames) ? asset.metadata.frames.length : null;
-                        const isSheet = asset.type === 'SHEET' || asset.tags?.includes('sheet') || asset.source.includes('-sheet');
-                        if (framesCount) {
-                          return (
-                            <span className="text-[7px] font-bold px-1 py-0.2 rounded bg-indigo-950/90 border border-indigo-500/40 text-indigo-300">
-                              {framesCount}f
-                            </span>
-                          );
-                        }
-                        if (isSheet) {
-                          return (
-                            <span className="text-[7px] font-bold px-1 py-0.2 rounded bg-indigo-950/90 border border-indigo-500/40 text-indigo-300">
-                              Sheet
-                            </span>
-                          );
-                        }
-                        return null;
                       })()}
                     </div>
 
@@ -652,13 +700,15 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                       />
                     </div>
 
-                    {/* Title */}
+                    {/* Title & Metadata */}
                     <span className="text-[10px] text-slate-300 truncate w-full text-center font-medium">
                       {fileName.replace(/\.(png|jpg|webp)$/i, '')}
                     </span>
                     {componentLabel || componentLayer ? (
                       <span className="text-[8px] text-cyan-200 truncate w-full text-center uppercase tracking-wide">
-                        {componentLabel ? `${componentLabel}${componentLayer ? ` • ${componentLayer}` : ''}` : componentLayer}
+                        {componentLabel
+                          ? `${componentLabel}${componentLayer ? ` • ${componentLayer}` : ''}`
+                          : componentLayer}
                       </span>
                     ) : null}
                   </div>
@@ -671,13 +721,25 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
               {assets.map((asset) => {
                 const isActive = activeAsset?.id === asset.id;
                 const fileName = asset.source.split('/').pop() || asset.id;
-                const sub = (asset.metadata?.subcategory as CreatureAssetSubcategory) || classifyCreatureAsset(asset.source);
+                const sub =
+                  (asset.metadata?.subcategory as CreatureAssetSubcategory) ||
+                  classifyCreatureAsset(asset.source);
                 const packId = asset.metadata?.pack || inferAssetPack(asset.source);
-                const packLabel = ASSET_PACK_LABELS[packId as AssetPackId] || packId;
-                const isSheet = asset.type === 'SHEET' || asset.tags?.includes('sheet') || asset.source.includes('-sheet');
-                const componentLabel = asset.metadata?.componentCategory || asset.componentCategory || null;
-                const componentLayer = asset.metadata?.componentLayer || asset.componentLayer || null;
-                const isModular = Boolean(asset.isModularComponent || asset.metadata?.isModularComponent || componentLabel);
+                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.saints;
+                const isSheet =
+                  asset.type === 'SHEET' ||
+                  asset.tags?.includes('sheet') ||
+                  asset.source.includes('-sheet');
+                const componentLabel =
+                  asset.metadata?.componentCategory || asset.componentCategory || null;
+                const componentLayer =
+                  asset.metadata?.componentLayer || asset.componentLayer || null;
+                const isModular = Boolean(
+                  asset.isModularComponent ||
+                    asset.metadata?.isModularComponent ||
+                    componentLabel
+                );
+
                 return (
                   <div
                     key={asset.id}
@@ -688,7 +750,7 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                     className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
                       isActive
                         ? 'bg-amber-950/30 border-amber-400/60 shadow-md'
-                        : 'bg-[#0b1320] border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                        : 'bg-[#070e1a] border-slate-800/80 hover:border-slate-700 hover:bg-slate-850'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -702,9 +764,13 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                       </div>
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-slate-200 truncate">{fileName}</span>
-                          <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-black/60 border border-slate-700 text-amber-300">
-                            {packLabel}
+                          <span className="text-xs font-bold text-slate-200 truncate">
+                            {fileName}
+                          </span>
+                          <span
+                            className={`text-[8px] font-bold uppercase px-1 py-0.2 rounded border ${packTheme.badgeColor}`}
+                          >
+                            {ASSET_PACK_LABELS[packId as AssetPackId] || packId}
                           </span>
                           {sub && (
                             <span className="text-[8px] font-bold uppercase px-1 py-0.2 rounded bg-purple-950/80 border border-purple-500/40 text-purple-300">
@@ -727,7 +793,9 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                           {componentLabel || componentLayer ? (
                             <>
                               {' • '}
-                              <strong className="text-cyan-300 uppercase">{componentLabel || componentLayer}</strong>
+                              <strong className="text-cyan-300 uppercase">
+                                {componentLabel || componentLayer}
+                              </strong>
                             </>
                           ) : null}
                         </span>
@@ -736,7 +804,10 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
 
                     <div className="flex items-center gap-2 shrink-0">
                       {asset.tags.slice(0, 3).map((t) => (
-                        <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-black/60 border border-slate-800 text-slate-400">
+                        <span
+                          key={t}
+                          className="text-[9px] px-1.5 py-0.5 rounded bg-black/60 border border-slate-800 text-slate-400"
+                        >
                           #{t}
                         </span>
                       ))}
@@ -751,7 +822,8 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
           {!loading && assets.length > 0 && (
             <div className="mt-6 flex flex-col items-center gap-2 pb-4">
               <span className="text-xs text-slate-400">
-                Showing <strong className="text-white">{assets.length}</strong> of <strong className="text-amber-400">{total}</strong> assets
+                Showing <strong className="text-white">{assets.length}</strong> of{' '}
+                <strong className="text-amber-400">{total}</strong> assets
               </span>
               {hasMore && (
                 <button
@@ -769,7 +841,7 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
 
         {/* Right Asset Inspector Pane */}
         {activeAsset && (
-          <div className="w-80 bg-[#0b1320]/95 border-l border-slate-800/80 p-5 flex flex-col gap-4 overflow-y-auto shrink-0 custom-scrollbar">
+          <div className="w-80 bg-[#060c16]/95 border-l border-slate-800/80 p-4 flex flex-col gap-4 overflow-y-auto shrink-0 custom-scrollbar">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                 <SlidersHorizontal className="w-3.5 h-3.5" /> Asset Inspector
@@ -780,7 +852,9 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                     key={z}
                     onClick={() => setPreviewZoom(z)}
                     className={`px-1.5 py-0.5 text-[9px] rounded font-bold transition ${
-                      previewZoom === z ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-white'
+                      previewZoom === z
+                        ? 'bg-amber-400 text-slate-950'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     {z}
@@ -790,12 +864,16 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
             </div>
 
             {/* Checkered Canvas Preview Box */}
-            <div className="w-full aspect-square bg-[#050b14] bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:12px_12px] border border-slate-800 rounded-2xl flex items-center justify-center p-4 relative overflow-hidden shadow-inner">
+            <div className="w-full aspect-square bg-[#040810] bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:12px_12px] border border-slate-800/80 rounded-2xl flex items-center justify-center p-4 relative overflow-hidden shadow-inner">
               <img
                 src={activeAsset.source}
                 alt=""
                 className={`max-w-full max-h-full object-contain transition-transform ${
-                  previewZoom === '1x' ? 'scale-100' : previewZoom === '2x' ? 'scale-150' : 'scale-250'
+                  previewZoom === '1x'
+                    ? 'scale-100'
+                    : previewZoom === '2x'
+                    ? 'scale-150'
+                    : 'scale-250'
                 }`}
                 style={{ imageRendering: 'pixelated' }}
               />
@@ -809,9 +887,13 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => copyToClipboard(activeAsset.source, 'Path')}
-                  className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[10px] text-slate-300 flex items-center justify-center gap-1 transition"
+                  className="flex-1 py-1.5 px-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[10px] text-slate-300 flex items-center justify-center gap-1 transition cursor-pointer"
                 >
-                  {copiedKey === 'Path' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-amber-400" />}
+                  {copiedKey === 'Path' ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3 text-amber-400" />
+                  )}
                   <span>Copy Path</span>
                 </button>
                 {onOpenSlicer && (
@@ -823,16 +905,18 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                         storagePath: activeAsset.source,
                       })
                     }
-                    className="py-1.5 px-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-[10px] text-amber-300 flex items-center justify-center gap-1 transition font-semibold"
+                    className="py-1.5 px-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-[10px] text-amber-300 flex items-center justify-center gap-1 transition font-semibold cursor-pointer"
                     title="Open in Slicer"
                   >
                     <Scissors className="w-3 h-3" /> Slicer
                   </button>
                 )}
               </div>
-              
+
               {/* Make Starter Hero Button (Phase 5) */}
-              {(activeAsset.type === 'CHARACTER' || activeAsset.type === 'SPRITE' && activeAsset.tags?.includes('profile:character')) && (
+              {(activeAsset.type === 'CHARACTER' ||
+                (activeAsset.type === 'SPRITE' &&
+                  activeAsset.tags?.includes('profile:character'))) && (
                 <button
                   onClick={() => {
                     soundSynth?.playActionSound?.();
@@ -844,7 +928,9 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                     const store = useEditorStore.getState();
                     store.setStudioMode('develop');
                     store.openPanel('characters');
-                    showToast(`Opening Starter Hero Editor for ${activeAsset.source.split('/').pop()}`);
+                    showToast(
+                      `Opening Starter Hero Editor for ${activeAsset.source.split('/').pop()}`
+                    );
                   }}
                   className="w-full py-1.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow cursor-pointer mt-1"
                 >
@@ -853,7 +939,8 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
               )}
 
               {/* Use as Tileset in Active Map Button (Phase 4C) */}
-              {(activeAsset.type === 'TILESET' || activeAsset.source.includes('/tilesets/')) && (
+              {(activeAsset.type === 'TILESET' ||
+                activeAsset.source.includes('/tilesets/')) && (
                 <button
                   onClick={() => {
                     soundSynth?.playActionSound?.();
@@ -862,7 +949,9 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                         detail: { source: activeAsset.source },
                       })
                     );
-                    showToast(`Added ${activeAsset.source.split('/').pop()} to active map tilesets`);
+                    showToast(
+                      `Added ${activeAsset.source.split('/').pop()} to active map tilesets`
+                    );
                   }}
                   className="w-full py-1.5 px-3 bg-gradient-to-r from-purple-700 to-purple-600 hover:from-purple-600 hover:to-purple-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow cursor-pointer mt-1"
                 >
@@ -879,27 +968,41 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Categories</span>
-                <span className="text-slate-200">{activeAsset.categories?.join(', ') || 'General'}</span>
+                <span className="text-slate-200">
+                  {activeAsset.categories?.join(', ') || 'General'}
+                </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Component</span>
-                <span className="text-slate-200">{activeAsset.metadata?.componentCategory || activeAsset.componentCategory || '—'}</span>
+                <span className="text-slate-200">
+                  {activeAsset.metadata?.componentCategory ||
+                    activeAsset.componentCategory ||
+                    '—'}
+                </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Layer</span>
-                <span className="text-slate-200">{activeAsset.metadata?.componentLayer || activeAsset.componentLayer || '—'}</span>
+                <span className="text-slate-200">
+                  {activeAsset.metadata?.componentLayer ||
+                    activeAsset.componentLayer ||
+                    '—'}
+                </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400">Frames</span>
                 <span className="text-slate-200">
-                  {Array.isArray(activeAsset.metadata?.frames) ? activeAsset.metadata.frames.length : 1}
+                  {Array.isArray(activeAsset.metadata?.frames)
+                    ? activeAsset.metadata.frames.length
+                    : 1}
                 </span>
               </div>
             </div>
 
             {/* Gameplay Flags */}
             <div className="flex flex-col gap-2 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gameplay Collision & Flags</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Gameplay Collision & Flags
+              </span>
               <div className="flex flex-col gap-1.5">
                 {(
                   [
@@ -908,7 +1011,10 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                     ['decorative', 'Decorative'],
                   ] as const
                 ).map(([flag, label]) => (
-                  <label key={flag} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <label
+                    key={flag}
+                    className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       disabled={savingFlags}
@@ -924,7 +1030,9 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
 
             {/* Tags Panel */}
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tags</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Tags
+              </span>
               <div className="flex flex-wrap gap-1">
                 {activeAsset.tags.map((t) => (
                   <span
@@ -932,7 +1040,10 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                     className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg text-[10px]"
                   >
                     #{t}
-                    <button onClick={() => handleRemoveTag(t)} className="text-slate-500 hover:text-rose-400 ml-0.5 font-bold">
+                    <button
+                      onClick={() => handleRemoveTag(t)}
+                      className="text-slate-500 hover:text-rose-400 ml-0.5 font-bold cursor-pointer"
+                    >
                       ×
                     </button>
                   </span>
@@ -950,7 +1061,7 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
                 />
                 <button
                   onClick={handleAddTag}
-                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition"
+                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
                   Add
                 </button>
@@ -961,14 +1072,14 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
             <div className="flex flex-col gap-2 mt-auto pt-2">
               <button
                 onClick={() => setReclassifyModalOpen(true)}
-                className="w-full py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow"
+                className="w-full py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Reclassify Asset
               </button>
               {onAssetSelect && (
                 <button
                   onClick={() => onAssetSelect(activeAsset)}
-                  className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20"
+                  className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/20 cursor-pointer"
                 >
                   <Edit2 className="w-3.5 h-3.5" /> Use Asset in Canvas
                 </button>
@@ -986,7 +1097,8 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
               <RefreshCw className="w-4 h-4" /> [ RECLASSIFY GAME ASSET ]
             </span>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Fix classification by reassigning asset type and categories across selected items ({selectedAssetIds.size || 1}).
+              Fix classification by reassigning asset type and categories across selected items (
+              {selectedAssetIds.size || 1}).
             </p>
 
             <div className="flex flex-col gap-1.5">
@@ -1019,13 +1131,13 @@ export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, 
             <div className="flex justify-end gap-2.5 mt-2">
               <button
                 onClick={() => setReclassifyModalOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleReclassifySubmit}
-                className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-lg"
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-lg cursor-pointer"
               >
                 Apply Reclassification
               </button>

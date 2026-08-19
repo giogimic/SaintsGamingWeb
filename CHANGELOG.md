@@ -1,3 +1,15 @@
+## [2.1.363] - 2026-08-19
+### Added & Fixed
+- **Asset Studio & Asset Browser Overhaul:**
+  - **Asset Pack & Bundle Query Matching (`app/api/assets/route.ts`)**: Fixed `/api/assets` route to support all bundle identifiers (`tuxemon`, `lpc`, `saints`, `studio`) across both source path patterns (`/monster/`, `/creatures/`, `/tilesets/`, `/npc/`, `/packs/`, `george`), metadata tags, and categories. Filtered out 1,515 empty stub records so pagination and sorting are clean.
+  - **Type Normalization in API (`app/api/assets/route.ts`)**: Added multi-alias matching for normalized types (`CHARACTER`, `SPRITE`, `CREATURE`, `MONSTER`, `TILE`, `TILESET`, `ITEM`, `ITEM_ICON`, `AUDIO`, `UI`), ensuring workspace tabs accurately return their designated assets.
+  - **Unified & Integrated Asset Browser UI (`AssetEditor.tsx`, `AssetStudioSuite.tsx`)**:
+    - Eliminated redundant inner left sidebar ("tabs beside tabs"), replacing it with a streamlined, responsive top filter toolbar.
+    - Added quick Asset Bundle filter pills (`All Bundles`, `Tuxemon`, `LPC`, `Saints Official`, `Studio Registry`) with live visual cues and count badges.
+    - Added context-aware refinement options per workspace (Characters: modular vs full sprite filters, component and layer dropdowns; Creatures: form subcategory pills; Tilesets: terrain category filters; Catalog: full type dropdown).
+    - Removed nested floating rounded card styling (`rounded-2xl border-amber-500/30`) in favor of seamless, full-bleed integration matching the outer Studio theme and frame.
+    - Polished right-hand Asset Inspector panel, batch selection tools, and grid/list thumbnail rendering.
+
 ## [2.1.362] - 2026-08-19
 ### Added & Fixed
 - **Studio Prefabs, Dynamic Map Loading, LPC Rendering & Character Creation Curation:**
