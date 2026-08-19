@@ -135,6 +135,42 @@ export function DialogueEditorPanel() {
     void loadList();
   }, [loadList]);
 
+  useEffect(() => {
+    const handleFocus = async (e: Event) => {
+      const customEv = e as CustomEvent<{ npcId: string; npcName?: string }>;
+      const targetNpcId = customEv.detail?.npcId;
+      if (!targetNpcId) return;
+      setLoading(true);
+      const res = await getNpcDialogueTree(targetNpcId);
+      setLoading(false);
+      if (res.success && res.data) {
+        clearDefinitionStackFor(dialogueResourceKey(form, isNewRef.current));
+        const nodes = treeToNodes(res.data.tree);
+        setForm({
+          npcId: res.data.npcId,
+          name: res.data.name,
+          nodes,
+          rawMode: false,
+          rawJson: JSON.stringify(res.data.tree, null, 2),
+        });
+        setIsNew(false);
+      } else {
+        clearDefinitionStackFor('dialogue:new');
+        const nodes = emptyNodes();
+        setForm({
+          npcId: targetNpcId,
+          name: customEv.detail?.npcName || targetNpcId,
+          nodes,
+          rawMode: false,
+          rawJson: JSON.stringify({ node_start: nodes[0] }, null, 2),
+        });
+        setIsNew(true);
+      }
+    };
+    window.addEventListener('studio_focus_dialogue', handleFocus);
+    return () => window.removeEventListener('studio_focus_dialogue', handleFocus);
+  }, [clearDefinitionStackFor, form]);
+
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
     setTimeout(() => setStatus(null), 3500);

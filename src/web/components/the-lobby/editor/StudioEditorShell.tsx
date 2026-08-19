@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { Layout, Model, TabNode, IJsonModel, Action, Actions, DockLocation } from 'flexlayout-react';
 import {
@@ -30,6 +30,7 @@ import {
   Globe,
   AlertCircle,
   Flame,
+  Loader2,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -50,22 +51,24 @@ import { FullScreenMapBrowser } from './FullScreenMapBrowser';
 import { AssetStudioSuite } from './AssetStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 
-import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
-import { PropertiesPanel } from './panels/PropertiesPanel';
-import { AssetBrowserPanel } from './panels/AssetBrowserPanel';
-import { EntityEditorPanel } from './panels/EntityEditorPanel';
-import { DevToolsPanel } from './panels/DevToolsPanel';
-import { StarterHeroEditorPanel } from './panels/StarterHeroEditorPanel';
-import { CreatureDefEditorPanel } from './panels/CreatureDefEditorPanel';
-import { ClassEditorPanel } from './panels/ClassEditorPanel';
-import { QuestEditorPanel } from './panels/QuestEditorPanel';
-import { DialogueEditorPanel } from './panels/DialogueEditorPanel';
-import { LootManagerPanel } from './panels/LootManagerPanel';
-import { ItemEditorPanel } from './panels/ItemEditorPanel';
-import { MonsterSpawnerPanel } from './panels/MonsterSpawnerPanel';
-import { PrefabBuilderPanel } from './panels/PrefabBuilderPanel';
-import { WorldAtlasPanel } from './panels/WorldAtlasPanel';
-import { StudioProblemsPanel } from './panels/StudioProblemsPanel';
+// Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
+const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
+const PropertiesPanel = lazy(() => import('./panels/PropertiesPanel').then((m) => ({ default: m.PropertiesPanel })));
+const AssetBrowserPanel = lazy(() => import('./panels/AssetBrowserPanel').then((m) => ({ default: m.AssetBrowserPanel })));
+const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
+const DevToolsPanel = lazy(() => import('./panels/DevToolsPanel').then((m) => ({ default: m.DevToolsPanel })));
+const StarterHeroEditorPanel = lazy(() => import('./panels/StarterHeroEditorPanel').then((m) => ({ default: m.StarterHeroEditorPanel })));
+const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
+const ClassEditorPanel = lazy(() => import('./panels/ClassEditorPanel').then((m) => ({ default: m.ClassEditorPanel })));
+const QuestEditorPanel = lazy(() => import('./panels/QuestEditorPanel').then((m) => ({ default: m.QuestEditorPanel })));
+const DialogueEditorPanel = lazy(() => import('./panels/DialogueEditorPanel').then((m) => ({ default: m.DialogueEditorPanel })));
+const LootManagerPanel = lazy(() => import('./panels/LootManagerPanel').then((m) => ({ default: m.LootManagerPanel })));
+const ItemEditorPanel = lazy(() => import('./panels/ItemEditorPanel').then((m) => ({ default: m.ItemEditorPanel })));
+const MonsterSpawnerPanel = lazy(() => import('./panels/MonsterSpawnerPanel').then((m) => ({ default: m.MonsterSpawnerPanel })));
+const PrefabBuilderPanel = lazy(() => import('./panels/PrefabBuilderPanel').then((m) => ({ default: m.PrefabBuilderPanel })));
+const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
+const StudioProblemsPanel = lazy(() => import('./panels/StudioProblemsPanel').then((m) => ({ default: m.StudioProblemsPanel })));
+const GameplayStudioPanels = lazy(() => import('./panels/GameplayStudioPanels'));
 
 const initialLayout: IJsonModel = {
   global: {
@@ -276,10 +279,29 @@ export const StudioEditorShell: React.FC = () => {
     return () => window.removeEventListener(STUDIO_TRIGGER_SAVE_MAP_EVENT, onTriggerSave);
   }, [showToast]);
 
+  // Periodic Autosave every 5 minutes (Phase 8 Track F1)
+  useEffect(() => {
+    const AUTOSAVE_INTERVAL_MS = 5 * 60 * 1000;
+    const interval = setInterval(() => {
+      const state = useEditorStore.getState();
+      if (state.isCreationMode && (state.mapDirty || state.definitionOpStack.undo.length > 0) && !state.isSavingMap) {
+        void performSave();
+      }
+    }, AUTOSAVE_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      // '?' or 'F1' toggles keyboard shortcuts cheat sheet (Phase 8 Track C1)
+      if ((e.key === '?' || e.key === 'F1') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('studio_open_shortcuts'));
         return;
       }
 
@@ -701,26 +723,44 @@ export const StudioEditorShell: React.FC = () => {
 
   const factory = (node: TabNode) => {
     const component = node.getComponent();
-    switch (component) {
-      case 'build': return <WorldBuilderPanel />;
-      case 'properties': return <PropertiesPanel />;
-      case 'assets': return <AssetBrowserPanel />;
-      case 'npc': return <EntityEditorPanel />;
-      case 'dev': return <DevToolsPanel />;
-      case 'characters': return <StarterHeroEditorPanel />;
-      case 'creature': return <CreatureDefEditorPanel />;
-      case 'classes': return <ClassEditorPanel />;
-      case 'quest': return <QuestEditorPanel />;
-      case 'dialogue': return <DialogueEditorPanel />;
-      case 'loot': return <LootManagerPanel />;
-      case 'items': return <ItemEditorPanel />;
-      case 'spawner': return <MonsterSpawnerPanel />;
-      case 'prefab': return <PrefabBuilderPanel />;
-      case 'atlas': return <WorldAtlasPanel />;
-      case 'problems': return <StudioProblemsPanel />;
-      case 'viewport': return <div className="sg-viewport-container w-full h-full pointer-events-none" />;
-      default: return <div>Unknown component: {component}</div>;
+    if (component === 'viewport') {
+      return <div className="sg-viewport-container w-full h-full pointer-events-none" />;
     }
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-full w-full items-center justify-center bg-[#050b14]/80 p-4">
+            <div className="flex items-center gap-2 text-xs font-mono text-amber-400/80">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading panel...</span>
+            </div>
+          </div>
+        }
+      >
+        {(() => {
+          switch (component) {
+            case 'build': return <WorldBuilderPanel />;
+            case 'properties': return <PropertiesPanel />;
+            case 'assets': return <AssetBrowserPanel />;
+            case 'npc': return <EntityEditorPanel />;
+            case 'dev': return <DevToolsPanel />;
+            case 'characters': return <StarterHeroEditorPanel />;
+            case 'creature': return <CreatureDefEditorPanel />;
+            case 'classes': return <ClassEditorPanel />;
+            case 'quest': return <QuestEditorPanel />;
+            case 'dialogue': return <DialogueEditorPanel />;
+            case 'loot': return <LootManagerPanel />;
+            case 'items': return <ItemEditorPanel />;
+            case 'spawner': return <MonsterSpawnerPanel />;
+            case 'prefab': return <PrefabBuilderPanel />;
+            case 'atlas': return <WorldAtlasPanel />;
+            case 'problems': return <StudioProblemsPanel />;
+            case 'gameplay': return <GameplayStudioPanels />;
+            default: return <div>Unknown component: {component}</div>;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   const handleAction = (action: Action) => {

@@ -19,9 +19,10 @@ import {
   FALLBACK_CREATURE_DEFS,
 } from '@/shared/game/creatureCatalog';
 import {
-  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle,
+  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
+import { useGameStore } from '../../store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 
@@ -48,6 +49,7 @@ export function CreatureDefEditorPanel() {
   const [showJson, setShowJson] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const [assetFilter, setAssetFilter] = useState('');
+  const [lootTables, setLootTables] = useState<Array<{ id: string; name: string }>>([]);
   const isNewRef = useRef(isNew);
   isNewRef.current = isNew;
 
@@ -68,6 +70,15 @@ export function CreatureDefEditorPanel() {
   const load = useCallback(async () => {
     const res = await getAllCreatureDefs(activeGameId);
     if (res.success) setList(res.data);
+    try {
+      const lootRes = await fetch(`/api/loot/tables?gameId=${encodeURIComponent(activeGameId)}`);
+      const lootData = await lootRes.json();
+      if (lootRes.ok && lootData.items) {
+        setLootTables(lootData.items.map((t: any) => ({ id: t.id, name: t.name })));
+      }
+    } catch {
+      // fallback
+    }
   }, [activeGameId]);
 
   useEffect(() => {
@@ -76,6 +87,38 @@ export function CreatureDefEditorPanel() {
     setForm({ ...emptyCreatureDef(), gameId: activeGameId });
     setIsNew(false);
   }, [load, activeGameId, clearDefinitionStackFor]);
+
+  const addLootRef = () => {
+    const firstTable = lootTables[0]?.id || 'default_loot';
+    const next = {
+      ...form,
+      lootTableRefs: [...(form.lootTableRefs || []), { tableId: firstTable, label: 'normal' }],
+    };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const updateLootRef = (idx: number, patch: { tableId?: string; label?: string }) => {
+    const nextRefs = [...(form.lootTableRefs || [])];
+    if (nextRefs[idx]) {
+      nextRefs[idx] = { ...nextRefs[idx], ...patch };
+      const next = { ...form, lootTableRefs: nextRefs };
+      commitStructural(next);
+      setForm(next);
+    }
+  };
+
+  const removeLootRef = (idx: number) => {
+    const nextRefs = (form.lootTableRefs || []).filter((_, i) => i !== idx);
+    const next = { ...form, lootTableRefs: nextRefs };
+    commitStructural(next);
+    setForm(next);
+  };
+
+  const handleOpenLootTable = (tableId: string) => {
+    useEditorStore.getState().openPanel('loot');
+    useGameStore.getState().showToast(`Opened Loot Editor for ${tableId}`);
+  };
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -438,6 +481,37 @@ export function CreatureDefEditorPanel() {
                     </div>
                   ))}
                 </div>
+
+                {/* Visual Stat Breakdown & BST (Phase 8 Track E5) */}
+                <div className="mt-2.5 p-2 rounded bg-black/50 border border-slate-800 space-y-1.5">
+                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-400">
+                    <span className="uppercase tracking-wider">Stat Distribution</span>
+                    <span className="text-amber-300 font-mono">
+                      BST: {(form.baseHp || 0) + (form.physicalPower || 0) + (form.physicalDefense || 0) + (form.abilityPower || 0) + (form.abilityDefense || 0) + (form.combatTempo || 0)}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {[
+                      { label: 'HP', val: form.baseHp || 0, max: 200, color: 'bg-emerald-500' },
+                      { label: 'Atk', val: form.physicalPower || 0, max: 200, color: 'bg-rose-500' },
+                      { label: 'Def', val: form.physicalDefense || 0, max: 200, color: 'bg-blue-500' },
+                      { label: 'SpA', val: form.abilityPower || 0, max: 200, color: 'bg-purple-500' },
+                      { label: 'SpD', val: form.abilityDefense || 0, max: 200, color: 'bg-cyan-500' },
+                      { label: 'Spe', val: form.combatTempo || 0, max: 200, color: 'bg-amber-500' },
+                    ].map((st) => (
+                      <div key={st.label} className="flex items-center gap-2 text-[8px] font-mono">
+                        <span className="w-6 text-slate-400 font-bold">{st.label}</span>
+                        <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                          <div
+                            className={`h-full ${st.color} rounded-full transition-all duration-300`}
+                            style={{ width: `${Math.min(100, Math.round((st.val / st.max) * 100))}%` }}
+                          />
+                        </div>
+                        <span className="w-7 text-right text-slate-200 font-bold">{st.val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -521,6 +595,86 @@ export function CreatureDefEditorPanel() {
                     onChange={(e) => f('flavor', e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Loot Drop Tables Section (Phase 8 Track B4) */}
+              <div className="p-2.5 rounded border border-amber-500/30 bg-[#050b14]/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#cbb26a] uppercase tracking-wider">
+                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Loot Drop Tables</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addLootRef}
+                    className="flex items-center gap-1 text-[9px] text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded cursor-pointer"
+                  >
+                    <Plus className="w-2.5 h-2.5" />
+                    <span>Add Loot Table</span>
+                  </button>
+                </div>
+
+                {(!form.lootTableRefs || form.lootTableRefs.length === 0) ? (
+                  <p className="text-[10px] text-slate-500 italic py-1">No loot tables attached to this creature.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {form.lootTableRefs.map((ref, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 bg-black/40 border border-slate-800 rounded p-1.5 text-[11px]">
+                        <select
+                          value={ref.label || 'normal'}
+                          onChange={(e) => updateLootRef(idx, { label: e.target.value })}
+                          className="bg-[#111a2a] border border-slate-700 rounded px-1.5 py-1 text-[10px] text-amber-300 font-bold outline-none cursor-pointer"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="rare">Rare Drop</option>
+                          <option value="boss">Boss Drop</option>
+                          <option value="gather">Gather</option>
+                        </select>
+
+                        {lootTables.length > 0 ? (
+                          <select
+                            value={ref.tableId}
+                            onChange={(e) => updateLootRef(idx, { tableId: e.target.value })}
+                            className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-200 outline-none cursor-pointer"
+                          >
+                            {lootTables.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.name} ({t.id})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            value={ref.tableId}
+                            onChange={(e) => updateLootRef(idx, { tableId: e.target.value })}
+                            placeholder="table_id"
+                            className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                          />
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLootTable(ref.tableId)}
+                          className="flex items-center gap-1 text-[9px] text-amber-400 hover:text-amber-300 transition-colors bg-amber-950/40 border border-amber-800/40 px-2 py-1 rounded cursor-pointer shrink-0"
+                          title="Open in Loot Manager"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>View Loot →</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeLootRef(idx)}
+                          className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
+                          title="Remove table reference"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="p-2 rounded border border-[#806f47]/30 bg-[#050b14]/60 space-y-2">

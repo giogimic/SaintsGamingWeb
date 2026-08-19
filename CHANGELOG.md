@@ -1,3 +1,47 @@
+## [2.1.361] - 2026-08-19
+### Added & Fixed
+- **Studio Phase 8 Track F (Infrastructure & Reliability):**
+  - **Periodic 5-Minute Autosave (`StudioEditorShell.tsx`)**: Added background autosave timer that automatically triggers map saves when `isCreationMode` is active and unsaved edits (`mapDirty` or definition stack changes) are present.
+  - **Studio Activity & Notification History Log Modal (`NotificationHistoryModal.tsx`, `StudioMenuBar.tsx`, `store.ts`)**: Built a notification and activity history log modal retaining the last 50 studio toasts and system notices with timestamps and clear actions, accessible via a bell button in the top menu and under `Help → Activity & Notice Log`.
+  - **Collaboration & Soft-Locks State**: Fully integrated and verified real-time locks and peer presence in the bottom toolbar.
+  - **Phase 8 Milestone Complete**: All Tracks (A: Architecture & Wiring, B: Cross-Mode Linking, C: Usability, D: Performance, E: Per-Mode Polish, F: Infrastructure) are 100% complete and verified.
+
+## [2.1.360] - 2026-08-19
+### Added & Fixed
+- **Studio Phase 8 Track E (Per-Mode Polish) & Search Performance (Track C5):**
+  - **Atlas Biome Icons & Quick Teleport (`WorldAtlasPanel.tsx`)**: Replaced generic icons with smart biome-specific placeholder icons (`Castle` for towns/hubs, `Trees` for forests/plains, `Waves` for oceans/ports, `Mountain` for caves/dungeons, `Flame` for raids/volcanoes) and added direct hover teleport navigation to any atlas node.
+  - **Quest Objective Flow Chain & Test Quest Button (`QuestEditorPanel.tsx`)**: Built visual stage chain flow badge showing numbered sequence badges, target entity/item identifiers, quantity multipliers, and transition arrows. Added a "Test Quest" button to instantly launch playtest mode for the active quest.
+  - **Creature Stat Distribution Visualizer & BST Breakdown (`CreatureDefEditorPanel.tsx`)**: Added stat progress bars (`HP`, `Atk`, `Def`, `SpA`, `SpD`, `Spe`) with color-coded fills and auto-calculated Base Stat Total (BST).
+  - **NPC List Avatars & Badges (`EntityEditorPanel.tsx`)**: Enhanced the entity catalog list with avatar icon chips and formatted coordinates.
+  - **Search Debouncing (`WorldBuilderPanel.tsx`, `StudioOmnisearch.tsx`)**: Added 150ms–200ms debouncing across map explorer and studio omnisearch to prevent unneeded heavy iteration on every keystroke.
+
+## [2.1.359] - 2026-08-19
+### Added & Fixed
+- **Studio Phase 8 Track C (Usability Polish) & Track D (Performance Optimizations):**
+  - **Keyboard Shortcut Cheat Sheet Modal (`StudioShortcutsModal.tsx`, `StudioMenuBar.tsx`, `StudioEditorShell.tsx`)**: Created a dedicated cheat sheet modal categorizing ~25 shortcuts across 5 functional groups (Tools & Brushes, Clipboard & Edit, Stamp Transforms, Modes & Workspaces, Navigation & View) accessible via `?`, `F1`, or `Help → Keyboard Shortcuts`.
+  - **Studio Mode Switching Feedback (`StudioMenuBar.tsx`)**: Added clear, contextual toast feedback upon switching between modes (`Switched to Paint Mode`, `Switched to Populate Mode`, etc.).
+  - **Item Editor Undo / Redo (`ItemEditorPanel.tsx`)**: Wired `useDefinitionFormHistory` into the Item Editor form state, connecting `CatalogEditorShell` undo/redo buttons with snapshot history stacks.
+  - **FPS Counter Isolation & Performance (`StudioBottomToolbar.tsx`)**: Extracted the FPS animation loop into a memoized `<FpsBadge />` sub-component, preventing the 1-second interval update from re-rendering the entire 600+ line bottom toolbar.
+  - **Removed Unused `hoveredTile` Subscription (`StudioBottomToolbar.tsx`)**: Removed the high-frequency `hoveredTile` store subscription from the bottom toolbar, eliminating unneeded toolbar re-renders on every canvas mouse move.
+  - **Lazy-Loaded Dock Panels (`StudioEditorShell.tsx`)**: Converted all 17 dock panels in the FlexLayout factory to `React.lazy()` with `<Suspense>` loading fallbacks, maximizing code-splitting and reducing the initial bundle size.
+
+## [2.1.358] - 2026-08-19
+### Added & Fixed
+- **Studio Phase 8 Track B (Cross-Mode Integration) & Track C4 (Visual Loot Builder):**
+  - **NPC ↔ Dialogue Connection (`EntityEditorPanel.tsx`, `DialogueEditorPanel.tsx`)**: Added "Edit Dialogue Tree →" button that switches to the Dialogue dock and dispatches `studio_focus_dialogue` to pre-load or scaffold the NPC's branch conversation tree.
+  - **NPC ↔ Quest Connection (`EntityEditorPanel.tsx`, `QuestEditorPanel.tsx`)**: Upgraded NPC quest hook with a searchable quest dropdown, a "Jump to Quest →" link, and a "Create Quest for NPC →" button that switches to the Quest Editor and auto-generates TALK objectives for the NPC via `studio_focus_quest`.
+  - **Creature ↔ Spawner Connection (`MonsterSpawnerPanel.tsx`)**: Added creature catalog picker with species dropdown and "Edit Creature →" quick-jump link in the spawner configuration.
+  - **Creature ↔ Loot Connection (`CreatureDefEditorPanel.tsx`, `creatureCatalog.ts`)**: Added `lootTableRefs` array of labeled table references (`normal`, `rare`, `boss`, `gather`) with "Add Loot Table" selector and "View Loot →" jump button to open the referenced loot table.
+  - **Item ↔ Loot Reverse Link & Visual Table Builder (`LootManagerPanel.tsx`, `ItemEditorPanel.tsx`)**: Rebuilt the Loot Manager panel into a visual table builder with live drop rate calculations, autocomplete item templates, min/max quantity inputs, and quick-jump item icons wired to `studio_focus_item` in `ItemEditorPanel`. Completely eliminated raw JSON textareas.
+
+## [2.1.357] - 2026-08-19
+### Added & Fixed
+- **Studio Phase 8 Track A — Critical Wiring Fixes & Architecture Consolidation:**
+  - **Wired Gameplay Hub (`StudioEditorShell.tsx`, `StudioBottomToolbar.tsx`)**: Connected `GameplayStudioPanels` (Abilities, Status Effects, Skills, Professions, Combat Balance Simulator) into the FlexLayout dock factory and added quick dock launcher in the toolbar with Activity indicator.
+  - **Unified `CatalogEditorShell` (`editor/components/CatalogEditorShell.tsx`)**: Consolidated three divergent `CatalogEditorShell` implementations into a single canonical component supporting both slot layouts and typed master-detail catalogs (with integrated search, list column, definition undo/redo, and action footers).
+  - **Orphaned File & Component Cleanup**: Removed dead `StudioEditorShell_old.tsx` and harvested unique features (stamp transforms X/Y/Z, soft-locks indicator, peer count, latency ms) into `StudioBottomToolbar.tsx` before safely deleting `StudioStatusBar.tsx` and `StudioPaintHud.tsx`.
+  - **Cleaned Panel Imports (`ItemEditorPanel.tsx`, `LootManagerPanel.tsx`)**: Migrated item and loot manager panels to the unified `CatalogEditorShell`.
+
 ## [2.1.356] - 2026-08-19
 ### Added & Fixed
 - **Clean Separation of Paint Mode & Asset Studio:**

@@ -3,10 +3,34 @@
 import React, { useState, useEffect } from 'react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
-import { Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio } from 'lucide-react';
+import {
+  Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio,
+  Castle, Trees, Waves, Mountain, Flame, Navigation
+} from 'lucide-react';
 import { MapIndexEntry, loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { soundSynth } from '@/engine/sound-synth';
+
+function getBiomeIcon(mapId: string, isSelected: boolean) {
+  const lower = mapId.toLowerCase();
+  const cls = `w-4 h-4 mb-0.5 ${isSelected ? 'text-amber-300' : 'text-amber-400'}`;
+  if (lower.includes('lobby') || lower.includes('town') || lower.includes('village') || lower.includes('hub')) {
+    return <Castle className={cls} />;
+  }
+  if (lower.includes('forest') || lower.includes('wood') || lower.includes('garden') || lower.includes('farm') || lower.includes('grass')) {
+    return <Trees className={cls} />;
+  }
+  if (lower.includes('water') || lower.includes('sea') || lower.includes('ocean') || lower.includes('port') || lower.includes('beach')) {
+    return <Waves className={cls} />;
+  }
+  if (lower.includes('cave') || lower.includes('dungeon') || lower.includes('mine') || lower.includes('mountain') || lower.includes('pass')) {
+    return <Mountain className={cls} />;
+  }
+  if (lower.includes('boss') || lower.includes('raid') || lower.includes('volcano') || lower.includes('fire')) {
+    return <Flame className={cls} />;
+  }
+  return <MapIcon className={cls} />;
+}
 
 export interface AtlasNode {
   mapId: string;
@@ -311,7 +335,7 @@ export const WorldAtlasPanel: React.FC = () => {
                     {hasWest && <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="West Connected" />}
                     {hasEast && <div className="absolute -right-1 top-1/2 -translate-y-1/2 w-1 h-2 bg-cyan-400 rounded-full shadow-[0_0_4px_rgba(34,211,238,0.8)]" title="East Connected" />}
 
-                    <MapIcon className={`w-4 h-4 mb-0.5 ${isSelected ? 'text-amber-300' : 'text-amber-400'}`} />
+                    {getBiomeIcon(node.mapId, isSelected)}
                     <span className="text-[9px] text-slate-200 break-all leading-tight font-bold">
                       {node.mapId}
                     </span>
@@ -320,6 +344,17 @@ export const WorldAtlasPanel: React.FC = () => {
                         HUB
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleWarpToMap(node.mapId);
+                      }}
+                      className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-amber-500 text-black hover:bg-amber-400 transition-opacity shadow"
+                      title="Teleport to map"
+                    >
+                      <Navigation className="w-2.5 h-2.5" />
+                    </button>
                   </div>
                 );
               })}

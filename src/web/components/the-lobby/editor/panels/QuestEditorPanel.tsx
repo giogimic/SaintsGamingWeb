@@ -11,7 +11,7 @@ import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { definitionOpValue } from '@/shared/game/definitionOps';
 import {
-  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle, LayoutTemplate
+  Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle, LayoutTemplate, Play, ArrowRight
 } from 'lucide-react';
 
 const inputCls =
@@ -97,6 +97,60 @@ export function QuestEditorPanel() {
     setForm(emptyQuest(activeGameId));
     setIsNew(false);
   }, [load, activeGameId, clearDefinitionStackFor]);
+
+  useEffect(() => {
+    const handleFocus = async (e: Event) => {
+      const customEv = e as CustomEvent<{ questSlug: string; npcId?: string; npcName?: string }>;
+      const targetSlug = customEv.detail?.questSlug;
+      if (!targetSlug) return;
+      setLoading(true);
+      const res = await listQuestTemplates(activeGameId);
+      setLoading(false);
+      if (res.success && res.data) {
+        const rows = res.data as QuestRow[];
+        setList(rows);
+        const match = rows.find((q) => q.slug === targetSlug);
+        if (match) {
+          clearDefinitionStackFor(questResourceKey(formRef.current, isNewRef.current));
+          setForm({
+            ...match,
+            rewards: (() => {
+              try {
+                return JSON.stringify(JSON.parse(match.rewards), null, 2);
+              } catch {
+                return match.rewards;
+              }
+            })(),
+          });
+          setIsNew(false);
+        } else {
+          clearDefinitionStackFor('quest:new');
+          const next: QuestForm = {
+            ...emptyQuest(activeGameId),
+            slug: targetSlug,
+            title: customEv.detail?.npcName ? `Quest: ${customEv.detail.npcName}` : targetSlug,
+            objectives: customEv.detail?.npcId
+              ? [
+                  {
+                    stage: 1,
+                    type: 'TALK',
+                    targetSlug: customEv.detail.npcId,
+                    requiredQty: 1,
+                    description: `Speak to ${customEv.detail.npcName || customEv.detail.npcId}`,
+                  },
+                ]
+              : [
+                  { stage: 1, type: 'TALK', targetSlug: 'npc_', requiredQty: 1, description: '' },
+                ],
+          };
+          setForm(next);
+          setIsNew(true);
+        }
+      }
+    };
+    window.addEventListener('studio_focus_quest', handleFocus);
+    return () => window.removeEventListener('studio_focus_quest', handleFocus);
+  }, [activeGameId, clearDefinitionStackFor]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -234,7 +288,7 @@ export function QuestEditorPanel() {
       onUndoDefinition={() => applyDefinitionHistory('undo')}
       onRedoDefinition={() => applyDefinitionHistory('redo')}
       toolbar={
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
@@ -243,6 +297,18 @@ export function QuestEditorPanel() {
           </button>
           <button type="button" onClick={handleTemplate} className="rounded p-1.5 text-blue-400 hover:bg-white/5" title="Load Starter Template">
             <LayoutTemplate className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              useEditorStore.getState().enterPlaytest();
+              showStatus('success', `Playtesting quest: ${form.title || form.slug}`);
+            }}
+            className="flex items-center gap-1 rounded bg-gradient-to-r from-emerald-600 to-teal-600 px-2 py-1 text-[10px] font-bold text-white shadow hover:from-emerald-500 hover:to-teal-500 transition-all cursor-pointer ml-1"
+            title="Launch playtest mode to test this quest"
+          >
+            <Play className="h-3 w-3 fill-current" />
+            <span>Test Quest</span>
           </button>
         </div>
       }
@@ -273,6 +339,39 @@ export function QuestEditorPanel() {
         <div className={`mb-2 flex items-center gap-1.5 rounded px-2 py-1 text-[10px] ${status.type === 'success' ? 'bg-emerald-900/40 text-emerald-300' : 'bg-red-900/40 text-red-300'}`}>
           {status.type === 'success' ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
           {status.msg}
+        </div>
+      )}
+
+      {/* Visual Objective Stage Chain Flow (Phase 8 Track E4) */}
+      {form.objectives.length > 0 && (
+        <div className="mb-3 p-2 rounded-lg border border-amber-500/30 bg-[#050b14]/80 space-y-1">
+          <div className="text-[9px] font-black text-[#cbb26a] uppercase tracking-wider flex items-center justify-between">
+            <span>Objective Flow Chain ({form.objectives.length} Stages)</span>
+            <span className="text-slate-500 font-mono text-[8px]">Auto-sequenced</span>
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar py-1">
+            {form.objectives.map((obj, idx) => (
+              <React.Fragment key={idx}>
+                <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#0b1320] border border-slate-700/80 text-[10px] shrink-0 font-mono">
+                  <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center text-[9px]">
+                    {obj.stage || idx + 1}
+                  </span>
+                  <span className="font-bold text-slate-200">{obj.type}</span>
+                  {obj.targetSlug && (
+                    <span className="text-slate-400 text-[9px] max-w-[80px] truncate font-normal">
+                      {obj.targetSlug}
+                    </span>
+                  )}
+                  {obj.requiredQty > 1 && (
+                    <span className="text-cyan-400 text-[9px] font-bold">×{obj.requiredQty}</span>
+                  )}
+                </div>
+                {idx < form.objectives.length - 1 && (
+                  <ArrowRight className="w-3 h-3 text-amber-500/50 shrink-0" />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       )}
 

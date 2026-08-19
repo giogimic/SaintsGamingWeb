@@ -131,16 +131,23 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedIdx, setSelectedIdx] = useState(0);
   const showToast = useGameStore((s) => s.showToast);
   const { bookmarks, toggleBookmark, isBookmarked } = useStudioBookmarks();
 
   const quickActions = useMemo(() => buildQuickActions(showToast), [showToast]);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 150);
+    return () => clearTimeout(t);
+  }, [query]);
+
   // Focus input on open
   useEffect(() => {
     if (open) {
       setQuery('');
+      setDebouncedQuery('');
       setSelectedIdx(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -148,7 +155,7 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
 
   // Build results: bookmarks first, then maps, items, creatures, quests, quick actions
   const results = useMemo(() => {
-    const q = query.toLowerCase().trim();
+    const q = debouncedQuery.toLowerCase().trim();
     const all: SearchResult[] = [];
 
     // Show bookmarks if no query
