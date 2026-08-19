@@ -162,6 +162,13 @@ interface EditorState {
   isPasting: boolean;
   selectionStart: { r: number; c: number } | null;
   selectionEnd: { r: number; c: number } | null;
+  selectedCells: Record<string, boolean>;
+  addSelectedCell: (r: number, c: number) => void;
+  removeSelectedCell: (r: number, c: number) => void;
+  toggleSelectedCell: (r: number, c: number) => void;
+  addSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
+  removeSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
+  clearSelectedCells: () => void;
   clickedTile: { r: number; c: number } | null;
   hoveredTile: { r: number; c: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
@@ -537,6 +544,7 @@ export const useEditorStore = create<EditorState>()(
       isPasting: false,
       selectionStart: null,
       selectionEnd: null,
+      selectedCells: {},
       clickedTile: null,
       hoveredTile: null,
       lastPaintedTile: null,
@@ -825,6 +833,53 @@ export const useEditorStore = create<EditorState>()(
       setSelectionEnd: (tile) =>
         set((state) => {
           state.selectionEnd = tile;
+        }),
+      addSelectedCell: (r, c) =>
+        set((state) => {
+          state.selectedCells[`${r},${c}`] = true;
+        }),
+      removeSelectedCell: (r, c) =>
+        set((state) => {
+          delete state.selectedCells[`${r},${c}`];
+        }),
+      toggleSelectedCell: (r, c) =>
+        set((state) => {
+          const key = `${r},${c}`;
+          if (state.selectedCells[key]) {
+            delete state.selectedCells[key];
+          } else {
+            state.selectedCells[key] = true;
+          }
+        }),
+      addSelectedBox: (minR, maxR, minC, maxC) =>
+        set((state) => {
+          const r0 = Math.min(minR, maxR);
+          const r1 = Math.max(minR, maxR);
+          const c0 = Math.min(minC, maxC);
+          const c1 = Math.max(minC, maxC);
+          for (let r = r0; r <= r1; r++) {
+            for (let c = c0; c <= c1; c++) {
+              state.selectedCells[`${r},${c}`] = true;
+            }
+          }
+        }),
+      removeSelectedBox: (minR, maxR, minC, maxC) =>
+        set((state) => {
+          const r0 = Math.min(minR, maxR);
+          const r1 = Math.max(minR, maxR);
+          const c0 = Math.min(minC, maxC);
+          const c1 = Math.max(minC, maxC);
+          for (let r = r0; r <= r1; r++) {
+            for (let c = c0; c <= c1; c++) {
+              delete state.selectedCells[`${r},${c}`];
+            }
+          }
+        }),
+      clearSelectedCells: () =>
+        set((state) => {
+          state.selectedCells = {};
+          state.selectionStart = null;
+          state.selectionEnd = null;
         }),
       markMapDirty: () =>
         set((state) => {

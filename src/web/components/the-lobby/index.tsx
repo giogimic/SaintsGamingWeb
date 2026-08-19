@@ -1413,12 +1413,13 @@ export default function TheLobby({
     if (!socket?.connected) return;
     const state = useGameStore.getState();
     if (state.gameMode !== 'EXPLORING') return;
-    const curMap = toBaseMapId(state.currentMapId || 'DEMO_SANDBOX');
+    const curMap = toBaseMapId(state.currentMapId || 'LOBBY');
     const mapId = curMap;
-    if (!enableStudio && toBaseMapId(state.currentMapId || '') === 'LOBBY') {
-      state.setCurrentMapId('DEMO_SANDBOX');
-      void loadMap('DEMO_SANDBOX').then((m) => {
+    if (!state.activeMapData || state.activeMapData.id !== curMap) {
+      void loadMap(curMap).then((m) => {
         useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+      }).catch(() => {
+        /* map load fallback */
       });
     }
     const joinPayload = {

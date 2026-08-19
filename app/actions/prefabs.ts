@@ -36,7 +36,13 @@ export async function listPrefabs(search?: string) {
       take: 100,
     });
 
-    return { success: true, data: prefabs as MapPrefab[] };
+    const parsedPrefabs = prefabs.map((p) => ({
+      ...p,
+      visualData: typeof p.visualData === 'string' ? JSON.parse(p.visualData || '[]') : (p.visualData || []),
+      logicData: typeof p.logicData === 'string' ? JSON.parse(p.logicData || '[]') : (p.logicData || []),
+    }));
+
+    return { success: true, data: parsedPrefabs as any[] };
   } catch (err: any) {
     return { success: false, error: err.message };
   }

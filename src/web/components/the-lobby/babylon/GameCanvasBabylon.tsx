@@ -1110,14 +1110,46 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           if (brushMode === 'select') {
+            const isShift = (window.event as MouseEvent)?.shiftKey;
+            const isAlt = (window.event as MouseEvent)?.altKey;
+
             if (eventType === 'down') {
-              setSelectionStart({ r, c });
-              setSelectionEnd({ r, c });
-              engine.setSelectionPreview(r, c, r, c);
+              if (isAlt) {
+                store.removeSelectedCell(r, c);
+                engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
+              } else if (isShift) {
+                store.addSelectedCell(r, c);
+                setSelectionStart({ r, c });
+                setSelectionEnd({ r, c });
+                engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
+              } else {
+                store.clearSelectedCells();
+                store.addSelectedCell(r, c);
+                setSelectionStart({ r, c });
+                setSelectionEnd({ r, c });
+                engine.setSelectionPreview(r, c, r, c);
+              }
             } else if (eventType === 'move') {
-              setSelectionEnd({ r, c });
               if (store.selectionStart) {
-                engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
+                setSelectionEnd({ r, c });
+                if (isAlt) {
+                  store.removeSelectedBox(store.selectionStart.r, r, store.selectionStart.c, c);
+                  engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
+                } else if (isShift) {
+                  store.addSelectedBox(store.selectionStart.r, r, store.selectionStart.c, c);
+                  engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
+                } else {
+                  store.clearSelectedCells();
+                  store.addSelectedBox(store.selectionStart.r, r, store.selectionStart.c, c);
+                  engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
+                }
+              }
+            } else if (eventType === 'up') {
+              if (store.selectionStart && store.selectionEnd) {
+                if (!isShift && !isAlt && Object.keys(store.selectedCells).length === 0) {
+                  store.addSelectedBox(store.selectionStart.r, store.selectionEnd.r, store.selectionStart.c, store.selectionEnd.c);
+                }
+                engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
               }
             }
             return;

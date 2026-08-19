@@ -33,8 +33,8 @@ export function resolveSafePlayerSpawn(params: {
   const worldSpawn = params.worldDefaultSpawn || DEFAULT_FALLBACK_SPAWN;
   const rawSavedMap = params.savedMapId ? params.savedMapId.replace(/_ch\d+$/, '').trim() : '';
 
-  // 1. If saved map exists in available maps list, keep player on that map
-  if (rawSavedMap && params.availableMapIds.includes(rawSavedMap)) {
+  // 1. If saved map exists in available maps list (or available list is empty/loading), keep player on that map
+  if (rawSavedMap && (params.availableMapIds.length === 0 || params.availableMapIds.includes(rawSavedMap))) {
     return {
       mapId: rawSavedMap,
       x: typeof params.savedX === 'number' ? params.savedX : 15,

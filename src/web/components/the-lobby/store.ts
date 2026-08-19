@@ -400,9 +400,9 @@ export const useGameStore = create<GameState>()(
       combatTarget: null,
       cooldowns: {},
       pathQueue: [],
-      // Default to the seeded demo map; entities come from the socket (creature_spawned).
-      currentMapId: 'DEMO_SANDBOX',
-      instanceId: 'DEMO_SANDBOX',
+      // Default world map; dynamic maps load on character select
+      currentMapId: 'LOBBY',
+      instanceId: '',
       activeMapData: null,
       mapEntities: [],
       toasts: [],

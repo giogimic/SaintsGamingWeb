@@ -36,7 +36,13 @@ export function CharacterSpritePreview({
     if (key.startsWith('/') || key.startsWith('http://') || key.startsWith('https://')) {
       return key;
     }
-    if (key.includes('.')) {
+    if (key.startsWith('game-assets/')) {
+      return `/${key}`;
+    }
+    if (key.startsWith('npc/') || key.startsWith('monster/') || key.startsWith('creatures/') || key.startsWith('objects/')) {
+      return `/game-assets/${key.endsWith('.png') ? key : `${key}.png`}`;
+    }
+    if (key.includes('.') || key.startsWith('upload_') || key.startsWith('asset_')) {
       return `/uploads/${key}`;
     }
     return `/game-assets/npc/${key}.png`;
