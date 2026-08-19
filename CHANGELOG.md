@@ -1,3 +1,12 @@
+## [2.1.351] - 2026-08-19
+### Added & Fixed
+- **LPC Character Models & Hero Selection Overhaul:**
+  - **Universal Character Sprite Preview (`CharacterSpritePreview.tsx`)**: Intelligently renders South-facing front frames across LPC full sheets (Row 10), LPC walk sheets (Row 2), Tuxemon classic 3×4 sheets, direct upload URLs, and asset paths without hardcoded 96×128 dimensions.
+  - **Catalog LPC Hero Picker in Studio (`StarterHeroEditorPanel.tsx`)**: Added "Pick from LPC / Catalog" button opening `SpriteBrowser` directly in the Starter Hero Editor. Selected LPC character sheets and bundle IDs populate automatically.
+  - **Broadened Sprite Validation (`StarterHeroEditorPanel.tsx`)**: Accepted custom upload paths, CDN URLs, and LPC asset identifiers alongside classic preset keys.
+  - **Dynamic LPC Character Discovery in Character Creator (`character-creator.tsx`)**: Ingested custom LPC character assets alongside sprite presets in the Appearance step and added a "Custom Hero" flow when no starter heroes are seeded.
+  - **LPC Hero Card Rendering (`character-selector.tsx`, `character-creator.tsx`)**: Replaced hardcoded CSS background offsets with `CharacterSpritePreview` for all character cards.
+
 ## [2.1.350] - 2026-08-19
 ### Added & Fixed
 - **Dedicated Studio Asset Management Mode & Specialized Workspaces:**
