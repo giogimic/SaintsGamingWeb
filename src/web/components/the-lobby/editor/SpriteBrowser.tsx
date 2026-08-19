@@ -93,7 +93,16 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   useEffect(() => {
     setPage(0);
     void fetchSprites(0, false);
-  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, classDef, packFilter]);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, classDef, packFilter, filterType, filterTags]);
+
+  useEffect(() => {
+    const handleRefreshed = () => {
+      setPage(0);
+      void fetchSprites(0, false);
+    };
+    window.addEventListener('assets:refreshed', handleRefreshed);
+    return () => window.removeEventListener('assets:refreshed', handleRefreshed);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, classDef, packFilter, filterType, filterTags]);
 
   const fetchSprites = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);

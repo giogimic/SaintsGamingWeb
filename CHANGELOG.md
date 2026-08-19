@@ -1,3 +1,13 @@
+## [2.1.350] - 2026-08-19
+### Added & Fixed
+- **Dedicated Studio Asset Management Mode & Specialized Workspaces:**
+  - **First-Class Studio Assets Mode (`src/shared/game/studioModes.ts`, `StudioEditorShell.tsx`)**: Added `assets` mode with full workspace replacement (`AssetStudioSuite.tsx`), persistent top and bottom toolbars, and 7 purpose-driven sub-studios.
+  - **7 Specialized Asset Workspaces**: Characters & LPC Studio, Creatures & Monsters Studio, Tilesets & World Art Studio, Items & UI Icons Studio, Audio & Soundscapes Studio, Packs & Bundles Manager, and Master Catalog with moderation.
+  - **Instant Cross-Component Asset Sync (`AssetManager.ts`, `AssetEditor.tsx`, `SpriteBrowser.tsx`, `AssetUploadView.tsx`, `SpritesheetSlicer.tsx`)**: Added `broadcastRefresh()` event listener pipeline and automatic cache invalidation on upload and slice completion.
+  - **Accurate LPC Front-Facing Thumbnails (`assetSheets.ts`)**: Enhanced `getThumbnailFrameRect` to crop the South-facing (Front) idle frame across LPC full sheets (Row 10), LPC walk cycles (Row 2), and Tuxemon 3×4 sheets (Row 0).
+  - **Normalized Type Search (`app/api/assets/route.ts`)**: Normalized `CHARACTER` and `SPRITE` type querying with profile tag indexing.
+  - **Primary Lobby World Builder Control (`WorldBuilderPanel.tsx`)**: Added 1-click "Set as Primary Lobby" action in World Builder Overview.
+
 ## [2.1.349] - 2026-08-19
 ### Added & Fixed
 - **Universal Sprite Definitions & Animation Profile Architecture:**

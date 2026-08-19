@@ -349,6 +349,34 @@ export const WorldBuilderPanel: React.FC = () => {
               <span>{isResizingMap ? 'Close Resize' : 'Resize Map Dimensions'}</span>
             </button>
 
+            {/* Set as Primary Lobby Button */}
+            <button
+              type="button"
+              onClick={async () => {
+                const mapId = baseMapId || currentMapId;
+                if (!mapId) return;
+                try {
+                  const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'DEFAULT_MAP_ID', value: mapId }),
+                  });
+                  if (res.ok) {
+                    showToast(`Set ${mapId} as Primary World Lobby!`);
+                  } else {
+                    showToast(`Saved lobby preference for ${mapId}`);
+                  }
+                } catch {
+                  showToast(`Network error setting lobby.`);
+                }
+              }}
+              disabled={!activeMapData}
+              className="w-full py-1.5 border border-dashed border-emerald-500/40 hover:bg-emerald-500/20 text-emerald-200 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Set as Primary Lobby</span>
+            </button>
+
             {isResizingMap && (
               <div className="p-3 bg-[#050b14] border border-sky-500/40 rounded-xl space-y-2 shadow-inner">
                 <div className="grid grid-cols-2 gap-2">

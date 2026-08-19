@@ -48,6 +48,7 @@ import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 import { StudioBottomToolbar } from './StudioBottomToolbar';
 import { FullScreenMapBrowser } from './FullScreenMapBrowser';
 import { FullScreenAssetBrowser } from './FullScreenAssetBrowser';
+import { AssetStudioSuite } from './AssetStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 
 import { WorldBuilderPanel } from './panels/WorldBuilderPanel';
@@ -752,8 +753,8 @@ export const StudioEditorShell: React.FC = () => {
         />
       )}
 
-      {/* FlexLayout Workspace Container */}
-      <div className="flex-1 relative pointer-events-none">
+      {/* FlexLayout Workspace Container — hidden when in Assets mode */}
+      <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' ? 'hidden' : ''}`}>
         <Layout 
           ref={layoutRef} 
           model={model} 
@@ -761,6 +762,11 @@ export const StudioEditorShell: React.FC = () => {
           onAction={handleAction} 
         />
       </div>
+
+      {/* Asset Management Mode — full workspace replacement */}
+      {studioMode === 'assets' && (
+        <AssetStudioSuite />
+      )}
 
       {/* Unified Bottom Studio Toolbar */}
       <StudioBottomToolbar

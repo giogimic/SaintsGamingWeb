@@ -6,7 +6,7 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'atlas' | 'npc' | 'quest' | 'creature' | 'test';
+export type StudioMode = 'develop' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
@@ -16,7 +16,8 @@ export type StudioCanonicalMode =
   | 'populate'
   | 'script'
   | 'catalog'
-  | 'atlas';
+  | 'atlas'
+  | 'assets';
 
 export type StudioDockId =
   | 'build'
@@ -45,6 +46,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
   npc: 'populate',
   quest: 'script',
   creature: 'catalog',
+  assets: 'assets',
 };
 
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
@@ -54,6 +56,7 @@ export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   npc: ['npc', 'properties', 'assets', 'spawner'],
   quest: ['npc', 'quest'],
   creature: ['creature', 'loot', 'items'],
+  assets: [],
   test: [],
 };
 
@@ -85,6 +88,11 @@ export const STUDIO_MODE_META: Record<
     label: 'Catalog',
     canonical: 'catalog',
     blurb: 'Edit creature defs, loot tables, and definitions.',
+  },
+  assets: {
+    label: 'Assets',
+    canonical: 'assets',
+    blurb: 'Manage characters, creatures, tilesets, items, audio, and asset packs.',
   },
   test: {
     label: 'Play',
