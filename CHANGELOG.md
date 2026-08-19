@@ -1,4 +1,10 @@
-## [2.1.352] - 2026-08-19
+## [2.1.354] - 2026-08-19
+### Added & Fixed
+- **Asset Management Studio Final Polish:**
+  - **Top Bar Explicit Button (`StudioMenuBar.tsx`)**: Pulled the `Assets` mode out of the generic dropdown and placed it as a prominent, explicit button right next to the Edit and Play Test modes.
+  - **Catalog Search Normalization (`SpriteBrowser.tsx`)**: Hardened `SpriteBrowser.tsx` so that when the filter is set to `CHARACTER`, the list accurately filters out map tiles, environment props, and autotiles even if their database type overlaps as `SPRITE`.
+
+## [2.1.353] - 2026-08-19
 ### Added & Fixed
 - **Clean Fresh Installs & Character Appearance Curation:**
   - **Zero Demo Map Forcing on Clean Boot (`DemoBootstrap.ts`)**: Prevented `ensureStudioMapFoundation()` from automatically seeding `DEMO_SANDBOX`, `LOBBY`, and expansion maps on clean installs. Demo maps are only seeded if explicitly requested via `FORCE_DEMO_MAP=1` or explicit setup action.

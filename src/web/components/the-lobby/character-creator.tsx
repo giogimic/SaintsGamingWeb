@@ -225,7 +225,17 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       const res = await fetch('/api/assets?type=CHARACTER&limit=50');
       if (res.ok) {
         const data = await res.json();
-        customList = (data.items || []).map((a: any) => a.source).filter(Boolean);
+        customList = (data.items || [])
+          .filter((a: any) => {
+            if (a.type === 'CHARACTER' || a.tags?.includes('profile:character')) return true;
+            if (a.type === 'SPRITE') {
+              const src = (a.source || '').toLowerCase();
+              return !src.includes('tile') && !src.includes('map') && !src.includes('sheet1_') && !src.includes('wall') && !src.includes('floor');
+            }
+            return false;
+          })
+          .map((a: any) => a.source)
+          .filter(Boolean);
       }
     } catch {
       /* ignore */
@@ -630,15 +640,10 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                     className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(203,178,106,0.25)' }}
                   >
-                    <div
-                      className="pixelated bg-no-repeat"
-                      style={{
-                        backgroundImage: `url('/game-assets/npc/${spriteId}.png')`,
-                        backgroundPosition: '0px -64px',
-                        backgroundSize: '96px 128px',
-                        width: '32px', height: '32px',
-                        transform: 'scale(1.4)',
-                      }}
+                    <CharacterSpritePreview
+                      spriteKey={spriteId}
+                      size={32}
+                      scale={1.4}
                     />
                   </div>
                   <div>

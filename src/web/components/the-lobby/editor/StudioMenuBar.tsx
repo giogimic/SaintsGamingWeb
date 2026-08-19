@@ -363,9 +363,10 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           onClick={() => {
             soundSynth?.playActionSound?.();
             if (!isCreationMode) toggleCreationMode();
+            if (studioMode === 'assets') setStudioMode('develop');
           }}
           className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-            isCreationMode
+            isCreationMode && studioMode !== 'assets'
               ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           }`}
@@ -397,6 +398,23 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         >
           <Play className="w-3.5 h-3.5 fill-current" />
           <span>Play Test</span>
+        </button>
+        <div className="w-px h-4 bg-amber-500/30 mx-1" />
+        <button
+          onClick={() => {
+            soundSynth?.playActionSound?.();
+            if (!isCreationMode) toggleCreationMode();
+            setStudioMode('assets');
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+            isCreationMode && studioMode === 'assets'
+              ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Asset Manager — Characters, Audio, Packs, and Catalog"
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Assets</span>
         </button>
       </div>
 
