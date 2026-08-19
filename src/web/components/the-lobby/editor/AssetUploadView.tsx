@@ -43,6 +43,11 @@ import {
   UnpackedLpcPackage,
   UnpackedLpcLayer,
 } from '@/shared/game/lpcPackage';
+import {
+  ANIMATION_PROFILES,
+  SpriteAnimationProfile,
+  resolveSpriteDefinition,
+} from '@/shared/game/spriteDefinitions';
 
 const ASSET_TYPES = [
   { value: 'OBJECT', label: 'Object / Prop (Furniture, Trees, Rocks)', icon: Box },
@@ -85,6 +90,7 @@ export function AssetUploadView({
   const [bodyTypeWarning, setBodyTypeWarning] = useState<string | null>(null);
   const [importProfile, setImportProfile] = useState<AssetImportProfileId | ''>('');
   const [slotRole, setSlotRole] = useState('');
+  const [animationProfile, setAnimationProfile] = useState<SpriteAnimationProfile | ''>('');
   const [tagsInput, setTagsInput] = useState('');
   const [visibility, setVisibility] = useState('COMMUNITY');
   const [createUsable, setCreateUsable] = useState(true);
@@ -166,10 +172,17 @@ export function AssetUploadView({
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
 
-      // Measure dimensions to detect LPC layout
+      // Measure dimensions to detect LPC layout & animation profile
       const img = new Image();
       img.onload = () => {
         const format = detectLpcFormat(img.naturalWidth, img.naturalHeight);
+        const resolved = resolveSpriteDefinition({
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          spriteUrl: url,
+        });
+        setAnimationProfile(resolved.profile);
+
         if (format.isLpc) {
           setDetectedLpc(format);
           if (!importProfile) {
@@ -186,6 +199,7 @@ export function AssetUploadView({
     } else {
       setPreviewUrl(null);
       setDetectedLpc(null);
+      setAnimationProfile('');
     }
   };
 
@@ -204,11 +218,12 @@ export function AssetUploadView({
         setImportProfile('character');
         setSlotRole('walk');
         setCategory('actor');
+        setAnimationProfile('lpc-full');
         if (pkg.baseBodyType) {
           setBaseBodyType(pkg.baseBodyType);
         }
 
-        const tagList = ['lpc', 'lpc-studio-export', 'spritesheet', 'character'];
+        const tagList = ['lpc', 'lpc-studio-export', 'spritesheet', 'character', 'anim:lpc-full'];
         if (pkg.presetName) tagList.push(pkg.presetName.toLowerCase().replace(/\s+/g, '-'));
         if (pkg.baseBodyType) tagList.push(`body:${pkg.baseBodyType}`);
         setTagsInput(tagList.join(', '));
@@ -285,6 +300,7 @@ export function AssetUploadView({
       formData.append('type', assetType);
       if (importProfile) formData.append('importProfile', importProfile);
       if (slotRole) formData.append('slotRole', slotRole);
+      if (animationProfile) formData.append('animationProfile', animationProfile);
       formData.append('sourceMode', detectedLpc?.isLpc ? 'spritesheet' : 'single');
       if (category.trim()) formData.append('category', category.trim().toLowerCase());
 
@@ -355,6 +371,7 @@ export function AssetUploadView({
         formData.append('type', 'CHARACTER');
         formData.append('importProfile', 'character');
         formData.append('slotRole', layer.componentCategory);
+        formData.append('animationProfile', 'lpc-full');
         formData.append('category', layer.componentCategory);
         formData.append('componentCategory', layer.componentCategory);
         formData.append('componentLayer', layer.componentLayer);
@@ -370,6 +387,7 @@ export function AssetUploadView({
             'lpc',
             'modular',
             'sprite-component',
+            'anim:lpc-full',
             `component:${layer.componentCategory}`,
             `layer:${layer.componentLayer}`,
           ])
@@ -407,6 +425,7 @@ export function AssetUploadView({
     setAssetName('');
     setImportProfile('');
     setSlotRole('');
+    setAnimationProfile('');
     setCategory('');
     setComponentCategory('');
     setComponentLayer('');
@@ -835,6 +854,29 @@ export function AssetUploadView({
                       {ASSET_IMPORT_PROFILE_META[profile].label}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 mb-1 flex items-center justify-between">
+                  <span>Animation Profile</span>
+                  {animationProfile && (
+                    <span className="text-cyan-400 text-[9px] font-bold">
+                      {ANIMATION_PROFILES[animationProfile as SpriteAnimationProfile]?.label || animationProfile}
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={animationProfile}
+                  onChange={(e) => setAnimationProfile(e.target.value as SpriteAnimationProfile | '')}
+                  className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
+                >
+                  <option value="">Auto-Detect (from sheet format)</option>
+                  <option value="lpc-full">Universal LPC Full Sheet (13x21 · 64x64)</option>
+                  <option value="lpc-walk">LPC Walk Cycle (9x4 · 64x64)</option>
+                  <option value="tuxemon-3x4">Tuxemon Classic (3x4 · 32x32)</option>
+                  <option value="portrait-1x1">Single Frame Portrait / Billboard (1x1)</option>
+                  <option value="custom">Custom Grid</option>
                 </select>
               </div>
 

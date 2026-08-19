@@ -48,6 +48,12 @@ import {
   type AuthorOverlaysInput,
 } from "../shared/game/authorOverlays";
 import { BIOME_SKIRT_CONFIG } from "../shared/game/types/map";
+import {
+  resolveSpriteDefinition,
+  spriteDefinitionToBabylonConfig,
+  type SpriteAnimationProfile,
+  type SpriteDefinition,
+} from "../shared/game/spriteDefinitions";
 export interface BabylonMapChunk {
   chunkX: number;
   chunkY: number;
@@ -153,6 +159,8 @@ export interface BabylonEntityData {
   isCreature?: boolean;
   chatMessage?: string;
   spriteConfig?: SpriteSheetConfig;
+  animationProfile?: SpriteAnimationProfile;
+  spriteDef?: SpriteDefinition;
 }
 
 export class BabylonEngine {
@@ -2476,8 +2484,10 @@ private resolveTilePick(
   }
 
   private resolveSpriteConfig(entity: BabylonEntityData): SpriteSheetConfig {
-    // URL is source of truth — never let a stale SINGLE_FRAME client override
-    // wipe 3×4 walk sheets (that rendered rockitten as a full grid).
+    if (entity.spriteDef) {
+      return spriteDefinitionToBabylonConfig(entity.spriteDef);
+    }
+    // URL is source of truth for single-frame overrides (portraits / -ow)
     if (isSingleFrameSpriteUrl(entity.spriteUrl)) {
       return SINGLE_FRAME_SPRITE_CONFIG;
     }
@@ -2488,7 +2498,12 @@ private resolveTilePick(
     ) {
       return entity.spriteConfig;
     }
-    return DEFAULT_SPRITE_CONFIG;
+    const resolved = resolveSpriteDefinition({
+      animationProfile: entity.animationProfile,
+      spriteUrl: entity.spriteUrl,
+      spriteConfig: entity.spriteConfig,
+    });
+    return spriteDefinitionToBabylonConfig(resolved);
   }
 
   /**

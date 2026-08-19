@@ -19,6 +19,7 @@ import {
   isValidCharacterBaseBodyType,
   isValidSlotRole,
 } from "@/shared/game/assetImportProfiles";
+import { resolveSpriteDefinition } from "@/shared/game/spriteDefinitions";
 
 export interface AssetIngestOptions {
   userId: string;
@@ -34,6 +35,7 @@ export interface AssetIngestOptions {
   visibility?: 'PERSONAL' | 'PROJECT' | 'COMMUNITY' | 'PUBLIC';
   importProfile?: string;
   slotRole?: string;
+  animationProfile?: string;
   componentCategory?: string;
   componentLayer?: string;
   variantFamily?: string;
@@ -137,6 +139,13 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
     const assetCategory = options.category || inferredCategory || (isModularComponent ? componentCategory || "other" : null);
     const moderationStatus = options.moderationStatus || "PENDING";
 
+    const resolvedSpriteDef = resolveSpriteDefinition({
+      animationProfile: options.animationProfile,
+      width,
+      height,
+      spriteUrl: storedUrl,
+    });
+
     const baseTags = options.tags || [];
     const enrichedTags = Array.from(
       new Set(
@@ -144,6 +153,7 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
           ...baseTags,
           gameId,
           normalizedAssetType.toLowerCase(),
+          `anim:${resolvedSpriteDef.profile}`,
           isModularComponent ? "modular" : "",
           isModularComponent ? "sprite-component" : "",
           isModularComponent && componentCategory ? `component:${componentCategory}` : "",
@@ -174,6 +184,7 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
           version: 1,
           metadata: JSON.stringify({
             orig: file.name,
+            anim: resolvedSpriteDef.profile,
             profile: importProfile || undefined,
             role: slotRole || undefined,
             cat: componentCategory || undefined,
@@ -225,6 +236,7 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
           ),
           metadata: JSON.stringify({
             name: assetName,
+            anim: resolvedSpriteDef.profile,
             profile: importProfile || undefined,
             role: slotRole || undefined,
             cat: componentCategory || undefined,

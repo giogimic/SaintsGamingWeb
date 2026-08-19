@@ -21,6 +21,7 @@ export interface SlicedRegionInput {
   tags?: string[];
   importProfile?: string;
   slotRole?: string;
+  animationProfile?: string;
   bundleId?: string;
   sourceMode?: "spritesheet" | "multi" | "single";
   sourceRegion: { x: number; y: number; w: number; h: number };
@@ -196,6 +197,7 @@ export async function POST(req: NextRequest) {
                 assetType.toLowerCase(),
                 profile ? `profile:${profile}` : "",
                 slotRole ? `role:${slotRole}` : "",
+                r.animationProfile ? `anim:${r.animationProfile}` : "",
                 r.bundleId ? `bundle:${r.bundleId}` : "",
                 `source:${r.sourceMode || mode || "spritesheet"}`,
               ].filter(Boolean)
