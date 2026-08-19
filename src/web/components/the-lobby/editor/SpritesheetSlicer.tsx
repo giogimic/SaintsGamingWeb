@@ -61,10 +61,17 @@ export interface SpritesheetSlicerProps {
     width?: number;
     height?: number;
   };
+  defaultImportProfile?: AssetImportProfileId;
+  defaultGridSize?: number;
   onSliceComplete?: (assets: any[]) => void;
 }
 
-export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetSlicerProps) {
+export function SpritesheetSlicer({
+  sourceAsset,
+  defaultImportProfile,
+  defaultGridSize,
+  onSliceComplete,
+}: SpritesheetSlicerProps) {
   const showToast = useGameStore((s) => s.showToast);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -75,9 +82,17 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
 
   // Slicing Mode
   const [sliceMode, setSliceMode] = useState<'grid' | 'box'>('grid');
-  const [gridSize, setGridSize] = useState<number>(64);
+  const [gridSize, setGridSize] = useState<number>(defaultGridSize || 64);
   const [scale, setScale] = useState<number>(2);
-  const [importProfile, setImportProfile] = useState<AssetImportProfileId>('character');
+  const [importProfile, setImportProfile] = useState<AssetImportProfileId>(defaultImportProfile || 'character');
+
+  useEffect(() => {
+    if (defaultGridSize) setGridSize(defaultGridSize);
+  }, [defaultGridSize]);
+
+  useEffect(() => {
+    if (defaultImportProfile) setImportProfile(defaultImportProfile);
+  }, [defaultImportProfile]);
   const [assetMode, setAssetMode] = useState<'full-character' | 'modular-component'>('full-character');
   const [selectedView, setSelectedView] = useState<string>('front');
   const [selectedComponentCategory, setSelectedComponentCategory] = useState<string>('hat');

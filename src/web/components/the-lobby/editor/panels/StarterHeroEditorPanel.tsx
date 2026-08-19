@@ -327,6 +327,30 @@ export function StarterHeroEditorPanel() {
     return () => window.removeEventListener('studio_sprite_picked', handleSpritePicked);
   }, []);
 
+  useEffect(() => {
+    const handleMakeHero = (e: Event) => {
+      const customEv = e as CustomEvent<{ asset: any }>;
+      const asset = customEv.detail?.asset;
+      if (asset) {
+        setSelected(null);
+        setIsNew(true);
+        const name = (asset.source.split('/').pop() || '').split('.')[0] || 'New Hero';
+        const capitalName = name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
+        setForm({
+          ...EMPTY_HERO,
+          gameId: activeGameId,
+          sortOrder: heroes.length + 1,
+          spriteKey: asset.source,
+          name: capitalName,
+          slug: `hero_${name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${Date.now().toString().slice(-4)}`
+        });
+        showStatus('success', `Initialized Starter Hero from Asset`);
+      }
+    };
+    window.addEventListener('studio_make_starter_hero', handleMakeHero);
+    return () => window.removeEventListener('studio_make_starter_hero', handleMakeHero);
+  }, [activeGameId, heroes.length]);
+
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
     setTimeout(() => setStatus(null), 3500);

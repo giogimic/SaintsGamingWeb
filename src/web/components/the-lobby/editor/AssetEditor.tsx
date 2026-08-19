@@ -22,6 +22,7 @@ import {
   SlidersHorizontal,
   Plus,
   LayoutGrid,
+  Users,
 } from 'lucide-react';
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
 import { ASSET_PACKS, ASSET_PACK_LABELS, type AssetPackId, inferAssetPack } from '@/shared/game/assetPacks';
@@ -32,15 +33,17 @@ import {
 } from '@/shared/game/assetImportProfiles';
 import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from '../store';
+import { useEditorStore } from './editor-store';
 import { SpriteThumbnail } from './SpriteThumbnail';
 
 export interface AssetEditorProps {
+  initialTypeFilter?: string;
   onAssetSelect?: (asset: GameAssetItem) => void;
   onAssetEdit?: (asset: GameAssetItem) => void;
   onOpenSlicer?: (asset: { id: string; filename: string; storagePath: string }) => void;
 }
 
-export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }: AssetEditorProps) {
+export default function AssetEditor({ initialTypeFilter = 'ALL', onAssetSelect, onAssetEdit, onOpenSlicer }: AssetEditorProps) {
   const showToast = useGameStore((s) => s.showToast);
 
   const [assets, setAssets] = useState<GameAssetItem[]>([]);
@@ -51,7 +54,13 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>(initialTypeFilter || 'ALL');
+
+  useEffect(() => {
+    if (initialTypeFilter) {
+      setTypeFilter(initialTypeFilter);
+    }
+  }, [initialTypeFilter]);
   const [subcategoryFilter, setSubcategoryFilter] = useState<string>('ALL');
   const [modularFilter, setModularFilter] = useState<'ALL' | 'MODULAR' | 'FULL'>('ALL');
   const [componentCategoryFilter, setComponentCategoryFilter] = useState<string>('ALL');
@@ -821,6 +830,27 @@ export default function AssetEditor({ onAssetSelect, onAssetEdit, onOpenSlicer }
                   </button>
                 )}
               </div>
+              
+              {/* Make Starter Hero Button (Phase 5) */}
+              {(activeAsset.type === 'CHARACTER' || activeAsset.type === 'SPRITE' && activeAsset.tags?.includes('profile:character')) && (
+                <button
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    window.dispatchEvent(
+                      new CustomEvent('studio_make_starter_hero', {
+                        detail: { asset: activeAsset },
+                      })
+                    );
+                    const store = useEditorStore.getState();
+                    store.setStudioMode('edit');
+                    store.openPanel('characters');
+                    showToast(`Opening Starter Hero Editor for ${activeAsset.source.split('/').pop()}`);
+                  }}
+                  className="w-full py-1.5 px-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow cursor-pointer mt-1"
+                >
+                  <Users className="w-3.5 h-3.5" /> Make Starter Hero
+                </button>
+              )}
 
               {/* Use as Tileset in Active Map Button (Phase 4C) */}
               {(activeAsset.type === 'TILESET' || activeAsset.source.includes('/tilesets/')) && (
