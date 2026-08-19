@@ -1378,7 +1378,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const engine = engineRef.current;
       if (!engine) return;
       const unsub = useEditorStore.subscribe((state, prevState) => {
-        engine.setBrushRadius(state.brushRadius);
+        if (state.brushRadius !== prevState.brushRadius) {
+          engine.setBrushRadius(state.brushRadius);
+          engine.refreshBrushPreview();
+        }
         if (state.brushMode !== 'select' && prevState.brushMode === 'select') {
           engine.clearSelectionPreview();
         }

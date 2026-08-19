@@ -200,4 +200,21 @@ export class AssetManager {
     this.cache.set(assetId, formatted);
     return formatted;
   }
+
+  async deleteAsset(assetId: string): Promise<boolean> {
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'DELETE',
+    });
+    this.cache.delete(assetId);
+    return res.ok;
+  }
+
+  async batchDeleteAssets(assetIds: string[]): Promise<boolean> {
+    let allOk = true;
+    for (const id of assetIds) {
+      const ok = await this.deleteAsset(id);
+      if (!ok) allOk = false;
+    }
+    return allOk;
+  }
 }

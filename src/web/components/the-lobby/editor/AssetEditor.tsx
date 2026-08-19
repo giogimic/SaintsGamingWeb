@@ -41,6 +41,7 @@ import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
 import { SpriteThumbnail } from './SpriteThumbnail';
 import type { AssetWorkspaceId } from './AssetStudioSuite';
+import { AssetContextMenu } from './AssetContextMenu';
 
 export interface AssetEditorProps {
   workspaceId?: AssetWorkspaceId;
@@ -116,6 +117,8 @@ export default function AssetEditor({
   const [reclassifyType, setReclassifyType] = useState('SPRITE');
   const [reclassifyCategories, setReclassifyCategories] = useState('npcs,heroes');
   const [newTagInput, setNewTagInput] = useState('');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; asset: GameAssetItem } | null>(null);
+  const [reclassifyTargets, setReclassifyTargets] = useState<GameAssetItem[] | null>(null);
 
   // Sync initial type filter when workspace switches
   useEffect(() => {
@@ -268,10 +271,27 @@ export default function AssetEditor({
     }
   };
 
+  const handleOpenReclassify = (targetAssets: GameAssetItem[]) => {
+    setReclassifyTargets(targetAssets);
+    if (targetAssets.length === 1) {
+      setReclassifyType(targetAssets[0].type);
+      setReclassifyCategories(targetAssets[0].categories.join(', '));
+    } else {
+      setReclassifyType('SPRITE');
+      setReclassifyCategories('');
+    }
+    setReclassifyModalOpen(true);
+  };
+
   const handleReclassifySubmit = async () => {
-    if (selectedAssetIds.size === 0 && !activeAsset) return;
-    const idsToReclassify =
-      selectedAssetIds.size > 0 ? Array.from(selectedAssetIds) : [activeAsset!.id];
+    const targets = reclassifyTargets || (selectedAssetIds.size > 0 
+      ? assets.filter(a => selectedAssetIds.has(a.id)) 
+      : activeAsset 
+        ? [activeAsset] 
+        : []);
+    if (targets.length === 0) return;
+    
+    const idsToReclassify = targets.map(t => t.id);
     const cats = reclassifyCategories
       .split(',')
       .map((c) => c.trim())
@@ -284,9 +304,75 @@ export default function AssetEditor({
         await manager.reclassifyAsset(id, reclassifyType, cats);
       }
       setReclassifyModalOpen(false);
+      setReclassifyTargets(null);
       void fetchAssets(0, false);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteAssets = async (assetsToDelete: GameAssetItem[]) => {
+    if (assetsToDelete.length === 0) return;
+    const confirmMsg =
+      assetsToDelete.length === 1
+        ? `Are you sure you want to delete/archive asset: ${assetsToDelete[0].source.split('/').pop()}?`
+        : `Are you sure you want to delete/archive ${assetsToDelete.length} assets?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      soundSynth?.playActionSound?.();
+      const manager = AssetManager.getInstance();
+      const assetIds = assetsToDelete.map(a => a.id);
+      const ok = await manager.batchDeleteAssets(assetIds);
+      if (ok) {
+        showToast(
+          assetsToDelete.length === 1
+            ? 'Asset deleted/archived successfully'
+            : `${assetsToDelete.length} assets deleted/archived successfully`
+        );
+        setSelectedAssetIds((prev) => {
+          const next = new Set(prev);
+          assetIds.forEach(id => next.delete(id));
+          return next;
+        });
+        if (activeAsset && assetIds.includes(activeAsset.id)) {
+          setActiveAsset(null);
+        }
+        void fetchAssets(0, false);
+      } else {
+        showToast('Failed to delete some assets');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error deleting assets');
+    }
+  };
+
+  const handleToggleFlagFromMenu = async (asset: GameAssetItem, flag: 'solid' | 'interactable' | 'decorative', val: boolean) => {
+    try {
+      soundSynth?.playActionSound?.();
+      const manager = AssetManager.getInstance();
+      const updated = await manager.updateGameplayFlags(asset.id, { [flag]: val });
+      setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      if (activeAsset && activeAsset.id === updated.id) {
+        setActiveAsset(updated);
+      }
+      onAssetEdit?.(updated);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update gameplay flag');
+    }
+  };
+
+  const handleAddTagFromMenu = async (asset: GameAssetItem, tag: string) => {
+    try {
+      soundSynth?.playActionSound?.();
+      const manager = AssetManager.getInstance();
+      await manager.addTag(asset.id, tag);
+      void fetchAssets(0, false);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to add tag');
     }
   };
 
@@ -642,6 +728,10 @@ export default function AssetEditor({
                       setActiveAsset(asset);
                       if (onAssetSelect) onAssetSelect(asset);
                     }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({ x: e.clientX, y: e.clientY, asset });
+                    }}
                     className={`group relative aspect-square bg-[#070e1a] border rounded-xl p-2 flex flex-col items-center justify-between cursor-pointer transition-all hover:scale-[1.02] hover:border-amber-400 hover:shadow-lg ${
                       isActive
                         ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-950/20'
@@ -746,6 +836,10 @@ export default function AssetEditor({
                     onClick={() => {
                       setActiveAsset(asset);
                       if (onAssetSelect) onAssetSelect(asset);
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({ x: e.clientX, y: e.clientY, asset });
                     }}
                     className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${
                       isActive
@@ -1144,6 +1238,27 @@ export default function AssetEditor({
             </div>
           </div>
         </div>
+      )}
+
+      {contextMenu && (
+        <AssetContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          asset={contextMenu.asset}
+          selectedAssetIds={selectedAssetIds}
+          allAssets={assets}
+          onClose={() => setContextMenu(null)}
+          onInspect={(asset) => {
+            setActiveAsset(asset);
+            if (onAssetSelect) onAssetSelect(asset);
+          }}
+          onSelectInCanvas={onAssetSelect}
+          onOpenSlicer={onOpenSlicer}
+          onReclassify={handleOpenReclassify}
+          onDelete={handleDeleteAssets}
+          onToggleFlag={handleToggleFlagFromMenu}
+          onAddTag={handleAddTagFromMenu}
+        />
       )}
     </div>
   );

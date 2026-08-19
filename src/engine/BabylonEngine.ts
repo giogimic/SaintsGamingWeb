@@ -259,6 +259,8 @@ export class BabylonEngine {
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
   private brushRadius: number = 1;
+  private lastHoveredR: number = -1;
+  private lastHoveredC: number = -1;
   /** Brush preview overlay meshes. */
   private brushPreviewMeshes: Mesh[] = [];
   private selectionPreviewMeshes: Mesh[] = [];
@@ -2110,6 +2112,8 @@ private resolveTilePick(
 
     const updateBrushPreview = () => {
       if (!this.scene) {
+        this.lastHoveredR = -1;
+        this.lastHoveredC = -1;
         this.clearBrushPreview();
         return;
       }
@@ -2120,10 +2124,14 @@ private resolveTilePick(
       );
       const resolved = this.resolveTilePick(pickResult);
       if (!resolved) {
+        this.lastHoveredR = -1;
+        this.lastHoveredC = -1;
         this.clearBrushPreview();
         if (options?.onTileLeave) options.onTileLeave();
         return;
       }
+      this.lastHoveredR = resolved.r;
+      this.lastHoveredC = resolved.c;
       this.renderBrushPreview(resolved.r, resolved.c);
       if (options?.onTileHover) {
         options.onTileHover(resolved.r, resolved.c);
@@ -2194,12 +2202,22 @@ private resolveTilePick(
     this.scene.onPointerDown = undefined;
     this.scene.onPointerUp = undefined;
     this.scene.onPointerMove = undefined;
+    this.lastHoveredR = -1;
+    this.lastHoveredC = -1;
     this.clearBrushPreview();
   }
 
   /** Set brush radius for multi-tile painting. */
   public setBrushRadius(radius: number) {
     this.brushRadius = Math.max(1, Math.min(10, radius));
+    this.refreshBrushPreview();
+  }
+
+  /** Re-render the brush preview at the last hovered coordinate. */
+  public refreshBrushPreview() {
+    if (this.lastHoveredR !== -1 && this.lastHoveredC !== -1) {
+      this.renderBrushPreview(this.lastHoveredR, this.lastHoveredC);
+    }
   }
 
   /** Clear brush preview overlay. */
