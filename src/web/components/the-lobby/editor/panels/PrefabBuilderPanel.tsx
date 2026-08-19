@@ -5,7 +5,7 @@ import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import { Plus, Trash2, BoxSelect, Droplet, LayoutGrid } from 'lucide-react';
 import { listPrefabs, savePrefab, deletePrefab, seedBasicPrefabs, type PrefabTileData, type PrefabLogicData } from '@/app/actions/prefabs';
-import { extractSubgridFromMap } from '@/shared/game/subgridStamp';
+import { extractSubgridFromMap, extractSparseCellsFromMap } from '@/shared/game/subgridStamp';
 import type { MapPrefab } from '@prisma/client';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 
@@ -17,6 +17,7 @@ export const PrefabBuilderPanel: React.FC = () => {
   const setActivePrefabId = useEditorStore((s) => s.setActivePrefabId);
   const selectionStart = useEditorStore((s) => s.selectionStart);
   const selectionEnd = useEditorStore((s) => s.selectionEnd);
+  const selectedCells = useEditorStore((s) => s.selectedCells);
   
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
@@ -41,21 +42,31 @@ export const PrefabBuilderPanel: React.FC = () => {
   }, [isOpen, reloadPrefabs]);
 
   const handleSaveSelection = async () => {
-    if (!selectionStart || !selectionEnd || !activeMapData || !newPrefabName) {
-      showToast('Select an area on the map and enter a name first.');
+    const selectedKeys = Object.keys(selectedCells || {}).filter((k) => selectedCells[k]);
+    if (!newPrefabName || (!selectionStart && selectedKeys.length === 0) || !activeMapData) {
+      showToast('Select an area or tiles on the map and enter a name first.');
       return;
     }
 
-    const subgrid = extractSubgridFromMap({
-      map: activeMapData,
-      minR: selectionStart.r,
-      maxR: selectionEnd.r,
-      minC: selectionStart.c,
-      maxC: selectionEnd.c,
-    });
+    let subgrid: any = null;
+    if (selectedKeys.length > 0) {
+      const cells = selectedKeys.map((k) => {
+        const [r, c] = k.split(',').map(Number);
+        return { r, c };
+      });
+      subgrid = extractSparseCellsFromMap({ map: activeMapData, cells });
+    } else if (selectionStart && selectionEnd) {
+      subgrid = extractSubgridFromMap({
+        map: activeMapData,
+        minR: selectionStart.r,
+        maxR: selectionEnd.r,
+        minC: selectionStart.c,
+        maxC: selectionEnd.c,
+      });
+    }
 
-    if (!subgrid) {
-      showToast('Failed to extract tiles from selection.');
+    if (!subgrid || (subgrid.visualData.length === 0 && subgrid.logicData.length === 0)) {
+      showToast('No tiles found in the selected area to save as a prefab.');
       return;
     }
 
@@ -71,8 +82,7 @@ export const PrefabBuilderPanel: React.FC = () => {
     if (res.success) {
       showToast('Prefab saved successfully!');
       setNewPrefabName('');
-      useEditorStore.getState().setSelectionStart(null);
-      useEditorStore.getState().setSelectionEnd(null);
+      useEditorStore.getState().clearSelectedCells();
       setBrushMode('paint');
       reloadPrefabs();
     } else {

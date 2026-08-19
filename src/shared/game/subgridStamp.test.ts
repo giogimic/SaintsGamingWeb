@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   extractSubgridFromMap,
+  extractSparseCellsFromMap,
   stampClipboardOntoMap,
   type TileClipboardData,
 } from './subgridStamp';
@@ -133,5 +134,33 @@ describe('stampClipboardOntoMap', () => {
     expect(res.newLayerCreated).toBe(true);
     expect(map.tileLayers?.length).toBe(2);
     expect(map.tileLayers?.[1].grid?.[1][1]).toBe(77);
+  });
+
+  it('extracts sparse and irregularly shaped tile selections correctly', () => {
+    const map = createMockMap();
+    // Select odd non-contiguous cells: (0,0) and (1,1)
+    const clip = extractSparseCellsFromMap({
+      map,
+      cells: [
+        { r: 0, c: 0 },
+        { r: 1, c: 1 },
+      ],
+    });
+
+    expect(clip).not.toBeNull();
+    if (!clip) return;
+
+    expect(clip.width).toBe(2);
+    expect(clip.height).toBe(2);
+    expect(clip.sourceOrigin).toEqual({ r: 0, c: 0 });
+    // Only the explicitly selected cells are extracted
+    expect(clip.visualData).toEqual([
+      { layerOffset: 0, r: 0, c: 0, tileId: 10 },
+      { layerOffset: 0, r: 1, c: 1, tileId: 13 },
+    ]);
+    expect(clip.logicData).toEqual([
+      { r: 0, c: 0, tileId: 1 },
+      { r: 1, c: 1, tileId: 2 },
+    ]);
   });
 });

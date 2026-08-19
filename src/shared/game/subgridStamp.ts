@@ -110,6 +110,87 @@ export function extractSubgridFromMap(params: ExtractSubgridParams): TileClipboa
   };
 }
 
+export interface ExtractSparseCellsParams {
+  map: PaintableMap | null | undefined;
+  cells: Array<{ r: number; c: number }>;
+  activeLayerIdx?: number;
+}
+
+/**
+ * Extract visual and logic tiles from an arbitrary set of selected cells (e.g. Shift+Click multi-selection, odd shapes).
+ * Normalized to relative coordinates within the minimum bounding box.
+ */
+export function extractSparseCellsFromMap(params: ExtractSparseCellsParams): TileClipboardData | null {
+  const { map, cells, activeLayerIdx = 0 } = params;
+  if (!map || !Array.isArray(cells) || cells.length === 0) return null;
+
+  let minR = Infinity;
+  let maxR = -Infinity;
+  let minC = Infinity;
+  let maxC = -Infinity;
+
+  const cellLookup = new Set<string>();
+  cells.forEach(({ r, c }) => {
+    if (r < minR) minR = r;
+    if (r > maxR) maxR = r;
+    if (c < minC) minC = c;
+    if (c > maxC) maxC = c;
+    cellLookup.add(`${r},${c}`);
+  });
+
+  const width = maxC - minC + 1;
+  const height = maxR - minR + 1;
+  if (width <= 0 || height <= 0 || !isFinite(minR) || !isFinite(minC)) return null;
+
+  const visualData: ClipboardVisualTile[] = [];
+  const logicData: ClipboardLogicTile[] = [];
+
+  // Extract visual layers for matched cells
+  if (Array.isArray(map.tileLayers)) {
+    map.tileLayers.forEach((layer, layerIdx) => {
+      if (!Array.isArray(layer.grid)) return;
+      for (const { r, c } of cells) {
+        const row = layer.grid[r];
+        if (!Array.isArray(row)) continue;
+        const tileId = row[c];
+        if (typeof tileId === 'number' && tileId > 0) {
+          visualData.push({
+            layerOffset: layerIdx,
+            r: r - minR,
+            c: c - minC,
+            tileId,
+          });
+        }
+      }
+    });
+  }
+
+  // Extract logic grid for matched cells
+  if (Array.isArray(map.grid)) {
+    for (const { r, c } of cells) {
+      const row = map.grid[r];
+      if (!Array.isArray(row)) continue;
+      const tileId = row[c];
+      if (typeof tileId === 'number' && tileId !== 0) {
+        logicData.push({
+          r: r - minR,
+          c: c - minC,
+          tileId,
+        });
+      }
+    }
+  }
+
+  return {
+    width,
+    height,
+    visualData,
+    logicData,
+    sourceOrigin: { r: minR, c: minC },
+    activeLayerAtCopy: activeLayerIdx,
+  };
+}
+
 export interface StampClipboardParams {
   map: PaintableMap;
   clipboard: TileClipboardData;

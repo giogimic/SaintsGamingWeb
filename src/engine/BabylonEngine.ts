@@ -2251,6 +2251,44 @@ private resolveTilePick(
     }
   }
 
+  public setMultiSelectionPreview(cells: Array<{ r: number; c: number }> | Record<string, boolean>) {
+    this.clearSelectionPreview();
+    const cellList: Array<{ r: number; c: number }> = Array.isArray(cells)
+      ? cells
+      : Object.keys(cells).filter(k => (cells as Record<string, boolean>)[k]).map(k => {
+          const [r, c] = k.split(',').map(Number);
+          return { r, c };
+        });
+
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+
+    let previewMat = this.scene.getMaterialByName('selection_preview_mat') as StandardMaterial | null;
+    if (!previewMat) {
+      const mat = new StandardMaterial('selection_preview_mat', this.scene);
+      mat.diffuseColor = new Color3(0.5, 0.4, 1.0);
+      mat.alpha = 0.45;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      previewMat = mat;
+    }
+
+    for (const { r, c } of cellList) {
+      if (r < 0 || r >= h || c < 0 || c >= w) continue;
+      const posX = (c - w / 2) * s;
+      const posZ = (h / 2 - r) * s;
+      const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.95 }, this.scene);
+      plane.rotation.x = Math.PI / 2;
+      plane.position.x = posX;
+      plane.position.z = posZ;
+      plane.position.y = 0.02;
+      plane.material = previewMat;
+      plane.isPickable = false;
+      this.selectionPreviewMeshes.push(plane);
+    }
+  }
+
   /** Render semi-transparent brush preview / tile hover reticle at given center tile. */
   private renderBrushPreview(centerR: number, centerC: number) {
     this.clearBrushPreview();

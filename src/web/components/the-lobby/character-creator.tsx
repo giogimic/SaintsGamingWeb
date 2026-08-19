@@ -222,19 +222,17 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     const { CHARACTER_SPRITES } = await import('./data/sprites');
     let customList: string[] = [];
     try {
-      const res = await fetch('/api/assets?type=CHARACTER&limit=50');
+      const res = await fetch('/api/assets?type=CHARACTER&limit=100');
       if (res.ok) {
         const data = await res.json();
         customList = (data.items || [])
           .filter((a: any) => {
-            if (a.type === 'CHARACTER' || a.tags?.includes('profile:character')) return true;
-            if (a.type === 'SPRITE') {
-              const src = (a.source || '').toLowerCase();
-              return !src.includes('tile') && !src.includes('map') && !src.includes('sheet1_') && !src.includes('wall') && !src.includes('floor');
-            }
-            return false;
+            const tags = Array.isArray(a.tags) ? a.tags : [];
+            const isCharacter = a.type === 'CHARACTER' || tags.includes('character') || tags.includes('hero');
+            const isPlayable = a.isPlayable || tags.includes('playable') || tags.includes('player') || tags.includes('character_creator');
+            return isCharacter && isPlayable;
           })
-          .map((a: any) => a.source)
+          .map((a: any) => a.source || a.slug)
           .filter(Boolean);
       }
     } catch {

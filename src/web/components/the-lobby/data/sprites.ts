@@ -253,11 +253,64 @@ export const GAME_SPRITES = [
   "xerogrunt_yellow"
 ];
 
+/** Canonical Tuxemon Humanoid Player / Trainer Sprites */
+export const TUXEMON_HERO_SPRITES = [
+  "adventurer",
+  "adventurerblack",
+  "adventurer_beige",
+  "adventurer_green",
+  "adventurer_red",
+  "adventurer_yellow",
+  "heroine",
+  "heroine_black",
+  "heroine_brown",
+  "heroine_grey",
+  "heroine_red",
+  "warrior",
+  "knight",
+  "knightlord",
+  "knight_green",
+  "knight_red",
+  "knight_yellow",
+  "magician",
+  "magician_black",
+  "magician_blonde",
+  "magician_brown",
+  "magician_fiery",
+  "magician_grey",
+  "monk",
+  "monk_black",
+  "monk_blue",
+  "monk_green",
+  "monk_orange",
+  "monk_red",
+  "ninja",
+  "ninja_blue",
+  "ninja_red",
+  "rogue",
+  "rogue_blue",
+  "rogue_copper",
+  "rogue_green",
+  "rogue_red",
+  "soldier",
+  "witch",
+  "woodnymph",
+  "firenymph",
+  "dragonrider",
+  "dragonrider_black",
+  "dragonrider_blue",
+  "dragonrider_fiery",
+  "dragonrider_green",
+  "cooldude",
+  "catgirl",
+  "goth",
+];
+
 /** Filtered list containing ONLY humanoid / character / LPC player models for Character Creation */
 export const CHARACTER_SPRITES = Array.from(
   new Set([
     ...LPC_HERO_SPRITES,
-    ...GAME_SPRITES.filter((s) => !NON_CHARACTER_SPRITES.has(s)),
+    ...TUXEMON_HERO_SPRITES,
   ])
 );
 

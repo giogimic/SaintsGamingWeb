@@ -1,3 +1,12 @@
+## [2.1.362] - 2026-08-19
+### Added & Fixed
+- **Studio Prefabs, Dynamic Map Loading, LPC Rendering & Character Creation Curation:**
+  - **Dynamic Map Persistence (DEMO_SANDBOX Override Fix)**: Stopped hardcoded `DEMO_SANDBOX` defaults from overwriting the player's saved character map or chosen world map. Updated `resolveSafePlayerSpawn` in `worldSpawns.ts` to preserve `savedMapId` and updated `store.ts` initial map to `LOBBY`.
+  - **Odd-Shaped & Multi-Tile Selection Tool (`editor-store.ts`, `subgridStamp.ts`, `GameCanvasBabylon.tsx`, `BabylonEngine.ts`)**: Upgraded Studio Selection mode from simple single-box rectangle to arbitrary tile cell selection. Supported **Shift + Click/Drag** (add tiles to selection) and **Alt + Click/Drag** (remove tiles from selection) for irregular shapes (trees, curved fences, non-rectangular buildings). Added `extractSparseCellsFromMap` with 100% unit test coverage.
+  - **Prefab Column Limit & Parsing Fix (`app/actions/prefabs.ts`, `prisma/schema.prisma`)**: Updated `MapPrefab.visualData` and `MapPrefab.logicData` to properly serialize and parse JSON arrays on `listPrefabs` and `savePrefab`, eliminating column length serialization errors and empty array iterations during stamping.
+  - **LPC Spritesheet Resolution & Rendering (`CharacterSpritePreview.tsx`)**: Upgraded `resolveSrc` in `CharacterSpritePreview.tsx` to handle standard `/game-assets/npc/` paths, multi-frame LPC sheets (832x1344), and custom uploads without incorrect prefixing.
+  - **Curated Character Creation Sprites (`sprites.ts`, `character-creator.tsx`)**: Purged non-character monster/NPC/grunt clutter from `CHARACTER_SPRITES`, retaining strictly canonical Tuxemon humanoid trainers + LPC hero models. Added allowlist filter in `character-creator.tsx` ensuring only explicitly tagged playable assets appear in character creation.
+
 ## [2.1.361] - 2026-08-19
 ### Added & Fixed
 - **Studio Phase 8 Track F (Infrastructure & Reliability):**
