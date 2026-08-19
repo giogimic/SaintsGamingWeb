@@ -42,7 +42,6 @@ import { useEditorStore } from './editor-store';
 import { SpriteThumbnail } from './SpriteThumbnail';
 import type { AssetWorkspaceId } from './AssetStudioSuite';
 import { AssetContextMenu } from './AssetContextMenu';
-import { AssetManager } from '@/engine/assets/AssetManager';
 
 export interface AssetEditorProps {
   workspaceId?: AssetWorkspaceId;
