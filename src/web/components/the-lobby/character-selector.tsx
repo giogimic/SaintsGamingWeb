@@ -8,6 +8,7 @@ import { soundSynth } from "@/engine/sound-synth";
 import { useGameStore } from "./store";
 import { DigitalSnowV5 } from "@/web/components/landing/digital-snow-v5";
 import { PalmCanopyVignetteV5 } from "@/web/components/landing/palm-canopy-vignette-v5";
+import { CharacterSpritePreview } from "./CharacterSpritePreview";
 
 interface CharacterSelectorProps {
   characters: any[];
@@ -200,22 +201,12 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
                         boxShadow: isHovered ? `0 0 20px ${palette.glow}` : 'inset 0 0 12px rgba(0,0,0,0.8)',
                       }}
                     >
-                      {isCustomSprite ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={char.spriteId} alt={char.name} className="w-14 h-14 object-contain pixelated drop-shadow-[0_0_8px_rgba(0,245,212,0.5)]" />
-                      ) : (
-                        <div
-                          className="pixelated bg-no-repeat transition-transform group-hover:scale-110 duration-200 drop-shadow-[0_0_10px_rgba(242,0,137,0.6)]"
-                          style={{
-                            backgroundImage: `url('/game-assets/npc/${char.spriteId || 'adventurer'}.png')`,
-                            backgroundPosition: '0px -64px',
-                            backgroundSize: '96px 128px',
-                            width: '32px',
-                            height: '32px',
-                            transform: 'scale(1.8)',
-                          }}
-                        />
-                      )}
+                      <CharacterSpritePreview
+                        spriteKey={char.spriteId || 'adventurer'}
+                        size={32}
+                        scale={1.8}
+                        className="transition-transform group-hover:scale-110 duration-200 drop-shadow-[0_0_10px_rgba(242,0,137,0.6)]"
+                      />
                     </div>
 
                     <div className="flex-1 min-w-0">

@@ -11,8 +11,11 @@ import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Swords, Wand2, Feather,
   ChevronDown, ChevronUp, Database, AlertCircle, CheckCircle2, Users,
-  Wand, FileJson, Copy, Download, Sparkles, BookOpen, Check, HelpCircle
+  Wand, FileJson, Copy, Download, Sparkles, BookOpen, Check, HelpCircle,
+  FolderOpen, ImageIcon,
 } from 'lucide-react';
+import SpriteBrowser from '../SpriteBrowser';
+import { CharacterSpritePreview } from '@/web/components/the-lobby/CharacterSpritePreview';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -232,18 +235,14 @@ function HeroListItem({
     >
       {/* Sprite thumb */}
       <div
-        className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
+        className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 overflow-hidden"
         style={{ background: 'rgba(255,255,255,0.04)' }}
       >
-        <div
-          className="pixelated bg-no-repeat"
-          style={{
-            backgroundImage: `url('/game-assets/npc/${hero.spriteKey}.png')`,
-            backgroundPosition: '0px -64px',
-            backgroundSize: '96px 128px',
-            width: '24px', height: '24px',
-            transform: 'scale(1.1)',
-          }}
+        <CharacterSpritePreview
+          spriteKey={hero.spriteKey}
+          spriteBundleId={hero.spriteBundleId}
+          size={24}
+          scale={1.1}
         />
       </div>
 
@@ -297,6 +296,7 @@ export function StarterHeroEditorPanel() {
   const [showJsonModal, setShowJsonModal] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
 
   const spritesPerPage = 32;
   const filteredSprites = GAME_SPRITES.filter(s => !spriteFilter || s.includes(spriteFilter.toLowerCase()));
@@ -459,7 +459,15 @@ export function StarterHeroEditorPanel() {
     setForm(prev => ({ ...prev, [key]: value }));
 
   // Validation state checks
-  const isSpriteValid = GAME_SPRITES.includes(form.spriteKey);
+  const isSpriteValid = Boolean(
+    form.spriteKey && (
+      GAME_SPRITES.includes(form.spriteKey) ||
+      form.spriteKey.startsWith('/') ||
+      form.spriteKey.startsWith('http') ||
+      form.spriteKey.includes('.') ||
+      form.spriteBundleId
+    )
+  );
   const isSlugValid = Boolean(form.slug && /^[a-z0-9_]+$/.test(form.slug));
   let isJsonValid = true;
   try { JSON.parse(form.startingInventory); } catch { isJsonValid = false; }
@@ -736,47 +744,54 @@ export function StarterHeroEditorPanel() {
                   style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}
                 >
                   <span className="text-[9px] font-black text-violet-500/60 uppercase tracking-[0.2em]">
-                    Sprite Selection ({GAME_SPRITES.length} Available)
+                    Sprite Selection ({GAME_SPRITES.length} Presets + LPC Catalog)
                   </span>
-                  <button
-                    onClick={() => { setShowSpriteGrid(s => !s); setSpritePage(0); }}
-                    className="flex items-center gap-1 text-[9px] text-violet-500/50 hover:text-violet-300 transition-colors"
-                  >
-                    {showSpriteGrid ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                    {showSpriteGrid ? 'Hide grid' : 'Browse sprites'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCatalogBrowser(true)}
+                      className="flex items-center gap-1 text-[9px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded transition-all cursor-pointer shadow"
+                    >
+                      <ImageIcon size={10} />
+                      Pick from LPC / Catalog
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowSpriteGrid(s => !s); setSpritePage(0); }}
+                      className="flex items-center gap-1 text-[9px] text-violet-500/50 hover:text-violet-300 transition-colors cursor-pointer"
+                    >
+                      {showSpriteGrid ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                      {showSpriteGrid ? 'Hide grid' : 'Presets'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Selected sprite preview */}
                 <div className="flex items-center gap-3 mb-2">
                   <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                    className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
                     style={{
                       background: isSpriteValid ? 'rgba(139,92,246,0.1)' : 'rgba(239,68,68,0.1)',
                       border: isSpriteValid ? '1px solid rgba(139,92,246,0.3)' : '1px solid rgba(239,68,68,0.3)',
                     }}
                   >
-                    <div
-                      className="pixelated bg-no-repeat"
-                      style={{
-                        backgroundImage: `url('/game-assets/npc/${form.spriteKey}.png')`,
-                        backgroundPosition: '0px -64px',
-                        backgroundSize: '96px 128px',
-                        width: '32px', height: '32px',
-                        transform: 'scale(1.8)',
-                      }}
+                    <CharacterSpritePreview
+                      spriteKey={form.spriteKey}
+                      spriteBundleId={form.spriteBundleId}
+                      size={32}
+                      scale={1.8}
                     />
                   </div>
                   <div className="flex-1">
-                    <label className={labelCls}>Sprite Key *</label>
+                    <label className={labelCls}>Sprite Key / Asset URL *</label>
                     <input
                       value={form.spriteKey}
                       onChange={e => f('spriteKey', e.target.value)}
                       className={inputCls}
-                      placeholder="e.g. warrior, catgirl, knightlord, disciple"
+                      placeholder="e.g. warrior, catgirl, /uploads/lpc-hero.png"
                     />
-                    <p className="text-[8px] text-slate-600 mt-0.5">
-                      Must match PNG asset in <code className="text-violet-700">/public/game-assets/npc/</code>
+                    <p className="text-[8px] text-slate-500 mt-0.5">
+                      Enter classic NPC key, upload URL, or click "Pick from LPC / Catalog"
                     </p>
                   </div>
                 </div>
@@ -1082,6 +1097,46 @@ export function StarterHeroEditorPanel() {
         </div>
       )}
 
+      {/* Catalog LPC Sprite Picker Modal */}
+      {showCatalogBrowser && (
+        <div
+          className="pointer-events-auto absolute inset-0 z-40 p-4 flex items-center justify-center animate-in fade-in duration-200"
+          style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(10px)' }}
+        >
+          <div className="w-full max-w-3xl h-[80vh] bg-[#0a051d] border border-cyan-500/40 rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-cyan-500/30 bg-[#050b14]/80">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-cyan-400" />
+                <h3 className="font-black text-cyan-200 text-sm">
+                  Select Character / LPC Sprite from Catalog
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowCatalogBrowser(false)}
+                className="text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 text-xs cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden p-2">
+              <SpriteBrowser
+                filterType="CHARACTER"
+                onSelect={(selectedAssets) => {
+                  const asset = selectedAssets[0];
+                  if (asset) {
+                    f('spriteKey', asset.source);
+                    if (asset.variantFamily || asset.id) {
+                      f('spriteBundleId', asset.variantFamily || asset.id);
+                    }
+                  }
+                  setShowCatalogBrowser(false);
+                }}
+                onClose={() => setShowCatalogBrowser(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

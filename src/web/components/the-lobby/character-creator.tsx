@@ -15,6 +15,7 @@ import {
   resolveClassStats,
   resolveStartingSkills,
 } from "@/shared/game/classCatalog";
+import { CharacterSpritePreview } from "./CharacterSpritePreview";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ type DbHero = {
   name: string;
   classId: string;
   spriteKey: string;
+  spriteBundleId?: string | null;
   flavor: string;
   tag: string;
   tagColor: string;
@@ -214,11 +216,22 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   const totalPages = Math.ceil(allSprites.length / spritesPerPage);
   const currentSprites = allSprites.slice(spritePage * spritesPerPage, (spritePage + 1) * spritesPerPage);
 
-  // Load sprite list lazily when user reaches that step
+  // Load sprite list lazily when user reaches that step (including imported LPC assets)
   const loadSprites = async () => {
     if (allSprites.length > 0) return;
     const { GAME_SPRITES } = await import('./data/sprites');
-    setAllSprites(GAME_SPRITES);
+    let customList: string[] = [];
+    try {
+      const res = await fetch('/api/assets?type=CHARACTER&limit=50');
+      if (res.ok) {
+        const data = await res.json();
+        customList = (data.items || []).map((a: any) => a.source).filter(Boolean);
+      }
+    } catch {
+      /* ignore */
+    }
+    const combined = Array.from(new Set([...customList, ...GAME_SPRITES]));
+    setAllSprites(combined);
   };
 
   const stepToNum: Record<CreatorStep, number> = {
@@ -497,6 +510,26 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Create Custom Hero Card */}
+                    <div
+                      onClick={() => {
+                        soundSynth?.playSelectSound?.();
+                        setSelectedHeroSlug(null);
+                        setSpriteId('adventurer');
+                        setClassId('WARRIOR');
+                        setStep('NAME');
+                      }}
+                      className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group flex flex-col items-center justify-center p-6 border border-dashed border-cyan-500/40 bg-cyan-950/20 hover:bg-cyan-900/30 shadow-lg hover:scale-105"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center mb-3 text-cyan-400">
+                        <Sparkles className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-base font-black text-cyan-200">Custom Hero</h3>
+                      <p className="text-[11px] text-cyan-400/60 text-center mt-1">
+                        Build your own hero from scratch
+                      </p>
+                    </div>
+
                     {starterHeroes.map(hero => {
                       const cls = CLASSES.find(c => c.id === hero.classId) ?? CLASSES[0];
                       return (
@@ -538,22 +571,17 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                           <div className="p-5">
                             {/* Sprite preview */}
                             <div
-                              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110"
+                              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110 overflow-hidden"
                               style={{
                                 background: 'rgba(255,255,255,0.05)',
                                 border: `1px solid ${cls.accent}30`,
                               }}
                             >
-                              <div
-                                className="pixelated bg-no-repeat"
-                                style={{
-                                  backgroundImage: `url('/game-assets/npc/${hero.spriteKey}.png')`,
-                                  backgroundPosition: '0px -64px',
-                                  backgroundSize: '96px 128px',
-                                  width: '32px',
-                                  height: '32px',
-                                  transform: 'scale(1.5)',
-                                }}
+                              <CharacterSpritePreview
+                                spriteKey={hero.spriteKey}
+                                spriteBundleId={hero.spriteBundleId}
+                                size={32}
+                                scale={1.5}
                               />
                             </div>
 
@@ -713,15 +741,10 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                               }
                             }}
                           >
-                            <div
-                              className="pixelated bg-no-repeat"
-                              style={{
-                                backgroundImage: `url('/game-assets/npc/${sprite}.png')`,
-                                backgroundPosition: '0px -64px',
-                                backgroundSize: '96px 128px',
-                                width: '32px', height: '32px',
-                                transform: isActive ? 'scale(1.5)' : 'scale(1.2)',
-                              }}
+                            <CharacterSpritePreview
+                              spriteKey={sprite}
+                              size={32}
+                              scale={isActive ? 1.5 : 1.2}
                             />
                           </div>
                         );
@@ -859,15 +882,10 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
                       boxShadow: '0 0 30px rgba(203,178,106,0.25)',
                     }}
                   >
-                    <div
-                      className="pixelated bg-no-repeat"
-                      style={{
-                        backgroundImage: `url('/game-assets/npc/${spriteId}.png')`,
-                        backgroundPosition: '0px -64px',
-                        backgroundSize: '96px 128px',
-                        width: '32px', height: '32px',
-                        transform: 'scale(3)',
-                      }}
+                    <CharacterSpritePreview
+                      spriteKey={spriteId}
+                      size={32}
+                      scale={3}
                     />
                   </div>
 
