@@ -42,6 +42,7 @@ export interface SlicedRegion {
   category: string;
   importProfile: AssetImportProfileId | '';
   slotRole: string;
+  animationProfile?: string;
   x: number;
   y: number;
   w: number;
@@ -353,6 +354,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
       category: s.category,
       importProfile: 'character',
       slotRole: s.slotRole,
+      animationProfile: preset === 'saints-2.5d' ? 'tuxemon-3x4' : preset === 'lpc-walk' ? 'lpc-walk' : 'lpc-full',
       x: s.x,
       y: s.y,
       w: s.w,
@@ -397,6 +399,7 @@ export function SpritesheetSlicer({ sourceAsset, onSliceComplete }: SpritesheetS
           category: r.category,
           importProfile: r.importProfile || importProfile,
           slotRole: r.slotRole,
+          animationProfile: r.animationProfile,
           sourceMode: 'spritesheet',
           sourceRegion: { x: r.x, y: r.y, w: r.w, h: r.h },
           facing: r.facing,

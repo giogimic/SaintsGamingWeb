@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
       }
     }
     const bundleId = (formData.get("bundleId") as string | null)?.trim() || undefined;
+    const animationProfile = (formData.get("animationProfile") as string | null)?.trim() || undefined;
     const sourceModeRaw = (formData.get("sourceMode") as string | null)?.trim().toLowerCase();
     const strictRequiredRoles = formData.get("strictRequiredRoles") === "true";
     const roleAssignmentsRaw = (formData.get("roleAssignments") as string | null)?.trim();
@@ -166,6 +167,7 @@ export async function POST(req: NextRequest) {
       height,
       importProfile: importProfile || undefined,
       slotRole: slotRoleRaw || undefined,
+      animationProfile: animationProfile || undefined,
       componentCategory,
       componentLayer,
       variantFamily,

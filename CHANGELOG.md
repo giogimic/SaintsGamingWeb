@@ -1,3 +1,12 @@
+## [2.1.349] - 2026-08-19
+### Added & Fixed
+- **Universal Sprite Definitions & Animation Profile Architecture:**
+  - **Shared Sprite Definition & Animation Profile Contract (`src/shared/game/spriteDefinitions.ts`)**: Replaced raw hardcoded dimensions with declarative animation profiles (`tuxemon-3x4`, `lpc-full`, `lpc-walk`, `portrait-1x1`, `custom`).
+  - **Deterministic Resolver with Legacy Fallback (`resolveSpriteDefinition`)**: Resolves explicit stored profiles on assets with automatic fallback inference for legacy 3×4 Tuxemon walk sheets (96×128, 48×128), single-frame portraits/monsters (`-ow.png`), and custom grids.
+  - **Babylon 2.5D Engine Integration (`src/engine/BabylonEngine.ts`)**: Engine now reads resolved sprite definitions for vertex UV cell cropping, supporting 9-frame LPC fluid walk cycles, 3-step classic Tuxemon walks, and combat action blocks seamlessly on the same map.
+  - **Studio Uploader & Slicer Profile Wiring (`AssetUploadView.tsx`, `SpritesheetSlicer.tsx`, `assetUpload.ts`, `app/api/assets/upload`, `app/api/assets/slice`)**: Stores explicit `animationProfile` metadata on upload and slicing, guaranteeing consistent rendering without guessing.
+  - **Unit Test Coverage (`src/shared/game/spriteDefinitions.test.ts`)**: 9 unit tests verifying profile resolution, legacy fallback inference, and Babylon config conversion.
+
 ## [2.1.348] - 2026-08-19
 ### Added & Fixed
 - **Native Browser Universal LPC Character & Splicer Ingestion Pipeline:**
