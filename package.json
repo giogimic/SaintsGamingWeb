@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-community",
-  "version": "2.1.355",
+  "version": "2.1.356",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

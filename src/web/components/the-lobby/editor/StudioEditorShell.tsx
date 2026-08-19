@@ -47,7 +47,6 @@ import { StudioOmnisearch } from './StudioOmnisearch';
 import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 import { StudioBottomToolbar } from './StudioBottomToolbar';
 import { FullScreenMapBrowser } from './FullScreenMapBrowser';
-import { FullScreenAssetBrowser } from './FullScreenAssetBrowser';
 import { AssetStudioSuite } from './AssetStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 
@@ -119,7 +118,7 @@ const initialLayout: IJsonModel = {
       location: "bottom",
       size: 300,
       children: [
-        { type: "tab", id: "assets", name: "Assets", component: "assets" },
+        { type: "tab", id: "assets", name: "Sprite Picker", component: "assets" },
         { type: "tab", id: "dev", name: "Dev Tools", component: "dev" }
       ]
     }
@@ -146,7 +145,6 @@ export const StudioEditorShell: React.FC = () => {
   const [model] = useState(() => Model.fromJson(initialLayout));
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
   const [mapBrowserOpen, setMapBrowserOpen] = useState(false);
-  const [assetBrowserOpen, setAssetBrowserOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 
   useEffect(() => {
@@ -335,10 +333,11 @@ export const StudioEditorShell: React.FC = () => {
         return;
       }
 
-      // Ctrl+Shift+A opens Full-Screen Asset Browser
+      // Ctrl+Shift+A toggles Asset Studio
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
         e.preventDefault();
-        setAssetBrowserOpen((prev) => !prev);
+        const curMode = useEditorStore.getState().studioMode;
+        setStudioMode(curMode === 'assets' ? 'develop' : 'assets');
         return;
       }
 
@@ -732,7 +731,7 @@ export const StudioEditorShell: React.FC = () => {
     <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10">
       <StudioMenuBar
         onOpenMapBrowser={() => setMapBrowserOpen(true)}
-        onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
+        onOpenAssetBrowser={() => setStudioMode('assets')}
       />
       <PasteOptionsToolbar />
       <StudioFavoritesStrip />
@@ -740,7 +739,6 @@ export const StudioEditorShell: React.FC = () => {
       
       {/* Full-Screen Overlay Modals */}
       <FullScreenMapBrowser isOpen={mapBrowserOpen} onClose={() => setMapBrowserOpen(false)} />
-      <FullScreenAssetBrowser isOpen={assetBrowserOpen} onClose={() => setAssetBrowserOpen(false)} />
 
       {/* Context Menu */}
       {contextMenu && (
@@ -773,7 +771,7 @@ export const StudioEditorShell: React.FC = () => {
         layoutRef={layoutRef}
         model={model}
         onOpenMapBrowser={() => setMapBrowserOpen(true)}
-        onOpenAssetBrowser={() => setAssetBrowserOpen(true)}
+        onOpenAssetBrowser={() => setStudioMode('assets')}
       />
     </div>
   );

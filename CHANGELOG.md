@@ -1,3 +1,10 @@
+## [2.1.356] - 2026-08-19
+### Added & Fixed
+- **Clean Separation of Paint Mode & Asset Studio:**
+  - **De-cluttered Paint Mode Docks (`AssetBrowserPanel.tsx`)**: Removed redundant Catalog, Upload, and Slicer tabs from the docked panel in Paint/Populate modes. Replaced with a streamlined, lightweight Sprite Picker and a clean "Asset Studio" link.
+  - **Direct Workspace Switching (`StudioMenuBar.tsx`, `StudioEditorShell.tsx`)**: Wired menu items, bottom toolbar shortcuts, and `Ctrl+Shift+A` to smoothly toggle directly into the full-screen Asset Management Suite rather than opening modal overlays.
+  - **Deprecated Modal Overlay (`StudioEditorShell.tsx`)**: Removed the duplicate `FullScreenAssetBrowser` overlay in favor of the dedicated `AssetStudioSuite` workspace.
+
 ## [2.1.355] - 2026-08-19
 ### Added & Fixed
 - **Sub-Studio Context Handshake & Starter Hero Ingestion:**
