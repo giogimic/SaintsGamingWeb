@@ -3,14 +3,12 @@
  * Prefer curated packs (Tuxemon / LPC / Studio registry) over raw uploads.
  */
 
-export const ASSET_PACKS = ["saints", "tuxemon", "lpc", "studio"] as const;
+export const ASSET_PACKS = ["tuxemon", "lpc"] as const;
 export type AssetPackId = (typeof ASSET_PACKS)[number];
 
 export const ASSET_PACK_LABELS: Record<AssetPackId, string> = {
-  saints: "Saints Official Bundle",
   tuxemon: "Tuxemon",
   lpc: "LPC",
-  studio: "Studio registry",
 };
 
 export function packTag(pack: AssetPackId): string {
@@ -22,47 +20,27 @@ export function inferAssetPack(sourceOrRel: string): AssetPackId {
   const lower = sourceOrRel.toLowerCase().replace(/\\/g, "/");
 
   if (
-    lower.includes("/packs/") ||
-    lower.includes("saints") ||
-    lower.includes("george") ||
-    lower.includes("terrain_by_george")
-  ) {
-    return "saints";
-  }
-
-  if (
     lower.includes("/npc/") ||
     lower.startsWith("npc/") ||
     /(^|\/)\d+_(male|female)/.test(lower) ||
-    lower.includes("lpc")
+    lower.includes("lpc") ||
+    lower.includes("/monster/player/") ||
+    lower.includes("/player/")
   ) {
     return "lpc";
   }
 
-  if (
-    lower.includes("/monster/") ||
-    lower.includes("/creatures/") ||
-    lower.includes("/world-monsters/") ||
-    lower.includes("/tilesets/") ||
-    lower.includes("tuxemon")
-  ) {
-    return "tuxemon";
-  }
-
-  return "studio";
+  // Everything else is treated as tuxemon (since all other assets in the system are Tuxemon/derived terrain/tilesets/creatures/items/objects)
+  return "tuxemon";
 }
 
 /** Prisma/SQLite-friendly source substring matchers for a pack (pagination-safe). */
 export function packSourceMatchers(pack: AssetPackId): string[] {
   switch (pack) {
-    case "saints":
-      return ["/packs/", "george", "saints"];
     case "lpc":
-      return ["/npc/"];
+      return ["/npc/", "/monster/player/", "/player/"];
     case "tuxemon":
-      return ["/monster/", "/creatures/", "/world-monsters/", "/tilesets/"];
-    case "studio":
-      return [];
+      return ["/monster/", "/creatures/", "/world-monsters/", "/tilesets/", "/items/", "/objects/", "/ui/"];
     default:
       return [];
   }

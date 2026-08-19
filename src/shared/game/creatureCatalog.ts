@@ -3,7 +3,7 @@
  * Canonical runtime seed; Studio / Prisma CreatureDef can override.
  */
 
-import { AssetManager } from '@/engine/assets/AssetManager';
+import { AssetManager } from '../../engine/assets/AssetManager';
 
 export const CREATURE_ELEMENT_TYPES = [
   "Solar",

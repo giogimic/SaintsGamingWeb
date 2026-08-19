@@ -20,11 +20,12 @@ import {
   XCircle,
   ChevronRight,
   ChevronDown,
+  Settings,
 } from 'lucide-react';
 import { useEditorStore, type PanelId } from './editor-store';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
-import { upsertWarpGate } from '@/shared/game/logicComponents';
+import { upsertWarpGate, removeWarpGateAt, normalizeGates } from '@/shared/game/logicComponents';
 
 export interface StudioContextMenuProps {
   x: number;
@@ -283,6 +284,37 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     showToast('Selection cleared');
   };
 
+  const handleDeleteWarpGate = () => {
+    if (!activeMapData) return;
+    const nextGates = removeWarpGateAt(activeMapData.gates, tileC, tileR);
+    const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
+      row.map((cell: number, ci: number) => (ri === tileR && ci === tileC ? 0 : cell))
+    );
+    const next = { ...activeMapData, gates: nextGates, grid: nextGrid };
+    useGameStore.getState().setActiveMapData(next);
+    useEditorStore.getState().markMapDirty();
+    showToast(`Removed Warp Gate at [${tileC}, ${tileR}]`);
+  };
+
+  // Smart Context Actions Helpers
+  const npcsOnTile =
+    activeMapData?.npcs?.filter(
+      (n: any) =>
+        (n.position ? n.position.x === tileC && n.position.y === tileR : n.x === tileC && n.y === tileR)
+    ) || [];
+  const logicTag = activeMapData?.grid?.[tileR]?.[tileC] ?? 0;
+  
+  const currentGates = activeMapData ? normalizeGates(activeMapData.gates) : [];
+  const gateOnTile = currentGates.find(
+    (g: any) => g.position?.x === tileC && g.position?.y === tileR
+  );
+
+  const isWarpTag = logicTag === 3 || (logicTag >= 14 && logicTag <= 23);
+  const logicTiles = useGameStore((s) => s.logicTiles);
+  const currentTagObj = logicTiles[logicTag];
+  const tagLabel = currentTagObj?.name || `Tag #${logicTag}`;
+  const hasSmartActions = npcsOnTile.length > 0 || gateOnTile || isWarpTag || (logicTag > 0);
+
   return (
     <div
       ref={menuRef}
@@ -298,6 +330,129 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           {activeLayerIdx === -1 ? 'Logic (−1)' : `Layer ${activeLayerIdx}`}
         </span>
       </div>
+
+      {/* --- Context-Sensitive Smart Actions --- */}
+      {hasSmartActions && (
+        <div className="p-1.5 space-y-1.5 border-b border-amber-500/10 bg-amber-950/5">
+          <div className="px-1 py-0.5 text-[9px] font-bold text-amber-400/80 uppercase tracking-wider">
+            Smart Context Actions
+          </div>
+          
+          {/* NPCs */}
+          {npcsOnTile.map((npc: any) => (
+            <div key={npc.id} className="rounded-lg bg-emerald-950/30 border border-emerald-500/20 p-1.5 space-y-1">
+              <div className="px-1 text-[10px] font-bold text-emerald-300 flex items-center gap-1.5 truncate">
+                <UserRound className="h-3 w-3 shrink-0" />
+                <span className="truncate">{npc.name || 'Unnamed NPC'}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => {
+                    useEditorStore.getState().openPanel('npc');
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('studio_select_npc', {
+                        detail: { npcId: npc.id }
+                      }));
+                    }, 50);
+                  })}
+                  className="px-1.5 py-1 text-center bg-slate-900 border border-slate-800 hover:border-emerald-500/30 hover:bg-emerald-950/20 text-slate-300 hover:text-white rounded text-[9px] cursor-pointer"
+                >
+                  Configure
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => {
+                    useEditorStore.getState().openPanel('dialogue');
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('studio_focus_dialogue', {
+                        detail: { npcId: npc.id, name: npc.name }
+                      }));
+                    }, 50);
+                  })}
+                  className="px-1.5 py-1 text-center bg-slate-900 border border-slate-800 hover:border-emerald-500/30 hover:bg-emerald-950/20 text-slate-300 hover:text-white rounded text-[9px] cursor-pointer"
+                >
+                  Dialogue
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAction(() => {
+                  window.dispatchEvent(new CustomEvent('studio_delete_npc_context', {
+                    detail: { npcId: npc.id, name: npc.name }
+                  }));
+                })}
+                className="w-full py-0.5 text-center bg-rose-950/20 border border-rose-900/30 hover:bg-rose-950/50 text-rose-300 hover:text-rose-100 rounded text-[9px] cursor-pointer"
+              >
+                Delete NPC
+              </button>
+            </div>
+          ))}
+
+          {/* Warp Gates */}
+          {(gateOnTile || isWarpTag) && (
+            <div className="rounded-lg bg-purple-950/30 border border-purple-500/20 p-1.5 space-y-1">
+              <div className="px-1 text-[10px] font-bold text-purple-300 flex items-center gap-1.5 truncate">
+                <DoorOpen className="h-3 w-3 shrink-0" />
+                <span className="truncate">Warp Gate {gateOnTile?.category ? `(${gateOnTile.category})` : ''}</span>
+              </div>
+              {gateOnTile?.targetMapId && (
+                <div className="px-1 text-[8px] text-purple-400 font-mono">
+                  Target: {gateOnTile.targetMapId} ({gateOnTile.spawnPoint?.x}, {gateOnTile.spawnPoint?.y})
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => {
+                    useEditorStore.getState().openPanel('properties');
+                    useEditorStore.getState().setClickedTile({ r: tileR, c: tileC });
+                  })}
+                  className="px-1.5 py-1 text-center bg-slate-900 border border-slate-800 hover:border-purple-500/30 hover:bg-purple-950/20 text-slate-300 hover:text-white rounded text-[9px] cursor-pointer"
+                >
+                  Configure
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAction(handleDeleteWarpGate)}
+                  className="px-1.5 py-1 text-center bg-rose-950/20 border border-rose-900/30 hover:bg-rose-950/50 text-rose-300 hover:text-rose-100 rounded text-[9px] cursor-pointer"
+                >
+                  Delete Gate
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Other Logic Components */}
+          {logicTag > 0 && !isWarpTag && (
+            <div className="rounded-lg bg-cyan-950/30 border border-cyan-500/20 p-1.5 space-y-1">
+              <div className="px-1 text-[10px] font-bold text-cyan-300 flex items-center gap-1.5 truncate">
+                <Settings className="h-3 w-3 shrink-0" />
+                <span className="truncate">{tagLabel}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => {
+                    useEditorStore.getState().openPanel('properties');
+                    useEditorStore.getState().setClickedTile({ r: tileR, c: tileC });
+                  })}
+                  className="px-1.5 py-1 text-center bg-slate-900 border border-slate-800 hover:border-cyan-500/30 hover:bg-cyan-950/20 text-slate-300 hover:text-white rounded text-[9px] cursor-pointer"
+                >
+                  Configure
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAction(() => handlePlaceLogicTag(0, 'Clear Tag'))}
+                  className="px-1.5 py-1 text-center bg-rose-950/20 border border-rose-900/30 hover:bg-rose-950/50 text-rose-300 hover:text-rose-100 rounded text-[9px] cursor-pointer"
+                >
+                  Clear Tag
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="py-1 space-y-0.5">
         {/* --- Clipboard Section --- */}

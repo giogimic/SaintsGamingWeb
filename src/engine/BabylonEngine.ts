@@ -259,6 +259,10 @@ export class BabylonEngine {
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
   private brushRadius: number = 1;
+  private activeBrushTileId: number = 0;
+  private activeLayerIdx: number = 0;
+  private brushMode: string = 'paint';
+  private currentTilesets: any[] = [];
   private lastHoveredR: number = -1;
   private lastHoveredC: number = -1;
   /** Brush preview overlay meshes. */
@@ -888,6 +892,7 @@ export class BabylonEngine {
     this.cameraSnapped = false; // Force snap on next setCameraPosition
 
     const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
+    this.currentTilesets = tilesets || [];
     this.currentMapId = mapId || '';
     this.currentMapWidth = width;
     this.currentMapHeight = height;
@@ -2213,6 +2218,21 @@ private resolveTilePick(
     this.refreshBrushPreview();
   }
 
+  public setActiveBrushTileId(gid: number) {
+    this.activeBrushTileId = gid;
+    this.refreshBrushPreview();
+  }
+
+  public setActiveLayerIdx(layerIdx: number) {
+    this.activeLayerIdx = layerIdx;
+    this.refreshBrushPreview();
+  }
+
+  public setBrushMode(mode: string) {
+    this.brushMode = mode;
+    this.refreshBrushPreview();
+  }
+
   /** Re-render the brush preview at the last hovered coordinate. */
   public refreshBrushPreview() {
     if (this.lastHoveredR !== -1 && this.lastHoveredC !== -1) {
@@ -2307,7 +2327,6 @@ private resolveTilePick(
     }
   }
 
-  /** Render semi-transparent brush preview / tile hover reticle at given center tile. */
   private renderBrushPreview(centerR: number, centerC: number) {
     this.clearBrushPreview();
     const rad = this.brushRadius <= 1 ? 0 : this.brushRadius - 1;
@@ -2325,17 +2344,90 @@ private resolveTilePick(
       previewMat = mat;
     }
 
+    let eraseMat = this.scene.getMaterialByName('brush_erase_mat') as StandardMaterial | null;
+    if (!eraseMat) {
+      const mat = new StandardMaterial('brush_erase_mat', this.scene);
+      mat.diffuseColor = new Color3(1.0, 0.2, 0.2);
+      mat.alpha = 0.4;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      eraseMat = mat;
+    }
+
+    let selectMat = this.scene.getMaterialByName('brush_select_mat') as StandardMaterial | null;
+    if (!selectMat) {
+      const mat = new StandardMaterial('brush_select_mat', this.scene);
+      mat.diffuseColor = new Color3(1.0, 0.9, 0.2);
+      mat.alpha = 0.25;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+      selectMat = mat;
+    }
+
+    let matToUse = previewMat;
+    if (this.brushMode === 'erase') {
+      matToUse = eraseMat;
+    } else if (this.brushMode === 'select') {
+      matToUse = selectMat;
+    }
+
+    const isLogicLayer = this.activeLayerIdx === -1;
+    const hasTexture = !isLogicLayer && this.brushMode === 'paint' && this.activeBrushTileId > 0;
+
+    let tilesetTs: any = null;
+    let uvPair: number[] = [];
+    if (hasTexture && this.currentTilesets.length > 0) {
+      tilesetTs = this.currentTilesets.find((t: any) => this.activeBrushTileId >= t.firstgid);
+      if (tilesetTs && tilesetTs.imageSource) {
+        uvPair = tilesetUvForGid(this.activeBrushTileId, tilesetTs, TILESET_SIZES);
+      }
+    }
+
+    const renderCellPreview = (r: number, c: number, sizeMult: number) => {
+      if (r < 0 || r >= h || c < 0 || c >= w) return;
+      const posX = (c - w / 2) * s;
+      const posZ = (h / 2 - r) * s;
+
+      if (hasTexture && tilesetTs && uvPair.length > 0) {
+        const matKey = `brush_preview_mat_${tilesetTs.imageSource}`;
+        let textureMat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
+        if (!textureMat) {
+          textureMat = new StandardMaterial(matKey, this.scene);
+          const cachedTex = this.tilesetTextureCache.get(tilesetTs.imageSource);
+          if (cachedTex) {
+            textureMat.diffuseTexture = cachedTex;
+          }
+          textureMat.alpha = 0.6;
+          textureMat.disableLighting = true;
+          textureMat.backFaceCulling = false;
+        }
+
+        const plane = new Mesh(`brush_preview_${r}_${c}`, this.scene);
+        const vertexData = new VertexData();
+        vertexData.positions = groundQuadPositions(posX, posZ, 0.16, s * sizeMult);
+        vertexData.indices = [0, 1, 2, 0, 2, 3];
+        vertexData.uvs = uvPair;
+        const normals: number[] = [];
+        VertexData.ComputeNormals(vertexData.positions, vertexData.indices, normals);
+        vertexData.normals = normals;
+        vertexData.applyToMesh(plane);
+        plane.parent = this.rootNode;
+        plane.material = textureMat;
+        plane.isPickable = false;
+        this.brushPreviewMeshes.push(plane);
+      } else {
+        const plane = MeshBuilder.CreatePlane(`brush_preview_${r}_${c}`, { size: s * sizeMult }, this.scene);
+        plane.rotation.x = Math.PI / 2;
+        plane.position = new Vector3(posX, 0.16, posZ);
+        plane.parent = this.rootNode;
+        plane.material = matToUse;
+        plane.isPickable = false;
+        this.brushPreviewMeshes.push(plane);
+      }
+    };
+
     if (this.brushRadius <= 1) {
-      if (centerR < 0 || centerR >= h || centerC < 0 || centerC >= w) return;
-      const posX = (centerC - w / 2) * s;
-      const posZ = (h / 2 - centerR) * s;
-      const plane = MeshBuilder.CreatePlane(`brush_preview_${centerR}_${centerC}`, { size: s * 0.96 }, this.scene);
-      plane.rotation.x = Math.PI / 2;
-      plane.position = new Vector3(posX, 0.16, posZ);
-      plane.parent = this.rootNode;
-      plane.material = previewMat;
-      plane.isPickable = false;
-      this.brushPreviewMeshes.push(plane);
+      renderCellPreview(centerR, centerC, 0.96);
       return;
     }
 
@@ -2344,16 +2436,7 @@ private resolveTilePick(
         if (dr * dr + dc * dc > rad * rad + rad) continue;
         const nr = centerR + dr;
         const nc = centerC + dc;
-        if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
-        const posX = (nc - w / 2) * s;
-        const posZ = (h / 2 - nr) * s;
-        const plane = MeshBuilder.CreatePlane(`brush_preview_${nr}_${nc}`, { size: s * 0.95 }, this.scene);
-        plane.rotation.x = Math.PI / 2;
-        plane.position = new Vector3(posX, 0.16, posZ);
-        plane.parent = this.rootNode;
-        plane.material = previewMat;
-        plane.isPickable = false;
-        this.brushPreviewMeshes.push(plane);
+        renderCellPreview(nr, nc, 0.95);
       }
     }
   }

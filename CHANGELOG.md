@@ -1,3 +1,20 @@
+## [2.1.365] - 2026-08-19
+### Added & Fixed
+- **Curated Asset Bundle Registry Overhaul:**
+  - Removed obsolete `"saints"` and `"studio"` asset pack definitions from the application (`ASSET_PACKS`), restricting the curated bundles strictly to `"tuxemon"` and `"lpc"`.
+  - Refactored `inferAssetPack` and `packSourceMatchers` in `src/shared/game/assetPacks.ts` to cleanly classify LPC walk cycle animations (including hero walk cycles) as `"lpc"`, and all other game assets (tilesets, creatures, face portraits, items, objects, UI elements, audio) as `"tuxemon"`.
+  - Updated the frontend `AssetEditor` component to remove theme mappings for Saints and Studio, falling back cleanly to the Tuxemon theme.
+  - Updated all unit tests in `src/shared/game/assetPacks.test.ts` to align with the new binary classification structure.
+- **Babylon Engine Real-time Studio Tile Brush Integration:**
+  - Added `setActiveBrushTileId`, `setActiveLayerIdx`, and `setBrushMode` to `BabylonEngine.ts` to sync live brush properties and tile textures on the viewport hover reticle.
+  - Fixed TypeScript compiler errors where `setActiveBrushTileId` was missing on `BabylonEngine`.
+- **Canvas Context Menu Smart Actions:**
+  - Added context-sensitive smart action overlays to `StudioContextMenu.tsx` allowing direct editing, dialogue config, and live despawn of NPCs, as well as configuration and deletion of Warp Gates and logic tiles directly from the right-click menu.
+  - Integrated `EntityEditorPanel.tsx` with global custom events (`studio_select_npc`, `studio_delete_npc_context`) for seamless live interaction between canvas context menu and sidebar editors.
+- **Module Resolution & Animation Profile Performance:**
+  - Corrected relative import path for `AssetManager` in `src/shared/game/creatureCatalog.ts`.
+  - Optimized animation profile lookup caching in `GameCanvasBabylon.tsx` to prevent redundant network requests inside the 60FPS render loop.
+
 ## [2.1.364] - 2026-08-19
 ### Added & Fixed
 - **Asset Browser Context Menu Integration:**
