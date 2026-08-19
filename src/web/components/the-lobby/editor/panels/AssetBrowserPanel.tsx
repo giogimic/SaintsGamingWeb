@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import AssetEditor from '../AssetEditor';
+import React from 'react';
 import SpriteBrowser from '../SpriteBrowser';
-import { ImageIcon, Layers, Upload, Scissors } from 'lucide-react';
+import { Layers, ArrowUpRight } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
-import { AssetUploadView } from '../AssetUploadView';
-import { SpritesheetSlicer } from '../SpritesheetSlicer';
 
 function spriteKeyFromAsset(asset: GameAssetItem): string {
   const src = asset.source || '';
@@ -20,23 +17,15 @@ function spriteKeyFromAsset(asset: GameAssetItem): string {
 
 export const AssetBrowserPanel: React.FC = () => {
   const studioMode = useEditorStore((s) => s.studioMode);
+  const setStudioMode = useEditorStore((s) => s.setStudioMode);
   const showToast = useGameStore((s) => s.showToast);
-  const [activeTab, setActiveTab] = useState<'manager' | 'sprites' | 'upload' | 'slicer'>(
-    studioMode === 'npc' ? 'sprites' : 'manager'
-  );
-  const [slicerSource, setSlicerSource] = useState<{ id: string; filename: string; storagePath: string } | undefined>(undefined);
-
-  useEffect(() => {
-    if (studioMode === 'npc') setActiveTab('sprites');
-    else if (studioMode === 'develop') setActiveTab('manager');
-  }, [studioMode]);
 
   const handleSpriteSelect = (assets: GameAssetItem[]) => {
     const asset = assets[0];
     if (!asset) return;
     const key = spriteKeyFromAsset(asset);
     window.dispatchEvent(new CustomEvent('studio_sprite_picked', { detail: { key, source: asset.source } }));
-    showToast(`Sprite key ready: ${key}`);
+    showToast(`Sprite selected: ${key}`);
     try {
       void navigator.clipboard?.writeText(key);
     } catch {
@@ -45,92 +34,30 @@ export const AssetBrowserPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex bg-[#050b14]/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium shrink-0">
+    <div className="flex flex-col h-full overflow-hidden bg-[#050b14]/90 font-mono">
+      {/* Top Header / Quick Action */}
+      <div className="flex items-center justify-between bg-[#0b1320] border-b border-amber-500/20 px-3 py-1.5 text-xs shrink-0">
+        <span className="text-[10px] font-black tracking-wider uppercase text-amber-400">
+          Sprite Picker
+        </span>
         <button
-          onClick={() => setActiveTab('manager')}
-          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-            activeTab === 'manager'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow' 
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
+          type="button"
+          onClick={() => setStudioMode('assets')}
+          className="flex items-center gap-1 text-[10px] text-amber-400/80 hover:text-amber-300 font-bold cursor-pointer"
+          title="Switch to full Asset Management Studio (Upload, Slicer, Packs)"
         >
-          <Layers className="w-3 h-3" /> Catalog
-        </button>
-        <button
-          onClick={() => setActiveTab('sprites')}
-          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-            activeTab === 'sprites'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow' 
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <ImageIcon className="w-3 h-3" /> Sprites
-        </button>
-        <button
-          onClick={() => setActiveTab('upload')}
-          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-            activeTab === 'upload'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow' 
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Upload className="w-3 h-3" /> Upload
-        </button>
-        <button
-          onClick={() => setActiveTab('slicer')}
-          className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-            activeTab === 'slicer'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow' 
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-          }`}
-        >
-          <Scissors className="w-3 h-3" /> Slicer
+          <span>Asset Studio</span>
+          <ArrowUpRight className="w-3 h-3" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
-        {activeTab === 'manager' && (
-          <AssetEditor
-            onAssetSelect={(asset) => {
-              const key = spriteKeyFromAsset(asset);
-              showToast(`Asset selected: ${key || asset.source}`);
-            }}
-            onOpenSlicer={(asset) => {
-              setSlicerSource(asset);
-              setActiveTab('slicer');
-            }}
-          />
-        )}
-        {activeTab === 'sprites' && (
-          <SpriteBrowser
-            filterTags={studioMode === 'npc' ? ['npc'] : []}
-            filterType="SPRITE"
-            onSelect={handleSpriteSelect}
-          />
-        )}
-        {activeTab === 'upload' && (
-          <AssetUploadView
-            onUploadComplete={(result) => {
-              if (result.sourceAsset) {
-                setSlicerSource(result.sourceAsset);
-              }
-              setActiveTab('manager');
-            }}
-            onOpenSlicer={(asset) => {
-              setSlicerSource(asset);
-              setActiveTab('slicer');
-            }}
-          />
-        )}
-        {activeTab === 'slicer' && (
-          <SpritesheetSlicer
-            sourceAsset={slicerSource}
-            onSliceComplete={() => {
-              setActiveTab('manager');
-            }}
-          />
-        )}
+      {/* Main Sprite Browser */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <SpriteBrowser
+          filterTags={studioMode === 'npc' ? ['npc'] : []}
+          filterType={studioMode === 'npc' ? 'CHARACTER' : undefined}
+          onSelect={handleSpriteSelect}
+        />
       </div>
     </div>
   );

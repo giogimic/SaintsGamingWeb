@@ -314,19 +314,17 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               }}
             />
             <MenuItem
-              label="Master Asset Library"
+              label="Asset Studio (Full Workspace)"
               shortcut="Ctrl+Shift+A"
               icon={Box}
               onClick={() => {
-                if (onOpenAssetBrowser) onOpenAssetBrowser();
-                else useEditorStore.getState().openPanel('assets');
+                useEditorStore.getState().setStudioMode('assets');
               }}
             />
             <MenuItem divider />
             <MenuItem label="World Atlas" shortcut="Ctrl+Shift+P" icon={Globe} onClick={() => useEditorStore.getState().openPanel('atlas')} />
             <MenuItem label="Inspector" onClick={() => useEditorStore.getState().openPanel('properties')} />
             <MenuItem label="World Builder" onClick={() => useEditorStore.getState().openPanel('build')} />
-            <MenuItem label="Assets" onClick={() => useEditorStore.getState().openPanel('assets')} />
             <MenuItem label="Problems & Diagnostics" shortcut="Ctrl+Shift+O" icon={AlertCircle} onClick={() => useEditorStore.getState().openPanel('problems')} />
             <MenuItem divider />
             <MenuItem label="Reset Layout" onClick={() => {
