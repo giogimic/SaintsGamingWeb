@@ -83,6 +83,21 @@ describe('Sprite Definitions & Animation Profiles', () => {
     expect(def.rows).toBe(1);
   });
 
+  it('infers lpc-full from extended height 832x3456 when profile is absent', () => {
+    const def = resolveSpriteDefinition({ width: 832, height: 3456 });
+    expect(def.profile).toBe('lpc-full');
+    expect(def.columns).toBe(13);
+    expect(def.rows).toBe(54);
+    expect(def.isLpc).toBe(true);
+  });
+
+  it('infers lpc-full from item- prefix in URL', () => {
+    const def = resolveSpriteDefinition({ spriteUrl: '/game-assets/npc/item-hat-hood-white.png' });
+    expect(def.profile).toBe('lpc-full');
+    expect(def.columns).toBe(13);
+    expect(def.isLpc).toBe(true);
+  });
+
   it('converts definition to Babylon SpriteSheetConfig', () => {
     const lpcConfig = spriteDefinitionToBabylonConfig(LPC_FULL_PROFILE);
     expect(lpcConfig.columns).toBe(13);
