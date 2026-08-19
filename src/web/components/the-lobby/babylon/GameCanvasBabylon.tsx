@@ -792,7 +792,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             kind: 'player',
             fallback: '/game-assets/npc/adventurer.png',
           }),
-          animationProfile: playerAnimationProfileRef.current || undefined,
+          animationProfile: playerAnimationProfileRef.current as any,
           isPlayer: true,
           direction: freshPlayer.direction,
           isMoving: freshPlayer.isMoving,
@@ -826,21 +826,22 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
         });
 
-        Object.entries(freshOtherPlayers).forEach(async ([socketId, other]) => {
+        for (const [socketId, other] of Object.entries(freshOtherPlayers)) {
           babylonEngine._renderedSockets.add(socketId);
           // Prefer ?? so tile (0,0) is not remapped to demo defaults.
           const targetX = other.x ?? 6;
           const targetY = other.y ?? 2;
-          
+
           const ox = targetX - liveW / 2;
           const oz = liveH / 2 - targetY;
 
-          // Fetch animationProfile if not cached
+          // Fetch animationProfile if not cached (non-blocking)
           if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.spriteId) {
-            const profile = await getAssetAnimationProfile(other.spriteId);
-            multiplayerAnimationProfilesRef.current.set(socketId, profile);
+            getAssetAnimationProfile(other.spriteId).then((profile) => {
+              multiplayerAnimationProfilesRef.current.set(socketId, profile);
+            });
           }
-          
+
           babylonEngine.updateEntity({
             id: `multiplayer_${socketId}`,
             name: other.name || 'Saint',
@@ -850,14 +851,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               kind: 'player',
               fallback: '/game-assets/npc/adventurer.png',
             }),
-            animationProfile: multiplayerAnimationProfilesRef.current.get(socketId) || undefined,
+            animationProfile: multiplayerAnimationProfilesRef.current.get(socketId) as any,
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,
             chatMessage: other.chatMessage,
             spriteConfig: (other as any).spriteConfig
           });
-        });
+        }
       }
 
       // Render map entities: socket mapEntities + static map NPCs as fallback
@@ -899,7 +900,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       ];
 
       const activeEntities = new Set<string>();
-      merged.forEach(async (ent) => {
+      for (const ent of merged) {
         if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
           activeEntities.add(ent.id);
           const ex = ent.position.x - liveW / 2;
@@ -912,10 +913,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 : 'monster';
           const spriteUrl = resolveEntitySpriteUrl(ent.spriteKey, { kind });
 
-          // Fetch animationProfile if not cached
+          // Fetch animationProfile if not cached (non-blocking)
           if (!entityAnimationProfilesRef.current.has(ent.id) && ent.spriteKey) {
-            const profile = await getAssetAnimationProfile(ent.spriteKey);
-            entityAnimationProfilesRef.current.set(ent.id, profile);
+            getAssetAnimationProfile(ent.spriteKey).then((profile) => {
+              entityAnimationProfilesRef.current.set(ent.id, profile);
+            });
           }
 
           babylonEngine.updateEntity({
@@ -924,7 +926,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             x: ex,
             y: ez,
             spriteUrl,
-            animationProfile: entityAnimationProfilesRef.current.get(ent.id) || undefined,
+            animationProfile: entityAnimationProfilesRef.current.get(ent.id) as any,
             isPlayer: false,
             isNpc: ent.type === 'NPC',
             isCreature: ent.type === 'MONSTER' || ent.type === 'ANIMAL',
@@ -933,7 +935,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               (isSingleFrameSpriteUrl(spriteUrl) ? SINGLE_FRAME_SPRITE_CONFIG : undefined),
           });
         }
-      });
+      }
 
       // Cleanup stale map entities
       babylonEngine._renderedEntities.forEach((id: string) => {
@@ -1569,11 +1571,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         kind: 'npc',
       });
 
-      // Fetch animationProfile if not cached
+      // Fetch animationProfile if not cached (non-blocking)
       const npcId = `mapnpc_${npc.id}`;
       if (!entityAnimationProfilesRef.current.has(npcId) && npc.sprite) {
-        const profile = await getAssetAnimationProfile(npc.sprite);
-        entityAnimationProfilesRef.current.set(npcId, profile);
+        getAssetAnimationProfile(npc.sprite).then((profile) => {
+          entityAnimationProfilesRef.current.set(npcId, profile);
+        });
       }
 
       engine.updateEntity({
@@ -1582,7 +1585,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         x: npc.x - liveW / 2,
         y: liveH / 2 - npc.y,
         spriteUrl,
-        animationProfile: entityAnimationProfilesRef.current.get(npcId) || undefined,
+        animationProfile: entityAnimationProfilesRef.current.get(npcId) as any,
         isPlayer: false,
         isNpc: true,
         spriteConfig: isSingleFrameSpriteUrl(spriteUrl)
