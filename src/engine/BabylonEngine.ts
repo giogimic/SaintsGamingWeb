@@ -2773,7 +2773,39 @@ private resolveTilePick(
           true,
           Texture.NEAREST_SAMPLINGMODE,
           () => {
-            this.applySpriteSheetUv(tex, resolvedConfig);
+            const size = tex.getBaseSize();
+            if (size.width > 0 && size.height > 0) {
+              const updatedDef = resolveSpriteDefinition({
+                animationProfile: entity.animationProfile,
+                spriteUrl: entity.spriteUrl,
+                width: size.width,
+                height: size.height,
+                spriteConfig: entity.spriteConfig,
+              });
+              const updatedConfig = spriteDefinitionToBabylonConfig(updatedDef);
+              if (createdMesh.metadata) {
+                createdMesh.metadata.spriteConfig = updatedConfig;
+              }
+              this.applySpriteSheetUv(tex, updatedConfig);
+              const isSingle = updatedConfig.columns <= 1 && updatedConfig.rows <= 1;
+              if (isSingle) {
+                this.setSpriteCellUVs(createdMesh, 0, 0, 1, 1);
+                if (createdMesh.metadata) createdMesh.metadata.uvFullFrame = true;
+              } else {
+                const dir = (createdMesh.metadata?.direction || 'down') as 'down' | 'left' | 'right' | 'up';
+                const rowIdx = (updatedConfig.directions as Record<string, number>)[dir] ?? updatedConfig.directions.down;
+                const col = updatedConfig.idleFrame;
+                this.setSpriteCellUVs(createdMesh, col, rowIdx, updatedConfig.columns, updatedConfig.rows);
+                if (createdMesh.metadata) {
+                  createdMesh.metadata.uvCol = col;
+                  createdMesh.metadata.uvRow = rowIdx;
+                  createdMesh.metadata.uvCols = updatedConfig.columns;
+                  createdMesh.metadata.uvRows = updatedConfig.rows;
+                }
+              }
+            } else {
+              this.applySpriteSheetUv(tex, resolvedConfig);
+            }
           },
           () => {
             console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
@@ -2867,7 +2899,39 @@ private resolveTilePick(
             true,
             Texture.NEAREST_SAMPLINGMODE,
             () => {
-              this.applySpriteSheetUv(newTex, resolvedConfig);
+              const size = newTex.getBaseSize();
+              if (size.width > 0 && size.height > 0) {
+                const updatedDef = resolveSpriteDefinition({
+                  animationProfile: entity.animationProfile,
+                  spriteUrl: entity.spriteUrl,
+                  width: size.width,
+                  height: size.height,
+                  spriteConfig: entity.spriteConfig,
+                });
+                const updatedConfig = spriteDefinitionToBabylonConfig(updatedDef);
+                if (existingMesh.metadata) {
+                  existingMesh.metadata.spriteConfig = updatedConfig;
+                }
+                this.applySpriteSheetUv(newTex, updatedConfig);
+                const isSingle = updatedConfig.columns <= 1 && updatedConfig.rows <= 1;
+                if (isSingle) {
+                  this.setSpriteCellUVs(existingMesh, 0, 0, 1, 1);
+                  if (existingMesh.metadata) existingMesh.metadata.uvFullFrame = true;
+                } else {
+                  const dir = (existingMesh.metadata?.direction || 'down') as 'down' | 'left' | 'right' | 'up';
+                  const rowIdx = (updatedConfig.directions as Record<string, number>)[dir] ?? updatedConfig.directions.down;
+                  const col = updatedConfig.idleFrame;
+                  this.setSpriteCellUVs(existingMesh, col, rowIdx, updatedConfig.columns, updatedConfig.rows);
+                  if (existingMesh.metadata) {
+                    existingMesh.metadata.uvCol = col;
+                    existingMesh.metadata.uvRow = rowIdx;
+                    existingMesh.metadata.uvCols = updatedConfig.columns;
+                    existingMesh.metadata.uvRows = updatedConfig.rows;
+                  }
+                }
+              } else {
+                this.applySpriteSheetUv(newTex, resolvedConfig);
+              }
             },
             () => {
               console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);

@@ -1,3 +1,12 @@
+## [2.1.366] - 2026-08-19
+### Fixed
+- **Universal LPC Sprite Resolution & Dynamic Row Calculation:**
+  - Fixed an issue where LPC character and modular equipment spritesheets (e.g., 832x3456, 832x1344, 576x256) were incorrectly sliced with Tuxemon 3x4 layout due to unresolved texture dimensions prior to image load.
+  - Upgraded `resolveSpriteDefinition` in `src/shared/game/spriteDefinitions.ts` to dynamically calculate row counts (`Math.floor(height / 64)`) for extended LPC sprite sheets and recognize modular item patterns (`item-`, `/npc/item-`, `character_layer_`).
+  - Added texture `onLoad` dimension listeners in `src/engine/BabylonEngine.ts` to inspect natural image dimensions on load and re-resolve sprite configs and mesh UVs in real time.
+  - Enhanced `getAssetAnimationProfile` in `src/shared/game/creatureCatalog.ts` with synchronous heuristic fallback matching for fast profile detection.
+  - Added unit test cases in `src/shared/game/spriteDefinitions.test.ts` for extended LPC heights and modular item URLs.
+
 ## [2.1.365] - 2026-08-19
 ### Added & Fixed
 - **Curated Asset Bundle Registry Overhaul:**

@@ -4,6 +4,7 @@
  */
 
 import { AssetManager } from '../../engine/assets/AssetManager';
+import { resolveSpriteDefinition } from './spriteDefinitions';
 
 export const CREATURE_ELEMENT_TYPES = [
   "Solar",
@@ -572,6 +573,12 @@ export async function getAssetAnimationProfile(
   } catch (err) {
     // Non-critical: fall back to URL detection
     console.warn('[getAssetAnimationProfile] Failed to query asset metadata:', err);
+  }
+
+  // Fast heuristic fallback from URL pattern if DB has no stored metadata
+  const resolved = resolveSpriteDefinition({ spriteUrl: spriteUrlOrKey });
+  if (resolved && resolved.profile && resolved.profile !== 'tuxemon-3x4') {
+    return resolved.profile;
   }
 
   return null;
