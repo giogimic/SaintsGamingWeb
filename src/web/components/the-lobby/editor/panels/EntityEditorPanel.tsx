@@ -8,7 +8,8 @@ import {
   updateMapNpc,
   type MapNpcData,
 } from '@/app/actions/map-npcs';
-import { UserPlus, Save, Loader2, Trash2, RefreshCw } from 'lucide-react';
+import { UserPlus, Save, Loader2, Trash2, RefreshCw, MessageSquare, ScrollText, ExternalLink, Plus, Users } from 'lucide-react';
+import { listQuestTemplates } from '@/app/actions/quest-templates';
 import {
   defaultEntityProps,
   fieldsForCategory,
@@ -66,8 +67,51 @@ export const EntityEditorPanel: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const clickedTile = useEditorStore((state) => state.clickedTile);
+  const activeGameId = useEditorStore((state) => state.activeGameId);
   const [spawnX, setSpawnX] = useState(10);
   const [spawnY, setSpawnY] = useState(10);
+  const [availableQuests, setAvailableQuests] = useState<Array<{ slug: string; title: string }>>([]);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await listQuestTemplates(activeGameId);
+      if (res.success && res.data) {
+        setAvailableQuests((res.data as any[]).map((q) => ({ slug: q.slug, title: q.title })));
+      }
+    })();
+  }, [activeGameId]);
+
+  const handleOpenDialogueTree = () => {
+    const npcName = String(entityProps.displayName || 'Villager');
+    const npcId = selectedId || slugifyNpcId(npcName);
+    useEditorStore.getState().openPanel('dialogue');
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('studio_focus_dialogue', {
+          detail: { npcId, npcName },
+        })
+      );
+    }, 50);
+    showToast(`Opened Dialogue Editor for ${npcName}`);
+  };
+
+  const handleOpenQuest = (targetSlug?: string) => {
+    const npcName = String(entityProps.displayName || 'Villager');
+    const npcId = selectedId || slugifyNpcId(npcName);
+    const slug = targetSlug || questSlug.trim() || `quest_${slugifyNpcId(npcName).replace(/^npc_/, '')}`;
+    if (!questSlug) {
+      setQuestSlug(slug);
+    }
+    useEditorStore.getState().openPanel('quest');
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('studio_focus_quest', {
+          detail: { questSlug: slug, npcId, npcName },
+        })
+      );
+    }, 50);
+    showToast(`Opened Quest Editor for ${slug}`);
+  };
 
   const reloadList = useCallback(async () => {
     if (!mapId) {
@@ -258,15 +302,20 @@ export const EntityEditorPanel: React.FC = () => {
               key={npc.id}
               type="button"
               onClick={() => handleSelect(npc)}
-              className={`w-full rounded border px-2 py-1.5 text-left transition-colors ${
+              className={`w-full rounded-lg border px-2 py-1.5 text-left transition-colors flex items-center gap-2 cursor-pointer ${
                 selectedId === npc.id
-                  ? 'border-amber-600/50 bg-amber-900/20 text-amber-100'
-                  : 'border-transparent text-slate-300 hover:bg-white/5'
+                  ? 'border-amber-500/60 bg-amber-500/15 text-amber-100 shadow-sm'
+                  : 'border-slate-800/80 hover:border-slate-700 text-slate-300 hover:bg-white/5'
               }`}
             >
-              <div className="truncate text-[11px] font-bold">{npc.name}</div>
-              <div className="truncate text-[9px] text-slate-500">
-                {npc.id} · ({npc.x},{npc.y})
+              <div className="w-7 h-7 rounded-md bg-black/60 border border-slate-700/80 flex items-center justify-center shrink-0 overflow-hidden text-amber-400">
+                <Users className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="truncate text-[11px] font-bold text-slate-100">{npc.name}</div>
+                <div className="truncate text-[9px] text-slate-500 font-mono">
+                  {npc.id} · ({npc.x},{npc.y})
+                </div>
               </div>
             </button>
           ))}
@@ -301,30 +350,87 @@ export const EntityEditorPanel: React.FC = () => {
         </div>
 
         {kind === 'npc' && (
-          <div className="space-y-2 rounded border border-slate-800 bg-black/30 p-2">
-            <label className="block space-y-1">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Greeting
-              </span>
+          <div className="space-y-3 rounded border border-slate-800 bg-black/30 p-2.5">
+            {/* Dialogue / Greeting Hook */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Greeting Line
+                </span>
+                <button
+                  type="button"
+                  onClick={handleOpenDialogueTree}
+                  className="flex items-center gap-1 text-[10px] text-sky-400 hover:text-sky-300 transition-colors bg-sky-950/40 border border-sky-800/40 px-2 py-0.5 rounded cursor-pointer"
+                  title="Open full branch dialogue tree editor for this NPC"
+                >
+                  <MessageSquare className="w-3 h-3" />
+                  <span>Edit Dialogue Tree →</span>
+                </button>
+              </div>
               <textarea
                 value={npcDialogue}
                 onChange={(e) => setNpcDialogue(e.target.value)}
                 placeholder="Greeting line"
-                className="custom-scrollbar h-20 w-full resize-none rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
+                className="custom-scrollbar h-16 w-full resize-none rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
               />
-            </label>
-            <label className="block space-y-1">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Quest slug
-              </span>
+            </div>
+
+            {/* Quest Hook */}
+            <div className="space-y-1.5 border-t border-slate-800/80 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Quest Hook
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {questSlug ? (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenQuest(questSlug)}
+                      className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 transition-colors bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded cursor-pointer"
+                      title="Jump directly to this quest in the Quest Editor"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Jump to Quest →</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenQuest()}
+                      className="flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded cursor-pointer"
+                      title="Create a new quest assigned to this NPC"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Create Quest for NPC →</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {availableQuests.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={questSlug}
+                    onChange={(e) => setQuestSlug(e.target.value)}
+                    className="flex-1 rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px] text-slate-200 outline-none focus:border-[#cbb26a]/60 cursor-pointer"
+                  >
+                    <option value="">-- Pick from Existing Quests --</option>
+                    {availableQuests.map((q) => (
+                      <option key={q.slug} value={q.slug}>
+                        {q.title} ({q.slug})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <input
                 type="text"
                 value={questSlug}
                 onChange={(e) => setQuestSlug(e.target.value)}
-                placeholder="Optional questSlug (ACCEPT_QUEST)"
+                placeholder="Or type questSlug manually (ACCEPT_QUEST)"
                 className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
               />
-            </label>
+            </div>
           </div>
         )}
 

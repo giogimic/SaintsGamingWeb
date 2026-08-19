@@ -53,6 +53,13 @@ export const WorldBuilderPanel: React.FC = () => {
   };
 
   const [mapSearchQuery, setMapSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(mapSearchQuery), 200);
+    return () => clearTimeout(t);
+  }, [mapSearchQuery]);
+
   const [isCreatingNewMap, setIsCreatingNewMap] = useState(false);
   const [newMapSlug, setNewMapSlug] = useState('');
   const [newMapName, setNewMapName] = useState('');
@@ -111,8 +118,8 @@ export const WorldBuilderPanel: React.FC = () => {
     useGameStore.getState().setActiveMapData(ensured);
   }, [activeMapData]);
 
-  const localIndex = searchMapIndex(mapSearchQuery);
-  const q = mapSearchQuery.trim().toLowerCase();
+  const localIndex = searchMapIndex(debouncedSearch);
+  const q = debouncedSearch.trim().toLowerCase();
   const remoteFiltered = remoteMaps.filter((m) =>
     !q || m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
   );

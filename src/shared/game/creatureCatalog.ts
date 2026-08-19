@@ -39,6 +39,11 @@ export type CreatureStatBlock = {
   catchRate: number;
 };
 
+export type CreatureLootRef = {
+  tableId: string;
+  label?: string;
+};
+
 /** Full editable creature definition (shared by seed, Studio, gameplay). */
 export type CreatureDefData = {
   slug: string;
@@ -80,6 +85,7 @@ export type CreatureDefData = {
   isWildSpawn: boolean;
   isActive: boolean;
   sortOrder: number;
+  lootTableRefs?: CreatureLootRef[];
 };
 
 const DEFAULT_SHINY_FIELDS = {
@@ -532,5 +538,6 @@ export function emptyCreatureDef(): CreatureDefData {
     isWildSpawn: false,
     isActive: true,
     sortOrder: 0,
+    lootTableRefs: [],
   };
 }

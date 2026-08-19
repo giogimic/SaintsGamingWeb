@@ -7,7 +7,8 @@ import {
   Hammer, Globe, Settings2, Package, ImageIcon, Users,
   ScrollText, MessageSquare, Sword, PawPrint, Flame,
   Coins, UserCheck, AlertCircle, TerminalSquare, UserRound,
-  Play, Shield, Grid3X3, MapPin, CheckCircle2, ChevronUp
+  Play, Shield, Grid3X3, MapPin, CheckCircle2, ChevronUp,
+  FlipHorizontal, FlipVertical, RotateCw, Activity, Sparkles
 } from 'lucide-react';
 import { useEditorStore, PanelId, STUDIO_DOCK_META } from './editor-store';
 import { useGameStore } from '../store';
@@ -47,13 +48,17 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
   const setActiveLayerIdx = useEditorStore((s) => s.setActiveLayerIdx);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
   const activeLogicTileId = useEditorStore((s) => s.activeLogicTileId);
-  const hoveredTile = useEditorStore((s) => s.hoveredTile);
   const showEditorCoords = useEditorStore((s) => s.showEditorCoords);
   const setShowEditorCoords = useEditorStore((s) => s.setShowEditorCoords);
   const showWarpOverlays = useEditorStore((s) => s.showWarpOverlays);
   const setShowWarpOverlays = useEditorStore((s) => s.setShowWarpOverlays);
   const showSpawnOverlays = useEditorStore((s) => s.showSpawnOverlays);
   const setShowSpawnOverlays = useEditorStore((s) => s.setShowSpawnOverlays);
+  const stampTransform = useEditorStore((s) => s.stampTransform);
+  const flipStampH = useEditorStore((s) => s.flipStampH);
+  const flipStampV = useEditorStore((s) => s.flipStampV);
+  const rotateStampCW = useEditorStore((s) => s.rotateStampCW);
+  const activeLocks = useEditorStore((s) => s.activeLocks);
 
   const activeMapData = useGameStore((s) => s.activeMapData);
   const logicTiles = useGameStore((s) => s.logicTiles);
@@ -64,30 +69,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
 
   const [profiles, setProfiles] = useState(WORLD_PROFILES.map((p) => ({ ...p, isActive: p.id === activeGameId })));
   const [busy, setBusy] = useState(false);
-  const [fps, setFps] = useState(0);
 
   const peerCount = Object.keys(otherPlayers || {}).length;
   const defsDirtyCount = definitionStack.undo.length;
   const canDev = canUseStudioDock(permissionLevel, 'dev');
-
-  // FPS counter
-  useEffect(() => {
-    let frameCount = 0;
-    let lastTime = performance.now();
-    let animId = 0;
-    const loop = () => {
-      frameCount++;
-      const now = performance.now();
-      if (now - lastTime >= 1000) {
-        setFps(frameCount);
-        frameCount = 0;
-        lastTime = now;
-      }
-      animId = requestAnimationFrame(loop);
-    };
-    animId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animId);
-  }, []);
 
   // Hydrate world profiles
   useEffect(() => {
@@ -325,6 +310,55 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
             +
           </button>
         </div>
+
+        {/* Stamp Transform Controls (X/Y/Z) */}
+        <div className="flex items-center gap-0.5 bg-black/40 border border-amber-500/20 rounded-xl p-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              flipStampH();
+              showToast(`Stamp Flip H: ${!stampTransform.flipH ? 'ON' : 'OFF'} (X)`);
+            }}
+            className={`p-1 rounded-lg transition-colors cursor-pointer ${
+              stampTransform.flipH
+                ? 'bg-amber-400 text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Flip Stamp Horizontally (X)"
+          >
+            <FlipHorizontal className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              flipStampV();
+              showToast(`Stamp Flip V: ${!stampTransform.flipV ? 'ON' : 'OFF'} (Y)`);
+            }}
+            className={`p-1 rounded-lg transition-colors cursor-pointer ${
+              stampTransform.flipV
+                ? 'bg-amber-400 text-black font-bold shadow'
+                : 'text-slate-400 hover:text-white hover:bg-white/10'
+            }`}
+            title="Flip Stamp Vertically (Y)"
+          >
+            <FlipVertical className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              rotateStampCW();
+              const nextRot = (stampTransform.rotation + 90) % 360;
+              showToast(`Stamp Rotate: ${nextRot}° (Z)`);
+            }}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title="Rotate Stamp 90° CW (Z)"
+          >
+            <RotateCw className="h-3 w-3" />
+          </button>
+        </div>
       </div>
 
       {/* ─── ZONE 2: Layer & Brush Display Chips ─── */}
@@ -437,6 +471,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
         <PanelDockButton id="loot" icon={<Coins className="w-3.5 h-3.5" />} label="Loot" onClick={() => openDockTab('loot')} />
         <PanelDockButton id="items" icon={<Package className="w-3.5 h-3.5" />} label="Items" onClick={() => openDockTab('items')} />
         <PanelDockButton id="classes" icon={<UserCheck className="w-3.5 h-3.5" />} label="Classes" onClick={() => openDockTab('classes')} />
+        <PanelDockButton id="gameplay" icon={<Activity className="w-3.5 h-3.5" />} label="Gameplay" onClick={() => openDockTab('gameplay')} />
         <PanelDockButton id="problems" icon={<AlertCircle className="w-3.5 h-3.5" />} label="Diagnostics" onClick={() => openDockTab('problems')} />
         {canDev && (
           <PanelDockButton id="dev" icon={<TerminalSquare className="w-3.5 h-3.5" />} label="Dev" onClick={() => openDockTab('dev')} />
@@ -511,7 +546,15 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           </button>
         </div>
 
-        {/* Latency / FPS Status */}
+        {/* Soft Locks */}
+        {Object.keys(activeLocks || {}).length > 0 && (
+          <div className="flex items-center gap-1 text-rose-400 bg-rose-950/40 px-2 py-1 rounded-xl border border-rose-500/30 text-[10px]" title="Resource locks active">
+            <AlertCircle className="w-3 h-3" />
+            <span>{Object.keys(activeLocks).length} Lock(s)</span>
+          </div>
+        )}
+
+        {/* Latency / FPS Status (Isolated Sub-Component for Performance - Phase 8 Track D1) */}
         <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-black/40 px-2 py-1 rounded-xl border border-slate-800">
           <div
             className={`w-1.5 h-1.5 rounded-full ${
@@ -519,8 +562,14 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
                 ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]'
                 : 'bg-amber-400 animate-pulse'
             }`}
+            title={`Realtime: ${connectionStatus} (${latencyMs}ms)`}
           />
-          <span>{fps} FPS</span>
+          <FpsBadge />
+          {peerCount > 0 && (
+            <span className="text-[9px] bg-cyan-500/20 text-cyan-300 px-1 py-0.2 rounded border border-cyan-500/30 font-mono">
+              {peerCount}P
+            </span>
+          )}
         </div>
 
         {/* Playtest Button */}
@@ -584,3 +633,29 @@ const PanelDockButton: React.FC<{
     </button>
   );
 };
+
+const FpsBadge: React.FC = React.memo(() => {
+  const [fps, setFps] = useState(0);
+
+  useEffect(() => {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let animId = 0;
+    const loop = () => {
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        setFps(frameCount);
+        frameCount = 0;
+        lastTime = now;
+      }
+      animId = requestAnimationFrame(loop);
+    };
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  return <span>{fps} FPS</span>;
+});
+FpsBadge.displayName = 'FpsBadge';
+

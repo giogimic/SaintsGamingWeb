@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useEditorStore } from '../editor-store';
 import { Link2 } from 'lucide-react';
 import {
@@ -12,7 +12,13 @@ import {
   type ItemTemplateInput,
 } from '@/app/actions/item-templates';
 import type { ItemTemplate } from '@prisma/client';
-import { CatalogEditorShell } from '../CatalogEditorShell';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
+
+function itemResourceKey(form: ItemTemplateInput, activeSlug: string | null): string {
+  if (!activeSlug || !form.slug) return 'item:new';
+  return `item:${form.slug}`;
+}
 
 export const ItemEditorPanel: React.FC = () => {
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
@@ -38,6 +44,20 @@ export const ItemEditorPanel: React.FC = () => {
     stackable: false,
   });
   const [dependencies, setDependencies] = useState<{ type: string; id: string; name: string }[]>([]);
+
+  const resourceKey = itemResourceKey(formData, activeSlug);
+  const {
+    canUndoDefinition,
+    canRedoDefinition,
+    syncFormRef,
+    onFieldFocus,
+    onFieldBlur,
+    commitStructural,
+    applyHistory,
+    clearDefinitionStackFor,
+  } = useDefinitionFormHistory<ItemTemplateInput>(resourceKey);
+
+  syncFormRef(formData);
 
   // Find original item to check for dirty state
   const originalItem = useMemo(() => items.find(i => i.slug === activeSlug), [items, activeSlug]);
@@ -69,6 +89,35 @@ export const ItemEditorPanel: React.FC = () => {
   useEffect(() => {
     loadList();
   }, [search, dataVersion]);
+
+  useEffect(() => {
+    const handleFocus = async (e: Event) => {
+      const customEv = e as CustomEvent<{ itemSlug: string }>;
+      const targetSlug = customEv.detail?.itemSlug;
+      if (!targetSlug) return;
+      setActiveSlug(targetSlug);
+      const res = await getItemTemplate(targetSlug);
+      if (res.success && res.data) {
+        setFormData({
+          slug: res.data.slug,
+          name: res.data.name,
+          description: res.data.description || '',
+          category: res.data.category,
+          subCategory: res.data.subCategory || '',
+          tier: res.data.tier,
+          baseDurability: res.data.baseDurability ?? undefined,
+          baseStats: res.data.baseStats || '',
+          stackable: res.data.stackable,
+        });
+        const deps = await getItemDependencies(targetSlug);
+        if (deps.success && deps.data) {
+          setDependencies(deps.data);
+        }
+      }
+    };
+    window.addEventListener('studio_focus_item', handleFocus);
+    return () => window.removeEventListener('studio_focus_item', handleFocus);
+  }, []);
 
   const handleSelect = async (slug: string) => {
     if (isDirty && activeSlug) {
@@ -188,6 +237,10 @@ export const ItemEditorPanel: React.FC = () => {
       onDelete={handleDelete}
       saving={saving}
       validationError={validationError}
+      canUndoDefinition={canUndoDefinition}
+      canRedoDefinition={canRedoDefinition}
+      onUndoDefinition={() => applyHistory('undo', setFormData)}
+      onRedoDefinition={() => applyHistory('redo', setFormData)}
     >
       <div className="space-y-4">
         <div className="flex gap-4">

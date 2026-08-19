@@ -6,9 +6,11 @@ import { useGameStore } from '../store';
 import {
   FileText, Edit, Eye, Folder, Box, Globe, PlayCircle, Users, HelpCircle,
   Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle,
-  Scissors, Copy, Clipboard, Pin, Layers, Settings
+  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell
 } from 'lucide-react';
 import { RealmSettingsModal } from './RealmSettingsModal';
+import { StudioShortcutsModal } from './components/StudioShortcutsModal';
+import { NotificationHistoryModal } from './components/NotificationHistoryModal';
 import { STUDIO_MODE_META, type StudioMode } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
@@ -23,6 +25,8 @@ interface StudioMenuBarProps {
 export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMenuBarProps) {
   const [activeMenu, setActiveMenu] = useState<MenuState>(null);
   const [realmSettingsOpen, setRealmSettingsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
@@ -32,6 +36,19 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const mapDirty = useEditorStore((s) => s.mapDirty);
   const currentMapId = useGameStore((s) => s.currentMapId);
   const showToast = useGameStore((s) => s.showToast);
+
+  const handleSwitchMode = (mode: StudioMode) => {
+    setStudioMode(mode);
+    const meta = STUDIO_MODE_META[mode];
+    const name = meta ? meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1) : mode;
+    showToast(`Switched to ${name} Mode`);
+  };
+
+  useEffect(() => {
+    const handleOpen = () => setShortcutsOpen(true);
+    window.addEventListener('studio_open_shortcuts', handleOpen);
+    return () => window.removeEventListener('studio_open_shortcuts', handleOpen);
+  }, []);
 
   // Close menus on outside click
   useEffect(() => {
@@ -342,15 +359,25 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                   key={key} 
                   label={meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1)} 
                   icon={studioMode === key ? CheckCircle2 : undefined}
-                  onClick={() => setStudioMode(key as StudioMode)}
+                  onClick={() => handleSwitchMode(key as StudioMode)}
                 />
               );
             })}
           </TopLevelMenu>
 
           <TopLevelMenu id="help" label="Help">
-            <MenuItem label="Shortcuts" onClick={() => showToast('Shortcuts: Ctrl+E (Play/Edit), Ctrl+K (Search), Ctrl+S (Save)')} />
-            <MenuItem label="Fun-First Checklist" disabled />
+            <MenuItem 
+              label="Keyboard Shortcuts" 
+              shortcut="?" 
+              icon={Keyboard} 
+              onClick={() => setShortcutsOpen(true)} 
+            />
+            <MenuItem 
+              label="Activity & Notice Log" 
+              icon={Bell} 
+              onClick={() => setNotificationHistoryOpen(true)} 
+            />
+            <MenuItem label="Studio Documentation" onClick={() => window.open('https://github.com/giogimic/SaintsGamingWeb', '_blank')} />
           </TopLevelMenu>
         </div>
       </div>
@@ -456,11 +483,32 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           <span>Omnisearch</span>
           <span className="bg-black/60 px-1 rounded text-slate-400 text-[9px]">Ctrl+K</span>
         </button>
+
+        <button
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            setNotificationHistoryOpen(true);
+          }}
+          className="p-1 rounded text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
+          title="Studio Activity & Notification Log"
+        >
+          <Bell className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       <RealmSettingsModal
         isOpen={realmSettingsOpen}
         onClose={() => setRealmSettingsOpen(false)}
+      />
+
+      <StudioShortcutsModal
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
+
+      <NotificationHistoryModal
+        isOpen={notificationHistoryOpen}
+        onClose={() => setNotificationHistoryOpen(false)}
       />
     </div>
   );

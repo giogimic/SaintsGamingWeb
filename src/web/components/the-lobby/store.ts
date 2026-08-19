@@ -233,9 +233,11 @@ export interface GameState {
   pathQueue: Point[];
   currentMapId: string;
   instanceId: string;
-  activeMapData: any | null; // For dynamically loaded maps from DB
+  activeMapData: any | null;
   mapEntities: MapEntity[];
   toasts: ToastMessage[];
+  toastHistory: Array<{ id: number; message: string; timestamp: number }>;
+  clearToastHistory: () => void;
   activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null;
   setGameMode: (mode: GameMode) => void;
   setCurrentMapId: (id: string) => void;
@@ -404,6 +406,8 @@ export const useGameStore = create<GameState>()(
       activeMapData: null,
       mapEntities: [],
       toasts: [],
+      toastHistory: [],
+      clearToastHistory: () => set((state) => { state.toastHistory = []; }),
       activeDialog: null,
       moveSequence: 0,
       pendingMoves: [],
@@ -887,6 +891,8 @@ export const useGameStore = create<GameState>()(
         set((state) => {
           const newToasts = [...state.toasts, { id, message }].slice(-3); // Keep max 3
           state.toasts = newToasts;
+          if (!state.toastHistory) state.toastHistory = [];
+          state.toastHistory = [{ id, message, timestamp: Date.now() }, ...state.toastHistory].slice(0, 50);
         });
         setTimeout(() => {
           set((state) => {

@@ -8,7 +8,9 @@ import {
   updateMapSpawner,
   type MapSpawnerData,
 } from '@/app/actions/map-spawners';
-import { Save, Loader2, Trash2 } from 'lucide-react';
+import { Save, Loader2, Trash2, PawPrint, ExternalLink } from 'lucide-react';
+import { getAllCreatureDefs } from '@/app/actions/creature-defs';
+import { FALLBACK_CREATURE_DEFS } from '@/shared/game/creatureCatalog';
 import {
   defaultFieldValues,
   LOGIC_COMPONENT_PRESETS,
@@ -44,8 +46,26 @@ export const MonsterSpawnerPanel: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const clickedTile = useEditorStore((state) => state.clickedTile);
+  const activeGameId = useEditorStore((state) => state.activeGameId);
   const [spawnX, setSpawnX] = useState(10);
   const [spawnY, setSpawnY] = useState(10);
+  const [creatures, setCreatures] = useState<Array<{ slug: string; name: string; sprite: string }>>([]);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await getAllCreatureDefs(activeGameId);
+      if (res.success && res.data && res.data.length > 0) {
+        setCreatures(res.data.map((c) => ({ slug: c.slug, name: c.name, sprite: c.spriteOverworld })));
+      } else {
+        setCreatures(FALLBACK_CREATURE_DEFS.map((c) => ({ slug: c.slug, name: c.name, sprite: c.spriteOverworld })));
+      }
+    })();
+  }, [activeGameId]);
+
+  const handleOpenCreature = (slug: string) => {
+    useEditorStore.getState().openPanel('creature');
+    showToast(`Opening Creature Catalog for ${slug}`);
+  };
 
   const reloadList = useCallback(async () => {
     if (!mapId) {
@@ -215,8 +235,36 @@ export const MonsterSpawnerPanel: React.FC = () => {
           <div className="grid grid-cols-1 gap-y-3">
             {preset.fields.map((f) => (
               <div key={f.key}>
-                <label className="text-[10px] text-slate-500 mb-1 block">{f.label}</label>
-                {f.type === 'enum' && f.options ? (
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] text-slate-500 block">{f.label}</label>
+                  {f.key === 'monsterPool' && String(entityProps.monsterPool || '') && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCreature(String(entityProps.monsterPool))}
+                      className="flex items-center gap-1 text-[9px] text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-950/40 border border-emerald-800/40 px-1.5 py-0.5 rounded cursor-pointer"
+                      title="Open in Creature Catalog"
+                    >
+                      <PawPrint className="w-2.5 h-2.5" />
+                      <span>Edit Creature →</span>
+                    </button>
+                  )}
+                </div>
+
+                {f.key === 'monsterPool' && creatures.length > 0 ? (
+                  <div className="space-y-1">
+                    <select
+                      value={String(entityProps.monsterPool || 'slime')}
+                      onChange={(e) => onFieldChange('monsterPool', e.target.value)}
+                      className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-rose-500/50 cursor-pointer"
+                    >
+                      {creatures.map((c) => (
+                        <option key={c.slug} value={c.slug}>
+                          {c.name} ({c.slug})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : f.type === 'enum' && f.options ? (
                   <select
                     value={String(entityProps[f.key] ?? f.defaultValue)}
                     onChange={(e) => onFieldChange(f.key, e.target.value)}
