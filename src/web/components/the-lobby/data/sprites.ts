@@ -1,3 +1,40 @@
+/** Official Full LPC Character Sprite Models (9-frame walk cycle, 832x1344 standard) */
+export const LPC_HERO_SPRITES = [
+  "good-paladin-templar-female",
+  "good-ranger-grovekeeper-female",
+  "good-cleric-highpriestess-female",
+  "good-cleric-sanctuary-male",
+  "good-wizard-archmage-male",
+  "good-wizard-celestial-female",
+  "evil-assassin-nightstalker-female",
+  "evil-berserker-bloodaxe-male",
+  "scout_mira",
+  "capturer_kian",
+  "soulwarden_aldric",
+  "ironwright_kael",
+  "candrift_keeper",
+  "elder_voss",
+];
+
+const NON_CHARACTER_SPRITES = new Set([
+  "bee",
+  "conileaf",
+  "ghost",
+  "invisible",
+  "landbird",
+  "landrace",
+  "light",
+  "moth",
+  "naked",
+  "penguin",
+  "robot",
+  "rockitten",
+  "snugglepot",
+  "varmint",
+  "37707_female_missing",
+  "37707_male_missing",
+]);
+
 // Generated list of available sprites
 export const GAME_SPRITES = [
   "37707_female",
@@ -215,3 +252,12 @@ export const GAME_SPRITES = [
   "xerogrunt_white",
   "xerogrunt_yellow"
 ];
+
+/** Filtered list containing ONLY humanoid / character / LPC player models for Character Creation */
+export const CHARACTER_SPRITES = Array.from(
+  new Set([
+    ...LPC_HERO_SPRITES,
+    ...GAME_SPRITES.filter((s) => !NON_CHARACTER_SPRITES.has(s)),
+  ])
+);
+

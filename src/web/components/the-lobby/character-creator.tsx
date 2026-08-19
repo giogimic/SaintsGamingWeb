@@ -219,7 +219,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
   // Load sprite list lazily when user reaches that step (including imported LPC assets)
   const loadSprites = async () => {
     if (allSprites.length > 0) return;
-    const { GAME_SPRITES } = await import('./data/sprites');
+    const { CHARACTER_SPRITES } = await import('./data/sprites');
     let customList: string[] = [];
     try {
       const res = await fetch('/api/assets?type=CHARACTER&limit=50');
@@ -230,7 +230,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     } catch {
       /* ignore */
     }
-    const combined = Array.from(new Set([...customList, ...GAME_SPRITES]));
+    const combined = Array.from(new Set([...customList, ...CHARACTER_SPRITES]));
     setAllSprites(combined);
   };
 

@@ -1,3 +1,10 @@
+## [2.1.352] - 2026-08-19
+### Added & Fixed
+- **Clean Fresh Installs & Character Appearance Curation:**
+  - **Zero Demo Map Forcing on Clean Boot (`DemoBootstrap.ts`)**: Prevented `ensureStudioMapFoundation()` from automatically seeding `DEMO_SANDBOX`, `LOBBY`, and expansion maps on clean installs. Demo maps are only seeded if explicitly requested via `FORCE_DEMO_MAP=1` or explicit setup action.
+  - **Strict Character Appearance Curation (`sprites.ts`, `character-creator.tsx`)**: Created `CHARACTER_SPRITES` list containing only humanoid and LPC character models, filtering out non-humanoid beasts, monsters, and props (`bee`, `conileaf`, `ghost`, `rockitten`, `snugglepot`, etc.) from the Character Creator appearance picker.
+  - **LPC Character Models Ingestion**: Registered approved full LPC character models (`good-paladin-templar-female`, `good-ranger-grovekeeper-female`, `good-cleric-highpriestess-female`, `good-cleric-sanctuary-male`, `good-wizard-archmage-male`, `good-wizard-celestial-female`, `evil-assassin-nightstalker-female`, `evil-berserker-bloodaxe-male`) for instant preview and selection.
+
 ## [2.1.351] - 2026-08-19
 ### Added & Fixed
 - **LPC Character Models & Hero Selection Overhaul:**
