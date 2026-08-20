@@ -209,6 +209,18 @@ export const StudioEditorShell: React.FC = () => {
       e.preventDefault();
       const state = useEditorStore.getState();
       const tile = state.hoveredTile || state.clickedTile || { r: 0, c: 0 };
+      
+      const key = `${tile.r},${tile.c}`;
+      const isInsideSparse = Boolean(state.selectedCells[key]);
+      const bounds = state.getSelectedBounds();
+      const isInsideBounds = bounds && tile.r >= bounds.minR && tile.r <= bounds.maxR && tile.c >= bounds.minC && tile.c <= bounds.maxC;
+
+      if (!isInsideSparse && !isInsideBounds) {
+        state.setSelectionBox(tile.r, tile.r, tile.c, tile.c);
+        const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+        engine?.setSelectionPreview?.(tile.r, tile.c, tile.r, tile.c);
+      }
+
       setContextMenu({
         x: e.clientX,
         y: e.clientY,

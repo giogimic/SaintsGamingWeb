@@ -254,6 +254,9 @@ export class BabylonEngine {
     if (e.code === 'Space') this.editorSpaceHeld = false;
   };
   private selectionRingMesh?: Mesh;
+  private smartTargetRingMesh?: Mesh;
+  private destinationIndicatorMesh?: Mesh;
+  private abilityAoEMeshes: Mesh[] = [];
   private activeProjectiles: Map<string, { mesh: Mesh, observer: any }> = new Map();
   /** Covers erased cells so batched tileset art disappears without a full remesh. */
   private eraseVoidMaterial?: StandardMaterial;
@@ -268,6 +271,7 @@ export class BabylonEngine {
   /** Brush preview overlay meshes. */
   private brushPreviewMeshes: Mesh[] = [];
   private selectionPreviewMeshes: Mesh[] = [];
+  private actionPreviewMeshes: Mesh[] = [];
   /** Editor keyboard pan active keys. */
   private editorPanKeysHeld: Set<string> = new Set();
   private editorPanAnimFrameId: number | null = null;
@@ -2148,13 +2152,18 @@ private resolveTilePick(
     this.scene.onPointerDown = (evt) => {
       if (!this.scene) return;
       const button = evt.button;
-      const isPanTrigger = button === 1 || (this.editorCameraMode && button === 2) || (button === 0 && options?.isPanActive?.());
+      const isPanTrigger = button === 1 || (button === 0 && options?.isPanActive?.());
 
       if (isPanTrigger) {
         isPanning = true;
         lastPointerX = evt.clientX;
         lastPointerY = evt.clientY;
         if (options?.onPanStateChange) options.onPanStateChange(true);
+        return;
+      }
+
+      // Ignore right click (button === 2) for painting; context menu owns right click
+      if (button === 2) {
         return;
       }
 
@@ -2212,6 +2221,7 @@ private resolveTilePick(
     this.lastHoveredR = -1;
     this.lastHoveredC = -1;
     this.clearBrushPreview();
+    this.clearActionPreview();
   }
 
   /** Set brush radius for multi-tile painting. */
@@ -2253,7 +2263,13 @@ private resolveTilePick(
     this.selectionPreviewMeshes = [];
   }
 
-  public setSelectionPreview(r1: number, c1: number, r2: number, c2: number) {
+  public setSelectionPreview(
+    r1: number,
+    c1: number,
+    r2: number,
+    c2: number,
+    mode: 'normal' | 'add' | 'subtract' = 'normal'
+  ) {
     this.clearSelectionPreview();
     const minR = Math.min(r1, r2);
     const maxR = Math.max(r1, r2);
@@ -2264,51 +2280,66 @@ private resolveTilePick(
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
 
-    let previewMat = this.scene.getMaterialByName('selection_preview_mat') as StandardMaterial | null;
+    const matKey = `selection_preview_mat_${mode}`;
+    let previewMat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
     if (!previewMat) {
-      const mat = new StandardMaterial('selection_preview_mat', this.scene);
-      mat.diffuseColor = new Color3(0.5, 0.4, 1.0);
-      mat.alpha = 0.4;
+      const mat = new StandardMaterial(matKey, this.scene);
+      if (mode === 'add') {
+        mat.diffuseColor = new Color3(0.2, 0.9, 0.4);
+        mat.emissiveColor = new Color3(0.1, 0.4, 0.2);
+        mat.alpha = 0.45;
+      } else if (mode === 'subtract') {
+        mat.diffuseColor = new Color3(1.0, 0.3, 0.3);
+        mat.emissiveColor = new Color3(0.5, 0.1, 0.1);
+        mat.alpha = 0.45;
+      } else {
+        mat.diffuseColor = new Color3(0.4, 0.5, 1.0);
+        mat.emissiveColor = new Color3(0.2, 0.3, 0.6);
+        mat.alpha = 0.45;
+      }
       mat.disableLighting = true;
       mat.backFaceCulling = false;
       previewMat = mat;
     }
 
-    for (let r = minR; r <= maxR; r++) {
-      for (let c = minC; c <= maxC; c++) {
-        if (r < 0 || r >= h || c < 0 || c >= w) continue;
-        const posX = (c - w / 2) * s;
-        const posZ = (h / 2 - r) * s;
-        const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.95 }, this.scene);
-        plane.rotation.x = Math.PI / 2;
-        plane.position.x = posX;
-        plane.position.z = posZ;
-        plane.position.y = 0.02; // slightly above brush preview
-        plane.material = previewMat;
-        plane.isPickable = false;
-        this.selectionPreviewMeshes.push(plane);
-      }
-    }
+    const rectWidth = (maxC - minC + 1) * s;
+    const rectHeight = (maxR - minR + 1) * s;
+    const centerPosX = ((minC + maxC) / 2 - w / 2 + 0.5) * s;
+    const centerPosZ = (h / 2 - (minR + maxR) / 2 - 0.5) * s;
+
+    // Single bounding plane for smooth rendering regardless of rectangle size
+    const plane = MeshBuilder.CreatePlane('selection_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
+    plane.rotation.x = Math.PI / 2;
+    plane.position = new Vector3(centerPosX, 0.18, centerPosZ);
+    plane.material = previewMat;
+    plane.isPickable = false;
+    plane.parent = this.rootNode;
+    this.selectionPreviewMeshes.push(plane);
   }
 
   public setMultiSelectionPreview(cells: Array<{ r: number; c: number }> | Record<string, boolean>) {
     this.clearSelectionPreview();
     const cellList: Array<{ r: number; c: number }> = Array.isArray(cells)
       ? cells
-      : Object.keys(cells).filter(k => (cells as Record<string, boolean>)[k]).map(k => {
-          const [r, c] = k.split(',').map(Number);
-          return { r, c };
-        });
+      : Object.keys(cells)
+          .filter((k) => (cells as Record<string, boolean>)[k])
+          .map((k) => {
+            const [r, c] = k.split(',').map(Number);
+            return { r, c };
+          });
+
+    if (cellList.length === 0) return;
 
     const s = this.currentTileSize || 1;
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
 
-    let previewMat = this.scene.getMaterialByName('selection_preview_mat') as StandardMaterial | null;
+    let previewMat = this.scene.getMaterialByName('selection_multi_mat') as StandardMaterial | null;
     if (!previewMat) {
-      const mat = new StandardMaterial('selection_preview_mat', this.scene);
-      mat.diffuseColor = new Color3(0.5, 0.4, 1.0);
-      mat.alpha = 0.45;
+      const mat = new StandardMaterial('selection_multi_mat', this.scene);
+      mat.diffuseColor = new Color3(0.45, 0.55, 1.0);
+      mat.emissiveColor = new Color3(0.2, 0.3, 0.7);
+      mat.alpha = 0.48;
       mat.disableLighting = true;
       mat.backFaceCulling = false;
       previewMat = mat;
@@ -2316,17 +2347,305 @@ private resolveTilePick(
 
     for (const { r, c } of cellList) {
       if (r < 0 || r >= h || c < 0 || c >= w) continue;
-      const posX = (c - w / 2) * s;
-      const posZ = (h / 2 - r) * s;
-      const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.95 }, this.scene);
+      const posX = (c - w / 2 + 0.5) * s;
+      const posZ = (h / 2 - r - 0.5) * s;
+      const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.96 }, this.scene);
       plane.rotation.x = Math.PI / 2;
-      plane.position.x = posX;
-      plane.position.z = posZ;
-      plane.position.y = 0.02;
+      plane.position = new Vector3(posX, 0.18, posZ);
       plane.material = previewMat;
       plane.isPickable = false;
+      plane.parent = this.rootNode;
       this.selectionPreviewMeshes.push(plane);
     }
+  }
+
+  public clearActionPreview() {
+    for (const m of this.actionPreviewMeshes) m.dispose();
+    this.actionPreviewMeshes = [];
+  }
+
+  public setActionPreview(
+    data: { width: number; height: number; visualData?: any[]; logicData?: any[] } | null,
+    targetR: number,
+    targetC: number
+  ) {
+    this.clearActionPreview();
+    if (!data) return;
+
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+
+    let validMat = this.scene.getMaterialByName('action_preview_valid_mat') as StandardMaterial | null;
+    if (!validMat) {
+      validMat = new StandardMaterial('action_preview_valid_mat', this.scene);
+      validMat.diffuseColor = new Color3(0.3, 1.0, 0.6);
+      validMat.emissiveColor = new Color3(0.1, 0.5, 0.2);
+      validMat.alpha = 0.4;
+      validMat.disableLighting = true;
+      validMat.backFaceCulling = false;
+    }
+
+    let overflowMat = this.scene.getMaterialByName('action_preview_overflow_mat') as StandardMaterial | null;
+    if (!overflowMat) {
+      overflowMat = new StandardMaterial('action_preview_overflow_mat', this.scene);
+      overflowMat.diffuseColor = new Color3(1.0, 0.7, 0.2);
+      overflowMat.emissiveColor = new Color3(0.6, 0.3, 0.1);
+      overflowMat.alpha = 0.4;
+      overflowMat.disableLighting = true;
+      overflowMat.backFaceCulling = false;
+    }
+
+    const totalW = data.width || 1;
+    const totalH = data.height || 1;
+    const isOverflow = targetR < 0 || targetC < 0 || targetR + totalH > h || targetC + totalW > w;
+    const matToUse = isOverflow ? overflowMat : validMat;
+
+    const rectWidth = totalW * s;
+    const rectHeight = totalH * s;
+    const centerPosX = (targetC + totalW / 2 - w / 2) * s;
+    const centerPosZ = (h / 2 - (targetR + totalH / 2)) * s;
+
+    const boundsPlane = MeshBuilder.CreatePlane('action_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
+    boundsPlane.rotation.x = Math.PI / 2;
+    boundsPlane.position = new Vector3(centerPosX, 0.2, centerPosZ);
+    boundsPlane.material = matToUse;
+    boundsPlane.isPickable = false;
+    boundsPlane.parent = this.rootNode;
+    this.actionPreviewMeshes.push(boundsPlane);
+  }
+
+  /**
+   * Smart Ground Target Ring: Ground-projected circular reticle sized to target's footprint.
+   * Visual modes: 'hover' (subtle cyan), 'focus' (bright amber/gold), 'combat' (crimson).
+   */
+  public setGroundTargetRing(
+    target: { position: { x: number; y: number; z: number }; footprint?: { radius?: number } } | null,
+    mode: 'hover' | 'focus' | 'combat' = 'hover'
+  ) {
+    if (!target || !this.scene) {
+      if (this.smartTargetRingMesh) {
+        this.smartTargetRingMesh.isVisible = false;
+      }
+      return;
+    }
+
+    const s = this.currentTileSize || 1;
+    const radius = (target.footprint?.radius || 0.55) * s;
+
+    if (!this.smartTargetRingMesh || this.smartTargetRingMesh.isDisposed()) {
+      const ring = MeshBuilder.CreateDisc(
+        'smart_ground_target_ring',
+        { radius: 1, tessellation: 36 },
+        this.scene
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.isPickable = false;
+      ring.parent = this.rootNode;
+      this.smartTargetRingMesh = ring;
+    }
+
+    const matKey = `target_ring_mat_${mode}`;
+    let mat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
+    if (!mat) {
+      mat = new StandardMaterial(matKey, this.scene);
+      if (mode === 'combat') {
+        mat.diffuseColor = new Color3(1.0, 0.2, 0.25);
+        mat.emissiveColor = new Color3(0.6, 0.05, 0.08);
+        mat.alpha = 0.55;
+      } else if (mode === 'focus') {
+        mat.diffuseColor = new Color3(1.0, 0.85, 0.2);
+        mat.emissiveColor = new Color3(0.5, 0.35, 0.05);
+        mat.alpha = 0.55;
+      } else {
+        // hover
+        mat.diffuseColor = new Color3(0.3, 0.85, 1.0);
+        mat.emissiveColor = new Color3(0.1, 0.3, 0.5);
+        mat.alpha = 0.35;
+      }
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+    }
+
+    this.smartTargetRingMesh.material = mat;
+    this.smartTargetRingMesh.scaling = new Vector3(radius, radius, radius);
+    this.smartTargetRingMesh.position = new Vector3(target.position.x, 0.02, target.position.z);
+    this.smartTargetRingMesh.isVisible = true;
+  }
+
+  /**
+   * Soft ground destination indicator for mouse-driven movement.
+   */
+  public setDestinationIndicator(c: number, r: number, isWalkable: boolean) {
+    if (!this.scene) return;
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const posX = (c - w / 2 + 0.5) * s;
+    const posZ = (h / 2 - r - 0.5) * s;
+
+    if (!this.destinationIndicatorMesh || this.destinationIndicatorMesh.isDisposed()) {
+      const disc = MeshBuilder.CreateDisc(
+        'destination_indicator_disc',
+        { radius: s * 0.28, tessellation: 24 },
+        this.scene
+      );
+      disc.rotation.x = Math.PI / 2;
+      disc.isPickable = false;
+      disc.parent = this.rootNode;
+      this.destinationIndicatorMesh = disc;
+    }
+
+    const matKey = `dest_indicator_${isWalkable ? 'valid' : 'invalid'}`;
+    let mat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
+    if (!mat) {
+      mat = new StandardMaterial(matKey, this.scene);
+      if (isWalkable) {
+        mat.diffuseColor = new Color3(0.2, 0.9, 0.4);
+        mat.emissiveColor = new Color3(0.1, 0.4, 0.2);
+        mat.alpha = 0.6;
+      } else {
+        mat.diffuseColor = new Color3(0.95, 0.25, 0.25);
+        mat.emissiveColor = new Color3(0.5, 0.1, 0.1);
+        mat.alpha = 0.6;
+      }
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+    }
+
+    this.destinationIndicatorMesh.material = mat;
+    this.destinationIndicatorMesh.position = new Vector3(posX, 0.025, posZ);
+    this.destinationIndicatorMesh.isVisible = true;
+  }
+
+  public clearDestinationIndicator() {
+    if (this.destinationIndicatorMesh) {
+      this.destinationIndicatorMesh.isVisible = false;
+    }
+  }
+
+  /**
+   * Previews area-of-effect ability / spell footprints before execution.
+   */
+  public setAbilityAoEPreview(footprint: {
+    shape?: 'circle' | 'box';
+    radius: number; // in tiles
+    centerR: number;
+    centerC: number;
+  }) {
+    this.clearAbilityAoEPreview();
+    if (!this.scene) return;
+
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const centerPosX = (footprint.centerC - w / 2 + 0.5) * s;
+    const centerPosZ = (h / 2 - footprint.centerR - 0.5) * s;
+    const radWorld = (footprint.radius || 1) * s;
+
+    let mat = this.scene.getMaterialByName('ability_aoe_preview_mat') as StandardMaterial | null;
+    if (!mat) {
+      mat = new StandardMaterial('ability_aoe_preview_mat', this.scene);
+      mat.diffuseColor = new Color3(1.0, 0.4, 0.15);
+      mat.emissiveColor = new Color3(0.6, 0.15, 0.05);
+      mat.alpha = 0.4;
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+    }
+
+    if (footprint.shape === 'box') {
+      const boxSize = radWorld * 2;
+      const plane = MeshBuilder.CreatePlane('ability_aoe_box', { size: boxSize }, this.scene);
+      plane.rotation.x = Math.PI / 2;
+      plane.position = new Vector3(centerPosX, 0.03, centerPosZ);
+      plane.material = mat;
+      plane.isPickable = false;
+      plane.parent = this.rootNode;
+      this.abilityAoEMeshes.push(plane);
+    } else {
+      const disc = MeshBuilder.CreateDisc('ability_aoe_circle', { radius: radWorld, tessellation: 36 }, this.scene);
+      disc.rotation.x = Math.PI / 2;
+      disc.position = new Vector3(centerPosX, 0.03, centerPosZ);
+      disc.material = mat;
+      disc.isPickable = false;
+      disc.parent = this.rootNode;
+      this.abilityAoEMeshes.push(disc);
+    }
+  }
+
+  public clearAbilityAoEPreview() {
+    for (const m of this.abilityAoEMeshes) m.dispose();
+    this.abilityAoEMeshes = [];
+  }
+
+  /**
+   * Universal Scene Picking: Checks character/NPC/monster entities first, then falls back to ground plane.
+   */
+  public pickWorldTarget(pointerX?: number, pointerY?: number): {
+    kind: 'entity' | 'tile';
+    entityId?: string;
+    r: number;
+    c: number;
+    hitPoint?: Vector3;
+  } | null {
+    if (!this.scene) return null;
+    const px = pointerX !== undefined ? pointerX : this.scene.pointerX;
+    const py = pointerY !== undefined ? pointerY : this.scene.pointerY;
+
+    // 1. Raycast against entity meshes first (rendering group 1)
+    const entityPick = this.scene.pick(
+      px,
+      py,
+      (mesh) =>
+        mesh.isPickable &&
+        mesh.renderingGroupId === 1 &&
+        (mesh.name.startsWith('player_') ||
+          mesh.name.startsWith('npc_') ||
+          mesh.name.startsWith('creature_') ||
+          this.entityMeshes.has(mesh.name))
+    );
+
+    if (entityPick && entityPick.hit && entityPick.pickedMesh) {
+      const meshName = entityPick.pickedMesh.name;
+      let entityId = meshName;
+      for (const [id, mesh] of this.entityMeshes.entries()) {
+        if (mesh === entityPick.pickedMesh) {
+          entityId = id;
+          break;
+        }
+      }
+      const s = this.currentTileSize || 1;
+      const w = this.currentMapWidth;
+      const h = this.currentMapHeight;
+      const entityPos = entityPick.pickedMesh.position;
+      const c = Math.round(entityPos.x / s + w / 2 - 0.5);
+      const r = Math.round(h / 2 - entityPos.z / s - 0.5);
+      return {
+        kind: 'entity',
+        entityId,
+        r,
+        c,
+        hitPoint: entityPos.clone(),
+      };
+    }
+
+    // 2. Raycast against ground plane / tiles
+    const tilePick = this.scene.pick(
+      px,
+      py,
+      (mesh) => mesh.isPickable && isTilePickTarget(mesh.name)
+    );
+    const resolved = this.resolveTilePick(tilePick);
+    if (resolved) {
+      return {
+        kind: 'tile',
+        r: resolved.r,
+        c: resolved.c,
+        hitPoint: tilePick?.pickedPoint || undefined,
+      };
+    }
+
+    return null;
   }
 
   private renderBrushPreview(centerR: number, centerC: number) {
@@ -2387,8 +2706,8 @@ private resolveTilePick(
 
     const renderCellPreview = (r: number, c: number, sizeMult: number) => {
       if (r < 0 || r >= h || c < 0 || c >= w) return;
-      const posX = (c - w / 2) * s;
-      const posZ = (h / 2 - r) * s;
+      const posX = (c - w / 2 + 0.5) * s;
+      const posZ = (h / 2 - r - 0.5) * s;
 
       if (hasTexture && tilesetTs && uvPair.length > 0) {
         const matKey = `brush_preview_mat_${tilesetTs.imageSource}`;

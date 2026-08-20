@@ -46,8 +46,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
   const activeLogicTileId = useEditorStore((s) => s.activeLogicTileId);
-  const selectionStart = useEditorStore((s) => s.selectionStart);
-  const selectionEnd = useEditorStore((s) => s.selectionEnd);
+  const selectedCells = useEditorStore((s) => s.selectedCells);
   const tileClipboard = useEditorStore((s) => s.tileClipboard);
   const activeMapData = useGameStore((s) => s.activeMapData);
   const showToast = useGameStore((s) => s.showToast);
@@ -55,7 +54,9 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isSelectingGateType, setIsSelectingGateType] = useState(false);
 
-  const hasSelection = !!(selectionStart && selectionEnd);
+  const selectedCount = useEditorStore.getState().getSelectedCount();
+  const hasMultiSelection = selectedCount > 1;
+  const hasSelection = selectedCount > 0;
   const hasClipboard = !!tileClipboard;
 
   // Close on outside click or Escape
@@ -92,10 +93,6 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const handleCopy = () => {
     if (!activeMapData) return;
     const store = useEditorStore.getState();
-    if (!store.selectionStart || !store.selectionEnd) {
-      store.setSelectionStart({ r: tileR, c: tileC });
-      store.setSelectionEnd({ r: tileR, c: tileC });
-    }
     const res = store.copySelection(activeMapData, activeLayerIdx);
     if (res.ok) {
       showToast(`Copied ${res.width}x${res.height} selection to clipboard`);
@@ -107,10 +104,6 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const handleCut = () => {
     if (!activeMapData) return;
     const store = useEditorStore.getState();
-    if (!store.selectionStart || !store.selectionEnd) {
-      store.setSelectionStart({ r: tileR, c: tileC });
-      store.setSelectionEnd({ r: tileR, c: tileC });
-    }
     const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
     const res = store.cutSelection(activeMapData, engine, activeLayerIdx);
     if (res.ok) {
@@ -125,7 +118,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
     const res = useEditorStore.getState().pasteClipboard(activeMapData, engine, tileR, tileC);
     if (res.ok) {
-      showToast(`Pasted ${res.count} tiles at [${tileC}, ${tileR}]`);
+      showToast(`Pasted ${res.count} tiles`);
     } else {
       showToast(res.error || 'Clipboard is empty');
     }
@@ -267,8 +260,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     if (!activeMapData) return;
     const h = activeMapData.grid?.length || (activeMapData.tileLayers?.[0]?.grid?.length ?? 24);
     const w = activeMapData.grid?.[0]?.length || (activeMapData.tileLayers?.[0]?.grid?.[0]?.length ?? 24);
-    useEditorStore.getState().setSelectionStart({ r: 0, c: 0 });
-    useEditorStore.getState().setSelectionEnd({ r: h - 1, c: w - 1 });
+    useEditorStore.getState().setSelectionBox(0, h - 1, 0, w - 1);
     if (typeof window !== 'undefined') {
       (window as any).__babylonEngine?.setSelectionPreview?.(0, 0, h - 1, w - 1);
     }
@@ -276,8 +268,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   };
 
   const handleClearSelection = () => {
-    useEditorStore.getState().setSelectionStart(null);
-    useEditorStore.getState().setSelectionEnd(null);
+    useEditorStore.getState().clearSelectedCells();
     if (typeof window !== 'undefined') {
       (window as any).__babylonEngine?.clearSelectionPreview?.();
     }
@@ -463,7 +454,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
         >
           <div className="flex items-center gap-2">
             <Copy className="h-3.5 w-3.5 text-amber-400" />
-            <span>Copy {hasSelection ? 'Selection' : 'Tile'}</span>
+            <span>Copy {hasMultiSelection ? `${selectedCount} Tiles` : 'Tile'}</span>
           </div>
           <span className="text-[9px] text-slate-500 font-mono">Ctrl+C</span>
         </button>
@@ -475,7 +466,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
         >
           <div className="flex items-center gap-2">
             <Scissors className="h-3.5 w-3.5 text-amber-400" />
-            <span>Cut {hasSelection ? 'Selection' : 'Tile'}</span>
+            <span>Cut {hasMultiSelection ? `${selectedCount} Tiles` : 'Tile'}</span>
           </div>
           <span className="text-[9px] text-slate-500 font-mono">Ctrl+X</span>
         </button>
@@ -492,7 +483,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
         >
           <div className="flex items-center gap-2">
             <ClipboardPaste className="h-3.5 w-3.5 text-amber-400" />
-            <span>Paste</span>
+            <span>{hasMultiSelection ? 'Paste at Selection' : 'Paste'}</span>
           </div>
           <span className="text-[9px] text-slate-500 font-mono">Ctrl+V</span>
         </button>
@@ -535,7 +526,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
         >
           <PaintBucket className="h-3.5 w-3.5 text-sky-400" />
-          <span>Fill Layer with Brush</span>
+          <span>{hasMultiSelection ? `Fill Selection (${selectedCount})` : 'Fill Layer with Brush'}</span>
         </button>
 
         <button
@@ -545,7 +536,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
         >
           <div className="flex items-center gap-2">
             <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-            <span>Erase {hasSelection ? 'Selection' : 'Tile'}</span>
+            <span>Delete {hasMultiSelection ? `${selectedCount} Tiles` : 'Tile'}</span>
           </div>
           <span className="text-[9px] text-rose-400/60 font-mono">Del</span>
         </button>

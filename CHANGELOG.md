@@ -1,3 +1,59 @@
+## [2.1.378] - 2026-08-20
+### Unified WorldTarget Spatial Interaction & Targeting Architecture
+- **Unified `WorldTarget` Pipeline (`src/shared/game/worldTarget.ts`):**
+  - Created shared spatial targeting vocabulary and evaluation pipeline bridging Studio, Exploration, and Combat.
+  - Supports typed targets: `tile`, `entity`, `object`, `creature`, `player`, `gate`, and `resource`.
+  - Computes reachability, dynamic footprint radius (1x1, 2x2, 3x3), primary action mapping (`TALK`, `ATTACK`, `HARVEST`, `WARP`, `OPEN`), and status (`valid`, `blocked`, `targetable`).
+- **Smart Ground Target Rings (`src/engine/BabylonEngine.ts`):**
+  - Implemented 2.5D ground-projected circular reticle sized dynamically to target footprints (`radius = width * 0.55`).
+  - Added 3 distinct visual states: **Hover** (subtle cyan/glow), **Focus / Target Lock** (vibrant amber/gold), and **Hostile Combat** (crimson/ruby).
+- **Destination Cue Indicator (`BabylonEngine.ts`):**
+  - Integrated soft mouse exploration indicator on target tile: soft emerald marker for reachable tiles and subtle red cue for solid/blocked tiles.
+- **Combat & Ability AoE Footprint Preview (`BabylonEngine.ts`):**
+  - Added `setAbilityAoEPreview` and `clearAbilityAoEPreview` for circular and box spell/ability reach previews prior to execution.
+- **Context Interaction Badge & Target Frame (`src/web/components/the-lobby/hud/`):**
+  - `ContextInteractionBadge`: Floating contextual prompt (`[E] TALK - Professor Oakwood`, `[E] ENTER - Paper Town`, `[SPACE] ATTACK`) that animates in only when targetable and within range.
+  - `TargetUnitFrame`: Top-anchored unit frame for focused target with health bar, level badge, distance readout, and deselect controls.
+  - Added global `KeyE` / `Space` keyboard trigger for primary interactions.
+- **Test Coverage (`src/shared/game/worldTarget.test.ts`):**
+  - 9 automated unit tests covering footprint radius, reachability, primary actions, NPC/monster/player evaluation, and tile/gate targets.
+
+## [2.1.377] - 2026-08-20
+### Studio Viewport Spatial Interaction System Redesign
+- **Unified Interaction Model (Hover, Selection, Action Preview):**
+  - **High-Performance Hover Overlay (`BabylonEngine.ts`):** Lightweight, Babylon-side visual hover highlight updating at 60 FPS with reusable meshes/materials, eliminating per-frame memory allocation and React/Zustand render churn.
+  - **Arbitrary & Rectangular Selection (`editor-store.ts`, `GameCanvasBabylon.tsx`):** Unclamped rectangular drag selection of any size (e.g. 8x6, 48 cells) with live bounding box preview, dimension feedback, and single canonical `selectedCells` state.
+  - **Additive & Subtractive Selection:** Shift+click and Shift+drag add to active selection; Ctrl/Cmd+click and Ctrl/Cmd+drag subtract from selection; normal click creates clean single/box selection.
+  - **Action & Paste Preview (`BabylonEngine.ts`):** Translucent Babylon preview displaying actual clipboard tiles and footprint following the cursor or anchored at active selection bounds before committing.
+  - **Atomic Multi-Cell Operations (`tilePaint.ts`, `editorOps.ts`, `subgridStamp.ts`):**
+    - Added `eraseSparseCells` and `getCellsBoundingBox` in `tilePaint.ts`.
+    - Delete, Cut, Copy, and Paste now operate across all selected cells (sparse or rectangular) in a single atomic undo/redo op.
+    - Pasting with an active selection automatically anchors to the selection's top-left bounding box without requiring extra clicks.
+  - **Selection-Aware Context Menu (`StudioContextMenu.tsx`, `StudioEditorShell.tsx`):**
+    - Right-clicking inside an active selection preserves multi-cell selection and displays scope-aware labels (`Delete N Tiles`, `Cut N Tiles`, `Copy N Tiles`, `Paste at Selection`, `Fill Selection`).
+    - Right-clicking outside selection cleanly targets the clicked tile.
+  - **Camera & Pointer Separation:** Middle-mouse and Space+drag pan camera cleanly without triggering paint or selection drags; right-click context menu opens cleanly without drag-paint side effects.
+  - **Comprehensive Test Suite (`src/shared/game/spatialInteraction.test.ts`):** 11 new automated unit tests covering 1-tile, 2x2, 8x6, sparse selections, additive/subtractive modes, multi-cell delete/cut/paste, atomic undo/redo, logic/visual layers, and boundary clipping.
+
+## [2.1.376] - 2026-08-20
+### Quick Menu & Floating Window Interface Architecture Refactor
+- **Decoupled Window Manager (`src/web/components/the-lobby/store.ts`):**
+  - Added `openWindows: string[]`, `toggleWindow()`, `closeWindow()`, `closeAllWindows()`, and `getTopmostWindow()` to Zustand game store.
+  - Interface windows now open and close independently while keeping `gameMode = 'EXPLORING'`, allowing players to open multiple interfaces simultaneously (e.g. Inventory and Skills side-by-side) without breaking real-time game world interaction.
+- **Quick Menu Dock (`src/web/components/the-lobby/ClassicPanel.tsx`):**
+  - Refactored `ClassicPanel` into a dedicated compact icon-only quick access dock.
+  - Eliminated cramped 390px scaled tab container and CSS scale-wrapper hacks.
+  - Added real-time quick glance badges: item stack totals for Inventory, total level for Skills, and active quest count for Quest Log.
+  - Mapped responsive hotkey toggles (`I` for Inventory, `K` for Skills, `C` for Equipment, `L` for Quests).
+- **Floating Window Wrappers (`src/web/components/the-lobby/windows/`):**
+  - Created standalone floating window shells for all core interfaces: `InventoryWindow`, `SkillsWindow`, `EquipmentWindow`, `QuestLogWindow`, and `GtcWindow`.
+  - Interfaces now support full dragging, z-index elevation on click, minimization, and proper default dimensions (e.g. 860px wide Skills grid, 500px wide 3-column Equipment paperdoll, 420px Inventory grid).
+  - Integrated 3-level skill progression drilldown: Skills Grid (Level 1) -> Skill Inspect modal (Level 2) -> Full Skill Guide & Battlepass (Level 3).
+- **Overlay Shell Decoupling (`skills-overlay.tsx`, `quest-log-overlay.tsx`):**
+  - Stripped duplicate `HudPanelShell` containers and fixed pointer-events overlays from child components so they render cleanly inside `FloatingWindow`.
+- **Topmost Escape Handling (`src/web/components/the-lobby/index.tsx`):**
+  - Pressing `Escape` now hierarchically closes the topmost open floating window before falling back to target deselection or game options menu.
+
 ## [2.1.375] - 2026-08-20
 ### Smooth Movement & Animation Polish
 - **Movement Interpolation (`src/engine/BabylonEngine.ts`):**
@@ -930,7 +986,7 @@
   - Formally documented that 100% of game engine source code, Go MMO networking, 27-skill proficiency curves, d20 resolution math, and map architectures are proprietary Saints Gaming IP.
 - **Tabletop D20 Resolution & Capture Engine (`d20Engine.ts`, `heroCombatD20.ts`)**:
   - Implemented a tabletop d20 resolution engine for creature captures (`d20 + Tamer Proficiency + Tool Tier vs Creature Willpower DC`), featuring Advantage/Disadvantage, Natural 20 Critical Resonance, and Natural 1 Fumble handling.
-  - Preserved Pokemon/Tuxemon-style turn-based combat for creature battles (`TurnBattleOverlay.tsx`), enhanced with live d20 capture dice animations and DC check summaries.
+  - Preserved tactical turn-based combat for creature battles (`TurnBattleOverlay.tsx`), enhanced with live d20 capture dice animations and DC check summaries.
   - Built D20 combat resolution for Player vs Monster Hero Battles (`heroCombatD20.ts`) with Armor Class (AC), weapon proficiency bonuses, and elemental saving throws.
 - **Layered Floating Windows & Enhanced Inventory UI (`FloatingWindow.tsx`, `inventory-overlay.tsx`)**:
   - Created a reusable, draggable `FloatingWindow` shell with chamfered styling, z-index elevation, and boundary locking.
@@ -2178,7 +2234,7 @@
 ## [2.1.87] - 2026-07-31
 
 ### Changed
-- **Lobby Redesign**: Re-styled `GameLogin.tsx`, `ServerSelect.tsx`, and `character-selector.tsx` to a lighter Nintendo aesthetic.
+- **Lobby Redesign**: Re-styled `GameLogin.tsx`, `ServerSelect.tsx`, and `character-selector.tsx` to a lighter vibrant console aesthetic.
 - **Character Creator**: Redesigned `character-creator.tsx` to a multi-step "Dark Souls" style wizard where users directly select `GAME_SPRITES` models.
 - **HUD Redesign**: Decoupled the dark UI box into clean, separate pill-shaped floating indicators in `SaintsHudOrbs.tsx`.
 - **Options Menu**: Updated `GameOptionsMenu.tsx` to match the new lighter aesthetic.
