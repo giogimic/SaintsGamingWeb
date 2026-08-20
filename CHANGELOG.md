@@ -1,3 +1,30 @@
+## [2.1.388] - 2026-08-20
+### Studio Map Boundaries, 64x64+ Zoom Expansion & Runtime Edge Bleed
+- **Map Boundary Clarity & Frame (`BabylonEngine.ts`):**
+  - Disabled outer 64-tile generic grass skirt in Studio Editor mode, eliminating visual perimeter clutter.
+  - Added dynamic glowing `map_boundary_frame` mesh outline along the exact map perimeter across all map dimensions.
+- **64×64+ Full Zoom Range (`zoomMath.ts`, `BabylonEngine.ts`):**
+  - Expanded `STUDIO_MAX_ORTHO` from 40 to 120, removing the 63% zoom clamp and allowing 64×64, 96×96, and 128×128 maps to fit 100% in view down to 15%–25% zoom.
+  - Updated `fitMapInView` to dynamically compute exact ortho requirements without clamping large realms.
+- **Runtime Edge Bleed Pipeline (`edgeStrip.ts`, `BabylonEngine.ts`):**
+  - Created `getEdgeStrip` utility to read thin outer tile strips from adjacent atlas neighbor maps.
+  - Fed real neighbor edge tiles into border skirt quads with live multi-tileset UV mapping.
+  - Added "Preview Neighbor Bleed" toggle in `WorldBuilderPanel.tsx` for live boundary alignment checks while authoring.
+- **Atlas Multi-Map Fast Switch & 1-Click Editing (`WorldBuilderPanel.tsx`, `AtlasStudioSuite.tsx`):**
+  - Added connected directional neighbor badges (North, South, East, West) to the World Builder header for 1-click loading and editing.
+  - Added "Edit Realm" fast transition from Macro Atlas grid node inspection.
+
+## [2.1.387] - 2026-08-20
+### Studio Mode Overhaul (Atlas Studio Suite & WorldBuilder Edit Panel Decluttering)
+- **Dedicated Atlas Studio Mode (`AtlasStudioSuite.tsx`):**
+  - Elevated Atlas Mode (`studioMode === 'atlas'`) to a full workspace suite mirroring the Asset Studio architecture.
+  - Implemented multi-workspace views: Macro World Atlas (20×20 placement canvas with 4-way seam syncing and directional adjacency indicators), Map Library & Explorer (categorized map catalog, stats, and safe deletion), Realm Creator (custom slug, display name, dimension autorun), and Seams & Bounds (map dimension resizer and primary spawn hub selector).
+- **WorldBuilder Edit Panel Decluttering (`WorldBuilderPanel.tsx`):**
+  - Removed heavy map explorer lists, creation modals, deletion confirmation dialogs, and resize forms from the World Builder dock.
+  - Restructured into a clean, focused tile painting workspace featuring a compact active realm status bar, direct "Atlas Studio ↗" jump button, visual vs logic layer controls, and tileset/logic brush palettes.
+- **Unified Studio Integration (`StudioEditorShell.tsx`, `StudioMenuBar.tsx`, `StudioBottomToolbar.tsx`, `WorldAtlasPanel.tsx`, `StudioOmnisearch.tsx`):**
+  - Integrated Atlas Studio seamlessly across top menu bar mode transition switchers, bottom dock launchers, omnisearch actions, and shortcuts (`Ctrl+Shift+M`).
+
 ## [2.1.386] - 2026-08-20
 ### MMO Lifecycle Overhaul (Defeat Transition Synchronization & Phase 6 Audit)
 - **Defeat Respawn Peer Flushing (`index.tsx`):**

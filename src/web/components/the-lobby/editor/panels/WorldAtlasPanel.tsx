@@ -5,7 +5,7 @@ import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import {
   Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio,
-  Castle, Trees, Waves, Mountain, Flame, Navigation
+  Castle, Trees, Waves, Mountain, Flame, Navigation, ArrowUpRight, Globe
 } from 'lucide-react';
 import { MapIndexEntry, loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
@@ -53,6 +53,7 @@ export interface WorldAtlasData {
 
 export const WorldAtlasPanel: React.FC = () => {
   const activeGameId = useEditorStore((state) => state.activeGameId);
+  const setStudioMode = useEditorStore((state) => state.setStudioMode);
   const showToast = useGameStore((state) => state.showToast);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -228,14 +229,26 @@ export const WorldAtlasPanel: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => void handleSaveAtlas()}
-          disabled={isSaving}
-          className="px-3.5 py-1.5 bg-amber-400 text-black font-bold rounded-lg flex items-center gap-1.5 hover:bg-amber-300 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
-        >
-          <Save className="w-3.5 h-3.5" />
-          {isSaving ? 'Saving...' : 'Save Atlas & Sync Edge Seams'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setStudioMode('atlas')}
+            className="px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer"
+            title="Open full Atlas Studio workspace"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Atlas Studio</span>
+            <ArrowUpRight className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => void handleSaveAtlas()}
+            disabled={isSaving}
+            className="px-3.5 py-1.5 bg-amber-400 text-black font-bold rounded-lg flex items-center gap-1.5 hover:bg-amber-300 active:scale-95 transition-all shadow-md disabled:opacity-50 cursor-pointer"
+          >
+            <Save className="w-3.5 h-3.5" />
+            {isSaving ? 'Saving...' : 'Save Atlas & Sync Edge Seams'}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">

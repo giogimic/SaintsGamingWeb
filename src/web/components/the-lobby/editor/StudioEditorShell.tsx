@@ -49,6 +49,7 @@ import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 import { StudioBottomToolbar } from './StudioBottomToolbar';
 import { FullScreenMapBrowser } from './FullScreenMapBrowser';
 import { AssetStudioSuite } from './AssetStudioSuite';
+import { AtlasStudioSuite } from './AtlasStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
@@ -360,10 +361,11 @@ export const StudioEditorShell: React.FC = () => {
         return;
       }
 
-      // Ctrl+Shift+M or Ctrl+Shift+P opens Full-Screen World Atlas / Map Browser
+      // Ctrl+Shift+M or Ctrl+Shift+P toggles Atlas Studio
       if (e.ctrlKey && e.shiftKey && (e.key.toLowerCase() === 'm' || e.key.toLowerCase() === 'p')) {
         e.preventDefault();
-        setMapBrowserOpen((prev) => !prev);
+        const curMode = useEditorStore.getState().studioMode;
+        setStudioMode(curMode === 'atlas' ? 'develop' : 'atlas');
         return;
       }
 
@@ -803,8 +805,8 @@ export const StudioEditorShell: React.FC = () => {
         />
       )}
 
-      {/* FlexLayout Workspace Container — hidden when in Assets mode */}
-      <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' ? 'hidden' : ''}`}>
+      {/* FlexLayout Workspace Container — hidden when in Assets or Atlas mode */}
+      <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' ? 'hidden' : ''}`}>
         <Layout 
           ref={layoutRef} 
           model={model} 
@@ -818,11 +820,16 @@ export const StudioEditorShell: React.FC = () => {
         <AssetStudioSuite />
       )}
 
+      {/* Atlas World Mode — full workspace replacement */}
+      {studioMode === 'atlas' && (
+        <AtlasStudioSuite />
+      )}
+
       {/* Unified Bottom Studio Toolbar */}
       <StudioBottomToolbar
         layoutRef={layoutRef}
         model={model}
-        onOpenMapBrowser={() => setMapBrowserOpen(true)}
+        onOpenMapBrowser={() => setStudioMode('atlas')}
         onOpenAssetBrowser={() => setStudioMode('assets')}
       />
     </div>

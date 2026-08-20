@@ -439,12 +439,12 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           id="atlas"
           icon={<Globe className="w-3.5 h-3.5" />}
           label="Atlas"
-          onClick={(e) => {
-            if (e.shiftKey || !openDockTab) onOpenMapBrowser?.();
+          onClick={() => {
+            if (onOpenMapBrowser) onOpenMapBrowser();
             else openDockTab('atlas');
           }}
-          onDoubleClick={onOpenMapBrowser}
-          title="World Atlas (Double-click / Shift-click for Full-Screen)"
+          onDoubleClick={() => openDockTab('atlas')}
+          title="Atlas Studio (Click for Full Workspace, Double-click for Dock)"
         />
         <PanelDockButton id="properties" icon={<Settings2 className="w-3.5 h-3.5" />} label="Inspector" onClick={() => openDockTab('properties')} />
         <PanelDockButton id="prefab" icon={<Package className="w-3.5 h-3.5" />} label="Prefabs" onClick={() => openDockTab('prefab')} />
