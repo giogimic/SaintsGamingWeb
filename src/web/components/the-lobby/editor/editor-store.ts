@@ -28,6 +28,8 @@ import {
 import {
   eraseTilesInRegion,
   eraseSparseCells,
+  paintTilesInRegion,
+  paintSparseCells,
   getCellsBoundingBox,
   type PaintableMap,
 } from '@/shared/game/tilePaint';
@@ -35,6 +37,8 @@ import {
   extractSubgridFromMap,
   extractSparseCellsFromMap,
   stampClipboardOntoMap,
+  duplicateSelectionOnMap,
+  moveSelectionOnMap,
   type TileClipboardData,
   type PasteMode,
 } from '@/shared/game/subgridStamp';
@@ -44,7 +48,9 @@ import {
   rotateCW,
   rotateCCW,
   transformClipboard,
+  transformSelectionInPlace,
 } from '@/shared/game/stampTransform';
+
 import { studioRuntimeFromCreation, type StudioRuntime } from '@/shared/game/studioSession';
 import { STUDIO_PIE_CHANGED_EVENT, STUDIO_MAP_CELLS_CHANGED_EVENT } from '@/shared/game/studioEvents';
 import type { StudioPieChangedDetail } from '@/shared/game/studioEvents';
@@ -100,6 +106,72 @@ function emitPieChanged(pie: boolean) {
     })
   );
 }
+
+function dispatchOpEvents(op: EditorOp, direction: 'undo' | 'redo') {
+  if (typeof window === 'undefined') return;
+
+  const handleOp = (subOp: EditorOp) => {
+    switch (subOp.kind) {
+      case 'paint_cells': {
+        window.dispatchEvent(
+          new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+            detail: {
+              cells: subOp.cells.map((c) => ({
+                r: c.r,
+                c: c.c,
+                layerIdx: c.layerIdx,
+                value: direction === 'undo' ? c.before : c.after,
+              })),
+            },
+          })
+        );
+        break;
+      }
+      case 'create_layer':
+      case 'delete_layer':
+      case 'reorder_layer':
+      case 'rename_layer': {
+        window.dispatchEvent(new CustomEvent('studio_layers_changed', { detail: { op: subOp, direction } }));
+        break;
+      }
+      case 'create_entity':
+      case 'delete_entity':
+      case 'move_entity':
+      case 'modify_entity': {
+        window.dispatchEvent(new CustomEvent('studio_entities_changed', { detail: { op: subOp, direction } }));
+        break;
+      }
+      case 'create_gate':
+      case 'delete_gate':
+      case 'modify_gate': {
+        window.dispatchEvent(new CustomEvent('studio_gates_changed', { detail: { op: subOp, direction } }));
+        if (subOp.kind !== 'modify_gate' && subOp.tileChange) {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: [{
+                  r: subOp.tileChange.r,
+                  c: subOp.tileChange.c,
+                  layerIdx: subOp.tileChange.layerIdx,
+                  value: direction === 'undo' ? subOp.tileChange.before : subOp.tileChange.after,
+                }],
+              },
+            })
+          );
+        }
+        break;
+      }
+      case 'compound': {
+        const ops = direction === 'undo' ? [...subOp.ops].reverse() : subOp.ops;
+        for (const o of ops) handleOp(o);
+        break;
+      }
+    }
+  };
+
+  handleOp(op);
+}
+
 
 export interface FloatingPanelState {
   id: PanelId;
@@ -240,6 +312,49 @@ interface EditorState {
     engine?: any,
     targetLayerIdx?: number
   ) => { count: number; layerIdx: number; error?: string };
+  paintSelection: (
+    map: any,
+    engine?: any,
+    targetLayerIdx?: number,
+    customTileId?: number
+  ) => { count: number; layerIdx: number; error?: string };
+  fillSelection: (
+    map: any,
+    engine?: any,
+    targetLayerIdx?: number,
+    customTileId?: number
+  ) => { count: number; layerIdx: number; error?: string };
+  eraseSelection: (
+    map: any,
+    engine?: any,
+    targetLayerIdx?: number
+  ) => { count: number; layerIdx: number; error?: string };
+  rotateSelection: (
+    map: any,
+    engine?: any,
+    angle?: 90 | 180 | 270,
+    targetLayerIdx?: number
+  ) => { ok: boolean; count?: number; error?: string };
+  flipSelection: (
+    map: any,
+    engine?: any,
+    axis?: 'h' | 'v',
+    targetLayerIdx?: number
+  ) => { ok: boolean; count?: number; error?: string };
+  duplicateSelection: (
+    map: any,
+    engine?: any,
+    offsetR?: number,
+    offsetC?: number,
+    targetLayerIdx?: number
+  ) => { ok: boolean; count?: number; error?: string };
+  moveSelection: (
+    map: any,
+    engine?: any,
+    offsetR?: number,
+    offsetC?: number,
+    targetLayerIdx?: number
+  ) => { ok: boolean; count?: number; error?: string };
   copySelection: (
     map: any,
     layerIdx?: number
@@ -258,6 +373,7 @@ interface EditorState {
   ) => { ok: boolean; count?: number; error?: string };
   cancelPaste: () => void;
   clearOpStack: () => void;
+
 
   /** Stamp & Brush Transform Actions (Phase 5A) */
   stampTransform: StampTransform;
@@ -1005,42 +1121,17 @@ export const useEditorStore = create<EditorState>()(
       triggerUndo: (map) => {
         const res = get().undoLastOp(map);
         if (!res.ok || !res.op) return res;
-        if (res.op.kind === 'paint_cells') {
-          window.dispatchEvent(
-            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
-              detail: {
-                cells: res.op.cells.map((c) => ({
-                  r: c.r,
-                  c: c.c,
-                  layerIdx: c.layerIdx,
-                  value: c.before,
-                })),
-              },
-            })
-          );
-        }
+        dispatchOpEvents(res.op, 'undo');
         return res;
       },
 
       triggerRedo: (map) => {
         const res = get().redoLastOp(map);
         if (!res.ok || !res.op) return res;
-        if (res.op.kind === 'paint_cells') {
-          window.dispatchEvent(
-            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
-              detail: {
-                cells: res.op.cells.map((c) => ({
-                  r: c.r,
-                  c: c.c,
-                  layerIdx: c.layerIdx,
-                  value: c.after,
-                })),
-              },
-            })
-          );
-        }
+        dispatchOpEvents(res.op, 'redo');
         return res;
       },
+
 
       deleteSelectionTiles: (map, engine, targetLayerIdx) => {
         const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
@@ -1128,6 +1219,399 @@ export const useEditorStore = create<EditorState>()(
 
         return { count: erasedCells.length, layerIdx };
       },
+
+      paintSelection: (map, engine, targetLayerIdx, customTileId) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const hasSparseSelection = Object.keys(selectedCells).length > 0;
+        const start = get().selectionStart;
+        const end = get().selectionEnd;
+        const hovered = get().hoveredTile;
+
+        const tileId =
+          customTileId !== undefined
+            ? customTileId
+            : layerIdx === -1
+            ? get().activeLogicTileId
+            : get().activeBrushTileId;
+
+        if (!map) return { count: 0, layerIdx, error: 'No active map.' };
+
+        let paintResult;
+        if (hasSparseSelection) {
+          paintResult = paintSparseCells({
+            map,
+            layerIdx,
+            cells: selectedCells,
+            tileId,
+          });
+        } else if (start && end) {
+          paintResult = paintTilesInRegion({
+            map,
+            layerIdx,
+            minR: Math.min(start.r, end.r),
+            maxR: Math.max(start.r, end.r),
+            minC: Math.min(start.c, end.c),
+            maxC: Math.max(start.c, end.c),
+            tileId,
+          });
+        } else if (hovered) {
+          paintResult = paintTilesInRegion({
+            map,
+            layerIdx,
+            minR: hovered.r,
+            maxR: hovered.r,
+            minC: hovered.c,
+            maxC: hovered.c,
+            tileId,
+          });
+        } else {
+          return { count: 0, layerIdx, error: 'No selection or tile to paint.' };
+        }
+
+        if (!paintResult.ok) {
+          return { count: 0, layerIdx, error: paintResult.reason };
+        }
+
+        const paintedCells = paintResult.cells;
+        if (paintedCells.length > 0) {
+          set((state) => {
+            state.opStack = pushEditorOp(state.opStack, {
+              kind: 'paint_cells',
+              cells: paintedCells,
+            });
+            state.mapDirty = true;
+            state.hasUnsavedChanges = true;
+          });
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+                detail: {
+                  cells: paintedCells.map((c) => ({
+                    layerIdx: c.layerIdx,
+                    r: c.r,
+                    c: c.c,
+                    value: c.after,
+                  })),
+                },
+              })
+            );
+          }
+
+          const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+          if (activeEng) {
+            for (const c of paintedCells) {
+              if (c.layerIdx === -1) {
+                if (!activeEng.updateLogicTile(c.r, c.c, c.after)) {
+                  activeEng.enableLogicGridOverlay(map.grid || []);
+                  activeEng.updateLogicTile(c.r, c.c, c.after);
+                }
+              } else {
+                activeEng.updateSingleTile(c.r, c.c, c.after, c.layerIdx, map.tilesets);
+              }
+            }
+          }
+        }
+
+        return { count: paintedCells.length, layerIdx };
+      },
+
+      fillSelection: (map, engine, targetLayerIdx, customTileId) => {
+        return get().paintSelection(map, engine, targetLayerIdx, customTileId);
+      },
+
+      eraseSelection: (map, engine, targetLayerIdx) => {
+        return get().deleteSelectionTiles(map, engine, targetLayerIdx);
+      },
+
+      rotateSelection: (map, engine, angle = 90, targetLayerIdx) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const bounds = get().getSelectedBounds();
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        const rot = (angle % 360) as 0 | 90 | 180 | 270;
+        const transform: StampTransform = { flipH: false, flipV: false, rotation: rot };
+
+        const res = transformSelectionInPlace({
+          map,
+          layerIdx,
+          cells: Object.keys(selectedCells).length > 0 ? selectedCells : undefined,
+          bounds: bounds ? { minR: bounds.minR, maxR: bounds.maxR, minC: bounds.minC, maxC: bounds.maxC } : undefined,
+          transform,
+        });
+
+        if (!res.ok || res.cells.length === 0) {
+          return { ok: false, error: res.error || 'Nothing to rotate.' };
+        }
+
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_cells',
+            cells: res.cells,
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
+          if (res.newCells && Object.keys(res.newCells).length > 0) {
+            state.selectedCells = res.newCells;
+          }
+          if (res.newBounds) {
+            state.selectionStart = { r: res.newBounds.minR, c: res.newBounds.minC };
+            state.selectionEnd = { r: res.newBounds.maxR, c: res.newBounds.maxC };
+          }
+        });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: res.cells.map((c) => ({
+                  layerIdx: c.layerIdx,
+                  r: c.r,
+                  c: c.c,
+                  value: c.after,
+                })),
+              },
+            })
+          );
+        }
+
+        const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+        if (activeEng) {
+          for (const c of res.cells) {
+            if (c.layerIdx === -1) {
+              if (!activeEng.updateLogicTile(c.r, c.c, c.after)) {
+                activeEng.enableLogicGridOverlay(map.grid || []);
+                activeEng.updateLogicTile(c.r, c.c, c.after);
+              }
+            } else {
+              activeEng.updateSingleTile(c.r, c.c, c.after, c.layerIdx, map.tilesets);
+            }
+          }
+          if (activeEng.setMultiSelectionPreview && res.newCells) {
+            activeEng.setMultiSelectionPreview(res.newCells);
+          }
+        }
+
+        return { ok: true, count: res.cells.length };
+      },
+
+      flipSelection: (map, engine, axis = 'h', targetLayerIdx) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const bounds = get().getSelectedBounds();
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        const transform: StampTransform = {
+          flipH: axis === 'h',
+          flipV: axis === 'v',
+          rotation: 0,
+        };
+
+        const res = transformSelectionInPlace({
+          map,
+          layerIdx,
+          cells: Object.keys(selectedCells).length > 0 ? selectedCells : undefined,
+          bounds: bounds ? { minR: bounds.minR, maxR: bounds.maxR, minC: bounds.minC, maxC: bounds.maxC } : undefined,
+          transform,
+        });
+
+        if (!res.ok || res.cells.length === 0) {
+          return { ok: false, error: res.error || 'Nothing to flip.' };
+        }
+
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_cells',
+            cells: res.cells,
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
+          if (res.newCells && Object.keys(res.newCells).length > 0) {
+            state.selectedCells = res.newCells;
+          }
+          if (res.newBounds) {
+            state.selectionStart = { r: res.newBounds.minR, c: res.newBounds.minC };
+            state.selectionEnd = { r: res.newBounds.maxR, c: res.newBounds.maxC };
+          }
+        });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: res.cells.map((c) => ({
+                  layerIdx: c.layerIdx,
+                  r: c.r,
+                  c: c.c,
+                  value: c.after,
+                })),
+              },
+            })
+          );
+        }
+
+        const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+        if (activeEng) {
+          for (const c of res.cells) {
+            if (c.layerIdx === -1) {
+              if (!activeEng.updateLogicTile(c.r, c.c, c.after)) {
+                activeEng.enableLogicGridOverlay(map.grid || []);
+                activeEng.updateLogicTile(c.r, c.c, c.after);
+              }
+            } else {
+              activeEng.updateSingleTile(c.r, c.c, c.after, c.layerIdx, map.tilesets);
+            }
+          }
+          if (activeEng.setMultiSelectionPreview && res.newCells) {
+            activeEng.setMultiSelectionPreview(res.newCells);
+          }
+        }
+
+        return { ok: true, count: res.cells.length };
+      },
+
+      duplicateSelection: (map, engine, offsetR = 1, offsetC = 1, targetLayerIdx) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const bounds = get().getSelectedBounds();
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        const res = duplicateSelectionOnMap({
+          map,
+          layerIdx,
+          cells: Object.keys(selectedCells).length > 0 ? selectedCells : undefined,
+          bounds: bounds ? { minR: bounds.minR, maxR: bounds.maxR, minC: bounds.minC, maxC: bounds.maxC } : undefined,
+          offsetR,
+          offsetC,
+        });
+
+        if (!res.ok || res.cells.length === 0) {
+          return { ok: false, error: res.error || 'Nothing to duplicate.' };
+        }
+
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_cells',
+            cells: res.cells,
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
+          if (res.newCells && Object.keys(res.newCells).length > 0) {
+            state.selectedCells = res.newCells;
+          }
+          if (res.newBounds) {
+            state.selectionStart = { r: res.newBounds.minR, c: res.newBounds.minC };
+            state.selectionEnd = { r: res.newBounds.maxR, c: res.newBounds.maxC };
+          }
+        });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: res.cells.map((c) => ({
+                  layerIdx: c.layerIdx,
+                  r: c.r,
+                  c: c.c,
+                  value: c.after,
+                })),
+              },
+            })
+          );
+        }
+
+        const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+        if (activeEng) {
+          for (const c of res.cells) {
+            if (c.layerIdx === -1) {
+              if (!activeEng.updateLogicTile(c.r, c.c, c.after)) {
+                activeEng.enableLogicGridOverlay(map.grid || []);
+                activeEng.updateLogicTile(c.r, c.c, c.after);
+              }
+            } else {
+              activeEng.updateSingleTile(c.r, c.c, c.after, c.layerIdx, map.tilesets);
+            }
+          }
+          if (activeEng.setMultiSelectionPreview && res.newCells) {
+            activeEng.setMultiSelectionPreview(res.newCells);
+          }
+        }
+
+        return { ok: true, count: res.cells.length };
+      },
+
+      moveSelection: (map, engine, offsetR = 1, offsetC = 1, targetLayerIdx) => {
+        const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const bounds = get().getSelectedBounds();
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        const res = moveSelectionOnMap({
+          map,
+          layerIdx,
+          cells: Object.keys(selectedCells).length > 0 ? selectedCells : undefined,
+          bounds: bounds ? { minR: bounds.minR, maxR: bounds.maxR, minC: bounds.minC, maxC: bounds.maxC } : undefined,
+          offsetR,
+          offsetC,
+        });
+
+        if (!res.ok || res.cells.length === 0) {
+          return { ok: false, error: res.error || 'Nothing to move.' };
+        }
+
+        set((state) => {
+          state.opStack = pushEditorOp(state.opStack, {
+            kind: 'paint_cells',
+            cells: res.cells,
+          });
+          state.mapDirty = true;
+          state.hasUnsavedChanges = true;
+          if (res.newCells && Object.keys(res.newCells).length > 0) {
+            state.selectedCells = res.newCells;
+          }
+          if (res.newBounds) {
+            state.selectionStart = { r: res.newBounds.minR, c: res.newBounds.minC };
+            state.selectionEnd = { r: res.newBounds.maxR, c: res.newBounds.maxC };
+          }
+        });
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent(STUDIO_MAP_CELLS_CHANGED_EVENT, {
+              detail: {
+                cells: res.cells.map((c) => ({
+                  layerIdx: c.layerIdx,
+                  r: c.r,
+                  c: c.c,
+                  value: c.after,
+                })),
+              },
+            })
+          );
+        }
+
+        const activeEng = engine || (typeof window !== 'undefined' ? (window as any).__babylonEngine : null);
+        if (activeEng) {
+          for (const c of res.cells) {
+            if (c.layerIdx === -1) {
+              if (!activeEng.updateLogicTile(c.r, c.c, c.after)) {
+                activeEng.enableLogicGridOverlay(map.grid || []);
+                activeEng.updateLogicTile(c.r, c.c, c.after);
+              }
+            } else {
+              activeEng.updateSingleTile(c.r, c.c, c.after, c.layerIdx, map.tilesets);
+            }
+          }
+          if (activeEng.setMultiSelectionPreview && res.newCells) {
+            activeEng.setMultiSelectionPreview(res.newCells);
+          }
+        }
+
+        return { ok: true, count: res.cells.length };
+      },
+
 
       copySelection: (map, targetLayerIdx) => {
         const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
@@ -1232,17 +1716,37 @@ export const useEditorStore = create<EditorState>()(
           return { ok: false, error: stampRes.error || 'Nothing pasted.' };
         }
 
+        const op: EditorOp =
+          stampRes.newLayerCreated && stampRes.createdLayer && typeof stampRes.newLayerIdx === 'number'
+            ? {
+                kind: 'compound',
+                description: 'Paste onto New Layer',
+                ops: [
+                  {
+                    kind: 'create_layer',
+                    layerIdx: stampRes.newLayerIdx,
+                    layer: stampRes.createdLayer,
+                  },
+                  {
+                    kind: 'paint_cells',
+                    cells: stampRes.cells,
+                  },
+                ],
+              }
+            : {
+                kind: 'paint_cells',
+                cells: stampRes.cells,
+              };
+
         set((state) => {
-          state.opStack = pushEditorOp(state.opStack, {
-            kind: 'paint_cells',
-            cells: stampRes.cells,
-          });
+          state.opStack = pushEditorOp(state.opStack, op);
           state.mapDirty = true;
           state.hasUnsavedChanges = true;
           if (stampRes.newLayerCreated && typeof stampRes.newLayerIdx === 'number') {
             state.activeLayerIdx = stampRes.newLayerIdx;
           }
         });
+
 
         if (typeof window !== 'undefined') {
           window.dispatchEvent(

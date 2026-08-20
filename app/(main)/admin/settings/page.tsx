@@ -23,7 +23,9 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.380";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.382";
+
+
 
 
   const maxCharacters = configMap["ucp_max_characters"] || "3";

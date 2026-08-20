@@ -254,6 +254,139 @@ export function eraseSparseCells(params: EraseSparseCellsParams): EraseRegionRes
   return { ok: true, cells: erased };
 }
 
+export interface PaintRegionParams {
+  map: PaintableMap | null | undefined;
+  layerIdx: number;
+  minR: number;
+  maxR: number;
+  minC: number;
+  maxC: number;
+  tileId: number;
+}
+
+export interface PaintSparseCellsParams {
+  map: PaintableMap | null | undefined;
+  layerIdx: number;
+  cells: Array<{ r: number; c: number }> | Record<string, boolean>;
+  tileId: number;
+}
+
+export interface BatchPaintCell {
+  layerIdx: number;
+  r: number;
+  c: number;
+  before: number;
+  after: number;
+}
+
+export type BatchPaintResult =
+  | { ok: true; cells: BatchPaintCell[] }
+  | { ok: false; reason: string };
+
+/**
+ * Paint all tiles within a bounding box [minR..maxR, minC..maxC] on the target layer
+ * with tileId, mutating the grid in-place and returning the list of changed cells.
+ */
+export function paintTilesInRegion(params: PaintRegionParams): BatchPaintResult {
+  const { map, layerIdx, minR, maxR, minC, maxC, tileId } = params;
+  if (!map) return { ok: false, reason: "Map data missing." };
+
+  const target = resolvePaintTarget(map, layerIdx);
+  if (target.kind === "unavailable") return { ok: false, reason: target.reason };
+
+  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  if (!Array.isArray(grid)) {
+    return {
+      ok: false,
+      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+    };
+  }
+
+  const r0 = Math.max(0, Math.min(minR, maxR));
+  const r1 = Math.max(minR, maxR);
+  const c0 = Math.max(0, Math.min(minC, maxC));
+  const c1 = Math.max(minC, maxC);
+
+  const changed: BatchPaintCell[] = [];
+
+  for (let r = r0; r <= r1; r++) {
+    const row = grid[r];
+    if (!Array.isArray(row) || Object.isFrozen(row)) continue;
+    for (let c = c0; c <= c1; c++) {
+      if (c >= row.length) continue;
+      const prev = row[c] ?? 0;
+      if (prev !== tileId) {
+        row[c] = tileId;
+        changed.push({
+          layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+          r,
+          c,
+          before: prev,
+          after: tileId,
+        });
+      }
+    }
+  }
+
+  return { ok: true, cells: changed };
+}
+
+/**
+ * Paint all tiles for an arbitrary set of cell coordinates on the target layer with tileId,
+ * mutating the grid in-place and returning the list of changed cells for single-op undo history.
+ */
+export function paintSparseCells(params: PaintSparseCellsParams): BatchPaintResult {
+  const { map, layerIdx, cells, tileId } = params;
+  if (!map) return { ok: false, reason: "Map data missing." };
+
+  const target = resolvePaintTarget(map, layerIdx);
+  if (target.kind === "unavailable") return { ok: false, reason: target.reason };
+
+  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  if (!Array.isArray(grid)) {
+    return {
+      ok: false,
+      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+    };
+  }
+
+  const cellList: Array<{ r: number; c: number }> = Array.isArray(cells)
+    ? cells
+    : Object.keys(cells)
+        .filter((k) => cells[k])
+        .map((k) => {
+          const [r, c] = k.split(",").map(Number);
+          return { r, c };
+        });
+
+  const changed: BatchPaintCell[] = [];
+  const visited = new Set<string>();
+
+  for (const { r, c } of cellList) {
+    if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) continue;
+    const key = `${r},${c}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const row = grid[r];
+    if (!Array.isArray(row) || Object.isFrozen(row) || c >= row.length) continue;
+
+    const prev = row[c] ?? 0;
+    if (prev !== tileId) {
+      row[c] = tileId;
+      changed.push({
+        layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+        r,
+        c,
+        before: prev,
+        after: tileId,
+      });
+    }
+  }
+
+  return { ok: true, cells: changed };
+}
+
 /** Compute bounding box of arbitrary cells. Returns null if empty. */
 export function getCellsBoundingBox(
   cells: Array<{ r: number; c: number }> | Record<string, boolean>
@@ -296,5 +429,6 @@ export function getCellsBoundingBox(
     count: cellList.length,
   };
 }
+
 
 

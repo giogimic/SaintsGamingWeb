@@ -1285,6 +1285,37 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           // In erase mode, write 0 (clear tile)
           const paintValue = brushMode === 'erase' ? 0 : (target.kind === 'logic' ? store.activeLogicTileId : activeBrushTileId);
 
+          // Select → Paint / Select → Erase composability
+          const selectedCells = store.selectedCells;
+          const hasSparse = Object.keys(selectedCells).length > 0;
+          const selStart = store.selectionStart;
+          const selEnd = store.selectionEnd;
+          const isInsideSelection = hasSparse
+            ? Boolean(selectedCells[`${r},${c}`])
+            : selStart && selEnd
+            ? r >= Math.min(selStart.r, selEnd.r) &&
+              r <= Math.max(selStart.r, selEnd.r) &&
+              c >= Math.min(selStart.c, selEnd.c) &&
+              c <= Math.max(selStart.c, selEnd.c)
+            : false;
+
+          if (isInsideSelection && eventType === 'down') {
+            if (brushMode === 'erase') {
+              const res = useEditorStore.getState().eraseSelection(map, engine, activeLayerIdx);
+              if (res.count > 0) {
+                showToast(`Erased ${res.count} selected tiles`);
+              }
+              return;
+            } else if (brushMode === 'paint') {
+              const res = useEditorStore.getState().paintSelection(map, engine, activeLayerIdx, paintValue);
+              if (res.count > 0) {
+                showToast(`Painted ${res.count} selected tiles with ${target.kind === 'logic' ? `Logic #${paintValue}` : `GID ${paintValue}`}`);
+              }
+              return;
+            }
+          }
+
+
           if (target.kind === 'logic') {
             const logicId = paintValue;
             const logicTiles = useGameStore.getState().logicTiles;
