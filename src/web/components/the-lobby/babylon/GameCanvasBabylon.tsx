@@ -1606,9 +1606,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         if (state.brushMode !== prevState.brushMode) {
           engine.setBrushMode(state.brushMode);
-        }
-        if (state.brushMode !== 'select' && prevState.brushMode === 'select') {
-          engine.clearSelectionPreview();
+          if (state.brushMode === 'select') {
+            engine.clearBrushPreview();
+          } else {
+            engine.clearSelectionPreview();
+          }
         }
       });
       return unsub;

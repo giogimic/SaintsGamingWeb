@@ -1,3 +1,22 @@
+## [2.1.379] - 2026-08-20
+### Spatial Layer Priorities, Unified Highlights & Dual Shop Triggers
+- **Unified Spatial & Interface Layer Hierarchy (`src/shared/game/spatialLayers.ts`):**
+  - Standardized explicit 3D viewport depth altitudes (`SPATIAL_LAYER_ALTITUDES`) from base terrain (`0.00`) through editor guides (`0.02`), destination (`0.025`), target rings (`0.03`), selection overlay (`0.04`), brush footprint (`0.05`), hover outline (`0.06`), temp tools (`0.07`), and entities (`0.10`).
+  - Standardized explicit 2D DOM React z-index priorities (`INTERFACE_Z_INDEX`) across Canvas (`0`), World HUD (`10`), Docks (`30`), Floating Windows (`40`/`45`), Modals (`50`), Context Menus (`100`), and System Curtains (`200`).
+- **One Clean Highlight System (`src/engine/BabylonEngine.ts`):**
+  - **Hover**: Crisp, thin sky-blue outline (`#38bdf8`) on hovered center cell at layer altitude `0.06`.
+  - **Paint Preview**: Dedicated multi-cell tinted footprint grid matching `brushRadius` at layer altitude `0.05` without overlapping selection or hover.
+  - **Selection**: Distinct filled translucent overlay with boundary frame at layer altitude `0.04`.
+  - **Immediate Brush Size Refresh**: Brush preview mesh immediately resizes upon brush radius changes via slider or keyboard shortcuts without waiting for cursor motion.
+- **Editor Map Boundaries vs. Gameplay (`BabylonEngine.ts`):**
+  - Implemented high-contrast glowing neon amber boundary box and corner markers around map perimeter, active exclusively in Editor mode and hidden completely in gameplay.
+- **Bulletproof Context Menu Dismissal (`StudioContextMenu.tsx`):**
+  - Added full-viewport event-capturing backdrop that dismisses context menu immediately on any outside click or right-click without triggering accidental canvas paint or camera pans.
+- **Dual Entity-Bound & Region-Bound Shop Triggers (`interactionResolver.ts`, `worldTarget.ts`):**
+  - Unified both NPC merchants (entity-bound) and store counters/tiles (region-bound) under the single `WorldTarget` and `queryInteractions` pipeline.
+- **Test Suite (`src/shared/game/shopInteraction.test.ts`):**
+  - Added unit test suite validating spatial layer altitude sorting, DOM interface z-index hierarchy, NPC merchant evaluation, and region shop counter evaluation.
+
 ## [2.1.378] - 2026-08-20
 ### Unified WorldTarget Spatial Interaction & Targeting Architecture
 - **Unified `WorldTarget` Pipeline (`src/shared/game/worldTarget.ts`):**

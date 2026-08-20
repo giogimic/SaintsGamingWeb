@@ -198,6 +198,16 @@ export function evaluateTileTarget(params: {
       enabled: isTargetInRange(dist, 1.5),
       payload: { warpGate },
     });
+  } else if (logicTag && (logicTag.tagType === 'shop' || logicTag.name?.toLowerCase().includes('shop'))) {
+    kind = 'object';
+    actions.push({
+      id: `shop_region_${r}_${c}`,
+      type: 'SHOP',
+      label: 'Browse Counter',
+      primary: true,
+      enabled: isTargetInRange(dist, 1.8),
+      payload: { shopId: 'general_store', isRegion: true },
+    });
   } else if (logicTag && logicTag.tagType === 'resource') {
     kind = 'resource';
     actions.push({

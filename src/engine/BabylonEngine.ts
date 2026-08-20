@@ -28,6 +28,7 @@ import {
   clampCameraFocus,
   paintOverlayHeight,
 } from "../shared/game/babylonViewHelpers";
+import { SPATIAL_LAYER_ALTITUDES } from "../shared/game/spatialLayers";
 import {
   cellBatchKey,
   collapsedQuadPositions,
@@ -272,6 +273,8 @@ export class BabylonEngine {
   private brushPreviewMeshes: Mesh[] = [];
   private selectionPreviewMeshes: Mesh[] = [];
   private actionPreviewMeshes: Mesh[] = [];
+  private editorMapBoundaryMesh?: Mesh;
+  private editorMapCornerMeshes: Mesh[] = [];
   /** Editor keyboard pan active keys. */
   private editorPanKeysHeld: Set<string> = new Set();
   private editorPanAnimFrameId: number | null = null;
@@ -791,7 +794,9 @@ export class BabylonEngine {
       if (this.currentMapWidth > 0 && this.currentMapHeight > 0) {
         this.fitMapInView();
       }
+      this.setEditorMapBordersVisible(true);
     } else {
+      this.setEditorMapBordersVisible(false);
       this.canvas.removeEventListener('pointerdown', this.onEditorPointerDown);
       this.canvas.removeEventListener('auxclick', this.onEditorAuxClick);
       window.removeEventListener('pointermove', this.onEditorPointerMove);
@@ -1344,6 +1349,9 @@ export class BabylonEngine {
         });
       });
     }
+
+    // Refresh high-contrast editor map boundaries (visible only in editor mode)
+    this.updateEditorMapBorders();
   }
 
   private applyTileMaterial(mat: StandardMaterial, tileId: number, r: number = 0, c: number = 0, isBlock: boolean = false) {
@@ -2252,6 +2260,90 @@ private resolveTilePick(
     }
   }
 
+  /**
+   * Render single clear highlight system:
+   * - Hover: Thin crisp sky-blue outline on hovered center cell (Layer Altitude 0.06).
+   * - Paint footprint: Tinted grid for multi-cell brush radius > 1 (Layer Altitude 0.05).
+   */
+  public renderBrushPreview(r: number, c: number) {
+    this.clearBrushPreview();
+    if (!this.scene) return;
+
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    if (r < 0 || r >= h || c < 0 || c >= w) return;
+
+    // 1. Single-cell hover outline (Thin sky-blue border on hovered center cell)
+    const centerPosX = (c - w / 2 + 0.5) * s;
+    const centerPosZ = (h / 2 - r - 0.5) * s;
+
+    let hoverMat = this.scene.getMaterialByName('brush_hover_outline_mat') as StandardMaterial | null;
+    if (!hoverMat) {
+      hoverMat = new StandardMaterial('brush_hover_outline_mat', this.scene);
+      hoverMat.diffuseColor = new Color3(0.22, 0.74, 0.97); // #38bdf8 sky-400
+      hoverMat.emissiveColor = new Color3(0.1, 0.4, 0.6);
+      hoverMat.alpha = 0.85;
+      hoverMat.disableLighting = true;
+      hoverMat.backFaceCulling = false;
+    }
+
+    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 0.96 }, this.scene);
+    hoverPlane.rotation.x = Math.PI / 2;
+    hoverPlane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR, centerPosZ);
+    hoverPlane.material = hoverMat;
+    hoverPlane.isPickable = false;
+    hoverPlane.parent = this.rootNode;
+    this.brushPreviewMeshes.push(hoverPlane);
+
+    // 2. Multi-cell footprint grid if brushRadius > 1
+    if (this.brushRadius > 1) {
+      const rad = this.brushRadius - 1;
+      const isErase = this.brushMode === 'erase';
+      const isFill = this.brushMode === 'fill';
+      const matKey = `brush_footprint_mat_${this.brushMode}`;
+
+      let footMat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
+      if (!footMat) {
+        footMat = new StandardMaterial(matKey, this.scene);
+        if (isErase) {
+          footMat.diffuseColor = new Color3(1.0, 0.3, 0.2); // Rose/red
+          footMat.emissiveColor = new Color3(0.5, 0.1, 0.05);
+        } else if (isFill) {
+          footMat.diffuseColor = new Color3(1.0, 0.8, 0.2); // Amber
+          footMat.emissiveColor = new Color3(0.5, 0.35, 0.05);
+        } else {
+          footMat.diffuseColor = new Color3(0.2, 0.9, 0.5); // Emerald/mint
+          footMat.emissiveColor = new Color3(0.1, 0.4, 0.2);
+        }
+        footMat.alpha = 0.35;
+        footMat.disableLighting = true;
+        footMat.backFaceCulling = false;
+      }
+
+      for (let dr = -rad; dr <= rad; dr++) {
+        for (let dc = -rad; dc <= rad; dc++) {
+          if (dr === 0 && dc === 0) continue; // center already has hover outline
+          if (dr * dr + dc * dc > rad * rad + rad) continue;
+          const nr = r + dr;
+          const nc = c + dc;
+          if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
+
+          const posX = (nc - w / 2 + 0.5) * s;
+          const posZ = (h / 2 - nr - 0.5) * s;
+
+          const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.92 }, this.scene);
+          plane.rotation.x = Math.PI / 2;
+          plane.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.BRUSH_PREVIEW, posZ);
+          plane.material = footMat;
+          plane.isPickable = false;
+          plane.parent = this.rootNode;
+          this.brushPreviewMeshes.push(plane);
+        }
+      }
+    }
+  }
+
   /** Clear brush preview overlay. */
   public clearBrushPreview() {
     for (const m of this.brushPreviewMeshes) m.dispose();
@@ -2307,10 +2399,10 @@ private resolveTilePick(
     const centerPosX = ((minC + maxC) / 2 - w / 2 + 0.5) * s;
     const centerPosZ = (h / 2 - (minR + maxR) / 2 - 0.5) * s;
 
-    // Single bounding plane for smooth rendering regardless of rectangle size
+    // Single bounding plane at SELECTION_OVERLAY layer altitude
     const plane = MeshBuilder.CreatePlane('selection_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
     plane.rotation.x = Math.PI / 2;
-    plane.position = new Vector3(centerPosX, 0.18, centerPosZ);
+    plane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, centerPosZ);
     plane.material = previewMat;
     plane.isPickable = false;
     plane.parent = this.rootNode;
@@ -2351,7 +2443,7 @@ private resolveTilePick(
       const posZ = (h / 2 - r - 0.5) * s;
       const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.96 }, this.scene);
       plane.rotation.x = Math.PI / 2;
-      plane.position = new Vector3(posX, 0.18, posZ);
+      plane.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, posZ);
       plane.material = previewMat;
       plane.isPickable = false;
       plane.parent = this.rootNode;
@@ -2408,11 +2500,90 @@ private resolveTilePick(
 
     const boundsPlane = MeshBuilder.CreatePlane('action_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
     boundsPlane.rotation.x = Math.PI / 2;
-    boundsPlane.position = new Vector3(centerPosX, 0.2, centerPosZ);
+    boundsPlane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.TEMP_TOOL_PREVIEW, centerPosZ);
     boundsPlane.material = matToUse;
     boundsPlane.isPickable = false;
     boundsPlane.parent = this.rootNode;
     this.actionPreviewMeshes.push(boundsPlane);
+  }
+
+  /**
+   * Builds or updates the high-contrast editor map boundary box.
+   * Painfully clear in editor view, hidden in gameplay.
+   */
+  public updateEditorMapBorders() {
+    if (this.editorMapBoundaryMesh) {
+      this.editorMapBoundaryMesh.dispose();
+      this.editorMapBoundaryMesh = undefined;
+    }
+    for (const m of this.editorMapCornerMeshes) m.dispose();
+    this.editorMapCornerMeshes = [];
+
+    if (!this.scene) return;
+
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    if (w <= 0 || h <= 0) return;
+
+    const minX = (-w / 2) * s;
+    const maxX = (w / 2) * s;
+    const minZ = (-h / 2) * s;
+    const maxZ = (h / 2) * s;
+
+    // Glowing border lines around the active map perimeter
+    const borderPoints = [
+      new Vector3(minX, SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES, minZ),
+      new Vector3(maxX, SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES, minZ),
+      new Vector3(maxX, SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES, maxZ),
+      new Vector3(minX, SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES, maxZ),
+      new Vector3(minX, SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES, minZ),
+    ];
+
+    const lines = MeshBuilder.CreateLines(
+      'editor_map_boundary_lines',
+      { points: borderPoints, updatable: false },
+      this.scene
+    );
+    lines.color = new Color3(0.96, 0.62, 0.04); // #f59e0b amber neon
+    lines.isPickable = false;
+    lines.parent = this.rootNode;
+    lines.isVisible = this.editorCameraMode;
+    this.editorMapBoundaryMesh = lines;
+
+    // Corner bracket markers for spatial clarity
+    const cornerMat = new StandardMaterial('editor_corner_mat', this.scene);
+    cornerMat.diffuseColor = new Color3(0.96, 0.62, 0.04);
+    cornerMat.emissiveColor = new Color3(0.6, 0.35, 0.05);
+    cornerMat.disableLighting = true;
+    cornerMat.backFaceCulling = false;
+
+    const corners = [
+      { x: minX, z: minZ },
+      { x: maxX, z: minZ },
+      { x: maxX, z: maxZ },
+      { x: minX, z: maxZ },
+    ];
+
+    for (let i = 0; i < corners.length; i++) {
+      const c = corners[i];
+      const marker = MeshBuilder.CreateBox(`editor_corner_${i}`, { size: s * 0.35 }, this.scene);
+      marker.position = new Vector3(c.x, SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES + 0.01, c.z);
+      marker.material = cornerMat;
+      marker.isPickable = false;
+      marker.parent = this.rootNode;
+      marker.isVisible = this.editorCameraMode;
+      this.editorMapCornerMeshes.push(marker);
+    }
+  }
+
+  public setEditorMapBordersVisible(visible: boolean) {
+    if (this.editorMapBoundaryMesh) {
+      this.editorMapBoundaryMesh.isVisible = visible;
+    }
+    for (const m of this.editorMapCornerMeshes) {
+      m.isVisible = visible;
+    }
   }
 
   /**
@@ -2469,7 +2640,7 @@ private resolveTilePick(
 
     this.smartTargetRingMesh.material = mat;
     this.smartTargetRingMesh.scaling = new Vector3(radius, radius, radius);
-    this.smartTargetRingMesh.position = new Vector3(target.position.x, 0.02, target.position.z);
+    this.smartTargetRingMesh.position = new Vector3(target.position.x, SPATIAL_LAYER_ALTITUDES.SMART_TARGET_RING, target.position.z);
     this.smartTargetRingMesh.isVisible = true;
   }
 
@@ -2514,7 +2685,7 @@ private resolveTilePick(
     }
 
     this.destinationIndicatorMesh.material = mat;
-    this.destinationIndicatorMesh.position = new Vector3(posX, 0.025, posZ);
+    this.destinationIndicatorMesh.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW, posZ);
     this.destinationIndicatorMesh.isVisible = true;
   }
 
@@ -2557,7 +2728,7 @@ private resolveTilePick(
       const boxSize = radWorld * 2;
       const plane = MeshBuilder.CreatePlane('ability_aoe_box', { size: boxSize }, this.scene);
       plane.rotation.x = Math.PI / 2;
-      plane.position = new Vector3(centerPosX, 0.03, centerPosZ);
+      plane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.TEMP_TOOL_PREVIEW, centerPosZ);
       plane.material = mat;
       plane.isPickable = false;
       plane.parent = this.rootNode;
@@ -2565,7 +2736,7 @@ private resolveTilePick(
     } else {
       const disc = MeshBuilder.CreateDisc('ability_aoe_circle', { radius: radWorld, tessellation: 36 }, this.scene);
       disc.rotation.x = Math.PI / 2;
-      disc.position = new Vector3(centerPosX, 0.03, centerPosZ);
+      disc.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.TEMP_TOOL_PREVIEW, centerPosZ);
       disc.material = mat;
       disc.isPickable = false;
       disc.parent = this.rootNode;
@@ -2646,120 +2817,6 @@ private resolveTilePick(
     }
 
     return null;
-  }
-
-  private renderBrushPreview(centerR: number, centerC: number) {
-    this.clearBrushPreview();
-    const rad = this.brushRadius <= 1 ? 0 : this.brushRadius - 1;
-    const w = this.currentMapWidth;
-    const h = this.currentMapHeight;
-    const s = this.currentTileSize || 1;
-
-    let previewMat = this.scene.getMaterialByName('brush_preview_mat') as StandardMaterial | null;
-    if (!previewMat) {
-      const mat = new StandardMaterial('brush_preview_mat', this.scene);
-      mat.diffuseColor = new Color3(0.3, 0.85, 1.0);
-      mat.alpha = 0.3;
-      mat.disableLighting = true;
-      mat.backFaceCulling = false;
-      previewMat = mat;
-    }
-
-    let eraseMat = this.scene.getMaterialByName('brush_erase_mat') as StandardMaterial | null;
-    if (!eraseMat) {
-      const mat = new StandardMaterial('brush_erase_mat', this.scene);
-      mat.diffuseColor = new Color3(1.0, 0.2, 0.2);
-      mat.alpha = 0.4;
-      mat.disableLighting = true;
-      mat.backFaceCulling = false;
-      eraseMat = mat;
-    }
-
-    let selectMat = this.scene.getMaterialByName('brush_select_mat') as StandardMaterial | null;
-    if (!selectMat) {
-      const mat = new StandardMaterial('brush_select_mat', this.scene);
-      mat.diffuseColor = new Color3(1.0, 0.9, 0.2);
-      mat.alpha = 0.25;
-      mat.disableLighting = true;
-      mat.backFaceCulling = false;
-      selectMat = mat;
-    }
-
-    let matToUse = previewMat;
-    if (this.brushMode === 'erase') {
-      matToUse = eraseMat;
-    } else if (this.brushMode === 'select') {
-      matToUse = selectMat;
-    }
-
-    const isLogicLayer = this.activeLayerIdx === -1;
-    const hasTexture = !isLogicLayer && this.brushMode === 'paint' && this.activeBrushTileId > 0;
-
-    let tilesetTs: any = null;
-    let uvPair: number[] = [];
-    if (hasTexture && this.currentTilesets.length > 0) {
-      tilesetTs = this.currentTilesets.find((t: any) => this.activeBrushTileId >= t.firstgid);
-      if (tilesetTs && tilesetTs.imageSource) {
-        uvPair = tilesetUvForGid(this.activeBrushTileId, tilesetTs, TILESET_SIZES);
-      }
-    }
-
-    const renderCellPreview = (r: number, c: number, sizeMult: number) => {
-      if (r < 0 || r >= h || c < 0 || c >= w) return;
-      const posX = (c - w / 2 + 0.5) * s;
-      const posZ = (h / 2 - r - 0.5) * s;
-
-      if (hasTexture && tilesetTs && uvPair.length > 0) {
-        const matKey = `brush_preview_mat_${tilesetTs.imageSource}`;
-        let textureMat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
-        if (!textureMat) {
-          textureMat = new StandardMaterial(matKey, this.scene);
-          const cachedTex = this.tilesetTextureCache.get(tilesetTs.imageSource);
-          if (cachedTex) {
-            textureMat.diffuseTexture = cachedTex;
-          }
-          textureMat.alpha = 0.6;
-          textureMat.disableLighting = true;
-          textureMat.backFaceCulling = false;
-        }
-
-        const plane = new Mesh(`brush_preview_${r}_${c}`, this.scene);
-        const vertexData = new VertexData();
-        vertexData.positions = groundQuadPositions(posX, posZ, 0.16, s * sizeMult);
-        vertexData.indices = [0, 1, 2, 0, 2, 3];
-        vertexData.uvs = uvPair;
-        const normals: number[] = [];
-        VertexData.ComputeNormals(vertexData.positions, vertexData.indices, normals);
-        vertexData.normals = normals;
-        vertexData.applyToMesh(plane);
-        plane.parent = this.rootNode;
-        plane.material = textureMat;
-        plane.isPickable = false;
-        this.brushPreviewMeshes.push(plane);
-      } else {
-        const plane = MeshBuilder.CreatePlane(`brush_preview_${r}_${c}`, { size: s * sizeMult }, this.scene);
-        plane.rotation.x = Math.PI / 2;
-        plane.position = new Vector3(posX, 0.16, posZ);
-        plane.parent = this.rootNode;
-        plane.material = matToUse;
-        plane.isPickable = false;
-        this.brushPreviewMeshes.push(plane);
-      }
-    };
-
-    if (this.brushRadius <= 1) {
-      renderCellPreview(centerR, centerC, 0.96);
-      return;
-    }
-
-    for (let dr = -rad; dr <= rad; dr++) {
-      for (let dc = -rad; dc <= rad; dc++) {
-        if (dr * dr + dc * dc > rad * rad + rad) continue;
-        const nr = centerR + dr;
-        const nc = centerC + dc;
-        renderCellPreview(nr, nc, 0.95);
-      }
-    }
   }
 
   private layerIsolationActive: boolean = false;

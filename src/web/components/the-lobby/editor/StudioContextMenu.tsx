@@ -308,11 +308,25 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   return (
     <div
-      ref={menuRef}
-      style={{ left: clampedX, top: clampedY }}
-      className="fixed z-[250] min-w-[240px] max-w-[280px] rounded-xl border border-amber-500/40 bg-[#050b14]/95 p-1.5 font-mono text-xs text-slate-200 shadow-2xl backdrop-blur-xl pointer-events-auto select-none max-h-[85vh] overflow-y-auto custom-scrollbar"
+      className="fixed inset-0 z-[240] pointer-events-auto"
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }}
     >
-      {/* Header Info */}
+      <div
+        ref={menuRef}
+        style={{ left: clampedX, top: clampedY }}
+        onPointerDown={(e) => e.stopPropagation()}
+        onContextMenu={(e) => e.stopPropagation()}
+        className="fixed z-[250] min-w-[240px] max-w-[280px] rounded-xl border border-amber-500/40 bg-[#050b14]/95 p-1.5 font-mono text-xs text-slate-200 shadow-2xl backdrop-blur-xl pointer-events-auto select-none max-h-[85vh] overflow-y-auto custom-scrollbar"
+      >
+        {/* Header Info */}
       <div className="flex items-center justify-between border-b border-amber-500/20 px-2.5 py-1.5 text-[10px] text-amber-300">
         <span className="font-bold uppercase tracking-wider">
           Tile [{tileC}, {tileR}]
@@ -708,5 +722,6 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
         )}
       </div>
     </div>
+  </div>
   );
 };
