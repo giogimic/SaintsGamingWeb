@@ -124,6 +124,13 @@ func (h *Hub) onConnect(client *socket.Socket) {
 		if prevSock := h.getSocket(prev); prevSock != nil {
 			prevSock.Disconnect(true)
 		}
+		// Seamlessly migrate world seat to new socket without destroying player state
+		if p := h.eng.Players().GetByAccount(accountID); p != nil {
+			h.eng.Players().UpdateSocket(accountID, sid)
+			h.JoinRoom(sid, p.MapID)
+			h.joinAOI(sid, p)
+			log.Printf("[socket] SESSION_MIGRATED account=%s oldSid=%s newSid=%s map=%s", accountID, prev, sid, p.MapID)
+		}
 	}
 
 	log.Printf("[socket] connected account=%s sid=%s", accountID, sid)
@@ -252,6 +259,16 @@ func (h *Hub) authenticate(client *socket.Socket) string {
 	return ""
 }
 
+func isSamePolicy(instanceID, baseMapID, accountID string, isPrivate, pie bool) bool {
+	if pie {
+		return world.IsStudioPIE(instanceID)
+	}
+	if isPrivate {
+		return instanceID == world.PrivateInstanceID(baseMapID, accountID)
+	}
+	return world.IsPublicChannel(instanceID)
+}
+
 func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protocol.JoinMapRequest) {
 	sid := string(client.Id())
 	base := world.ResolvePlayableBase(req.MapID, req.Lobby, req.ForceDemo)
@@ -260,9 +277,63 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		base = protocol.DemoMapID
 	}
 
+	// 1. Character ownership validation: Reject if character is actively controlled by another account
+	if req.CharacterID != "" {
+		if existing := h.eng.Players().GetByCharacter(req.CharacterID); existing != nil && existing.AccountID != accountID {
+			log.Printf("[socket] JOIN_REJECT account=%s char=%s reason=character_owned_by_other targetAccount=%s", accountID, req.CharacterID, existing.AccountID)
+			h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "Character is currently active on another account."})
+			return
+		}
+	}
+
+	// 2. Check for existing player on this account
 	if prev := h.eng.Players().GetByAccount(accountID); prev != nil {
-		h.leaveAOI(sid, prev)
-		h.LeaveRoom(sid, prev.MapID)
+		sameChar := req.CharacterID == "" || req.CharacterID == prev.CharacterID
+		sameBase := prev.BaseMapID == base
+		samePolicy := isSamePolicy(prev.MapID, base, accountID, req.IsPrivate, req.PIE)
+
+		if sameChar && sameBase && samePolicy {
+			// IDEMPOTENT RE-JOIN / RECOVERY:
+			// Do NOT leave AOI, do NOT broadcast player_left, do NOT destroy state.
+			if prev.SocketID != sid {
+				// Reconnect case: transfer socket to new connection
+				oldSid := prev.SocketID
+				h.eng.Players().UpdateSocket(accountID, sid)
+				if oldSid != "" {
+					h.leaveAOI(oldSid, prev)
+					h.LeaveRoom(oldSid, prev.MapID)
+				}
+				h.JoinRoom(sid, prev.MapID)
+				h.joinAOI(sid, prev)
+			}
+
+			// Update name/sprite/character if provided
+			if req.Name != "" {
+				prev.Name = req.Name
+			}
+			if req.SpriteID != "" {
+				prev.SpriteID = req.SpriteID
+			}
+			if req.CharacterID != "" {
+				prev.CharacterID = req.CharacterID
+			}
+
+			h.EmitToSocket(sid, protocol.EvMapJoined, protocol.MapJoinedPayload{
+				InstanceID: prev.MapID,
+				MapID:      prev.BaseMapID,
+				X:          prev.X,
+				Y:          prev.Y,
+				JoinSeq:    req.JoinSeq,
+			})
+			h.EmitToSocket(sid, protocol.EvMapPlayers, h.eng.Players().SnapshotPeers(prev.MapID, accountID))
+			log.Printf("[socket] JOIN_IDEMPOTENT account=%s char=%s base=%s instance=%s seq=%d", accountID, prev.CharacterID, base, prev.MapID, req.JoinSeq)
+			return
+		}
+
+		// TRANSITION CASE: Cleanly leave old world seat
+		log.Printf("[socket] JOIN_TRANSITION account=%s oldMap=%s oldChar=%s newBase=%s newChar=%s", accountID, prev.MapID, prev.CharacterID, base, req.CharacterID)
+		h.leaveAOI(prev.SocketID, prev)
+		h.LeaveRoom(prev.SocketID, prev.MapID)
 		h.eng.World().LeaveInstance(prev.MapID)
 		h.EmitToRoom(prev.MapID, protocol.EvPlayerLeft, map[string]string{"socketId": prev.SocketID, "entityId": prev.EntityID})
 		h.eng.Players().Remove(prev.SocketID)
@@ -270,6 +341,7 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 
 	inst, err := h.eng.World().JoinMap(base, accountID, req.IsPrivate, req.PIE)
 	if err != nil {
+		log.Printf("[socket] JOIN_REJECT account=%s reason=%v", accountID, err)
 		h.EmitToSocket(sid, protocol.EvShowToast, map[string]string{"message": "join failed: " + err.Error()})
 		return
 	}
@@ -298,7 +370,7 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		sprite = "player_default"
 	}
 
-	p := h.eng.Players().Create(accountID, sid, name, sprite, inst.InstanceID, base, x, y)
+	p := h.eng.Players().CreateWithCharacter(accountID, req.CharacterID, sid, name, sprite, inst.InstanceID, base, x, y)
 	if hot.OK && hot.Credits > 0 {
 		p.Credits = hot.Credits
 	}
@@ -315,13 +387,14 @@ func (h *Hub) handleJoinMap(client *socket.Socket, accountID string, req protoco
 		MapID:      base,
 		X:          p.X,
 		Y:          p.Y,
+		JoinSeq:    req.JoinSeq,
 	})
 	h.EmitToSocket(sid, protocol.EvMapPlayers, h.eng.Players().SnapshotPeers(inst.InstanceID, accountID))
 	h.EmitToRoom(inst.InstanceID, protocol.EvPlayerJoined, p.Peer())
 	for _, c := range h.eng.Creatures().List(inst.InstanceID) {
 		h.EmitToSocket(sid, protocol.EvCreatureSpawned, c)
 	}
-	log.Printf("[socket] join_map account=%s base=%s instance=%s", accountID, base, inst.InstanceID)
+	log.Printf("[socket] JOIN_ACCEPTED account=%s char=%s base=%s instance=%s seq=%d", accountID, req.CharacterID, base, inst.InstanceID, req.JoinSeq)
 }
 
 func (h *Hub) handleEncounter(accountID string) {
@@ -480,8 +553,9 @@ func (h *Hub) handleShopSell(accountID string, datas []any) {
 }
 
 func (h *Hub) onDisconnect(sid, accountID string) {
-	p := h.eng.Players().Remove(sid)
-	if p != nil {
+	p := h.eng.Players().GetBySocket(sid)
+	if p != nil && p.SocketID == sid {
+		h.eng.Players().Remove(sid)
 		h.leaveAOI(sid, p)
 		h.LeaveRoom(sid, p.MapID)
 		h.eng.World().LeaveInstance(p.MapID)

@@ -20,6 +20,7 @@ const (
 type State struct {
 	EntityID    string
 	AccountID   string
+	CharacterID string
 	SocketID    string
 	Name        string
 	SpriteID    string
@@ -43,6 +44,7 @@ type Manager struct {
 	mu          sync.RWMutex
 	byAccount   map[string]*State
 	bySocket    map[string]*State
+	byCharacter map[string]*State
 	occupied    map[string]map[string]string // instanceID -> "x,y" -> accountID
 	aoiZoneSize int
 	store       *persist.Store
@@ -59,6 +61,7 @@ func NewManager(aoiZoneSize int, db *sql.DB) *Manager {
 	return &Manager{
 		byAccount:   make(map[string]*State),
 		bySocket:    make(map[string]*State),
+		byCharacter: make(map[string]*State),
 		occupied:    make(map[string]map[string]string),
 		aoiZoneSize: aoiZoneSize,
 		store:       store,
@@ -94,6 +97,15 @@ func (m *Manager) GetBySocket(socketID string) *State {
 	return m.bySocket[socketID]
 }
 
+func (m *Manager) GetByCharacter(characterID string) *State {
+	if characterID == "" {
+		return nil
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.byCharacter[characterID]
+}
+
 func (m *Manager) SocketIDForAccount(accountID string) string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -115,6 +127,11 @@ func (m *Manager) ForEach(fn func(*State)) {
 
 // Create registers a new seat. Caller handles session_replaced for prior socket.
 func (m *Manager) Create(accountID, socketID, name, spriteID, instanceID, baseMapID string, x, y float64) *State {
+	return m.CreateWithCharacter(accountID, "", socketID, name, spriteID, instanceID, baseMapID, x, y)
+}
+
+// CreateWithCharacter registers a new seat with explicit character ownership.
+func (m *Manager) CreateWithCharacter(accountID, characterID, socketID, name, spriteID, instanceID, baseMapID string, x, y float64) *State {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -125,24 +142,45 @@ func (m *Manager) Create(accountID, socketID, name, spriteID, instanceID, baseMa
 		spriteID = "player_default"
 	}
 	p := &State{
-		EntityID:  fmt.Sprintf("player_%s_%d", accountID, time.Now().UnixMilli()),
-		AccountID: accountID,
-		SocketID:  socketID,
-		Name:      name,
-		SpriteID:  spriteID,
-		MapID:     instanceID,
-		BaseMapID: baseMapID,
-		X:         x,
-		Y:         y,
-		Direction: "down",
-		HP:        100,
-		MaxHP:     100,
-		Credits:   100,
+		EntityID:    fmt.Sprintf("player_%s_%d", accountID, time.Now().UnixMilli()),
+		AccountID:   accountID,
+		CharacterID: characterID,
+		SocketID:    socketID,
+		Name:        name,
+		SpriteID:    spriteID,
+		MapID:       instanceID,
+		BaseMapID:   baseMapID,
+		X:           x,
+		Y:           y,
+		Direction:   "down",
+		HP:          100,
+		MaxHP:       100,
+		Credits:     100,
 	}
 	p.ZoneX, p.ZoneY = ZoneOf(x, y, m.aoiZoneSize)
 	m.byAccount[accountID] = p
 	m.bySocket[socketID] = p
+	if characterID != "" {
+		m.byCharacter[characterID] = p
+	}
 	m.setOccupiedLocked(instanceID, int(x), int(y), accountID)
+	return p
+}
+
+// UpdateSocket smoothly switches the socket association without tearing down the player state.
+func (m *Manager) UpdateSocket(accountID, newSocketID string) *State {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	p := m.byAccount[accountID]
+	if p == nil {
+		return nil
+	}
+	oldSocket := p.SocketID
+	if oldSocket != "" && oldSocket != newSocketID {
+		delete(m.bySocket, oldSocket)
+	}
+	p.SocketID = newSocketID
+	m.bySocket[newSocketID] = p
 	return p
 }
 
@@ -157,6 +195,11 @@ func (m *Manager) Remove(socketID string) *State {
 	delete(m.bySocket, socketID)
 	if cur := m.byAccount[p.AccountID]; cur != nil && cur.SocketID == socketID {
 		delete(m.byAccount, p.AccountID)
+	}
+	if p.CharacterID != "" {
+		if cur := m.byCharacter[p.CharacterID]; cur != nil && cur.SocketID == socketID {
+			delete(m.byCharacter, p.CharacterID)
+		}
 	}
 	m.clearOccupiedLocked(p.MapID, int(p.X), int(p.Y), p.AccountID)
 	return p
@@ -331,6 +374,7 @@ func (p *State) Peer() protocol.PeerSnapshot {
 	return protocol.PeerSnapshot{
 		SocketID:  p.SocketID,
 		EntityID:  p.EntityID,
+		AccountID: p.AccountID,
 		X:         p.X,
 		Y:         p.Y,
 		Direction: p.Direction,

@@ -1,3 +1,35 @@
+## [2.1.384] - 2026-08-20
+### MMO Lifecycle Overhaul (Phase 6: Atomic Map Transition Sequencing)
+- **Map Transition Sequencing (`lobbyWorldJoin.ts`):**
+  - Added `startMapTransition(opts)` orchestrator: transitions `worldSessionState` to `'transitioning'`, activates `isMapTransitioning`, immediately flushes departed peers (`setOtherPlayers({})`), and executes destination `joinWorld`.
+  - Added transition timeout fallback so the client never becomes stuck in transition if server response is delayed.
+- **Client Input & Warp Hardening (`GameCanvasBabylon.tsx`, `index.tsx`, `GameOptionsMenu.tsx`):**
+  - Hardened `tryMovePlayerTo`: movement inputs and client-predicted steps are strictly dormant during `isMapTransitioning` or `worldSessionState === 'transitioning'`, preventing movement command leakage across map boundaries.
+  - Refactored Babylon gate warps and GameOptionsMenu "Unstuck" teleports to execute through `startMapTransition`.
+  - Updated `map_joined` listener to automatically clear `isMapTransitioning` upon arrival confirmation.
+- **Unit Testing:**
+  - Added test case in `lobbyWorldJoin.test.ts` verifying transition state activation, peer flushing, and forced world join.
+
+## [2.1.383] - 2026-08-20
+### MMO Lifecycle Overhaul (Phases 1–5: State Machine, Join Centralization, Idempotent Joins & Reconnect Hardening)
+- **Authoritative World-Session State Machine (`store.ts`, `lobbyWorldJoin.ts`):**
+  - Added explicit `worldSessionState` (`not_joined`, `joining`, `joined`, `transitioning`, `disconnected`) and `worldJoinSeq` monotonic counter to `useGameStore`.
+  - Created `lobbyWorldJoin.ts` as the single authoritative client function for executing world joins with redundancy and concurrent join guards.
+- **Client `join_map` Centralization (`index.tsx`, `GameCanvasBabylon.tsx`):**
+  - Refactored all 6 previous raw `join_map` emission sites (`selectAndLoadCharacter`, `enterStudioAuthorSession`, socket `connect`, `activeCharacterId` effect, PIE toggle, and Babylon gate warps) to route through `joinWorld()`.
+  - Updated `map_joined` handler to reject stale out-of-order join acknowledgements (`data.joinSeq < state.worldJoinSeq`) and advance session state to `joined`.
+- **Server Idempotent Joins & Character Ownership (`handler.go`, `player.go`, `protocol.go`):**
+  - Made `handleJoinMap` fully idempotent: requests from same account + same character + same map + same policy preserve world seat and peers without emitting `player_left`/`player_joined` storms.
+  - Added character ownership enforcement: joins with a character actively controlled by another account are authoritatively rejected.
+  - Switching characters on the same account cleanly removes the previous character seat and establishes the new character seat.
+  - Echoed `joinSeq` in Go `map_joined` payload so correlation is validated on the client.
+- **Reconnect & Session Migration (`handler.go`, `player.go`):**
+  - Wired `UpdateSocket` into `onConnect` session replacement: new sockets from the same account seamlessly take over world seat ownership without triggering teardown.
+  - Hardened `onDisconnect` to only remove players if the disconnecting socket is the currently active socket for the player.
+- **Unit Testing:**
+  - Added test suite `lobbyWorldJoin.test.ts` (6/6 passing).
+  - Added Go test suites in `player_test.go` and `handler_test.go` verifying character ownership lookup, socket migration, policy matching, and idempotent join lifecycle.
+
 ## [2.1.382] - 2026-08-20
 ### Generalized Reversible EditorOps Architecture (Phase 2)
 - **Generalized Command Hierarchy (`editorOps.ts`):**

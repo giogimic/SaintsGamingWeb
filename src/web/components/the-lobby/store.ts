@@ -226,7 +226,13 @@ export interface PendingMove {
   predictedPos: Point;
 }
 
+export type WorldSessionState = 'not_joined' | 'joining' | 'joined' | 'transitioning' | 'disconnected';
+
 export interface GameState {
+  worldSessionState: WorldSessionState;
+  worldJoinSeq: number;
+  setWorldSessionState: (state: WorldSessionState) => void;
+  incrementWorldJoinSeq: () => number;
   logicTiles: Record<number, MapLogicTile>;
   gameMode: GameMode;
   player: PlayerState;
@@ -376,6 +382,17 @@ export const useGameStore = create<GameState>()(
   subscribeWithSelector(
     immer((set, get) => ({
       logicTiles: {},
+      worldSessionState: 'not_joined',
+      worldJoinSeq: 0,
+      setWorldSessionState: (worldState) => set((state) => { state.worldSessionState = worldState; }),
+      incrementWorldJoinSeq: () => {
+        let nextSeq = 1;
+        set((state) => {
+          state.worldJoinSeq += 1;
+          nextSeq = state.worldJoinSeq;
+        });
+        return nextSeq;
+      },
 
       gameMode: 'TITLE_SCREEN',
       player: {
