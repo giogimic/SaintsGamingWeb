@@ -192,3 +192,109 @@ export function eraseTilesInRegion(params: EraseRegionParams): EraseRegionResult
   return { ok: true, cells: erased };
 }
 
+export interface EraseSparseCellsParams {
+  map: PaintableMap | null | undefined;
+  layerIdx: number;
+  cells: Array<{ r: number; c: number }> | Record<string, boolean>;
+}
+
+/**
+ * Erase all non-zero tiles for an arbitrary set of cell coordinates on the target layer,
+ * mutating the grid in-place and returning the list of changed cells for single-op undo history.
+ */
+export function eraseSparseCells(params: EraseSparseCellsParams): EraseRegionResult {
+  const { map, layerIdx, cells } = params;
+  if (!map) return { ok: false, reason: "Map data missing." };
+
+  const target = resolvePaintTarget(map, layerIdx);
+  if (target.kind === "unavailable") return { ok: false, reason: target.reason };
+
+  const grid = target.kind === "logic" ? map.grid : map.tileLayers?.[target.layerIdx]?.grid;
+  if (!Array.isArray(grid)) {
+    return {
+      ok: false,
+      reason: target.kind === "logic" ? "Logic grid is missing." : `Layer ${target.layerIdx} is missing.`,
+    };
+  }
+
+  const cellList: Array<{ r: number; c: number }> = Array.isArray(cells)
+    ? cells
+    : Object.keys(cells)
+        .filter((k) => cells[k])
+        .map((k) => {
+          const [r, c] = k.split(",").map(Number);
+          return { r, c };
+        });
+
+  const erased: ErasedCell[] = [];
+  const visited = new Set<string>();
+
+  for (const { r, c } of cellList) {
+    if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0) continue;
+    const key = `${r},${c}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const row = grid[r];
+    if (!Array.isArray(row) || Object.isFrozen(row) || c >= row.length) continue;
+
+    const prev = row[c] ?? 0;
+    if (prev !== 0) {
+      row[c] = 0;
+      erased.push({
+        layerIdx: target.kind === "logic" ? LOGIC_LAYER_IDX : target.layerIdx,
+        r,
+        c,
+        before: prev,
+        after: 0,
+      });
+    }
+  }
+
+  return { ok: true, cells: erased };
+}
+
+/** Compute bounding box of arbitrary cells. Returns null if empty. */
+export function getCellsBoundingBox(
+  cells: Array<{ r: number; c: number }> | Record<string, boolean>
+): { minR: number; maxR: number; minC: number; maxC: number; width: number; height: number; count: number } | null {
+  const cellList: Array<{ r: number; c: number }> = Array.isArray(cells)
+    ? cells
+    : Object.keys(cells)
+        .filter((k) => cells[k])
+        .map((k) => {
+          const [r, c] = k.split(",").map(Number);
+          return { r, c };
+        });
+
+  if (cellList.length === 0) return null;
+
+  let minR = Infinity;
+  let maxR = -Infinity;
+  let minC = Infinity;
+  let maxC = -Infinity;
+
+  for (const { r, c } of cellList) {
+    if (r < minR) minR = r;
+    if (r > maxR) maxR = r;
+    if (c < minC) minC = c;
+    if (c > maxC) maxC = c;
+  }
+
+  if (!isFinite(minR) || !isFinite(minC)) return null;
+
+  const width = maxC - minC + 1;
+  const height = maxR - minR + 1;
+
+  return {
+    minR,
+    maxR,
+    minC,
+    maxC,
+    width,
+    height,
+    count: cellList.length,
+  };
+}
+
+

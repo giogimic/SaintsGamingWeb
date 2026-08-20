@@ -15,6 +15,7 @@ import {
   BUILTIN_HUD_PRESETS,
   ensureCompletePreset,
 } from './hud/default-presets';
+import type { WorldTarget } from '../../../shared/game/worldTarget';
 
 
 /**
@@ -297,12 +298,27 @@ export interface GameState {
   hydrateMobileControlMode: () => void;
 
   
+  // Floating Window Manager — interfaces open independently of gameMode
+  openWindows: string[];
+  toggleWindow: (windowId: string) => void;
+  closeWindow: (windowId: string) => void;
+  closeAllWindows: () => void;
+  /** Returns the topmost (last-opened) window id, or null */
+  getTopmostWindow: () => string | null;
+
   // Game Data
   fetchLogicTiles: () => Promise<void>;
   activeBattle: BattleState | null;
   setActiveBattle: (battleData: BattleState | null) => void;
   activeEnemies: Record<string, any>;
   setActiveEnemies: (enemies: Record<string, any>) => void;
+  // Spatial Interaction & Targeting (Unified WorldTarget)
+  hoveredTarget: WorldTarget | null;
+  focusedTarget: WorldTarget | null;
+  setHoveredTarget: (target: WorldTarget | null) => void;
+  setFocusedTarget: (target: WorldTarget | null) => void;
+  clearFocusedTarget: () => void;
+
   combatTarget: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string, behavior?: string } | null;
   setCombatTarget: (target: { entityId: string, name: string, hp: number, maxHp: number, isCasting?: boolean, castName?: string, behavior?: string } | null) => void;
   cooldowns: Record<string, number>;
@@ -418,6 +434,7 @@ export const useGameStore = create<GameState>()(
       activeHudPreset: DEFAULT_PRESET_MODERN,
       customHudPresets: [],
       mobileControlMode: 'floating' as MobileControlMode,
+      openWindows: [] as string[],
 
       setMobileControlMode: (mode) => set((state) => {
         state.mobileControlMode = mode;
@@ -431,6 +448,29 @@ export const useGameStore = create<GameState>()(
         if (stored === 'floating' || stored === 'dpad') {
           set((state) => { state.mobileControlMode = stored; });
         }
+      },
+
+      // Floating Window Manager actions
+      toggleWindow: (windowId) => set((state) => {
+        const idx = state.openWindows.indexOf(windowId);
+        if (idx >= 0) {
+          state.openWindows.splice(idx, 1);
+        } else {
+          state.openWindows.push(windowId);
+        }
+      }),
+      closeWindow: (windowId) => set((state) => {
+        const idx = state.openWindows.indexOf(windowId);
+        if (idx >= 0) {
+          state.openWindows.splice(idx, 1);
+        }
+      }),
+      closeAllWindows: () => set((state) => {
+        state.openWindows = [];
+      }),
+      getTopmostWindow: () => {
+        const wins = get().openWindows;
+        return wins.length > 0 ? wins[wins.length - 1] : null;
       },
 
       setActiveHudPreset: (presetOrId) => set((state) => {
@@ -800,6 +840,28 @@ export const useGameStore = create<GameState>()(
       }),
       setActiveEnemies: (enemies) => set((state) => {
         state.activeEnemies = enemies;
+      }),
+      hoveredTarget: null,
+      focusedTarget: null,
+      setHoveredTarget: (target) => set((state) => {
+        state.hoveredTarget = target;
+      }),
+      setFocusedTarget: (target) => set((state) => {
+        state.focusedTarget = target;
+        if (target && target.kind === 'creature') {
+          state.combatTarget = {
+            entityId: target.id || '',
+            name: target.name,
+            hp: target.health?.current || 100,
+            maxHp: target.health?.max || 100,
+          };
+        } else if (!target) {
+          state.combatTarget = null;
+        }
+      }),
+      clearFocusedTarget: () => set((state) => {
+        state.focusedTarget = null;
+        state.combatTarget = null;
       }),
       setCooldown: (abilityId, timestamp) => set((state) => {
         state.cooldowns[abilityId] = timestamp;

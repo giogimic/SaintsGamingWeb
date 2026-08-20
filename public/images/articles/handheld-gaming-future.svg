@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-handheld" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#31104b" />
+    </linearGradient>
+    <linearGradient id="glow-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-handheld)" rx="16" />
+  
+  <!-- Handheld Console Body Outline -->
+  <rect x="220" y="100" width="360" height="200" rx="32" fill="#090d16" stroke="url(#glow-accent)" stroke-width="4" />
+  
+  <!-- Screen -->
+  <rect x="280" y="125" width="240" height="150" rx="8" fill="#020617" stroke="#334155" stroke-width="2" />
+  <rect x="290" y="135" width="220" height="130" rx="4" fill="#0f172a" />
+  <circle cx="400" cy="200" r="28" fill="none" stroke="url(#glow-accent)" stroke-width="3" />
+  <polygon points="392,186 416,200 392,214" fill="#38bdf8" />
+  
+  <!-- Left Controls (D-Pad + Thumbstick) -->
+  <circle cx="252" cy="160" r="14" fill="#1e293b" stroke="#475569" stroke-width="2" />
+  <rect x="249" y="195" width="6" height="20" rx="2" fill="#64748b" />
+  <rect x="242" y="202" width="20" height="6" rx="2" fill="#64748b" />
+  
+  <!-- Right Controls (Action Buttons + Thumbstick) -->
+  <circle cx="548" cy="210" r="14" fill="#1e293b" stroke="#475569" stroke-width="2" />
+  <circle cx="548" cy="150" r="5" fill="#38bdf8" />
+  <circle cx="536" cy="162" r="5" fill="#818cf8" />
+  <circle cx="560" cy="162" r="5" fill="#c084fc" />
+  <circle cx="548" cy="174" r="5" fill="#f43f5e" />
+  
+  <text x="400" y="345" fill="white" font-family="sans-serif" font-size="22" font-weight="bold" text-anchor="middle" letter-spacing="2">NEXT-GEN HANDHELD GAMING</text>
+</svg>

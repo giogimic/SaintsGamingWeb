@@ -47,7 +47,7 @@ export default function SaintsDexOverlay() {
           }
         }
       } catch (err) {
-        console.error('Failed to load Tuxepedia species:', err);
+        console.error('Failed to load SaintsDex species:', err);
       } finally {
         setIsLoading(false);
       }

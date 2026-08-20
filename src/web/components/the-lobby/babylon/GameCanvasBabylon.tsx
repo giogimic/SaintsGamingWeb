@@ -19,6 +19,11 @@ import { resolveEntitySpriteUrl, getAssetAnimationProfile } from '@/shared/game/
 import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { normalizeGates } from '@/shared/game/logicComponents';
 import {
+  evaluateEntityTarget,
+  evaluateTileTarget,
+  type WorldTarget,
+} from '@/shared/game/worldTarget';
+import {
   LOGIC_LAYER_IDX,
   isPaintableLogicId,
   resolvePaintTarget,
@@ -1152,10 +1157,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           if (brushMode === 'select') {
             const isShift = (window.event as MouseEvent)?.shiftKey;
             const isAlt = (window.event as MouseEvent)?.altKey;
+            const isCtrl = (window.event as MouseEvent)?.ctrlKey || (window.event as MouseEvent)?.metaKey;
 
             if (eventType === 'down') {
-              if (isAlt) {
+              if (isAlt || isCtrl) {
                 store.removeSelectedCell(r, c);
+                setSelectionStart({ r, c });
+                setSelectionEnd({ r, c });
                 engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
               } else if (isShift) {
                 store.addSelectedCell(r, c);
@@ -1167,27 +1175,26 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 store.addSelectedCell(r, c);
                 setSelectionStart({ r, c });
                 setSelectionEnd({ r, c });
-                engine.setSelectionPreview(r, c, r, c);
+                engine.setSelectionPreview(r, c, r, c, 'normal');
               }
             } else if (eventType === 'move') {
               if (store.selectionStart) {
                 setSelectionEnd({ r, c });
-                if (isAlt) {
-                  store.removeSelectedBox(store.selectionStart.r, r, store.selectionStart.c, c);
-                  engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
-                } else if (isShift) {
-                  store.addSelectedBox(store.selectionStart.r, r, store.selectionStart.c, c);
-                  engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
-                } else {
-                  store.clearSelectedCells();
-                  store.addSelectedBox(store.selectionStart.r, r, store.selectionStart.c, c);
-                  engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
-                }
+                const mode = isAlt || isCtrl ? 'subtract' : isShift ? 'add' : 'normal';
+                engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c, mode);
               }
             } else if (eventType === 'up') {
               if (store.selectionStart && store.selectionEnd) {
-                if (!isShift && !isAlt && Object.keys(store.selectedCells).length === 0) {
-                  store.addSelectedBox(store.selectionStart.r, store.selectionEnd.r, store.selectionStart.c, store.selectionEnd.c);
+                const r0 = store.selectionStart.r;
+                const r1 = store.selectionEnd.r;
+                const c0 = store.selectionStart.c;
+                const c1 = store.selectionEnd.c;
+                if (isAlt || isCtrl) {
+                  store.removeSelectedBox(r0, r1, c0, c1);
+                } else if (isShift) {
+                  store.addSelectedBox(r0, r1, c0, c1);
+                } else {
+                  store.setSelectionBox(r0, r1, c0, c1);
                 }
                 engine.setMultiSelectionPreview(useEditorStore.getState().selectedCells);
               }
@@ -1342,69 +1349,201 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const store = useEditorStore.getState();
             store.setHoveredTile({ r, c });
             if ((store.brushMode === 'paste' || store.isPasting) && store.tileClipboard) {
-              const clip = store.tileClipboard;
-              engine.setSelectionPreview(r, c, r + clip.height - 1, c + clip.width - 1);
+              engine.setActionPreview(store.tileClipboard, r, c);
             } else if (store.brushMode === 'prefab' && store.activePrefabId) {
               const prefab = store.prefabs.find((p) => p.id === store.activePrefabId);
               if (prefab) {
-                engine.setSelectionPreview(r, c, r + prefab.height - 1, c + prefab.width - 1);
+                engine.setActionPreview(prefab, r, c);
               }
             } else if (store.brushMode === 'select') {
               if (store.selectionStart && !store.selectionEnd) {
                 engine.setSelectionPreview(store.selectionStart.r, store.selectionStart.c, r, c);
               }
+            } else {
+              engine.clearActionPreview();
             }
           },
           onTileLeave: () => {
             useEditorStore.getState().setHoveredTile(null);
+            engine.clearActionPreview();
           },
         });
     } else {
-      // Click-to-move in exploration mode with Pathfinding
-      engine.enableTilePicking((r, c) => {
-        const currentPos = useGameStore.getState().player?.position;
-        if (!currentPos) return;
+      // Spatial Interaction & Targeting in exploration mode
+      engine.enableTilePicking(
+        (r, c, _layerIdx, eventType) => {
+          if (eventType && eventType !== 'down') return;
+          const currentPos = useGameStore.getState().player?.position;
+          if (!currentPos) return;
 
-        const dist = Math.abs(c - currentPos.x) + Math.abs(r - currentPos.y);
-        
-        if (dist === 1) {
-           clearAutoWalk();
-           tryMovePlayerTo(c, r);
-        } else {
-           const isWalkable = (x: number, y: number) => {
-             const logicTiles = useGameStore.getState().logicTiles;
-             const tileId = map.grid[y]?.[x];
-             if (logicTiles[tileId]?.isSolid) return false;
-             
-             const dynamicEntities = useGameStore.getState().mapEntities || [];
-             const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
-             const isDynamicNpc = dynamicEntities.some((e) => Math.round(e.position.x) === x && Math.round(e.position.y) === y && (e.mapId === currentMapId || !e.mapId));
-             if (isStaticNpc || isDynamicNpc) return false;
+          const picked = engine.pickWorldTarget();
+          const dynamicEntities = useGameStore.getState().mapEntities || [];
+          const logicTiles = useGameStore.getState().logicTiles;
 
-             return true;
-           };
+          if (picked && picked.kind === 'entity' && picked.entityId) {
+            let entityObj = dynamicEntities.find((e) => e.id === picked.entityId);
+            if (!entityObj && map.npcs) {
+              const staticNpc = map.npcs.find((n: any) => `npc_${n.id}` === picked.entityId || n.id === picked.entityId);
+              if (staticNpc) {
+                entityObj = {
+                  id: picked.entityId,
+                  name: staticNpc.name || staticNpc.id,
+                  type: 'NPC',
+                  position: { x: staticNpc.x, y: staticNpc.y },
+                  components: {
+                    identity: { id: picked.entityId, name: staticNpc.name || staticNpc.id },
+                    dialogue: { dialogueKey: staticNpc.dialogueKey || 'default' },
+                    interact: { enabled: true },
+                  },
+                } as any;
+              }
+            }
 
-           const path = findPath(currentPos.x, currentPos.y, c, r, mapWidth, mapHeight, isWalkable);
-           if (path.length > 0) {
-             clearAutoWalk();
-             autoWalkPathRef.current = path;
-             
-             // Take first step immediately
-             const nextStep = autoWalkPathRef.current.shift()!;
-             tryMovePlayerTo(nextStep.x, nextStep.y);
-             
-             // Start interval for remaining steps
-             autoWalkIntervalRef.current = setInterval(() => {
-               if (autoWalkPathRef.current.length === 0) {
-                 clearAutoWalk();
-                 return;
-               }
-               const step = autoWalkPathRef.current.shift()!;
-               tryMovePlayerTo(step.x, step.y);
-             }, 250);
-           }
+            if (entityObj) {
+              const worldTarget = evaluateEntityTarget({
+                entity: entityObj as any,
+                playerPos: currentPos,
+              });
+
+              useGameStore.getState().setFocusedTarget(worldTarget);
+              engine.setGroundTargetRing(worldTarget, worldTarget.kind === 'creature' ? 'combat' : 'focus');
+
+              if (worldTarget.interactable && worldTarget.primaryAction) {
+                soundSynth?.playUiClick?.();
+                if (worldTarget.primaryAction.type === 'TALK') {
+                  const payload = worldTarget.primaryAction.payload;
+                  window.dispatchEvent(
+                    new CustomEvent('open_dialogue', {
+                      detail: {
+                        speaker: worldTarget.name,
+                        text: `Greetings, traveler! I am ${worldTarget.name}.`,
+                        dialogueKey: payload?.dialogueKey,
+                      },
+                    })
+                  );
+                }
+                return;
+              }
+            }
+          }
+
+          // Otherwise, ground click / navigation
+          const isWalkable = (x: number, y: number) => {
+            const tileId = map.grid[y]?.[x];
+            if (logicTiles[tileId]?.isSolid) return false;
+            const isStaticNpc = map.npcs?.some((npc: any) => npc.x === x && npc.y === y);
+            const isDynamicNpc = dynamicEntities.some(
+              (e) => Math.round(e.position.x) === x && Math.round(e.position.y) === y && (e.mapId === currentMapId || !e.mapId)
+            );
+            return !isStaticNpc && !isDynamicNpc;
+          };
+
+          const targetIsSolid = !isWalkable(c, r);
+          engine.setDestinationIndicator(c, r, !targetIsSolid);
+
+          if (targetIsSolid) {
+            soundSynth?.playUiClick?.();
+            return;
+          }
+
+          const dist = Math.abs(c - currentPos.x) + Math.abs(r - currentPos.y);
+          if (dist === 1) {
+            clearAutoWalk();
+            tryMovePlayerTo(c, r);
+          } else {
+            const path = findPath(currentPos.x, currentPos.y, c, r, mapWidth, mapHeight, isWalkable);
+            if (path.length > 0) {
+              clearAutoWalk();
+              autoWalkPathRef.current = path;
+              const nextStep = autoWalkPathRef.current.shift()!;
+              tryMovePlayerTo(nextStep.x, nextStep.y);
+              autoWalkIntervalRef.current = setInterval(() => {
+                if (autoWalkPathRef.current.length === 0) {
+                  clearAutoWalk();
+                  engine.clearDestinationIndicator();
+                  return;
+                }
+                const step = autoWalkPathRef.current.shift()!;
+                tryMovePlayerTo(step.x, step.y);
+              }, 250);
+            }
+          }
+        },
+        {
+          onTileHover: (r, c) => {
+            const currentPos = useGameStore.getState().player?.position;
+            if (!currentPos) return;
+
+            const picked = engine.pickWorldTarget();
+            const dynamicEntities = useGameStore.getState().mapEntities || [];
+            const logicTiles = useGameStore.getState().logicTiles;
+
+            if (picked && picked.kind === 'entity' && picked.entityId) {
+              let entityObj = dynamicEntities.find((e) => e.id === picked.entityId);
+              if (!entityObj && map.npcs) {
+                const staticNpc = map.npcs.find((n: any) => `npc_${n.id}` === picked.entityId || n.id === picked.entityId);
+                if (staticNpc) {
+                  entityObj = {
+                    id: picked.entityId,
+                    name: staticNpc.name || staticNpc.id,
+                    type: 'NPC',
+                    position: { x: staticNpc.x, y: staticNpc.y },
+                    components: {
+                      identity: { id: picked.entityId, name: staticNpc.name || staticNpc.id },
+                      dialogue: { dialogueKey: staticNpc.dialogueKey || 'default' },
+                      interact: { enabled: true },
+                    },
+                  } as any;
+                }
+              }
+
+              if (entityObj) {
+                const target = evaluateEntityTarget({
+                  entity: entityObj as any,
+                  playerPos: currentPos,
+                });
+                useGameStore.getState().setHoveredTarget(target);
+                engine.setGroundTargetRing(target, target.kind === 'creature' ? 'combat' : 'hover');
+                engine.clearDestinationIndicator();
+                return;
+              }
+            }
+
+            // Tile hover
+            const tileId = map.grid[r]?.[c];
+            const isSolid = Boolean(logicTiles[tileId]?.isSolid);
+            const normalizedGates = normalizeGates(map.gates);
+            const gate = normalizedGates.find((g) => g.position.x === c && g.position.y === r);
+            const tileTarget = evaluateTileTarget({
+              r,
+              c,
+              playerPos: currentPos,
+              isSolid,
+              warpGate: gate,
+            });
+
+            useGameStore.getState().setHoveredTarget(tileTarget);
+            engine.setDestinationIndicator(c, r, !isSolid);
+
+            const focused = useGameStore.getState().focusedTarget;
+            if (focused) {
+              engine.setGroundTargetRing(focused, focused.kind === 'creature' ? 'combat' : 'focus');
+            } else {
+              engine.setGroundTargetRing(null);
+            }
+          },
+          onTileLeave: () => {
+            useGameStore.getState().setHoveredTarget(null);
+            engine.clearDestinationIndicator();
+            const focused = useGameStore.getState().focusedTarget;
+            if (focused) {
+              engine.setGroundTargetRing(focused, focused.kind === 'creature' ? 'combat' : 'focus');
+            } else {
+              engine.setGroundTargetRing(null);
+            }
+          },
         }
-      });
+      );
     }
 
     return () => {
@@ -1412,6 +1551,43 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       cleanupPan();
     };
   }, [isDevEditorOpen, activeBrushTileId, mapData, activeLayerIdx]);
+
+  // Contextual interaction key listener ('E' or 'Space')
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+
+      if (e.code === 'KeyE' || e.code === 'Space') {
+        const state = useGameStore.getState();
+        const target = state.focusedTarget || state.hoveredTarget;
+        if (target && target.interactable && target.primaryAction && target.primaryAction.enabled) {
+          e.preventDefault();
+          soundSynth?.playUiClick?.();
+          const action = target.primaryAction;
+          if (action.type === 'TALK') {
+            window.dispatchEvent(
+              new CustomEvent('open_dialogue', {
+                detail: {
+                  speaker: target.name,
+                  text: `Greetings! How may I assist you today?`,
+                  dialogueKey: action.payload?.dialogueKey,
+                },
+              })
+            );
+          } else if (action.type === 'WARP') {
+            const gate = action.payload?.warpGate as any;
+            if (gate?.targetMapId) {
+              state.changeMap(gate.targetMapId, { x: gate.targetX || 12, y: gate.targetY || 12 });
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
      // Sync brush radius and modes separately so we don't re-bind tile picking on every brush size/mode change
     useEffect(() => {

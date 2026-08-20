@@ -22,8 +22,38 @@ const PlayerVitalsHud = dynamic(() => import('./hud/PlayerVitalsHud'));
 const ClassicPanel = dynamic(() => import('./ClassicPanel'));
 const Hotbar = dynamic(() => import('./Hotbar'));
 const DraggablePanel = dynamic(() => import('./DraggablePanel'));
+
+// Floating Window interfaces
+const InventoryWindow = dynamic(
+  () => import('./windows/InventoryWindow').then((m) => m.InventoryWindow),
+  { ssr: false }
+);
+const SkillsWindow = dynamic(
+  () => import('./windows/SkillsWindow').then((m) => m.SkillsWindow),
+  { ssr: false }
+);
+const EquipmentWindow = dynamic(
+  () => import('./windows/EquipmentWindow').then((m) => m.EquipmentWindow),
+  { ssr: false }
+);
+const QuestLogWindow = dynamic(
+  () => import('./windows/QuestLogWindow').then((m) => m.QuestLogWindow),
+  { ssr: false }
+);
+const GtcWindow = dynamic(
+  () => import('./windows/GtcWindow').then((m) => m.GtcWindow),
+  { ssr: false }
+);
 const LobbyHudDockLayout = dynamic(
   () => import('./hud/LobbyHudDockLayout').then((m) => m.LobbyHudDockLayout),
+  { ssr: false }
+);
+const ContextInteractionBadge = dynamic(
+  () => import('./hud/ContextInteractionBadge').then((m) => m.ContextInteractionBadge),
+  { ssr: false }
+);
+const TargetUnitFrame = dynamic(
+  () => import('./hud/TargetUnitFrame').then((m) => m.TargetUnitFrame),
   { ssr: false }
 );
 const GameTitleScreen = dynamic(() => import('./GameTitleScreen'));
@@ -1581,6 +1611,12 @@ export default function TheLobby({
           setIsOptionsOpen(false);
           return;
         }
+        // Close topmost floating window first
+        const topWindow = store.getTopmostWindow();
+        if (topWindow) {
+          store.closeWindow(topWindow);
+          return;
+        }
         // Sub-mode open: Escape closes back to EXPLORING
         if (store.gameMode !== 'EXPLORING' && store.gameMode !== 'BATTLE') {
           store.setGameMode('EXPLORING');
@@ -1599,11 +1635,9 @@ export default function TheLobby({
       const toggleMode = (targetMode: any) => {
         store.setGameMode(store.gameMode === targetMode ? 'EXPLORING' : targetMode);
       };
-      if (key === 'c') store.setGameMode('CHARACTER_CREATOR');
-      // Bare `e` is interact in playtest (canvas). Studio Editor↔Play is Ctrl+E only.
-      else if (key === 'i') toggleMode('INVENTORY');
-      else if (key === 'k') toggleMode('SKILLS');
-      else if (key === 'p') toggleMode('PARTY');
+      // Interface windows use floating window system (handled by ClassicPanel hotkeys)
+      // i, k, c, l are handled by ClassicPanel's own keydown listener
+      if (key === 'p') toggleMode('PARTY');
       else if (key === 'x') toggleMode('DEX');
       else if (key === 'b') toggleMode('ACHIEVEMENTS');
       else if (key === 'y') socketRef.current?.emit('party_invite_accept');
@@ -1806,8 +1840,21 @@ export default function TheLobby({
         />
 
         {/* Modular Dock-Based In-Game HUD */}
-        {((['EXPLORING', 'INVENTORY', 'SKILLS', 'EQUIPMENT', 'QUESTS', 'GTC', 'DIALOG'].includes(gameMode) && showGameplayHud) || isEditingInterface) && (
+        {((['EXPLORING', 'DIALOG'].includes(gameMode) && showGameplayHud) || isEditingInterface) && (
           <LobbyHudDockLayout enableStudio={enableStudio} />
+        )}
+
+        {/* Floating Interface Windows — independent of gameMode */}
+        {gameMode === 'EXPLORING' && (
+          <>
+            <TargetUnitFrame />
+            <ContextInteractionBadge />
+            <InventoryWindow />
+            <SkillsWindow />
+            <EquipmentWindow />
+            <QuestLogWindow />
+            <GtcWindow />
+          </>
         )}
 
       </div>

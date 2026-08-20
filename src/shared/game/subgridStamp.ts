@@ -112,7 +112,7 @@ export function extractSubgridFromMap(params: ExtractSubgridParams): TileClipboa
 
 export interface ExtractSparseCellsParams {
   map: PaintableMap | null | undefined;
-  cells: Array<{ r: number; c: number }>;
+  cells: Array<{ r: number; c: number }> | Record<string, boolean>;
   activeLayerIdx?: number;
 }
 
@@ -122,7 +122,18 @@ export interface ExtractSparseCellsParams {
  */
 export function extractSparseCellsFromMap(params: ExtractSparseCellsParams): TileClipboardData | null {
   const { map, cells, activeLayerIdx = 0 } = params;
-  if (!map || !Array.isArray(cells) || cells.length === 0) return null;
+  if (!map || !cells) return null;
+
+  const cellList: Array<{ r: number; c: number }> = Array.isArray(cells)
+    ? cells
+    : Object.keys(cells)
+        .filter((k) => cells[k])
+        .map((k) => {
+          const [r, c] = k.split(',').map(Number);
+          return { r, c };
+        });
+
+  if (cellList.length === 0) return null;
 
   let minR = Infinity;
   let maxR = -Infinity;
@@ -130,7 +141,7 @@ export function extractSparseCellsFromMap(params: ExtractSparseCellsParams): Til
   let maxC = -Infinity;
 
   const cellLookup = new Set<string>();
-  cells.forEach(({ r, c }) => {
+  cellList.forEach(({ r, c }) => {
     if (r < minR) minR = r;
     if (r > maxR) maxR = r;
     if (c < minC) minC = c;
@@ -149,7 +160,7 @@ export function extractSparseCellsFromMap(params: ExtractSparseCellsParams): Til
   if (Array.isArray(map.tileLayers)) {
     map.tileLayers.forEach((layer, layerIdx) => {
       if (!Array.isArray(layer.grid)) return;
-      for (const { r, c } of cells) {
+      for (const { r, c } of cellList) {
         const row = layer.grid[r];
         if (!Array.isArray(row)) continue;
         const tileId = row[c];
@@ -167,7 +178,7 @@ export function extractSparseCellsFromMap(params: ExtractSparseCellsParams): Til
 
   // Extract logic grid for matched cells
   if (Array.isArray(map.grid)) {
-    for (const { r, c } of cells) {
+    for (const { r, c } of cellList) {
       const row = map.grid[r];
       if (!Array.isArray(row)) continue;
       const tileId = row[c];

@@ -25,9 +25,15 @@ import {
   type EditorOpStack,
   type PaintedCell,
 } from '@/shared/game/editorOps';
-import { eraseTilesInRegion, type PaintableMap } from '@/shared/game/tilePaint';
+import {
+  eraseTilesInRegion,
+  eraseSparseCells,
+  getCellsBoundingBox,
+  type PaintableMap,
+} from '@/shared/game/tilePaint';
 import {
   extractSubgridFromMap,
+  extractSparseCellsFromMap,
   stampClipboardOntoMap,
   type TileClipboardData,
   type PasteMode,
@@ -166,9 +172,12 @@ interface EditorState {
   addSelectedCell: (r: number, c: number) => void;
   removeSelectedCell: (r: number, c: number) => void;
   toggleSelectedCell: (r: number, c: number) => void;
+  setSelectionBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   addSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   removeSelectedBox: (minR: number, maxR: number, minC: number, maxC: number) => void;
   clearSelectedCells: () => void;
+  getSelectedBounds: () => { minR: number; maxR: number; minC: number; maxC: number; width: number; height: number; count: number } | null;
+  getSelectedCount: () => number;
   clickedTile: { r: number; c: number } | null;
   hoveredTile: { r: number; c: number } | null;
   lastPaintedTile: { r: number; c: number } | null;
@@ -784,6 +793,12 @@ export const useEditorStore = create<EditorState>()(
         }),
       setHoveredTile: (tile) =>
         set((state) => {
+          if (
+            (state.hoveredTile === null && tile === null) ||
+            (state.hoveredTile && tile && state.hoveredTile.r === tile.r && state.hoveredTile.c === tile.c)
+          ) {
+            return;
+          }
           state.hoveredTile = tile;
         }),
       setLastPaintedTile: (tile) =>
@@ -851,6 +866,22 @@ export const useEditorStore = create<EditorState>()(
             state.selectedCells[key] = true;
           }
         }),
+      setSelectionBox: (minR, maxR, minC, maxC) =>
+        set((state) => {
+          const r0 = Math.min(minR, maxR);
+          const r1 = Math.max(minR, maxR);
+          const c0 = Math.min(minC, maxC);
+          const c1 = Math.max(minC, maxC);
+          const next: Record<string, boolean> = {};
+          for (let r = r0; r <= r1; r++) {
+            for (let c = c0; c <= c1; c++) {
+              next[`${r},${c}`] = true;
+            }
+          }
+          state.selectedCells = next;
+          state.selectionStart = { r: r0, c: c0 };
+          state.selectionEnd = { r: r1, c: c1 };
+        }),
       addSelectedBox: (minR, maxR, minC, maxC) =>
         set((state) => {
           const r0 = Math.min(minR, maxR);
@@ -881,6 +912,35 @@ export const useEditorStore = create<EditorState>()(
           state.selectionStart = null;
           state.selectionEnd = null;
         }),
+      getSelectedBounds: () => {
+        const cells = get().selectedCells;
+        const bounds = getCellsBoundingBox(cells);
+        if (bounds) return bounds;
+        const start = get().selectionStart;
+        const end = get().selectionEnd;
+        if (start && end) {
+          const minR = Math.min(start.r, end.r);
+          const maxR = Math.max(start.r, end.r);
+          const minC = Math.min(start.c, end.c);
+          const maxC = Math.max(start.c, end.c);
+          return {
+            minR,
+            maxR,
+            minC,
+            maxC,
+            width: maxC - minC + 1,
+            height: maxR - minR + 1,
+            count: (maxR - minR + 1) * (maxC - minC + 1),
+          };
+        }
+        return null;
+      },
+      getSelectedCount: () => {
+        const keys = Object.keys(get().selectedCells);
+        if (keys.length > 0) return keys.length;
+        const bounds = get().getSelectedBounds();
+        return bounds ? bounds.count : 0;
+      },
       markMapDirty: () =>
         set((state) => {
           state.mapDirty = true;
@@ -984,35 +1044,42 @@ export const useEditorStore = create<EditorState>()(
 
       deleteSelectionTiles: (map, engine, targetLayerIdx) => {
         const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const hasSparseSelection = Object.keys(selectedCells).length > 0;
         const start = get().selectionStart;
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
 
-        let minR: number, maxR: number, minC: number, maxC: number;
-        if (start && end) {
-          minR = Math.min(start.r, end.r);
-          maxR = Math.max(start.r, end.r);
-          minC = Math.min(start.c, end.c);
-          maxC = Math.max(start.c, end.c);
+        if (!map) return { count: 0, layerIdx, error: 'No active map.' };
+
+        let eraseResult;
+        if (hasSparseSelection) {
+          eraseResult = eraseSparseCells({
+            map,
+            layerIdx,
+            cells: selectedCells,
+          });
+        } else if (start && end) {
+          eraseResult = eraseTilesInRegion({
+            map,
+            layerIdx,
+            minR: Math.min(start.r, end.r),
+            maxR: Math.max(start.r, end.r),
+            minC: Math.min(start.c, end.c),
+            maxC: Math.max(start.c, end.c),
+          });
         } else if (hovered) {
-          minR = hovered.r;
-          maxR = hovered.r;
-          minC = hovered.c;
-          maxC = hovered.c;
+          eraseResult = eraseTilesInRegion({
+            map,
+            layerIdx,
+            minR: hovered.r,
+            maxR: hovered.r,
+            minC: hovered.c,
+            maxC: hovered.c,
+          });
         } else {
           return { count: 0, layerIdx, error: 'No selection or tile to delete.' };
         }
-
-        if (!map) return { count: 0, layerIdx, error: 'No active map.' };
-
-        const eraseResult = eraseTilesInRegion({
-          map,
-          layerIdx,
-          minR,
-          maxR,
-          minC,
-          maxC,
-        });
 
         if (!eraseResult.ok) {
           return { count: 0, layerIdx, error: eraseResult.reason };
@@ -1027,6 +1094,7 @@ export const useEditorStore = create<EditorState>()(
             });
             state.mapDirty = true;
             state.hasUnsavedChanges = true;
+            state.selectedCells = {};
             state.selectionStart = null;
             state.selectionEnd = null;
           });
@@ -1047,6 +1115,7 @@ export const useEditorStore = create<EditorState>()(
           }
         } else {
           set((state) => {
+            state.selectedCells = {};
             state.selectionStart = null;
             state.selectionEnd = null;
           });
@@ -1062,35 +1131,42 @@ export const useEditorStore = create<EditorState>()(
 
       copySelection: (map, targetLayerIdx) => {
         const layerIdx = targetLayerIdx ?? get().activeLayerIdx;
+        const selectedCells = get().selectedCells;
+        const hasSparseSelection = Object.keys(selectedCells).length > 0;
         const start = get().selectionStart;
         const end = get().selectionEnd;
         const hovered = get().hoveredTile;
 
-        let minR: number, maxR: number, minC: number, maxC: number;
-        if (start && end) {
-          minR = Math.min(start.r, end.r);
-          maxR = Math.max(start.r, end.r);
-          minC = Math.min(start.c, end.c);
-          maxC = Math.max(start.c, end.c);
+        if (!map) return { ok: false, error: 'No active map.' };
+
+        let clipboard: TileClipboardData | null = null;
+        if (hasSparseSelection) {
+          clipboard = extractSparseCellsFromMap({
+            map,
+            cells: selectedCells,
+            activeLayerIdx: layerIdx,
+          });
+        } else if (start && end) {
+          clipboard = extractSubgridFromMap({
+            map,
+            minR: Math.min(start.r, end.r),
+            maxR: Math.max(start.r, end.r),
+            minC: Math.min(start.c, end.c),
+            maxC: Math.max(start.c, end.c),
+            activeLayerIdx: layerIdx,
+          });
         } else if (hovered) {
-          minR = hovered.r;
-          maxR = hovered.r;
-          minC = hovered.c;
-          maxC = hovered.c;
+          clipboard = extractSubgridFromMap({
+            map,
+            minR: hovered.r,
+            maxR: hovered.r,
+            minC: hovered.c,
+            maxC: hovered.c,
+            activeLayerIdx: layerIdx,
+          });
         } else {
           return { ok: false, error: 'Select an area or hover a tile first.' };
         }
-
-        if (!map) return { ok: false, error: 'No active map.' };
-
-        const clipboard = extractSubgridFromMap({
-          map,
-          minR,
-          maxR,
-          minC,
-          maxC,
-          activeLayerIdx: layerIdx,
-        });
 
         if (!clipboard) return { ok: false, error: 'Failed to extract selection.' };
 
@@ -1127,8 +1203,20 @@ export const useEditorStore = create<EditorState>()(
         }
 
         const mode = customMode ?? get().pasteMode ?? 'overlay';
-        const r = targetR ?? get().hoveredTile?.r ?? activeClip.sourceOrigin.r ?? 0;
-        const c = targetC ?? get().hoveredTile?.c ?? activeClip.sourceOrigin.c ?? 0;
+        const bounds = get().getSelectedBounds();
+        
+        let r = targetR;
+        let c = targetC;
+        if (typeof r !== 'number' || typeof c !== 'number') {
+          if (bounds) {
+            r = bounds.minR;
+            c = bounds.minC;
+          } else {
+            r = get().hoveredTile?.r ?? activeClip.sourceOrigin.r ?? 0;
+            c = get().hoveredTile?.c ?? activeClip.sourceOrigin.c ?? 0;
+          }
+        }
+
         const activeLayer = get().activeLayerIdx;
 
         const stampRes = stampClipboardOntoMap({
