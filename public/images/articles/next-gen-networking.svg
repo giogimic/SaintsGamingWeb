@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-net" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#030712" />
+      <stop offset="50%" stop-color="#0c1e33" />
+      <stop offset="100%" stop-color="#022c22" />
+    </linearGradient>
+    <linearGradient id="net-pulse" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#3b82f6" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="400" fill="url(#bg-net)" rx="16" />
+  
+  <!-- Server / Router Node Center -->
+  <rect x="260" y="110" width="280" height="150" rx="16" fill="#0b1324" stroke="url(#net-pulse)" stroke-width="3" />
+  
+  <!-- Network Speed Signal Waves -->
+  <path d="M 330 185 Q 400 135 470 185" fill="none" stroke="#06b6d4" stroke-width="4" stroke-linecap="round" />
+  <path d="M 350 200 Q 400 165 450 200" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+  <circle cx="400" cy="215" r="8" fill="#3b82f6" />
+  
+  <!-- Low Ping Nodes & Connections -->
+  <line x1="160" y1="185" x2="260" y2="185" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4" />
+  <circle cx="150" cy="185" r="14" fill="#0f172a" stroke="#10b981" stroke-width="2" />
+  <circle cx="150" cy="185" r="4" fill="#10b981" />
+
+  <line x1="540" y1="185" x2="640" y2="185" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4 4" />
+  <circle cx="650" cy="185" r="14" fill="#0f172a" stroke="#06b6d4" stroke-width="2" />
+  <circle cx="650" cy="185" r="4" fill="#06b6d4" />
+
+  <!-- Speed & Ping Metrics -->
+  <rect x="330" y="130" width="140" height="24" rx="6" fill="#042f2e" stroke="#14b8a6" stroke-width="1" />
+  <text x="400" y="146" fill="#2dd4bf" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle">WI-FI 7 • 1ms PING</text>
+  
+  <text x="400" y="345" fill="white" font-family="sans-serif" font-size="22" font-weight="bold" text-anchor="middle" letter-spacing="2">NEXT-GEN MULTIPLAYER NETWORKING</text>
+</svg>
