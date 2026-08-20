@@ -165,7 +165,29 @@ export function queryInteractions(
     });
   }
 
-  // 7. INSPECT (Universal Fallback)
+  // 7. SHOP (Entity-bound Merchant or Region-bound Counter)
+  if (components.shop || (components as any).shopId || (target as any).shopId) {
+    const shopData = (components.shop as Record<string, unknown>) || {};
+    const shopId =
+      (shopData.shopId as string) ||
+      ((components as any).shopId as string) ||
+      ((target as any).shopId as string) ||
+      'general_store';
+    const isRegion = Boolean((target as any).isRegion || shopData.isRegion);
+    options.push({
+      id: `${target.id}_shop`,
+      type: 'SHOP',
+      label: isRegion ? 'Browse Counter' : `Shop with ${components.identity?.name || 'Merchant'}`,
+      primary: true,
+      enabled: true,
+      payload: {
+        shopId,
+        isRegion,
+      },
+    });
+  }
+
+  // 8. INSPECT (Universal Fallback)
   if (components.identity) {
     options.push({
       id: `${target.id}_inspect`,
