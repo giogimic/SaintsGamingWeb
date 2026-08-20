@@ -1,3 +1,15 @@
+## [2.1.390] - 2026-08-20
+### Modern Drafting Artboard Frame & Precise Viewport Centering
+- **Precision Studio Artboard Frame (`BabylonEngine.ts`, `spatialLayers.ts`):**
+  - Replaced wireframe box & 3D corner cubes with a modern drafting artboard frame.
+  - Raised `SPATIAL_LAYER_ALTITUDES.EDITOR_GUIDES` to `0.085` so boundary frames cleanly overlay multi-layer terrain and painted heights without clipping.
+  - Added primary cyber amber `#f59e0b` outer border and soft cyan `#38bdf8` blueprint inset line.
+  - Added precision drafting L-bracket crop marks on all 4 corners and cardinal midpoint orientation ticks (North arrow notch, South/East/West markers).
+  - Added subtle obsidian/blueprint canvas artboard underlay plane distinguishing the map area from the void.
+- **Accurate Viewport Centering & Tile Coordinate Pan (`BabylonEngine.ts`):**
+  - Updated `fitMapInView()` to snap camera to the true mathematical center `(-0.5 * s, 0.5 * s)` instead of unaligned `(0, 0)`.
+  - Corrected `panEditorCameraToTile` to map 1:1 with tile quad centers.
+
 ## [2.1.389] - 2026-08-20
 ### Studio Camera Lifecycle & Immediate Skirt Rebuilding
 - **Studio Skirt Rebuilding & Editor Mode Synchronisation (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`):**
