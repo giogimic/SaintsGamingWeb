@@ -1,3 +1,67 @@
+## [2.1.372] - 2026-08-19
+### Unified & Streamlined
+- **Canonical Elemental System B Matrix (Bible 25 §3.7 & Bible 11 §3):**
+  - Standardized on the canonical 10-element matrix (`normal`, `fire`, `water`, `grass`, `electric`, `ice`, `earth`, `wind`, `shadow`, `holy`) across **BOTH** Real-Time MMO Hero Battles and Turn-Based Saints Buddy Battles.
+  - Bridged and deprecated the duplicate 8-element cyberpunk matrix in `elementMatchups.ts`.
+  - Updated `typeChartEngine.ts` to provide universal case-insensitive and backward-compatible alias resolution.
+- **Combat Engine Anti-Cheat & Single Source of Truth (Bible 02 & 07):**
+  - Unified damage calculations into `src/shared/game/combat/combatBalanceEngine.ts`.
+  - Routed client-side visual hit calculations in `combat.ts` to the authoritative shared formula.
+- **Dynamic Database Registries:**
+  - Added dynamic memory caching and hot-registration for items (`registerDynamicItem`) and quests (`registerDynamicQuest`) in lobby data registries, enabling instant hot-reloading when creating items/quests in Saints Studio without code modifications.
+- **Cleanup:**
+  - Removed orphaned root scratch files.
+
+## [2.1.371] - 2026-08-19
+### Added & Automated
+- **Systemd Service Audit & Orphan Remediation Tooling (`scripts/audit-systemd.sh`):**
+  - Added dedicated CLI audit tool for detecting duplicate units (`saints.service`, `saints-web.service`, `saintsgaming.service`, `saints-next.service`), orphaned unit files with invalid working directories, and host vs. Docker container port collisions.
+  - Implemented automated modes: `--audit`, `--clean`, `--dry-run`, and `--canonical`.
+  - Added canonical systemd service templates (`scripts/systemd/saints-web.service` and `scripts/systemd/saints-go-mmo.service`).
+  - Integrated systemd service detection and clean decommissioning into `scripts/setup.sh` and `scripts/update.sh`.
+
+## [2.1.370] - 2026-08-19
+### Added & Redesigned
+- **Modular LPC Character Architecture & Ingestion (Bible 35):**
+  - **Layered Sprite Compositing (`CharacterSpritePreview.tsx`):** Added multi-layer stack rendering (`layers: string[]`), compositing base bodies, capes, headgear, and armor layers using precise sprite frame offset calculation.
+  - **Archetype vs. Appearance Decoupling:** Decoupled class archetypes from visual character models in `CharacterCreator.tsx` by utilizing SVG class icons (`Swords`, `Wand2`, `Crosshair`, `Heart`, `Zap`, `Shield`).
+  - **Modular LPC Customization Deck:** Re-architected Step 3 in `CharacterCreator.tsx` into a tabbed modular designer with Base Body selection, Capes, Headgear/Hoods/Helms, Armor/Gear, and All Catalog sprites.
+  - **Persistent Layer State:** Encoded composite layer configuration (`appearance` and `customization.layers`) into `PlayerState` on character creation, automatically rendering multi-layer characters in `CharacterSelector`.
+- **Strict Web Setup Lockout Flow:**
+  - Game interface strictly locks out public players and displays "Currently Offline" when setup has not run (`isSetupCompleted === false`).
+  - World developer accounts are greeted with a dedicated "Proceed to Realm Setup" portal linking directly to the Studio setup workflow.
+
+## [2.1.369] - 2026-08-19
+### Added & Redesigned
+- **In-Game MMO HUD Ergonomic & Cyber Aesthetic Overhaul:**
+  - **Player Vitals HUD (`PlayerVitalsHud.tsx`):** Overhauled with dark neo-cyber glass styling, character sprite avatar, dynamic HP bar with critical low-health heartbeat pulse (<25%), MP energy bar, XP progress bar, active Saint Blessing/perk badges, and gold coin counter.
+  - **Target Unit Frame (`target-frame.tsx`):** Modernized with entity classification badges (`PLAYER`, `WILD`, `NPC`), animated health bar with damage decay, cast progress bar with spell names, and quick action buttons (Party Invite, Duel Challenge, Whisper Comms, Clear Target).
+  - **Tactical Action Hotbar (`Hotbar.tsx`):** Overhauled with numeric/keybind tags (`1`–`5`), radial and vertical cooldown sweeps with fractional timers (`1.4s`), inventory stack counter on consumable items, ability type glows, and audio synthesis cues (`soundSynth`).
+  - **MiniMap Radar (`MiniMapRadar.tsx`):** Upgraded with glowing compass cardinal ticks (N, S, E, W), dynamic entity radar blips (Party = Cyan, Players = Gold, NPCs = Cyan, Wilds = Rose), real-time map name, channel, and Pos X/Y coordinates readout.
+  - **Classic Utility Ribbon (`ClassicPanel.tsx`):** Upgraded with dark neo-cyber docked tray for Inventory (`I`), Skills (`K`), Equipment (`C`), Quests (`L`), and GTC (`G`), featuring glowing active tabs and global keyboard shortcuts.
+
+## [2.1.368] - 2026-08-19
+### Added & Redesigned
+- **Character Creator & Character Selector Full UI Redesign:**
+  - Redesigned `CharacterSelector` (`/lobby`) with dark neo-cyber synthwave glass aesthetic matching Saints Landing Page and Saints Studio (`#0d0221`, glowing neon cyan/magenta/gold accents, polygon clip paths, animated horizon grid, and digital snow particles).
+  - Integrated a dedicated dual-panel command deck in Character Selector with real-time **Hall of Champions Leaderboard** (Top Operatives) and **Global Comms / Live Lobby Chat**, allowing players to chat and view rankings prior to entering the world.
+  - Added illuminated character sprite pedestals, HP meters, coin pouch metrics, active perk badges, and a custom cyber-styled Operative Deletion confirmation modal.
+  - Re-architected `CharacterCreator` into a 5-step Operative Forge (Archetype Selection, Callsign Identity with generator, Appearance/Sprite Picker with pagination and custom uploaded asset support, Saint Blessing/Perk selection, and Dossier Review & Deploy).
+  - Integrated comprehensive sound effects via `soundSynth` across creation, selection, navigation, and modal actions.
+- **Dedicated Game Offline Gating & Admin Setup Flow:**
+  - Added `GameOfflineScreen.tsx` for clean status communication and lockout when fresh installs or maintenance modes are active (`isSetupCompleted === false`).
+  - Restricted the Realm Setup Wizard strictly to authenticated Server Administrators / Developers (`permissionLevel >= 200` or first user).
+  - Removed intrusive public "Realm Setup Required" banners and buttons from player title screens.
+  - Directed admins to Studio (`/studio`) upon completing setup.
+
+## [2.1.367] - 2026-08-19
+### Added & Changed
+- **Starter Heroes LPC Overhaul & Dev-Controlled Active Realm:**
+  - Overhauled Starter Hero presets in Character Creator (`/lobby`) to use official LPC humanoid hero sprites (`evil-berserker-bloodaxe-male`, `good-paladin-templar-female`, `good-wizard-archmage-male`, `evil-assassin-nightstalker-female`, `good-ranger-grovekeeper-female`, `good-cleric-highpriestess-female`) for the core classes while preserving legacy Tuxemon archetypes (`monk`, `spyder_tamer`).
+  - Removed user-facing world/realm switcher dropdown in Character Creator, enforcing server-authoritative active realm settings.
+  - Decoupled `upsertStarterHero` from hardcoded `'tuxemon'` fallback strings, dynamically deriving active game profiles from `prisma.gameConfig`.
+  - Upgraded Asset Manager search and asset pack installer to enforce dev-defined flags (`showInCharacterCreation`, `isPlayable`, `playable`, `character_creator`) during import and filtering.
+
 ## [2.1.366] - 2026-08-19
 ### Fixed
 - **Universal LPC Sprite Resolution & Dynamic Row Calculation:**

@@ -1,7 +1,23 @@
 /**
- * Saints Gaming — Canonical Elemental Type Chart Engine (Bible 25 §3.7)
- * Defines the canonical attacker -> defender multiplier matrix for elemental combat and creature battles.
+ * Saints Gaming — Canonical Elemental Type Chart Engine (Bible 25 §3.7 & Bible 11 §3)
+ * Defines the canonical attacker -> defender multiplier matrix for both:
+ * 1. Real-Time MMO Hero Battles (monsters, bosses, player abilities, equipment)
+ * 2. Instanced Turn-Based Saints Buddy Battles (creatures & collection)
  */
+
+export const CANONICAL_ELEMENT_TYPES = [
+  'normal',
+  'fire',
+  'water',
+  'grass',
+  'electric',
+  'ice',
+  'earth',
+  'wind',
+  'shadow',
+  'holy',
+  'none',
+] as const;
 
 export type ElementType =
   | 'normal'
@@ -13,12 +29,64 @@ export type ElementType =
   | 'earth'
   | 'wind'
   | 'shadow'
-  | 'holy';
+  | 'holy'
+  | 'none'
+  | 'None'
+  | 'Solar'
+  | 'Hydro'
+  | 'Bio'
+  | 'Volt'
+  | 'Geo'
+  | 'Cryo'
+  | 'Aero'
+  | 'Cyber';
 
 export interface TypeChartDef {
   id: string;
   name: string;
   matrix: Record<string, Record<string, number>>;
+}
+
+/**
+ * Normalizes any element name (including legacy aliases) to a canonical lower-case key.
+ */
+export function normalizeElementType(type: string | undefined | null): string {
+  if (!type) return 'none';
+  const clean = type.trim().toLowerCase();
+  switch (clean) {
+    case 'solar':
+      return 'fire';
+    case 'hydro':
+      return 'water';
+    case 'bio':
+    case 'wood':
+    case 'plant':
+      return 'grass';
+    case 'volt':
+    case 'electricity':
+      return 'electric';
+    case 'geo':
+      return 'earth';
+    case 'cryo':
+    case 'frost':
+      return 'ice';
+    case 'aero':
+    case 'sky':
+    case 'air':
+      return 'wind';
+    case 'cyber':
+    case 'dark':
+      return 'shadow';
+    case 'sacred':
+    case 'light':
+    case 'aether':
+      return 'holy';
+    case '':
+    case 'none':
+      return 'none';
+    default:
+      return clean;
+  }
 }
 
 export const CANONICAL_TYPE_CHART: TypeChartDef = {
@@ -86,14 +154,16 @@ export const CANONICAL_TYPE_CHART: TypeChartDef = {
  * Calculates the elemental damage multiplier given attacking type and defending type(s).
  */
 export function getElementalMultiplier(
-  attackType: string,
-  defendTypes: string | string[],
+  attackType: ElementType | string,
+  defendTypes: ElementType | string | (ElementType | string)[],
   typeChart: TypeChartDef = CANONICAL_TYPE_CHART
 ): number {
-  const atk = attackType.toLowerCase();
+  const atk = normalizeElementType(attackType);
+  if (atk === 'none') return 1.0;
+
   const defs = Array.isArray(defendTypes)
-    ? defendTypes.map((d) => d.toLowerCase())
-    : [defendTypes.toLowerCase()];
+    ? defendTypes.map((d) => normalizeElementType(d))
+    : [normalizeElementType(defendTypes)];
 
   let multiplier = 1.0;
   const atkRow = typeChart.matrix[atk];
@@ -101,6 +171,7 @@ export function getElementalMultiplier(
   if (!atkRow) return 1.0;
 
   for (const def of defs) {
+    if (def === 'none') continue;
     if (def in atkRow) {
       multiplier *= atkRow[def];
     }
@@ -108,3 +179,15 @@ export function getElementalMultiplier(
 
   return multiplier;
 }
+
+/**
+ * Single canonical 1v1 combat multiplier resolver for both MMO & Buddy battles.
+ */
+export function getCombatMultiplier(
+  attacker: ElementType | string,
+  defender: ElementType | string,
+  typeChart: TypeChartDef = CANONICAL_TYPE_CHART
+): number {
+  return getElementalMultiplier(attacker, defender, typeChart);
+}
+

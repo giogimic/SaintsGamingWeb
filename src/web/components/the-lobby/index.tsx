@@ -68,6 +68,7 @@ import { QUEST_DB } from './data/quests';
 
 import { CharacterCreator } from './character-creator';
 import { CharacterSelector } from './character-selector';
+import { GameOfflineScreen } from './GameOfflineScreen';
 import { io, Socket } from 'socket.io-client';
 import { lobbySocketConnect } from '@/shared/net/goMmoSocket';
 import { useSession } from 'next-auth/react';
@@ -112,6 +113,7 @@ export default function TheLobby({
   const recentChatEventKeysRef = useRef<Map<string, number>>(new Map());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isRealmOffline, setIsRealmOffline] = useState(false);
   const [devMapList, setDevMapList] = useState<{id: string, name: string}[]>([]);
   const [uiScale, setUiScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
@@ -409,8 +411,12 @@ export default function TheLobby({
         if (setupRes.ok) {
           const setupJson = await setupRes.json();
           if (setupJson.status && !setupJson.status.isSetupCompleted) {
-            window.location.href = '/setup';
-            return;
+            if (!enableStudio) {
+              setIsRealmOffline(true);
+              setIsInitializing(false);
+              return;
+            }
+            // If in Studio, allow entry so they can run setup from the Studio dashboard.
           }
         }
       } catch {}
@@ -1625,6 +1631,28 @@ export default function TheLobby({
         onSelectCharacter={() => {
           setShowSelector(true);
           setHasEnteredMobile(true);
+        }}
+      />
+    );
+  }
+
+  if (isRealmOffline) {
+    return (
+      <GameOfflineScreen
+        isAdmin={enableStudio && canStudio}
+        onAdminLogin={() => {
+          useGameStore.getState().setGameMode('LOGIN');
+          setIsRealmOffline(false);
+        }}
+        onRefresh={async () => {
+          const res = await fetch('/api/setup/status', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status?.isSetupCompleted) {
+              setIsRealmOffline(false);
+              window.location.reload();
+            }
+          }
         }}
       />
     );

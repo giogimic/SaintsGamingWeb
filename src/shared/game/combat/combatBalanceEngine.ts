@@ -104,3 +104,37 @@ export function simulateCombatScenario(
     warnings,
   };
 }
+
+export interface CombatHitResult {
+  damage: number;
+  isCrit: boolean;
+  rawDamage?: number;
+  mitigatedAmount?: number;
+}
+
+/**
+ * Canonical real-time combat hit calculation (Bible 02, 07, 25 §3.7).
+ * Authoritative on server, and provides visual prediction numbers on client.
+ */
+export function calculateCombatHitDamage(
+  attackerAtk: number,
+  defenderDef: number,
+  basePower = 10,
+  multiplier = 1,
+  varianceSeed?: number
+): CombatHitResult {
+  const isCrit = Math.random() < 0.15;
+  const effectiveAtk = isCrit ? attackerAtk * 1.5 : attackerAtk;
+  const defReduction = defenderDef / (defenderDef + 50); // standard diminishing returns
+  const rawDamage = (effectiveAtk * 0.5 + basePower) * (1 - defReduction) * multiplier;
+  const variance = varianceSeed !== undefined ? varianceSeed : 0.9 + Math.random() * 0.2;
+  const finalDamage = Math.max(1, Math.round(rawDamage * variance));
+
+  return {
+    damage: finalDamage,
+    isCrit,
+    rawDamage: Math.round(rawDamage),
+    mitigatedAmount: Math.max(0, Math.round(effectiveAtk * 0.5 + basePower - rawDamage)),
+  };
+}
+

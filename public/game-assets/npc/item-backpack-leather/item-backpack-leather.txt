@@ -1,0 +1,11 @@
+CREDITS & ATTRIBUTION FOR ITEM-BACKPACK-LEATHER
+==================================================
+
+File: backpack/backpack/male/walk/leather.png
+Authors: Benjamin K. Smith (BenCreating), macmanmatty
+Licenses: CC-BY-SA 3.0, GPL 3.0
+Source: https://opengameart.org/content/lpc-backpacks
+----------------------------------------
+
+Generated with Universal LPC Spritesheet Generator.
+Free/Libre pixel art from Liberated Pixel Cup (LPC). You must credit the authors.

@@ -43,11 +43,11 @@ describe('Turn-Based Buddy Battle Calculation Engine (Bible 07 & 11)', () => {
     element: 'Hydro', // Hydro is neutral against Bio
   };
 
-  it('calculates STAB bonus (1.25x) and super-effective multiplier (1.5x)', () => {
+  it('calculates STAB bonus (1.25x) and super-effective multiplier (2.0x)', () => {
     const result = calculateMoveDamage(solarEmber, attacker, defender);
 
     expect(result.stabBonus).toBe(true);
-    expect(result.typeMultiplier).toBe(1.5);
+    expect(result.typeMultiplier).toBe(2.0);
     expect(result.finalEffectiveness).toBe('super_effective');
     expect(result.damage).toBeGreaterThan(15);
   });

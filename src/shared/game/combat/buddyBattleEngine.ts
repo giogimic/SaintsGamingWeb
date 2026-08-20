@@ -3,7 +3,7 @@
  * Calculates authoritative turn-based move damage, elemental multipliers, and capture probability.
  */
 
-import { ElementType, getCombatMultiplier } from '../elementMatchups';
+import { ElementType, getCombatMultiplier } from './typeChartEngine';
 import { getCaptureItemModifier } from '../captureItems';
 
 export interface BattleCombatantStats {

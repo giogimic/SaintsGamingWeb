@@ -1,0 +1,11 @@
+CREDITS & ATTRIBUTION FOR ITEM-ARMOR-PLATE-IRON
+==================================================
+
+File: torso/armour/plate/male/walk.png
+Authors: Napsio (Vitruvian Studio), JaidynReiman, bluecarrot16, Michael Whitlock (bigbeargames), Johannes Sjölund (wulax)
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+Source: https://opengameart.org/content/lpc-medieval-fantasy-character-sprites, https://opengameart.org/content/lpc-combat-armor-for-women
+----------------------------------------
+
+Generated with Universal LPC Spritesheet Generator.
+Free/Libre pixel art from Liberated Pixel Cup (LPC). You must credit the authors.

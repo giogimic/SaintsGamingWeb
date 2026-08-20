@@ -7,6 +7,18 @@ import { AssetManager } from '../../engine/assets/AssetManager';
 import { resolveSpriteDefinition } from './spriteDefinitions';
 
 export const CREATURE_ELEMENT_TYPES = [
+  "normal",
+  "fire",
+  "water",
+  "grass",
+  "electric",
+  "ice",
+  "earth",
+  "wind",
+  "shadow",
+  "holy",
+  "none",
+  "None",
   "Solar",
   "Hydro",
   "Bio",
@@ -15,7 +27,6 @@ export const CREATURE_ELEMENT_TYPES = [
   "Cryo",
   "Aero",
   "Cyber",
-  "None",
 ] as const;
 
 export type CreatureElementType = (typeof CREATURE_ELEMENT_TYPES)[number];

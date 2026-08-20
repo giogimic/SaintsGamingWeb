@@ -108,3 +108,31 @@ export const SAINTS_TAMER_QUESTS: Record<string, GameQuest> = {
 };
 
 export const QUEST_DB: Record<string, GameQuest> = SAINTS_TAMER_QUESTS;
+
+const dynamicQuestCache: Map<string, GameQuest> = new Map();
+
+export function registerDynamicQuest(quest: GameQuest): void {
+  if (quest && quest.id) {
+    dynamicQuestCache.set(quest.id, quest);
+  }
+}
+
+export function registerDynamicQuests(quests: GameQuest[]): void {
+  for (const quest of quests) {
+    registerDynamicQuest(quest);
+  }
+}
+
+export function getQuest(id: string): GameQuest | undefined {
+  if (!id) return undefined;
+  return dynamicQuestCache.get(id) || QUEST_DB[id];
+}
+
+export function getAllQuests(): GameQuest[] {
+  const merged: Record<string, GameQuest> = { ...QUEST_DB };
+  dynamicQuestCache.forEach((quest, questId) => {
+    merged[questId] = quest;
+  });
+  return Object.values(merged);
+}
+

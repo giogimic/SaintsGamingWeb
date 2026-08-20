@@ -220,6 +220,12 @@ if [ "$IS_NUCLEAR_MODE" != "1" ]; then
         EXISTING_HINTS="${EXISTING_HINTS}• Docker container saints-gaming-db exists\n"
     fi
 
+    if command -v systemctl &>/dev/null; then
+        if systemctl is-active --quiet saints-web 2>/dev/null || systemctl is-active --quiet saints 2>/dev/null || systemctl is-active --quiet saints-gaming-web 2>/dev/null; then
+            EXISTING_HINTS="${EXISTING_HINTS}• Host systemd service (saints-web) is RUNNING\n"
+        fi
+    fi
+
     if [ -n "$EXISTING_HINTS" ]; then
         EXIST_OPT=$(whiptail --title "Existing Server Detected" --menu "Something is already set up on this host:\n\n${EXISTING_HINTS}\nWhat should setup do?" 20 78 4 \
         "1" "Add subdomain only (keep primary Caddy/site — recommended for reruns)" \
@@ -254,9 +260,10 @@ CONFLICTS=""
 if [ "$IS_NUCLEAR_MODE" = "1" ]; then
     ALLOW_KILL_PORTS=1
     if ss -tuln | grep -qE ":(80|443|3000) "; then
-        echo -e "${CYAN}[*] Nuclear mode: Clearing conflicting ports 80/443/3000...${NC}"
+        echo -e "${CYAN}[*] Nuclear mode: Clearing conflicting ports 80/443/3000 & systemd services...${NC}"
         sudo apt-get update -qq && sudo apt-get install -y -qq psmisc 2>/dev/null || true
         sudo fuser -k 80/tcp 443/tcp 3000/tcp &>/dev/null || true
+        bash "${SCRIPT_DIR}/audit-systemd.sh" --clean -y 2>/dev/null || true
         sleep 1
     fi
 else
@@ -298,13 +305,14 @@ else
             exit 0
         elif [ "$PORT_OPT" = "4" ]; then
             if [ "$ALLOW_KILL_PORTS" != "1" ]; then
-                if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/3000?" 10 55; then
+                if ! whiptail --title "Confirm Kill" --yesno "Really kill processes on 80/443/3000 and conflicting systemd services?" 10 65; then
                     exit 1
                 fi
             fi
-            echo -e "${CYAN}Killing processes on conflicting ports...${NC}"
+            echo -e "${CYAN}Killing processes and clearing conflicting systemd units...${NC}"
             sudo apt-get update && sudo apt-get install -y psmisc
             sudo fuser -k 80/tcp 443/tcp 3000/tcp || true
+            bash "${SCRIPT_DIR}/audit-systemd.sh" --clean -y 2>/dev/null || true
             sleep 2
         else
             exit 1

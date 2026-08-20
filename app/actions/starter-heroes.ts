@@ -83,7 +83,17 @@ export async function upsertStarterHero(data: StarterHeroData) {
   if (!isAdmin) return { success: false, error: 'Unauthorized' };
 
   try {
-    const gameId = data.gameId || 'tuxemon';
+    let gameId = data.gameId;
+    if (!gameId) {
+      const active = await prisma.gameConfig.findFirst({
+        where: {
+          isActive: true,
+          slug: { notIn: ['saints', 'saints-gaming', 'saints-gaming-qol'] },
+        },
+        select: { slug: true },
+      });
+      gameId = active?.slug || 'saints';
+    }
     const hero = await prisma.starterHero.upsert({
       where: { slug: data.slug },
       create: {
@@ -214,42 +224,42 @@ export async function seedDefaultStarterHeroes() {
 
   const defaults: StarterHeroData[] = [
     {
-      slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior',
+      slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'evil-berserker-bloodaxe-male',
       flavor: 'Frontline champion. High HP, unstoppable in melee.',
       tag: 'Beginner Friendly', tagColor: '#34d399', sortOrder: 1, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight',
+      slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'good-paladin-templar-female',
       flavor: 'Holy guardian. Superior defense, supports allies.',
       tag: 'Defensive', tagColor: '#60a5fa', sortOrder: 2, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician',
+      slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'good-wizard-archmage-male',
       flavor: 'Master of arcane arts. High burst, low defense.',
       tag: 'Advanced', tagColor: '#a78bfa', sortOrder: 3, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue',
+      slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'evil-assassin-nightstalker-female',
       flavor: "Swift and lethal. Strike before you're seen.",
       tag: 'Skill Cap', tagColor: '#f472b6', sortOrder: 4, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja',
+      slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'good-ranger-grovekeeper-female',
       flavor: 'Agile hunter. Precision strikes from distance.',
       tag: 'Mobile', tagColor: '#fbbf24', sortOrder: 5, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple',
+      slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'good-cleric-highpriestess-female',
       flavor: 'Devoted healer. Wisdom and vitality over raw attack.',
       tag: 'Support', tagColor: '#e2d5b3', sortOrder: 6, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,

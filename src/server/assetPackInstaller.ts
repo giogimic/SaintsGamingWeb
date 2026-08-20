@@ -154,6 +154,7 @@ export async function installAssetPacks(
           size = fs.statSync(file).size;
         } catch {}
 
+        const isPlayable = pack.id === 'heroes' || pack.id === 'npc';
         const tags = [type, category, packTag(packId)];
         if (subcategory) tags.push(subcategory);
         if (creatureSubcategory) tags.push(`creature:${creatureSubcategory}`);
@@ -166,6 +167,9 @@ export async function installAssetPacks(
         ) {
           tags.push('sheet', 'spritesheet');
         }
+        if (isPlayable) {
+          tags.push('playable', 'character_creator', 'player');
+        }
 
         await prisma.gameAsset.create({
           data: {
@@ -173,7 +177,13 @@ export async function installAssetPacks(
             source: relativePath,
             tags: JSON.stringify(tags),
             categories: JSON.stringify([category, ...(subcategory ? [subcategory] : [])]),
-            metadata: JSON.stringify({ name, pack: pack.id, subcategory }),
+            metadata: JSON.stringify({
+              name,
+              pack: pack.id,
+              subcategory,
+              showInCharacterCreation: isPlayable,
+              isPlayable,
+            }),
             isActive: true,
             fileSize: size,
           },

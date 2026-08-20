@@ -1,0 +1,41 @@
+CREDITS & ATTRIBUTION FOR EVIL-BERSERKER-BLOODAXE-MALE
+==================================================
+
+File: body/bodies/male/walk.png
+Authors: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+Source: https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles, https://opengameart.org/content/lpc-medieval-fantasy-character-sprites, https://opengameart.org/content/lpc-male-jumping-animation-by-durrani, https://opengameart.org/content/lpc-runcycle-and-diagonal-walkcycle, https://opengameart.org/content/lpc-revised-character-basics, https://opengameart.org/content/lpc-be-seated, https://opengameart.org/content/lpc-runcycle-for-male-muscular-and-pregnant-character-bases-with-modular-heads, https://opengameart.org/content/lpc-jump-expanded, https://opengameart.org/content/lpc-character-bases
+----------------------------------------
+File: head/heads/human/male/walk.png
+Authors: bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike)
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+Source: https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles, https://opengameart.org/content/lpc-character-bases
+----------------------------------------
+File: head/faces/male/neutral/walk.png
+Authors: JaidynReiman, ElizaWy, Stephen Challener (Redshrike)
+Licenses: OGA-BY 3.0
+Source: https://github.com/ElizaWy/LPC/tree/main/Characters/Head, https://opengameart.org/content/ulpc-expanded-expressions
+----------------------------------------
+File: hair/unkempt/adult/walk.png
+Authors: JaidynReiman, Manuel Riecke (MrBeast)
+Licenses: CC-BY-SA 3.0, GPL 3.0
+Source: https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles, https://opengameart.org/content/lpc-expanded-hair
+----------------------------------------
+File: torso/clothes/sleeveless/sleeveless/male/walk/tan.png
+Authors: bluecarrot16, Matthew Krohn (makrohn), JaidynReiman, Marcel van de Steeg (MadMarcel), Nila122, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+Source: https://opengameart.org/content/lpc-female-orcogregoblintroll-base-walkcycle, https://opengameart.org/content/lpc-curly-hair-elven-ears-white-cape-with-blue-trim-and-more, https://opengameart.org/content/more-lpc-clothes-and-hair, https://opengameart.org/content/lpc-pirates
+----------------------------------------
+File: legs/pants/male/walk.png
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+Source: https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles, https://opengameart.org/content/lpc-medieval-fantasy-character-sprites, https://opengameart.org/content/lpc-expanded-pants
+----------------------------------------
+File: feet/boots/fold/male/walk.png
+Authors: JaidynReiman
+Licenses: OGA-BY 3.0+, CC-BY 3.0+, GPL 3.0
+Source: https://opengameart.org/content/lpc-kimono-relm, https://opengameart.org/content/lpc-expanded-socks-shoes
+----------------------------------------
+
+Generated with Universal LPC Spritesheet Generator.
+Free/Libre pixel art from Liberated Pixel Cup (LPC). You must credit the authors.

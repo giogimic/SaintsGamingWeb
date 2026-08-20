@@ -4,7 +4,7 @@ import { getCreatureById } from "./data/saints-dex";
 import {
   getCombatMultiplier,
   type ElementType,
-} from "../../../shared/game/elementMatchups";
+} from "../../../shared/game/combat/typeChartEngine";
 
 export type { ElementType };
 export { getCombatMultiplier };
@@ -45,27 +45,12 @@ export function calculatePlayerCombatStats(player: PlayerState) {
   };
 }
 
-/**
- * Calculates raw and mitigated damage for real-time multiplayer PvP & monster combat.
- */
-export function calculateCombatHitDamage(
-  attackerAtk: number,
-  defenderDef: number,
-  basePower = 10,
-  multiplier = 1
-): { damage: number; isCrit: boolean } {
-  const isCrit = Math.random() < 0.15;
-  const effectiveAtk = isCrit ? attackerAtk * 1.5 : attackerAtk;
-  const defReduction = defenderDef / (defenderDef + 50); // standard diminishing returns
-  const rawDamage = (effectiveAtk * 0.5 + basePower) * (1 - defReduction) * multiplier;
-  const variance = 0.9 + Math.random() * 0.2; // ±10% damage variance
-  const finalDamage = Math.max(1, Math.round(rawDamage * variance));
+import {
+  calculateCombatHitDamage,
+  type CombatHitResult,
+} from "../../../shared/game/combat/combatBalanceEngine";
 
-  return {
-    damage: finalDamage,
-    isCrit,
-  };
-}
+export { calculateCombatHitDamage, type CombatHitResult };
 
 export {
   computeArmorClass,

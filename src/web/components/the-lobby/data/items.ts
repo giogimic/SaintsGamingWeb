@@ -463,6 +463,30 @@ export const CRAFTING_RECIPES = [
   }
 ];
 
-export function getItem(id: string): ItemSchema | undefined {
-  return ITEM_DB[id];
+const dynamicItemCache: Map<string, ItemSchema> = new Map();
+
+export function registerDynamicItem(item: ItemSchema): void {
+  if (item && item.id) {
+    dynamicItemCache.set(item.id, item);
+  }
 }
+
+export function registerDynamicItems(items: ItemSchema[]): void {
+  for (const item of items) {
+    registerDynamicItem(item);
+  }
+}
+
+export function getItem(id: string): ItemSchema | undefined {
+  if (!id) return undefined;
+  return dynamicItemCache.get(id) || ITEM_DB[id];
+}
+
+export function getAllItems(): ItemSchema[] {
+  const merged: Record<string, ItemSchema> = { ...ITEM_DB };
+  dynamicItemCache.forEach((item, itemId) => {
+    merged[itemId] = item;
+  });
+  return Object.values(merged);
+}
+
