@@ -785,7 +785,8 @@ export default function AssetEditor({
                     {/* Image Preview with Checkered Canvas Background */}
                     <div className="w-full flex-1 flex items-center justify-center overflow-hidden my-1 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:8px_8px] rounded-lg p-1">
                       <SpriteThumbnail
-                        src={asset.source}
+                        src={asset.atlasSource || asset.source}
+                        atlasFrame={asset.atlasFrame}
                         alt={asset.id}
                         className="max-w-full max-h-full object-contain"
                       />
