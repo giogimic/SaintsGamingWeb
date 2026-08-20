@@ -6,6 +6,7 @@ import { X, Monitor, Volume2, Gamepad2, Settings2, Layout, Sliders, LogOut, Chec
 import { BUILTIN_HUD_PRESETS } from './default-presets';
 import { soundSynth } from '@/engine/sound-synth';
 import { canCastUnstuck, UNSTUCK_COOLDOWN_MS, UNSTUCK_CAST_DURATION_MS } from '@/shared/game/worldSpawns';
+import { startMapTransition } from '@/shared/game/lobbyWorldJoin';
 
 
 interface GameOptionsMenuProps {
@@ -100,8 +101,31 @@ export default function GameOptionsMenu({
           }
         } catch {}
 
-        useGameStore.getState().setPlayerPosition({ x: 32, y: 32 }, 'down', false);
-        useGameStore.getState().setCurrentMapId(targetMapId);
+        const store = useGameStore.getState();
+        store.setPlayerPosition({ x: 32, y: 32 }, 'down', false);
+        store.setCurrentMapId(targetMapId);
+        if (store.emitSocketEvent && store.player.accountId) {
+          startMapTransition({
+            socket: { connected: true, emit: store.emitSocketEvent },
+            accountId: store.player.accountId,
+            contract: {
+              mapId: targetMapId,
+              lobby: true,
+              isPrivate: false,
+              pie: false,
+            },
+            position: { x: 32, y: 32 },
+            name: store.player.name || 'Player',
+            spriteId: store.player.spriteId || 'adventurer',
+            currentInstanceId: store.instanceId,
+            worldJoinSeq: store.worldJoinSeq,
+            onSetWorldSessionState: store.setWorldSessionState,
+            onIncrementWorldJoinSeq: store.incrementWorldJoinSeq,
+            setIsMapTransitioning: store.setIsMapTransitioning,
+            onClearPeers: () => store.setOtherPlayers({}),
+            force: true,
+          });
+        }
         showToast(`Unstuck successful! Transported to ${targetMapId} spawn.`);
         onClose();
       }

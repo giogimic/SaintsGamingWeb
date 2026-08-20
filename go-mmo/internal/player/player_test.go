@@ -39,12 +39,31 @@ func TestCreateMoveAndPeers(t *testing.T) {
 
 func TestSessionReplaceTracking(t *testing.T) {
 	m := player.NewManager(16, nil)
-	m.Create("a1", "s1", "Ada", "spr", "DEMO_ch1", "DEMO", 1, 1)
+	m.CreateWithCharacter("a1", "c1", "s1", "Ada", "spr", "DEMO_ch1", "DEMO", 1, 1)
 	if m.SocketIDForAccount("a1") != "s1" {
 		t.Fatal("socket map")
 	}
-	m.Remove("s1")
+	if charPlayer := m.GetByCharacter("c1"); charPlayer == nil || charPlayer.AccountID != "a1" {
+		t.Fatal("character map lookup failed")
+	}
+
+	// Seamless socket migration without state destruction
+	migrated := m.UpdateSocket("a1", "s2")
+	if migrated == nil || migrated.SocketID != "s2" {
+		t.Fatal("UpdateSocket failed")
+	}
+	if m.GetBySocket("s1") != nil {
+		t.Fatal("old socket should no longer be indexed")
+	}
+	if m.GetBySocket("s2") == nil || m.GetBySocket("s2").AccountID != "a1" {
+		t.Fatal("new socket should be indexed")
+	}
+
+	m.Remove("s2")
 	if m.GetByAccount("a1") != nil {
 		t.Fatal("should be gone")
+	}
+	if m.GetByCharacter("c1") != nil {
+		t.Fatal("character index should be cleared on remove")
 	}
 }

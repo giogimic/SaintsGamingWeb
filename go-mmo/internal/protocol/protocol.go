@@ -112,16 +112,18 @@ const (
 
 // JoinMapRequest is the client join_map payload.
 type JoinMapRequest struct {
-	AccountID string  `json:"accountId"`
-	MapID     string  `json:"mapId"`
-	Lobby     bool    `json:"lobby"`
-	ForceDemo bool    `json:"forceDemo"`
-	IsPrivate bool    `json:"isPrivate"`
-	PIE       bool    `json:"pie"`
-	X         *float64 `json:"x"`
-	Y         *float64 `json:"y"`
-	Name      string  `json:"name"`
-	SpriteID  string  `json:"spriteId"`
+	AccountID   string   `json:"accountId"`
+	CharacterID string   `json:"characterId"`
+	MapID       string   `json:"mapId"`
+	Lobby       bool     `json:"lobby"`
+	ForceDemo   bool     `json:"forceDemo"`
+	IsPrivate   bool     `json:"isPrivate"`
+	PIE         bool     `json:"pie"`
+	X           *float64 `json:"x"`
+	Y           *float64 `json:"y"`
+	Name        string   `json:"name"`
+	SpriteID    string   `json:"spriteId"`
+	JoinSeq     uint64   `json:"joinSeq"`
 }
 
 // PlayerInput matches PlayerInput on the TS wire.
@@ -140,6 +142,7 @@ type PlayerInput struct {
 type PeerSnapshot struct {
 	SocketID  string  `json:"socketId"`
 	EntityID  string  `json:"entityId"`
+	AccountID string  `json:"accountId,omitempty"`
 	X         float64 `json:"x"`
 	Y         float64 `json:"y"`
 	Direction string  `json:"direction"`
@@ -154,6 +157,7 @@ type MapJoinedPayload struct {
 	MapID      string  `json:"mapId"`
 	X          float64 `json:"x"`
 	Y          float64 `json:"y"`
+	JoinSeq    uint64  `json:"joinSeq,omitempty"`
 }
 
 // CreatureSpawn is creature_spawned payload.

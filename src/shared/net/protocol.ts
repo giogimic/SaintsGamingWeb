@@ -82,6 +82,7 @@ export type RealtimeEventName = typeof RealtimeEvents[keyof typeof RealtimeEvent
 // ─── Shard & Player Payloads ──────────────────────────────────────────────────
 export interface JoinMapPayload {
   accountId?: string;
+  characterId?: string;
   mapId: string;
   lobby?: boolean;
   isPrivate?: boolean;
@@ -91,6 +92,7 @@ export interface JoinMapPayload {
   x?: number;
   y?: number;
   direction?: string;
+  joinSeq?: number;
 }
 
 export interface MapJoinedPayload {
@@ -100,6 +102,7 @@ export interface MapJoinedPayload {
   y: number;
   revision?: number;
   protocolVersion: string;
+  joinSeq?: number;
 }
 
 export interface PlayerPublicSnapshot {

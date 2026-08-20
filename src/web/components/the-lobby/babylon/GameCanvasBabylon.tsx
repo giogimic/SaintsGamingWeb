@@ -39,6 +39,7 @@ import {
 import { getIsEditorMode } from '@/shared/game/studioSession';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { shouldKeepActiveMapData } from '@/shared/game/mapSwitch';
+import { joinWorld, startMapTransition } from '@/shared/game/lobbyWorldJoin';
 import {
   mapVisualFingerprint,
   resolveMapDimensions,
@@ -258,7 +259,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (!activeMap) return;
     
     const store = useGameStore.getState();
-    if (store.isMapTransitioning) return;
+    if (store.isMapTransitioning || store.worldSessionState === 'transitioning') return;
     
     const currentPos = store.player?.position;
     if (!currentPos) return;
@@ -330,35 +331,45 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spawn.y = Math.max(0, Math.min(finalH - 1, spawn.y));
 
             setPlayerPosition(spawn);
-            const p = useGameStore.getState().player;
+            const liveStore = useGameStore.getState();
+            const p = liveStore.player;
             const inStudio = getIsEditorMode();
             const creation = useEditorStore.getState().isCreationMode;
-            emitSocketEvent?.('join_map', {
-              accountId: p.accountId,
-              mapId: targetBase,
-              lobby: !inStudio,
-              // Studio must stay on private / PIE — never leak into public DEMO_chN.
-              isPrivate: inStudio && creation,
-              pie: inStudio && !creation,
-              x: spawn.x,
-              y: spawn.y,
-              name: p.name || 'Player',
-              spriteId: p.spriteId || 'adventurer',
-            });
+            if (emitSocketEvent && p.accountId) {
+              startMapTransition({
+                socket: { connected: true, emit: emitSocketEvent },
+                accountId: p.accountId,
+                contract: {
+                  mapId: targetBase,
+                  lobby: !inStudio,
+                  // Studio must stay on private / PIE — never leak into public DEMO_chN.
+                  isPrivate: inStudio && creation,
+                  pie: inStudio && !creation,
+                },
+                position: { x: spawn.x, y: spawn.y },
+                name: p.name || 'Player',
+                spriteId: p.spriteId || 'adventurer',
+                currentInstanceId: liveStore.instanceId,
+                worldJoinSeq: liveStore.worldJoinSeq,
+                onSetWorldSessionState: liveStore.setWorldSessionState,
+                onIncrementWorldJoinSeq: liveStore.incrementWorldJoinSeq,
+                setIsMapTransitioning: liveStore.setIsMapTransitioning,
+                onClearPeers: () => liveStore.setOtherPlayers({}),
+                force: true,
+              });
+            }
             showToast(`Warped to ${gate.targetMapId.replace(/_/g, ' ')}`);
           });
       };
       if (isDevEditorOpen) {
         finishWarp();
       } else {
-        if (store.isMapTransitioning) return;
+        if (store.isMapTransitioning || store.worldSessionState === 'transitioning') return;
         store.setIsMapTransitioning(true);
+        store.setWorldSessionState('transitioning');
         setTimeout(() => {
           finishWarp();
-          setTimeout(() => {
-            useGameStore.getState().setIsMapTransitioning(false);
-          }, 100);
-        }, 300);
+        }, 200);
       }
       return;
     }

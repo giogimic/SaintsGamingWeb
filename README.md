@@ -14,7 +14,7 @@
                                                                  |___/ 
 ```
 
-![Version](https://img.shields.io/badge/Release-v2.1.382-purple?style=for-the-badge&logo=gamemaker)
+![Version](https://img.shields.io/badge/Release-v2.1.384-purple?style=for-the-badge&logo=gamemaker)
 
 
 ![Live Site](https://img.shields.io/badge/Live_Site-SaintsGaming.net-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)

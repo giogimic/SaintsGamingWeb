@@ -82,6 +82,7 @@ import {
   shouldReplacePeerSnapshot,
   shouldSkipRedundantLobbyJoin,
 } from '@/shared/game/lobbyJoin';
+import { joinWorld } from '@/shared/game/lobbyWorldJoin';
 import {
   STUDIO_MAP_HOT_RELOAD_EVENT,
   STUDIO_PIE_CHANGED_EVENT,
@@ -315,21 +316,31 @@ export default function TheLobby({
         otherPlayers: {}, // fresh seat; map_players / player_joined refill
       });
 
-      // Notify socket server of loaded character specs (base map id only — never shard suffix)
+      // Notify socket server of loaded character specs via centralized joinWorld
       if (socketRef.current) {
-        const joinPayload = {
+        const store = useGameStore.getState();
+        joinWorld({
+          socket: socketRef.current,
           accountId: session?.user?.id || charId,
-          mapId: toBaseMapId(validMapId),
-          lobby: !enableStudio,
-          isPrivate: enableStudio,
-          pie: enableStudio && !useEditorStore.getState().isCreationMode,
-          x: validPosition.x,
-          y: validPosition.y,
+          characterId: charId,
+          contract: {
+            mapId: validMapId,
+            lobby: !enableStudio,
+            isPrivate: enableStudio,
+            pie: enableStudio && !useEditorStore.getState().isCreationMode,
+          },
+          position: validPosition,
           name: res.data.name,
           spriteId: res.data.spriteId || 'adventurer',
-        };
-        lastJoinKeyRef.current = buildJoinKey(joinPayload);
-        socketRef.current.emit('join_map', joinPayload);
+          worldSessionState: store.worldSessionState,
+          currentInstanceId: store.instanceId,
+          worldJoinSeq: store.worldJoinSeq,
+          lastJoinKey: lastJoinKeyRef.current,
+          onSetWorldSessionState: store.setWorldSessionState,
+          onIncrementWorldJoinSeq: store.incrementWorldJoinSeq,
+          onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
+          force: true,
+        });
       }
 
       setActiveCharacterId(charId);
@@ -407,17 +418,29 @@ export default function TheLobby({
       mapEntities: [],
     });
 
-    if (accountId) {
-      socketRef.current?.emit('join_map', {
+    if (accountId && socketRef.current) {
+      const store = useGameStore.getState();
+      joinWorld({
+        socket: socketRef.current,
         accountId,
-        mapId: toBaseMapId(validMapId),
-        lobby: false, // Studio must not force DEMO_SANDBOX multiplayer shard
-        isPrivate: true, // Isolate author from public DEMO channels
-        pie: false,
-        x: validPosition.x,
-        y: validPosition.y,
+        characterId: undefined,
+        contract: {
+          mapId: validMapId,
+          lobby: false,
+          isPrivate: true,
+          pie: false,
+        },
+        position: validPosition,
         name: authorName,
         spriteId: 'adventurer',
+        worldSessionState: store.worldSessionState,
+        currentInstanceId: store.instanceId,
+        worldJoinSeq: store.worldJoinSeq,
+        lastJoinKey: lastJoinKeyRef.current,
+        onSetWorldSessionState: store.setWorldSessionState,
+        onIncrementWorldJoinSeq: store.incrementWorldJoinSeq,
+        onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
+        force: true,
       });
     }
 
@@ -616,19 +639,30 @@ export default function TheLobby({
           if (!state.player.accountId || state.player.accountId !== session.user.id) {
             useGameStore.getState().hydratePlayer({ accountId: session.user.id });
           }
-          const joinPayload = {
+          joinWorld({
+            socket,
             accountId: effectiveAccountId,
-            mapId: toBaseMapId(state.currentMapId || 'DEMO_SANDBOX'),
-            lobby: !enableStudio,
-            isPrivate: enableStudio,
-            pie: enableStudio && !useEditorStore.getState().isCreationMode,
-            x: state.player.position?.x ?? 14,
-            y: state.player.position?.y ?? 15,
+            characterId: activeCharacterId,
+            contract: {
+              mapId: state.currentMapId || 'DEMO_SANDBOX',
+              lobby: !enableStudio,
+              isPrivate: enableStudio,
+              pie: enableStudio && !useEditorStore.getState().isCreationMode,
+            },
+            position: {
+              x: state.player.position?.x ?? 14,
+              y: state.player.position?.y ?? 15,
+            },
             name: state.player.name || 'Player',
             spriteId: state.player.spriteId || 'adventurer',
-          };
-          lastJoinKeyRef.current = buildJoinKey(joinPayload);
-          socket.emit('join_map', joinPayload);
+            worldSessionState: state.worldSessionState,
+            currentInstanceId: state.instanceId,
+            worldJoinSeq: state.worldJoinSeq,
+            lastJoinKey: lastJoinKeyRef.current,
+            onSetWorldSessionState: state.setWorldSessionState,
+            onIncrementWorldJoinSeq: state.incrementWorldJoinSeq,
+            onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
+          });
           if (!enableStudio) {
             const cur = toBaseMapId(state.currentMapId || 'DEMO_SANDBOX');
             if (cur !== 'DEMO_SANDBOX') {
@@ -654,6 +688,7 @@ export default function TheLobby({
       hadLobbyDisconnect = true;
       lastJoinKeyRef.current = null;
       useGameStore.getState().setConnectionStatus('disconnected');
+      useGameStore.getState().setWorldSessionState('disconnected');
       if (shouldClearPeersOnDisconnect(reason)) {
         useGameStore.getState().setOtherPlayers({});
       }
@@ -683,12 +718,23 @@ export default function TheLobby({
     
     socket.on('map_joined', (data) => {
       const state = useGameStore.getState();
+      // Protect against stale and reordered join responses
+      if (typeof data.joinSeq === 'number' && data.joinSeq < state.worldJoinSeq) {
+        if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+          console.debug('[lobby] discard stale map_joined', { dataSeq: data.joinSeq, currentSeq: state.worldJoinSeq });
+        }
+        return;
+      }
+      state.setWorldSessionState('joined');
+      if (state.isMapTransitioning) {
+        state.setIsMapTransitioning(false);
+      }
       state.setInstanceId(data.instanceId);
       if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
         const peerCount = Object.keys(useGameStore.getState().otherPlayers || {}).length;
         console.debug(
           '[lobby] map_joined',
-          { instanceId: data.instanceId, mapId: data.mapId, peerHint: peerCount }
+          { instanceId: data.instanceId, mapId: data.mapId, seq: data.joinSeq, peerHint: peerCount }
         );
       }
       // Server may remap retired maps (SAINTS_VILLAGE → DEMO_SANDBOX).
@@ -1458,31 +1504,30 @@ export default function TheLobby({
         /* map load fallback */
       });
     }
-    const joinPayload = {
+    joinWorld({
+      socket,
       accountId: session.user.id,
-      mapId,
-      lobby: !enableStudio,
-      isPrivate: enableStudio,
-      pie: enableStudio && !useEditorStore.getState().isCreationMode,
-      x: state.player.position?.x ?? 14,
-      y: state.player.position?.y ?? 15,
+      characterId: activeCharacterId,
+      contract: {
+        mapId: curMap,
+        lobby: !enableStudio,
+        isPrivate: enableStudio,
+        pie: enableStudio && !useEditorStore.getState().isCreationMode,
+      },
+      position: {
+        x: state.player.position?.x ?? 14,
+        y: state.player.position?.y ?? 15,
+      },
       name: state.player.name || 'Player',
       spriteId: state.player.spriteId || 'adventurer',
-    };
-    if (
-      shouldSkipRedundantLobbyJoin({
-        contract: joinPayload,
-        currentInstanceId: state.instanceId,
-        lastJoinKey: lastJoinKeyRef.current,
-      })
-    ) {
-      if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
-        console.debug('[lobby] skip redundant late join_map', state.instanceId);
-      }
-      return;
-    }
-    lastJoinKeyRef.current = buildJoinKey(joinPayload);
-    socket.emit('join_map', joinPayload);
+      worldSessionState: state.worldSessionState,
+      currentInstanceId: state.instanceId,
+      worldJoinSeq: state.worldJoinSeq,
+      lastJoinKey: lastJoinKeyRef.current,
+      onSetWorldSessionState: state.setWorldSessionState,
+      onIncrementWorldJoinSeq: state.incrementWorldJoinSeq,
+      onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
+    });
   }, [activeCharacterId, status, session?.user?.id, enableStudio]);
 
   // Studio PIE — rejoin private playtest shard / author private shard on Play ↔ Editor.
@@ -1508,22 +1553,36 @@ export default function TheLobby({
         });
       }
 
-      socket.emit('join_map', {
+      joinWorld({
+        socket,
         accountId,
-        mapId: toBaseMapId(state.currentMapId || 'LOBBY'),
-        lobby: false,
-        isPrivate: !pie,
-        pie,
-        x: state.player.position?.x ?? 14,
-        y: state.player.position?.y ?? 15,
+        characterId: activeCharacterId,
+        contract: {
+          mapId: toBaseMapId(state.currentMapId || 'LOBBY'),
+          lobby: false,
+          isPrivate: !pie,
+          pie,
+        },
+        position: {
+          x: state.player.position?.x ?? 14,
+          y: state.player.position?.y ?? 15,
+        },
         name: state.player.name || (pie ? 'Dev Explorer' : 'Studio Author'),
         spriteId: state.player.spriteId || 'adventurer',
+        worldSessionState: state.worldSessionState,
+        currentInstanceId: state.instanceId,
+        worldJoinSeq: state.worldJoinSeq,
+        lastJoinKey: lastJoinKeyRef.current,
+        onSetWorldSessionState: state.setWorldSessionState,
+        onIncrementWorldJoinSeq: state.incrementWorldJoinSeq,
+        onUpdateLastJoinKey: (k) => { lastJoinKeyRef.current = k; },
+        force: true,
       });
       state.showToast(pie ? 'PIE — Playtest runtime active (Test Character)' : 'Editor — World authoring runtime');
     };
     window.addEventListener(STUDIO_PIE_CHANGED_EVENT, onPieChanged as EventListener);
     return () => window.removeEventListener(STUDIO_PIE_CHANGED_EVENT, onPieChanged as EventListener);
-  }, [enableStudio, session?.user?.id]);
+  }, [enableStudio, session?.user?.id, activeCharacterId]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
