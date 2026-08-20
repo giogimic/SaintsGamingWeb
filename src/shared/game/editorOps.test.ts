@@ -267,8 +267,12 @@ describe("editorOps", () => {
       let stack = emptyEditorOpStack();
 
       const newLayer = { name: "Overlay 2", grid: [[0, 0], [0, 0]] };
-      map.tileLayers!.push(newLayer);
-      map.tileLayers![1].grid[0][0] = 77;
+      map.tileLayers = map.tileLayers || [];
+      map.tileLayers.push(newLayer);
+      const layer1 = map.tileLayers[1];
+      if (layer1 && layer1.grid && layer1.grid[0]) {
+        layer1.grid[0][0] = 77;
+      }
 
       const compoundOp = {
         kind: "compound" as const,
@@ -281,18 +285,18 @@ describe("editorOps", () => {
 
       stack = pushEditorOp(stack, compoundOp);
       expect(map.tileLayers).toHaveLength(2);
-      expect(map.tileLayers![1].grid[0][0]).toBe(77);
+      expect(map.tileLayers[1]?.grid?.[0]?.[0]).toBe(77);
 
       // Single Undo reverses both paint and layer creation
       const undone = undoEditorOp(map, stack);
       expect(map.tileLayers).toHaveLength(1);
-      expect(map.tileLayers![0].name).toBe("Ground");
+      expect(map.tileLayers[0]?.name).toBe("Ground");
 
       // Single Redo restores both
       redoEditorOp(map, undone.stack);
       expect(map.tileLayers).toHaveLength(2);
-      expect(map.tileLayers![1].name).toBe("Overlay 2");
-      expect(map.tileLayers![1].grid[0][0]).toBe(77);
+      expect(map.tileLayers[1]?.name).toBe("Overlay 2");
+      expect(map.tileLayers[1]?.grid?.[0]?.[0]).toBe(77);
     });
   });
 });

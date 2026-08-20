@@ -341,6 +341,7 @@ describe('Selection Operations Matrix (Phase 1)', () => {
       });
 
       expect(paintRes.ok).toBe(true);
+      if (!paintRes.ok) return;
       stack = pushEditorOp(stack, { kind: 'paint_cells', cells: paintRes.cells });
 
       expect(map.tileLayers![0].grid![1][1]).toBe(100);

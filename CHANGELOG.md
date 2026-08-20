@@ -1,3 +1,10 @@
+## [2.1.385] - 2026-08-20
+### MMO Lifecycle Overhaul (Build Hardening & Strict Type Checking)
+- **TypeScript Control Flow & Type Safety (`GameCanvasBabylon.tsx`, `editorOps.test.ts`, `selectionOperations.test.ts`):**
+  - Resolved TypeScript control-flow narrowing issue where prior boolean checks in the same scope narrowed store state and caused false negative type conflicts on subsequent checks.
+  - Hardened strict null checks in unit tests for editor compound operations and selection batch paint results.
+  - Verified 100% clean `tsc --noEmit` and production build pipeline.
+
 ## [2.1.384] - 2026-08-20
 ### MMO Lifecycle Overhaul (Phase 6: Atomic Map Transition Sequencing)
 - **Map Transition Sequencing (`lobbyWorldJoin.ts`):**
