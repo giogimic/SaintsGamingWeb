@@ -1,0 +1,24 @@
+[Unit]
+Description=Saints Gaming Web Platform & Embedded 2.5D MMO Engine
+After=network.target mysql.service mariadb.service redis.service
+Wants=mysql.service mariadb.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/saints-gaming
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=ENABLE_TS_GAME_ENGINE=1
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5s
+
+# Resource limits & hygiene
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=saints-web
+
+[Install]
+WantedBy=multi-user.target

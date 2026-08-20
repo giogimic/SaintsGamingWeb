@@ -682,36 +682,6 @@ export default function GameTitleScreen({
         </div>
       </header>
 
-      {/* ── REALM SETUP BANNER (Glows when fresh install or setup pending) ── */}
-      {setupStatus && (!setupStatus.isSetupCompleted || setupStatus.mapCount === 0) && (
-        <div className="relative z-30 mx-4 sm:mx-8 my-2 p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/95 via-slate-900/95 to-amber-950/95 border-2 border-amber-400 shadow-[0_0_30px_rgba(251,191,36,0.3)] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400 flex items-center justify-center text-amber-300 animate-pulse shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-amber-300 uppercase tracking-widest text-sm">Realm Setup Required</span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase">Fresh Install</span>
-              </div>
-              <span className="text-slate-300 text-[11px] block mt-0.5">
-                Configure realm identity, choose starter bundles (Haven, Meadows, Vance Quests), or jump into Studio to create your first map.
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              soundSynth?.playActionSound?.();
-              window.location.href = '/setup';
-            }}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 text-slate-950 font-black uppercase tracking-wider hover:scale-105 transition-all shadow-xl shadow-amber-500/30 cursor-pointer flex items-center gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            Launch Setup Wizard →
-          </button>
-        </div>
-      )}
-
       {/* ── MAIN 3-COLUMN MMO COMMAND DECK ─────────────────────────────── */}
       <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col justify-center">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">

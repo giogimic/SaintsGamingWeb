@@ -3,24 +3,23 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from './store';
 import { GAME_MAPS } from './data/maps';
-import { Compass, Map, Settings, Hammer, LogOut } from 'lucide-react';
-import { HudPanelShell } from './hud/HudPanelShell';
+import { Compass, Map, Settings, Hammer, LogOut, Radio } from 'lucide-react';
 import { useEditorStore } from './editor/editor-store';
 import { soundSynth } from '@/engine/sound-synth';
 
 const TILE_COLORS: Record<number, string> = {
-  0: '#1a3520',  // Safe walkable — dark forest green
-  1: '#0c1014',  // Wall — near black
-  2: '#144d1e',  // Tall grass — vivid green
-  3: '#92400e',  // Gate — amber
-  4: '#1e40af',  // Gate alt — blue
+  0: '#132a1c',  // Safe walkable — dark neon green
+  1: '#070b10',  // Wall / Void — black
+  2: '#0d3816',  // Tall grass — vivid green
+  3: '#78350f',  // Gate — amber
+  4: '#1e3a8a',  // Gate alt — blue
   5: '#064e3b',  // Woodcutting
-  6: '#374151',  // Ore
-  7: '#78350f',  // Shop — warm brown
-  8: '#0c4a6e',  // Clinic — blue
-  9: '#1f2937',  // Crafting
+  6: '#334155',  // Ore
+  7: '#854d0e',  // Shop — warm gold
+  8: '#0369a1',  // Clinic — cyan blue
+  9: '#1e293b',  // Crafting
   10: '#1d4ed8', // Water / Fishing
-  12: '#1e1b4b', // Terminal
+  12: '#312e81', // Terminal
 };
 
 interface MiniMapRadarProps {
@@ -61,7 +60,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     ctx.clearRect(0, 0, cw, ch);
 
     // Background
-    ctx.fillStyle = '#04090e';
+    ctx.fillStyle = '#050a12';
     ctx.fillRect(0, 0, cw, ch);
 
     // Draw tiles
@@ -78,21 +77,21 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
       }
     }
 
-    // Scan-line overlay for retro cyber HUD effect
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    // Scan-line overlay for cyber HUD effect
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
     for (let y = 0; y < ch; y += 3) {
       ctx.fillRect(0, y, cw, 1);
     }
 
-    // Draw NPCs — blue/cyan dots
+    // Draw NPCs — cyan/blue dots
     mapEntities.forEach((ent) => {
       if (!ent.mapId || ent.mapId === currentMapId) {
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#00f5d4';
         ctx.beginPath();
         ctx.arc(
           ent.position.x * cellW + cellW / 2,
           ent.position.y * cellH + cellH / 2,
-          Math.max(1.5, cellW * 0.9),
+          Math.max(1.8, cellW * 0.9),
           0,
           Math.PI * 2
         );
@@ -107,7 +106,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     Object.values(otherPlayers || {}).forEach((peer) => {
       if (typeof peer.x !== 'number' || typeof peer.y !== 'number') return;
       const isParty = partyNames.has(peer.name);
-      ctx.fillStyle = isParty ? '#22d3ee' : '#fbbf24';
+      ctx.fillStyle = isParty ? '#00f5d4' : '#ffbe0b';
       ctx.beginPath();
       ctx.arc(
         peer.x * cellW + cellW / 2,
@@ -117,18 +116,18 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
         Math.PI * 2
       );
       ctx.fill();
-      ctx.strokeStyle = isParty ? 'rgba(34, 211, 238, 0.9)' : 'rgba(255,255,255,0.7)';
+      ctx.strokeStyle = isParty ? 'rgba(0, 245, 212, 0.9)' : 'rgba(255, 255, 255, 0.8)';
       ctx.lineWidth = isParty ? 1.5 : 1;
       ctx.stroke();
     });
 
-    // Player pulsing emerald indicator
+    // Player pulsing indicator
     const now = Date.now();
-    const pulse = Math.abs(Math.sin(now * 0.004));
-    const r = Math.max(2, cellW * 1.5);
+    const pulse = Math.abs(Math.sin(now * 0.005));
+    const r = Math.max(2.5, cellW * 1.6);
 
     // Glow ring
-    ctx.fillStyle = `rgba(20, 184, 166, ${0.2 + pulse * 0.25})`;
+    ctx.fillStyle = `rgba(0, 245, 212, ${0.25 + pulse * 0.35})`;
     ctx.beginPath();
     ctx.arc(
       playerPos.x * cellW + cellW / 2,
@@ -140,7 +139,7 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     ctx.fill();
 
     // Core dot
-    ctx.fillStyle = `rgba(45, 212, 191, ${0.85 + pulse * 0.15})`;
+    ctx.fillStyle = `rgba(0, 245, 212, ${0.9 + pulse * 0.1})`;
     ctx.beginPath();
     ctx.arc(
       playerPos.x * cellW + cellW / 2,
@@ -151,8 +150,8 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
     );
     ctx.fill();
 
-    // White center
-    ctx.fillStyle = '#fff';
+    // Center spark
+    ctx.fillStyle = '#ffffff';
     ctx.beginPath();
     ctx.arc(
       playerPos.x * cellW + cellW / 2,
@@ -196,98 +195,109 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
   };
 
   return (
-    <HudPanelShell className="pointer-events-auto w-[min(92vw,176px)]">
-      {/* 1. Header Action Row: Quick Buttons */}
-      <div className="flex items-center justify-between gap-1 pb-1.5 mb-1.5 border-b border-teal-500/20">
-        <button
-          type="button"
-          onClick={handleOpenOptionsClick}
-          className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/5 hover:bg-white/10 text-teal-300 hover:text-white text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-          title="Game Settings (ESC)"
-        >
-          <Settings className="w-3 h-3 text-teal-400" />
-          <span>Options</span>
-        </button>
+    <div
+      className="pointer-events-auto w-[min(92vw,180px)] select-none font-mono"
+      style={{ filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))' }}
+    >
+      <div
+        className="w-full bg-[#0a0318]/95 border border-pink-500/30 rounded-2xl p-2.5 backdrop-blur-xl relative overflow-hidden flex flex-col gap-2"
+        style={{
+          clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
+          boxShadow: '0 0 20px rgba(242,0,137,0.15), inset 0 0 15px rgba(0,0,0,0.8)',
+        }}
+      >
+        {/* 1. Header Action Row: Quick Navigation Buttons */}
+        <div className="flex items-center justify-between gap-1 pb-1.5 border-b border-pink-500/20">
+          <button
+            type="button"
+            onClick={handleOpenOptionsClick}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-white text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            title="Game Settings (ESC)"
+          >
+            <Settings className="w-3 h-3 text-[#00f5d4]" />
+            <span>Options</span>
+          </button>
 
-        {enableStudio ? (
+          {enableStudio ? (
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                useEditorStore.getState().toggleCreationMode();
+              }}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                studioToolsOpen
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white'
+              }`}
+              title="Toggle Studio Editor (Ctrl+E)"
+            >
+              <Hammer className="w-3 h-3 text-amber-400" />
+              <span>{studioToolsOpen ? 'Play' : 'Edit'}</span>
+            </button>
+          ) : (
+            <a
+              href="/studio"
+              onClick={() => soundSynth?.playSelectSound?.()}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-amber-300 hover:text-white text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              title="Open Studio Map Editor"
+            >
+              <Hammer className="w-3 h-3 text-amber-400" />
+              <span>Studio</span>
+            </a>
+          )}
+
           <button
             type="button"
             onClick={() => {
               soundSynth?.playSelectSound?.();
-              useEditorStore.getState().toggleCreationMode();
+              window.location.href = '/';
             }}
-            className={`flex items-center gap-1 px-1.5 py-1 rounded text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-              studioToolsOpen
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white'
-            }`}
-            title="Toggle Studio Editor (Ctrl+E)"
+            className="flex items-center justify-center p-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-white transition-colors cursor-pointer"
+            title="Leave Game (Return to Portal)"
           >
-            <Hammer className="w-3 h-3 text-amber-400" />
-            <span>{studioToolsOpen ? 'Play' : 'Edit'}</span>
+            <LogOut className="w-3 h-3" />
           </button>
-        ) : (
-          <a
-            href="/studio"
-            onClick={() => soundSynth?.playSelectSound?.()}
-            className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/5 hover:bg-white/10 text-amber-300/80 hover:text-amber-200 text-[9px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
-            title="Open Studio Map Editor"
-          >
-            <Hammer className="w-3 h-3 text-amber-400" />
-            <span>Studio</span>
-          </a>
-        )}
-
-        <button
-          type="button"
-          onClick={() => {
-            soundSynth?.playSelectSound?.();
-            window.location.href = '/';
-          }}
-          className="flex items-center justify-center p-1 rounded bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-rose-200 transition-colors cursor-pointer"
-          title="Leave Game (Return to Website)"
-        >
-          <LogOut className="w-3 h-3" />
-        </button>
-      </div>
-
-      {/* 2. Middle Section: Radar Thumbnail with Compass Ticks */}
-      <div className="relative h-28 w-full overflow-hidden rounded border border-teal-500/30 bg-[#02060a] shadow-inner mb-1.5">
-        <canvas ref={canvasRef} width={160} height={120} className="absolute inset-0 h-full w-full opacity-85" />
-        
-        {/* Compass Cardinal Overlays */}
-        <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">N</span>
-        <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-cyan-400/40 pointer-events-none">S</span>
-        <span className="absolute top-1/2 left-0.5 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/40 pointer-events-none">W</span>
-        <span className="absolute top-1/2 right-0.5 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/40 pointer-events-none">E</span>
-
-        <div className="absolute top-1 right-1 px-1 py-0.5 rounded bg-black/70 text-[8px] font-mono font-black uppercase tracking-widest text-teal-400/70 border border-teal-500/20">
-          RADAR
-        </div>
-      </div>
-
-      {/* 3. Footer Line: Location Label & Coordinates Readout */}
-      <div className="flex flex-col gap-0.5 pt-1 border-t border-teal-500/20 font-mono">
-        <div className="flex items-center gap-1 text-[10px] text-slate-200 font-bold truncate">
-          <Map className="h-3 w-3 shrink-0 text-teal-400" />
-          <span className="truncate">
-            {mapName}
-            {channelText}
-          </span>
         </div>
 
-        <div className="flex items-center justify-between text-[9px] text-teal-300/60 font-medium">
-          <div className="flex items-center gap-1">
-            <Compass className="h-2.5 w-2.5 text-teal-400" />
-            <span>POS</span>
+        {/* 2. Middle Section: Radar Thumbnail with Compass Ticks */}
+        <div className="relative h-28 w-full overflow-hidden rounded-xl border border-[#00f5d4]/40 bg-[#02060a] shadow-inner">
+          <canvas ref={canvasRef} width={160} height={120} className="absolute inset-0 h-full w-full opacity-90" />
+
+          {/* Compass Cardinal Overlays */}
+          <span className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-[#00f5d4] drop-shadow-[0_1px_2px_rgba(0,0,0,1)] pointer-events-none">N</span>
+          <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">S</span>
+          <span className="absolute top-1/2 left-1 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">W</span>
+          <span className="absolute top-1/2 right-1 -translate-y-1/2 text-[8px] font-mono font-black text-cyan-400/60 pointer-events-none">E</span>
+
+          <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[8px] font-black uppercase tracking-widest text-[#00f5d4] border border-[#00f5d4]/30 flex items-center gap-1">
+            <Radio size={8} className="animate-pulse" />
+            RADAR
           </div>
-          <div className="text-teal-100 font-mono font-bold text-[10px] tracking-wide">
-            <span className="text-teal-400/60">X:</span> {playerPos.x}{' '}
-            <span className="text-teal-400/60 ml-1">Y:</span> {playerPos.y}
+        </div>
+
+        {/* 3. Footer Line: Location Label & Coordinates Readout */}
+        <div className="flex flex-col gap-1 pt-1.5 border-t border-pink-500/20">
+          <div className="flex items-center gap-1.5 text-[10px] text-white font-black truncate">
+            <Map className="h-3 w-3 shrink-0 text-[#00f5d4]" />
+            <span className="truncate">
+              {mapName}
+              {channelText}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between text-[9px] text-slate-400 font-medium">
+            <div className="flex items-center gap-1">
+              <Compass className="h-2.5 w-2.5 text-amber-400" />
+              <span>COORDS</span>
+            </div>
+            <div className="text-white font-mono font-bold text-[10px] tracking-wide">
+              <span className="text-cyan-400">X:</span> {playerPos.x}{' '}
+              <span className="text-cyan-400 ml-1">Y:</span> {playerPos.y}
+            </div>
           </div>
         </div>
       </div>
-    </HudPanelShell>
+    </div>
   );
 }
-

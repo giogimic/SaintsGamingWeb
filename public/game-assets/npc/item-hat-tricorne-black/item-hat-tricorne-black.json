@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "bodyType": "male",
+  "selections": {
+    "hat": {
+      "itemId": "hat_tricorne",
+      "subId": null,
+      "variant": "black",
+      "recolor": "",
+      "name": "Tricorne (black)"
+    }
+  },
+  "selectedAnimation": "walk",
+  "showTransparencyGrid": true,
+  "applyTransparencyMask": false,
+  "matchBodyColorEnabled": false,
+  "compactDisplay": false,
+  "enabledLicenses": {
+    "CC0": true,
+    "CC-BY-SA": true,
+    "CC-BY": true,
+    "OGA-BY": true,
+    "GPL": true
+  },
+  "enabledAnimations": {
+    "spellcast": false,
+    "thrust": false,
+    "walk": false,
+    "slash": false,
+    "shoot": false,
+    "hurt": false,
+    "climb": false,
+    "idle": false,
+    "jump": false,
+    "sit": false,
+    "emote": false,
+    "run": false,
+    "watering": false,
+    "combat": false,
+    "1h_slash": false,
+    "1h_backslash": false,
+    "1h_halfslash": false
+  },
+  "url": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&hat=Tricorne_black",
+  "layers": [
+    {
+      "itemId": "hat_tricorne",
+      "name": "Tricorne (black)",
+      "variant": "black",
+      "recolors": null,
+      "zPos": 130,
+      "layerNum": 1,
+      "yPos": 0,
+      "needsRecolor": false,
+      "source": {
+        "kind": "catalog",
+        "spritePath": "hat/pirate/tricorne/basic/adult/spellcast/black.png"
+      },
+      "supportedAnimations": [
+        "spellcast",
+        "thrust",
+        "walk",
+        "slash",
+        "shoot",
+        "hurt",
+        "climb",
+        "idle",
+        "jump",
+        "sit",
+        "emote",
+        "run",
+        "combat_idle",
+        "backslash",
+        "halfslash"
+      ]
+    }
+  ],
+  "credits": [
+    {
+      "fileName": "hat/pirate/tricorne/basic/adult/walk/black.png",
+      "file": "hat/pirate/tricorne",
+      "notes": "Pirate Hat by Bluecarrot16, layers and added animations by JaidynReiman",
+      "authors": [
+        "bluecarrot16"
+      ],
+      "licenses": [
+        "OGA-BY 3.0"
+      ],
+      "urls": [
+        "https://opengameart.org/content/lpc-pirates",
+        "https://opengameart.org/content/lpc-expanded-hats-facial-helmets"
+      ]
+    }
+  ],
+  "character_id": "item-hat-tricorne-black",
+  "preset": "standalone_item",
+  "preset_title": "Item: Pirate Tricorne",
+  "description": "Standalone LPC item 'Pirate Tricorne' with transparent background (no character base model)."
+}

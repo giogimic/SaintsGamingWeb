@@ -194,6 +194,11 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
         echo -e "${GREEN}[✓] PM2 web/MMO process refreshed.${NC}"
     fi
 
+    # Clean up conflicting or orphaned systemd services if Docker is running
+    if command -v systemctl &>/dev/null; then
+        bash "$(dirname "$0")/audit-systemd.sh" --clean -y 2>/dev/null || true
+    fi
+
     # Reload proxy server if present
     if command -v systemctl &>/dev/null; then
         echo -e "${CYAN}[*] Reloading web proxies if present...${NC}"

@@ -2,23 +2,24 @@ import { describe, expect, it } from "vitest";
 import { getCombatMultiplier, calculateCombatHitDamage, calculatePlayerCombatStats } from "./combat";
 
 describe("getCombatMultiplier", () => {
-  it("returns 1.0 for same type, unknown, or None", () => {
-    expect(getCombatMultiplier("Solar", "Solar")).toBe(1.0);
-    expect(getCombatMultiplier("Volt", "Bio")).toBe(1.0);
-    expect(getCombatMultiplier("None", "Hydro")).toBe(1.0);
+  it("returns 1.0 for neutral matchups or none", () => {
+    expect(getCombatMultiplier("normal", "normal")).toBe(1.0);
+    expect(getCombatMultiplier("None", "water")).toBe(1.0);
+    expect(getCombatMultiplier("fire", "earth")).toBe(1.0);
   });
 
-  it("returns 1.5 for advantageous matchups", () => {
-    expect(getCombatMultiplier("Solar", "Bio")).toBe(1.5);
-    expect(getCombatMultiplier("Solar", "Cryo")).toBe(1.5);
-    expect(getCombatMultiplier("Cyber", "Solar")).toBe(1.5);
-    expect(getCombatMultiplier("Hydro", "Geo")).toBe(1.5);
+  it("returns 2.0 for advantageous super-effective matchups", () => {
+    expect(getCombatMultiplier("fire", "grass")).toBe(2.0);
+    expect(getCombatMultiplier("water", "fire")).toBe(2.0);
+    expect(getCombatMultiplier("electric", "water")).toBe(2.0);
+    expect(getCombatMultiplier("holy", "shadow")).toBe(2.0);
   });
 
-  it("returns 0.5 for disadvantageous matchups", () => {
-    expect(getCombatMultiplier("Bio", "Solar")).toBe(0.5);
-    expect(getCombatMultiplier("Cryo", "Geo")).toBe(0.5);
-    expect(getCombatMultiplier("Volt", "Cyber")).toBe(0.5);
+  it("returns 0.5 for resistant/disadvantageous matchups", () => {
+    expect(getCombatMultiplier("grass", "fire")).toBe(0.5);
+    expect(getCombatMultiplier("fire", "water")).toBe(0.5);
+    expect(getCombatMultiplier("water", "grass")).toBe(0.5);
+    expect(getCombatMultiplier("shadow", "shadow")).toBe(0.5);
   });
 });
 

@@ -1,14 +1,39 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Gamepad2, Plus, Trash2, Shield, Sparkles, Zap, Wrench, User, Play, Swords, Heart, Coins, ArrowLeft } from "lucide-react";
-import { deleteGameCharacter } from "@/app/actions/game";
-import { toast } from "sonner";
-import { soundSynth } from "@/engine/sound-synth";
-import { useGameStore } from "./store";
-import { DigitalSnowV5 } from "@/web/components/landing/digital-snow-v5";
-import { PalmCanopyVignetteV5 } from "@/web/components/landing/palm-canopy-vignette-v5";
-import { CharacterSpritePreview } from "./CharacterSpritePreview";
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Gamepad2,
+  Plus,
+  Trash2,
+  Shield,
+  Sparkles,
+  Zap,
+  Wrench,
+  User,
+  Play,
+  Swords,
+  Heart,
+  Coins,
+  ArrowLeft,
+  Trophy,
+  Crown,
+  MessageSquare,
+  Send,
+  Wifi,
+  RefreshCw,
+  AlertTriangle,
+  Flame,
+  Layers,
+} from 'lucide-react';
+import { deleteGameCharacter, getTopLobbyOperatives } from '@/app/actions/game';
+import { toast } from 'sonner';
+import { soundSynth } from '@/engine/sound-synth';
+import { useGameStore } from './store';
+import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
+import { useSession } from 'next-auth/react';
+import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
+import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
+import { CharacterSpritePreview } from './CharacterSpritePreview';
 
 interface CharacterSelectorProps {
   characters: any[];
@@ -47,24 +72,127 @@ const CLASS_COLORS: Record<string, { glow: string; accent: string; label: string
 
 const DEFAULT_COLOR = { glow: 'rgba(242,0,137,0.35)', accent: '#f20089', label: '#f472b6', border: 'rgba(242,0,137,0.5)' };
 
-export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh, onCancel }: CharacterSelectorProps) {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+interface ChatMessage {
+  id: string;
+  sender: string;
+  text: string;
+  timestamp: number;
+  type?: 'GLOBAL' | 'SYSTEM' | 'ANNOUNCE';
+}
+
+export function CharacterSelector({
+  characters,
+  onSelect,
+  onCreateNew,
+  onRefresh,
+  onCancel,
+}: CharacterSelectorProps) {
+  const { data: session } = useSession();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [deleteModalChar, setDeleteModalChar] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const setGameMode = useGameStore((state) => state.setGameMode);
 
-  const handleDelete = async (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    if (!confirm(`Permanently delete hero "${name}"? All inventory and quest progress will be lost.`)) return;
+  // Social & Comms Deck State
+  const [activeSideTab, setActiveSideTab] = useState<'LEADERBOARD' | 'CHAT'>('LEADERBOARD');
+  const [topOperatives, setTopOperatives] = useState<any[]>([]);
+  const [loadingLeaderboards, setLoadingLeaderboards] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: 'sys-1',
+      sender: 'Saints Gateway',
+      text: 'Welcome to the Saints Gaming MMO Vault. Select an operative to enter the live world.',
+      timestamp: Date.now() - 60000,
+      type: 'SYSTEM',
+    },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
-    setDeletingId(id);
-    const res = await deleteGameCharacter(id);
+  // Realtime count
+  const mmoPlayerCount = useRealtimeStore((state) => state.mmoPlayerCount);
+  const emitSocketEvent = useGameStore((state) => state.emitSocketEvent);
+
+  // Fetch leaderboard data
+  const fetchLeaderboards = async () => {
+    setLoadingLeaderboards(true);
+    try {
+      const res = await getTopLobbyOperatives();
+      if (res.success && res.data) {
+        setTopOperatives(res.data.slice(0, 6));
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoadingLeaderboards(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaderboards();
+  }, []);
+
+  // Listen for incoming global chat events
+  useEffect(() => {
+    const handleIncoming = (e: CustomEvent<any>) => {
+      const msg = e.detail;
+      if (!msg?.text) return;
+      setChatMessages((prev) => {
+        const item: ChatMessage = {
+          id: msg.id || `${Date.now()}-${Math.random()}`,
+          sender: msg.sender || 'Operative',
+          text: msg.text,
+          timestamp: msg.timestamp || Date.now(),
+          type: msg.type || 'GLOBAL',
+        };
+        return [...prev, item].slice(-100);
+      });
+    };
+
+    window.addEventListener('game_chat_msg' as any, handleIncoming as any);
+    return () => window.removeEventListener('game_chat_msg' as any, handleIncoming as any);
+  }, []);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, activeSideTab]);
+
+  const handleSendChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = chatInput.trim();
+    if (!text) return;
+
+    soundSynth?.playSelectSound?.();
+    const senderName = session?.user?.name || 'Operative';
+    const newMsg: ChatMessage = {
+      id: `${Date.now()}-${Math.random()}`,
+      sender: senderName,
+      text,
+      timestamp: Date.now(),
+      type: 'GLOBAL',
+    };
+
+    setChatMessages((prev) => [...prev, newMsg].slice(-100));
+    emitSocketEvent?.('global_chat', text);
+    setChatInput('');
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModalChar) return;
+    setIsDeleting(true);
+    soundSynth?.playActionSound?.();
+    const res = await deleteGameCharacter(deleteModalChar.id);
     if (res.success) {
-      toast.success(`${name} was deleted.`);
+      toast.success(`${deleteModalChar.name} has been archived.`);
       onRefresh();
     } else {
-      toast.error(res.error || "Failed to delete character.");
+      toast.error(res.error || 'Failed to delete character.');
     }
-    setDeletingId(null);
+    setIsDeleting(false);
+    setDeleteModalChar(null);
   };
 
   const handleBack = () => {
@@ -78,10 +206,8 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
 
   return (
     <div
-      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col items-center justify-center p-4 md:p-8 select-none font-sans"
-      style={{
-        backgroundColor: '#0d0221',
-      }}
+      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col justify-between p-3 sm:p-6 select-none font-sans"
+      style={{ backgroundColor: '#0d0221' }}
     >
       {/* Synthwave Horizon Grid Floor */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -102,191 +228,443 @@ export function CharacterSelector({ characters, onSelect, onCreateNew, onRefresh
       <DigitalSnowV5 />
       <PalmCanopyVignetteV5 />
 
-      {/* Back button */}
-      <button
-        onClick={handleBack}
-        className="absolute top-6 left-6 z-30 flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-pink-500/40 text-pink-300 hover:text-white hover:border-[#00f5d4] hover:bg-pink-950/40 cursor-pointer shadow-lg active:scale-95"
-      >
-        <ArrowLeft size={14} strokeWidth={2.5} />
-        Back to Gateway
-      </button>
+      {/* ── TOP HEADER BAR ── */}
+      <header className="relative z-30 w-full max-w-7xl mx-auto flex items-center justify-between gap-4 py-2 border-b border-pink-500/20 mb-4">
+        {/* Back Button */}
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl font-mono font-bold text-xs tracking-wider uppercase transition-all bg-black/80 border border-pink-500/40 text-pink-300 hover:text-white hover:border-[#00f5d4] hover:bg-pink-950/50 cursor-pointer shadow-lg active:scale-95"
+        >
+          <ArrowLeft size={14} strokeWidth={2.5} />
+          <span className="hidden sm:inline">Back to Gateway</span>
+          <span className="sm:hidden">Back</span>
+        </button>
 
-      <div className="w-full max-w-6xl flex flex-col items-center relative z-20 py-8">
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="h-[1px] w-20 bg-gradient-to-r from-transparent via-[#00f5d4] to-transparent" />
-            <Gamepad2 className="w-5 h-5 text-[#00f5d4] drop-shadow-[0_0_8px_rgba(0,245,212,0.8)]" />
-            <div className="h-[1px] w-20 bg-gradient-to-l from-transparent via-[#00f5d4] to-transparent" />
-          </div>
+        {/* Center Title */}
+        <div className="flex items-center gap-3">
+          <Gamepad2 className="w-5 h-5 text-[#00f5d4] drop-shadow-[0_0_8px_rgba(0,245,212,0.8)]" />
           <h1
-            className="text-4xl md:text-5xl font-black tracking-widest uppercase font-mono mb-2"
+            className="text-xl sm:text-2xl font-black tracking-widest uppercase font-mono"
             style={{
               background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
-              filter: 'drop-shadow(0 0 25px rgba(242,0,137,0.6))',
+              filter: 'drop-shadow(0 0 15px rgba(242,0,137,0.5))',
             }}
           >
-            HERO VAULT
+            OPERATIVE VAULT
           </h1>
-          <p className="text-cyan-300/70 text-xs tracking-[0.3em] uppercase font-mono">
-            Select your champion operative to enter the live world
-          </p>
         </div>
 
-        {/* Character grid */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {characters.map((char) => {
-            let state: any = { level: 1, hp: 100, maxHp: 100, credits: 1000, perk: 'SWIFT_TRAVELER' };
-            try {
-              if (char.stateData) state = JSON.parse(char.stateData);
-            } catch {}
+        {/* Server Presence Badge */}
+        <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-xs font-mono font-extrabold shadow-[0_0_10px_rgba(0,245,212,0.2)]">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>{mmoPlayerCount > 0 ? `${mmoPlayerCount} Online` : 'Connected'}</span>
+        </div>
+      </header>
 
-            const classKey = (char.classId || 'WARRIOR').toUpperCase();
-            const Icon = CLASS_ICONS[classKey] || User;
-            const palette = CLASS_COLORS[classKey] || DEFAULT_COLOR;
-            const isCustomSprite = char.spriteId && (char.spriteId.startsWith('/') || char.spriteId.startsWith('http'));
-            const isHovered = hoveredId === char.id;
+      {/* ── MAIN 2-COLUMN COMMAND DECK ── */}
+      <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        
+        {/* ── LEFT SECTION: HEROES ROSTER (Cols 1-8) ── */}
+        <section className="lg:col-span-8 flex flex-col justify-between">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-cyan-200/80 text-xs tracking-[0.2em] uppercase font-mono flex items-center gap-2">
+              <Layers size={14} className="text-[#00f5d4]" />
+              Select Active Operative ({characters.length})
+            </p>
+            <button
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                onRefresh();
+              }}
+              className="text-[11px] font-mono text-pink-300 hover:text-white flex items-center gap-1.5 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-lg border border-pink-500/30 transition-all cursor-pointer"
+            >
+              <RefreshCw size={11} />
+              Refresh
+            </button>
+          </div>
 
-            return (
-              <div
-                key={char.id}
-                onClick={() => {
-                  soundSynth?.playActionSound?.();
-                  onSelect(char.id);
-                }}
-                onMouseEnter={() => {
-                  soundSynth?.playSelectSound?.();
-                  setHoveredId(char.id);
-                }}
-                onMouseLeave={() => setHoveredId(null)}
-                className="relative cursor-pointer transition-all duration-200 overflow-hidden group rounded-2xl p-[1px]"
-                style={{
-                  clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-                  background: isHovered
-                    ? `linear-gradient(135deg, ${palette.accent} 0%, rgba(242,0,137,0.6) 100%)`
-                    : 'linear-gradient(135deg, rgba(242,0,137,0.4) 0%, rgba(13,2,33,0.9) 100%)',
-                  boxShadow: isHovered
-                    ? `0 0 35px ${palette.glow}, 0 10px 30px rgba(0,0,0,0.7)`
-                    : '0 4px 20px rgba(0,0,0,0.5)',
-                  transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-                }}
-              >
+          {/* Grid of Characters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 auto-rows-fr">
+            {characters.map((char) => {
+              let state: any = { level: 1, hp: 100, maxHp: 100, credits: 1000, perk: 'SWIFT_TRAVELER' };
+              try {
+                if (char.stateData) state = JSON.parse(char.stateData);
+              } catch {}
+
+              const classKey = (char.classId || 'WARRIOR').toUpperCase();
+              const Icon = CLASS_ICONS[classKey] || User;
+              const palette = CLASS_COLORS[classKey] || DEFAULT_COLOR;
+              const isHovered = hoveredId === char.id;
+
+              const charLayers = state?.customization?.layers || state?.appearance?.layers || (char.spriteId ? [char.spriteId] : ['adventurer']);
+
+              return (
                 <div
-                  className="w-full h-full bg-[#0a0318]/95 p-5 flex flex-col justify-between"
+                  key={char.id}
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    onSelect(char.id);
+                  }}
+                  onMouseEnter={() => {
+                    soundSynth?.playSelectSound?.();
+                    setHoveredId(char.id);
+                  }}
+                  onMouseLeave={() => setHoveredId(null)}
+                  className="relative cursor-pointer transition-all duration-200 overflow-hidden group rounded-2xl p-[1px]"
                   style={{
-                    clipPath: 'polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px)',
+                    clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+                    background: isHovered
+                      ? `linear-gradient(135deg, ${palette.accent} 0%, rgba(242,0,137,0.6) 100%)`
+                      : 'linear-gradient(135deg, rgba(242,0,137,0.4) 0%, rgba(13,2,33,0.9) 100%)',
+                    boxShadow: isHovered
+                      ? `0 0 30px ${palette.glow}, 0 10px 30px rgba(0,0,0,0.7)`
+                      : '0 4px 20px rgba(0,0,0,0.5)',
+                    transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
                   }}
                 >
-                  {/* Top Bar: Class Badge + Level */}
-                  <div className="flex items-center justify-between mb-4 border-b border-pink-500/20 pb-3">
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="w-4 h-4" style={{ color: palette.accent }} />
-                      <span className="text-[10px] font-black uppercase tracking-widest font-mono text-cyan-200">
-                        {char.classId || 'WARRIOR'}
-                      </span>
-                    </div>
-                    <div className="px-2.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-xs font-mono font-extrabold shadow-[0_0_8px_rgba(0,245,212,0.3)]">
-                      LVL {state.level || 1}
-                    </div>
-                  </div>
-
-                  {/* Character Avatar & Pedestal */}
-                  <div className="flex items-center gap-4 mb-4">
-                    <div
-                      className="w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden shrink-0 bg-black/70 border border-pink-500/30 relative shadow-inner"
-                      style={{
-                        boxShadow: isHovered ? `0 0 20px ${palette.glow}` : 'inset 0 0 12px rgba(0,0,0,0.8)',
-                      }}
-                    >
-                      <CharacterSpritePreview
-                        spriteKey={char.spriteId || 'adventurer'}
-                        size={32}
-                        scale={1.8}
-                        className="transition-transform group-hover:scale-110 duration-200 drop-shadow-[0_0_10px_rgba(242,0,137,0.6)]"
-                      />
+                  <div
+                    className="w-full h-full bg-[#0a0318]/95 p-4 sm:p-5 flex flex-col justify-between"
+                    style={{
+                      clipPath: 'polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px)',
+                    }}
+                  >
+                    {/* Top Bar: Class Badge + Level */}
+                    <div className="flex items-center justify-between mb-3 border-b border-pink-500/20 pb-2.5">
+                      <div className="flex items-center gap-1.5">
+                        <Icon className="w-4 h-4" style={{ color: palette.accent }} />
+                        <span className="text-[10px] font-black uppercase tracking-widest font-mono text-cyan-200">
+                          {char.classId || 'WARRIOR'}
+                        </span>
+                      </div>
+                      <div className="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-[11px] font-mono font-extrabold shadow-[0_0_8px_rgba(0,245,212,0.3)]">
+                        LVL {state.level || 1}
+                      </div>
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-black font-mono text-white truncate group-hover:text-[#00f5d4] transition-colors">
-                        {char.name}
-                      </h3>
-                      <div className="flex flex-col gap-1 mt-1 text-[11px] font-mono text-slate-300">
-                        <div className="flex items-center gap-1.5">
-                          <Heart className="w-3 h-3 text-rose-400" />
-                          <span>HP: <strong className="text-white">{state.hp || 100}/{state.maxHp || 100}</strong></span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <Coins className="w-3 h-3 text-amber-400" />
-                          <span>Pouch: <strong className="text-amber-300">{(state.credits || 1000).toLocaleString()} C</strong></span>
+                    {/* Character Avatar & Pedestal */}
+                    <div className="flex items-center gap-4 mb-3">
+                      <div
+                        className="w-18 h-18 rounded-xl flex items-center justify-center overflow-hidden shrink-0 bg-black/70 border border-pink-500/30 relative shadow-inner"
+                        style={{
+                          boxShadow: isHovered ? `0 0 20px ${palette.glow}` : 'inset 0 0 12px rgba(0,0,0,0.8)',
+                        }}
+                      >
+                        <CharacterSpritePreview
+                          layers={charLayers}
+                          spriteKey={char.spriteId || 'adventurer'}
+                          size={32}
+                          scale={1.8}
+                          className="transition-transform group-hover:scale-110 duration-200 drop-shadow-[0_0_10px_rgba(242,0,137,0.6)]"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-black font-mono text-white truncate group-hover:text-[#00f5d4] transition-colors">
+                          {char.name}
+                        </h3>
+                        <div className="flex flex-col gap-1 mt-1 text-[11px] font-mono text-slate-300">
+                          <div className="flex items-center gap-1.5">
+                            <Heart className="w-3 h-3 text-rose-400" />
+                            <span>HP: <strong className="text-white">{state.hp || 100}/{state.maxHp || 100}</strong></span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Coins className="w-3 h-3 text-amber-400" />
+                            <span>Pouch: <strong className="text-amber-300">{(state.credits || 1000).toLocaleString()} C</strong></span>
+                          </div>
+                          {state.perk && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-purple-300">
+                              <Zap className="w-3 h-3 text-purple-400" />
+                              <span>{state.perk.replace(/_/g, ' ')}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Action row */}
-                  <div className="flex items-center justify-between pt-3 border-t border-pink-500/20">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        soundSynth?.playActionSound?.();
-                        onSelect(char.id);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition-all bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(242,0,137,0.4)] active:scale-95 cursor-pointer"
-                    >
-                      <Play size={12} fill="currentColor" />
-                      ENTER REALM
-                    </button>
+                    {/* Action Row */}
+                    <div className="flex items-center justify-between pt-3 border-t border-pink-500/20 gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundSynth?.playActionSound?.();
+                          onSelect(char.id);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-mono font-bold text-xs uppercase tracking-wider transition-all bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(242,0,137,0.4)] active:scale-95 cursor-pointer"
+                      >
+                        <Play size={12} fill="currentColor" />
+                        ENTER REALM
+                      </button>
 
-                    <button
-                      onClick={(e) => handleDelete(e, char.id, char.name)}
-                      disabled={deletingId === char.id}
-                      className="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/40 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                      title="Delete Champion"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundSynth?.playSelectSound?.();
+                          setDeleteModalChar({ id: char.id, name: char.name });
+                        }}
+                        className="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/40 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                        title="Delete Operative"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* Create New Card */}
-          <div
-            onClick={() => {
-              soundSynth?.playActionSound?.();
-              onCreateNew();
-            }}
-            className="cursor-pointer transition-all duration-200 flex flex-col items-center justify-center gap-4 min-h-[220px] rounded-2xl p-[1px] group"
-            style={{
-              clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-              background: 'linear-gradient(135deg, rgba(0,245,212,0.4) 0%, rgba(242,0,137,0.3) 100%)',
-            }}
-          >
+            {/* Create New Operative Card */}
             <div
-              className="w-full h-full bg-[#0a0318]/85 p-8 flex flex-col items-center justify-center text-center group-hover:bg-[#12052a]/90 transition-colors"
+              onClick={() => {
+                soundSynth?.playActionSound?.();
+                onCreateNew();
+              }}
+              className="cursor-pointer transition-all duration-200 flex flex-col items-center justify-center min-h-[190px] rounded-2xl p-[1px] group"
               style={{
-                clipPath: 'polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px)',
+                clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+                background: 'linear-gradient(135deg, rgba(0,245,212,0.4) 0%, rgba(242,0,137,0.3) 100%)',
               }}
             >
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-pink-950/60 border border-pink-500/50 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(242,0,137,0.3)] mb-3">
-                <Plus className="w-7 h-7 text-[#00f5d4] group-hover:text-white transition-colors" strokeWidth={2.5} />
+              <div
+                className="w-full h-full bg-[#0a0318]/85 p-6 flex flex-col items-center justify-center text-center group-hover:bg-[#12052a]/90 transition-colors"
+                style={{
+                  clipPath: 'polygon(13px 0%, 100% 0%, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0% 100%, 0% 13px)',
+                }}
+              >
+                <div className="w-13 h-13 rounded-2xl flex items-center justify-center bg-pink-950/60 border border-pink-500/50 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(242,0,137,0.3)] mb-2">
+                  <Plus className="w-6 h-6 text-[#00f5d4] group-hover:text-white transition-colors" strokeWidth={2.5} />
+                </div>
+                <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffbe0b] to-[#00f5d4] uppercase tracking-widest font-mono">
+                  FORGE NEW HERO
+                </p>
+                <p className="text-[10px] text-slate-300 font-mono mt-1">Create operative & customize skills</p>
               </div>
-              <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffbe0b] to-[#00f5d4] uppercase tracking-widest font-mono">
-                FORGE NEW HERO
-              </p>
-              <p className="text-[10px] text-slate-300 font-mono mt-1">Create a new operative & customize skills</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── RIGHT SECTION: LIVE COMMS & HALL OF CHAMPIONS (Cols 9-12) ── */}
+        <section
+          className="lg:col-span-4 flex flex-col justify-between rounded-2xl border p-4 bg-[#0a031a]/90 backdrop-blur-xl shadow-2xl relative overflow-hidden"
+          style={{
+            borderColor: 'rgba(242,0,137,0.35)',
+            boxShadow: '0 0 30px rgba(242,0,137,0.15), inset 0 0 20px rgba(0,0,0,0.8)',
+            clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+          }}
+        >
+          {/* Side Tabs Header */}
+          <div className="flex items-center gap-2 border-b border-pink-500/20 pb-3 mb-3">
+            <button
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setActiveSideTab('LEADERBOARD');
+              }}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeSideTab === 'LEADERBOARD'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-400/50 shadow-[0_0_12px_rgba(251,191,36,0.25)]'
+                  : 'text-slate-400 hover:text-white bg-white/5 border border-transparent'
+              }`}
+            >
+              <Trophy size={13} className="text-amber-400" />
+              Champions
+            </button>
+
+            <button
+              onClick={() => {
+                soundSynth?.playSelectSound?.();
+                setActiveSideTab('CHAT');
+              }}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeSideTab === 'CHAT'
+                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,245,212,0.25)]'
+                  : 'text-slate-400 hover:text-white bg-white/5 border border-transparent'
+              }`}
+            >
+              <MessageSquare size={13} className="text-cyan-400" />
+              Global Chat
+            </button>
+          </div>
+
+          {/* TAB 1: LEADERBOARD CONTENT */}
+          {activeSideTab === 'LEADERBOARD' && (
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="space-y-2 overflow-y-auto max-h-[320px] pr-1">
+                {loadingLeaderboards ? (
+                  <div className="text-center py-10 text-xs font-mono text-slate-400 animate-pulse">
+                    Scanning realm operatives...
+                  </div>
+                ) : topOperatives.length === 0 ? (
+                  <div className="text-center py-10 text-xs font-mono text-slate-400">
+                    No champion operatives registered yet.
+                  </div>
+                ) : (
+                  topOperatives.map((op, idx) => {
+                    let st: any = { level: 1, credits: 1000 };
+                    try {
+                      if (op.stateData) st = JSON.parse(op.stateData);
+                    } catch {}
+                    const isTop = idx === 0;
+
+                    return (
+                      <div
+                        key={op.id || idx}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                          isTop
+                            ? 'bg-amber-950/40 border-amber-400/40 shadow-[0_0_10px_rgba(251,191,36,0.15)]'
+                            : 'bg-black/50 border-pink-500/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-black ${
+                              isTop
+                                ? 'bg-amber-400 text-slate-950 font-extrabold'
+                                : idx === 1
+                                ? 'bg-slate-300 text-slate-950'
+                                : idx === 2
+                                ? 'bg-amber-700 text-white'
+                                : 'bg-white/10 text-slate-400'
+                            }`}
+                          >
+                            {isTop ? <Crown size={12} /> : idx + 1}
+                          </div>
+                          <div className="truncate">
+                            <div className="text-xs font-bold font-mono text-white truncate">
+                              {op.name}
+                            </div>
+                            <div className="text-[10px] font-mono text-cyan-300">
+                              {op.classId || 'WARRIOR'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-right font-mono">
+                          <div className="text-xs font-black text-amber-300">
+                            LVL {st.level || op.level || 1}
+                          </div>
+                          <div className="text-[9px] text-slate-400">
+                            {(st.credits || 1000).toLocaleString()} C
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Leaderboard Footer */}
+              <div className="pt-3 border-t border-pink-500/20 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <span className="flex items-center gap-1 text-amber-300">
+                  <Flame size={12} /> Live Standings
+                </span>
+                <span>Top Operatives</span>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: CHAT CONTENT */}
+          {activeSideTab === 'CHAT' && (
+            <div className="flex-1 flex flex-col justify-between">
+              {/* Message List */}
+              <div
+                ref={chatScrollRef}
+                className="flex-1 space-y-2 overflow-y-auto max-h-[280px] pr-1 mb-2"
+              >
+                {chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`p-2 rounded-xl text-xs font-mono ${
+                      msg.type === 'SYSTEM'
+                        ? 'bg-purple-950/60 border border-purple-500/40 text-purple-200'
+                        : 'bg-black/60 border border-pink-500/20 text-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] mb-1">
+                      <span className={`font-bold ${msg.type === 'SYSTEM' ? 'text-purple-300' : 'text-[#00f5d4]'}`}>
+                        {msg.sender}
+                      </span>
+                      <span className="text-slate-500">
+                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="break-words text-[11px] leading-relaxed">{msg.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Chat Input */}
+              <form onSubmit={handleSendChat} className="flex gap-2 pt-2 border-t border-pink-500/20">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Transmit to lobby..."
+                  maxLength={140}
+                  className="flex-1 px-3 py-1.5 rounded-lg bg-black/70 border border-pink-500/30 text-white placeholder:text-slate-500 text-xs font-mono focus:outline-none focus:border-[#00f5d4]"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white text-xs font-mono font-bold disabled:opacity-40 cursor-pointer"
+                >
+                  <Send size={12} />
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* ── FOOTER BAR ── */}
+      <footer className="relative z-30 w-full max-w-7xl mx-auto flex items-center justify-between text-[10px] font-mono text-pink-500/60 pt-3 border-t border-pink-500/20 mt-4">
+        <span>⚔ Saints Gaming MMO Core Engine // Hero Gate ⚔</span>
+        <span className="text-cyan-400/80">Press ENTER or click any card to deploy</span>
+      </footer>
+
+      {/* ── HIGH-TECH DELETE CONFIRMATION MODAL ── */}
+      {deleteModalChar && (
+        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div
+            className="w-full max-w-md bg-[#0d0221] border-2 border-rose-500/80 rounded-2xl p-6 shadow-[0_0_50px_rgba(244,63,94,0.4)] relative text-center"
+            style={{
+              clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+            }}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-rose-950/80 border border-rose-500 flex items-center justify-center mx-auto mb-4 text-rose-400">
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 className="text-xl font-black font-mono uppercase text-white mb-2 tracking-wider">
+              Archive Operative?
+            </h3>
+            <p className="text-xs font-mono text-rose-200/80 leading-relaxed mb-6">
+              Permanently delete champion <strong className="text-white">"{deleteModalChar.name}"</strong>? All quest
+              progression, inventory items, and world rank will be lost.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  setDeleteModalChar(null);
+                }}
+                disabled={isDeleting}
+                className="py-2.5 rounded-xl font-mono font-bold text-xs uppercase bg-white/10 hover:bg-white/15 text-white border border-white/20 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="py-2.5 rounded-xl font-mono font-black text-xs uppercase bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.5)] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                {isDeleting ? 'Archiving...' : 'Confirm Delete'}
+              </button>
             </div>
           </div>
         </div>
-
-        <p className="mt-8 text-pink-500/50 text-[10px] font-mono tracking-widest uppercase">
-          ⚔ Saints Gaming MMO Core Engine ⚔
-        </p>
-      </div>
+      )}
     </div>
   );
 }

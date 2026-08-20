@@ -1,0 +1,23 @@
+[Unit]
+Description=Saints Gaming Go Realtime MMO Server (:3001)
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/saints-gaming/go-mmo
+Environment=PORT=3001
+Environment=ADDR=:3001
+ExecStart=/var/www/saints-gaming/go-mmo/bin/server
+Restart=always
+RestartSec=3s
+
+# Resource limits & hygiene
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=saints-go-mmo
+
+[Install]
+WantedBy=multi-user.target

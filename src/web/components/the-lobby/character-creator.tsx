@@ -1,43 +1,153 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { createGameCharacter } from "@/app/actions/game";
-import { getStarterHeroes } from "@/app/actions/starter-heroes";
-import { getPlayableClasses } from "@/app/actions/character-classes";
-import { ensureWorldProfiles } from "@/app/actions/world-profiles";
-import { User, Sparkles, Shield, Zap, ArrowLeft, ArrowRight, Wand2, Swords, Feather, Heart, ChevronRight, Loader2, Crosshair, Globe2 } from "lucide-react";
-import { toast } from "sonner";
-import { INITIAL_SKILLS, useGameStore } from "./store";
-import { soundSynth } from "@/engine/sound-synth";
+import React, { useState, useEffect } from 'react';
+import {
+  User,
+  Sparkles,
+  Shield,
+  Zap,
+  ArrowLeft,
+  ArrowRight,
+  Wand2,
+  Swords,
+  Feather,
+  Heart,
+  ChevronRight,
+  ChevronLeft,
+  Loader2,
+  Crosshair,
+  Globe2,
+  Dice5,
+  CheckCircle2,
+  Flame,
+  Search,
+  Package,
+  Layers,
+  Award,
+  LucideIcon,
+} from 'lucide-react';
+import { createGameCharacter } from '@/app/actions/game';
+import { getStarterHeroes } from '@/app/actions/starter-heroes';
+import { getPlayableClasses } from '@/app/actions/character-classes';
+import { ensureWorldProfiles } from '@/app/actions/world-profiles';
+import { toast } from 'sonner';
+import { INITIAL_SKILLS, useGameStore } from './store';
+import { soundSynth } from '@/engine/sound-synth';
 import {
   ClassDefData,
   FALLBACK_CLASS_DEFS,
   resolveClassStats,
   resolveStartingSkills,
-} from "@/shared/game/classCatalog";
-import { CharacterSpritePreview } from "./CharacterSpritePreview";
-import { AssetManager } from "@/engine/assets/AssetManager";
+} from '@/shared/game/classCatalog';
+import { CharacterSpritePreview } from './CharacterSpritePreview';
+import { AssetManager } from '@/engine/assets/AssetManager';
+import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
+import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PERKS = [
-  { id: "SWIFT_TRAVELER", name: "Swift Traveler", desc: "+25% Movement Speed across all maps.", icon: Zap, color: '#fbbf24' },
-  { id: "ACROBAT", name: "Acrobat", desc: "Perform 2-tile Double Jumps over obstacles.", icon: Feather, color: '#34d399' },
-  { id: "PACK_MULE", name: "Pack Mule", desc: "+50% Inventory Carry Weight Capacity.", icon: Shield, color: '#60a5fa' },
-  { id: "MASTER_TAMER", name: "Master Saint", desc: "+15% Catch Rate boost for wild Beasts.", icon: User, color: '#cbb26a' },
-  { id: "STAMINA_SURGE", name: "Stamina Surge", desc: "+30 Max Health & accelerated health regen.", icon: Sparkles, color: '#e2d5b3' },
+  {
+    id: 'SWIFT_TRAVELER',
+    name: 'Swift Traveler',
+    desc: '+25% Movement Speed across all maps and dungeons.',
+    icon: Zap,
+    color: '#fbbf24',
+    badge: 'AGILITY',
+  },
+  {
+    id: 'ACROBAT',
+    name: 'Acrobat',
+    desc: 'Perform 2-tile Double Jumps over obstacles and gaps.',
+    icon: Feather,
+    color: '#34d399',
+    badge: 'MOBILITY',
+  },
+  {
+    id: 'PACK_MULE',
+    name: 'Pack Mule',
+    desc: '+50% Inventory Carry Weight & pouch capacity.',
+    icon: Shield,
+    color: '#60a5fa',
+    badge: 'UTILITY',
+  },
+  {
+    id: 'MASTER_TAMER',
+    name: 'Master Saint',
+    desc: '+15% Capture Rate boost for wild Daemons & Beasts.',
+    icon: User,
+    color: '#cbb26a',
+    badge: 'MASTERY',
+  },
+  {
+    id: 'STAMINA_SURGE',
+    name: 'Stamina Surge',
+    desc: '+30 Base Health & accelerated health regeneration.',
+    icon: Sparkles,
+    color: '#f472b6',
+    badge: 'SURVIVAL',
+  },
 ];
 
-const CLASS_ICONS: Record<string, typeof Swords> = {
+const RANDOM_NAMES = [
+  'Valkyrie', 'ShadowFox', 'NeonKnight', 'Cipher', 'Vortex', 'Zephyr', 'Aegis', 'Blitz',
+  'Nova', 'Eclipse', 'RogueSaint', 'Frostbyte', 'Saber', 'Hyperion', 'Zero', 'Apex',
+];
+
+const CLASS_ICONS: Record<string, LucideIcon> = {
   WARRIOR: Swords,
   MAGE: Wand2,
   THIEF: Feather,
   RANGER: Crosshair,
   PRIEST: Heart,
+  CLERIC: Heart,
+  ROGUE: Zap,
+  PALADIN: Shield,
 };
 
+const MODULAR_BASES = [
+  { id: 'good-paladin-templar-female', label: 'Templar (F)', tag: 'Holy' },
+  { id: 'good-cleric-highpriestess-female', label: 'High Priestess (F)', tag: 'Sacred' },
+  { id: 'good-cleric-sanctuary-male', label: 'Sanctuary Monk (M)', tag: 'Faith' },
+  { id: 'good-ranger-grovekeeper-female', label: 'Grovekeeper (F)', tag: 'Nature' },
+  { id: 'good-wizard-archmage-male', label: 'Archmage (M)', tag: 'Arcane' },
+  { id: 'good-wizard-celestial-female', label: 'Celestial Mage (F)', tag: 'Astral' },
+  { id: 'evil-assassin-nightstalker-female', label: 'Nightstalker (F)', tag: 'Stealth' },
+  { id: 'evil-berserker-bloodaxe-male', label: 'Berserker (M)', tag: 'Chaos' },
+  { id: 'adventurer', label: 'Adventurer (M)', tag: 'Classic' },
+  { id: 'heroine', label: 'Heroine (F)', tag: 'Classic' },
+  { id: 'ninja', label: 'Shinobi', tag: 'Stealth' },
+  { id: 'monk', label: 'Monk', tag: 'Martial' },
+];
+
+const MODULAR_CAPES = [
+  { id: null, label: 'None' },
+  { id: 'item-cape-blue', label: 'Blue Cape' },
+  { id: 'item-cape-crimson', label: 'Crimson Cape' },
+  { id: 'item-cape-forest-green', label: 'Forest Cape' },
+  { id: 'item-cape-purple', label: 'Arcane Purple Cape' },
+  { id: 'item-cape-white', label: 'Sacred White Cape' },
+];
+
+const MODULAR_HATS = [
+  { id: null, label: 'None' },
+  { id: 'item-hat-hood-green', label: 'Green Hood' },
+  { id: 'item-hat-hood-white', label: 'White Hood' },
+  { id: 'item-hat-horned-iron', label: 'Horned Helm' },
+  { id: 'item-hat-tricorne-black', label: 'Tricorne Hat' },
+];
+
+const MODULAR_ARMOR = [
+  { id: null, label: 'None' },
+  { id: 'item-armor-plate-iron', label: 'Iron Plate' },
+  { id: 'item-armor-plate-steel', label: 'Steel Plate' },
+  { id: 'item-backpack-leather', label: 'Leather Backpack' },
+  { id: 'item-boots-rim-black', label: 'Black Boots' },
+  { id: 'item-bracers-steel', label: 'Steel Bracers' },
+];
+
 function classVisual(def: ClassDefData) {
-  const accent = def.color || '#cbb26a';
+  const accent = def.color || '#00f5d4';
   return {
     id: def.classId,
     name: def.name,
@@ -51,16 +161,15 @@ function classVisual(def: ClassDefData) {
   };
 }
 
-// Fallback starter heroes (shown if DB is empty or unreachable)
 const FALLBACK_HEROES = [
-  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'warrior', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'knight', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'magician', flavor: 'Master of arcane arts. High burst, low defense.', tag: 'Advanced', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'rogue', flavor: "Swift and lethal. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'ninja', flavor: 'Agile hunter. Precision strikes from distance.', tag: 'Mobile', tagColor: '#fbbf24', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'disciple', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength fighter. Balanced offense and utility.', tag: 'Balanced', tagColor: '#fb923c', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Tuxemon Spyder campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
+  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'evil-berserker-bloodaxe-male', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'good-paladin-templar-female', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'good-wizard-archmage-male', flavor: 'Master of arcane arts. High burst damage, tactical spells.', tag: 'Advanced', tagColor: '#a78bfa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'evil-assassin-nightstalker-female', flavor: "Swift and lethal assassin. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'good-ranger-grovekeeper-female', flavor: 'Agile hunter. Precision strikes and tactical kiting.', tag: 'Mobile', tagColor: '#fbbf24', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'good-cleric-highpriestess-female', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength martial artist. Balanced offense and defense.', tag: 'Balanced', tagColor: '#fb923c', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
+  { slug: 'spyder_tamer', name: 'Spyder Saint', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Tuxemon campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
 ];
 
 type DbHero = {
@@ -80,180 +189,119 @@ type DbHero = {
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function StepHeader({
-  label, onBack
-}: { label: string; onBack?: () => void }) {
-  return (
-    <div className="flex items-center justify-between mb-8">
-      {onBack ? (
-        <button
-          onClick={() => {
-            soundSynth?.playSelectSound?.();
-            onBack();
-          }}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-mono font-bold text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-cyan-300 border border-cyan-500/30 transition-all active:scale-95 cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" strokeWidth={2.5} />
-          Back
-        </button>
-      ) : <div />}
-      <h2
-        className="text-3xl font-black tracking-widest font-mono uppercase"
-        style={{
-          background: 'linear-gradient(180deg, #ffffff 0%, #22d3ee 70%, #0891b2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          filter: 'drop-shadow(0 0 15px rgba(34,211,238,0.4))',
-        }}
-      >
-        {label}
-      </h2>
-      <div className="w-20" />
-    </div>
-  );
-}
-
-function NextButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <div className="flex justify-end mt-8">
-      <button
-        disabled={disabled}
-        onClick={() => {
-          soundSynth?.playActionSound?.();
-          onClick();
-        }}
-        className="flex items-center gap-3 px-8 py-3.5 rounded-xl font-mono font-black text-sm tracking-widest uppercase transition-all hover:scale-[1.03] active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-400/60 shadow-[0_0_20px_rgba(34,211,238,0.3)] cursor-pointer"
-      >
-        {label}
-        <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
-      </button>
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export function CharacterCreator({ onComplete, onCancel }: { onComplete: (characterId: string) => void; onCancel?: () => void }) {
+export function CharacterCreator({
+  onComplete,
+  onCancel,
+}: {
+  onComplete: (characterId: string) => void;
+  onCancel?: () => void;
+}) {
   const [step, setStep] = useState<CreatorStep>('HERO_PICK');
   const [name, setName] = useState('');
-  const [spriteId, setSpriteId] = useState('warrior');
+  const [spriteId, setSpriteId] = useState('evil-berserker-bloodaxe-male');
+  const [selectedCape, setSelectedCape] = useState<string | null>(null);
+  const [selectedHat, setSelectedHat] = useState<string | null>(null);
+  const [selectedArmor, setSelectedArmor] = useState<string | null>(null);
+  const [appearanceTab, setAppearanceTab] = useState<'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG'>('BASE');
+
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
   const [classDefs, setClassDefs] = useState<ClassDefData[]>(FALLBACK_CLASS_DEFS);
   const [heroesLoading, setHeroesLoading] = useState(true);
-  const [activeWorld, setActiveWorld] = useState<{ id: string; name: string } | null>(null);
-  const [worldOptions, setWorldOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [setupDefaultMapId, setSetupDefaultMapId] = useState<string | null>(null);
-  const [characterCreationAssets, setCharacterCreationAssets] = useState<any[]>([]);
 
-  const loadForWorld = async (gameId?: string) => {
-    setHeroesLoading(true);
-    try {
-      const [heroesRes, classesRes, worldsRes] = await Promise.all([
-        getStarterHeroes(gameId),
-        getPlayableClasses(),
-        ensureWorldProfiles(),
-      ]);
-      if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
-      if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
-      if (worldsRes.success) {
-        setWorldOptions(worldsRes.profiles.map((p) => ({ id: p.id, name: p.name })));
-        const active =
-          worldsRes.profiles.find((p) => p.id === gameId) ||
-          worldsRes.profiles.find((p) => p.isActive) ||
-          worldsRes.profiles.find((p) => p.id === worldsRes.activeId);
-        if (active) setActiveWorld({ id: active.id, name: active.name });
-      }
+  // Appearance picker state
+  const [allSprites, setAllSprites] = useState<string[]>([]);
+  const [spriteSearch, setSpriteSearch] = useState('');
+  const [spritePage, setSpritePage] = useState(0);
+  const spritesPerPage = 18;
 
-      // Load assets flagged for character creation
-      const manager = AssetManager.getInstance();
-      const assetsRes = await manager.searchAssets({ type: 'CHARACTER', showInCharacterCreation: true }, 0, 100);
-      setCharacterCreationAssets(assetsRes.items);
-    } catch {
-      /* ignore */
-    } finally {
-      setHeroesLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const preferredGameId = (() => {
-      try {
-        return window.localStorage.getItem('saints.activeGameId') || undefined;
-      } catch {
-        return undefined;
-      }
-    })();
-    void loadForWorld(preferredGameId);
-
-    // Pull setup status once so new character spawn honors the configured realm default map.
-    void (async () => {
-      try {
-        const res = await fetch('/api/setup/status', { cache: 'no-store' });
-        if (!res.ok) return;
-        const data = await res.json();
-        const mapId = typeof data?.status?.defaultMapId === 'string' ? data.status.defaultMapId.trim() : '';
-        setSetupDefaultMapId(mapId || null);
-      } catch {
-        setSetupDefaultMapId(null);
-      }
-    })();
-  }, []);
-
-  const onPickWorld = (id: string) => {
-    try {
-      window.localStorage.setItem('saints.activeGameId', id);
-    } catch { /* ignore */ }
-    setSelectedHeroSlug(null);
-    void loadForWorld(id);
-  };
-
-  const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
-  const CLASSES = classDefs.map(classVisual);
+  // Selected config
   const [classId, setClassId] = useState('WARRIOR');
   const [selectedHeroSlug, setSelectedHeroSlug] = useState<string | null>(null);
   const [perkId, setPerkId] = useState(PERKS[0].id);
   const [loading, setLoading] = useState(false);
-  const [spritePage, setSpritePage] = useState(0);
 
-  // Build the big sprite list dynamically from GAME_SPRITES but lazy-import friendly
-  const [allSprites, setAllSprites] = useState<string[]>([]);
-  const spritesPerPage = 24;
-  const totalPages = Math.ceil(allSprites.length / spritesPerPage);
-  const currentSprites = allSprites.slice(spritePage * spritesPerPage, (spritePage + 1) * spritesPerPage);
+  // Computed multi-layer stack
+  const activeLayers = [
+    spriteId,
+    selectedCape,
+    selectedArmor,
+    selectedHat,
+  ].filter(Boolean) as string[];
 
-  // Load sprite list lazily when user reaches that step (including imported LPC assets)
+  // Load database starter heroes & class defs
+  useEffect(() => {
+    async function loadData() {
+      setHeroesLoading(true);
+      try {
+        const [heroesRes, classesRes, setupRes] = await Promise.all([
+          getStarterHeroes(),
+          getPlayableClasses(),
+          fetch('/api/setup/status', { cache: 'no-store' }).catch(() => null),
+        ]);
+        if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
+        if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
+        if (setupRes && setupRes.ok) {
+          const setupData = await setupRes.json();
+          const mapId = typeof setupData?.status?.defaultMapId === 'string' ? setupData.status.defaultMapId.trim() : '';
+          setSetupDefaultMapId(mapId || null);
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setHeroesLoading(false);
+      }
+    }
+    void loadData();
+  }, []);
+
+  // Load sprite catalog lazily
   const loadSprites = async () => {
     if (allSprites.length > 0) return;
-    const { CHARACTER_SPRITES } = await import('./data/sprites');
-    let customList: string[] = [];
     try {
-      const res = await fetch('/api/assets?type=CHARACTER&limit=100');
-      if (res.ok) {
-        const data = await res.json();
-        customList = (data.items || [])
-          .filter((a: any) => {
-            const tags = Array.isArray(a.tags) ? a.tags : [];
-            const isCharacter = a.type === 'CHARACTER' || tags.includes('character') || tags.includes('hero');
-            const isPlayable = a.isPlayable || tags.includes('playable') || tags.includes('player') || tags.includes('character_creator');
-            return isCharacter && isPlayable;
-          })
-          .map((a: any) => a.source || a.slug)
-          .filter(Boolean);
+      const { CHARACTER_SPRITES } = await import('./data/sprites');
+      let customList: string[] = [];
+      try {
+        const res = await fetch('/api/assets?type=CHARACTER&showInCharacterCreation=true&limit=100');
+        if (res.ok) {
+          const data = await res.json();
+          customList = (data.items || [])
+            .filter((a: any) => {
+              const tags = Array.isArray(a.tags) ? a.tags : [];
+              const isChar = a.type === 'CHARACTER' || a.type === 'SPRITE' || tags.includes('character') || tags.includes('hero');
+              const isPlayable = a.isPlayable || a.showInCharacterCreation || tags.includes('playable') || tags.includes('player');
+              return isChar && isPlayable;
+            })
+            .map((a: any) => a.source || a.slug)
+            .filter(Boolean);
+        }
+      } catch {
+        /* ignore */
       }
+      const combined = Array.from(new Set([...customList, ...CHARACTER_SPRITES]));
+      setAllSprites(combined);
     } catch {
       /* ignore */
     }
-    const combined = Array.from(new Set([...customList, ...CHARACTER_SPRITES]));
-    setAllSprites(combined);
   };
 
+  useEffect(() => {
+    if (step === 'APPEARANCE') {
+      void loadSprites();
+    }
+  }, [step]);
+
+  const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
+  const CLASSES = classDefs.map(classVisual);
+
   const stepToNum: Record<CreatorStep, number> = {
-    HERO_PICK: 1, NAME: 2, APPEARANCE: 3, GIFT: 4, REVIEW: 5,
+    HERO_PICK: 1,
+    NAME: 2,
+    APPEARANCE: 3,
+    GIFT: 4,
+    REVIEW: 5,
   };
   const currentNum = stepToNum[step];
-  const progressPct = ((currentNum - 1) / 4) * 100;
 
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
@@ -263,12 +311,20 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     setStep('NAME');
   };
 
+  const handleRandomizeName = () => {
+    soundSynth?.playSelectSound?.();
+    const pick = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const num = Math.floor(Math.random() * 90 + 10);
+    setName(`${pick}${num}`);
+  };
+
   const handleCreate = async () => {
-    if (!name || name.length < 3) {
-      toast.error('Name must be at least 3 characters.');
+    if (!name || name.trim().length < 3) {
+      toast.error('Operative callsign must be at least 3 characters.');
       return;
     }
     setLoading(true);
+    soundSynth?.playActionSound?.();
 
     const selectedDef =
       classDefs.find((c) => c.classId === classId) ||
@@ -285,7 +341,6 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
       starterHeroes.find((h) => h.classId === classId && h.spriteKey === spriteId);
 
-    // Dynamic spawn resolution: Use hero starting map if specified, otherwise query available maps index.
     let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' ? hero.startingMap : '';
     let startX = hero?.startingX;
     let startY = hero?.startingY;
@@ -306,30 +361,27 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
           }
 
           if (!startMap) {
-            // Find designated hub map (SAINTS_HAVEN, LOBBY, or map matching haven/lobby/hub)
-            const hubMap = maps.find((m: any) => 
-              m.id === 'SAINTS_HAVEN' || 
-              m.id === 'LOBBY' || 
-              m.id?.toLowerCase().includes('haven') ||
-              m.id?.toLowerCase().includes('lobby') || 
-              m.id?.toLowerCase().includes('hub')
-            ) || maps[0];
+            const hubMap =
+              maps.find(
+                (m: any) =>
+                  m.id === 'SAINTS_HAVEN' ||
+                  m.id === 'LOBBY' ||
+                  m.id?.toLowerCase().includes('haven') ||
+                  m.id?.toLowerCase().includes('lobby') ||
+                  m.id?.toLowerCase().includes('hub')
+              ) || maps[0];
             startMap = hubMap.id;
           }
-        } else if (setupDefaultMapId === 'STARTING_MAP') {
-          startMap = 'STARTING_MAP';
         }
       }
     } catch {
-      /* fallback below */
+      /* fallback */
     }
 
     if (!startMap) {
-      if (setupDefaultMapId === 'STARTING_MAP') startMap = 'STARTING_MAP';
-      else startMap = setupDefaultMapId || 'SAINTS_HAVEN';
+      startMap = setupDefaultMapId || 'SAINTS_HAVEN';
     }
 
-    // Query map's configured spawn point if hero didn't specify custom coordinates
     if (startX === undefined || startY === undefined) {
       try {
         const mapRes = await fetch(`/api/maps/${startMap}`);
@@ -344,7 +396,7 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
           }
         }
       } catch {
-        /* fallback below */
+        /* fallback */
       }
     }
 
@@ -355,29 +407,35 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
     const initialState = {
       currentMapId: startMap,
       position: { x: startX, y: startY },
-      level: 1, xp: 0,
+      level: 1,
+      xp: 0,
       hp: hpBase + hpFromSkills,
       maxHp: hpBase + hpFromSkills,
       credits: 1000,
-      // Server capture uses Prisma inventory (Guide grant on quest accept). Client bag hint only.
-      inventory: (() => {
-        const base = isSpyder
-          ? { patch_kit: 5, film_standard: 5, soul_camera: 1 }
-          : { patch_kit: 5 };
-        let custom: Record<string, number> = {};
-        if (hero?.startingInventory) {
-          try {
-            custom = typeof hero.startingInventory === 'string'
-              ? JSON.parse(hero.startingInventory)
-              : hero.startingInventory;
-          } catch {}
-        }
-        return { ...base, ...custom };
-      })(),
+      inventory: isSpyder
+        ? { patch_kit: 5, film_standard: 5, soul_camera: 1 }
+        : { patch_kit: 5 },
       skills: initialSkills,
       classStats: sheet,
-      equipment: { head: null, chest: 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
-      customization: { skinTone: '#fcd34d', hairColor: '#3b82f6', shirtColor: '#10b981', pantsColor: '#18181b' },
+      equipment: { head: selectedHat, chest: selectedArmor || 'bronze_chestplate', legs: 'bronze_leggings', weapon: 'bronze_sword' },
+      customization: {
+        skinTone: '#fcd34d',
+        hairColor: '#3b82f6',
+        shirtColor: '#10b981',
+        pantsColor: '#18181b',
+        layers: activeLayers,
+        base: spriteId,
+        cape: selectedCape,
+        hat: selectedHat,
+        armor: selectedArmor,
+      },
+      appearance: {
+        layers: activeLayers,
+        base: spriteId,
+        cape: selectedCape,
+        hat: selectedHat,
+        armor: selectedArmor,
+      },
       combatStyle: classId,
       activeDaemonId: 'd-001',
       saintRank: 'Rookie',
@@ -388,621 +446,803 @@ export function CharacterCreator({ onComplete, onCancel }: { onComplete: (charac
       maxPartySize: 4,
     };
 
-    const result = await createGameCharacter({ name, spriteId, classId, initialState: JSON.stringify(initialState) });
+    const result = await createGameCharacter({
+      name: name.trim(),
+      spriteId,
+      classId,
+      initialState: JSON.stringify(initialState),
+    });
 
     if (result.success && result.character) {
-      toast.success('Character Created! Entering The World...');
+      toast.success('Operative forged! Entering the live realm...');
       setTimeout(() => onComplete(result.character.id), 300);
     } else {
-      toast.error(result.error || 'Failed to create character.');
+      toast.error(result.error || 'Failed to forge character.');
       setLoading(false);
       if (result.error === 'Unauthorized') {
         useGameStore.getState().setGameMode('LOGIN');
-        window.dispatchEvent(new CustomEvent('close_creator'));
       }
     }
   };
 
-  // Input style helper
-  const inputStyle = {
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(128,111,71,0.35)',
-    color: '#e9d5ff',
-    caretColor: '#cbb26a',
-  };
-  const inputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.border = '1px solid rgba(203,178,106,0.55)';
-    e.currentTarget.style.background = 'rgba(128,111,71,0.12)';
-    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128,111,71,0.2)';
-  };
-  const inputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.border = '1px solid rgba(128,111,71,0.35)';
-    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-    e.currentTarget.style.boxShadow = 'none';
-  };
+  // Filtered sprites for catalog tab
+  const filteredSprites = allSprites.filter((s) =>
+    s.toLowerCase().includes(spriteSearch.toLowerCase())
+  );
+  const totalSpritePages = Math.ceil(filteredSprites.length / spritesPerPage) || 1;
+  const currentSprites = filteredSprites.slice(
+    spritePage * spritesPerPage,
+    (spritePage + 1) * spritesPerPage
+  );
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const selectedClassDef =
+    classDefs.find((c) => c.classId === classId) ||
+    FALLBACK_CLASS_DEFS.find((c) => c.classId === classId) ||
+    FALLBACK_CLASS_DEFS[0];
+  const selectedPerk = PERKS.find((p) => p.id === perkId) || PERKS[0];
+
   return (
     <div
-      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100]"
-      style={{ background: 'rgba(5,0,15,0.96)', backdropFilter: 'blur(14px)' }}
+      className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col justify-between p-3 sm:p-6 select-none font-sans"
+      style={{ backgroundColor: '#0d0221' }}
     >
-      {/* Ambient glow */}
-      <div
-        className="fixed w-[700px] h-[700px] rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(128,111,71,0.2) 0%, transparent 70%)',
-          top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        }}
-      />
+      {/* Synthwave Horizon Grid Floor */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute top-0 w-full h-[60vh]"
+          style={{ background: 'linear-gradient(to bottom, #0d0221 0%, #3a0ca3 45%, #f20089 100%)', opacity: 0.8 }}
+        />
+        <div
+          className="absolute bottom-0 w-full h-[40vh] origin-top opacity-50"
+          style={{
+            backgroundImage:
+              'linear-gradient(transparent 65%, #f20089 100%), repeating-linear-gradient(0deg, transparent, transparent 19px, #f20089 20px), repeating-linear-gradient(90deg, transparent, transparent 39px, #f20089 40px)',
+            transform: 'perspective(500px) rotateX(60deg)',
+          }}
+        />
+      </div>
 
-      <div className="min-h-full flex flex-col items-center justify-center p-4 md:p-8 relative z-10">
+      <DigitalSnowV5 />
+      <PalmCanopyVignetteV5 />
 
-        {/* Step breadcrumb */}
-        <div className="w-full max-w-4xl mb-5 flex items-center justify-center gap-1 text-[11px] font-mono uppercase tracking-widest">
+      {/* ── TOP BREADCRUMB & HEADER ── */}
+      <header className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between border-b border-pink-500/20 pb-3 mb-4">
+        <button
+          onClick={() => {
+            soundSynth?.playSelectSound?.();
+            if (step === 'HERO_PICK') {
+              if (onCancel) onCancel();
+              else useGameStore.getState().setGameMode('CHARACTER_SELECT');
+            } else if (step === 'NAME') setStep('HERO_PICK');
+            else if (step === 'APPEARANCE') setStep('NAME');
+            else if (step === 'GIFT') setStep('APPEARANCE');
+            else if (step === 'REVIEW') setStep('GIFT');
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 font-mono text-xs transition-colors cursor-pointer"
+        >
+          <ArrowLeft size={14} />
+          <span>{step === 'HERO_PICK' ? 'Abort' : 'Back'}</span>
+        </button>
+
+        {/* Steps Breadcrumb */}
+        <div className="flex items-center gap-2 font-mono text-xs">
           {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[]).map((s, i) => {
-            const labels: Record<CreatorStep, string> = {
-              HERO_PICK: 'Hero', NAME: 'Name', APPEARANCE: 'Look', GIFT: 'Gift', REVIEW: 'Enter',
-            };
-            const done = stepToNum[s] < currentNum;
-            const active = s === step;
+            const isDone = stepToNum[step] > i + 1;
+            const isCur = step === s;
+            const label =
+              s === 'HERO_PICK'
+                ? 'Archetype'
+                : s === 'NAME'
+                ? 'Identity'
+                : s === 'APPEARANCE'
+                ? 'Avatar'
+                : s === 'GIFT'
+                ? 'Blessing'
+                : 'Dossier';
+
             return (
-              <div key={s} className="flex items-center gap-1">
-                <span
-                  style={{
-                    color: active ? '#cbb26a' : done ? 'rgba(203,178,106,0.45)' : 'rgba(203,178,106,0.25)',
-                    fontWeight: active ? 900 : 700,
-                  }}
+              <React.Fragment key={s}>
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-all ${
+                    isCur
+                      ? 'bg-gradient-to-r from-pink-600/40 to-cyan-500/40 border border-cyan-400 text-white font-bold shadow-[0_0_10px_rgba(0,245,212,0.4)]'
+                      : isDone
+                      ? 'text-[#00f5d4] opacity-80'
+                      : 'text-slate-500 opacity-50'
+                  }`}
                 >
-                  {i + 1}. {labels[s]}
-                </span>
-                {i < 4 && <ChevronRight size={10} style={{ color: 'rgba(203,178,106,0.25)' }} />}
-              </div>
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
+                      isCur
+                        ? 'bg-[#00f5d4] text-slate-950'
+                        : isDone
+                        ? 'bg-pink-500/40 text-pink-200'
+                        : 'bg-white/10 text-slate-400'
+                    }`}
+                  >
+                    {isDone ? '✓' : i + 1}
+                  </span>
+                  <span className="hidden sm:inline uppercase tracking-wider text-[11px]">{label}</span>
+                </div>
+                {i < 4 && <span className="text-pink-500/30 text-xs">›</span>}
+              </React.Fragment>
             );
           })}
         </div>
 
-        {/* Main panel */}
-        <div
-          className="w-full max-w-4xl rounded-2xl overflow-hidden"
-          style={{
-            background: 'linear-gradient(160deg, rgba(18,6,45,0.99) 0%, rgba(10,3,28,0.99) 100%)',
-            border: '1px solid rgba(128,111,71,0.35)',
-            boxShadow: '0 0 60px rgba(128,111,71,0.25), 0 25px 50px rgba(0,0,0,0.6)',
-          }}
-        >
-          {/* Progress bar */}
-          <div className="h-[3px] w-full" style={{ background: 'rgba(255,255,255,0.05)' }}>
-            <div
-              className="h-full transition-all duration-500"
-              style={{
-                width: `${progressPct}%`,
-                background: 'linear-gradient(90deg, #806f47, #cbb26a)',
-                boxShadow: '0 0 10px rgba(203,178,106,0.55)',
-              }}
-            />
-          </div>
+        <div className="w-16 flex justify-end" />
+      </header>
 
-          <div className="p-6 md:p-10">
+      {/* ── STEP CONTENT ── */}
+      <main className="relative z-20 w-full max-w-5xl mx-auto flex-1 flex flex-col justify-center my-auto py-2">
+        {/* ── STEP 1: HERO / ARCHETYPE PICK ── */}
+        {step === 'HERO_PICK' && (
+          <div className="w-full flex flex-col items-center">
+            <div className="text-center mb-6">
+              <h2
+                className="text-3xl md:text-4xl font-black uppercase font-mono tracking-widest mb-1 text-white"
+                style={{
+                  background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 50%, #f20089 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0 0 20px rgba(242,0,137,0.5))',
+                }}
+              >
+                SELECT ARCHETYPE
+              </h2>
+              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
+                Choose a foundation hero class for combat bonuses and abilities
+              </p>
+            </div>
 
-            {/* ─── STEP 1: Hero Pick ─── */}
-            {step === 'HERO_PICK' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <StepHeader label="Choose Your Hero" onBack={onCancel ? () => onCancel() : undefined} />
+            {heroesLoading ? (
+              <div className="flex flex-col items-center py-16">
+                <Loader2 className="w-10 h-10 text-[#00f5d4] animate-spin mb-3" />
+                <p className="text-xs font-mono text-cyan-200">Initializing Operative Matrix...</p>
+              </div>
+            ) : (
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
+                {starterHeroes.map((hero) => {
+                  const isSelected = selectedHeroSlug === hero.slug;
+                  const classDef = classDefs.find((c) => c.classId === hero.classId) || FALLBACK_CLASS_DEFS[0];
 
-                <div className="flex flex-col items-center gap-2 mb-5">
-                  <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#806f47]/35 bg-[#050b14]/70 text-[10px] font-mono uppercase tracking-[0.18em] text-[#cbb26a]/90">
-                    <Globe2 className="w-3.5 h-3.5 shrink-0" />
-                    World
-                    <select
-                      value={activeWorld?.id || ''}
-                      onChange={(e) => onPickWorld(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[#e2d5b3] font-mono text-[11px] uppercase tracking-wider cursor-pointer max-w-[160px]"
-                    >
-                      {worldOptions.map((w) => (
-                        <option key={w.id} value={w.id} className="bg-[#0b1320] text-[#e2d5b3]">
-                          {w.name}
-                        </option>
-                      ))}
-                      {activeWorld && !worldOptions.some((w) => w.id === activeWorld.id) && (
-                        <option value={activeWorld.id}>{activeWorld.name}</option>
-                      )}
-                    </select>
-                  </label>
-                  <p className="text-[9px] text-[#806f47]/70 font-mono tracking-wide">
-                    Local pick for heroes / start map · Studio World bar sets the server active realm
-                  </p>
-                </div>
-
-                <p className="text-[#cbb26a]/50 text-sm font-mono mb-8 text-center tracking-widest">
-                  Pick a starting archetype — you can customise appearance in the next step
-                </p>
-
-                {heroesLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Loader2 className="w-8 h-8 text-[#806f47]/70 animate-spin" />
-                    <p className="text-[#806f47]/70 text-xs font-mono">Loading heroes...</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Create Custom Hero Card */}
+                  return (
                     <div
-                      onClick={() => {
-                        soundSynth?.playSelectSound?.();
-                        setSelectedHeroSlug(null);
-                        setSpriteId('adventurer');
-                        setClassId('WARRIOR');
-                        setStep('NAME');
+                      key={hero.slug}
+                      onClick={() => handleHeroPick(hero)}
+                      className={`cursor-pointer rounded-2xl p-[1px] transition-all group overflow-hidden ${
+                        isSelected
+                          ? 'ring-2 ring-[#00f5d4] shadow-[0_0_25px_rgba(0,245,212,0.5)] scale-[1.02]'
+                          : 'hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(242,0,137,0.4)]'
+                      }`}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(242,0,137,0.5) 0%, rgba(0,245,212,0.3) 100%)',
+                        clipPath: 'polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px)',
                       }}
-                      className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group flex flex-col items-center justify-center p-6 border border-dashed border-cyan-500/40 bg-cyan-950/20 hover:bg-cyan-900/30 shadow-lg hover:scale-105"
                     >
-                      <div className="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center mb-3 text-cyan-400">
-                        <Sparkles className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-base font-black text-cyan-200">Custom Hero</h3>
-                      <p className="text-[11px] text-cyan-400/60 text-center mt-1">
-                        Build your own hero from scratch
-                      </p>
-                    </div>
-
-                    {starterHeroes.map(hero => {
-                      const cls = CLASSES.find(c => c.id === hero.classId) ?? CLASSES[0];
-                      return (
-                        <div
-                          key={hero.slug}
-                          onClick={() => handleHeroPick(hero)}
-                          className="relative rounded-2xl cursor-pointer transition-all duration-200 overflow-hidden group"
-                          style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(128,111,71,0.18)',
-                          }}
-                          onMouseEnter={e => {
-                            const el = e.currentTarget as HTMLElement;
-                            el.style.background = cls.bg;
-                            el.style.border = `1px solid ${cls.border}`;
-                            el.style.boxShadow = `0 0 25px ${cls.glow}, 0 8px 25px rgba(0,0,0,0.4)`;
-                            el.style.transform = 'translateY(-3px) scale(1.02)';
-                          }}
-                          onMouseLeave={e => {
-                            const el = e.currentTarget as HTMLElement;
-                            el.style.background = 'rgba(255,255,255,0.03)';
-                            el.style.border = '1px solid rgba(128,111,71,0.18)';
-                            el.style.boxShadow = 'none';
-                            el.style.transform = 'none';
-                          }}
-                        >
-                          {/* Tag */}
-                          <div
-                            className="absolute top-3 right-3 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest"
-                            style={{
-                              background: `${hero.tagColor}18`,
-                              border: `1px solid ${hero.tagColor}40`,
-                              color: hero.tagColor,
-                            }}
+                      <div
+                        className="w-full h-full bg-[#0a0318]/95 p-4 flex flex-col justify-between"
+                        style={{
+                          clipPath: 'polygon(11px 0%, 100% 0%, 100% calc(100% - 11px), calc(100% - 11px) 100%, 0% 100%, 0% 11px)',
+                        }}
+                      >
+                        {/* Tag */}
+                        <div className="flex items-center justify-between mb-2">
+                          <span
+                            className="px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase"
+                            style={{ backgroundColor: `${hero.tagColor}22`, color: hero.tagColor, border: `1px solid ${hero.tagColor}44` }}
                           >
                             {hero.tag}
-                          </div>
-
-                          <div className="p-5">
-                            {/* Sprite preview */}
-                            <div
-                              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110 overflow-hidden"
-                              style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                border: `1px solid ${cls.accent}30`,
-                              }}
-                            >
-                              <CharacterSpritePreview
-                                spriteKey={hero.spriteKey}
-                                spriteBundleId={hero.spriteBundleId}
-                                size={32}
-                                scale={1.5}
-                              />
-                            </div>
-
-                            <h3
-                              className="text-lg font-black mb-1 transition-colors"
-                              style={{ color: 'rgba(237,233,254,0.85)' }}
-                            >
-                              {hero.name}
-                            </h3>
-                            <p
-                              className="text-[10px] font-black uppercase tracking-widest mb-3 font-mono"
-                              style={{ color: `${cls.accent}70` }}
-                            >
-                              {cls.name}
-                            </p>
-                            <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(196,181,253,0.45)' }}>
-                              {hero.flavor}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <p className="text-center text-[#806f47]/40 text-xs font-mono mt-6">
-                  {heroesLoading ? '' : `${starterHeroes.length} heroes available · Manage in Studio → Heroes`}
-                </p>
-              </div>
-            )}
-
-            {/* ─── STEP 2: Name ─── */}
-            {step === 'NAME' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300 max-w-md mx-auto">
-                <StepHeader label="Name Your Hero" onBack={() => setStep('HERO_PICK')} />
-
-                {/* Chosen hero preview */}
-                <div
-                  className="flex items-center gap-4 rounded-2xl p-4 mb-8"
-                  style={{
-                    background: 'rgba(128,111,71,0.12)',
-                    border: '1px solid rgba(203,178,106,0.25)',
-                  }}
-                >
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(203,178,106,0.25)' }}
-                  >
-                    <CharacterSpritePreview
-                      spriteKey={spriteId}
-                      size={32}
-                      scale={1.4}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-[#e2d5b3] font-black text-base">{spriteId.charAt(0).toUpperCase() + spriteId.slice(1)}</p>
-                    <p className="text-[#806f47]/70 text-xs font-mono uppercase tracking-widest">{classId}</p>
-                  </div>
-                </div>
-
-                {/* Name field */}
-                <div className="mb-3">
-                  <label className="block text-[10px] font-black text-[#cbb26a]/70 uppercase tracking-[0.2em] mb-2 px-1">
-                    Character Name
-                  </label>
-                  <input
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="w-full px-4 py-4 rounded-xl font-black text-xl outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={inputFocus as any}
-                    onBlur={inputBlur as any}
-                    placeholder="Enter hero name..."
-                    maxLength={16}
-                    autoFocus
-                  />
-                  <p className="text-[#806f47]/70 text-[11px] font-mono mt-2 px-1">
-                    {name.length}/16 characters · min 3
-                  </p>
-                </div>
-
-                {/* Also let them switch class here */}
-                <div className="mt-6">
-                  <label className="block text-[10px] font-black text-[#cbb26a]/70 uppercase tracking-[0.2em] mb-3 px-1">
-                    Class
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                    {CLASSES.map(c => {
-                      const Icon = c.icon;
-                      const isActive = classId === c.id;
-                      return (
-                        <div
-                          key={c.id}
-                          onClick={() => setClassId(c.id)}
-                          className="flex flex-col items-center gap-2 p-3 rounded-xl cursor-pointer transition-all"
-                          style={{
-                            background: isActive ? c.bg : 'rgba(255,255,255,0.03)',
-                            border: isActive ? `1px solid ${c.border}` : '1px solid rgba(128,111,71,0.25)',
-                            boxShadow: isActive ? `0 0 15px ${c.glow}` : 'none',
-                          }}
-                        >
-                          <Icon className="w-5 h-5" style={{ color: isActive ? c.accent : 'rgba(128,111,71,0.45)' }} />
-                          <span
-                            className="text-[11px] font-black uppercase tracking-widest font-mono"
-                            style={{ color: isActive ? c.accent : 'rgba(128,111,71,0.4)' }}
-                          >
-                            {c.name}
+                          </span>
+                          <span className="text-[10px] font-mono text-cyan-300 font-extrabold uppercase">
+                            {hero.classId}
                           </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                <NextButton label="Appearance" onClick={() => { loadSprites(); setStep('APPEARANCE'); }} disabled={name.length < 3} />
-              </div>
-            )}
-
-            {/* ─── STEP 3: Appearance ─── */}
-            {step === 'APPEARANCE' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <StepHeader label="Appearance" onBack={() => setStep('NAME')} />
-
-                {currentSprites.length === 0 ? (
-                  <div className="text-center py-20 text-[#806f47]/60 font-mono">Loading sprites...</div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 mb-6">
-                      {currentSprites.map(sprite => {
-                        const isActive = spriteId === sprite;
-                        return (
-                          <div
-                            key={sprite}
-                            onClick={() => setSpriteId(sprite)}
-                            className="aspect-square rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-center relative overflow-hidden"
-                            style={{
-                              background: isActive ? 'rgba(128,111,71,0.18)' : 'rgba(255,255,255,0.03)',
-                              border: isActive ? '1px solid rgba(203,178,106,0.55)' : '1px solid rgba(128,111,71,0.2)',
-                              boxShadow: isActive ? '0 0 15px rgba(203,178,106,0.35)' : 'none',
-                              transform: isActive ? 'scale(1.08)' : 'scale(1)',
-                            }}
-                            onMouseEnter={e => {
-                              if (!isActive) {
-                                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(203,178,106,0.35)';
-                                (e.currentTarget as HTMLElement).style.background = 'rgba(128,111,71,0.1)';
-                              }
-                            }}
-                            onMouseLeave={e => {
-                              if (!isActive) {
-                                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(128,111,71,0.2)';
-                                (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                              }
-                            }}
-                          >
-                            <CharacterSpritePreview
-                              spriteKey={sprite}
-                              size={32}
-                              scale={isActive ? 1.5 : 1.2}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Pagination */}
-                    <div
-                      className="flex items-center justify-between rounded-xl p-3 mb-6"
-                      style={{ background: 'rgba(128,111,71,0.1)', border: '1px solid rgba(128,111,71,0.25)' }}
-                    >
-                      <button
-                        disabled={spritePage === 0}
-                        onClick={() => setSpritePage(p => p - 1)}
-                        className="px-5 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-30"
-                        style={{
-                          background: 'rgba(128,111,71,0.25)', border: '1px solid rgba(203,178,106,0.25)',
-                          color: 'rgba(196,181,253,0.7)',
-                        }}
-                      >
-                        ← Prev
-                      </button>
-                      <span className="text-[#cbb26a]/70 font-mono text-xs uppercase tracking-widest">
-                        Page {spritePage + 1} of {totalPages}
-                      </span>
-                      <button
-                        disabled={spritePage === totalPages - 1}
-                        onClick={() => setSpritePage(p => p + 1)}
-                        className="px-5 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-30"
-                        style={{
-                          background: 'rgba(128,111,71,0.25)', border: '1px solid rgba(203,178,106,0.25)',
-                          color: 'rgba(196,181,253,0.7)',
-                        }}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                <NextButton label="Choose Gift" onClick={() => setStep('GIFT')} />
-              </div>
-            )}
-
-            {/* ─── STEP 4: Gift / Perk ─── */}
-            {step === 'GIFT' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <StepHeader label="Starting Gift" onBack={() => setStep('APPEARANCE')} />
-
-                <p className="text-[#cbb26a]/50 text-sm font-mono mb-8 text-center tracking-wider">
-                  Choose one innate perk that defines your playstyle
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
-                  {PERKS.map(p => {
-                    const Icon = p.icon;
-                    const isActive = perkId === p.id;
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => setPerkId(p.id)}
-                        className="flex items-start gap-4 p-5 rounded-2xl cursor-pointer transition-all duration-200"
-                        style={{
-                          background: isActive ? `${p.color}12` : 'rgba(255,255,255,0.03)',
-                          border: isActive ? `1px solid ${p.color}50` : '1px solid rgba(128,111,71,0.25)',
-                          boxShadow: isActive ? `0 0 20px ${p.color}25` : 'none',
-                          transform: isActive ? 'scale(1.02)' : 'scale(1)',
-                        }}
-                        onMouseEnter={e => {
-                          if (!isActive) {
-                            (e.currentTarget as HTMLElement).style.background = `${p.color}08`;
-                            (e.currentTarget as HTMLElement).style.borderColor = `${p.color}30`;
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (!isActive) {
-                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                            (e.currentTarget as HTMLElement).style.borderColor = 'rgba(128,111,71,0.25)';
-                          }
-                        }}
-                      >
-                        <div
-                          className="p-3 rounded-xl shrink-0 transition-all"
-                          style={{
-                            background: isActive ? `${p.color}22` : 'rgba(255,255,255,0.05)',
-                            border: `1px solid ${isActive ? p.color + '40' : 'rgba(255,255,255,0.07)'}`,
-                          }}
-                        >
-                          <Icon
-                            className="w-5 h-5"
-                            style={{ color: isActive ? p.color : 'rgba(128,111,71,0.45)' }}
-                            strokeWidth={2.5}
-                          />
+                        {/* Avatar / Icon */}
+                        <div className="w-16 h-16 rounded-xl bg-black/60 border border-pink-500/30 mx-auto my-2 flex items-center justify-center shadow-inner group-hover:border-[#00f5d4] transition-all">
+                          {(() => {
+                            const Icon = CLASS_ICONS[hero.classId] || Swords;
+                            return (
+                              <Icon 
+                                size={32} 
+                                className="text-white group-hover:text-[#00f5d4] drop-shadow-[0_0_10px_rgba(242,0,137,0.6)] transition-all" 
+                              />
+                            );
+                          })()}
                         </div>
-                        <div>
-                          <h3
-                            className="font-black text-base mb-1"
-                            style={{ color: isActive ? p.color : 'rgba(237,233,254,0.7)' }}
-                          >
-                            {p.name}
+
+                        {/* Name & Lore */}
+                        <div className="text-center mt-2">
+                          <h3 className="text-sm font-black font-mono text-white group-hover:text-[#00f5d4] transition-colors">
+                            {hero.name}
                           </h3>
-                          <p className="text-sm leading-snug" style={{ color: 'rgba(196,181,253,0.4)' }}>
-                            {p.desc}
+                          <p className="text-[10px] font-mono text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                            {hero.flavor}
                           </p>
                         </div>
+
+                        {/* Pick Button */}
+                        <div className="mt-3 pt-2 border-t border-pink-500/20 text-center">
+                          <span className="text-[11px] font-mono font-bold text-[#ffbe0b] group-hover:text-white uppercase tracking-wider flex items-center justify-center gap-1">
+                            Select Archetype <ChevronRight size={12} />
+                          </span>
+                        </div>
                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── STEP 2: NAME / CALLSIGN ── */}
+        {step === 'NAME' && (
+          <div className="w-full max-w-lg mx-auto flex flex-col items-center">
+            <div className="text-center mb-6">
+              <h2
+                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
+                style={{
+                  background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 70%, #3b82f6 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                OPERATIVE CALLSIGN
+              </h2>
+              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
+                Assign a unique identity to your champion operative
+              </p>
+            </div>
+
+            {/* Avatar Preview */}
+            <div className="w-24 h-24 rounded-2xl bg-black/80 border-2 border-[#00f5d4] flex items-center justify-center mb-6 shadow-[0_0_25px_rgba(0,245,212,0.4)]">
+              <CharacterSpritePreview layers={activeLayers} size={32} scale={2.2} />
+            </div>
+
+            {/* Input Form */}
+            <div
+              className="w-full bg-[#0a0318]/90 border border-pink-500/40 rounded-2xl p-6 shadow-2xl backdrop-blur-xl flex flex-col gap-4"
+              style={{
+                clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+              }}
+            >
+              <label className="text-xs font-mono font-bold text-cyan-200 uppercase tracking-wider flex items-center justify-between">
+                <span>Codename / Hero Name</span>
+                <span className="text-[10px] text-slate-400">Min 3 characters</span>
+              </label>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter Operative Name..."
+                  maxLength={18}
+                  autoFocus
+                  className="flex-1 px-4 py-3 rounded-xl bg-black/70 border-2 border-pink-500/40 text-white placeholder:text-slate-500 font-mono text-base focus:outline-none focus:border-[#00f5d4] shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={handleRandomizeName}
+                  className="px-4 py-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/50 text-purple-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 font-mono text-xs font-bold"
+                  title="Generate Random Name"
+                >
+                  <Dice5 size={16} />
+                  Random
+                </button>
+              </div>
+
+              <div className="flex justify-end mt-4">
+                <button
+                  disabled={!name || name.trim().length < 3}
+                  onClick={() => {
+                    soundSynth?.playActionSound?.();
+                    setStep('APPEARANCE');
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] disabled:opacity-40 cursor-pointer"
+                >
+                  Proceed to Avatar <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 3: APPEARANCE / MODULAR LPC CUSTOMIZER ── */}
+        {step === 'APPEARANCE' && (
+          <div className="w-full flex flex-col items-center">
+            <div className="text-center mb-4">
+              <h2
+                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
+                style={{
+                  background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                OPERATIVE CUSTOMIZATION
+              </h2>
+              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
+                Modular LPC System: Assemble base operative body, capes, headgear & armor
+              </p>
+            </div>
+
+            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+              {/* Selected Preview Stage */}
+              <div
+                className="lg:col-span-4 bg-[#0a0318]/90 border border-pink-500/40 rounded-2xl p-5 flex flex-col items-center justify-between text-center"
+                style={{
+                  clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+                }}
+              >
+                <div>
+                  <span className="px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-[10px] font-mono font-extrabold uppercase tracking-wider">
+                    Operative Preview
+                  </span>
+                  <h3 className="text-lg font-black font-mono text-white mt-2">{name || 'Operative'}</h3>
+                  <span className="text-xs font-mono text-pink-300">{classId}</span>
+                </div>
+
+                <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-cyan-400/80 flex items-center justify-center my-3 shadow-[0_0_30px_rgba(0,245,212,0.4)]">
+                  <CharacterSpritePreview layers={activeLayers} size={32} scale={2.8} />
+                </div>
+
+                {/* Layer Badges */}
+                <div className="flex flex-wrap gap-1.5 justify-center mb-3">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-200">
+                    Base: {MODULAR_BASES.find(b => b.id === spriteId)?.label || spriteId}
+                  </span>
+                  {selectedCape && (
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-purple-950/60 border border-purple-500/30 text-purple-200">
+                      Cape: {MODULAR_CAPES.find(c => c.id === selectedCape)?.label}
+                    </span>
+                  )}
+                  {selectedHat && (
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-pink-950/60 border border-pink-500/30 text-pink-200">
+                      Hat: {MODULAR_HATS.find(h => h.id === selectedHat)?.label}
+                    </span>
+                  )}
+                  {selectedArmor && (
+                    <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-amber-950/60 border border-amber-500/30 text-amber-200">
+                      Armor: {MODULAR_ARMOR.find(a => a.id === selectedArmor)?.label}
+                    </span>
+                  )}
+                </div>
+
+                <div className="w-full pt-3 border-t border-pink-500/20">
+                  <button
+                    onClick={() => {
+                      soundSynth?.playActionSound?.();
+                      setStep('GIFT');
+                    }}
+                    className="w-full py-2.5 rounded-xl font-mono font-bold text-xs uppercase bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_15px_rgba(0,245,212,0.3)] cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    Confirm Avatar <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modular Deck & Tabs */}
+              <div
+                className="lg:col-span-8 bg-[#0a0318]/90 border border-pink-500/40 rounded-2xl p-4 flex flex-col justify-between"
+                style={{
+                  clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+                }}
+              >
+                {/* Category Tabs */}
+                <div className="flex items-center gap-1.5 border-b border-pink-500/20 pb-3 mb-3 overflow-x-auto">
+                  {(
+                    [
+                      { id: 'BASE', label: '1. Body Base' },
+                      { id: 'CAPE', label: '2. Cape' },
+                      { id: 'HEAD', label: '3. Headgear' },
+                      { id: 'ARMOR', label: '4. Armor & Gear' },
+                      { id: 'CATALOG', label: '5. All Sprites' },
+                    ] as const
+                  ).map((tab) => {
+                    const isTabCur = appearanceTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playSelectSound?.();
+                          setAppearanceTab(tab.id);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl font-mono text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                          isTabCur
+                            ? 'bg-gradient-to-r from-pink-600 to-cyan-600 text-white font-black shadow-[0_0_15px_rgba(0,245,212,0.4)]'
+                            : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
                     );
                   })}
                 </div>
 
-                <NextButton label="Review" onClick={() => setStep('REVIEW')} />
-              </div>
-            )}
-
-            {/* ─── STEP 5: Review / Finalize ─── */}
-            {step === 'REVIEW' && (
-              <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                <StepHeader label="Enter the World" onBack={() => setStep('GIFT')} />
-
-                {/* Summary card */}
-                <div
-                  className="rounded-2xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center gap-8"
-                  style={{
-                    background: 'rgba(128,111,71,0.1)',
-                    border: '1px solid rgba(203,178,106,0.25)',
-                    boxShadow: '0 0 30px rgba(128,111,71,0.12)',
-                  }}
-                >
-                  {/* Sprite */}
-                  <div
-                    className="w-28 h-28 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{
-                      background: 'rgba(128,111,71,0.2)',
-                      border: '1px solid rgba(203,178,106,0.35)',
-                      boxShadow: '0 0 30px rgba(203,178,106,0.25)',
-                    }}
-                  >
-                    <CharacterSpritePreview
-                      spriteKey={spriteId}
-                      size={32}
-                      scale={3}
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-grow text-center md:text-left">
-                    <h3
-                      className="text-4xl font-black mb-3 tracking-wide"
-                      style={{
-                        background: 'linear-gradient(180deg, #e2d5b3 0%, #cbb26a 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                        fontFamily: 'serif',
-                      }}
-                    >
-                      {name}
-                    </h3>
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                      {(() => {
-                        const cls = CLASSES.find(c => c.id === classId);
-                        return cls ? (
-                          <span
-                            className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-widest"
-                            style={{
-                              background: `${cls.accent}18`,
-                              border: `1px solid ${cls.accent}40`,
-                              color: cls.accent,
+                {/* TAB CONTENT */}
+                <div className="flex-1 min-h-[260px] max-h-[300px] overflow-y-auto p-1">
+                  {/* TAB: BASE */}
+                  {appearanceTab === 'BASE' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {MODULAR_BASES.map((b) => {
+                        const isCur = spriteId === b.id;
+                        return (
+                          <div
+                            key={b.id}
+                            onClick={() => {
+                              soundSynth?.playSelectSound?.();
+                              setSpriteId(b.id);
                             }}
+                            className={`p-2.5 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
+                              isCur
+                                ? 'bg-cyan-500/30 border-cyan-400 shadow-[0_0_15px_rgba(0,245,212,0.5)] scale-[1.02]'
+                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                            }`}
                           >
-                            {cls.name}
-                          </span>
-                        ) : null;
-                      })()}
-                      {(() => {
-                        const perk = PERKS.find(p => p.id === perkId);
-                        return perk ? (
-                          <span
-                            className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-widest"
-                            style={{
-                              background: `${perk.color}18`,
-                              border: `1px solid ${perk.color}40`,
-                              color: perk.color,
-                            }}
-                          >
-                            {perk.name}
-                          </span>
-                        ) : null;
-                      })()}
-                      <span
-                        className="px-3 py-1 rounded-xl text-xs font-black uppercase tracking-widest"
-                        style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          color: 'rgba(226,213,179,0.55)',
-                        }}
-                      >
-                        {spriteId}
-                      </span>
+                            <div className="w-14 h-14 flex items-center justify-center">
+                              <CharacterSpritePreview spriteKey={b.id} size={32} scale={1.4} />
+                            </div>
+                            <span className="text-[11px] font-mono font-bold text-white mt-1 text-center line-clamp-1">
+                              {b.label}
+                            </span>
+                            <span className="text-[9px] font-mono text-cyan-300/80 uppercase">
+                              {b.tag}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
+                  )}
 
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {[
-                        { label: 'Level', value: '1' },
-                        { label: 'HP', value: perkId === 'STAMINA_SURGE' ? '165' : '110' },
-                        { label: 'Credits', value: '1,000' },
-                      ].map(stat => (
-                        <div key={stat.label} className="text-center">
-                          <div className="text-[#e2d5b3] font-black text-lg">{stat.value}</div>
-                          <div className="text-[#806f47]/60 text-[10px] font-mono uppercase tracking-widest">{stat.label}</div>
+                  {/* TAB: CAPE */}
+                  {appearanceTab === 'CAPE' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {MODULAR_CAPES.map((cape) => {
+                        const isCur = selectedCape === cape.id;
+                        return (
+                          <div
+                            key={cape.label}
+                            onClick={() => {
+                              soundSynth?.playSelectSound?.();
+                              setSelectedCape(cape.id);
+                            }}
+                            className={`p-3 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
+                              isCur
+                                ? 'bg-purple-500/30 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)] scale-[1.02]'
+                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                            }`}
+                          >
+                            <div className="w-14 h-14 flex items-center justify-center">
+                              {cape.id ? (
+                                <CharacterSpritePreview spriteKey={cape.id} size={32} scale={1.4} />
+                              ) : (
+                                <span className="text-xs font-mono text-slate-500">None</span>
+                              )}
+                            </div>
+                            <span className="text-xs font-mono font-bold text-white mt-1 text-center">
+                              {cape.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* TAB: HEAD */}
+                  {appearanceTab === 'HEAD' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {MODULAR_HATS.map((hat) => {
+                        const isCur = selectedHat === hat.id;
+                        return (
+                          <div
+                            key={hat.label}
+                            onClick={() => {
+                              soundSynth?.playSelectSound?.();
+                              setSelectedHat(hat.id);
+                            }}
+                            className={`p-3 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
+                              isCur
+                                ? 'bg-pink-500/30 border-pink-400 shadow-[0_0_15px_rgba(242,0,137,0.5)] scale-[1.02]'
+                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                            }`}
+                          >
+                            <div className="w-14 h-14 flex items-center justify-center">
+                              {hat.id ? (
+                                <CharacterSpritePreview spriteKey={hat.id} size={32} scale={1.4} />
+                              ) : (
+                                <span className="text-xs font-mono text-slate-500">None</span>
+                              )}
+                            </div>
+                            <span className="text-xs font-mono font-bold text-white mt-1 text-center">
+                              {hat.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* TAB: ARMOR */}
+                  {appearanceTab === 'ARMOR' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {MODULAR_ARMOR.map((armor) => {
+                        const isCur = selectedArmor === armor.id;
+                        return (
+                          <div
+                            key={armor.label}
+                            onClick={() => {
+                              soundSynth?.playSelectSound?.();
+                              setSelectedArmor(armor.id);
+                            }}
+                            className={`p-3 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
+                              isCur
+                                ? 'bg-amber-500/30 border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)] scale-[1.02]'
+                                : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-[1.02]'
+                            }`}
+                          >
+                            <div className="w-14 h-14 flex items-center justify-center">
+                              {armor.id ? (
+                                <CharacterSpritePreview spriteKey={armor.id} size={32} scale={1.4} />
+                              ) : (
+                                <span className="text-xs font-mono text-slate-500">None</span>
+                              )}
+                            </div>
+                            <span className="text-xs font-mono font-bold text-white mt-1 text-center">
+                              {armor.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* TAB: CATALOG (Full Sprites) */}
+                  {appearanceTab === 'CATALOG' && (
+                    <div>
+                      {/* Search & Filter Header */}
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="relative flex-1">
+                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={spriteSearch}
+                            onChange={(e) => {
+                              setSpriteSearch(e.target.value);
+                              setSpritePage(0);
+                            }}
+                            placeholder="Filter sprite catalog..."
+                            className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-black/60 border border-pink-500/30 text-white placeholder:text-slate-500 text-xs font-mono focus:outline-none focus:border-[#00f5d4]"
+                          />
                         </div>
-                      ))}
+
+                        {/* Pagination */}
+                        <div className="flex items-center gap-1 font-mono text-xs text-slate-400">
+                          <button
+                            onClick={() => setSpritePage((p) => Math.max(0, p - 1))}
+                            disabled={spritePage === 0}
+                            className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
+                          >
+                            <ChevronLeft size={14} />
+                          </button>
+                          <span>{spritePage + 1}/{totalSpritePages}</span>
+                          <button
+                            onClick={() => setSpritePage((p) => Math.min(totalSpritePages - 1, p + 1))}
+                            disabled={spritePage >= totalSpritePages - 1}
+                            className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
+                          >
+                            <ChevronRight size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Sprite Grid */}
+                      <div className="grid grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-1">
+                        {currentSprites.map((sprite) => {
+                          const isCur = spriteId === sprite;
+                          return (
+                            <div
+                              key={sprite}
+                              onClick={() => {
+                                soundSynth?.playSelectSound?.();
+                                setSpriteId(sprite);
+                              }}
+                              className={`p-2 rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${
+                                isCur
+                                  ? 'bg-cyan-500/30 border-cyan-400 shadow-[0_0_15px_rgba(0,245,212,0.5)] scale-105'
+                                  : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-105'
+                              }`}
+                            >
+                              <CharacterSpritePreview spriteKey={sprite} size={32} scale={1.5} />
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* Create button */}
+                <div className="text-[10px] font-mono text-slate-400 text-center pt-2 border-t border-pink-500/20 mt-2">
+                  ✦ Layered Modular Character Ingestion // Bible 35 Standard ✦
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 4: PERK / SAINT GIFT ── */}
+        {step === 'GIFT' && (
+          <div className="w-full max-w-3xl mx-auto flex flex-col items-center">
+            <div className="text-center mb-6">
+              <h2
+                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
+                style={{
+                  background: 'linear-gradient(180deg, #ffffff 0%, #ffbe0b 50%, #f20089 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                SAINT BLESSING
+              </h2>
+              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
+                Select a permanent passive bonus trait for this operative
+              </p>
+            </div>
+
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-6">
+              {PERKS.map((perk) => {
+                const isSelected = perkId === perk.id;
+                const Icon = perk.icon;
+
+                return (
+                  <div
+                    key={perk.id}
+                    onClick={() => {
+                      soundSynth?.playSelectSound?.();
+                      setPerkId(perk.id);
+                    }}
+                    className={`cursor-pointer rounded-2xl p-4 border transition-all ${
+                      isSelected
+                        ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.3)] scale-[1.02]'
+                        : 'bg-[#0a0318]/90 border-pink-500/30 hover:border-pink-400 hover:scale-[1.01]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${perk.color}22`, color: perk.color }}
+                        >
+                          <Icon size={16} />
+                        </div>
+                        <span className="font-bold font-mono text-sm text-white">{perk.name}</span>
+                      </div>
+                      <span
+                        className="px-2 py-0.5 rounded text-[9px] font-mono font-black uppercase"
+                        style={{ backgroundColor: `${perk.color}22`, color: perk.color }}
+                      >
+                        {perk.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-slate-300 leading-relaxed">{perk.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end w-full">
+              <button
+                onClick={() => {
+                  soundSynth?.playActionSound?.();
+                  setStep('REVIEW');
+                }}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] cursor-pointer"
+              >
+                Review Dossier <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 5: REVIEW & FINAL FORGE ── */}
+        {step === 'REVIEW' && (
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+            <div className="text-center mb-6">
+              <h2
+                className="text-3xl font-black uppercase font-mono tracking-widest mb-1"
+                style={{
+                  background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 50%, #f20089 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  filter: 'drop-shadow(0 0 20px rgba(0,245,212,0.5))',
+                }}
+              >
+                OPERATIVE DOSSIER
+              </h2>
+              <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
+                Review operative attributes and confirm realm deployment
+              </p>
+            </div>
+
+            <div
+              className="w-full bg-[#0a0318]/95 border-2 border-[#00f5d4]/60 rounded-2xl p-6 shadow-[0_0_35px_rgba(0,245,212,0.25)] flex flex-col gap-5"
+              style={{
+                clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
+              }}
+            >
+              {/* Profile Card */}
+              <div className="flex items-center gap-5 border-b border-pink-500/20 pb-4">
+                <div className="w-20 h-20 rounded-2xl bg-black/80 border border-[#00f5d4] flex items-center justify-center shrink-0 shadow-inner">
+                  <CharacterSpritePreview layers={activeLayers} size={32} scale={2} />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black font-mono text-white">{name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-xs font-mono font-bold">
+                      {classId}
+                    </span>
+                    <span className="text-xs font-mono text-purple-300">Level 1 Operative</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attributes Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
+                  <span className="text-slate-400 text-[10px] block">HEALTH</span>
+                  <strong className="text-rose-400 text-sm">
+                    {100 + (perkId === 'STAMINA_SURGE' ? 30 : 0)} HP
+                  </strong>
+                </div>
+                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
+                  <span className="text-slate-400 text-[10px] block">POUCH</span>
+                  <strong className="text-amber-300 text-sm">1,000 C</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
+                  <span className="text-slate-400 text-[10px] block">BLESSING</span>
+                  <strong className="text-[#00f5d4] text-sm">{selectedPerk.name}</strong>
+                </div>
+                <div className="p-3 rounded-xl bg-black/50 border border-pink-500/20">
+                  <span className="text-slate-400 text-[10px] block">BAG CAPACITY</span>
+                  <strong className="text-purple-300 text-sm">
+                    {perkId === 'PACK_MULE' ? '150 KG' : '100 KG'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Launch Button */}
+              <div className="pt-2">
                 <button
                   disabled={loading}
                   onClick={handleCreate}
-                  className="w-full py-4 rounded-xl font-black text-lg tracking-widest uppercase transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-3"
-                  style={{
-                    background: loading
-                      ? 'rgba(16,185,129,0.3)'
-                      : 'linear-gradient(135deg, #059669 0%, #10b981 50%, #06b86c 100%)',
-                    boxShadow: loading ? 'none' : '0 0 30px rgba(16,185,129,0.35), 0 4px 15px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
-                    color: 'white',
-                  }}
+                  className="w-full py-4 rounded-xl font-mono font-black text-sm uppercase tracking-widest bg-gradient-to-r from-amber-400 via-pink-500 to-cyan-400 hover:from-amber-300 hover:via-pink-400 hover:to-cyan-300 text-slate-950 shadow-[0_0_30px_rgba(242,0,137,0.5)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <span className="animate-pulse font-mono">Creating...</span>
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
+                      Forging Operative...
+                    </>
                   ) : (
                     <>
-                      <Sparkles className="w-5 h-5" />
-                      Start Adventure
+                      <Flame className="w-5 h-5 text-slate-950" />
+                      FORGE OPERATIVE // ENTER REALM
                     </>
                   )}
                 </button>
               </div>
-            )}
-
+            </div>
           </div>
-        </div>
+        )}
+      </main>
 
-        <p className="mt-8 text-[#806f47]/35 text-[10px] font-mono tracking-widest">
-          ᚠ &nbsp; Saints Online &nbsp; ᚠ
-        </p>
-      </div>
+      {/* ── FOOTER BAR ── */}
+      <footer className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between text-[10px] font-mono text-pink-500/60 pt-3 border-t border-pink-500/20">
+        <span>⚔ Saints Gaming MMO Core Engine // Operative Forge ⚔</span>
+        <span className="text-cyan-400/80">Step {currentNum} of 5</span>
+      </footer>
     </div>
   );
 }

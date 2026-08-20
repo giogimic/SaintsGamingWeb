@@ -266,6 +266,11 @@ export async function GET(req: NextRequest) {
           OR: [
             { metadata: { contains: '"showInCharacterCreation":true' } },
             { metadata: { contains: '"showInCharacterCreation": true' } },
+            { metadata: { contains: '"isPlayable":true' } },
+            { metadata: { contains: '"isPlayable": true' } },
+            { tags: { contains: 'playable' } },
+            { tags: { contains: 'character_creator' } },
+            { tags: { contains: 'player' } },
           ],
         },
       ];
