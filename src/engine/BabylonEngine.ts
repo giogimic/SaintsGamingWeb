@@ -389,7 +389,8 @@ export class BabylonEngine {
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const currentOrtho = this.camera.orthoTop || 10;
       // Editor mode: max 120 (supports 128x128 full fit), Game mode: max 16, Min: 2.5 (up to 400%)
-      const maxZoom = this.editorCameraMode ? 120 : 16;
+      const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.editorCameraMode;
+      const maxZoom = isStudioToolsOpen ? 120 : 16;
       const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * zoomFactor));
       if (newOrtho === currentOrtho) return;
 
@@ -431,7 +432,7 @@ export class BabylonEngine {
     // Programmatic Zoom & Fit Map Events
     window.addEventListener('studio_set_zoom', (e: Event) => {
       const custom = e as CustomEvent<{ percent?: number; ortho?: number }>;
-      const maxZoom = this.editorCameraMode ? 120 : 16;
+      const maxZoom = 120; // Allow full zoom out in studio events
       let newOrtho = 10;
       if (custom.detail?.percent !== undefined) {
         newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
@@ -1031,7 +1032,7 @@ export class BabylonEngine {
       // --- PHASE B: FILL SKIRT & NEIGHBOR EDGE BLEED ---
       const isEditor = this.editorCameraMode;
       const shouldRenderNeighborBleed = this.showNeighborBleedPreview || !isEditor;
-      const SKIRT_PADDING = isEditor && !this.showNeighborBleedPreview ? 0 : (isEditor ? 6 : 64);
+      const SKIRT_PADDING = isEditor ? 0 : 64;
 
       const biome = (mapData as any).biome || 'default';
       const skirtConfig = BIOME_SKIRT_CONFIG[biome] || BIOME_SKIRT_CONFIG['default'];
@@ -2688,6 +2689,7 @@ private resolveTilePick(
     backdropGround.isPickable = false;
     backdropGround.parent = this.rootNode;
     backdropGround.isVisible = this.editorCameraMode;
+    backdropGround.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(backdropGround);
 
     // 2. Primary Outer Perimeter Frame (Glowing Amber Neon #f59e0b)
@@ -2707,6 +2709,7 @@ private resolveTilePick(
     outerLines.isPickable = false;
     outerLines.parent = this.rootNode;
     outerLines.isVisible = this.editorCameraMode;
+    outerLines.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(outerLines);
 
     // 3. Subtle Inner Inset Blueprint Outline (Cyan #38bdf8, 0.04s inset)
@@ -2728,6 +2731,7 @@ private resolveTilePick(
     innerLines.isPickable = false;
     innerLines.parent = this.rootNode;
     innerLines.isVisible = this.editorCameraMode;
+    innerLines.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(innerLines);
 
     // 4. Precision L-Bracket Crop Marks on all 4 corners (Drafting/CAD style)
@@ -3128,7 +3132,8 @@ private resolveTilePick(
     // The orthographic size needed to fit the larger dimension.
     const orthoH = (h * s) / 2 + 2;
     const orthoW = (w * s) / (2 * Math.max(0.1, aspect)) + 2;
-    const maxZoom = this.editorCameraMode ? 120 : 16;
+    // Always allow large zooms when trying to fit a map in view
+    const maxZoom = 120;
     const ortho = Math.max(orthoH, orthoW);
     const clamped = Math.max(2.5, Math.min(maxZoom, ortho));
     this.updateCameraAspect(clamped);
