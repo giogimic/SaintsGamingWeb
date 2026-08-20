@@ -1,3 +1,16 @@
+## [2.1.374] - 2026-08-20
+### Hardened & Converged
+- **Multi-Resolution LPC Slicing Presets (`src/shared/game/lpcPackage.ts`):**
+  - Updated `getLpcStandardSlices()` to derive cell dimensions dynamically from input options or sheet width (e.g. 1664px/1152px -> 128px cells; 832px/576px -> 64px cells), eliminating split-brain preset coordinates in the Studio Slicer.
+  - Updated `detectLpcFormat()` to detect 128x128 high-resolution LPC sheets (`1664x...` and `1152x512`) with correct frame dimensions and row counts.
+- **Pack Installer Canonical Convergence (`src/server/assetPackInstaller.ts`):**
+  - Re-routed `installAssetPacks()` through `buildCanonicalAssetData()`, ensuring that pre-packaged catalog assets follow the exact same schema, tags, and metadata normalization as uploads and slices.
+- **Conservative Type Fallback & Character Creation Safety (`src/shared/game/canonicalAsset.ts`):**
+  - Tightened unknown asset fallback from `CHARACTER` to conservative `OBJECT` / `SPRITE` to prevent arbitrary images from cluttering character creator catalogs.
+  - Made `isPlayable` and `showInCharacterCreation` strictly opt-in (requiring explicit metadata, pack membership like `heroes`, or role tags).
+- **Test Coverage:**
+  - Added unit tests for multi-resolution slice coordinate calculation, unknown asset type fallback safety, and asset pack installer canonical ingestion.
+
 ## [2.1.373] - 2026-08-20
 ### Fixed & Unified
 - **Asset Pipeline Convergence & Canonical Lifecycle (`src/shared/game/canonicalAsset.ts`):**

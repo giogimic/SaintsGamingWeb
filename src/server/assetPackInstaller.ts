@@ -3,6 +3,7 @@ import path from 'path';
 import type { PrismaClient } from '@prisma/client';
 import { inferAssetPack, packTag } from '../shared/game/assetPacks';
 import { classifyCreatureAsset } from '../shared/game/creatureCatalog';
+import { buildCanonicalAssetData } from '../shared/game/canonicalAsset';
 
 export interface AssetPackDefinition {
   id: string;
@@ -154,10 +155,10 @@ export async function installAssetPacks(
           size = fs.statSync(file).size;
         } catch {}
 
-        const isPlayable = pack.id === 'heroes' || pack.id === 'npc';
-        const tags = [type, category, packTag(packId)];
-        if (subcategory) tags.push(subcategory);
-        if (creatureSubcategory) tags.push(`creature:${creatureSubcategory}`);
+        const isPlayable = pack.id === 'heroes';
+        const rawTags = [type, category, packTag(packId)];
+        if (subcategory) rawTags.push(subcategory);
+        if (creatureSubcategory) rawTags.push(`creature:${creatureSubcategory}`);
         if (
           subcategory === 'battle_sheet' ||
           subcategory === 'npc_walk' ||
@@ -165,27 +166,33 @@ export async function installAssetPacks(
           relativePath.includes('-sheet') ||
           isTileset
         ) {
-          tags.push('sheet', 'spritesheet');
+          rawTags.push('sheet', 'spritesheet');
         }
         if (isPlayable) {
-          tags.push('playable', 'character_creator', 'player');
+          rawTags.push('playable', 'character_creator', 'player');
         }
+
+        const canonical = buildCanonicalAssetData({
+          gameId: 'tuxemon',
+          name,
+          type,
+          category,
+          tags: rawTags,
+          sourceUrl: relativePath,
+          pack: pack.id,
+          importProfile: pack.id === 'heroes' || pack.id === 'npc' ? 'character' : pack.id === 'tilesets' ? 'tileset' : undefined,
+          showInCharacterCreation: isPlayable,
+          isPlayable,
+          fileSize: size,
+        });
 
         await prisma.gameAsset.create({
           data: {
-            type,
-            source: relativePath,
-            tags: JSON.stringify(tags),
-            categories: JSON.stringify([category, ...(subcategory ? [subcategory] : [])]),
+            ...canonical.gameAssetData,
             metadata: JSON.stringify({
-              name,
-              pack: pack.id,
+              ...canonical.metadata,
               subcategory,
-              showInCharacterCreation: isPlayable,
-              isPlayable,
             }),
-            isActive: true,
-            fileSize: size,
           },
         });
         packInstalled++;

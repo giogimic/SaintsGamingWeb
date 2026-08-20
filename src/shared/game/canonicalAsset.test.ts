@@ -5,6 +5,7 @@ import {
   formatCanonicalGameAsset,
 } from "./canonicalAsset";
 import { resolveSpriteDefinition } from "./spriteDefinitions";
+import { getLpcStandardSlices } from "./lpcPackage";
 
 describe("Canonical Asset Convergence (Bible 35)", () => {
   it("generates deterministic GameAsset and UsableAsset records for sliced spritesheets", () => {
@@ -138,5 +139,47 @@ describe("Canonical Asset Convergence (Bible 35)", () => {
     expect(standardDef.frameWidth).toBe(64);
     expect(standardDef.frameHeight).toBe(64);
     expect(standardDef.rows).toBe(21); // 1344 / 64 = 21
+  });
+
+  it("safely defaults ambiguous/unknown assets to OBJECT and isPlayable: false", () => {
+    const unknownAsset = buildCanonicalAssetData({
+      sourceUrl: "/uploads/mystery_prop.png",
+      width: 64,
+      height: 64,
+    });
+
+    expect(unknownAsset.normalizedType).toBe("OBJECT");
+    expect(unknownAsset.metadata.isPlayable).toBe(false);
+    expect(unknownAsset.metadata.showInCharacterCreation).toBe(false);
+
+    const tags = JSON.parse(unknownAsset.gameAssetData.tags);
+    expect(tags).not.toContain("playable");
+    expect(tags).not.toContain("character_creator");
+  });
+
+  it("generates 128px slice coordinates for 1664px sheets and 64px coordinates for 832px sheets", () => {
+    // 1664px High-Res LPC Sheet
+    const highResSlices = getLpcStandardSlices("lpc-full", {
+      sheetWidth: 1664,
+      sheetHeight: 4992,
+    });
+
+    const highResWalkSouth = highResSlices.find((s: any) => s.id === "slice_walk_s");
+    expect(highResWalkSouth).toBeDefined();
+    expect(highResWalkSouth!.y).toBe(10 * 128); // Row 10 @ 128px = 1280 (NOT 640)
+    expect(highResWalkSouth!.w).toBe(9 * 128);  // 1152px
+    expect(highResWalkSouth!.h).toBe(128);      // 128px
+
+    // 832px Standard LPC Sheet
+    const standardSlices = getLpcStandardSlices("lpc-full", {
+      sheetWidth: 832,
+      sheetHeight: 1344,
+    });
+
+    const standardWalkSouth = standardSlices.find((s: any) => s.id === "slice_walk_s");
+    expect(standardWalkSouth).toBeDefined();
+    expect(standardWalkSouth!.y).toBe(10 * 64); // Row 10 @ 64px = 640
+    expect(standardWalkSouth!.w).toBe(9 * 64);  // 576px
+    expect(standardWalkSouth!.h).toBe(64);      // 64px
   });
 });

@@ -122,34 +122,66 @@ export function detectLpcFormat(width: number, height: number): LpcDetectedForma
     };
   }
 
-  // Universal LPC Full Character Spritesheet (832x1344 = 13 cols x 21 rows at 64x64, or 832x1408, or 832x2048)
-  if (width === 832 && (height === 1344 || height === 1408 || height === 2048)) {
+  // High-Resolution LPC Full Character Spritesheet (1664x... = 13 cols @ 128x128)
+  if (width === 1664 && height >= 512) {
+    return {
+      isLpc: true,
+      variant: "universal-full",
+      label: "Universal LPC Character Sheet (High-Res 128x128)",
+      description: "High-resolution LPC spritesheet with 128x128 cells covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
+      frameWidth: 128,
+      frameHeight: 128,
+      cols: 13,
+      rows: Math.floor(height / 128),
+      totalFrames: 13 * Math.floor(height / 128),
+      suggestedPresets: ["lpc-full", "lpc-walk", "saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  // High-Resolution LPC Walk Cycle (1152x512 = 9 cols x 4 rows at 128x128)
+  if (width === 1152 && (height === 512 || height % 128 === 0)) {
+    return {
+      isLpc: true,
+      variant: "lpc-walk",
+      label: "LPC 4-Direction Walk Cycle (High-Res 128x128)",
+      description: "High-resolution 4-direction 9-frame walk cycle sheet (North, West, South, East) at 128x128.",
+      frameWidth: 128,
+      frameHeight: 128,
+      cols: 9,
+      rows: Math.floor(height / 128),
+      totalFrames: 9 * Math.floor(height / 128),
+      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  // Universal LPC Full Character Spritesheet (832x1344 = 13 cols x 21 rows at 64x64, or 832x1408, or 832x2048, or 832x3456)
+  if (width === 832 && height >= 256) {
     return {
       isLpc: true,
       variant: "universal-full",
       label: "Universal LPC Character Sheet (Full)",
-      description: "Full LPC spritesheet with 21 rows covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
+      description: "Full LPC spritesheet with 64x64 cells covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
       frameWidth: 64,
       frameHeight: 64,
-      cols: Math.floor(width / 64),
+      cols: 13,
       rows: Math.floor(height / 64),
-      totalFrames: Math.floor(width / 64) * Math.floor(height / 64),
+      totalFrames: 13 * Math.floor(height / 64),
       suggestedPresets: ["lpc-full", "lpc-walk", "saints-2.5d", "lpc-idles"],
     };
   }
 
   // Universal LPC 4-Direction Walk Cycle (576x256 = 9 cols x 4 rows at 64x64)
-  if (width === 576 && height === 256) {
+  if (width === 576 && (height === 256 || height % 64 === 0)) {
     return {
       isLpc: true,
       variant: "lpc-walk",
       label: "LPC 4-Direction Walk Cycle (64x64)",
-      description: "Standard 4-direction 9-frame walk cycle sheet (North, West, South, East).",
+      description: "Standard 4-direction 9-frame walk cycle sheet (North, West, South, East) at 64x64.",
       frameWidth: 64,
       frameHeight: 64,
       cols: 9,
-      rows: 4,
-      totalFrames: 36,
+      rows: Math.floor(height / 64),
+      totalFrames: 9 * Math.floor(height / 64),
       suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
     };
   }
@@ -175,13 +207,29 @@ export function detectLpcFormat(width: number, height: number): LpcDetectedForma
     return {
       isLpc: true,
       variant: "custom-grid",
-      label: `LPC-Compatible Grid (${width}x${height})`,
+      label: `LPC-Compatible Grid (${width}x${height}) [64px]`,
       description: `64x64 pixel-aligned spritesheet with ${width / 64} cols x ${height / 64} rows.`,
       frameWidth: 64,
       frameHeight: 64,
       cols: width / 64,
       rows: height / 64,
       totalFrames: (width / 64) * (height / 64),
+      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+    };
+  }
+
+  // 128x128 grid-aligned spritesheet (large custom sheets >= 512px)
+  if (width % 128 === 0 && height % 128 === 0 && width >= 512 && height >= 512) {
+    return {
+      isLpc: true,
+      variant: "custom-grid",
+      label: `LPC-Compatible Grid (${width}x${height}) [128px]`,
+      description: `128x128 pixel-aligned spritesheet with ${width / 128} cols x ${height / 128} rows.`,
+      frameWidth: 128,
+      frameHeight: 128,
+      cols: width / 128,
+      rows: height / 128,
+      totalFrames: (width / 128) * (height / 128),
       suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
     };
   }
@@ -209,12 +257,31 @@ export function getLpcStandardSlices(
     sheetWidth?: number;
     sheetHeight?: number;
     prefix?: string;
+    cellSize?: number;
   } = {}
 ): LpcSliceRegion[] {
   const regions: LpcSliceRegion[] = [];
   const prefix = options.prefix ? `${options.prefix}_` : "";
-  const cellW = 64;
-  const cellH = 64;
+
+  // Derive cell dimensions dynamically from options or sheet width
+  const explicitCellSize = options.cellSize;
+  let cellW = 64;
+  let cellH = 64;
+  if (explicitCellSize && explicitCellSize > 0) {
+    cellW = explicitCellSize;
+    cellH = explicitCellSize;
+  } else if (options.sheetWidth === 1664 || options.sheetWidth === 1152) {
+    cellW = 128;
+    cellH = 128;
+  } else if (options.sheetWidth && options.sheetWidth > 0) {
+    if (options.sheetWidth % 13 === 0 && options.sheetWidth >= 832) {
+      cellW = Math.floor(options.sheetWidth / 13);
+      cellH = cellW;
+    } else if (options.sheetWidth % 9 === 0 && options.sheetWidth >= 576) {
+      cellW = Math.floor(options.sheetWidth / 9);
+      cellH = cellW;
+    }
+  }
 
   if (preset === "lpc-full") {
     // 1. Walk Cycles (Rows 8..11)
@@ -354,8 +421,10 @@ export function getLpcStandardSlices(
       });
     }
   } else if (preset === "lpc-walk") {
-    // 4-Direction Walk Cycle (can start at row 0 if 576x256 or row 8 if full sheet)
-    const isFullSheet = (options.sheetHeight || 0) >= 1344;
+    // 4-Direction Walk Cycle (starts at row 0 for walk-only sheets, or row 8 for full sheets)
+    const isFullSheet =
+      (options.sheetHeight || 0) >= cellH * 21 ||
+      (options.sheetWidth || 0) >= cellW * 13;
     const startRowOffset = isFullSheet ? LPC_ACTION_ROW_OFFSETS.walk.startRow : 0;
 
     for (const dir of LPC_DIRECTION_ROW_MAP) {
@@ -380,7 +449,7 @@ export function getLpcStandardSlices(
     // 3x4 Grid for 2.5D Engine (South, West, East, North)
     // If standard 96x128 sheet: 32x32 frames
     const is32Grid = (options.sheetWidth || 0) === 96 || (options.sheetHeight || 0) === 128;
-    const size = is32Grid ? 32 : 64;
+    const size = is32Grid ? 32 : cellW;
     const rows = [
       { row: 0, facing: "S" as const, label: "south" },
       { row: 1, facing: "W" as const, label: "west" },
@@ -407,7 +476,9 @@ export function getLpcStandardSlices(
     }
   } else if (preset === "lpc-idles") {
     // 4-Direction Idles
-    const isFullSheet = (options.sheetHeight || 0) >= 1344;
+    const isFullSheet =
+      (options.sheetHeight || 0) >= cellH * 21 ||
+      (options.sheetWidth || 0) >= cellW * 13;
     const startRowOffset = isFullSheet ? LPC_ACTION_ROW_OFFSETS.walk.startRow : 0;
 
     for (const dir of LPC_DIRECTION_ROW_MAP) {
