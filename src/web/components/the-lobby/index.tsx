@@ -1221,10 +1221,14 @@ export default function TheLobby({
       state.showToast("You blacked out... Respawning at Safe Zone");
       if (data?.instanceId) state.setInstanceId(data.instanceId);
       const defeatMap = toBaseMapId(String(data?.mapId || state.currentMapId || 'DEMO_SANDBOX'));
-      state.setCurrentMapId(defeatMap);
-      void loadMap(defeatMap).then((m) => {
-        useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
-      });
+      const currentBase = toBaseMapId(String(state.currentMapId || ''));
+      if (defeatMap !== currentBase) {
+        state.setOtherPlayers({});
+        state.setCurrentMapId(defeatMap);
+        void loadMap(defeatMap).then((m) => {
+          useGameStore.getState().setActiveMapData(ensureMapHasStudioTilesets(m));
+        });
+      }
       const spawnX = typeof data?.x === 'number' ? data.x : 10;
       const spawnY = typeof data?.y === 'number' ? data.y : 10;
       state.setPlayerPosition({ x: spawnX, y: spawnY }, 'down', false);
