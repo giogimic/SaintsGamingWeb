@@ -3,6 +3,22 @@
  * Handles 2D grid flipping (horizontal, vertical) and 90°/180°/270° clockwise rotations.
  */
 
+import {
+  type TileClipboardData,
+  extractSparseCellsFromMap,
+  extractSubgridFromMap,
+  stampClipboardOntoMap,
+} from './subgridStamp';
+import {
+  type PaintableMap,
+  eraseSparseCells,
+  eraseTilesInRegion,
+} from './tilePaint';
+import {
+  type PaintedCell,
+  deduplicatePaintedCells,
+} from './editorOps';
+
 export interface StampTransform {
   flipH: boolean;
   flipV: boolean;
@@ -22,6 +38,7 @@ export function rotateCW(rot: 0 | 90 | 180 | 270): 0 | 90 | 180 | 270 {
 export function rotateCCW(rot: 0 | 90 | 180 | 270): 0 | 90 | 180 | 270 {
   return ((rot + 270) % 360) as 0 | 90 | 180 | 270;
 }
+
 
 /** Rotate a 2D matrix 90 degrees clockwise. */
 export function rotateMatrix90CW<T>(matrix: T[][]): T[][] {
@@ -76,8 +93,7 @@ export function transformGrid<T>(grid: T[][], transform: StampTransform): T[][] 
   return current;
 }
 
-export type { TileClipboardData } from './subgridStamp';
-import type { TileClipboardData } from './subgridStamp';
+export type { TileClipboardData };
 
 /** Transform coordinates and dimensions of a TileClipboardData object. */
 export function transformClipboard(
@@ -132,3 +148,116 @@ export function transformClipboard(
     logicData: logic,
   };
 }
+
+export interface TransformSelectionParams {
+  map: PaintableMap | null | undefined;
+  layerIdx?: number;
+  cells?: Array<{ r: number; c: number }> | Record<string, boolean>;
+  bounds?: { minR: number; maxR: number; minC: number; maxC: number };
+  transform: StampTransform;
+}
+
+export interface TransformSelectionResult {
+  ok: boolean;
+  cells: PaintedCell[];
+  newBounds?: { minR: number; maxR: number; minC: number; maxC: number; width: number; height: number };
+  newCells?: Record<string, boolean>;
+  error?: string;
+}
+
+/**
+ * Transforms (flips / rotates) the selected region or sparse cells in-place on the map document.
+ * Returns the atomic deduplicated list of painted cells for single-op undo history and visual sync,
+ * along with the updated sparse cells / bounding box for UI selection preservation.
+ */
+export function transformSelectionInPlace(
+  params: TransformSelectionParams
+): TransformSelectionResult {
+  const { map, layerIdx = 0, cells, bounds, transform } = params;
+  if (!map) return { ok: false, cells: [], error: 'Map data missing.' };
+
+  // 1. Extract clipboard from selection
+  const hasSparse = cells && (Array.isArray(cells) ? cells.length > 0 : Object.keys(cells).length > 0);
+  let extracted: TileClipboardData | null = null;
+
+  if (hasSparse) {
+    extracted = extractSparseCellsFromMap({ map, cells: cells!, activeLayerIdx: layerIdx });
+  } else if (bounds) {
+    extracted = extractSubgridFromMap({
+      map,
+      minR: bounds.minR,
+      maxR: bounds.maxR,
+      minC: bounds.minC,
+      maxC: bounds.maxC,
+      activeLayerIdx: layerIdx,
+    });
+  }
+
+  if (!extracted || (extracted.visualData.length === 0 && extracted.logicData.length === 0)) {
+    return { ok: false, cells: [], error: 'No tiles in selection to transform.' };
+  }
+
+  // 2. Erase the source cells first
+  let erasedCells: PaintedCell[] = [];
+  if (hasSparse) {
+    const eraseRes = eraseSparseCells({ map, layerIdx, cells: cells! });
+    if (eraseRes.ok) erasedCells = eraseRes.cells;
+  } else if (bounds) {
+    const eraseRes = eraseTilesInRegion({
+      map,
+      layerIdx,
+      minR: bounds.minR,
+      maxR: bounds.maxR,
+      minC: bounds.minC,
+      maxC: bounds.maxC,
+    });
+    if (eraseRes.ok) erasedCells = eraseRes.cells;
+  }
+
+  // 3. Transform the clipboard
+  const transformed = transformClipboard(extracted, transform);
+
+  // 4. Stamp transformed clipboard back onto the map at the same source origin
+  const stampRes = stampClipboardOntoMap({
+    map,
+    clipboard: transformed,
+    targetR: extracted.sourceOrigin.r,
+    targetC: extracted.sourceOrigin.c,
+    mode: 'overlay',
+    activeLayerIdx: layerIdx,
+  });
+
+  if (!stampRes.ok) {
+    return { ok: false, cells: [], error: stampRes.error || 'Failed to stamp transformed tiles.' };
+  }
+
+  // 5. Deduplicate intermediate writes (erase + stamp) into a single atomic change set
+  const allMutations = [...erasedCells, ...stampRes.cells];
+  const deduplicated = deduplicatePaintedCells(allMutations);
+
+  // 6. Compute new selection boundaries & sparse cells
+  const newBounds = {
+    minR: extracted.sourceOrigin.r,
+    minC: extracted.sourceOrigin.c,
+    maxR: extracted.sourceOrigin.r + transformed.height - 1,
+    maxC: extracted.sourceOrigin.c + transformed.width - 1,
+    width: transformed.width,
+    height: transformed.height,
+  };
+
+  const newCells: Record<string, boolean> = {};
+  for (const v of transformed.visualData) {
+    newCells[`${extracted.sourceOrigin.r + v.r},${extracted.sourceOrigin.c + v.c}`] = true;
+  }
+  for (const l of transformed.logicData) {
+    newCells[`${extracted.sourceOrigin.r + l.r},${extracted.sourceOrigin.c + l.c}`] = true;
+  }
+
+  return {
+    ok: true,
+    cells: deduplicated,
+    newBounds,
+    newCells,
+  };
+}
+

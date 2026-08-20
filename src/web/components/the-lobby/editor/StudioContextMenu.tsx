@@ -18,10 +18,15 @@ import {
   MessageSquare,
   Scan,
   XCircle,
+  RotateCw,
+  FlipHorizontal,
+  FlipVertical,
+  CopyPlus,
   ChevronRight,
   ChevronDown,
   Settings,
 } from 'lucide-react';
+
 import { useEditorStore, type PanelId } from './editor-store';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
@@ -162,24 +167,82 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   const handleFillLayerWithBrush = () => {
     if (!activeMapData) return;
-    const gridH = activeMapData.grid?.length || 24;
-    const gridW = activeMapData.grid?.[0]?.length || 24;
-    
-    if (activeLayerIdx === -1) {
-      const filled = Array(gridH).fill(0).map(() => Array(gridW).fill(activeLogicTileId));
-      useGameStore.getState().setActiveMapData({ ...activeMapData, grid: filled });
-      useEditorStore.getState().markMapDirty();
-      showToast(`Filled Logic layer with tag #${activeLogicTileId}`);
+    const store = useEditorStore.getState();
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const selectedCount = store.getSelectedCount();
+
+    if (selectedCount > 0) {
+      const res = store.fillSelection(activeMapData, engine, activeLayerIdx);
+      if (res.error) {
+        showToast(res.error);
+      } else if (res.count > 0) {
+        const layerName = res.layerIdx === -1 ? 'Logic (−1)' : `Layer ${res.layerIdx}`;
+        showToast(`Filled ${res.count} selected tiles on ${layerName}`);
+      }
     } else {
-      const tileLayers = [...(activeMapData.tileLayers || [])];
-      if (!tileLayers[activeLayerIdx]) return;
-      const filled = Array(gridH).fill(0).map(() => Array(gridW).fill(activeBrushTileId));
-      tileLayers[activeLayerIdx] = { ...tileLayers[activeLayerIdx], grid: filled };
-      useGameStore.getState().setActiveMapData({ ...activeMapData, tileLayers });
-      useEditorStore.getState().markMapDirty();
-      showToast(`Filled Layer ${activeLayerIdx} with GID ${activeBrushTileId}`);
+      const gridH = activeMapData.grid?.length || (activeMapData.tileLayers?.[0]?.grid?.length ?? 24);
+      const gridW = activeMapData.grid?.[0]?.length || (activeMapData.tileLayers?.[0]?.grid?.[0]?.length ?? 24);
+      const prevStart = store.selectionStart;
+      const prevEnd = store.selectionEnd;
+      store.setSelectionBox(0, gridH - 1, 0, gridW - 1);
+      const res = store.fillSelection(activeMapData, engine, activeLayerIdx);
+      store.setSelectionStart(prevStart);
+      store.setSelectionEnd(prevEnd);
+      if (res.count > 0) {
+        const layerName = res.layerIdx === -1 ? 'Logic (−1)' : `Layer ${res.layerIdx}`;
+        showToast(`Filled entire ${layerName} with ${res.count} tiles`);
+      }
     }
   };
+
+  const handleRotateSelection = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = store.rotateSelection(activeMapData, engine, 90, activeLayerIdx);
+    if (res.ok) {
+      showToast(`Rotated selection 90° CW (${res.count} tiles)`);
+    } else {
+      showToast(res.error || 'Rotate failed');
+    }
+  };
+
+  const handleFlipSelectionH = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = store.flipSelection(activeMapData, engine, 'h', activeLayerIdx);
+    if (res.ok) {
+      showToast(`Flipped selection horizontally (${res.count} tiles)`);
+    } else {
+      showToast(res.error || 'Flip failed');
+    }
+  };
+
+  const handleFlipSelectionV = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = store.flipSelection(activeMapData, engine, 'v', activeLayerIdx);
+    if (res.ok) {
+      showToast(`Flipped selection vertically (${res.count} tiles)`);
+    } else {
+      showToast(res.error || 'Flip failed');
+    }
+  };
+
+  const handleDuplicateSelection = () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+    const res = store.duplicateSelection(activeMapData, engine, 1, 1, activeLayerIdx);
+    if (res.ok) {
+      showToast(`Duplicated selection (+1, +1)`);
+    } else {
+      showToast(res.error || 'Duplicate failed');
+    }
+  };
+
 
   const handleClearTile = () => {
     if (!activeMapData) return;
@@ -543,6 +606,53 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
           <span>{hasMultiSelection ? `Fill Selection (${selectedCount})` : 'Fill Layer with Brush'}</span>
         </button>
 
+        {hasSelection && (
+          <>
+            <button
+              type="button"
+              onClick={() => handleAction(handleRotateSelection)}
+              className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <RotateCw className="h-3.5 w-3.5 text-amber-400" />
+                <span>Rotate 90° CW</span>
+              </div>
+              <span className="text-[9px] text-slate-500 font-mono">R</span>
+            </button>
+
+            <div className="grid grid-cols-2 gap-1 px-1 py-0.5">
+              <button
+                type="button"
+                onClick={() => handleAction(handleFlipSelectionH)}
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-amber-950/20 border border-amber-500/20 px-2 py-1 text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer text-[10px]"
+              >
+                <FlipHorizontal className="h-3 w-3 text-cyan-400" />
+                <span>Flip H</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAction(handleFlipSelectionV)}
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-amber-950/20 border border-amber-500/20 px-2 py-1 text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer text-[10px]"
+              >
+                <FlipVertical className="h-3 w-3 text-cyan-400" />
+                <span>Flip V</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleAction(handleDuplicateSelection)}
+              className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-slate-300 hover:bg-amber-500/20 hover:text-white transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <CopyPlus className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Duplicate Selection</span>
+              </div>
+              <span className="text-[9px] text-slate-500 font-mono">Ctrl+D</span>
+            </button>
+          </>
+        )}
+
         <button
           type="button"
           onClick={() => handleAction(handleClearTile)}
@@ -556,6 +666,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
         </button>
 
         <div className="my-1 h-px bg-amber-500/20" />
+
 
         {/* --- Quick Create Section --- */}
         <div>

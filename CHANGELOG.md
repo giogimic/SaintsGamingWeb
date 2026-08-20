@@ -1,4 +1,35 @@
+## [2.1.382] - 2026-08-20
+### Generalized Reversible EditorOps Architecture (Phase 2)
+- **Generalized Command Hierarchy (`editorOps.ts`):**
+  - Extended `EditorOp` from cell-only writes into a complete command architecture supporting `LayerOp` (`create_layer`, `delete_layer`, `reorder_layer`, `rename_layer`), `EntityOp` (`create_entity`, `delete_entity`, `move_entity`, `modify_entity`), `GateOp` (`create_gate`, `delete_gate`, `modify_gate`), `MapPropsOp` (`modify_map_props`), and `CompoundOp` (`compound`).
+  - Implemented bidirectional `applyEditorOp(map, op, direction: 'do' | 'undo')` for atomic state execution and reversal.
+- **Structural Paste Reversal (`subgridStamp.ts`, `editor-store.ts`):**
+  - Updated `stampClipboardOntoMap` to return the `createdLayer` structure in `new_layer` mode.
+  - Recorded a `compound` op (`create_layer` + `paint_cells`) on `new_layer` paste so undoing cleanly deletes the created layer rather than leaving an orphaned empty layer.
+- **Multi-System Event Synchronization (`editor-store.ts`):**
+  - Implemented `dispatchOpEvents` to broadcast `studio_layers_changed`, `studio_entities_changed`, and `studio_gates_changed` alongside tile cell updates upon undo/redo.
+- **Comprehensive Unit Testing (`editorOps.test.ts`):**
+  - Added unit tests verifying bidirectional execution and reversal for Layer CRUD, Entity CRUD/Move, Gate CRUD, Map properties, and compound multi-system operations.
+
+## [2.1.381] - 2026-08-20
+
+### Master Development Plan: Phase 0 Inventory & Phase 1 Studio Selection Matrix
+- **Selection Operations Matrix & Composability (`tilePaint.ts`, `subgridStamp.ts`, `stampTransform.ts`):**
+  - Implemented `paintTilesInRegion` and `paintSparseCells` in `tilePaint.ts` for atomic batch painting across rectangular and arbitrary sparse cell selections.
+  - Implemented `transformSelectionInPlace` in `stampTransform.ts` supporting 90°/180°/270° CW/CCW in-place rotations and horizontal/vertical flips with automatic selection bounds recalculation.
+  - Implemented `duplicateSelectionOnMap` and `moveSelectionOnMap` in `subgridStamp.ts` for atomic cloning and translating selected cells with relative layer integrity.
+- **Unified Studio Selection Actions (`editor-store.ts`):**
+  - Added `paintSelection`, `fillSelection`, `eraseSelection`, `rotateSelection`, `flipSelection`, `duplicateSelection`, and `moveSelection` store actions.
+  - Consolidated all batch selection mutations into **one atomic undoable `EditorOp` (`paint_cells`)** with complete visual mesh and logic grid sync.
+- **Canvas & Context Menu Integration (`GameCanvasBabylon.tsx`, `StudioContextMenu.tsx`):**
+  - Added Select → Paint and Select → Erase canvas click detection: clicking inside an active rectangular or sparse selection in Paint or Erase mode applies the operation across all selected cells atomically.
+  - Integrated Rotate 90° CW, Flip H, Flip V, and Duplicate Selection directly into `StudioContextMenu.tsx` with Lucide icons.
+  - Updated `handleFillLayerWithBrush` in context menu to route through single-op undoable editor history.
+- **Selection Operations Matrix Test Suite (`selectionOperations.test.ts`):**
+  - 15 comprehensive unit tests verifying Paint, Erase, Copy, Cut, Paste, Rotate, Flip, Duplicate, Move, Edge/Corner boundary clamping, and Single-Op Undo/Redo across Visual layers and Logic grid (-1).
+
 ## [2.1.380] - 2026-08-20
+
 ### Map Boundary Precision Alignment & Cursor Highlight Hide
 - **Exact Map Boundary Grid Calibration (`src/engine/BabylonEngine.ts`):**
   - Calibrated outer perimeter coordinates `minX = (-w/2 - 0.5)*s`, `maxX = (w/2 - 0.5)*s`, `minZ = (-h/2 + 0.5)*s`, `maxZ = (h/2 + 0.5)*s` to align with the tilemap quad vertices.

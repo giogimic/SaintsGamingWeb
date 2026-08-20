@@ -3,10 +3,19 @@
  * Pure logic shared across Studio Tile Clipboard (Cut/Copy/Paste) and Prefab Builder.
  */
 
-import { LOGIC_LAYER_IDX, type PaintableMap } from './tilePaint';
-import type { PaintedCell } from './editorOps';
+import {
+  LOGIC_LAYER_IDX,
+  type PaintableMap,
+  eraseSparseCells,
+  eraseTilesInRegion,
+} from './tilePaint';
+import {
+  type PaintedCell,
+  deduplicatePaintedCells,
+} from './editorOps';
 
 export type PasteMode = 'overlay' | 'replace' | 'new_layer';
+
 
 export interface ClipboardVisualTile {
   layerOffset: number;
@@ -216,6 +225,7 @@ export interface StampClipboardResult {
   cells: PaintedCell[];
   newLayerCreated?: boolean;
   newLayerIdx?: number;
+  createdLayer?: { name: string; grid: number[][] };
   error?: string;
 }
 
@@ -232,6 +242,7 @@ export function stampClipboardOntoMap(params: StampClipboardParams): StampClipbo
   const cells: PaintedCell[] = [];
   let newLayerCreated = false;
   let newLayerIdx: number | undefined;
+  let createdLayer: { name: string; grid: number[][] } | undefined;
 
   // Determine target visual layer based on mode
   let effectiveVisualLayer = activeLayerIdx;
@@ -244,13 +255,15 @@ export function stampClipboardOntoMap(params: StampClipboardParams): StampClipbo
     const mapW = Array.isArray(map.grid?.[0]) ? map.grid[0].length : 64;
     const blankGrid: number[][] = Array.from({ length: mapH }, () => Array(mapW).fill(0));
     newLayerIdx = map.tileLayers.length;
-    map.tileLayers.push({
+    createdLayer = {
       name: `Pasted Layer ${newLayerIdx + 1}`,
       grid: blankGrid,
-    });
+    };
+    map.tileLayers.push(createdLayer);
     newLayerCreated = true;
     effectiveVisualLayer = newLayerIdx;
   }
+
 
   // Handle visual tiles
   if (Array.isArray(map.tileLayers) && map.tileLayers.length > 0) {
@@ -361,5 +374,198 @@ export function stampClipboardOntoMap(params: StampClipboardParams): StampClipbo
     cells,
     newLayerCreated,
     newLayerIdx,
+    createdLayer,
   };
 }
+
+
+export interface DuplicateSelectionParams {
+  map: PaintableMap | null | undefined;
+  layerIdx?: number;
+  cells?: Array<{ r: number; c: number }> | Record<string, boolean>;
+  bounds?: { minR: number; maxR: number; minC: number; maxC: number };
+  offsetR: number;
+  offsetC: number;
+  mode?: PasteMode;
+}
+
+export interface DuplicateSelectionResult {
+  ok: boolean;
+  cells: PaintedCell[];
+  newBounds?: { minR: number; maxR: number; minC: number; maxC: number; width: number; height: number };
+  newCells?: Record<string, boolean>;
+  error?: string;
+}
+
+/**
+ * Clones the selected region or sparse cells to a new offset destination on the map.
+ * Returns the painted cells as a single undoable change set along with updated selection coordinates.
+ */
+export function duplicateSelectionOnMap(
+  params: DuplicateSelectionParams
+): DuplicateSelectionResult {
+  const { map, layerIdx = 0, cells, bounds, offsetR, offsetC, mode = 'overlay' } = params;
+  if (!map) return { ok: false, cells: [], error: 'Map data missing.' };
+
+  const hasSparse = cells && (Array.isArray(cells) ? cells.length > 0 : Object.keys(cells).length > 0);
+  let extracted: TileClipboardData | null = null;
+
+  if (hasSparse) {
+    extracted = extractSparseCellsFromMap({ map, cells: cells!, activeLayerIdx: layerIdx });
+  } else if (bounds) {
+    extracted = extractSubgridFromMap({
+      map,
+      minR: bounds.minR,
+      maxR: bounds.maxR,
+      minC: bounds.minC,
+      maxC: bounds.maxC,
+      activeLayerIdx: layerIdx,
+    });
+  }
+
+  if (!extracted || (extracted.visualData.length === 0 && extracted.logicData.length === 0)) {
+    return { ok: false, cells: [], error: 'No tiles in selection to duplicate.' };
+  }
+
+  const targetR = extracted.sourceOrigin.r + offsetR;
+  const targetC = extracted.sourceOrigin.c + offsetC;
+
+  const stampRes = stampClipboardOntoMap({
+    map,
+    clipboard: extracted,
+    targetR,
+    targetC,
+    mode,
+    activeLayerIdx: layerIdx,
+  });
+
+  if (!stampRes.ok) {
+    return { ok: false, cells: [], error: stampRes.error || 'Failed to stamp duplicate.' };
+  }
+
+  const newBounds = {
+    minR: targetR,
+    minC: targetC,
+    maxR: targetR + extracted.height - 1,
+    maxC: targetC + extracted.width - 1,
+    width: extracted.width,
+    height: extracted.height,
+  };
+
+  const newCells: Record<string, boolean> = {};
+  for (const v of extracted.visualData) {
+    newCells[`${targetR + v.r},${targetC + v.c}`] = true;
+  }
+  for (const l of extracted.logicData) {
+    newCells[`${targetR + l.r},${targetC + l.c}`] = true;
+  }
+
+  return {
+    ok: true,
+    cells: stampRes.cells,
+    newBounds,
+    newCells,
+  };
+}
+
+export interface MoveSelectionParams {
+  map: PaintableMap | null | undefined;
+  layerIdx?: number;
+  cells?: Array<{ r: number; c: number }> | Record<string, boolean>;
+  bounds?: { minR: number; maxR: number; minC: number; maxC: number };
+  offsetR: number;
+  offsetC: number;
+}
+
+/**
+ * Moves the selected region or sparse cells to a new offset destination on the map.
+ * Erases the original location and stamps at the destination in a single atomic undoable change set.
+ */
+export function moveSelectionOnMap(
+  params: MoveSelectionParams
+): DuplicateSelectionResult {
+  const { map, layerIdx = 0, cells, bounds, offsetR, offsetC } = params;
+  if (!map) return { ok: false, cells: [], error: 'Map data missing.' };
+
+  const hasSparse = cells && (Array.isArray(cells) ? cells.length > 0 : Object.keys(cells).length > 0);
+  let extracted: TileClipboardData | null = null;
+
+  if (hasSparse) {
+    extracted = extractSparseCellsFromMap({ map, cells: cells!, activeLayerIdx: layerIdx });
+  } else if (bounds) {
+    extracted = extractSubgridFromMap({
+      map,
+      minR: bounds.minR,
+      maxR: bounds.maxR,
+      minC: bounds.minC,
+      maxC: bounds.maxC,
+      activeLayerIdx: layerIdx,
+    });
+  }
+
+  if (!extracted || (extracted.visualData.length === 0 && extracted.logicData.length === 0)) {
+    return { ok: false, cells: [], error: 'No tiles in selection to move.' };
+  }
+
+  // 1. Erase original tiles
+  let erasedCells: PaintedCell[] = [];
+  if (hasSparse) {
+    const eraseRes = eraseSparseCells({ map, layerIdx, cells: cells! });
+    if (eraseRes.ok) erasedCells = eraseRes.cells;
+  } else if (bounds) {
+    const eraseRes = eraseTilesInRegion({
+      map,
+      layerIdx,
+      minR: bounds.minR,
+      maxR: bounds.maxR,
+      minC: bounds.minC,
+      maxC: bounds.maxC,
+    });
+    if (eraseRes.ok) erasedCells = eraseRes.cells;
+  }
+
+  // 2. Stamp at destination
+  const targetR = extracted.sourceOrigin.r + offsetR;
+  const targetC = extracted.sourceOrigin.c + offsetC;
+
+  const stampRes = stampClipboardOntoMap({
+    map,
+    clipboard: extracted,
+    targetR,
+    targetC,
+    mode: 'overlay',
+    activeLayerIdx: layerIdx,
+  });
+
+  if (!stampRes.ok) {
+    return { ok: false, cells: [], error: stampRes.error || 'Failed to move tiles.' };
+  }
+
+  const allMutations = [...erasedCells, ...stampRes.cells];
+  const deduplicated = deduplicatePaintedCells(allMutations);
+
+  const newBounds = {
+    minR: targetR,
+    minC: targetC,
+    maxR: targetR + extracted.height - 1,
+    maxC: targetC + extracted.width - 1,
+    width: extracted.width,
+    height: extracted.height,
+  };
+
+  const newCells: Record<string, boolean> = {};
+  for (const v of extracted.visualData) {
+    newCells[`${targetR + v.r},${targetC + v.c}`] = true;
+  }
+  for (const l of extracted.logicData) {
+    newCells[`${targetR + l.r},${targetC + l.c}`] = true;
+  }
+
+  return {
+    ok: true,
+    cells: deduplicated,
+    newBounds,
+    newCells,
+  };
+}
+
