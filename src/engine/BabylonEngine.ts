@@ -2134,6 +2134,7 @@ private resolveTilePick(
         this.lastHoveredR = -1;
         this.lastHoveredC = -1;
         this.clearBrushPreview();
+        if (this.canvas) this.canvas.style.cursor = 'default';
         return;
       }
       const pickResult = this.scene.pick(
@@ -2146,9 +2147,12 @@ private resolveTilePick(
         this.lastHoveredR = -1;
         this.lastHoveredC = -1;
         this.clearBrushPreview();
+        if (this.canvas) this.canvas.style.cursor = 'default';
         if (options?.onTileLeave) options.onTileLeave();
         return;
       }
+      // Hide standard mouse cursor in the paint & highlight area so the 3D reticle acts as cursor
+      if (this.canvas) this.canvas.style.cursor = 'none';
       this.lastHoveredR = resolved.r;
       this.lastHoveredC = resolved.c;
       this.renderBrushPreview(resolved.r, resolved.c);
@@ -2166,6 +2170,7 @@ private resolveTilePick(
         isPanning = true;
         lastPointerX = evt.clientX;
         lastPointerY = evt.clientY;
+        if (this.canvas) this.canvas.style.cursor = 'grab';
         if (options?.onPanStateChange) options.onPanStateChange(true);
         return;
       }
@@ -2186,6 +2191,7 @@ private resolveTilePick(
     this.scene.onPointerUp = (evt) => {
       if (isPanning) {
         isPanning = false;
+        if (this.canvas) this.canvas.style.cursor = 'default';
         if (options?.onPanStateChange) options.onPanStateChange(false);
       }
       if (isPainting) {
@@ -2198,6 +2204,7 @@ private resolveTilePick(
 
     this.scene.onPointerMove = (evt) => {
       if (isPanning) {
+        if (this.canvas) this.canvas.style.cursor = 'grabbing';
         const currentOrtho = this.camera.orthoTop || 10;
         const renderHeight = Math.max(1, this.engine.getRenderHeight());
         const worldPerPixel = (currentOrtho * 2) / renderHeight;
@@ -2230,6 +2237,7 @@ private resolveTilePick(
     this.lastHoveredC = -1;
     this.clearBrushPreview();
     this.clearActionPreview();
+    if (this.canvas) this.canvas.style.cursor = 'default';
   }
 
   /** Set brush radius for multi-tile painting. */
@@ -2275,8 +2283,8 @@ private resolveTilePick(
     if (r < 0 || r >= h || c < 0 || c >= w) return;
 
     // 1. Single-cell hover outline (Thin sky-blue border on hovered center cell)
-    const centerPosX = (c - w / 2 + 0.5) * s;
-    const centerPosZ = (h / 2 - r - 0.5) * s;
+    const centerPosX = (c - w / 2) * s;
+    const centerPosZ = (h / 2 - r) * s;
 
     let hoverMat = this.scene.getMaterialByName('brush_hover_outline_mat') as StandardMaterial | null;
     if (!hoverMat) {
@@ -2329,8 +2337,8 @@ private resolveTilePick(
           const nc = c + dc;
           if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
 
-          const posX = (nc - w / 2 + 0.5) * s;
-          const posZ = (h / 2 - nr - 0.5) * s;
+          const posX = (nc - w / 2) * s;
+          const posZ = (h / 2 - nr) * s;
 
           const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.92 }, this.scene);
           plane.rotation.x = Math.PI / 2;
@@ -2396,8 +2404,8 @@ private resolveTilePick(
 
     const rectWidth = (maxC - minC + 1) * s;
     const rectHeight = (maxR - minR + 1) * s;
-    const centerPosX = ((minC + maxC) / 2 - w / 2 + 0.5) * s;
-    const centerPosZ = (h / 2 - (minR + maxR) / 2 - 0.5) * s;
+    const centerPosX = ((minC + maxC) / 2 - w / 2) * s;
+    const centerPosZ = (h / 2 - (minR + maxR) / 2) * s;
 
     // Single bounding plane at SELECTION_OVERLAY layer altitude
     const plane = MeshBuilder.CreatePlane('selection_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
@@ -2439,8 +2447,8 @@ private resolveTilePick(
 
     for (const { r, c } of cellList) {
       if (r < 0 || r >= h || c < 0 || c >= w) continue;
-      const posX = (c - w / 2 + 0.5) * s;
-      const posZ = (h / 2 - r - 0.5) * s;
+      const posX = (c - w / 2) * s;
+      const posZ = (h / 2 - r) * s;
       const plane = MeshBuilder.CreatePlane(`selection_preview_${r}_${c}`, { size: s * 0.96 }, this.scene);
       plane.rotation.x = Math.PI / 2;
       plane.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.SELECTION_OVERLAY, posZ);
@@ -2495,8 +2503,8 @@ private resolveTilePick(
 
     const rectWidth = totalW * s;
     const rectHeight = totalH * s;
-    const centerPosX = (targetC + totalW / 2 - w / 2) * s;
-    const centerPosZ = (h / 2 - (targetR + totalH / 2)) * s;
+    const centerPosX = (targetC + (totalW - 1) / 2 - w / 2) * s;
+    const centerPosZ = (h / 2 - (targetR + (totalH - 1) / 2)) * s;
 
     const boundsPlane = MeshBuilder.CreatePlane('action_preview_bounds', { width: rectWidth, height: rectHeight }, this.scene);
     boundsPlane.rotation.x = Math.PI / 2;
@@ -2526,10 +2534,11 @@ private resolveTilePick(
     const h = this.currentMapHeight;
     if (w <= 0 || h <= 0) return;
 
-    const minX = (-w / 2) * s;
-    const maxX = (w / 2) * s;
-    const minZ = (-h / 2) * s;
-    const maxZ = (h / 2) * s;
+    // Exact outer perimeter bounds enclosing the whole tilemap grid [0..w-1] x [0..h-1]
+    const minX = (-w / 2 - 0.5) * s;
+    const maxX = (w / 2 - 0.5) * s;
+    const minZ = (-h / 2 + 0.5) * s;
+    const maxZ = (h / 2 + 0.5) * s;
 
     // Glowing border lines around the active map perimeter
     const borderPoints = [
@@ -2652,8 +2661,8 @@ private resolveTilePick(
     const s = this.currentTileSize || 1;
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
-    const posX = (c - w / 2 + 0.5) * s;
-    const posZ = (h / 2 - r - 0.5) * s;
+    const posX = (c - w / 2) * s;
+    const posZ = (h / 2 - r) * s;
 
     if (!this.destinationIndicatorMesh || this.destinationIndicatorMesh.isDisposed()) {
       const disc = MeshBuilder.CreateDisc(
@@ -2710,8 +2719,8 @@ private resolveTilePick(
     const s = this.currentTileSize || 1;
     const w = this.currentMapWidth;
     const h = this.currentMapHeight;
-    const centerPosX = (footprint.centerC - w / 2 + 0.5) * s;
-    const centerPosZ = (h / 2 - footprint.centerR - 0.5) * s;
+    const centerPosX = (footprint.centerC - w / 2) * s;
+    const centerPosZ = (h / 2 - footprint.centerR) * s;
     const radWorld = (footprint.radius || 1) * s;
 
     let mat = this.scene.getMaterialByName('ability_aoe_preview_mat') as StandardMaterial | null;

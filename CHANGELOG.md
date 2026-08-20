@@ -1,3 +1,14 @@
+## [2.1.380] - 2026-08-20
+### Map Boundary Precision Alignment & Cursor Highlight Hide
+- **Exact Map Boundary Grid Calibration (`src/engine/BabylonEngine.ts`):**
+  - Calibrated outer perimeter coordinates `minX = (-w/2 - 0.5)*s`, `maxX = (w/2 - 0.5)*s`, `minZ = (-h/2 + 0.5)*s`, `maxZ = (h/2 + 0.5)*s` to align with the tilemap quad vertices.
+  - Aligned corner bracket posts and glowing amber perimeter lines directly to the outer edges of the map's border cells.
+- **In-Viewport Cursor Hide (`BabylonEngine.ts`):**
+  - Set `canvas.style.cursor = 'none'` when hovering over active map grid in paint and edit modes so the 3D ground highlight serves as the primary cursor reticle.
+  - Automatically restores `cursor = 'default'` / `'grab'` / `'grabbing'` when moving outside the map or during camera pan.
+- **Tile Center Position Normalization (`BabylonEngine.ts`):**
+  - Aligned all preview meshes (hover reticle, brush footprint, selection plane, action preview, destination indicator, ability AoE) to `(c - w/2) * s` and `(h/2 - r) * s`.
+
 ## [2.1.379] - 2026-08-20
 ### Spatial Layer Priorities, Unified Highlights & Dual Shop Triggers
 - **Unified Spatial & Interface Layer Hierarchy (`src/shared/game/spatialLayers.ts`):**
