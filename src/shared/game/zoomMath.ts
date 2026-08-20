@@ -3,11 +3,11 @@
  */
 
 export const BASE_ORTHO_SIZE = 10;
-export const STUDIO_MIN_ORTHO = 3;
-export const STUDIO_MAX_ORTHO = 40;
+export const STUDIO_MIN_ORTHO = 2.5;
+export const STUDIO_MAX_ORTHO = 120;
 export const GAME_MAX_ORTHO = 16;
 
-export const ZOOM_PRESETS = [25, 50, 100, 200, 400] as const;
+export const ZOOM_PRESETS = [15, 25, 50, 100, 200, 400] as const;
 
 /** Convert camera orthographic size to a display percentage (100% = baseline ortho 10). */
 export function orthoToZoomPercent(orthoSize: number, baseOrtho: number = BASE_ORTHO_SIZE): number {
@@ -22,7 +22,7 @@ export function zoomPercentToOrtho(
   minOrtho: number = STUDIO_MIN_ORTHO,
   maxOrtho: number = STUDIO_MAX_ORTHO
 ): number {
-  const safePercent = Math.max(10, percent);
+  const safePercent = Math.max(5, percent);
   const ortho = baseOrtho / (safePercent / 100);
   return Math.max(minOrtho, Math.min(maxOrtho, ortho));
 }

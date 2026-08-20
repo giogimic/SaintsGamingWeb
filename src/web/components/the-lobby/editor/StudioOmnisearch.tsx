@@ -96,10 +96,10 @@ function buildQuickActions(showToast: (msg: string) => void): SearchResult[] {
       id: 'action:atlas',
       type: 'action',
       title: 'World Atlas & Connected Maps',
-      subtitle: 'Ctrl+Shift+P',
+      subtitle: 'Ctrl+Shift+M',
       onSelect: () => {
-        useEditorStore.getState().openPanel('atlas');
-        showToast('Opened World Atlas');
+        useEditorStore.getState().setStudioMode('atlas');
+        showToast('Opened Atlas Studio');
       },
     },
     {

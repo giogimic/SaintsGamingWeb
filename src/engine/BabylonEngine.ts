@@ -17,12 +17,15 @@ import {
   TransformNode,
   VertexBuffer,
   VertexData,
-  Matrix
+  Matrix,
+  LinesMesh,
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
 import { resolveEntitySpriteUrl } from "../shared/game/creatureCatalog";
 import { isTilePickTarget } from "../shared/game/tilePaint";
+import { type EdgeStripData } from "../shared/game/atlas/edgeStrip";
+import { type CardinalDirection } from "../shared/game/atlas/spatialAtlas";
 import {
   ENTITY_GROUND_CLEARANCE,
   clampCameraFocus,
@@ -205,6 +208,28 @@ export class BabylonEngine {
   > = new Map();
   private tilesetMeshBySource: Map<string, Mesh> = new Map();
   private mapPickPlane?: Mesh;
+  private mapBoundaryMesh?: LinesMesh | Mesh;
+  private neighborEdgeStrips: Map<string, EdgeStripData> = new Map();
+  private showNeighborBleedPreview: boolean = false;
+
+  public setNeighborEdgeStrip(direction: CardinalDirection, strip: EdgeStripData | null) {
+    if (strip) {
+      this.neighborEdgeStrips.set(direction, strip);
+    } else {
+      this.neighborEdgeStrips.delete(direction);
+    }
+  }
+
+  public setNeighborEdgeStrips(strips: Partial<Record<CardinalDirection, EdgeStripData | null>>) {
+    this.neighborEdgeStrips.clear();
+    Object.entries(strips).forEach(([dir, strip]) => {
+      if (strip) this.neighborEdgeStrips.set(dir, strip);
+    });
+  }
+
+  public setShowNeighborBleedPreview(show: boolean) {
+    this.showNeighborBleedPreview = show;
+  }
 
   public onEntityClick?: (entityId: string) => void;
 
@@ -363,9 +388,9 @@ export class BabylonEngine {
       e.preventDefault();
       const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
       const currentOrtho = this.camera.orthoTop || 10;
-      // Editor mode: max 40 (keeps ~20 tiles), Game mode: max 16 (keeps ~8 tiles), Min: 3
-      const maxZoom = this.editorCameraMode ? 40 : 16;
-      const newOrtho = Math.max(3, Math.min(maxZoom, currentOrtho * zoomFactor));
+      // Editor mode: max 120 (supports 128x128 full fit), Game mode: max 16, Min: 2.5 (up to 400%)
+      const maxZoom = this.editorCameraMode ? 120 : 16;
+      const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * zoomFactor));
       if (newOrtho === currentOrtho) return;
 
       const renderW = Math.max(1, this.engine.getRenderWidth());
@@ -406,12 +431,12 @@ export class BabylonEngine {
     // Programmatic Zoom & Fit Map Events
     window.addEventListener('studio_set_zoom', (e: Event) => {
       const custom = e as CustomEvent<{ percent?: number; ortho?: number }>;
-      const maxZoom = this.editorCameraMode ? 40 : 16;
+      const maxZoom = this.editorCameraMode ? 120 : 16;
       let newOrtho = 10;
       if (custom.detail?.percent !== undefined) {
-        newOrtho = Math.max(3, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
+        newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (custom.detail.percent / 100)));
       } else if (custom.detail?.ortho !== undefined) {
-        newOrtho = Math.max(3, Math.min(maxZoom, custom.detail.ortho));
+        newOrtho = Math.max(2.5, Math.min(maxZoom, custom.detail.ortho));
       }
       this.updateCameraAspect(newOrtho);
       const zoomPercent = Math.round((10 / newOrtho) * 100);
@@ -900,6 +925,10 @@ export class BabylonEngine {
       this.mapPickPlane.dispose();
       this.mapPickPlane = undefined;
     }
+    if (this.mapBoundaryMesh) {
+      this.mapBoundaryMesh.dispose();
+      this.mapBoundaryMesh = undefined;
+    }
     this.cameraSnapped = false; // Force snap on next setCameraPosition
 
     const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
@@ -996,24 +1025,91 @@ export class BabylonEngine {
         });
       });
 
-      // --- PHASE B: FILL SKIRT ---
+      // --- PHASE B: FILL SKIRT & NEIGHBOR EDGE BLEED ---
+      const isEditor = this.editorCameraMode;
+      const shouldRenderNeighborBleed = this.showNeighborBleedPreview || !isEditor;
+      const SKIRT_PADDING = isEditor && !this.showNeighborBleedPreview ? 0 : (isEditor ? 6 : 64);
+
       const biome = (mapData as any).biome || 'default';
       const skirtConfig = BIOME_SKIRT_CONFIG[biome] || BIOME_SKIRT_CONFIG['default'];
       const skirtGid = skirtConfig.gid;
       const skirtTs = sortedTilesets.find((t: any) => skirtGid >= t.firstgid);
       
-      if (skirtTs && skirtTs.imageSource) {
-        const SKIRT_PADDING = 64; 
-        const uvPair = tilesetUvForGid(skirtGid, skirtTs, TILESET_SIZES);
+      if (SKIRT_PADDING > 0 && skirtTs && skirtTs.imageSource) {
+        const defaultUvPair = tilesetUvForGid(skirtGid, skirtTs, TILESET_SIZES);
         const y = -0.01; // Render slightly below layer 0
 
         for (let absR = -SKIRT_PADDING; absR < height + SKIRT_PADDING; absR++) {
           for (let absC = -SKIRT_PADDING; absC < width + SKIRT_PADDING; absC++) {
             if (absR >= 0 && absR < height && absC >= 0 && absC < width) continue;
 
+            // Check if this cell falls into a connected neighbor's edge strip
+            let cellGid = skirtGid;
+            let cellTs = skirtTs;
+            let uvPair = defaultUvPair;
+
+            if (shouldRenderNeighborBleed && this.neighborEdgeStrips.size > 0) {
+              // North strip (absR < 0, 0 <= absC < width)
+              if (absR < 0 && absC >= 0 && absC < width) {
+                const northStrip = this.neighborEdgeStrips.get('north');
+                if (northStrip) {
+                  const offsetR = -1 - absR; // absR = -1 -> offsetR 0, absR = -2 -> offsetR 1
+                  const match = northStrip.tiles.find((t) => t.offsetR === offsetR && t.offsetC === absC);
+                  if (match && match.tileId > 0) {
+                    const matchedTs = sortedTilesets.find((t: any) => match.tileId >= t.firstgid) || skirtTs;
+                    cellGid = match.tileId;
+                    cellTs = matchedTs;
+                    uvPair = tilesetUvForGid(cellGid, cellTs, TILESET_SIZES);
+                  }
+                }
+              }
+              // South strip (absR >= height, 0 <= absC < width)
+              else if (absR >= height && absC >= 0 && absC < width) {
+                const southStrip = this.neighborEdgeStrips.get('south');
+                if (southStrip) {
+                  const offsetR = absR - height; // absR = height -> offsetR 0
+                  const match = southStrip.tiles.find((t) => t.offsetR === offsetR && t.offsetC === absC);
+                  if (match && match.tileId > 0) {
+                    const matchedTs = sortedTilesets.find((t: any) => match.tileId >= t.firstgid) || skirtTs;
+                    cellGid = match.tileId;
+                    cellTs = matchedTs;
+                    uvPair = tilesetUvForGid(cellGid, cellTs, TILESET_SIZES);
+                  }
+                }
+              }
+              // West strip (absC < 0, 0 <= absR < height)
+              else if (absC < 0 && absR >= 0 && absR < height) {
+                const westStrip = this.neighborEdgeStrips.get('west');
+                if (westStrip) {
+                  const offsetC = -1 - absC; // absC = -1 -> offsetC 0
+                  const match = westStrip.tiles.find((t) => t.offsetC === offsetC && t.offsetR === absR);
+                  if (match && match.tileId > 0) {
+                    const matchedTs = sortedTilesets.find((t: any) => match.tileId >= t.firstgid) || skirtTs;
+                    cellGid = match.tileId;
+                    cellTs = matchedTs;
+                    uvPair = tilesetUvForGid(cellGid, cellTs, TILESET_SIZES);
+                  }
+                }
+              }
+              // East strip (absC >= width, 0 <= absR < height)
+              else if (absC >= width && absR >= 0 && absR < height) {
+                const eastStrip = this.neighborEdgeStrips.get('east');
+                if (eastStrip) {
+                  const offsetC = absC - width; // absC = width -> offsetC 0
+                  const match = eastStrip.tiles.find((t) => t.offsetC === offsetC && t.offsetR === absR);
+                  if (match && match.tileId > 0) {
+                    const matchedTs = sortedTilesets.find((t: any) => match.tileId >= t.firstgid) || skirtTs;
+                    cellGid = match.tileId;
+                    cellTs = matchedTs;
+                    uvPair = tilesetUvForGid(cellGid, cellTs, TILESET_SIZES);
+                  }
+                }
+              }
+            }
+
             const chunkR = Math.floor(absR / CHUNK_SIZE);
             const chunkC = Math.floor(absC / CHUNK_SIZE);
-            const chunkKey = `${skirtTs.imageSource}_${chunkR}_${chunkC}`;
+            const chunkKey = `${cellTs.imageSource}_${chunkR}_${chunkC}`;
 
             const posX = (absC - width / 2) * tileSize;
             const posZ = (height / 2 - absR) * tileSize;
@@ -1330,6 +1426,35 @@ export class BabylonEngine {
     pickPlane.visibility = 0;
     this.mapPickPlane = pickPlane;
     this.tileMeshes.push(pickPlane);
+
+    // In Studio / Editor camera mode, render a crisp, glowing Map Boundary Frame
+    if (this.editorCameraMode) {
+      const halfW = (width * tileSize) / 2;
+      const halfH = (height * tileSize) / 2;
+      const y = 0.03;
+
+      const borderPoints = [
+        new Vector3(-halfW, y, halfH),
+        new Vector3(halfW, y, halfH),
+        new Vector3(halfW, y, -halfH),
+        new Vector3(-halfW, y, -halfH),
+        new Vector3(-halfW, y, halfH),
+      ];
+
+      const boundaryLine = MeshBuilder.CreateLines(
+        'map_boundary_frame',
+        {
+          points: borderPoints,
+          colors: borderPoints.map(() => new Color4(0.96, 0.62, 0.1, 0.85)),
+          updatable: false,
+        },
+        this.scene
+      );
+      boundaryLine.parent = this.rootNode;
+      boundaryLine.isPickable = false;
+      this.mapBoundaryMesh = boundaryLine;
+      this.tileMeshes.push(boundaryLine);
+    }
 
     // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
     if (npcs) {
@@ -2905,9 +3030,9 @@ private resolveTilePick(
     // The orthographic size needed to fit the larger dimension.
     const orthoH = (h * s) / 2 + 2;
     const orthoW = (w * s) / (2 * Math.max(0.1, aspect)) + 2;
-    const maxZoom = this.editorCameraMode ? 40 : 16;
+    const maxZoom = this.editorCameraMode ? 120 : 16;
     const ortho = Math.max(orthoH, orthoW);
-    const clamped = Math.max(3, Math.min(maxZoom, ortho));
+    const clamped = Math.max(2.5, Math.min(maxZoom, ortho));
     this.updateCameraAspect(clamped);
     // Center camera on map center.
     this.snapCameraTo(0, 0);
