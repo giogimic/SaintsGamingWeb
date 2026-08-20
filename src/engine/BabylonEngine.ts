@@ -637,10 +637,10 @@ export class BabylonEngine {
         if (state.isEditor && !state.isPlayer && !state.isCreature) {
           mesh.position = state.targetPos;
         } else {
-          if (dist > 0.005) {
-            // Speed = 4.5 tiles per second
-            // If distance is large (> 1.5 tiles), catch up faster
-            const speed = dist > 1.5 ? 12.0 : 4.5; 
+          if (dist > 0.001) {
+            // Speed matches the 250ms input cadence (4.0 tiles/sec) for seamless continuous gliding.
+            // If network lag or warp creates a gap (> 1.25 tiles), smoothly accelerate to catch up.
+            const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
             const moveStep = speed * deltaTime;
             if (moveStep >= dist) {
               mesh.position = state.targetPos;
@@ -666,10 +666,12 @@ export class BabylonEngine {
             const dir = state.direction || 'down';
             const rowIdx = config.directions[dir] ?? config.directions.down;
             let col = config.idleFrame;
-            // Animate walking if moving flag is true OR if the mesh is still actively interpolating to targetPos
-            const isEntityWalking = state.isMoving || dist > 0.05;
+            // Animate walking if moving flag is true OR if actively interpolating to targetPos
+            const isEntityWalking = state.isMoving || dist > 0.01;
             if (isEntityWalking) {
-              state.animTime += deltaTime * config.walkSpeed;
+              const cycleLength = config.walkCycle?.length || 4;
+              const effectiveSpeed = config.walkSpeed || (cycleLength > 4 ? 10 : 6);
+              state.animTime = (state.animTime || 0) + deltaTime * effectiveSpeed;
               const frameSeq = config.walkCycle;
               col = frameSeq[Math.floor(state.animTime) % frameSeq.length];
             } else {
@@ -727,7 +729,7 @@ export class BabylonEngine {
    * Smoothly follow a world position each tick.
    * No-op while editor camera mode is active (engine-editor foundation).
    */
-  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.08) {
+  public setCameraPosition(targetX: number, targetZ: number, lerpFactor: number = 0.15) {
     if (this.editorCameraMode) return;
 
     const clamped = clampCameraFocus(

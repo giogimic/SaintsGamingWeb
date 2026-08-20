@@ -1,3 +1,14 @@
+## [2.1.375] - 2026-08-20
+### Smooth Movement & Animation Polish
+- **Movement Interpolation (`src/engine/BabylonEngine.ts`):**
+  - Replaced 4.5 tiles/sec linear speed with 4.0 tiles/sec matching the 250ms input cadence, eliminating the 28ms dead-stop freeze between tile steps during continuous WASD walking.
+  - Reduced movement snap threshold from 0.005 to 0.001 for sub-pixel smooth arrival.
+  - Added dynamic acceleration curve for catch-up movement (>1.25 tiles gap) using `Math.min(14.0, dist * 5.5)` instead of a hard 12.0 speed jump, preventing jerky teleport corrections.
+  - Walk animation cycling threshold lowered from 0.05 to 0.01 so sprite walk frames continue playing smoothly across tile boundaries without premature idle resets.
+  - Added `walkSpeed` fallback for configs missing speed metadata, using cycle-length-aware defaults (10 for 9-frame LPC, 6 for 4-frame Tuxemon).
+- **Camera Tracking (`BabylonEngine.ts` + `GameCanvasBabylon.tsx`):**
+  - Increased camera lerp factor from 0.08 to 0.15 for tighter player tracking, reducing the laggy "camera chasing" feel during rapid directional changes.
+
 ## [2.1.374] - 2026-08-20
 ### Hardened & Converged
 - **Multi-Resolution LPC Slicing Presets (`src/shared/game/lpcPackage.ts`):**
