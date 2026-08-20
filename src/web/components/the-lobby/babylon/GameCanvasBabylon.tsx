@@ -364,9 +364,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       if (isDevEditorOpen) {
         finishWarp();
       } else {
-        if (store.isMapTransitioning || store.worldSessionState === 'transitioning') return;
-        store.setIsMapTransitioning(true);
-        store.setWorldSessionState('transitioning');
+        const live = useGameStore.getState();
+        if (live.isMapTransitioning) return;
+        live.setIsMapTransitioning(true);
+        live.setWorldSessionState('transitioning');
         setTimeout(() => {
           finishWarp();
         }, 200);
