@@ -71,15 +71,15 @@ async function main() {
   });
 
   await prisma.modpack.upsert({
-    where: { slug: "dimensional-pixelmon" },
+    where: { slug: "dimensional-saints" },
     update: {},
     create: {
-      name: "Dimensional Pixelmon",
-      slug: "dimensional-pixelmon",
+      name: "Dimensional Saints Adventure",
+      slug: "dimensional-saints",
       game: "Minecraft",
-      description: "The official Dimensional Pixelmon modpack.",
+      description: "The official Dimensional Saints community modpack.",
       version: "1.0",
-      downloadUrl: "http://www.technicpack.net/modpack/dimensional-pixelmon.136119",
+      downloadUrl: "http://www.technicpack.net/modpack/dimensional-saints",
     },
   });
   console.log("Seeded Modpacks.");
