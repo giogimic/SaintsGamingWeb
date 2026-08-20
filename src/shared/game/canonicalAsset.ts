@@ -179,7 +179,22 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
   }
 
   const inferredType = importProfile ? inferTypeForProfile(importProfile) : null;
-  const normalizedType = (input.type || inferredType || (sourceUrl.includes("/audio/") ? "AUDIO" : "CHARACTER")).toUpperCase();
+  const inferredFromUrl =
+    sourceUrl.includes("/audio/") || sourceUrl.includes("/sounds/") || sourceUrl.includes("/music/")
+      ? "AUDIO"
+      : sourceUrl.includes("/tilesets/") || sourceUrl.includes("/terrain/")
+      ? "TILESET"
+      : sourceUrl.includes("/monster/") || sourceUrl.includes("/creatures/")
+      ? "CREATURE"
+      : sourceUrl.includes("/npc/") || sourceUrl.includes("/player/")
+      ? "CHARACTER"
+      : sourceUrl.includes("/items/")
+      ? "ITEM"
+      : sourceUrl.includes("/objects/")
+      ? "OBJECT"
+      : "OBJECT";
+
+  const normalizedType = (input.type || inferredType || inferredFromUrl).toUpperCase();
   const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
   const assetCategory = input.category || inferredCategory || (isModularComponent ? componentCategory || "other" : null);
 
@@ -191,19 +206,24 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
     spriteUrl: sourceUrl,
   });
 
+  const baseTags = Array.isArray(input.tags) ? input.tags : [];
+  const hasPlayableTag =
+    baseTags.includes("playable") || baseTags.includes("character_creator") || baseTags.includes("player");
+
   const isPlayable = Boolean(
-    input.isPlayable ||
-      input.showInCharacterCreation ||
-      normalizedType === "CHARACTER" ||
-      importProfile === "character"
+    input.isPlayable ??
+      (input.showInCharacterCreation ||
+        hasPlayableTag ||
+        input.pack === "heroes" ||
+        (importProfile === "character" && (slotRole === "hero" || slotRole === "player")))
   );
+
   const showInCharacterCreation = Boolean(
-    input.showInCharacterCreation ||
-      (isPlayable && (isModularComponent || normalizedType === "CHARACTER"))
+    input.showInCharacterCreation ??
+      (input.isPlayable || hasPlayableTag || input.pack === "heroes")
   );
 
   // 4. Unified Enriched Tags
-  const baseTags = Array.isArray(input.tags) ? input.tags : [];
   const enrichedTags = Array.from(
     new Set(
       [
