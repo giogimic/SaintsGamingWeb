@@ -1,3 +1,10 @@
+## [2.1.386] - 2026-08-20
+### MMO Lifecycle Overhaul (Defeat Transition Synchronization & Phase 6 Audit)
+- **Defeat Respawn Peer Flushing (`index.tsx`):**
+  - Updated `player_defeated` socket handler to flush `otherPlayers` if the safe-zone respawn destination differs from the current map, eliminating lingering player ghosts at safe-zone arrival.
+- **Phase 6 Audit:**
+  - Audited all map transition vectors (gate warps, options menu unstuck teleports, defeat respawns, studio warps) to ensure 100% routing through transition state guards, peer flushing, and atomic server join sequencing.
+
 ## [2.1.385] - 2026-08-20
 ### MMO Lifecycle Overhaul (Build Hardening & Strict Type Checking)
 - **TypeScript Control Flow & Type Safety (`GameCanvasBabylon.tsx`, `editorOps.test.ts`, `selectionOperations.test.ts`):**
