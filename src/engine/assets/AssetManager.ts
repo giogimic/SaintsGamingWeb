@@ -82,15 +82,38 @@ export class AssetManager {
   }
 
   private hydrate(raw: any): GameAssetItem {
+    const meta = raw.metadata || {};
+    const tags = Array.isArray(raw.tags) ? raw.tags : [];
+    const isModular = Boolean(
+      raw.isModularComponent ||
+        meta.isModularComponent ||
+        tags.includes('modular') ||
+        tags.includes('sprite-component') ||
+        meta.componentCategory ||
+        meta.cat
+    );
+
     return {
       ...raw,
       createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
       updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : new Date(),
+      atlasSource: raw.atlasSource || null,
       atlasFrame: raw.atlasFrame || null,
-      tags: raw.tags || [],
-      categories: raw.categories || [],
-      metadata: raw.metadata || {},
+      tags,
+      categories: Array.isArray(raw.categories) ? raw.categories : [],
+      metadata: meta,
       customLabels: raw.customLabels || null,
+      isModularComponent: isModular,
+      componentCategory: raw.componentCategory || meta.componentCategory || meta.cat || null,
+      componentLayer: raw.componentLayer || meta.componentLayer || meta.layer || null,
+      variantFamily: raw.variantFamily || meta.variantFamily || meta.variant || null,
+      zOrderHint: raw.zOrderHint ?? meta.zOrderHint ?? meta.z ?? null,
+      baseBodyType: raw.baseBodyType || meta.baseBodyType || meta.body || null,
+      hidesComponents: Array.isArray(raw.hidesComponents)
+        ? raw.hidesComponents
+        : Array.isArray(meta.hidesComponents)
+        ? meta.hidesComponents
+        : [],
     };
   }
 

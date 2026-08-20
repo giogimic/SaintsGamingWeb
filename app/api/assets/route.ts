@@ -1,35 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
+import { formatCanonicalGameAsset } from "@/shared/game/canonicalAsset";
 
 export const dynamic = "force-dynamic";
 
-function normalizeJsonArray(value: string | null): string[] {
-  try {
-    const parsed = JSON.parse(value || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function normalizeJsonObject(value: string | null): Record<string, unknown> {
-  try {
-    const parsed = JSON.parse(value || "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
 function formatAsset(asset: any) {
-  return {
-    ...asset,
-    tags: normalizeJsonArray(asset.tags),
-    categories: normalizeJsonArray(asset.categories),
-    metadata: normalizeJsonObject(asset.metadata),
-    atlasFrame: asset.atlasFrame ? normalizeJsonObject(asset.atlasFrame) : null,
-    customLabels: asset.customLabels ? normalizeJsonObject(asset.customLabels) : null,
-  };
+  return formatCanonicalGameAsset(asset);
 }
 
 /**
@@ -37,10 +13,17 @@ function formatAsset(asset: any) {
  * Query params:
  *  - type: string (e.g. "CHARACTER", "OBJECT", "TILE", "AUDIO", "ALL")
  *  - gameId: string
- *  - search: string
- *  - category: string
+ *  - search / query: string
+ *  - pack: string
+ *  - modular: boolean
+ *  - componentCategory: string
+ *  - componentLayer: string
+ *  - variantFamily: string
+ *  - showInCharacterCreation: boolean
+ *  - tags: string (comma-separated)
+ *  - categories: string (comma-separated)
  *  - limit: number (default 50)
- *  - offset: number (default 0)
+ *  - page / offset: number
  */
 export async function GET(req: NextRequest) {
   try {
@@ -93,6 +76,8 @@ export async function GET(req: NextRequest) {
               { categories: { contains: "npcs" } },
               { tags: { contains: "profile:character" } },
               { tags: { contains: "character" } },
+              { tags: { contains: "modular" } },
+              { tags: { contains: "sprite-component" } },
               { source: { contains: "/npc/" } },
               { source: { contains: "/player/" } },
             ],
@@ -193,6 +178,7 @@ export async function GET(req: NextRequest) {
             { type: { contains: query } },
             { tags: { contains: query } },
             { categories: { contains: query } },
+            { metadata: { contains: query } },
           ],
         },
       ];
@@ -203,8 +189,13 @@ export async function GET(req: NextRequest) {
         ...(whereClause.AND || []),
         {
           OR: [
-            { metadata: { contains: `"isModularComponent":true` } },
-            { tags: { contains: `"modular"` } },
+            { metadata: { contains: '"isModularComponent":true' } },
+            { metadata: { contains: '"isModularComponent": true' } },
+            { tags: { contains: '"modular"' } },
+            { tags: { contains: '"sprite-component"' } },
+            { categories: { contains: '"modular"' } },
+            { metadata: { contains: '"cat":' } },
+            { metadata: { contains: '"componentCategory":' } },
           ],
         },
       ];
@@ -215,8 +206,8 @@ export async function GET(req: NextRequest) {
         ...(whereClause.AND || []),
         {
           OR: [
-            { metadata: { not: { contains: `"isModularComponent":true` } } },
-            { tags: { not: { contains: `"modular"` } } },
+            { metadata: { not: { contains: '"isModularComponent":true' } } },
+            { tags: { not: { contains: '"modular"' } } },
           ],
         },
       ];
@@ -228,6 +219,7 @@ export async function GET(req: NextRequest) {
         {
           OR: [
             { metadata: { contains: `"componentCategory":"${componentCategory.toLowerCase()}"` } },
+            { metadata: { contains: `"cat":"${componentCategory.toLowerCase()}"` } },
             { categories: { contains: `"${componentCategory.toLowerCase()}"` } },
             { tags: { contains: `"component:${componentCategory.toLowerCase()}"` } },
           ],
@@ -241,6 +233,7 @@ export async function GET(req: NextRequest) {
         {
           OR: [
             { metadata: { contains: `"componentLayer":"${componentLayer.toLowerCase()}"` } },
+            { metadata: { contains: `"layer":"${componentLayer.toLowerCase()}"` } },
             { tags: { contains: `"layer:${componentLayer.toLowerCase()}"` } },
           ],
         },
@@ -253,6 +246,7 @@ export async function GET(req: NextRequest) {
         {
           OR: [
             { metadata: { contains: `"variantFamily":"${variantFamily}"` } },
+            { metadata: { contains: `"variant":"${variantFamily}"` } },
             { tags: { contains: `"variant:${variantFamily.toLowerCase()}"` } },
           ],
         },
@@ -271,6 +265,8 @@ export async function GET(req: NextRequest) {
             { tags: { contains: 'playable' } },
             { tags: { contains: 'character_creator' } },
             { tags: { contains: 'player' } },
+            { type: "CHARACTER" },
+            { tags: { contains: "profile:character" } },
           ],
         },
       ];
@@ -279,14 +275,14 @@ export async function GET(req: NextRequest) {
     if (tags.length) {
       whereClause.AND = [
         ...(whereClause.AND || []),
-        ...tags.map((tag) => ({ tags: { contains: `\"${tag}\"` } })),
+        ...tags.map((tag) => ({ tags: { contains: `"${tag}"` } })),
       ];
     }
 
     if (categories.length) {
       whereClause.AND = [
         ...(whereClause.AND || []),
-        ...categories.map((cat) => ({ categories: { contains: `\"${cat}\"` } })),
+        ...categories.map((cat) => ({ categories: { contains: `"${cat}"` } })),
       ];
     }
 
@@ -341,6 +337,8 @@ export async function GET(req: NextRequest) {
           {
             OR: [
               { metadata: { contains: '"pack":"studio"' } },
+              { metadata: { contains: '"pack":"studio-slice"' } },
+              { metadata: { contains: '"pack":"studio-import"' } },
               { tags: { contains: "studio" } },
               { source: { contains: "atlases" } },
               { source: { contains: "daemon_" } },
@@ -352,57 +350,49 @@ export async function GET(req: NextRequest) {
           ...(whereClause.AND || []),
           {
             OR: [
-              { metadata: { contains: `\"pack\":\"${pack}\"` } },
-              { source: { contains: `/game-assets/${pack}/` } },
-              { source: { contains: `/${pack}/` } },
+              { metadata: { contains: `\"pack\":\"${p}\"` } },
+              { tags: { contains: p } },
+              { source: { contains: p } },
             ],
           },
         ];
       }
     }
 
-    const allowedSort: Record<string, string> = {
-      source: "source",
-      createdAt: "createdAt",
-      fileSize: "fileSize",
-      usageCount: "usageCount",
-    };
-    const sortField = allowedSort[sortBy] || "source";
+    const orderByClause: any = {};
+    if (sortBy === "createdAt") {
+      orderByClause.createdAt = sortOrder;
+    } else if (sortBy === "fileSize") {
+      orderByClause.fileSize = sortOrder;
+    } else if (sortBy === "usageCount") {
+      orderByClause.usageCount = sortOrder;
+    } else {
+      orderByClause.source = sortOrder;
+    }
 
-    const [assets, total] = await Promise.all([
+    const [total, assets] = await Promise.all([
+      prisma.gameAsset.count({ where: whereClause }),
       prisma.gameAsset.findMany({
         where: whereClause,
-        orderBy: { [sortField]: sortOrder },
-        take: limit,
+        orderBy: orderByClause,
         skip: offset,
+        take: limit,
       }),
-      prisma.gameAsset.count({ where: whereClause }),
     ]);
 
-    const items = assets.map((asset) => formatAsset(asset));
-    const hasMore = offset + limit < total;
+    const formattedAssets = assets.map(formatAsset);
 
     return NextResponse.json({
-      success: true,
-      // Canonical payload for AssetManager
-      items,
+      items: formattedAssets,
       total,
       page,
       limit,
-      hasMore,
-      // Backward-compat payload for older callers
-      assets: items,
-      pagination: {
-        total,
-        limit,
-        offset,
-        hasMore,
-      },
+      hasMore: offset + assets.length < total,
     });
   } catch (error: any) {
-    console.error("[api/assets] Failed to query assets:", error);
+    console.error("[api/assets] GET error:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch assets catalog." },
+      { error: error.message || "Failed to fetch assets", items: [], total: 0 },
       { status: 500 }
     );
   }

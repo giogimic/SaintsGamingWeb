@@ -8,27 +8,23 @@ export interface SpriteThumbnailProps {
   alt: string;
   /** LPC-standard cell size used to compute the representative frame. */
   cellSize?: number;
+  /** Explicit atlas frame bounding box if this asset is a sliced sub-region */
+  atlasFrame?: { x: number; y: number; width?: number; height?: number; w?: number; h?: number } | null;
   className?: string;
 }
 
 /**
- * Renders a single representative frame (the south-facing walk frame on a
- * standard LPC grid) instead of squashing an entire multi-row spritesheet
- * into a tiny gallery card. Detects the image's natural pixel dimensions on
- * load rather than trusting potentially-inaccurate stored metadata, so it
- * works for both freshly uploaded assets and the existing bundled catalog.
- *
- * Falls back to rendering the plain image whenever the source isn't a
- * multi-frame sheet (or dimensions can't be determined).
+ * Renders a single representative frame (or explicit atlas frame) instead of squashing
+ * an entire multi-row spritesheet into a tiny gallery card. Detects the image's natural
+ * pixel dimensions on load.
  */
-export function SpriteThumbnail({ src, alt, cellSize = 64, className }: SpriteThumbnailProps) {
+export function SpriteThumbnail({ src, alt, cellSize = 64, atlasFrame, className }: SpriteThumbnailProps) {
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
   const [failed, setFailed] = useState(false);
 
   if (failed) return null;
 
   // First paint: load the image normally so we can measure its natural size.
-  // Once loaded, we decide whether cropping to a single frame is appropriate.
   if (!naturalSize) {
     return (
       <img
@@ -45,7 +41,18 @@ export function SpriteThumbnail({ src, alt, cellSize = 64, className }: SpriteTh
     );
   }
 
-  const rect = getThumbnailFrameRect(naturalSize.width, naturalSize.height, cellSize, cellSize);
+  let rect = { x: 0, y: 0, width: naturalSize.width, height: naturalSize.height };
+  if (atlasFrame) {
+    rect = {
+      x: atlasFrame.x,
+      y: atlasFrame.y,
+      width: atlasFrame.width ?? atlasFrame.w ?? cellSize,
+      height: atlasFrame.height ?? atlasFrame.h ?? cellSize,
+    };
+  } else {
+    rect = getThumbnailFrameRect(naturalSize.width, naturalSize.height, cellSize, cellSize);
+  }
+
   const isCropped = rect.width < naturalSize.width || rect.height < naturalSize.height;
 
   if (!isCropped) {
@@ -77,3 +84,4 @@ export function SpriteThumbnail({ src, alt, cellSize = 64, className }: SpriteTh
     />
   );
 }
+

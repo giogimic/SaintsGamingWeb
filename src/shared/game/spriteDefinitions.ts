@@ -232,41 +232,60 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     spriteConfig,
   } = input;
 
+  const w = width || 0;
+  const h = height || 0;
+
   // 1. Explicit Animation Profile
   if (animationProfile && animationProfile in ANIMATION_PROFILES && animationProfile !== 'custom') {
     const base = ANIMATION_PROFILES[animationProfile as SpriteAnimationProfile];
+    const cellWidth = w > 0 ? Math.floor(w / base.columns) : base.frameWidth;
     const actualRows =
-      animationProfile === 'lpc-full' && height && height >= 64
-        ? Math.floor(height / 64)
+      animationProfile === 'lpc-full' && h > 0 && cellWidth > 0
+        ? Math.floor(h / cellWidth)
         : base.rows;
+
     return {
       ...base,
-      sheetWidth: width && width > 0 ? width : base.sheetWidth,
-      sheetHeight: height && height > 0 ? height : base.sheetHeight,
-      rows: actualRows,
+      sheetWidth: w > 0 ? w : base.sheetWidth,
+      sheetHeight: h > 0 ? h : base.sheetHeight,
+      frameWidth: cellWidth > 0 ? cellWidth : base.frameWidth,
+      frameHeight: cellWidth > 0 ? cellWidth : base.frameHeight,
+      rows: actualRows > 0 ? actualRows : base.rows,
     };
   }
 
   // 2. Custom Explicit Columns & Rows
   if (columns && rows && columns > 0 && rows > 0) {
-    if (columns === 1 && rows === 1) return { ...PORTRAIT_1X1_PROFILE, sheetWidth: width || 64, sheetHeight: height || 64 };
-    if (columns === 3 && rows === 4) return { ...TUXEMON_3X4_PROFILE, sheetWidth: width || 96, sheetHeight: height || 128 };
+    if (columns === 1 && rows === 1) return { ...PORTRAIT_1X1_PROFILE, sheetWidth: w || 64, sheetHeight: h || 64, frameWidth: w || 64, frameHeight: h || 64 };
+    if (columns === 3 && rows === 4) return { ...TUXEMON_3X4_PROFILE, sheetWidth: w || 96, sheetHeight: h || 128, frameWidth: w ? Math.floor(w / 3) : 32, frameHeight: h ? Math.floor(h / 4) : 32 };
     if (columns === 13 && rows >= 21) {
+      const cellWidth = w > 0 ? Math.floor(w / 13) : 64;
       return {
         ...LPC_FULL_PROFILE,
-        sheetWidth: width || 832,
-        sheetHeight: height || rows * 64,
+        sheetWidth: w || 832,
+        sheetHeight: h || rows * cellWidth,
+        frameWidth: cellWidth,
+        frameHeight: cellWidth,
         rows,
       };
     }
-    if (columns === 9 && rows === 4) return { ...LPC_WALK_PROFILE, sheetWidth: width || 576, sheetHeight: height || 256 };
+    if (columns === 9 && rows === 4) {
+      const cellWidth = w > 0 ? Math.floor(w / 9) : 64;
+      return {
+        ...LPC_WALK_PROFILE,
+        sheetWidth: w || 576,
+        sheetHeight: h || 256,
+        frameWidth: cellWidth,
+        frameHeight: cellWidth,
+      };
+    }
 
     return {
       profile: 'custom',
-      sheetWidth: width || columns * (frameWidth || 32),
-      sheetHeight: height || rows * (frameHeight || 32),
-      frameWidth: frameWidth || (width ? Math.floor(width / columns) : 32),
-      frameHeight: frameHeight || (height ? Math.floor(height / rows) : 32),
+      sheetWidth: w || columns * (frameWidth || 32),
+      sheetHeight: h || rows * (frameHeight || 32),
+      frameWidth: frameWidth || (w ? Math.floor(w / columns) : 32),
+      frameHeight: frameHeight || (h ? Math.floor(h / rows) : 32),
       columns,
       rows,
       idleFrame: 0,
@@ -294,8 +313,10 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
   if (isPortraitOrSingleFrameUrl(spriteUrl)) {
     return {
       ...PORTRAIT_1X1_PROFILE,
-      sheetWidth: width || 64,
-      sheetHeight: height || 64,
+      sheetWidth: w || 64,
+      sheetHeight: h || 64,
+      frameWidth: w || 64,
+      frameHeight: h || 64,
     };
   }
 
@@ -312,42 +333,71 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       s.includes('/lpc/') ||
       s.includes('character_layer_')
     ) {
-      const actualRows = height && height >= 64 ? Math.floor(height / 64) : 21;
+      const cellWidth = w === 1664 ? 128 : 64;
+      const actualRows = h && h >= cellWidth ? Math.floor(h / cellWidth) : 21;
       return {
         ...LPC_FULL_PROFILE,
-        sheetWidth: width || 832,
-        sheetHeight: height || actualRows * 64,
+        sheetWidth: w || 832,
+        sheetHeight: h || actualRows * cellWidth,
+        frameWidth: cellWidth,
+        frameHeight: cellWidth,
         rows: actualRows,
       };
     }
   }
 
   // 5. Dimension-Based Fallback Inference
-  const w = width || 0;
-  const h = height || 0;
-
   if (w > 0 && h > 0) {
-    // Universal LPC Full Sheet (832x1344, 832x1408, 832x2048, 832x3456, etc.)
+    // High-Res LPC Full Sheet (1664x4992, 1664x6912, etc. 13 cols @ 128px)
+    if (w === 1664 && h >= 512) {
+      const rowsCount = Math.floor(h / 128);
+      return {
+        ...LPC_FULL_PROFILE,
+        sheetWidth: w,
+        sheetHeight: h,
+        frameWidth: 128,
+        frameHeight: 128,
+        rows: rowsCount,
+      };
+    }
+
+    // High-Res LPC Walk Cycle (1152x512, 9 cols @ 128px)
+    if (w === 1152 && (h === 512 || h % 128 === 0)) {
+      return {
+        ...LPC_WALK_PROFILE,
+        sheetWidth: w,
+        sheetHeight: h,
+        frameWidth: 128,
+        frameHeight: 128,
+        rows: Math.floor(h / 128),
+      };
+    }
+
+    // Standard LPC Full Sheet (832x1344, 832x1408, 832x2048, 832x3456, etc. 13 cols @ 64px)
     if (w === 832 && h >= 256) {
       return {
         ...LPC_FULL_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
+        frameWidth: 64,
+        frameHeight: 64,
         rows: Math.floor(h / 64),
       };
     }
 
-    // LPC Walk Cycle (576x256 or 9 cols x N rows 64x64)
+    // Standard LPC Walk Cycle (576x256 or 9 cols x N rows @ 64px)
     if (w === 576 && (h === 256 || h % 64 === 0)) {
       return {
         ...LPC_WALK_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
+        frameWidth: 64,
+        frameHeight: 64,
         rows: Math.floor(h / 64),
       };
     }
 
-    // Grid-aligned 64x64 modular spritesheets
+    // Grid-aligned modular spritesheets
     if (w % 64 === 0 && h % 64 === 0 && w >= 576) {
       const cols = Math.floor(w / 64);
       const rowsCount = Math.floor(h / 64);
@@ -356,6 +406,8 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
           ...LPC_FULL_PROFILE,
           sheetWidth: w,
           sheetHeight: h,
+          frameWidth: 64,
+          frameHeight: 64,
           rows: rowsCount,
         };
       }
@@ -364,6 +416,8 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
           ...LPC_WALK_PROFILE,
           sheetWidth: w,
           sheetHeight: h,
+          frameWidth: 64,
+          frameHeight: 64,
         };
       }
     }
@@ -396,20 +450,25 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
 }
 
 /**
- * Converts a SpriteDefinition into a BabylonEngine-compatible SpriteSheetConfig.
+ * Converts a SpriteDefinition into the compact SpriteSheetConfig format
+ * used by the BabylonEngine 2.5D renderer.
  */
-export function spriteDefinitionToBabylonConfig(def: SpriteDefinition) {
+export function spriteDefinitionToBabylonConfig(def: SpriteDefinition): any {
   return {
     columns: def.columns,
     rows: def.rows,
-    idleFrame: def.idleFrame,
-    walkCycle: def.walkCycle,
-    walkSpeed: def.walkSpeed,
+    frameWidth: def.frameWidth,
+    frameHeight: def.frameHeight,
     directions: {
       down: def.directions.down,
       left: def.directions.left,
       right: def.directions.right,
       up: def.directions.up,
     },
+    walkCycle: def.walkCycle,
+    idleFrame: def.idleFrame,
+    walkSpeed: def.walkSpeed,
+    isLpc: def.isLpc || false,
+    profile: def.profile,
   };
 }

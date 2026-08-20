@@ -1,3 +1,17 @@
+## [2.1.373] - 2026-08-20
+### Fixed & Unified
+- **Asset Pipeline Convergence & Canonical Lifecycle (`src/shared/game/canonicalAsset.ts`):**
+  - Resolved major pipeline divergence where Spritesheet Slicer created `UsableAsset` records without corresponding `GameAsset` records, leaving sliced assets invisible to the Asset Browser, Studio, and Character Creator.
+  - Implemented `buildCanonicalAssetData` and `projectUsableAssetToGameAssetData` as a single shared projection layer across single uploads, spritesheet slices, LPC package ingestion, and pre-packaged installer flows.
+  - Updated `/api/assets/slice` to atomically create both `UsableAsset` and `GameAsset` records with `atlasSource`, `atlasFrame`, enriched tags, and normalized metadata in a single transaction.
+  - Updated `AssetManager.hydrate` and `GET /api/assets` to deterministically query and filter sliced and modular components (`isModularComponent`, `componentCategory`, `componentLayer`, `variantFamily`, `zOrderHint`, `baseBodyType`, `hidesComponents`).
+- **Multi-Resolution LPC & BabylonEngine Sprite Slicing (`spriteDefinitions.ts` & `BabylonEngine.ts`):**
+  - Fixed row calculation for high-resolution 128x128 LPC sheets (`1664x4992`, `1152x512`) to prevent halving frames and row count inflation.
+  - Fixed BabylonEngine render loop bug where `updateEntity()` re-computed `spriteConfig` on every tick without measured dimensions, overwriting loaded texture configurations with unmeasured fallbacks.
+  - Enhanced `SpriteThumbnail.tsx` and `AssetEditor.tsx` with `atlasFrame` support to render cropped preview thumbnails for sliced sub-regions on catalog cards.
+- **Cache Invalidation & Real-Time Sync:**
+  - Verified `AssetManager.getInstance().broadcastRefresh()` cache invalidation and `assets:refreshed` event dispatching so sliced assets instantly appear in the Asset Browser without requiring a page reload.
+
 ## [2.1.372] - 2026-08-19
 ### Unified & Streamlined
 - **Canonical Elemental System B Matrix (Bible 25 §3.7 & Bible 11 §3):**

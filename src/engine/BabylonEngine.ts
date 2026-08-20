@@ -2622,7 +2622,7 @@ private resolveTilePick(
     if (shadow) shadow.setEnabled(visible);
   }
 
-  private resolveSpriteConfig(entity: BabylonEntityData): SpriteSheetConfig {
+  private resolveSpriteConfig(entity: BabylonEntityData, dimensions?: { width: number; height: number } | null): SpriteSheetConfig {
     if (entity.spriteDef) {
       return spriteDefinitionToBabylonConfig(entity.spriteDef);
     }
@@ -2641,6 +2641,8 @@ private resolveTilePick(
       animationProfile: entity.animationProfile,
       spriteUrl: entity.spriteUrl,
       spriteConfig: entity.spriteConfig,
+      width: dimensions?.width,
+      height: dimensions?.height,
     });
     return spriteDefinitionToBabylonConfig(resolved);
   }
@@ -2706,7 +2708,8 @@ private resolveTilePick(
   public updateEntity(entity: BabylonEntityData) {
     let spriteMesh = this.entityMeshes.get(entity.id);
     const targetPos = new Vector3(entity.x, ENTITY_GROUND_CLEARANCE, entity.y);
-    const resolvedConfig = this.resolveSpriteConfig(entity);
+    const existingDims = spriteMesh?.metadata?.spriteDimensions as { width: number; height: number } | undefined;
+    const resolvedConfig = this.resolveSpriteConfig(entity, existingDims);
     const singleFrame = resolvedConfig.columns <= 1 && resolvedConfig.rows <= 1;
 
     if (!spriteMesh) {
@@ -2736,6 +2739,7 @@ private resolveTilePick(
         isEditor: !!this.scene.onPointerDown, // Simple heuristic: if tile picking is enabled, it's dev editor
         spriteConfig: resolvedConfig,
         spriteUrl: entity.spriteUrl || null,
+        spriteDimensions: null,
       };
       
       // Initial position snap
@@ -2775,6 +2779,9 @@ private resolveTilePick(
           () => {
             const size = tex.getBaseSize();
             if (size.width > 0 && size.height > 0) {
+              if (createdMesh.metadata) {
+                createdMesh.metadata.spriteDimensions = { width: size.width, height: size.height };
+              }
               const updatedDef = resolveSpriteDefinition({
                 animationProfile: entity.animationProfile,
                 spriteUrl: entity.spriteUrl,
@@ -2862,8 +2869,7 @@ private resolveTilePick(
 
       this.entityMeshes.set(entity.id, spriteMesh);
     } else {
-      // Update Metadata — always refresh spriteConfig from current URL so a
-      // prior SINGLE_FRAME assign can't keep resetting walk-sheet UVs every tick.
+      // Update Metadata — keep existing spriteConfig if dimensions were already measured
       if (spriteMesh.metadata) {
         spriteMesh.metadata.targetPos = targetPos;
         spriteMesh.metadata.isMoving = entity.isMoving || false;
@@ -2872,7 +2878,9 @@ private resolveTilePick(
         spriteMesh.metadata.isNpc = entity.isNpc || false;
         spriteMesh.metadata.isPlayer = entity.isPlayer || false;
         spriteMesh.metadata.isCreature = entity.isCreature || false;
-        spriteMesh.metadata.spriteConfig = resolvedConfig;
+        if (!spriteMesh.metadata.spriteConfig || (entity.spriteUrl && spriteMesh.metadata.spriteUrl !== entity.spriteUrl)) {
+          spriteMesh.metadata.spriteConfig = resolvedConfig;
+        }
       }
 
       // Keep peers / NPCs above grass if they were created before this fix.
@@ -2901,6 +2909,9 @@ private resolveTilePick(
             () => {
               const size = newTex.getBaseSize();
               if (size.width > 0 && size.height > 0) {
+                if (existingMesh.metadata) {
+                  existingMesh.metadata.spriteDimensions = { width: size.width, height: size.height };
+                }
                 const updatedDef = resolveSpriteDefinition({
                   animationProfile: entity.animationProfile,
                   spriteUrl: entity.spriteUrl,

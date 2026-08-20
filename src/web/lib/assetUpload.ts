@@ -20,6 +20,7 @@ import {
   isValidSlotRole,
 } from "@/shared/game/assetImportProfiles";
 import { resolveSpriteDefinition } from "@/shared/game/spriteDefinitions";
+import { buildCanonicalAssetData } from "@/shared/game/canonicalAsset";
 
 export interface AssetIngestOptions {
   userId: string;
@@ -134,42 +135,33 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       }
     }
 
-    const normalizedAssetType = (options.type || inferTypeForProfile(importProfile || 'character') || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT")).toUpperCase();
-    const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
-    const assetCategory = options.category || inferredCategory || (isModularComponent ? componentCategory || "other" : null);
-    const moderationStatus = options.moderationStatus || "PENDING";
-
-    const resolvedSpriteDef = resolveSpriteDefinition({
-      animationProfile: options.animationProfile,
+    const canonical = buildCanonicalAssetData({
+      userId,
+      gameId,
+      name: options.name,
+      type: options.type,
+      category: options.category,
+      tags: options.tags,
       width,
       height,
-      spriteUrl: storedUrl,
+      sourceUrl: storedUrl,
+      sourceMode,
+      importProfile: importProfile || undefined,
+      slotRole: slotRole || undefined,
+      animationProfile: options.animationProfile,
+      componentCategory,
+      componentLayer,
+      variantFamily,
+      isModularComponent,
+      zOrderHint: zOrderHint ?? undefined,
+      baseBodyType: baseBodyType ?? undefined,
+      hidesComponents,
+      credits: options.credits,
+      bundleId: options.bundleId,
+      visibility: options.visibility,
+      moderationStatus: options.moderationStatus,
+      fileSize: uploadRes.sizeBytes || file.size,
     });
-
-    const baseTags = options.tags || [];
-    const enrichedTags = Array.from(
-      new Set(
-        [
-          ...baseTags,
-          gameId,
-          normalizedAssetType.toLowerCase(),
-          `anim:${resolvedSpriteDef.profile}`,
-          isModularComponent ? "modular" : "",
-          isModularComponent ? "sprite-component" : "",
-          isModularComponent && componentCategory ? `component:${componentCategory}` : "",
-          isModularComponent && componentLayer ? `layer:${componentLayer}` : "",
-          isModularComponent && variantFamily ? `variant:${variantFamily.toLowerCase()}` : "",
-          importProfile ? `profile:${importProfile}` : "",
-          slotRole ? `role:${slotRole}` : "",
-          options.bundleId ? `bundle:${options.bundleId}` : "",
-          `source:${sourceMode}`,
-        ].filter(Boolean)
-      )
-    );
-    const tagsJson = JSON.stringify(enrichedTags);
-
-    const assetName = options.name || filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
-    const assetType = (options.type || inferTypeForProfile(importProfile || 'character') || (mimeType.startsWith("audio") ? "AUDIO" : "OBJECT")).toUpperCase();
 
     const { sourceAsset, usableAsset, gameAsset } = await prisma.$transaction(async (tx) => {
       const sourceAsset = await tx.sourceAsset.create({
@@ -184,7 +176,7 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
           version: 1,
           metadata: JSON.stringify({
             orig: file.name,
-            anim: resolvedSpriteDef.profile,
+            anim: canonical.spriteDef.profile,
             profile: importProfile || undefined,
             role: slotRole || undefined,
             cat: componentCategory || undefined,
@@ -201,58 +193,22 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       const usableAsset = createUsable
         ? await tx.usableAsset.create({
             data: {
+              ...canonical.usableAssetData,
               sourceAssetId: sourceAsset.id,
-              name: assetName,
-              type: assetType,
-              category: assetCategory,
-              tags: tagsJson,
-              width,
-              height,
-              createdById: userId,
-              gameId,
-              visibility: options.visibility || "COMMUNITY",
-              moderationStatus,
-              version: 1,
-              cdnUrl: storedUrl,
-              thumbnailPath: storedUrl,
             },
           })
         : null;
 
+      const finalGameMeta = {
+        ...canonical.metadata,
+        sourceAssetId: sourceAsset.id,
+        usableAssetId: usableAsset?.id || undefined,
+      };
+
       const gameAsset = await tx.gameAsset.create({
         data: {
-          gameId,
-          type: normalizedAssetType,
-          source: storedUrl,
-          tags: tagsJson,
-          categories: JSON.stringify(
-            Array.from(
-              new Set([
-                assetCategory || "general",
-                ...(componentCategory ? [componentCategory] : []),
-                ...(isModularComponent ? ["modular", "character-component"] : []),
-              ])
-            )
-          ),
-          metadata: JSON.stringify({
-            name: assetName,
-            anim: resolvedSpriteDef.profile,
-            profile: importProfile || undefined,
-            role: slotRole || undefined,
-            cat: componentCategory || undefined,
-            layer: componentLayer || undefined,
-            variant: variantFamily || undefined,
-            z: zOrderHint ?? undefined,
-            body: baseBodyType || undefined,
-            w: width,
-            h: height,
-            bundle: options.bundleId || undefined,
-            pack: "studio-import",
-          }),
-          isActive: true,
-          usageCount: 0,
-          fileSize: uploadRes.sizeBytes || file.size,
-          cdnUrl: storedUrl,
+          ...canonical.gameAssetData,
+          metadata: JSON.stringify(finalGameMeta),
         },
       });
 
@@ -269,7 +225,7 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
     console.error("[assetUpload] Error ingesting asset:", err);
     return {
       success: false,
-      error: err.message || "Internal asset ingestion error",
+      error: err.message || "Failed to ingest asset.",
     };
   }
 }

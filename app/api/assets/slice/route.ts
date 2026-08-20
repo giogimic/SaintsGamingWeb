@@ -7,10 +7,10 @@ import {
   getDefaultSlotRole,
   getMissingRequiredRoles,
   inferCategoryForRole,
-  inferTypeForProfile,
   isValidAssetImportProfile,
   isValidSlotRole,
 } from "@/shared/game/assetImportProfiles";
+import { buildCanonicalAssetData } from "@/shared/game/canonicalAsset";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,13 @@ export interface SlicedRegionInput {
   importProfile?: string;
   slotRole?: string;
   animationProfile?: string;
+  componentCategory?: string;
+  componentLayer?: string;
+  variantFamily?: string;
+  isModularComponent?: boolean;
+  zOrderHint?: number;
+  baseBodyType?: string;
+  hidesComponents?: string[];
   bundleId?: string;
   sourceMode?: "spritesheet" | "multi" | "single";
   sourceRegion: { x: number; y: number; w: number; h: number };
@@ -33,7 +40,7 @@ export interface SlicedRegionInput {
 }
 
 /**
- * POST /api/assets/slice — Batch create UsableAssets from a SourceAsset
+ * POST /api/assets/slice — Batch create UsableAssets and canonical GameAssets from a SourceAsset
  * Body: {
  *   sourceAssetId: string;
  *   gameId?: string;
@@ -118,7 +125,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `Role \"${roleCandidate}\" is not valid for profile \"${profile}\" in region ${region.name || "unnamed"}.`,
+            error: `Role "${roleCandidate}" is not valid for profile "${profile}" in region ${region.name || "unnamed"}.`,
           },
           { status: 400 }
         );
@@ -137,7 +144,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               success: false,
-              error: `Missing required roles for profile \"${profile}\": ${missingRoles.join(", ")}`,
+              error: `Missing required roles for profile "${profile}": ${missingRoles.join(", ")}`,
               profile,
               missingRoles,
             },
@@ -155,6 +162,8 @@ export async function POST(req: NextRequest) {
         filename: true,
         storagePath: true,
         uploadedById: true,
+        metadata: true,
+        fileSize: true,
       },
     });
 
@@ -172,70 +181,99 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create UsableAsset records in batch transaction
-    const createdAssets = await prisma.$transaction(
-      regions.map((r: SlicedRegionInput) => {
+    let sourceAssetMetadata: Record<string, any> = {};
+    try {
+      if (sourceAsset.metadata) {
+        sourceAssetMetadata = JSON.parse(sourceAsset.metadata);
+      }
+    } catch {
+      sourceAssetMetadata = {};
+    }
+
+    // Create both UsableAsset and GameAsset records in an atomic batch transaction
+    const { createdUsableAssets, createdGameAssets } = await prisma.$transaction(async (tx) => {
+      const createdUsable: any[] = [];
+      const createdGame: any[] = [];
+
+      for (const r of regions as SlicedRegionInput[]) {
         const regionProfileCandidate =
           typeof r.importProfile === "string" && r.importProfile.trim()
             ? r.importProfile.trim().toLowerCase()
-            : fallbackProfile;
+            : fallbackProfile || sourceAssetMetadata.profile || undefined;
+
         const profile =
           regionProfileCandidate && isValidAssetImportProfile(regionProfileCandidate)
             ? regionProfileCandidate
-            : null;
-        const slotRole = profile ? r.slotRole?.trim() || getDefaultSlotRole(profile) : null;
-        const assetName = r.name || `${sourceAsset.filename}_slice_${r.sourceRegion.x}_${r.sourceRegion.y}`;
-        const inferredType = profile ? inferTypeForProfile(profile) : null;
-        const assetType = (r.type || inferredType || "CHARACTER").toUpperCase();
-        const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
-        const tagsJson = JSON.stringify(
-          Array.from(
-            new Set(
-              [
-                ...(r.tags || []),
-                gameId,
-                assetType.toLowerCase(),
-                profile ? `profile:${profile}` : "",
-                slotRole ? `role:${slotRole}` : "",
-                r.animationProfile ? `anim:${r.animationProfile}` : "",
-                r.bundleId ? `bundle:${r.bundleId}` : "",
-                `source:${r.sourceMode || mode || "spritesheet"}`,
-              ].filter(Boolean)
-            )
-          )
-        );
-        const regionJson = JSON.stringify(r.sourceRegion);
+            : undefined;
 
-        return prisma.usableAsset.create({
+        const slotRole = r.slotRole?.trim() || (profile ? getDefaultSlotRole(profile) : sourceAssetMetadata.role || undefined);
+        const inferredCategory = slotRole ? inferCategoryForRole(slotRole) : null;
+        const category = r.category || inferredCategory || sourceAssetMetadata.cat || null;
+
+        const canonical = buildCanonicalAssetData({
+          userId: session.user.id,
+          gameId,
+          name: r.name || `${sourceAsset.filename}_slice_${r.sourceRegion.x}_${r.sourceRegion.y}`,
+          type: r.type,
+          category,
+          tags: r.tags,
+          width: r.sourceRegion.w,
+          height: r.sourceRegion.h,
+          sourceUrl: sourceAsset.storagePath,
+          atlasSource: sourceAsset.storagePath,
+          sourceRegion: r.sourceRegion,
+          atlasFrame: { x: r.sourceRegion.x, y: r.sourceRegion.y, width: r.sourceRegion.w, height: r.sourceRegion.h },
+          sourceMode: "spritesheet",
+          importProfile: profile,
+          slotRole,
+          animationProfile: r.animationProfile || sourceAssetMetadata.anim || undefined,
+          componentCategory: r.componentCategory || sourceAssetMetadata.cat || undefined,
+          componentLayer: r.componentLayer || sourceAssetMetadata.layer || undefined,
+          variantFamily: r.variantFamily || sourceAssetMetadata.variant || undefined,
+          isModularComponent: r.isModularComponent ?? Boolean(sourceAssetMetadata.cat || sourceAssetMetadata.layer),
+          zOrderHint: r.zOrderHint ?? sourceAssetMetadata.z,
+          baseBodyType: r.baseBodyType || sourceAssetMetadata.body || undefined,
+          hidesComponents: r.hidesComponents || sourceAssetMetadata.hidesComponents || undefined,
+          bundleId: r.bundleId || sourceAssetMetadata.bundle || undefined,
+          pack: "studio-slice",
+          visibility: (r.visibility as any) || "COMMUNITY",
+          moderationStatus: canModerate ? "APPROVED" : "PENDING",
+          facing: r.facing,
+          animationState: r.animationState,
+          animationFrames: r.animationFrames,
+          frameDurationMs: r.frameDurationMs,
+          sourceAssetId: sourceAsset.id,
+        });
+
+        const usableRow = await tx.usableAsset.create({
+          data: canonical.usableAssetData,
+        });
+
+        // Link usableAsset ID in GameAsset metadata
+        const finalMetadata = {
+          ...canonical.metadata,
+          usableAssetId: usableRow.id,
+        };
+
+        const gameRow = await tx.gameAsset.create({
           data: {
-            sourceAssetId: sourceAsset.id,
-            name: assetName,
-            type: assetType,
-            category: r.category || inferredCategory || null,
-            tags: tagsJson,
-            width: r.sourceRegion.w,
-            height: r.sourceRegion.h,
-            sourceRegion: regionJson,
-            facing: r.facing || null,
-            animationState: r.animationState || null,
-            animationFrames: r.animationFrames || 1,
-            frameDurationMs: r.frameDurationMs || 100,
-            createdById: session.user.id,
-            gameId,
-            visibility: r.visibility || "COMMUNITY",
-            moderationStatus: canModerate ? "APPROVED" : "PENDING",
-            version: 1,
-            cdnUrl: sourceAsset.storagePath,
-            thumbnailPath: sourceAsset.storagePath,
+            ...canonical.gameAssetData,
+            metadata: JSON.stringify(finalMetadata),
           },
         });
-      })
-    );
+
+        createdUsable.push(usableRow);
+        createdGame.push(gameRow);
+      }
+
+      return { createdUsableAssets: createdUsable, createdGameAssets: createdGame };
+    });
 
     return NextResponse.json({
       success: true,
-      count: createdAssets.length,
-      assets: createdAssets,
+      count: createdUsableAssets.length,
+      assets: createdUsableAssets,
+      gameAssets: createdGameAssets,
     });
   } catch (error: any) {
     console.error("[api/assets/slice] Error creating sliced usable assets:", error);

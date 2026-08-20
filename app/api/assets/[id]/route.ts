@@ -3,32 +3,10 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 
-function formatAsset(asset: {
-  id: string;
-  gameId: string | null;
-  type: string;
-  source: string;
-  atlasSource: string | null;
-  atlasFrame: string | null;
-  tags: string;
-  categories: string;
-  metadata: string;
-  customLabels: string | null;
-  isActive: boolean;
-  usageCount: number;
-  fileSize: number;
-  cdnUrl: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    ...asset,
-    tags: JSON.parse(asset.tags || "[]"),
-    categories: JSON.parse(asset.categories || "[]"),
-    metadata: JSON.parse(asset.metadata || "{}"),
-    atlasFrame: asset.atlasFrame ? JSON.parse(asset.atlasFrame) : null,
-    customLabels: asset.customLabels ? JSON.parse(asset.customLabels) : null,
-  };
+import { formatCanonicalGameAsset } from "@/shared/game/canonicalAsset";
+
+function formatAsset(asset: any) {
+  return formatCanonicalGameAsset(asset);
 }
 
 /**
