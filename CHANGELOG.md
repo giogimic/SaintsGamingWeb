@@ -1,3 +1,14 @@
+## [2.1.389] - 2026-08-20
+### Studio Camera Lifecycle & Immediate Skirt Rebuilding
+- **Studio Skirt Rebuilding & Editor Mode Synchronisation (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`):**
+  - Resolved initial mount lifecycle bug where `loadTilemap` ran before `editorCameraMode` was set, leaving the 64-tile grass skirt rendered from default state.
+  - Initialized `babylonEngine.setEditorCameraMode(isDevEditorOpen)` before initial `loadTilemap` execution.
+  - Automatically rebuilds and remeshes the tilemap on `setEditorCameraMode` transitions, instantly clearing the outer grass skirt when entering editor mode.
+- **Unclamped Programmatic Zoom & Presets (`BabylonEngine.ts`, `StudioBottomToolbar.tsx`):**
+  - Removed remaining hardcoded `40` max zoom clamps in `zoomCamera` and `setZoomPercent`.
+  - Updated `handleZoomOut` and preset dropdown in the bottom toolbar to support zooming down to `15%`.
+  - Prevented `loadTilemap` from forcefully resetting camera ortho to 6.0 when in editor mode.
+
 ## [2.1.388] - 2026-08-20
 ### Studio Map Boundaries, 64x64+ Zoom Expansion & Runtime Edge Bleed
 - **Map Boundary Clarity & Frame (`BabylonEngine.ts`):**

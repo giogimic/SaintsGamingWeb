@@ -760,6 +760,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     
     lastLoadedMapDataRef.current = mapData;
     lastVisualFingerprintRef.current = mapVisualFingerprint(mapData);
+    babylonEngine.setEditorCameraMode(Boolean(editorToolsRef.current));
     babylonEngine.loadTilemap({
       id: currentMapId,
       width: mapWidth,

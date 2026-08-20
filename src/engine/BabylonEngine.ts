@@ -209,6 +209,7 @@ export class BabylonEngine {
   private tilesetMeshBySource: Map<string, Mesh> = new Map();
   private mapPickPlane?: Mesh;
   private mapBoundaryMesh?: LinesMesh | Mesh;
+  private currentRawMapData?: BabylonTileMapData;
   private neighborEdgeStrips: Map<string, EdgeStripData> = new Map();
   private showNeighborBleedPreview: boolean = false;
 
@@ -803,6 +804,9 @@ export class BabylonEngine {
   public setEditorCameraMode(enabled: boolean) {
     if (this.editorCameraMode === enabled) return;
     this.editorCameraMode = enabled;
+    if (this.currentRawMapData) {
+      this.loadTilemap(this.currentRawMapData);
+    }
     if (enabled) {
       this.editorCameraBookmark = {
         x: this.cameraTargetX,
@@ -815,7 +819,6 @@ export class BabylonEngine {
       window.addEventListener('pointerup', this.onEditorPointerUp);
       window.addEventListener('keydown', this.onEditorKeyDown);
       window.addEventListener('keyup', this.onEditorKeyUp);
-      // Author session spawn may sit outside the loaded map (e.g. DEMO 14,15 on a 12-tall dojo).
       if (this.currentMapWidth > 0 && this.currentMapHeight > 0) {
         this.fitMapInView();
       }
@@ -830,8 +833,6 @@ export class BabylonEngine {
       window.removeEventListener('keyup', this.onEditorKeyUp);
       this.editorPanPointerId = null;
       this.editorSpaceHeld = false;
-      // Resume follow from current focus — do not jump to pre-edit bookmark
-      // (author may have panned; Playtest should start from what they see).
       this.cameraSnapped = true;
     }
   }
@@ -931,6 +932,7 @@ export class BabylonEngine {
     }
     this.cameraSnapped = false; // Force snap on next setCameraPosition
 
+    this.currentRawMapData = mapData;
     const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
     this.currentTilesets = tilesets || [];
     this.currentMapId = mapId || '';
@@ -938,10 +940,12 @@ export class BabylonEngine {
     this.currentMapHeight = height;
     this.currentTileSize = tileSize;
 
-    // Use a fixed zoom level for a classic GBA/SNES style RPG look (~6 tiles vertically)
-    // rather than zooming way out for large maps.
-    const targetOrtho = 6.0;
-    this.updateCameraAspect(targetOrtho);
+    // Use a fixed zoom level for gameplay RPG look (~6 tiles vertically).
+    // In editor mode, keep editor zoom / fitMapInView.
+    if (!this.editorCameraMode) {
+      const targetOrtho = 6.0;
+      this.updateCameraAspect(targetOrtho);
+    }
 
     // Rich multi-layer tileset rendering
     if (tileLayers && tileLayers.length > 0 && tilesets && tilesets.length > 0) {
@@ -3000,8 +3004,8 @@ private resolveTilePick(
   /** Zoom the camera by a fractional multiplier factor (e.g. 0.85 = zoom in, 1.15 = zoom out). */
   public zoomCamera(factor: number) {
     const currentOrtho = this.camera.orthoTop || 10;
-    const maxZoom = this.editorCameraMode ? 40 : 16;
-    const newOrtho = Math.max(3, Math.min(maxZoom, currentOrtho * factor));
+    const maxZoom = this.editorCameraMode ? 120 : 16;
+    const newOrtho = Math.max(2.5, Math.min(maxZoom, currentOrtho * factor));
     this.updateCameraAspect(newOrtho);
     const zoomPercent = Math.round((10 / newOrtho) * 100);
     window.dispatchEvent(
@@ -3011,8 +3015,8 @@ private resolveTilePick(
 
   /** Set camera zoom directly by display percentage (e.g. 100% = ortho 10). */
   public setZoomPercent(percent: number) {
-    const maxZoom = this.editorCameraMode ? 40 : 16;
-    const newOrtho = Math.max(3, Math.min(maxZoom, 10 / (Math.max(10, percent) / 100)));
+    const maxZoom = this.editorCameraMode ? 120 : 16;
+    const newOrtho = Math.max(2.5, Math.min(maxZoom, 10 / (Math.max(5, percent) / 100)));
     this.updateCameraAspect(newOrtho);
     const zoomPercent = Math.round((10 / newOrtho) * 100);
     window.dispatchEvent(
