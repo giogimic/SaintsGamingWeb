@@ -140,7 +140,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
 
   const handleZoomOut = () => {
     soundSynth?.playUiClick?.();
-    const next = Math.max(25, Math.round(zoomPercent * 0.8));
+    const next = Math.max(15, Math.round(zoomPercent * 0.8));
     handleSetPresetZoom(next);
   };
 
@@ -526,12 +526,13 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
             className="bg-[#050b14] border border-amber-500/30 rounded-lg px-1.5 py-0.5 text-[10px] text-amber-200 font-mono focus:outline-none focus:border-amber-400 cursor-pointer text-center"
             title="Zoom Presets (Ctrl+0 to Reset)"
           >
+            <option value={15}>15%</option>
             <option value={25}>25%</option>
             <option value={50}>50%</option>
             <option value={100}>100%</option>
             <option value={200}>200%</option>
             <option value={400}>400%</option>
-            {![25, 50, 100, 200, 400].includes(zoomPercent) && (
+            {![15, 25, 50, 100, 200, 400].includes(zoomPercent) && (
               <option value={zoomPercent}>{zoomPercent}%</option>
             )}
           </select>
