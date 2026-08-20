@@ -804,9 +804,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         if (!editorToolsRef.current) {
           const playerMesh = babylonEngine.getEntityMesh('player_main');
           if (playerMesh) {
-            babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.08);
+            babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.15);
           } else {
-            babylonEngine.setCameraPosition(worldX, worldZ, 0.08);
+            babylonEngine.setCameraPosition(worldX, worldZ, 0.15);
           }
         }
       }
