@@ -58,13 +58,17 @@ import {
   type SpriteAnimationProfile,
   type SpriteDefinition,
 } from "../shared/game/spriteDefinitions";
-export interface BabylonMapChunk {
-  chunkX: number;
-  chunkY: number;
+export interface RenderedChunk {
+  mapId?: string;
+  chunkX?: number; // Legacy
+  chunkY?: number; // Legacy
+  offsetX: number;
+  offsetZ: number;
   width: number;
   height: number;
-  grid: number[][];
+  grid?: number[][];
   tileLayers?: Array<{ name: string; grid: number[][] }>;
+  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
 }
 
 export interface BabylonTileMapData {
@@ -77,7 +81,7 @@ export interface BabylonTileMapData {
   tileLayers?: Array<{ name: string; grid: number[][] }>;
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
-  chunks?: BabylonMapChunk[];
+  chunks?: RenderedChunk[];
 }
 
 export interface SpriteSheetConfig {
@@ -908,29 +912,46 @@ export class BabylonEngine {
     this.cameraSnapped = false;
   }
 
-  public loadTilemap(mapData: BabylonTileMapData) {
-    // Clear old meshes
-    this.tileMeshes.forEach((mesh) => mesh.dispose());
-    this.objectMeshes.forEach((mesh) => mesh.dispose());
-    this.tileMeshes = [];
-    this.objectMeshes = [];
-    this.waterMaterials = [];
-    this.clearPaintOverlays();
-    this.clearAuthorOverlays();
-    this.batchedQuadIndex.clear();
-    this.tilesetMeshBySource.clear();
-    // Stale logic planes would keep the previous map's dimensions; the caller
-    // re-enables the overlay after the rebuild.
-    this.disableLogicGridOverlay();
-    if (this.mapPickPlane) {
-      this.mapPickPlane.dispose();
-      this.mapPickPlane = undefined;
+  public loadTilemap(mapData: BabylonTileMapData, seamlessOffset?: { x: number, y: number }) {
+    if (!this.scene) return;
+
+    if (!seamlessOffset) {
+      // Clear old meshes
+      this.tileMeshes.forEach((mesh) => mesh.dispose());
+      this.objectMeshes.forEach((mesh) => mesh.dispose());
+      this.tileMeshes = [];
+      this.objectMeshes = [];
+      this.waterMaterials = [];
+      this.clearPaintOverlays();
+      this.clearAuthorOverlays();
+      this.batchedQuadIndex.clear();
+      this.tilesetMeshBySource.clear();
+      
+      this.disableLogicGridOverlay();
+      if (this.mapPickPlane) {
+        this.mapPickPlane.dispose();
+        this.mapPickPlane = undefined;
+      }
+      if (this.mapBoundaryMesh) {
+        this.mapBoundaryMesh.dispose();
+        this.mapBoundaryMesh = undefined;
+      }
+      this.cameraSnapped = false; // Force snap on next setCameraPosition
+    } else {
+      // Seamless transition: preserve tileMeshes, but clear objects/pickPlane
+      this.objectMeshes.forEach((mesh) => mesh.dispose());
+      this.objectMeshes = [];
+      this.batchedQuadIndex.clear(); // We'll rebuild the quad index
+      
+      if (this.mapPickPlane) {
+        this.mapPickPlane.dispose();
+        this.mapPickPlane = undefined;
+      }
+      if (this.mapBoundaryMesh) {
+        this.mapBoundaryMesh.dispose();
+        this.mapBoundaryMesh = undefined;
+      }
     }
-    if (this.mapBoundaryMesh) {
-      this.mapBoundaryMesh.dispose();
-      this.mapBoundaryMesh = undefined;
-    }
-    this.cameraSnapped = false; // Force snap on next setCameraPosition
 
     this.currentRawMapData = mapData;
     const { width, height, tileSize, tiles, tileLayers, tilesets, npcs, id: mapId } = mapData;
@@ -956,22 +977,22 @@ export class BabylonEngine {
       const CHUNK_SIZE = 32;
 
       // Normalize input: if chunks aren't provided, treat the base map as a single chunk at 0,0
-      const chunksToRender: BabylonMapChunk[] = mapData.chunks?.length 
+      const chunksToRender: RenderedChunk[] = mapData.chunks?.length 
         ? mapData.chunks 
         : [{
-            chunkX: 0, chunkY: 0, 
+            offsetX: 0, offsetZ: 0, 
             width: width, height: height, 
             grid: tiles || [], 
             tileLayers: tileLayers
           }];
 
       // Ensure we treat the map as 32x32 chunks, regardless of input structure
-      const processTile = (r: number, c: number, absR: number, absC: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number) => {
+      const processTile = (r: number, c: number, absR: number, absC: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number, chunkWidth: number, chunkHeight: number, chunkTilesets: any[]) => {
         const rawGid = layer.grid[r]?.[c] ?? 0;
         const gid = stripTiledGidFlags(rawGid);
         if (gid === 0) return;
 
-        const ts = sortedTilesets.find((t: any) => gid >= t.firstgid);
+        const ts = chunkTilesets.find((t: any) => gid >= t.firstgid);
         if (!ts || !ts.imageSource) return;
 
         // Determine which 32x32 chunk this tile belongs to
@@ -979,8 +1000,8 @@ export class BabylonEngine {
         const chunkC = Math.floor(absC / CHUNK_SIZE);
         const chunkKey = `${ts.imageSource}_${chunkR}_${chunkC}`;
 
-        const localX = (c - width / 2) * tileSize;
-        const localZ = (height / 2 - r) * tileSize;
+        const localX = (c - chunkWidth / 2) * tileSize;
+        const localZ = (chunkHeight / 2 - r) * tileSize;
         const posX = localX + chunkOffsetX;
         const posZ = localZ + chunkOffsetZ;
         const y = layerIdx * 0.02;
@@ -1015,19 +1036,44 @@ export class BabylonEngine {
       chunksToRender.forEach(chunk => {
         if (!chunk.tileLayers) return;
         
-        const chunkOffsetX = chunk.chunkX * chunk.width * tileSize;
-        const chunkOffsetZ = -(chunk.chunkY * chunk.height * tileSize);
+        // Use chunk's own tilesets to resolve GIDs locally, falling back to global tilesets
+        const rawChunkTilesets = chunk.tilesets || tilesets || [];
+        const chunkTilesets = [...rawChunkTilesets].sort((a, b) => b.firstgid - a.firstgid);
+
+        // Handle both explicit world offsets and legacy chunk coords
+        const chunkOffsetX = (chunk.offsetX !== undefined ? chunk.offsetX * tileSize : (chunk.chunkX || 0) * chunk.width * tileSize) + (seamlessOffset ? seamlessOffset.x * tileSize : 0);
+        const chunkOffsetZ = (chunk.offsetZ !== undefined ? chunk.offsetZ * tileSize : -((chunk.chunkY || 0) * chunk.height * tileSize)) - (seamlessOffset ? seamlessOffset.y * tileSize : 0);
+
+        // Tile-space offsets for globally unique batched quad index keys
+        const tileOffsetX = (chunk.offsetX !== undefined ? Math.floor(chunk.offsetX) : (chunk.chunkX || 0) * chunk.width) + (seamlessOffset ? seamlessOffset.x : 0);
+        const tileOffsetZ = (chunk.offsetZ !== undefined ? Math.floor(-chunk.offsetZ) : (chunk.chunkY || 0) * chunk.height) - (seamlessOffset ? seamlessOffset.y : 0);
 
         chunk.tileLayers.forEach((layer, layerIdx) => {
           for (let r = 0; r < chunk.height; r++) {
-            const absR = chunk.chunkY * chunk.height + r;
+            const absR = tileOffsetZ + r;
             for (let c = 0; c < chunk.width; c++) {
-              const absC = chunk.chunkX * chunk.width + c;
-              processTile(r, c, absR, absC, layer, layerIdx, chunkOffsetX, chunkOffsetZ);
+              const absC = tileOffsetX + c;
+              processTile(r, c, absR, absC, layer, layerIdx, chunkOffsetX, chunkOffsetZ, chunk.width, chunk.height, chunkTilesets);
             }
           }
         });
       });
+      
+      if (seamlessOffset) {
+        // Dispose any tileset meshes that are no longer needed
+        const keysToRemove: string[] = [];
+        this.tilesetMeshBySource.forEach((mesh, chunkKey) => {
+          if (!tilesetVertexData.has(chunkKey)) {
+            mesh.dispose();
+            keysToRemove.push(chunkKey);
+          }
+        });
+        keysToRemove.forEach(k => {
+          this.tilesetMeshBySource.delete(k);
+          const idx = this.tileMeshes.findIndex(m => m.name === `tileset_mesh_${k}`);
+          if (idx !== -1) this.tileMeshes.splice(idx, 1);
+        });
+      }
 
       // --- PHASE B: FILL SKIRT & NEIGHBOR EDGE BLEED ---
       const isEditor = this.editorCameraMode;
@@ -1149,8 +1195,14 @@ export class BabylonEngine {
         if (data.vertexIndex === 0) return;
         totalTilesMeshed += data.vertexIndex / 4;
         
-        const mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
+        let mesh = this.tilesetMeshBySource.get(chunkKey);
+        const isNewMesh = !mesh;
         
+        if (isNewMesh) {
+          mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
+        }
+        
+        // We always update vertex data because terrain edits or neighbor resolution might have changed
         const vertexData = new VertexData();
         vertexData.positions = data.positions;
         vertexData.indices = data.indices;
@@ -1161,8 +1213,11 @@ export class BabylonEngine {
         vertexData.normals = normals;
         
         // Updatable so Studio paint can patch UV/positions without remount.
-        vertexData.applyToMesh(mesh, true);
-        mesh.parent = this.rootNode;
+        vertexData.applyToMesh(mesh!, true);
+        
+        if (isNewMesh) {
+          mesh!.parent = this.rootNode;
+        }
 
         let mat = this.tilesetMaterialCache.get(imageSource);
         if (!mat) {
@@ -1207,11 +1262,14 @@ export class BabylonEngine {
         } else {
           this.configureTilesetMaterial(mat, mat.diffuseTexture as Texture);
         }
-        mesh.material = mat;
+        mesh!.material = mat;
         // Pick through map_pick_plane only — batched alpha meshes mis-hit cells.
-        mesh.isPickable = false;
-        this.tileMeshes.push(mesh);
-        this.tilesetMeshBySource.set(chunkKey, mesh);
+        mesh!.isPickable = false;
+        
+        if (isNewMesh) {
+          this.tileMeshes.push(mesh!);
+          this.tilesetMeshBySource.set(chunkKey, mesh!);
+        }
       });
 
       console.log(`[BabylonEngine] loadTilemap complete. Meshed ${totalTilesMeshed} tiles across ${tilesetVertexData.size} chunks.`);

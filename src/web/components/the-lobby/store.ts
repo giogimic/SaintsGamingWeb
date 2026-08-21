@@ -238,6 +238,7 @@ export interface GameState {
   player: PlayerState;
   otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
+  worldOriginOffset: { x: number; y: number };
   currentMapId: string;
   instanceId: string;
   activeMapData: any | null;
@@ -247,6 +248,8 @@ export interface GameState {
   clearToastHistory: () => void;
   activeDialog: { npcId: string; npcName?: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null;
   setGameMode: (mode: GameMode) => void;
+  setWorldOriginOffset: (x: number, y: number) => void;
+  addWorldOriginOffset: (dx: number, dy: number) => void;
   setCurrentMapId: (id: string) => void;
   setInstanceId: (id: string) => void;
   setActiveMapData: (data: any) => void;
@@ -437,6 +440,14 @@ export const useGameStore = create<GameState>()(
       currentMapId: 'LOBBY',
       instanceId: '',
       activeMapData: null,
+      worldOriginOffset: { x: 0, y: 0 },
+      setWorldOriginOffset: (x, y) => set((state) => {
+        state.worldOriginOffset = { x, y };
+      }),
+      addWorldOriginOffset: (dx, dy) => set((state) => {
+        state.worldOriginOffset.x += dx;
+        state.worldOriginOffset.y += dy;
+      }),
       mapEntities: [],
       toasts: [],
       toastHistory: [],

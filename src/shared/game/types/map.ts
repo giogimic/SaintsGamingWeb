@@ -38,6 +38,24 @@ export interface TilesetMeta {
   tileheight: number;
 }
 
+export interface MapConnection {
+  targetMapId: string;
+  targetEdge?: 'north' | 'south' | 'east' | 'west';
+  offsetX: number;
+  offsetZ: number;
+}
+
+export interface RenderedChunk {
+  mapId: string;
+  offsetX: number;
+  offsetZ: number;
+  width: number;
+  height: number;
+  grid?: number[][];
+  tileLayers?: TileLayer[];
+  tilesets?: TilesetMeta[];
+}
+
 export interface MapData {
   id: string;
   name: string;
@@ -56,11 +74,12 @@ export interface MapData {
   biome?: string | null;
   description?: string | null;
   connections?: {
-    north?: string;
-    south?: string;
-    east?: string;
-    west?: string;
+    north?: string | MapConnection;
+    south?: string | MapConnection;
+    east?: string | MapConnection;
+    west?: string | MapConnection;
   };
+  chunks?: RenderedChunk[];
 }
 
 export interface LogicTile {
