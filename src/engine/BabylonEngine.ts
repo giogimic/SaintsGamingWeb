@@ -1426,39 +1426,9 @@ export class BabylonEngine {
     pickPlane.position = new Vector3(0, 0.001, 0);
     pickPlane.parent = this.rootNode;
     pickPlane.isPickable = true;
-    pickPlane.isVisible = false;
     pickPlane.visibility = 0;
     this.mapPickPlane = pickPlane;
     this.tileMeshes.push(pickPlane);
-
-    // In Studio / Editor camera mode, render a crisp, glowing Map Boundary Frame
-    if (this.editorCameraMode) {
-      const halfW = (width * tileSize) / 2;
-      const halfH = (height * tileSize) / 2;
-      const y = 0.03;
-
-      const borderPoints = [
-        new Vector3(-halfW, y, halfH),
-        new Vector3(halfW, y, halfH),
-        new Vector3(halfW, y, -halfH),
-        new Vector3(-halfW, y, -halfH),
-        new Vector3(-halfW, y, halfH),
-      ];
-
-      const boundaryLine = MeshBuilder.CreateLines(
-        'map_boundary_frame',
-        {
-          points: borderPoints,
-          colors: borderPoints.map(() => new Color4(0.96, 0.62, 0.1, 0.85)),
-          updatable: false,
-        },
-        this.scene
-      );
-      boundaryLine.parent = this.rootNode;
-      boundaryLine.isPickable = false;
-      this.mapBoundaryMesh = boundaryLine;
-      this.tileMeshes.push(boundaryLine);
-    }
 
     // Render Map NPCs (prefer absolute /game-assets paths; never /assets/sprites/)
     if (npcs) {
