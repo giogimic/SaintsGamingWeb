@@ -10,13 +10,24 @@ export interface MapGate {
   errorMessage?: string;
 }
 
-export interface MapChunkData {
-  chunkX: number;
-  chunkY: number;
+export interface MapConnection {
+  targetMapId: string;
+  targetEdge?: 'north' | 'south' | 'east' | 'west';
+  offsetX: number;
+  offsetZ: number;
+}
+
+export interface RenderedChunk {
+  mapId: string;
+  chunkX?: number; // Legacy
+  chunkY?: number; // Legacy
+  offsetX: number;
+  offsetZ: number;
   width: number;
   height: number;
   grid?: number[][];
   tileLayers?: Array<{ name: string; grid: number[][] }>;
+  tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number }>;
   npcs?: Array<{
     id: string;
     name: string;
@@ -54,12 +65,12 @@ export interface GameMapData {
     maxLevel: number;
     weight: number;
   }>;
-  chunks?: MapChunkData[];
+  chunks?: RenderedChunk[];
   connections?: {
-    north?: string;
-    south?: string;
-    east?: string;
-    west?: string;
+    north?: string | MapConnection;
+    south?: string | MapConnection;
+    east?: string | MapConnection;
+    west?: string | MapConnection;
   };
 }
 
@@ -98,13 +109,17 @@ function isValidMapId(mapId: unknown): mapId is string {
   return true;
 }
 
-export async function loadMap(mapId: string): Promise<GameMapData> {
+export async function loadMap(mapId: string, depth: number = 0): Promise<GameMapData> {
   if (!isValidMapId(mapId)) {
     return emptyMapFallback('INVALID');
   }
 
+  // Use cached map directly if we are just fetching a neighbor (depth > 0)
+  // or if it already has the assembled chunks (we assume it was fully loaded)
   if (mapCache[mapId]) {
-    return mapCache[mapId];
+    if (depth > 0 || (mapCache[mapId].chunks && mapCache[mapId].chunks!.length > 0)) {
+      return mapCache[mapId];
+    }
   }
 
   const failUntil = mapFailUntil.get(mapId);
@@ -124,6 +139,71 @@ export async function loadMap(mapId: string): Promise<GameMapData> {
       const mapData: GameMapData = await res.json();
       mapCache[mapId] = mapData;
       mapFailUntil.delete(mapId);
+
+      // Phase 1: Seamless Terrain - Fetch immediate neighbors (Depth 1)
+      if (depth === 0 && mapData.connections) {
+        const neighborPromises: Promise<void>[] = [];
+        mapData.chunks = mapData.chunks || [];
+        
+        const processConnection = (conn: string | MapConnection | undefined, direction: 'north' | 'south' | 'east' | 'west') => {
+          if (!conn) return;
+          const targetMapId = typeof conn === 'string' ? conn : conn.targetMapId;
+          
+          neighborPromises.push(
+            loadMap(targetMapId, 1).then(neighborData => {
+              if (neighborData.id === 'INVALID') return;
+
+              let offsetX = 0;
+              let offsetZ = 0;
+              const mainW = mapData.width || 24;
+              const mainH = mapData.height || 24;
+              const nW = neighborData.width || 24;
+              const nH = neighborData.height || 24;
+
+              if (typeof conn === 'object' && conn.offsetX !== undefined && conn.offsetZ !== undefined) {
+                offsetX = conn.offsetX;
+                offsetZ = conn.offsetZ;
+              } else {
+                if (direction === 'north') {
+                  offsetX = 0;
+                  offsetZ = (mainH / 2 + nH / 2);
+                } else if (direction === 'south') {
+                  offsetX = 0;
+                  offsetZ = -(mainH / 2 + nH / 2);
+                } else if (direction === 'east') {
+                  offsetX = (mainW / 2 + nW / 2);
+                  offsetZ = 0;
+                } else if (direction === 'west') {
+                  offsetX = -(mainW / 2 + nW / 2);
+                  offsetZ = 0;
+                }
+              }
+
+              mapData.chunks!.push({
+                mapId: neighborData.id,
+                offsetX,
+                offsetZ,
+                width: nW,
+                height: nH,
+                grid: neighborData.grid,
+                tileLayers: neighborData.tileLayers,
+                tilesets: neighborData.tilesets,
+                // NPCs omitted for Phase 1 (Entity Isolation)
+              });
+            }).catch(e => {
+              console.warn(`[MapLoader] Failed to load neighbor ${targetMapId}:`, e);
+            })
+          );
+        };
+
+        processConnection(mapData.connections.north, 'north');
+        processConnection(mapData.connections.south, 'south');
+        processConnection(mapData.connections.east, 'east');
+        processConnection(mapData.connections.west, 'west');
+
+        await Promise.allSettled(neighborPromises);
+      }
+
       return mapData;
     } catch (err) {
       console.error(`Error loading map ${mapId}:`, err);
@@ -200,7 +280,8 @@ export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
 
   if (current.connections) {
     const { north, south, east, west } = current.connections;
-    for (const targetMapId of [north, south, east, west]) {
+    for (const conn of [north, south, east, west]) {
+      const targetMapId = typeof conn === 'string' ? conn : conn?.targetMapId;
       if (targetMapId && !mapCache[targetMapId]) {
         loadMap(targetMapId).catch(() => {});
       }

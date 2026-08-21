@@ -301,6 +301,24 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const spawn = { ...(gate.targetSpawn || { x: 6, y: 2 }) };
       const targetBase = toBaseMapId(gate.targetMapId);
       const finishWarp = () => {
+        const store = useGameStore.getState();
+        
+        let deltaX = 0;
+        let deltaZ = 0;
+        if (gate.isEdgeConnection) {
+          const neighborChunk = store.activeMapData?.chunks?.find((c: any) => c.mapId === gate.targetMapId);
+          if (neighborChunk) {
+            deltaX = neighborChunk.offsetX || 0;
+            deltaZ = neighborChunk.offsetZ || 0;
+          }
+        }
+        
+        if (gate.isEdgeConnection) {
+          store.addWorldOriginOffset(deltaX, deltaZ);
+        } else {
+          store.setWorldOriginOffset(0, 0);
+        }
+
         let loadedGrid: number[][] | undefined = undefined;
         // Load destination document before flipping ids — never leave stale
         // activeMapData mounted (World Builder warp already does this pair).
@@ -334,9 +352,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
             // Immediate camera alignment on the new map
             if (engineRef.current && !editorToolsRef.current) {
-              const snapX = spawn.x - finalW / 2;
-              const snapZ = finalH / 2 - spawn.y;
-              engineRef.current.snapCameraTo(snapX, snapZ);
+              const liveStore = useGameStore.getState();
+              const offset = liveStore.worldOriginOffset;
+              const snapX = spawn.x - finalW / 2 + offset.x;
+              const snapZ = finalH / 2 - spawn.y - offset.y;
+              // We do not snap camera for edge connections because it stays perfectly continuous!
+              if (!gate.isEdgeConnection) {
+                engineRef.current.snapCameraTo(snapX, snapZ);
+              }
             }
 
             const liveStore = useGameStore.getState();
@@ -773,7 +796,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tileLayers: mapData.tileLayers,
       tilesets: mapData.tilesets,
       npcs: [],
-    });
+      chunks: mapData.chunks,
+    }, useGameStore.getState().worldOriginOffset);
     setMapMeshEpoch((n) => n + 1);
 
     // Editor: frame the whole map (author spawn often sits outside short maps).
@@ -781,10 +805,12 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (editorToolsRef.current) {
       babylonEngine.fitMapInView();
     } else {
-      const initPlayer = useGameStore.getState().player;
+      const liveStore = useGameStore.getState();
+      const initPlayer = liveStore.player;
       if (initPlayer?.position) {
-        const initX = (initPlayer.position.x ?? 6) - mapWidth / 2;
-        const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2);
+        const offset = liveStore.worldOriginOffset;
+        const initX = (initPlayer.position.x ?? 6) - mapWidth / 2 + offset.x;
+        const initZ = mapHeight / 2 - (initPlayer.position.y ?? 2) - offset.y;
         babylonEngine.snapCameraTo(initX, initZ);
       }
     }
@@ -795,12 +821,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // without a full remount.
       const liveW = babylonEngine.getMapWidth() || mapWidth;
       const liveH = babylonEngine.getMapHeight() || mapHeight;
-      const freshPlayer = useGameStore.getState().player;
+      const liveStore = useGameStore.getState();
+      const freshPlayer = liveStore.player;
       if (freshPlayer && freshPlayer.position) {
+        const offset = liveStore.worldOriginOffset;
         const px = freshPlayer.position.x ?? 6;
         const py = freshPlayer.position.y ?? 2;
-        const worldX = px - liveW / 2;
-        const worldZ = liveH / 2 - py;
+        const worldX = px - liveW / 2 + offset.x;
+        const worldZ = liveH / 2 - py - offset.y;
 
         babylonEngine.updateEntity({
           id: 'player_main',
@@ -815,7 +843,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           isPlayer: true,
           direction: freshPlayer.direction,
           isMoving: freshPlayer.isMoving,
-          chatMessage: useGameStore.getState().localChat || undefined,
+          chatMessage: liveStore.localChat || undefined,
           spriteConfig: freshPlayer.spriteConfig
         });
         // Keep avatar hidden while editor tools are active (avatar-free viewport)
@@ -851,8 +879,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const targetX = other.x ?? 6;
           const targetY = other.y ?? 2;
 
-          const ox = targetX - liveW / 2;
-          const oz = liveH / 2 - targetY;
+          const ox = targetX - liveW / 2 + offset.x;
+          const oz = liveH / 2 - targetY - offset.y;
 
           // Fetch animationProfile if not cached (non-blocking)
           if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.spriteId) {
@@ -885,9 +913,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // (socket snapshot can miss if join races; map JSON still has placements).
       // Read live store doc — mount closure activeMap.npcs goes stale when we
       // keep the Babylon engine across setActiveMapData refreshes.
-      const mapEntities = useGameStore.getState().mapEntities || [];
+      const mapEntities = liveStore.mapEntities || [];
       const liveMapDoc =
-        (useGameStore.getState().activeMapData as {
+        (liveStore.activeMapData as {
           npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;
         } | null) || activeMap;
       const staticNpcs = (liveMapDoc?.npcs || []).map((npc: any) => ({
@@ -923,8 +951,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       for (const ent of merged) {
         if (!ent.mapId || ent.mapId === currentMapId || isSameBaseMap(ent.mapId, currentMapId)) {
           activeEntities.add(ent.id);
-          const ex = ent.position.x - liveW / 2;
-          const ez = liveH / 2 - ent.position.y;
+          const ex = ent.position.x - liveW / 2 + offset.x;
+          const ez = liveH / 2 - ent.position.y - offset.y;
           const kind =
             ent.type === 'NPC'
               ? 'npc'

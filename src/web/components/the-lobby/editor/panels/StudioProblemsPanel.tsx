@@ -22,7 +22,7 @@ import { normalizeGatesToArray } from '@/shared/game/mapGates';
 export interface MapProblem {
   id: string;
   type: 'ERROR' | 'WARNING' | 'INFO';
-  category: 'GATE' | 'ENTITY' | 'LAYER' | 'SPAWN';
+  category: 'GATE' | 'ENTITY' | 'LAYER' | 'SPAWN' | 'CONNECTION';
   message: string;
   detail?: string;
   coordinate?: { r: number; c: number };
@@ -87,6 +87,44 @@ export function StudioProblemsPanel() {
         });
       }
     });
+
+    // 2.5 Check Map Connections
+    if (mapData.connections) {
+      const dirs = ['north', 'south', 'east', 'west'] as const;
+      dirs.forEach(dir => {
+        const conn = mapData.connections![dir];
+        if (!conn) return;
+
+        const targetMapId = typeof conn === 'string' ? conn : conn.targetMapId;
+        const targetMap = GAME_MAPS[targetMapId];
+
+        if (!targetMap && !targetMapId.startsWith('TEST_') && !targetMapId.startsWith('DEMO_')) {
+          list.push({
+            id: `conn_unknown_${dir}`,
+            type: 'ERROR',
+            category: 'CONNECTION',
+            message: `Connection ${dir.toUpperCase()} targets map "${targetMapId}" which is missing from the atlas.`,
+          });
+        } else if (targetMap) {
+          // Check reciprocity
+          const opposite = { north: 'south', south: 'north', east: 'west', west: 'east' }[dir] as 'north'|'south'|'east'|'west';
+          const reciprocal = targetMap.connections?.[opposite];
+          let reciprocalTargetId = null;
+          if (reciprocal) {
+             reciprocalTargetId = typeof reciprocal === 'string' ? reciprocal : reciprocal.targetMapId;
+          }
+          
+          if (reciprocalTargetId !== baseMapId) {
+             list.push({
+                id: `conn_nonreciprocal_${dir}`,
+                type: 'WARNING',
+                category: 'CONNECTION',
+                message: `Connection ${dir.toUpperCase()} to "${targetMapId}" is not reciprocal (target does not connect ${opposite.toUpperCase()} back to this map).`,
+             });
+          }
+        }
+      });
+    }
 
     // 3. Check Entity Collisions with Solid Tiles
     const npcs = mapData.npcs || mapEntities || [];
