@@ -45,6 +45,28 @@ export interface MapConnection {
   offsetZ: number;
 }
 
+export const WORLD_CHUNK_SIZE = 32;
+
+export type ChunkLifecycleState = 
+  | 'UNREQUESTED'
+  | 'FETCHING'
+  | 'DECODED'
+  | 'BUILDING'
+  | 'READY'
+  | 'VISIBLE'
+  | 'HIDDEN'
+  | 'EVICTABLE'
+  | 'EVICTED'
+  | 'FAILED';
+
+export interface ChunkKey {
+  mapId: string;
+  mapVersion: number;
+  chunkX: number;
+  chunkZ: number;
+  worldTransform: { x: number; z: number };
+}
+
 export interface RenderedChunk {
   mapId: string;
   offsetX: number;
@@ -58,6 +80,7 @@ export interface RenderedChunk {
 
 export interface MapData {
   id: string;
+  version?: number;
   name: string;
   grid: number[][];
   gates: Record<number, GateData>;

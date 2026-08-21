@@ -93,6 +93,7 @@ export type PanelId =
   | 'prefab'
   | 'atlas'
   | 'problems'
+  | 'streaming'
   | 'gameplay';
 
 export type { StudioMode };
@@ -580,6 +581,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 40,
     width: 860,
     height: 640,
+    zIndex: 10,
+  },
+  streaming: {
+    id: 'streaming',
+    title: 'Streaming Inspector',
+    isOpen: false,
+    isCollapsed: false,
+    x: 100,
+    y: 100,
+    width: 400,
+    height: 350,
     zIndex: 10,
   },
 };

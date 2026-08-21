@@ -19,6 +19,7 @@ import {
   VertexData,
   Matrix,
   LinesMesh,
+  ImageProcessingPostProcess,
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
@@ -172,6 +173,11 @@ export interface BabylonEntityData {
 }
 
 export class BabylonEngine {
+  private pendingPlayerTeleports: Map<string, { x: number, z: number }> = new Map();
+
+  // Chunk-Level Resource Pooling (Phase 3)
+  private chunkMeshPool: Mesh[] = [];
+
   private canvas: HTMLCanvasElement;
   private engine: Engine;
   private scene: Scene;
@@ -262,6 +268,8 @@ export class BabylonEngine {
   private cameraTargetX: number = 0;
   private cameraTargetZ: number = 0;
   private cameraSnapped: boolean = false;
+  private cameraProfile = { pitch: Math.PI / 4, distance: 14, lerpFactor: 0.15 };
+  private vignettePostProcess?: ImageProcessingPostProcess;
   /** When true, camera ignores player follow and accepts editor pan. */
   private editorCameraMode: boolean = false;
   private editorPanPointerId: number | null = null;
@@ -363,7 +371,14 @@ export class BabylonEngine {
     this.rootNode = new TransformNode('rootNode', this.scene);
 
     // 2.5D Camera: Orthographic angled at ~40 degrees looking down
-    this.camera = new FreeCamera('camera2D', new Vector3(0, 14, -14), this.scene);
+    this.camera = new FreeCamera('camera2D', new Vector3(0, this.cameraProfile.distance, -this.cameraProfile.distance), this.scene);
+    
+    // Enable Vignette
+    this.vignettePostProcess = new ImageProcessingPostProcess("vignette", 1.0, this.camera);
+    this.vignettePostProcess.vignetteEnabled = true;
+    this.vignettePostProcess.vignetteWeight = 1.5;
+    this.vignettePostProcess.vignetteColor = new Color4(0, 0, 0, 1);
+    this.vignettePostProcess.vignetteBlendMode = ImageProcessingPostProcess.VIGNETTEMODE_MULTIPLY;
     this.camera.setTarget(Vector3.Zero());
     this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
 
@@ -656,6 +671,7 @@ export class BabylonEngine {
     this.isRunning = true;
 
     this.engine.runRenderLoop(() => {
+      if (typeof performance !== 'undefined') performance.mark('scene_render_start');
       const deltaTime = this.engine.getDeltaTime() / 1000;
       this.waterAnimTime += deltaTime;
 
@@ -732,6 +748,11 @@ export class BabylonEngine {
 
       if (onTick) onTick(deltaTime);
       this.scene.render();
+      
+      if (typeof performance !== 'undefined') {
+        performance.mark('scene_render_end');
+        performance.measure('scene_render_time', 'scene_render_start', 'scene_render_end');
+      }
     });
   }
 
@@ -757,7 +778,7 @@ export class BabylonEngine {
 
     this.cameraTargetX = worldX;
     this.cameraTargetZ = worldZ;
-    this.camera.position = new Vector3(worldX, 14, worldZ - 14);
+    this.camera.position = new Vector3(worldX, this.cameraProfile.distance, worldZ - this.cameraProfile.distance);
     this.camera.setTarget(new Vector3(worldX, 0, worldZ));
     this.cameraSnapped = true;
   }
@@ -788,12 +809,17 @@ export class BabylonEngine {
       return;
     }
 
-    const targetCamPos = new Vector3(targetX, 14, targetZ - 14);
-    this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, lerpFactor);
+    const targetCamPos = new Vector3(targetX, this.cameraProfile.distance, targetZ - this.cameraProfile.distance);
+    
+    // Spring damper / Decoupled Physics
+    const dt = this.engine.getDeltaTime() / 1000.0;
+    const smoothFactor = 1.0 - Math.exp(-this.cameraProfile.lerpFactor * 60 * dt);
+    
+    this.camera.position = Vector3.Lerp(this.camera.position, targetCamPos, smoothFactor);
     this.camera.setTarget(Vector3.Lerp(
       this.camera.getTarget(),
       new Vector3(targetX, 0, targetZ),
-      lerpFactor
+      smoothFactor
     ));
   }
 
@@ -1063,11 +1089,12 @@ export class BabylonEngine {
       });
       
       if (seamlessOffset) {
-        // Dispose any tileset meshes that are no longer needed
+        // Pool any tileset meshes that are no longer needed instead of disposing
         const keysToRemove: string[] = [];
         this.tilesetMeshBySource.forEach((mesh, chunkKey) => {
           if (!tilesetVertexData.has(chunkKey)) {
-            mesh.dispose();
+            mesh.isVisible = false;
+            this.chunkMeshPool.push(mesh);
             keysToRemove.push(chunkKey);
           }
         });
@@ -1202,7 +1229,13 @@ export class BabylonEngine {
         const isNewMesh = !mesh;
         
         if (isNewMesh) {
-          mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
+          mesh = this.chunkMeshPool.pop();
+          if (mesh) {
+            mesh.name = `tileset_mesh_${chunkKey}`;
+            mesh.isVisible = true;
+          } else {
+            mesh = new Mesh(`tileset_mesh_${chunkKey}`, this.scene);
+          }
         }
         
         // We always update vertex data because terrain edits or neighbor resolution might have changed

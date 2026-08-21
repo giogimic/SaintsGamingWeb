@@ -1,3 +1,11 @@
+## [2.1.399] - 2026-08-21
+### Seamless Map Streaming (Phases 1-4 Complete)
+- **Streaming Architecture**: Implemented async `ChunkStreamingQueue`, isolated `contentCache`, `RenderedChunk` batching, and exponential retry backoff.
+- **Streaming Inspector HUD**: Added Studio panel to monitor chunk lifecycle, network fetches, and cache hits.
+- **Atomic Activation & Mesh Pooling**: Deployed `StreamingManager` to ensure zero pop-in by asynchronously building meshes before making them visible. Implemented `chunkMeshPool` in `BabylonEngine.ts` to dramatically reduce GC stutters during chunk unloads.
+- **Studio Invalidation**: Map saves in Studio now instantly bump map version and clear stale client chunk caches.
+- **Camera Decoupling & Vignette**: Added `CameraProfile` with spring-damper interpolation for smooth 2.5D tracking, and applied an aesthetic vignette edge masking pass.
+
 ## [2.1.398] - 2026-08-20
 ### Map Connection Object Unpacking Fix
 - **Black Map Return Fix (`WorldSimulation.ts`)**: Fixed a bug where edge boundary transitions into maps with JSON `MapConnection` object configurations (instead of raw strings) would incorrectly pass the entire connection object as the `targetMapId`. This caused `loadMap` to fail the string validation check and return an empty `INVALID` map, resulting in a black screen. `targetMapId` is now properly extracted.
