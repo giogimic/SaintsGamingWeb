@@ -331,6 +331,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             spawn.y = Math.max(0, Math.min(finalH - 1, spawn.y));
 
             setPlayerPosition(spawn);
+
+            // Immediate camera alignment on the new map
+            if (engineRef.current && !editorToolsRef.current) {
+              const snapX = spawn.x - finalW / 2;
+              const snapZ = finalH / 2 - spawn.y;
+              engineRef.current.snapCameraTo(snapX, snapZ);
+            }
+
             const liveStore = useGameStore.getState();
             const p = liveStore.player;
             const inStudio = getIsEditorMode();
@@ -356,22 +364,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 setIsMapTransitioning: liveStore.setIsMapTransitioning,
                 onClearPeers: () => liveStore.setOtherPlayers({}),
                 force: true,
+                transitionTimeoutMs: 600,
               });
             }
-            showToast(`Warped to ${gate.targetMapId.replace(/_/g, ' ')}`);
+            // Ensure transition state is cleared immediately so gameplay is completely fluid
+            liveStore.setIsMapTransitioning(false);
+            liveStore.setWorldSessionState('joined');
+            showToast(`Crossed into ${gate.targetMapId.replace(/_/g, ' ')}`);
           });
       };
-      if (isDevEditorOpen) {
-        finishWarp();
-      } else {
-        const live = useGameStore.getState();
-        if (live.isMapTransitioning) return;
-        live.setIsMapTransitioning(true);
-        live.setWorldSessionState('transitioning');
-        setTimeout(() => {
-          finishWarp();
-        }, 200);
-      }
+
+      finishWarp();
       return;
     }
 
