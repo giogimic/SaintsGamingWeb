@@ -7,6 +7,7 @@ import {
   setCachedLogicTiles,
   invalidateMapCache,
 } from "./mapCache";
+import { invalidateContentCacheForMap } from "./chunkCache";
 
 export function buildDemoSandboxGridFallback(): number[][] {
   const w = 30;
@@ -164,6 +165,7 @@ export async function saveMapData(mapId: string, data: Partial<MapData>): Promis
     const grid = data.grid || [];
     const height = Array.isArray(grid) ? grid.length || data.height || 24 : data.height || 24;
     const width = Array.isArray(grid?.[0]) ? grid[0].length : data.width || 24;
+    const version = (data.version || 0) + 1;
 
     await prisma.gameMap.upsert({
       where: { id: mapId },
@@ -175,6 +177,7 @@ export async function saveMapData(mapId: string, data: Partial<MapData>): Promis
         npcs: JSON.stringify(data.npcs || []),
         encounters: JSON.stringify(data.encountersData || []),
         gates: JSON.stringify(data.gates || {}),
+        version,
       },
       create: {
         id: mapId,
@@ -185,10 +188,12 @@ export async function saveMapData(mapId: string, data: Partial<MapData>): Promis
         npcs: JSON.stringify(data.npcs || []),
         encounters: JSON.stringify(data.encountersData || []),
         gates: JSON.stringify(data.gates || {}),
+        version,
       },
     });
 
     invalidateMapCache(mapId);
+    invalidateContentCacheForMap(mapId, version);
     return true;
   } catch (err) {
     console.error(`[MapLoader] Failed to save map ${mapId}:`, err);

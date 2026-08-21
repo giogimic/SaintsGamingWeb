@@ -1673,6 +1673,7 @@ model GameMap {
   npcs          String?  // JSON stringified static NPCs
   encounters    String?  // JSON stringified encounter pool
   gates         String?  // JSON stringified teleport gates
+  version       Int      @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

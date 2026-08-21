@@ -6,7 +6,7 @@ import { useGameStore } from '../store';
 import {
   FileText, Edit, Eye, Folder, Box, Globe, PlayCircle, Users, HelpCircle,
   Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle,
-  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell
+  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell, Activity
 } from 'lucide-react';
 import { RealmSettingsModal } from './RealmSettingsModal';
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
@@ -342,6 +342,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="Inspector" onClick={() => useEditorStore.getState().openPanel('properties')} />
             <MenuItem label="World Builder" onClick={() => useEditorStore.getState().openPanel('build')} />
             <MenuItem label="Problems & Diagnostics" shortcut="Ctrl+Shift+O" icon={AlertCircle} onClick={() => useEditorStore.getState().openPanel('problems')} />
+            <MenuItem label="Streaming Inspector" icon={Activity} onClick={() => useEditorStore.getState().openPanel('streaming')} />
             <MenuItem divider />
             <MenuItem label="Reset Layout" onClick={() => {
               window.localStorage.removeItem('saints.panelLayouts');

@@ -58,6 +58,7 @@ const PropertiesPanel = lazy(() => import('./panels/PropertiesPanel').then((m) =
 const AssetBrowserPanel = lazy(() => import('./panels/AssetBrowserPanel').then((m) => ({ default: m.AssetBrowserPanel })));
 const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
 const DevToolsPanel = lazy(() => import('./panels/DevToolsPanel').then((m) => ({ default: m.DevToolsPanel })));
+const StreamingInspectorPanel = lazy(() => import('./panels/StreamingInspectorPanel').then((m) => ({ default: m.StreamingInspectorPanel })));
 const StarterHeroEditorPanel = lazy(() => import('./panels/StarterHeroEditorPanel').then((m) => ({ default: m.StarterHeroEditorPanel })));
 const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
 const ClassEditorPanel = lazy(() => import('./panels/ClassEditorPanel').then((m) => ({ default: m.ClassEditorPanel })));
@@ -769,6 +770,7 @@ export const StudioEditorShell: React.FC = () => {
             case 'prefab': return <PrefabBuilderPanel />;
             case 'atlas': return <WorldAtlasPanel />;
             case 'problems': return <StudioProblemsPanel />;
+            case 'streaming': return <StreamingInspectorPanel />;
             case 'gameplay': return <GameplayStudioPanels />;
             default: return <div>Unknown component: {component}</div>;
           }
