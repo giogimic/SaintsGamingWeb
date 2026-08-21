@@ -45,6 +45,7 @@ async function loadMapPayload(slug: string) {
   const gameMap = await prisma.gameMap.findUnique({ where: { id: slug } });
   if (gameMap) {
     const rawGates = JSON.parse(gameMap.gates || "{}");
+    const connections = rawGates.connections || undefined;
     const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
     const spawnPoint = rawGates.spawnPoint || (Array.isArray(actualGates) ? actualGates.find((g: any) => g.id === 'spawn' || g.category === 'SPAWN')?.position : undefined) || { x: Math.floor(gameMap.width / 2), y: Math.floor(gameMap.height / 2) };
     return {
@@ -54,6 +55,7 @@ async function loadMapPayload(slug: string) {
       height: gameMap.height,
       grid: JSON.parse(gameMap.tilesetData || "[]"),
       gates: actualGates,
+      connections: connections,
       spawnPoint,
       npcs: JSON.parse(gameMap.npcs || "[]"),
       encounterPool: JSON.parse(gameMap.encounters || "[]"),
@@ -188,13 +190,38 @@ export async function POST(
       ? body.entities
       : (body.npcs || []).map((npc: any) => npcToEntity(npc));
 
+    // Preserve existing Atlas connections if not explicitly overwritten
+    let existingConns = body.connections;
+    if (!existingConns) {
+      try {
+        const existingRow = await prisma.worldMap.findUnique({ where: { id: slug }, select: { gatesData: true } });
+        if (existingRow?.gatesData) {
+          const parsed = JSON.parse(existingRow.gatesData);
+          if (parsed?.connections) existingConns = parsed.connections;
+        }
+      } catch {}
+    }
+
+    const rawGatesToSave = body.gates;
+    let serializedGatesData: string | undefined = undefined;
+    if (rawGatesToSave !== undefined || existingConns !== undefined) {
+      if (existingConns) {
+        const baseGates = rawGatesToSave !== undefined 
+          ? (Array.isArray(rawGatesToSave) ? rawGatesToSave : (rawGatesToSave?.gates || rawGatesToSave))
+          : [];
+        serializedGatesData = JSON.stringify({ gates: baseGates, connections: existingConns });
+      } else if (rawGatesToSave !== undefined) {
+        serializedGatesData = typeof rawGatesToSave === 'string' ? rawGatesToSave : JSON.stringify(rawGatesToSave);
+      }
+    }
+
     const worldMap = await prisma.worldMap.upsert({
       where: { id: slug },
       update: {
         name: body.name || slug,
         gameId: body.gameId || "tuxemon",
         ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
-        ...(body.gates ? { gatesData: JSON.stringify(body.gates) } : {}),
+        ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
         ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
         ...(body.encounterPool ? { encountersData: JSON.stringify(body.encounterPool) } : {}),
         entitiesData: JSON.stringify(entitiesPayload),
@@ -211,7 +238,7 @@ export async function POST(
         gameId: body.gameId || "tuxemon",
         name: body.name || slug,
         gridData: JSON.stringify(body.grid || []),
-        gatesData: JSON.stringify(body.gates || {}),
+        gatesData: serializedGatesData || JSON.stringify(body.gates || {}),
         npcsData: JSON.stringify(body.npcs || []),
         encountersData: JSON.stringify(body.encounterPool || []),
         entitiesData: JSON.stringify(entitiesPayload),
@@ -227,7 +254,7 @@ export async function POST(
         width,
         height,
         ...(body.grid ? { tilesetData: JSON.stringify(body.grid) } : {}),
-        ...(body.gates ? { gates: JSON.stringify(body.gates) } : {}),
+        ...(serializedGatesData !== undefined ? { gates: serializedGatesData } : {}),
         ...(body.npcs ? { npcs: JSON.stringify(body.npcs) } : {}),
         ...(body.encounterPool ? { encounters: JSON.stringify(body.encounterPool) } : {}),
       },
@@ -237,7 +264,7 @@ export async function POST(
         width,
         height,
         tilesetData: JSON.stringify(body.grid || []),
-        gates: JSON.stringify(body.gates || {}),
+        gates: serializedGatesData || JSON.stringify(body.gates || {}),
         npcs: JSON.stringify(body.npcs || []),
         encounters: JSON.stringify(body.encounterPool || []),
       },

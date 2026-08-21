@@ -5,8 +5,10 @@
 
 export interface AtlasNode {
   mapId: string;
-  gridX: number; // Atlas grid X coordinate
-  gridY: number; // Atlas grid Y coordinate
+  x?: number;
+  y?: number;
+  gridX?: number; // Atlas grid X coordinate (alias)
+  gridY?: number; // Atlas grid Y coordinate (alias)
   width?: number; // In-game tile width
   height?: number; // In-game tile height
 }
@@ -31,25 +33,30 @@ export function getAdjacentAtlasNeighbors(atlas: AtlasGridData, mapId: string): 
   const current = atlas.nodes.find((n) => n.mapId === mapId);
   if (!current) return {};
 
+  const curX = current.x ?? current.gridX ?? 0;
+  const curY = current.y ?? current.gridY ?? 0;
+
   const neighbors: NeighborNodes = {};
 
   for (const node of atlas.nodes) {
     if (node.mapId === mapId) continue;
+    const nx = node.x ?? node.gridX ?? 0;
+    const ny = node.y ?? node.gridY ?? 0;
 
-    // North (gridY - 1)
-    if (node.gridX === current.gridX && node.gridY === current.gridY - 1) {
+    // North (y - 1)
+    if (nx === curX && ny === curY - 1) {
       neighbors.north = node;
     }
-    // South (gridY + 1)
-    if (node.gridX === current.gridX && node.gridY === current.gridY + 1) {
+    // South (y + 1)
+    if (nx === curX && ny === curY + 1) {
       neighbors.south = node;
     }
-    // East (gridX + 1)
-    if (node.gridX === current.gridX + 1 && node.gridY === current.gridY) {
+    // East (x + 1)
+    if (nx === curX + 1 && ny === curY) {
       neighbors.east = node;
     }
-    // West (gridX - 1)
-    if (node.gridX === current.gridX - 1 && node.gridY === current.gridY) {
+    // West (x - 1)
+    if (nx === curX - 1 && ny === curY) {
       neighbors.west = node;
     }
   }

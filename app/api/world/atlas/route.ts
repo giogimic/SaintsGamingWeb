@@ -161,20 +161,33 @@ export async function POST(request: Request) {
       try {
         for (const [mapId, conns] of Object.entries(connectionsByMap)) {
           const existing = await prisma.worldMap.findUnique({ where: { id: mapId } });
-          if (existing) {
-            let currentGates: any = {};
+          let currentGates: any = {};
+          if (existing?.gatesData) {
             try {
               currentGates = JSON.parse(existing.gatesData || "{}");
             } catch {}
-            const mergedGates = Array.isArray(currentGates)
-              ? { gates: currentGates, connections: conns }
-              : { ...currentGates, connections: conns };
+          } else {
+            const existingGameMap = await prisma.gameMap.findUnique({ where: { id: mapId } });
+            if (existingGameMap?.gates) {
+              try {
+                currentGates = JSON.parse(existingGameMap.gates || "{}");
+              } catch {}
+            }
+          }
+          const actualGates = currentGates.gates !== undefined ? currentGates.gates : currentGates;
+          const mergedGates = { gates: actualGates, connections: conns };
+          const serializedGates = JSON.stringify(mergedGates);
 
+          if (existing) {
             await prisma.worldMap.update({
               where: { id: mapId },
-              data: { gatesData: JSON.stringify(mergedGates) }
+              data: { gatesData: serializedGates }
             });
           }
+          await prisma.gameMap.updateMany({
+            where: { id: mapId },
+            data: { gates: serializedGates }
+          });
         }
       } catch (connErr) {
         console.warn("[Atlas] Failed to sync map adjacency connections:", connErr);

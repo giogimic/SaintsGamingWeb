@@ -7,7 +7,7 @@ import {
   Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio,
   Castle, Trees, Waves, Mountain, Flame, Navigation, ArrowUpRight, Globe
 } from 'lucide-react';
-import { MapIndexEntry, loadMap } from '../../data/maps';
+import { MapIndexEntry, loadMap, invalidateMapCache } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { soundSynth } from '@/engine/sound-synth';
 
@@ -159,6 +159,7 @@ export const WorldAtlasPanel: React.FC = () => {
       const result = await res.json();
       if (res.ok && result.ok) {
         useEditorStore.getState().clearMapDirty();
+        invalidateMapCache();
         showToast('Atlas saved & 4-way map connections synchronized.');
       } else {
         showToast(result.error || 'Failed to save atlas.');
