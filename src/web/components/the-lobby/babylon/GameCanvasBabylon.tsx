@@ -822,9 +822,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const liveW = babylonEngine.getMapWidth() || mapWidth;
       const liveH = babylonEngine.getMapHeight() || mapHeight;
       const liveStore = useGameStore.getState();
+      const offset = liveStore.worldOriginOffset;
       const freshPlayer = liveStore.player;
       if (freshPlayer && freshPlayer.position) {
-        const offset = liveStore.worldOriginOffset;
         const px = freshPlayer.position.x ?? 6;
         const py = freshPlayer.position.y ?? 2;
         const worldX = px - liveW / 2 + offset.x;
