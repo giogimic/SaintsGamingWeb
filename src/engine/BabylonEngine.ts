@@ -2641,7 +2641,8 @@ private resolveTilePick(
     const maxZ = (h / 2 + 0.5) * s;
     const centerX = -0.5 * s;
     const centerZ = 0.5 * s;
-    const alt = SPATIAL_LAYER_ALTITUDES.AUTHOR_MARKERS + 0.005; // 0.085 (above ground quads & painted layers)
+    // Keep altitude right on top of layer 0 (0.003) to eliminate 45-degree isometric projection parallax shift
+    const alt = 0.003;
 
     // 1. Dark Blueprint Canvas Artboard Foundation (subtle underlay behind active map)
     const backdropGround = MeshBuilder.CreateGround(
@@ -2662,7 +2663,7 @@ private resolveTilePick(
     backdropGround.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(backdropGround);
 
-    // 2. Primary Outer Perimeter Frame (Glowing Amber Neon #f59e0b)
+    // 2. Single, razor-sharp perimeter boundary frame (Glowing Amber Neon #f59e0b)
     const borderPoints = [
       new Vector3(minX, alt, minZ),
       new Vector3(maxX, alt, minZ),
@@ -2681,109 +2682,6 @@ private resolveTilePick(
     outerLines.isVisible = this.editorCameraMode;
     outerLines.alwaysSelectAsActiveMesh = true;
     this.editorMapBorderMeshes.push(outerLines);
-
-    // 3. Subtle Inner Inset Blueprint Outline (Cyan #38bdf8, 0.04s inset)
-    const inset = Math.min(0.06 * s, 0.2);
-    const insetPoints = [
-      new Vector3(minX + inset, alt, minZ + inset),
-      new Vector3(maxX - inset, alt, minZ + inset),
-      new Vector3(maxX - inset, alt, maxZ - inset),
-      new Vector3(minX + inset, alt, maxZ - inset),
-      new Vector3(minX + inset, alt, minZ + inset),
-    ];
-    const innerLines = MeshBuilder.CreateLines(
-      'editor_map_inner_frame',
-      { points: insetPoints, updatable: false },
-      this.scene
-    );
-    innerLines.color = new Color3(0.22, 0.74, 0.97); // #38bdf8 cyan neon
-    innerLines.alpha = 0.45;
-    innerLines.isPickable = false;
-    innerLines.parent = this.rootNode;
-    innerLines.isVisible = this.editorCameraMode;
-    innerLines.alwaysSelectAsActiveMesh = true;
-    this.editorMapBorderMeshes.push(innerLines);
-
-    // 4. Precision L-Bracket Crop Marks on all 4 corners (Drafting/CAD style)
-    const arm = Math.min(2.5 * s, Math.max(1.0 * s, Math.min(w, h) * 0.08 * s));
-    const cornerSegments: Vector3[][] = [
-      // Bottom-Left (minX, minZ)
-      [
-        new Vector3(minX, alt + 0.005, minZ + arm),
-        new Vector3(minX, alt + 0.005, minZ),
-        new Vector3(minX + arm, alt + 0.005, minZ),
-      ],
-      // Bottom-Right (maxX, minZ)
-      [
-        new Vector3(maxX - arm, alt + 0.005, minZ),
-        new Vector3(maxX, alt + 0.005, minZ),
-        new Vector3(maxX, alt + 0.005, minZ + arm),
-      ],
-      // Top-Right (maxX, maxZ)
-      [
-        new Vector3(maxX, alt + 0.005, maxZ - arm),
-        new Vector3(maxX, alt + 0.005, maxZ),
-        new Vector3(maxX - arm, alt + 0.005, maxZ),
-      ],
-      // Top-Left (minX, maxZ)
-      [
-        new Vector3(minX + arm, alt + 0.005, maxZ),
-        new Vector3(minX, alt + 0.005, maxZ),
-        new Vector3(minX, alt + 0.005, maxZ - arm),
-      ],
-    ];
-
-    for (let i = 0; i < cornerSegments.length; i++) {
-      const cornerBracket = MeshBuilder.CreateLines(
-        `editor_corner_bracket_${i}`,
-        { points: cornerSegments[i], updatable: false },
-        this.scene
-      );
-      cornerBracket.color = new Color3(0.98, 0.75, 0.14); // #fbbf24 bright gold
-      cornerBracket.isPickable = false;
-      cornerBracket.parent = this.rootNode;
-      cornerBracket.isVisible = this.editorCameraMode;
-      this.editorMapBorderMeshes.push(cornerBracket);
-    }
-
-    // 5. Cardinal Midpoint Orientation Notches (North arrow notch, S/E/W ticks)
-    const tick = 0.4 * s;
-    const midTicks: Vector3[][] = [
-      // North (top center) arrow notch
-      [
-        new Vector3(centerX - tick * 0.5, alt + 0.005, maxZ + tick * 0.8),
-        new Vector3(centerX, alt + 0.005, maxZ + tick * 1.2),
-        new Vector3(centerX + tick * 0.5, alt + 0.005, maxZ + tick * 0.8),
-      ],
-      // South (bottom center)
-      [
-        new Vector3(centerX - tick * 0.5, alt + 0.005, minZ),
-        new Vector3(centerX + tick * 0.5, alt + 0.005, minZ),
-      ],
-      // East (right center)
-      [
-        new Vector3(maxX, alt + 0.005, centerZ - tick * 0.5),
-        new Vector3(maxX, alt + 0.005, centerZ + tick * 0.5),
-      ],
-      // West (left center)
-      [
-        new Vector3(minX, alt + 0.005, centerZ - tick * 0.5),
-        new Vector3(minX, alt + 0.005, centerZ + tick * 0.5),
-      ],
-    ];
-
-    for (let i = 0; i < midTicks.length; i++) {
-      const tickMesh = MeshBuilder.CreateLines(
-        `editor_cardinal_tick_${i}`,
-        { points: midTicks[i], updatable: false },
-        this.scene
-      );
-      tickMesh.color = new Color3(0.22, 0.74, 0.97); // Cyan tick
-      tickMesh.isPickable = false;
-      tickMesh.parent = this.rootNode;
-      tickMesh.isVisible = this.editorCameraMode;
-      this.editorMapBorderMeshes.push(tickMesh);
-    }
   }
 
   public setEditorMapBordersVisible(visible: boolean) {
