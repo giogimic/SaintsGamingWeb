@@ -1,3 +1,7 @@
+## [2.1.398] - 2026-08-20
+### Map Connection Object Unpacking Fix
+- **Black Map Return Fix (`WorldSimulation.ts`)**: Fixed a bug where edge boundary transitions into maps with JSON `MapConnection` object configurations (instead of raw strings) would incorrectly pass the entire connection object as the `targetMapId`. This caused `loadMap` to fail the string validation check and return an empty `INVALID` map, resulting in a black screen. `targetMapId` is now properly extracted.
+
 ## [2.1.397] - 2026-08-20
 ### Monolithic Map Chunk Rendering Fix
 - **Blank Map Fix (`maps.ts`)**: Resolved an issue where loading seamless neighbors on a monolithic map (like `DEMO_SANDBOX` with no legacy chunks) would cause the client to only render the neighbor chunks and completely skip rendering the main map. Monolithic maps are now safely pushed into the chunk array before fetching neighbor connections.
