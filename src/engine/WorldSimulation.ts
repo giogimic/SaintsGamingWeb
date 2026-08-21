@@ -85,7 +85,15 @@ export class WorldSimulation {
     const targetTileId = mapGrid[targetY]?.[targetX];
     const logicTile = logicTiles[targetTileId];
     
-    if (logicTile?.isSolid) {
+    // If the perimeter tile has solid wall collision (default generated border), but the player
+    // is moving towards an active adjacent Atlas connection, permit transition through the seam!
+    const isConnectedSeam = 
+      (targetY === 0 && dir === 'up' && state.connections?.north) ||
+      (targetY === mapHeight - 1 && dir === 'down' && state.connections?.south) ||
+      (targetX === 0 && dir === 'left' && state.connections?.west) ||
+      (targetX === mapWidth - 1 && dir === 'right' && state.connections?.east);
+
+    if (logicTile?.isSolid && !isConnectedSeam) {
       return { type: 'BLOCKED', direction: dir, reason: 'WALL' };
     }
 

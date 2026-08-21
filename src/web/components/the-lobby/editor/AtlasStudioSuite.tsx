@@ -264,6 +264,7 @@ export function AtlasStudioSuite() {
       const result = await res.json();
       if (res.ok && result.ok) {
         useEditorStore.getState().clearMapDirty();
+        invalidateMapCache();
         showToast('Atlas saved & 4-way map seams synchronized.');
       } else {
         showToast(result.error || 'Failed to save atlas.');

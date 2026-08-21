@@ -96,14 +96,17 @@ export async function loadMapData(mapId: string): Promise<MapData> {
     if (gameMap) {
       const grid = JSON.parse(gameMap.tilesetData || "[]");
       const npcs = JSON.parse(gameMap.npcs || "[]");
-      const gates = JSON.parse(gameMap.gates || "{}");
+      const rawGates = JSON.parse(gameMap.gates || "{}");
+      const connections = rawGates.connections || undefined;
+      const actualGates = rawGates.gates !== undefined ? rawGates.gates : rawGates;
       const encounters = JSON.parse(gameMap.encounters || "[]");
 
       const data: MapData = {
         id: gameMap.id,
         name: gameMap.name,
         grid,
-        gates,
+        gates: actualGates,
+        connections,
         npcs,
         encountersData: encounters,
         width: gameMap.width,
