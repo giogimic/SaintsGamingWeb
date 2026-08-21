@@ -1,3 +1,7 @@
+## [2.1.397] - 2026-08-20
+### Monolithic Map Chunk Rendering Fix
+- **Blank Map Fix (`maps.ts`)**: Resolved an issue where loading seamless neighbors on a monolithic map (like `DEMO_SANDBOX` with no legacy chunks) would cause the client to only render the neighbor chunks and completely skip rendering the main map. Monolithic maps are now safely pushed into the chunk array before fetching neighbor connections.
+
 ## [2.1.396] - 2026-08-20
 ### Map Coordinate Alignment Fix
 - **Map Origin Desync Fix (`BabylonEngine.ts`)**: Resolved a coordinate de-sync where legacy maps composed of sub-chunks (like `DEMO_SANDBOX`) were rendering off-screen (e.g. +48 tile offset relative to the player). `processTile` now properly centers seamless neighbor chunks relative to their own width, while legacy sub-chunks remain offset relative to the global origin of the primary map (`mapData.width/height`).
