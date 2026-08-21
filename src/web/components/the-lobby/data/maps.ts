@@ -143,8 +143,22 @@ export async function loadMap(mapId: string, depth: number = 0): Promise<GameMap
       // Phase 1: Seamless Terrain - Fetch immediate neighbors (Depth 1)
       if (depth === 0 && mapData.connections) {
         const neighborPromises: Promise<void>[] = [];
-        mapData.chunks = mapData.chunks || [];
         
+        // If the map is monolithic (no legacy chunks), we must add it as the first chunk 
+        // so that adding neighbors doesn't cause BabylonEngine to skip rendering the main map.
+        if (!mapData.chunks || mapData.chunks.length === 0) {
+          mapData.chunks = [{
+            mapId: mapData.id,
+            offsetX: 0,
+            offsetZ: 0,
+            width: mapData.width || 24,
+            height: mapData.height || 24,
+            grid: mapData.grid,
+            tileLayers: mapData.tileLayers,
+            tilesets: mapData.tilesets,
+            npcs: mapData.npcs,
+          }];
+        }
         const processConnection = (conn: string | MapConnection | undefined, direction: 'north' | 'south' | 'east' | 'west') => {
           if (!conn) return;
           const targetMapId = typeof conn === 'string' ? conn : conn.targetMapId;
