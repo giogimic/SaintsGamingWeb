@@ -183,6 +183,21 @@ export default function TheLobby({
     return () => setEditorMode(false);
   }, [enableStudio]);
 
+  // Infallible safety watchdog: never let the client remain permanently trapped in a black transition curtain
+  useEffect(() => {
+    if (!isMapTransitioning) return;
+    const timer = setTimeout(() => {
+      const live = useGameStore.getState();
+      if (live.isMapTransitioning) {
+        live.setIsMapTransitioning(false);
+        if (live.worldSessionState === 'transitioning') {
+          live.setWorldSessionState('joined');
+        }
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [isMapTransitioning]);
+
   const [activeCharacterId, setActiveCharacterId] = useState<string | undefined>(initialCharacterId);
   const [userCharacters, setUserCharacters] = useState<any[]>([]);
   const [showSelector, setShowSelector] = useState(false);
