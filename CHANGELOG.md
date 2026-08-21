@@ -1,3 +1,7 @@
+## [2.1.400] - 2026-08-21
+### Map Vignette Syntax Fix
+- **ImageProcessingConfiguration**: Fixed a compilation error where `VIGNETTEMODE_MULTIPLY` was incorrectly referenced on `ImageProcessingPostProcess` instead of `ImageProcessingConfiguration`.
+
 ## [2.1.399] - 2026-08-21
 ### Seamless Map Streaming (Phases 1-4 Complete)
 - **Streaming Architecture**: Implemented async `ChunkStreamingQueue`, isolated `contentCache`, `RenderedChunk` batching, and exponential retry backoff.

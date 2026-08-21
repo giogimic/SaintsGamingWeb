@@ -20,6 +20,7 @@ import {
   Matrix,
   LinesMesh,
   ImageProcessingPostProcess,
+  ImageProcessingConfiguration,
 } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Rectangle, TextBlock } from '@babylonjs/gui';
 import { TILESET_SIZES } from "../web/components/the-lobby/data/tileset-sizes";
@@ -378,7 +379,7 @@ export class BabylonEngine {
     this.vignettePostProcess.vignetteEnabled = true;
     this.vignettePostProcess.vignetteWeight = 1.5;
     this.vignettePostProcess.vignetteColor = new Color4(0, 0, 0, 1);
-    this.vignettePostProcess.vignetteBlendMode = ImageProcessingPostProcess.VIGNETTEMODE_MULTIPLY;
+    this.vignettePostProcess.vignetteBlendMode = ImageProcessingConfiguration.VIGNETTEMODE_MULTIPLY;
     this.camera.setTarget(Vector3.Zero());
     this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
 
