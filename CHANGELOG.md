@@ -1,3 +1,12 @@
+## [2.1.395] - 2026-08-20
+### Seamless Client-Side Map Transitions
+- **Seamless Engine Rendering (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`):**
+  - Updated `GameCanvasBabylon` to parse edge connection warp objects and emit a global `worldOriginOffset` before handing the player over to the server for map transfers.
+  - Implemented continuous camera offsetting during edge warps; the player coordinate mathematically maps to the neighbor chunk smoothly so the visuals never hitch.
+  - Updated player loop and entity renderers (multiplayer peers, static NPCs, dynamic entities) to offset against `worldOriginOffset`.
+- **Edge Transition Logic (`WorldSimulation.ts`):**
+  - Configured `tryMove` to emit `isEdgeConnection` with boundary metadata when the player walks into a loaded adjacent chunk.
+  
 ## [2.1.390] - 2026-08-20
 ### Modern Drafting Artboard Frame & Precise Viewport Centering
 - **Precision Studio Artboard Frame (`BabylonEngine.ts`, `spatialLayers.ts`):**
