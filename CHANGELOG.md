@@ -1,3 +1,7 @@
+## [2.1.396] - 2026-08-20
+### Map Coordinate Alignment Fix
+- **Map Origin Desync Fix (`BabylonEngine.ts`)**: Resolved a coordinate de-sync where legacy maps composed of sub-chunks (like `DEMO_SANDBOX`) were rendering off-screen (e.g. +48 tile offset relative to the player). `processTile` now properly centers seamless neighbor chunks relative to their own width, while legacy sub-chunks remain offset relative to the global origin of the primary map (`mapData.width/height`).
+
 ## [2.1.395] - 2026-08-20
 ### Seamless Client-Side Map Transitions
 - **Seamless Engine Rendering (`BabylonEngine.ts`, `GameCanvasBabylon.tsx`):**

@@ -987,7 +987,7 @@ export class BabylonEngine {
           }];
 
       // Ensure we treat the map as 32x32 chunks, regardless of input structure
-      const processTile = (r: number, c: number, absR: number, absC: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number, chunkWidth: number, chunkHeight: number, chunkTilesets: any[]) => {
+      const processTile = (r: number, c: number, absR: number, absC: number, layer: any, layerIdx: number, chunkOffsetX: number, chunkOffsetZ: number, chunkWidth: number, chunkHeight: number, chunkTilesets: any[], centerWidth: number, centerHeight: number) => {
         const rawGid = layer.grid[r]?.[c] ?? 0;
         const gid = stripTiledGidFlags(rawGid);
         if (gid === 0) return;
@@ -1000,8 +1000,8 @@ export class BabylonEngine {
         const chunkC = Math.floor(absC / CHUNK_SIZE);
         const chunkKey = `${ts.imageSource}_${chunkR}_${chunkC}`;
 
-        const localX = (c - chunkWidth / 2) * tileSize;
-        const localZ = (chunkHeight / 2 - r) * tileSize;
+        const localX = (c - centerWidth / 2) * tileSize;
+        const localZ = (centerHeight / 2 - r) * tileSize;
         const posX = localX + chunkOffsetX;
         const posZ = localZ + chunkOffsetZ;
         const y = layerIdx * 0.02;
@@ -1048,12 +1048,15 @@ export class BabylonEngine {
         const tileOffsetX = (chunk.offsetX !== undefined ? Math.floor(chunk.offsetX) : (chunk.chunkX || 0) * chunk.width) + (seamlessOffset ? seamlessOffset.x : 0);
         const tileOffsetZ = (chunk.offsetZ !== undefined ? Math.floor(-chunk.offsetZ) : (chunk.chunkY || 0) * chunk.height) - (seamlessOffset ? seamlessOffset.y : 0);
 
+        const centerWidth = chunk.offsetX !== undefined ? chunk.width : width;
+        const centerHeight = chunk.offsetZ !== undefined ? chunk.height : height;
+
         chunk.tileLayers.forEach((layer, layerIdx) => {
           for (let r = 0; r < chunk.height; r++) {
             const absR = tileOffsetZ + r;
             for (let c = 0; c < chunk.width; c++) {
               const absC = tileOffsetX + c;
-              processTile(r, c, absR, absC, layer, layerIdx, chunkOffsetX, chunkOffsetZ, chunk.width, chunk.height, chunkTilesets);
+              processTile(r, c, absR, absC, layer, layerIdx, chunkOffsetX, chunkOffsetZ, chunk.width, chunk.height, chunkTilesets, centerWidth, centerHeight);
             }
           }
         });
