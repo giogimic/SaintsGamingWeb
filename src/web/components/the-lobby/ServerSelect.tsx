@@ -7,8 +7,7 @@ import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { soundSynth } from '@/engine/sound-synth';
-import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
-import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
+import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 
 interface ServerInfo {
   id: string;
@@ -119,9 +118,12 @@ export default function ServerSelect() {
     }, 600);
   };
 
-  const server = servers[0];
-  const isServerOnline = server?.status === 'online';
-  const fillPct = server ? Math.round((server.players / server.capacity) * 100) : 0;
+  const currentServer = servers[0];
+  const isServerOnline = currentServer?.status === 'online';
+  const isOnline = isServerOnline;
+  const players = currentServer?.players ?? 0;
+  const capacity = currentServer?.capacity ?? 500;
+  const fillPct = Math.min(100, Math.round((players / capacity) * 100));
   const fillColor =
     fillPct > 80 ? '#ef4444' :
     fillPct > 50 ? '#ffbe0b' :
@@ -130,26 +132,10 @@ export default function ServerSelect() {
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500 select-none font-sans"
-      style={{ backgroundColor: '#0d0221' }}
+      style={{ backgroundColor: '#050014' }}
     >
-      {/* Synthwave Horizon Grid Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute top-0 w-full h-[60vh]"
-          style={{ background: 'linear-gradient(to bottom, #0d0221 0%, #3a0ca3 45%, #f20089 100%)', opacity: 0.8 }}
-        />
-        <div
-          className="absolute bottom-0 w-full h-[40vh] origin-top opacity-50"
-          style={{
-            backgroundImage:
-              'linear-gradient(transparent 65%, #f20089 100%), repeating-linear-gradient(0deg, transparent, transparent 19px, #f20089 20px), repeating-linear-gradient(90deg, transparent, transparent 39px, #f20089 40px)',
-            transform: 'perspective(500px) rotateX(60deg)',
-          }}
-        />
-      </div>
-
-      <DigitalSnowV5 />
-      <PalmCanopyVignetteV5 />
+      {/* Midnight Tropical Dynamic Horizon Background */}
+      <MidnightTropicalBackground />
 
       {/* Back button */}
       <button

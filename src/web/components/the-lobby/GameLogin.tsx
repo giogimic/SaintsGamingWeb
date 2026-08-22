@@ -5,8 +5,7 @@ import { useGameStore } from './store';
 import { signIn } from 'next-auth/react';
 import { X, LogIn, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
-import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
-import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
+import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 
 export default function GameLogin() {
   const setGameMode = useGameStore((state) => state.setGameMode);
@@ -55,29 +54,13 @@ export default function GameLogin() {
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[210] flex items-center justify-center animate-in fade-in duration-300 select-none font-sans"
-      style={{ backgroundColor: '#0d0221' }}
+      style={{ backgroundColor: '#050014' }}
     >
-      {/* Synthwave Horizon Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute top-0 w-full h-[60vh]"
-          style={{ background: 'linear-gradient(to bottom, #0d0221 0%, #3a0ca3 45%, #f20089 100%)', opacity: 0.8 }}
-        />
-        <div
-          className="absolute bottom-0 w-full h-[40vh] origin-top opacity-50"
-          style={{
-            backgroundImage:
-              'linear-gradient(transparent 65%, #f20089 100%), repeating-linear-gradient(0deg, transparent, transparent 19px, #f20089 20px), repeating-linear-gradient(90deg, transparent, transparent 39px, #f20089 40px)',
-            transform: 'perspective(500px) rotateX(60deg)',
-          }}
-        />
-      </div>
-
-      <DigitalSnowV5 />
-      <PalmCanopyVignetteV5 />
+      {/* Midnight Tropical Dynamic Horizon Background */}
+      <MidnightTropicalBackground />
 
       <div
-        className="relative w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-300 rounded-2xl border border-pink-500/40 overflow-hidden bg-[#0a0318]/95 shadow-[0_0_60px_rgba(242,0,137,0.3)] z-10"
+        className="relative w-full max-w-sm mx-4 animate-in fade-in zoom-in-95 duration-300 rounded-2xl border border-[#00f5d4]/40 overflow-hidden bg-[#050014]/90 backdrop-blur-xl shadow-[0_0_60px_rgba(0,245,212,0.25)] z-10"
         style={{
           clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
         }}
