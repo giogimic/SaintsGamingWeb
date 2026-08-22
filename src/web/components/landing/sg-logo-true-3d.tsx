@@ -143,7 +143,7 @@ function VoxelFrame() {
 
 export function SGVoxelLogo() {
   return (
-    <div className="w-full h-full min-h-[300px] cursor-grab active:cursor-grabbing relative z-50">
+    <div className="w-full h-full min-h-[300px] cursor-grab active:cursor-grabbing relative z-50 pointer-events-auto">
       <Canvas camera={{ position: [0, 0, 45], fov: 40 }}>
         <Suspense fallback={null}>
           <OrbitControls 

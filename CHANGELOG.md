@@ -1,3 +1,9 @@
+## [2.1.403] - 2026-08-22
+### Midnight Tropical Landing Page Theme
+- **Landing Page**: Implemented the Midnight Tropical aesthetic on the main landing page with interactive 3D voxel logo orbit controls and clean CTA buttons.
+- **Pointer Events**: Ensured all background layers (sun, water, stars, palm silhouettes, atmospheric pixel particles, and color gradient overlays) pass pointer events through seamlessly so that 3D logo spinning and button interactions are completely unobstructed.
+- **Landing Prototype**: Added the "Original" landing style option to the desktop landing page style switcher catalog.
+
 ## [2.1.402] - 2026-08-22
 ### Map Streaming Atlas Fix
 - **Atlas Streaming**: Maps placed multiple times in the World Atlas now correctly stream their respective visual neighbors. `loadMap` dynamically computes connections using the client Atlas layout instead of relying on static database connections.
