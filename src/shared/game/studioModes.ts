@@ -36,6 +36,7 @@ export type StudioDockId =
   | 'prefab'
   | 'atlas'
   | 'problems'
+  | 'streaming'
   | 'gameplay';
 
 /** Map stable internal ids → canonical engine-editor labels. */
@@ -169,6 +170,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   problems: {
     label: 'Problems',
     blurb: 'Live validation diagnostics, broken warps, and entity collision checks.',
+  },
+  streaming: {
+    label: 'Streaming Inspector',
+    blurb: 'Monitor chunk loading and offloading for seamless world streaming.',
   },
   gameplay: {
     label: 'Gameplay Hub',
