@@ -1,3 +1,9 @@
+## [2.1.401] - 2026-08-22
+### Build Fixes
+- **Build**: Fixed duplicate block in `settings.ts`.
+- **Studio**: Made `currentMapId` public in `BabylonEngine.ts`.
+- **Studio**: Added missing `streaming` panel to `StudioDockId` and `STUDIO_DOCK_META`.
+
 ## [2.1.400] - 2026-08-21
 ### Map Vignette Syntax Fix
 - **ImageProcessingConfiguration**: Fixed a compilation error where `VIGNETTEMODE_MULTIPLY` was incorrectly referenced on `ImageProcessingPostProcess` instead of `ImageProcessingConfiguration`.

@@ -196,7 +196,7 @@ export class BabylonEngine {
   private indoorWallTexture?: DynamicTexture;
   private waterTexture?: DynamicTexture;
   private waterAnimTime: number = 0;
-  private currentMapId: string = '';
+  public currentMapId: string = '';
   private currentMapWidth: number = 24;
   private currentMapHeight: number = 24;
 
