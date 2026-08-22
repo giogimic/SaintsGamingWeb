@@ -116,11 +116,11 @@ export function StaffFloatingMenu({
 
               <div>
                 <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1.5 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-cyan-400" /> Nearby Operatives ({nearby.length})
+                  <Users className="w-3.5 h-3.5 text-cyan-400" /> Nearby Saints ({nearby.length})
                 </div>
                 {nearby.length === 0 ? (
                   <p className="text-[11px] text-slate-500 italic p-2 bg-black/40 rounded-lg border border-slate-800">
-                    No other operatives visible on this map.
+                    No other saints visible on this map.
                   </p>
                 ) : (
                   <ul className="space-y-1.5">

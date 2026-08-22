@@ -14,6 +14,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Badge } from "@/shared/ui/badge";
 import { buttonVariants } from "@/shared/ui/button";
 import { Separator } from "@/shared/ui/separator";
+import { prisma } from "@/web/lib/prisma";
+import {
+  DEFAULT_REALM_NAME,
+  DEFAULT_REALM_DESCRIPTION,
+  SETUP_SETTING_KEYS,
+} from "@/shared/game/setup/setupDetection";
 
 export const metadata: Metadata = {
   title: "Home",
@@ -21,50 +27,64 @@ export const metadata: Metadata = {
     "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
 };
 
-const FEATURES = [
-  {
-    icon: Gamepad2,
-    title: "Saints MMO / The Lobby",
-    description: "Step into our 2.5D online multiplayer realm. Capture companion spirits, level 27 skills, build worlds, and explore shards together.",
-    href: "/lobby",
-    color: "text-amber-400",
-    badge: "Live Game",
-    highlight: true,
-  },
-  {
-    icon: Newspaper,
-    title: "News & Opinions",
-    description: "Gaming takes, updates, and community news from our writers.",
-    href: "/news",
-    color: "text-blue-400",
-  },
-  {
-    icon: Package,
-    title: "Modpacks",
-    description:
-      "Browse our Minecraft modpacks — active and archived. Easy to explore.",
-    href: "/modpacks",
-    color: "text-green-400",
-  },
-  {
-    icon: MessageSquare,
-    title: "Forum",
-    description:
-      "Join the conversation. Discuss games, share tips, and connect with the community.",
-    href: "/forum",
-    color: "text-purple-400",
-  },
-  {
-    icon: Monitor,
-    title: "Streams",
-    description:
-      "Watch community members live. Featured streams and stream showcases.",
-    href: "/streams",
-    color: "text-red-400",
-  },
-];
+export default async function HomePage() {
+  let realmName = DEFAULT_REALM_NAME;
+  let realmDescription = DEFAULT_REALM_DESCRIPTION;
 
-export default function HomePage() {
+  try {
+    const [nameSetting, descSetting] = await Promise.all([
+      prisma.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_NAME } }),
+      prisma.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_DESCRIPTION } }),
+    ]);
+    if (nameSetting?.value?.trim()) realmName = nameSetting.value.trim();
+    if (descSetting?.value?.trim()) realmDescription = descSetting.value.trim();
+  } catch (error) {
+    console.error("[HomePage] Failed to fetch realm settings:", error);
+  }
+
+  const features = [
+    {
+      icon: Gamepad2,
+      title: realmName,
+      description: realmDescription,
+      href: "/lobby",
+      color: "text-amber-400",
+      badge: "Live Game",
+      highlight: true,
+    },
+    {
+      icon: Newspaper,
+      title: "News & Opinions",
+      description: "Gaming takes, updates, and community news from our writers.",
+      href: "/news",
+      color: "text-blue-400",
+    },
+    {
+      icon: Package,
+      title: "Modpacks",
+      description:
+        "Browse our Minecraft modpacks — active and archived. Easy to explore.",
+      href: "/modpacks",
+      color: "text-green-400",
+    },
+    {
+      icon: MessageSquare,
+      title: "Forum",
+      description:
+        "Join the conversation. Discuss games, share tips, and connect with the community.",
+      href: "/forum",
+      color: "text-purple-400",
+    },
+    {
+      icon: Monitor,
+      title: "Streams",
+      description:
+        "Watch community members live. Featured streams and stream showcases.",
+      href: "/streams",
+      color: "text-red-400",
+    },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* ─── Hero Section ────────────────────────────────────────── */}
@@ -105,7 +125,7 @@ export default function HomePage() {
             })}
           >
             <Gamepad2 className="mr-2 h-5 w-5 fill-current" />
-            Play Saints MMO
+            Play {realmName}
           </Link>
           <Link 
             href="/forum"
@@ -135,7 +155,7 @@ export default function HomePage() {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map(({ icon: Icon, title, description, href, color, badge, highlight }) => (
+          {features.map(({ icon: Icon, title, description, href, color, badge, highlight }) => (
             <Link key={href} href={href} className={`group ${highlight ? "sm:col-span-2 lg:col-span-2" : ""}`}>
               <Card className={`h-full sg-3d-card transition-all ${highlight ? "bg-gradient-to-br from-amber-950/30 via-slate-900/60 to-emerald-950/30 border-amber-500/40 shadow-xl hover:border-amber-400" : "bg-card/50"}`}>
                 <CardHeader className="pb-3">

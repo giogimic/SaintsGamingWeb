@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
+import { normalizeAtlasGridData } from "@/shared/game/atlas/spatialAtlas";
 
 export const dynamic = 'force-dynamic';
 
@@ -72,6 +73,12 @@ export async function GET(request: Request) {
       }
     }
 
+    // Guarantee all nodes in payload have stable node IDs
+    try {
+      const parsedObj = typeof finalAtlasData === 'string' ? JSON.parse(finalAtlasData) : finalAtlasData;
+      finalAtlasData = JSON.stringify(normalizeAtlasGridData(parsedObj));
+    } catch {}
+
     return NextResponse.json({
       ok: true,
       atlas: {
@@ -113,9 +120,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const gameId = body.gameId || "tuxemon";
     const lobbyMapId = body.lobbyMapId || "LOBBY";
-    const atlasData = typeof body.atlasData === 'string'
-      ? body.atlasData
-      : JSON.stringify(body.atlasData || { nodes: [], edges: [] });
+    const rawAtlasData = typeof body.atlasData === 'string'
+      ? JSON.parse(body.atlasData || '{"nodes":[]}')
+      : (body.atlasData || { nodes: [], edges: [] });
+    const atlasData = JSON.stringify(normalizeAtlasGridData(rawAtlasData));
     const connectionsByMap = body.connectionsByMap as Record<string, { north?: string; south?: string; east?: string; west?: string }> | undefined;
 
     let atlasResult: any = null;

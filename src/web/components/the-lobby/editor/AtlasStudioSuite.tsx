@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
-import { loadMap } from '../data/maps';
+import { loadMap, invalidateClientAtlas } from '../data/maps';
 import { MapIndexEntry, searchMapIndex, unregisterMap } from '../data/map-index';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { buildNewStudioMap, formatMapWriteError, resizeStudioMap } from '@/shared/game/studioMapCreate';
@@ -43,6 +43,12 @@ import { invalidateMapCache } from '@/shared/game/mapCache';
 import { soundSynth } from '@/engine/sound-synth';
 import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
+import {
+  type AtlasNode,
+  type AtlasGridData,
+  createAtlasNodeId,
+  normalizeAtlasGridData,
+} from '@/shared/game/atlas/spatialAtlas';
 
 // ─── Sub-Studio Workspaces ───────────────────────────────────────────────────
 export type AtlasWorkspaceId = 'grid' | 'explorer' | 'generator' | 'boundaries';
@@ -83,14 +89,9 @@ const WORKSPACE_META: Record<AtlasWorkspaceId, AtlasWorkspaceMeta> = {
 
 const WORKSPACE_ORDER: AtlasWorkspaceId[] = ['grid', 'explorer', 'generator', 'boundaries'];
 
-export interface AtlasNode {
-  mapId: string;
-  x: number;
-  y: number;
-}
+export type { AtlasNode };
 
-export interface WorldAtlasData {
-  nodes: AtlasNode[];
+export interface WorldAtlasData extends AtlasGridData {
   edges: any[];
   bufferPresets?: any[];
   options?: {
@@ -185,7 +186,8 @@ export function AtlasStudioSuite() {
               parsed = { nodes: [], edges: [] };
             }
           }
-          setAtlasData(parsed || { nodes: [], edges: [] });
+          const normalized = normalizeAtlasGridData(parsed);
+          setAtlasData(normalized as WorldAtlasData);
           setLobbyMapId(data.atlas.lobbyMapId || 'LOBBY');
         }
       }
@@ -265,6 +267,7 @@ export function AtlasStudioSuite() {
       if (res.ok && result.ok) {
         useEditorStore.getState().clearMapDirty();
         invalidateMapCache();
+        invalidateClientAtlas();
         showToast('Atlas saved & 4-way map seams synchronized.');
       } else {
         showToast(result.error || 'Failed to save atlas.');
@@ -285,13 +288,19 @@ export function AtlasStudioSuite() {
       const existingNodeIdx = atlasData.nodes.findIndex((n) => n.x === x && n.y === y);
       const newNodes = [...atlasData.nodes];
       if (existingNodeIdx >= 0) {
-        newNodes[existingNodeIdx] = { mapId: selectedMapIdToPlace, x, y };
+        const ex = atlasData.nodes[existingNodeIdx];
+        const id = ex.mapId === selectedMapIdToPlace && ex.id ? ex.id : createAtlasNodeId(selectedMapIdToPlace);
+        const updatedNode: AtlasNode = { id, mapId: selectedMapIdToPlace, x, y };
+        newNodes[existingNodeIdx] = updatedNode;
+        setSelectedNode(updatedNode);
       } else {
-        newNodes.push({ mapId: selectedMapIdToPlace, x, y });
+        const id = createAtlasNodeId(selectedMapIdToPlace);
+        const newNode: AtlasNode = { id, mapId: selectedMapIdToPlace, x, y };
+        newNodes.push(newNode);
+        setSelectedNode(newNode);
       }
       setAtlasData({ ...atlasData, nodes: newNodes });
       setSelectedMapIdToPlace(null);
-      setSelectedNode({ mapId: selectedMapIdToPlace, x, y });
       useEditorStore.getState().markMapDirty();
     } else if (existingNode) {
       soundSynth?.playSelectSound?.();

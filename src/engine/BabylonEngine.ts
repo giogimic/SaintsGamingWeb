@@ -210,6 +210,21 @@ export class BabylonEngine {
   private currentTileSize: number = 1;
   private tilesetTextureCache: Map<string, Texture> = new Map();
   private tilesetMaterialCache: Map<string, StandardMaterial> = new Map();
+  private static failedSpriteUrls: Set<string> = new Set();
+
+  public static isSpriteUrlFailed(url?: string | null): boolean {
+    if (!url) return false;
+    const raw = url.split('?')[0];
+    return BabylonEngine.failedSpriteUrls.has(raw) || BabylonEngine.failedSpriteUrls.has(url);
+  }
+
+  public static markSpriteUrlFailed(url?: string | null): void {
+    if (!url) return;
+    const raw = url.split('?')[0];
+    BabylonEngine.failedSpriteUrls.add(raw);
+    BabylonEngine.failedSpriteUrls.add(url);
+  }
+
   /** Studio paint overlays — fallback when batched remesh cannot patch a cell. */
   private paintOverlayMeshes: Map<string, Mesh> = new Map();
   /** layerIdx_r_c → quad in a `tileset_mesh_*` (live remesh). */
@@ -3345,7 +3360,7 @@ private resolveTilePick(
       // Draw after ground (group 0) so characters always composite on top.
       spriteMesh.renderingGroupId = 1;
 
-      if (entity.spriteUrl) {
+      if (entity.spriteUrl && !BabylonEngine.isSpriteUrlFailed(entity.spriteUrl)) {
         // Always invertY=true (Babylon default). Re-apply UV in onLoad — Babylon can
         // reset transforms when the image bytes arrive, which showed full 3×4 sheets.
         // Unique URL per mesh so Babylon's texture cache can't share UV state.
@@ -3395,8 +3410,12 @@ private resolveTilePick(
             }
           },
           () => {
-            console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
+            BabylonEngine.markSpriteUrlFailed(entity.spriteUrl);
+            console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
             this.applyDefaultPlayerFallback(createdMesh, mat);
+            if (createdMesh.metadata) {
+              createdMesh.metadata.spriteUrl = entity.spriteUrl;
+            }
           }
         );
         tex.hasAlpha = true;
@@ -3427,6 +3446,9 @@ private resolveTilePick(
         mat.diffuseTexture = tex;
       } else if (this.defaultPlayerTexture) {
         this.applyDefaultPlayerFallback(createdMesh, mat);
+        if (createdMesh.metadata) {
+          createdMesh.metadata.spriteUrl = entity.spriteUrl || "defaultPlayerTex";
+        }
       }
 
       spriteMesh.material = mat;
@@ -3479,67 +3501,78 @@ private resolveTilePick(
       if (mat) {
         // If the URL changed (and it's not falling back to the default dynamic texture)
         if (entity.spriteUrl && currentUrl !== entity.spriteUrl) {
-          const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
-          const newTex = new Texture(
-            texUrl,
-            this.scene,
-            true,
-            true,
-            Texture.NEAREST_SAMPLINGMODE,
-            () => {
-              const size = newTex.getBaseSize();
-              if (size.width > 0 && size.height > 0) {
-                if (existingMesh.metadata) {
-                  existingMesh.metadata.spriteDimensions = { width: size.width, height: size.height };
-                }
-                const updatedDef = resolveSpriteDefinition({
-                  animationProfile: entity.animationProfile,
-                  spriteUrl: entity.spriteUrl,
-                  width: size.width,
-                  height: size.height,
-                  spriteConfig: entity.spriteConfig,
-                });
-                const updatedConfig = spriteDefinitionToBabylonConfig(updatedDef);
-                if (existingMesh.metadata) {
-                  existingMesh.metadata.spriteConfig = updatedConfig;
-                }
-                this.applySpriteSheetUv(newTex, updatedConfig);
-                const isSingle = updatedConfig.columns <= 1 && updatedConfig.rows <= 1;
-                if (isSingle) {
-                  this.setSpriteCellUVs(existingMesh, 0, 0, 1, 1);
-                  if (existingMesh.metadata) existingMesh.metadata.uvFullFrame = true;
-                } else {
-                  const dir = (existingMesh.metadata?.direction || 'down') as 'down' | 'left' | 'right' | 'up';
-                  const rowIdx = (updatedConfig.directions as Record<string, number>)[dir] ?? updatedConfig.directions.down;
-                  const col = updatedConfig.idleFrame;
-                  this.setSpriteCellUVs(existingMesh, col, rowIdx, updatedConfig.columns, updatedConfig.rows);
-                  if (existingMesh.metadata) {
-                    existingMesh.metadata.uvCol = col;
-                    existingMesh.metadata.uvRow = rowIdx;
-                    existingMesh.metadata.uvCols = updatedConfig.columns;
-                    existingMesh.metadata.uvRows = updatedConfig.rows;
-                  }
-                }
-              } else {
-                this.applySpriteSheetUv(newTex, resolvedConfig);
-              }
-            },
-            () => {
-              console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl}`);
-              this.applyDefaultPlayerFallback(existingMesh, mat);
+          if (BabylonEngine.isSpriteUrlFailed(entity.spriteUrl)) {
+            this.applyDefaultPlayerFallback(existingMesh, mat);
+            if (existingMesh.metadata) {
+              existingMesh.metadata.spriteUrl = entity.spriteUrl;
             }
-          );
-          newTex.hasAlpha = true;
-          this.applySpriteSheetUv(newTex, resolvedConfig);
-          if (spriteMesh.metadata) {
-            spriteMesh.metadata.spriteConfig = resolvedConfig;
-            spriteMesh.metadata.spriteUrl = entity.spriteUrl;
-            // Force UV cell recompute next anim tick
-            spriteMesh.metadata.uvCol = undefined;
-            spriteMesh.metadata.uvRow = undefined;
-            spriteMesh.metadata.uvFullFrame = false;
+          } else {
+            const texUrl = `${entity.spriteUrl}${entity.spriteUrl.includes("?") ? "&" : "?"}mesh=${encodeURIComponent(entity.id)}`;
+            const newTex = new Texture(
+              texUrl,
+              this.scene,
+              true,
+              true,
+              Texture.NEAREST_SAMPLINGMODE,
+              () => {
+                const size = newTex.getBaseSize();
+                if (size.width > 0 && size.height > 0) {
+                  if (existingMesh.metadata) {
+                    existingMesh.metadata.spriteDimensions = { width: size.width, height: size.height };
+                  }
+                  const updatedDef = resolveSpriteDefinition({
+                    animationProfile: entity.animationProfile,
+                    spriteUrl: entity.spriteUrl,
+                    width: size.width,
+                    height: size.height,
+                    spriteConfig: entity.spriteConfig,
+                  });
+                  const updatedConfig = spriteDefinitionToBabylonConfig(updatedDef);
+                  if (existingMesh.metadata) {
+                    existingMesh.metadata.spriteConfig = updatedConfig;
+                  }
+                  this.applySpriteSheetUv(newTex, updatedConfig);
+                  const isSingle = updatedConfig.columns <= 1 && updatedConfig.rows <= 1;
+                  if (isSingle) {
+                    this.setSpriteCellUVs(existingMesh, 0, 0, 1, 1);
+                    if (existingMesh.metadata) existingMesh.metadata.uvFullFrame = true;
+                  } else {
+                    const dir = (existingMesh.metadata?.direction || 'down') as 'down' | 'left' | 'right' | 'up';
+                    const rowIdx = (updatedConfig.directions as Record<string, number>)[dir] ?? updatedConfig.directions.down;
+                    const col = updatedConfig.idleFrame;
+                    this.setSpriteCellUVs(existingMesh, col, rowIdx, updatedConfig.columns, updatedConfig.rows);
+                    if (existingMesh.metadata) {
+                      existingMesh.metadata.uvCol = col;
+                      existingMesh.metadata.uvRow = rowIdx;
+                      existingMesh.metadata.uvCols = updatedConfig.columns;
+                      existingMesh.metadata.uvRows = updatedConfig.rows;
+                    }
+                  }
+                } else {
+                  this.applySpriteSheetUv(newTex, resolvedConfig);
+                }
+              },
+              () => {
+                BabylonEngine.markSpriteUrlFailed(entity.spriteUrl);
+                console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
+                this.applyDefaultPlayerFallback(existingMesh, mat);
+                if (existingMesh.metadata) {
+                  existingMesh.metadata.spriteUrl = entity.spriteUrl;
+                }
+              }
+            );
+            newTex.hasAlpha = true;
+            this.applySpriteSheetUv(newTex, resolvedConfig);
+            if (spriteMesh.metadata) {
+              spriteMesh.metadata.spriteConfig = resolvedConfig;
+              spriteMesh.metadata.spriteUrl = entity.spriteUrl;
+              // Force UV cell recompute next anim tick
+              spriteMesh.metadata.uvCol = undefined;
+              spriteMesh.metadata.uvRow = undefined;
+              spriteMesh.metadata.uvFullFrame = false;
+            }
+            mat.diffuseTexture = newTex;
           }
-          mat.diffuseTexture = newTex;
         } else if (!entity.spriteUrl && currentUrl !== 'defaultPlayerTex' && this.defaultPlayerTexture) {
           this.applyDefaultPlayerFallback(existingMesh, mat);
         }

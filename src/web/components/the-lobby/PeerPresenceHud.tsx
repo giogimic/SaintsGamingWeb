@@ -66,7 +66,7 @@ export default function PeerPresenceHud() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="text-slate-400 font-bold uppercase text-[9px]">OPERATIVES:</span>
+            <span className="text-slate-400 font-bold uppercase text-[9px]">SAINTS:</span>
           </div>
           <span
             className={
@@ -87,9 +87,9 @@ export default function PeerPresenceHud() {
                 type="button"
                 onClick={() => handleSelectPeer(socketId, p)}
                 className="px-2 py-0.5 rounded-md bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-200 text-[9px] font-bold truncate max-w-[95px] transition-colors cursor-pointer active:scale-95"
-                title={`Target ${p.name || 'Operative'}`}
+                title={`Target ${p.name || 'Saint'}`}
               >
-                {p.name || 'Operative'}
+                {p.name || 'Saint'}
               </button>
             ))}
             {count > 4 && (
@@ -98,7 +98,7 @@ export default function PeerPresenceHud() {
           </div>
         ) : (
           <div className="text-slate-500 italic text-[9px]">
-            No operatives in sector range
+            No saints in sector range
           </div>
         )}
       </HudPanelShell>

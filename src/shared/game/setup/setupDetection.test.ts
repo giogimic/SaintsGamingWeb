@@ -15,6 +15,7 @@ describe('evaluateSetupStatus', () => {
     expect(status.mapCount).toBe(0);
     expect(status.hasAdmin).toBe(false);
     expect(status.realmName).toBe(DEFAULT_REALM_NAME);
+    expect(status.realmDescription).toBe('The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~');
     expect(status.defaultMapId).toBeNull();
   });
 
@@ -25,6 +26,7 @@ describe('evaluateSetupStatus', () => {
       userCount: 10,
       adminCount: 2,
       realmNameSettingVal: 'Custom Realm',
+      realmDescriptionSettingVal: 'Custom Tagline',
       defaultMapIdSettingVal: 'TOWN_CENTER',
     });
 
@@ -33,6 +35,7 @@ describe('evaluateSetupStatus', () => {
     expect(status.mapCount).toBe(5);
     expect(status.hasAdmin).toBe(true);
     expect(status.realmName).toBe('Custom Realm');
+    expect(status.realmDescription).toBe('Custom Tagline');
     expect(status.defaultMapId).toBe('TOWN_CENTER');
   });
 

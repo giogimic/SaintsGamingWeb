@@ -128,7 +128,7 @@ export const PlayerVitalsHud: React.FC = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
               <h2 className="truncate text-xs font-black tracking-wide text-white">
-                {player.name || 'Operative'}
+                {player.name || 'Saint'}
               </h2>
               <span className="px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-400/50 text-[#00f5d4] text-[9px] font-extrabold shadow-[0_0_6px_rgba(0,245,212,0.3)]">
                 LVL {level}

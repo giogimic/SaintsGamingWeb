@@ -100,7 +100,7 @@ export function CharacterSelector({
     {
       id: 'sys-1',
       sender: 'Saints Gateway',
-      text: 'Welcome to the Saints Gaming MMO Vault. Select an operative to enter the live world.',
+      text: 'Welcome to the Saints Gaming MMO Vault. Select a Saint to enter the live world.',
       timestamp: Date.now() - 60000,
       type: 'SYSTEM',
     },
@@ -235,7 +235,7 @@ export function CharacterSelector({
               filter: 'drop-shadow(0 0 15px rgba(242,0,137,0.5))',
             }}
           >
-            OPERATIVE VAULT
+            SAINTS VAULT
           </h1>
         </div>
 
@@ -254,7 +254,7 @@ export function CharacterSelector({
           <div className="mb-3 flex items-center justify-between">
             <p className="text-cyan-200/80 text-xs tracking-[0.2em] uppercase font-mono flex items-center gap-2">
               <Layers size={14} className="text-[#00f5d4]" />
-              Select Active Operative ({characters.length})
+              Select Active Saint ({characters.length})
             </p>
             <button
               onClick={() => {
@@ -387,7 +387,7 @@ export function CharacterSelector({
                           setDeleteModalChar({ id: char.id, name: char.name });
                         }}
                         className="p-2 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/40 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                        title="Delete Operative"
+                        title="Delete Saint"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -397,7 +397,7 @@ export function CharacterSelector({
               );
             })}
 
-            {/* Create New Operative Card */}
+            {/* Create New Saint Card */}
             <div
               onClick={() => {
                 soundSynth?.playActionSound?.();
@@ -419,9 +419,9 @@ export function CharacterSelector({
                   <Plus className="w-6 h-6 text-[#00f5d4] group-hover:text-white transition-colors" strokeWidth={2.5} />
                 </div>
                 <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffbe0b] to-[#00f5d4] uppercase tracking-widest font-mono">
-                  FORGE NEW HERO
+                  FORGE NEW SAINT
                 </p>
-                <p className="text-[10px] text-slate-300 font-mono mt-1">Create operative & customize skills</p>
+                <p className="text-[10px] text-slate-300 font-mono mt-1">Create Saint & customize skills</p>
               </div>
             </div>
           </div>
@@ -475,11 +475,11 @@ export function CharacterSelector({
               <div className="space-y-2 overflow-y-auto max-h-[320px] pr-1">
                 {loadingLeaderboards ? (
                   <div className="text-center py-10 text-xs font-mono text-slate-400 animate-pulse">
-                    Scanning realm operatives...
+                    Scanning realm saints...
                   </div>
                 ) : topOperatives.length === 0 ? (
                   <div className="text-center py-10 text-xs font-mono text-slate-400">
-                    No champion operatives registered yet.
+                    No champion saints registered yet.
                   </div>
                 ) : (
                   topOperatives.map((op, idx) => {
@@ -541,7 +541,7 @@ export function CharacterSelector({
                 <span className="flex items-center gap-1 text-amber-300">
                   <Flame size={12} /> Live Standings
                 </span>
-                <span>Top Operatives</span>
+                <span>Top Saints</span>
               </div>
             </div>
           )}
@@ -619,10 +619,10 @@ export function CharacterSelector({
             </div>
 
             <h3 className="text-xl font-black font-mono uppercase text-white mb-2 tracking-wider">
-              Archive Operative?
+              Archive Saint?
             </h3>
             <p className="text-xs font-mono text-rose-200/80 leading-relaxed mb-6">
-              Permanently delete champion <strong className="text-white">"{deleteModalChar.name}"</strong>? All quest
+              Permanently delete Saint <strong className="text-white">"{deleteModalChar.name}"</strong>? All quest
               progression, inventory items, and world rank will be lost.
             </p>
 

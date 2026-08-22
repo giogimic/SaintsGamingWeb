@@ -23,7 +23,8 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const realmName = typeof body?.realmName === 'string' ? body.realmName.trim() : 'Saints Realm';
+    const realmName = typeof body?.realmName === 'string' ? body.realmName.trim() : 'The Lobby';
+    const realmDescription = typeof body?.realmDescription === 'string' ? body.realmDescription.trim() : 'The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~';
     const requestedDefaultMapId = typeof body?.defaultMapId === 'string' ? body.defaultMapId.trim() : undefined;
 
     // Save Realm Name
@@ -32,6 +33,15 @@ export async function POST(req: Request) {
         where: { key: SETUP_SETTING_KEYS.REALM_NAME },
         create: { key: SETUP_SETTING_KEYS.REALM_NAME, value: realmName },
         update: { value: realmName },
+      });
+    }
+
+    // Save Realm Description
+    if (realmDescription) {
+      await prisma.siteSetting.upsert({
+        where: { key: SETUP_SETTING_KEYS.REALM_DESCRIPTION },
+        create: { key: SETUP_SETTING_KEYS.REALM_DESCRIPTION, value: realmDescription },
+        update: { value: realmDescription },
       });
     }
 

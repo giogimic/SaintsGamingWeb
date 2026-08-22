@@ -5,8 +5,8 @@ import { AtlasGridData } from './spatialAtlas';
 describe('Cross-Map Border Seamless Warp Resolution (Bible 23 & 24)', () => {
   const mockAtlas: AtlasGridData = {
     nodes: [
-      { mapId: 'VILLAGE_CENTER', gridX: 2, gridY: 2, width: 20, height: 20 },
-      { mapId: 'EAST_RIVER', gridX: 3, gridY: 2, width: 25, height: 20 },
+      { id: 'node_village', mapId: 'VILLAGE_CENTER', x: 2, y: 2, gridX: 2, gridY: 2, width: 20, height: 20 },
+      { id: 'node_river', mapId: 'EAST_RIVER', x: 3, y: 2, gridX: 3, gridY: 2, width: 25, height: 20 },
     ],
   };
 

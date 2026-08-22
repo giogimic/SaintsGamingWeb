@@ -33,7 +33,7 @@ export default function LeaderboardOverlay() {
   return (
     <div className="pointer-events-auto z-40 flex w-[min(95vw,600px)] max-w-full flex-col font-mono text-xs select-none">
       <HudPanelShell 
-        title="GLOBAL OPERATIVE LEADERBOARDS" 
+        title="GLOBAL SAINTS LEADERBOARDS" 
         icon={<Trophy className="w-4 h-4 text-amber-400" />}
         onClose={() => setGameMode('EXPLORING')}
         headerRight={
@@ -56,7 +56,7 @@ export default function LeaderboardOverlay() {
                 <Trophy className="w-4 h-4 text-amber-400" />
               </div>
               <div>
-                <span className="font-bold text-white text-xs">TOP COMMUNITY OPERATIVES</span>
+                <span className="font-bold text-white text-xs">TOP COMMUNITY SAINTS</span>
                 <p className="text-[10px] text-slate-400">Ranked by Level, 27-Skill Total XP, Sanctuary Wealth & Captured Beasts.</p>
               </div>
             </div>
@@ -69,11 +69,11 @@ export default function LeaderboardOverlay() {
           <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
             {loading ? (
               <div className="text-center text-slate-400 italic p-8 border border-slate-800 rounded-xl bg-black/40">
-                Syncing global operative rankings...
+                Syncing global saints rankings...
               </div>
             ) : operatives.length === 0 ? (
               <div className="text-center text-slate-500 italic p-8 border border-dashed border-slate-800 rounded-xl bg-black/40">
-                No operative rankings recorded yet.
+                No rankings recorded yet.
               </div>
             ) : (
               operatives.map((op, idx) => (

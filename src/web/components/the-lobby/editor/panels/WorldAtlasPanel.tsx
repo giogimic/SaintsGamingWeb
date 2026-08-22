@@ -7,9 +7,15 @@ import {
   Save, Map as MapIcon, Plus, Trash2, Crosshair, HelpCircle, Compass, Radio,
   Castle, Trees, Waves, Mountain, Flame, Navigation, ArrowUpRight, Globe
 } from 'lucide-react';
-import { MapIndexEntry, loadMap, invalidateMapCache } from '../../data/maps';
+import { MapIndexEntry, loadMap, invalidateMapCache, invalidateClientAtlas } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { soundSynth } from '@/engine/sound-synth';
+import {
+  type AtlasNode,
+  type AtlasGridData,
+  createAtlasNodeId,
+  normalizeAtlasGridData,
+} from '@/shared/game/atlas/spatialAtlas';
 
 function getBiomeIcon(mapId: string, isSelected: boolean) {
   const lower = mapId.toLowerCase();
@@ -32,22 +38,17 @@ function getBiomeIcon(mapId: string, isSelected: boolean) {
   return <MapIcon className={cls} />;
 }
 
-export interface AtlasNode {
-  mapId: string;
-  x: number;
-  y: number;
-}
+export type { AtlasNode };
 
-export interface WorldAtlasData {
-  nodes: AtlasNode[];
+export interface WorldAtlasData extends AtlasGridData {
   edges: any[];
-  bufferPresets: any[];
-  options: {
-    defaultZoneSize: { w: number; h: number };
-    bufferSize: { w: number; h: number };
-    softTransition: boolean;
-    zeroFade: boolean;
-    renderNeighborStripTiles: number;
+  bufferPresets?: any[];
+  options?: {
+    defaultZoneSize?: { w: number; h: number };
+    bufferSize?: { w: number; h: number };
+    softTransition?: boolean;
+    zeroFade?: boolean;
+    renderNeighborStripTiles?: number;
   };
 }
 
@@ -90,7 +91,8 @@ export const WorldAtlasPanel: React.FC = () => {
                 parsedAtlas = { nodes: [], edges: [] };
               }
             }
-            setAtlasData(parsedAtlas || { nodes: [], edges: [] });
+            const normalized = normalizeAtlasGridData(parsedAtlas);
+            setAtlasData(normalized as WorldAtlasData);
             setLobbyMapId(data.atlas.lobbyMapId || 'LOBBY');
           }
         }
@@ -160,6 +162,7 @@ export const WorldAtlasPanel: React.FC = () => {
       if (res.ok && result.ok) {
         useEditorStore.getState().clearMapDirty();
         invalidateMapCache();
+        invalidateClientAtlas();
         showToast('Atlas saved & 4-way map connections synchronized.');
       } else {
         showToast(result.error || 'Failed to save atlas.');
@@ -183,13 +186,19 @@ export const WorldAtlasPanel: React.FC = () => {
       const existingNodeIdx = atlasData.nodes.findIndex(n => n.x === x && n.y === y);
       const newNodes = [...atlasData.nodes];
       if (existingNodeIdx >= 0) {
-        newNodes[existingNodeIdx] = { mapId: selectedMapIdToPlace, x, y };
+        const ex = atlasData.nodes[existingNodeIdx];
+        const id = ex.mapId === selectedMapIdToPlace && ex.id ? ex.id : createAtlasNodeId(selectedMapIdToPlace);
+        const updatedNode: AtlasNode = { id, mapId: selectedMapIdToPlace, x, y };
+        newNodes[existingNodeIdx] = updatedNode;
+        setSelectedNode(updatedNode);
       } else {
-        newNodes.push({ mapId: selectedMapIdToPlace, x, y });
+        const id = createAtlasNodeId(selectedMapIdToPlace);
+        const newNode: AtlasNode = { id, mapId: selectedMapIdToPlace, x, y };
+        newNodes.push(newNode);
+        setSelectedNode(newNode);
       }
       setAtlasData({ ...atlasData, nodes: newNodes });
       setSelectedMapIdToPlace(null);
-      setSelectedNode({ mapId: selectedMapIdToPlace, x, y });
       useEditorStore.getState().markMapDirty();
     } else if (existingNode) {
       soundSynth?.playSelectSound?.();

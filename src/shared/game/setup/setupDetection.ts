@@ -11,6 +11,7 @@ export interface SetupStatus {
   userCount: number;
   hasAdmin: boolean;
   realmName: string;
+  realmDescription: string;
   defaultMapId: string | null;
 }
 
@@ -18,11 +19,13 @@ export const SETUP_SETTING_KEYS = {
   SETUP_COMPLETED: 'SETUP_COMPLETED',
   SETUP_COMPLETED_AT: 'SETUP_COMPLETED_AT',
   REALM_NAME: 'REALM_NAME',
+  REALM_DESCRIPTION: 'REALM_DESCRIPTION',
   DEFAULT_MAP_ID: 'DEFAULT_MAP_ID',
   STARTER_PACK_IMPORTED: 'STARTER_PACK_IMPORTED',
 } as const;
 
-export const DEFAULT_REALM_NAME = 'Saints Realm';
+export const DEFAULT_REALM_NAME = 'The Lobby';
+export const DEFAULT_REALM_DESCRIPTION = 'The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~';
 export const DEFAULT_FALLBACK_MAP_ID = 'DEMO_SANDBOX';
 
 /**
@@ -34,6 +37,7 @@ export function evaluateSetupStatus(params: {
   userCount: number;
   adminCount: number;
   realmNameSettingVal?: string | null;
+  realmDescriptionSettingVal?: string | null;
   defaultMapIdSettingVal?: string | null;
 }): SetupStatus {
   const isSetupCompleted = params.setupSettingVal === 'true' || params.setupSettingVal === '1';
@@ -49,6 +53,7 @@ export function evaluateSetupStatus(params: {
     userCount: Math.max(0, params.userCount),
     hasAdmin: params.adminCount > 0,
     realmName: params.realmNameSettingVal?.trim() || DEFAULT_REALM_NAME,
+    realmDescription: params.realmDescriptionSettingVal?.trim() || DEFAULT_REALM_DESCRIPTION,
     defaultMapId: params.defaultMapIdSettingVal?.trim() || null,
   };
 }
@@ -58,9 +63,10 @@ export function evaluateSetupStatus(params: {
  */
 export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStatus> {
   try {
-    const [setupSetting, realmNameSetting, defaultMapSetting, mapCount, userCount, adminCount] = await Promise.all([
+    const [setupSetting, realmNameSetting, realmDescSetting, defaultMapSetting, mapCount, userCount, adminCount] = await Promise.all([
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.SETUP_COMPLETED } }).catch(() => null),
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_NAME } }).catch(() => null),
+      prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.REALM_DESCRIPTION } }).catch(() => null),
       prismaClient.siteSetting.findUnique({ where: { key: SETUP_SETTING_KEYS.DEFAULT_MAP_ID } }).catch(() => null),
       prismaClient.worldMap.count().catch(() => 0),
       prismaClient.user.count().catch(() => 0),
@@ -70,6 +76,7 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
     return evaluateSetupStatus({
       setupSettingVal: setupSetting?.value,
       realmNameSettingVal: realmNameSetting?.value,
+      realmDescriptionSettingVal: realmDescSetting?.value,
       defaultMapIdSettingVal: defaultMapSetting?.value,
       mapCount,
       userCount,
@@ -85,6 +92,7 @@ export async function getSystemSetupStatus(prismaClient: any): Promise<SetupStat
       userCount: 1,
       hasAdmin: true,
       realmName: DEFAULT_REALM_NAME,
+      realmDescription: DEFAULT_REALM_DESCRIPTION,
       defaultMapId: DEFAULT_FALLBACK_MAP_ID,
     };
   }

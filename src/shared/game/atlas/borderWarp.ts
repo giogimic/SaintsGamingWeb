@@ -5,6 +5,7 @@
 
 import {
   AtlasGridData,
+  AtlasNode,
   CardinalDirection,
   calculateBorderWarp,
 } from './spatialAtlas';
@@ -12,6 +13,7 @@ import {
 export interface BorderStepEvaluation {
   shouldWarp: boolean;
   targetMapId?: string;
+  targetNodeId?: string;
   spawnX?: number;
   spawnY?: number;
   direction?: CardinalDirection;
@@ -22,7 +24,7 @@ export interface BorderStepEvaluation {
  * Evaluates whether moving from `currentPos` with intent `(dx, dy)` steps across the map border into an adjacent Atlas zone.
  */
 export function evaluateBorderStep(
-  currentMapId: string,
+  currentSource: string | AtlasNode,
   currentPos: { x: number; y: number },
   intent: { dx: number; dy: number },
   mapDimensions: { width: number; height: number },
@@ -43,7 +45,7 @@ export function evaluateBorderStep(
   }
 
   const borderWarp = calculateBorderWarp(
-    currentMapId,
+    currentSource,
     mapDimensions,
     currentPos,
     direction,
@@ -60,6 +62,7 @@ export function evaluateBorderStep(
   return {
     shouldWarp: true,
     targetMapId: borderWarp.targetMapId,
+    targetNodeId: borderWarp.targetNodeId,
     spawnX: borderWarp.spawnX,
     spawnY: borderWarp.spawnY,
     direction: borderWarp.direction,

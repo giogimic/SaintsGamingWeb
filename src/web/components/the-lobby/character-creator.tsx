@@ -319,7 +319,7 @@ export function CharacterCreator({
 
   const handleCreate = async () => {
     if (!name || name.trim().length < 3) {
-      toast.error('Operative callsign must be at least 3 characters.');
+      toast.error('Saint name must be at least 3 characters.');
       return;
     }
     setLoading(true);
@@ -453,7 +453,7 @@ export function CharacterCreator({
     });
 
     if (result.success && result.character) {
-      toast.success('Operative forged! Entering the live realm...');
+      toast.success('Saint forged! Entering the live realm...');
       setTimeout(() => onComplete(result.character.id), 300);
     } else {
       toast.error(result.error || 'Failed to forge character.');
@@ -672,10 +672,10 @@ export function CharacterCreator({
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                OPERATIVE CALLSIGN
+                SAINT IDENTITY
               </h2>
               <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Assign a unique identity to your champion operative
+                Assign a unique identity to your champion Saint
               </p>
             </div>
 
@@ -701,7 +701,7 @@ export function CharacterCreator({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter Operative Name..."
+                  placeholder="Enter Saint Name..."
                   maxLength={18}
                   autoFocus
                   className="flex-1 px-4 py-3 rounded-xl bg-black/70 border-2 border-pink-500/40 text-white placeholder:text-slate-500 font-mono text-base focus:outline-none focus:border-[#00f5d4] shadow-inner"
@@ -745,10 +745,10 @@ export function CharacterCreator({
                   WebkitTextFillColor: 'transparent',
                 }}
               >
-                OPERATIVE CUSTOMIZATION
+                SAINT CUSTOMIZATION
               </h2>
               <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Modular LPC System: Assemble base operative body, capes, headgear & armor
+                Modular LPC System: Assemble base Saint body, capes, headgear & armor
               </p>
             </div>
 
@@ -762,9 +762,9 @@ export function CharacterCreator({
               >
                 <div>
                   <span className="px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-[10px] font-mono font-extrabold uppercase tracking-wider">
-                    Operative Preview
+                    Saint Preview
                   </span>
-                  <h3 className="text-lg font-black font-mono text-white mt-2">{name || 'Operative'}</h3>
+                  <h3 className="text-lg font-black font-mono text-white mt-2">{name || 'Saint'}</h3>
                   <span className="text-xs font-mono text-pink-300">{classId}</span>
                 </div>
 
@@ -1135,7 +1135,7 @@ export function CharacterCreator({
           <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
             <div className="text-center mb-6">
               <h2
-                className="text-3xl font-black uppercase font-mono tracking-widest mb-1"
+                className="text-3xl font-black uppercase font-mono tracking-widest mb-1 text-white"
                 style={{
                   background: 'linear-gradient(180deg, #ffffff 0%, #00f5d4 50%, #f20089 100%)',
                   WebkitBackgroundClip: 'text',
@@ -1143,10 +1143,10 @@ export function CharacterCreator({
                   filter: 'drop-shadow(0 0 20px rgba(0,245,212,0.5))',
                 }}
               >
-                OPERATIVE DOSSIER
+                SAINT DOSSIER
               </h2>
               <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Review operative attributes and confirm realm deployment
+                Review Saint attributes and confirm realm deployment
               </p>
             </div>
 
@@ -1167,7 +1167,7 @@ export function CharacterCreator({
                     <span className="px-2.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-400/40 text-[#00f5d4] text-xs font-mono font-bold">
                       {classId}
                     </span>
-                    <span className="text-xs font-mono text-purple-300">Level 1 Operative</span>
+                    <span className="text-xs font-mono text-purple-300">Level 1 Saint</span>
                   </div>
                 </div>
               </div>
@@ -1206,12 +1206,12 @@ export function CharacterCreator({
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
-                      Forging Operative...
+                      Forging Saint...
                     </>
                   ) : (
                     <>
                       <Flame className="w-5 h-5 text-slate-950" />
-                      FORGE OPERATIVE // ENTER REALM
+                      FORGE SAINT // ENTER REALM
                     </>
                   )}
                 </button>
@@ -1223,7 +1223,7 @@ export function CharacterCreator({
 
       {/* ── FOOTER BAR ── */}
       <footer className="relative z-30 w-full max-w-5xl mx-auto flex items-center justify-between text-[10px] font-mono text-pink-500/60 pt-3 border-t border-pink-500/20">
-        <span>⚔ Saints Gaming MMO Core Engine // Operative Forge ⚔</span>
+        <span>⚔ Saints Gaming MMO Core Engine // Saint Forge ⚔</span>
         <span className="text-cyan-400/80">Step {currentNum} of 5</span>
       </footer>
     </div>
