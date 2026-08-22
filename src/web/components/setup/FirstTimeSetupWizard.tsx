@@ -46,7 +46,8 @@ export function FirstTimeSetupWizard() {
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
 
   // Form State
-  const [realmName, setRealmName] = useState('Saints Realm');
+  const [realmName, setRealmName] = useState('The Lobby');
+  const [realmDescription, setRealmDescription] = useState('The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~');
   const [selectedPackId, setSelectedPackId] = useState('saints-community-starter');
   const [importingWorld, setImportingWorld] = useState(false);
   const [importingAssets, setImportingAssets] = useState(false);
@@ -71,6 +72,9 @@ export function FirstTimeSetupWizard() {
         setAuthenticatedUser(data.authenticatedUser);
         if (data.status?.realmName) {
           setRealmName(data.status.realmName);
+        }
+        if (data.status?.realmDescription) {
+          setRealmDescription(data.status.realmDescription);
         }
 
         if (assetsRes && assetsRes.ok) {
@@ -150,7 +154,7 @@ export function FirstTimeSetupWizard() {
       const res = await fetch('/api/setup/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ realmName, defaultMapId }),
+        body: JSON.stringify({ realmName, realmDescription, defaultMapId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to finalize setup');
@@ -278,15 +282,31 @@ export function FirstTimeSetupWizard() {
             <div className="space-y-4 max-w-xl">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                  Realm / Community Name
+                  Realm / Game Name
                 </label>
                 <input
                   type="text"
                   value={realmName}
                   onChange={(e) => setRealmName(e.target.value)}
-                  placeholder="e.g. Saints Realm, Aethervale MMO"
+                  placeholder="e.g. The Lobby, Saints MMO, Aethervale"
                   className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-base outline-none transition"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Game Description / Tagline
+                </label>
+                <textarea
+                  rows={3}
+                  value={realmDescription}
+                  onChange={(e) => setRealmDescription(e.target.value)}
+                  placeholder="The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"
+                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-sm outline-none transition resize-none"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Featured on the home page showcase card and community portal.
+                </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">

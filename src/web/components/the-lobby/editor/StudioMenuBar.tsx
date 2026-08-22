@@ -343,6 +343,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem label="World Builder" onClick={() => useEditorStore.getState().openPanel('build')} />
             <MenuItem label="Problems & Diagnostics" shortcut="Ctrl+Shift+O" icon={AlertCircle} onClick={() => useEditorStore.getState().openPanel('problems')} />
             <MenuItem label="Streaming Inspector" icon={Activity} onClick={() => useEditorStore.getState().openPanel('streaming')} />
+            <MenuItem label="Server & Game Settings" icon={Settings} onClick={() => useEditorStore.getState().openPanel('settings')} />
             <MenuItem divider />
             <MenuItem label="Reset Layout" onClick={() => {
               window.localStorage.removeItem('saints.panelLayouts');

@@ -23,11 +23,13 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.404";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.407";
 
 
 
 
+  const realmName = configMap["REALM_NAME"] || "The Lobby";
+  const realmDescription = configMap["REALM_DESCRIPTION"] || "The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~";
   const maxCharacters = configMap["ucp_max_characters"] || "3";
 
   const startingCash = configMap["ucp_starting_cash"] || "5000";
@@ -46,6 +48,30 @@ export default async function AdminSettingsPage() {
 
       <div className="bg-card shadow-sm rounded-lg border p-6">
         <form action={updateSiteSettings} className="space-y-6">
+          <div className="space-y-4 border-b pb-6">
+            <h2 className="text-xl font-semibold">Game & Realm Identity</h2>
+
+            <div className="space-y-2">
+              <Label htmlFor="REALM_NAME">Realm / Game Name</Label>
+              <Input 
+                id="REALM_NAME" 
+                name="REALM_NAME" 
+                defaultValue={realmName} 
+              />
+              <p className="text-xs text-muted-foreground">The game title displayed on the home page showcase, server select, and navigation.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="REALM_DESCRIPTION">Game Description / Tagline</Label>
+              <Input 
+                id="REALM_DESCRIPTION" 
+                name="REALM_DESCRIPTION" 
+                defaultValue={realmDescription} 
+              />
+              <p className="text-xs text-muted-foreground">The game description displayed on the home page showcase card.</p>
+            </div>
+          </div>
+
           <div className="space-y-4 border-b pb-6">
             <h2 className="text-xl font-semibold">User Control Panel Limits</h2>
             

@@ -12,42 +12,40 @@ interface RealmSettingsModalProps {
 
 export const RealmSettingsModal: React.FC<RealmSettingsModalProps> = ({ isOpen, onClose }) => {
   const showToast = useGameStore((s) => s.showToast);
-
-  const [settings, setSettings] = useState<RealmSettingsConfig>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = window.localStorage.getItem('saints.realmSettings');
-        if (saved) return JSON.parse(saved);
-      } catch {}
-    }
-    return DEFAULT_REALM_SETTINGS;
-  });
+  const [settings, setSettings] = useState<RealmSettingsConfig>(DEFAULT_REALM_SETTINGS);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (isOpen && typeof window !== 'undefined') {
-      try {
-        const saved = window.localStorage.getItem('saints.realmSettings');
-        if (saved) setSettings(JSON.parse(saved));
-      } catch {}
+    if (isOpen) {
+      fetch('/api/realm/settings')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.settings) {
+            setSettings({ ...DEFAULT_REALM_SETTINGS, ...data.settings });
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    const cleanSettings: RealmSettingsConfig = {
-      playerClassName: getPlayerClassName(settings.playerClassName),
-      realmName: settings.realmName?.trim() || DEFAULT_REALM_SETTINGS.realmName,
-      motd: settings.motd?.trim() || DEFAULT_REALM_SETTINGS.motd,
-      allowGuestAccess: settings.allowGuestAccess ?? true,
-    };
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('saints.realmSettings', JSON.stringify(cleanSettings));
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const res = await fetch('/api/realm/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (!res.ok) throw new Error('Failed to save settings');
+      showToast(`Realm settings saved! Player identity: ${settings.playerClassName || 'Saint'}`);
+      onClose();
+    } catch {
+      showToast('Error saving realm settings');
+    } finally {
+      setSaving(false);
     }
-    setSettings(cleanSettings);
-    showToast(`Realm settings saved! Player identity: ${cleanSettings.playerClassName}`);
-    onClose();
   };
 
   const PRESET_IDENTITIES = ['Saint', 'Tamer', 'Operative', 'Hero', 'Hunter', 'Adventurer'];
@@ -114,6 +112,48 @@ export const RealmSettingsModal: React.FC<RealmSettingsModalProps> = ({ isOpen, 
             </div>
           </div>
 
+          {/* Soul Link / Chat Box Title */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-mono font-bold text-teal-300 uppercase tracking-wider">
+              Chat Channel Title (Default: Soul Link)
+            </label>
+            <input
+              type="text"
+              value={settings.chatTitle}
+              onChange={(e) => setSettings({ ...settings, chatTitle: e.target.value })}
+              placeholder="Soul Link"
+              className="w-full px-3 py-2 rounded-xl bg-black/60 border border-slate-700 focus:border-teal-400 focus:outline-none text-white font-mono text-sm"
+            />
+          </div>
+
+          {/* Creature & Capture Mechanics */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                Creatures / Beings
+              </label>
+              <input
+                type="text"
+                value={settings.creatureIdentity}
+                onChange={(e) => setSettings({ ...settings, creatureIdentity: e.target.value })}
+                placeholder="Soul"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 focus:border-amber-400 focus:outline-none text-white font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1">
+                Capture Device
+              </label>
+              <input
+                type="text"
+                value={settings.captureToolName}
+                onChange={(e) => setSettings({ ...settings, captureToolName: e.target.value })}
+                placeholder="Camera"
+                className="w-full px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-700 focus:border-amber-400 focus:outline-none text-white font-mono text-xs"
+              />
+            </div>
+          </div>
+
           {/* Realm Name */}
           <div className="space-y-1.5">
             <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
@@ -123,7 +163,7 @@ export const RealmSettingsModal: React.FC<RealmSettingsModalProps> = ({ isOpen, 
               type="text"
               value={settings.realmName}
               onChange={(e) => setSettings({ ...settings, realmName: e.target.value })}
-              placeholder="Saints Realm"
+              placeholder="The Lobby"
               className="w-full px-3 py-2 rounded-xl bg-black/60 border border-slate-700 focus:border-amber-500 focus:outline-none text-white font-mono text-sm"
             />
           </div>
@@ -137,7 +177,7 @@ export const RealmSettingsModal: React.FC<RealmSettingsModalProps> = ({ isOpen, 
               rows={2}
               value={settings.motd}
               onChange={(e) => setSettings({ ...settings, motd: e.target.value })}
-              placeholder="Welcome to Saints MMO!"
+              placeholder="Welcome to Saints MMO — where spirit captures and heroic battles unfold!"
               className="w-full px-3 py-2 rounded-xl bg-black/60 border border-slate-700 focus:border-amber-500 focus:outline-none text-white font-mono text-xs resize-none"
             />
           </div>

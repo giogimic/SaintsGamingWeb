@@ -140,8 +140,8 @@ describe('World Atlas Connectivity & Gate Linter (Bible 24)', () => {
   it('detects overlapping Atlas grid node positions', () => {
     const overlappingAtlas: AtlasGridData = {
       nodes: [
-        { mapId: 'MAP_A', gridX: 3, gridY: 3 },
-        { mapId: 'MAP_B', gridX: 3, gridY: 3 }, // Duplicate slot
+        { id: 'node_a', mapId: 'MAP_A', x: 3, y: 3, gridX: 3, gridY: 3 },
+        { id: 'node_b', mapId: 'MAP_B', x: 3, y: 3, gridX: 3, gridY: 3 }, // Duplicate slot
       ],
     };
 

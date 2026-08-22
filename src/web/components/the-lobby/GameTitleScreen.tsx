@@ -644,7 +644,7 @@ export default function GameTitleScreen({
               <div className="flex items-center gap-2">
                 <Gamepad2 className="w-4 h-4 text-cyan-400" />
                 <span className="text-xs font-mono font-black text-cyan-200 uppercase tracking-widest">
-                  OPERATIVE STAGE
+                  SAINT STAGE
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[10px] font-mono text-pink-400/70">
@@ -752,7 +752,7 @@ export default function GameTitleScreen({
             ) : (
               <div className="text-center p-4 bg-black/40 rounded-xl border border-dashed border-cyan-500/30 mb-4">
                 <p className="text-xs font-mono text-cyan-300/80 font-bold">NO CHAMPION YET</p>
-                <p className="text-[10px] font-mono text-slate-400 mt-1">Forge your operative to enter the live world.</p>
+                <p className="text-[10px] font-mono text-slate-400 mt-1">Forge your Saint to enter the live world.</p>
               </div>
             )}
 
@@ -1009,9 +1009,9 @@ export default function GameTitleScreen({
               {/* Leaderboard Top List */}
               <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar text-[11px]">
                 {loadingLeaderboards ? (
-                  <p className="text-center text-slate-400 italic py-4">Syncing top operatives...</p>
+                  <p className="text-center text-slate-400 italic py-4">Syncing top saints...</p>
                 ) : topOperatives.length === 0 ? (
-                  <p className="text-center text-slate-500 italic py-4">No operative rankings yet.</p>
+                  <p className="text-center text-slate-500 italic py-4">No rankings yet.</p>
                 ) : (
                   topOperatives.map((op, idx) => (
                     <div

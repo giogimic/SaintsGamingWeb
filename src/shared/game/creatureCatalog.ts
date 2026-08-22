@@ -388,12 +388,14 @@ const MISSING_NPC_PLACEHOLDERS = new Set([
   // Legacy peer default — file never shipped; use adventurer walk sheet.
   "hero_male",
   "hero_female",
+  "alchemist",
 ]);
 
-/** Player/peer aliases that must never 404 into the brown UV-cropped fallback. */
+/** Player/peer/NPC aliases that must never 404 into the brown UV-cropped fallback. */
 const PLAYER_SPRITE_ALIASES: Record<string, string> = {
   hero_male: "adventurer",
   hero_female: "adventurer",
+  alchemist: "professor",
 };
 
 const CUSTOM_NPC_SLUGS = [

@@ -37,7 +37,8 @@ export type StudioDockId =
   | 'atlas'
   | 'problems'
   | 'streaming'
-  | 'gameplay';
+  | 'gameplay'
+  | 'settings';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -178,5 +179,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   gameplay: {
     label: 'Gameplay Hub',
     blurb: 'Abilities, status conditions, 27-skill matrix, professions, and combat balance simulations.',
+  },
+  settings: {
+    label: 'Server Settings',
+    blurb: 'Configure realm identity, Saint/Hero terminology, Soul Link chat, and capture mechanics.',
   },
 };

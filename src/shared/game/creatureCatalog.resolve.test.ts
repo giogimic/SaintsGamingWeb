@@ -28,4 +28,13 @@ describe("resolveEntitySpriteUrl player fallbacks", () => {
       })
     ).toBe("/game-assets/npc/adventurer.png");
   });
+
+  it("maps alchemist to professor to prevent 404 texture requests", () => {
+    expect(resolveEntitySpriteUrl("alchemist", { kind: "npc" })).toBe(
+      "/game-assets/npc/professor.png"
+    );
+    expect(resolveEntitySpriteUrl("/game-assets/npc/alchemist.png", { kind: "npc" })).toBe(
+      "/game-assets/npc/adventurer.png"
+    );
+  });
 });

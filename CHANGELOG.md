@@ -1,3 +1,26 @@
+## [2.1.407] - 2026-08-22
+### Saint & Soul Link Terminology Overhaul & Studio Server Settings Menu
+- **Saint Canonical Player Identity**: Replaced legacy cyber-themed "Operative" terminology across the entire MMO client with the canonical default name **"Saint"** (plural: **"Saints"**). Updated character creator (`character-creator.tsx`), character selector (`character-selector.tsx`), authentication screen (`GameLogin.tsx`), title screen (`GameTitleScreen.tsx`), vitals HUD, presence radar, party overlay, and leaderboard modals.
+- **Soul Link Comms Channel**: Updated the in-game lobby HUD chat channel to default to **"Soul Link"** (replacing "COMM LINK"), with support for dynamic custom channel titles and cleansed transmissions copy.
+- **Souls, Spirits & Camera Capture Mechanics**: Formalized the default capture tooling conventions in `realmSettings.ts`: capture device = **"Camera"**, capture ammo = **"Film"**, target beings = **"Souls"** / spirits.
+- **Studio Server & Game Settings Panel**: Created a dedicated **Server Settings** dock panel (`RealmSettingsPanel.tsx`) and modal in Studio (`StudioDockId: 'settings'`), allowing server owners to configure Hero Class Name (default: `"Saint"`), Chat Title (default: `"Soul Link"`), Creature/Being Name (default: `"Soul"`), Capture Device (default: `"Camera"`), Ammo (default: `"Film"`), and Realm Title & Tagline with live in-game previews.
+- **Realm Settings API**: Created `/api/realm/settings` (GET & POST) to persist realm identity and terminology configurations to the database (`siteSetting`).
+- **Omnisearch & Menu Integration**: Registered `Server Settings` in Studio Omnisearch (`Ctrl+K`), View menu, and dock layout.
+
+## [2.1.406] - 2026-08-22
+### Customizable Game Title & Description Across Setup & Home Showcase
+- **Home Page Dynamic Showcase**: Updated `app/(main)/home/page.tsx` to dynamically query and display the user-configured realm/game name (`REALM_NAME`) and game description (`REALM_DESCRIPTION`), defaulting the description to `"The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"`.
+- **First-Time Setup Wizard**: Enhanced Step 1 (Identity) in `FirstTimeSetupWizard.tsx` to prompt the user for both **Realm / Game Name** and **Game Description / Tagline** (defaulting to `"The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"`), saving them upon completion via `/api/setup/complete`.
+- **Admin Configuration**: Added **Game & Realm Identity** fields to `app/(main)/admin/settings/page.tsx` so administrators can easily update the game title and description at any time.
+
+## [2.1.405] - 2026-08-22
+### World Atlas Topology Identity & Texture Cache Loop Fix
+- **Atlas Topology Instance Identity**: Refactored `AtlasNode` across `spatialAtlas.ts`, `AtlasStudioSuite.tsx`, and `WorldAtlasPanel.tsx` to require stable persistent `id`s (`id: string`). Adjacency is now computed mathematically from node grid coordinates `(x, y)` rather than collapsing into mapId-keyed dictionaries (`connectionsByMap`), perfectly isolating duplicate placements of the same map definition in different world zones.
+- **Client Atlas Cache Invalidation**: Added `invalidateClientAtlas()` and force-refresh capability to `getClientAtlas()`, called automatically on Atlas save and reload to prevent stale layout reuse.
+- **Instance-Aware Map Loading**: Updated `loadMap(mapId, depth, atlasNodeId?)` in `maps.ts` to derive 4-way connections strictly from the active node instance coordinates, eliminating ambiguous `currentMapId` adjacency heuristics.
+- **NPC Sprite 404 & Infinite Texture Loop Fix**: Resolved `alchemist.png` 404 by adding canonical alias mapping to `professor.png` and registering `alchemist` in `MISSING_NPC_PLACEHOLDERS`. Updated Prof. Oakwood starter sprite in `DemoBootstrap.ts` and `prepackagedPacks.ts`.
+- **BabylonEngine Texture Load Protection**: Added `failedSpriteUrls` failure cache in `BabylonEngine.ts` to prevent repeated failed `new Texture()` requests on every frame render loop.
+
 ## [2.1.404] - 2026-08-22
 ### Midnight Tropical Lobby & Menu Theme Unification
 - **Lobby Game Screens**: Upgraded all pre-game and lobby gateway screens (`GameTitleScreen`, `GameLogin`, `ServerSelect`, `character-selector`, `character-creator`, and `GameOfflineScreen`) to the unified **Midnight Tropical** aesthetic.

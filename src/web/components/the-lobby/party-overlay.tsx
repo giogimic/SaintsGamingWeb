@@ -177,7 +177,7 @@ export default function PartyOverlay() {
                     value={inviteInput}
                     onChange={e => setInviteInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleSendInvite(); }}
-                    placeholder="Enter operative name to invite to Party..."
+                    placeholder="Enter Saint name to invite to Party..."
                     className="flex-1 bg-black/80 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                   />
                   <button
@@ -191,7 +191,7 @@ export default function PartyOverlay() {
                 {/* Nearby online players quick invite */}
                 {nearbyPlayers.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 items-center pt-2 border-t border-slate-800">
-                    <span className="text-[10px] text-slate-400">Nearby Operatives:</span>
+                    <span className="text-[10px] text-slate-400">Nearby Saints:</span>
                     {nearbyPlayers.map((peer) => (
                       <button
                         key={peer.name}
@@ -215,7 +215,7 @@ export default function PartyOverlay() {
                       👑
                     </div>
                     <div>
-                      <h4 className="font-bold text-cyan-100 text-sm">{useGameStore.getState().player.name || 'Operative'} (You)</h4>
+                      <h4 className="font-bold text-cyan-100 text-sm">{useGameStore.getState().player.name || 'Saint'} (You)</h4>
                       <span className="text-[9px] text-cyan-400 font-bold uppercase">PARTY LEADER</span>
                     </div>
                   </div>
@@ -238,7 +238,7 @@ export default function PartyOverlay() {
                 {/* Members */}
                 {party.length === 0 ? (
                   <div className="text-slate-500 text-xs italic text-center p-6 border border-dashed border-slate-800 rounded-xl">
-                    No party members joined yet. Invite nearby online operatives to share XP!
+                    No party members joined yet. Invite nearby online saints to share XP!
                   </div>
                 ) : (
                   party.map((m: any) => (

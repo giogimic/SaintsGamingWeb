@@ -71,6 +71,7 @@ const PrefabBuilderPanel = lazy(() => import('./panels/PrefabBuilderPanel').then
 const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
 const StudioProblemsPanel = lazy(() => import('./panels/StudioProblemsPanel').then((m) => ({ default: m.StudioProblemsPanel })));
 const GameplayStudioPanels = lazy(() => import('./panels/GameplayStudioPanels'));
+const RealmSettingsPanel = lazy(() => import('./panels/RealmSettingsPanel').then((m) => ({ default: m.RealmSettingsPanel })));
 
 const initialLayout: IJsonModel = {
   global: {
@@ -772,6 +773,7 @@ export const StudioEditorShell: React.FC = () => {
             case 'problems': return <StudioProblemsPanel />;
             case 'streaming': return <StreamingInspectorPanel />;
             case 'gameplay': return <GameplayStudioPanels />;
+            case 'settings': return <RealmSettingsPanel />;
             default: return <div>Unknown component: {component}</div>;
           }
         })()}

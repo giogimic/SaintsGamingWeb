@@ -398,7 +398,7 @@ export function GameChat() {
           <div className="flex items-center gap-2 min-w-0">
             <Radio className="h-3.5 w-3.5 text-teal-400 shrink-0" />
             <span className="text-[9px] font-mono font-black uppercase tracking-[0.2em] text-teal-200/90 truncate">
-              COMM LINK
+              SOUL LINK
             </span>
 
             {/* Integrated Staff Badge Tag inside chat header */}
@@ -443,7 +443,7 @@ export function GameChat() {
               >
                 {filteredMessages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-[11px] italic text-teal-300/50 py-2">
-                    <span>No transmissions yet.</span>
+                    <span>No messages yet.</span>
                   </div>
                 ) : (
                   (isExpanded ? filteredMessages : filteredMessages.slice(-4)).map((msg) => {

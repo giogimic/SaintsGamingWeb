@@ -105,7 +105,7 @@ export default function GameLogin() {
               SAINTS
             </h1>
             <p className="text-cyan-300/80 text-[10px] tracking-[0.4em] uppercase font-mono mt-1 font-bold">
-              OPERATIVE AUTHENTICATION
+              PLAYER AUTHENTICATION
             </p>
           </div>
 
@@ -167,7 +167,7 @@ export default function GameLogin() {
               ) : (
                 <>
                   <LogIn size={15} />
-                  Authorize Operative
+                  Authorize & Enter Realm
                 </>
               )}
             </button>

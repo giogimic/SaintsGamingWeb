@@ -94,7 +94,8 @@ export type PanelId =
   | 'atlas'
   | 'problems'
   | 'streaming'
-  | 'gameplay';
+  | 'gameplay'
+  | 'settings';
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -592,6 +593,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 100,
     width: 400,
     height: 350,
+    zIndex: 10,
+  },
+  settings: {
+    id: 'settings',
+    title: 'Server Settings',
+    isOpen: false,
+    isCollapsed: false,
+    x: 200,
+    y: 60,
+    width: 720,
+    height: 600,
     zIndex: 10,
   },
 };

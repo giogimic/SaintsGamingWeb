@@ -142,7 +142,7 @@ export function getCommunityStarterPackManifest(): StarterPackManifest {
         ],
         npcs: [
           { id: 'haven_vance', name: 'Warden Vance', x: 20, y: 18, sprite: 'adventurer', dialogue: ['Welcome to Saints Haven! Explore the 4 realms via the cardinal gates.'] },
-          { id: 'haven_oakwood', name: 'Prof. Oakwood', x: 16, y: 20, sprite: 'alchemist', dialogue: ['Choose your starter companion at the lab, then venture north into the Wild Meadows.'] },
+          { id: 'haven_oakwood', name: 'Prof. Oakwood', x: 16, y: 20, sprite: 'professor', dialogue: ['Choose your starter companion at the lab, then venture north into the Wild Meadows.'] },
         ],
         encounters: [],
         biome: 'town',

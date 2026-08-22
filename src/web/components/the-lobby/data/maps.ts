@@ -1,7 +1,12 @@
 import { Point } from '../store';
-import type { ElementType } from '@/shared/game/elementMatchups';
-import { listGateTargets } from '@/shared/game/mapGates';
-import { MAP_DOC_SOURCE_PROXY_SHELL } from '@/shared/game/mapDocVisual';
+import type { ElementType } from '../../../../shared/game/elementMatchups';
+import { listGateTargets } from '../../../../shared/game/mapGates';
+import { MAP_DOC_SOURCE_PROXY_SHELL } from '../../../../shared/game/mapDocVisual';
+import {
+  type AtlasNode,
+  type AtlasGridData,
+  normalizeAtlasGridData,
+} from '../../../../shared/game/atlas/spatialAtlas';
 
 export interface MapGate {
   targetMapId: string;
@@ -60,10 +65,11 @@ export interface GameMapData {
     dialogueKey: string;
   }>;
   encounterPool?: Array<{
-    speciesId: string;
+    id: string;
+    monsterId: string;
+    weight: number;
     minLevel: number;
     maxLevel: number;
-    weight: number;
   }>;
   chunks?: RenderedChunk[];
   connections?: {
@@ -71,6 +77,13 @@ export interface GameMapData {
     south?: string | MapConnection;
     east?: string | MapConnection;
     west?: string | MapConnection;
+  };
+  atlasNodeId?: string;
+  nodeConnections?: {
+    north?: string;
+    south?: string;
+    east?: string;
+    west?: string;
   };
 }
 
@@ -81,18 +94,26 @@ const mapInflight = new Map<string, Promise<GameMapData>>();
 const mapFailUntil = new Map<string, number>();
 const MAP_FAIL_COOLDOWN_MS = 8_000;
 
-let cachedAtlas: any = null;
-async function getClientAtlas() {
-  if (cachedAtlas) return cachedAtlas;
+let cachedAtlas: AtlasGridData | null = null;
+
+export function invalidateClientAtlas() {
+  cachedAtlas = null;
+}
+
+export async function getClientAtlas(forceRefresh = false): Promise<AtlasGridData> {
+  if (!forceRefresh && cachedAtlas) return cachedAtlas;
   try {
-    const res = await fetch(`/api/world/atlas`);
+    const res = await fetch(`/api/world/atlas?t=${Date.now()}`);
     if (res.ok) {
       const data = await res.json();
       if (data?.atlas?.atlasData) {
-        cachedAtlas = typeof data.atlas.atlasData === 'string' ? JSON.parse(data.atlas.atlasData) : data.atlas.atlasData;
+        const raw = typeof data.atlas.atlasData === 'string' ? JSON.parse(data.atlas.atlasData) : data.atlas.atlasData;
+        cachedAtlas = normalizeAtlasGridData(raw);
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[MapLoader] Failed to fetch client atlas:', e);
+  }
   if (!cachedAtlas) cachedAtlas = { nodes: [] };
   return cachedAtlas;
 }
@@ -125,7 +146,11 @@ function isValidMapId(mapId: unknown): mapId is string {
   return true;
 }
 
-export async function loadMap(mapId: string, depth: number = 0): Promise<GameMapData> {
+export async function loadMap(
+  mapId: string,
+  depth: number = 0,
+  atlasNodeId?: string
+): Promise<GameMapData> {
   if (!isValidMapId(mapId)) {
     return emptyMapFallback('INVALID');
   }
@@ -160,34 +185,51 @@ export async function loadMap(mapId: string, depth: number = 0): Promise<GameMap
       if (depth === 0) {
         try {
           const atlas = await getClientAtlas();
-          const allMyNodes = atlas.nodes.filter((n: any) => n.mapId === mapData.id);
-          let myNode = allMyNodes[0];
+          let myNode: AtlasNode | undefined;
 
-          // If map is placed multiple times, use adjacency to previous map to disambiguate instance
-          if (allMyNodes.length > 1) {
+          // 1. Direct node identity match (authoritative)
+          if (atlasNodeId) {
+            myNode = atlas.nodes.find((n) => n.id === atlasNodeId);
+          }
+
+          // 2. Active node in gameStore if set
+          if (!myNode) {
             const { useGameStore } = await import('../store');
-            const prevMapId = useGameStore.getState().currentMapId;
-            if (prevMapId && prevMapId !== mapData.id) {
-              const prevNodes = atlas.nodes.filter((n: any) => n.mapId === prevMapId);
-              for (const mn of allMyNodes) {
-                const isAdjacent = prevNodes.some((pn: any) => 
-                  (pn.x === mn.x && Math.abs(pn.y - mn.y) === 1) ||
-                  (pn.y === mn.y && Math.abs(pn.x - mn.x) === 1)
-                );
-                if (isAdjacent) {
-                  myNode = mn;
-                  break;
-                }
-              }
+            const activeNodeId = (useGameStore.getState() as any).activeAtlasNodeId;
+            if (activeNodeId) {
+              myNode = atlas.nodes.find((n) => n.id === activeNodeId && n.mapId === mapData.id);
+            }
+          }
+
+          // 3. Fallback: filter all placements for this map definition
+          if (!myNode) {
+            const allMyNodes = atlas.nodes.filter((n) => n.mapId === mapData.id);
+            if (allMyNodes.length > 0) {
+              myNode = allMyNodes[0];
             }
           }
 
           if (myNode) {
+            const curX = myNode.x;
+            const curY = myNode.y;
+            mapData.atlasNodeId = myNode.id;
+
+            const northNode = atlas.nodes.find((n) => n.x === curX && n.y === curY - 1);
+            const southNode = atlas.nodes.find((n) => n.x === curX && n.y === curY + 1);
+            const eastNode = atlas.nodes.find((n) => n.x === curX + 1 && n.y === curY);
+            const westNode = atlas.nodes.find((n) => n.x === curX - 1 && n.y === curY);
+
             mapData.connections = {
-              north: atlas.nodes.find((n: any) => n.x === myNode.x && n.y === myNode.y - 1)?.mapId,
-              south: atlas.nodes.find((n: any) => n.x === myNode.x && n.y === myNode.y + 1)?.mapId,
-              east: atlas.nodes.find((n: any) => n.x === myNode.x + 1 && n.y === myNode.y)?.mapId,
-              west: atlas.nodes.find((n: any) => n.x === myNode.x - 1 && n.y === myNode.y)?.mapId,
+              north: northNode?.mapId,
+              south: southNode?.mapId,
+              east: eastNode?.mapId,
+              west: westNode?.mapId,
+            };
+            mapData.nodeConnections = {
+              north: northNode?.id,
+              south: southNode?.id,
+              east: eastNode?.id,
+              west: westNode?.id,
             };
           }
         } catch (err) {
