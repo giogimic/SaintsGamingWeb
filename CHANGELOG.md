@@ -1,3 +1,9 @@
+## [2.1.404] - 2026-08-22
+### Midnight Tropical Lobby & Menu Theme Unification
+- **Lobby Game Screens**: Upgraded all pre-game and lobby gateway screens (`GameTitleScreen`, `GameLogin`, `ServerSelect`, `character-selector`, `character-creator`, and `GameOfflineScreen`) to the unified **Midnight Tropical** aesthetic.
+- **Shared Background**: Created `MidnightTropicalBackground` component featuring the midnight gradient, ambient starfield, shooting star, specular dash water reflections, silhouetted palm framing, and ambient pixel particle effects.
+- **Color Palettes**: Realigned theme tokens, headers, footers, and modal containers across the gateway screens to the deep midnight/cyan/violet palette.
+
 ## [2.1.403] - 2026-08-22
 ### Midnight Tropical Landing Page Theme
 - **Landing Page**: Implemented the Midnight Tropical aesthetic on the main landing page with interactive 3D voxel logo orbit controls and clean CTA buttons.

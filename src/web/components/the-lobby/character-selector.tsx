@@ -31,8 +31,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { useGameStore } from './store';
 import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { useSession } from 'next-auth/react';
-import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
-import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
+import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import { CharacterSpritePreview } from './CharacterSpritePreview';
 
 interface CharacterSelectorProps {
@@ -207,26 +206,10 @@ export function CharacterSelector({
   return (
     <div
       className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col justify-between p-3 sm:p-6 select-none font-sans"
-      style={{ backgroundColor: '#0d0221' }}
+      style={{ backgroundColor: '#050014' }}
     >
-      {/* Synthwave Horizon Grid Floor */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute top-0 w-full h-[60vh]"
-          style={{ background: 'linear-gradient(to bottom, #0d0221 0%, #3a0ca3 45%, #f20089 100%)', opacity: 0.8 }}
-        />
-        <div
-          className="absolute bottom-0 w-full h-[40vh] origin-top opacity-50"
-          style={{
-            backgroundImage:
-              'linear-gradient(transparent 65%, #f20089 100%), repeating-linear-gradient(0deg, transparent, transparent 19px, #f20089 20px), repeating-linear-gradient(90deg, transparent, transparent 39px, #f20089 40px)',
-            transform: 'perspective(500px) rotateX(60deg)',
-          }}
-        />
-      </div>
-
-      <DigitalSnowV5 />
-      <PalmCanopyVignetteV5 />
+      {/* Midnight Tropical Dynamic Horizon Background */}
+      <MidnightTropicalBackground />
 
       {/* ── TOP HEADER BAR ── */}
       <header className="relative z-30 w-full max-w-7xl mx-auto flex items-center justify-between gap-4 py-2 border-b border-pink-500/20 mb-4">

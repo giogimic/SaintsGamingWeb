@@ -7,8 +7,7 @@ import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { getUserCharacters, getTopLobbyOperatives } from '@/app/actions/game';
 import { soundSynth } from '@/engine/sound-synth';
 import GameOptionsMenu from './hud/GameOptionsMenu';
-import { DigitalSnowV5 } from '@/web/components/landing/digital-snow-v5';
-import { PalmCanopyVignetteV5 } from '@/web/components/landing/palm-canopy-vignette-v5';
+import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import {
   Play,
   Volume2,
@@ -42,25 +41,20 @@ import {
 } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
-// ── Theme Palettes (matching Saints Landing Page) ──────────────────────
+// ── Theme Palettes (matching Saints Midnight Tropical Landing Page) ─────
 const THEME = {
-  bg: '#0d0221',
-  skyGradient: 'linear-gradient(to bottom, #0d0221 0%, #3a0ca3 45%, #f20089 100%)',
-  gridColor: '#f20089',
-  sunGradient: 'linear-gradient(180deg, #ffbe0b 0%, #fb5607 40%, #ff006e 100%)',
-  sunGlow: 'radial-gradient(ellipse at 50% 100%, #fb5607 0%, #f20089 50%, transparent 70%)',
-  groundGlow: 'radial-gradient(ellipse at 50% 0%, #fb5607 0%, #f20089 40%, transparent 70%)',
-  textColor: '#00f5d4',
-  accentColor: '#ffbe0b',
-  btnBg: '#f20089',
-  btnBorder: '#ffbe0b',
-  btnGlow: '#f20089',
-  btn2Border: '#00f5d4',
-  btn2Text: '#00f5d4',
-  logoGlow: 'rgba(242,0,137,0.6)',
-  panelBg: 'rgba(13, 2, 33, 0.88)',
-  panelBorder: 'rgba(242, 0, 137, 0.35)',
-  panelGlow: 'rgba(242, 0, 137, 0.2)',
+  bg: '#050014',
+  textColor: '#ffffff',
+  accentColor: '#00f5d4',
+  btnBg: 'rgba(114, 9, 183, 0.25)',
+  btnBorder: '#00f5d4',
+  btnGlow: '#7209b7',
+  btn2Border: '#4cc9f0',
+  btn2Text: '#4cc9f0',
+  logoGlow: 'rgba(0, 245, 212, 0.6)',
+  panelBg: 'rgba(5, 0, 20, 0.88)',
+  panelBorder: 'rgba(0, 245, 212, 0.35)',
+  panelGlow: 'rgba(114, 9, 183, 0.25)',
 };
 
 const CLASS_ICONS: Record<string, any> = {
@@ -530,61 +524,11 @@ export default function GameTitleScreen({
       className="pointer-events-auto absolute inset-0 z-[200] flex flex-col justify-between overflow-x-hidden overflow-y-auto select-none font-sans"
       style={{ backgroundColor: THEME.bg, color: THEME.textColor }}
     >
-      {/* Synthwave Sunset Horizon Background */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Sky Gradient */}
-        <div className="absolute top-0 w-full h-[60vh]" style={{ background: THEME.skyGradient }} />
-
-        {/* Retro Grid Floor */}
-        <div
-          className="absolute bottom-0 w-full h-[40vh] origin-top opacity-50"
-          style={{
-            backgroundImage: `linear-gradient(transparent 65%, ${THEME.gridColor} 100%), repeating-linear-gradient(0deg, transparent, transparent 19px, ${THEME.gridColor} 20px), repeating-linear-gradient(90deg, transparent, transparent 39px, ${THEME.gridColor} 40px)`,
-            transform: 'perspective(500px) rotateX(60deg)',
-          }}
-        />
-
-        {/* Sun at horizon */}
-        <div
-          className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[24rem] h-[24rem] rounded-full opacity-70"
-          style={{
-            background: THEME.sunGradient,
-            clipPath: 'polygon(0 0, 100% 0, 100% 50%, 0 50%)',
-          }}
-        />
-
-        {/* Sun Glow */}
-        <div
-          className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-[100%] w-[38rem] h-[18rem] opacity-40"
-          style={{ background: THEME.sunGlow }}
-        />
-
-        {/* Ground light reflection */}
-        <div
-          className="absolute top-[52%] left-1/2 -translate-x-1/2 w-[85%] h-[35vh] opacity-30"
-          style={{ background: THEME.groundGlow }}
-        />
-      </div>
-
-      {/* Atmospheric digital particles & Embers */}
-      <GatewayAtmosphere />
-      <DigitalSnowV5 />
-
-      {/* Cinematic Vignette */}
-      <PalmCanopyVignetteV5 />
-
-      {/* Subtle CRT Scanline overlay */}
-      <div
-        className="fixed inset-0 z-10 pointer-events-none opacity-15"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05))',
-          backgroundSize: '100% 4px, 3px 100%',
-        }}
-      />
+      {/* Midnight Tropical Dynamic Horizon Background */}
+      <MidnightTropicalBackground />
 
       {/* ── TOP HEADER / UTILITY BAR ────────────────────────────────────── */}
-      <header className="relative z-30 w-full px-4 sm:px-8 py-3 flex items-center justify-between border-b border-pink-500/20 bg-[#0d0221]/70 backdrop-blur-md">
+      <header className="relative z-30 w-full px-4 sm:px-8 py-3 flex items-center justify-between border-b border-[#00f5d4]/20 bg-[#050014]/75 backdrop-blur-md">
         {/* Left utility tools */}
         <div className="flex items-center gap-2">
           <button
@@ -1115,7 +1059,7 @@ export default function GameTitleScreen({
       </main>
 
       {/* ── FOOTER STATUS / SHORTCUTS BAR ──────────────────────────────── */}
-      <footer className="relative z-30 w-full px-4 sm:px-8 py-2.5 flex flex-col sm:flex-row items-center justify-between border-t border-pink-500/20 bg-[#0d0221]/80 backdrop-blur-md text-[11px] font-mono text-slate-400">
+      <footer className="relative z-30 w-full px-4 sm:px-8 py-2.5 flex flex-col sm:flex-row items-center justify-between border-t border-[#00f5d4]/20 bg-[#050014]/80 backdrop-blur-md text-[11px] font-mono text-slate-400">
         <div className="flex items-center gap-3">
           <span className="text-pink-400 font-bold">v{process.env.NEXT_PUBLIC_APP_VERSION || '2.1.238'} · Core MMO</span>
           <span className="hidden md:inline text-slate-600">|</span>
