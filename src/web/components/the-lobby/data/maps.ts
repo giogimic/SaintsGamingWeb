@@ -81,6 +81,22 @@ const mapInflight = new Map<string, Promise<GameMapData>>();
 const mapFailUntil = new Map<string, number>();
 const MAP_FAIL_COOLDOWN_MS = 8_000;
 
+let cachedAtlas: any = null;
+async function getClientAtlas() {
+  if (cachedAtlas) return cachedAtlas;
+  try {
+    const res = await fetch(`/api/world/atlas`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.atlas?.atlasData) {
+        cachedAtlas = typeof data.atlas.atlasData === 'string' ? JSON.parse(data.atlas.atlasData) : data.atlas.atlasData;
+      }
+    }
+  } catch (e) {}
+  if (!cachedAtlas) cachedAtlas = { nodes: [] };
+  return cachedAtlas;
+}
+
 function emptyMapFallback(mapId: string): GameMapData {
   return {
     id: mapId,
@@ -141,6 +157,44 @@ export async function loadMap(mapId: string, depth: number = 0): Promise<GameMap
       mapFailUntil.delete(mapId);
 
       // Phase 1: Seamless Terrain - Fetch immediate neighbors (Depth 1)
+      if (depth === 0) {
+        try {
+          const atlas = await getClientAtlas();
+          const allMyNodes = atlas.nodes.filter((n: any) => n.mapId === mapData.id);
+          let myNode = allMyNodes[0];
+
+          // If map is placed multiple times, use adjacency to previous map to disambiguate instance
+          if (allMyNodes.length > 1) {
+            const { useGameStore } = await import('../store');
+            const prevMapId = useGameStore.getState().currentMapId;
+            if (prevMapId && prevMapId !== mapData.id) {
+              const prevNodes = atlas.nodes.filter((n: any) => n.mapId === prevMapId);
+              for (const mn of allMyNodes) {
+                const isAdjacent = prevNodes.some((pn: any) => 
+                  (pn.x === mn.x && Math.abs(pn.y - mn.y) === 1) ||
+                  (pn.y === mn.y && Math.abs(pn.x - mn.x) === 1)
+                );
+                if (isAdjacent) {
+                  myNode = mn;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (myNode) {
+            mapData.connections = {
+              north: atlas.nodes.find((n: any) => n.x === myNode.x && n.y === myNode.y - 1)?.mapId,
+              south: atlas.nodes.find((n: any) => n.x === myNode.x && n.y === myNode.y + 1)?.mapId,
+              east: atlas.nodes.find((n: any) => n.x === myNode.x + 1 && n.y === myNode.y)?.mapId,
+              west: atlas.nodes.find((n: any) => n.x === myNode.x - 1 && n.y === myNode.y)?.mapId,
+            };
+          }
+        } catch (err) {
+          console.warn("[MapLoader] Failed to resolve atlas connections, falling back to DB", err);
+        }
+      }
+
       if (depth === 0 && mapData.connections) {
         const neighborPromises: Promise<void>[] = [];
         

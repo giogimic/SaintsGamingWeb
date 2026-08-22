@@ -1,3 +1,7 @@
+## [2.1.402] - 2026-08-22
+### Map Streaming Atlas Fix
+- **Atlas Streaming**: Maps placed multiple times in the World Atlas now correctly stream their respective visual neighbors. `loadMap` dynamically computes connections using the client Atlas layout instead of relying on static database connections.
+
 ## [2.1.401] - 2026-08-22
 ### Build Fixes
 - **Build**: Fixed duplicate block in `settings.ts`.
