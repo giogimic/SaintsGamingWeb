@@ -1,3 +1,11 @@
+## [2.1.419] - 2026-08-22
+### Edge-to-Edge Feed Layout & Fixed Viewport Shorts Reel Viewer
+- **Expansive Feed Layout**: Expanded the inbox page container from constrained `max-w-7xl` to `max-w-[1720px]` and widened the feed stream column from `max-w-2xl` to `max-w-4xl 2xl:max-w-5xl` for an edge-to-edge desktop experience.
+- **Fixed & Wide Desktop Reel Viewer**:
+  - **Fixed Viewport & Scroll Locking**: Fixed the reel modal directly in the screen center (`fixed inset-0 z-[9999]`) and locked document body scroll upon opening, eliminating awkward jumps or offscreen scrolling.
+  - **Wide PC Aspect Support**: Expanded modal container width up to `md:max-w-3xl lg:max-w-4xl xl:max-w-5xl` with high-resolution centered media rendering (`max-h-[88vh] md:max-h-[84vh] object-contain`).
+  - **Wheel & Keyboard Navigation**: Enabled seamless mouse wheel scroll up/down (debounced with comments drawer protection) and Arrow/Page keys to transition instantly between previous and next posts.
+
 ## [2.1.418] - 2026-08-22
 ### Harmonize Service & Setup Script Naming (`saints-lobby.service` & `setup-the-lobby.sh`)
 - **Service Name Standardization**: Renamed `saints-go-mmo.service` to `saints-lobby.service` with description `Saints Gaming The Lobby Realtime MMO Server (:3001)` and syslog identifier `saints-lobby`.
