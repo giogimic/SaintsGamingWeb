@@ -1267,16 +1267,53 @@ export function TheFeed() {
     }
   }, [viewingShortsPost, displayPosts, handleRecordView]);
 
+  // Lock body scroll when Shorts Viewer is open so page never scrolls behind it
+  useEffect(() => {
+    if (viewingShortsPost) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [viewingShortsPost]);
+
+  // Global mouse wheel listener for seamless scroll up/down navigation between posts
+  useEffect(() => {
+    if (!viewingShortsPost) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Don't intercept if scrolling inside comments
+      const target = e.target as HTMLElement;
+      if (target && target.closest(".shorts-comments-scroll")) return;
+
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastWheelTime.current < 320) return;
+
+      if (e.deltaY > 15) {
+        lastWheelTime.current = now;
+        navigateShorts(1); // Next
+      } else if (e.deltaY < -15) {
+        lastWheelTime.current = now;
+        navigateShorts(-1); // Previous
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+    return () => window.removeEventListener("wheel", handleWheel);
+  }, [viewingShortsPost, navigateShorts]);
+
   // Keyboard navigation for Shorts Viewer
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (!viewingShortsPost) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+      if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "PageDown") {
         e.preventDefault();
         navigateShorts(1);
-      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key === "PageUp") {
         e.preventDefault();
         navigateShorts(-1);
       } else if (e.key === "Escape") {
@@ -1319,82 +1356,74 @@ export function TheFeed() {
   return (
     <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
       
-      {/* Full-Screen Vertical Shorts / Reel Swiper Modal */}
+      {/* Full-Screen Immersive Shorts / Reel Swiper Modal (Fixed Viewport, Wide on Desktop) */}
       {viewingShortsPost && (
         <div 
-          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden animate-in fade-in duration-200"
           onTouchStart={(e) => {
             touchStartY.current = e.touches[0].clientY;
           }}
           onTouchEnd={(e) => {
             if (touchStartY.current === null) return;
             const deltaY = touchStartY.current - e.changedTouches[0].clientY;
-            if (deltaY > 40) {
+            if (deltaY > 35) {
               navigateShorts(1); // Swiped UP -> Next
-            } else if (deltaY < -40) {
+            } else if (deltaY < -35) {
               navigateShorts(-1); // Swiped DOWN -> Previous
             }
             touchStartY.current = null;
-          }}
-          onWheel={(e) => {
-            const now = Date.now();
-            if (now - lastWheelTime.current < 450) return;
-            if (e.deltaY > 25) {
-              lastWheelTime.current = now;
-              navigateShorts(1);
-            } else if (e.deltaY < -25) {
-              lastWheelTime.current = now;
-              navigateShorts(-1);
-            }
           }}
         >
           {/* Top Bar Controls */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
             <button 
               onClick={() => { setViewingShortsPost(null); setIsShortsCommentsOpen(false); }}
-              className="p-2.5 bg-black/60 hover:bg-black/90 border border-white/10 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
-              title="Close Shorts"
+              className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              title="Close (Esc)"
             >
               <X className="w-6 h-6" />
             </button>
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-white/10 text-white backdrop-blur-md text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
-              <span>Saints Shorts</span>
+            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/70 border border-white/20 text-white backdrop-blur-md text-xs font-bold shadow-md">
+              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <span>Saints Reel</span>
             </div>
           </div>
 
           <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
             <button 
               onClick={() => setIsShortsMuted(!isShortsMuted)}
-              className="p-2.5 bg-black/60 hover:bg-black/90 border border-white/10 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
-              title={isShortsMuted ? "Unmute" : "Mute"}
+              className="p-2.5 bg-black/70 hover:bg-black/95 border border-white/20 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              title={isShortsMuted ? "Unmute (M)" : "Mute (M)"}
             >
               {isShortsMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
             </button>
           </div>
 
-          {/* Up & Down Floating Navigation Chevrons */}
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 z-40">
+          {/* Up & Down Floating Navigation Chevrons on PC */}
+          <div className="absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col items-center gap-3 z-40">
             <button 
               onClick={() => navigateShorts(-1)}
               disabled={displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) === 0}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110"
-              title="Previous (Swipe Down or Up Arrow)"
+              className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
+              title="Previous (Scroll Up / ↑)"
             >
               <ChevronUp className="w-6 h-6" />
             </button>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-white/50 bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-xs">
+              Scroll
+            </span>
             <button 
               onClick={() => navigateShorts(1)}
               disabled={displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) === displayPosts.length - 1}
-              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110"
-              title="Next (Swipe Up or Down Arrow)"
+              className="p-3.5 rounded-full bg-black/70 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110 shadow-xl"
+              title="Next (Scroll Down / ↓)"
             >
               <ChevronDown className="w-6 h-6" />
             </button>
           </div>
 
-          {/* Main Shorts Container Frame */}
-          <div className="w-full max-w-[420px] h-[92vh] sm:h-[88vh] relative rounded-3xl overflow-hidden bg-black/90 border border-white/15 shadow-2xl flex items-center justify-center">
+          {/* Main Shorts Container Frame: Responsive Width (Wide on Desktop, Centered and Fixed) */}
+          <div className="w-full max-w-[480px] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl h-[94vh] md:h-[88vh] md:max-h-[920px] relative rounded-3xl overflow-hidden bg-black/90 border border-white/20 shadow-2xl flex items-center justify-center mx-3 sm:mx-6">
             
             {/* Ambient Blurred Background for Dynamic Glow */}
             {viewingShortsPost.mediaUrl && !isArchive(viewingShortsPost.mediaUrl) && (
@@ -1417,7 +1446,7 @@ export function TheFeed() {
                   loop
                   playsInline
                   muted={isShortsMuted}
-                  className="w-full h-full object-cover sm:object-contain bg-black"
+                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto bg-black rounded-2xl"
                 />
               ) : viewingShortsPost.mediaUrl && isArchive(viewingShortsPost.mediaUrl) ? (
                 <div className="flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-md rounded-2xl border border-white/10 m-4">
@@ -1439,7 +1468,7 @@ export function TheFeed() {
                   key={viewingShortsPost.id}
                   src={viewingShortsPost.mediaUrl} 
                   alt="Shorts media" 
-                  className="w-full h-full object-cover sm:object-contain"
+                  className="max-h-[88vh] md:max-h-[84vh] w-auto max-w-full object-contain mx-auto rounded-2xl"
                 />
               ) : (
                 /* Text-only Post in Shorts View */
@@ -1633,7 +1662,7 @@ export function TheFeed() {
               </div>
 
               {/* Comments List */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 shorts-comments-scroll">
                 {loadingReplies[viewingShortsPost.id] ? (
                   <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
                 ) : !loadedReplies[viewingShortsPost.id] || loadedReplies[viewingShortsPost.id].length === 0 ? (
@@ -1645,17 +1674,14 @@ export function TheFeed() {
                         <span className="font-bold text-xs">{reply.author?.username}</span>
                         <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(reply.createdAt))} ago</span>
                       </div>
-                      <p className="text-xs text-foreground/90 whitespace-pre-wrap">{reply.body}</p>
+                      <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">{renderBody(reply.body)}</p>
                     </div>
                   ))
                 )}
               </div>
 
-              {/* Quick Comment Input */}
-              <form 
-                onSubmit={(e) => handleReply(e, viewingShortsPost.id)}
-                className="p-3 border-t border-border/50 bg-background/80 flex items-center gap-2"
-              >
+              {/* Comment Input */}
+              <form onSubmit={(e) => handleReply(e, viewingShortsPost.id)} className="p-3 border-t border-border/50 bg-muted/10 flex items-center gap-2">
                 <Input 
                   placeholder="Add a comment... (max 1000)" 
                   value={replyBody}
@@ -1677,8 +1703,8 @@ export function TheFeed() {
         </div>
       )}
 
-      {/* Main Feed Column */}
-      <div className="flex-1 w-full max-w-2xl min-w-0 space-y-4">
+      {/* Main Feed Column: Expanded to generous edge-to-edge max width on PC */}
+      <div className="flex-1 w-full max-w-4xl 2xl:max-w-5xl min-w-0 space-y-4">
         {/* Header */}
         <div className="p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/80 backdrop-blur-xl z-10 shadow-sm">
           <div className="flex justify-between items-center mb-3">
