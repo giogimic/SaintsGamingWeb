@@ -87,28 +87,39 @@ async function main() {
   // 4. Seed Forum Categories & Threads
   const categories = [
     { 
-      name: "Community", 
+      name: "Official News & Announcements", 
+      slug: "official-news",
+      subcategories: [
+        { name: "Game News & Updates", slug: "game-news", description: "Official game announcements, updates, and server notifications" },
+        { name: "Patch Notes & Releases", slug: "patch-notes", description: "Detailed patch notes, MMO client updates, and balance changes" },
+        { name: "Rules & Guidelines", slug: "rules", description: "Official community guidelines and platform rules" }
+      ]
+    },
+    { 
+      name: "General & Community", 
       slug: "community",
       subcategories: [
-        { name: "Rules & Guidelines", slug: "rules", description: "Official rules for Saints Gaming" },
-        { name: "Announcements", slug: "announcements", description: "Official announcements and updates" },
-        { name: "General Discussion", slug: "general-discussion", description: "Discuss anything gaming related" }
+        { name: "General Discussion", slug: "general-discussion", description: "Discuss anything related to Saints Gaming and gaming in general" },
+        { name: "Introductions & Welcomes", slug: "introductions", description: "New to the realm? Introduce yourself to the Saints community" },
+        { name: "Media & Studio Creations", slug: "media-creations", description: "Share your screenshots, videos, maps, and studio artwork" }
       ]
     },
     { 
-      name: "Palworld Servers", 
-      slug: "palworld",
+      name: "Saints MMO & World Building", 
+      slug: "saints-mmo",
       subcategories: [
-        { name: "Palworld General", slug: "palworld-general", description: "General discussion for Palworld" },
-        { name: "Tribes & Recruitment", slug: "palworld-tribes", description: "Find players for your tribe" }
+        { name: "Hero Battles & Mechanics", slug: "hero-battles", description: "Strategies, builds, battle mechanics, and balance discussion" },
+        { name: "World Studio & Map Crafting", slug: "world-studio", description: "World Builder discussion, tilesets, scripts, and level design" },
+        { name: "Guides & Tutorials", slug: "guides-tutorials", description: "Community created guides, quest walkthroughs, and tips" }
       ]
     },
     { 
-      name: "Support", 
+      name: "Support & Development", 
       slug: "support",
       subcategories: [
-        { name: "Bug Reports", slug: "bug-reports", description: "Report bugs in the game or website" },
-        { name: "Help & Questions", slug: "help", description: "Ask for help from the community" }
+        { name: "Bug Reports", slug: "bug-reports", description: "Report bugs, visual glitches, or unexpected behavior" },
+        { name: "Suggestions & Feedback", slug: "suggestions-feedback", description: "Propose new features, improvements, and community ideas" },
+        { name: "Help & Technical Support", slug: "help-support", description: "Get assistance with account, launcher, or connection issues" }
       ]
     },
   ];

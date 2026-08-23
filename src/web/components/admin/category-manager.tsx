@@ -123,9 +123,77 @@ export function CategoryManager({ initialCategories, userPermissionLevel }: { in
     });
   };
 
-  // Move Up / Move Down helper (to be fully implemented in backend later, currently just basic UI scaffold)
-  const handleMove = async (_id: string, _direction: "up" | "down", _type: "category" | "subcategory") => {
-    alert("Reordering functionality is coming soon.");
+  // Move Up / Move Down handler
+  const handleMove = async (id: string, direction: "up" | "down", type: "category" | "subcategory") => {
+    setIsSaving(true);
+    try {
+      if (type === "category") {
+        const index = initialCategories.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= initialCategories.length) return;
+
+        const newItems = [...initialCategories];
+        const temp = newItems[index];
+        newItems[index] = newItems[targetIndex];
+        newItems[targetIndex] = temp;
+
+        const payload = newItems.map((item, idx) => ({
+          id: item.id,
+          order: idx,
+        }));
+
+        const res = await fetch("/api/admin/forum/reorder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "category", items: payload }),
+        });
+
+        if (res.ok) {
+          router.refresh();
+        } else {
+          alert("Failed to reorder categories.");
+        }
+      } else {
+        // Find category containing subcategory
+        const parentCat = initialCategories.find((c) =>
+          c.subcategories.some((s) => s.id === id)
+        );
+        if (!parentCat) return;
+
+        const subs = [...parentCat.subcategories];
+        const index = subs.findIndex((s) => s.id === id);
+        if (index === -1) return;
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= subs.length) return;
+
+        const temp = subs[index];
+        subs[index] = subs[targetIndex];
+        subs[targetIndex] = temp;
+
+        const payload = subs.map((item, idx) => ({
+          id: item.id,
+          order: idx,
+        }));
+
+        const res = await fetch("/api/admin/forum/reorder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "subcategory", items: payload }),
+        });
+
+        if (res.ok) {
+          router.refresh();
+        } else {
+          alert("Failed to reorder boards.");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while reordering.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

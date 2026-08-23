@@ -227,6 +227,10 @@ interface EditorState {
   /** Soft locks held by collaborators (CC1). Key is resource string. */
   activeLocks: Record<string, SoftLock>;
 
+  /** Active Atlas Node selected in World Atlas / Atlas Studio */
+  selectedAtlasNodeId: string | null;
+  setSelectedAtlasNodeId: (id: string | null) => void;
+
   /** Active paint transaction (for grouping brush strokes). */
   paintTransaction: PaintedCell[] | null;
 
@@ -680,6 +684,11 @@ export const useEditorStore = create<EditorState>()(
       paintTransaction: null,
       playtestSnapshot: null,
       activeLocks: {},
+      selectedAtlasNodeId: null,
+      setSelectedAtlasNodeId: (id) =>
+        set((state) => {
+          state.selectedAtlasNodeId = id;
+        }),
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
       activeLogicTileId: 1,
       activeLayerIdx: 0,

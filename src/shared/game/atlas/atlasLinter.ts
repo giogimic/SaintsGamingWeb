@@ -52,13 +52,15 @@ export function lintWorldAtlasConnectivity(
   if (atlas?.nodes) {
     const occupiedSlots = new Map<string, string>();
     for (const node of atlas.nodes) {
-      const key = `${node.gridX}_${node.gridY}`;
+      const nx = node.x ?? node.gridX ?? 0;
+      const ny = node.y ?? node.gridY ?? 0;
+      const key = `${nx}_${ny}`;
       if (occupiedSlots.has(key)) {
         errors.push({
           severity: 'error',
           sourceMapId: node.mapId,
           code: 'DUPLICATE_ATLAS_SLOT',
-          message: `Map '${node.mapId}' overlaps slot (${node.gridX}, ${node.gridY}) already claimed by '${occupiedSlots.get(key)}'.`,
+          message: `Map '${node.mapId}' overlaps slot (${nx}, ${ny}) already claimed by '${occupiedSlots.get(key)}'.`,
         });
       } else {
         occupiedSlots.set(key, node.mapId);
