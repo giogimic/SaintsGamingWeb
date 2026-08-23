@@ -14,7 +14,7 @@ import {
 import { 
   getVisibleAdminModules, 
   ADMIN_CATEGORIES, 
-  AdminCategoryKey,
+  AdminCategoryId,
   AdminModule
 } from "@/web/lib/admin-modules";
 import { 
@@ -59,7 +59,7 @@ export function GlobalCommandPalette({
 
   // Group modules by category
   const categorizedModules = React.useMemo(() => {
-    const map = new Map<AdminCategoryKey, AdminModule[]>();
+    const map = new Map<AdminCategoryId, AdminModule[]>();
     for (const mod of visibleModules) {
       if (!map.has(mod.category)) {
         map.set(mod.category, []);

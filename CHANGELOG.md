@@ -1,3 +1,11 @@
+## [2.1.440] - 2026-08-23
+### Fix
+- **TypeScript Type Safety in Layout & Profile**: Selected `isWriter` in user Prisma query in `app/(main)/profile/page.tsx` and updated `app/(main)/layout.tsx` to resolve Next.js production typecheck validation.
+
+## [2.1.439] - 2026-08-23
+### Fix
+- **Profile Layout JSX Tagging**: Restored missing `<CardContent>` container tag in `app/(main)/profile/page.tsx` resolving Next.js build compilation failure.
+
 ## [2.1.438] - 2026-08-23
 ### Phase 10: Operational Intelligence & Master Control Center Sign-Off
 - **Full 10-Phase Transformation Complete**: Completed comprehensive overhaul and modernization of the entire Saints Gaming Administration & Developer suite.

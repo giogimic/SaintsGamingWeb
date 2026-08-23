@@ -42,7 +42,7 @@ export default async function ProfilePage() {
     }),
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { youtubeVideoUrl: true, youtubeMusicUrl: true, profileImages: true }
+      select: { youtubeVideoUrl: true, youtubeMusicUrl: true, profileImages: true, isWriter: true }
     }),
     prisma.gameCharacter.findMany({
       where: { userId: user.id },
@@ -112,6 +112,7 @@ export default async function ProfilePage() {
                 </Badge>
               </div>
             </CardHeader>
+            <CardContent className="flex flex-col gap-2">
               {/* Staff / Operator Fast-Switch */}
               {(roleLevel >= PERMISSION_LEVELS.MODERATOR || userRecord?.isWriter) && (
                 <div className="p-3 my-1 rounded-xl border border-primary/30 bg-primary/5 space-y-2">

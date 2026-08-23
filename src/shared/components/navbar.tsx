@@ -22,7 +22,7 @@ import { NotificationsMenu } from "@/shared/components/notifications-menu";
 import { ThemeSwitcher } from "@/shared/components/theme-switcher";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/shared/ui/sheet";
 import { signOut } from "next-auth/react";
-import { User as UserIcon, LogOut, Settings, Gamepad2, Rss, Flame } from "lucide-react";
+import { User as UserIcon, LogOut, Settings, Gamepad2, Rss, Flame, Sparkles } from "lucide-react";
 import packageJson from '../../../package.json';
 import {
   DropdownMenu,
@@ -389,7 +389,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.438"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.440"}</span>
           </div>
 
 
