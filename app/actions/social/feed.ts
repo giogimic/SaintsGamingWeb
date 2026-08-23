@@ -10,16 +10,18 @@ export async function getTheFeed(hashtagFilter?: string, broadenFeed?: boolean, 
   const session = await auth();
   const currentUserId = session?.user?.id;
 
+  if (!currentUserId) {
+    return [];
+  }
+
   // Fetch muted keywords/hashtags for the current user
   let mutedKeywords: string[] = [];
   let mutedHashtags: string[] = [];
-  if (currentUserId) {
-    const muted = await prisma.socialMutedKeyword.findMany({
-      where: { userId: currentUserId }
-    });
-    mutedKeywords = muted.filter(m => m.type === "KEYWORD").map(m => m.keyword.toLowerCase());
-    mutedHashtags = muted.filter(m => m.type === "HASHTAG").map(m => m.keyword.toLowerCase());
-  }
+  const muted = await prisma.socialMutedKeyword.findMany({
+    where: { userId: currentUserId }
+  });
+  mutedKeywords = muted.filter(m => m.type === "KEYWORD").map(m => m.keyword.toLowerCase());
+  mutedHashtags = muted.filter(m => m.type === "HASHTAG").map(m => m.keyword.toLowerCase());
 
   const whereClause: any = { parentId: null };
   if (broadenFeed) {

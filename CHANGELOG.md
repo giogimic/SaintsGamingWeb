@@ -1,3 +1,9 @@
+## [2.1.444] - 2026-08-23
+### Security & Authentication
+- **Enforced Login on The Feed (`/profile/inbox`, `/feed`, `getTheFeed`)**:
+  - Protected the main feed route (`/profile/inbox`) and alias (`/feed`), automatically redirecting unauthenticated visitors to `/login?callbackUrl=/profile/inbox`.
+  - Enforced strict session authentication checks in `getTheFeed` server action to secure social post feeds from anonymous access.
+
 ## [2.1.443] - 2026-08-23
 ### Fix
 - **Forum & News AI Text Enhancement (`/api/ai/enhance`, `/admin/forum/settings`)**:
