@@ -41,6 +41,8 @@ const FORUM_AI_SETTING_KEYS = new Set([
   "forum_ai_provider",
   "forum_ai_ollama_url",
   "forum_ai_ollama_model",
+  "gemini_api_key",
+  "GEMINI_API_KEY",
 ]);
 
 /** Forum Settings → text enhance provider (Developer+). */

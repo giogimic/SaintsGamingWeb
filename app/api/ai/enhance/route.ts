@@ -44,19 +44,38 @@ export async function POST(req: Request) {
     }
 
     // Default: Gemini cloud
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = config.apiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { message: "Gemini API key not configured (GEMINI_API_KEY)" },
-        { status: 500 }
+        { message: "Gemini API key not configured. Set GEMINI_API_KEY in environment or Forum Settings." },
+        { status: 400 }
       );
     }
 
     const ai = new GoogleGenAI({ apiKey });
-    const responseStream = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+    const primaryModel = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+
+    let responseStream: any;
+    try {
+      responseStream = await ai.models.generateContentStream({
+        model: primaryModel,
+        contents: prompt,
+      });
+    } catch (primaryErr) {
+      console.warn(`Primary Gemini model ${primaryModel} failed, trying fallback gemini-1.5-flash:`, primaryErr);
+      try {
+        responseStream = await ai.models.generateContentStream({
+          model: "gemini-1.5-flash",
+          contents: prompt,
+        });
+      } catch (fallbackErr: any) {
+        console.error("Gemini fallback model also failed:", fallbackErr);
+        return NextResponse.json(
+          { message: fallbackErr?.message || "Gemini API request failed. Verify API key and network." },
+          { status: 502 }
+        );
+      }
+    }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -79,9 +98,12 @@ export async function POST(req: Request) {
     return new Response(stream, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Enhance Error:", error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: error?.message || "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 

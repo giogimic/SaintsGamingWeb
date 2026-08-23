@@ -5,6 +5,7 @@ import { Textarea } from "@/shared/ui/textarea";
 import { Button } from "@/shared/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Bold, Italic, Link as LinkIcon, List, ListOrdered, Quote, Image as ImageIcon, Film, Sparkles, Wand2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
 interface MarkdownEditorProps {
@@ -96,9 +97,10 @@ export function MarkdownEditor({ value, onChange, placeholder, draftKey, isNews 
         newText += decoder.decode(chunk, { stream: true });
         onChange(newText);
       }
+      toast.success(intent === "grammar" ? "Grammar check applied!" : "Text polished!");
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Failed to enhance text.");
+      toast.error(err instanceof Error ? err.message : "Failed to enhance text.");
     } finally {
       setIsEnhancing(false);
     }

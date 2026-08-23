@@ -23,12 +23,13 @@ export interface ForumAiConfig {
   ollamaUrl: string;
   ollamaModel: string;
   geminiConfigured: boolean;
+  apiKey?: string;
 }
 
 export async function getForumAiConfig(): Promise<ForumAiConfig> {
   const keys = Object.values(FORUM_AI_KEYS);
   const rows = await prisma.siteSetting.findMany({
-    where: { key: { in: [...keys] } },
+    where: { key: { in: [...keys, "GEMINI_API_KEY"] } },
   });
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
 
@@ -41,6 +42,8 @@ export async function getForumAiConfig(): Promise<ForumAiConfig> {
   const enabled =
     (map[FORUM_AI_KEYS.enabled] ?? "true") === "true" && provider !== "off";
 
+  const apiKey = process.env.GEMINI_API_KEY || map[FORUM_AI_KEYS.geminiApiKey] || map["GEMINI_API_KEY"] || "";
+
   return {
     enabled,
     provider,
@@ -49,6 +52,7 @@ export async function getForumAiConfig(): Promise<ForumAiConfig> {
       ""
     ),
     ollamaModel: map[FORUM_AI_KEYS.ollamaModel] || "llama3.2:3b",
-    geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    geminiConfigured: Boolean(apiKey),
+    apiKey,
   };
 }

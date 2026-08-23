@@ -1,3 +1,10 @@
+## [2.1.443] - 2026-08-23
+### Fix
+- **Forum & News AI Text Enhancement (`/api/ai/enhance`, `/admin/forum/settings`)**:
+  - Upgraded Google GenAI model to `gemini-2.0-flash` with automatic fallback to `gemini-1.5-flash` to eliminate model endpoint not found errors.
+  - Added in-panel Gemini API Key configuration so administrators can save their Gemini API key directly to the database via Admin Settings without requiring server environment restarts.
+  - Replaced editor alert popups with fluid Sonner toast notifications in `MarkdownEditor`.
+
 ## [2.1.442] - 2026-08-23
 ### Fix
 - **Pixel Art Asset Studio UI & Data Projection (`/admin/game-dev/assets`)**: Fixed asset mapping and rendering for 1600+ database assets.
