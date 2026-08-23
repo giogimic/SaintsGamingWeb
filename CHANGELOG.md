@@ -1,3 +1,9 @@
+## [2.1.445] - 2026-08-23
+### Features & UX
+- **Chatbox Reel / TikTok-Style Feed Viewer Integration (`MiniSocialFeed`, `ShortsViewerModal`)**:
+  - Extracted and created the reusable `<ShortsViewerModal />` supporting immersive full-screen video playback, audio stems, double-tap heart animations, vertical swipe/scroll navigation, and interactive comments.
+  - Linked post body, video thumbnails, and "Watch" actions in the bottom-right chatbox Messenger popup to launch the full-screen TikTok-style Shorts viewer seamlessly.
+
 ## [2.1.444] - 2026-08-23
 ### Security & Authentication
 - **Enforced Login on The Feed (`/profile/inbox`, `/feed`, `getTheFeed`)**:
