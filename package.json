@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-community",
-  "version": "2.1.453",
+  "version": "2.1.454",
   "private": true,
 
 
@@ -16,6 +16,8 @@
     "lint": "eslint",
     "release": "node scripts/release.mjs",
     "test": "vitest run",
+    "audit:legacy": "tsx scripts/audit-legacy-references.ts",
+    "validate:data": "tsx scripts/validate-canonical-data.ts",
     "smoke": "bash ./scripts/smoke-staging.sh",
     "assets:install": "tsx scripts/install-asset-pack.ts",
     "sync:assets": "tsx scripts/sync-local-assets.ts",

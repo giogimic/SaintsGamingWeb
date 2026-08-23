@@ -115,7 +115,7 @@ export interface CanonicalNormalizedAsset {
  * deterministic schema.
  */
 export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNormalizedAsset {
-  const gameId = input.gameId || "tuxemon";
+  const gameId = input.gameId || "saints";
   const sourceUrl = input.sourceUrl || "";
   const filename = sourceUrl.split("/").pop() || "unnamed_asset";
   const assetName = input.name || filename.replace(/\.[^/.]+$/, "").replace(/[_-]/g, " ");
@@ -422,7 +422,7 @@ export function projectUsableAssetToGameAssetData(
 
   const canonical = buildCanonicalAssetData({
     userId: undefined,
-    gameId: usable.gameId || "tuxemon",
+    gameId: usable.gameId || "saints",
     name: usable.name,
     type: usable.type,
     category: usable.category,

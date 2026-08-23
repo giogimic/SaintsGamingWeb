@@ -64,7 +64,7 @@ export interface AssetIngestResult {
 
 export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIngestResult> {
   try {
-    const { file, userId, gameId = "tuxemon", createUsable = true } = options;
+    const { file, userId, gameId = "saints", createUsable = true } = options;
 
     if (!file || file.size === 0) {
       return { success: false, error: "Empty or invalid file uploaded." };

@@ -25,26 +25,21 @@ async function main() {
     console.log(`[ok] ${p.id} (${p.name})`);
   }
 
-  // Tag Spyder quests with tuxemon gameId if column exists
+  // Tag Spyder quests with saints gameId if column exists
   try {
     const updated = await prisma.questTemplate.updateMany({
       where: { slug: { startsWith: "quest_" } },
-      data: { gameId: "tuxemon" },
+      data: { gameId: "saints" },
     });
-    console.log(`[ok] tagged ${updated.count} quests → tuxemon`);
+    console.log(`[ok] tagged ${updated.count} quests → saints`);
   } catch (e) {
     console.warn("[skip] quest gameId tag (run prisma db push first)", e);
   }
 
-  // Tag spyder_tamer hero
+  // Tag starter heroes
   try {
     await prisma.starterHero.updateMany({
-      where: { slug: "spyder_tamer" },
-      data: { gameId: "tuxemon" },
-    });
-    await prisma.starterHero.updateMany({
-      where: { slug: { not: "spyder_tamer" }, startingMap: "DEMO_SANDBOX" },
-      data: { gameId: "custom_1" },
+      data: { gameId: "saints" },
     });
     console.log("[ok] tagged starter heroes");
   } catch (e) {

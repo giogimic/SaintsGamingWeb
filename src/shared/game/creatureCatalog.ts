@@ -518,7 +518,7 @@ export function listFallbackStarters(): CreatureDefData[] {
 export function emptyCreatureDef(): CreatureDefData {
   return {
     slug: "",
-    gameId: "tuxemon",
+    gameId: "saints",
     name: "",
     dexNumber: 0,
     typePrimary: "Solar",

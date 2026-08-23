@@ -246,7 +246,7 @@ func PersistMap(db *sql.DB, wm *world.Manager, id, name, grid, npcs, tiles, tile
 			name, grid, npcs, tiles, tilesets, id)
 	} else {
 		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, version)
-			VALUES (?, 'tuxemon', ?, ?, '{}', ?, '[]', ?, ?, 1)`, id, name, grid, npcs, tiles, tilesets)
+			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 1)`, id, name, grid, npcs, tiles, tilesets)
 	}
 	return err
 }

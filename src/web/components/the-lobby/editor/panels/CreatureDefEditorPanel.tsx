@@ -358,7 +358,7 @@ export function CreatureDefEditorPanel() {
                     onFocus={onFieldFocus}
                     onBlur={onFieldBlur}
                     onChange={(e) => f('gameId', e.target.value || null)}
-                    placeholder="tuxemon / custom_1 / empty=shared"
+                    placeholder="saints / custom_1 / empty=shared"
                   />
                   <label className={labelCls}>Slug</label>
                   <input

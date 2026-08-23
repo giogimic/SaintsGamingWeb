@@ -133,7 +133,7 @@ model User {
   youtubeVideoUrl String?
   youtubeMusicUrl String?
   profileImages   ProfileImage[]
-  pinnedBeastId   String? // ID of the Tuxemon to display on profile
+  pinnedBeastId   String? // ID of the Beast/Creature to display on profile
 
   // Guilds
   guildMemberships GuildMember[]
@@ -761,7 +761,7 @@ model MapPrefab {
 
 model WorldMap {
   id             String   @id // e.g. "SAINTS_VILLAGE"
-  gameId         String?  @default("tuxemon")
+  gameId         String?  @default("saints")
   name           String
   gridData       String // JSON 2D Array
   gatesData      String // JSON
@@ -814,7 +814,7 @@ model GameAsset {
   source        String   @default("") // canonical file path
   atlasSource   String?  // atlas file if from atlas
   atlasFrame    String?  // JSON: {x, y, width, height} for atlas extraction
-  tags          String   @default("[]") // JSON string: ["tuxemon", "npc", "male"] for SQLite compat
+  tags          String   @default("[]") // JSON string: ["saints", "npc", "male"] for SQLite compat
   categories    String   @default("[]") // JSON string: ["npcs", "heroes"] for SQLite compat
   metadata      String   @default("{}") // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
   customLabels  String?  // JSON string: {en: "Hero", es: "Héroe"}
@@ -840,7 +840,7 @@ model GameConfig {
   // Game rules
   maxLevel      Int      @default(100)
   baseStats     String   @default("{}") // JSON: {hp: 100, atk: 50, ...}
-  combatFormula String   @default("tuxemon-standard")
+  combatFormula String   @default("saints-standard")
   skillFormula  String   @default("runescape-style")
   xpCurve       String   @default("exponential")
   xpCurveData   String?  // JSON: custom XP table
@@ -848,8 +848,8 @@ model GameConfig {
   globalShinyChancePercent Float @default(0.5)
 
   // Asset pack references
-  spritePackIds  String   @default("[]") // JSON: ["tuxemon-npcs", "tuxemon-monsters"]
-  tilesetPackIds String   @default("[]") // JSON: ["tuxemon-outdoor", "tuxemon-indoor"]
+  spritePackIds  String   @default("[]") // JSON: ["saints-npcs", "saints-monsters"]
+  tilesetPackIds String   @default("[]") // JSON: ["saints-outdoor", "saints-indoor"]
 
   // Performance settings
   maxEntitiesPerMap  Int    @default(100)
@@ -875,7 +875,7 @@ model CharacterClass {
   id            String    @id @default(cuid())
   gameId        String
   game          GameConfig @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  /// World profile id (tuxemon / custom_1 / custom_2). null/empty = shared across profiles.
+  /// World profile id (saints / custom_1 / custom_2). null/empty = shared across profiles.
   /// Distinct from gameId, which is the GameConfig FK (slug "saints").
   profileId     String?
   slug          String
@@ -948,7 +948,7 @@ model LootTable {
 model MonsterSpritePool {
   id                     String   @id @default(cuid())
   gameId                 String
-  speciesSlug            String   // references TuxemonSpecies.slug
+  speciesSlug            String   // references CreatureDef.slug
   spriteAssetId          String   // primary sprite (front)
   shinySpriteAssetId     String?
   backSpriteAssetId      String?
@@ -1526,7 +1526,7 @@ model SaintsMap {
   @@index([slug])
 }
 
-// ─── Tile Registry (Tuxemon Tilesets) ─────────────────────────────
+// ─── Tile Registry (Saints Tilesets) ─────────────────────────────
 
 model TileRegistry {
   id              String  @id @default(cuid())
@@ -1592,7 +1592,7 @@ model QuestTemplate {
   id             String           @id @default(cuid())
   slug           String           @unique
   /// World profile id (matches WorldMap.gameId / Studio active profile)
-  gameId         String           @default("tuxemon")
+  gameId         String           @default("saints")
   title          String
   description    String
   levelReq       Int              @default(1)
@@ -1686,7 +1686,7 @@ model StarterHero {
   id          String   @id @default(cuid())
   slug        String   @unique          // e.g. "warrior", "mystic" — used as stable key
   /// World profile id (Studio active profile / WorldMap.gameId)
-  gameId      String   @default("tuxemon")
+  gameId      String   @default("saints")
   name        String                    // Display name on card
   classId     String                    // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
   spriteKey   String                    // Key in GAME_SPRITES (no extension), e.g. "warrior"
@@ -1715,7 +1715,7 @@ model CreatureDef {
   id                    String   @id @default(cuid())
   slug                  String   @unique // e.g. "agnite", "rockitten"
   /// World profile id; null/empty = shared across all Studio profiles
-  gameId                String?  @default("tuxemon")
+  gameId                String?  @default("saints")
   name                  String            // Display name
   dexNumber             Int      @default(0)
   // Types (Saints elements). Secondary may be "None".
@@ -1785,7 +1785,7 @@ model PlayerStructure {
 
 model WorldAtlas {
   id            String   @id @default(cuid())
-  gameId        String   @unique @default("tuxemon")
+  gameId        String   @unique @default("saints")
   lobbyMapId    String?  @default("LOBBY")
   atlasData     String   @default("{}") // JSON blob of nodes, edges, bufferPresets, options
   createdAt     DateTime @default(now())
@@ -1840,7 +1840,7 @@ model UsableAsset {
   // Ownership, Community & Moderation (Bible 35 §7)
   createdById       String
   createdBy         User         @relation("UsableAssetsCreated", fields: [createdById], references: [id], onDelete: Cascade)
-  gameId            String?      @default("tuxemon") // World profile or game ID
+  gameId            String?      @default("saints") // World profile or game ID
   visibility        String       @default("COMMUNITY") // "PERSONAL", "PROJECT", "COMMUNITY", "PUBLIC"
   moderationStatus  String       @default("APPROVED")  // "PENDING", "APPROVED", "REJECTED"
   license           String?      @default("CC0")

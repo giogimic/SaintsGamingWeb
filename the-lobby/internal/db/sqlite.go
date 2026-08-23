@@ -48,7 +48,7 @@ func migrate(db *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS WorldMap (
 			id TEXT PRIMARY KEY,
-			gameId TEXT DEFAULT 'tuxemon',
+			gameId TEXT DEFAULT 'saints',
 			name TEXT NOT NULL,
 			gridData TEXT NOT NULL,
 			gatesData TEXT NOT NULL DEFAULT '{}',

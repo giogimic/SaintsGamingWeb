@@ -169,7 +169,7 @@ const FALLBACK_HEROES = [
   { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'good-ranger-grovekeeper-female', flavor: 'Agile hunter. Precision strikes and tactical kiting.', tag: 'Mobile', tagColor: '#fbbf24', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
   { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'good-cleric-highpriestess-female', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
   { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength martial artist. Balanced offense and defense.', tag: 'Balanced', tagColor: '#fb923c', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'spyder_tamer', name: 'Spyder Saint', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Tuxemon campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
+  { slug: 'spyder_tamer', name: 'Spyder Saint', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Saints campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
 ];
 
 type DbHero = {

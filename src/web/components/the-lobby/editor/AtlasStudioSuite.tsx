@@ -677,6 +677,7 @@ export function AtlasStudioSuite() {
                 </div>
               )}
             </div>
+          </div>
         );
 
       case 'explorer':

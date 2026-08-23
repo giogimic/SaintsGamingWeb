@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import { normalizeAtlasGridData } from "@/shared/game/atlas/spatialAtlas";
+import { DEFAULT_WORLD_PROFILE_ID } from "@/shared/game/worldProfiles";
 
 export const dynamic = 'force-dynamic';
 
@@ -21,14 +22,14 @@ const DEFAULT_ATLAS_DATA = JSON.stringify({
 });
 
 /**
- * GET /api/world/atlas?gameId=tuxemon
+ * GET /api/world/atlas?gameId=saints
  * Returns the macro WorldAtlas node layout from the canonical WorldAtlas table,
  * with legacy SiteSetting fallback/migration only if WorldAtlas is unpopulated.
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const gameId = searchParams.get("gameId") || "tuxemon";
+    const gameId = searchParams.get("gameId") || DEFAULT_WORLD_PROFILE_ID;
 
     let atlasRecord: any = null;
     let finalAtlasData: string | null = null;
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       atlas: {
-        gameId: "tuxemon",
+        gameId: DEFAULT_WORLD_PROFILE_ID,
         lobbyMapId: "LOBBY",
         atlasData: DEFAULT_ATLAS_DATA,
       }
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const gameId = body.gameId || "tuxemon";
+    const gameId = body.gameId || DEFAULT_WORLD_PROFILE_ID;
     const lobbyMapId = body.lobbyMapId || "LOBBY";
     const rawAtlasData = typeof body.atlasData === 'string'
       ? JSON.parse(body.atlasData || '{"nodes":[]}')

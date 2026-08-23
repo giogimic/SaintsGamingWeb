@@ -10,7 +10,7 @@ const defaults = [
   {
     slug: "warrior",
     name: "Warrior",
-    gameId: "custom_1",
+    gameId: "saints",
     classId: "WARRIOR",
     spriteKey: "warrior",
     flavor: "Frontline champion. High HP, unstoppable in melee.",
@@ -26,7 +26,7 @@ const defaults = [
   {
     slug: "paladin",
     name: "Paladin",
-    gameId: "custom_1",
+    gameId: "saints",
     classId: "WARRIOR",
     spriteKey: "knight",
     flavor: "Holy guardian. Superior defense, supports allies.",
@@ -42,7 +42,7 @@ const defaults = [
   {
     slug: "mystic",
     name: "Mystic",
-    gameId: "custom_1",
+    gameId: "saints",
     classId: "MAGE",
     spriteKey: "magician",
     flavor: "Master of arcane arts. High burst, low defense.",
@@ -58,11 +58,12 @@ const defaults = [
   {
     slug: "shadow",
     name: "Shadow",
+    gameId: "saints",
     classId: "THIEF",
-    spriteKey: "rogue",
-    flavor: "Swift and lethal. Strike before you're seen.",
-    tag: "Skill Cap",
-    tagColor: "#f472b6",
+    spriteKey: "shadow",
+    flavor: "Master of stealth. Quick strikes and critical hits.",
+    tag: "Agile",
+    tagColor: "#ec4899",
     sortOrder: 4,
     isActive: true,
     startingMap: "DEMO_SANDBOX",
@@ -73,27 +74,13 @@ const defaults = [
   {
     slug: "ranger",
     name: "Ranger",
+    gameId: "saints",
     classId: "RANGER",
-    spriteKey: "ninja",
-    flavor: "Agile hunter. Precision strikes from distance.",
-    tag: "Mobile",
-    tagColor: "#fbbf24",
+    spriteKey: "dragonrider",
+    flavor: "Expert marksman. Ranged precision and field utility.",
+    tag: "Tactical",
+    tagColor: "#f59e0b",
     sortOrder: 5,
-    isActive: true,
-    startingMap: "DEMO_SANDBOX",
-    startingX: 14,
-    startingY: 15,
-    startingInventory: '{"capture_script":10,"patch_kit":5}',
-  },
-  {
-    slug: "priest",
-    name: "Priest",
-    classId: "PRIEST",
-    spriteKey: "disciple",
-    flavor: "Devoted healer. Wisdom and vitality over raw attack.",
-    tag: "Support",
-    tagColor: "#e2d5b3",
-    sortOrder: 6,
     isActive: true,
     startingMap: "DEMO_SANDBOX",
     startingX: 14,
@@ -103,12 +90,13 @@ const defaults = [
   {
     slug: "monk",
     name: "Monk",
+    gameId: "saints",
     classId: "WARRIOR",
-    spriteKey: "monk",
-    flavor: "Inner strength fighter. Balanced offense and utility.",
-    tag: "Balanced",
-    tagColor: "#fb923c",
-    sortOrder: 7,
+    spriteKey: "catgirl",
+    flavor: "Disciplined martial artist. Fast combos and self-healing.",
+    tag: "Sustained",
+    tagColor: "#10b981",
+    sortOrder: 6,
     isActive: true,
     startingMap: "DEMO_SANDBOX",
     startingX: 14,
@@ -118,9 +106,10 @@ const defaults = [
   {
     slug: "spyder_tamer",
     name: "Spyder Tamer",
+    gameId: "saints",
     classId: "RANGER",
     spriteKey: "catgirl",
-    flavor: "Starts in Azure Town — Tuxemon Spyder campaign playtest bed.",
+    flavor: "Starts in Azure Town — Saints campaign playtest bed.",
     tag: "Campaign",
     tagColor: "#cbb26a",
     sortOrder: 0,
@@ -134,11 +123,7 @@ const defaults = [
 
 async function main() {
   for (const h of defaults) {
-    const gameId =
-      (h as { gameId?: string }).gameId ||
-      (h.slug === "spyder_tamer" || h.startingMap === "AZURE_TOWN"
-        ? "tuxemon"
-        : "custom_1");
+    const gameId = (h as { gameId?: string }).gameId || "saints";
     const row = { ...h, gameId };
     await prisma.starterHero.upsert({
       where: { slug: h.slug },
