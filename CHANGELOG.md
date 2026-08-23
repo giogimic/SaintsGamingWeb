@@ -1,3 +1,10 @@
+## [2.1.417] - 2026-08-22
+### Rename `go-mmo` Directory to `the-lobby`
+- **Go MMO Directory Renaming**: Renamed the standalone Go MMO realtime server directory from `go-mmo/` to `the-lobby/` across the repository:
+  - **Go Module & Imports**: Updated `go.mod` to `github.com/giogimic/SaintsGamingWeb/the-lobby` and replaced all internal Go package imports across `the-lobby/internal/...` and `the-lobby/cmd/...`.
+  - **Deployment & Service Configurations**: Updated `scripts/setup.sh`, `scripts/audit-systemd.sh`, `scripts/systemd/saints-go-mmo.service`, `the-lobby/scripts/setup-go-mmo.sh`, `the-lobby/README.md`, `README.md`, and `AGENTS.md` to reference `the-lobby/`.
+  - **Test Suite Verification**: Verified that `go test ./...` in `the-lobby/` and `npm test` across all 186 test suites pass with zero regressions.
+
 ## [2.1.416] - 2026-08-22
 ### Pre-Game Screens & Character Creation Dynamic Theme Integration
 - **Universal Pre-Game Theme Synchronization**: Updated all pre-game game entry interfaces to dynamically inherit the active theme (`Light / Style #3 Dreamy Sunset`, `Vice`, and `Dark / Midnight Tropical`):

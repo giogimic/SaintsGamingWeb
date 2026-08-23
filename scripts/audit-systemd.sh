@@ -177,7 +177,7 @@ inspect_unit() {
   fi
   
   # WorkingDirectory exists but points to a different old repo path
-  if [ -n "$workdir" ] && [ -d "$workdir" ] && [ "$workdir" != "$REPO_ROOT" ] && [ "$workdir" != "$REPO_ROOT/go-mmo" ]; then
+  if [ -n "$workdir" ] && [ -d "$workdir" ] && [ "$workdir" != "$REPO_ROOT" ] && [ "$workdir" != "$REPO_ROOT/the-lobby" ] && [ "$workdir" != "$REPO_ROOT/go-mmo" ]; then
     # It points to another directory
     if [ ! -f "$workdir/server.ts" ] && [ ! -f "$workdir/package.json" ]; then
       is_orphan=1

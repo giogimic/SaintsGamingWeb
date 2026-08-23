@@ -52,7 +52,7 @@ It is an active personal sandbox project by **GioGimic**, built to experiment wi
 - ⚔️ **27-Skill Matrix & Progression:** Full 1–99 skill trees across Combat (9), Gathering (5), Artisan (8), and Support (5) with Grandmaster Capstones (Max Cape, Master Totem Relic).
 - 👾 **Dual-Combat Mechanics:** Seamless real-time overworld mob combat featuring hotbar abilities, combined with instanced turn-based creature battles and capture crystals.
 - 🗺️ **Saints Studio (`/studio`):** Built-in level editor with dual-grid visual GID and collision logic painting, entity spawners, dialogue node editors, and Play-In-Editor (PIE) testing.
-- ⚡ **Hybrid Realtime Backend:** High-performance standalone Go MMO socket server (`go-mmo/`) on `:3001` with Area-of-Interest (AOI) spatial sharding and SQLite persistence.
+- ⚡ **Hybrid Realtime Backend:** High-performance standalone Go MMO socket server (`the-lobby/`) on `:3001` with Area-of-Interest (AOI) spatial sharding and SQLite persistence.
 - 📱 **Adaptive Mobile Controls:** Virtual joystick, quick action pad, and fullscreen launcher for mobile and tablet web browsers.
 - 📚 **In-Depth Documentation Wiki:** Full system breakdown available in [`docs/README.md`](docs/README.md).
 
@@ -77,7 +77,7 @@ It is an active personal sandbox project by **GioGimic**, built to experiment wi
 - **Styling & UI:** Tailwind CSS, Custom `sg-*` Design Tokens, Lucide Icons
 - **Database & ORM:** Prisma ORM with SQLite (dev/embedded) and MariaDB (prod)
 - **Game Engine & Rendering:** Babylon.js 2.5D Orthographic Engine (`BabylonEngine.ts`)
-- **Realtime Networking:** Go MMO service (`go-mmo/`) on `:3001` + Node.js socket fallback (`server.ts`)
+- **Realtime Networking:** The Lobby Go MMO service (`the-lobby/`) on `:3001` + Node.js socket fallback (`server.ts`)
 - **Audio & FX:** WebAudio API synthesized audio effects and particle emitters
 
 ---
@@ -91,8 +91,8 @@ It is an active personal sandbox project by **GioGimic**, built to experiment wi
 # 2. Start development server (Next.js + Socket Engine)
 npm run dev
 
-# 3. Launch Go MMO backend (Required for realtime multiplayer on :3001)
-./go-mmo/scripts/setup-go-mmo.sh --full
+# 3. Launch The Lobby Go backend (Required for realtime multiplayer on :3001)
+./the-lobby/scripts/setup-go-mmo.sh --full
 
 # 4. Run automated test suite (Vitest)
 npm test
