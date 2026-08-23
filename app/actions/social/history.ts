@@ -13,18 +13,31 @@ export async function recordWatchHistory(postId: string) {
   if (!session?.user?.id) return;
 
   // Track the view count and watch history
-  const post = await prisma.socialPost.findUnique({ where: { id: postId }, select: { viewCount: true } });
+  const post = await prisma.socialPost.findUnique({ where: { id: postId }, select: { viewCount: true, authorId: true } });
   
   if (post) {
     const newViewCount = post.viewCount + 1;
-    // Calculate revenue: let's say $0.05 per 100 views (just an example algorithm)
-    const revenueEarned = (newViewCount / 100) * 0.05;
+    // Award 5 Gold every 100 views
+    const shouldAwardGold = newViewCount % 100 === 0;
+    const additionalGold = shouldAwardGold ? 5 : 0;
+    
+    // Total revenue earned for the post is 5 gold per 100 views
+    const revenueEarned = Math.floor(newViewCount / 100) * 5;
 
-    await prisma.socialPost.update({
-      where: { id: postId },
-      data: { 
-        viewCount: { increment: 1 },
-        revenueEarned: revenueEarned
+    await prisma.$transaction(async (tx) => {
+      await tx.socialPost.update({
+        where: { id: postId },
+        data: { 
+          viewCount: { increment: 1 },
+          revenueEarned: revenueEarned
+        }
+      });
+
+      if (additionalGold > 0) {
+        await tx.user.update({
+          where: { id: post.authorId },
+          data: { coins: { increment: additionalGold } }
+        });
       }
     });
   }

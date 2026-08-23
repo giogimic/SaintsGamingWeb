@@ -26,6 +26,7 @@ export type LogicComponentKind =
   | "gate_mine"
   | "gate_forest"
   | "gate_portal"
+  | "bank"
   | "custom";
 
 export type LogicComponentField = {
@@ -68,6 +69,20 @@ export const LOGIC_COMPONENT_PRESETS: LogicComponentPreset[] = [
     isSolid: false,
     interactable: false,
     onInteractAction: null,
+    onStepAction: null,
+    fields: [],
+  },
+  {
+    kind: "bank",
+    tag: "bank",
+    label: "Global Bank",
+    description: "Deposit or withdraw Gold between character inventory and account.",
+    paintTileId: 24,
+    name: "Bank",
+    color: "bg-yellow-600",
+    isSolid: true,
+    interactable: true,
+    onInteractAction: "BANK",
     onStepAction: null,
     fields: [],
   },

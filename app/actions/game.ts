@@ -335,3 +335,79 @@ export async function getTopLobbyOperatives() {
     return { success: false, error: 'Failed to load leaderboards', data: [] };
   }
 }
+
+export async function getGlobalBankGold() {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { coins: true }
+  });
+  return { success: true, gold: user?.coins || 0 };
+}
+
+export async function depositToBank(characterId: string, amount: number) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+
+  const character = await prisma.gameCharacter.findUnique({
+    where: { id: characterId, userId: session.user.id },
+  });
+  if (!character) return { success: false, error: 'Character not found' };
+
+  const state = JSON.parse(character.stateData);
+  if ((state.credits || 0) < amount) {
+    return { success: false, error: 'Insufficient character gold' };
+  }
+
+  state.credits -= amount;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.gameCharacter.update({
+      where: { id: characterId },
+      data: { stateData: JSON.stringify(state) }
+    });
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: { coins: { increment: amount } }
+    });
+  });
+
+  return { success: true, newCharacterGold: state.credits };
+}
+
+export async function withdrawFromBank(characterId: string, amount: number) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { coins: true }
+  });
+  
+  if (!user || user.coins < amount) {
+    return { success: false, error: 'Insufficient bank gold' };
+  }
+
+  const character = await prisma.gameCharacter.findUnique({
+    where: { id: characterId, userId: session.user.id },
+  });
+  if (!character) return { success: false, error: 'Character not found' };
+
+  const state = JSON.parse(character.stateData);
+  state.credits = (state.credits || 0) + amount;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: { coins: { decrement: amount } }
+    });
+    await tx.gameCharacter.update({
+      where: { id: characterId },
+      data: { stateData: JSON.stringify(state) }
+    });
+  });
+
+  return { success: true, newCharacterGold: state.credits, newBankGold: user.coins - amount };
+}

@@ -129,7 +129,7 @@ export async function tipSocialPost(postId: string, amount: number, message?: st
       data: {
         userId: post.authorId,
         type: "TIP",
-        message: `Someone sent you a tip of $${amount}!`,
+        message: `Someone sent you a tip of ${amount} Gold!`,
         link: `/profile/inbox?post=${postId}`
       }
     });

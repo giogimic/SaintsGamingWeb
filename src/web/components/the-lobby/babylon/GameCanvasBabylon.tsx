@@ -436,6 +436,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             gainSkillXp('fishing', payload.xp || 20);
             showToast(`Fishing... caught something! (+${payload.xp || 20} Fishing XP)`);
             break;
+          case 'BANK':
+            showToast('Bank Terminal accessed!');
+            useGameStore.getState().setGameMode('BANK');
+            break;
           case 'OPEN_CRAFTING':
             showToast('Crafting Station accessed!');
             useGameStore.getState().setGameMode('CRAFTING');
@@ -484,6 +488,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     const result = WorldSimulation.tryInteract(worldState, dir);
 
     if (result.type === 'LOGIC_INTERACT') {
+      if (result.action === 'BANK') {
+        showToast('Bank Terminal accessed!');
+        useGameStore.getState().setGameMode('BANK');
+        return;
+      }
       if (result.action === 'OPEN_CRAFTING') {
         showToast('Opened Crafting Station (Playtest Preview)');
         useGameStore.setState({ gameMode: 'CRAFTING' });
