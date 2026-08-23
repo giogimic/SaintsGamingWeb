@@ -4,23 +4,25 @@ import { prisma } from '@/web/lib/prisma';
 export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.saintsgaming.net';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://www.saintsgaming.net';
 
-  // Base static routes
+  // Base static routes with structured priority for search engine sitelinks
   const staticRoutes = [
-    '',
-    '/news',
-    '/forum',
-    '/modpacks',
-    '/servers',
-    '/support',
-    '/login',
-    '/register'
-  ].map((route) => ({
+    { route: '', priority: 1.0, changeFrequency: 'daily' as const },
+    { route: '/forum', priority: 0.9, changeFrequency: 'hourly' as const },
+    { route: '/news', priority: 0.9, changeFrequency: 'daily' as const },
+    { route: '/streams', priority: 0.9, changeFrequency: 'daily' as const },
+    { route: '/modpacks', priority: 0.9, changeFrequency: 'weekly' as const },
+    { route: '/lobby', priority: 0.8, changeFrequency: 'weekly' as const },
+    { route: '/servers', priority: 0.7, changeFrequency: 'daily' as const },
+    { route: '/support', priority: 0.6, changeFrequency: 'monthly' as const },
+    { route: '/login', priority: 0.5, changeFrequency: 'monthly' as const },
+    { route: '/register', priority: 0.5, changeFrequency: 'monthly' as const },
+  ].map(({ route, priority, changeFrequency }) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency: 'daily' as const,
-    priority: route === '' ? 1 : 0.8,
+    changeFrequency,
+    priority,
   }));
 
   // Dynamic News Articles

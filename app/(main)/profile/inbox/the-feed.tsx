@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { 
   getTrendingTags, 
   createSocialPost,
@@ -34,9 +34,9 @@ import { Input } from "@/shared/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { 
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
-  X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, 
+  X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
-  ChevronLeft, ChevronRight, ArrowRight, BarChart2, Pin,
+  ChevronLeft, ChevronRight, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, UploadCloud,
   BadgeCheck, Crown, ShieldCheck, FileArchive, Download
 } from "lucide-react";
 import Image from "next/image";
@@ -56,6 +56,121 @@ const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv
 type MutedKeyword = { id: string; keyword: string; type: string; createdAt: Date };
 
 const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv)$/i.test(url);
+
+function FeedInlineVideo({
+  src,
+  onClick,
+  onRecordView,
+}: {
+  src: string;
+  onClick: () => void;
+  onRecordView?: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasRecordedView, setHasRecordedView] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            video.play().then(() => {
+              setIsPlaying(true);
+              if (!hasRecordedView && onRecordView) {
+                onRecordView();
+                setHasRecordedView(true);
+              }
+            }).catch(() => {});
+          } else {
+            video.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: 0.4 }
+    );
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [hasRecordedView, onRecordView]);
+
+  const togglePlay = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
+
+  return (
+    <div
+      className="relative rounded-xl overflow-hidden bg-black group cursor-pointer border border-border/50 max-h-[440px] flex items-center justify-center"
+      onClick={onClick}
+    >
+      <video
+        ref={videoRef}
+        src={src}
+        playsInline
+        loop
+        muted={isMuted}
+        className="max-h-[440px] w-auto max-w-full object-contain"
+      />
+      
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+      {/* Controls Overlay */}
+      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
+        >
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+        </button>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
+            title="Expand to Fullscreen"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function TheFeed() {
   const { data: session } = useSession();
@@ -81,6 +196,7 @@ export function TheFeed() {
   // Media / GIF
   const [mediaUrl, setMediaUrl] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [showGiphy, setShowGiphy] = useState(false);
   const [giphySearch, setGiphySearch] = useState("");
 
@@ -354,10 +470,8 @@ export function TheFeed() {
     }
   }
 
-  async function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function uploadFileBlob(file: File) {
     if (!file) return;
-
     setIsUploading(true);
     const formData = new FormData();
     formData.append("file", file);
@@ -375,10 +489,54 @@ export function TheFeed() {
 
       const data = await res.json();
       setMediaUrl(data.url);
+      toast.success("Media attached successfully!");
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || "Upload failed");
     } finally {
       setIsUploading(false);
+    }
+  }
+
+  function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) uploadFileBlob(file);
+    e.target.value = "";
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === "file") {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          uploadFileBlob(file);
+          break;
+        }
+      }
+    }
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      uploadFileBlob(e.dataTransfer.files[0]);
     }
   }
 
@@ -725,35 +883,51 @@ export function TheFeed() {
             </div>
           )}
           {post.mediaUrl && (
-            <div 
-              className="mb-3 rounded-xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[400px] relative group cursor-pointer" 
-              onClick={() => {
-                setViewingMedia(post);
-                if (post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm")) {
-                  handleRecordView(post.id);
-                }
-              }}
-            >
+            <div className="mb-3">
               {isArchive(post.mediaUrl) ? (
-                <div className="flex flex-col items-center justify-center p-8 bg-muted/20 w-full h-full text-center">
-                  <FileArchive className="w-16 h-16 text-primary mb-3" />
-                  <span className="text-sm font-semibold mb-2 text-primary break-all px-4">{post.mediaUrl.split('/').pop()}</span>
-                  <a href={post.mediaUrl} download target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors font-bold text-sm" onClick={(e) => e.stopPropagation()}>
-                    <Download className="w-4 h-4" /> Download Archive
+                <div 
+                  className="rounded-xl overflow-hidden border border-border/50 bg-muted/20 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => setViewingMedia(post)}
+                >
+                  <FileArchive className="w-12 h-12 text-primary mb-2" />
+                  <span className="text-sm font-semibold text-primary break-all px-4 mb-2">{post.mediaUrl.split('/').pop()}</span>
+                  <a 
+                    href={post.mediaUrl} 
+                    download 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="flex items-center gap-2 px-4 py-1.5 bg-primary/20 hover:bg-primary/30 text-primary rounded-full transition-colors font-bold text-xs" 
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download Archive
                   </a>
                 </div>
-              ) : post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm") ? (
-                <>
-                  <video src={post.mediaUrl} className="max-h-[400px] w-auto max-w-full opacity-90 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-black/40 backdrop-blur-sm rounded-full p-3">
-                      <svg className="w-8 h-8 text-white fill-white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+              ) : isVideo(post.mediaUrl) ? (
+                <FeedInlineVideo
+                  src={post.mediaUrl}
+                  onClick={() => {
+                    setViewingVideo(post);
+                    handleRecordView(post.id);
+                  }}
+                  onRecordView={() => handleRecordView(post.id)}
+                />
+              ) : (
+                <div 
+                  className="rounded-xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[440px] relative group cursor-pointer"
+                  onClick={() => setViewingMedia(post)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={post.mediaUrl} 
+                    alt="Post attachment" 
+                    className="max-h-[440px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
+                  />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <div className="p-2 rounded-full bg-black/60 text-white backdrop-blur-sm">
+                      <Maximize2 className="w-5 h-5" />
                     </div>
                   </div>
-                </>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={post.mediaUrl} alt="Post attachment" className="max-h-[400px] w-auto max-w-full object-contain" />
+                </div>
               )}
             </div>
           )}
@@ -771,8 +945,15 @@ export function TheFeed() {
             
             {!isReply && !post.isForumThread && (
               <button 
-                onClick={() => setReplyingTo(replyingTo === post.id ? null : post.id)}
-                className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
+                onClick={() => {
+                  if (replyingTo === post.id) {
+                    setReplyingTo(null);
+                  } else {
+                    setReplyingTo(post.id);
+                    setMediaUrl("");
+                  }
+                }}
+                className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary ${replyingTo === post.id ? 'text-primary' : ''}`}
               >
                 <MessageSquare className="w-4 h-4" />
                 {post.repliesCount > 0 && post.repliesCount}
@@ -815,24 +996,98 @@ export function TheFeed() {
           {replyingTo === post.id && !isReply && (
             <div className="mt-4 flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
               <div className="flex-1">
-                <form onSubmit={handlePost} className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                <form 
+                  onSubmit={handlePost} 
+                  onPaste={handlePaste}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className="bg-muted/30 p-3 rounded-xl border border-border/50 relative"
+                >
                   <Textarea 
-                    placeholder="Post your reply..."
+                    placeholder="Post your reply... (paste or drag image/video)"
                     className="resize-none border-0 focus-visible:ring-0 px-0 bg-transparent text-sm min-h-[60px]"
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
                     maxLength={280}
                     autoFocus
                   />
+
+                  {/* Reply Media Preview */}
+                  {isUploading && (
+                    <div className="my-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 flex items-center justify-center gap-2 animate-pulse">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span className="text-xs font-medium text-primary">Uploading attachment...</span>
+                    </div>
+                  )}
+
+                  {mediaUrl && !isUploading && (
+                    <div className="relative my-2 rounded-lg overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[200px]">
+                      <Button 
+                        type="button"
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full z-10 shadow-md"
+                        onClick={() => setMediaUrl("")}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                      {isArchive(mediaUrl) ? (
+                        <div className="flex flex-col items-center justify-center p-4 text-center w-full">
+                          <FileArchive className="w-8 h-8 text-primary mb-1" />
+                          <span className="text-xs font-medium text-primary/80">Archive Attached</span>
+                          <span className="text-[10px] text-muted-foreground break-all max-w-[90%]">{mediaUrl.split('/').pop()}</span>
+                        </div>
+                      ) : isVideo(mediaUrl) ? (
+                        <video src={mediaUrl} controls className="max-h-[200px] w-auto max-w-full rounded" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={mediaUrl} alt="Reply preview" className="max-h-[200px] w-auto max-w-full object-contain rounded" />
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50">
-                     <div className="flex items-center gap-2">
-                       <span className={`text-xs ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                     <div className="flex items-center gap-1">
+                       <div>
+                         <input 
+                           type="file" 
+                           id={`social-reply-media-upload-${post.id}`} 
+                           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg" 
+                           className="hidden" 
+                           onChange={handleMediaUpload} 
+                           disabled={isUploading}
+                         />
+                         <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
+                           <label htmlFor={`social-reply-media-upload-${post.id}`} className="cursor-pointer">
+                             <ImageIcon className="w-4 h-4" />
+                           </label>
+                         </Button>
+                       </div>
+
+                       <div>
+                         <input 
+                           type="file" 
+                           id={`social-reply-archive-upload-${post.id}`} 
+                           accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
+                           className="hidden" 
+                           onChange={handleMediaUpload} 
+                           disabled={isUploading}
+                         />
+                         <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
+                           <label htmlFor={`social-reply-archive-upload-${post.id}`} className="cursor-pointer">
+                             <Paperclip className="w-4 h-4" />
+                           </label>
+                         </Button>
+                       </div>
+
+                       <span className={`text-xs ml-2 ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
                          {body.length} / 280
                        </span>
                      </div>
                      <div className="flex gap-2">
-                       <Button type="button" variant="ghost" size="sm" onClick={() => setReplyingTo(null)}>Cancel</Button>
-                       <Button type="submit" size="sm" disabled={!body.trim() || isPosting}>Reply</Button>
+                       <Button type="button" variant="ghost" size="sm" onClick={() => { setReplyingTo(null); setMediaUrl(""); }}>Cancel</Button>
+                       <Button type="submit" size="sm" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading}>Reply</Button>
                      </div>
                   </div>
                 </form>
@@ -925,7 +1180,7 @@ export function TheFeed() {
           </button>
           
           <div className="flex-1 flex items-center justify-center relative bg-black/90">
-            {viewingVideo.mediaUrl?.endsWith(".mp4") || viewingVideo.mediaUrl?.endsWith(".webm") ? (
+            {isVideo(viewingVideo.mediaUrl) ? (
               <VideoPlayer
                 src={viewingVideo.mediaUrl}
                 autoPlay
@@ -1087,26 +1342,51 @@ export function TheFeed() {
         <div className="overflow-y-auto flex-1 p-4 space-y-6">
           {/* Post Composer */}
           {searchResults === null && (
-            <Card className="bg-card shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+            <Card 
+              className={`bg-card shadow-sm border-border/50 rounded-2xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/50 transition-all relative ${
+                isDragging ? "ring-2 ring-primary border-primary bg-primary/5" : ""
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {/* Drag & Drop Visual Overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-2xl flex flex-col items-center justify-center z-30 pointer-events-none backdrop-blur-xs animate-in fade-in duration-150">
+                  <UploadCloud className="w-10 h-10 text-primary animate-bounce mb-2" />
+                  <span className="text-sm font-bold text-primary">Drop images, videos, or archives here</span>
+                </div>
+              )}
+
               <CardContent className="p-0">
                 <form onSubmit={handlePost}>
                   <Textarea 
-                    placeholder="What's happening? Use #hashtags to join trends!"
+                    placeholder="What's happening? Use #hashtags, paste or drop media!"
                     className="resize-none border-0 focus-visible:ring-0 p-4 bg-transparent text-base min-h-[100px]"
                     value={replyingTo ? "" : body}
                     onChange={(e) => {
                       if(!replyingTo) setBody(e.target.value);
                     }}
+                    onPaste={handlePaste}
                     maxLength={280}
                   />
                   
-                  {mediaUrl && !replyingTo && (
-                    <div className="relative mx-4 mt-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[300px]">
+                  {/* Uploading Shimmer Preview */}
+                  {isUploading && !replyingTo && (
+                    <div className="relative mx-4 mt-2 p-6 rounded-xl border border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-2 animate-pulse">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <span className="text-xs font-medium text-primary">Uploading attachment...</span>
+                    </div>
+                  )}
+
+                  {/* Attached Media Preview */}
+                  {mediaUrl && !replyingTo && !isUploading && (
+                    <div className="relative mx-4 mt-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[320px]">
                       <Button 
                         type="button"
                         variant="destructive" 
                         size="icon" 
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full z-10"
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full z-10 shadow-md"
                         onClick={() => setMediaUrl("")}
                       >
                         <X className="w-4 h-4" />
@@ -1117,11 +1397,11 @@ export function TheFeed() {
                           <span className="text-sm font-medium text-primary/80">Archive Attached</span>
                           <span className="text-xs text-muted-foreground mt-1 break-all max-w-[80%]">{mediaUrl.split('/').pop()}</span>
                         </div>
-                      ) : mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".webm") ? (
-                        <video src={mediaUrl} controls className="max-h-[300px] w-auto max-w-full" />
+                      ) : isVideo(mediaUrl) ? (
+                        <video src={mediaUrl} controls className="max-h-[320px] w-auto max-w-full rounded-lg" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={mediaUrl} alt="Upload preview" className="max-h-[300px] w-auto max-w-full object-contain" />
+                        <img src={mediaUrl} alt="Upload preview" className="max-h-[320px] w-auto max-w-full object-contain rounded-lg" />
                       )}
                     </div>
                   )}
@@ -1153,8 +1433,43 @@ export function TheFeed() {
 
                   <div className="flex justify-between items-center p-3 bg-muted/20 border-t border-border/50">
                     <div className="flex items-center gap-1">
+                      {/* Image / Video Upload */}
+                      <div>
+                        <input 
+                          type="file" 
+                          id="social-media-upload-main" 
+                          accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg" 
+                          className="hidden" 
+                          onChange={handleMediaUpload} 
+                          disabled={isUploading}
+                        />
+                        <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
+                          <label htmlFor="social-media-upload-main" className="cursor-pointer">
+                            <ImageIcon className="w-5 h-5" />
+                          </label>
+                        </Button>
+                      </div>
+
+                      {/* Archive Upload */}
+                      <div>
+                        <input 
+                          type="file" 
+                          id="social-archive-upload-main" 
+                          accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
+                          className="hidden" 
+                          onChange={handleMediaUpload} 
+                          disabled={isUploading}
+                        />
+                        <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
+                          <label htmlFor="social-archive-upload-main" className="cursor-pointer">
+                            <Paperclip className="w-5 h-5" />
+                          </label>
+                        </Button>
+                      </div>
+
+                      {/* Emoji Picker */}
                       <Popover>
-                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
+                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Add Emoji">
                           <Smile className="w-5 h-5" />
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent" side="bottom" align="start">
@@ -1162,9 +1477,10 @@ export function TheFeed() {
                         </PopoverContent>
                       </Popover>
 
+                      {/* Giphy Picker */}
                       <Popover open={showGiphy} onOpenChange={setShowGiphy}>
-                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
-                          <ImageIcon className="w-5 h-5" />
+                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Choose a GIF">
+                          <span className="font-extrabold text-[11px] border border-current px-1 rounded">GIF</span>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 p-3 h-96 overflow-y-auto" side="bottom" align="start">
                           <input 
@@ -1187,29 +1503,15 @@ export function TheFeed() {
                           />
                         </PopoverContent>
                       </Popover>
-                      
-                      <div>
-                        <input 
-                          type="file" 
-                          id="social-media-upload-main" 
-                          accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
-                          className="hidden" 
-                          onChange={handleMediaUpload} 
-                          disabled={isUploading}
-                        />
-                        <Button asChild variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-primary disabled:opacity-50">
-                          <label htmlFor="social-media-upload-main" className="cursor-pointer">
-                            {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
-                          </label>
-                        </Button>
-                      </div>
 
-                      <Button type="button" variant="ghost" size="icon" className={`rounded-full hover:text-primary transition-colors ${showPollForm ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setShowPollForm(!showPollForm)}>
+                      {/* Poll Button */}
+                      <Button type="button" variant="ghost" size="icon" className={`rounded-full hover:text-primary transition-colors ${showPollForm ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`} onClick={() => setShowPollForm(!showPollForm)} title="Create Poll">
                         <BarChart2 className="w-5 h-5" />
                       </Button>
 
+                      {/* Advanced Tools */}
                       <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
-                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors">
+                        <PopoverTrigger className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors" title="Advanced Creator Tools">
                           <Plus className="w-5 h-5" />
                         </PopoverTrigger>
                         <PopoverContent className="w-80 p-4 max-h-[400px] overflow-y-auto" side="top" align="start">
@@ -1257,7 +1559,7 @@ export function TheFeed() {
                       <span className={`ml-3 text-xs font-medium ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
                         {body.length} / 280
                       </span>
-                      <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || body.length > 280} className="rounded-full px-6 font-bold shadow-md">
+                      <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 280} className="rounded-full px-6 font-bold shadow-md">
                         {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Post"}
                       </Button>
                     </div>
@@ -1342,7 +1644,7 @@ export function TheFeed() {
                   <Download className="w-5 h-5" /> Download Now
                 </a>
               </div>
-            ) : viewingMedia.mediaUrl.endsWith(".mp4") || viewingMedia.mediaUrl.endsWith(".webm") ? (
+            ) : isVideo(viewingMedia.mediaUrl) ? (
               <VideoPlayer 
                 src={viewingMedia.mediaUrl}
                 voiceoverUrl={viewingMedia.voiceoverUrl}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { getRoleName, getRoleColor, PERMISSION_LEVELS } from "@/web/lib/permissions";
 import { Badge } from "@/shared/ui/badge";
-import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare, BarChart, Bookmark, Clock } from "lucide-react";
+import { User, LogOut, Settings, Gamepad2, Coins, Backpack, Landmark, MessageSquare, BarChart, Bookmark, Clock, Flame } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/web/lib/prisma";
@@ -119,9 +119,9 @@ export default async function ProfilePage() {
                   Admin Dashboard
                 </Link>
               )}
-              <Link href="/profile/inbox" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Secure Inbox & Feed
+              <Link href="/profile/inbox" className={buttonVariants({ variant: "outline", className: "w-full justify-start font-semibold text-primary border-primary/30 hover:bg-primary/10" })}>
+                <Flame className="mr-2 h-4 w-4 text-primary" />
+                The Feed
               </Link>
               <Link href="/profile/bookmarks" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
                 <Bookmark className="mr-2 h-4 w-4" />

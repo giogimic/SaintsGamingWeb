@@ -20,6 +20,8 @@ type MiniPost = {
   repliesCount: number;
 };
 
+const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv)$/i.test(url);
+
 export function MiniSocialFeed() {
   const [posts, setPosts] = useState<MiniPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,7 +151,7 @@ export function MiniSocialFeed() {
           {/* Media thumbnail */}
           {post.mediaUrl && (
             <div className="mt-2 rounded-md overflow-hidden border border-border/50 max-h-24 relative">
-              {post.mediaUrl.endsWith(".mp4") || post.mediaUrl.endsWith(".webm") ? (
+              {isVideo(post.mediaUrl) ? (
                 <video src={post.mediaUrl} className="w-full max-h-24 object-cover opacity-70" />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element

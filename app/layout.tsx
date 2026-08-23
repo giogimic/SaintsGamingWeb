@@ -7,6 +7,7 @@ import { ForcePasswordRedirect } from "@/web/components/auth/force-password-redi
 import { DevOverlayLoader } from "@/editor/dev-overlay-loader";
 import { ThemeProvider } from "@/web/components/theme-provider";
 import { AuthProvider } from "@/web/components/auth-provider";
+import { JsonLd } from "@/shared/components/json-ld";
 import { auth } from "@/auth";
 import { Suspense } from "react";
 import "./globals.css";
@@ -29,10 +30,23 @@ export const metadata: Metadata = {
     template: "%s | Saints Gaming",
     default: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
   },
-  description: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
+  description: "Saints Gaming - Dedicated Game Servers, Custom Modpacks, Community Forums, Live Streams, and Embedded MMO Experience.",
+  keywords: [
+    "Saints Gaming",
+    "Forums",
+    "News",
+    "Live Streams",
+    "Modpacks",
+    "The Lobby",
+    "Game Servers",
+    "Community"
+  ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Saints Gaming",
-    description: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
+    description: "Saints Gaming - Dedicated Game Servers, Custom Modpacks, Community Forums, Live Streams, and Embedded MMO Experience.",
     url: "https://saintsgaming.net",
     siteName: "Saints Gaming",
     images: [
@@ -48,7 +62,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Saints Gaming",
-    description: "Saints Gaming - Game Servers, Mod Packs, Community its Time To Play!",
+    description: "Saints Gaming - Dedicated Game Servers, Custom Modpacks, Community Forums, Live Streams, and Embedded MMO Experience.",
     images: ["/og-image.jpg"],
   },
 };
@@ -67,6 +81,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <JsonLd />
         <ThemeProvider
           attribute="class"
           defaultTheme="hacker"

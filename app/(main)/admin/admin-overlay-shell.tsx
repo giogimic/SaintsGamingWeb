@@ -41,9 +41,8 @@ export function AdminOverlayShell({
       ]
     },
     {
-      name: "Game Servers",
+      name: "Modpacks & FiveM",
       items: [
-        { href: "/admin/game-servers", label: "Game Servers", icon: Server, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN },
         { href: "/admin/modpacks", label: "Modpacks", icon: Package, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN },
         { href: "/admin/characters", label: "Characters", icon: Users, isVisible: permissionLevel >= PERMISSION_LEVELS.ADMIN },
         { href: "/admin/server-manager", label: "FiveM txAdmin", icon: Server, isVisible: permissionLevel >= PERMISSION_LEVELS.FIVEM_DEVELOPER },

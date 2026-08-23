@@ -14,17 +14,25 @@ import {
   deleteUploadObject,
   isS3Enabled,
   putUploadObject,
-} from "@/web/lib/s3-storage";
-import { localPathFromUploadUrl } from "@/web/lib/s3-storage-utils";
+} from "./s3-storage";
+import { localPathFromUploadUrl } from "./s3-storage-utils";
 
-const ALLOWED_MIME_TYPES = [
+export const ALLOWED_IMAGE_MIME_TYPES = [
   "image/jpeg",
   "image/png",
   "image/gif",
   "image/webp",
 ];
 
-const ALLOWED_ARCHIVE_MIME_TYPES = [
+export const ALLOWED_VIDEO_MIME_TYPES = [
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/ogg",
+  "video/x-matroska",
+];
+
+export const ALLOWED_ARCHIVE_MIME_TYPES = [
   "application/zip",
   "application/x-zip-compressed",
   "application/x-7z-compressed",
@@ -35,7 +43,9 @@ const ALLOWED_ARCHIVE_MIME_TYPES = [
   "application/gzip",
 ];
 
-const ALLOWED_SOCIAL_MIME_TYPES = [
+export const ALLOWED_SOCIAL_MIME_TYPES = [
+  ...ALLOWED_IMAGE_MIME_TYPES,
+  ...ALLOWED_VIDEO_MIME_TYPES,
   ...ALLOWED_ARCHIVE_MIME_TYPES,
 ];
 
@@ -118,12 +128,12 @@ async function persistUpload(input: {
   };
 }
 
-/** Upload a file from a FormData File object */
+/** Upload a standard image file from a FormData File object */
 export async function uploadFile(file: File): Promise<UploadResult> {
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+  if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
     return {
       success: false,
-      error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
+      error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_IMAGE_MIME_TYPES.join(", ")}`,
     };
   }
 
@@ -154,19 +164,22 @@ export async function uploadFile(file: File): Promise<UploadResult> {
   });
 }
 
-/** Upload a social media file (archives up to 250MB) */
+/** Upload a social media file (images up to 15MB, videos/archives up to 250MB) */
 export async function uploadSocialMedia(file: File): Promise<UploadResult> {
   if (!ALLOWED_SOCIAL_MIME_TYPES.includes(file.type)) {
     return {
       success: false,
-      error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_SOCIAL_MIME_TYPES.join(", ")}`,
+      error: `Invalid file type: ${file.type}. Allowed: images, videos, and archives.`,
     };
   }
 
-  if (file.size > MAX_SOCIAL_FILE_SIZE) {
+  const isImage = ALLOWED_IMAGE_MIME_TYPES.includes(file.type);
+  const maxSize = isImage ? 15 * 1024 * 1024 : MAX_SOCIAL_FILE_SIZE;
+
+  if (file.size > maxSize) {
     return {
       success: false,
-      error: `File too large. Maximum size: ${(MAX_SOCIAL_FILE_SIZE / 1024 / 1024).toFixed(1)}MB`,
+      error: `File too large. Maximum size for this type: ${(maxSize / 1024 / 1024).toFixed(0)}MB`,
     };
   }
 
@@ -190,25 +203,36 @@ export async function uploadSocialMedia(file: File): Promise<UploadResult> {
   });
 }
 
-/** Validate file magic bytes match the MIME type (basic check) */
+/** Validate file magic bytes match the MIME type */
 function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
-  if (buffer.length < 12) return false;
+  if (buffer.length < 8) return false;
 
+  // WebP: RIFF....WEBP
   if (mimeType === "image/webp") {
+    if (buffer.length < 12) return false;
     const isRiff = buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46; // RIFF
     const isWebp = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50; // WEBP
     return isRiff && isWebp;
   }
 
-  if (mimeType === "video/mp4") {
+  // MP4 & QuickTime MOV
+  if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
     if (buffer.length < 8) return false;
-    return buffer[4] === 0x66 && buffer[5] === 0x74 && buffer[6] === 0x79 && buffer[7] === 0x70; // "ftyp"
+    const boxType = buffer.toString("latin1", 4, 8);
+    return ["ftyp", "moov", "mdat", "wide", "free", "skip"].includes(boxType);
   }
 
-  if (mimeType === "video/webm") {
-    return buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3; // EBML Header
+  // WebM & MKV (EBML Header)
+  if (mimeType === "video/webm" || mimeType === "video/x-matroska") {
+    return buffer[0] === 0x1A && buffer[1] === 0x45 && buffer[2] === 0xDF && buffer[3] === 0xA3;
   }
 
+  // OGG Video / Audio
+  if (mimeType === "video/ogg" || mimeType === "application/ogg") {
+    return buffer[0] === 0x4F && buffer[1] === 0x67 && buffer[2] === 0x67 && buffer[3] === 0x53; // OggS
+  }
+
+  // Archives
   if (ALLOWED_ARCHIVE_MIME_TYPES.includes(mimeType)) {
     if (mimeType === "application/zip" || mimeType === "application/x-zip-compressed") {
       return buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04;
@@ -238,7 +262,8 @@ function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
     "image/jpeg": [[0xff, 0xd8, 0xff]],
     "image/png": [[0x89, 0x50, 0x4e, 0x47]],
     "image/gif": [
-      [0x47, 0x49, 0x46, 0x38],
+      [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], // GIF87a
+      [0x47, 0x49, 0x46, 0x38, 0x39, 0x61], // GIF89a
     ],
   };
 

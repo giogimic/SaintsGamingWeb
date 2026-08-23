@@ -22,7 +22,7 @@ import { NotificationsMenu } from "@/shared/components/notifications-menu";
 import { ThemeSwitcher } from "@/shared/components/theme-switcher";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/shared/ui/sheet";
 import { signOut } from "next-auth/react";
-import { User as UserIcon, LogOut, Settings, Gamepad2, Sparkles } from "lucide-react";
+import { User as UserIcon, LogOut, Settings, Gamepad2, Rss, Flame } from "lucide-react";
 import packageJson from '../../../package.json';
 import {
   DropdownMenu,
@@ -150,6 +150,10 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                     <UserIcon className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
+                  <DropdownMenuItem render={<Link href="/profile/inbox" className="cursor-pointer text-primary font-medium" />}>
+                    <Flame className="mr-2 h-4 w-4 text-primary" />
+                    The Feed
+                  </DropdownMenuItem>
                   {showUcpLink && (
                     <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
                       <Gamepad2 className="mr-2 h-4 w-4" />
@@ -157,16 +161,10 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                     </DropdownMenuItem>
                   )}
                   {isAdmin && (
-                    <>
-                      <DropdownMenuItem render={<Link href="/setup" className="cursor-pointer text-amber-400 font-semibold" />}>
-                        <Sparkles className="mr-2 h-4 w-4 text-amber-400" />
-                        Setup Wizard
-                      </DropdownMenuItem>
-                      <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer" />}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </DropdownMenuItem>
-                    </>
+                    <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer" />}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-400/10" onClick={() => signOut({ callbackUrl: '/' })}>
@@ -247,6 +245,9 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-2 px-2">Account</span>
                       <Link href="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
                         <UserIcon className="h-4 w-4" /> Profile
+                      </Link>
+                      <Link href="/profile/inbox" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors">
+                        <Flame className="h-4 w-4 text-primary" /> The Feed
                       </Link>
                       {showUcpLink && (
                         <Link href="/ucp" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
@@ -365,7 +366,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.406"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.411"}</span>
           </div>
 
 
