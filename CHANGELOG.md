@@ -1,3 +1,8 @@
+## [2.1.418] - 2026-08-22
+### Harmonize Service & Setup Script Naming (`saints-lobby.service` & `setup-the-lobby.sh`)
+- **Service Name Standardization**: Renamed `saints-go-mmo.service` to `saints-lobby.service` with description `Saints Gaming The Lobby Realtime MMO Server (:3001)` and syslog identifier `saints-lobby`.
+- **Setup Script Standardization**: Renamed `setup-go-mmo.sh` to `setup-the-lobby.sh` and created backward-compatible forwarding wrappers across all setup orchestration routines (`scripts/setup.sh`, `scripts/audit-systemd.sh`, and documentation).
+
 ## [2.1.417] - 2026-08-22
 ### Rename `go-mmo` Directory to `the-lobby`
 - **Go MMO Directory Renaming**: Renamed the standalone Go MMO realtime server directory from `go-mmo/` to `the-lobby/` across the repository:

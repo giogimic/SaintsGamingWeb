@@ -25,13 +25,13 @@ Inventory / quests / last seat persist in Go SQLite (`GoInventory`, `GoQuestProg
 ## Quick start
 
 ```bash
-# During main install (recommended): say YES to Go MMO in ./scripts/setup.sh
+# During main install (recommended): say YES to The Lobby in ./scripts/setup.sh
 
 # Standalone full setup (env + docker + optional Caddy subdomain)
-./the-lobby/scripts/setup-go-mmo.sh --full
+./the-lobby/scripts/setup-the-lobby.sh --full
 
 # Subdomain only on existing Caddy
-./the-lobby/scripts/setup-go-mmo.sh --proxy-only
+./the-lobby/scripts/setup-the-lobby.sh --proxy-only
 ```
 
 Unset `NEXT_PUBLIC_GO_MMO_URL` and set `ENABLE_TS_GAME_ENGINE=1` to fall back to the emergency TypeScript `server.ts` sockets.

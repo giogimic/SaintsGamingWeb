@@ -675,8 +675,11 @@ ENABLE_GO_MMO=1
 GO_MMO_PORT=3001
 GO_MMO_PUBLIC_URL=""
 GO_MMO_SUBDOMAIN_CHOSEN=""
-GO_MMO_SETUP_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../the-lobby/scripts/setup-go-mmo.sh"
+GO_MMO_SETUP_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../the-lobby/scripts/setup-the-lobby.sh"
 # Resolve in case setup.sh lives at repo root as ./setup.sh symlink/copy
+if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
+    GO_MMO_SETUP_SCRIPT="$(pwd)/the-lobby/scripts/setup-the-lobby.sh"
+fi
 if [ ! -f "$GO_MMO_SETUP_SCRIPT" ]; then
     GO_MMO_SETUP_SCRIPT="$(pwd)/the-lobby/scripts/setup-go-mmo.sh"
 fi
@@ -734,7 +737,7 @@ if [ "$ENABLE_GO_MMO" = "1" ]; then
             bash "$GO_MMO_SETUP_SCRIPT" --non-interactive --docker --full; then
             echo -e "${GREEN}[✓] Go MMO setup finished (port $GO_MMO_PORT).${NC}"
         else
-            echo -e "${YELLOW}[!] Go MMO setup reported errors — Next will still build. Retry: ./the-lobby/scripts/setup-go-mmo.sh --full${NC}"
+            echo -e "${YELLOW}[!] Go MMO setup reported errors — Next will still build. Retry: ./the-lobby/scripts/setup-the-lobby.sh --full${NC}"
         fi
     else
         echo -e "${YELLOW}[!] Missing $GO_MMO_SETUP_SCRIPT — URL written; run Go setup manually later.${NC}"
@@ -867,7 +870,7 @@ if [ $SERVER_READY -eq 1 ]; then
     echo -e "  Restart:        docker compose restart"
     echo -e "  Update:         ./update.sh"
     if [ "$ENABLE_GO_MMO" = "1" ]; then
-        echo -e "  The Lobby Go setup: ./the-lobby/scripts/setup-go-mmo.sh --full"
+        echo -e "  The Lobby setup:    ./the-lobby/scripts/setup-the-lobby.sh --full"
         echo -e "  Dev proxy:          ./scripts/dev-proxy.sh status"
     fi
     echo -e "============================================================\n"

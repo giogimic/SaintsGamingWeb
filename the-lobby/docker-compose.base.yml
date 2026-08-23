@@ -1,12 +1,12 @@
-# Template for Go MMO parallel deploy. setup-go-mmo.sh copies this to
+# Template for The Lobby Go MMO parallel deploy. setup-the-lobby.sh copies this to
 # docker-compose.yml and substitutes port + unique container_name.
 services:
-  go-mmo:
+  lobby:
     build:
       context: .
       dockerfile: Dockerfile
-    image: saints-gaming-go-mmo
-    container_name: saints-gaming-go-mmo
+    image: saints-lobby
+    container_name: saints-lobby
     restart: unless-stopped
     ports:
       - "3001:3001"
