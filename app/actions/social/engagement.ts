@@ -89,56 +89,59 @@ export async function incrementViewCount(postId: string) {
 
 export async function tipSocialPost(postId: string, amount: number, message?: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" };
 
   const post = await prisma.socialPost.findUnique({
     where: { id: postId },
     select: { authorId: true }
   });
-  if (!post) throw new Error("Post not found");
-  if (post.authorId === session.user.id) throw new Error("Cannot tip your own post");
-  if (amount <= 0) throw new Error("Invalid amount");
+  if (!post) return { success: false, error: "Post not found" };
+  if (post.authorId === session.user.id) return { success: false, error: "Cannot tip your own post" };
+  if (amount <= 0) return { success: false, error: "Invalid amount" };
 
-  const tipNotification = await prisma.$transaction(async (tx) => {
-    const sender = await tx.user.findUnique({ where: { id: session.user.id }, select: { coins: true } });
-    if (!sender || sender.coins < amount) {
-      throw new Error("Insufficient coins to send this tip.");
-    }
-
-    await tx.user.update({
-      where: { id: session.user.id },
-      data: { coins: { decrement: amount } }
-    });
-
-    await tx.user.update({
-      where: { id: post.authorId },
-      data: { coins: { increment: amount } }
-    });
-
-    await tx.socialTip.create({
-      data: {
-        senderId: session.user.id,
-        receiverId: post.authorId,
-        postId: postId,
-        amount: amount,
-        message: message
+  try {
+    const tipNotification = await prisma.$transaction(async (tx) => {
+      const sender = await tx.user.findUnique({ where: { id: session.user.id }, select: { coins: true } });
+      if (!sender || sender.coins < amount) {
+        throw new Error("Insufficient gold to send this tip.");
       }
+
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: { coins: { decrement: amount } }
+      });
+
+      await tx.user.update({
+        where: { id: post.authorId },
+        data: { coins: { increment: amount } }
+      });
+
+      await tx.socialTip.create({
+        data: {
+          senderId: session.user.id,
+          receiverId: post.authorId,
+          postId: postId,
+          amount: amount,
+          message: message
+        }
+      });
+
+      return tx.notification.create({
+        data: {
+          userId: post.authorId,
+          type: "TIP",
+          message: `Someone sent you a tip of ${amount} Gold!`,
+          link: `/profile/inbox?post=${postId}`
+        }
+      });
     });
 
-    return tx.notification.create({
-      data: {
-        userId: post.authorId,
-        type: "TIP",
-        message: `Someone sent you a tip of ${amount} Gold!`,
-        link: `/profile/inbox?post=${postId}`
-      }
-    });
-  });
-
-  await emitNotificationCreated(tipNotification);
-
-  // Auto-award tipper badge for sender
-  void checkAndAwardAchievements(session.user.id);
+    await emitNotificationCreated(tipNotification);
+    void checkAndAwardAchievements(session.user.id);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to tip post" };
+  }
 }
 
 export async function subscribeToCreator(creatorId: string) {
