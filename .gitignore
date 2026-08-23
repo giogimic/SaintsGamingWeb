@@ -83,3 +83,10 @@ docker_build.log
 *.db
 *.sqlite
 *.sqlite3
+
+# Archived / Offline Game Assets
+/.old-assets/
+/public/game-assets/
+/public/assets/
+/tuxemon-data/
+/tuxemon-db/
