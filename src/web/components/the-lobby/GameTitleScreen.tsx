@@ -6,6 +6,7 @@ import { useGameStore } from './store';
 import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { getUserCharacters, getTopLobbyOperatives } from '@/app/actions/game';
 import { soundSynth } from '@/engine/sound-synth';
+import { useTheme } from 'next-themes';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import {
@@ -41,8 +42,8 @@ import {
 } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 
-// ── Theme Palettes (matching Saints Midnight Tropical Landing Page) ─────
-const THEME = {
+// ── Theme Palettes (matching Saints Dynamic Landing Page) ─────
+const THEME_DARK = {
   bg: '#050014',
   textColor: '#ffffff',
   accentColor: '#00f5d4',
@@ -55,6 +56,36 @@ const THEME = {
   panelBg: 'rgba(5, 0, 20, 0.88)',
   panelBorder: 'rgba(0, 245, 212, 0.35)',
   panelGlow: 'rgba(114, 9, 183, 0.25)',
+};
+
+const THEME_LIGHT = {
+  bg: '#240046',
+  textColor: '#ffffff',
+  accentColor: '#f9c74f',
+  btnBg: 'rgba(247, 37, 133, 0.2)',
+  btnBorder: '#f9c74f',
+  btnGlow: '#f8961e',
+  btn2Border: '#f72585',
+  btn2Text: '#f72585',
+  logoGlow: 'rgba(248, 150, 30, 0.6)',
+  panelBg: 'rgba(36, 0, 70, 0.88)',
+  panelBorder: 'rgba(249, 199, 79, 0.4)',
+  panelGlow: 'rgba(248, 150, 30, 0.25)',
+};
+
+const THEME_VICE = {
+  bg: '#1b121c',
+  textColor: '#ffffff',
+  accentColor: '#ffc15e',
+  btnBg: 'rgba(250, 142, 91, 0.25)',
+  btnBorder: '#ff007f',
+  btnGlow: '#fa8e5b',
+  btn2Border: '#00f5d4',
+  btn2Text: '#00f5d4',
+  logoGlow: 'rgba(255, 0, 127, 0.6)',
+  panelBg: 'rgba(27, 18, 28, 0.88)',
+  panelBorder: 'rgba(255, 0, 127, 0.4)',
+  panelGlow: 'rgba(250, 142, 91, 0.25)',
 };
 
 const CLASS_ICONS: Record<string, any> = {
@@ -519,12 +550,18 @@ export default function GameTitleScreen({
     }
   };
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const isVice = theme === 'vice' || theme === 'hacker';
+
+  const THEME = isLight ? THEME_LIGHT : isVice ? THEME_VICE : THEME_DARK;
+
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[200] flex flex-col justify-between overflow-x-hidden overflow-y-auto select-none font-sans"
       style={{ backgroundColor: THEME.bg, color: THEME.textColor }}
     >
-      {/* Midnight Tropical Dynamic Horizon Background */}
+      {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
       {/* ── TOP HEADER / UTILITY BAR ────────────────────────────────────── */}

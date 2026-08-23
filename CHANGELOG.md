@@ -1,3 +1,13 @@
+## [2.1.416] - 2026-08-22
+### Pre-Game Screens & Character Creation Dynamic Theme Integration
+- **Universal Pre-Game Theme Synchronization**: Updated all pre-game game entry interfaces to dynamically inherit the active theme (`Light / Style #3 Dreamy Sunset`, `Vice`, and `Dark / Midnight Tropical`):
+  - **Character Creation & Archetype / Class Pick** ([`character-creator.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/character-creator.tsx)): Dynamic background, Archetype cards, identity forms, and review steps reflect theme styling.
+  - **Character Selector & Vault** ([`character-selector.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/character-selector.tsx)): Operative hero cards, roster lists, and gateway headers reflect theme styling.
+  - **Server / Realm Selection** ([`ServerSelect.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/ServerSelect.tsx)): Realm list cards, ping indicators, and command actions reflect theme styling.
+  - **Game Title Screen** ([`GameTitleScreen.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/GameTitleScreen.tsx)): Full palette synchronization across top bar, action panels, and quick launch buttons.
+  - **Game Login & Offline Gateways** ([`GameLogin.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/GameLogin.tsx) & [`GameOfflineScreen.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/GameOfflineScreen.tsx)): Background layers and glassmorphic modal cards reflect theme styling.
+  - **Shared Tropical Horizon Engine** ([`MidnightTropicalBackground.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/the-lobby/MidnightTropicalBackground.tsx)): Dynamically renders Style #3 radiant golden sun, sunset water reflections, and sunset particle embers in Light mode, vibrant neon sunset in Vice mode, and midnight starfield in Dark mode.
+
 ## [2.1.415] - 2026-08-22
 ### Style #3 "Dreamy Sunset" Integration for Light Theme
 - **Landing Page Style #3 Integration**: Configured the landing page ([`app/page.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/page.tsx)) so that when "Light" theme is active, it displays **Style #3 (Dreamy Tropical Sunset)** featuring the glowing golden sun disc, reflective ocean water wavelets ([`S3Water`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/s3-water.tsx)), silhouetted framing palms ([`S3Palms`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/s3-palms.tsx)), ambient sunset embers, and glowing gold & fuchsia action buttons.

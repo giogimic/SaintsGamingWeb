@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { WifiOff, RefreshCw, ShieldAlert, Sparkles, LogIn, ArrowLeft, ExternalLink } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import Link from 'next/link';
 
@@ -21,6 +22,9 @@ export function GameOfflineScreen({
   customMessage,
   isAdmin,
 }: GameOfflineScreenProps) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const isVice = theme === 'vice' || theme === 'hacker';
   const [checking, setChecking] = useState(false);
 
   const handleRefresh = async () => {
@@ -41,7 +45,7 @@ export function GameOfflineScreen({
     } catch {
       /* ignore */
     } finally {
-      setTimeout(() => setChecking(false), 600);
+      setTimeout(() => setChecking(false), 800);
     }
   };
 
@@ -57,9 +61,9 @@ export function GameOfflineScreen({
   return (
     <div
       className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col items-center justify-center p-4 md:p-8 select-none font-sans"
-      style={{ backgroundColor: '#050014' }}
+      style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
-      {/* Midnight Tropical Dynamic Horizon Background */}
+      {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
       {/* CRT Scanline effect */}
