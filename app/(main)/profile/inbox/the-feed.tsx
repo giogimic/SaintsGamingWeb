@@ -36,7 +36,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { 
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
-  MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
+  MoreHorizontal, Eye, EyeOff, Plus, Trash2, Coins, Flag,
   ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, UploadCloud,
   BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check
 } from "lucide-react";
@@ -475,8 +475,12 @@ export function TheFeed() {
 
   async function handleTip(postId: string) {
     try {
-      await tipSocialPost(postId, 5); // Default $5 tip for now
-      toast.success("Sent a $5 tip to the creator!");
+      const res = await tipSocialPost(postId, 5); // Default 5 Gold tip for now
+      if (res && !res.success) {
+        toast.error(res.error || "Failed to send tip");
+        return;
+      }
+      toast.success("Sent 5 Gold to the creator!");
     } catch (e: any) {
       toast.error(e.message || "Failed to send tip");
     }
@@ -1106,10 +1110,10 @@ export function TheFeed() {
             {!post.isForumThread && (
               <button 
                 onClick={() => handleTip(post.id)}
-                className="flex items-center gap-1.5 text-xs font-medium transition-colors text-green-500/80 hover:text-green-500"
+                className="flex items-center gap-1.5 text-xs font-medium transition-colors text-yellow-500/80 hover:text-yellow-500"
               >
-                <DollarSign className="w-4 h-4" />
-                Tip
+                <Coins className="w-4 h-4" />
+                Gold
               </button>
             )}
 
