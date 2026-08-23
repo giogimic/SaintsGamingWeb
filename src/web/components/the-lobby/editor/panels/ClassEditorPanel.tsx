@@ -275,7 +275,7 @@ export function ClassEditorPanel() {
                     className={inputCls}
                     value={form.profileId ?? ''}
                     onChange={(e) => f('profileId', e.target.value || null)}
-                    placeholder="tuxemon / custom_1 / empty=shared"
+                    placeholder="saints / custom_1 / empty=shared"
                   />
                 </div>
                 <div>

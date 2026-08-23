@@ -1,3 +1,15 @@
+## [2.1.454] - 2026-08-23
+### Architectural Gut & Canonical Saints Pipeline Audit
+- **Full Legacy / Tuxemon Gut & Canonical Alignment**:
+  - Migrated database schema (`prisma/schema.prisma`) defaults for `WorldMap`, `GameAsset`, `QuestTemplate`, `StarterHero`, `CreatureDef`, `WorldAtlas`, and `UsableAsset` to canonical `gameId: "saints"`.
+  - Promoted `saints` as `DEFAULT_WORLD_PROFILE_ID` across world profiles, Atlas API (`app/api/world/atlas/route.ts`), and Go MMO server (`the-lobby/internal/httpapi/maps.go`, `the-lobby/internal/db/sqlite.go`, `the-lobby/internal/bootstrap/demo.go`).
+  - Updated Asset Manager ingest and canonical resolution to default `gameId` to `"saints"` and added canonical `saints-3x4` sprite animation profile (`src/shared/game/spriteDefinitions.ts`).
+  - Tagged all Starter Heroes and Quests with `gameId: "saints"` (`scripts/ensure-starter-heroes.ts`, `scripts/ensure-world-profiles.ts`).
+  - Added new automated validation and audit toolchain:
+    - `scripts/audit-legacy-references.ts` (`npm run audit:legacy`): Scans codebase for forbidden paths or legacy bundle imports.
+    - `scripts/validate-canonical-data.ts` (`npm run validate:data`): Validates database integrity across maps, atlas nodes, heroes, and creature definitions.
+  - Implemented `src/server/cloneSaintsTrail.ts` for safe profile cloning and map templating.
+
 ## [2.1.453] - 2026-08-23
 ### Realm Architecture & Map Engine
 - **Purged Premade Demo Maps & Generator Scripts**:

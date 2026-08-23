@@ -7,6 +7,7 @@
  */
 
 export type SpriteAnimationProfile =
+  | 'saints-3x4'
   | 'tuxemon-3x4'
   | 'lpc-full'
   | 'lpc-walk'
@@ -75,8 +76,8 @@ export const LPC_ACTION_ROWS: Record<string, { startRow: number; frameCount: num
  * Predefined Canonical Profiles
  */
 
-export const TUXEMON_3X4_PROFILE: SpriteDefinition = {
-  profile: 'tuxemon-3x4',
+export const SAINTS_3X4_PROFILE: SpriteDefinition = {
+  profile: 'saints-3x4',
   sheetWidth: 96,
   sheetHeight: 128,
   frameWidth: 32,
@@ -93,8 +94,13 @@ export const TUXEMON_3X4_PROFILE: SpriteDefinition = {
     up: 3,
   },
   isLpc: false,
-  label: 'Tuxemon Classic (3x4)',
+  label: 'Saints Classic (3x4)',
   description: 'Classic 3-step walk cycle (Down, Left, Right, Up). 32x32 frames.',
+};
+
+export const TUXEMON_3X4_PROFILE: SpriteDefinition = {
+  ...SAINTS_3X4_PROFILE,
+  profile: 'tuxemon-3x4',
 };
 
 export const LPC_FULL_PROFILE: SpriteDefinition = {
@@ -117,8 +123,8 @@ export const LPC_FULL_PROFILE: SpriteDefinition = {
   },
   actions: LPC_ACTION_ROWS,
   isLpc: true,
-  label: 'Universal LPC Full Sheet (13x21)',
-  description: 'Universal LPC 64x64 sheet with Walk, Slash, Thrust, Spellcast, Shoot, Hurt animations.',
+  label: 'LPC Standard (13x21)',
+  description: 'Full LPC spritesheet with 9-frame walk, slash, thrust, spellcast, and hurt animations.',
 };
 
 export const LPC_WALK_PROFILE: SpriteDefinition = {
@@ -143,8 +149,8 @@ export const LPC_WALK_PROFILE: SpriteDefinition = {
     walk: { startRow: 0, frameCount: 9 },
   },
   isLpc: true,
-  label: 'LPC Walk Cycle (9x4)',
-  description: '4-direction 9-frame LPC walk cycle (Up, Left, Down, Right). 64x64 frames.',
+  label: 'LPC Walk-Only (9x4)',
+  description: 'Compact 9-frame LPC walk cycle without combat rows (64x64 frames).',
 };
 
 export const PORTRAIT_1X1_PROFILE: SpriteDefinition = {
@@ -170,6 +176,7 @@ export const PORTRAIT_1X1_PROFILE: SpriteDefinition = {
 };
 
 export const ANIMATION_PROFILES: Record<SpriteAnimationProfile, SpriteDefinition> = {
+  'saints-3x4': SAINTS_3X4_PROFILE,
   'tuxemon-3x4': TUXEMON_3X4_PROFILE,
   'lpc-full': LPC_FULL_PROFILE,
   'lpc-walk': LPC_WALK_PROFILE,

@@ -85,7 +85,7 @@ export function buildNewStudioMap(input: NewStudioMapInput):
     map: {
       id,
       name: (input.name || "").trim() || id,
-      gameId: input.gameId || "tuxemon",
+      gameId: input.gameId || "saints",
       grid,
       gates: {},
       npcs: [],

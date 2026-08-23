@@ -47,7 +47,7 @@ func EnsureDemo(db *sql.DB, wm *world.Manager) error {
 			def.Name, gridJSON, string(npcs), tileLayers, tilesets, protocol.DemoMapID)
 	} else {
 		_, err = db.Exec(`INSERT INTO WorldMap (id, gameId, name, gridData, gatesData, npcsData, encountersData, tileLayersData, tilesetsData, version)
-			VALUES (?, 'tuxemon', ?, ?, '{}', ?, '[]', ?, ?, 1)`,
+			VALUES (?, 'saints', ?, ?, '{}', ?, '[]', ?, ?, 1)`,
 			protocol.DemoMapID, def.Name, gridJSON, string(npcs), tileLayers, tilesets)
 	}
 	if err != nil {

@@ -3,7 +3,7 @@
  * `id` matches WorldMap.gameId, QuestTemplate.gameId, StarterHero.gameId.
  */
 
-export type WorldProfileId = "tuxemon" | "custom_1" | "custom_2" | string;
+export type WorldProfileId = "saints" | "custom_1" | "custom_2" | string;
 
 export type WorldProfile = {
   id: WorldProfileId;
@@ -13,9 +13,9 @@ export type WorldProfile = {
 
 export const WORLD_PROFILES: WorldProfile[] = [
   {
-    id: "tuxemon",
-    name: "Tuxemon",
-    description: "Spyder campaign showcase — Azure → Leather Shafts",
+    id: "saints",
+    name: "Saints Realm",
+    description: "Authoritative Saints MMO canonical world & sandbox",
   },
   {
     id: "custom_1",
@@ -29,7 +29,7 @@ export const WORLD_PROFILES: WorldProfile[] = [
   },
 ];
 
-export const DEFAULT_WORLD_PROFILE_ID: WorldProfileId = "tuxemon";
+export const DEFAULT_WORLD_PROFILE_ID: WorldProfileId = "saints";
 
 export function getWorldProfile(id: string | null | undefined): WorldProfile {
   const found = WORLD_PROFILES.find((p) => p.id === id);

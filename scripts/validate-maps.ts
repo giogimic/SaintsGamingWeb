@@ -16,7 +16,8 @@ async function validateMaps(): Promise<ValidationReport> {
   console.log('Validating WorldMap database entries...');
 
   const maps = await prisma.worldMap.findMany();
-  const tilesetsDir = path.join(process.cwd(), 'public', 'tuxemon-assets', 'tilesets');
+  const tilesetsDir = path.join(process.cwd(), 'public', 'game-assets', 'tilesets');
+  const oldTilesetsDir = path.join(process.cwd(), '.old-assets', 'game-assets', 'tilesets');
 
   const report: ValidationReport = {
     totalMaps: maps.length,
@@ -47,12 +48,15 @@ async function validateMaps(): Promise<ValidationReport> {
     if (tilesets && tilesets.length > 0) {
       for (const ts of tilesets) {
         if (ts.imageSource) {
-          const fileExist = fs.existsSync(path.join(tilesetsDir, ts.imageSource));
+          const rawName = ts.imageSource.replace(/^.*\/tilesets\//i, '');
+          const fileExist =
+            fs.existsSync(path.join(tilesetsDir, rawName)) ||
+            fs.existsSync(path.join(oldTilesetsDir, rawName));
           if (!fileExist) {
             report.issues.push({
               mapId: map.id,
               type: 'MISSING_TILESET',
-              detail: `Tileset image missing at /tuxemon-assets/tilesets/${ts.imageSource}`,
+              detail: `Tileset image missing at /game-assets/tilesets/${rawName}`,
             });
             hasIssue = true;
           }

@@ -253,8 +253,8 @@ export const GAME_SPRITES = [
   "xerogrunt_yellow"
 ];
 
-/** Canonical Tuxemon Humanoid Player / Trainer Sprites */
-export const TUXEMON_HERO_SPRITES = [
+/** Canonical Humanoid Player / Saint Sprites */
+export const CANONICAL_HERO_SPRITES = [
   "adventurer",
   "adventurerblack",
   "adventurer_beige",
@@ -302,15 +302,16 @@ export const TUXEMON_HERO_SPRITES = [
   "dragonrider_fiery",
   "dragonrider_green",
   "cooldude",
-  "catgirl",
-  "goth",
 ];
+
+/** @deprecated Use CANONICAL_HERO_SPRITES */
+export const TUXEMON_HERO_SPRITES = CANONICAL_HERO_SPRITES;
 
 /** Filtered list containing ONLY humanoid / character / LPC player models for Character Creation */
 export const CHARACTER_SPRITES = Array.from(
   new Set([
     ...LPC_HERO_SPRITES,
-    ...TUXEMON_HERO_SPRITES,
+    ...CANONICAL_HERO_SPRITES,
   ])
 );
 

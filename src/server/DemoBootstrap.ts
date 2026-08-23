@@ -13,7 +13,7 @@ const VANCE_TREE = {
 function creatureToDb(def: (typeof FALLBACK_CREATURE_DEFS)[0]) {
   return {
     slug: def.slug,
-    gameId: null as string | null,
+    gameId: "saints" as string | null,
     name: def.name,
     dexNumber: def.dexNumber,
     typePrimary: def.typePrimary,

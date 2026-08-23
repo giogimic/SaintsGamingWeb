@@ -46,14 +46,14 @@ const TAG_PRESETS = [
 
 const ARCHETYPE_PRESETS: { name: string; icon: string; data: StarterHeroData }[] = [
   {
-    name: '🐾 Tuxemon Beast Master',
+    name: '🐾 Beast Master',
     icon: '🐾',
     data: {
-      slug: 'tuxemon_beast_master',
+      slug: 'beast_master',
       name: 'Beast Master',
       classId: 'WARRIOR',
       spriteKey: 'catgirl',
-      flavor: 'Tuxemon creature specialist with enhanced capture rates and wild empathy.',
+      flavor: 'Creature specialist with enhanced capture rates and wild empathy.',
       tag: 'Beast Master',
       tagColor: '#f472b6',
       sortOrder: 1,
@@ -1026,10 +1026,10 @@ export function StarterHeroEditorPanel() {
               <div className="p-3 rounded-xl bg-violet-950/40 border border-violet-500/20 space-y-2">
                 <h4 className="font-bold text-violet-300">📋 Field Specifications & Requirements</h4>
                 <ul className="space-y-1.5 list-disc list-inside">
-                  <li><strong className="text-violet-200">slug</strong>: Unique key string (lowercase, underscores, no spaces). E.g. <code className="text-violet-400">tuxemon_beast_master</code>.</li>
+                  <li><strong className="text-violet-200">slug</strong>: Unique key string (lowercase, underscores, no spaces). E.g. <code className="text-violet-400">beast_master</code>.</li>
                   <li><strong className="text-violet-200">name</strong>: Hero title displayed on character creator cards. Recommended 3–20 chars. E.g. <code className="text-violet-400">Beast Master</code>.</li>
                   <li><strong className="text-violet-200">classId</strong>: Must match an active class ID: <code className="text-violet-400">WARRIOR</code>, <code className="text-violet-400">MAGE</code>, or <code className="text-violet-400">THIEF</code>.</li>
-                  <li><strong className="text-violet-200">spriteKey</strong>: Name of sprite file (without extension) in <code className="text-violet-400">/public/game-assets/npc/</code> (or Tuxemon pool). E.g. <code className="text-violet-400">catgirl</code>, <code className="text-violet-400">dragonrider</code>.</li>
+                  <li><strong className="text-violet-200">spriteKey</strong>: Name of sprite file (without extension) in <code className="text-violet-400">/public/game-assets/npc/</code> (or sprite pool). E.g. <code className="text-violet-400">catgirl</code>, <code className="text-violet-400">dragonrider</code>.</li>
                   <li><strong className="text-violet-200">flavor</strong>: 1-line description displayed under hero name. Max 80 chars.</li>
                   <li><strong className="text-violet-200">tag & tagColor</strong>: Difficulty/style badge text & hex color code (e.g. <code className="text-violet-400">Beast Master</code> / <code className="text-violet-400">#f472b6</code>).</li>
                   <li><strong className="text-violet-200">sortOrder</strong>: Integer index controlling card position in Character Creator.</li>
@@ -1041,11 +1041,11 @@ export function StarterHeroEditorPanel() {
                 <h4 className="font-bold text-violet-300 mb-1">💡 Example JSON Definition</h4>
                 <pre className="p-2 rounded bg-[#050b14] border border-violet-900/50 text-[10px] text-violet-300 overflow-x-auto">
 {`{
-  "slug": "tuxemon_tamer",
+  "slug": "beast_master",
   "name": "Beast Master",
   "classId": "WARRIOR",
   "spriteKey": "catgirl",
-  "flavor": "Tuxemon creature specialist with high catch rate.",
+  "flavor": "Creature specialist with high catch rate.",
   "tag": "Beast Master",
   "tagColor": "#f472b6",
   "sortOrder": 1,
