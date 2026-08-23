@@ -1,3 +1,10 @@
+## [2.1.442] - 2026-08-23
+### Fix
+- **Pixel Art Asset Studio UI & Data Projection (`/admin/game-dev/assets`)**: Fixed asset mapping and rendering for 1600+ database assets.
+  - Normalized `GameAsset` columns (extracting `name`, `type`, and smart category mapping into `Terrain`, `Monsters/Beasts`, `NPCs`, `Items`, `Environment`).
+  - Added fast client-side search, category filter counts, and responsive pagination (48 items per page) to eliminate rendering bottlenecks.
+  - Added robust image fallback placeholders when source files are unavailable.
+
 ## [2.1.441] - 2026-08-23
 ### Fix
 - **Realtime Platform Route Resiliency (`/api/admin/realtime`)**: Hardened route handler against module bundling failures by attaching `RealtimeService` to `globalThis`, safely catching unhandled exceptions, and gracefully returning standby telemetry metrics instead of HTTP 500 errors.

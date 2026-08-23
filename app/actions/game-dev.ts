@@ -147,9 +147,79 @@ export async function deleteGameAsset(id: string) {
 
 export async function fetchAllGameAssets() {
   try {
-    const assets = await prisma.gameAsset.findMany({
+    const rawAssets = await prisma.gameAsset.findMany({
       orderBy: { createdAt: 'desc' }
     });
+
+    const assets = rawAssets.map((asset) => {
+      let parsedMetadata: any = {};
+      let parsedTags: string[] = [];
+      let parsedCategories: string[] = [];
+
+      try {
+        parsedMetadata = asset.metadata ? JSON.parse(asset.metadata) : {};
+      } catch {
+        parsedMetadata = {};
+      }
+
+      try {
+        parsedTags = asset.tags ? JSON.parse(asset.tags) : [];
+      } catch {
+        parsedTags = [];
+      }
+
+      try {
+        parsedCategories = asset.categories ? JSON.parse(asset.categories) : [];
+      } catch {
+        parsedCategories = [];
+      }
+
+      const sourceUrl = asset.cdnUrl || asset.source || '';
+      const filename = sourceUrl ? sourceUrl.split('/').pop()?.replace(/\.[^/.]+$/, '') : '';
+      const name = parsedMetadata.name || parsedMetadata.displayName || filename || `Asset ${asset.id.slice(-6)}`;
+
+      let category = 'Environment';
+      const catLower = [
+        ...parsedCategories.map((c) => String(c).toLowerCase()),
+        ...parsedTags.map((t) => String(t).toLowerCase()),
+        (asset.type || '').toLowerCase(),
+      ];
+
+      if (catLower.some((c) => c.includes('terrain') || c.includes('tile') || c.includes('ground') || c.includes('floor') || c.includes('wall'))) {
+        category = 'Terrain';
+      } else if (catLower.some((c) => c.includes('monster') || c.includes('beast') || c.includes('creature') || c.includes('tuxemon'))) {
+        category = 'Monsters/Beasts';
+      } else if (catLower.some((c) => c.includes('npc') || c.includes('char') || c.includes('hero') || c.includes('player') || c.includes('sprite'))) {
+        category = 'NPCs';
+      } else if (catLower.some((c) => c.includes('item') || c.includes('icon') || c.includes('equipment') || c.includes('weapon') || c.includes('potion'))) {
+        category = 'Items';
+      } else if (catLower.some((c) => c.includes('env') || c.includes('prop') || c.includes('decor') || c.includes('building') || c.includes('tree'))) {
+        category = 'Environment';
+      } else if (asset.type === 'TILESET') {
+        category = 'Terrain';
+      } else if (asset.type === 'SPRITE') {
+        category = 'NPCs';
+      } else if (asset.type === 'ITEM_ICON') {
+        category = 'Items';
+      }
+
+      const filePath = asset.cdnUrl || asset.source || '';
+
+      return {
+        id: asset.id,
+        name,
+        category,
+        filePath,
+        source: asset.source,
+        cdnUrl: asset.cdnUrl,
+        type: asset.type,
+        tags: parsedTags,
+        categories: parsedCategories,
+        metadata: parsedMetadata,
+        createdAt: asset.createdAt,
+      };
+    });
+
     return { success: true, data: assets };
   } catch (err) {
     console.error('Failed to fetch assets:', err);
