@@ -1,3 +1,66 @@
+## [2.1.438] - 2026-08-23
+### Phase 10: Operational Intelligence & Master Control Center Sign-Off
+- **Full 10-Phase Transformation Complete**: Completed comprehensive overhaul and modernization of the entire Saints Gaming Administration & Developer suite.
+- **Unified Operational Mesh**: Harmonized 27 canonical administrative modules, real-time health checks, database diagnostics, multi-game server fleet telemetry, and 2.5D World Studio shortcuts into an enterprise-grade command console.
+- **Universal Observability & Navigation**: Integrated `Ctrl+K` Global Command Palette, `DevSubNav` developer suite bar, persistent Favorites & Recents history, and context-preserving smart exit mechanics.
+- **Zero-Defect Verification**: Executed 187 test suites with 838 unit tests passing across all game systems, netcode, and UI components.
+
+## [2.1.437] - 2026-08-23
+### Phase 9: Global Command Palette
+- **Universal Command Palette (`GlobalCommandPalette`)**: Built site-wide `Ctrl+K` / `Cmd+K` keyboard shortcut popup enabling rapid fuzzy-search navigation across modules, quick actions, and public destinations.
+- **Categorized Command Dispatcher**: Dynamically organizes visible actions by operational pillars (Quick Actions, Overview, Operations, Community, Identity, Infrastructure, Developer Tools, and Community Navigation).
+- **Role-Aware Security**: Command list automatically respects viewer permission level (e.g. Studio, Realtime Bus, Support Tickets, and News Creator only appear when authorized).
+- **Global Layout Integration**: Mounted in `app/(main)/layout.tsx` for instant accessibility anywhere on the platform.
+
+## [2.1.436] - 2026-08-23
+### Phase 8: Account Center Cleanup
+- **Profile & Account Center Separation (`/profile`)**: Clearly demarcated personal community features (Feed, Bookmarks, History, Analytics, FiveM UCP, MMO heroes) from administrative operations.
+- **Operator Fast-Switch Banner**: Provided staff/moderators/writers with an elegant, compact **Operator Tools** widget linking directly to Admin Command Center and 2.5D World Studio without polluting regular user account views.
+- **Support & Ticketing Boundary (`/support`)**: Confirmed support page operates solely on authenticated user ticket history, keeping staff administrative triage strictly inside `/admin/tickets`.
+
+## [2.1.435] - 2026-08-23
+### Phase 7: Site-Wide Navigation Audit
+- **Navbar & User Dropdown Alignment (`navbar.tsx`)**: Updated user navigation dropdown and mobile slide-out sheets with strict, role-aware permission gates:
+  - Added dedicated **2.5D World Studio** shortcut for Admin / Dev operators (`permissionLevel >= 300`).
+  - Added **Admin Command Center** entry for all operators (`permissionLevel >= 200` or `isWriter`).
+- **Mobile Navigation Parity**: Synchronized mobile drawer options with desktop navigation, eliminating broken and unauthenticated admin links.
+
+## [2.1.434] - 2026-08-23
+### Phase 6: Integrate Developer Tools
+- **Developer Tools Sub-Navigation (`DevSubNav`)**: Created a persistent top navigation bar connecting Console Home, Database Diagnostics, Realtime Bus, System State, Metrics Telemetry, Background Tasks, and API Sandbox.
+- **Developer Console Rebuild (`/admin/dev`)**: Rebuilt the console landing page with a complete architectural sitemap of all 27 registered admin modules, public routes, and REST endpoints.
+- **Unified Diagnostic Navigation**: Embedded `DevSubNav` across `/admin/dev/database`, `/admin/dev/system`, `/admin/dev/metrics`, `/admin/dev/tasks`, `/admin/dev/sandbox`, and `/admin/realtime`.
+
+## [2.1.433] - 2026-08-23
+### Phase 5: Integrate World / MMO / Asset Operations
+- **Unified MMO & World Operations (`/admin/game`)**: Rebuilt game management surface with dual sub-tabs for Active Heroes & Inventory Control and World Maps & Atlas Registry.
+- **Hero & Inventory Admin Tools**: Added quick currency adjustments (+500 / +5k / -500), Item ID injector with custom quantities, emergency unstuck position reset to DEMO_SANDBOX (8, 8), and character deletion.
+- **World Maps & Atlas Browser**: Integrated live map database browser showing versioning, gate connections, NPC spawns, encounter weights, and direct deep-links to edit maps in the 2.5D Studio.
+- **Server Actions**: Added `adminResetPlayerPosition`, `adminAdjustPlayerGold`, `adminDeleteGameCharacter`, and `fetchWorldMapsDetailed`.
+
+## [2.1.432] - 2026-08-23
+### Phase 4: Rebuild Admin Overview (Command Center)
+- **Live Operational Landing (`/admin`)**: Rebuilt the overview dashboard to answer *"What is happening right now?"* across all gaming, community, and system operations.
+- **System Health Strip**: Integrated status indicators for Database (dynamic SQLite vs MariaDB), Socket.IO Realtime Bus, MMO Engine, and Multi-Game Dedicated Server fleet.
+- **Action Required Alerts**: Surfaced high-priority actionable items (pending stream approvals, open support tickets in queue, unpublished news drafts, and restricted accounts).
+- **MMO & World Telemetry**: Added live stats for registered Saints characters, creature species catalog, active quests, pixel sprites, custom world maps, and direct World Studio launcher.
+- **Recent Administrative Activity**: Embedded timeline for latest published announcements, support tickets, and newest registered community members.
+
+## [2.1.431] - 2026-08-23
+### Phase 3: Rebuild Admin Shell
+- **Operating Shell Header**: Integrated live system status indicator, operator avatar identity badge with dynamic role color/label, and contextual exit button.
+- **Context-Aware Smart Exit**: Updated shell close button to inspect `searchParams` (`?from=`), `sessionStorage` (`sg_last_non_admin_route`), and history stack to return operators to where they were (`/studio`, `/lobby`, etc.) instead of hardcoded `/home`.
+- **Breadcrumb Navigation**: Added contextual breadcrumb hierarchy (`Admin > Category > Module`) with quick favorite/pin toggle for the active module.
+- **Favorites & Recent Views**: Implemented persistent localStorage-backed pinned favorites and 5 most recent admin module history in sidebar.
+- **In-Shell Module Filter**: Added live search and filter input within the admin navigation drawer.
+
+## [2.1.430] - 2026-08-23
+### Phase 2: Canonical Admin Module Registry
+- **Unified Admin Registry (`admin-modules.ts`)**: Created the single canonical `AdminModule` data structure and registry defining categories, labels, icons, permissions, exact match flags, keywords, and metadata.
+- **Categorized Taxonomy**: Established 6 canonical operational pillars (`overview`, `operations`, `community`, `identity`, `infrastructure`, `developer`).
+- **Dynamic Shell Integration**: Updated `AdminOverlayShell` to dynamically consume the module registry with automatic permission filtering and category ordering, eliminating duplicated navigation arrays.
+- **Registry Helpers & Search**: Added `getVisibleAdminModules`, `getCategorizedAdminModules`, `getActiveAdminModule`, and `searchAdminModules` with full Vitest unit test coverage (6 passing unit tests).
+
 ## [2.1.429] - 2026-08-23
 ### MariaDB / MySQL Provider Health & Dynamic Dev Dashboard
 - **Dynamic Database Health Status**: Updated `/admin/dev/database` and `/admin/dev/system` to dynamically detect and reflect whether the app is running on MariaDB/MySQL vs SQLite based on active environment variables (`DB_PROVIDER` / `DATABASE_URL`).

@@ -4,6 +4,7 @@ import { RefreshCw, Play, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/shared/ui/button";
 import { runTask_ClearCache, runTask_SyncDiscordRoles, runTask_AuditLogs } from "./actions";
+import { DevSubNav } from "../dev-sub-nav";
 
 type TaskStatus = "IDLE" | "RUNNING" | "SUCCESS" | "ERROR";
 
@@ -53,13 +54,15 @@ export default function DevTasksPage() {
  ];
 
  return (
- <div className="space-y-8">
- <div>
+ <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+ <div className="border-b border-border/40 pb-4">
  <h1 className="text-2xl font-bold flex items-center gap-2">
- <RefreshCw className="h-6 w-6" /> Background Tasks
+ <RefreshCw className="h-6 w-6 text-primary" /> Background Tasks &amp; Cron
  </h1>
- <p className="text-muted-foreground mt-1">Manually trigger cron jobs and maintenance scripts.</p>
+ <p className="text-muted-foreground mt-1 text-sm">Manually trigger cron jobs, cache invalidations, and maintenance scripts.</p>
  </div>
+
+ <DevSubNav />
 
  <div className="space-y-4">
  {TASK_LIST.map((t) => {

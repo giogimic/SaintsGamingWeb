@@ -129,6 +129,7 @@ export async function adminGivePlayerItem(characterId: string, itemId: string, a
     }
 
     const state = JSON.parse(character.stateData);
+    if (!state.inventory) state.inventory = {};
     
     // Inject Item
     if (!state.inventory[itemId]) {
@@ -148,3 +149,130 @@ export async function adminGivePlayerItem(characterId: string, itemId: string, a
     return { success: false, error: 'Internal Server Error' };
   }
 }
+
+export async function adminResetPlayerPosition(characterId: string, targetMapId: string = "DEMO_SANDBOX", x: number = 8, y: number = 8) {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+    const character = await prisma.gameCharacter.findUnique({
+      where: { id: characterId }
+    });
+
+    if (!character || !character.stateData) {
+      return { success: false, error: 'Character not found' };
+    }
+
+    const state = JSON.parse(character.stateData);
+    state.mapId = targetMapId;
+    state.x = x;
+    state.y = y;
+
+    await prisma.gameCharacter.update({
+      where: { id: characterId },
+      data: {
+        mapId: targetMapId,
+        x,
+        y,
+        stateData: JSON.stringify(state)
+      }
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('Reset player position failed:', err);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function adminAdjustPlayerGold(characterId: string, deltaGold: number) {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+    const character = await prisma.gameCharacter.findUnique({
+      where: { id: characterId }
+    });
+
+    if (!character || !character.stateData) {
+      return { success: false, error: 'Character not found' };
+    }
+
+    const state = JSON.parse(character.stateData);
+    state.gold = Math.max(0, (state.gold || 0) + deltaGold);
+
+    await prisma.gameCharacter.update({
+      where: { id: characterId },
+      data: { stateData: JSON.stringify(state) }
+    });
+
+    return { success: true, newGold: state.gold };
+  } catch (err) {
+    console.error('Adjust player gold failed:', err);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function adminDeleteGameCharacter(characterId: string) {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return { success: false, error: 'Unauthorized' };
+
+    await prisma.gameCharacter.delete({
+      where: { id: characterId }
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('Delete game character failed:', err);
+    return { success: false, error: 'Internal Server Error' };
+  }
+}
+
+export async function fetchWorldMapsDetailed() {
+  try {
+    const isAdmin = await verifyAdmin();
+    if (!isAdmin) return { success: false, error: 'Unauthorized', data: [] };
+
+    const maps = await prisma.worldMap.findMany({
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        version: true,
+        updatedAt: true,
+        gatesData: true,
+        npcsData: true,
+        encountersData: true,
+        tileLayersData: true,
+        tilesetsData: true,
+      }
+    });
+
+    const parsed = maps.map(m => {
+      let gateCount = 0;
+      let npcCount = 0;
+      let encounterCount = 0;
+      try { gateCount = (JSON.parse(m.gatesData || '[]')).length; } catch {}
+      try { npcCount = (JSON.parse(m.npcsData || '[]')).length; } catch {}
+      try { encounterCount = (JSON.parse(m.encountersData || '[]')).length; } catch {}
+
+      return {
+        id: m.id,
+        name: m.name,
+        version: m.version,
+        updatedAt: m.updatedAt,
+        gateCount,
+        npcCount,
+        encounterCount,
+        hasTilesets: Boolean(m.tilesetsData && m.tilesetsData.length > 5),
+      };
+    });
+
+    return { success: true, data: parsed };
+  } catch (err) {
+    console.error('Fetch detailed maps failed:', err);
+    return { success: false, error: 'Internal Server Error', data: [] };
+  }
+}
+

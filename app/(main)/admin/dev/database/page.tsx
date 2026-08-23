@@ -3,6 +3,7 @@ import { Database, Trash2, CheckCircle2 } from "lucide-react";
 import { clearExpiredSessions, clearAllNotifications, nukeAllThreads, seedDummyThreads } from "./actions";
 import { Button } from "@/shared/ui/button";
 import { DummyContentButton } from "./dummy-content-button";
+import { DevSubNav } from "../dev-sub-nav";
 
 export const metadata = { title: "Dev - Database Health" };
 
@@ -43,13 +44,15 @@ export default async function DevDatabasePage() {
    : (dbUrl || "./prisma/db/dev.db");
 
  return (
- <div className="space-y-8">
- <div>
+ <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+ <div className="border-b border-border/40 pb-4">
  <h1 className="text-2xl font-bold flex items-center gap-2">
- <Database className="h-6 w-6" /> Database Health
+ <Database className="h-6 w-6 text-primary" /> Database Health &amp; Diagnostics
  </h1>
- <p className="text-muted-foreground mt-1">Live table statistics and raw data management.</p>
+ <p className="text-muted-foreground mt-1 text-sm">Live table statistics, connection targets, and raw data management.</p>
  </div>
+
+ <DevSubNav />
 
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
  {stats.map((stat, i) => (
