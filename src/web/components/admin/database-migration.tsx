@@ -6,11 +6,12 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Database, AlertTriangle } from "lucide-react";
 
-export function DatabaseMigration() {
+export function DatabaseMigration({ currentProvider }: { currentProvider?: string }) {
   const [dbUrl, setDbUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const isCurrentlyMysql = currentProvider === "mysql";
 
   const handleMigrate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +55,7 @@ export function DatabaseMigration() {
         <Database className="h-5 w-5" /> Database Migration
       </h2>
       <p className="text-sm text-muted-foreground mb-4">
-        Currently using SQLite. You can migrate the backend to MariaDB/MySQL by providing a connection string below.
+        Currently using <span className="font-semibold text-foreground">{isCurrentlyMysql ? "MariaDB / MySQL" : "SQLite"}</span>. {isCurrentlyMysql ? "You are already running on a MariaDB/MySQL backend." : "You can migrate the backend to MariaDB/MySQL by providing a connection string below."}
       </p>
 
       {error && (

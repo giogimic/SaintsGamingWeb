@@ -1,3 +1,8 @@
+## [2.1.429] - 2026-08-23
+### MariaDB / MySQL Provider Health & Dynamic Dev Dashboard
+- **Dynamic Database Health Status**: Updated `/admin/dev/database` and `/admin/dev/system` to dynamically detect and reflect whether the app is running on MariaDB/MySQL vs SQLite based on active environment variables (`DB_PROVIDER` / `DATABASE_URL`).
+- **Database Migration Clarity**: Clarified migration panel descriptions in dev settings to avoid misleading hardcoded SQLite references when connected to MariaDB.
+
 ## [2.1.428] - 2026-08-23
 ### Community Forums Modernization & Modular Reordering
 - **Modern Modular Forum Index**: Redesigned `/forum` with a high-impact glassmorphic hero banner, search bar, active board counters, recent discussions ticker, and category cards.

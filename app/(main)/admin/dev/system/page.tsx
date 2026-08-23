@@ -78,7 +78,7 @@ export default async function SystemStatePage() {
         </form>
 
         <div className="space-y-8">
-          <DatabaseMigration />
+          <DatabaseMigration currentProvider={process.env.DB_PROVIDER || (process.env.DATABASE_URL?.startsWith("mysql://") ? "mysql" : "sqlite")} />
           <SystemUpdater isDocker={isDocker} />
         </div>
       </div>
