@@ -1,3 +1,8 @@
+## [2.1.421] - 2026-08-22
+### Sunset / Dawn-Dusk Atmospheric Light Theme Overhaul
+- **Sunset Palette Harmonization**: Replaced the stark white light theme with a rich, luminous Dawn & Dusk twilight aesthetic (`#240046` background depth with sunrise amber `#f9c74f`, sunset orange `#f8961e`, dusk magenta `#f72585`, and twilight blues `#4361ee` / `#4cc9f0`).
+- **Global Theme & Switcher Polish**: Updated `.light` design tokens across cards, popovers, borders, and sidebar states, aligning with the landing page Style #3 and pregame screen art directions.
+
 ## [2.1.420] - 2026-08-22
 ### Body Portal Attachment for Shorts Reel Swiper Modal
 - **Direct Body Portal Attachment (`createPortal`)**: Mounted the full-screen reel/shorts modal directly to `document.body` via React's `createPortal`, breaking out of ancestor page animations, transforms, and overflow constraints.
