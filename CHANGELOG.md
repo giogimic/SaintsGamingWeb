@@ -1,3 +1,29 @@
+## [2.1.411] - 2026-08-22
+### Google Sitelinks & Schema.org Rich Search Navigation Structured Data
+- **Schema.org Structured Data (`JsonLd`)**: Created [`json-ld.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/json-ld.tsx) injecting structured JSON-LD (`WebSite` with `SearchAction` for sitelinks searchbox, `ItemList` with `SiteNavigationElement` declaring **Forums**, **News**, **Live Streams**, **Modpacks**, and **The Lobby**, and `Organization` metadata).
+- **Expanded Sitemap Priorities**: Updated [`sitemap.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/sitemap.ts) with prioritized crawler ratings and change frequencies for `/forum`, `/news`, `/streams`, `/modpacks`, and `/lobby`.
+- **Root Metadata Optimization**: Enhanced canonical URLs, targeted keywords, and OpenGraph descriptions in `app/layout.tsx`.
+
+## [2.1.410] - 2026-08-22
+### User Orb Dropdown Streamlining & Admin Dashboard Cleanup
+- **User Orb Dropdown Cleanup**: Removed the redundant Setup Wizard link from the user avatar dropdown in `navbar.tsx`, leaving a clean path directly to Profile, The Feed, UCP, and the Admin Dashboard.
+- **Admin Dashboard Alignment**: Removed unused legacy Game Servers section from the Admin Command Center sidebar and updated Modpack quick action copy to focus on client files and installations.
+
+## [2.1.409] - 2026-08-22
+### Profile Navigation Integration for The Feed
+- **Navbar Profile Dropdown**: Added a dedicated **The Feed** shortcut directly beneath the Profile link in the authenticated desktop navigation dropdown (`navbar.tsx`).
+- **Mobile Menu Integration**: Added **The Feed** link under Account in the mobile navigation drawer.
+- **Profile Dashboard Quick Action**: Enhanced the user profile sidebar (`/profile`) with a prominent, themed button for **The Feed** (`/profile/inbox`).
+
+## [2.1.408] - 2026-08-22
+### Frictionless Feed Media Integration & Video Streaming
+- **Feed Image & Video Attachments**: Added native support for attaching images (`.jpg`, `.png`, `.gif`, `.webp`) and videos (`.mp4`, `.webm`, `.mov`, `.ogg`, `.mkv`) directly to posts and replies in "The Feed" (`the-feed.tsx`).
+- **Frictionless Composer UX**: Integrated direct clipboard pasting (`Ctrl+V`) for image files and fluid drag-and-drop file zones with animated feedback indicators across both the main post composer and inline reply forms.
+- **Asynchronous Pre-uploading & Previews**: Media uploads begin immediately upon selection or drop, presenting animated shimmer previews with one-click removal before submission.
+- **Inline Video Playback**: Integrated `FeedInlineVideo` for timeline feeds featuring automatic viewport-based autoplay (muted), fast inline mute/unmute toggling, play/pause controls, and one-click expand to the cinematic fullscreen video viewer.
+- **HTTP 206 Partial Content Video Streaming**: Implemented standard HTTP Range requests in `/uploads/[...path]/route.ts` to allow instant seek/scrubbing and low-latency video streaming.
+- **Secure File Storage & Magic Bytes**: Enhanced `upload.ts` with strict magic byte inspections for WebP, MP4 (`ftyp`/`moov`/`mdat`), QuickTime, WebM/MKV (EBML), and OGG alongside strict size limits (15MB for images, 250MB for video/archive content).
+
 ## [2.1.407] - 2026-08-22
 ### Saint & Soul Link Terminology Overhaul & Studio Server Settings Menu
 - **Saint Canonical Player Identity**: Replaced legacy cyber-themed "Operative" terminology across the entire MMO client with the canonical default name **"Saint"** (plural: **"Saints"**). Updated character creator (`character-creator.tsx`), character selector (`character-selector.tsx`), authentication screen (`GameLogin.tsx`), title screen (`GameTitleScreen.tsx`), vitals HUD, presence radar, party overlay, and leaderboard modals.

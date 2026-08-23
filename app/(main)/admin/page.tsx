@@ -64,8 +64,8 @@ export default async function AdminDashboardPage() {
       isVisible: hasPermission(level, PERMISSION_LEVELS.ADMIN) || viewer.isWriter,
     },
     {
-      title: "Modpacks & Servers",
-      description: "Manage game servers and modpack listings.",
+      title: "Modpacks & Client Files",
+      description: "Manage client modpacks, downloads, and instructions.",
       href: "/admin/modpacks",
       icon: <Gamepad2 className="h-6 w-6 text-primary" />,
       stat: `${modpackCount} Modpacks`,

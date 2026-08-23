@@ -15,7 +15,7 @@ import {
   publicUrlForFilename,
   readS3Env,
   type S3EnvConfig,
-} from "@/web/lib/s3-storage-utils";
+} from "./s3-storage-utils";
 
 export {
   isS3Enabled,
