@@ -263,6 +263,8 @@ export interface GameState {
   setPlayerChat: (message: string) => void;
   localChat: string | null;
   isMapTransitioning: boolean;
+  activeAtlasNodeId: string | null;
+  setActiveAtlasNodeId: (id: string | null) => void;
   
   // Server Reconciliation (Phase 2)
   moveSequence: number;
@@ -783,6 +785,8 @@ export const useGameStore = create<GameState>()(
       }),
 
       setGameMode: (mode) => set((state) => { state.gameMode = mode; }),
+      activeAtlasNodeId: null,
+      setActiveAtlasNodeId: (id) => set({ activeAtlasNodeId: id }),
       setCurrentMapId: (id) => set({ currentMapId: id, activeMapData: null }),
       setInstanceId: (id) => set({ instanceId: id }),
       setActiveMapData: (data) => set({ activeMapData: data }),

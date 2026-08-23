@@ -1,3 +1,36 @@
+## [2.1.428] - 2026-08-23
+### Community Forums Modernization & Modular Reordering
+- **Modern Modular Forum Index**: Redesigned `/forum` with a high-impact glassmorphic hero banner, search bar, active board counters, recent discussions ticker, and category cards.
+- **Removed Outdated Roleplay References**: Updated forum descriptions and seed categories to focus on Game News, Hero Battles, MMO World Studio, and Community.
+- **Admin Category & Subcategory Reordering**: Added `/api/admin/forum/reorder` endpoint and implemented reorder handlers in `CategoryManager` for organizing categories and boards.
+- **Dynamic Loading Skeleton**: Updated `/forum/loading.tsx` to match the new modular structure.
+
+## [2.1.427] - 2026-08-23
+### Phase 6: Runtime Connection Unification
+- **Runtime Border & Seam Traversal**: Unified boundary step evaluations in `WorldSimulation.ts` and `borderWarp.ts` against authoritative Atlas adjacency.
+- **Visual Neighbor Bleed**: Supported edge look-ahead rendering (`neighborEdgeStrips`) in `BabylonEngine.ts` to preview adjacent connected maps seamlessly.
+
+## [2.1.425] - 2026-08-23
+### Phase 5: Unified Painting & Stroke Engine
+- **Unified Paint Operations**: Consolidated cell painting (`paintCell`, `paintCellWithHistory`, and `eraseTilesInRegion`) with single-transaction undo/redo across both visual layers and logic layer `-1`.
+- **Stroke Engine Validation**: Verified Bresenham line rasterization (`rasterizeLine`) for Shift straight-line painting and deduplicated cell stroke undo stacks with 40 unit tests passing.
+
+## [2.1.424] - 2026-08-23
+### Phase 4: Unified Logic Authoring & Gate Normalization
+- **Canonical Logic & Gate Handling**: Verified canonical gate normalization (`normalizeGatesToArray` and `normalizeGates`) and logic presets interoperability across `logicComponents.ts` and `mapGates.ts`.
+- **Validation**: Added unit test suite coverage for gate normalization and backward compatibility across array and key-value formats.
+
+## [2.1.423] - 2026-08-23
+### Phase 3: Atlas Editor UX & State Integration
+- **Selected Atlas Node State**: Added `selectedAtlasNodeId` and `setSelectedAtlasNodeId` to `useEditorStore` for shared selection sync between World Atlas dock, Atlas Studio Suite, and the Inspector.
+- **Atlas-to-Editor Navigation**: Linked selection context seamlessly across Atlas Studio, World Builder, and Viewport warp actions.
+
+## [2.1.422] - 2026-08-23
+### Phase 2: Atlas Topology Unification & Active Node State
+- **Active Node Identity Tracking**: Added explicit `activeAtlasNodeId` state and `setActiveAtlasNodeId` action to `useGameStore`, ensuring accurate placement identification during multi-instance map placements.
+- **Topology Linter Normalization**: Updated `lintWorldAtlasConnectivity` to check slot overlaps on canonical `x`/`y` coordinates seamlessly.
+- **Atlas Spatial Validation**: Verified full 4-way spatial adjacency, border warp calculations, and unit tests across the unified Atlas engine.
+
 ## [2.1.421] - 2026-08-22
 ### Sunset / Dawn-Dusk Atmospheric Light Theme Overhaul
 - **Sunset Palette Harmonization**: Replaced the stark white light theme with a rich, luminous Dawn & Dusk twilight aesthetic (`#240046` background depth with sunrise amber `#f9c74f`, sunset orange `#f8961e`, dusk magenta `#f72585`, and twilight blues `#4361ee` / `#4cc9f0`).
