@@ -92,7 +92,7 @@ It is an active personal sandbox project by **GioGimic**, built to experiment wi
 npm run dev
 
 # 3. Launch The Lobby Go backend (Required for realtime multiplayer on :3001)
-./the-lobby/scripts/setup-go-mmo.sh --full
+./the-lobby/scripts/setup-the-lobby.sh --full
 
 # 4. Run automated test suite (Vitest)
 npm test

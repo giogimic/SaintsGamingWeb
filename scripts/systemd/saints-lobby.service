@@ -1,5 +1,5 @@
 [Unit]
-Description=Saints Gaming Go Realtime MMO Server (:3001)
+Description=Saints Gaming The Lobby Realtime MMO Server (:3001)
 After=network.target redis.service
 Wants=redis.service
 
@@ -17,7 +17,7 @@ RestartSec=3s
 LimitNOFILE=65536
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=saints-the-lobby
+SyslogIdentifier=saints-lobby
 
 [Install]
 WantedBy=multi-user.target

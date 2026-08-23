@@ -79,7 +79,7 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # Detect known Saints-related patterns
-PATTERNS=("saints*" "go-mmo*" "saints-gaming*" "saints-web*" "saints-mmo*")
+PATTERNS=("saints*" "saints-lobby*" "go-mmo*" "saints-gaming*" "saints-web*" "saints-mmo*")
 
 log() {
   if [ "$JSON_OUTPUT" -eq 0 ]; then
