@@ -1,3 +1,8 @@
+## [2.1.420] - 2026-08-22
+### Body Portal Attachment for Shorts Reel Swiper Modal
+- **Direct Body Portal Attachment (`createPortal`)**: Mounted the full-screen reel/shorts modal directly to `document.body` via React's `createPortal`, breaking out of ancestor page animations, transforms, and overflow constraints.
+- **True Viewport Centering**: Fixed modal coordinates (`top: 0, left: 0, right: 0, bottom: 0, w-screen h-screen z-[999999]`) ensuring the viewer opens squarely centered on-screen over the navbar and regardless of how far down the feed was scrolled.
+
 ## [2.1.419] - 2026-08-22
 ### Edge-to-Edge Feed Layout & Fixed Viewport Shorts Reel Viewer
 - **Expansive Feed Layout**: Expanded the inbox page container from constrained `max-w-7xl` to `max-w-[1720px]` and widened the feed stream column from `max-w-2xl` to `max-w-4xl 2xl:max-w-5xl` for an edge-to-edge desktop experience.

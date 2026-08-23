@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { 
   getTrendingTags, 
   createSocialPost,
@@ -242,6 +243,11 @@ export function TheFeed() {
 
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // === Feed Upgrade State ===
   const [broadenFeed, setBroadenFeed] = useState(false);
@@ -1356,10 +1362,10 @@ export function TheFeed() {
   return (
     <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
       
-      {/* Full-Screen Immersive Shorts / Reel Swiper Modal (Fixed Viewport, Wide on Desktop) */}
-      {viewingShortsPost && (
+      {/* Full-Screen Immersive Shorts / Reel Swiper Modal rendered via Portal directly to body */}
+      {mounted && viewingShortsPost && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden animate-in fade-in duration-200"
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden m-0 p-0 animate-in fade-in duration-200"
           onTouchStart={(e) => {
             touchStartY.current = e.touches[0].clientY;
           }}
@@ -1700,7 +1706,8 @@ export function TheFeed() {
               </form>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Main Feed Column: Expanded to generous edge-to-edge max width on PC */}
