@@ -6,6 +6,7 @@ import {
   type AtlasNode,
   type AtlasGridData,
   normalizeAtlasGridData,
+  getAdjacentAtlasNeighbors,
 } from '../../../../shared/game/atlas/spatialAtlas';
 
 export interface MapGate {
@@ -87,8 +88,13 @@ export interface GameMapData {
   };
 }
 
+export function getPlacementCacheKey(mapId: string, atlasNodeId?: string, depth: number = 0): string {
+  if (depth > 0) return `${mapId}:neighbor`;
+  return atlasNodeId ? `${mapId}@${atlasNodeId}` : mapId;
+}
+
 const mapCache: Record<string, GameMapData> = {};
-/** Dedupe concurrent fetches for the same id (Studio remount storms). */
+/** Dedupe concurrent fetches for the same placement/id (Studio remount storms). */
 const mapInflight = new Map<string, Promise<GameMapData>>();
 /** Brief cooldown after a failed fetch so we don't hammer /api/maps on 404 loops. */
 const mapFailUntil = new Map<string, number>();
@@ -155,20 +161,23 @@ export async function loadMap(
     return emptyMapFallback('INVALID');
   }
 
+  // Derive placement-aware cache key
+  const cacheKey = getPlacementCacheKey(mapId, atlasNodeId, depth);
+
   // Use cached map directly if we are just fetching a neighbor (depth > 0)
   // or if it already has the assembled chunks (we assume it was fully loaded)
-  if (mapCache[mapId]) {
-    if (depth > 0 || (mapCache[mapId].chunks && mapCache[mapId].chunks!.length > 0)) {
-      return mapCache[mapId];
+  if (mapCache[cacheKey]) {
+    if (depth > 0 || (mapCache[cacheKey].chunks && mapCache[cacheKey].chunks!.length > 0)) {
+      return mapCache[cacheKey];
     }
   }
 
-  const failUntil = mapFailUntil.get(mapId);
+  const failUntil = mapFailUntil.get(cacheKey) ?? mapFailUntil.get(mapId);
   if (failUntil && Date.now() < failUntil) {
     return emptyMapFallback(mapId);
   }
 
-  const existing = mapInflight.get(mapId);
+  const existing = mapInflight.get(cacheKey);
   if (existing) return existing;
 
   const pending = (async (): Promise<GameMapData> => {
@@ -177,8 +186,15 @@ export async function loadMap(
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: Failed to load map ${mapId}`);
       }
-      const mapData: GameMapData = await res.json();
-      mapCache[mapId] = mapData;
+      const rawMapData: GameMapData = await res.json();
+      // Clone mapData so different placements with the same base map do not mutate the same object
+      const mapData: GameMapData = JSON.parse(JSON.stringify(rawMapData));
+      mapCache[cacheKey] = mapData;
+      // Also cache base mapId if not set yet for direct fast lookups
+      if (!mapCache[mapId]) {
+        mapCache[mapId] = mapData;
+      }
+      mapFailUntil.delete(cacheKey);
       mapFailUntil.delete(mapId);
 
       // Phase 1: Seamless Terrain - Fetch immediate neighbors (Depth 1)
@@ -201,35 +217,31 @@ export async function loadMap(
             }
           }
 
-          // 3. Fallback: filter all placements for this map definition
+          // 3. Fallback: only bind if this map definition has exactly one unique placement
           if (!myNode) {
             const allMyNodes = atlas.nodes.filter((n) => n.mapId === mapData.id);
-            if (allMyNodes.length > 0) {
+            if (allMyNodes.length === 1) {
               myNode = allMyNodes[0];
+            } else if (allMyNodes.length > 1) {
+              console.warn(`[MapLoader] Map ${mapData.id} has ${allMyNodes.length} placements in Atlas; specify atlasNodeId to bind specific placement.`);
             }
           }
 
           if (myNode) {
-            const curX = myNode.x;
-            const curY = myNode.y;
             mapData.atlasNodeId = myNode.id;
-
-            const northNode = atlas.nodes.find((n) => n.x === curX && n.y === curY - 1);
-            const southNode = atlas.nodes.find((n) => n.x === curX && n.y === curY + 1);
-            const eastNode = atlas.nodes.find((n) => n.x === curX + 1 && n.y === curY);
-            const westNode = atlas.nodes.find((n) => n.x === curX - 1 && n.y === curY);
+            const neighbors = getAdjacentAtlasNeighbors(atlas, myNode);
 
             mapData.connections = {
-              north: northNode?.mapId,
-              south: southNode?.mapId,
-              east: eastNode?.mapId,
-              west: westNode?.mapId,
+              north: neighbors.north?.mapId,
+              south: neighbors.south?.mapId,
+              east: neighbors.east?.mapId,
+              west: neighbors.west?.mapId,
             };
             mapData.nodeConnections = {
-              north: northNode?.id,
-              south: southNode?.id,
-              east: eastNode?.id,
-              west: westNode?.id,
+              north: neighbors.north?.id,
+              south: neighbors.south?.id,
+              east: neighbors.east?.id,
+              west: neighbors.west?.id,
             };
           }
         } catch (err) {
@@ -255,12 +267,16 @@ export async function loadMap(
             npcs: mapData.npcs,
           }];
         }
-        const processConnection = (conn: string | MapConnection | undefined, direction: 'north' | 'south' | 'east' | 'west') => {
+        const processConnection = (
+          conn: string | MapConnection | undefined,
+          targetNodeId: string | undefined,
+          direction: 'north' | 'south' | 'east' | 'west'
+        ) => {
           if (!conn) return;
           const targetMapId = typeof conn === 'string' ? conn : conn.targetMapId;
           
           neighborPromises.push(
-            loadMap(targetMapId, 1).then(neighborData => {
+            loadMap(targetMapId, 1, targetNodeId).then(neighborData => {
               if (neighborData.id === 'INVALID') return;
 
               let offsetX = 0;
@@ -306,10 +322,10 @@ export async function loadMap(
           );
         };
 
-        processConnection(mapData.connections.north, 'north');
-        processConnection(mapData.connections.south, 'south');
-        processConnection(mapData.connections.east, 'east');
-        processConnection(mapData.connections.west, 'west');
+        processConnection(mapData.connections.north, mapData.nodeConnections?.north, 'north');
+        processConnection(mapData.connections.south, mapData.nodeConnections?.south, 'south');
+        processConnection(mapData.connections.east, mapData.nodeConnections?.east, 'east');
+        processConnection(mapData.connections.west, mapData.nodeConnections?.west, 'west');
 
         await Promise.allSettled(neighborPromises);
       }
@@ -319,18 +335,22 @@ export async function loadMap(
       console.error(`Error loading map ${mapId}:`, err);
       // Do NOT cache empty fallbacks long-term — only cool down retries.
       // A transient failure must not permanently poison DEMO with npcs:[].
-      mapFailUntil.set(mapId, Date.now() + MAP_FAIL_COOLDOWN_MS);
+      mapFailUntil.set(cacheKey, Date.now() + MAP_FAIL_COOLDOWN_MS);
       return emptyMapFallback(mapId);
     } finally {
-      mapInflight.delete(mapId);
+      mapInflight.delete(cacheKey);
     }
   })();
 
-  mapInflight.set(mapId, pending);
+  mapInflight.set(cacheKey, pending);
   return pending;
 }
 
-export function getCachedMap(mapId: string): GameMapData | null {
+export function getCachedMap(mapId: string, atlasNodeId?: string): GameMapData | null {
+  if (atlasNodeId) {
+    const key = `${mapId}@${atlasNodeId}`;
+    if (mapCache[key]) return mapCache[key];
+  }
   return mapCache[mapId] || null;
 }
 
@@ -339,9 +359,10 @@ export function patchCachedMapTile(
   mapId: string,
   x: number,
   y: number,
-  tileId: number
+  tileId: number,
+  atlasNodeId?: string
 ): boolean {
-  const map = mapCache[mapId];
+  const map = getCachedMap(mapId, atlasNodeId);
   if (!map?.grid?.[y] || map.grid[y][x] === undefined) return false;
   map.grid[y][x] = tileId;
   return true;
@@ -353,8 +374,19 @@ export function invalidateMapCache(mapId?: string) {
     mapFailUntil.clear();
     return;
   }
-  delete mapCache[mapId];
-  mapFailUntil.delete(mapId);
+  // Delete exact mapId, neighbor entries, and all placement composite keys (mapId@nodeId)
+  const prefix = `${mapId}@`;
+  const neighborKey = `${mapId}:neighbor`;
+  for (const key of Object.keys(mapCache)) {
+    if (key === mapId || key === neighborKey || key.startsWith(prefix)) {
+      delete mapCache[key];
+    }
+  }
+  for (const key of Object.keys(mapFailUntil)) {
+    if (key === mapId || key === neighborKey || key.startsWith(prefix)) {
+      mapFailUntil.delete(key);
+    }
+  }
 }
 
 export interface MapIndexEntry {

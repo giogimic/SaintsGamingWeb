@@ -48,6 +48,7 @@ import {
   type AtlasGridData,
   createAtlasNodeId,
   normalizeAtlasGridData,
+  getAdjacentAtlasNeighbors,
 } from '@/shared/game/atlas/spatialAtlas';
 
 // ─── Sub-Studio Workspaces ───────────────────────────────────────────────────
@@ -214,35 +215,23 @@ export function AtlasStudioSuite() {
     }
   }, [currentMapId, resizeTargetMapId]);
 
-  // Compute 4-way adjacent connections for every placed node
-  const computeConnections = (nodes: AtlasNode[]) => {
-    const connectionsByMap: Record<
-      string,
-      { north?: string; south?: string; east?: string; west?: string }
-    > = {};
-    for (const node of nodes) {
-      const north = nodes.find((n) => n.x === node.x && n.y === node.y - 1)?.mapId;
-      const south = nodes.find((n) => n.x === node.x && n.y === node.y + 1)?.mapId;
-      const west = nodes.find((n) => n.x === node.x - 1 && n.y === node.y)?.mapId;
-      const east = nodes.find((n) => n.x === node.x + 1 && n.y === node.y)?.mapId;
-      connectionsByMap[node.mapId] = { north, south, west, east };
-    }
-    return connectionsByMap;
-  };
-
-  const handleWarpToMap = async (targetMapId: string) => {
+  const handleWarpToMap = async (targetMapId: string, targetNodeId?: string) => {
     soundSynth?.playActionSound?.();
     try {
-      const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId));
+      const loaded = ensureMapHasStudioTilesets(await loadMap(targetMapId, 0, targetNodeId));
       const mw = loaded.grid?.[0]?.length || loaded.width || 24;
       const mh = loaded.grid?.length || loaded.height || 24;
       const cx = Math.max(1, Math.min(mw - 2, Math.floor(mw / 2)));
       const cy = Math.max(1, Math.min(mh - 2, Math.floor(mh / 2)));
-      useGameStore.setState({ currentMapId: targetMapId, activeMapData: loaded });
+      useGameStore.setState({
+        currentMapId: targetMapId,
+        activeAtlasNodeId: targetNodeId || loaded.atlasNodeId || null,
+        activeMapData: loaded,
+      });
       useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
       showToast(`Warped to ${targetMapId}`);
     } catch {
-      useGameStore.setState({ currentMapId: targetMapId });
+      useGameStore.setState({ currentMapId: targetMapId, activeAtlasNodeId: targetNodeId || null });
       showToast(`Warped to ${targetMapId} (loading…)`);
     }
   };
@@ -252,7 +241,6 @@ export function AtlasStudioSuite() {
     setIsSaving(true);
     try {
       soundSynth?.playActionSound?.();
-      const connectionsByMap = computeConnections(atlasData.nodes);
       const res = await fetch('/api/world/atlas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -260,15 +248,19 @@ export function AtlasStudioSuite() {
           gameId: activeGameId,
           lobbyMapId,
           atlasData,
-          connectionsByMap,
         }),
       });
       const result = await res.json();
       if (res.ok && result.ok) {
+        if (result.atlas?.atlasData) {
+          const raw = typeof result.atlas.atlasData === 'string' ? JSON.parse(result.atlas.atlasData) : result.atlas.atlasData;
+          const normalized = normalizeAtlasGridData(raw);
+          setAtlasData(normalized as WorldAtlasData);
+        }
         useEditorStore.getState().clearMapDirty();
         invalidateMapCache();
         invalidateClientAtlas();
-        showToast('Atlas saved & 4-way map seams synchronized.');
+        showToast('Atlas saved successfully.');
       } else {
         showToast(result.error || 'Failed to save atlas.');
       }
@@ -446,7 +438,13 @@ export function AtlasStudioSuite() {
 
   const meta = WORKSPACE_META[activeWorkspace];
   const Icon = meta.icon;
-  const activeConnections = selectedNode ? computeConnections(atlasData.nodes)[selectedNode.mapId] : null;
+  const adjacentNeighbors = selectedNode ? getAdjacentAtlasNeighbors(atlasData, selectedNode) : null;
+  const activeConnections = adjacentNeighbors ? {
+    north: adjacentNeighbors.north?.mapId,
+    south: adjacentNeighbors.south?.mapId,
+    east: adjacentNeighbors.east?.mapId,
+    west: adjacentNeighbors.west?.mapId,
+  } : null;
 
   // ─── Render Sub-Studio Content ──────────────────────────────────────────────
   const renderContent = () => {
@@ -534,9 +532,9 @@ export function AtlasStudioSuite() {
 
                     return (
                       <div
-                        key={node.mapId}
+                        key={node.id || `${node.x}_${node.y}`}
                         onClick={() => handleGridClick(node.x, node.y)}
-                        onDoubleClick={() => handleWarpToMap(node.mapId)}
+                        onDoubleClick={() => handleWarpToMap(node.mapId, node.id)}
                         className={`absolute w-[74px] h-[74px] m-[1px] rounded-lg flex flex-col items-center justify-center p-1.5 text-center cursor-pointer shadow-xl transition-all group ${
                           isSelected
                             ? 'bg-amber-950/90 border-2 border-amber-400 scale-105 z-10 shadow-[0_0_20px_rgba(245,158,11,0.4)]'
@@ -587,7 +585,7 @@ export function AtlasStudioSuite() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleWarpToMap(node.mapId);
+                            handleWarpToMap(node.mapId, node.id);
                           }}
                           className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-amber-500 text-black hover:bg-amber-400 transition-opacity shadow"
                           title="Teleport to map"
@@ -607,6 +605,7 @@ export function AtlasStudioSuite() {
                     <span className="font-bold text-amber-400 flex items-center gap-1.5">
                       <MapIcon className="w-4 h-4 text-amber-400" />
                       Selected: <span className="text-white">{selectedNode.mapId}</span>
+                      <span className="text-[10px] text-slate-500 font-normal">({selectedNode.id})</span>
                     </span>
                     <span className="text-slate-400 text-[11px]">
                       Grid Coordinate: [{selectedNode.x}, {selectedNode.y}]
@@ -632,7 +631,7 @@ export function AtlasStudioSuite() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={async () => {
-                        await handleWarpToMap(selectedNode.mapId);
+                        await handleWarpToMap(selectedNode.mapId, selectedNode.id);
                         setStudioMode('develop');
                       }}
                       className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold rounded-lg shadow-lg flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
@@ -642,7 +641,7 @@ export function AtlasStudioSuite() {
                       <span>Edit Realm</span>
                     </button>
                     <button
-                      onClick={() => handleWarpToMap(selectedNode.mapId)}
+                      onClick={() => handleWarpToMap(selectedNode.mapId, selectedNode.id)}
                       className="px-3 py-1.5 bg-[#1a2333] hover:bg-[#253247] text-cyan-300 font-bold rounded-lg border border-cyan-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                       title="Open map in Viewport"
                     >
@@ -661,7 +660,7 @@ export function AtlasStudioSuite() {
                       onClick={() => {
                         soundSynth?.playUiClick?.();
                         const newNodes = atlasData.nodes.filter(
-                          (n) => !(n.x === selectedNode.x && n.y === selectedNode.y)
+                          (n) => n.id !== selectedNode.id && !(n.x === selectedNode.x && n.y === selectedNode.y)
                         );
                         setAtlasData({ ...atlasData, nodes: newNodes });
                         setSelectedNode(null);
@@ -669,7 +668,7 @@ export function AtlasStudioSuite() {
                         showToast(`Removed ${selectedNode.mapId} from atlas`);
                       }}
                       className="px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 font-bold rounded-lg border border-rose-500/40 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                      title="Remove from the atlas"
+                      title="Remove this node from the atlas"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Remove Node</span>
@@ -678,7 +677,6 @@ export function AtlasStudioSuite() {
                 </div>
               )}
             </div>
-          </div>
         );
 
       case 'explorer':

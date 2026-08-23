@@ -59,18 +59,19 @@ export class WorldSimulation {
       // Check connections for One-World map transitions
       if (state.connections) {
         const getTarget = (c: any) => typeof c === 'string' ? c : c?.targetMapId;
+        const nodeConns = (state as any).nodeConnections;
         
         if (targetY < 0 && state.connections.north) {
-          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.north), isEdgeConnection: true, edgeDirection: 'north', targetSpawn: { x: targetX, y: -1 } } }; // y: -1 means bottom edge
+          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.north), targetNodeId: nodeConns?.north, isEdgeConnection: true, edgeDirection: 'north', targetSpawn: { x: targetX, y: -1 } } }; // y: -1 means bottom edge
         }
         if (targetY >= mapHeight && state.connections.south) {
-          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.south), isEdgeConnection: true, edgeDirection: 'south', targetSpawn: { x: targetX, y: 0 } } };
+          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.south), targetNodeId: nodeConns?.south, isEdgeConnection: true, edgeDirection: 'south', targetSpawn: { x: targetX, y: 0 } } };
         }
         if (targetX < 0 && state.connections.west) {
-          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.west), isEdgeConnection: true, edgeDirection: 'west', targetSpawn: { x: -1, y: targetY } } }; // x: -1 means right edge
+          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.west), targetNodeId: nodeConns?.west, isEdgeConnection: true, edgeDirection: 'west', targetSpawn: { x: -1, y: targetY } } }; // x: -1 means right edge
         }
         if (targetX >= mapWidth && state.connections.east) {
-          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.east), isEdgeConnection: true, edgeDirection: 'east', targetSpawn: { x: 0, y: targetY } } };
+          return { type: 'WARP', gate: { targetMapId: getTarget(state.connections.east), targetNodeId: nodeConns?.east, isEdgeConnection: true, edgeDirection: 'east', targetSpawn: { x: 0, y: targetY } } };
         }
       }
       return { type: 'BLOCKED', direction: dir, reason: 'BOUNDS' };

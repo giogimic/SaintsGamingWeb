@@ -51,6 +51,7 @@ import { FullScreenMapBrowser } from './FullScreenMapBrowser';
 import { AssetStudioSuite } from './AssetStudioSuite';
 import { AtlasStudioSuite } from './AtlasStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
+import { AtlasDiagnosticOverlay } from './AtlasDiagnosticOverlay';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
 const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
@@ -836,6 +837,9 @@ export const StudioEditorShell: React.FC = () => {
         onOpenMapBrowser={() => setStudioMode('atlas')}
         onOpenAssetBrowser={() => setStudioMode('assets')}
       />
+
+      {/* Developer Atlas Diagnostic Overlay */}
+      <AtlasDiagnosticOverlay />
     </div>
   );
 };

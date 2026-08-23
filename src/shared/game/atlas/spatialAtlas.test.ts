@@ -161,5 +161,61 @@ describe('World Atlas Spatial Adjacency Engine (Bible 23 & 24)', () => {
       expect(normalized.nodes[0].x).toBe(2);
       expect(normalized.nodes[1].x).toBe(8);
     });
+
+    it('passes the 4-node multi-placement matrix acceptance test', () => {
+      // Town @ A = (5,5)
+      // Forest @ B = (5,4)
+      // Town @ C = (10,10)
+      // Forest @ D = (10,9)
+      const matrixAtlas: AtlasGridData = {
+        nodes: [
+          { id: 'node_town_a', mapId: 'TOWN', x: 5, y: 5 },
+          { id: 'node_forest_b', mapId: 'FOREST', x: 5, y: 4 },
+          { id: 'node_town_c', mapId: 'TOWN', x: 10, y: 10 },
+          { id: 'node_forest_d', mapId: 'FOREST', x: 10, y: 9 },
+        ]
+      };
+
+      // 1. Forest B South is Town A (y=5 is South of y=4)
+      const neighborsB = getAdjacentAtlasNeighbors(matrixAtlas, 'node_forest_b');
+      expect(neighborsB.south?.id).toBe('node_town_a');
+      expect(neighborsB.north).toBeUndefined();
+
+      // 2. Forest D South is Town C (y=10 is South of y=9)
+      const neighborsD = getAdjacentAtlasNeighbors(matrixAtlas, 'node_forest_d');
+      expect(neighborsD.south?.id).toBe('node_town_c');
+      expect(neighborsD.north).toBeUndefined();
+
+      // 3. Move Forest B to (10,8) (North of Forest D @ 10,9)
+      const movedForestB: AtlasNode = {
+        id: 'node_forest_b',
+        mapId: 'FOREST',
+        x: 10,
+        y: 8,
+      };
+      const updatedAtlas: AtlasGridData = {
+        nodes: [
+          matrixAtlas.nodes[0], // Town A @ (5,5)
+          movedForestB,         // Forest B @ (10,8)
+          matrixAtlas.nodes[2], // Town C @ (10,10)
+          matrixAtlas.nodes[3], // Forest D @ (10,9)
+        ]
+      };
+
+      // Forest B's South is now Forest D
+      const updatedBNeighbors = getAdjacentAtlasNeighbors(updatedAtlas, 'node_forest_b');
+      expect(updatedBNeighbors.south?.id).toBe('node_forest_d');
+      expect(updatedBNeighbors.south?.mapId).toBe('FOREST');
+
+      // Forest D's North is now Forest B, and its South remains Town C
+      const updatedDNeighbors = getAdjacentAtlasNeighbors(updatedAtlas, 'node_forest_d');
+      expect(updatedDNeighbors.north?.id).toBe('node_forest_b');
+      expect(updatedDNeighbors.south?.id).toBe('node_town_c');
+
+      // Town A is now isolated
+      const townANeighbors = getAdjacentAtlasNeighbors(updatedAtlas, 'node_town_a');
+      expect(townANeighbors.north).toBeUndefined();
+      expect(townANeighbors.south).toBeUndefined();
+    });
   });
 });
