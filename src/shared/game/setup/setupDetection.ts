@@ -40,11 +40,15 @@ export function evaluateSetupStatus(params: {
   realmDescriptionSettingVal?: string | null;
   defaultMapIdSettingVal?: string | null;
 }): SetupStatus {
-  const isSetupCompleted = params.setupSettingVal === 'true' || params.setupSettingVal === '1';
+  const hasExplicitCompleted = params.setupSettingVal === 'true' || params.setupSettingVal === '1';
   
-  // A fresh install is detected if setup is NOT marked complete AND there are 0 world maps.
-  // If maps already exist (e.g. existing database), we treat it as an update/existing server.
-  const isFreshInstall = !isSetupCompleted && params.mapCount === 0;
+  // A server is an existing/updated install if it already has maps or existing users from prior versions.
+  const hasExistingData = params.mapCount > 0 || params.userCount > 1;
+
+  // If the server is updated with existing data OR setup was explicitly completed, setup is completed
+  // and will not block normal gameplay, studio access, or rewrite old data.
+  const isSetupCompleted = hasExplicitCompleted || hasExistingData;
+  const isFreshInstall = !hasExplicitCompleted && !hasExistingData;
 
   return {
     isFreshInstall,

@@ -31,7 +31,7 @@ describe('evaluateSetupStatus', () => {
     });
 
     expect(status.isFreshInstall).toBe(false);
-    expect(status.isSetupCompleted).toBe(false);
+    expect(status.isSetupCompleted).toBe(true);
     expect(status.mapCount).toBe(5);
     expect(status.hasAdmin).toBe(true);
     expect(status.realmName).toBe('Custom Realm');

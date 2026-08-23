@@ -19,6 +19,9 @@ import {
   CheckSquare,
   Square,
   SkipForward,
+  FolderDown,
+  Clock,
+  Info,
 } from 'lucide-react';
 import type { StarterPackMeta } from '@/shared/game/setup/prepackagedPacks';
 import type { SetupStatus } from '@/shared/game/setup/setupDetection';
@@ -36,6 +39,7 @@ interface AssetPackItem {
 export function FirstTimeSetupWizard() {
   const router = useRouter();
 
+  const [setupMode, setSetupMode] = useState<'fresh' | 'import'>('fresh');
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [loading, setLoading] = useState(true);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
@@ -267,63 +271,184 @@ export function FirstTimeSetupWizard() {
         </div>
       )}
 
-      {/* STEP 1: REALM IDENTITY */}
+      {/* UPDATED SERVER / EXISTING DATA NOTICE */}
+      {setupStatus && !setupStatus.isFreshInstall && (
+        <div className="mb-8 p-6 rounded-3xl bg-slate-900/90 border border-amber-500/30 backdrop-blur-xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Info className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-white text-base">Existing Realm Detected</h3>
+              <p className="text-sm text-slate-300">
+                This server is updated and running with <span className="text-amber-300 font-semibold">{setupStatus.mapCount} world maps</span> and active data. First-time setup is non-blocking and will not overwrite your existing maps.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => router.push('/studio')}
+              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-purple-600/30 border border-purple-500/40 hover:bg-purple-600/50 text-purple-200 text-sm font-semibold transition cursor-pointer"
+            >
+              Enter Studio
+            </button>
+            <button
+              onClick={() => router.push('/lobby')}
+              className="flex-1 md:flex-initial px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-sm font-bold transition cursor-pointer shadow-lg shadow-amber-500/20"
+            >
+              Play Realm
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 1: SETUP OPTION & REALM IDENTITY */}
       {step === 1 && (
         <div className="space-y-6">
           <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-2">
               <Globe2 className="w-5 h-5 text-amber-400" />
-              1. Realm Configuration & Identity
+              1. Setup Mode & Realm Identity
             </h2>
             <p className="text-sm text-slate-400 mb-6">
-              Name your realm. This title will appear on the server select screen, navigation bar, and world documents.
+              Choose how you want to configure your realm, or select a setup option below.
             </p>
 
-            <div className="space-y-4 max-w-xl">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                  Realm / Game Name
-                </label>
-                <input
-                  type="text"
-                  value={realmName}
-                  onChange={(e) => setRealmName(e.target.value)}
-                  placeholder="e.g. The Lobby, Saints MMO, Aethervale"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-base outline-none transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                  Game Description / Tagline
-                </label>
-                <textarea
-                  rows={3}
-                  value={realmDescription}
-                  onChange={(e) => setRealmDescription(e.target.value)}
-                  placeholder="The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"
-                  className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-sm outline-none transition resize-none"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Featured on the home page showcase card and community portal.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">
-                <div className="text-slate-300 font-semibold flex items-center gap-2">
-                  <Sparkle className="w-3.5 h-3.5 text-amber-400" />
-                  Database State
+            {/* 2 SETUP OPTIONS: FRESH SETUP vs IMPORT */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {/* OPTION 1: FRESH SETUP */}
+              <div
+                onClick={() => setSetupMode('fresh')}
+                className={`relative rounded-2xl p-6 border transition-all cursor-pointer flex flex-col justify-between ${
+                  setupMode === 'fresh'
+                    ? 'bg-purple-950/30 border-amber-400 ring-2 ring-amber-400/20 shadow-xl'
+                    : 'bg-slate-950/50 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${setupMode === 'fresh' ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-400/20 border border-amber-400/40 text-amber-300">
+                      Recommended
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">Fresh Setup</h3>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Initialize a clean canvas or configure a fresh starter world bundle with maps, NPCs, and creatures.
+                    </p>
+                  </div>
                 </div>
-                <div>World Maps in DB: <span className="text-amber-300 font-mono">{setupStatus?.mapCount ?? 0} {setupStatus?.mapCount === 0 ? '(Clean Canvas)' : 'Active Maps'}</span></div>
-                <div>Admin Session: <span className="text-emerald-300 font-mono">{authenticatedUser?.username || 'Owner'}</span></div>
+                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Mode: <strong className="text-white">Active</strong></span>
+                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition ${setupMode === 'fresh' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700'}`}>
+                    {setupMode === 'fresh' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  </div>
+                </div>
+              </div>
+
+              {/* OPTION 2: IMPORT REALM (COMING SOON) */}
+              <div
+                onClick={() => setSetupMode('import')}
+                className={`relative rounded-2xl p-6 border transition-all cursor-pointer flex flex-col justify-between ${
+                  setupMode === 'import'
+                    ? 'bg-purple-950/30 border-purple-500/60 ring-2 ring-purple-500/20 shadow-xl'
+                    : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700'
+                }`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${setupMode === 'import' ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                      <FolderDown className="w-5 h-5" />
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-800 border border-slate-700 text-amber-300 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Coming Soon
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-base">Import Realm</h3>
+                    <div className="text-amber-400 font-semibold text-xs mt-0.5">(coming soon)</div>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                      Restore or migrate an existing realm from an external backup archive (.zip, JSON map package, or SQL export).
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                  <span className="text-amber-400/80 font-medium">In Development</span>
+                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition ${setupMode === 'import' ? 'border-purple-400 bg-purple-500 text-white' : 'border-slate-700'}`}>
+                    {setupMode === 'import' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  </div>
+                </div>
               </div>
             </div>
+
+            {setupMode === 'import' ? (
+              <div className="p-8 rounded-2xl bg-slate-950/60 border border-slate-800 text-center space-y-4 max-w-xl">
+                <FolderDown className="w-12 h-12 text-amber-400/80 mx-auto" />
+                <h3 className="text-lg font-bold text-white">Realm Importer</h3>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+                  The automated realm archive importer is currently being finalized. In the meantime, use <strong className="text-white">Fresh Setup</strong> to configure realm identity and build or paint maps via Studio.
+                </p>
+                <div className="inline-block px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                  (coming soon)
+                </div>
+                <div className="pt-2">
+                  <button
+                    onClick={() => setSetupMode('fresh')}
+                    className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold transition cursor-pointer"
+                  >
+                    Switch to Fresh Setup
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 max-w-xl">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                    Realm / Game Name
+                  </label>
+                  <input
+                    type="text"
+                    value={realmName}
+                    onChange={(e) => setRealmName(e.target.value)}
+                    placeholder="e.g. The Lobby, Saints MMO, Aethervale"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-base outline-none transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                    Game Description / Tagline
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={realmDescription}
+                    onChange={(e) => setRealmDescription(e.target.value)}
+                    placeholder="The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-3 text-white text-sm outline-none transition resize-none"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Featured on the home page showcase card and community portal.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 text-xs text-slate-400 space-y-1">
+                  <div className="text-slate-300 font-semibold flex items-center gap-2">
+                    <Sparkle className="w-3.5 h-3.5 text-amber-400" />
+                    Database State
+                  </div>
+                  <div>World Maps in DB: <span className="text-amber-300 font-mono">{setupStatus?.mapCount ?? 0} {setupStatus?.mapCount === 0 ? '(Clean Canvas)' : 'Active Maps'}</span></div>
+                  <div>Admin Session: <span className="text-emerald-300 font-mono">{authenticatedUser?.username || 'Owner'}</span></div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end">
             <button
               onClick={() => setStep(2)}
-              disabled={!realmName.trim()}
+              disabled={setupMode !== 'fresh' || !realmName.trim()}
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-950 bg-gradient-to-r from-amber-300 to-amber-500 hover:from-amber-200 hover:to-amber-400 shadow-lg shadow-amber-500/20 transition disabled:opacity-50 cursor-pointer"
             >
               Continue to World Selection

@@ -1,3 +1,12 @@
+## [2.1.450] - 2026-08-23
+### Onboarding & Setup Architecture
+- **2-Option Setup Architecture (`FirstTimeSetupWizard.tsx`)**:
+  - Implemented the 2-mode setup selection: **Fresh Setup** (active, configuring realm identity, blank canvas or starter pack) and **Import Realm** (`(coming soon)`).
+- **Non-Blocking Updated Server Protection (`setupDetection.ts`, `FirstTimeSetupWizard.tsx`)**:
+  - Hardened setup evaluation: servers with existing maps or user records are recognized as active updated servers where `isSetupCompleted` is true and `isFreshInstall` is false.
+  - Setup wizard never blocks regular gameplay, studio editing, or redirects, and will never overwrite existing world maps or character data on server upgrades.
+  - Added an informational banner on the `/setup` route for updated servers with instant links to enter Studio or play in the Lobby.
+
 ## [2.1.449] - 2026-08-23
 ### Asset Pipeline & Optimization
 - **Offline Asset Archival & Removal (`.old-assets`, `.gitignore`)**:
