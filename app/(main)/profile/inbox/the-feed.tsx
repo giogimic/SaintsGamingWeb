@@ -36,8 +36,8 @@ import {
   Heart, Loader2, MessageSquare, TrendingUp, Hash, Smile, Paperclip, 
   X, Image as ImageIcon, Share, Bookmark, Compass, Search, VolumeX, Volume2,
   MoreHorizontal, Eye, EyeOff, Plus, Trash2, DollarSign, Flag,
-  ChevronLeft, ChevronRight, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, UploadCloud,
-  BadgeCheck, Crown, ShieldCheck, FileArchive, Download
+  ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ArrowRight, BarChart2, Pin, Play, Pause, Maximize2, UploadCloud,
+  BadgeCheck, Crown, ShieldCheck, FileArchive, Download, Music, Disc, Send, Copy, Sparkles, Check
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -48,7 +48,7 @@ import { GiphyFetch } from "@giphy/js-fetch-api";
 import { Grid } from "@giphy/react-components";
 import { VideoPlayer } from "@/shared/components/video-player";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 // Initialize Giphy Fetch
 const gf = new GiphyFetch(process.env.NEXT_PUBLIC_GIPHY_API_KEY || "sXpGFDGZs0Dv1mmz014D8zDvwYkE7a7A");
@@ -59,19 +59,45 @@ const isArchive = (url: string) => /\.(zip|rar|7z|tar|bz2|gz)$/i.test(url);
 const isVideo = (url: string) => /\.(mp4|webm|mov|ogg|ogv|mkv)$/i.test(url);
 
 function FeedInlineVideo({
+  id,
   src,
+  activePlayingId,
+  setActivePlayingId,
   onClick,
   onRecordView,
 }: {
+  id: string;
   src: string;
+  activePlayingId: string | null;
+  setActivePlayingId: React.Dispatch<React.SetStateAction<string | null>>;
   onClick: () => void;
   onRecordView?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const isCurrentlyActive = activePlayingId === id;
   const [hasRecordedView, setHasRecordedView] = useState(false);
 
+  // Strictly sync video play/pause with active playing state
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isCurrentlyActive) {
+      video.play().then(() => {
+        if (!hasRecordedView && onRecordView) {
+          onRecordView();
+          setHasRecordedView(true);
+        }
+      }).catch(() => {
+        // Autoplay may be deferred by browser policies
+      });
+    } else {
+      video.pause();
+    }
+  }, [isCurrentlyActive, hasRecordedView, onRecordView]);
+
+  // Strict Viewport Intersection Observer: Only plays when in viewport (>= 50% visible), pauses instantly when off-screen
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -79,36 +105,29 @@ function FeedInlineVideo({
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            video.play().then(() => {
-              setIsPlaying(true);
-              if (!hasRecordedView && onRecordView) {
-                onRecordView();
-                setHasRecordedView(true);
-              }
-            }).catch(() => {});
-          } else {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            setActivePlayingId(id);
+          } else if (!entry.isIntersecting || entry.intersectionRatio < 0.25) {
+            setActivePlayingId((current: string | null) => (current === id ? null : current));
             video.pause();
-            setIsPlaying(false);
           }
         });
       },
-      { threshold: 0.4 }
+      { threshold: [0.25, 0.5, 0.75] }
     );
 
     observer.observe(video);
     return () => observer.disconnect();
-  }, [hasRecordedView, onRecordView]);
+  }, [id, setActivePlayingId]);
 
   const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
     const video = videoRef.current;
     if (!video) return;
-    if (video.paused) {
-      video.play().then(() => setIsPlaying(true)).catch(() => {});
+    if (isCurrentlyActive) {
+      setActivePlayingId(null);
     } else {
-      video.pause();
-      setIsPlaying(false);
+      setActivePlayingId(id);
     }
   };
 
@@ -122,7 +141,7 @@ function FeedInlineVideo({
 
   return (
     <div
-      className="relative rounded-xl overflow-hidden bg-black group cursor-pointer border border-border/50 max-h-[440px] flex items-center justify-center"
+      className="relative rounded-2xl overflow-hidden bg-black group cursor-pointer border border-border/50 max-h-[520px] w-full flex items-center justify-center aspect-[9/16] sm:aspect-auto sm:max-h-[480px]"
       onClick={onClick}
     >
       <video
@@ -131,7 +150,7 @@ function FeedInlineVideo({
         playsInline
         loop
         muted={isMuted}
-        className="max-h-[440px] w-auto max-w-full object-contain"
+        className="max-h-[520px] w-auto max-w-full object-contain"
       />
       
       {/* Overlay gradient */}
@@ -144,7 +163,7 @@ function FeedInlineVideo({
           onClick={togglePlay}
           className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
         >
-          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
+          {isCurrentlyActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
         </button>
 
         <div className="flex items-center gap-2">
@@ -162,7 +181,7 @@ function FeedInlineVideo({
               onClick();
             }}
             className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-all"
-            title="Expand to Fullscreen"
+            title="Open Shorts Viewer"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
@@ -202,12 +221,25 @@ export function TheFeed() {
 
   // Interactions
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+  const [replyMediaUrl, setReplyMediaUrl] = useState("");
+  const [isUploadingReply, setIsUploadingReply] = useState(false);
   const [loadedReplies, setLoadedReplies] = useState<Record<string, any[]>>({});
   const [loadingReplies, setLoadingReplies] = useState<Record<string, boolean>>({});
   
-  // Media Viewer Overlay (Lightbox/Video)
-  const [viewingMedia, setViewingMedia] = useState<any | null>(null);
-  const [viewingVideo, setViewingVideo] = useState<any | null>(null);
+  // Single active playing video in feed timeline coordinator
+  const [activePlayingVideoId, setActivePlayingVideoId] = useState<string | null>(null);
+
+  // TikTok-style Shorts Swiper Overlay
+  const [viewingShortsPost, setViewingShortsPost] = useState<any | null>(null);
+  const [isShortsCommentsOpen, setIsShortsCommentsOpen] = useState(false);
+  const [isShortsMuted, setIsShortsMuted] = useState(false);
+  const [shortsPlaying, setShortsPlaying] = useState(true);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const [captionExpanded, setCaptionExpanded] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+  const lastWheelTime = useRef<number>(0);
+
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
 
@@ -468,33 +500,28 @@ export function TheFeed() {
   async function handlePost(e: React.FormEvent) {
     e.preventDefault();
     if (!body.trim() && !mediaUrl) return;
-    if (body.length > 280) return;
+    if (body.length > 1000) {
+      toast.error("Post exceeds 1000 characters limit");
+      return;
+    }
     setIsPosting(true);
     try {
-      if (replyingTo) {
-        await replyToSocialPost(replyingTo, body, mediaUrl || undefined);
-        setReplyingTo(null);
-        toast.success("Reply posted!");
-        await handleLoadReplies(replyingTo);
-      } else {
-        const validPollOptions = pollOptions.filter(o => o.trim() !== "");
-        const pollData = showPollForm && pollQuestion.trim() && validPollOptions.length >= 2 
-          ? { question: pollQuestion, options: validPollOptions } 
-          : undefined;
+      const validPollOptions = pollOptions.filter(o => o.trim() !== "");
+      const pollData = showPollForm && pollQuestion.trim() && validPollOptions.length >= 2 
+        ? { question: pollQuestion, options: validPollOptions } 
+        : undefined;
 
-        await createSocialPost(body, mediaUrl || undefined, {
-          isSubscriberOnly,
-          voiceoverUrl: voiceoverUrl || undefined,
-          backgroundTrackUrl: backgroundTrackUrl || undefined,
-          voiceoverVolume,
-          backgroundTrackVolume,
-          chapters: chapters || undefined,
-          captionsText: captionsText || undefined,
-          poll: pollData
-        });
-        toast.success("Post created successfully!");
-        loadFeed();
-      }
+      await createSocialPost(body, mediaUrl || undefined, {
+        isSubscriberOnly,
+        voiceoverUrl: voiceoverUrl || undefined,
+        backgroundTrackUrl: backgroundTrackUrl || undefined,
+        voiceoverVolume,
+        backgroundTrackVolume,
+        chapters: chapters || undefined,
+        captionsText: captionsText || undefined,
+        poll: pollData
+      });
+      toast.success("Post created successfully!");
       setBody("");
       setMediaUrl("");
       setIsSubscriberOnly(false);
@@ -507,16 +534,47 @@ export function TheFeed() {
       setShowPollForm(false);
       setPollQuestion("");
       setPollOptions(["", ""]);
-    } catch (e) {
+      loadFeed(false);
+    } catch (e: any) {
       console.error(e);
+      toast.error(e.message || "Failed to create post");
     } finally {
       setIsPosting(false);
     }
   }
 
-  async function uploadFileBlob(file: File) {
+  async function handleReply(e: React.FormEvent, parentPostId: string) {
+    e.preventDefault();
+    if (!replyBody.trim() && !replyMediaUrl) return;
+    if (replyBody.length > 1000) {
+      toast.error("Reply exceeds 1000 characters limit");
+      return;
+    }
+    setIsPosting(true);
+    try {
+      await replyToSocialPost(parentPostId, replyBody, replyMediaUrl || undefined);
+      setReplyingTo(null);
+      setReplyBody("");
+      setReplyMediaUrl("");
+      toast.success("Reply posted!");
+      await handleLoadReplies(parentPostId);
+      setPosts(prev => prev.map(p => p.id === parentPostId ? { ...p, repliesCount: (p.repliesCount || 0) + 1 } : p));
+      if (viewingShortsPost && viewingShortsPost.id === parentPostId) {
+        setViewingShortsPost((prev: any) => prev ? { ...prev, repliesCount: (prev.repliesCount || 0) + 1 } : null);
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Failed to post reply");
+    } finally {
+      setIsPosting(false);
+    }
+  }
+
+  async function uploadFileBlob(file: File, isReply = false) {
     if (!file) return;
-    setIsUploading(true);
+    if (isReply) setIsUploadingReply(true);
+    else setIsUploading(true);
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -532,22 +590,27 @@ export function TheFeed() {
       }
 
       const data = await res.json();
-      setMediaUrl(data.url);
+      if (isReply) {
+        setReplyMediaUrl(data.url);
+      } else {
+        setMediaUrl(data.url);
+      }
       toast.success("Media attached successfully!");
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
     } finally {
-      setIsUploading(false);
+      if (isReply) setIsUploadingReply(false);
+      else setIsUploading(false);
     }
   }
 
-  function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleMediaUpload(e: React.ChangeEvent<HTMLInputElement>, isReply = false) {
     const file = e.target.files?.[0];
-    if (file) uploadFileBlob(file);
+    if (file) uploadFileBlob(file, isReply);
     e.target.value = "";
   }
 
-  function handlePaste(e: React.ClipboardEvent) {
+  function handlePaste(e: React.ClipboardEvent, isReply = false) {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (let i = 0; i < items.length; i++) {
@@ -556,7 +619,7 @@ export function TheFeed() {
         const file = item.getAsFile();
         if (file) {
           e.preventDefault();
-          uploadFileBlob(file);
+          uploadFileBlob(file, isReply);
           break;
         }
       }
@@ -931,7 +994,7 @@ export function TheFeed() {
               {isArchive(post.mediaUrl) ? (
                 <div 
                   className="rounded-xl overflow-hidden border border-border/50 bg-muted/20 p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => setViewingMedia(post)}
+                  onClick={() => setViewingShortsPost(post)}
                 >
                   <FileArchive className="w-12 h-12 text-primary mb-2" />
                   <span className="text-sm font-semibold text-primary break-all px-4 mb-2">{post.mediaUrl.split('/').pop()}</span>
@@ -948,23 +1011,26 @@ export function TheFeed() {
                 </div>
               ) : isVideo(post.mediaUrl) ? (
                 <FeedInlineVideo
+                  id={post.id}
                   src={post.mediaUrl}
+                  activePlayingId={activePlayingVideoId}
+                  setActivePlayingId={setActivePlayingVideoId}
                   onClick={() => {
-                    setViewingVideo(post);
+                    setViewingShortsPost(post);
                     handleRecordView(post.id);
                   }}
                   onRecordView={() => handleRecordView(post.id)}
                 />
               ) : (
                 <div 
-                  className="rounded-xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[440px] relative group cursor-pointer"
-                  onClick={() => setViewingMedia(post)}
+                  className="rounded-2xl overflow-hidden border border-border/50 bg-black flex items-center justify-center max-h-[500px] relative group cursor-pointer"
+                  onClick={() => setViewingShortsPost(post)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={post.mediaUrl} 
                     alt="Post attachment" 
-                    className="max-h-[440px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
+                    className="max-h-[500px] w-auto max-w-full object-contain hover:scale-[1.01] transition-transform duration-200" 
                   />
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                     <div className="p-2 rounded-full bg-black/60 text-white backdrop-blur-sm">
@@ -976,13 +1042,13 @@ export function TheFeed() {
             </div>
           )}
 
-          <div className="flex items-center gap-6 text-muted-foreground mt-2">
+          <div className="flex items-center gap-5 text-muted-foreground mt-2">
             {!post.isForumThread && (
               <button 
                 onClick={() => handleLike(post.id, isReply, parentId)}
                 className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-red-500 ${post.hasLiked ? 'text-red-500' : ''}`}
               >
-                <Heart className={`w-4 h-4 ${post.hasLiked ? 'fill-current' : ''}`} />
+                <Heart className={`w-4 h-4 ${post.hasLiked ? 'fill-current text-red-500' : ''}`} />
                 {post.likesCount > 0 && post.likesCount}
               </button>
             )}
@@ -992,9 +1058,12 @@ export function TheFeed() {
                 onClick={() => {
                   if (replyingTo === post.id) {
                     setReplyingTo(null);
+                    setReplyBody("");
+                    setReplyMediaUrl("");
                   } else {
                     setReplyingTo(post.id);
-                    setMediaUrl("");
+                    setReplyBody("");
+                    setReplyMediaUrl("");
                   }
                 }}
                 className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary ${replyingTo === post.id ? 'text-primary' : ''}`}
@@ -1016,6 +1085,20 @@ export function TheFeed() {
 
             {!post.isForumThread && (
               <button 
+                onClick={() => {
+                  setViewingShortsPost(post);
+                  handleRecordView(post.id);
+                }}
+                className="flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-primary"
+                title="Watch in full-screen Shorts / Reel mode"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+                <span className="hidden sm:inline">Shorts</span>
+              </button>
+            )}
+
+            {!post.isForumThread && (
+              <button 
                 onClick={() => handleTip(post.id)}
                 className="flex items-center gap-1.5 text-xs font-medium transition-colors text-green-500/80 hover:text-green-500"
               >
@@ -1031,7 +1114,7 @@ export function TheFeed() {
                 onClick={() => handleBookmark(post.id)}
                 className={`flex items-center gap-1.5 text-xs font-medium transition-colors hover:text-yellow-500 ml-auto ${post.hasBookmarked ? 'text-yellow-500' : ''}`}
               >
-                <Bookmark className={`w-4 h-4 ${post.hasBookmarked ? 'fill-current' : ''}`} />
+                <Bookmark className={`w-4 h-4 ${post.hasBookmarked ? 'fill-current text-yellow-500' : ''}`} />
               </button>
             )}
           </div>
@@ -1041,52 +1124,49 @@ export function TheFeed() {
             <div className="mt-4 flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
               <div className="flex-1">
                 <form 
-                  onSubmit={handlePost} 
-                  onPaste={handlePaste}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
+                  onSubmit={(e) => handleReply(e, post.id)} 
+                  onPaste={(e) => handlePaste(e, true)}
                   className="bg-muted/30 p-3 rounded-xl border border-border/50 relative"
                 >
                   <Textarea 
                     placeholder="Post your reply... (paste or drag image/video)"
                     className="resize-none border-0 focus-visible:ring-0 px-0 bg-transparent text-sm min-h-[60px]"
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    maxLength={280}
+                    value={replyBody}
+                    onChange={(e) => setReplyBody(e.target.value)}
+                    maxLength={1000}
                     autoFocus
                   />
 
                   {/* Reply Media Preview */}
-                  {isUploading && (
+                  {isUploadingReply && (
                     <div className="my-2 p-4 rounded-lg border border-dashed border-primary/40 bg-primary/5 flex items-center justify-center gap-2 animate-pulse">
                       <Loader2 className="w-4 h-4 animate-spin text-primary" />
                       <span className="text-xs font-medium text-primary">Uploading attachment...</span>
                     </div>
                   )}
 
-                  {mediaUrl && !isUploading && (
+                  {replyMediaUrl && !isUploadingReply && (
                     <div className="relative my-2 rounded-lg overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[200px]">
                       <Button 
-                        type="button"
+                        type="button" 
                         variant="destructive" 
                         size="icon" 
                         className="absolute top-2 right-2 w-6 h-6 rounded-full z-10 shadow-md"
-                        onClick={() => setMediaUrl("")}
+                        onClick={() => setReplyMediaUrl("")}
                       >
                         <X className="w-3.5 h-3.5" />
                       </Button>
-                      {isArchive(mediaUrl) ? (
+                      {isArchive(replyMediaUrl) ? (
                         <div className="flex flex-col items-center justify-center p-4 text-center w-full">
                           <FileArchive className="w-8 h-8 text-primary mb-1" />
                           <span className="text-xs font-medium text-primary/80">Archive Attached</span>
-                          <span className="text-[10px] text-muted-foreground break-all max-w-[90%]">{mediaUrl.split('/').pop()}</span>
+                          <span className="text-[10px] text-muted-foreground break-all max-w-[90%]">{replyMediaUrl.split('/').pop()}</span>
                         </div>
-                      ) : isVideo(mediaUrl) ? (
-                        <video src={mediaUrl} controls className="max-h-[200px] w-auto max-w-full rounded" />
+                      ) : isVideo(replyMediaUrl) ? (
+                        <video src={replyMediaUrl} controls className="max-h-[200px] w-auto max-w-full rounded" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={mediaUrl} alt="Reply preview" className="max-h-[200px] w-auto max-w-full object-contain rounded" />
+                        <img src={replyMediaUrl} alt="Reply preview" className="max-h-[200px] w-auto max-w-full object-contain rounded" />
                       )}
                     </div>
                   )}
@@ -1099,8 +1179,8 @@ export function TheFeed() {
                            id={`social-reply-media-upload-${post.id}`} 
                            accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,video/ogg" 
                            className="hidden" 
-                           onChange={handleMediaUpload} 
-                           disabled={isUploading}
+                           onChange={(e) => handleMediaUpload(e, true)} 
+                           disabled={isUploadingReply}
                          />
                          <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Image or Video">
                            <label htmlFor={`social-reply-media-upload-${post.id}`} className="cursor-pointer">
@@ -1115,8 +1195,8 @@ export function TheFeed() {
                            id={`social-reply-archive-upload-${post.id}`} 
                            accept=".zip,.rar,.7z,.tar,.bz2,.gz,application/zip,application/x-zip-compressed,application/x-7z-compressed,application/vnd.rar,application/x-rar-compressed,application/x-tar,application/x-bzip2,application/gzip" 
                            className="hidden" 
-                           onChange={handleMediaUpload} 
-                           disabled={isUploading}
+                           onChange={(e) => handleMediaUpload(e, true)} 
+                           disabled={isUploadingReply}
                          />
                          <Button asChild variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-primary disabled:opacity-50" title="Attach Archive">
                            <label htmlFor={`social-reply-archive-upload-${post.id}`} className="cursor-pointer">
@@ -1125,13 +1205,13 @@ export function TheFeed() {
                          </Button>
                        </div>
 
-                       <span className={`text-xs ml-2 ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                         {body.length} / 280
+                       <span className={`text-xs ml-2 ${replyBody.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                         {replyBody.length} / 1000
                        </span>
                      </div>
                      <div className="flex gap-2">
-                       <Button type="button" variant="ghost" size="sm" onClick={() => { setReplyingTo(null); setMediaUrl(""); }}>Cancel</Button>
-                       <Button type="submit" size="sm" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading}>Reply</Button>
+                       <Button type="button" variant="ghost" size="sm" onClick={() => { setReplyingTo(null); setReplyBody(""); setReplyMediaUrl(""); }}>Cancel</Button>
+                       <Button type="submit" size="sm" disabled={(!replyBody.trim() && !replyMediaUrl) || isPosting || isUploadingReply}>Reply</Button>
                      </div>
                   </div>
                 </form>
@@ -1171,87 +1251,429 @@ export function TheFeed() {
 
   const displayPosts = searchResults !== null ? searchResults : posts;
 
-  const navigatePost = useCallback((direction: number) => {
-    if (!viewingVideo || !displayPosts) return;
-    const currentIndex = displayPosts.findIndex((p: any) => p.id === viewingVideo.id);
+  const navigateShorts = useCallback((direction: number) => {
+    if (!viewingShortsPost || !displayPosts.length) return;
+    const currentIndex = displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id);
     if (currentIndex === -1) return;
     const nextIndex = currentIndex + direction;
     if (nextIndex >= 0 && nextIndex < displayPosts.length) {
-      setViewingVideo(displayPosts[nextIndex]);
+      setViewingShortsPost(displayPosts[nextIndex]);
+      setCaptionExpanded(false);
+      setShortsPlaying(true);
+      setShowHeartAnimation(false);
+      if (displayPosts[nextIndex].id) {
+        handleRecordView(displayPosts[nextIndex].id);
+      }
     }
-  }, [viewingVideo, displayPosts]);
+  }, [viewingShortsPost, displayPosts, handleRecordView]);
 
-  // Keyboard navigation for viewer
+  // Keyboard navigation for Shorts Viewer
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (!viewingVideo) return;
-      if (e.key === "ArrowRight") navigatePost(1);
-      if (e.key === "ArrowLeft") navigatePost(-1);
-      if (e.key === "Escape") setViewingVideo(null);
+      if (!viewingShortsPost) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        e.preventDefault();
+        navigateShorts(1);
+      } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        navigateShorts(-1);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setViewingShortsPost(null);
+        setIsShortsCommentsOpen(false);
+      } else if (e.key === "m" || e.key === "M") {
+        setIsShortsMuted(prev => !prev);
+      } else if (e.key === " ") {
+        e.preventDefault();
+        setShortsPlaying(prev => !prev);
+      }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewingVideo, navigatePost]);
+  }, [viewingShortsPost, navigateShorts]);
+
+  // Double tap handler for instant like
+  const lastTapRef = useRef<number>(0);
+  const handleShortsTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap -> like
+      if (viewingShortsPost && !viewingShortsPost.hasLiked) {
+        handleLike(viewingShortsPost.id);
+      }
+      setShowHeartAnimation(true);
+      setTimeout(() => setShowHeartAnimation(false), 900);
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      setTimeout(() => {
+        if (lastTapRef.current === now) {
+          setShortsPlaying(prev => !prev);
+        }
+      }, 300);
+    }
+  };
 
   return (
     <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
       
-      {/* Video Overlay (Enhanced TikTok-style viewer) */}
-      {viewingVideo && (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col md:flex-row animate-in fade-in zoom-in-95">
-          <button 
-            onClick={() => setViewingVideo(null)}
-            className="absolute top-4 left-4 z-50 p-2 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+      {/* Full-Screen Vertical Shorts / Reel Swiper Modal */}
+      {viewingShortsPost && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex items-center justify-center select-none overflow-hidden animate-in fade-in duration-200"
+          onTouchStart={(e) => {
+            touchStartY.current = e.touches[0].clientY;
+          }}
+          onTouchEnd={(e) => {
+            if (touchStartY.current === null) return;
+            const deltaY = touchStartY.current - e.changedTouches[0].clientY;
+            if (deltaY > 40) {
+              navigateShorts(1); // Swiped UP -> Next
+            } else if (deltaY < -40) {
+              navigateShorts(-1); // Swiped DOWN -> Previous
+            }
+            touchStartY.current = null;
+          }}
+          onWheel={(e) => {
+            const now = Date.now();
+            if (now - lastWheelTime.current < 450) return;
+            if (e.deltaY > 25) {
+              lastWheelTime.current = now;
+              navigateShorts(1);
+            } else if (e.deltaY < -25) {
+              lastWheelTime.current = now;
+              navigateShorts(-1);
+            }
+          }}
+        >
+          {/* Top Bar Controls */}
+          <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
+            <button 
+              onClick={() => { setViewingShortsPost(null); setIsShortsCommentsOpen(false); }}
+              className="p-2.5 bg-black/60 hover:bg-black/90 border border-white/10 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              title="Close Shorts"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 border border-white/10 text-white backdrop-blur-md text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+              <span>Saints Shorts</span>
+            </div>
+          </div>
 
-          {/* Navigation Arrows */}
-          <button 
-            onClick={(e) => { e.stopPropagation(); navigatePost(-1); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed hidden md:block"
-            disabled={displayPosts.findIndex((p: any) => p.id === viewingVideo.id) === 0}
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-          
-          <button 
-            onClick={(e) => { e.stopPropagation(); navigatePost(1); }}
-            className="absolute right-4 md:right-[416px] top-1/2 -translate-y-1/2 z-50 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed hidden md:block"
-            disabled={displayPosts.findIndex((p: any) => p.id === viewingVideo.id) === displayPosts.length - 1}
-          >
-            <ChevronRight className="w-8 h-8" />
-          </button>
-          
-          <div className="flex-1 flex items-center justify-center relative bg-black/90">
-            {isVideo(viewingVideo.mediaUrl) ? (
-              <VideoPlayer
-                src={viewingVideo.mediaUrl}
-                autoPlay
-                loop
-                onView={() => handleRecordView(viewingVideo.id)}
-                className="max-h-screen w-full"
-                voiceoverUrl={viewingVideo.voiceoverUrl}
-                backgroundTrackUrl={viewingVideo.backgroundTrackUrl}
-                voiceoverVolume={viewingVideo.voiceoverVolume}
-                backgroundTrackVolume={viewingVideo.backgroundTrackVolume}
-                captionsText={viewingVideo.captionsText}
-                chapters={viewingVideo.chapters ? (() => { try { return JSON.parse(viewingVideo.chapters); } catch { return null; } })() : null}
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+            <button 
+              onClick={() => setIsShortsMuted(!isShortsMuted)}
+              className="p-2.5 bg-black/60 hover:bg-black/90 border border-white/10 rounded-full text-white backdrop-blur-md transition-all shadow-lg hover:scale-105"
+              title={isShortsMuted ? "Unmute" : "Mute"}
+            >
+              {isShortsMuted ? <VolumeX className="w-5 h-5 text-red-400" /> : <Volume2 className="w-5 h-5 text-green-400" />}
+            </button>
+          </div>
+
+          {/* Up & Down Floating Navigation Chevrons */}
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 z-40">
+            <button 
+              onClick={() => navigateShorts(-1)}
+              disabled={displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) === 0}
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110"
+              title="Previous (Swipe Down or Up Arrow)"
+            >
+              <ChevronUp className="w-6 h-6" />
+            </button>
+            <button 
+              onClick={() => navigateShorts(1)}
+              disabled={displayPosts.findIndex((p: any) => p.id === viewingShortsPost.id) === displayPosts.length - 1}
+              className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed hover:scale-110"
+              title="Next (Swipe Up or Down Arrow)"
+            >
+              <ChevronDown className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Main Shorts Container Frame */}
+          <div className="w-full max-w-[420px] h-[92vh] sm:h-[88vh] relative rounded-3xl overflow-hidden bg-black/90 border border-white/15 shadow-2xl flex items-center justify-center">
+            
+            {/* Ambient Blurred Background for Dynamic Glow */}
+            {viewingShortsPost.mediaUrl && !isArchive(viewingShortsPost.mediaUrl) && (
+              <div 
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-35 scale-125 pointer-events-none"
+                style={{ backgroundImage: `url(${viewingShortsPost.mediaUrl})` }}
               />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={viewingVideo.mediaUrl} alt="Post attachment" className="max-h-screen w-auto max-w-full object-contain" />
             )}
-          </div>
-          
-          <div className="w-full md:w-[400px] bg-background border-l border-border/50 flex flex-col h-[50vh] md:h-full">
-            <div className="p-4 border-b border-border/50">
-              <h3 className="font-bold text-lg">Comments</h3>
+
+            {/* Central Media / Content */}
+            <div 
+              className="w-full h-full relative flex items-center justify-center cursor-pointer"
+              onClick={handleShortsTap}
+            >
+              {viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) ? (
+                <video
+                  key={viewingShortsPost.id}
+                  src={viewingShortsPost.mediaUrl}
+                  autoPlay={shortsPlaying}
+                  loop
+                  playsInline
+                  muted={isShortsMuted}
+                  className="w-full h-full object-cover sm:object-contain bg-black"
+                />
+              ) : viewingShortsPost.mediaUrl && isArchive(viewingShortsPost.mediaUrl) ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-card/60 backdrop-blur-md rounded-2xl border border-white/10 m-4">
+                  <FileArchive className="w-16 h-16 text-primary mb-3" />
+                  <h3 className="font-bold text-lg text-white mb-1">Archive Attachment</h3>
+                  <p className="text-xs text-muted-foreground break-all mb-4">{viewingShortsPost.mediaUrl.split('/').pop()}</p>
+                  <a 
+                    href={viewingShortsPost.mediaUrl} 
+                    download 
+                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-bold text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download className="w-4 h-4" /> Download File
+                  </a>
+                </div>
+              ) : viewingShortsPost.mediaUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  key={viewingShortsPost.id}
+                  src={viewingShortsPost.mediaUrl} 
+                  alt="Shorts media" 
+                  className="w-full h-full object-cover sm:object-contain"
+                />
+              ) : (
+                /* Text-only Post in Shorts View */
+                <div className="w-full h-full flex flex-col justify-between p-8 bg-gradient-to-b from-primary/20 via-background/80 to-black text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden relative bg-muted border border-white/20">
+                      {viewingShortsPost.author?.image ? (
+                        <Image src={viewingShortsPost.author.image} alt={viewingShortsPost.author.username} fill className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-bold text-lg">
+                          {viewingShortsPost.author?.username?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-base flex items-center gap-1.5">
+                        {viewingShortsPost.author?.username}
+                        {viewingShortsPost.author?.isFounder && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                        {viewingShortsPost.author?.isVIP && <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" />}
+                      </h4>
+                      <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</p>
+                    </div>
+                  </div>
+
+                  <div className="my-auto py-6">
+                    <p className="text-lg md:text-xl font-medium leading-relaxed drop-shadow-md whitespace-pre-wrap">
+                      {renderBody(viewingShortsPost.body)}
+                    </p>
+                  </div>
+
+                  <div className="text-xs text-primary/80 font-bold tracking-widest uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Saints Post Reel
+                  </div>
+                </div>
+              )}
+
+              {/* Play/Pause Center Indicator */}
+              {!shortsPlaying && viewingShortsPost.mediaUrl && isVideo(viewingShortsPost.mediaUrl) && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none animate-in fade-in zoom-in duration-150">
+                  <div className="p-5 rounded-full bg-black/70 text-white backdrop-blur-md border border-white/20 shadow-2xl">
+                    <Play className="w-10 h-10 fill-white" />
+                  </div>
+                </div>
+              )}
+
+              {/* Blooming Double-Tap Heart Animation */}
+              {showHeartAnimation && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                  <motion.div
+                    initial={{ scale: 0.3, opacity: 0 }}
+                    animate={{ scale: [0.3, 1.4, 1], opacity: [0, 1, 0] }}
+                    transition={{ duration: 0.8 }}
+                  >
+                    <Heart className="w-28 h-28 text-red-500 fill-red-500 drop-shadow-2xl" />
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Gradient Bottom Shadow for Captions */}
+              <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+
+              {/* Bottom Caption & Author Details */}
+              <div className="absolute bottom-4 left-4 right-16 z-20 text-white pointer-events-auto">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-bold text-sm drop-shadow-md flex items-center gap-1">
+                    @{viewingShortsPost.author?.username}
+                    {viewingShortsPost.author?.isFounder && <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
+                    {viewingShortsPost.author?.isVIP && <BadgeCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-500" />}
+                  </span>
+                  <span className="text-[11px] text-white/70">• {formatDistanceToNow(new Date(viewingShortsPost.createdAt))} ago</span>
+                </div>
+
+                {viewingShortsPost.body && (
+                  <div className="text-xs text-white/90 leading-snug drop-shadow-md mb-2">
+                    <p className={captionExpanded ? "" : "line-clamp-2"}>
+                      {renderBody(viewingShortsPost.body)}
+                    </p>
+                    {viewingShortsPost.body.length > 90 && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setCaptionExpanded(!captionExpanded); }}
+                        className="text-[11px] font-bold text-primary hover:underline mt-0.5"
+                      >
+                        {captionExpanded ? "less" : "more"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Audio Ticker */}
+                <div className="flex items-center gap-2 text-[11px] text-white/80 mt-1 bg-black/40 px-2.5 py-1 rounded-full w-fit border border-white/10 backdrop-blur-xs">
+                  <Music className="w-3 h-3 text-primary animate-spin" style={{ animationDuration: '4s' }} />
+                  <span className="truncate max-w-[180px]">
+                    {viewingShortsPost.backgroundTrackUrl ? "Background Audio Stem" : `Original Audio - @${viewingShortsPost.author?.username}`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Side Floating TikTok Action Rail */}
+              <div 
+                className="absolute right-3 bottom-8 flex flex-col items-center gap-4 z-30 pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Creator Avatar with Follow Button */}
+                <div className="relative mb-2">
+                  <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-primary bg-muted relative shadow-lg">
+                    {viewingShortsPost.author?.image ? (
+                      <Image src={viewingShortsPost.author.image} alt={viewingShortsPost.author.username} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-white bg-primary/40">
+                        {viewingShortsPost.author?.username?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => handleSubscribe(viewingShortsPost.author.id)}
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground rounded-full p-0.5 hover:scale-110 transition-transform shadow-md"
+                    title="Subscribe"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Like Button */}
+                <button 
+                  onClick={() => handleLike(viewingShortsPost.id)}
+                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                >
+                  <div className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${viewingShortsPost.hasLiked ? 'bg-red-500/20 text-red-500' : 'bg-black/50 text-white'}`}>
+                    <Heart className={`w-6 h-6 ${viewingShortsPost.hasLiked ? 'fill-red-500 text-red-500' : ''}`} />
+                  </div>
+                  <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.likesCount || 0}</span>
+                </button>
+
+                {/* Comments Button */}
+                <button 
+                  onClick={() => {
+                    setIsShortsCommentsOpen(!isShortsCommentsOpen);
+                    if (!loadedReplies[viewingShortsPost.id]) {
+                      handleLoadReplies(viewingShortsPost.id);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                >
+                  <div className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${isShortsCommentsOpen ? 'bg-primary text-primary-foreground' : 'bg-black/50 text-white'}`}>
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.repliesCount || 0}</span>
+                </button>
+
+                {/* Bookmark Button */}
+                <button 
+                  onClick={() => handleBookmark(viewingShortsPost.id)}
+                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                >
+                  <div className={`p-2.5 rounded-full backdrop-blur-md border border-white/10 shadow-lg ${viewingShortsPost.hasBookmarked ? 'bg-yellow-500/20 text-yellow-500' : 'bg-black/50 text-white'}`}>
+                    <Bookmark className={`w-6 h-6 ${viewingShortsPost.hasBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                  </div>
+                  <span className="text-[11px] font-bold drop-shadow-md">Save</span>
+                </button>
+
+                {/* Share Button */}
+                <button 
+                  onClick={() => handleShare(viewingShortsPost)}
+                  className="flex flex-col items-center gap-1 text-white hover:scale-110 transition-transform"
+                >
+                  <div className="p-2.5 rounded-full bg-black/50 text-white backdrop-blur-md border border-white/10 shadow-lg">
+                    <Share className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold drop-shadow-md">{viewingShortsPost.shareCount || 0}</span>
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {renderPost(viewingVideo, false)}
-            </div>
           </div>
+
+          {/* Slide-Over Comments Drawer */}
+          {isShortsCommentsOpen && (
+            <div 
+              className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-0 md:left-auto w-full md:w-96 bg-background/95 backdrop-blur-2xl border-t md:border-t-0 md:border-l border-border/60 z-50 flex flex-col h-[70vh] md:h-full shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-border/50 flex items-center justify-between">
+                <h3 className="font-bold text-base flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-primary" /> Comments ({viewingShortsPost.repliesCount || 0})
+                </h3>
+                <button 
+                  onClick={() => setIsShortsCommentsOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Comments List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {loadingReplies[viewingShortsPost.id] ? (
+                  <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+                ) : !loadedReplies[viewingShortsPost.id] || loadedReplies[viewingShortsPost.id].length === 0 ? (
+                  <p className="text-center text-xs text-muted-foreground py-10">No comments yet. Be the first to start the conversation!</p>
+                ) : (
+                  loadedReplies[viewingShortsPost.id].map((reply: any) => (
+                    <div key={reply.id} className="p-3 bg-muted/20 rounded-xl border border-border/40 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs">{reply.author?.username}</span>
+                        <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(reply.createdAt))} ago</span>
+                      </div>
+                      <p className="text-xs text-foreground/90 whitespace-pre-wrap">{reply.body}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Quick Comment Input */}
+              <form 
+                onSubmit={(e) => handleReply(e, viewingShortsPost.id)}
+                className="p-3 border-t border-border/50 bg-background/80 flex items-center gap-2"
+              >
+                <Input 
+                  placeholder="Add a comment... (max 1000)" 
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  maxLength={1000}
+                  className="h-9 text-xs rounded-full bg-muted/30"
+                />
+                <Button 
+                  type="submit" 
+                  size="sm" 
+                  disabled={!replyBody.trim() || isPosting}
+                  className="h-9 rounded-full px-4 text-xs font-bold shrink-0 shadow-sm"
+                >
+                  {isPosting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                </Button>
+              </form>
+            </div>
+          )}
         </div>
       )}
 
@@ -1407,16 +1829,14 @@ export function TheFeed() {
                   <Textarea 
                     placeholder="What's happening? Use #hashtags, paste or drop media!"
                     className="resize-none border-0 focus-visible:ring-0 p-4 bg-transparent text-base min-h-[100px]"
-                    value={replyingTo ? "" : body}
-                    onChange={(e) => {
-                      if(!replyingTo) setBody(e.target.value);
-                    }}
-                    onPaste={handlePaste}
-                    maxLength={280}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    onPaste={(e) => handlePaste(e, false)}
+                    maxLength={1000}
                   />
                   
                   {/* Uploading Shimmer Preview */}
-                  {isUploading && !replyingTo && (
+                  {isUploading && (
                     <div className="relative mx-4 mt-2 p-6 rounded-xl border border-dashed border-primary/40 bg-primary/5 flex flex-col items-center justify-center gap-2 animate-pulse">
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
                       <span className="text-xs font-medium text-primary">Uploading attachment...</span>
@@ -1424,7 +1844,7 @@ export function TheFeed() {
                   )}
 
                   {/* Attached Media Preview */}
-                  {mediaUrl && !replyingTo && !isUploading && (
+                  {mediaUrl && !isUploading && (
                     <div className="relative mx-4 mt-2 rounded-xl overflow-hidden border border-border/50 bg-black/10 flex items-center justify-center max-h-[320px]">
                       <Button 
                         type="button"
@@ -1600,10 +2020,10 @@ export function TheFeed() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className={`ml-3 text-xs font-medium ${body.length > 250 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {body.length} / 280
+                      <span className={`ml-3 text-xs font-medium ${body.length > 900 ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                        {body.length} / 1000
                       </span>
-                      <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 280} className="rounded-full px-6 font-bold shadow-md">
+                      <Button type="submit" disabled={(!body.trim() && !mediaUrl) || isPosting || isUploading || body.length > 1000} className="rounded-full px-6 font-bold shadow-md">
                         {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Post"}
                       </Button>
                     </div>
@@ -1679,44 +2099,6 @@ export function TheFeed() {
         </div>
       </div>
 
-      {/* Media Lightbox Overlay */}
-      {viewingMedia && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-4 right-4 text-white hover:bg-white/20 z-[101]"
-            onClick={() => setViewingMedia(null)}
-          >
-            <X className="w-8 h-8" />
-          </Button>
-          <div className="w-full max-w-5xl max-h-full flex items-center justify-center relative">
-            {isArchive(viewingMedia.mediaUrl) ? (
-              <div className="bg-background/90 p-8 rounded-2xl flex flex-col items-center justify-center text-center max-w-md w-full shadow-2xl">
-                <FileArchive className="w-20 h-20 text-primary mb-4" />
-                <h3 className="text-xl font-bold mb-2">Archive File</h3>
-                <p className="text-sm text-muted-foreground mb-6 break-all">{viewingMedia.mediaUrl.split('/').pop()}</p>
-                <a href={viewingMedia.mediaUrl} download target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full transition-colors font-bold w-full justify-center">
-                  <Download className="w-5 h-5" /> Download Now
-                </a>
-              </div>
-            ) : isVideo(viewingMedia.mediaUrl) ? (
-              <VideoPlayer 
-                src={viewingMedia.mediaUrl}
-                voiceoverUrl={viewingMedia.voiceoverUrl}
-                backgroundTrackUrl={viewingMedia.backgroundTrackUrl}
-                voiceoverVolume={viewingMedia.voiceoverVolume}
-                backgroundTrackVolume={viewingMedia.backgroundTrackVolume}
-                chapters={viewingMedia.chapters}
-                captionsText={viewingMedia.captionsText}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={viewingMedia.mediaUrl} alt="Expanded media" className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

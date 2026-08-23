@@ -1,3 +1,16 @@
+## [2.1.413] - 2026-08-22
+### Full-Screen Vertical Shorts Swiper Modal & 1000-Character Text Posts
+- **TikTok-Style Vertical Shorts Swiper**: Built a full-screen vertical Reels/Shorts swiper overlay (`the-feed.tsx`) accessible by clicking any media, video, text post, or the "Shorts" action button:
+  - **Fluid Gestures & Navigation**: Supports touch vertical swipe gestures (`Swipe Up` for next, `Swipe Down` for previous), debounced mouse wheel scrolling, keyboard navigation (`ArrowUp`/`ArrowDown`, `ArrowLeft`/`ArrowRight`, `Escape` to close), and on-screen navigation chevrons.
+  - **Interactive Double-Tap & Actions Rail**: Double-tap on media triggers an instant animated heart like effect; right-side action rail provides Creator Subscribe, Like counter, Comments drawer toggle, Bookmark, Share toast, and Mute/Unmute toggle.
+  - **Dynamic Ambient Glow**: Renders ambient blurred glow behind vertical 9:16 video/image frames.
+  - **Expandable Bottom Caption & Audio Ticker**: Displays creator badges, expandable caption text with interactive hashtags, and a dynamic audio track marquee.
+  - **Slide-Over Comments Drawer**: Side panel on desktop and bottom sheet on mobile for exploring comments and submitting instant replies.
+- **Strict Viewport Autoplay Coordination**: `FeedInlineVideo` strictly coordinates active playing video IDs and only autoplays when at least 50% in the viewport, immediately pausing when scrolled off-screen.
+- **1000-Character Text Posts & Decoupled Reply Composer**:
+  - Expanded post and reply character limits to 1000 characters in both frontend counters and backend schema validation (`app/actions/social/posts.ts`).
+  - Decoupled reply form state (`replyBody`, `replyMediaUrl`) from main post composer state, eliminating composer lockouts and guaranteeing text-only and media posts publish cleanly.
+
 ## [2.1.412] - 2026-08-22
 ### Unboxed Feed Architecture & Frictionless Infinite Scrolling
 - **Unboxed Modern Layout**: Freed "The Feed" from fixed nested container boxes and double scrollbars (`h-[calc(100vh-8rem)] overflow-hidden`). Transformed it into an expansive, modern social timeline layout adhering to native window scrolling.
