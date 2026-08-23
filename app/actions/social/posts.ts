@@ -28,7 +28,7 @@ export async function createSocialPost(
 ) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
-  if ((!body.trim() && !mediaUrl) || body.length > 280) throw new Error("Invalid post length");
+  if ((!body.trim() && !mediaUrl) || body.length > 1000) throw new Error("Invalid post length (max 1000 characters)");
 
   // Extract hashtags (e.g. #gaming, #saints)
   const hashTags = body.match(/#[a-zA-Z0-9_]+/g) || [];
