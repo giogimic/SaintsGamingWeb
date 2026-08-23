@@ -1,3 +1,10 @@
+## [2.1.449] - 2026-08-23
+### Asset Pipeline & Optimization
+- **Offline Asset Archival & Removal (`.old-assets`, `.gitignore`)**:
+  - Removed all legacy baked-in game sprites, creature sheets, tilesets, and tuxemon database assets from git tracking.
+  - Relocated local assets to `.old-assets/` (`game-assets`, `assets`, `tuxemon-data`, `tuxemon-db`).
+  - Added `/.old-assets/`, `/public/game-assets/`, `/public/assets/`, `/tuxemon-data/`, `/tuxemon-db/` to `.gitignore`.
+
 ## [2.1.448] - 2026-08-23
 ### Architecture & World Systems
 - **World Atlas Canonical Source-of-Truth Migration (`app/api/world/atlas/route.ts`)**:
