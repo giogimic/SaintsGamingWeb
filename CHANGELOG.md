@@ -1,3 +1,7 @@
+## [2.1.455] - 2026-08-23
+### Cleanup
+- Delete leftover untracked scripts and finalize legacy term renaming.
+
 ## [2.1.454] - 2026-08-23
 ### Architectural Gut & Canonical Saints Pipeline Audit
 - **Full Legacy / Tuxemon Gut & Canonical Alignment**:
@@ -3067,6 +3071,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

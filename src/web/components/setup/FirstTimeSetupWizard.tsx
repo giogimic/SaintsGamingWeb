@@ -603,7 +603,7 @@ export function FirstTimeSetupWizard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {(availableAssetPacks.length > 0 ? availableAssetPacks : [
                 { id: 'tilesets', name: 'Core Tilesets', description: '79 terrain, building, indoor/outdoor tilesets', category: 'environment', estimatedCount: 79, badge: 'Core', recommended: true },
-                { id: 'creatures', name: 'Creature Battle Sheets', description: '413 Tuxemon battle spritesheets and forms', category: 'monster', estimatedCount: 413, badge: 'Creatures', recommended: true },
+                { id: 'creatures', name: 'Creature Battle Sheets', description: '413 legacy battle spritesheets and forms', category: 'monster', estimatedCount: 413, badge: 'Creatures', recommended: true },
                 { id: 'portraits', name: 'Creature Portraits', description: '~600 face, front, and back battle poses', category: 'monster', estimatedCount: 600 },
                 { id: 'npc', name: 'NPC Walk Cycles (LPC)', description: '221 NPC character sprites & walk cycles', category: 'character', estimatedCount: 221, badge: 'Characters', recommended: true },
                 { id: 'heroes', name: 'Hero Walk Cycles', description: '357 player operative character sprites', category: 'character', estimatedCount: 357 },

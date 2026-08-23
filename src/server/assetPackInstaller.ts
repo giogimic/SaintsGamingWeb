@@ -30,7 +30,7 @@ export const AVAILABLE_ASSET_PACKS: AssetPackDefinition[] = [
   {
     id: 'creatures',
     name: 'Creature Battle Sheets',
-    description: 'Tuxemon companion & monster battle spritesheets.',
+    description: 'Legacy companion & monster battle spritesheets.',
     category: 'monster',
     relativeDir: 'monster/battle',
     estimatedCount: 413,
@@ -173,7 +173,7 @@ export async function installAssetPacks(
         }
 
         const canonical = buildCanonicalAssetData({
-          gameId: 'tuxemon',
+          gameId: 'saints',
           name,
           type,
           category,
