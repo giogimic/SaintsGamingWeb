@@ -1,3 +1,10 @@
+## [2.1.414] - 2026-08-22
+### "Vice" Tropical Sunset Theme & Palm Horizon Aesthetic
+- **Vice Theme Transformation**: Replaced the legacy Hacker style with a tropical "Vice" theme modeled after the palm sunset skyline:
+  - **Sunset Horizon Palette**: Deep twilight dusk background (`oklch(0.13 0.045 310)`), warm sunset cream foreground typography (`oklch(0.96 0.03 75)`), vibrant sunset hot magenta primary buttons/highlights (`oklch(0.70 0.28 345)`), glowing sunset coral-orange secondaries (`oklch(0.88 0.16 65)`), and radiant Caribbean ocean turquoise accents (`oklch(0.78 0.16 195)`).
+  - **Theme Switcher Upgrade**: Updated [theme-switcher.tsx](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/theme-switcher.tsx) with a `<Palmtree />` icon and hot-pink active indicator for Vice Theme.
+  - **Ambient Particle & Orb Synchronization**: Updated [particle-background.tsx](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/particle-background.tsx) and [ambient-background.tsx](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/ambient-background.tsx) to animate glowing sunset fuchsia, coral orange, and turquoise particles and background orbs when in Vice theme.
+
 ## [2.1.413] - 2026-08-22
 ### Full-Screen Vertical Shorts Swiper Modal & 1000-Character Text Posts
 - **TikTok-Style Vertical Shorts Swiper**: Built a full-screen vertical Reels/Shorts swiper overlay (`the-feed.tsx`) accessible by clicking any media, video, text post, or the "Shorts" action button:

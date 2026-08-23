@@ -84,8 +84,8 @@ export default async function RootLayout({
         <JsonLd />
         <ThemeProvider
           attribute="class"
-          defaultTheme="hacker"
-          themes={["light", "dark", "hacker"]}
+          defaultTheme="vice"
+          themes={["light", "dark", "vice", "hacker"]}
           disableTransitionOnChange
         >
           <AuthProvider session={session}>
