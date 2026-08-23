@@ -35,6 +35,13 @@ export default async function DevDatabasePage() {
  { label: "Modpacks", count: modpackCount },
  ];
 
+ const dbUrl = process.env.DATABASE_URL || "";
+ const isMySql = dbUrl.startsWith("mysql://") || process.env.DB_PROVIDER === "mysql";
+ const dbTypeDisplay = isMySql ? "MariaDB / MySQL" : "SQLite";
+ const dbTargetDisplay = isMySql 
+   ? (dbUrl.includes("@") ? dbUrl.split("@")[1].split("?")[0] : "Configured Endpoint")
+   : (dbUrl || "./prisma/db/dev.db");
+
  return (
  <div className="space-y-8">
  <div>
@@ -114,13 +121,15 @@ export default async function DevDatabasePage() {
   </div>
  </div>
 
- <div className="mt-8 p-4 border border-border/40 rounded bg-card flex items-start gap-3 text-sm">
- <CheckCircle2 className="h-5 w-5 text-foreground shrink-0 mt-0.5" />
- <div>
- <span className="font-bold">Database Connection: OK</span>
- <p className="text-muted-foreground mt-1">Prisma Client is successfully connected to the SQLite file database at <code className="bg-green-950/50 px-1 rounded">./prisma/dev.db</code>.</p>
- </div>
- </div>
- </div>
- );
+      <div className="mt-8 p-4 border border-border/40 rounded bg-card flex items-start gap-3 text-sm">
+        <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold">Database Connection: OK ({dbTypeDisplay})</span>
+          <p className="text-muted-foreground mt-1">
+            Prisma Client is successfully connected to <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono">{dbTargetDisplay}</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
