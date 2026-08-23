@@ -60,7 +60,8 @@ export function ParticleBackground() {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (const p of particles) {
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         // Move
         p.x += p.speedX;
         p.y += p.speedY;
@@ -80,8 +81,14 @@ export function ParticleBackground() {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         
         let colorStr = "oklch(0.82 0.12 85"; // default dark/light gold
-        if (themeRef.current === "hacker") {
-          colorStr = "oklch(0.8 0.2 150"; // hacker green
+        if (themeRef.current === "vice" || themeRef.current === "hacker") {
+          // Vice sunset palette: cycle through sunset fuchsia, coral orange, and turquoise
+          const viceColors = [
+            "oklch(0.75 0.28 345", // Sunset Hot Pink
+            "oklch(0.82 0.20 55",  // Sunset Coral Orange
+            "oklch(0.80 0.16 195"  // Ocean Turquoise
+          ];
+          colorStr = viceColors[i % viceColors.length];
         } else if (themeRef.current === "light") {
           colorStr = "oklch(0.5 0.15 85"; // light mode deep gold
         } else if (themeRef.current === "dark") {

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Terminal } from "lucide-react";
+import { Moon, Sun, Palmtree } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 
 export function ThemeSwitcher() {
@@ -17,6 +17,8 @@ export function ThemeSwitcher() {
   if (!mounted) {
     return null;
   }
+
+  const isVice = theme === "vice" || theme === "hacker";
 
   return (
     <div className="flex items-center gap-1 bg-card/80 backdrop-blur-md border border-border/50 p-1 rounded-full sg-glass">
@@ -45,12 +47,12 @@ export function ThemeSwitcher() {
       <Button
         variant="ghost"
         size="icon"
-        className={`rounded-full w-8 h-8 transition-colors ${theme === "hacker" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-        onClick={() => setTheme("hacker")}
-        title="Hacker Theme"
+        className={`rounded-full w-8 h-8 transition-all ${isVice ? "bg-pink-500/25 text-pink-400 shadow-xs shadow-pink-500/20" : "text-muted-foreground hover:text-foreground hover:text-pink-400"}`}
+        onClick={() => setTheme("vice")}
+        title="Vice Theme"
       >
-        <Terminal className="h-4 w-4" />
-        <span className="sr-only">Hacker Theme</span>
+        <Palmtree className="h-4 w-4" />
+        <span className="sr-only">Vice Theme</span>
       </Button>
     </div>
   );
