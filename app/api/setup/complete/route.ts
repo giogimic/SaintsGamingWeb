@@ -80,7 +80,32 @@ export async function POST(req: Request) {
       update: { value: persistedDefaultMapId },
     });
 
-    // Mark Setup Completed
+    // Mark Setup & Game Completed
+    await prisma.siteSetting.upsert({
+      where: { key: SETUP_SETTING_KEYS.GAME_INITIALIZED },
+      create: { key: SETUP_SETTING_KEYS.GAME_INITIALIZED, value: 'true' },
+      update: { value: 'true' },
+    });
+
+    await prisma.siteSetting.upsert({
+      where: { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT },
+      create: { key: SETUP_SETTING_KEYS.GAME_INITIALIZED_AT, value: new Date().toISOString() },
+      update: { value: new Date().toISOString() },
+    });
+
+    await prisma.siteSetting.upsert({
+      where: { key: SETUP_SETTING_KEYS.GAME_NAME },
+      create: { key: SETUP_SETTING_KEYS.GAME_NAME, value: realmName },
+      update: { value: realmName },
+    });
+
+    await prisma.siteSetting.upsert({
+      where: { key: SETUP_SETTING_KEYS.GAME_DESCRIPTION },
+      create: { key: SETUP_SETTING_KEYS.GAME_DESCRIPTION, value: realmDescription },
+      update: { value: realmDescription },
+    });
+
+    // Mark Setup Completed (legacy)
     await prisma.siteSetting.upsert({
       where: { key: SETUP_SETTING_KEYS.SETUP_COMPLETED },
       create: { key: SETUP_SETTING_KEYS.SETUP_COMPLETED, value: 'true' },

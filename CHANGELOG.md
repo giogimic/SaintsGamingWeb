@@ -1,3 +1,16 @@
+## [2.1.456] - 2026-08-23
+### Game Initialization Flow & Safe Update Architecture
+- **Refactored Game Setup & Onboarding**:
+  - Replaced legacy realm/platform setup with a game-specific, content-driven onboarding wizard (GameInitializationWizard.tsx).
+  - Implemented 2-option entrypoint: **Fresh Game** (active) and **Import Data** (coming soon placeholder).
+  - Added general game questions (Name, Description, Genre, Gameplay Style, Camera View) that dynamically calculate game content requirements.
+  - Implemented asset-type aware entity setup supporting **Sprite Sheets**, **Modular Characters (LPC)**, and **Single Images**, with multiple hero/creature collection support.
+  - Added environment tile configuration and visual default fill tile selection.
+  - Created interactive HTML5 canvas starting map editor with brush painting and player spawn point pin placement.
+- **Durable Game Initialization State & Update Protection**:
+  - Defined explicit game initialization keys (GAME_INITIALIZED, GAME_NAME, GAME_GENRE, DEFAULT_MAP_ID, DEFAULT_GROUND_GID).
+  - Enhanced evaluateSetupStatus to recognize existing games (maps > 0, active configs, users > 1) and guarantee updates never force developers back to setup or wipe data.
+  - Created transaction-safe atomic initialization API endpoint (/api/setup/initialize-game).
 ## [2.1.455] - 2026-08-23
 ### Cleanup
 - Delete leftover untracked scripts and finalize legacy term renaming.
@@ -3071,6 +3084,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

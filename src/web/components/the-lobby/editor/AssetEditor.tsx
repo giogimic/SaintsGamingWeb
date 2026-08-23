@@ -58,8 +58,8 @@ const BUNDLE_THEMES: Record<AssetPackId | 'ALL', { label: string; activeColor: s
     activeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-amber-500/10',
     badgeColor: 'bg-amber-950/80 border-amber-500/40 text-amber-300',
   },
-  tuxemon: {
-    label: 'Tuxemon',
+  legacy: {
+    label: 'Legacy / Saints',
     activeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sky-500/10',
     badgeColor: 'bg-sky-950/80 border-sky-500/40 text-sky-300',
   },
@@ -720,7 +720,7 @@ export default function AssetEditor({
                 );
 
                 const packId = asset.metadata?.pack || inferAssetPack(asset.source);
-                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.tuxemon;
+                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.legacy;
 
                 return (
                   <div
@@ -817,7 +817,7 @@ export default function AssetEditor({
                   (asset.metadata?.subcategory as CreatureAssetSubcategory) ||
                   classifyCreatureAsset(asset.source);
                 const packId = asset.metadata?.pack || inferAssetPack(asset.source);
-                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.tuxemon;
+                const packTheme = BUNDLE_THEMES[packId as AssetPackId] || BUNDLE_THEMES.legacy;
                 const isSheet =
                   asset.type === 'SHEET' ||
                   asset.tags?.includes('sheet') ||

@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-community",
-  "version": "2.1.455",
+  "version": "2.1.456",
   "private": true,
 
 
@@ -125,4 +125,5 @@
     "seed": "npx tsx prisma/seed.ts"
   }
 }
+
 
