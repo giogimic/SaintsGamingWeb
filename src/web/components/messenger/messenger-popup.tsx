@@ -35,7 +35,7 @@ export function MessengerPopup() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-20 right-4 w-80 sm:w-96 h-[500px] max-h-[70vh] bg-background border border-border/50 rounded-xl shadow-2xl flex flex-col overflow-hidden z-50 flex"
+            className="fixed bottom-20 right-4 w-80 sm:w-96 h-[500px] max-h-[70vh] bg-background border border-border/50 rounded-xl shadow-2xl flex flex-col overflow-hidden z-50"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b border-border/50 bg-muted/30">
@@ -112,7 +112,7 @@ export function MessengerPopup() {
 
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-xl z-50 p-0 relative"
+        className="fixed bottom-4 right-4 h-14 w-14 rounded-full shadow-xl z-50 p-0"
       >
         {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         {!isOpen && meta.unreadCount > 0 && (
