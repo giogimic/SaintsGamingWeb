@@ -3,11 +3,11 @@
  * Prefer curated packs (Tuxemon / LPC / Studio registry) over raw uploads.
  */
 
-export const ASSET_PACKS = ["tuxemon", "lpc"] as const;
+export const ASSET_PACKS = ["legacy", "lpc"] as const;
 export type AssetPackId = (typeof ASSET_PACKS)[number];
 
 export const ASSET_PACK_LABELS: Record<AssetPackId, string> = {
-  tuxemon: "Tuxemon",
+  legacy: "Legacy",
   lpc: "LPC",
 };
 
@@ -30,8 +30,8 @@ export function inferAssetPack(sourceOrRel: string): AssetPackId {
     return "lpc";
   }
 
-  // Everything else is treated as tuxemon (since all other assets in the system are Tuxemon/derived terrain/tilesets/creatures/items/objects)
-  return "tuxemon";
+  // Everything else is treated as legacy (since all other assets in the system are derived terrain/tilesets/creatures/items/objects)
+  return "legacy";
 }
 
 /** Prisma/SQLite-friendly source substring matchers for a pack (pagination-safe). */
@@ -39,7 +39,7 @@ export function packSourceMatchers(pack: AssetPackId): string[] {
   switch (pack) {
     case "lpc":
       return ["/npc/", "/monster/player/", "/player/"];
-    case "tuxemon":
+    case "legacy":
       return ["/monster/", "/creatures/", "/world-monsters/", "/tilesets/", "/items/", "/objects/", "/ui/"];
     default:
       return [];

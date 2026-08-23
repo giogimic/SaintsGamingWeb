@@ -1,6 +1,6 @@
 // Rich Generated Campaign Maps Data
 
-export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
+export const DEMO_CAMPAIGN_MAPS: Record<string, any> = {
   "37707_TOWER": {
     "id": "37707_TOWER",
     "name": "37707 TOWER",
@@ -806236,5 +806236,5 @@ export const TUXEMON_CAMPAIGN_MAPS: Record<string, any> = {
 };
 
 
-/** @deprecated alias — prefer TUXEMON_CAMPAIGN_MAPS */
-export const creature_CAMPAIGN_MAPS = TUXEMON_CAMPAIGN_MAPS;
+/** @deprecated alias — prefer DEMO_CAMPAIGN_MAPS */
+export const creature_CAMPAIGN_MAPS = DEMO_CAMPAIGN_MAPS;
