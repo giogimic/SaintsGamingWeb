@@ -15,10 +15,9 @@ const port = parseInt(process.env.PORT || "3000", 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// Singleton — API routes import this to publish events via RealtimeService
 let _realtimeService: RealtimeService | null = null;
 export function getRealtimeService(): RealtimeService | null {
-  return _realtimeService;
+  return _realtimeService || (globalThis as any).__sg_realtime_service || null;
 }
 
 app.prepare().then(async () => {
@@ -63,6 +62,7 @@ app.prepare().then(async () => {
 
   await attachRedisAdapter(io);
   _realtimeService = new RealtimeService(io);
+  (globalThis as any).__sg_realtime_service = _realtimeService;
   new LobbySocketHandler(io);
 
   // Maps / Studio content seed always (API path), even when Go owns game sockets.

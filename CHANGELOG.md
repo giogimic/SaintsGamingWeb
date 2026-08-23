@@ -1,3 +1,7 @@
+## [2.1.441] - 2026-08-23
+### Fix
+- **Realtime Platform Route Resiliency (`/api/admin/realtime`)**: Hardened route handler against module bundling failures by attaching `RealtimeService` to `globalThis`, safely catching unhandled exceptions, and gracefully returning standby telemetry metrics instead of HTTP 500 errors.
+
 ## [2.1.440] - 2026-08-23
 ### Fix
 - **TypeScript Type Safety in Layout & Profile**: Selected `isWriter` in user Prisma query in `app/(main)/profile/page.tsx` and updated `app/(main)/layout.tsx` to resolve Next.js production typecheck validation.
