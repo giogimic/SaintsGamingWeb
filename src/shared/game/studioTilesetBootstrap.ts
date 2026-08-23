@@ -112,7 +112,10 @@ export function upgradeLegacyGroundGids<T extends { name: string; grid: number[]
   }));
 }
 
-export function buildDefaultGroundLayer(grid: number[][] | undefined): {
+export function buildDefaultGroundLayer(
+  grid: number[][] | undefined,
+  fillGid: number = DEFAULT_STUDIO_GROUND_GID
+): {
   name: string;
   grid: number[][];
 } {
@@ -121,7 +124,7 @@ export function buildDefaultGroundLayer(grid: number[][] | undefined): {
   return {
     name: "Ground",
     grid: Array.from({ length: h }, () =>
-      Array.from({ length: w }, () => DEFAULT_STUDIO_GROUND_GID)
+      Array.from({ length: w }, () => fillGid)
     ),
   };
 }

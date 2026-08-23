@@ -1,11 +1,11 @@
 import { Metadata } from 'next';
-import { FirstTimeSetupWizard } from '@/web/components/setup/FirstTimeSetupWizard';
+import { GameInitializationWizard } from '@/web/components/setup/GameInitializationWizard';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-  title: 'Realm Setup Wizard | Saints Gaming',
-  description: 'First-time setup and onboarding wizard for configuring realm maps and starter bundles.',
+  title: 'Game Setup | Saints Gaming',
+  description: 'Game initialization and onboarding wizard for configuring game identity, characters, environment, and starting maps.',
 };
 
 export default async function SetupPage() {
@@ -16,7 +16,8 @@ export default async function SetupPage() {
 
   return (
     <main className="min-h-[85vh] flex items-center justify-center relative z-10">
-      <FirstTimeSetupWizard />
+      <GameInitializationWizard />
     </main>
   );
 }
+
