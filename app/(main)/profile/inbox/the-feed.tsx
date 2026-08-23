@@ -228,6 +228,10 @@ export function TheFeed() {
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
 
+  const [hasMore, setHasMore] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
   // Load preferences on mount
   useEffect(() => {
     async function loadPrefs() {
@@ -245,29 +249,69 @@ export function TheFeed() {
     loadPrefs();
   }, []);
 
-  async function loadFeed(isLoadMore = false) {
-    setLoading(true);
+  const loadFeed = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore) {
+      setIsFetchingMore(true);
+    } else {
+      setLoading(true);
+      setHasMore(true);
+    }
+
     try {
-      const cursor = isLoadMore && posts.length > 0 ? posts[posts.length - 1].id : undefined;
-      const [feed, tags] = await Promise.all([
-        getTheFeed(filter || undefined, broadenFeed, cursor),
-        getTrendingTags()
-      ]);
-      setPosts(prev => isLoadMore ? [...prev, ...feed] : feed);
-      setTrending(tags);
+      setPosts(currentPosts => {
+        const cursor = isLoadMore && currentPosts.length > 0 ? currentPosts[currentPosts.length - 1].id : undefined;
+        getTheFeed(filter || undefined, broadenFeed, cursor).then(feed => {
+          if (feed.length < 35) {
+            setHasMore(false);
+          } else {
+            setHasMore(true);
+          }
+          setPosts(prev => {
+            if (!isLoadMore) return feed;
+            const existingIds = new Set(prev.map(p => p.id));
+            const newPosts = feed.filter((p: any) => !existingIds.has(p.id));
+            return [...prev, ...newPosts];
+          });
+        }).catch(err => {
+          console.error(err);
+        }).finally(() => {
+          setLoading(false);
+          setIsFetchingMore(false);
+        });
+        return currentPosts;
+      });
+
+      getTrendingTags().then(tags => setTrending(tags)).catch(() => {});
     } catch (e) {
       console.error(e);
-    } finally {
       setLoading(false);
+      setIsFetchingMore(false);
     }
-  }
+  }, [broadenFeed, filter]);
 
   useEffect(() => {
     setSearchResults(null);
     setSearchQuery("");
-    loadFeed();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, broadenFeed]);
+    loadFeed(false);
+  }, [filter, broadenFeed, loadFeed]);
+
+  // Infinite Scroll IntersectionObserver
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore || loading || isFetchingMore || searchResults !== null) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loading && !isFetchingMore && searchResults === null) {
+          loadFeed(true);
+        }
+      },
+      { rootMargin: "600px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, isFetchingMore, searchResults, loadFeed]);
 
   // === Broaden Toggle ===
   async function handleBroadenToggle() {
@@ -1150,7 +1194,7 @@ export function TheFeed() {
   }, [viewingVideo, navigatePost]);
 
   return (
-    <div className="flex h-full bg-background overflow-hidden animate-in fade-in relative">
+    <div className="w-full flex flex-col xl:flex-row items-start justify-center gap-6 relative min-h-screen">
       
       {/* Video Overlay (Enhanced TikTok-style viewer) */}
       {viewingVideo && (
@@ -1212,9 +1256,9 @@ export function TheFeed() {
       )}
 
       {/* Main Feed Column */}
-      <div className="flex-1 flex flex-col border-r border-border/50">
+      <div className="flex-1 w-full max-w-2xl min-w-0 space-y-4">
         {/* Header */}
-        <div className="p-4 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <div className="p-4 border border-border/50 rounded-2xl sticky top-20 bg-background/80 backdrop-blur-xl z-10 shadow-sm">
           <div className="flex justify-between items-center mb-3">
             <h2 className="font-bold text-xl flex items-center gap-2">
               {filter ? <><Hash className="w-5 h-5 text-primary"/> {filter}</> : "The Feed"}
@@ -1339,7 +1383,7 @@ export function TheFeed() {
           )}
         </div>
 
-        <div className="overflow-y-auto flex-1 p-4 space-y-6">
+        <div className="space-y-4">
           {/* Post Composer */}
           {searchResults === null && (
             <Card 
@@ -1582,12 +1626,24 @@ export function TheFeed() {
           ) : (
             <div className="space-y-4 pb-20">
               {displayPosts.map(post => renderPost(post))}
-              {displayPosts.length > 0 && (
-                <div className="pt-4 flex justify-center">
-                  <Button variant="outline" onClick={() => loadFeed(false)} disabled={loading}>
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Compass className="w-4 h-4 mr-2" />}
-                    Load More
-                  </Button>
+              
+              {/* Infinite Scroll Sentinel */}
+              {searchResults === null && (
+                <div ref={sentinelRef} className="py-8 flex flex-col items-center justify-center min-h-[60px] text-muted-foreground">
+                  {isFetchingMore && (
+                    <div className="flex items-center gap-2 text-sm font-medium text-primary bg-primary/10 px-4 py-2 rounded-full border border-primary/20 animate-pulse">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span>Streaming more posts...</span>
+                    </div>
+                  )}
+                  {!hasMore && displayPosts.length > 0 && (
+                    <div className="text-center py-6">
+                      <div className="w-12 h-1 bg-border/60 rounded-full mx-auto mb-3" />
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                        You&apos;re all caught up
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1596,11 +1652,11 @@ export function TheFeed() {
       </div>
 
       {/* Trending Sidebar */}
-      <div className="w-80 hidden lg:block bg-muted/5 p-6 overflow-y-auto border-l border-border/50">
-        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+      <div className="w-80 hidden xl:block sticky top-20 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto bg-card/40 border border-border/50 rounded-2xl p-5 shadow-sm space-y-4 shrink-0 backdrop-blur-md">
+        <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-primary" /> Trending Now
         </h3>
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {trending.length === 0 ? (
             <p className="text-sm text-muted-foreground">No trends yet.</p>
           ) : (
@@ -1608,10 +1664,10 @@ export function TheFeed() {
               <button 
                 key={t.name}
                 onClick={() => setFilter(t.name)}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-card border border-border/50 hover:border-primary/50 transition-colors text-left group shadow-sm"
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-background/60 border border-border/50 hover:border-primary/50 transition-colors text-left group shadow-xs"
               >
                 <div>
-                  <div className="text-xs text-muted-foreground mb-1 font-medium">{idx + 1} · Trending</div>
+                  <div className="text-xs text-muted-foreground mb-0.5 font-medium">{idx + 1} · Trending</div>
                   <div className="font-bold group-hover:text-primary transition-colors">#{t.name}</div>
                 </div>
                 <div className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-md font-medium">

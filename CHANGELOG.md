@@ -1,3 +1,10 @@
+## [2.1.412] - 2026-08-22
+### Unboxed Feed Architecture & Frictionless Infinite Scrolling
+- **Unboxed Modern Layout**: Freed "The Feed" from fixed nested container boxes and double scrollbars (`h-[calc(100vh-8rem)] overflow-hidden`). Transformed it into an expansive, modern social timeline layout adhering to native window scrolling.
+- **IntersectionObserver Infinite Scrolling**: Implemented seamless `IntersectionObserver` sentinel pagination at the bottom of the feed timeline that streams in the next batches of posts with zero clicks and zero page lag.
+- **Sticky Sidebars & Messenger Integration**: Refactored `InboxClient` so the Messenger quick access rail and the Trending tags rail float as sticky sidebars alongside the infinite timeline on desktop, preserving instant access to E2EE direct messages and group chats.
+- **Smooth Viewport & UX Polish**: Added streaming status animations, preloading offsets, and a clean "You're all caught up" completion state.
+
 ## [2.1.411] - 2026-08-22
 ### Google Sitelinks & Schema.org Rich Search Navigation Structured Data
 - **Schema.org Structured Data (`JsonLd`)**: Created [`json-ld.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/json-ld.tsx) injecting structured JSON-LD (`WebSite` with `SearchAction` for sitelinks searchbox, `ItemList` with `SiteNavigationElement` declaring **Forums**, **News**, **Live Streams**, **Modpacks**, and **The Lobby**, and `Organization` metadata).
