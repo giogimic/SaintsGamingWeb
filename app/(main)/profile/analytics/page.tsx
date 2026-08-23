@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/web/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
-import { ArrowLeft, BarChart, Heart, MessageSquare, Share, Eye, Bookmark, TrendingUp, Award, DollarSign, AlertTriangle } from "lucide-react";
+import { ArrowLeft, BarChart, Heart, MessageSquare, Share, Eye, Bookmark, TrendingUp, Award, DollarSign, Coins, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { appealSocialPost } from "@/app/actions/social";
@@ -155,11 +155,11 @@ export default async function AnalyticsHub() {
         <Card className="bg-card/50 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-              <DollarSign className="w-3.5 h-3.5 text-green-500" /> Revenue
+              <Coins className="w-3.5 h-3.5 text-yellow-500" /> Gold Earned
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold font-mono text-yellow-500">{Math.floor(totalRevenue).toLocaleString()} G</div>
           </CardContent>
         </Card>
 
@@ -214,7 +214,7 @@ export default async function AnalyticsHub() {
                     <th className="text-right py-3 px-2 font-medium">
                       <span className="flex items-center justify-end gap-1"><TrendingUp className="w-3.5 h-3.5" /> Eng. %</span>
                     </th>
-                    <th className="text-right py-3 px-2 font-medium">Revenue</th>
+                    <th className="text-right py-3 px-2 font-medium">Gold</th>
                     <th className="text-right py-3 px-2 font-medium">Status</th>
                   </tr>
                 </thead>
@@ -247,7 +247,7 @@ export default async function AnalyticsHub() {
                           {post.engagementRate}%
                         </span>
                       </td>
-                      <td className="py-3 px-2 text-right font-mono text-green-500">${post.revenueEarned.toFixed(2)}</td>
+                      <td className="py-3 px-2 text-right font-mono text-yellow-500">{Math.floor(post.revenueEarned).toLocaleString()} G</td>
                       <td className="py-3 px-2 text-right">
                         {post.throttleStatus ? (
                           <div className="flex flex-col items-end gap-1">

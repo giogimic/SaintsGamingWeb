@@ -1,3 +1,13 @@
+## [2.1.446] - 2026-08-23
+### Features & Systems
+- **Global Gold Bank Conversion (`SocialTip`, `Analytics`, `logicComponents`)**:
+  - Replaced the USD `$0.00` based tipping and revenue system across the social feed and analytics hub to natively use in-game `Gold` (`user.coins`).
+  - Analytics "Revenue" has been rebranded to "Gold Earned", updating visual displays with correct Gold metrics.
+  - Earning 5 Gold per 100 views is now automatically deposited to the author's Global Bank (User `coins`).
+- **Global Bank Studio Logic Tile (`bank-overlay.tsx`, `GameCanvasBabylon.tsx`)**:
+  - Added a new map logic component (`BANK`, ID 24) for World Builders to place functional banks inside 2.5D game maps.
+  - Implemented the `<BankOverlay />` game UI, allowing players to securely Deposit and Withdraw gold between their character's inventory and their account-wide Global Bank.
+
 ## [2.1.445] - 2026-08-23
 ### Features & UX
 - **Chatbox Reel / TikTok-Style Feed Viewer Integration (`MiniSocialFeed`, `ShortsViewerModal`)**:

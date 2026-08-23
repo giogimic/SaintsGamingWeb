@@ -8,6 +8,7 @@ const SaintsDexOverlay = dynamic(() => import('./SaintsDexOverlay'));
 const TargetFrame = dynamic(() => import('./target-frame'));
 const QuestTrackerOverlay = dynamic(() => import('./quest-tracker-overlay'));
 const ShopOverlay = dynamic(() => import('./shop-overlay'));
+const BankOverlay = dynamic(() => import('./windows/bank-overlay'));
 const PartyOverlay = dynamic(() => import('./party-overlay'));
 const CraftingOverlay = dynamic(() => import('./crafting-overlay'));
 const BaseOverlay = dynamic(() => import('./base-overlay'));
@@ -1911,6 +1912,7 @@ export default function TheLobby({
         </div>
         
         {gameMode === 'SHOP' && <ShopOverlay />}
+        {gameMode === 'BANK' && activeCharacterId && <BankOverlay characterId={activeCharacterId} />}
         {activeDialog && gameMode !== 'DIALOG' && <DialogOverlay />}
         
         <div 
