@@ -322,18 +322,24 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         let loadedGrid: number[][] | undefined = undefined;
         // Load destination document before flipping ids — never leave stale
         // activeMapData mounted (World Builder warp already does this pair).
-        void loadMap(gate.targetMapId)
+        const targetNodeId = (gate as any).targetNodeId;
+        void loadMap(gate.targetMapId, 0, targetNodeId)
           .then((data) => {
             const loaded = ensureMapHasStudioTilesets(data);
             loadedGrid = loaded.grid;
             useGameStore.setState({
               currentMapId: gate.targetMapId,
+              activeAtlasNodeId: targetNodeId || loaded.atlasNodeId || null,
               activeMapData: loaded,
             });
           })
           .catch(() => {
             // Clears activeMapData so the canvas effect loads fresh.
-            useGameStore.getState().setCurrentMapId(gate.targetMapId);
+            useGameStore.setState({
+              currentMapId: gate.targetMapId,
+              activeAtlasNodeId: targetNodeId || null,
+              activeMapData: null,
+            });
           })
           .finally(() => {
             const finalW = loadedGrid?.[0]?.length || 20;

@@ -101,8 +101,12 @@ export function getAdjacentAtlasNeighbors(
       curY = foundById.y ?? foundById.gridY ?? 0;
       targetNodeId = foundById.id;
     } else {
-      const foundByMapId = atlas.nodes.find((n) => n.mapId === target);
-      if (!foundByMapId) return {};
+      const matches = atlas.nodes.filter((n) => n.mapId === target);
+      if (matches.length === 0) return {};
+      if (matches.length > 1) {
+        console.warn(`[SpatialAtlas] Ambiguous neighbor resolution: mapId '${target}' has ${matches.length} placements; pass AtlasNode or node ID for exact placement adjacency.`);
+      }
+      const foundByMapId = matches[0];
       curX = foundByMapId.x ?? foundByMapId.gridX ?? 0;
       curY = foundByMapId.y ?? foundByMapId.gridY ?? 0;
       targetNodeId = foundByMapId.id;

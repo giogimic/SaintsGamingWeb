@@ -22,7 +22,8 @@ const DEFAULT_ATLAS_DATA = JSON.stringify({
 
 /**
  * GET /api/world/atlas?gameId=tuxemon
- * Returns the macro WorldAtlas node layout from WorldAtlas or SiteSetting fallback.
+ * Returns the macro WorldAtlas node layout from the canonical WorldAtlas table,
+ * with legacy SiteSetting fallback/migration only if WorldAtlas is unpopulated.
  */
 export async function GET(request: Request) {
   try {
@@ -30,9 +31,10 @@ export async function GET(request: Request) {
     const gameId = searchParams.get("gameId") || "tuxemon";
 
     let atlasRecord: any = null;
-    let siteSettingRecord: any = null;
+    let finalAtlasData: string | null = null;
+    let finalLobbyMapId: string = "LOBBY";
 
-    // 1. Try WorldAtlas model
+    // 1. Canonical source of truth: WorldAtlas model
     try {
       if ((prisma as any).worldAtlas) {
         atlasRecord = await (prisma as any).worldAtlas.findUnique({
@@ -40,37 +42,49 @@ export async function GET(request: Request) {
         });
       }
     } catch (e) {
-      console.warn("[Atlas] WorldAtlas table not accessible:", e);
-    }
-
-    // 2. Try SiteSetting fallback
-    try {
-      siteSettingRecord = await prisma.siteSetting.findUnique({
-        where: { key: `WORLD_ATLAS_${gameId}` },
-      });
-    } catch (e) {
-      console.warn("[Atlas] SiteSetting query failed:", e);
-    }
-
-    let finalAtlasData = DEFAULT_ATLAS_DATA;
-    let finalLobbyMapId = "LOBBY";
-
-    if (siteSettingRecord?.value) {
-      try {
-        const parsed = JSON.parse(siteSettingRecord.value);
-        finalAtlasData = typeof parsed.atlasData === 'string' ? parsed.atlasData : JSON.stringify(parsed.atlasData || parsed);
-        finalLobbyMapId = parsed.lobbyMapId || "LOBBY";
-      } catch {
-        finalAtlasData = siteSettingRecord.value;
-      }
+      console.warn("[Atlas] WorldAtlas table query error:", e);
     }
 
     if (atlasRecord?.atlasData && atlasRecord.atlasData !== "{}" && atlasRecord.atlasData !== DEFAULT_ATLAS_DATA) {
-      const isRecordNewer = !siteSettingRecord || (atlasRecord.updatedAt && siteSettingRecord.updatedAt && atlasRecord.updatedAt >= siteSettingRecord.updatedAt);
-      if (isRecordNewer) {
-        finalAtlasData = atlasRecord.atlasData;
-        finalLobbyMapId = atlasRecord.lobbyMapId || "LOBBY";
+      finalAtlasData = atlasRecord.atlasData;
+      finalLobbyMapId = atlasRecord.lobbyMapId || "LOBBY";
+    } else {
+      // 2. Legacy migration fallback: read SiteSetting only if WorldAtlas has no record
+      try {
+        const siteSettingRecord = await prisma.siteSetting.findUnique({
+          where: { key: `WORLD_ATLAS_${gameId}` },
+        });
+        if (siteSettingRecord?.value) {
+          try {
+            const parsed = JSON.parse(siteSettingRecord.value);
+            finalAtlasData = typeof parsed.atlasData === 'string'
+              ? parsed.atlasData
+              : JSON.stringify(parsed.atlasData || parsed);
+            finalLobbyMapId = parsed.lobbyMapId || "LOBBY";
+          } catch {
+            finalAtlasData = siteSettingRecord.value;
+          }
+
+          // Auto-migrate legacy SiteSetting data into WorldAtlas if table exists
+          if (finalAtlasData && (prisma as any).worldAtlas) {
+            try {
+              await (prisma as any).worldAtlas.upsert({
+                where: { gameId },
+                create: { gameId, lobbyMapId: finalLobbyMapId, atlasData: finalAtlasData },
+                update: { lobbyMapId: finalLobbyMapId, atlasData: finalAtlasData },
+              });
+            } catch (migErr) {
+              console.warn("[Atlas] Auto-migration to WorldAtlas table failed:", migErr);
+            }
+          }
+        }
+      } catch (siteErr) {
+        console.warn("[Atlas] Legacy SiteSetting fallback query failed:", siteErr);
       }
+    }
+
+    if (!finalAtlasData) {
+      finalAtlasData = DEFAULT_ATLAS_DATA;
     }
 
     // Guarantee all nodes in payload have stable node IDs
@@ -102,7 +116,7 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/world/atlas
- * Saves or updates the macro WorldAtlas node layout to WorldAtlas & SiteSetting.
+ * Saves the canonical WorldAtlas node layout directly to WorldAtlas.
  */
 export async function POST(request: Request) {
   try {
@@ -123,12 +137,14 @@ export async function POST(request: Request) {
     const rawAtlasData = typeof body.atlasData === 'string'
       ? JSON.parse(body.atlasData || '{"nodes":[]}')
       : (body.atlasData || { nodes: [], edges: [] });
-    const atlasData = JSON.stringify(normalizeAtlasGridData(rawAtlasData));
-    const connectionsByMap = body.connectionsByMap as Record<string, { north?: string; south?: string; east?: string; west?: string }> | undefined;
+    
+    // Normalize and assign permanent IDs to any newly added nodes
+    const normalizedData = normalizeAtlasGridData(rawAtlasData);
+    const atlasData = JSON.stringify(normalizedData);
 
     let atlasResult: any = null;
 
-    // 1. Try WorldAtlas model
+    // 1. Save directly to canonical WorldAtlas table
     try {
       if ((prisma as any).worldAtlas) {
         atlasResult = await (prisma as any).worldAtlas.upsert({
@@ -145,72 +161,37 @@ export async function POST(request: Request) {
         });
       }
     } catch (err) {
-      console.warn("[Atlas] WorldAtlas table upsert failed, using SiteSetting fallback:", err);
+      console.warn("[Atlas] WorldAtlas table upsert failed, attempting SiteSetting fallback:", err);
     }
 
-    // 2. Ensure SiteSetting persistent mirror
-    try {
-      await prisma.siteSetting.upsert({
-        where: { key: `WORLD_ATLAS_${gameId}` },
-        create: {
-          key: `WORLD_ATLAS_${gameId}`,
-          value: JSON.stringify({ lobbyMapId, atlasData, connectionsByMap }),
-        },
-        update: {
-          value: JSON.stringify({ lobbyMapId, atlasData, connectionsByMap }),
-        },
-      });
-    } catch (siteErr) {
-      console.warn("[Atlas] SiteSetting mirror failed:", siteErr);
-    }
-
-    // 3. If adjacency connections are provided, sync them to WorldMap records
-    if (connectionsByMap && typeof connectionsByMap === 'object') {
+    // 2. Fallback to SiteSetting only if WorldAtlas table is not available
+    if (!atlasResult) {
       try {
-        for (const [mapId, conns] of Object.entries(connectionsByMap)) {
-          const existing = await prisma.worldMap.findUnique({ where: { id: mapId } });
-          let currentGates: any = {};
-          if (existing?.gatesData) {
-            try {
-              currentGates = JSON.parse(existing.gatesData || "{}");
-            } catch {}
-          } else {
-            const existingGameMap = await prisma.gameMap.findUnique({ where: { id: mapId } });
-            if (existingGameMap?.gates) {
-              try {
-                currentGates = JSON.parse(existingGameMap.gates || "{}");
-              } catch {}
-            }
-          }
-          const actualGates = currentGates.gates !== undefined ? currentGates.gates : currentGates;
-          const mergedGates = { gates: actualGates, connections: conns };
-          const serializedGates = JSON.stringify(mergedGates);
-
-          if (existing) {
-            await prisma.worldMap.update({
-              where: { id: mapId },
-              data: { gatesData: serializedGates }
-            });
-          }
-          await prisma.gameMap.updateMany({
-            where: { id: mapId },
-            data: { gates: serializedGates }
-          });
-        }
-      } catch (connErr) {
-        console.warn("[Atlas] Failed to sync map adjacency connections:", connErr);
+        await prisma.siteSetting.upsert({
+          where: { key: `WORLD_ATLAS_${gameId}` },
+          create: {
+            key: `WORLD_ATLAS_${gameId}`,
+            value: JSON.stringify({ lobbyMapId, atlasData }),
+          },
+          update: {
+            value: JSON.stringify({ lobbyMapId, atlasData }),
+          },
+        });
+        atlasResult = { gameId, lobbyMapId, atlasData };
+      } catch (siteErr) {
+        console.error("[Atlas] SiteSetting save failed:", siteErr);
+        throw siteErr;
       }
     }
 
-    if (!atlasResult) {
-      atlasResult = {
-        gameId,
-        lobbyMapId,
-        atlasData,
-      };
-    }
-
-    return NextResponse.json({ ok: true, atlas: atlasResult });
+    return NextResponse.json({
+      ok: true,
+      atlas: {
+        gameId: atlasResult.gameId || gameId,
+        lobbyMapId: atlasResult.lobbyMapId || lobbyMapId,
+        atlasData: atlasResult.atlasData || atlasData,
+      }
+    });
   } catch (error) {
     console.error("Failed to save world atlas:", error);
     return NextResponse.json({ error: "Failed to save atlas" }, { status: 500 });

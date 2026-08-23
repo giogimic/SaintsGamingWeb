@@ -1,3 +1,19 @@
+## [2.1.448] - 2026-08-23
+### Architecture & World Systems
+- **World Atlas Canonical Source-of-Truth Migration (`app/api/world/atlas/route.ts`)**:
+  - Established `WorldAtlas` as the sole canonical database authority for World Atlas layouts.
+  - Eliminated the `updatedAt` reconciliation guessing between `WorldAtlas` and `SiteSetting` records.
+  - Removed destructive `connectionsByMap` map-overwriting loops that previously overwrote `gatesData`/`gates` on `WorldMap` and `GameMap` database records on every save.
+- **Placement-Aware Map Caching & Deduplication (`src/web/components/the-lobby/data/maps.ts`)**:
+  - Replaced the single `mapId` cache bucket with placement-aware composite keys (`mapId@atlasNodeId`), enabling multiple instances of the same map definition (e.g. `FOREST` at (5,4) and `FOREST` at (10,9)) to coexist concurrently without chunk or neighbor corruption.
+  - Hardened `loadMap` against ambiguous fallbacks: if multiple nodes use the same `mapId` and no `atlasNodeId` is specified, `loadMap` logs an explicit warning rather than arbitrarily selecting the first placement.
+- **Node-Aware Spatial Adjacency & Boundary Warps (`spatialAtlas.ts`, `WorldSimulation.ts`, `GameCanvasBabylon.tsx`)**:
+  - Boundary transitions now emit `targetNodeId` in gate metadata, passing exact node identity across map loads and keeping `activeAtlasNodeId` synchronized in `useGameStore`.
+  - Resolved UI inspection collision in `WorldAtlasPanel.tsx` and `AtlasStudioSuite.tsx` by using `getAdjacentAtlasNeighbors(atlasData, selectedNode)` instead of dictionary lookups by `selectedNode.mapId`.
+  - Replaced React keys with persistent node IDs (`key={node.id}`) across Studio Atlas grids.
+- **Atlas Diagnostics Payload Inspector (`AtlasDiagnosticOverlay.tsx`, `StudioEditorShell.tsx`)**:
+  - Implemented real-time developer diagnostic overlay displaying active map ID, active node ID, placement cache key, loaded seamless chunk count, and full cardinal neighbor readouts for all placed Atlas nodes.
+
 ## [2.1.446] - 2026-08-23
 ### Features & Systems
 - **Global Gold Bank Conversion (`SocialTip`, `Analytics`, `logicComponents`)**:
