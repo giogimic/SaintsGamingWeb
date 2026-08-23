@@ -38,7 +38,7 @@ Saints Gaming uses a **hybrid decoupling architecture**:
 
 The game renders characters and tiles in an orthographic 2.5D projection:
 - **Camera Configuration:** An `ArcRotateCamera` locked at an isometric tilt (`alpha = -Math.PI / 2`, `beta = Math.PI / 3.2`) with `mode = Camera.ORTHOGRAPHIC_CAMERA`.
-- **Sprite Projection:** 4-directional sprite sheets (LPC / Tuxemon standard 96×128px frames) are projected onto billboarded planes or quads with depth offsets to prevent Z-fighting.
+- **Sprite Projection:** 4-directional sprite sheets (standard 96×128px frames) are projected onto billboarded planes or quads with depth offsets to prevent Z-fighting.
 - **Tile Batching:** Map tiles are batched into multi-cell chunk meshes (`tileset_mesh_*`) to drastically reduce draw calls and maintain 60 FPS even on large maps.
 
 ---

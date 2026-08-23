@@ -3,15 +3,13 @@
 # 📖 Saints Gaming Documentation Wiki
 ### *Technical Specification, Game Architecture & Studio Manual*
 
-🌐 **Official Site:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.343`
+🌐 **Official Site:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.450`
 
 ---
 
 </div>
 
-Welcome to the comprehensive **Saints Gaming Engine & Platform Documentation**. This is the deeper technical reference for the project. The main README is the short front door. This wiki is where the actual systems, tools, and runtime logic live.
-
-Important note: optional community and LPC-style prototype art can be used in the content pipeline for testing and sprite validation, but those assets are not treated as the project’s required base art. They are attributed and kept separate from the game’s original source systems and final project identity.
+Welcome to the **Saints Gaming Engine & Platform Documentation**! This is the deep technical handbook where all the inner mechanics, networking protocols, combat formulas, and live Studio editor pipelines live. If the main README is our quick front-door overview, this wiki is the full architectural breakdown.
 
 ---
 

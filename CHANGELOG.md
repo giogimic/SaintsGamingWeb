@@ -1,3 +1,10 @@
+## [2.1.451] - 2026-08-23
+### Documentation & Asset Cleanup
+- **Complete Third-Party Prototype Asset & Attribution Removal**:
+  - Confirmed all legacy game sprites, LPC, and Tuxemon asset bundles are archived offline into `.old-assets/` and excluded from repository tracking.
+  - Removed `docs/TUXEMON_ATTRIBUTION.md` and pruned third-party asset license dependencies.
+  - Refreshed `README.md` and documentation wiki (`docs/`) with clean descriptions in GioGimic's indie developer style.
+
 ## [2.1.450] - 2026-08-23
 ### Onboarding & Setup Architecture
 - **2-Option Setup Architecture (`FirstTimeSetupWizard.tsx`)**:

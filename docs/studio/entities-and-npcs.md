@@ -7,7 +7,7 @@ Populate Mode (`Populate`) in Saints Studio provides full control over game enti
 ## 1. Placing & Configuring NPCs (`EntityEditorPanel.tsx`)
 
 NPCs can be placed on any map coordinate:
-- **Sprite Selection:** Choose from LPC sprite bases, hair styles, outfits, or custom sprite sheets.
+- **Sprite Selection:** Choose from character sprite bases, hair styles, outfits, or uploaded custom sprite sheets.
 - **Facing Direction:** North, South, East, West default orientations.
 - **Wander Radius:** Set patrol boundaries ($0$ = stationary, $>0$ = autonomous roaming within $N$ tiles).
 - **Interaction Behaviors:**
