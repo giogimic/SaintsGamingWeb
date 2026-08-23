@@ -11,7 +11,7 @@ export async function getMessengerMetadata() {
   if (!session?.user?.id) return { unreadCount: 0, coins: 0, onlineFriends: 0 };
 
   const [unreadCount, user, friends] = await Promise.all([
-    prisma.message.count({
+    prisma.directMessage.count({
       where: {
         receiverId: session.user.id,
         isRead: false
