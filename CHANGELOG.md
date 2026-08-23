@@ -1,3 +1,9 @@
+## [2.1.415] - 2026-08-22
+### Style #3 "Dreamy Sunset" Integration for Light Theme
+- **Landing Page Style #3 Integration**: Configured the landing page ([`app/page.tsx`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/page.tsx)) so that when "Light" theme is active, it displays **Style #3 (Dreamy Tropical Sunset)** featuring the glowing golden sun disc, reflective ocean water wavelets ([`S3Water`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/s3-water.tsx)), silhouetted framing palms ([`S3Palms`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/web/components/landing/s3-palms.tsx)), ambient sunset embers, and glowing gold & fuchsia action buttons.
+- **Global Light Theme Horizon Synchronization**: Refactored the global `.light` CSS theme variables in [`app/globals.css`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/app/globals.css) to adopt a warm golden-hour / dreamy sunset palette (warm pearl/cream surfaces, amber/gold borders, fuchsia accents, and plum typography) across all community menus, HUD overlays, dialogs, and panels.
+- **Landing Page Theme Switcher**: Embedded the floating [`ThemeSwitcher`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/src/shared/components/theme-switcher.tsx) onto the landing page top-right corner for instant real-time style preview and toggling.
+
 ## [2.1.414] - 2026-08-22
 ### "Vice" Tropical Sunset Theme & Palm Horizon Aesthetic
 - **Vice Theme Transformation**: Replaced the legacy Hacker style with a tropical "Vice" theme modeled after the palm sunset skyline:

@@ -4,15 +4,43 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { SGVoxelLogo } from "@/web/components/landing/sg-logo-true-3d";
 import { PixelEnvironmentalEffects } from "@/web/components/landing/pixel-environmental-effects";
 import { MidnightStars } from "@/web/components/landing/midnight-stars";
 import { S3Background } from "@/web/components/landing/s3-background";
 import { S3Water } from "@/web/components/landing/s3-water";
 import { S3Palms } from "@/web/components/landing/s3-palms";
+import { ThemeSwitcher } from "@/shared/components/theme-switcher";
 import { getDiscordInviteUrl } from "./actions/settings";
 
-// ── Theme color palette for Midnight Tropical ─────────────────────
+// ── Theme color palette for Style #3 (Dreamy Tropical Sunset / Light Theme) ─────
+const PALETTE_S3_SUNSET = {
+  bg: "#240046",
+  textColor: "#ffffff",
+  accentColor: "#f9c74f",
+  btnBg: "rgba(247, 37, 133, 0.15)",
+  btnBorder: "#f9c74f",
+  btnGlow: "#f8961e",
+  btn2Border: "#f72585",
+  btn2Text: "#f72585",
+  logoGlow: "rgba(248, 150, 30, 0.6)",
+};
+
+// ── Theme color palette for Vice ───────────────────────────────────────────────
+const PALETTE_VICE = {
+  bg: "#1b121c",
+  textColor: "#ffffff",
+  accentColor: "#ffc15e",
+  btnBg: "rgba(250, 142, 91, 0.2)",
+  btnBorder: "#ff007f",
+  btnGlow: "#fa8e5b",
+  btn2Border: "#00f5d4",
+  btn2Text: "#00f5d4",
+  logoGlow: "rgba(255, 0, 127, 0.6)",
+};
+
+// ── Theme color palette for Midnight Tropical (Dark Theme) ─────────────────────
 const PALETTE_MIDNIGHT_TROPICAL = {
   bg: "#050014",
   textColor: "#ffffff",
@@ -26,23 +54,47 @@ const PALETTE_MIDNIGHT_TROPICAL = {
 };
 
 export default function LandingPage() {
-  const p = PALETTE_MIDNIGHT_TROPICAL;
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [discordLink, setDiscordLink] = useState("https://discord.saintsgaming.net");
 
   useEffect(() => {
+    setMounted(true);
     getDiscordInviteUrl().then(setDiscordLink);
   }, []);
+
+  const isLight = mounted && theme === "light";
+  const isVice = mounted && (theme === "vice" || theme === "hacker");
+
+  const p = isLight
+    ? PALETTE_S3_SUNSET
+    : isVice
+    ? PALETTE_VICE
+    : PALETTE_MIDNIGHT_TROPICAL;
 
   return (
     <main
       className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden font-sans select-none"
       style={{ backgroundColor: p.bg, color: p.textColor }}
     >
-      {/* ── Background Sky ────── */}
-      <S3Background sunClassName="top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 grayscale brightness-200" />
+      {/* ── Floating Theme Switcher at Top Right ────────────────────── */}
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50">
+        <ThemeSwitcher />
+      </div>
 
-      {/* ── Twinkling Night Sky Stars & Shooting Star ─────────────── */}
-      <MidnightStars />
+      {/* ── Background Sky ────── */}
+      <S3Background 
+        sunClassName={
+          isLight
+            ? "top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2"
+            : isVice
+            ? "top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2"
+            : "top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 grayscale brightness-200"
+        } 
+      />
+
+      {/* ── Twinkling Night Sky Stars (Only for Dark mode) ─────────── */}
+      {!isLight && !isVice && <MidnightStars />}
 
       {/* ── Water with Thin Wavelets ──────────────────────────────── */}
       <S3Water />
@@ -50,19 +102,32 @@ export default function LandingPage() {
       {/* ── Palms (Silhouetted framing, non-interfering) ─────────── */}
       <S3Palms />
 
-      {/* ── Midnight Pixel Environmental Effects ───────────────────── */}
-      <PixelEnvironmentalEffects palette="midnight" />
+      {/* ── Pixel Environmental Effects ───────────────────────────── */}
+      <PixelEnvironmentalEffects palette={isLight ? "sunset" : isVice ? "sunset" : "midnight"} />
 
-      {/* ── Midnight Color Overlays ────────────────────────────────── */}
-      <div 
-        className="absolute inset-0 pointer-events-none z-[25] opacity-80 mix-blend-color"
-        style={{ background: "linear-gradient(to bottom, #03045e, #0077b6)" }}
-      />
-      
-      <div 
-        className="absolute inset-0 pointer-events-none z-[25] opacity-50 mix-blend-multiply"
-        style={{ background: "#050014" }}
-      />
+      {/* ── Color Overlays for Midnight or Dreamy Sunset Vignette ─── */}
+      {isLight ? (
+        <div 
+          className="absolute inset-0 pointer-events-none z-[25] opacity-70 mix-blend-multiply"
+          style={{ background: "radial-gradient(circle at 50% 50%, transparent 40%, #10002b 100%)" }}
+        />
+      ) : isVice ? (
+        <div 
+          className="absolute inset-0 pointer-events-none z-[25] opacity-40 mix-blend-color"
+          style={{ background: "linear-gradient(to bottom, #d946ef, #fb923c)" }}
+        />
+      ) : (
+        <>
+          <div 
+            className="absolute inset-0 pointer-events-none z-[25] opacity-80 mix-blend-color"
+            style={{ background: "linear-gradient(to bottom, #03045e, #0077b6)" }}
+          />
+          <div 
+            className="absolute inset-0 pointer-events-none z-[25] opacity-50 mix-blend-multiply"
+            style={{ background: "#050014" }}
+          />
+        </>
+      )}
 
       {/* ── Animated 3D Voxel Logo (Interactive: spin by drag) ─────── */}
       <div
@@ -105,7 +170,7 @@ export default function LandingPage() {
             style={{
               backgroundColor: p.btnBg,
               borderColor: p.btnBorder,
-              boxShadow: `0 0 15px rgba(0,245,212,0.3), inset 0 0 10px rgba(0,245,212,0.2)`,
+              boxShadow: `0 0 15px ${p.btnBorder}66, inset 0 0 10px ${p.btnBorder}44`,
               textShadow: "0 2px 4px rgba(0,0,0,0.8)",
             }}
           >
@@ -124,7 +189,7 @@ export default function LandingPage() {
             style={{
               borderColor: p.btn2Border,
               color: p.btn2Text,
-              boxShadow: `0 0 10px rgba(76,201,240,0.3) inset`,
+              boxShadow: `0 0 10px ${p.btn2Border}44 inset`,
             }}
           >
             Join Discord
