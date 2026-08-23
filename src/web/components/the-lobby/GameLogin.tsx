@@ -5,10 +5,14 @@ import { useGameStore } from './store';
 import { signIn } from 'next-auth/react';
 import { X, LogIn, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { soundSynth } from '@/engine/sound-synth';
+import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 
 export default function GameLogin() {
   const setGameMode = useGameStore((state) => state.setGameMode);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const isVice = theme === 'vice' || theme === 'hacker';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,9 +58,9 @@ export default function GameLogin() {
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[210] flex items-center justify-center animate-in fade-in duration-300 select-none font-sans"
-      style={{ backgroundColor: '#050014' }}
+      style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
-      {/* Midnight Tropical Dynamic Horizon Background */}
+      {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
       <div

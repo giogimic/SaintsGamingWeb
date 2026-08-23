@@ -7,6 +7,7 @@ import { useRealtimeStore } from '@/web/hooks/useRealtimeStore';
 import { Globe, Users, Server, Play, ArrowLeft, Wifi, AlertTriangle, Power } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
 import { soundSynth } from '@/engine/sound-synth';
+import { useTheme } from 'next-themes';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 
 interface ServerInfo {
@@ -129,12 +130,16 @@ export default function ServerSelect() {
     fillPct > 50 ? '#ffbe0b' :
     '#00f5d4';
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const isVice = theme === 'vice' || theme === 'hacker';
+
   return (
     <div
       className="pointer-events-auto absolute inset-0 z-[200] flex flex-col items-center justify-center animate-in fade-in duration-500 select-none font-sans"
-      style={{ backgroundColor: '#050014' }}
+      style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
-      {/* Midnight Tropical Dynamic Horizon Background */}
+      {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
       {/* Back button */}

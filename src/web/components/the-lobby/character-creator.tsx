@@ -42,6 +42,7 @@ import {
 import { CharacterSpritePreview } from './CharacterSpritePreview';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { useTheme } from 'next-themes';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -480,12 +481,16 @@ export function CharacterCreator({
     FALLBACK_CLASS_DEFS[0];
   const selectedPerk = PERKS.find((p) => p.id === perkId) || PERKS[0];
 
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const isVice = theme === 'vice' || theme === 'hacker';
+
   return (
     <div
       className="pointer-events-auto fixed inset-0 w-full h-full overflow-y-auto z-[100] flex flex-col justify-between p-3 sm:p-6 select-none font-sans"
-      style={{ backgroundColor: '#050014' }}
+      style={{ backgroundColor: isLight ? '#240046' : isVice ? '#1b121c' : '#050014' }}
     >
-      {/* Midnight Tropical Dynamic Horizon Background */}
+      {/* Dynamic Horizon Background */}
       <MidnightTropicalBackground />
 
       {/* ── TOP BREADCRUMB & HEADER ── */}
