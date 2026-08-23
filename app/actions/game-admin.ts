@@ -171,9 +171,6 @@ export async function adminResetPlayerPosition(characterId: string, targetMapId:
     await prisma.gameCharacter.update({
       where: { id: characterId },
       data: {
-        mapId: targetMapId,
-        x,
-        y,
         stateData: JSON.stringify(state)
       }
     });
