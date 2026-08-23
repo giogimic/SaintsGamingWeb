@@ -1,7 +1,7 @@
 # ⚜️ SAINTS GAMING ⚜️
-### *Web Community Platform & 2.5D Sandbox RPG*
+### *Gaming Community Since 2007*
 
-🌐 **Live Realm:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Creator:** **GioGimic** &nbsp;•&nbsp; 💬 **Discord:** [Join Community](https://discord.saintsgaming.net)
+🌐 **Website:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Creator:** **GioGimic** &nbsp;•&nbsp; 💬 **Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)
 
 ```
    _____       _       _          _____                 _             
@@ -14,92 +14,68 @@
                                                                  |___/ 
 ```
 
-![Version](https://img.shields.io/badge/Release-v2.1.450-purple?style=for-the-badge&logo=gamemaker)
-![Live Site](https://img.shields.io/badge/Live_Site-SaintsGaming.net-0ea5e9?style=for-the-badge&logo=googlechrome&logoColor=white)
+![Release](https://img.shields.io/badge/Version-v2.1.452-purple?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/Next.js_15-React_19-black?style=for-the-badge&logo=next.js)
-![Go MMO](https://img.shields.io/badge/Go_MMO-3001-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Babylon.js](https://img.shields.io/badge/Babylon.js-2.5D_WebGL-F58025?style=for-the-badge&logo=babylonjs&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-SQLite%2FMariaDB-5A67D8?style=for-the-badge&logo=prisma&logoColor=white)
 
-*Hey everyone! This is my personal indie passion project — an all-in-one gaming hub, web community, and 2.5D browser MMO sandbox where I test and build custom game systems, realtime networking, and in-browser world-building tools.*
+---
+
+## 🌟 Welcome to Saints Gaming
+
+**Saints Gaming** originally started out as an online gaming community back in **2007**. This repository is our brand new website, rebuilt from scratch as a modern full-stack community hub with embedded game tools and social features.
+
+The idea here is simple: bring together a full gaming platform—forums, news, user profiles, a media feed, an in-game gold economy, and a 2.5D multiplayer world with built-in creative studio tools—all running right inside the web browser.
 
 ---
 
-## 🌟 What is Saints Gaming?
+## 🎮 What's On the Site
 
-**Saints Gaming** ([SaintsGaming.net](https://SaintsGaming.net)) is built from the ground up to combine a modern gaming community (forums, user dashboards, achievements, social feed, live chat) with an embedded **2.5D top-down multiplayer RPG** and a live, in-browser map and game editor (**Saints Studio**).
-
-Whether you're exploring the seamless overworld, leveling up 27 unique skills, jumping into real-time or turn-based creature battles, or painting new maps right inside your browser with Studio, everything runs seamlessly on one cohesive platform.
-
----
-
-## 🎮 Key Systems at a Glance
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                             SAINTS GAMING ECOSYSTEM                         │
-├──────────────────────────────┬──────────────────────────────┬───────────────┤
-│        🌐 WEB PLATFORM       │        🕹️ GAME CLIENT        │   🛠️ STUDIO   │
-│  • SaintsGaming.net Portal   │  • Babylon 2.5D WebGL        │  • Tile Paint │
-│  • Community Forums & News   │  • 27-Skill Progression      │  • NPC Placer │
-│  • Profile Showcases & UCP   │  • Dual-Combat Engine        │  • Catalogs   │
-│  • Realtime Social Feeds     │  • Mobile Touch / Joystick   │  • PIE Tester │
-└──────────────────────────────┴──────────────────────────────┴───────────────┘
-```
-
-- ⚔️ **27-Skill Matrix & Progression:** Classic 1–99 skill grinding across Combat (9), Gathering (5), Artisan (8), and Support (5) with Grandmaster Max Capes and endgame relics.
-- 👾 **Dual-Combat Engine:** Real-time overworld monster combat with ability hotbars, alongside turn-based collection battles and capture mechanics.
-- 🗺️ **Saints Studio (`/studio`):** Complete in-game level editor with multi-layer visual tile painting, collision logic, NPC and monster spawners, dialogue node graphs, and Play-In-Editor (PIE) testing.
-- ⚡ **Hybrid Realtime Backend:** High-speed Go MMO socket server (`the-lobby/`) on `:3001` handling Area-of-Interest (AOI) spatial sharding, tick simulation, and state persistence.
-- 📱 **Mobile Ready:** Responsive touch controls, virtual joystick, quick action pads, and full-screen browser gameplay on phones and tablets.
-- 📚 **Full Documentation Wiki:** Dive into the deep architecture and mechanics breakdown in [`docs/README.md`](docs/README.md).
-
----
-
-## 🧭 Project Navigation & Documentation
-
-| Section | Description | Link |
-| :--- | :--- | :--- |
-| 🌐 **Live Portal** | Official Saints Gaming web community | [**SaintsGaming.net**](https://SaintsGaming.net) |
-| 📚 **Complete Wiki** | Index of all game & studio system documentation | [`docs/README.md`](docs/README.md) |
-| 🎮 **Game Systems** | Game loop, 27 skills, combat, networking & economy | [`docs/game-systems/README.md`](docs/game-systems/README.md) |
-| 🛠️ **Studio Manual** | Editor architecture, tile painting, NPCs & catalogs | [`docs/studio/README.md`](docs/studio/README.md) |
-| 📜 **Changelog** | Full version history and milestone release notes | [`CHANGELOG.md`](CHANGELOG.md) |
+- 💬 **Community Forums & News:** Discussion boards, member threads, gaming news articles, and community announcements.
+- 📱 **Integrated Feed & Shorts:** A social feed with video shorts playback, audio stems, comments, and creator tips.
+- 🪙 **Unified Gold Economy:** Earn gold through site activity and content views, tip creators directly on posts, and access your gold in-game at physical bank locations to transfer funds between your character inventory and account bank.
+- 🕹️ **The Lobby (2.5D Game):** An embedded browser game featuring top-down multiplayer movement, chat, exploration, and combat powered by Babylon.js WebGL.
+- 🛠️ **Saints Studio (`/studio`):** An in-browser map and world builder for admins and creators to paint map layers, set collision logic, place NPCs and spawners, write quest dialogues, and playtest maps instantly.
+- 👤 **User Control Panel (UCP):** Custom member profiles, avatars, showcase widgets, achievements, and settings.
 
 ---
 
 ## 💻 Tech Stack
 
-- **Frontend & Web Core:** Next.js 15+ (App Router), React 19, TypeScript
-- **Styling & UI:** Tailwind CSS, Custom `sg-*` Design System Tokens, Lucide Icons
-- **Database & ORM:** Prisma ORM with SQLite (dev/local) and MariaDB (prod)
-- **Game Engine & Rendering:** Babylon.js 2.5D Orthographic Engine (`BabylonEngine.ts`)
-- **Realtime Networking:** The Lobby Go MMO server (`the-lobby/`) on `:3001` + Node.js fallback (`server.ts`)
-- **Audio & FX:** WebAudio API dynamic soundscapes, music jukebox, and particle effects
+- **Frontend & App:** Next.js 15+ (App Router), React 19, TypeScript
+- **Styling:** Tailwind CSS with custom glassmorphism design tokens
+- **Database:** Prisma ORM (SQLite for simple local setups, MariaDB/MySQL in production)
+- **Game Engine:** Babylon.js 2.5D orthographic renderer
+- **Multiplayer & Realtime:** Optional Go MMO socket server (`the-lobby/`) on `:3001` with Node.js socket fallback
+- **Authentication:** Auth.js (NextAuth v5) with credentials, sessions, and role permissions
 
 ---
 
-## 🚀 Quickstart & Running Locally
+## 🚀 Running Locally
+
+Getting the project up and running locally is straightforward:
 
 ```bash
-# 1. Automated environment setup & dependency install
+# 1. Automated setup & dependency install (copies .env if needed and sets up database)
 ./scripts/setup.sh
 
-# 2. Start development server (Next.js + Socket Engine)
+# 2. Run the dev server
 npm run dev
 
-# 3. Launch The Lobby Go backend (For realtime multiplayer on :3001)
+# 3. (Optional) Run The Lobby Go server for realtime multiplayer on :3001
 ./the-lobby/scripts/setup-the-lobby.sh --full
 
-# 4. Run automated test suite (Vitest)
+# 4. Run automated tests
 npm test
 ```
 
-For production deployment and automated reverse proxy management, check out `./scripts/setup.sh` and `./scripts/update.sh`.
+Once running, open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📄 License & Credits
+## 💬 Community & Feedback
 
-- **Platform & Engine Code:** Built with passion by GioGimic. All rights reserved.
-- **Community:** Feel free to hop into our [Discord](https://discord.saintsgaming.net) to chat, share feedback, or check out the latest development progress!
+If you want to hang out, chat about games, share feedback, or follow development updates:
+- **Website:** [SaintsGaming.net](https://SaintsGaming.net)
+- **Discord:** [discord.saintsgaming.net](https://discord.saintsgaming.net)

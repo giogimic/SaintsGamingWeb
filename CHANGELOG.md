@@ -1,3 +1,9 @@
+## [2.1.452] - 2026-08-23
+### Community Platform & Documentation
+- **README & Storyline Refresh (`README.md`)**:
+  - Grounded project identity around Saints Gaming's 2007 community history and brand new website rebuild.
+  - Focused documentation on core integrated features: community forums/news, feed & video shorts, unified in-game Gold economy with physical banks, embedded 2.5D game, and in-browser Saints Studio creator suite.
+
 ## [2.1.451] - 2026-08-23
 ### Documentation & Asset Cleanup
 - **Complete Third-Party Prototype Asset & Attribution Removal**:
