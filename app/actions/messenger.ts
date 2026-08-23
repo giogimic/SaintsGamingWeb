@@ -6,6 +6,36 @@ import { revalidatePath } from "next/cache";
 import { checkAndAwardAchievements } from "@/web/lib/achievements";
 import { emitChatMessageCreated } from "@/web/lib/realtime-emit";
 
+export async function getMessengerMetadata() {
+  const session = await auth();
+  if (!session?.user?.id) return { unreadCount: 0, coins: 0, onlineFriends: 0 };
+
+  const [unreadCount, user, friends] = await Promise.all([
+    prisma.message.count({
+      where: {
+        receiverId: session.user.id,
+        isRead: false
+      }
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { coins: true }
+    }),
+    prisma.friendship.count({
+      where: {
+        OR: [{ userId: session.user.id }, { friendId: session.user.id }],
+        status: "ACCEPTED"
+      }
+    })
+  ]);
+
+  return {
+    unreadCount,
+    coins: user?.coins || 0,
+    totalFriends: friends
+  };
+}
+
 export async function uploadPublicKey(publicKey: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
