@@ -20,6 +20,7 @@ interface ForumAiSettingsProps {
   initialProvider: string;
   initialOllamaUrl: string;
   initialOllamaModel: string;
+  initialGeminiApiKey?: string;
   geminiConfigured: boolean;
   canEdit: boolean;
   catalog: LocalModelOption[];
@@ -43,6 +44,7 @@ export function ForumAiSettingsPanel({
   initialProvider,
   initialOllamaUrl,
   initialOllamaModel,
+  initialGeminiApiKey = "",
   geminiConfigured,
   canEdit,
   catalog,
@@ -51,6 +53,7 @@ export function ForumAiSettingsPanel({
   const [enabled, setEnabled] = useState(initialEnabled);
   const [ollamaUrl, setOllamaUrl] = useState(initialOllamaUrl);
   const [ollamaModel, setOllamaModel] = useState(initialOllamaModel);
+  const [geminiApiKey, setGeminiApiKey] = useState(initialGeminiApiKey);
   const [status, setStatus] = useState<LocalStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [pulling, setPulling] = useState<string | null>(null);
@@ -96,6 +99,7 @@ export function ForumAiSettingsPanel({
       fd.set("forum_ai_provider", provider);
       fd.set("forum_ai_ollama_url", ollamaUrl.trim() || "http://127.0.0.1:11434");
       fd.set("forum_ai_ollama_model", ollamaModel);
+      fd.set("gemini_api_key", geminiApiKey.trim());
       await updateForumAiSettings(fd);
       setMessage("Forum text-enhance settings saved.");
       await refreshStatus();
@@ -214,20 +218,36 @@ export function ForumAiSettingsPanel({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="gemini">
-                  Cloud — Gemini 2.5 Flash
-                  {!geminiConfigured ? " (GEMINI_API_KEY missing)" : ""}
+                  Cloud — Google Gemini (Flash)
+                  {!geminiConfigured && !geminiApiKey ? " (API key missing)" : ""}
                 </SelectItem>
                 <SelectItem value="ollama">Local — Ollama (downloaded models)</SelectItem>
                 <SelectItem value="off">Off</SelectItem>
               </SelectContent>
             </Select>
-            {provider === "gemini" && !geminiConfigured && (
+            {provider === "gemini" && !geminiConfigured && !geminiApiKey && (
               <p className="text-xs text-amber-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" /> Set <code>GEMINI_API_KEY</code> in the
-                server environment.
+                <AlertCircle className="h-3 w-3" /> Set <code>GEMINI_API_KEY</code> below or in server environment.
               </p>
             )}
           </div>
+
+          {provider === "gemini" && (
+            <div className="space-y-2">
+              <Label htmlFor="gemini_api_key">Gemini API Key</Label>
+              <Input
+                id="gemini_api_key"
+                type="password"
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
+                disabled={!canEdit}
+                placeholder="AIzaSy..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Google Gemini API key used for grammar check and text polish. Saved to database if not set in server environment.
+              </p>
+            </div>
+          )}
 
           {provider === "ollama" && (
             <div className="space-y-2">

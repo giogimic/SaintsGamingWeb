@@ -7,6 +7,7 @@ export const FORUM_AI_KEYS = {
   provider: "forum_ai_provider",
   ollamaUrl: "forum_ai_ollama_url",
   ollamaModel: "forum_ai_ollama_model",
+  geminiApiKey: "gemini_api_key",
 } as const;
 
 export type ForumAiProvider = "off" | "gemini" | "ollama";

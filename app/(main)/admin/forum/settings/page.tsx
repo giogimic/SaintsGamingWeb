@@ -68,7 +68,8 @@ export default async function AdminForumSettingsPage() {
           initialProvider={map[FORUM_AI_KEYS.provider] ?? "gemini"}
           initialOllamaUrl={map[FORUM_AI_KEYS.ollamaUrl] ?? "http://127.0.0.1:11434"}
           initialOllamaModel={map[FORUM_AI_KEYS.ollamaModel] ?? "llama3.2:3b"}
-          geminiConfigured={Boolean(process.env.GEMINI_API_KEY)}
+          initialGeminiApiKey={map[FORUM_AI_KEYS.geminiApiKey] || map["GEMINI_API_KEY"] || ""}
+          geminiConfigured={Boolean(process.env.GEMINI_API_KEY || map[FORUM_AI_KEYS.geminiApiKey] || map["GEMINI_API_KEY"])}
           canEdit={canEdit}
           catalog={LOCAL_MODEL_CATALOG}
         />
