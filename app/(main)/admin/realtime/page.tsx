@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Activity, Radio, ShieldAlert, Unplug, RefreshCw } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { DevSubNav } from "../dev/dev-sub-nav";
 
 type Metrics = {
   totalEmits: number;
@@ -97,13 +98,13 @@ export default function AdminRealtimePage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      <div className="flex items-start justify-between gap-4 border-b border-border/40 pb-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Radio className="h-6 w-6" /> Realtime Platform
+            <Radio className="h-6 w-6 text-primary" /> Realtime Platform &amp; Bus
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             Live Socket.io bus metrics, circuit breaker, and recent CRITICAL events.
           </p>
         </div>
@@ -112,6 +113,8 @@ export default function AdminRealtimePage() {
           Refresh
         </Button>
       </div>
+
+      <DevSubNav />
 
       {error && (
         <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">

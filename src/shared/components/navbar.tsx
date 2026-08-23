@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Home,
   Newspaper,
@@ -51,6 +51,16 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  useEffect(() => {
+    if (pathname && !pathname.startsWith("/admin")) {
+      try {
+        sessionStorage.setItem("sg_last_non_admin_route", pathname);
+      } catch {
+        // ignore
+      }
+    }
+  }, [pathname]);
+
   // Lobby/studio are full-viewport game shells — site chrome must not paint over them
   // (their fixed z-index is trapped under main's z-10 stacking context).
   if (pathname?.startsWith("/lobby") || pathname?.startsWith("/studio")) {
@@ -60,7 +70,9 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
   const user = session?.user;
   // Use DB level if provided, otherwise fallback to session
   const permissionLevel = dbPermissionLevel ?? ((user?.permissionLevel as number) || 0);
-  const isAdmin = permissionLevel >= 200; // MOD or above
+  const isWriter = Boolean(user?.isWriter);
+  const isOperator = permissionLevel >= 200 || isWriter; // MOD (200)+ or Writer
+  const canAccessStudio = permissionLevel >= 300; // ADMIN (300)+ or DEV (400)+
 
   return (
     <div className="sticky top-0 z-50 w-full pointer-events-none">
@@ -160,10 +172,16 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                       FiveM UCP
                     </DropdownMenuItem>
                   )}
-                  {isAdmin && (
-                    <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer" />}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Admin Dashboard
+                  {canAccessStudio && (
+                    <DropdownMenuItem render={<Link href="/studio" className="cursor-pointer text-purple-400 font-medium" />}>
+                      <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
+                      2.5D World Studio
+                    </DropdownMenuItem>
+                  )}
+                  {isOperator && (
+                    <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer text-primary font-medium" />}>
+                      <Settings className="mr-2 h-4 w-4 text-primary" />
+                      Admin Command Center
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
@@ -254,9 +272,14 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                           <Gamepad2 className="h-4 w-4" /> FiveM UCP
                         </Link>
                       )}
-                      {isAdmin && (
-                        <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
-                          <Settings className="h-4 w-4" /> Admin
+                      {canAccessStudio && (
+                        <Link href="/studio" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-purple-400 font-medium hover:bg-purple-500/10 transition-colors">
+                          <Sparkles className="h-4 w-4 text-purple-400" /> 2.5D Studio
+                        </Link>
+                      )}
+                      {isOperator && (
+                        <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors">
+                          <Settings className="h-4 w-4 text-primary" /> Admin Command Center
                         </Link>
                       )}
                     </>
@@ -366,7 +389,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.429"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.438"}</span>
           </div>
 
 

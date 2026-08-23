@@ -1,5 +1,6 @@
 import { Activity, Cpu, HardDrive, Clock } from "lucide-react";
 import os from "os";
+import { DevSubNav } from "../dev-sub-nav";
 
 export const metadata = { title: "Dev - System Metrics" };
 
@@ -37,13 +38,15 @@ export default function DevMetricsPage() {
  const memPercentage = ((usedMem / totalMem) * 100).toFixed(1);
 
  return (
- <div className="space-y-8">
- <div>
+ <div className="space-y-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+ <div className="border-b border-border/40 pb-4">
  <h1 className="text-2xl font-bold flex items-center gap-2">
- <Activity className="h-6 w-6" /> System Metrics
+ <Activity className="h-6 w-6 text-primary" /> System Metrics &amp; Telemetry
  </h1>
- <p className="text-muted-foreground mt-1">Live telemetry for the Node.js process and host server.</p>
+ <p className="text-muted-foreground mt-1 text-sm">Live telemetry for the Node.js process and host server.</p>
  </div>
+
+ <DevSubNav />
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  

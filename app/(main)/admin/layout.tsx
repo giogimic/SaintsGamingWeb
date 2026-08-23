@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { permissionLevel: true, isWriter: true }
+    select: { permissionLevel: true, isWriter: true, username: true, image: true, email: true }
   });
 
   if (!dbUser || (dbUser.permissionLevel < PERMISSION_LEVELS.MODERATOR && !dbUser.isWriter)) {
@@ -18,7 +18,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminOverlayShell permissionLevel={dbUser.permissionLevel} isWriter={dbUser.isWriter}>
+    <AdminOverlayShell 
+      permissionLevel={dbUser.permissionLevel} 
+      isWriter={dbUser.isWriter}
+      user={{
+        id: session.user.id,
+        username: dbUser.username || session.user.name,
+        email: dbUser.email || session.user.email,
+        image: dbUser.image || session.user.image,
+      }}
+    >
       {children}
     </AdminOverlayShell>
   );

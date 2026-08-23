@@ -4,6 +4,7 @@ import { Code, Send, Play } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
+import { DevSubNav } from "../dev-sub-nav";
 
 export default function DevSandboxPage() {
  const [endpoint, setEndpoint] = useState("/api/webhooks/store");
@@ -37,13 +38,15 @@ export default function DevSandboxPage() {
  };
 
  return (
- <div className="space-y-8 h-full flex flex-col">
- <div>
+ <div className="space-y-6 max-w-7xl mx-auto h-full flex flex-col animate-in fade-in duration-300">
+ <div className="border-b border-border/40 pb-4">
  <h1 className="text-2xl font-bold flex items-center gap-2">
- <Code className="h-6 w-6" /> API Sandbox
+ <Code className="h-6 w-6 text-primary" /> API Testing Sandbox
  </h1>
- <p className="text-muted-foreground mt-1">Test internal APIs and simulate incoming webhooks.</p>
+ <p className="text-muted-foreground mt-1 text-sm">Test internal APIs, inspect payloads, and simulate incoming webhooks.</p>
  </div>
+
+ <DevSubNav />
 
  <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[500px]">
  {/* Request Configurator */}

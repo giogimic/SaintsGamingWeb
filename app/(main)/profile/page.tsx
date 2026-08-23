@@ -112,40 +112,65 @@ export default async function ProfilePage() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {roleLevel >= PERMISSION_LEVELS.MODERATOR && (
-                <Link href="/admin" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Admin Dashboard
-                </Link>
+              {/* Staff / Operator Fast-Switch */}
+              {(roleLevel >= PERMISSION_LEVELS.MODERATOR || userRecord?.isWriter) && (
+                <div className="p-3 my-1 rounded-xl border border-primary/30 bg-primary/5 space-y-2">
+                  <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-primary flex items-center justify-between">
+                    <span>Operator Tools</span>
+                    <Badge variant="outline" className="text-[9px] px-1 py-0 border-primary/30 text-primary">Staff</Badge>
+                  </div>
+                  <Link 
+                    href="/admin" 
+                    className={buttonVariants({ variant: "default", size: "sm", className: "w-full justify-start text-xs font-bold gap-2 shadow-sm" })}
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    Admin Command Center
+                  </Link>
+                  {roleLevel >= PERMISSION_LEVELS.ADMIN && (
+                    <Link 
+                      href="/studio" 
+                      className={buttonVariants({ variant: "outline", size: "sm", className: "w-full justify-start text-xs gap-2 border-purple-500/30 text-purple-400 hover:bg-purple-500/10" })}
+                    >
+                      <Gamepad2 className="h-3.5 w-3.5" />
+                      2.5D World Studio
+                    </Link>
+                  )}
+                </div>
               )}
-              <Link href="/profile/inbox" className={buttonVariants({ variant: "outline", className: "w-full justify-start font-semibold text-primary border-primary/30 hover:bg-primary/10" })}>
+
+              <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground px-1 mt-2">
+                Personal Hub
+              </div>
+              <Link href="/profile/inbox" className={buttonVariants({ variant: "outline", size: "sm", className: "w-full justify-start font-semibold text-primary border-primary/30 hover:bg-primary/10" })}>
                 <Flame className="mr-2 h-4 w-4 text-primary" />
                 The Feed
               </Link>
-              <Link href="/profile/bookmarks" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+              <Link href="/profile/bookmarks" className={buttonVariants({ variant: "outline", size: "sm", className: "w-full justify-start" })}>
                 <Bookmark className="mr-2 h-4 w-4" />
                 Bookmarks Repository
               </Link>
-              <Link href="/profile/history" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+              <Link href="/profile/history" className={buttonVariants({ variant: "outline", size: "sm", className: "w-full justify-start" })}>
                 <Clock className="mr-2 h-4 w-4" />
                 Watch History
               </Link>
-              <Link href="/profile/analytics" className={buttonVariants({ variant: "outline", className: "w-full justify-start" })}>
+              <Link href="/profile/analytics" className={buttonVariants({ variant: "outline", size: "sm", className: "w-full justify-start" })}>
                 <BarChart className="mr-2 h-4 w-4" />
                 Engagement Hub
               </Link>
-              <Link href="/ucp" className={buttonVariants({ variant: "default", className: "w-full justify-start mt-2" })}>
-                <Gamepad2 className="mr-2 h-4 w-4" />
-                FiveM UCP
-              </Link>
+              {showUcpStats && (
+                <Link href="/ucp" className={buttonVariants({ variant: "secondary", size: "sm", className: "w-full justify-start mt-1" })}>
+                  <Gamepad2 className="mr-2 h-4 w-4" />
+                  FiveM UCP Center
+                </Link>
+              )}
               <form
                 action={async () => {
                   "use server";
                   await signOut({ redirectTo: "/" });
                 }}
+                className="mt-2"
               >
-                <Button variant="destructive" className="w-full justify-start" type="submit">
+                <Button variant="ghost" size="sm" className="w-full justify-start text-destructive hover:bg-destructive/10" type="submit">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </Button>

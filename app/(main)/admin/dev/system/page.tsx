@@ -9,6 +9,8 @@ import { updateSiteSettings } from "@/app/(main)/admin/actions";
 import { prisma } from "@/web/lib/prisma";
 import fs from "fs";
 
+import { DevSubNav } from "../dev-sub-nav";
+
 export default async function SystemStatePage() {
   // Extract all process environment variables safely
   // We MUST NOT expose actual secrets to the UI, even in the dev console.
@@ -55,6 +57,8 @@ export default async function SystemStatePage() {
           Inspect currently loaded environment configuration and manually purge internal router caches.
         </p>
       </div>
+
+      <DevSubNav />
 
       <SystemClient />
 
