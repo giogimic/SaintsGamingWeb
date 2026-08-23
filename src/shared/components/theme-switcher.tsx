@@ -25,23 +25,23 @@ export function ThemeSwitcher() {
       <Button
         variant="ghost"
         size="icon"
-        className={`rounded-full w-8 h-8 transition-colors ${theme === "light" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+        className={`rounded-full w-8 h-8 transition-all ${theme === "light" ? "bg-amber-500/25 text-amber-300 shadow-xs shadow-amber-500/20" : "text-muted-foreground hover:text-foreground hover:text-amber-300"}`}
         onClick={() => setTheme("light")}
-        title="Light Theme"
+        title="Sunset Theme (Dawn & Dusk)"
       >
         <Sun className="h-4 w-4" />
-        <span className="sr-only">Light Theme</span>
+        <span className="sr-only">Sunset Theme</span>
       </Button>
 
       <Button
         variant="ghost"
         size="icon"
-        className={`rounded-full w-8 h-8 transition-colors ${theme === "dark" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+        className={`rounded-full w-8 h-8 transition-all ${theme === "dark" ? "bg-blue-500/25 text-blue-300 shadow-xs shadow-blue-500/20" : "text-muted-foreground hover:text-foreground hover:text-blue-300"}`}
         onClick={() => setTheme("dark")}
-        title="Dark Theme"
+        title="Midnight Tropical Theme (Dark)"
       >
         <Moon className="h-4 w-4" />
-        <span className="sr-only">Dark Theme</span>
+        <span className="sr-only">Midnight Theme</span>
       </Button>
 
       <Button
@@ -49,7 +49,7 @@ export function ThemeSwitcher() {
         size="icon"
         className={`rounded-full w-8 h-8 transition-all ${isVice ? "bg-pink-500/25 text-pink-400 shadow-xs shadow-pink-500/20" : "text-muted-foreground hover:text-foreground hover:text-pink-400"}`}
         onClick={() => setTheme("vice")}
-        title="Vice Theme"
+        title="Vice Theme (Miami Sunset)"
       >
         <Palmtree className="h-4 w-4" />
         <span className="sr-only">Vice Theme</span>

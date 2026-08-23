@@ -74,40 +74,40 @@
   --color-lobby-border-strong: rgba(232, 232, 240, 0.38);
 }
 
-/* Light theme (Dreamy Sunset / Golden Hour styling) */
+/* Sunset / Dawn-Dusk Light Theme (Luminous Twilight Sky, Blues, Pinks, Oranges & Purples) */
 .light, :root {
-  --background: oklch(0.97 0.015 80);
-  --foreground: oklch(0.18 0.04 310);
-  --card: oklch(0.99 0.012 80);
-  --card-foreground: oklch(0.18 0.04 310);
-  --popover: oklch(0.99 0.012 80);
-  --popover-foreground: oklch(0.18 0.04 310);
-  --primary: oklch(0.68 0.20 55);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.93 0.035 65);
-  --secondary-foreground: oklch(0.25 0.06 310);
-  --muted: oklch(0.94 0.02 75);
-  --muted-foreground: oklch(0.46 0.04 310);
-  --accent: oklch(0.70 0.24 345);
+  --background: oklch(0.20 0.08 300); /* #240046 deep dusk sky */
+  --foreground: oklch(0.98 0.02 75); /* #fff8f0 luminous sunset cream */
+  --card: oklch(0.25 0.09 305 / 0.85); /* dusky twilight purple glass */
+  --card-foreground: oklch(0.98 0.02 75);
+  --popover: oklch(0.25 0.09 305);
+  --popover-foreground: oklch(0.98 0.02 75);
+  --primary: oklch(0.85 0.17 80); /* #f9c74f radiant sunset golden amber */
+  --primary-foreground: oklch(0.16 0.08 300); /* deep twilight contrast */
+  --secondary: oklch(0.55 0.22 265); /* #4361ee twilight sky blue */
+  --secondary-foreground: oklch(0.98 0.02 75);
+  --muted: oklch(0.28 0.07 310);
+  --muted-foreground: oklch(0.82 0.06 320); /* #e0c3fc dawn lavender */
+  --accent: oklch(0.68 0.28 350); /* #f72585 dusk neon pink / magenta */
   --accent-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.58 0.24 25);
-  --border: oklch(0.88 0.04 75 / 0.7);
-  --input: oklch(0.92 0.025 75);
-  --ring: oklch(0.72 0.18 55);
-  --chart-1: oklch(0.68 0.20 55);
-  --chart-2: oklch(0.70 0.24 345);
-  --chart-3: oklch(0.82 0.18 85);
-  --chart-4: oklch(0.65 0.20 25);
-  --chart-5: oklch(0.50 0.20 300);
+  --destructive: oklch(0.60 0.24 25);
+  --border: oklch(0.52 0.16 335 / 0.45); /* glowing pink/purple twilight border */
+  --input: oklch(0.28 0.08 310);
+  --ring: oklch(0.75 0.22 55); /* #f8961e sunset orange */
+  --chart-1: oklch(0.68 0.28 350); /* #f72585 sunset pink */
+  --chart-2: oklch(0.85 0.17 80); /* #f9c74f golden dawn */
+  --chart-3: oklch(0.75 0.18 215); /* #4cc9f0 twilight cyan / blue */
+  --chart-4: oklch(0.72 0.21 55); /* #f8961e sunset orange */
+  --chart-5: oklch(0.50 0.26 310); /* #7209b7 royal sunset purple */
   --radius: 0.625rem;
-  --sidebar: oklch(0.96 0.018 80);
-  --sidebar-foreground: oklch(0.18 0.04 310);
-  --sidebar-primary: oklch(0.68 0.20 55);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.93 0.035 65);
-  --sidebar-accent-foreground: oklch(0.25 0.06 310);
-  --sidebar-border: oklch(0.88 0.04 75 / 0.7);
-  --sidebar-ring: oklch(0.72 0.18 55);
+  --sidebar: oklch(0.19 0.08 300);
+  --sidebar-foreground: oklch(0.98 0.02 75);
+  --sidebar-primary: oklch(0.85 0.17 80);
+  --sidebar-primary-foreground: oklch(0.16 0.08 300);
+  --sidebar-accent: oklch(0.55 0.22 265);
+  --sidebar-accent-foreground: oklch(0.98 0.02 75);
+  --sidebar-border: oklch(0.52 0.16 335 / 0.45);
+  --sidebar-ring: oklch(0.75 0.22 55);
 }
 
 /* Dark theme */
