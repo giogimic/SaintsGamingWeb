@@ -1,3 +1,11 @@
+## [2.1.453] - 2026-08-23
+### Realm Architecture & Map Engine
+- **Purged Premade Demo Maps & Generator Scripts**:
+  - Removed all hardcoded procedural demo map builders (`buildDemoSandboxGrid`, `buildLobbyGrid`, `buildSaintsHavenGrid`, etc.) from `src/server/demoMapSeed.ts`.
+  - Deleted legacy demo map seed JSON files (`demo_map.json`, `demo_map2.json`) and obsolete demo generator scripts.
+  - Simplified server startup in `DemoBootstrap.ts` to only seed baseline Studio logic tile tools (SOLID, WATER, SPAWN, BANK, GATE) and essential species catalogs without forcing fake or demo maps into `WorldMap`.
+  - Converted Setup Wizard to purely initialize a Clean World Canvas, ready for custom level design directly inside Saints Studio.
+
 ## [2.1.452] - 2026-08-23
 ### Community Platform & Documentation
 - **README & Storyline Refresh (`README.md`)**:

@@ -81,12 +81,8 @@ export async function GET(
     const { slug } = await params;
 
     let payload = await loadMapPayload(slug);
-    if (!payload && (slug === DEMO_MAP_ID || slug.toUpperCase() === DEMO_MAP_ID || slug.toUpperCase() === 'LOBBY')) {
-      await ensureStudioMapFoundation();
+    if (!payload) {
       payload = await loadMapPayload(slug.toUpperCase());
-      if (!payload) {
-        payload = await loadMapPayload(slug);
-      }
     }
 
     if (!payload) {

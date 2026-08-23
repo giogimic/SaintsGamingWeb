@@ -29,25 +29,7 @@ export async function GET(request: Request) {
     });
 
     if (maps.length === 0) {
-      const setupStatus = await getSystemSetupStatus(prisma);
-      if (!setupStatus.isFreshInstall) {
-        const ensured = await ensureStudioMapFoundation();
-        if (ensured.demoMap) {
-          maps = await prisma.worldMap.findMany({
-            where: gameId ? { gameId } : undefined,
-            select: {
-              id: true,
-              name: true,
-              gameId: true,
-              version: true,
-              updatedAt: true,
-            },
-            orderBy: { name: "asc" },
-          });
-        } else if (ensured.error) {
-          console.error("[api/maps] empty-index ensure failed:", ensured.error);
-        }
-      }
+      await ensureStudioMapFoundation();
     }
 
     return NextResponse.json({ maps, count: maps.length });
