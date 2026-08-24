@@ -90,10 +90,13 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(selectedAssetIds));
   const [previewAsset, setPreviewAsset] = useState<GameAssetItem | null>(null);
 
+  const stableFilterTags = JSON.stringify(filterTags);
+  const stableClassDef = JSON.stringify(classDef);
+
   useEffect(() => {
     setPage(0);
     void fetchSprites(0, false);
-  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, classDef, packFilter, filterType, filterTags]);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, stableClassDef, packFilter, filterType, stableFilterTags]);
 
   useEffect(() => {
     const handleRefreshed = () => {
@@ -102,7 +105,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
     };
     window.addEventListener('assets:refreshed', handleRefreshed);
     return () => window.removeEventListener('assets:refreshed', handleRefreshed);
-  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, classDef, packFilter, filterType, filterTags]);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, stableClassDef, packFilter, filterType, stableFilterTags]);
 
   const fetchSprites = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
