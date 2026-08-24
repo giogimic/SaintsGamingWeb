@@ -204,7 +204,15 @@ export function FinalReviewStep({
             <div className="text-xs text-slate-400">{gameDefinition.description}</div>
             <div className="text-[11px] text-slate-400 pt-1">
               Genre: <span className="text-slate-200 font-semibold">{gameDefinition.genre}</span> · Style:{' '}
-              <span className="text-slate-200 font-semibold">{gameDefinition.style}</span>
+              <span className="text-amber-300 font-semibold">
+                {gameDefinition.style === 'SAINTS_HYBRID'
+                  ? 'Saints Hybrid Combat (Real-time + Turn-based)'
+                  : gameDefinition.style === 'ACTION_REALTIME'
+                  ? 'Real-Time Action'
+                  : gameDefinition.style === 'TURN_BASED'
+                  ? 'Turn-Based Tactics'
+                  : 'Narrative & Exploration'}
+              </span>
             </div>
           </div>
 

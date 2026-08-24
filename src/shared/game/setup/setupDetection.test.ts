@@ -64,7 +64,7 @@ describe('evaluateSetupStatus', () => {
       gameNameSettingVal: 'Kingdom of Valor',
       gameDescriptionSettingVal: 'Action RPG Adventure',
       gameGenreSettingVal: 'ARPG',
-      gameStyleSettingVal: 'ACTION_REALTIME',
+      gameStyleSettingVal: 'SAINTS_HYBRID',
       gameCameraSettingVal: 'ISOMETRIC_25D',
       defaultMapIdSettingVal: 'CASTLE_GATES',
       defaultGroundGidSettingVal: '25',
@@ -75,6 +75,7 @@ describe('evaluateSetupStatus', () => {
     expect(status.isGameInitialized).toBe(true);
     expect(status.gameName).toBe('Kingdom of Valor');
     expect(status.gameGenre).toBe('ARPG');
+    expect(status.gameStyle).toBe('SAINTS_HYBRID');
     expect(status.defaultMapId).toBe('CASTLE_GATES');
     expect(status.defaultGroundGid).toBe(25);
   });
