@@ -94,7 +94,7 @@ export function StartingMapStep({
     const newVisual = Array.from({ length: clampedH }, (_, r) =>
       Array.from({ length: clampedW }, (_, c) => {
         if (
-          startingMap.tileLayers>[0]?.grid &&
+          startingMap.tileLayers?.[0]?.grid &&
           r < startingMap.tileLayers[0].grid.length &&
           c < startingMap.tileLayers[0].grid[r].length
         ) {
@@ -297,7 +297,7 @@ export function StartingMapStep({
               value={startingMap.name}
               onChange={(e) => {
                 const name = e.target.value;
-                const slug = name.trim().upperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '') || 'STARTING_MEADOW';
+                const slug = name.trim().toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '') || 'STARTING_MEADOW';
                 onChange({ ...startingMap, name, id: slug });
               }}
               placeholder="e.g. Starting Meadow, Town Square"
@@ -375,12 +375,9 @@ export function StartingMapStep({
             </button>
           </div>
 
-          <button
-            onClick={() => setIsPickerOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-800 text-white border border-slate-700 hover:border-slate-500"
-          >
+          <button onClick={() => setIsPickerOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-800 text-white border border-slate-700 hover:border-slate-500">
             <ImageIcon className="w-4 h-4 text-indigo-400" />
-            {startingMap.tilesetAsset ? startingMap.tilesetAsset.name : 'Select Tile Sheet'}
+            {startingMap.tilesetAsset ? (startingMap.tilesetAsset.id.split('/').pop() || 'Selected') : 'Select Tile Sheet'}
           </button>
         </div>
 
@@ -507,7 +504,7 @@ export function StartingMapStep({
                  <div className="absolute inset-0 overflow-y-auto p-4">
                    <AssetUploadView
                      initialAssetType="TILESET"
-                     initialImportProfile="tileset"
+                     initialImportProfile="tile"
                      onUploadComplete={(asset) => {
                        if (asset?.id) {
                           onChange({ ...startingMap, tilesetAsset: asset as GameAssetItem });

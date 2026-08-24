@@ -50,6 +50,7 @@ export interface InitializeGamePayload {
     grid: number[][];
     tileLayers?: Array<{ name: string; grid: number[][] }>;
     spawnPoint: { x: number; y: number };
+    tilesetAsset?: any;
   };
 }
 

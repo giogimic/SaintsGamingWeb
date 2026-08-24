@@ -1291,7 +1291,7 @@ export class BabylonEngine {
             }
             
             // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
-            const tilesetPath = imageSource.startsWith("/") ? imageSource : (ts?.imageSource?.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`);
+            const tilesetPath = imageSource.startsWith("/") ? imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
             console.log(`[BabylonEngine] Requesting texture: ${tilesetPath}`);
             tex = new Texture(
               tilesetPath,
@@ -1728,7 +1728,7 @@ export class BabylonEngine {
       let tex = this.tilesetTextureCache.get(imageSource);
       if (!tex) {
         const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-        const tilesetPath = imageSource.startsWith("/") ? imageSource : (ts?.imageSource?.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`);
+            const tilesetPath = imageSource.startsWith("/") ? imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
         tex = new Texture(
           tilesetPath,
           this.scene,
@@ -1964,7 +1964,7 @@ export class BabylonEngine {
         let tex = this.tilesetTextureCache.get(ts.imageSource);
         if (!tex) {
           const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-          const tilesetPath = imageSource.startsWith("/") ? imageSource : (ts?.imageSource?.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`);
+            const tilesetPath = ts.imageSource.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
           tex = new Texture(tilesetPath, this.scene, true, false, 1);
           tex.hasAlpha = true;
           this.tilesetTextureCache.set(ts.imageSource, tex);
@@ -2012,7 +2012,7 @@ export class BabylonEngine {
       let tex = this.tilesetTextureCache.get(ts.imageSource);
       if (!tex) {
         const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-        const tilesetPath = imageSource.startsWith("/") ? imageSource : (ts?.imageSource?.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`);
+            const tilesetPath = ts.imageSource.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
         tex = new Texture(tilesetPath, this.scene, true, false, 1);
         tex.hasAlpha = true;
         this.tilesetTextureCache.set(ts.imageSource, tex);
@@ -3900,4 +3900,5 @@ private resolveTilePick(
     this.engine.dispose();
   }
 }
+
 
