@@ -6,7 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && prisma generate && prisma db push",
+    "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && prisma generate && prisma db push && npx tsx scripts/mysql-alter-strings.ts",
     "dev": "npx tsx server.ts",
     "build": "next build",
     "start": "npx tsx server.ts",
