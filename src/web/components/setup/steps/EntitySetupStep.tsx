@@ -19,6 +19,9 @@ import {
   FileImage,
 } from 'lucide-react';
 import type { GameDefinitionData } from './GameDefinitionStep';
+import { SetupAssetPicker } from './SetupAssetPicker';
+import { SetupBabylonPreview } from './SetupBabylonPreview';
+import type { GameAssetItem } from '@/engine/assets/AssetManager';
 
 export interface SetupCharacterData {
   slug: string;
@@ -88,11 +91,15 @@ export function EntitySetupStep({
   const isCreatureGame = gameDefinition.genre === 'CREATURE_MMO';
   const [activeTab, setActiveTab] = useState<'characters' | 'creatures'>('characters');
 
+  // Asset Picker State
+  const [pickerContext, setPickerContext] = useState<{ entityType: 'CHARACTER' | 'CREATURE', role?: string } | null>(null);
+
   // Character Form State
   const [charName, setCharName] = useState('Knight Commander');
   const [charClass, setCharClass] = useState('WARRIOR');
   const [charAssetType, setCharAssetType] = useState<'SPRITE_SHEET' | 'MODULAR' | 'SINGLE_IMAGE'>('SPRITE_SHEET');
   const [charSprite, setCharSprite] = useState('evil-berserker-bloodaxe-male');
+  const [charSpriteAsset, setCharSpriteAsset] = useState<GameAssetItem | null>(null);
   const [charFlavor, setCharFlavor] = useState('A steadfast frontline protector of the realm.');
 
   // Modular Character Details
@@ -104,6 +111,7 @@ export function EntitySetupStep({
   const [creatureName, setCreatureName] = useState('Ignis Flare');
   const [creatureElement, setCreatureElement] = useState('Solar');
   const [creatureSprite, setCreatureSprite] = useState('monster/battle/agnite-sheet');
+  const [creatureSpriteAsset, setCreatureSpriteAsset] = useState<GameAssetItem | null>(null);
   const [creatureHp, setCreatureHp] = useState(100);
   const [creatureAtk, setCreatureAtk] = useState(14);
   const [creatureDef, setCreatureDef] = useState(10);
@@ -112,16 +120,18 @@ export function EntitySetupStep({
     if (!charName.trim()) return;
     const slug = charName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
     
-    const spriteKey = charAssetType === 'MODULAR'
-      ? `lpc_modular_${baseBody}_${hairStyle}_${clothing}`
-      : charSprite;
+    // Phase 3: Canonical Asset Mapping
+    // Always prefer the selected canonical asset (GameAssetItem) from AssetManager.
+    // Fall back to legacy string defaults if none selected (for testing/demo).
+    const spriteKey = charSpriteAsset?.source || charSprite;
+    const bundleId = charSpriteAsset?.isModularComponent ? charSpriteAsset.id : (charSpriteAsset?.id || null);
 
     const newChar: SetupCharacterData = {
       slug,
       name: charName.trim(),
       classId: charClass,
       spriteKey,
-      spriteBundleId: charAssetType === 'MODULAR' ? `bundle_${slug}` : null,
+      spriteBundleId: bundleId,
       flavor: charFlavor.trim() || `${charName} the ${charClass}`,
       tag: characters.length === 0 ? 'Primary Hero' : 'Hero',
       tagColor: CLASS_OPTIONS.find((c) => c.id === charClass)?.color || '#38bdf8',
@@ -141,12 +151,14 @@ export function EntitySetupStep({
     if (!creatureName.trim()) return;
     const slug = creatureName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
 
+    const sprite = creatureSpriteAsset?.source || creatureSprite;
+
     const newCreature: SetupCreatureData = {
       slug,
       name: creatureName.trim(),
       typePrimary: creatureElement,
-      spriteOverworld: creatureSprite,
-      spriteBattle: creatureSprite,
+      spriteOverworld: sprite,
+      spriteBattle: sprite,
       baseHp: creatureHp,
       physicalPower: creatureAtk,
       physicalDefense: creatureDef,
@@ -167,6 +179,23 @@ export function EntitySetupStep({
 
   return (
     <div className="space-y-6">
+      {/* SETUP ASSET PICKER OVERLAY */}
+      {pickerContext && (
+        <SetupAssetPicker
+          entityType={pickerContext.entityType}
+          assetRole={pickerContext.role}
+          onSelectAsset={(asset) => {
+            if (pickerContext.entityType === 'CHARACTER') {
+              setCharSpriteAsset(asset);
+            } else {
+              setCreatureSpriteAsset(asset);
+            }
+            setPickerContext(null);
+          }}
+          onCancel={() => setPickerContext(null)}
+        />
+      )}
+
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 md:p-8 backdrop-blur-xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -332,76 +361,38 @@ export function EntitySetupStep({
               </div>
 
               {/* ASSET SPECIFIC OPTIONS */}
-              {charAssetType === 'SPRITE_SHEET' && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-                    Select Sprite Sheet
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                    {PRESET_SPRITES.map((spr) => {
-                      const isSelected = charSprite === spr.id;
-                      return (
-                        <div
-                          key={spr.id}
-                          onClick={() => setCharSprite(spr.id)}
-                          className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
-                            isSelected
-                              ? 'bg-amber-950/20 border-amber-400 text-white'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
-                          }`}
-                        >
-                          <span className="font-semibold">{spr.label}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
-                        </div>
-                      );
-                    })}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                  Select Character Asset
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => setPickerContext({ entityType: 'CHARACTER', role: 'walk' })}
+                      className="w-full flex items-center justify-between p-4 bg-slate-900 border border-slate-700 hover:border-indigo-500 rounded-xl transition-colors text-left min-h-[5rem]"
+                    >
+                      <div className="flex flex-col overflow-hidden mr-2">
+                        <span className="text-sm font-semibold text-white truncate">
+                          {charSpriteAsset ? charSpriteAsset.metadata?.originalName || charSpriteAsset.id : 'Choose Character Asset...'}
+                        </span>
+                        <span className="text-xs text-slate-400 mt-1 line-clamp-2">
+                          {charSpriteAsset ? `Selected Canonical Asset: ${charSpriteAsset.id}` : 'Opens the Asset Manager to select or upload a canonical asset'}
+                        </span>
+                      </div>
+                      <ImageIcon className="w-5 h-5 text-slate-400 shrink-0" />
+                    </button>
+                    {charSpriteAsset && (
+                      <div className="text-[10px] text-slate-500 bg-slate-900/50 p-2 rounded-lg font-mono truncate">
+                        Source: {charSpriteAsset.source}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
 
-              {charAssetType === 'MODULAR' && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Base Body</label>
-                    <select
-                      value={baseBody}
-                      onChange={(e) => setBaseBody(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                    >
-                      <option value="male_light">Male (Light)</option>
-                      <option value="female_light">Female (Light)</option>
-                      <option value="male_dark">Male (Dark)</option>
-                      <option value="female_dark">Female (Dark)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Hair Style</label>
-                    <select
-                      value={hairStyle}
-                      onChange={(e) => setHairStyle(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                    >
-                      <option value="short_blonde">Short Blonde</option>
-                      <option value="long_brown">Long Brown</option>
-                      <option value="spiky_black">Spiky Black</option>
-                      <option value="ponytail_red">Ponytail Red</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1">Clothing</label>
-                    <select
-                      value={clothing}
-                      onChange={(e) => setClothing(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none"
-                    >
-                      <option value="plate_armor">Plate Armor</option>
-                      <option value="wizard_robe">Wizard Robe</option>
-                      <option value="leather_tunic">Leather Tunic</option>
-                      <option value="adventurer_gear">Adventurer Gear</option>
-                    </select>
+                  <div className="h-48 md:h-56 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
+                    <SetupBabylonPreview asset={charSpriteAsset} role="walk" />
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* FLAVOR TEXT */}
               <div>
@@ -476,10 +467,10 @@ export function EntitySetupStep({
                 Add Companion Creature
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Creature Name
+                    Creature Species Name
                   </label>
                   <input
                     type="text"
@@ -505,6 +496,29 @@ export function EntitySetupStep({
                       </option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                  Creature Asset (Battle/Overworld)
+                </label>
+                <button
+                  onClick={() => setPickerContext({ entityType: 'CREATURE' })}
+                  className="w-full flex items-center justify-between p-4 bg-slate-900 border border-slate-700 hover:border-emerald-500 rounded-xl transition-colors text-left"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-white">
+                      {creatureSpriteAsset ? creatureSpriteAsset.metadata?.originalName || creatureSpriteAsset.id : 'Choose Creature Asset...'}
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1">
+                      {creatureSpriteAsset ? `Selected Canonical Asset: ${creatureSpriteAsset.id}` : 'Opens the Asset Manager to select or upload a canonical asset'}
+                    </span>
+                  </div>
+                  <ImageIcon className="w-5 h-5 text-slate-400" />
+                </button>
+                <div className="mt-4 h-48 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
+                  <SetupBabylonPreview asset={creatureSpriteAsset} role="idle" />
                 </div>
               </div>
 
