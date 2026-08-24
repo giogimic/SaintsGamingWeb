@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react';
 import { AssetManager, GameAssetItem } from '@/engine/assets/AssetManager';
-import SpriteBrowser from '../../the-lobby/editor/SpriteBrowser';
-import { AssetUploadView } from '../../the-lobby/editor/AssetUploadView';
-import { SpritesheetSlicer } from '../../the-lobby/editor/SpritesheetSlicer';
+import SpriteBrowser from '@/web/components/the-lobby/editor/SpriteBrowser';
+import { AssetUploadView } from '@/web/components/the-lobby/editor/AssetUploadView';
+import { SpritesheetSlicer } from '@/web/components/the-lobby/editor/SpritesheetSlicer';
 import { X, Search, Upload, Scissors, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { AssetImportProfileId } from '@/shared/game/assetImportProfiles';
 
-interface SetupAssetPickerProps {
-  entityType: 'CHARACTER' | 'CREATURE';
-  assetRole?: string; // 'walk', 'idle', 'front', 'back', etc.
+export interface RoleAwareAssetPickerProps {
+  entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER';
+  assetRole: string;
   onSelectAsset: (asset: GameAssetItem) => void;
   onCancel: () => void;
 }
 
-export function SetupAssetPicker({ entityType, assetRole, onSelectAsset, onCancel }: SetupAssetPickerProps) {
+export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onCancel }: RoleAwareAssetPickerProps) {
   const [activeTab, setActiveTab] = useState<'catalog' | 'upload' | 'slicer'>('catalog');
   const [slicerSource, setSlicerSource] = useState<{ id: string; filename: string; storagePath: string } | undefined>();
 
@@ -36,9 +36,13 @@ export function SetupAssetPicker({ entityType, assetRole, onSelectAsset, onCance
 
   const handleSlicerComplete = (assets: GameAssetItem[]) => {
     if (assets.length > 0) {
-      // Pick the first sliced asset that matches the requested role if possible, or just the first one
-      const match = assets.find(a => a.metadata?.slotRole === assetRole) || assets[0];
-      onSelectAsset(match);
+      // Strictly require a role match; do not fallback to assets[0] silently
+      const match = assets.find(a => a.metadata?.slotRole === assetRole);
+      if (match) {
+        onSelectAsset(match);
+      } else {
+        setActiveTab('catalog');
+      }
     } else {
       setActiveTab('catalog');
     }
@@ -111,12 +115,13 @@ export function SetupAssetPicker({ entityType, assetRole, onSelectAsset, onCance
         <div className="flex-1 overflow-hidden relative bg-slate-950">
           {activeTab === 'catalog' && (
             <div className="absolute inset-0 overflow-y-auto">
-              <SpriteBrowser 
-                filterType={profileTypeHint}
-                onSelect={(assets) => {
-                  if (assets.length > 0) onSelectAsset(assets[0]);
-                }} 
-              />
+                <SpriteBrowser 
+                  filterType={profileTypeHint}
+                  onSelect={(assets: GameAssetItem[]) => {
+                    const match = assets.find(a => a.metadata?.slotRole === assetRole);
+                    if (match) onSelectAsset(match);
+                  }} 
+                />
             </div>
           )}
           

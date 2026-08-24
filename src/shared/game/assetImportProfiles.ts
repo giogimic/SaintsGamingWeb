@@ -334,4 +334,39 @@ export function getMissingRequiredRoles(
     const meta = ASSET_IMPORT_PROFILE_META[profile].roles[role];
     return meta.required && !assignedSet.has(role);
   });
+}// Added to the end of assetImportProfiles.ts
+export function validateAssetForRole(
+  profile: AssetImportProfileId,
+  role: string,
+  assetMeta: Record<string, any>
+): boolean {
+  if (!isValidSlotRole(profile, role)) return false;
+  // Basic validation that asset exists and has some basic data
+  if (!assetMeta || typeof assetMeta !== 'object') return false;
+  
+  // Future role-specific checks can go here
+  return true;
 }
+
+export function validateEntityAssetSet(
+  profile: AssetImportProfileId,
+  assignedAssets: Record<string, any>
+): { valid: boolean; missingRoles: string[]; errors: string[] } {
+  const assignedRoles = Object.keys(assignedAssets).filter(role => !!assignedAssets[role]);
+  const missing = getMissingRequiredRoles(profile, assignedRoles);
+  
+  const errors: string[] = [];
+  
+  for (const role of assignedRoles) {
+    if (!validateAssetForRole(profile, role, assignedAssets[role])) {
+      errors.push(`Asset assigned to role '${role}' is invalid for profile '${profile}'.`);
+    }
+  }
+  
+  return {
+    valid: missing.length === 0 && errors.length === 0,
+    missingRoles: missing,
+    errors
+  };
+}
+

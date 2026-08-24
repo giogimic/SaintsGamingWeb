@@ -21,6 +21,7 @@ import AssetEditor from './AssetEditor';
 import SpriteBrowser from './SpriteBrowser';
 import { AssetUploadView } from './AssetUploadView';
 import { SpritesheetSlicer } from './SpritesheetSlicer';
+import { EntityAssetWorkspace } from './EntityAssetWorkspace';
 import AssetPackInstaller from './AssetPackInstaller';
 import { useGameStore } from '../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
@@ -199,17 +200,11 @@ export function AssetStudioSuite() {
     switch (activeWorkspace) {
       case 'characters':
         return [
-          { id: 'browse', label: 'Browse Characters', icon: Layers },
-          { id: 'sprites', label: 'Sprite Picker', icon: ImageIcon },
-          { id: 'upload', label: 'Upload & Unpack ZIP', icon: Upload },
-          { id: 'slicer', label: 'LPC Slicer', icon: Scissors },
+          { id: 'browse', label: 'Entity Builder', icon: Layers },
         ];
       case 'creatures':
         return [
-          { id: 'browse', label: 'Browse Creatures', icon: Layers },
-          { id: 'sprites', label: 'Sprite Picker', icon: ImageIcon },
-          { id: 'upload', label: 'Upload Sheets', icon: Upload },
-          { id: 'slicer', label: 'Battle Sheet Slicer', icon: Scissors },
+          { id: 'browse', label: 'Entity Builder', icon: Layers },
         ];
       case 'tilesets':
         return [
@@ -256,6 +251,12 @@ export function AssetStudioSuite() {
   const renderContent = () => {
     switch (activeSubTab) {
       case 'browse':
+        if (activeWorkspace === 'characters') {
+          return <EntityAssetWorkspace entityType="CHARACTER" profileId="character" />;
+        }
+        if (activeWorkspace === 'creatures') {
+          return <EntityAssetWorkspace entityType="CREATURE" profileId="creature" />;
+        }
         return (
           <AssetEditor
             workspaceId={activeWorkspace}

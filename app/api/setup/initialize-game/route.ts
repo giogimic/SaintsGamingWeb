@@ -96,6 +96,27 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+      const asset = await prisma.gameAsset.findUnique({ where: { id: char.spriteKey } });
+      if (!asset) {
+        return NextResponse.json(
+          { error: `Strict Validation Failed: Canonical Asset ID '${char.spriteKey}' not found in library.` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate Creatures
+    if (Array.isArray(body.creatures)) {
+      for (const c of body.creatures) {
+        if (!c.slug?.trim() || !c.name?.trim() || !c.spriteOverworld?.trim()) continue;
+        const asset = await prisma.gameAsset.findUnique({ where: { id: c.spriteOverworld } });
+        if (!asset) {
+          return NextResponse.json(
+            { error: `Strict Validation Failed: Canonical Asset ID '${c.spriteOverworld}' not found for creature '${c.name}'.` },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // 3. Validate Starting Map & Spawn

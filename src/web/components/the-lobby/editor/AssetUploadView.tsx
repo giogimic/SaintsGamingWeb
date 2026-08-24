@@ -20,6 +20,7 @@ import {
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 import { AssetManager } from '@/engine/assets/AssetManager';
+import { ASSET_FORMAT_TAXONOMY, AssetFormatDefinition } from '@/shared/game/spriteDefinitions';
 import {
   ASSET_IMPORT_PROFILE_META,
   AssetImportProfileId,
@@ -37,8 +38,6 @@ import {
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
 import {
-  detectLpcFormat,
-  LpcDetectedFormat,
   unpackLpcZipPackage,
   UnpackedLpcPackage,
   UnpackedLpcLayer,
@@ -111,7 +110,7 @@ export function AssetUploadView({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // LPC Detection & ZIP Package State
-  const [detectedLpc, setDetectedLpc] = useState<LpcDetectedFormat | null>(null);
+  const [detectedFormat, setDetectedFormat] = useState<AssetFormatDefinition | null>(null);
   const [unpackedZip, setUnpackedZip] = useState<UnpackedLpcPackage | null>(null);
   const [isUnpackingZip, setIsUnpackingZip] = useState(false);
   const [batchImportProgress, setBatchImportProgress] = useState<{ current: number; total: number } | null>(null);
@@ -184,33 +183,36 @@ export function AssetUploadView({
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
 
-      // Measure dimensions to detect LPC layout & animation profile
+      // Measure dimensions to detect layout & animation profile
       const img = new Image();
       img.onload = () => {
-        const format = detectLpcFormat(img.naturalWidth, img.naturalHeight);
+        let taxonomy = ASSET_FORMAT_TAXONOMY['custom-spritesheet'];
+        if (img.naturalWidth === 832 && img.naturalHeight === 1344) taxonomy = ASSET_FORMAT_TAXONOMY['modular-4dir-pixel'];
+        else if (img.naturalWidth === 576 && img.naturalHeight === 256) taxonomy = ASSET_FORMAT_TAXONOMY['modular-4dir-pixel'];
+        else if (img.naturalWidth % 3 === 0 && img.naturalHeight % 4 === 0) taxonomy = ASSET_FORMAT_TAXONOMY['classic-3x4-rpg'];
+        else if (img.naturalWidth === img.naturalHeight) taxonomy = ASSET_FORMAT_TAXONOMY['static-2d-image'];
+        setDetectedFormat(taxonomy);
+        
         const resolved = resolveSpriteDefinition({
           width: img.naturalWidth,
           height: img.naturalHeight,
-          spriteUrl: url,
+          animationProfile: taxonomy.animationProfile,
         });
         setAnimationProfile(resolved.profile);
 
-        if (format.isLpc) {
-          setDetectedLpc(format);
+        if (taxonomy.id !== 'custom-spritesheet') {
           if (!importProfile) {
             setImportProfile('character');
-            setSlotRole('walk');
+            setSlotRole(taxonomy.supportedRoles[0] || 'walk');
             setAssetType('CHARACTER');
             setCategory('actor');
           }
-        } else {
-          setDetectedLpc(null);
         }
       };
       img.src = url;
     } else {
       setPreviewUrl(null);
-      setDetectedLpc(null);
+      setDetectedFormat(null);
       setAnimationProfile('');
     }
   };
@@ -240,8 +242,7 @@ export function AssetUploadView({
         if (pkg.baseBodyType) tagList.push(`body:${pkg.baseBodyType}`);
         setTagsInput(tagList.join(', '));
 
-        const detected = detectLpcFormat(832, 1344);
-        setDetectedLpc(detected);
+        setDetectedFormat(ASSET_FORMAT_TAXONOMY['modular-4dir-pixel']);
         showToast(`Unpacked LPC Character Package: ${pkg.layers.length} modular layers found!`);
       } else {
         showToast(`Unpacked ZIP: ${pkg.layers.length} layers found.`);
@@ -313,7 +314,7 @@ export function AssetUploadView({
       if (importProfile) formData.append('importProfile', importProfile);
       if (slotRole) formData.append('slotRole', slotRole);
       if (animationProfile) formData.append('animationProfile', animationProfile);
-      formData.append('sourceMode', detectedLpc?.isLpc ? 'spritesheet' : 'single');
+      formData.append('sourceMode', detectedFormat?.id === 'modular-4dir-pixel' ? 'spritesheet' : 'single');
       if (category.trim()) formData.append('category', category.trim().toLowerCase());
 
       if (isModularComponent) {
@@ -449,7 +450,7 @@ export function AssetUploadView({
     setBaseBodyType('');
     setHidesComponents([]);
     setTagsInput('');
-    setDetectedLpc(null);
+    setDetectedFormat(null);
     setUnpackedZip(null);
     setUploadSuccess(null);
     setErrorMessage(null);
@@ -508,13 +509,21 @@ export function AssetUploadView({
           </div>
         </div>
 
-        {detectedLpc && (
+        {detectedFormat && detectedFormat.id !== 'custom-spritesheet' && (
           <div className="bg-cyan-950/40 border border-cyan-500/40 rounded p-2.5 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
               <div>
-                <div className="text-cyan-200 font-bold text-xs">{detectedLpc.label}</div>
-                <div className="text-[10px] text-slate-400">{detectedLpc.description}</div>
+                <div className="text-cyan-200 font-bold text-xs">Detected Format</div>
+                <div className="text-white font-bold text-sm">{detectedFormat.displayName}</div>
+                <div className="text-[11px] text-slate-300 mt-1">
+                  {detectedFormat.directionCount} directions - {detectedFormat.frameCount === 'variable' ? 'Variable' : detectedFormat.frameCount} frames {detectedFormat.modular ? '- Layered / modular' : ''}
+                </div>
+                {detectedFormat.aliases.length > 0 && (
+                  <div className="text-[10px] text-slate-400 mt-2">
+                    Common aliases: {detectedFormat.aliases.join(' - ')}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -6,12 +6,13 @@ import type { GameAssetItem } from '@/engine/assets/AssetManager';
 import { resolveSpriteDefinition, spriteDefinitionToBabylonConfig } from '@/shared/game/spriteDefinitions';
 import { Play, Square, RefreshCcw } from 'lucide-react';
 
-interface SetupBabylonPreviewProps {
-  asset: GameAssetItem | null;
+export interface CanonicalAssetPreviewProps {
+  asset: GameAssetItem | undefined;
   role?: string;
+  fallbackImageUrl?: string;
 }
 
-export function SetupBabylonPreview({ asset, role }: SetupBabylonPreviewProps) {
+export function CanonicalAssetPreview({ asset, role = 'idle', fallbackImageUrl }: CanonicalAssetPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [engine, setEngine] = useState<Engine | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
