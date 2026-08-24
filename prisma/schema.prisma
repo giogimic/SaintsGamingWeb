@@ -763,13 +763,13 @@ model WorldMap {
   id             String   @id // e.g. "SAINTS_VILLAGE"
   gameId         String?  @default("saints")
   name           String
-  gridData       String // JSON 2D Array
-  gatesData      String // JSON
-  npcsData       String // JSON for NPC dialogues/teams
-  encountersData String   @default("[]") // JSON for wild beast encounters
-  entitiesData   String   @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData String   @default("[]") // JSON for TMX tile layers
-  tilesetsData   String   @default("[]") // JSON for tilesets metadata
+  gridData       String @db.Text// JSON 2D Array
+  gatesData      String @db.Text// JSON
+  npcsData       String @db.Text// JSON for NPC dialogues/teams
+  encountersData String   @default("[]") @db.Text // JSON for wild beast encounters
+  entitiesData   String   @default("[]") @db.Text // JSON for EntityInstanceV1 records (Bible 20 E2)
+  tileLayersData String   @default("[]") @db.Text // JSON for TMX tile layers
+  tilesetsData   String   @default("[]") @db.Text // JSON for tilesets metadata
   version        Int      @default(1)
   
   // Rich Map Metadata

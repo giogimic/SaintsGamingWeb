@@ -90,6 +90,7 @@ export function FinalReviewStep({
           grid: startingMap.grid,
           tileLayers: startingMap.tileLayers,
           spawnPoint: startingMap.spawnPoint,
+          tilesetAsset: startingMap.tilesetAsset,
         },
       };
 

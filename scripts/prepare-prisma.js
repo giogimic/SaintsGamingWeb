@@ -32,7 +32,11 @@ if (isSqlite) {
     schema = schema.replace(/provider\s*=\s*"sqlite"/g, 'provider = "mysql"');
     
     // The schema is authored with @db.Text natively, but we enforce it just in case
-    const textCols = ['metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion'];
+    const textCols = [
+        'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
+        'gridData', 'gatesData', 'npcsData', 'encountersData', 'entitiesData', 
+        'tileLayersData', 'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData'
+    ];
     for (const col of textCols) {
         const regex = new RegExp(`^(\\s*${col}\\s+String\\s+[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
         schema = schema.replace(regex, (match, p1, p2) => {
