@@ -36,12 +36,12 @@ export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onC
 
   const handleSlicerComplete = (assets: GameAssetItem[]) => {
     if (assets.length > 0) {
-      // Strictly require a role match; do not fallback to assets[0] silently
       const match = assets.find(a => a.metadata?.slotRole === assetRole);
       if (match) {
         onSelectAsset(match);
       } else {
-        setActiveTab('catalog');
+        // Fallback: Use the first sliced asset if they didn't map the exact role.
+        onSelectAsset(assets[0]);
       }
     } else {
       setActiveTab('catalog');
@@ -118,8 +118,14 @@ export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onC
                 <SpriteBrowser 
                   filterType={profileTypeHint}
                   onSelect={(assets: GameAssetItem[]) => {
+                    if (assets.length === 0) return;
                     const match = assets.find(a => a.metadata?.slotRole === assetRole);
-                    if (match) onSelectAsset(match);
+                    if (match) {
+                      onSelectAsset(match);
+                    } else {
+                      // Fallback: If they manually clicked "Select Sprite", accept it regardless of strict role matching.
+                      onSelectAsset(assets[0]);
+                    }
                   }} 
                 />
             </div>
