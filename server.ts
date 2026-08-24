@@ -40,6 +40,33 @@ app.prepare().then(async () => {
         return;
       }
 
+      // Serve dynamic uploads manually since Next.js caches public/ at build time
+      if (parsedUrl.pathname?.startsWith("/uploads/")) {
+        const fs = require("fs");
+        const path = require("path");
+        // Prevent directory traversal
+        const safeSuffix = path.normalize(parsedUrl.pathname).replace(/^(\.\.[\/\\])+/, '');
+        const filePath = path.join(process.cwd(), "public", safeSuffix);
+        
+        if (fs.existsSync(filePath)) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes: Record<string, string> = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.mp3': 'audio/mpeg',
+            '.wav': 'audio/wav',
+            '.ogg': 'audio/ogg'
+          };
+          res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+          res.setHeader('Cache-Control', 'public, max-age=31536000');
+          fs.createReadStream(filePath).pipe(res);
+          return;
+        }
+      }
+
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error("Error occurred handling", req.url, err);
