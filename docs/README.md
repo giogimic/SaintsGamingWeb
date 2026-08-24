@@ -3,17 +3,25 @@
 # 📖 Saints Gaming Documentation Wiki
 ### *Technical Specification, Game Architecture & Studio Manual*
 
-🌐 **Official Site:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.450`
+🌐 **Official Site:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.457`
 
 ---
 
 </div>
 
-Welcome to the **Saints Gaming Engine & Platform Documentation**! This is the deep technical handbook where all the inner mechanics, networking protocols, combat formulas, and live Studio editor pipelines live. If the main README is our quick front-door overview, this wiki is the full architectural breakdown.
+Welcome to the **Saints Gaming Engine & Platform Documentation**! This is the deep technical handbook where all the inner mechanics, networking protocols, combat formulas, and live Studio editor pipelines live.
+
+> [!TIP]
+> **Browse the wiki in-app at [`/wiki`](/wiki)** — the full documentation is now available as a searchable, interactive web portal with category navigation, table of contents, and `Ctrl+K` instant search.
 
 ---
 
 ## 🗺️ Documentation Directory
+
+### 📚 [Wiki Portal](/wiki) — Recommended
+The unified wiki portal at `/wiki` provides the best reading experience with live search, categorized navigation, and interactive table of contents. All documentation below is also available there.
+
+---
 
 ### 🎮 [Game Systems Documentation](game-systems/README.md)
 Detailed architectural and gameplay guides for player-facing mechanics and runtime engine systems:
@@ -33,6 +41,16 @@ Comprehensive technical manuals for the in-game creator toolset (`/studio`):
 - **[Entity & NPC Placers](studio/entities-and-npcs.md)**: Spawners, NPC interactions, sprite configs, and dialogue tree integration.
 - **[Catalogs & Definition Editors](studio/catalogs-and-definitions.md)**: In-engine editors for Creatures, Items, Classes, Starter Heroes, Quests, and Loot Tables.
 - **[Map Validation, Sync & Playtesting](studio/validation-sync-playtest.md)**: Internal sync webhooks to Go MMO, map validation, and playtest (PIE) runtime.
+
+---
+
+### 🌐 [Wiki Knowledge Base](wiki/)
+Unified canonical documentation served via the `/wiki` web portal:
+- **[Getting Started](wiki/getting-started/)**: Platform overview, installation guide, and architecture deep-dive.
+- **[Game Systems](wiki/game-systems/)**: Core loop, skills, combat, economy, networking, and UI.
+- **[World Studio](wiki/studio/)**: Studio architecture, tile painting, entities, catalogs, validation, and assets.
+- **[Creator Guide](wiki/creator-guide/)**: Custom characters, creature design, quest authoring, and world building.
+- **[API & Reference](wiki/api-and-reference/)**: Database schema, REST API, and glossary.
 
 ---
 
