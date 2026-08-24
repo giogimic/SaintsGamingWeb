@@ -1,4 +1,4 @@
-﻿#!/bin/sh
+#!/bin/sh
 # Runtime entrypoint — handles migration and startup.
 # Production MUST run custom server.ts (Next + Socket.io + GameEngine + DemoBootstrap).
 # Plain `next start` leaves /socket.io and map bootstrap dead (grass-only lobby).
@@ -15,19 +15,19 @@ echo "[*] Starting Saints Gaming..."
 
 # Run database migration (unless DB_SKIP_MIGRATION is set)
 if [ "$DB_SKIP_MIGRATION" != "true" ]; then
+    # Run the dynamic schema preparation script (adapts to MySQL or SQLite)
+    if [ -f scripts/prepare-prisma.js ]; then
+        node scripts/prepare-prisma.js || true
+    fi
+
+    # Always regenerate the Prisma client since the baseline provider might have changed
+    echo "[*] Regenerating Prisma client for current environment..."
+    if ! npx prisma generate; then
+        echo "[!] ERROR: Prisma client generation failed! Aborting startup."
+        exit 1
+    fi
+
     if [ "$DB_PROVIDER" = "mysql" ]; then
-        echo "[*] MySQL/MariaDB mode: swapping Prisma provider and regenerating client..."
-        # Swap the provider in schema.prisma from sqlite to mysql
-        sed -i 's/provider = "sqlite"/provider = "mysql"/g' prisma/schema.prisma
-        # Run the MySQL schema preparation script (converts SQLite-specific types)
-        if [ -f scripts/prepare-mysql-schema.js ]; then
-            node scripts/prepare-mysql-schema.js || true
-        fi
-        # Regenerate the Prisma client for MySQL now that the DB is reachable
-        if ! npx prisma generate; then
-            echo "[!] ERROR: Prisma client generation failed for MySQL! Aborting startup."
-            exit 1
-        fi
         echo "[*] Ensuring MariaDB is ready (Docker healthcheck already passed)..."
         sleep 3
     fi
