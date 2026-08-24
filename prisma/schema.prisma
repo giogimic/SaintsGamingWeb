@@ -1669,10 +1669,10 @@ model GameMap {
   name          String
   width         Int      @default(24)
   height        Int      @default(24)
-  tilesetData   String?  // JSON stringified grid layers
-  npcs          String?  // JSON stringified static NPCs
-  encounters    String?  // JSON stringified encounter pool
-  gates         String?  // JSON stringified teleport gates
+  tilesetData   String?  @db.Text
+  npcs          String?  @db.Text
+  encounters    String?  @db.Text
+  gates         String?  @db.Text
   version       Int      @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

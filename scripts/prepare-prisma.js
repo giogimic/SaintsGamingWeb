@@ -35,7 +35,8 @@ if (isSqlite) {
     const textCols = [
         'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
         'gridData', 'gatesData', 'npcsData', 'encountersData', 'entitiesData', 
-        'tileLayersData', 'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData'
+        'tileLayersData', 'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData',
+        'tilesetData', 'npcs', 'encounters', 'gates'
     ];
     for (const col of textCols) {
         const regex = new RegExp(`^(\\s*${col}\\s+String\\s+[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
