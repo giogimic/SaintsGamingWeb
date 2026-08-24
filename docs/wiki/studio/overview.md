@@ -1,0 +1,64 @@
+# World Studio Overview & Architecture
+
+The **Saints World Studio** (`/studio`) is a web-based game engine and authoring suite providing visual map construction, definition catalog editing, NPC placement, and instant playtesting.
+
+---
+
+## 1. Studio Architecture & Shell Layout
+
+The Studio environment is orchestrated by `StudioEditorShell.tsx` and a modular docking layout engine:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ Top Toolbar: Mode Switcher, Map Selector, Undo/Redo, PIE │
+├───────────────────┬──────────────────────────────────────┤
+│ Left Panel        │ Main Babylon.js Viewport             │
+│ • Tool Palette    │ • Dual-Grid Visual/Logic Rendering   │
+│ • Tileset Picker  │ • Gizmo Handles & Brush Cursors      │
+│ • Catalog List    ├──────────────────────────────────────┤
+│                   │ Bottom Panel: Asset Browser, History │
+├───────────────────┴──────────────────────────────────────┤
+│ Right Panel: Entity Inspector, Properties & Problems     │
+└──────────────────────────────────────────────────────────┘
+```
+
+- **FlexLayout Docking:** Panels can be resized, stacked, detached into floating windows, or collapsed.
+- **`editor-store.ts`:** Zustand store managing active tool selection, brush radius, active layer, history stacks (undo/redo), and dirty state flags.
+
+---
+
+## 2. The 5 Core Studio Modes
+
+```
+[🎨 Paint (develop)]  [👾 Populate (npc)]  [📜 Script (script)]  [📚 Catalog (catalog)]  [▶️ Play (Ctrl+E)]
+```
+
+| Mode | Identifier | Primary Purpose |
+| :--- | :--- | :--- |
+| **🎨 Paint** | `develop` | Dual-grid tile painting, GID placement, layer switching, collision logic tags. |
+| **👾 Populate** | `npc` | Placing NPCs, monster spawners, harvestable nodes, and prop obstacles. |
+| **📜 Script** | `script` | Dialogue tree node graphs, quest triggers, warp links, and interactive logic. |
+| **📚 Catalog** | `catalog` | Managing global game items, creature stats, classes, and loot drop tables. |
+| **▶️ Playtest** | `test` (PIE) | Hotkeys **Ctrl+E** to simulate live gameplay directly inside the viewport. |
+
+---
+
+## 3. Omnisearch Palette (`StudioOmnisearch.tsx`)
+
+Pressing **Ctrl+K** opens the Omnisearch command palette, allowing creators to quickly search and execute actions:
+- **Map Navigation:** Jump instantly to any map by name or slug (e.g. `saints_village`, `celestial_dungeon`).
+- **Entity & Item Search:** Locate specific NPC instances or open item definitions.
+- **Fast Commands:** Execute operations such as `Save Map`, `Toggle Grid Lines`, `Export Map JSON`, or `Clear Layer`.
+
+---
+
+## 4. Keybindings & Shortcuts
+
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| **`Ctrl + S`** | Save Map | Persists map changes to Prisma DB and notifies Go MMO backend. |
+| **`Ctrl + E`** | Toggle PIE | Switches between editor mode and live playtest runtime. |
+| **`Ctrl + Z` / `Ctrl + Y`** | Undo / Redo | Reverts or reapplies recent map tile and entity edits. |
+| **`B` / `R` / `G`** | Stamp / Rect / Fill | Switches active painting tool (Brush, Bounding Box, Bucket). |
+| **`I` / `E`** | Eyedropper / Eraser | Picks tile/logic GID from viewport or erases cell contents. |
+| **`[` / `]`** | Brush Radius | Decreases or increases brush radius from $1\times 1$ up to $7\times 7$. |
