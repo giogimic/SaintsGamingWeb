@@ -1,8 +1,7 @@
 ## [2.1.459-2] - 2026-08-24
 ### Bug Fix: MySQL Asset Uploads
-- **Auto Schema Patching**: Addressed a critical crash on production MySQL/MariaDB deployments where uploading LPC spritesheets triggered a Prisma \VARCHAR(191)\ length limit exception on \GameAsset.metadata\.
-- **Setup Hooks**: Added an automated script (\mysql-alter-strings.ts\) that intercepts \
-pm run setup\ when \DATABASE_URL\ points to MySQL and surgically alters \String\ columns to \TEXT\ (e.g. \metadata\, \	ags\, \categories\) allowing large JSON storage while fully preserving the baseline SQLite compatibility of the repository.
+- **Pre-Push Schema Generation**: Addressed a critical crash on production MySQL deployments where uploading LPC spritesheets triggered a Prisma `VARCHAR(191)` limit.
+- **Dynamic Adapter**: Replaced post-push schema patching with `scripts/prepare-prisma.js` which dynamically generates the correct Prisma provider and `@db.Text` mappings *before* Prisma generates its client or pushes to the database, cleanly preventing schema drift while fully preserving the baseline SQLite compatibility of the repository.
 ## [2.1.459] - 2026-08-24
 ### Game Setup 2.0 - Canonical Asset Integration
 - **Deep Codebase Audit**: Completed system audit mapping the Setup UI to the Asset Manager and Babylon Runtime.
