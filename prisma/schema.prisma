@@ -1,6 +1,6 @@
 // Saints Gaming — Prisma Schema
-// Database: SQLite (initial) → MariaDB (when traffic justifies)
-// To switch: change provider to "mysql" and update DATABASE_URL in .env
+// Database: MariaDB / MySQL (Primary) + SQLite (Fallback)
+// To switch: set DB_PROVIDER="sqlite" and DATABASE_URL="file:..." in .env
 
 generator client {
   provider   = "prisma-client-js"
@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -814,9 +814,9 @@ model GameAsset {
   source        String   @default("") // canonical file path
   atlasSource   String?  // atlas file if from atlas
   atlasFrame    String?  // JSON: {x, y, width, height} for atlas extraction
-  tags          String   @default("[]") // JSON string: ["saints", "npc", "male"] for SQLite compat
-  categories    String   @default("[]") // JSON string: ["npcs", "heroes"] for SQLite compat
-  metadata      String   @default("{}") // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
+  tags          String   @default("[]") @db.Text // JSON string: ["saints", "npc", "male"] for SQLite compat
+  categories    String   @default("[]") @db.Text // JSON string: ["npcs", "heroes"] for SQLite compat
+  metadata      String   @default("{}") @db.Text // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
   customLabels  String?  // JSON string: {en: "Hero", es: "Héroe"}
   isActive      Boolean  @default(true)
   usageCount    Int      @default(0)
@@ -1274,7 +1274,7 @@ model CreatureTemplate {
   stage                String
   shape                String
   types                String // JSON array of element slugs
-  tags                 String // JSON array of tags
+  tags                 String// JSON array of tags
   terrains             String // JSON array
   genderWeights        String // JSON object
   sounds               String // JSON object
@@ -1807,7 +1807,7 @@ model SourceAsset {
   uploadedById    String
   uploadedBy      User          @relation("SourceAssetsUploaded", fields: [uploadedById], references: [id], onDelete: Cascade)
   version         Int           @default(1)
-  metadata        String        @default("{}") // JSON string: { originalName, hash, tags, etc. }
+  metadata        String        @default("{}") @db.Text // JSON string: { originalName, hash, tags, etc. }
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -1824,7 +1824,7 @@ model UsableAsset {
   name              String
   type              String       @default("OBJECT") // CHARACTER, CREATURE, TERRAIN, TILE, ITEM, OBJECT, UI, EFFECT, MODEL, ANIMATION, AUDIO
   category          String?      // Sub-classification e.g. "chair", "sword", "tree"
-  tags              String       @default("[]") // JSON array of string tags
+  tags              String       @default("[]") @db.Text // JSON array of string tags
   width             Int          @default(16)
   height            Int          @default(16)
   
