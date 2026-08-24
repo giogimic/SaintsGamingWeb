@@ -8,19 +8,32 @@ dotenv.config();
 const schemaPath = path.join(__dirname, '../prisma/schema.prisma');
 let schema = fs.readFileSync(schemaPath, 'utf8');
 
-const isMysql = (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('mysql')) || process.env.DB_PROVIDER === 'mysql';
+const dbUrl = process.env.DATABASE_URL || '';
+const dbProvider = process.env.DB_PROVIDER || '';
 
-if (isMysql) {
-    console.log('[*] Preparing Prisma schema for MySQL (injecting provider and @db.Text)...');
+const isSqlite = dbUrl.startsWith('file:') || (dbProvider === 'sqlite' && !dbUrl.startsWith('mysql:'));
+
+if (isSqlite) {
+    console.log('[*] Preparing Prisma schema for SQLite (fallback mode)...');
     
-    // Switch provider to mysql
+    // Switch provider to sqlite
+    schema = schema.replace(/provider\s*=\s*"mysql"/g, 'provider = "sqlite"');
+    
+    // Strip out MySQL-specific @db.Text modifiers which break SQLite
+    schema = schema.replace(/\s*@db\.Text/g, '');
+    schema = schema.replace(/\s*@db\.LongText/g, '');
+
+    fs.writeFileSync(schemaPath, schema);
+    console.log('[+] Schema adapted for SQLite.');
+} else {
+    console.log('[*] Preparing Prisma schema for MySQL (default mode)...');
+    
+    // Ensure provider is mysql
     schema = schema.replace(/provider\s*=\s*"sqlite"/g, 'provider = "mysql"');
-
-    // List of columns that need to bypass VARCHAR(191) limit
-    const textCols = ['metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion'];
     
+    // The schema is authored with @db.Text natively, but we enforce it just in case
+    const textCols = ['metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion'];
     for (const col of textCols) {
-        // Regex matches the column definition line safely
         const regex = new RegExp(`^(\\s*${col}\\s+String\\s+[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
         schema = schema.replace(regex, (match, p1, p2) => {
             if (p1.includes('@db.Text') || p1.includes('@db.LongText')) return match;
@@ -29,17 +42,5 @@ if (isMysql) {
     }
 
     fs.writeFileSync(schemaPath, schema);
-    console.log('[+] Schema dynamically adapted for MySQL.');
-} else {
-    console.log('[*] Preparing Prisma schema for SQLite (restoring baseline)...');
-    
-    // Ensure provider is sqlite
-    schema = schema.replace(/provider\s*=\s*"mysql"/g, 'provider = "sqlite"');
-    
-    // Strip out MySQL-specific @db.Text modifiers
-    schema = schema.replace(/\s*@db\.Text/g, '');
-    schema = schema.replace(/\s*@db\.LongText/g, '');
-
-    fs.writeFileSync(schemaPath, schema);
-    console.log('[+] Schema verified for SQLite.');
+    console.log('[+] Schema verified for MySQL.');
 }
