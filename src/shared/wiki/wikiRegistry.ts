@@ -106,10 +106,10 @@ export const WIKI_CATEGORIES: WikiCategory[] = [
       {
         slug: "game-systems/combat-encounters",
         title: "Combat & Encounters",
-        summary: "Overworld real-time MMO combat, turn-based creature battles, capture mechanics, and elemental matchups.",
+        summary: "Saints Hybrid Combat model: real-time overworld Hero Battles alongside turn-based companion creature battles.",
         readTime: 5,
         categoryId: "game-systems",
-        tags: ["combat", "battle", "hero battles", "buddy battles", "capture", "elemental"],
+        tags: ["combat", "battle", "hybrid combat", "saints hybrid", "hero battles", "buddy battles", "capture", "elemental"],
         filePath: "game-systems/combat-encounters.md",
         order: 2,
       },

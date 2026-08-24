@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     }
     const gameDesc = body?.game?.description?.trim() || `${gameName} - Created with Saints Studio`;
     const gameGenre = body?.game?.genre?.trim() || 'CREATURE_MMO';
-    const gameStyle = body?.game?.style?.trim() || 'ACTION_REALTIME';
+    const gameStyle = body?.game?.style?.trim() || 'SAINTS_HYBRID';
     const gameCamera = body?.game?.camera?.trim() || 'ISOMETRIC_25D';
 
     // 2. Validate Characters (Minimum 1 Required)

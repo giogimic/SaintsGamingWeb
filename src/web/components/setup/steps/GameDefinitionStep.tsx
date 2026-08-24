@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Gamepad2, Sparkles, Swords, Compass, Users, LayoutGrid, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Gamepad2, Sparkles, Swords, Compass, Users, ArrowRight, ArrowLeft, Flame, Info } from 'lucide-react';
 
 export interface GameDefinitionData {
   name: string;
   description: string;
   genre: 'CREATURE_MMO' | 'ARPG' | 'SOCIAL_METAVERSE' | 'CLASSIC_RPG';
-  style: 'ACTION_REALTIME' | 'TURN_BASED' | 'EXPLORATION';
+  style: 'SAINTS_HYBRID' | 'ACTION_REALTIME' | 'TURN_BASED' | 'EXPLORATION';
   camera: 'ISOMETRIC_25D' | 'TOPDOWN_2D';
 }
 
@@ -22,7 +22,8 @@ const GENRES = [
   {
     id: 'CREATURE_MMO',
     name: 'Creature Collection MMO',
-    description: 'Capture, train, and battle companion creatures across an open world.',
+    description: 'Capture, train, and battle companion creatures across a living open world.',
+    similarTo: 'Pokémon MMO, Temtem, Palworld',
     icon: Sparkles,
     badge: 'Popular',
   },
@@ -30,6 +31,7 @@ const GENRES = [
     id: 'ARPG',
     name: 'Action RPG / Dungeon Crawler',
     description: 'Real-time combat, equipment affixes, dungeon exploration, and boss encounters.',
+    similarTo: 'Diablo, Torchlight, RuneScape',
     icon: Swords,
     badge: 'Combat Heavy',
   },
@@ -37,6 +39,7 @@ const GENRES = [
     id: 'SOCIAL_METAVERSE',
     name: 'Social Hub & Metaverse',
     description: 'Community hangout spaces, customizable characters, mini-games, and player housing.',
+    similarTo: 'Habbo, Club Penguin, VRChat Worlds',
     icon: Users,
     badge: 'Social',
   },
@@ -44,6 +47,7 @@ const GENRES = [
     id: 'CLASSIC_RPG',
     name: 'Classic Story RPG',
     description: 'Narrative-driven quests, NPC dialogue trees, exploration, and turn-based progression.',
+    similarTo: 'Final Fantasy, EarthBound, Chrono Trigger',
     icon: Compass,
     badge: 'Story',
   },
@@ -51,19 +55,36 @@ const GENRES = [
 
 const GAMEPLAY_STYLES = [
   {
+    id: 'SAINTS_HYBRID',
+    name: 'Saints Hybrid Combat',
+    badge: 'Signature / Recommended',
+    badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
+    description: 'The signature Saints experience: seamless real-time overworld Hero Battles combined with tactical turn-based Saints Buddy Battles.',
+    similarTo: 'RuneScape overworld MMO action + Pokémon tactical creature encounters',
+  },
+  {
     id: 'ACTION_REALTIME',
     name: 'Real-Time Action Combat',
-    description: 'Fast-paced movement and direct attack inputs on the open world map.',
+    badge: 'Fast-Paced',
+    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+    description: 'Direct keyboard/mouse movement with instant attack hotbars, cooldowns, and dodge mechanics directly on the open map.',
+    similarTo: 'Diablo, Path of Exile, Zelda: A Link to the Past',
   },
   {
     id: 'TURN_BASED',
     name: 'Turn-Based Tactics',
-    description: 'Turn-based encounter battles with abilities, cooldowns, and element advantages.',
+    badge: 'Strategic',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+    description: 'Step into dedicated battle encounters with menu commands, action points, speed priority, and elemental advantages.',
+    similarTo: 'Classic Final Fantasy, Dragon Quest, Pokémon',
   },
   {
     id: 'EXPLORATION',
     name: 'Narrative & Exploration',
-    description: 'Focus on world discovery, puzzle solving, harvesting, crafting, and lore.',
+    badge: 'Cozy / Relaxed',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    description: 'Focus on gathering, artisan crafting, player housing, NPC questlines, and lore with pacifist or optional encounters.',
+    similarTo: 'Stardew Valley, Animal Crossing, Rune Factory',
   },
 ] as const;
 
@@ -72,11 +93,13 @@ const CAMERA_STYLES = [
     id: 'ISOMETRIC_25D',
     name: '2.5D Angled View',
     description: 'Smooth 3D perspective projection with 2.5D sprite billboards and depth.',
+    similarTo: 'Ragnarok Online, Tree of Savior, CrossCode',
   },
   {
     id: 'TOPDOWN_2D',
     name: 'Top-Down 2D Grid',
     description: 'Classic pixel-grid top-down camera with crisp pixel snapping.',
+    similarTo: 'Pokémon Emerald, Zelda: Minish Cap, RPG Maker',
   },
 ] as const;
 
@@ -92,7 +115,7 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
             1. Define Your Game
           </h2>
           <p className="text-sm text-slate-400">
-            Tell us about the game you want to build. Your answers will tailor the asset requirements and onboarding steps.
+            Tell us about the game you want to build. Each option includes references to similar games to help you choose the right design foundation.
           </p>
         </div>
 
@@ -127,9 +150,12 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
 
         {/* GENRE SELECTION */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-            Game Genre & Type
-          </label>
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+              Game Genre & Type
+            </label>
+            <span className="text-[11px] text-slate-400 italic">Game references shown to help guide your choice</span>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {GENRES.map((genre) => {
               const Icon = genre.icon;
@@ -160,7 +186,11 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
                         {genre.badge}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed pl-10">{genre.description}</p>
+                    <p className="text-xs text-slate-400 leading-relaxed pl-10 mb-3">{genre.description}</p>
+                    <div className="pl-10 flex items-center gap-1.5 text-[11px] text-amber-300/90 font-medium">
+                      <span className="text-slate-500 font-normal">Similar to:</span>
+                      <span>{genre.similarTo}</span>
+                    </div>
                   </div>
                 </div>
               );
@@ -169,27 +199,41 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
         </div>
 
         {/* GAMEPLAY STYLE & CAMERA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
           {/* GAMEPLAY STYLE */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-              Gameplay Style
-            </label>
-            <div className="space-y-2.5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                Gameplay & Combat Style
+              </label>
+            </div>
+            <div className="space-y-3">
               {GAMEPLAY_STYLES.map((style) => {
                 const isSelected = data.style === style.id;
                 return (
                   <div
                     key={style.id}
                     onClick={() => onChange({ style: style.id })}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-950/20 border-amber-400 text-white shadow-md'
+                        ? 'bg-amber-950/25 border-amber-400 ring-2 ring-amber-400/20 text-white shadow-lg'
                         : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 text-slate-400'
                     }`}
                   >
-                    <div className="font-semibold text-xs text-slate-200">{style.name}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{style.description}</div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-bold text-xs text-slate-100 flex items-center gap-1.5">
+                        {style.id === 'SAINTS_HYBRID' && <Flame className="w-3.5 h-3.5 text-amber-400" />}
+                        {style.name}
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${style.badgeColor}`}>
+                        {style.badge}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-300 mt-1 leading-relaxed">{style.description}</div>
+                    <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-1.5 text-[10.5px] text-amber-300/80 font-medium">
+                      <span className="text-slate-500 font-normal">Feels like:</span>
+                      <span>{style.similarTo}</span>
+                    </div>
                   </div>
                 );
               })}
@@ -198,24 +242,30 @@ export function GameDefinitionStep({ data, onChange, onNext, onBack }: GameDefin
 
           {/* CAMERA STYLE */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">
-              Camera & Perspective
-            </label>
-            <div className="space-y-2.5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                Camera & Perspective
+              </label>
+            </div>
+            <div className="space-y-3">
               {CAMERA_STYLES.map((cam) => {
                 const isSelected = data.camera === cam.id;
                 return (
                   <div
                     key={cam.id}
                     onClick={() => onChange({ camera: cam.id })}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-950/20 border-amber-400 text-white shadow-md'
+                        ? 'bg-amber-950/25 border-amber-400 ring-2 ring-amber-400/20 text-white shadow-lg'
                         : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 text-slate-400'
                     }`}
                   >
-                    <div className="font-semibold text-xs text-slate-200">{cam.name}</div>
-                    <div className="text-[11px] text-slate-400 mt-0.5">{cam.description}</div>
+                    <div className="font-bold text-xs text-slate-100">{cam.name}</div>
+                    <div className="text-[11px] text-slate-300 mt-1 leading-relaxed">{cam.description}</div>
+                    <div className="mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-1.5 text-[10.5px] text-cyan-300/80 font-medium">
+                      <span className="text-slate-500 font-normal">Examples:</span>
+                      <span>{cam.similarTo}</span>
+                    </div>
                   </div>
                 );
               })}

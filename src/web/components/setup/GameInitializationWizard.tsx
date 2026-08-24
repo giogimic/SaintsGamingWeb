@@ -40,7 +40,7 @@ export function GameInitializationWizard() {
     name: 'Saints Adventure',
     description: 'A 2.5D multiplayer MMO world filled with quests, monsters, and player creation.',
     genre: 'CREATURE_MMO',
-    style: 'ACTION_REALTIME',
+    style: 'SAINTS_HYBRID',
     camera: 'ISOMETRIC_25D',
   });
 
