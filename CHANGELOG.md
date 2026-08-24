@@ -1,3 +1,11 @@
+## [2.1.459] - 2026-08-24
+### Game Setup 2.0 - Canonical Asset Integration
+- **Deep Codebase Audit**: Completed system audit mapping the Setup UI to the Asset Manager and Babylon Runtime.
+- **Requirement Engine**: Setup wizard dynamically calculates required asset types and quantities based on the selected game style (MMO vs Turn-Based Hybrid).
+- **Setup Asset Picker Integration**: Replaced legacy, disconnected upload UI with a new tabbed SetupAssetPicker that bridges SpriteBrowser, AssetUploadView, and SpritesheetSlicer directly into the setup wizard.
+- **Canonical Asset Persistence**: Guided upload enforces resolving assets to valid GameAssetItem (canonical IDs) before persistence, entirely bypassing legacy string-path fragmentation.
+- **Setup Babylon Preview**: Added a live WebGL visual preview component (SetupBabylonPreview.tsx) in the setup wizard that faithfully renders selected sprite sheets using the actual Babylon engine logic, cell UV calculations, and animation profile configurations.
+
 ## [2.1.456] - 2026-08-23
 ### Game Initialization Flow & Safe Update Architecture
 - **Refactored Game Setup & Onboarding**:
@@ -3084,6 +3092,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 
