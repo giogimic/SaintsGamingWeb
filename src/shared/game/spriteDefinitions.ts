@@ -479,3 +479,135 @@ export function spriteDefinitionToBabylonConfig(def: SpriteDefinition): any {
     profile: def.profile,
   };
 }
+
+// ==========================================
+// ASSET FORMAT TAXONOMY (GAME SETUP 2.0)
+// ==========================================
+
+export type EntityType = 'CHARACTER' | 'CREATURE' | 'MONSTER' | 'OBJECT' | 'TILE';
+
+export interface AssetFormatDefinition {
+  id: string;
+  displayName: string;
+  shortDescription: string;
+  technicalDescription: string;
+  aliases: string[];
+  searchTerms: string[];
+  examples: string[];
+  supportedEntityTypes: EntityType[];
+  supportedRoles: string[];
+  animationProfile: SpriteAnimationProfile;
+  directionCount: number;
+  frameCount: number | 'variable';
+  layoutDescription: string;
+  modular: boolean;
+  isStatic: boolean;
+}
+
+export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
+  'modular-4dir-pixel': {
+    id: 'modular-4dir-pixel',
+    displayName: 'Modular 4-Directional Pixel Character',
+    shortDescription: 'Layered pixel-art character format designed for interchangeable body, hair, clothing, and accessory components across four directions.',
+    technicalDescription: '13-column by 21-row layout (or 9-column by 4-row subset) containing standardized rows for walking, spellcasting, thrusting, slashing, and hurt animations.',
+    aliases: ['LPC', 'Liberated Pixel Cup', 'LPC sprite', 'LPC character'],
+    searchTerms: ['modular pixel character', 'four directional modular character', 'lpc compatible'],
+    examples: ['Liberated Pixel Cup', 'Open-source RPG character pipelines'],
+    supportedEntityTypes: ['CHARACTER'],
+    supportedRoles: ['idle', 'walk', 'attack', 'hurt', 'spellcast', 'thrust', 'slash', 'shoot'],
+    animationProfile: 'lpc-full',
+    directionCount: 4,
+    frameCount: 'variable',
+    layoutDescription: 'Standard LPC 13x21 grid or 9x4 walk cycle subset.',
+    modular: true,
+    isStatic: false,
+  },
+  'classic-3x4-rpg': {
+    id: 'classic-3x4-rpg',
+    displayName: 'Classic 3x4 Four-Directional Character Sheet',
+    shortDescription: 'A compact top-down character format using three animation frames across four facing directions.',
+    technicalDescription: '3 columns by 4 rows grid, mapping to Down, Left, Right, Up. Walk cycle loops across the three columns (e.g. 0-1-2-1).',
+    aliases: ['Tuxemon', 'classic 3x4', '3x4 RPG sheet', 'four-direction 3-frame'],
+    searchTerms: ['tuxemon style', 'rpg maker style', '3x4 directional'],
+    examples: ['Tuxemon'],
+    supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER'],
+    supportedRoles: ['overworld', 'idle', 'walk', 'battle_front', 'battle_back'],
+    animationProfile: 'tuxemon-3x4',
+    directionCount: 4,
+    frameCount: 3,
+    layoutDescription: 'Grid of 3 columns and 4 rows (Down, Left, Right, Up).',
+    modular: false,
+    isStatic: false,
+  },
+  'saints-3x4': {
+    id: 'saints-3x4',
+    displayName: 'Saints 3x4 Directional Entity',
+    shortDescription: 'A modified 3x4 sheet with Saints Engine specific frame mappings.',
+    technicalDescription: '3 columns by 4 rows grid. Uses a different walk cycle pacing or resting frame compared to classic Tuxemon sheets.',
+    aliases: ['Saints 3x4'],
+    searchTerms: ['saints style', '3x4'],
+    examples: ['Saints Gaming default characters'],
+    supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER'],
+    supportedRoles: ['overworld', 'idle', 'walk'],
+    animationProfile: 'saints-3x4',
+    directionCount: 4,
+    frameCount: 3,
+    layoutDescription: '3x4 grid with Saints engine walk loops.',
+    modular: false,
+    isStatic: false,
+  },
+  'full-4dir-anim': {
+    id: 'full-4dir-anim',
+    displayName: 'Full 4-Directional Character Animation Sheet',
+    shortDescription: 'Comprehensive four-directional animation sheet with custom dimensions.',
+    technicalDescription: 'A non-standard grid requiring explicit configuration of rows, columns, and action mappings.',
+    aliases: ['Custom 4-Dir', 'Full Anim Sheet'],
+    searchTerms: ['custom character', '4 direction anim'],
+    examples: ['Custom commissioned assets'],
+    supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER'],
+    supportedRoles: ['idle', 'walk', 'attack', 'hurt'],
+    animationProfile: 'custom',
+    directionCount: 4,
+    frameCount: 'variable',
+    layoutDescription: 'Custom defined grid.',
+    modular: false,
+    isStatic: false,
+  },
+  'static-2d-image': {
+    id: 'static-2d-image',
+    displayName: 'Static 2D Entity Image',
+    shortDescription: 'A single non-animated frame.',
+    technicalDescription: '1x1 grid containing a single portrait or static sprite.',
+    aliases: ['Portrait', 'Icon', 'Billboard'],
+    searchTerms: ['static image', 'portrait', 'icon', 'single frame'],
+    examples: ['Creature Battle Fronts', 'Character Portraits', 'Icons'],
+    supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER', 'OBJECT', 'TILE'],
+    supportedRoles: ['portrait', 'icon', 'battle_front', 'battle_back', 'shadow'],
+    animationProfile: 'portrait-1x1',
+    directionCount: 1,
+    frameCount: 1,
+    layoutDescription: 'Single image frame (1x1).',
+    modular: false,
+    isStatic: true,
+  },
+  'custom-spritesheet': {
+    id: 'custom-spritesheet',
+    displayName: 'Custom Sprite Sheet',
+    shortDescription: 'Layout could not be determined automatically. Requires manual configuration.',
+    technicalDescription: 'Unknown dimensions or grid layout.',
+    aliases: ['Unknown layout'],
+    searchTerms: ['custom sprite', 'unrecognized sheet'],
+    examples: [],
+    supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER', 'OBJECT', 'TILE'],
+    supportedRoles: [],
+    animationProfile: 'custom',
+    directionCount: 1,
+    frameCount: 'variable',
+    layoutDescription: 'Manual grid definition required.',
+    modular: false,
+    isStatic: false,
+  }
+};
+
+export const ASSET_FORMATS_LIST = Object.values(ASSET_FORMAT_TAXONOMY);
+

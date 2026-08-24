@@ -69,6 +69,23 @@ export class AssetManager {
   }
 
   /** Wipe the in-memory asset cache so next fetch is fresh from the server. */
+    /**
+   * Fetch assets specifically compatible with a given entity type and role.
+   */
+  async getAssetsForRole(entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER', role: string, page = 0): Promise<GameAssetItem[]> {
+    // For now, this maps the role to an internal category filter
+    // E.g., 'walk' -> mostly 'actor'/'character', 'front' -> 'creature'
+    // This can be expanded to use the taxonomy later
+    let typeFilter = 'ALL';
+    if (entityType === 'CHARACTER') typeFilter = 'CHARACTER';
+    else if (entityType === 'CREATURE' || entityType === 'MONSTER') typeFilter = 'CREATURE';
+
+    // Fetch matching assets
+    const data = await this.searchAssets({ type: typeFilter as any }, page, 50);
+    return data.items;
+  }
+
+
   clearCache(): void {
     this.cache.clear();
   }

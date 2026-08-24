@@ -22,7 +22,7 @@ export type AssetStyleChoice =
   | 'static';
 
 export interface EntityAssetRequirements {
-  entityType: 'CHARACTER' | 'CREATURE';
+  entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER';
   requiredRoles: AssetSlotRole[];
   optionalRoles: AssetSlotRole[];
   supportedStyles: AssetStyleChoice[];
@@ -58,7 +58,7 @@ export function getSetupRequirements(game: GameDefinition): SetupRequirements {
  */
 export function getEntityAssetRequirements(input: {
   gameDefinition: GameDefinition;
-  entityType: 'CHARACTER' | 'CREATURE';
+  entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER';
 }): EntityAssetRequirements {
   const { gameDefinition, entityType } = input;
   const isHybrid = gameDefinition.style === 'SAINTS_HYBRID';

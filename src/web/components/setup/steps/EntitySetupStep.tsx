@@ -19,8 +19,8 @@ import {
   FileImage,
 } from 'lucide-react';
 import type { GameDefinitionData } from './GameDefinitionStep';
-import { SetupAssetPicker } from './SetupAssetPicker';
-import { SetupBabylonPreview } from './SetupBabylonPreview';
+import { RoleAwareAssetPicker } from '@/web/components/shared/RoleAwareAssetPicker';
+import { CanonicalAssetPreview } from '@/web/components/shared/CanonicalAssetPreview';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
 
 export interface SetupCharacterData {
@@ -92,26 +92,23 @@ export function EntitySetupStep({
   const [activeTab, setActiveTab] = useState<'characters' | 'creatures'>('characters');
 
   // Asset Picker State
-  const [pickerContext, setPickerContext] = useState<{ entityType: 'CHARACTER' | 'CREATURE', role?: string } | null>(null);
+  const [pickerContext, setPickerContext] = useState<{ entityType: 'CHARACTER' | 'CREATURE', role: string } | null>(null);
 
   // Character Form State
   const [charName, setCharName] = useState('Knight Commander');
   const [charClass, setCharClass] = useState('WARRIOR');
   const [charAssetType, setCharAssetType] = useState<'SPRITE_SHEET' | 'MODULAR' | 'SINGLE_IMAGE'>('SPRITE_SHEET');
-  const [charSprite, setCharSprite] = useState('evil-berserker-bloodaxe-male');
-  const [charSpriteAsset, setCharSpriteAsset] = useState<GameAssetItem | null>(null);
+  const [charSpriteAsset, setCharSpriteAsset] = useState<GameAssetItem | undefined>(undefined);
   const [charFlavor, setCharFlavor] = useState('A steadfast frontline protector of the realm.');
 
   // Modular Character Details
-  const [baseBody, setBaseBody] = useState('male_light');
-  const [hairStyle, setHairStyle] = useState('short_blonde');
-  const [clothing, setClothing] = useState('plate_armor');
+  const [charBaseBody, setCharBaseBody] = useState<string>('');
+  const [charClothing, setCharClothing] = useState<string>('');
 
-  // Creature Form State
-  const [creatureName, setCreatureName] = useState('Ignis Flare');
-  const [creatureElement, setCreatureElement] = useState('Solar');
-  const [creatureSprite, setCreatureSprite] = useState('monster/battle/agnite-sheet');
-  const [creatureSpriteAsset, setCreatureSpriteAsset] = useState<GameAssetItem | null>(null);
+  // Form State: Creatures
+  const [creatureName, setCreatureName] = useState('Aerochick');
+  const [creatureElement, setCreatureElement] = useState('NATURE');
+  const [creatureSpriteAsset, setCreatureSpriteAsset] = useState<GameAssetItem | undefined>(undefined);
   const [creatureHp, setCreatureHp] = useState(100);
   const [creatureAtk, setCreatureAtk] = useState(14);
   const [creatureDef, setCreatureDef] = useState(10);
@@ -121,9 +118,7 @@ export function EntitySetupStep({
     const slug = charName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
     
     // Phase 3: Canonical Asset Mapping
-    // Always prefer the selected canonical asset (GameAssetItem) from AssetManager.
-    // Fall back to legacy string defaults if none selected (for testing/demo).
-    const spriteKey = charSpriteAsset?.source || charSprite;
+    const spriteKey = charSpriteAsset?.id || '';
     const bundleId = charSpriteAsset?.isModularComponent ? charSpriteAsset.id : (charSpriteAsset?.id || null);
 
     const newChar: SetupCharacterData = {
@@ -151,7 +146,7 @@ export function EntitySetupStep({
     if (!creatureName.trim()) return;
     const slug = creatureName.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') + '_' + Date.now().toString().slice(-4);
 
-    const sprite = creatureSpriteAsset?.source || creatureSprite;
+    const sprite = creatureSpriteAsset?.id || '';
 
     const newCreature: SetupCreatureData = {
       slug,
@@ -181,7 +176,7 @@ export function EntitySetupStep({
     <div className="space-y-6">
       {/* SETUP ASSET PICKER OVERLAY */}
       {pickerContext && (
-        <SetupAssetPicker
+        <RoleAwareAssetPicker
           entityType={pickerContext.entityType}
           assetRole={pickerContext.role}
           onSelectAsset={(asset) => {
@@ -389,7 +384,7 @@ export function EntitySetupStep({
                   </div>
 
                   <div className="h-48 md:h-56 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
-                    <SetupBabylonPreview asset={charSpriteAsset} role="walk" />
+                    <CanonicalAssetPreview asset={charSpriteAsset} role="walk" />
                   </div>
                 </div>
               </div>
@@ -504,7 +499,7 @@ export function EntitySetupStep({
                   Creature Asset (Battle/Overworld)
                 </label>
                 <button
-                  onClick={() => setPickerContext({ entityType: 'CREATURE' })}
+                  onClick={() => setPickerContext({ entityType: 'CREATURE', role: 'idle' })}
                   className="w-full flex items-center justify-between p-4 bg-slate-900 border border-slate-700 hover:border-emerald-500 rounded-xl transition-colors text-left"
                 >
                   <div className="flex flex-col">
@@ -518,7 +513,7 @@ export function EntitySetupStep({
                   <ImageIcon className="w-5 h-5 text-slate-400" />
                 </button>
                 <div className="mt-4 h-48 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-inner">
-                  <SetupBabylonPreview asset={creatureSpriteAsset} role="idle" />
+                  <CanonicalAssetPreview asset={creatureSpriteAsset} role="idle" />
                 </div>
               </div>
 
