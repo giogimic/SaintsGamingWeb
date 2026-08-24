@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { soundSynth } from '@/engine/sound-synth';
-import { Layers, Plus, Grid, Trash2, Search, ImageIcon, X, Check, Info } from 'lucide-react';
+import { Layers, Plus, Grid, Trash2, Search, ImageIcon, X, Check, Info, Settings } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
 
 export interface TilesetMeta {
@@ -35,6 +35,7 @@ export default function TilesetPicker({
   const [activeTsIdx, setActiveTsIdx] = useState(0);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [imgError, setImgError] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number } | null>(null);
   const [tilesetSearch, setTilesetSearch] = useState('');
   
@@ -150,6 +151,13 @@ export default function TilesetPicker({
     };
     img.src = imgUrl;
     soundSynth?.playActionSound?.();
+  };
+
+  const handleUpdateTilesetSettings = (meta: Partial<TilesetMeta>) => {
+    if (!tilesets || activeTsIdx < 0 || activeTsIdx >= tilesets.length) return;
+    const updated = [...tilesets];
+    updated[activeTsIdx] = { ...updated[activeTsIdx], ...meta };
+    onUpdateTilesets?.(updated);
   };
 
   const handleRemoveTileset = (idx: number) => {
@@ -308,14 +316,24 @@ export default function TilesetPicker({
               <Plus className="w-3 h-3" /> Add Tileset
             </button>
             {ts && (
-              <button
-                type="button"
-                onClick={() => handleRemoveTileset(activeTsIdx)}
-                className="text-[10px] text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/20 p-1 rounded transition cursor-pointer"
-                title="Remove current tileset from map"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  className="text-[10px] text-slate-400 hover:text-white hover:bg-slate-700/50 p-1 rounded transition cursor-pointer"
+                  title="Tileset Settings (Resize grid)"
+                >
+                  <Settings className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTileset(activeTsIdx)}
+                  className="text-[10px] text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/20 p-1 rounded transition cursor-pointer"
+                  title="Remove current tileset from map"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -572,6 +590,86 @@ export default function TilesetPicker({
           </div>
         </div>
       )}
+
+      {/* TILESET SETTINGS MODAL */}
+      {isSettingsModalOpen && ts && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-amber-500/40 bg-[#050b14] p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
+                <Settings className="w-4 h-4 text-amber-400" />
+                <span>Tileset Settings</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-mono">
+              <div>
+                <label className="block text-slate-400 mb-1">Tile Width (px)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={ts.tilewidth}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 16;
+                    handleUpdateTilesetSettings({ 
+                      tilewidth: val,
+                      columns: Math.max(1, Math.floor(natural.w / val))
+                    });
+                  }}
+                  className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Tile Height (px)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={ts.tileheight}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 16;
+                    handleUpdateTilesetSettings({ tileheight: val });
+                  }}
+                  className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">Columns</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={ts.columns}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    handleUpdateTilesetSettings({ columns: val });
+                  }}
+                  className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Adjusting width auto-calculates columns, but you can override it here if the image has margins.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
