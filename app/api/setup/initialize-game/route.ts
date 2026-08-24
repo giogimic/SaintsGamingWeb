@@ -277,6 +277,18 @@ export async function POST(req: Request) {
         }
       }
 
+      const tilesetsDataPayload = map.tilesetAsset
+        ? [
+            {
+              firstgid: 1,
+              imageSource: map.tilesetAsset.source,
+              columns: Math.floor(640 / (Number(map.tilesetAsset.metadata?.tilewidth) || 32)),
+              tilewidth: Number(map.tilesetAsset.metadata?.tilewidth || 32),
+              tileheight: Number(map.tilesetAsset.metadata?.tileheight || 32),
+            },
+          ]
+        : DEFAULT_STUDIO_TILESETS;
+
       // 4d. Upsert Starting WorldMap & GameMap
       await tx.worldMap.upsert({
         where: { id: mapId },
@@ -290,7 +302,7 @@ export async function POST(req: Request) {
           encountersData: JSON.stringify([]),
           entitiesData: JSON.stringify([]),
           tileLayersData: JSON.stringify(tileLayers),
-          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+          tilesetsData: JSON.stringify(tilesetsDataPayload),
           version: 1,
         },
         update: {
@@ -299,7 +311,7 @@ export async function POST(req: Request) {
           gridData: JSON.stringify(logicGrid),
           gatesData: JSON.stringify(gatesPayload),
           tileLayersData: JSON.stringify(tileLayers),
-          tilesetsData: JSON.stringify(DEFAULT_STUDIO_TILESETS),
+          tilesetsData: JSON.stringify(tilesetsDataPayload),
           version: { increment: 1 },
         },
       });
