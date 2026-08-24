@@ -84,8 +84,11 @@ export default function TilesetPicker({
   }, [isAddModalOpen, assetSearchQuery]);
 
   const handleAddTilesetFromSource = (rawSource: string) => {
-    let normalized = rawSource.replace(/^\/game-assets\/tilesets\//i, '').replace(/^tilesets\//i, '');
-    if (normalized.startsWith('/')) normalized = normalized.substring(1);
+    let normalized = rawSource;
+    if (!rawSource.startsWith('/uploads/') && !rawSource.startsWith('http')) {
+      normalized = rawSource.replace(/^\/game-assets\/tilesets\//i, '').replace(/^tilesets\//i, '');
+      if (normalized.startsWith('/')) normalized = normalized.substring(1);
+    }
 
     // Check if already in active tilesets
     const existingIdx = tilesets.findIndex((t) => t.imageSource.toLowerCase().includes(normalized.toLowerCase()));
@@ -103,20 +106,49 @@ export default function TilesetPicker({
       nextFirstGid = last.firstgid + estimatedCount;
     }
 
-    const newTileset: TilesetMeta = {
-      firstgid: nextFirstGid,
-      imageSource: normalized,
-      columns: 8,
-      tilewidth: 16,
-      tileheight: 16,
-    };
+    const imgUrl = normalized.startsWith('/') || normalized.startsWith('http') 
+        ? normalized 
+        : `/game-assets/tilesets/${normalized}`;
 
-    const updated = [...tilesets, newTileset];
-    onUpdateTilesets?.(updated);
-    setActiveTsIdx(updated.length - 1);
-    setNatural({ w: 0, h: 0 });
-    setImgError(false);
-    setIsAddModalOpen(false);
+    const img = new Image();
+    img.onload = () => {
+      const isLarge = img.width >= 512 || img.width % 32 === 0;
+      const tilewidth = isLarge ? 32 : 16;
+      const tileheight = isLarge ? 32 : 16;
+      const columns = Math.max(1, Math.floor(img.width / tilewidth));
+
+      const newTileset: TilesetMeta = {
+        firstgid: nextFirstGid,
+        imageSource: normalized,
+        columns,
+        tilewidth,
+        tileheight,
+      };
+
+      const updated = [...tilesets, newTileset];
+      onUpdateTilesets?.(updated);
+      setActiveTsIdx(updated.length - 1);
+      setNatural({ w: 0, h: 0 });
+      setImgError(false);
+      setIsAddModalOpen(false);
+    };
+    img.onerror = () => {
+      const newTileset: TilesetMeta = {
+        firstgid: nextFirstGid,
+        imageSource: normalized,
+        columns: 8,
+        tilewidth: 16,
+        tileheight: 16,
+      };
+
+      const updated = [...tilesets, newTileset];
+      onUpdateTilesets?.(updated);
+      setActiveTsIdx(updated.length - 1);
+      setNatural({ w: 0, h: 0 });
+      setImgError(false);
+      setIsAddModalOpen(false);
+    };
+    img.src = imgUrl;
     soundSynth?.playActionSound?.();
   };
 
