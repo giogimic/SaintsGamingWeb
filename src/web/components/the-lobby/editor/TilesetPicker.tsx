@@ -1,7 +1,25 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { soundSynth } from '@/engine/sound-synth';
-import { Layers, Plus, Grid, Trash2, Search, ImageIcon, X, Check, Info, Settings } from 'lucide-react';
+import {
+  Layers,
+  Plus,
+  Grid,
+  Trash2,
+  Search,
+  ImageIcon,
+  X,
+  Check,
+  Info,
+  Settings,
+  PaintBucket,
+  Download,
+  Copy,
+  Sparkles,
+  Brush,
+  Eraser,
+} from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
+import { useGameStore } from '../store';
 
 export interface TilesetMeta {
   firstgid: number;
@@ -15,11 +33,15 @@ interface TilesetPickerProps {
   tilesets: TilesetMeta[];
   activeBrushTileId: number;
   onBrushSelect: (gid: number) => void;
-  onBrushSelectPattern?: (pattern: { w: number, h: number, gids: number[][] }) => void;
+  onBrushSelectPattern?: (pattern: { w: number; h: number; gids: number[][] }) => void;
   activeLayerIdx: number;
   onLayerChange: (idx: number) => void;
   tileLayers: Array<{ name: string; grid: number[][] }>;
   onAddLayer: () => void;
+  onDeleteLayer?: (idx: number) => void;
+  onClearLayer?: (idx: number) => void;
+  onFillLayer?: (idx: number, gid: number) => void;
+  onSetDefaultGroundGid?: (gid: number) => void;
   onUpdateTilesets?: (tilesets: TilesetMeta[]) => void;
 }
 
@@ -32,15 +54,30 @@ export default function TilesetPicker({
   onLayerChange,
   tileLayers,
   onAddLayer,
+  onDeleteLayer,
+  onClearLayer,
+  onFillLayer,
+  onSetDefaultGroundGid,
   onUpdateTilesets,
 }: TilesetPickerProps) {
+  const showToast = useGameStore((s) => s.showToast);
   const [activeTsIdx, setActiveTsIdx] = useState(0);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [imgError, setImgError] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [dragStart, setDragStart] = useState<{ r: number, c: number } | null>(null);
+  const [dragStart, setDragStart] = useState<{ r: number; c: number } | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number } | null>(null);
   const [tilesetSearch, setTilesetSearch] = useState('');
+  const [tileContextMenu, setTileContextMenu] = useState<{
+    x: number;
+    y: number;
+    gid: number;
+    row: number;
+    col: number;
+    localId: number;
+    ts: TilesetMeta;
+    dataUrl?: string;
+  } | null>(null);
   
   // Asset Manager Add Tileset Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -322,10 +359,80 @@ export default function TilesetPicker({
     });
   };
 
+  useEffect(() => {
+    const handleGlobalClick = () => setTileContextMenu(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setTileContextMenu(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const handleContextMenu = (e: React.MouseEvent<HTMLImageElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!ts || imgError || !imgRef.current) return;
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const scaleX = imgRef.current.naturalWidth / rect.width;
+    const scaleY = imgRef.current.naturalHeight / rect.height;
+    const nativeX = Math.floor(x * scaleX);
+    const nativeY = Math.floor(y * scaleY);
+    const col = Math.floor(nativeX / ts.tilewidth);
+    const row = Math.floor(nativeY / ts.tileheight);
+
+    if (col < 0 || row < 0 || col >= ts.columns || nativeY >= imgRef.current.naturalHeight) return;
+
+    const localId = row * ts.columns + col;
+    const gid = ts.firstgid + localId;
+
+    let dataUrl: string | undefined = undefined;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = ts.tilewidth;
+      canvas.height = ts.tileheight;
+      const ctx = canvas.getContext('2d');
+      if (ctx && imgRef.current) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(
+          imgRef.current,
+          col * ts.tilewidth,
+          row * ts.tileheight,
+          ts.tilewidth,
+          ts.tileheight,
+          0,
+          0,
+          ts.tilewidth,
+          ts.tileheight
+        );
+        dataUrl = canvas.toDataURL('image/png');
+      }
+    } catch {
+      /* cross-origin canvas fallback */
+    }
+
+    soundSynth?.playUiClick?.();
+    setTileContextMenu({
+      x: Math.min(e.clientX, window.innerWidth - 260),
+      y: Math.min(e.clientY, window.innerHeight - 340),
+      gid,
+      row,
+      col,
+      localId,
+      ts,
+      dataUrl,
+    });
+  };
+
   return (
     <div className="flex flex-col gap-2 font-mono">
       <p className="text-[10px] leading-relaxed text-slate-400">
-        Click a tile below to set your brush, then click or drag on the map. Prefer solid grass (GID 17) for ground fills.
+        Left-click or drag to select brush. <span className="text-amber-300 font-bold">Right-click any tile</span> for layer fill, single-tile export, & quick actions.
       </p>
 
       {/* TILE LAYERS */}
@@ -348,22 +455,55 @@ export default function TilesetPicker({
           </button>
         </div>
         {tileLayers.map((layer, idx) => (
-          <button 
+          <div
             key={idx}
-            type="button"
             onClick={() => {
               soundSynth?.playUiClick?.();
               onLayerChange(idx);
             }}
-            className={`text-left text-xs px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+            className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
               activeLayerIdx === idx
                 ? 'bg-amber-500/20 text-amber-200 border border-amber-500/40 font-bold'
                 : 'bg-[#0b1320] text-slate-400 hover:bg-white/5 border border-transparent'
             }`}
           >
-            <span>L{idx}: {layer.name}</span>
-            {activeLayerIdx === idx && <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-500/20 text-amber-300">ACTIVE</span>}
-          </button>
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-xs truncate">L{idx}: {layer.name}</span>
+              {activeLayerIdx === idx && (
+                <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 flex-shrink-0">
+                  ACTIVE
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+              {onClearLayer && (
+                <button
+                  type="button"
+                  title={`Clear all tiles on L${idx}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClearLayer(idx);
+                  }}
+                  className="p-1 hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 rounded transition cursor-pointer"
+                >
+                  <Eraser className="w-3 h-3" />
+                </button>
+              )}
+              {idx > 0 && onDeleteLayer && (
+                <button
+                  type="button"
+                  title={`Delete L${idx}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteLayer(idx);
+                  }}
+                  className="p-1 hover:bg-red-500/30 text-red-400 rounded transition cursor-pointer"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
@@ -470,8 +610,12 @@ export default function TilesetPicker({
                }
                alt={ts.imageSource}
                onMouseDown={handleMouseDown}
-                 onMouseUp={handleMouseUp}
-                 onMouseLeave={() => { setHoveredTile(null); setDragStart(null); }}
+               onMouseUp={handleMouseUp}
+               onContextMenu={handleContextMenu}
+               onMouseLeave={() => {
+                 setHoveredTile(null);
+                 setDragStart(null);
+               }}
                draggable
                onDragStart={(e) => {
                  const gid = hoveredTile?.gid || activeBrushTileId;
@@ -486,7 +630,6 @@ export default function TilesetPicker({
                  e.dataTransfer.effectAllowed = 'copy';
                }}
                onMouseMove={handleMouseMove}
-               
                onLoad={(e) => {
                  const el = e.currentTarget;
                  setNatural({ w: el.naturalWidth, h: el.naturalHeight });
@@ -740,6 +883,143 @@ export default function TilesetPicker({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TILE PALETTE RIGHT-CLICK CONTEXT MENU */}
+      {tileContextMenu && (
+        <div
+          className="fixed z-[9999] bg-[#0c1424] border border-amber-500/40 rounded-xl shadow-2xl p-2 flex flex-col gap-1 min-w-[240px] text-xs font-mono text-slate-200 backdrop-blur-md animate-in fade-in zoom-in-95 duration-100"
+          style={{ left: tileContextMenu.x, top: tileContextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header with Tile Info & Mini Preview */}
+          <div className="flex items-center gap-2.5 p-2 bg-black/60 rounded-lg border border-amber-500/20 mb-1">
+            {tileContextMenu.dataUrl ? (
+              <img
+                src={tileContextMenu.dataUrl}
+                alt="Tile"
+                className="w-9 h-9 border border-amber-400/40 bg-black/80 rounded object-contain shrink-0"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            ) : (
+              <div className="w-9 h-9 border border-amber-400/40 bg-black/80 rounded flex items-center justify-center text-amber-400 font-bold text-xs">
+                #{tileContextMenu.gid}
+              </div>
+            )}
+            <div className="flex flex-col min-w-0">
+              <span className="text-amber-300 font-bold text-xs">Tile GID #{tileContextMenu.gid}</span>
+              <span className="text-[10px] text-slate-400 truncate">
+                Local #{tileContextMenu.localId} ({tileContextMenu.ts.tilewidth}×{tileContextMenu.ts.tileheight}px)
+              </span>
+              <span className="text-[9px] text-slate-500 truncate">
+                Row {tileContextMenu.row}, Col {tileContextMenu.col}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Brush Selection */}
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playSelectSound?.();
+              onBrushSelect(tileContextMenu.gid);
+              setTileContextMenu(null);
+              showToast(`Selected Tile GID #${tileContextMenu.gid} as Brush`);
+            }}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
+          >
+            <Brush className="w-3.5 h-3.5 text-amber-400" />
+            <span>Select as Active Brush</span>
+          </button>
+
+          {/* Fill Active Layer */}
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playActionSound?.();
+              if (onFillLayer) {
+                onFillLayer(activeLayerIdx, tileContextMenu.gid);
+              }
+              setTileContextMenu(null);
+            }}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
+          >
+            <PaintBucket className="w-3.5 h-3.5 text-amber-400" />
+            <span>Fill Active Layer (L{activeLayerIdx})</span>
+          </button>
+
+          {/* Fill Entire Ground (L0) */}
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playActionSound?.();
+              if (onFillLayer) {
+                onFillLayer(0, tileContextMenu.gid);
+              }
+              setTileContextMenu(null);
+            }}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
+          >
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Fill Entire Map Ground (L0)</span>
+          </button>
+
+          {/* Download / Export Individual Tile */}
+          {tileContextMenu.dataUrl && (
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                const a = document.createElement('a');
+                a.href = tileContextMenu.dataUrl!;
+                const name =
+                  tileContextMenu.ts.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'tileset';
+                a.download = `${name}_tile_${tileContextMenu.localId}_gid${tileContextMenu.gid}.png`;
+                a.click();
+                showToast(
+                  `Exported tile as individual PNG (${tileContextMenu.ts.tilewidth}×${tileContextMenu.ts.tileheight}px)`
+                );
+                setTileContextMenu(null);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Save as Individual Tile (PNG)</span>
+            </button>
+          )}
+
+          {/* Set Default Ground GID */}
+          {onSetDefaultGroundGid && (
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playActionSound?.();
+                onSetDefaultGroundGid(tileContextMenu.gid);
+                showToast(`Set GID #${tileContextMenu.gid} as Realm Default Ground`);
+                setTileContextMenu(null);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Set as Default Ground GID</span>
+            </button>
+          )}
+
+          {/* Copy Tile GID */}
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              navigator.clipboard.writeText(String(tileContextMenu.gid));
+              showToast(`Copied GID #${tileContextMenu.gid} to clipboard`);
+              setTileContextMenu(null);
+            }}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/20 text-slate-200 hover:text-amber-200 text-left transition cursor-pointer"
+          >
+            <Copy className="w-3.5 h-3.5 text-slate-400" />
+            <span>Copy Tile GID</span>
+          </button>
         </div>
       )}
     </div>
