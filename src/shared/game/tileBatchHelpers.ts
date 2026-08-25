@@ -70,11 +70,12 @@ export function groundQuadPositions(
   tileSize: number,
   tileW: number = 32,
   tileH: number = 32,
-  baseGridPx: number = 32
+  baseGridPx?: number
 ): number[] {
   const s = Number.isFinite(tileSize) && tileSize > 0 ? tileSize : 1;
-  const worldW = s * (tileW / baseGridPx);
-  const worldH = s * (tileH / baseGridPx);
+  const unitPx = baseGridPx && baseGridPx > 0 ? baseGridPx : (tileW || 32);
+  const worldW = s * (tileW / unitPx);
+  const worldH = s * (tileH / unitPx);
   const half = s / 2;
   const x0 = posX - half;
   const z0 = posZ - half;

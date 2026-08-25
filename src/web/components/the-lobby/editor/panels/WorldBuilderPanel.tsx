@@ -170,6 +170,89 @@ export const WorldBuilderPanel: React.FC = () => {
     showToast(`Added ${layers[nextIdx].name} — Save Map to persist.`);
   };
 
+  const handleDeleteLayer = (layerIdx: number) => {
+    if (!activeMapData) return;
+    const base = activeMapData;
+    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
+    if (layers.length <= 1 || layerIdx === 0) {
+      if (confirm(`Clear all tiles on Layer ${layerIdx} (${layers[layerIdx]?.name || 'Ground'})?`)) {
+        soundSynth?.playActionSound?.();
+        const h = base.grid?.length || 24;
+        const w = base.grid?.[0]?.length || 24;
+        layers[layerIdx] = { ...layers[layerIdx], grid: Array(h).fill(0).map(() => Array(w).fill(0)) };
+        const next = { ...base, tileLayers: layers };
+        useGameStore.getState().setActiveMapData(next);
+        const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
+        if (engine) engine.loadTilemap(next);
+        useEditorStore.getState().markMapDirty();
+        showToast(`Cleared ${layers[layerIdx].name}`);
+      }
+      return;
+    }
+
+    const layerName = layers[layerIdx]?.name || `Layer ${layerIdx}`;
+    if (confirm(`Delete ${layerName}? All tiles on this layer will be removed.`)) {
+      soundSynth?.playActionSound?.();
+      layers.splice(layerIdx, 1);
+      const next = { ...base, tileLayers: layers };
+      useGameStore.getState().setActiveMapData(next);
+      if (activeLayerIdx >= layers.length) {
+        setActiveLayerIdx(Math.max(0, layers.length - 1));
+      }
+      const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
+      if (engine) engine.loadTilemap(next);
+      useEditorStore.getState().markMapDirty();
+      showToast(`Deleted ${layerName}`);
+    }
+  };
+
+  const handleClearLayer = (layerIdx: number) => {
+    if (!activeMapData) return;
+    const base = activeMapData;
+    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
+    if (!layers[layerIdx]) return;
+    const layerName = layers[layerIdx].name || `Layer ${layerIdx}`;
+    if (confirm(`Clear all tiles on ${layerName}?`)) {
+      soundSynth?.playActionSound?.();
+      const h = base.grid?.length || 24;
+      const w = base.grid?.[0]?.length || 24;
+      layers[layerIdx] = { ...layers[layerIdx], grid: Array(h).fill(0).map(() => Array(w).fill(0)) };
+      const next = { ...base, tileLayers: layers };
+      useGameStore.getState().setActiveMapData(next);
+      const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
+      if (engine) engine.loadTilemap(next);
+      useEditorStore.getState().markMapDirty();
+      showToast(`Cleared ${layerName}`);
+    }
+  };
+
+  const handleFillLayer = (layerIdx: number, gid: number) => {
+    if (!activeMapData) return;
+    const base = activeMapData;
+    const layers = Array.isArray(base.tileLayers) ? [...base.tileLayers] : [];
+    if (!layers[layerIdx]) return;
+    soundSynth?.playActionSound?.();
+    const h = base.grid?.length || 24;
+    const w = base.grid?.[0]?.length || 24;
+    layers[layerIdx] = { ...layers[layerIdx], grid: Array(h).fill(0).map(() => Array(w).fill(gid)) };
+    const next = { ...base, tileLayers: layers };
+    useGameStore.getState().setActiveMapData(next);
+    const engine = (typeof window !== 'undefined' && (window as any).__babylonEngine) || null;
+    if (engine) engine.loadTilemap(next);
+    useEditorStore.getState().markMapDirty();
+    showToast(`Filled ${layers[layerIdx].name} with GID #${gid}`);
+  };
+
+  const handleSetDefaultGroundGid = (gid: number) => {
+    if (!activeMapData) return;
+    const updated = {
+      ...activeMapData,
+      defaultGroundGid: gid,
+    };
+    useGameStore.getState().setActiveMapData(updated);
+    useEditorStore.getState().markMapDirty();
+  };
+
   const handleBrushSelect = (tileId: number) => {
     setBrushTileId(tileId);
     if (activeLayerIdx === -1) {
@@ -482,6 +565,10 @@ export const WorldBuilderPanel: React.FC = () => {
                 onLayerChange={(idx) => setActiveLayerIdx(idx)}
                 tileLayers={currentMapData.tileLayers || []}
                 onAddLayer={handleAddLayer}
+                onDeleteLayer={handleDeleteLayer}
+                onClearLayer={handleClearLayer}
+                onFillLayer={handleFillLayer}
+                onSetDefaultGroundGid={handleSetDefaultGroundGid}
                 onUpdateTilesets={handleUpdateTilesets}
               />
             )}

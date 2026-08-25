@@ -1,3 +1,21 @@
+## [2.1.459-7] - 2026-08-25
+### Studio Tileset Context Menu, Layer Deletion & 16x16 Scaling Fix
+- **16x16 / Arbitrary Tileset Scaling Fix (`tileBatchHelpers.ts`)**:
+  - Fixed `groundQuadPositions` where maps without explicit `baseTileSizePx` caused 16x16 tilesets to shrink into half-size quads (0.5×0.5), leaving black gaps between cells. Square tiles now seamlessly span the 1.0×1.0 grid footprint without gaps.
+- **Tile Palette Right-Click Context Menu (`TilesetPicker.tsx`)**:
+  - Added rich interactive context menu on right-clicking any tile in the tilesheet palette:
+    - **Tile Inspector**: GID #, local ID, row, col, and pixel dimensions.
+    - **Select as Active Brush**: Instantly primes the brush with the selected tile GID.
+    - **Fill Active Layer (L{activeLayerIdx})**: Flood-fills the active layer with this tile GID.
+    - **Fill Entire Map Ground (L0)**: Fills the entire base ground layer.
+    - **Save as Individual Tile (PNG)**: Slices the single 16×16 or 32×32 tile from the tilesheet and triggers a clean pixel-perfect PNG download.
+    - **Set as Realm Default Ground**: Persists the tile as the default ground fill.
+    - **Copy Tile GID**: Copies the GID number to the clipboard with toast feedback.
+- **Tile Layer Deletion & Clearing Controls (`TilesetPicker.tsx` & `WorldBuilderPanel.tsx`)**:
+  - Added delete buttons (Trash icon) to remove non-base tile layers (`> 0`) with live map reload.
+  - Added clear buttons (Eraser icon) to reset all tiles on a layer without deleting the layer structure.
+  - Added flood fill handler for instant layer filling.
+
 ## [2.1.459-6] - 2026-08-25
 ### Critical Fix: Studio Map Paint Saving & White Map Rendering
 - **Preserve User Paint on Save (`studioTilesetBootstrap.ts` & `studioMapCreate.ts`)**:
