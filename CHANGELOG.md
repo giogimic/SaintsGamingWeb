@@ -1,3 +1,10 @@
+## [2.1.459-4] - 2026-08-25
+### Critical Fix: React Error #185 (Maximum Update Depth Exceeded) in Studio & Lobby
+- **Reference Equality Stabilization**:
+  - Fixed `ensureMapHasStudioTilesets` in `studioTilesetBootstrap.ts` to preserve reference equality (`map === next`) when no modifications to `tileLayers` or `tilesets` are required.
+  - Resolved circular state synchronization loop between `useState(mapData)` in `GameCanvasBabylon.tsx` and `useGameStore.setActiveMapData` in the parent lobby/studio container that repeatedly triggered setState updates.
+  - Evaluated stabilized map instance before calling `setMapData` to eliminate infinite React reconciliation cycles on `/studio` and `/lobby`.
+
 ## [2.1.459-3] - 2026-08-25
 ### Comprehensive Architecture Fix: Structural Terminology Purge & Setup Wizard Tileset Workflow
 - **LPC / Tuxemon Terminology Purge**:
