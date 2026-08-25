@@ -1,8 +1,9 @@
-﻿"use client";
+'use client';
 
 import { useState } from "react";
 import { Loader2, Database } from "lucide-react";
 import { Button } from "@/shared/ui/button";
+import { seedDummyContentAction } from "@/app/actions/game-dev";
 
 export function DummyContentButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,15 +11,21 @@ export function DummyContentButton() {
   const pushDummyContent = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/dev/seed-dummy", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message || "Dummy content pushed successfully!");
+      const res = await seedDummyContentAction();
+      if (res.success) {
+        alert(res.message || "Dummy content pushed successfully!");
       } else {
-        alert(data.message || "Failed to push content.");
+        // Fallback to API route if direct action had permission mismatch
+        const apiRes = await fetch("/api/dev/seed-dummy", { method: "POST" });
+        const data = await apiRes.json();
+        if (apiRes.ok && data.success) {
+          alert(data.message || "Dummy content pushed successfully!");
+        } else {
+          alert(data.message || res.error || "Failed to push content.");
+        }
       }
-    } catch {
-      alert("Error pushing dummy content.");
+    } catch (err: any) {
+      alert(`Error pushing dummy content: ${err?.message || err}`);
     } finally {
       setIsLoading(false);
     }
