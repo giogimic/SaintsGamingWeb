@@ -187,7 +187,7 @@ export async function fetchAllGameAssets() {
 
       if (catLower.some((c) => c.includes('terrain') || c.includes('tile') || c.includes('ground') || c.includes('floor') || c.includes('wall'))) {
         category = 'Terrain';
-      } else if (catLower.some((c) => c.includes('monster') || c.includes('beast') || c.includes('creature') || c.includes('tuxemon'))) {
+      } else if (catLower.some((c) => c.includes('monster') || c.includes('beast') || c.includes('creature'))) {
         category = 'Monsters/Beasts';
       } else if (catLower.some((c) => c.includes('npc') || c.includes('char') || c.includes('hero') || c.includes('player') || c.includes('sprite'))) {
         category = 'NPCs';

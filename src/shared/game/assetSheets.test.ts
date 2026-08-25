@@ -17,8 +17,8 @@ describe('Spritesheet & Grid Classification (Phase 4A)', () => {
 
   it('correctly excludes single-frame front/back sprites and icons', () => {
     expect(isSpritesheetAsset('/game-assets/items/sword.png')).toBe(false);
-    expect(isSpritesheetAsset('/game-assets/tuxemon/agnite-front.png')).toBe(false);
-    expect(isSpritesheetAsset('/game-assets/tuxemon/agnite-face.png')).toBe(false);
+    expect(isSpritesheetAsset('/game-assets/creatures/agnite-front.png')).toBe(false);
+    expect(isSpritesheetAsset('/game-assets/creatures/agnite-face.png')).toBe(false);
   });
 
   it('calculates frame count for standard 4x4 or 8x8 sheets', () => {

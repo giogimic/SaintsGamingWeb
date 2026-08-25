@@ -288,7 +288,7 @@ export function EntitySetupStep({
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
                     { id: 'SPRITE_SHEET', label: 'Sprite Sheet', desc: '4-directional sheet with walk cycles', icon: Layers },
-                    { id: 'MODULAR', label: 'Modular Character', desc: 'LPC composite (body, hair, clothing)', icon: ImageIcon },
+                    { id: 'MODULAR', label: 'Modular Character', desc: 'Modular composite (body, hair, clothing)', icon: ImageIcon },
                     { id: 'SINGLE_IMAGE', label: 'Single Image', desc: 'Static icon / 2D token sprite', icon: FileImage },
                   ].map((type) => {
                     const Icon = type.icon;

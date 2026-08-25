@@ -43,11 +43,11 @@ export interface AssetIngestOptions {
   isModularComponent?: boolean;
   /** Baseline stacking order for compositing (lower draws first). */
   zOrderHint?: number;
-  /** LPC-style base mesh this component was fitted for (e.g. "male", "child"). */
+  /** Modular-style base mesh this component was fitted for (e.g. "male", "child"). */
   baseBodyType?: string;
   /** componentCategory values this piece hides when equipped (e.g. a closed helm hides "hair"). */
   hidesComponents?: string[];
-  /** Structured per-layer attribution (e.g. multi-author LPC packs). Stored in asset metadata for getAssetAttribution. */
+  /** Structured per-layer attribution (e.g. multi-author modular packs). Stored in asset metadata for getAssetAttribution. */
   credits?: { fileName?: string; authors?: string[]; licenses?: string[]; urls?: string[] }[];
   bundleId?: string;
   sourceMode?: "single" | "multi" | "spritesheet";

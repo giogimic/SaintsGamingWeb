@@ -30,7 +30,7 @@ describe('Canonical Ability Registry Engine (Bible 25 §3.1)', () => {
       }
     }
 
-    const captureMove = getAbilityDef('tuxemon_capture');
+    const captureMove = getAbilityDef('creature_capture');
     expect(captureMove).toBeDefined();
     expect(captureMove?.isCapture).toBe(true);
     expect(captureMove?.domain).toBe('creature_tb');

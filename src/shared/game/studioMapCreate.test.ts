@@ -9,6 +9,7 @@ import {
   normalizeMapSlug,
   normalizeStudioMapVisuals,
 } from "./studioMapCreate";
+import { DEFAULT_STUDIO_TILESETS } from "./studioTilesetBootstrap";
 
 describe("normalizeMapSlug", () => {
   it("uppercases and replaces spaces", () => {
@@ -56,10 +57,10 @@ describe("buildNewStudioMap", () => {
     expect(ground.grid.every((row) => row.every((c) => c === DEFAULT_STUDIO_GROUND_GID))).toBe(
       true
     );
-    expect(r.map.tilesets.length).toBeGreaterThan(0);
-    // Must not accidentally copy logic ids into visuals.
-    expect(ground.grid[0][0]).not.toBe(1);
-    expect(ground.grid[5][5]).not.toBe(0);
+    expect(r.map.tilesets).toEqual(DEFAULT_STUDIO_TILESETS);
+    // Must not accidentally copy logic wall id 1 into visuals
+    expect(ground.grid[0][0]).toBe(DEFAULT_STUDIO_GROUND_GID);
+    expect(ground.grid[5][5]).toBe(DEFAULT_STUDIO_GROUND_GID);
   });
 });
 

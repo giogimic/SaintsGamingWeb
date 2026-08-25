@@ -143,7 +143,7 @@ const SINGLE_FRAME_NPC_SLUGS = [
 
 /**
  * True when a sprite URL should render as one full frame (no 3×4 walk UV slicing).
- * Classic Tuxemon /npc/ walk sheets (e.g. adventurer 48×128) stay on DEFAULT_SPRITE_CONFIG.
+ * Classic /npc/ walk sheets (e.g. adventurer 48×128) stay on DEFAULT_SPRITE_CONFIG.
  * Custom portraits, creature/monster sheets, and *-ow crops are single-frame.
  */
 export function isSingleFrameSpriteUrl(url: string | null | undefined): boolean {
@@ -3443,7 +3443,9 @@ private resolveTilePick(
           },
           () => {
             BabylonEngine.markSpriteUrlFailed(entity.spriteUrl);
-            console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
+            if (!entity.spriteUrl?.includes('adventurer')) {
+              console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
+            }
             this.applyDefaultPlayerFallback(createdMesh, mat);
             if (createdMesh.metadata) {
               createdMesh.metadata.spriteUrl = entity.spriteUrl;
@@ -3586,7 +3588,9 @@ private resolveTilePick(
               },
               () => {
                 BabylonEngine.markSpriteUrlFailed(entity.spriteUrl);
-                console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
+                if (!entity.spriteUrl?.includes('adventurer')) {
+                  console.warn(`[BabylonEngine] Failed to load sprite: ${entity.spriteUrl} (cached failure, using fallback)`);
+                }
                 this.applyDefaultPlayerFallback(existingMesh, mat);
                 if (existingMesh.metadata) {
                   existingMesh.metadata.spriteUrl = entity.spriteUrl;

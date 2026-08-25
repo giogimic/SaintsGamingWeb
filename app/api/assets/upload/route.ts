@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * POST /api/assets/upload — Ingest a SourceAsset (and optional UsableAsset)
  * Multipart Form Data:
  *  - file: File (required)
- *  - gameId: string (optional, defaults to "tuxemon")
+ *  - gameId: string (optional, defaults to "saints")
  *  - name: string (optional)
  *  - type: string (optional, e.g. "CHARACTER", "OBJECT", "TILE", "AUDIO")
  *  - category: string (optional)
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const gameId = (formData.get("gameId") as string) || "tuxemon";
+    const gameId = (formData.get("gameId") as string) || "saints";
     const name = formData.get("name") as string | undefined;
     const type = formData.get("type") as string | undefined;
     const category = formData.get("category") as string | undefined;

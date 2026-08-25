@@ -8,7 +8,7 @@
 
 export type SpriteAnimationProfile =
   | 'directional_3x4'
-  | 'tuxemon_legacy_3x4'
+  | 'classic_3x4'
   | 'multi_frame_directional'
   | 'directional_walk'
   | 'portrait-1x1'
@@ -43,7 +43,7 @@ export interface SpriteDefinition {
     up: number;
   };
   actions?: Record<string, SpriteActionDefinition>;
-  isLpc?: boolean;
+  isModular?: boolean;
   label?: string;
   description?: string;
 }
@@ -93,14 +93,14 @@ export const DIRECTIONAL_3X4_PROFILE: SpriteDefinition = {
     right: 2,
     up: 3,
   },
-  isLpc: false,
+  isModular: false,
   label: 'Saints Classic (3x4)',
   description: 'Classic 3-step walk cycle (Down, Left, Right, Up). 32x32 frames.',
 };
 
 export const LEGACY_3X4_PROFILE: SpriteDefinition = {
   ...DIRECTIONAL_3X4_PROFILE,
-  profile: 'tuxemon_legacy_3x4',
+  profile: 'classic_3x4',
 };
 
 export const MULTI_FRAME_DIRECTIONAL_PROFILE: SpriteDefinition = {
@@ -122,7 +122,7 @@ export const MULTI_FRAME_DIRECTIONAL_PROFILE: SpriteDefinition = {
     right: 11,
   },
   actions: ACTION_ROWS,
-  isLpc: true,
+  isModular: true,
   label: 'Modular Standard (13x21)',
   description: 'Full Modular spritesheet with 9-frame walk, slash, thrust, spellcast, and hurt animations.',
 };
@@ -148,7 +148,7 @@ export const DIRECTIONAL_WALK_PROFILE: SpriteDefinition = {
   actions: {
     walk: { startRow: 0, frameCount: 9 },
   },
-  isLpc: true,
+  isModular: true,
   label: 'Modular Walk-Only (9x4)',
   description: 'Compact 9-frame Modular walk cycle without combat rows (64x64 frames).',
 };
@@ -170,14 +170,14 @@ export const PORTRAIT_1X1_PROFILE: SpriteDefinition = {
     right: 0,
     up: 0,
   },
-  isLpc: false,
+  isModular: false,
   label: 'Single Frame Portrait (1x1)',
   description: 'Static single frame / portrait / creature overworld billboard.',
 };
 
 export const ANIMATION_PROFILES: Record<SpriteAnimationProfile, SpriteDefinition> = {
   'directional_3x4': DIRECTIONAL_3X4_PROFILE,
-  'tuxemon_legacy_3x4': LEGACY_3X4_PROFILE,
+  'classic_3x4': LEGACY_3X4_PROFILE,
   'multi_frame_directional': MULTI_FRAME_DIRECTIONAL_PROFILE,
   'directional_walk': DIRECTIONAL_WALK_PROFILE,
   'portrait-1x1': PORTRAIT_1X1_PROFILE,
@@ -193,7 +193,7 @@ export const ANIMATION_PROFILES: Record<SpriteAnimationProfile, SpriteDefinition
     walkCycle: [0, 1],
     walkSpeed: 6,
     directions: { down: 0, left: 1, right: 2, up: 3 },
-    isLpc: false,
+    isModular: false,
     label: 'Custom Grid',
     description: 'Custom grid dimensions and animation frames.',
   },
@@ -304,7 +304,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
         right: Math.min(2, rows - 1),
         up: Math.min(3, rows - 1),
       },
-      isLpc: false,
+      isModular: false,
     };
   }
 
@@ -333,11 +333,11 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     if (
       s.includes('good-') ||
       s.includes('evil-') ||
-      s.includes('lpc_') ||
-      s.includes('_lpc') ||
+      s.includes('modular_') ||
+      s.includes('_modular') ||
       s.includes('item-') ||
       s.includes('/npc/item-') ||
-      s.includes('/lpc/') ||
+      s.includes('/modular/') ||
       s.includes('character_layer_')
     ) {
       const cellWidth = w === 1664 ? 128 : 64;
@@ -429,7 +429,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       }
     }
 
-    // Classic Tuxemon 3x4 (96x128, 48x128, 48x64, 96x96, etc.)
+    // Classic 3x4 (96x128, 48x128, 48x64, 96x96, etc.)
     if ((w === 96 && h === 128) || (w === 48 && h === 128) || (w % 3 === 0 && h % 4 === 0 && w < 300)) {
       return {
         ...LEGACY_3X4_PROFILE,
@@ -452,7 +452,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     }
   }
 
-  // Default fallback for general walking characters: Classic Tuxemon 3x4
+  // Default fallback for general walking characters: Classic 3x4
   return LEGACY_3X4_PROFILE;
 }
 
@@ -475,7 +475,7 @@ export function spriteDefinitionToBabylonConfig(def: SpriteDefinition): any {
     walkCycle: def.walkCycle,
     idleFrame: def.idleFrame,
     walkSpeed: def.walkSpeed,
-    isLpc: def.isLpc || false,
+    isModular: def.isModular || false,
     profile: def.profile,
   };
 }
@@ -527,12 +527,12 @@ export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
     displayName: 'Classic 3x4 Four-Directional Character Sheet',
     shortDescription: 'A compact top-down character format using three animation frames across four facing directions.',
     technicalDescription: '3 columns by 4 rows grid, mapping to Down, Left, Right, Up. Walk cycle loops across the three columns (e.g. 0-1-2-1).',
-    aliases: ['Tuxemon', 'classic 3x4', '3x4 RPG sheet', 'four-direction 3-frame'],
-    searchTerms: ['tuxemon style', 'rpg maker style', '3x4 directional'],
-    examples: ['Tuxemon'],
+    aliases: ['classic 3x4', '3x4 RPG sheet', 'four-direction 3-frame'],
+    searchTerms: ['rpg maker style', '3x4 directional', 'classic walk'],
+    examples: ['Classic Walk Grid'],
     supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER'],
     supportedRoles: ['overworld', 'idle', 'walk', 'battle_front', 'battle_back'],
-    animationProfile: 'tuxemon_legacy_3x4',
+    animationProfile: 'classic_3x4',
     directionCount: 4,
     frameCount: 3,
     layoutDescription: 'Grid of 3 columns and 4 rows (Down, Left, Right, Up).',
@@ -543,7 +543,7 @@ export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
     id: 'directional_3x4',
     displayName: 'Saints 3x4 Directional Entity',
     shortDescription: 'A modified 3x4 sheet with Saints Engine specific frame mappings.',
-    technicalDescription: '3 columns by 4 rows grid. Uses a different walk cycle pacing or resting frame compared to classic Tuxemon sheets.',
+    technicalDescription: '3 columns by 4 rows grid. Uses a different walk cycle pacing or resting frame.',
     aliases: ['Saints 3x4'],
     searchTerms: ['saints style', '3x4'],
     examples: ['Saints Gaming default characters'],

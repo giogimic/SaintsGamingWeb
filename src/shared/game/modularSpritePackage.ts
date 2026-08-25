@@ -186,7 +186,7 @@ export function detectSpriteFormat(width: number, height: number): DetectedSprit
     };
   }
 
-  // Saints / Tuxemon 2.5D Standard 3x4 Walk Grid (96x128 = 3 cols x 4 rows at 32x32)
+  // Saints 2.5D Standard 3x4 Walk Grid (96x128 = 3 cols x 4 rows at 32x32)
   if (width === 96 && height === 128) {
     return {
       isRecognized: true,

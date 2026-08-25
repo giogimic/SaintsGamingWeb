@@ -42,9 +42,9 @@ const WORKSPACE_META: Record<
   { label: string; icon: LucideIcon; blurb: string; color: string }
 > = {
   characters: {
-    label: 'Characters & LPC',
+    label: 'Characters & Sprites',
     icon: UserRound,
-    blurb: 'Player avatars, NPCs, modular LPC equipment layers, and character generators.',
+    blurb: 'Player avatars, NPCs, modular equipment layers, and character generators.',
     color: 'text-cyan-400 border-cyan-500/40 bg-cyan-500/10',
   },
   creatures: {

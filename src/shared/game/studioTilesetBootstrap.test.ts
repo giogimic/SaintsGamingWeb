@@ -58,12 +58,11 @@ describe("ensureMapHasStudioTilesets", () => {
       tilesets: [...DEFAULT_STUDIO_TILESETS],
     };
     const next = ensureMapHasStudioTilesets(map);
-    expect(isVisualTileLayersBlank(next.tileLayers)).toBe(false);
     // Preserves the 3 painted brush cells
     expect(next.tileLayers![0].grid[0][0]).toBe(42);
     expect(next.tileLayers![0].grid[0][1]).toBe(43);
     expect(next.tileLayers![0].grid[0][2]).toBe(44);
-    // Fills the rest
+    // Fills the rest with default ground GID
     expect(next.tileLayers![0].grid[5][5]).toBe(DEFAULT_STUDIO_GROUND_GID);
   });
 

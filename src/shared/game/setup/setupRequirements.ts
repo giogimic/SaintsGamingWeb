@@ -15,7 +15,7 @@ export interface SetupRequirements {
 }
 
 export type AssetStyleChoice = 
-  | 'lpc' 
+  | 'modular_layered' 
   | 'directional_3x4' 
   | 'separate_directions' 
   | 'custom_sheet' 
@@ -76,7 +76,7 @@ export function getEntityAssetRequirements(input: {
       entityType: 'CHARACTER',
       requiredRoles,
       optionalRoles,
-      supportedStyles: ['lpc', 'directional_3x4', 'separate_directions', 'custom_sheet', 'static'],
+      supportedStyles: ['modular_layered', 'directional_3x4', 'separate_directions', 'custom_sheet', 'static'],
     };
   } else {
     // CREATURE

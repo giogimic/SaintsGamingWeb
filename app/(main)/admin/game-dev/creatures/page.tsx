@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 
-export default async function TuxemonAdminPage() {
+export default async function CreaturesAdminPage() {
   const speciesList = await prisma.creatureTemplate.findMany({
     include: {
       stats: true,
@@ -30,7 +30,7 @@ export default async function TuxemonAdminPage() {
             Saints Beast Species Database
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Browse and manage all 411 registered Saints Beast species, stats, and learnedAbilitiess.
+            Browse and manage all registered Saints Beast species, stats, and abilities.
           </p>
         </div>
         <Link
@@ -66,7 +66,7 @@ export default async function TuxemonAdminPage() {
       {/* Species Grid */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg">Registered Tuxemon (First 100)</CardTitle>
+          <CardTitle className="text-lg">Registered Creatures (First 100)</CardTitle>
           <CardDescription>Species metadata synced directly from Prisma SQLite database.</CardDescription>
         </CardHeader>
         <CardContent>

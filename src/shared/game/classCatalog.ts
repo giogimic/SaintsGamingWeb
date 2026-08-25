@@ -49,7 +49,7 @@ export type ClassDefData = {
   icon?: string | null;
   color: string;
   /**
-   * World profile id (tuxemon / custom_1 / custom_2).
+   * World profile id (saints / custom_1 / custom_2).
    * null/empty = shared across all Studio profiles.
    * Not the GameConfig FK — that stays on the DB `gameId` column.
    */

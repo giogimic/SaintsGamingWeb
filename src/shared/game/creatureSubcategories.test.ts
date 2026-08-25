@@ -8,18 +8,18 @@ import {
 
 describe('Creature Asset Subcategories (Phase 4B)', () => {
   it('correctly classifies front sprites', () => {
-    expect(classifyCreatureAsset('public/assets/tuxemon/agnite-front.png')).toBe('front_sprite');
+    expect(classifyCreatureAsset('public/assets/creatures/agnite-front.png')).toBe('front_sprite');
     expect(classifyCreatureAsset('/game-assets/monster/rockitten_front_1.png')).toBe('front_sprite');
     expect(classifyCreatureAsset('budaye-front2.png')).toBe('front_sprite');
   });
 
   it('correctly classifies back sprites', () => {
-    expect(classifyCreatureAsset('public/assets/tuxemon/agnite-back.png')).toBe('back_sprite');
+    expect(classifyCreatureAsset('public/assets/creatures/agnite-back.png')).toBe('back_sprite');
     expect(classifyCreatureAsset('/game-assets/monster/rockitten_back_1.png')).toBe('back_sprite');
   });
 
   it('correctly classifies face portraits', () => {
-    expect(classifyCreatureAsset('public/assets/tuxemon/agnite-face.png')).toBe('face_portrait');
+    expect(classifyCreatureAsset('public/assets/creatures/agnite-face.png')).toBe('face_portrait');
     expect(classifyCreatureAsset('/game-assets/monster/face/rockitten_face.png')).toBe('face_portrait');
   });
 

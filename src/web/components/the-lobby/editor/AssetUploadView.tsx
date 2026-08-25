@@ -268,7 +268,7 @@ export function AssetUploadView({
     }
   };
 
-  const applyLpcPreset = (preset: 'character' | 'walk' | '2.5d') => {
+  const applyModularPreset = (preset: 'character' | 'walk' | '2.5d') => {
     setImportProfile('character');
     setSlotRole('walk');
     setAssetType('CHARACTER');
@@ -487,21 +487,21 @@ export function AssetUploadView({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => applyLpcPreset('character')}
+              onClick={() => applyModularPreset('character')}
               className="px-3 py-1.5 rounded bg-cyan-800 hover:bg-cyan-700 text-white font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Wand2 className="w-3.5 h-3.5" /> Full Modular Preset
             </button>
             <button
               type="button"
-              onClick={() => applyLpcPreset('walk')}
+              onClick={() => applyModularPreset('walk')}
               className="px-3 py-1.5 rounded bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               Walk Cycle (4-Dir)
             </button>
             <button
               type="button"
-              onClick={() => applyLpcPreset('2.5d')}
+              onClick={() => applyModularPreset('2.5d')}
               className="px-3 py-1.5 rounded bg-amber-700/80 hover:bg-amber-600 text-amber-100 font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
               Saints 2.5D (3x4)
@@ -897,7 +897,7 @@ export function AssetUploadView({
                   <option value="">Auto-Detect (from sheet format)</option>
                   <option value="modular-full">Universal Modular Full Sheet (13x21 · 64x64)</option>
                   <option value="directional_walk">Modular Walk Cycle (9x4 · 64x64)</option>
-                  <option value="directional_3x4">Tuxemon Classic (3x4 · 32x32)</option>
+                  <option value="directional_3x4">Classic Walk (3x4 · 32x32)</option>
                   <option value="portrait-1x1">Single Frame Portrait / Billboard (1x1)</option>
                   <option value="custom">Custom Grid</option>
                 </select>

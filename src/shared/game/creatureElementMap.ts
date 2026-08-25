@@ -1,8 +1,8 @@
 /**
- * Tuxemon Sprite-Tag to Canonical 10-Element Mapping (System B).
+ * Creature Sprite-Tag to Canonical 10-Element Mapping (System B).
  * Maps legacy creature sprite tags directly into canonical Saints elements.
  */
-export const TUXEMON_TO_SAINTS_ELEMENT: Record<string, string> = {
+export const CREATURE_TO_SAINTS_ELEMENT: Record<string, string> = {
   fire: "fire",
   water: "water",
   wood: "grass",
@@ -25,8 +25,7 @@ export const TUXEMON_TO_SAINTS_ELEMENT: Record<string, string> = {
   hero: "normal",
 };
 
-export function mapTuxemonTypeToSaints(tux: string | undefined | null): string {
-  if (!tux) return "normal";
-  return TUXEMON_TO_SAINTS_ELEMENT[tux.toLowerCase()] || "normal";
+export function mapCreatureTypeToSaints(type: string | undefined | null): string {
+  if (!type) return "normal";
+  return CREATURE_TO_SAINTS_ELEMENT[type.toLowerCase()] || "normal";
 }
-

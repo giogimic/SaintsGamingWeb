@@ -80,7 +80,7 @@ const DEFAULT_PACKS: AssetPackCard[] = [
   {
     id: 'creatures',
     name: 'Creature Battle Sheets',
-    description: 'Tuxemon companion & monster battle spritesheets.',
+    description: 'Creature & monster battle spritesheets.',
     category: 'monster',
     relativeDir: 'monster/battle',
     estimatedCount: 413,
@@ -89,8 +89,8 @@ const DEFAULT_PACKS: AssetPackCard[] = [
   },
   {
     id: 'npc',
-    name: 'NPC Walk Cycles (LPC)',
-    description: 'Liberated Pixel Cup citizen, guard, and vendor walk animations.',
+    name: 'NPC Walk Cycles',
+    description: 'Citizen, guard, and vendor walk animations.',
     category: 'character',
     relativeDir: 'npc',
     estimatedCount: 221,

@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 describe("Asset Ingestion Pipeline (Bible 35 §3)", () => {
   it("formats asset classification and tags correctly", () => {
-    const rawTags = ["hero", "warrior", "tuxemon"];
+    const rawTags = ["hero", "warrior", "creature"];
     const tagsJson = JSON.stringify(rawTags);
-    expect(JSON.parse(tagsJson)).toEqual(["hero", "warrior", "tuxemon"]);
+    expect(JSON.parse(tagsJson)).toEqual(["hero", "warrior", "creature"]);
   });
 
   it("handles sourceRegion coordinate bounds parsing", () => {

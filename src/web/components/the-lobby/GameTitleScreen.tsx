@@ -248,8 +248,8 @@ function CreditsModal({ onClose }: { onClose: () => void }) {
           {[
             { role: 'Game Director & Concept', name: 'The Saints Gaming Team' },
             { role: 'Core Engine & Architecture', name: 'BabylonJS · Next.js 15 · Go MMO' },
-            { role: 'Original Creature Art', name: 'Tuxemon Open Source Project' },
-            { role: 'World Tilesets', name: 'LPC & Community Contributors' },
+            { role: 'Original Creature Art', name: 'Open Source Creature Art Community' },
+            { role: 'World Tilesets', name: 'Open Source Community Contributors' },
             { role: 'Sound Synthesis & FX', name: 'Saints WebAudio Engine' },
           ].map((c) => (
             <div key={c.role} className="flex items-center justify-between border-b border-pink-900/40 pb-2.5">
