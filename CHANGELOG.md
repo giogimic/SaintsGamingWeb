@@ -1,3 +1,8 @@
+## [2.1.459-12] - 2026-08-25
+### Dedicated Animation Studio Suite
+- **Interactive Animation Studio (`AnimationStudioPanel.tsx` & `AssetStudioSuite.tsx`)**:
+  - Added full Animation Studio workspace featuring frame-strip timeline editor, customizable frame sizes ($W\times H$), FPS adjustment (1-30 FPS), ping-pong and loop playback controls, onion skinning, background backdrops, and live pixel-rendered preview canvas.
+
 ## [2.1.459-11] - 2026-08-25
 ### Asset Studio Workspace Catalog & Sub-Tab Unification
 - **Direct Catalog Browsing Across All Asset Categories (`AssetStudioSuite.tsx`)**:
