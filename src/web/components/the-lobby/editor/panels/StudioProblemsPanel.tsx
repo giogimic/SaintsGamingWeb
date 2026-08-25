@@ -12,17 +12,20 @@ import {
   Users,
   DoorOpen,
   Layers,
+  Sparkles,
+  ShieldAlert,
 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
 import { GAME_MAPS } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
+import { AssetManager } from '@/engine/assets/AssetManager';
 
 export interface MapProblem {
   id: string;
   type: 'ERROR' | 'WARNING' | 'INFO';
-  category: 'GATE' | 'ENTITY' | 'LAYER' | 'SPAWN' | 'CONNECTION';
+  category: 'GATE' | 'ENTITY' | 'LAYER' | 'SPAWN' | 'CONNECTION' | 'ASSET' | 'LIFECYCLE';
   message: string;
   detail?: string;
   coordinate?: { r: number; c: number };
@@ -30,6 +33,7 @@ export interface MapProblem {
 }
 
 export function StudioProblemsPanel() {
+  const [activeTab, setActiveTab] = React.useState<'map' | 'runtime_assets'>('map');
   const activeMapData = useGameStore((s) => s.activeMapData);
   const currentMapId = useGameStore((s) => s.currentMapId);
   const mapEntities = useGameStore((s) => s.mapEntities);
@@ -214,8 +218,43 @@ export function StudioProblemsPanel() {
       }
     });
 
+    // 5. Check Tileset Asset References
+    if (mapData.tilesets && mapData.tilesets.length > 0) {
+      (mapData.tilesets as any[]).forEach((ts: any, idx: number) => {
+        if (!ts.imageSource) {
+          list.push({
+            id: `ts_empty_${idx}`,
+            type: 'ERROR',
+            category: 'ASSET',
+            message: `Tileset #${idx + 1} has no valid image source URL defined.`,
+          });
+        }
+      });
+    }
+
+    // 6. Check Entity Asset Dependencies & Preload Requirements
+    const entityList = Array.isArray(mapEntities) ? mapEntities : Object.values(mapEntities || {});
+    entityList.forEach((ent: any, idx: number) => {
+      const sprite = ent.sprite || ent.spriteKey || ent.customSprite;
+      if (!sprite && ent.type !== 'trigger' && ent.type !== 'spawner') {
+        list.push({
+          id: `ent_no_sprite_${idx}`,
+          type: 'WARNING',
+          category: 'ASSET',
+          message: `Entity "${ent.name || ent.id}" has no presentation or sprite defined.`,
+          coordinate: ent.position ? { r: ent.position.y ?? ent.position.r, c: ent.position.x ?? ent.position.c } : undefined,
+          entityId: ent.id,
+        });
+      }
+    });
+
     return list;
   }, [mapData, mapEntities, logicTiles]);
+
+  const mapProblems = useMemo(() => problems.filter((p) => p.category !== 'ASSET' && p.category !== 'LIFECYCLE'), [problems]);
+  const assetProblems = useMemo(() => problems.filter((p) => p.category === 'ASSET' || p.category === 'LIFECYCLE'), [problems]);
+
+  const activeProblemList = activeTab === 'map' ? mapProblems : assetProblems;
 
   const [isScanning, setIsScanning] = React.useState(false);
   const handleScan = () => {
@@ -223,9 +262,9 @@ export function StudioProblemsPanel() {
     setTimeout(() => setIsScanning(false), 400);
   };
 
-  const errorCount = problems.filter((p) => p.type === 'ERROR').length;
-  const warningCount = problems.filter((p) => p.type === 'WARNING').length;
-  const infoCount = problems.filter((p) => p.type === 'INFO').length;
+  const errorCount = activeProblemList.filter((p) => p.type === 'ERROR').length;
+  const warningCount = activeProblemList.filter((p) => p.type === 'WARNING').length;
+  const infoCount = activeProblemList.filter((p) => p.type === 'INFO').length;
 
   const handleJumpTo = (problem: MapProblem) => {
     if (problem.coordinate) {
@@ -240,54 +279,87 @@ export function StudioProblemsPanel() {
 
   return (
     <div className="flex h-full w-full flex-col bg-[#050b14]/95 text-slate-200 font-mono text-xs select-none p-3 overflow-hidden">
-      {/* HEADER SUMMARY */}
-      <div className="flex items-center justify-between border-b border-[#806f47]/30 pb-2 mb-2">
-        <div className="flex items-center gap-3">
-          <span className="font-extrabold text-[#cbb26a] tracking-wider uppercase flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 text-[#cbb26a]" />
-            Diagnostics & Problems
-          </span>
-          <div className="flex items-center gap-2 text-[10px]">
-            <span className={`px-1.5 py-0.2 rounded font-bold ${errorCount > 0 ? 'bg-rose-950/80 text-rose-400 border border-rose-600/40' : 'text-slate-500'}`}>
-              {errorCount} Error{errorCount !== 1 ? 's' : ''}
+      {/* HEADER SUMMARY & TAB SELECTOR */}
+      <div className="flex flex-col gap-2 border-b border-[#806f47]/30 pb-2 mb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="font-extrabold text-[#cbb26a] tracking-wider uppercase flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-[#cbb26a]" />
+              Diagnostics & Health
             </span>
-            <span className={`px-1.5 py-0.2 rounded font-bold ${warningCount > 0 ? 'bg-amber-950/80 text-amber-400 border border-amber-600/40' : 'text-slate-500'}`}>
-              {warningCount} Warning{warningCount !== 1 ? 's' : ''}
-            </span>
-            <span className="text-slate-500 px-1 py-0.2">
-              {infoCount} Info
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className={`px-1.5 py-0.2 rounded font-bold ${errorCount > 0 ? 'bg-rose-950/80 text-rose-400 border border-rose-600/40' : 'text-slate-500'}`}>
+                {errorCount} Error{errorCount !== 1 ? 's' : ''}
+              </span>
+              <span className={`px-1.5 py-0.2 rounded font-bold ${warningCount > 0 ? 'bg-amber-950/80 text-amber-400 border border-amber-600/40' : 'text-slate-500'}`}>
+                {warningCount} Warning{warningCount !== 1 ? 's' : ''}
+              </span>
+              <span className="text-slate-500 px-1 py-0.2">
+                {infoCount} Info
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleScan}
+              className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-[#1a2333] hover:bg-[#253247] text-[#cbb26a] rounded border border-[#806f47]/30 transition-all cursor-pointer"
+              title="Scan map for issues"
+            >
+              <RefreshCw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} />
+              <span>Scan</span>
+            </button>
+            <span className="text-[10px] text-[#e2d5b3]/60 uppercase">
+              Map: {baseMapId}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-1.5 pt-1">
           <button
             type="button"
-            onClick={handleScan}
-            className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-[#1a2333] hover:bg-[#253247] text-[#cbb26a] rounded border border-[#806f47]/30 transition-all cursor-pointer"
-            title="Scan map for issues"
+            onClick={() => setActiveTab('map')}
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+              activeTab === 'map'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
+                : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
           >
-            <RefreshCw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} />
-            <span>Scan</span>
+            Map Topology ({mapProblems.length})
           </button>
-          <span className="text-[10px] text-[#e2d5b3]/60 uppercase">
-            Map: {baseMapId}
-          </span>
+          <button
+            type="button"
+            onClick={() => setActiveTab('runtime_assets')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+              activeTab === 'runtime_assets'
+                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm'
+                : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3 h-3 text-cyan-400" />
+            Runtime Asset Health ({assetProblems.length})
+          </button>
         </div>
       </div>
 
       {/* PROBLEMS LIST */}
       <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-[#806f47]/30">
-        {problems.length === 0 ? (
+        {activeProblemList.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-emerald-400 gap-2 p-6 text-center">
             <CheckCircle2 className="w-8 h-8 text-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
-            <span className="font-bold text-sm">No map validation issues found</span>
+            <span className="font-bold text-sm">
+              {activeTab === 'map' ? 'No map validation issues found' : 'All runtime assets healthy'}
+            </span>
             <span className="text-[11px] text-slate-400 max-w-xs">
-              All gates, entity placements, spawners, and layer bounds conform to engine specifications.
+              {activeTab === 'map'
+                ? 'All gates, entity placements, spawners, and layer bounds conform to engine specifications.'
+                : 'All tilesets, presentations, and entity sprite dependencies are resolved.'}
             </span>
           </div>
         ) : (
-          problems.map((prob) => {
+          activeProblemList.map((prob) => {
             const isErr = prob.type === 'ERROR';
             const isWarn = prob.type === 'WARNING';
 

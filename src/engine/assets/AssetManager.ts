@@ -25,6 +25,11 @@ export interface GameAssetItem {
   baseBodyType?: string | null;
   /** componentCategory values this piece hides when equipped (e.g. a closed helm hides "hair"). */
   hidesComponents?: string[];
+  dependencies?: string[];
+  dependents?: string[];
+  preloadGroup?: string | null;
+  preloadPriority?: string;
+  presentation?: any | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,23 +74,6 @@ export class AssetManager {
   }
 
   /** Wipe the in-memory asset cache so next fetch is fresh from the server. */
-    /**
-   * Fetch assets specifically compatible with a given entity type and role.
-   */
-  async getAssetsForRole(entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER', role: string, page = 0): Promise<GameAssetItem[]> {
-    // For now, this maps the role to an internal category filter
-    // E.g., 'walk' -> mostly 'actor'/'character', 'front' -> 'creature'
-    // This can be expanded to use the taxonomy later
-    let typeFilter = 'ALL';
-    if (entityType === 'CHARACTER') typeFilter = 'CHARACTER';
-    else if (entityType === 'CREATURE' || entityType === 'MONSTER') typeFilter = 'CREATURE';
-
-    // Fetch matching assets
-    const data = await this.searchAssets({ type: typeFilter as any }, page, 50);
-    return data.items;
-  }
-
-
   clearCache(): void {
     this.cache.clear();
   }
@@ -96,6 +84,18 @@ export class AssetManager {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('assets:refreshed'));
     }
+  }
+
+  /**
+   * Fetch assets specifically compatible with a given entity type and role.
+   */
+  async getAssetsForRole(entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER', role: string, page = 0): Promise<GameAssetItem[]> {
+    let typeFilter = 'ALL';
+    if (entityType === 'CHARACTER') typeFilter = 'CHARACTER';
+    else if (entityType === 'CREATURE' || entityType === 'MONSTER') typeFilter = 'CREATURE';
+
+    const data = await this.searchAssets({ type: typeFilter as any }, page, 50);
+    return data.items;
   }
 
   private hydrate(raw: any): GameAssetItem {
@@ -131,6 +131,19 @@ export class AssetManager {
         : Array.isArray(meta.hidesComponents)
         ? meta.hidesComponents
         : [],
+      dependencies: Array.isArray(raw.dependencies)
+        ? raw.dependencies
+        : Array.isArray(meta.dependencies)
+        ? meta.dependencies
+        : [],
+      dependents: Array.isArray(raw.dependents)
+        ? raw.dependents
+        : Array.isArray(meta.dependents)
+        ? meta.dependents
+        : [],
+      preloadGroup: raw.preloadGroup || meta.preloadGroup || null,
+      preloadPriority: raw.preloadPriority || meta.preloadPriority || 'NORMAL',
+      presentation: raw.presentation || meta.presentation || null,
     };
   }
 
@@ -277,6 +290,51 @@ export class AssetManager {
       body: JSON.stringify({ metadata: updatedMetadata }),
     });
     if (!res.ok) throw new Error('Failed to toggle showInCharacterCreation');
+    this.cache.delete(assetId);
+  }
+
+  /** Update dependency graph references for an asset */
+  async updateAssetDependencies(assetId: string, dependencies: string[]): Promise<void> {
+    const asset = await this.getAsset(assetId);
+    if (!asset) throw new Error('Asset not found');
+
+    const currentMetadata = asset.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      dependencies,
+    };
+
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata: updatedMetadata }),
+    });
+    if (!res.ok) throw new Error('Failed to update asset dependencies');
+    this.cache.delete(assetId);
+  }
+
+  /** Update runtime preload group and priority */
+  async updateAssetPreload(
+    assetId: string,
+    preloadGroup: string | null,
+    preloadPriority: string = 'NORMAL'
+  ): Promise<void> {
+    const asset = await this.getAsset(assetId);
+    if (!asset) throw new Error('Asset not found');
+
+    const currentMetadata = asset.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      preloadGroup: preloadGroup || undefined,
+      preloadPriority,
+    };
+
+    const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ metadata: updatedMetadata }),
+    });
+    if (!res.ok) throw new Error('Failed to update asset preload config');
     this.cache.delete(assetId);
   }
 }
