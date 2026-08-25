@@ -20,6 +20,39 @@ import {
 } from "./assetImportProfiles";
 import { resolveSpriteDefinition, SpriteDefinition } from "./spriteDefinitions";
 
+export type PreloadGroupId =
+  | "core"
+  | "player"
+  | "world_common"
+  | "town"
+  | "forest"
+  | "dungeon"
+  | "combat_common"
+  | "combat_fire"
+  | "tutorial"
+  | "ui_core"
+  | (string & {});
+
+export type PreloadPriority = "CRITICAL" | "HIGH" | "NORMAL" | "LOW" | "LAZY";
+
+export interface PresentationDefinition {
+  mode: "2D" | "2.5D" | "3D";
+  spriteSheetUrl?: string;
+  portraitUrl?: string;
+  animationProfileId?: string;
+  depthLayer?: number;
+  modelUrl?: string;
+  materialIds?: string[];
+  audioRefs?: {
+    attack?: string;
+    hit?: string;
+    ambient?: string;
+    death?: string;
+    [key: string]: string | undefined;
+  };
+  particleEffects?: string[];
+}
+
 export interface CanonicalAssetInput {
   userId?: string;
   gameId?: string;
@@ -58,6 +91,11 @@ export interface CanonicalAssetInput {
   fileSize?: number;
   sourceAssetId?: string | null;
   usableAssetId?: string | null;
+  dependencies?: string[];
+  dependents?: string[];
+  preloadGroup?: PreloadGroupId | null;
+  preloadPriority?: PreloadPriority;
+  presentation?: PresentationDefinition | null;
 }
 
 export interface CanonicalGameAssetData {
@@ -241,6 +279,7 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
         baseBodyType ? `body:${baseBodyType}` : "",
         input.bundleId ? `bundle:${input.bundleId}` : "",
         input.pack ? `pack:${input.pack}` : "",
+        input.preloadGroup ? `preload:${input.preloadGroup}` : "",
         `source:${sourceMode}`,
         isPlayable ? "playable" : "",
         showInCharacterCreation ? "character_creator" : "",
@@ -304,6 +343,11 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
     sourceAssetId: input.sourceAssetId || undefined,
     usableAssetId: input.usableAssetId || undefined,
     credits: input.credits || undefined,
+    dependencies: Array.isArray(input.dependencies) ? input.dependencies : undefined,
+    dependents: Array.isArray(input.dependents) ? input.dependents : undefined,
+    preloadGroup: input.preloadGroup || undefined,
+    preloadPriority: input.preloadPriority || undefined,
+    presentation: input.presentation || undefined,
   };
 
   const tagsJson = JSON.stringify(enrichedTags);
@@ -531,5 +575,10 @@ export function formatCanonicalGameAsset(asset: any) {
     zOrderHint: metadata.zOrderHint ?? metadata.z ?? null,
     baseBodyType: metadata.baseBodyType || metadata.body || null,
     hidesComponents: Array.isArray(metadata.hidesComponents) ? metadata.hidesComponents : [],
+    dependencies: Array.isArray(metadata.dependencies) ? metadata.dependencies : [],
+    dependents: Array.isArray(metadata.dependents) ? metadata.dependents : [],
+    preloadGroup: metadata.preloadGroup || null,
+    preloadPriority: metadata.preloadPriority || "NORMAL",
+    presentation: metadata.presentation || null,
   };
 }

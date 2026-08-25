@@ -107,6 +107,7 @@ export default function AssetEditor({
   const [reclassifyType, setReclassifyType] = useState('SPRITE');
   const [reclassifyCategories, setReclassifyCategories] = useState('npcs,heroes');
   const [newTagInput, setNewTagInput] = useState('');
+  const [newDepInput, setNewDepInput] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; asset: GameAssetItem } | null>(null);
   const [reclassifyTargets, setReclassifyTargets] = useState<GameAssetItem[] | null>(null);
 
@@ -394,6 +395,82 @@ export default function AssetEditor({
       console.error(err);
     } finally {
       setSavingFlags(false);
+    }
+  };
+
+  const handleUpdatePreload = async (preloadGroup: string | null, priority: string) => {
+    if (!activeAsset) return;
+    try {
+      soundSynth?.playActionSound?.();
+      const manager = AssetManager.getInstance();
+      await manager.updateAssetPreload(activeAsset.id, preloadGroup, priority);
+      const updated = {
+        ...activeAsset,
+        preloadGroup,
+        preloadPriority: priority,
+        metadata: {
+          ...activeAsset.metadata,
+          preloadGroup: preloadGroup || undefined,
+          preloadPriority: priority,
+        },
+      };
+      setActiveAsset(updated);
+      setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      showToast(`Preload updated: ${preloadGroup || 'None'} (${priority})`);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update preload configuration');
+    }
+  };
+
+  const handleAddDependency = async (depId: string) => {
+    if (!activeAsset || !depId.trim()) return;
+    const currentDeps = activeAsset.dependencies || [];
+    if (currentDeps.includes(depId.trim())) return;
+    const nextDeps = [...currentDeps, depId.trim()];
+    try {
+      soundSynth?.playActionSound?.();
+      const manager = AssetManager.getInstance();
+      await manager.updateAssetDependencies(activeAsset.id, nextDeps);
+      const updated = {
+        ...activeAsset,
+        dependencies: nextDeps,
+        metadata: {
+          ...activeAsset.metadata,
+          dependencies: nextDeps,
+        },
+      };
+      setActiveAsset(updated);
+      setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      showToast(`Added dependency: ${depId.trim()}`);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to add dependency');
+    }
+  };
+
+  const handleRemoveDependency = async (depId: string) => {
+    if (!activeAsset) return;
+    const currentDeps = activeAsset.dependencies || [];
+    const nextDeps = currentDeps.filter((d) => d !== depId);
+    try {
+      soundSynth?.playUiClick?.();
+      const manager = AssetManager.getInstance();
+      await manager.updateAssetDependencies(activeAsset.id, nextDeps);
+      const updated = {
+        ...activeAsset,
+        dependencies: nextDeps,
+        metadata: {
+          ...activeAsset.metadata,
+          dependencies: nextDeps,
+        },
+      };
+      setActiveAsset(updated);
+      setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      showToast(`Removed dependency: ${depId}`);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to remove dependency');
     }
   };
 
@@ -1161,6 +1238,141 @@ export default function AssetEditor({
                 >
                   Add
                 </button>
+              </div>
+            </div>
+
+            {/* Dependency Graph & References */}
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                  <Layers className="w-3 h-3 text-cyan-400" /> Dependencies & Graph
+                </span>
+                <span className="text-[9px] text-slate-400">
+                  {(activeAsset.dependencies || []).length} req / {(activeAsset.dependents || []).length} used
+                </span>
+              </div>
+
+              {/* Dependencies List */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-slate-400 uppercase font-semibold">Requires:</span>
+                {(activeAsset.dependencies || []).length === 0 ? (
+                  <span className="text-[10px] text-slate-500 italic">No external dependencies</span>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {(activeAsset.dependencies || []).map((dep) => (
+                      <span
+                        key={dep}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-cyan-950/60 border border-cyan-500/40 text-cyan-200 rounded text-[9px]"
+                      >
+                        <span>{dep}</span>
+                        <button
+                          onClick={() => handleRemoveDependency(dep)}
+                          className="hover:text-rose-400 font-bold ml-0.5 cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add Dependency Input */}
+              <div className="flex gap-1 mt-1">
+                <input
+                  type="text"
+                  placeholder="Asset ID to depend on..."
+                  value={newDepInput}
+                  onChange={(e) => setNewDepInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newDepInput.trim()) {
+                      handleAddDependency(newDepInput.trim());
+                      setNewDepInput('');
+                    }
+                  }}
+                  className="flex-1 bg-black/60 border border-slate-700 rounded-lg px-2 py-0.5 text-[10px] text-slate-200 focus:outline-none focus:border-cyan-400"
+                />
+                <button
+                  onClick={() => {
+                    if (newDepInput.trim()) {
+                      handleAddDependency(newDepInput.trim());
+                      setNewDepInput('');
+                    }
+                  }}
+                  className="px-2 py-0.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[10px] font-bold cursor-pointer"
+                >
+                  Link
+                </button>
+              </div>
+
+              {/* Dependents List (Referenced By) */}
+              {(activeAsset.dependents || []).length > 0 && (
+                <div className="flex flex-col gap-1 mt-1 pt-1.5 border-t border-slate-800/60">
+                  <span className="text-[9px] text-slate-400 uppercase font-semibold">Referenced By:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {(activeAsset.dependents || []).map((dep) => (
+                      <span
+                        key={dep}
+                        className="px-1.5 py-0.5 bg-slate-900 border border-slate-700 text-slate-300 rounded text-[9px]"
+                      >
+                        {dep}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Runtime Lifecycle & Preload */}
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" /> Runtime Lifecycle & Preload
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] text-slate-400 uppercase">Preload Group</label>
+                  <select
+                    value={activeAsset.preloadGroup || activeAsset.metadata?.preloadGroup || 'none'}
+                    onChange={(e) => {
+                      const val = e.target.value === 'none' ? null : e.target.value;
+                      handleUpdatePreload(val, activeAsset.preloadPriority || activeAsset.metadata?.preloadPriority || 'NORMAL');
+                    }}
+                    className="bg-black/60 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-amber-400 cursor-pointer"
+                  >
+                    <option value="none">None (Lazy)</option>
+                    <option value="core">Core</option>
+                    <option value="player">Player</option>
+                    <option value="world_common">World Common</option>
+                    <option value="town">Town</option>
+                    <option value="forest">Forest</option>
+                    <option value="dungeon">Dungeon</option>
+                    <option value="combat_common">Combat Common</option>
+                    <option value="tutorial">Tutorial</option>
+                    <option value="ui_core">UI Core</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] text-slate-400 uppercase">Priority</label>
+                  <select
+                    value={activeAsset.preloadPriority || activeAsset.metadata?.preloadPriority || 'NORMAL'}
+                    onChange={(e) => {
+                      handleUpdatePreload(activeAsset.preloadGroup || activeAsset.metadata?.preloadGroup || null, e.target.value);
+                    }}
+                    className="bg-black/60 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-amber-400 cursor-pointer"
+                  >
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="NORMAL">Normal</option>
+                    <option value="LOW">Low</option>
+                    <option value="LAZY">Lazy</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1 border-t border-slate-800/60">
+                <span>Est. Footprint:</span>
+                <span className="text-slate-200 font-mono">
+                  {activeAsset.fileSize ? `${Math.round(activeAsset.fileSize / 1024)} KB` : '~10 KB'}
+                </span>
               </div>
             </div>
 

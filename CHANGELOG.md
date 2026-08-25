@@ -1,3 +1,40 @@
+## [2.1.459-10] - 2026-08-25
+### Map Container Preloading & Runtime Asset Manager Transition Integration
+- **Map Container Lifecycle Hooking (`maps.ts`)**:
+  - Connected `loadMap` and `preloadAdjacentMaps` directly with `RuntimeAssetManager`.
+  - Automatically packages map tilesets, background visuals, and presentation layers into a dedicated `map` container (`Map_${mapId}`).
+  - Automatically warms destination and neighbor map containers before player transitions.
+- **Singleton Accessor on RuntimeAssetManager (`assetRuntimeManager.ts`)**:
+  - Added static `RuntimeAssetManager.getInstance()` singleton accessor for uniform global access across all client modules and dock systems.
+
+## [2.1.459-9] - 2026-08-25
+### Studio Multi-Tile Region Presets & Tile Collision Inspector
+- **Tileset Region Presets Toolbar (`TilesetPicker.tsx`)**:
+  - Added dedicated rectangular region selection presets toolbar (`1×1`, `2×2`, `3×3`, `4×4`, `2×3`, `3×2`) above the tilesheet preview.
+  - Selecting a preset allows single-click pattern extraction of arbitrary NxM rectangular tile stamps.
+  - Hover preview box dynamically expands to render the exact pixel footprint of the active multi-tile pattern.
+- **Per-Tile Collision & Swimmable Controls (`TilesetPicker.tsx`)**:
+  - Added direct gameplay flag action triggers to the right-click tile context menu:
+    - **Mark as Solid Collision**: Dispatches collision tag for immediate walk-blockage.
+    - **Mark as Swimmable Water**: Dispatches water mechanic flag for interactive water zones.
+
+## [2.1.459-8] - 2026-08-25
+### Asset Studio & Runtime Asset Lifecycle Architecture (Phase 1-4)
+- **Runtime Asset Lifecycle & Manager Layer (`assetRuntimeManager.ts`)**:
+  - Implemented `RuntimeAssetManager` with observable lifecycle states: `UNREGISTERED`, `DISCOVERED`, `QUEUED`, `LOADING`, `READY`, `ACTIVE`, `CACHED`, `RELEASED`, `ERROR`.
+  - Added support for "Warm" (cached/standby) vs "Cold" (unloaded) assets for smooth map and zone transitions.
+  - Implemented `AssetContainer` grouping (`Character`, `Creature`, `Environment`, `Map`) to bundle related dependencies together.
+  - Added decoupled preloading support with named `PreloadGroup`s (`Core`, `Town`, `Dungeon`, `Combat_Common`, etc.).
+  - Built comprehensive `getDiagnostics()` reporting missing dependencies, failed loads, and estimated memory footprint.
+- **Canonical Schema Enhancements (`canonicalAsset.ts`)**:
+  - Extended `CanonicalAssetInput` and `GameAsset` formatting with `dependencies`, `dependents`, `preloadGroup`, `preloadPriority`, and generic `presentation` (2D/2.5D/3D).
+- **Asset Studio & Inspector Upgrade (`AssetEditor.tsx` & `AssetManager.ts`)**:
+  - Added **Dependencies & Graph** inspector card with live dependency linking, removal, and orphan dependent visualization.
+  - Added **Runtime Lifecycle & Preload** configuration card allowing creators to tune preload groups and loading priority per asset.
+  - Added client-side `updateAssetDependencies` and `updateAssetPreload` API handlers to `AssetManager`.
+- **Runtime Asset Health Diagnostics (`StudioProblemsPanel.tsx`)**:
+  - Added dedicated **Runtime Asset Health** tab into the diagnostics suite to detect missing presentations, broken tileset source URLs, and entity dependency issues.
+
 ## [2.1.459-7] - 2026-08-25
 ### Studio Tileset Context Menu, Layer Deletion & 16x16 Scaling Fix
 - **16x16 / Arbitrary Tileset Scaling Fix (`tileBatchHelpers.ts`)**:

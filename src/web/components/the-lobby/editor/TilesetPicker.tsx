@@ -17,6 +17,7 @@ import {
   Sparkles,
   Brush,
   Eraser,
+  Shield,
 } from 'lucide-react';
 import { AssetManager, type GameAssetItem } from '@/engine/assets/AssetManager';
 import { useGameStore } from '../store';
@@ -65,6 +66,7 @@ export default function TilesetPicker({
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [imgError, setImgError] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [regionPreset, setRegionPreset] = useState<{ w: number; h: number }>({ w: 1, h: 1 });
   const [dragStart, setDragStart] = useState<{ r: number; c: number } | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number } | null>(null);
   const [tilesetSearch, setTilesetSearch] = useState('');
@@ -272,10 +274,28 @@ export default function TilesetPicker({
     
     setDragStart({ r: row, c: col });
     
-    // Also trigger immediately for single clicks
-    const gid = ts.firstgid + (row * ts.columns) + col;
-    soundSynth?.playSelectSound?.();
-    onBrushSelect(gid);
+    // If region preset is larger than 1x1, capture rectangular pattern immediately
+    if (regionPreset.w > 1 || regionPreset.h > 1) {
+      const maxRows = Math.floor(imgRef.current.naturalHeight / ts.tileheight);
+      const endRow = Math.min(row + regionPreset.h - 1, maxRows - 1);
+      const endCol = Math.min(col + regionPreset.w - 1, ts.columns - 1);
+      const gids: number[][] = [];
+      for (let r = row; r <= endRow; r++) {
+        const rowGids: number[] = [];
+        for (let c = col; c <= endCol; c++) {
+          rowGids.push(ts.firstgid + (r * ts.columns) + c);
+        }
+        gids.push(rowGids);
+      }
+      soundSynth?.playSelectSound?.();
+      if (onBrushSelectPattern) {
+        onBrushSelectPattern({ w: endCol - col + 1, h: endRow - row + 1, gids });
+      }
+    } else {
+      const gid = ts.firstgid + (row * ts.columns) + col;
+      soundSynth?.playSelectSound?.();
+      onBrushSelect(gid);
+    }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -295,7 +315,7 @@ export default function TilesetPicker({
 
     if (col >= 0 && row >= 0 && col < ts.columns && nativeY < imgRef.current.naturalHeight) {
       if (dragStart.r !== row || dragStart.c !== col) {
-        // Multi-tile select
+        // Multi-tile drag select
         const minRow = Math.min(dragStart.r, row);
         const maxRow = Math.max(dragStart.r, row);
         const minCol = Math.min(dragStart.c, col);
@@ -338,9 +358,9 @@ export default function TilesetPicker({
     }
     
     let minRow = row;
-    let maxRow = row;
+    let maxRow = row + (regionPreset.h - 1);
     let minCol = col;
-    let maxCol = col;
+    let maxCol = col + (regionPreset.w - 1);
     
     if (dragStart) {
       minRow = Math.min(dragStart.r, row);
@@ -349,6 +369,10 @@ export default function TilesetPicker({
       maxCol = Math.max(dragStart.c, col);
     }
     
+    const maxRows = Math.floor(natural.h / ts.tileheight);
+    maxRow = Math.min(maxRow, maxRows - 1);
+    maxCol = Math.min(maxCol, ts.columns - 1);
+
     const gid = ts.firstgid + (minRow * ts.columns) + minCol;
     setHoveredTile({
       leftPct: (minCol / ts.columns) * 100,
@@ -593,6 +617,43 @@ export default function TilesetPicker({
                 + Add One
               </button>
             )}
+          </div>
+        )}
+
+        {/* REGION SELECTION PRESETS TOOLBAR */}
+        {ts && (
+          <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span className="text-[9px] uppercase font-bold text-slate-400">Region:</span>
+            <div className="flex items-center gap-1">
+              {[
+                { w: 1, h: 1, label: '1×1' },
+                { w: 2, h: 2, label: '2×2' },
+                { w: 3, h: 3, label: '3×3' },
+                { w: 4, h: 4, label: '4×4' },
+                { w: 2, h: 3, label: '2×3' },
+                { w: 3, h: 2, label: '3×2' },
+              ].map((p) => {
+                const isActive = regionPreset.w === p.w && regionPreset.h === p.h;
+                return (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setRegionPreset({ w: p.w, h: p.h });
+                      showToast(`Brush Region Preset: ${p.label}`);
+                    }}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition border cursor-pointer ${
+                      isActive
+                        ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-sm'
+                        : 'bg-[#0b1320] border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -1020,6 +1081,44 @@ export default function TilesetPicker({
             <Copy className="w-3.5 h-3.5 text-slate-400" />
             <span>Copy Tile GID</span>
           </button>
+
+          {/* Per-Tile Gameplay & Collision Toggles */}
+          <div className="pt-1 mt-1 border-t border-slate-800 flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playActionSound?.();
+                window.dispatchEvent(
+                  new CustomEvent('studio_set_tile_logic', {
+                    detail: { gid: tileContextMenu.gid, isSolid: true },
+                  })
+                );
+                showToast(`Marked GID #${tileContextMenu.gid} as Solid Collision`);
+                setTileContextMenu(null);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-500/20 text-slate-200 hover:text-rose-300 text-left transition cursor-pointer text-[11px]"
+            >
+              <Shield className="w-3.5 h-3.5 text-rose-400" />
+              <span>Mark as Solid Collision</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playActionSound?.();
+                window.dispatchEvent(
+                  new CustomEvent('studio_set_tile_logic', {
+                    detail: { gid: tileContextMenu.gid, isWater: true },
+                  })
+                );
+                showToast(`Marked GID #${tileContextMenu.gid} as Swimmable Water`);
+                setTileContextMenu(null);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 text-left transition cursor-pointer text-[11px]"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+              <span>Mark as Swimmable Water</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

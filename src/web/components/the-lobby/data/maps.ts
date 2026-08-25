@@ -8,6 +8,7 @@ import {
   normalizeAtlasGridData,
   getAdjacentAtlasNeighbors,
 } from '../../../../shared/game/atlas/spatialAtlas';
+import { RuntimeAssetManager } from '../../../../shared/game/assetRuntimeManager';
 
 export interface MapGate {
   targetMapId: string;
@@ -330,6 +331,9 @@ export async function loadMap(
         await Promise.allSettled(neighborPromises);
       }
 
+      // Pre-warm map presentation and tileset assets in RuntimeAssetManager
+      registerMapRuntimeAssets(mapData);
+
       return mapData;
     } catch (err) {
       console.error(`Error loading map ${mapId}:`, err);
@@ -428,6 +432,52 @@ export async function preloadAdjacentMaps(currentMapId: string): Promise<void> {
         loadMap(targetMapId).catch(() => {});
       }
     }
+  }
+}
+
+/**
+ * Register map presentation, tileset textures, and containers into RuntimeAssetManager
+ */
+export function registerMapRuntimeAssets(mapData: GameMapData): void {
+  try {
+    if (typeof window === 'undefined') return;
+    const manager = RuntimeAssetManager.getInstance();
+    const assetIds: string[] = [];
+
+    if (mapData.tilesets && mapData.tilesets.length > 0) {
+      mapData.tilesets.forEach((ts, idx) => {
+        if (ts.imageSource) {
+          const id = `tileset_${mapData.id}_${idx}`;
+          const source =
+            ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
+              ? ts.imageSource
+              : `/game-assets/tilesets/${ts.imageSource}`;
+
+          manager.registerAsset({
+            id,
+            name: `Tileset ${ts.imageSource}`,
+            type: 'TILESET',
+            sourceUrl: source,
+            preloadPriority: 'HIGH',
+            preloadGroup: 'Core',
+          });
+          assetIds.push(id);
+        }
+      });
+    }
+
+    const containerId = `Map_${mapData.id}`;
+    manager.createContainer({
+      id: containerId,
+      name: `Map Container ${mapData.id}`,
+      type: 'map',
+      primaryAssetId: assetIds[0] || `map_${mapData.id}_root`,
+      extraAssetIds: assetIds.slice(1),
+    });
+
+    void manager.warmContainer(containerId).catch(() => {});
+  } catch (e) {
+    // Non-blocking runtime warmup
   }
 }
 
