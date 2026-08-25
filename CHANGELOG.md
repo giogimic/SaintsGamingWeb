@@ -1,3 +1,7 @@
+## [2.1.459-17] - 2026-08-25
+### Character Creator Fix
+- Disabled the modular avatar customization step (APPEARANCE) for base sprites and archetypes that are not modular. Choosing a non-modular hero now skips directly to the Blessing screen, avoiding the empty / mismatched layer screen.
+
 ## [2.1.459-16] - 2026-08-25
 ### Hero Studio Button Fix
 - Properly routed "Heroes" and "Classes" dock buttons to the new full-screen `HeroStudioSuite` instead of attempting to spawn them as standard FlexLayout dock nodes.
