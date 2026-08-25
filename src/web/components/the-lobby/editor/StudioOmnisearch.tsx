@@ -103,6 +103,26 @@ function buildQuickActions(showToast: (msg: string) => void): SearchResult[] {
       },
     },
     {
+      id: 'action:assets',
+      type: 'action',
+      title: 'Asset Studio & Manager',
+      subtitle: 'Ctrl+Shift+A',
+      onSelect: () => {
+        useEditorStore.getState().setStudioMode('assets');
+        showToast('Opened Asset Studio');
+      },
+    },
+    {
+      id: 'action:hero',
+      type: 'action',
+      title: 'Hero Studio (Archetypes & Classes)',
+      subtitle: 'Ctrl+Shift+H',
+      onSelect: () => {
+        useEditorStore.getState().setStudioMode('hero');
+        showToast('Opened Hero Studio');
+      },
+    },
+    {
       id: 'action:problems',
       type: 'action',
       title: 'Map Diagnostics & Problems',

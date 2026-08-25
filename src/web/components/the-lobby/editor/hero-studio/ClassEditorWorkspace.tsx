@@ -92,6 +92,37 @@ export function ClassEditorWorkspace() {
     setIsNew(true);
   };
 
+  const handleDuplicate = () => {
+    if (!form.slug) return;
+    const newSlug = `${form.slug}_copy_${Math.floor(Math.random() * 900 + 100)}`;
+    setForm({
+      ...form,
+      slug: newSlug,
+      name: `${form.name} (Copy)`,
+      sortOrder: list.length + 1,
+    });
+    setIsNew(true);
+    showStatus('success', 'Cloned class into new draft. Make your changes and Save.');
+  };
+
+  const applyStatPreset = (preset: 'tank' | 'dps' | 'mage' | 'scout' | 'balanced') => {
+    const presets: Record<string, Record<keyof typeof SHARED_BASE_STATS, number>> = {
+      tank: { hp: 40, atk: 5, def: 25, spd: -10, ratk: 0, rdef: 15 },
+      dps: { hp: 10, atk: 25, def: 5, spd: 15, ratk: 10, rdef: 0 },
+      mage: { hp: -5, atk: -5, def: 0, spd: 10, ratk: 30, rdef: 20 },
+      scout: { hp: 5, atk: 15, def: 5, spd: 30, ratk: 15, rdef: 5 },
+      balanced: { hp: 15, atk: 10, def: 10, spd: 10, ratk: 10, rdef: 10 },
+    };
+    const deltas = presets[preset];
+    if (deltas) {
+      setForm((prev) => ({
+        ...prev,
+        statDeltas: { ...deltas },
+      }));
+      showStatus('success', `Applied ${preset.toUpperCase()} stat preset.`);
+    }
+  };
+
   const handleSave = async () => {
     if (!form.slug || !form.name || !form.classId) {
       showStatus('error', 'Slug, name, and classId required.');
@@ -297,7 +328,53 @@ export function ClassEditorWorkspace() {
               </div>
 
               <div className="p-2 rounded border border-slate-800 bg-[#050b14]/60">
-                <div className={labelCls}>Stat deltas (on shared base)</div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className={labelCls}>Stat deltas (on shared base)</div>
+                  {/* Quick Stat Presets */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[8px] text-slate-500 font-bold uppercase">Presets:</span>
+                    <button
+                      type="button"
+                      onClick={() => applyStatPreset('tank')}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/30 text-amber-300 transition cursor-pointer"
+                      title="Tank: +HP, +DEF, -SPD"
+                    >
+                      🛡️ Tank
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyStatPreset('dps')}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 transition cursor-pointer"
+                      title="DPS / Berserker: +ATK, +SPD"
+                    >
+                      ⚔️ DPS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyStatPreset('mage')}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 transition cursor-pointer"
+                      title="Mage: +RATK, +RDEF, -HP"
+                    >
+                      🔮 Mage
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyStatPreset('scout')}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-300 transition cursor-pointer"
+                      title="Scout: +SPD, +RATK, +ATK"
+                    >
+                      🏹 Scout
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyStatPreset('balanced')}
+                      className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 transition cursor-pointer"
+                      title="Balanced: +10 all stats"
+                    >
+                      ⚖️ Balanced
+                    </button>
+                  </div>
+                </div>
                 <p className="text-[10px] text-slate-500 mb-2">
                   Shared base: HP {SHARED_BASE_STATS.hp} · ATK {SHARED_BASE_STATS.atk} · DEF {SHARED_BASE_STATS.def} · SPD {SHARED_BASE_STATS.spd}
                 </p>
@@ -337,20 +414,34 @@ export function ClassEditorWorkspace() {
               </div>
 
               <div className="flex flex-wrap gap-2 items-center">
-                <label className="flex items-center gap-1 text-slate-300">
+                <label className="flex items-center gap-1 text-slate-300 cursor-pointer">
                   <input type="checkbox" checked={form.isPlayable} onChange={(e) => f('isPlayable', e.target.checked)} /> Playable
                 </label>
                 <div className="flex-1" />
                 {!isNew && form.slug && (
-                  <button type="button" onClick={() => void handleDelete(form.slug)} className="px-2 py-1 text-red-300 border border-red-900/50 rounded flex items-center gap-1">
-                    <Trash2 size={12} /> Delete
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleDuplicate}
+                      className="px-2.5 py-1.5 text-cyan-300 hover:text-white bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/30 rounded text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                      title="Clone this class definition into a new draft"
+                    >
+                      Clone Class
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(form.slug)}
+                      className="px-2.5 py-1.5 text-red-300 hover:text-red-100 bg-red-950/40 hover:bg-red-900/50 border border-red-900/50 rounded text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </>
                 )}
                 <button
                   type="button"
                   disabled={loading}
                   onClick={() => void handleSave()}
-                  className="px-4 py-2 bg-[#806f47]/50 hover:bg-[#806f47]/70 text-[#e2d5b3] font-bold rounded flex items-center gap-1"
+                  className="px-4 py-2 bg-[#806f47]/50 hover:bg-[#806f47]/70 text-[#e2d5b3] font-bold rounded flex items-center gap-1 cursor-pointer transition shadow-sm"
                 >
                   <Save size={12} /> {loading ? 'Saving…' : 'Save Class'}
                 </button>
