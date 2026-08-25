@@ -1,3 +1,10 @@
+## [2.1.459-34] - 2026-08-25
+### Server Action Seed Dummy Content & Admin Dual-Execution Engine
+- **Server Action Seeding (`seedDummyContentAction`)**:
+  - Implemented direct server action in `app/actions/game-dev.ts` with guaranteed author fallback and auto-creation of system author if none exists.
+  - Rewired `app/api/dev/seed-dummy/route.ts` to execute `seedDummyContentAction` with proper JSON payload responses.
+  - Updated both `DummyContentButton` and `DevActions` to trigger `seedDummyContentAction` directly with transparent API fallback and actionable error alerts.
+
 ## [2.1.459-33] - 2026-08-25
 ### Dev Seed Dummy Content Hardening & Author Resolution
 - **Dev Seed Route Hardening (`/api/dev/seed-dummy`)**:
