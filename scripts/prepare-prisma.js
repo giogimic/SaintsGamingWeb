@@ -32,14 +32,27 @@ if (isSqlite) {
     schema = schema.replace(/provider\s*=\s*"sqlite"/g, 'provider = "mysql"');
     
     // The schema is authored with @db.Text natively, but we enforce it just in case
+    const longTextCols = [
+        'gridData', 'tileLayersData'
+    ];
     const textCols = [
         'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
-        'gridData', 'gatesData', 'npcsData', 'encountersData', 'entitiesData', 
-        'tileLayersData', 'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData',
+        'gatesData', 'npcsData', 'encountersData', 'entitiesData', 
+        'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData',
         'tilesetData', 'npcs', 'encounters', 'gates'
     ];
+
+    for (const col of longTextCols) {
+        const regex = new RegExp(`^(\\s*${col}\\s+String\\s*[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
+        schema = schema.replace(regex, (match, p1, p2) => {
+            if (p1.includes('@db.LongText')) return match;
+            if (p1.includes('@db.Text')) return match.replace('@db.Text', '@db.LongText');
+            return `${p1.trimRight()} @db.LongText${p2 || ''}`;
+        });
+    }
+
     for (const col of textCols) {
-        const regex = new RegExp(`^(\\s*${col}\\s+String\\s+[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
+        const regex = new RegExp(`^(\\s*${col}\\s+String\\s*[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
         schema = schema.replace(regex, (match, p1, p2) => {
             if (p1.includes('@db.Text') || p1.includes('@db.LongText')) return match;
             return `${p1.trimRight()} @db.Text${p2 || ''}`;
