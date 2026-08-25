@@ -67,15 +67,25 @@ export function groundQuadPositions(
   posX: number,
   posZ: number,
   y: number,
-  tileSize: number
+  tileSize: number,
+  tileW: number = 32,
+  tileH: number = 32,
+  baseGridPx: number = 32
 ): number[] {
   const s = Number.isFinite(tileSize) && tileSize > 0 ? tileSize : 1;
+  const worldW = s * (tileW / baseGridPx);
+  const worldH = s * (tileH / baseGridPx);
   const half = s / 2;
   const x0 = posX - half;
-  const x1 = posX + half;
   const z0 = posZ - half;
-  const z1 = posZ + half;
-  return [x0, y, z1, x1, y, z1, x1, y, z0, x0, y, z0];
+  const x1 = x0 + worldW;
+  const z1 = z0 + worldH;
+  return [
+    x0, y, z1, // TL
+    x1, y, z1, // TR
+    x1, y, z0, // BR
+    x0, y, z0, // BL
+  ];
 }
 
 /** Collapse a quad under the map so it no longer draws (erase / tileset move). */

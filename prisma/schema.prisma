@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -763,13 +763,13 @@ model WorldMap {
   id             String   @id // e.g. "SAINTS_VILLAGE"
   gameId         String?  @default("saints")
   name           String
-  gridData       String @db.Text// JSON 2D Array
-  gatesData      String @db.Text// JSON
-  npcsData       String @db.Text// JSON for NPC dialogues/teams
-  encountersData String   @default("[]") @db.Text // JSON for wild beast encounters
-  entitiesData   String   @default("[]") @db.Text // JSON for EntityInstanceV1 records (Bible 20 E2)
-  tileLayersData String   @default("[]") @db.Text // JSON for TMX tile layers
-  tilesetsData   String   @default("[]") @db.Text // JSON for tilesets metadata
+  gridData       String// JSON 2D Array
+  gatesData      String// JSON
+  npcsData       String// JSON for NPC dialogues/teams
+  encountersData String   @default("[]") // JSON for wild beast encounters
+  entitiesData   String   @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
+  tileLayersData String   @default("[]") // JSON for TMX tile layers
+  tilesetsData   String   @default("[]") // JSON for tilesets metadata
   version        Int      @default(1)
   
   // Rich Map Metadata
@@ -814,9 +814,9 @@ model GameAsset {
   source        String   @default("") // canonical file path
   atlasSource   String?  // atlas file if from atlas
   atlasFrame    String?  // JSON: {x, y, width, height} for atlas extraction
-  tags          String   @default("[]") @db.Text // JSON string: ["saints", "npc", "male"] for SQLite compat
-  categories    String   @default("[]") @db.Text // JSON string: ["npcs", "heroes"] for SQLite compat
-  metadata      String   @default("{}") @db.Text // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
+  tags          String   @default("[]") // JSON string: ["saints", "npc", "male"] for SQLite compat
+  categories    String   @default("[]") // JSON string: ["npcs", "heroes"] for SQLite compat
+  metadata      String   @default("{}") // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
   customLabels  String?  // JSON string: {en: "Hero", es: "Héroe"}
   isActive      Boolean  @default(true)
   usageCount    Int      @default(0)
@@ -1669,10 +1669,10 @@ model GameMap {
   name          String
   width         Int      @default(24)
   height        Int      @default(24)
-  tilesetData   String?  @db.Text
-  npcs          String?  @db.Text
-  encounters    String?  @db.Text
-  gates         String?  @db.Text
+  tilesetData   String?
+  npcs          String?
+  encounters    String?
+  gates         String?
   version       Int      @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -1807,7 +1807,7 @@ model SourceAsset {
   uploadedById    String
   uploadedBy      User          @relation("SourceAssetsUploaded", fields: [uploadedById], references: [id], onDelete: Cascade)
   version         Int           @default(1)
-  metadata        String        @default("{}") @db.Text // JSON string: { originalName, hash, tags, etc. }
+  metadata        String        @default("{}") // JSON string: { originalName, hash, tags, etc. }
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -1824,7 +1824,7 @@ model UsableAsset {
   name              String
   type              String       @default("OBJECT") // CHARACTER, CREATURE, TERRAIN, TILE, ITEM, OBJECT, UI, EFFECT, MODEL, ANIMATION, AUDIO
   category          String?      // Sub-classification e.g. "chair", "sword", "tree"
-  tags              String       @default("[]") @db.Text // JSON array of string tags
+  tags              String       @default("[]") // JSON array of string tags
   width             Int          @default(16)
   height            Int          @default(16)
   
