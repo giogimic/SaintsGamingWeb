@@ -22,8 +22,8 @@ export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [];
  */
 export const DEFAULT_STUDIO_GROUND_GID = 0;
 
-/** Old bootstrap fill — stair fragment tiles. */
-export const LEGACY_BAD_GROUND_GIDS = new Set([1]);
+/** Legacy bootstrap fill set — kept empty so painted GID 1 is never overwritten. */
+export const LEGACY_BAD_GROUND_GIDS = new Set<number>();
 
 /** Fraction of non-zero cells below which a layer is treated as an empty sandbox. */
 export const STUDIO_GROUND_FILL_DENSITY = 0.05;
