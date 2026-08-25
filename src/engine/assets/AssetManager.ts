@@ -337,4 +337,24 @@ export class AssetManager {
     if (!res.ok) throw new Error('Failed to update asset preload config');
     this.cache.delete(assetId);
   }
+
+  /** Register or persist a new asset (e.g. Tile Definition) into the catalog */
+  async registerAsset(payload: {
+    type: string;
+    source: string;
+    name?: string;
+    metadata?: Record<string, any>;
+    tags?: string[];
+    categories?: string[];
+  }): Promise<GameAssetItem> {
+    const res = await fetch('/api/assets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to register asset');
+    const data = await res.json();
+    this.broadcastRefresh();
+    return this.hydrate(data.asset || data);
+  }
 }

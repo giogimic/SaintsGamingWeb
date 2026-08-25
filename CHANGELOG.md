@@ -1,3 +1,14 @@
+## [2.1.459-13] - 2026-08-25
+### Tile Sheet Selector & Reusable Tile Library Integration
+- **Eliminated Browser Native Image Dragging (`TilesetPicker.tsx`)**:
+  - Replaced HTML5 native `draggable` ghost dragging on tilesheets with `draggable={false}` and `onDragStart={(e) => e.preventDefault()}` for seamless click-and-drag box selection.
+- **Continuous Incremental Source-Region Selection**:
+  - Decoupled selection size $(W, H)$ from movement increments $(\Delta c, \Delta r)$, allowing continuous 1-tile grid stepping across arbitrary source regions and presets.
+  - Added live coordinate and source region status strip (`Region: X={col*tw}, Y={row*th} ({w}×{h} tiles)`).
+- **Canonical Tile Definition System & Tile Library**:
+  - Integrated "Save as Tile Definition" modal and context menu action to store selected regions directly in the Tile Library (`UsableAsset` with `type: 'TILE'`, `sourceRegion: { x, y, w, h }`, collision flags, materials, and tags).
+  - Added `[ Tileset Palette ]` vs `[ Tile Library ]` tab switcher in `TilesetPicker` with search and tag filtering for immediate painting with saved canonical definitions.
+
 ## [2.1.459-12] - 2026-08-25
 ### Dedicated Animation Studio Suite
 - **Interactive Animation Studio (`AnimationStudioPanel.tsx` & `AssetStudioSuite.tsx`)**:
