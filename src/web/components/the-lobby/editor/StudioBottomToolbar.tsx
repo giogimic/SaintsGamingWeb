@@ -436,11 +436,12 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
 
       {/* ─── ZONE 3: Dock Panel Launchers (World, Atlas, Assets, Entities, Systems) ─── */}
       <div className="flex items-center gap-1 overflow-x-auto max-w-full px-1">
-        <PanelDockButton id="build" icon={<Hammer className="w-3.5 h-3.5" />} label="World" onClick={() => openDockTab('build')} />
+        <PanelDockButton id="build" icon={<Hammer className="w-3.5 h-3.5" />} label="World" active={Boolean(model?.getNodeById('build'))} onClick={() => openDockTab('build')} />
         <PanelDockButton
           id="atlas"
           icon={<Globe className="w-3.5 h-3.5" />}
           label="Atlas"
+          active={Boolean(model?.getNodeById('atlas'))}
           onClick={() => {
             if (onOpenMapBrowser) onOpenMapBrowser();
             else openDockTab('atlas');
@@ -448,12 +449,13 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           onDoubleClick={() => openDockTab('atlas')}
           title="Atlas Studio (Click for Full Workspace, Double-click for Dock)"
         />
-        <PanelDockButton id="properties" icon={<Settings2 className="w-3.5 h-3.5" />} label="Inspector" onClick={() => openDockTab('properties')} />
-        <PanelDockButton id="prefab" icon={<Package className="w-3.5 h-3.5" />} label="Prefabs" onClick={() => openDockTab('prefab')} />
+        <PanelDockButton id="properties" icon={<Settings2 className="w-3.5 h-3.5" />} label="Inspector" active={Boolean(model?.getNodeById('properties'))} onClick={() => openDockTab('properties')} />
+        <PanelDockButton id="prefab" icon={<Package className="w-3.5 h-3.5" />} label="Prefabs" active={Boolean(model?.getNodeById('prefab'))} onClick={() => openDockTab('prefab')} />
         <PanelDockButton
           id="assets"
           icon={<ImageIcon className="w-3.5 h-3.5" />}
           label="Assets"
+          active={Boolean(model?.getNodeById('assets'))}
           onClick={(e) => {
             if (e.shiftKey || !openDockTab) onOpenAssetBrowser?.();
             else openDockTab('assets');
@@ -464,9 +466,9 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
 
         <div className="w-px h-5 bg-amber-500/20 mx-1 shrink-0" />
 
-        <PanelDockButton id="npc" icon={<Users className="w-3.5 h-3.5" />} label="NPCs" onClick={() => openDockTab('npc')} />
-        <PanelDockButton id="quest" icon={<ScrollText className="w-3.5 h-3.5" />} label="Quests" onClick={() => openDockTab('quest')} />
-        <PanelDockButton id="dialogue" icon={<MessageSquare className="w-3.5 h-3.5" />} label="Dialogue" onClick={() => openDockTab('dialogue')} />
+        <PanelDockButton id="npc" icon={<Users className="w-3.5 h-3.5" />} label="NPCs" active={Boolean(model?.getNodeById('npc'))} onClick={() => openDockTab('npc')} />
+        <PanelDockButton id="quest" icon={<ScrollText className="w-3.5 h-3.5" />} label="Quests" active={Boolean(model?.getNodeById('quest'))} onClick={() => openDockTab('quest')} />
+        <PanelDockButton id="dialogue" icon={<MessageSquare className="w-3.5 h-3.5" />} label="Dialogue" active={Boolean(model?.getNodeById('dialogue'))} onClick={() => openDockTab('dialogue')} />
         <PanelDockButton
           id="characters"
           icon={<Sword className="w-3.5 h-3.5" />}
@@ -476,10 +478,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           }}
           title="Hero Studio (Full Workspace)"
         />
-        <PanelDockButton id="creature" icon={<PawPrint className="w-3.5 h-3.5" />} label="Creatures" onClick={() => openDockTab('creature')} />
-        <PanelDockButton id="spawner" icon={<Flame className="w-3.5 h-3.5" />} label="Spawners" onClick={() => openDockTab('spawner')} />
-        <PanelDockButton id="loot" icon={<Coins className="w-3.5 h-3.5" />} label="Loot" onClick={() => openDockTab('loot')} />
-        <PanelDockButton id="items" icon={<Package className="w-3.5 h-3.5" />} label="Items" onClick={() => openDockTab('items')} />
+        <PanelDockButton id="creature" icon={<PawPrint className="w-3.5 h-3.5" />} label="Creatures" active={Boolean(model?.getNodeById('creature'))} onClick={() => openDockTab('creature')} />
+        <PanelDockButton id="spawner" icon={<Flame className="w-3.5 h-3.5" />} label="Spawners" active={Boolean(model?.getNodeById('spawner'))} onClick={() => openDockTab('spawner')} />
+        <PanelDockButton id="loot" icon={<Coins className="w-3.5 h-3.5" />} label="Loot" active={Boolean(model?.getNodeById('loot'))} onClick={() => openDockTab('loot')} />
+        <PanelDockButton id="items" icon={<Package className="w-3.5 h-3.5" />} label="Items" active={Boolean(model?.getNodeById('items'))} onClick={() => openDockTab('items')} />
         <PanelDockButton
           id="classes"
           icon={<UserCheck className="w-3.5 h-3.5" />}
@@ -489,10 +491,10 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           }}
           title="Hero Studio (Full Workspace)"
         />
-        <PanelDockButton id="gameplay" icon={<Activity className="w-3.5 h-3.5" />} label="Gameplay" onClick={() => openDockTab('gameplay')} />
-        <PanelDockButton id="problems" icon={<AlertCircle className="w-3.5 h-3.5" />} label="Diagnostics" onClick={() => openDockTab('problems')} />
+        <PanelDockButton id="gameplay" icon={<Activity className="w-3.5 h-3.5" />} label="Gameplay" active={Boolean(model?.getNodeById('gameplay'))} onClick={() => openDockTab('gameplay')} />
+        <PanelDockButton id="problems" icon={<AlertCircle className="w-3.5 h-3.5" />} label="Diagnostics" active={Boolean(model?.getNodeById('problems'))} onClick={() => openDockTab('problems')} />
         {canDev && (
-          <PanelDockButton id="dev" icon={<TerminalSquare className="w-3.5 h-3.5" />} label="Dev" onClick={() => openDockTab('dev')} />
+          <PanelDockButton id="dev" icon={<TerminalSquare className="w-3.5 h-3.5" />} label="Dev" active={Boolean(model?.getNodeById('dev'))} onClick={() => openDockTab('dev')} />
         )}
       </div>
 
@@ -635,17 +637,22 @@ const PanelDockButton: React.FC<{
   id: string;
   icon: React.ReactNode;
   label: string;
+  active?: boolean;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick?: () => void;
   title?: string;
-}> = ({ id, icon, label, onClick, onDoubleClick, title }) => {
+}> = ({ id, icon, label, active, onClick, onDoubleClick, title }) => {
   return (
     <button
       type="button"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       title={title || `Open ${label}`}
-      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono text-slate-400 hover:text-white hover:bg-white/10 hover:border hover:border-amber-500/30 transition-all shrink-0 cursor-pointer"
+      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono transition-all shrink-0 cursor-pointer ${
+        active
+          ? 'text-amber-300 bg-amber-500/20 border border-amber-500/40 shadow-sm font-semibold'
+          : 'text-slate-400 hover:text-white hover:bg-white/10 hover:border hover:border-amber-500/30 border border-transparent'
+      }`}
     >
       {icon}
       <span>{label}</span>

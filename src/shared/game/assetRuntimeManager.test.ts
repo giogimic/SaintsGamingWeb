@@ -166,4 +166,56 @@ describe("RuntimeAssetManager", () => {
       missingId: "non_existent_dep",
     });
   });
+
+  it("warm asset transitions to active on use", async () => {
+    const manager = new RuntimeAssetManager();
+    manager.registerAsset({
+      id: "spell_fireball",
+      name: "Fireball FX",
+      type: "EFFECT",
+      sourceUrl: "/fx/fireball.png",
+    });
+
+    await manager.loadAsset("spell_fireball");
+    expect(manager.getAsset("spell_fireball")?.state).toBe("READY");
+
+    manager.activateAsset("spell_fireball");
+    expect(manager.getAsset("spell_fireball")?.state).toBe("ACTIVE");
+  });
+
+  it("active asset transitions to cached on release/deactivate", async () => {
+    const manager = new RuntimeAssetManager();
+    manager.registerAsset({
+      id: "boss_music",
+      name: "Boss Theme",
+      type: "AUDIO",
+      sourceUrl: "/audio/boss.mp3",
+    });
+
+    await manager.loadAsset("boss_music");
+    manager.activateAsset("boss_music");
+    expect(manager.getAsset("boss_music")?.state).toBe("ACTIVE");
+
+    manager.deactivateAsset("boss_music");
+    expect(manager.getAsset("boss_music")?.state).toBe("CACHED");
+  });
+
+  it("cached asset transitions to ready / active on re-request", async () => {
+    const manager = new RuntimeAssetManager();
+    manager.registerAsset({
+      id: "dungeon_map",
+      name: "Dungeon Map",
+      type: "MAP",
+      sourceUrl: "/maps/dungeon.json",
+    });
+
+    await manager.loadAsset("dungeon_map");
+    manager.activateAsset("dungeon_map");
+    manager.deactivateAsset("dungeon_map");
+    expect(manager.getAsset("dungeon_map")?.state).toBe("CACHED");
+
+    // Re-activating from cached state
+    manager.activateAsset("dungeon_map");
+    expect(manager.getAsset("dungeon_map")?.state).toBe("ACTIVE");
+  });
 });

@@ -14,7 +14,7 @@
                                                                  |___/ 
 ```
 
-![Release](https://img.shields.io/badge/Version-v2.1.453-purple?style=for-the-badge)
+![Release](https://img.shields.io/badge/Version-v2.1.459--31-purple?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/Next.js_15-React_19-black?style=for-the-badge&logo=next.js)
 ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Babylon.js](https://img.shields.io/badge/Babylon.js-2.5D_WebGL-F58025?style=for-the-badge&logo=babylonjs&logoColor=white)

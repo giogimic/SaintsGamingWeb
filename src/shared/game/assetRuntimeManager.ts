@@ -50,6 +50,16 @@ export interface AssetContainer {
   state: "COLD" | "WARM" | "ACTIVE" | "ERROR";
 }
 
+export const DEFAULT_PRELOAD_GROUPS: Record<
+  string,
+  { priority: number; description: string }
+> = {
+  Core: { priority: 100, description: 'Always loaded (UI, fonts, common effects)' },
+  Player: { priority: 90, description: 'Active player character presentation' },
+  Combat_Common: { priority: 80, description: 'Combat UI, common ability effects' },
+  World_Common: { priority: 70, description: 'Shared world assets (common tiles, NPCs)' },
+};
+
 export interface RuntimeAssetDiagnostics {
   totalRegistered: number;
   stateCounts: Record<AssetLifecycleState, number>;
@@ -351,6 +361,13 @@ export class RuntimeAssetManager {
       container.state = "ERROR";
       throw err;
     }
+  }
+
+  /**
+   * Alias for warmContainer (preloading container assets).
+   */
+  public async preloadContainer(containerId: string): Promise<AssetContainer> {
+    return this.warmContainer(containerId);
   }
 
   /**

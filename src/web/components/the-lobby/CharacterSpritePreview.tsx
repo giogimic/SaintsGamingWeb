@@ -29,32 +29,8 @@ export function resolveSpriteUrl(key: string): string {
   if (key.includes('.') || key.startsWith('upload_') || key.startsWith('asset_')) {
     return `/uploads/${key}`;
   }
-  // Check if it matches a modular directory pack name
-  const modularDirs = [
-    'good-paladin-templar-female',
-    'good-cleric-highpriestess-female',
-    'good-cleric-sanctuary-male',
-    'good-ranger-grovekeeper-female',
-    'good-wizard-archmage-male',
-    'good-wizard-celestial-female',
-    'evil-assassin-nightstalker-female',
-    'evil-berserker-bloodaxe-male',
-    'item-armor-plate-iron',
-    'item-armor-plate-steel',
-    'item-backpack-leather',
-    'item-boots-rim-black',
-    'item-bracers-steel',
-    'item-cape-blue',
-    'item-cape-crimson',
-    'item-cape-forest-green',
-    'item-cape-purple',
-    'item-cape-white',
-    'item-hat-hood-green',
-    'item-hat-hood-white',
-    'item-hat-horned-iron',
-    'item-hat-tricorne-black',
-  ];
-  if (modularDirs.includes(key)) {
+  // Dynamic pattern detection for all modular directory packs (good-*, evil-*, item-*)
+  if (key.startsWith('good-') || key.startsWith('evil-') || key.startsWith('item-')) {
     return `/game-assets/npc/${key}/${key}.png`;
   }
   return `/game-assets/npc/${key}.png`;

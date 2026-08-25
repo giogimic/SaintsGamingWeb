@@ -139,15 +139,26 @@ type DbHero = {
   startingInventory?: string | null;
 };
 
-type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
+export type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
-const isModularSprite = (id: string | null | undefined) => {
-  if (!id) return false;
-  return id === 'human_base' || 
-         id.startsWith('good-') || 
-         id.startsWith('evil-') || 
-         ['scout_mira', 'capturer_kian', 'soulwarden_aldric', 'ironwright_kael', 'candrift_keeper', 'elder_voss'].includes(id);
-};
+export type PresentationMode = 'complete' | 'modular' | 'portrait_only' | 'unavailable';
+
+export function detectPresentationMode(
+  id: string | null | undefined,
+  _availableAssets?: string[]
+): PresentationMode {
+  if (!id) return 'unavailable';
+  if (
+    id === 'human_base' || 
+    id.startsWith('good-') || 
+    id.startsWith('evil-') || 
+    id.startsWith('item-') ||
+    ['scout_mira', 'capturer_kian', 'soulwarden_aldric', 'ironwright_kael', 'candrift_keeper', 'elder_voss'].includes(id)
+  ) {
+    return 'modular';
+  }
+  return 'complete';
+}
 
 export function CharacterCreator({
   onComplete,
@@ -300,6 +311,37 @@ export function CharacterCreator({
     const pick = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
     const num = Math.floor(Math.random() * 90 + 10);
     setName(`${pick}${num}`);
+  };
+
+  const handleRollHero = () => {
+    if (starterHeroes.length === 0) return;
+    soundSynth?.playSelectSound?.();
+    const hero = starterHeroes[Math.floor(Math.random() * starterHeroes.length)];
+    const pick = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const num = Math.floor(Math.random() * 90 + 10);
+    const randomPerk = PERKS[Math.floor(Math.random() * PERKS.length)];
+
+    setSpriteId(hero.spriteKey);
+    setClassId(hero.classId);
+    setSelectedHeroSlug(hero.slug);
+    setName(`${pick}${num}`);
+    setPerkId(randomPerk.id);
+
+    if (dynamicCapes.length > 1 && Math.random() > 0.5) {
+      const cape = dynamicCapes[Math.floor(Math.random() * dynamicCapes.length)];
+      setSelectedCape(cape.id);
+    }
+    if (dynamicHats.length > 1 && Math.random() > 0.5) {
+      const hat = dynamicHats[Math.floor(Math.random() * dynamicHats.length)];
+      setSelectedHat(hat.id);
+    }
+    if (dynamicArmor.length > 1 && Math.random() > 0.5) {
+      const armor = dynamicArmor[Math.floor(Math.random() * dynamicArmor.length)];
+      setSelectedArmor(armor.id);
+    }
+
+    setStep('REVIEW');
+    toast.success(`Rolled: ${hero.name} (${hero.classId})`);
   };
 
   const handleCreate = async () => {
@@ -473,7 +515,7 @@ export function CharacterCreator({
             } else if (step === 'NAME') setStep('HERO_PICK');
             else if (step === 'APPEARANCE') setStep('NAME');
             else if (step === 'GIFT') {
-              if (isModularSprite(spriteId)) setStep('APPEARANCE');
+              if (detectPresentationMode(spriteId, allSprites) === 'modular') setStep('APPEARANCE');
               else setStep('NAME');
             }
             else if (step === 'REVIEW') setStep('GIFT');
@@ -487,7 +529,7 @@ export function CharacterCreator({
         {/* Steps Breadcrumb */}
         <div className="flex items-center gap-2 font-mono text-xs">
           {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[])
-            .filter(s => s !== 'APPEARANCE' || isModularSprite(spriteId))
+            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(spriteId, allSprites) === 'modular')
             .map((s, i, arr) => {
             const isDone = stepToNum[step] > stepToNum[s];
             const isCur = step === s;
@@ -555,6 +597,20 @@ export function CharacterCreator({
               <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
                 Choose a foundation archetype for combat bonuses and abilities
               </p>
+
+              {starterHeroes.length > 0 && !heroesLoading && (
+                <div className="mt-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleRollHero}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-400/50 text-purple-200 hover:text-white font-mono text-xs font-bold uppercase tracking-wider transition-all hover:scale-105 shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
+                    title="Randomly selects a hero archetype, class, and compatible appearance"
+                  >
+                    <Dice5 size={14} className="text-[#00f5d4]" />
+                    Quick Roll Saint (Archetype, Class & Presentation)
+                  </button>
+                </div>
+              )}
             </div>
 
             {heroesLoading ? (
@@ -705,12 +761,13 @@ export function CharacterCreator({
                   disabled={!name || name.trim().length < 3}
                   onClick={() => {
                     soundSynth?.playActionSound?.();
-                    if (isModularSprite(spriteId)) setStep('APPEARANCE');
+                    const mode = detectPresentationMode(spriteId, allSprites);
+                    if (mode === 'modular') setStep('APPEARANCE');
                     else setStep('GIFT');
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] disabled:opacity-40 cursor-pointer"
                 >
-                  {isModularSprite(spriteId) ? 'Proceed to Avatar' : 'Proceed to Blessing'} <ArrowRight size={14} />
+                  {detectPresentationMode(spriteId, allSprites) === 'modular' ? 'Proceed to Avatar' : 'Proceed to Blessing'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
