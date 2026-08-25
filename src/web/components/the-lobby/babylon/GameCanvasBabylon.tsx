@@ -1171,6 +1171,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Sync brush properties
     engine.setBrushRadius(useEditorStore.getState().brushRadius);
     engine.setActiveBrushTileId(useEditorStore.getState().activeBrushTileId);
+    engine.setActiveBrushPattern(useEditorStore.getState().activeBrushPattern);
     engine.setActiveLayerIdx(useEditorStore.getState().activeLayerIdx);
     engine.setBrushMode(useEditorStore.getState().brushMode);
 
@@ -1409,17 +1410,47 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const paintedOps: any[] = [];
           for (const pt of coordsToPaint) {
-            const painted = paintWorldCell(
-              map,
-              target.layerIdx,
-              pt.r,
-              pt.c,
-              paintValue,
-              worldSync
-            );
-            if (!('error' in painted)) {
-              paintedOps.push(painted.cell);
-              engine.updateSingleTile(pt.r, pt.c, paintValue, target.layerIdx, map.tilesets);
+            if (store.activeBrushPattern) {
+              const pat = store.activeBrushPattern;
+              for (let br = 0; br < pat.h; br++) {
+                for (let bc = 0; bc < pat.w; bc++) {
+                  const tr = pt.r + br;
+                  const tc = pt.c + bc;
+                  if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) continue;
+                  
+                  // Use pattern tile, or 0 if erase mode
+                  const patVal = brushMode === 'erase' ? 0 : pat.gids[br][bc];
+                  
+                  // Skip empty spots in the pattern so we don't erase the ground unintentionally when painting
+                  if (patVal === 0 && brushMode !== 'erase') continue;
+                  
+                  const painted = paintWorldCell(
+                    map,
+                    target.layerIdx,
+                    tr,
+                    tc,
+                    patVal,
+                    worldSync
+                  );
+                  if (!('error' in painted)) {
+                    paintedOps.push(painted.cell);
+                    engine.updateSingleTile(tr, tc, patVal, target.layerIdx, map.tilesets);
+                  }
+                }
+              }
+            } else {
+              const painted = paintWorldCell(
+                map,
+                target.layerIdx,
+                pt.r,
+                pt.c,
+                paintValue,
+                worldSync
+              );
+              if (!('error' in painted)) {
+                paintedOps.push(painted.cell);
+                engine.updateSingleTile(pt.r, pt.c, paintValue, target.layerIdx, map.tilesets);
+              }
             }
           }
           if (paintedOps.length > 0) {
@@ -1690,6 +1721,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         if (state.activeBrushTileId !== prevState.activeBrushTileId) {
           engine.setActiveBrushTileId(state.activeBrushTileId);
+        }
+        if (state.activeBrushPattern !== prevState.activeBrushPattern) {
+          engine.setActiveBrushPattern(state.activeBrushPattern);
         }
         if (state.activeLayerIdx !== prevState.activeLayerIdx) {
           engine.setActiveLayerIdx(state.activeLayerIdx);
