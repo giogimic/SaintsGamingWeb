@@ -7,7 +7,6 @@ import {
   ClassDefData,
   DEFAULT_GAME_CONFIG_SLUG,
   DEFAULT_GLOBAL_SHINY_CHANCE_PERCENT,
-  FALLBACK_CLASS_DEFS,
 } from '@/shared/game/classCatalog';
 import { classDataToDb, classRowToData } from '@/shared/game/classDefMap';
 import { ensureDefaultGameConfig } from '@/server/classDefs';
@@ -31,15 +30,15 @@ export async function getPlayableClasses(profileId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
-      return { success: true, data: FALLBACK_CLASS_DEFS.filter((c) => c.isPlayable), source: 'fallback' as const };
+      return { success: true, data: [] as ClassDefData[], source: 'db' as const };
     }
     return { success: true, data: rows.map(classRowToData), source: 'db' as const };
   } catch (err) {
     console.error('[getPlayableClasses]', err);
     return {
       success: true,
-      data: FALLBACK_CLASS_DEFS.filter((c) => c.isPlayable),
-      source: 'fallback' as const,
+      data: [] as ClassDefData[],
+      source: 'db' as const,
     };
   }
 }
@@ -55,12 +54,12 @@ export async function getAllCharacterClasses(profileId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
-      return { success: true, data: FALLBACK_CLASS_DEFS };
+      return { success: true, data: [] as ClassDefData[] };
     }
     return { success: true, data: rows.map(classRowToData) };
   } catch (err) {
     console.error('[getAllCharacterClasses]', err);
-    return { success: false, error: 'Failed to fetch', data: FALLBACK_CLASS_DEFS };
+    return { success: false, error: 'Failed to fetch', data: [] as ClassDefData[] };
   }
 }
 
@@ -119,28 +118,7 @@ export async function toggleCharacterClassPlayable(slug: string, isPlayable: boo
   }
 }
 
-export async function seedDefaultCharacterClasses() {
-  const isAdmin = await checkAdminPermission();
-  if (!isAdmin) return { success: false, error: 'Unauthorized', created: 0 };
 
-  let created = 0;
-  try {
-    const config = await ensureDefaultGameConfig();
-    for (const def of FALLBACK_CLASS_DEFS) {
-      const existing = await prisma.characterClass.findUnique({
-        where: { gameId_slug: { gameId: config.id, slug: def.slug } },
-      });
-      if (existing) continue;
-      await prisma.characterClass.create({ data: classDataToDb(def, config.id) });
-      created++;
-    }
-    revalidatePath('/studio');
-    return { success: true, created };
-  } catch (err: any) {
-    console.error('[seedDefaultCharacterClasses]', err);
-    return { success: false, error: err.message || 'Seed failed', created };
-  }
-}
 
 export async function importCharacterClassesJson(json: string) {
   const isAdmin = await checkAdminPermission();

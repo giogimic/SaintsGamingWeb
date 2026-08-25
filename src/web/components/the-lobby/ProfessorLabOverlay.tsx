@@ -8,8 +8,11 @@ import { soundSynth } from '@/engine/sound-synth';
 import {
   CreatureDefData,
   creatureAssetUrl,
-  listFallbackStarters,
 } from '@/shared/game/creatureCatalog';
+
+function listFallbackStarters(): CreatureDefData[] {
+  return [];
+}
 
 export default function ProfessorLabOverlay({ onClose }: { onClose: () => void }) {
   const [starters, setStarters] = useState<CreatureDefData[]>(listFallbackStarters());

@@ -3,9 +3,10 @@
 import { prisma } from '@/web/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { checkAdminPermission } from './game-admin';
+import { ensureDefaultGameConfig } from '@/server/classDefs';
 import {
   CreatureDefData,
-  FALLBACK_CREATURE_DEFS,
+  emptyCreatureDef,
 } from '@/shared/game/creatureCatalog';
 import { creatureDataToDb, creatureRowToData } from '@/shared/game/creatureDefMap';
 
@@ -19,7 +20,7 @@ function creatureScopeWhere(gameId?: string | null) {
   };
 }
 
-/** Public: active creatures (lab / dex / gameplay). Falls back to seed catalog. */
+/** Public: active creatures (lab / dex / gameplay). */
 export async function getActiveCreatureDefs(gameId?: string) {
   try {
     const rows = await prisma.creatureDef.findMany({
@@ -27,15 +28,15 @@ export async function getActiveCreatureDefs(gameId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
-      return { success: true, data: FALLBACK_CREATURE_DEFS.filter((c) => c.isActive), source: 'fallback' as const };
+      return { success: true, data: [], source: 'db' as const };
     }
     return { success: true, data: rows.map(creatureRowToData), source: 'db' as const };
   } catch (err) {
     console.error('[getActiveCreatureDefs]', err);
     return {
       success: true,
-      data: FALLBACK_CREATURE_DEFS.filter((c) => c.isActive),
-      source: 'fallback' as const,
+      data: [],
+      source: 'db' as const,
     };
   }
 }
@@ -59,12 +60,12 @@ export async function getAllCreatureDefs(gameId?: string) {
       orderBy: { sortOrder: 'asc' },
     });
     if (rows.length === 0) {
-      return { success: true, data: FALLBACK_CREATURE_DEFS };
+      return { success: true, data: [] };
     }
     return { success: true, data: rows.map(creatureRowToData) };
   } catch (err) {
-    console.error('[getAllCreatureDefs]', err);
-    return { success: false, error: 'Failed to fetch', data: FALLBACK_CREATURE_DEFS };
+    console.error('[getAllCreatureDefsRaw]', err);
+    return { success: false, error: 'Failed to fetch', data: [] };
   }
 }
 
@@ -115,26 +116,6 @@ export async function toggleCreatureDefActive(slug: string, isActive: boolean) {
   }
 }
 
-export async function seedDefaultCreatureDefs() {
-  const isAdmin = await checkAdminPermission();
-  if (!isAdmin) return { success: false, error: 'Unauthorized', created: 0 };
-
-  let created = 0;
-  try {
-    for (const def of FALLBACK_CREATURE_DEFS) {
-      const existing = await prisma.creatureDef.findUnique({ where: { slug: def.slug } });
-      if (existing) continue;
-      await prisma.creatureDef.create({ data: creatureDataToDb(def) });
-      created++;
-    }
-    revalidatePath('/studio');
-    return { success: true, created };
-  } catch (err: any) {
-    console.error('[seedDefaultCreatureDefs]', err);
-    return { success: false, error: err.message || 'Seed failed', created };
-  }
-}
-
 export async function importCreatureDefsJson(json: string) {
   const isAdmin = await checkAdminPermission();
   if (!isAdmin) return { success: false, error: 'Unauthorized', count: 0 };
@@ -145,21 +126,19 @@ export async function importCreatureDefsJson(json: string) {
     let count = 0;
     for (const item of list) {
       if (!item.slug || !item.name) continue;
+      const config = await ensureDefaultGameConfig();
       await prisma.creatureDef.upsert({
         where: { slug: item.slug },
         create: creatureDataToDb({
-          ...FALLBACK_CREATURE_DEFS[0],
+          ...emptyCreatureDef(),
           ...item,
-          shinyEnabled: item.shinyEnabled !== false,
-          shinyUseGlobalChance: item.shinyUseGlobalChance !== false,
-          shinyChancePercent: item.shinyChancePercent ?? 0.5,
+          slug: item.slug,
+          gameId: config.id,
         }),
         update: creatureDataToDb({
-          ...FALLBACK_CREATURE_DEFS[0],
+          ...emptyCreatureDef(),
           ...item,
-          shinyEnabled: item.shinyEnabled !== false,
-          shinyUseGlobalChance: item.shinyUseGlobalChance !== false,
-          shinyChancePercent: item.shinyChancePercent ?? 0.5,
+          slug: item.slug,
         }),
       });
       count++;
@@ -179,5 +158,5 @@ export async function resolveCreatureDef(slug: string): Promise<CreatureDefData 
   } catch {
     /* table may not exist yet */
   }
-  return FALLBACK_CREATURE_DEFS.find((c) => c.slug === slug && c.isActive) || null;
+  return null;
 }

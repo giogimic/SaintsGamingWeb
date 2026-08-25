@@ -13,7 +13,6 @@ import {
   normalizeSkillSlug,
 } from "./skillTypings";
 import {
-  FALLBACK_CLASS_DEFS,
   resolveClassStats,
   resolveStartingSkills,
   SHARED_BASE_STATS,
@@ -33,7 +32,7 @@ describe("combat skill typings", () => {
   });
 
   it("applies class skill deltas without locking skills", () => {
-    const warrior = FALLBACK_CLASS_DEFS.find((c) => c.classId === "WARRIOR")!;
+    const warrior = { classId: "WARRIOR", statDeltas: { def: 8 }, skillDeltas: { attack: 14 } } as any;
     const skills = resolveStartingSkills(warrior);
     expect(skills.Attack.level).toBeGreaterThan(1);
     expect(skills.Wisdom.level).toBe(1); // trainable, not locked out
@@ -41,8 +40,8 @@ describe("combat skill typings", () => {
   });
 
   it("shares base stats across classes with deltas", () => {
-    const ranger = FALLBACK_CLASS_DEFS.find((c) => c.classId === "RANGER")!;
-    const priest = FALLBACK_CLASS_DEFS.find((c) => c.classId === "PRIEST")!;
+    const ranger = { classId: "RANGER", statDeltas: { def: -6 } } as any;
+    const priest = { classId: "PRIEST", statDeltas: { hp: 15 } } as any;
     const r = resolveClassStats(ranger);
     const p = resolveClassStats(priest);
     expect(r.def).toBe(SHARED_BASE_STATS.def + (ranger.statDeltas.def || 0));

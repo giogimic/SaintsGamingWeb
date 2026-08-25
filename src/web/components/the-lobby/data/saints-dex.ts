@@ -3,7 +3,7 @@
  * Prefer creatureCatalog / CreatureDef DB for authority; this shape is for lobby UI only.
  */
 import {
-  FALLBACK_CREATURE_DEFS,
+
   creatureAssetUrl,
   type CreatureDefData,
   type CreatureElementType,
@@ -50,16 +50,8 @@ function toSchema(def: CreatureDefData): CreatureSchema {
   };
 }
 
-export const SAINTS_DEX: CreatureSchema[] = FALLBACK_CREATURE_DEFS.map(toSchema);
+export const SAINTS_DEX: CreatureSchema[] = [];
 
 export const getCreatureById = (id: string): CreatureSchema | undefined => {
-  if (!id) return undefined;
-  const bySlug = FALLBACK_CREATURE_DEFS.find((c) => c.slug === id);
-  if (bySlug) return toSchema(bySlug);
-  const num = parseInt(String(id).replace(/\D/g, ""), 10);
-  if (!Number.isNaN(num) && num > 0) {
-    const byDex = FALLBACK_CREATURE_DEFS.find((c) => c.dexNumber === num);
-    if (byDex) return toSchema(byDex);
-  }
-  return SAINTS_DEX.find((c) => c.id === id);
+  return undefined;
 };

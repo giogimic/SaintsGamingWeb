@@ -6,7 +6,6 @@ import {
   upsertCreatureDef,
   deleteCreatureDef,
   toggleCreatureDefActive,
-  seedDefaultCreatureDefs,
   importCreatureDefsJson,
 } from '@/app/actions/creature-defs';
 import {
@@ -16,7 +15,7 @@ import {
   CreaturePassive,
   emptyCreatureDef,
   creatureAssetUrl,
-  FALLBACK_CREATURE_DEFS,
+
 } from '@/shared/game/creatureCatalog';
 import {
   Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink,
@@ -158,16 +157,6 @@ export function CreatureDefEditorPanel() {
     }
   };
 
-  const handleSeed = async () => {
-    setLoading(true);
-    const res = await seedDefaultCreatureDefs();
-    setLoading(false);
-    if (res.success) {
-      showStatus('success', `Seeded ${res.created} creatures.`);
-      await load();
-    } else showStatus('error', res.error || 'Seed failed');
-  };
-
   const handleDelete = async (slug: string) => {
     if (!confirm(`Delete ${slug}?`)) return;
     const res = await deleteCreatureDef(slug);
@@ -241,9 +230,6 @@ export function CreatureDefEditorPanel() {
       }
       toolbar={
         <div className="flex flex-wrap gap-1">
-          <button type="button" onClick={handleSeed} className="flex items-center gap-1 rounded border border-emerald-800 bg-emerald-950/50 px-2 py-1 text-emerald-300" title="Seed defaults">
-            <Database size={10} /> Seed
-          </button>
           <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">
             <FileJson size={10} /> JSON
           </button>
@@ -337,7 +323,7 @@ export function CreatureDefEditorPanel() {
             type="button"
             className="ml-2 rounded border border-slate-600 px-3 py-1.5 text-slate-300"
             onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(FALLBACK_CREATURE_DEFS, null, 2));
+              navigator.clipboard.writeText(JSON.stringify(emptyCreatureDef(), null, 2));
               showStatus('success', 'Copied seed JSON');
             }}
           >

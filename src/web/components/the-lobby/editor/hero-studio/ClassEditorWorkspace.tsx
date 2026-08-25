@@ -6,7 +6,6 @@ import {
   upsertCharacterClass,
   deleteCharacterClass,
   toggleCharacterClassPlayable,
-  seedDefaultCharacterClasses,
   importCharacterClassesJson,
   getGlobalShinyChance,
   setGlobalShinyChance,
@@ -17,7 +16,6 @@ import {
   SHARED_BASE_STATS,
   emptyClassDef,
   resolveClassStats,
-  FALLBACK_CLASS_DEFS,
 } from '@/shared/game/classCatalog';
 import { COMBAT_SKILL_TYPINGS, skillSlugToLabel } from '@/shared/game/skillTypings';
 import { useEditorStore } from '../editor-store';
@@ -115,15 +113,7 @@ export function ClassEditorWorkspace() {
     }
   };
 
-  const handleSeed = async () => {
-    setLoading(true);
-    const res = await seedDefaultCharacterClasses();
-    setLoading(false);
-    if (res.success) {
-      showStatus('success', `Seeded ${res.created} classes.`);
-      await load();
-    } else showStatus('error', res.error || 'Seed failed');
-  };
+
 
   const handleDelete = async (slug: string) => {
     if (!confirm(`Delete class ${slug}?`)) return;
@@ -173,9 +163,7 @@ export function ClassEditorWorkspace() {
           <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => void handleSeed()} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Seed defaults">
-            <Database className="h-3.5 w-3.5" /> Seed
-          </button>
+
           <button type="button" onClick={() => setShowJson((v) => !v)} className="rounded px-2 py-1 text-slate-300 hover:bg-white/5 flex items-center gap-1" title="Import JSON">
             <FileJson className="h-3.5 w-3.5" /> JSON
           </button>
@@ -255,7 +243,7 @@ export function ClassEditorWorkspace() {
         <div className="mb-2 space-y-1">
           <textarea
             className={`${inputCls} h-24`}
-            placeholder={JSON.stringify(FALLBACK_CLASS_DEFS[0], null, 2)}
+            placeholder={JSON.stringify(emptyClassDef(), null, 2)}
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
           />
