@@ -4,7 +4,6 @@ import { prisma } from "@/web/lib/prisma";
 import { auth } from "@/auth";
 import {
   creatureAssetUrl,
-  getFallbackCreature,
 } from "@/shared/game/creatureCatalog";
 
 export async function getPublicProfile(username: string) {
@@ -113,13 +112,10 @@ export async function getPublicProfile(username: string) {
         where: { slug: pc.speciesSlug },
         select: { name: true, spriteOverworld: true, spriteBattle: true },
       });
-      const fallback = getFallbackCreature(pc.speciesSlug);
-      const name = defRow?.name || fallback?.name || pc.nickname || pc.speciesSlug;
+      const name = defRow?.name || pc.nickname || pc.speciesSlug;
       const spriteKey =
         defRow?.spriteOverworld ||
-        fallback?.spriteOverworld ||
         defRow?.spriteBattle ||
-        fallback?.spriteBattle ||
         `creatures/${pc.speciesSlug}`;
       pinnedCreature = {
         id: pc.id,

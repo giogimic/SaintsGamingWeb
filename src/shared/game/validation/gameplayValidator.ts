@@ -6,7 +6,7 @@
 import { getAllAbilityDefs, getAbilityDef } from '../combat/abilityRegistry';
 import { getAllCanonicalSkillDefs, getCanonicalSkillDef } from '../skills/skillRegistry';
 import { getAllStatusDefs, getStatusDef } from '../combat/statusRegistry';
-import { FALLBACK_CLASS_DEFS, ClassDefData } from '../classCatalog';
+import { ClassDefData } from '../classCatalog';
 
 export interface GameplayValidationError {
   code: string;
@@ -60,33 +60,6 @@ export function validateGameplayIntegrity(): {
             message: `Ability "${ab.id}" grants XP to unregistered skill "${grant.skillSlug}".`,
             severity: 'HARD_ERROR',
             entityId: ab.id,
-          });
-        }
-      }
-    }
-  }
-
-  // 2. Validate Class definitions against canonical skills and abilities
-  for (const cls of FALLBACK_CLASS_DEFS) {
-    for (const skillKey of Object.keys(cls.skillDeltas)) {
-      if (!getCanonicalSkillDef(skillKey)) {
-        issues.push({
-          code: 'ERR_CLASS_UNKNOWN_SKILL',
-          message: `Class "${cls.classId}" defines delta for unregistered skill "${skillKey}".`,
-          severity: 'HARD_ERROR',
-          entityId: cls.classId,
-        });
-      }
-    }
-
-    if (cls.learnableAbilityIds) {
-      for (const abId of cls.learnableAbilityIds) {
-        if (!getAbilityDef(abId)) {
-          issues.push({
-            code: 'ERR_CLASS_UNKNOWN_ABILITY',
-            message: `Class "${cls.classId}" references unknown learnable ability "${abId}".`,
-            severity: 'HARD_ERROR',
-            entityId: cls.classId,
           });
         }
       }

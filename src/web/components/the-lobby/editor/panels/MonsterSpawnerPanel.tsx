@@ -10,7 +10,7 @@ import {
 } from '@/app/actions/map-spawners';
 import { Save, Loader2, Trash2, PawPrint, ExternalLink } from 'lucide-react';
 import { getAllCreatureDefs } from '@/app/actions/creature-defs';
-import { FALLBACK_CREATURE_DEFS } from '@/shared/game/creatureCatalog';
+
 import {
   defaultFieldValues,
   LOGIC_COMPONENT_PRESETS,
@@ -57,7 +57,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
       if (res.success && res.data && res.data.length > 0) {
         setCreatures(res.data.map((c) => ({ slug: c.slug, name: c.name, sprite: c.spriteOverworld })));
       } else {
-        setCreatures(FALLBACK_CREATURE_DEFS.map((c) => ({ slug: c.slug, name: c.name, sprite: c.spriteOverworld })));
+        setCreatures([]);
       }
     })();
   }, [activeGameId]);

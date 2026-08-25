@@ -35,7 +35,7 @@ import { INITIAL_SKILLS, useGameStore } from './store';
 import { soundSynth } from '@/engine/sound-synth';
 import {
   ClassDefData,
-  FALLBACK_CLASS_DEFS,
+  emptyClassDef,
   resolveClassStats,
   resolveStartingSkills,
 } from '@/shared/game/classCatalog';
@@ -122,16 +122,7 @@ function classVisual(def: ClassDefData) {
   };
 }
 
-const FALLBACK_HEROES = [
-  { slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'evil-berserker-bloodaxe-male', flavor: 'Frontline champion. High HP, unstoppable in melee.', tag: 'Beginner Friendly', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'good-paladin-templar-female', flavor: 'Holy guardian. Superior defense, supports allies.', tag: 'Defensive', tagColor: '#60a5fa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'good-wizard-archmage-male', flavor: 'Master of arcane arts. High burst damage, tactical spells.', tag: 'Advanced', tagColor: '#a78bfa', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'evil-assassin-nightstalker-female', flavor: "Swift and lethal assassin. Strike before you're seen.", tag: 'Skill Cap', tagColor: '#34d399', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'good-ranger-grovekeeper-female', flavor: 'Agile hunter. Precision strikes and tactical kiting.', tag: 'Mobile', tagColor: '#fbbf24', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'good-cleric-highpriestess-female', flavor: 'Devoted healer. Wisdom and vitality over raw attack.', tag: 'Support', tagColor: '#e2d5b3', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk', flavor: 'Inner strength martial artist. Balanced offense and defense.', tag: 'Balanced', tagColor: '#fb923c', startingMap: 'DEMO_SANDBOX', startingX: 14, startingY: 15 },
-  { slug: 'spyder_tamer', name: 'Spyder Saint', classId: 'RANGER', spriteKey: 'catgirl', flavor: 'Starts in Azure Town — Saints campaign playtest.', tag: 'Campaign', tagColor: '#cbb26a', startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25 },
-];
+
 
 type DbHero = {
   slug: string;
@@ -173,7 +164,7 @@ export function CharacterCreator({
   const [appearanceTab, setAppearanceTab] = useState<'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG'>('BASE');
 
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
-  const [classDefs, setClassDefs] = useState<ClassDefData[]>(FALLBACK_CLASS_DEFS);
+  const [classDefs, setClassDefs] = useState<ClassDefData[]>([]);
   const [heroesLoading, setHeroesLoading] = useState(true);
 
   // Appearance picker state
@@ -283,7 +274,7 @@ export function CharacterCreator({
     }
   }, [step]);
 
-  const starterHeroes: DbHero[] = dbHeroes.length > 0 ? dbHeroes : FALLBACK_HEROES;
+  const starterHeroes: DbHero[] = dbHeroes;
   const CLASSES = classDefs.map(classVisual);
 
   const stepToNum: Record<CreatorStep, number> = {
@@ -318,10 +309,7 @@ export function CharacterCreator({
     setLoading(true);
     soundSynth?.playActionSound?.();
 
-    const selectedDef =
-      classDefs.find((c) => c.classId === classId) ||
-      FALLBACK_CLASS_DEFS.find((c) => c.classId === classId) ||
-      FALLBACK_CLASS_DEFS[0];
+    const selectedDef = classDefs.find((c) => c.classId === classId);
     const initialSkills = selectedDef
       ? resolveStartingSkills(selectedDef)
       : JSON.parse(JSON.stringify(INITIAL_SKILLS));
@@ -458,10 +446,7 @@ export function CharacterCreator({
     (spritePage + 1) * spritesPerPage
   );
 
-  const selectedClassDef =
-    classDefs.find((c) => c.classId === classId) ||
-    FALLBACK_CLASS_DEFS.find((c) => c.classId === classId) ||
-    FALLBACK_CLASS_DEFS[0];
+  const selectedDef = classDefs.find((c) => c.classId === classId);
   const selectedPerk = PERKS.find((p) => p.id === perkId) || PERKS[0];
 
   const { theme } = useTheme();
@@ -576,11 +561,15 @@ export function CharacterCreator({
                 <Loader2 className="w-10 h-10 text-[#00f5d4] animate-spin mb-3" />
                 <p className="text-xs font-mono text-cyan-200">Initializing Operative Matrix...</p>
               </div>
+            ) : starterHeroes.length === 0 ? (
+              <div className="flex flex-col items-center py-16">
+                <p className="text-sm font-mono text-pink-400">No archetypes available. An administrator must create archetypes in the Hero Studio.</p>
+              </div>
             ) : (
               <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto p-1">
                 {starterHeroes.map((hero) => {
                   const isSelected = selectedHeroSlug === hero.slug;
-                  const classDef = classDefs.find((c) => c.classId === hero.classId) || FALLBACK_CLASS_DEFS[0];
+                  const classDef = classDefs.find((c) => c.classId === hero.classId) || emptyClassDef();
 
                   return (
                     <div

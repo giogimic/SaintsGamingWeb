@@ -186,179 +186,41 @@ export function toPlayerCreatureStats(def: CreatureDefData) {
   };
 }
 
-/** Seed / fallback catalog — edit here or in Studio after seed. */
-export const FALLBACK_CREATURE_DEFS: CreatureDefData[] = [
-  {
-    slug: "agnite",
-    name: "Pyre Drake",
-    dexNumber: 1,
-    typePrimary: "Solar",
+export function emptyCreatureDef(): CreatureDefData {
+  return {
+    slug: "",
+    name: "",
+    dexNumber: 0,
+    typePrimary: "None",
     typeSecondary: "None",
-    spriteOverworld: "monster/battle/agnite-sheet",
-    spriteBattle: "monster/battle/agnite-sheet",
-    spriteBack: null,
-    ...DEFAULT_SHINY_FIELDS,
+    spriteOverworld: "",
+    shinyEnabled: true,
+    shinyUseGlobalChance: true,
+    shinyChancePercent: 0.5,
     baseHp: 100,
-    physicalPower: 16,
-    physicalDefense: 10,
-    abilityPower: 12,
-    abilityDefense: 8,
-    combatTempo: 95,
-    catchRate: 1,
-    starterLevel: 5,
-    passives: [
-      {
-        id: "molten_core",
-        name: "Molten Core",
-        description: "Physical attackers take slight burn chip when striking this creature.",
-        isDefault: true,
-      },
-      {
-        id: "kindling",
-        name: "Kindling",
-        description: "Firemaking actions near this creature gain a small XP bonus (future).",
-        isDefault: false,
-      },
-    ],
-    worldSkillName: "Ignite",
-    worldSkillDescription: "Burns bramble barriers and camp kindling in synergy events.",
-    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
-    flavor: "A false-dragon hatchling of living ember. Solar strength focus.",
-    tag: "Starter · Solar",
-    tagColor: "#f97316",
-    stage: "basic",
-    isStarter: true,
-    isWildSpawn: false,
-    isActive: true,
-    sortOrder: 1,
-  },
-  {
-    slug: "budaye",
-    name: "Thorn Bud",
-    dexNumber: 2,
-    typePrimary: "Bio",
-    typeSecondary: "None",
-    spriteOverworld: "monster/battle/budaye-sheet",
-    spriteBattle: "monster/battle/budaye-sheet",
-    spriteBack: null,
-    ...DEFAULT_SHINY_FIELDS,
-    baseHp: 110,
     physicalPower: 10,
-    physicalDefense: 16,
-    abilityPower: 10,
-    abilityDefense: 14,
-    combatTempo: 85,
-    catchRate: 1,
-    starterLevel: 5,
-    passives: [
-      {
-        id: "barkskin",
-        name: "Barkskin",
-        description: "Takes reduced damage from the first hit each battle.",
-        isDefault: true,
-      },
-      {
-        id: "photosynth",
-        name: "Photosynth",
-        description: "Slowly regenerates HP while standing on grass tiles (future).",
-        isDefault: false,
-      },
-    ],
-    worldSkillName: "Vine Surge",
-    worldSkillDescription: "Pulls and dissolves bramble walls; boosts woodcutting synergy.",
-    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
-    flavor: "A mutual wood-spirit bud. Bio endurance and harvest synergy.",
-    tag: "Starter · Bio",
-    tagColor: "#22c55e",
-    stage: "basic",
-    isStarter: true,
-    isWildSpawn: false,
-    isActive: true,
-    sortOrder: 2,
-  },
-  {
-    slug: "dollfin",
-    name: "Current Fin",
-    dexNumber: 3,
-    typePrimary: "Hydro",
-    typeSecondary: "None",
-    spriteOverworld: "monster/battle/dollfin-sheet",
-    spriteBattle: "monster/battle/dollfin-sheet",
-    spriteBack: null,
-    ...DEFAULT_SHINY_FIELDS,
-    baseHp: 95,
-    physicalPower: 11,
     physicalDefense: 10,
-    abilityPower: 13,
-    abilityDefense: 11,
-    combatTempo: 110,
-    catchRate: 1,
-    starterLevel: 5,
-    passives: [
-      {
-        id: "slipstream",
-        name: "Slipstream",
-        description: "Higher chance to move first when Tempo is tied.",
-        isDefault: true,
-      },
-      {
-        id: "mist_veil",
-        name: "Mist Veil",
-        description: "Small evasion bonus on the first turn of battle.",
-        isDefault: false,
-      },
-    ],
-    worldSkillName: "Water Jet",
-    worldSkillDescription: "Cuts bramble with pressurized spray; fishing synergy later.",
-    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
-    flavor: "A joyful leviathan pup. Hydro agility and rivercraft.",
-    tag: "Starter · Hydro",
-    tagColor: "#38bdf8",
-    stage: "basic",
-    isStarter: true,
-    isWildSpawn: false,
-    isActive: true,
-    sortOrder: 3,
-  },
-  {
-    slug: "rockitten",
-    name: "Rockitten",
-    dexNumber: 4,
-    typePrimary: "Geo",
-    typeSecondary: "None",
-    spriteOverworld: "npc/rockitten",
-    spriteBattle: "monster/battle/rockitten-sheet",
-    spriteBack: null,
-    ...DEFAULT_SHINY_FIELDS,
-    baseHp: 100,
-    physicalPower: 12,
-    physicalDefense: 14,
-    abilityPower: 8,
+    abilityPower: 10,
     abilityDefense: 10,
-    combatTempo: 90,
+    combatTempo: 100,
     catchRate: 1,
     starterLevel: 5,
-    passives: [
-      {
-        id: "stone_hide",
-        name: "Stone Hide",
-        description: "Slightly reduced physical damage taken.",
-        isDefault: true,
-      },
-    ],
-    worldSkillName: "Boulder Path",
-    worldSkillDescription: "Can weight pressure plates and clear small rockfall (future).",
-    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
-    flavor: "Cute boulder-beast. MPV wild spawn for RT + tall-grass TB.",
-    tag: "Wild · Geo",
-    tagColor: "#a78bfa",
+    passives: [],
+    worldSkillName: "",
+    worldSkillDescription: "",
+    abilities: [],
+    flavor: "",
+    tag: "Standard",
+    tagColor: "#34d399",
     stage: "basic",
     isStarter: false,
-    isWildSpawn: true,
+    isWildSpawn: false,
     isActive: true,
-    sortOrder: 4,
-  },
-];
+    sortOrder: 0,
+  };
+}
+
+
 
 const WILD_OVERWORLD_SLUGS = new Set([
   "ashwhirl",
@@ -473,10 +335,7 @@ export function resolveEntitySpriteUrl(
     return resolveEntitySpriteUrl(playerAlias, { ...opts, kind: opts?.kind || "player", fallback });
   }
 
-  const def = getFallbackCreature(key);
-  if (def?.spriteOverworld) {
-    return creatureAssetUrl(def.spriteOverworld);
-  }
+
   if (WILD_OVERWORLD_SLUGS.has(key)) {
     return creatureAssetUrl(`world-monsters/${key}-ow`);
   }
@@ -505,58 +364,7 @@ export function resolveEntitySpriteUrl(
   return creatureAssetUrl(`npc/${key}`);
 }
 
-export function getFallbackCreature(slug: string): CreatureDefData | undefined {
-  return FALLBACK_CREATURE_DEFS.find((c) => c.slug === slug);
-}
 
-export function listFallbackStarters(): CreatureDefData[] {
-  return FALLBACK_CREATURE_DEFS.filter((c) => c.isStarter && c.isActive).sort(
-    (a, b) => a.sortOrder - b.sortOrder
-  );
-}
-
-export function emptyCreatureDef(): CreatureDefData {
-  return {
-    slug: "",
-    gameId: "saints",
-    name: "",
-    dexNumber: 0,
-    typePrimary: "Solar",
-    typeSecondary: "None",
-    spriteOverworld: "daemon_data",
-    spriteBattle: "daemon_data",
-    spriteBack: null,
-    ...DEFAULT_SHINY_FIELDS,
-    baseHp: 100,
-    physicalPower: 10,
-    physicalDefense: 10,
-    abilityPower: 10,
-    abilityDefense: 10,
-    combatTempo: 100,
-    catchRate: 1,
-    starterLevel: 5,
-    passives: [
-      {
-        id: "new_passive",
-        name: "New Passive",
-        description: "Describe the passive effect.",
-        isDefault: true,
-      },
-    ],
-    worldSkillName: "",
-    worldSkillDescription: "",
-    abilities: [{ abilitySlug: "ram", currentCooldown: 0 }],
-    flavor: "",
-    tag: "Standard",
-    tagColor: "#34d399",
-    stage: "basic",
-    isStarter: false,
-    isWildSpawn: false,
-    isActive: true,
-    sortOrder: 0,
-    lootTableRefs: [],
-  };
-}
 
 /**
  * Fetch animationProfile from asset metadata for a given sprite URL/key.

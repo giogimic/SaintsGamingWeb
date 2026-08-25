@@ -7,8 +7,6 @@ import {
   ClassDefData,
   DEFAULT_GAME_CONFIG_SLUG,
   DEFAULT_GLOBAL_SHINY_CHANCE_PERCENT,
-  getFallbackClass,
-  listPlayableFallbackClasses,
   resolveClassStats,
 } from "@/shared/game/classCatalog";
 import { classRowToData } from "@/shared/game/classDefMap";
@@ -76,8 +74,7 @@ export async function loadClassDef(
   } catch {
     /* fallback */
   }
-  const fb = getFallbackClass(classIdOrSlug);
-  return fb && fb.isPlayable ? fb : null;
+  return null;
 }
 
 export async function loadPlayableClasses(profileId?: string | null): Promise<ClassDefData[]> {
@@ -91,7 +88,7 @@ export async function loadPlayableClasses(profileId?: string | null): Promise<Cl
   } catch {
     /* fallback */
   }
-  return listPlayableFallbackClasses();
+  return [];
 }
 
 export { resolveClassStats, classRowToData };
