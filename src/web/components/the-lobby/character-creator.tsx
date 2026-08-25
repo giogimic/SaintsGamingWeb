@@ -150,6 +150,13 @@ type DbHero = {
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
+const isModularSprite = (id: string) => {
+  return id === 'human_base' || 
+         id.startsWith('good-') || 
+         id.startsWith('evil-') || 
+         ['scout_mira', 'capturer_kian', 'soulwarden_aldric', 'ironwright_kael', 'candrift_keeper', 'elder_voss'].includes(id);
+};
+
 export function CharacterCreator({
   onComplete,
   onCancel,
@@ -479,7 +486,10 @@ export function CharacterCreator({
               else useGameStore.getState().setGameMode('CHARACTER_SELECT');
             } else if (step === 'NAME') setStep('HERO_PICK');
             else if (step === 'APPEARANCE') setStep('NAME');
-            else if (step === 'GIFT') setStep('APPEARANCE');
+            else if (step === 'GIFT') {
+              if (isModularSprite(spriteId)) setStep('APPEARANCE');
+              else setStep('NAME');
+            }
             else if (step === 'REVIEW') setStep('GIFT');
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 font-mono text-xs transition-colors cursor-pointer"
@@ -490,8 +500,10 @@ export function CharacterCreator({
 
         {/* Steps Breadcrumb */}
         <div className="flex items-center gap-2 font-mono text-xs">
-          {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[]).map((s, i) => {
-            const isDone = stepToNum[step] > i + 1;
+          {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[])
+            .filter(s => s !== 'APPEARANCE' || isModularSprite(spriteId))
+            .map((s, i, arr) => {
+            const isDone = stepToNum[step] > stepToNum[s];
             const isCur = step === s;
             const label =
               s === 'HERO_PICK'
@@ -528,7 +540,7 @@ export function CharacterCreator({
                   </span>
                   <span className="hidden sm:inline uppercase tracking-wider text-[11px]">{label}</span>
                 </div>
-                {i < 4 && <span className="text-pink-500/30 text-xs">›</span>}
+                {i < arr.length - 1 && <span className="text-pink-500/30 text-xs">›</span>}
               </React.Fragment>
             );
           })}
@@ -703,11 +715,12 @@ export function CharacterCreator({
                   disabled={!name || name.trim().length < 3}
                   onClick={() => {
                     soundSynth?.playActionSound?.();
-                    setStep('APPEARANCE');
+                    if (isModularSprite(spriteId)) setStep('APPEARANCE');
+                    else setStep('GIFT');
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] disabled:opacity-40 cursor-pointer"
                 >
-                  Proceed to Avatar <ArrowRight size={14} />
+                  {isModularSprite(spriteId) ? 'Proceed to Avatar' : 'Proceed to Blessing'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
