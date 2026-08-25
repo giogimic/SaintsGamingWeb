@@ -1,3 +1,15 @@
+## [2.1.459-14] - 2026-08-25
+### Saints Gaming Lobby Redesign & Character Creator Refactor
+- **Lobby Redesign**:
+  - Streamlined `GameTitleScreen.tsx` to solely focus on Game Start, Character Creation, and Options, removing the legacy Chat and Realm Gateway UI columns.
+- **Character Creator Improvements**:
+  - Decoupled `character-creator.tsx` from internal setup logic.
+  - Replaced hard-coded arrays for modular assets with dynamic sprite discovery powered by `useMemo` to pull from all available items.
+  - Ensured that `CharacterSpritePreview` inherits proper layer data from dynamic selections.
+- **System Standardization**:
+  - Validated that `CharacterClass` logic matches canonical definitions.
+  - Enforced strict separation of `StarterHero` templates (Archetypes) vs `GameCharacter` (Saints) across all creator endpoints and the backend `createGameCharacter` pipeline.
+
 ## [2.1.459-13] - 2026-08-25
 ### Tile Sheet Selector & Reusable Tile Library Integration
 - **Eliminated Browser Native Image Dragging (`TilesetPicker.tsx`)**:

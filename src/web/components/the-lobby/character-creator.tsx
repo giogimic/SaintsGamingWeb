@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   User,
   Sparkles,
@@ -105,46 +105,7 @@ const CLASS_ICONS: Record<string, LucideIcon> = {
   PALADIN: Shield,
 };
 
-const MODULAR_BASES = [
-  { id: 'good-paladin-templar-female', label: 'Templar (F)', tag: 'Holy' },
-  { id: 'good-cleric-highpriestess-female', label: 'High Priestess (F)', tag: 'Sacred' },
-  { id: 'good-cleric-sanctuary-male', label: 'Sanctuary Monk (M)', tag: 'Faith' },
-  { id: 'good-ranger-grovekeeper-female', label: 'Grovekeeper (F)', tag: 'Nature' },
-  { id: 'good-wizard-archmage-male', label: 'Archmage (M)', tag: 'Arcane' },
-  { id: 'good-wizard-celestial-female', label: 'Celestial Mage (F)', tag: 'Astral' },
-  { id: 'evil-assassin-nightstalker-female', label: 'Nightstalker (F)', tag: 'Stealth' },
-  { id: 'evil-berserker-bloodaxe-male', label: 'Berserker (M)', tag: 'Chaos' },
-  { id: 'adventurer', label: 'Adventurer (M)', tag: 'Classic' },
-  { id: 'heroine', label: 'Heroine (F)', tag: 'Classic' },
-  { id: 'ninja', label: 'Shinobi', tag: 'Stealth' },
-  { id: 'monk', label: 'Monk', tag: 'Martial' },
-];
-
-const MODULAR_CAPES = [
-  { id: null, label: 'None' },
-  { id: 'item-cape-blue', label: 'Blue Cape' },
-  { id: 'item-cape-crimson', label: 'Crimson Cape' },
-  { id: 'item-cape-forest-green', label: 'Forest Cape' },
-  { id: 'item-cape-purple', label: 'Arcane Purple Cape' },
-  { id: 'item-cape-white', label: 'Sacred White Cape' },
-];
-
-const MODULAR_HATS = [
-  { id: null, label: 'None' },
-  { id: 'item-hat-hood-green', label: 'Green Hood' },
-  { id: 'item-hat-hood-white', label: 'White Hood' },
-  { id: 'item-hat-horned-iron', label: 'Horned Helm' },
-  { id: 'item-hat-tricorne-black', label: 'Tricorne Hat' },
-];
-
-const MODULAR_ARMOR = [
-  { id: null, label: 'None' },
-  { id: 'item-armor-plate-iron', label: 'Iron Plate' },
-  { id: 'item-armor-plate-steel', label: 'Steel Plate' },
-  { id: 'item-backpack-leather', label: 'Leather Backpack' },
-  { id: 'item-boots-rim-black', label: 'Black Boots' },
-  { id: 'item-bracers-steel', label: 'Steel Bracers' },
-];
+// Dynamic discovery of assets instead of hard-coded assumptions
 
 function classVisual(def: ClassDefData) {
   const accent = def.color || '#00f5d4';
@@ -207,7 +168,6 @@ export function CharacterCreator({
   const [dbHeroes, setDbHeroes] = useState<DbHero[]>([]);
   const [classDefs, setClassDefs] = useState<ClassDefData[]>(FALLBACK_CLASS_DEFS);
   const [heroesLoading, setHeroesLoading] = useState(true);
-  const [setupDefaultMapId, setSetupDefaultMapId] = useState<string | null>(null);
 
   // Appearance picker state
   const [allSprites, setAllSprites] = useState<string[]>([]);
@@ -220,6 +180,37 @@ export function CharacterCreator({
   const [selectedHeroSlug, setSelectedHeroSlug] = useState<string | null>(null);
   const [perkId, setPerkId] = useState(PERKS[0].id);
   const [loading, setLoading] = useState(false);
+
+  // Dynamic Asset Discovery
+  const { dynamicBases, dynamicCapes, dynamicArmor, dynamicHats } = useMemo(() => {
+    if (allSprites.length === 0) return { dynamicBases: [], dynamicCapes: [], dynamicArmor: [], dynamicHats: [] };
+
+    const formatLabel = (id: string, prefix: string = '') => {
+      let lbl = id.replace(prefix, '').replace(/-/g, ' ');
+      return lbl.charAt(0).toUpperCase() + lbl.slice(1);
+    };
+
+    const bases = allSprites
+      .filter((s) => !s.startsWith('item-'))
+      .map((b: string) => ({ id: b, label: formatLabel(b), tag: 'Base' }));
+
+    const capes = [
+      { id: null, label: 'None' },
+      ...allSprites.filter((s) => s.startsWith('item-cape-')).map((c: string) => ({ id: c, label: formatLabel(c, 'item-cape-') })),
+    ];
+
+    const armor = [
+      { id: null, label: 'None' },
+      ...allSprites.filter((s) => s.startsWith('item-armor-') || s.startsWith('item-backpack-') || s.startsWith('item-boots-') || s.startsWith('item-bracers-')).map((a: string) => ({ id: a, label: formatLabel(a, 'item-') })),
+    ];
+
+    const hats = [
+      { id: null, label: 'None' },
+      ...allSprites.filter((s) => s.startsWith('item-hat-')).map((h: string) => ({ id: h, label: formatLabel(h, 'item-hat-') })),
+    ];
+
+    return { dynamicBases: bases, dynamicCapes: capes, dynamicArmor: armor, dynamicHats: hats };
+  }, [allSprites]);
 
   // Computed multi-layer stack
   const activeLayers = [
@@ -234,18 +225,12 @@ export function CharacterCreator({
     async function loadData() {
       setHeroesLoading(true);
       try {
-        const [heroesRes, classesRes, setupRes] = await Promise.all([
+        const [heroesRes, classesRes] = await Promise.all([
           getStarterHeroes(),
           getPlayableClasses(),
-          fetch('/api/setup/status', { cache: 'no-store' }).catch(() => null),
         ]);
         if (heroesRes.success) setDbHeroes(heroesRes.data as DbHero[]);
         if (classesRes.success && classesRes.data.length > 0) setClassDefs(classesRes.data);
-        if (setupRes && setupRes.ok) {
-          const setupData = await setupRes.json();
-          const mapId = typeof setupData?.status?.defaultMapId === 'string' ? setupData.status.defaultMapId.trim() : '';
-          setSetupDefaultMapId(mapId || null);
-        }
       } catch {
         /* ignore */
       } finally {
@@ -351,15 +336,6 @@ export function CharacterCreator({
         const mapData = await mapListRes.json();
         const maps = mapData.maps || [];
         if (maps.length > 0) {
-          const setupDefaultExists =
-            setupDefaultMapId &&
-            setupDefaultMapId !== 'STARTING_MAP' &&
-            maps.some((m: any) => m.id === setupDefaultMapId);
-
-          if (!startMap && setupDefaultExists) {
-            startMap = setupDefaultMapId as string;
-          }
-
           if (!startMap) {
             const hubMap =
               maps.find(
@@ -379,7 +355,7 @@ export function CharacterCreator({
     }
 
     if (!startMap) {
-      startMap = setupDefaultMapId || 'SAINTS_HAVEN';
+      startMap = 'SAINTS_HAVEN';
     }
 
     if (startX === undefined || startY === undefined) {
@@ -563,7 +539,7 @@ export function CharacterCreator({
 
       {/* ── STEP CONTENT ── */}
       <main className="relative z-20 w-full max-w-5xl mx-auto flex-1 flex flex-col justify-center my-auto py-2">
-        {/* ── STEP 1: HERO / ARCHETYPE PICK ── */}
+        {/* ── STEP 1: ARCHETYPE PICK ── */}
         {step === 'HERO_PICK' && (
           <div className="w-full flex flex-col items-center">
             <div className="text-center mb-6">
@@ -579,7 +555,7 @@ export function CharacterCreator({
                 SELECT ARCHETYPE
               </h2>
               <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Choose a foundation hero class for combat bonuses and abilities
+                Choose a foundation archetype for combat bonuses and abilities
               </p>
             </div>
 
@@ -697,7 +673,7 @@ export function CharacterCreator({
               }}
             >
               <label className="text-xs font-mono font-bold text-cyan-200 uppercase tracking-wider flex items-center justify-between">
-                <span>Codename / Hero Name</span>
+                <span>Saint Codename</span>
                 <span className="text-[10px] text-slate-400">Min 3 characters</span>
               </label>
 
@@ -780,21 +756,21 @@ export function CharacterCreator({
                 {/* Layer Badges */}
                 <div className="flex flex-wrap gap-1.5 justify-center mb-3">
                   <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-200">
-                    Base: {MODULAR_BASES.find(b => b.id === spriteId)?.label || spriteId}
+                    Base: {dynamicBases.find((b: any) => b.id === spriteId)?.label || spriteId}
                   </span>
                   {selectedCape && (
                     <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-purple-950/60 border border-purple-500/30 text-purple-200">
-                      Cape: {MODULAR_CAPES.find(c => c.id === selectedCape)?.label}
+                      Cape: {dynamicCapes.find((c: any) => c.id === selectedCape)?.label}
                     </span>
                   )}
                   {selectedHat && (
                     <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-pink-950/60 border border-pink-500/30 text-pink-200">
-                      Hat: {MODULAR_HATS.find(h => h.id === selectedHat)?.label}
+                      Hat: {dynamicHats.find((h: any) => h.id === selectedHat)?.label}
                     </span>
                   )}
                   {selectedArmor && (
                     <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-amber-950/60 border border-amber-500/30 text-amber-200">
-                      Armor: {MODULAR_ARMOR.find(a => a.id === selectedArmor)?.label}
+                      Armor: {dynamicArmor.find((a: any) => a.id === selectedArmor)?.label}
                     </span>
                   )}
                 </div>
@@ -856,7 +832,7 @@ export function CharacterCreator({
                   {/* TAB: BASE */}
                   {appearanceTab === 'BASE' && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      {MODULAR_BASES.map((b) => {
+                      {dynamicBases.map((b: any) => {
                         const isCur = spriteId === b.id;
                         return (
                           <div
@@ -889,7 +865,7 @@ export function CharacterCreator({
                   {/* TAB: CAPE */}
                   {appearanceTab === 'CAPE' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {MODULAR_CAPES.map((cape) => {
+                      {dynamicCapes.map((cape: any) => {
                         const isCur = selectedCape === cape.id;
                         return (
                           <div
@@ -923,7 +899,7 @@ export function CharacterCreator({
                   {/* TAB: HEAD */}
                   {appearanceTab === 'HEAD' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {MODULAR_HATS.map((hat) => {
+                      {dynamicHats.map((hat: any) => {
                         const isCur = selectedHat === hat.id;
                         return (
                           <div
@@ -957,7 +933,7 @@ export function CharacterCreator({
                   {/* TAB: ARMOR */}
                   {appearanceTab === 'ARMOR' && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {MODULAR_ARMOR.map((armor) => {
+                      {dynamicArmor.map((armor: any) => {
                         const isCur = selectedArmor === armor.id;
                         return (
                           <div
@@ -1010,7 +986,7 @@ export function CharacterCreator({
                         {/* Pagination */}
                         <div className="flex items-center gap-1 font-mono text-xs text-slate-400">
                           <button
-                            onClick={() => setSpritePage((p) => Math.max(0, p - 1))}
+                            onClick={() => setSpritePage((p: number) => Math.max(0, p - 1))}
                             disabled={spritePage === 0}
                             className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
                           >
@@ -1018,7 +994,7 @@ export function CharacterCreator({
                           </button>
                           <span>{spritePage + 1}/{totalSpritePages}</span>
                           <button
-                            onClick={() => setSpritePage((p) => Math.min(totalSpritePages - 1, p + 1))}
+                            onClick={() => setSpritePage((p: number) => Math.min(totalSpritePages - 1, p + 1))}
                             disabled={spritePage >= totalSpritePages - 1}
                             className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 cursor-pointer"
                           >
@@ -1029,7 +1005,7 @@ export function CharacterCreator({
 
                       {/* Sprite Grid */}
                       <div className="grid grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-1">
-                        {currentSprites.map((sprite) => {
+                        {currentSprites.map((sprite: string) => {
                           const isCur = spriteId === sprite;
                           return (
                             <div

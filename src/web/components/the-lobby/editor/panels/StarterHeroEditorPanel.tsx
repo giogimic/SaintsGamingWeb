@@ -320,7 +320,7 @@ export function StarterHeroEditorPanel() {
       const customEv = e as CustomEvent<{ key: string; source: string }>;
       if (customEv.detail?.key) {
         setForm((prev) => ({ ...prev, spriteKey: customEv.detail.key }));
-        showStatus('success', `Assigned hero sprite: ${customEv.detail.key}`);
+        showStatus('success', `Assigned archetype sprite: ${customEv.detail.key}`);
       }
     };
     window.addEventListener('studio_sprite_picked', handleSpritePicked);
@@ -344,7 +344,7 @@ export function StarterHeroEditorPanel() {
           name: capitalName,
           slug: `hero_${name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${Date.now().toString().slice(-4)}`
         });
-        showStatus('success', `Initialized Starter Hero from Asset`);
+        showStatus('success', `Initialized Archetype from Asset`);
       }
     };
     window.addEventListener('studio_make_starter_hero', handleMakeHero);
@@ -409,7 +409,7 @@ export function StarterHeroEditorPanel() {
       startingY: 15,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     });
-    showStatus('success', `Generated random hero with sprite: ${randomSprite}`);
+    showStatus('success', `Generated random archetype with sprite: ${randomSprite}`);
   };
 
   const handleSave = async () => {
@@ -451,7 +451,7 @@ export function StarterHeroEditorPanel() {
     const res = await seedDefaultStarterHeroes();
     setLoading(false);
     if (res.success) {
-      showStatus('success', `Seeded ${res.created} default heroes!`);
+      showStatus('success', `Seeded ${res.created} default archetypes!`);
       await load();
     } else {
       showStatus('error', res.error || 'Seed failed.');
@@ -464,7 +464,7 @@ export function StarterHeroEditorPanel() {
     const res = await importStarterHeroesJson(jsonInput);
     setLoading(false);
     if (res.success) {
-      showStatus('success', `Imported ${res.count} heroes from JSON!`);
+      showStatus('success', `Imported ${res.count} archetypes from JSON!`);
       setShowJsonModal(false);
       setJsonInput('');
       await load();
@@ -503,7 +503,7 @@ export function StarterHeroEditorPanel() {
   return (
     <div className="relative h-full min-h-0">
       <CatalogEditorShell
-        title="Starter Heroes"
+        title="Archetypes"
         blurb={`Catalog mode · profile ${activeGameId} · ${activeCount}/${heroes.length} active · StarterHero SoT`}
         dirty={isNew}
         toolbar={
@@ -520,7 +520,7 @@ export function StarterHeroEditorPanel() {
             <button type="button" onClick={() => void load()} className="rounded p-1.5 text-slate-400 hover:bg-white/5" title="Refresh">
               <RefreshCw className="h-3.5 w-3.5" />
             </button>
-            <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New hero">
+            <button type="button" onClick={handleNew} className="rounded p-1.5 text-emerald-400 hover:bg-white/5" title="New archetype">
               <Plus className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -532,7 +532,7 @@ export function StarterHeroEditorPanel() {
               onClick={handleNew}
               className="w-full rounded-lg border border-[#806f47]/40 bg-[#806f47]/20 px-2 py-1.5 text-[10px] font-bold text-[#e2d5b3] hover:bg-[#806f47]/30 flex items-center justify-center gap-1"
             >
-              <Plus size={11} strokeWidth={3} /> New Custom Hero
+              <Plus size={11} strokeWidth={3} /> New Custom Archetype
             </button>
             <button
               type="button"
@@ -556,11 +556,11 @@ export function StarterHeroEditorPanel() {
               ))}
             </div>
             <div className="text-[8px] font-black uppercase tracking-wider text-slate-500 px-1 border-t border-slate-800 pt-1">
-              Heroes Pool ({heroes.length})
+              Archetypes Pool ({heroes.length})
             </div>
             <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
               {heroes.length === 0 ? (
-                <p className="p-2 text-center text-[10px] text-slate-500">No heroes yet. Click Seed.</p>
+                <p className="p-2 text-center text-[10px] text-slate-500">No archetypes yet. Click Seed.</p>
               ) : (
                 heroes.map((h) => (
                   <HeroListItem
@@ -588,7 +588,7 @@ export function StarterHeroEditorPanel() {
           <div className="flex min-h-0 flex-col">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-[#806f47]/20 pb-2">
               <span className="text-[11px] font-bold text-[#e2d5b3]">
-                {isNew ? 'New Hero Archetype' : `Editing: ${selected?.name}`}
+                {isNew ? 'New Archetype Template' : `Editing: ${selected?.name}`}
               </span>
               <div className="flex items-center gap-1.5">
                 <button
