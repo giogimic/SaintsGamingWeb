@@ -1,3 +1,16 @@
+## [2.1.459-22] - 2026-08-25
+### Studio Tileset Picker & Asset Catalog Fixes
+- **Multi-Tile Stamping & Drag Selection**:
+  - Connected `onBrushSelectPattern` in `WorldBuilderPanel.tsx` to `useEditorStore.setActiveBrushPattern` so multi-tile regions (2×2, 3×3, etc.) and click-and-drag selections immediately stamp full multi-tile patterns in Babylon.js.
+  - Added global window-level mouse move and mouse up handlers so dragging across tiles is reliable and never gets interrupted when leaving the image.
+  - Updated selection highlight box in `TilesetPicker.tsx` to render the full bounding box of the active pattern.
+- **Granular 1-Block Navigation & Grid Size Switching**:
+  - Changed default tileset import resolution to 16×16px (standard RPG tile unit) so tiles with odd 16px offsets (e.g. following a 3×3 structure) can be properly selected.
+  - Added quick `[16px]` and `[32px]` grid resolution toggles in the tileset palette toolbar for 1-click grid switching.
+  - Added keyboard arrow key navigation (`ArrowUp`, `ArrowDown`, `ArrowLeft`, `ArrowRight`) to step 1 block in any direction.
+- **Asset Registration HTTP 405 Fix**:
+  - Implemented `POST /api/assets` endpoint in `app/api/assets/route.ts` with developer/admin authentication to support saving canonical tile definitions into the game asset library.
+
 ## [2.1.459-21] - 2026-08-25
 ### Bug Fixes
 - Removed SQLite-incompatible `@db.Text` annotation from the `stateData` field on the `GameCharacter` model in `prisma/schema.prisma` to fix `prisma generate` failures.

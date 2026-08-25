@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/web/lib/prisma";
+import { auth } from "@/auth";
+import { canWriteStudioContent } from "@/shared/game/studioPermissions";
 import { formatCanonicalGameAsset } from "@/shared/game/canonicalAsset";
 
 export const dynamic = "force-dynamic";
@@ -398,6 +400,74 @@ export async function GET(req: NextRequest) {
     console.error("[api/assets] GET error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch assets", items: [], total: 0 },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/assets — Register/create a new GameAsset in the catalog (Developer+)
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { permissionLevel: true },
+    });
+    if (!user || !canWriteStudioContent(user.permissionLevel)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const {
+      type = "TILE",
+      source = "",
+      name,
+      metadata = {},
+      tags = [],
+      categories = [],
+      gameId = null,
+      atlasSource = null,
+      atlasFrame = null,
+      customLabels = null,
+    } = body;
+
+    if (!source && !atlasSource) {
+      return NextResponse.json({ error: "Source or atlasSource is required" }, { status: 400 });
+    }
+
+    const metaObj = typeof metadata === "object" && metadata !== null ? { ...metadata } : {};
+    if (name && !metaObj.originalName) {
+      metaObj.originalName = name;
+    }
+
+    const created = await prisma.gameAsset.create({
+      data: {
+        type: String(type).toUpperCase(),
+        source: String(source),
+        gameId: gameId ? String(gameId) : null,
+        atlasSource: atlasSource ? String(atlasSource) : null,
+        atlasFrame: atlasFrame ? (typeof atlasFrame === "string" ? atlasFrame : JSON.stringify(atlasFrame)) : null,
+        tags: Array.isArray(tags) ? JSON.stringify(tags) : typeof tags === "string" ? tags : "[]",
+        categories: Array.isArray(categories) ? JSON.stringify(categories) : typeof categories === "string" ? categories : "[]",
+        metadata: JSON.stringify(metaObj),
+        customLabels: customLabels ? (typeof customLabels === "string" ? customLabels : JSON.stringify(customLabels)) : null,
+        isActive: true,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      asset: formatAsset(created),
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error("[api/assets] POST error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to register asset" },
       { status: 500 }
     );
   }

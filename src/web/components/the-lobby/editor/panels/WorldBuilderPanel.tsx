@@ -52,6 +52,7 @@ export const WorldBuilderPanel: React.FC = () => {
   const brushTileId = useEditorStore((state) => state.activeBrushTileId);
   const isMapDirty = useEditorStore((state) => state.mapDirty);
   const setBrushTileId = useEditorStore((state) => state.setActiveBrushTileId);
+  const setBrushPattern = useEditorStore((state) => state.setActiveBrushPattern);
 
   const [neighbors, setNeighbors] = useState<NeighborNodes>({});
   const [neighborBleedPreview, setNeighborBleedPreview] = useState(false);
@@ -255,6 +256,17 @@ export const WorldBuilderPanel: React.FC = () => {
 
   const handleBrushSelect = (tileId: number) => {
     setBrushTileId(tileId);
+    if (activeLayerIdx === -1) {
+      setActiveLayerIdx(0);
+      showToast('Switched to layer 0 (Visual) for tile paint.');
+    }
+  };
+
+  const handleBrushSelectPattern = (pattern: { w: number; h: number; gids: number[][] }) => {
+    setBrushPattern(pattern);
+    if (pattern.gids?.[0]?.[0]) {
+      setBrushTileId(pattern.gids[0][0]);
+    }
     if (activeLayerIdx === -1) {
       setActiveLayerIdx(0);
       showToast('Switched to layer 0 (Visual) for tile paint.');
@@ -561,6 +573,7 @@ export const WorldBuilderPanel: React.FC = () => {
                 tilesets={currentMapData.tilesets || []}
                 activeBrushTileId={brushTileId}
                 onBrushSelect={handleBrushSelect}
+                onBrushSelectPattern={handleBrushSelectPattern}
                 activeLayerIdx={activeLayerIdx}
                 onLayerChange={(idx) => setActiveLayerIdx(idx)}
                 tileLayers={currentMapData.tileLayers || []}
