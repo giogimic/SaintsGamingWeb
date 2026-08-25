@@ -1,3 +1,9 @@
+## [2.1.459-11] - 2026-08-25
+### Asset Studio Workspace Catalog & Sub-Tab Unification
+- **Direct Catalog Browsing Across All Asset Categories (`AssetStudioSuite.tsx`)**:
+  - Unified `AssetStudioSuite` sub-tabs so selecting Characters or Creatures directly displays the full search, preview, and inspector catalog with an optional "Slot Builder" sub-tab for composite roles.
+  - Initial view opens the Master Catalog by default, ensuring immediate access to global search, tagging, dependency inspector, and preload configuration cards.
+
 ## [2.1.459-10] - 2026-08-25
 ### Map Container Preloading & Runtime Asset Manager Transition Integration
 - **Map Container Lifecycle Hooking (`maps.ts`)**:

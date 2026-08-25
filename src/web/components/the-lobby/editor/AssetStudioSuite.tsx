@@ -15,6 +15,7 @@ import {
   Search,
   ImageIcon,
   RefreshCw,
+  LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
 import AssetEditor from './AssetEditor';
@@ -96,7 +97,7 @@ const WORKSPACE_ORDER: AssetWorkspaceId[] = [
 ];
 
 // ─── Sub-tab type per workspace ───────────────────────────────────────────────
-type SubTab = 'browse' | 'upload' | 'slicer' | 'packs' | 'sprites';
+type SubTab = 'browse' | 'builder' | 'upload' | 'slicer' | 'packs' | 'sprites';
 
 /**
  * AssetStudioSuite — the full-workspace Asset Management Mode view.
@@ -104,7 +105,7 @@ type SubTab = 'browse' | 'upload' | 'slicer' | 'packs' | 'sprites';
  */
 export function AssetStudioSuite() {
   const showToast = useGameStore((s) => s.showToast);
-  const [activeWorkspace, setActiveWorkspace] = useState<AssetWorkspaceId>('characters');
+  const [activeWorkspace, setActiveWorkspace] = useState<AssetWorkspaceId>('catalog');
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('browse');
   const [slicerSource, setSlicerSource] = useState<
     { id: string; filename: string; storagePath: string } | undefined
@@ -200,11 +201,17 @@ export function AssetStudioSuite() {
     switch (activeWorkspace) {
       case 'characters':
         return [
-          { id: 'browse', label: 'Entity Builder', icon: Layers },
+          { id: 'browse', label: 'Browse Characters', icon: Layers },
+          { id: 'builder', label: 'Slot Builder', icon: LayoutGrid },
+          { id: 'upload', label: 'Upload Character', icon: Upload },
+          { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
         ];
       case 'creatures':
         return [
-          { id: 'browse', label: 'Entity Builder', icon: Layers },
+          { id: 'browse', label: 'Browse Creatures', icon: Layers },
+          { id: 'builder', label: 'Slot Builder', icon: LayoutGrid },
+          { id: 'upload', label: 'Upload Creature', icon: Upload },
+          { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
         ];
       case 'tilesets':
         return [
@@ -250,13 +257,15 @@ export function AssetStudioSuite() {
   // ── Render active sub-tab content ──
   const renderContent = () => {
     switch (activeSubTab) {
-      case 'browse':
+      case 'builder':
         if (activeWorkspace === 'characters') {
           return <EntityAssetWorkspace entityType="CHARACTER" profileId="character" />;
         }
         if (activeWorkspace === 'creatures') {
           return <EntityAssetWorkspace entityType="CREATURE" profileId="creature" />;
         }
+        return null;
+      case 'browse':
         return (
           <AssetEditor
             workspaceId={activeWorkspace}
