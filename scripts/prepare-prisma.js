@@ -39,7 +39,7 @@ if (isSqlite) {
         'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
         'gatesData', 'npcsData', 'encountersData', 'entitiesData', 
         'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData',
-        'tilesetData', 'npcs', 'encounters', 'gates'
+        'tilesetData', 'npcs', 'encounters', 'gates', 'stateData'
     ];
 
     for (const col of longTextCols) {
