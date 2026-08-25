@@ -1,3 +1,7 @@
+## [2.1.459-21] - 2026-08-25
+### Bug Fixes
+- Removed SQLite-incompatible `@db.Text` annotation from the `stateData` field on the `GameCharacter` model in `prisma/schema.prisma` to fix `prisma generate` failures.
+
 ## [2.1.459-17] - 2026-08-25
 ### Character Creator Fix
 - Disabled the modular avatar customization step (APPEARANCE) for base sprites and archetypes that are not modular. Choosing a non-modular hero now skips directly to the Blessing screen, avoiding the empty / mismatched layer screen.
