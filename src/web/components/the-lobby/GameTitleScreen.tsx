@@ -41,6 +41,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
+import { CharacterSpritePreview } from './CharacterSpritePreview';
 
 // ── Theme Palettes (matching Saints Dynamic Landing Page) ─────
 const THEME_DARK = {
@@ -514,7 +515,7 @@ export default function GameTitleScreen({
 
     soundSynth?.playUiClick?.();
 
-    const senderName = session?.user?.name || session?.user?.username || activeChar?.name || 'Operative';
+    const senderName = session?.user?.name || (session?.user as any)?.username || 'Operative';
     const newMsg: ChatItem = {
       id: Date.now().toString(),
       sender: senderName,
@@ -710,26 +711,11 @@ export default function GameTitleScreen({
               {/* Character Avatar */}
               <div className="relative z-10 w-24 h-24 flex items-center justify-center">
                 {activeChar ? (
-                  isCustomSprite ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={activeChar.spriteId}
-                      alt={activeChar.name}
-                      className="w-20 h-20 object-contain pixelated drop-shadow-[0_0_12px_rgba(0,245,212,0.6)]"
-                    />
-                  ) : (
-                    <div
-                      className="pixelated bg-no-repeat transition-transform hover:scale-110 duration-200 drop-shadow-[0_0_15px_rgba(242,0,137,0.7)]"
-                      style={{
-                        backgroundImage: `url('/game-assets/npc/${activeChar.spriteId || 'adventurer'}.png')`,
-                        backgroundPosition: '0px -64px',
-                        backgroundSize: '96px 128px',
-                        width: '32px',
-                        height: '32px',
-                        transform: 'scale(2.2)',
-                      }}
-                    />
-                  )
+                  <CharacterSpritePreview
+                    spriteKey={activeChar.spriteId}
+                    size={32}
+                    scale={2.4}
+                  />
                 ) : (
                   <div className="w-16 h-16 rounded-2xl border border-dashed border-cyan-500/40 flex flex-col items-center justify-center text-cyan-400/50">
                     <User className="w-8 h-8" />

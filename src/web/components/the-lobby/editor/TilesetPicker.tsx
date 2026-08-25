@@ -965,7 +965,6 @@ export default function TilesetPicker({
                    }
                    alt={ts.imageSource}
                    onMouseDown={handleMouseDown}
-                   onMouseUp={handleMouseUp}
                    onContextMenu={handleContextMenu}
                    onMouseLeave={() => {
                      setHoveredTile(null);

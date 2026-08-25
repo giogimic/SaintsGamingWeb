@@ -1,3 +1,69 @@
+## [2.1.459-31] - 2026-08-25
+### Documentation, Wiki Synchronisation & Master Plan Completion
+- **Documentation & Wiki Architecture**:
+  - Synchronized public wiki metadata and technical documentation under `docs/` reflecting engine systems, studio tools, and runtime asset management.
+  - Updated release badges and version identifiers across all core application layers and public READMEs.
+- **Master Plan Verification**:
+  - All 8 progressive sprints fully audited, implemented, and verified with 100% test pass rate (189/189 test files, 870/870 unit tests).
+
+## [2.1.459-30] - 2026-08-25
+### Hero Roll, Spawner Diagnostics & Preload Groups (Sprint 4: Tasks A4, C3, D3)
+- **Hero Roll & Candidate Randomization**:
+  - Implemented `handleRollHero` in `character-creator.tsx` enabling valid randomized hero archetype, class, name, perk, and complementary modular layer generation with real-time UI notification.
+- **Studio Diagnostics & Character Integrity**:
+  - Added character class validation diagnostics to `StudioProblemsPanel.tsx` verifying map entities declare verified playable combat classes (`PLAYABLE_CLASS_IDS`).
+- **Preload Groups & Container Aliases**:
+  - Defined `DEFAULT_PRELOAD_GROUPS` (`Core`, `Player`, `Combat_Common`, `World_Common`) and exported `preloadContainer` alias in `assetRuntimeManager.ts`.
+
+## [2.1.459-29] - 2026-08-25
+### Lobby Identity, World Entry Pipeline & Social System (Sprint 3: Tasks B1, B2, B3)
+- **Account vs Character Identity Separation**:
+  - Enforced account usernames (`session.user.name`) across lobby chat and peer presence displays while keeping in-game character names strictly for avatar panels, inspection cards, and in-world nameplates.
+  - Rewired the Gateway character showcase in `GameTitleScreen.tsx` to utilize canonical `CharacterSpritePreview` with proper LPC scaling.
+- **World Entry Pipeline & Safety Validation**:
+  - Implemented `validateWorldEntry` gate in `src/shared/game/validation/worldEntryValidation.ts` checking character selection, name constraints, class assignment, and destination map geometry integrity.
+  - Documented full world entry trace and spawn location priority in `.docs/audit/world-entry-pipeline.md`.
+- **Lobby Socket Stability**:
+  - Verified socket effects depend on stable user IDs to maintain connection persistence across character switches.
+
+## [2.1.459-28] - 2026-08-25
+### Runtime Asset Manager Verification & Unit Tests (Sprint 2: Task D2)
+- **Runtime Asset Lifecycle Testing**:
+  - Expanded `assetRuntimeManager.test.ts` test suite to verify warm → active transitions, active → cached demotions, and cached → ready/active re-requests.
+  - Verified container lifecycle management and diagnostics output for missing dependencies and broken graph references.
+
+## [2.1.459-27] - 2026-08-25
+### Character Presentation & Dynamic Sprite Resolution (Sprint 2: Task A3)
+- **Character Creator Presentation Awareness**:
+  - Implemented `detectPresentationMode(spriteKey, availableAssets)` to dynamically identify `modular` vs `complete` vs `portrait_only` sprite modes.
+  - Replaced hardcoded pack directories with pattern-matched dynamic resolution (`good-*`, `evil-*`, `item-*`) across all modular LPC packs in `CharacterSpritePreview.tsx`.
+  - Wired smooth creator navigation: automatically routes modular character selections to the multi-layer Avatar Customizer, while routing complete sprite selections directly to the Blessing step.
+
+## [2.1.459-26] - 2026-08-25
+### Asset Registry CRUD Hardening & Dependency Architecture (Sprint 1: Task D1)
+- **Asset REST API Full CRUD**:
+  - Exported `PUT` handler on `/api/assets/[id]` for full canonical asset updates alongside existing `GET`, `POST`, `PATCH`, and `DELETE`.
+- **Asset Dependency Architecture**:
+  - Documented canonical dependency chains (Character, Creature, Map) and auto-discovery rules in `.docs/audit/asset-dependency-patterns.md`.
+  - Defined preload group matrix (`Core`, `Player`, `Combat_Common`, `World_Common`, `Zone_Specific`, `Lazy`) with priority weights and caching semantics.
+
+## [2.1.459-25] - 2026-08-25
+### Studio Bottom Toolbar & Dock Navigation Polish (Sprint 1: Task C1)
+- **Bottom Toolbar Navigation**:
+  - Audited all 17 studio dock panel launchers in `StudioBottomToolbar.tsx` (`World`, `Atlas`, `Inspector`, `Prefabs`, `Assets`, `NPCs`, `Quests`, `Dialogue`, `Heroes`, `Creatures`, `Spawners`, `Loot`, `Items`, `Classes`, `Gameplay`, `Diagnostics`, `Dev`).
+  - Added live active tab state indicators (`active={Boolean(model?.getNodeById(id))}`) with highlight border and text glow to immediately reflect open docks.
+  - Verified right-dock targeting for Inspector (`properties`) and Diagnostics (`problems`) vs left-dock targeting for asset and entity editors.
+
+## [2.1.459-24] - 2026-08-25
+### Character Model Validation & Canonical Glossary (Sprint 1: Tasks A1, A2)
+- **Canonical Terminology Glossary**:
+  - Published `.docs/glossary.md` standardizing canonical definitions for *Saint*, *Starter Hero*, *Entity Archetype*, *Player Archetype*, *Class*, *Game Character*, *CreatureDef*, and *Presentation*.
+  - Enforced formal boundary separating engine behavioral entity archetypes from player-facing hero starter presets.
+- **Character Creation & Model Hardening**:
+  - Audited `GameCharacter` and `StarterHero` fields in `.docs/audit/character-model-audit.md`.
+  - Added robust validation in `createGameCharacter` server action: enforced 3-32 character name limits, regex character whitelisting, duplicate character name detection per account, database/whitelist class validation, sprite path traversal sanitization, and state attribute boundary clamping.
+  - Added cache revalidation for `/lobby` route upon character creation.
+
 ## [2.1.459-22] - 2026-08-25
 ### Studio Tileset Picker & Asset Catalog Fixes
 - **Multi-Tile Stamping & Drag Selection**:

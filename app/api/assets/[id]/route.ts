@@ -96,6 +96,11 @@ export async function PATCH(
 }
 
 /**
+ * PUT /api/assets/[id] — full update GameAsset (alias to PATCH handler).
+ */
+export const PUT = PATCH;
+
+/**
  * DELETE /api/assets/[id] — soft-delete / deactivate GameAsset (Developer+).
  */
 export async function DELETE(

@@ -16,6 +16,50 @@ export async function createGameCharacter(data: {
       return { success: false, error: 'Unauthorized' };
     }
 
+    // 1. Name Validation
+    const cleanName = String(data.name || '').trim();
+    if (cleanName.length < 3 || cleanName.length > 32) {
+      return { success: false, error: 'Saint name must be between 3 and 32 characters.' };
+    }
+    if (!/^[a-zA-Z0-9_\- ]+$/.test(cleanName)) {
+      return { success: false, error: 'Saint name may only contain letters, numbers, spaces, hyphens, and underscores.' };
+    }
+
+    // 2. Duplicate Check for Account
+    const existing = await prisma.gameCharacter.findFirst({
+      where: {
+        userId: session.user.id,
+        name: cleanName,
+      },
+    });
+    if (existing) {
+      return { success: false, error: 'You already have a character with this name.' };
+    }
+
+    // 3. Class Validation
+    const normalizedClassId = String(data.classId || 'WARRIOR').toUpperCase().trim();
+    const validClass = await prisma.characterClass.findFirst({
+      where: {
+        OR: [
+          { classId: normalizedClassId },
+          { slug: normalizedClassId.toLowerCase() },
+          { name: { equals: normalizedClassId } },
+        ],
+      },
+    });
+    // Fallback allowed standard playable classes if DB is unseeded
+    const standardPlayable = ['WARRIOR', 'MAGE', 'THIEF', 'RANGER', 'PRIEST', 'CLERIC', 'ROGUE', 'PALADIN'];
+    if (!validClass && !standardPlayable.includes(normalizedClassId)) {
+      return { success: false, error: `Invalid class selection: ${normalizedClassId}` };
+    }
+
+    // 4. Sprite / Presentation Sanitization
+    const cleanSpriteId = String(data.spriteId || 'human_base')
+      .replace(/(\.\.[\/\\])+/g, '')
+      .slice(0, 255)
+      .trim();
+
+    // 5. State Data Sanitization
     let sanitizedStateStr = data.initialState;
     try {
       const parsedState = JSON.parse(data.initialState);
@@ -23,10 +67,21 @@ export async function createGameCharacter(data: {
       // Server Validation & Sanitization against exploits
       parsedState.level = 1;
       parsedState.xp = 0;
-      if (typeof parsedState.credits === 'number' && parsedState.credits > 2000) parsedState.credits = 1000;
-      if (typeof parsedState.hp === 'number' && parsedState.hp > 200) parsedState.hp = 200;
-      if (typeof parsedState.maxHp === 'number' && parsedState.maxHp > 200) parsedState.maxHp = 200;
+      if (typeof parsedState.credits === 'number') {
+        parsedState.credits = Math.min(Math.max(parsedState.credits, 0), 2000);
+      } else {
+        parsedState.credits = 1000;
+      }
+      if (typeof parsedState.hp === 'number') parsedState.hp = Math.min(Math.max(parsedState.hp, 1), 250);
+      if (typeof parsedState.maxHp === 'number') parsedState.maxHp = Math.min(Math.max(parsedState.maxHp, 1), 250);
       
+      if (!parsedState.currentMapId || typeof parsedState.currentMapId !== 'string') {
+        parsedState.currentMapId = 'DEMO_SANDBOX';
+      }
+      if (!parsedState.position || typeof parsedState.position.x !== 'number' || typeof parsedState.position.y !== 'number') {
+        parsedState.position = { x: 14, y: 15 };
+      }
+
       sanitizedStateStr = JSON.stringify(parsedState);
     } catch (e) {
       console.warn('Failed to parse initialState for validation, continuing with raw string', e);
@@ -35,14 +90,15 @@ export async function createGameCharacter(data: {
     const character = await prisma.gameCharacter.create({
       data: {
         userId: session.user.id,
-        name: (data.name || 'Saint').slice(0, 32).trim(),
-        spriteId: (data.spriteId || 'human_base').slice(0, 255),
-        classId: (data.classId || 'WARRIOR').slice(0, 50),
+        name: cleanName,
+        spriteId: cleanSpriteId || 'human_base',
+        classId: validClass?.classId || normalizedClassId,
         stateData: sanitizedStateStr,
       }
     });
 
     revalidatePath(`/user/[username]`);
+    revalidatePath(`/lobby`);
     return { success: true, character };
   } catch (error: any) {
     console.error('Failed to create character:', error);

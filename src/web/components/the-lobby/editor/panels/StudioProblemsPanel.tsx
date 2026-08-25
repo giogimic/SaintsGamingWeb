@@ -21,6 +21,7 @@ import { GAME_MAPS } from '../../data/maps';
 import { toBaseMapId } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import { AssetManager } from '@/engine/assets/AssetManager';
+import { PLAYABLE_CLASS_IDS } from '@/shared/game/classCatalog';
 
 export interface MapProblem {
   id: string;
@@ -242,6 +243,18 @@ export function StudioProblemsPanel() {
           type: 'WARNING',
           category: 'ASSET',
           message: `Entity "${ent.name || ent.id}" has no presentation or sprite defined.`,
+          coordinate: ent.position ? { r: ent.position.y ?? ent.position.r, c: ent.position.x ?? ent.position.c } : undefined,
+          entityId: ent.id,
+        });
+      }
+
+      // Check character class validity if entity specifies a class
+      if (ent.classId && !PLAYABLE_CLASS_IDS.includes(ent.classId.toUpperCase() as any)) {
+        list.push({
+          id: `ent_invalid_class_${idx}`,
+          type: 'WARNING',
+          category: 'ENTITY',
+          message: `Entity "${ent.name || ent.id}" references unverified class "${ent.classId}".`,
           coordinate: ent.position ? { r: ent.position.y ?? ent.position.r, c: ent.position.x ?? ent.position.c } : undefined,
           entityId: ent.id,
         });
