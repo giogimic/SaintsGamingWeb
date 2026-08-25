@@ -7,10 +7,10 @@
  */
 
 export type SpriteAnimationProfile =
-  | 'saints-3x4'
-  | 'tuxemon-3x4'
-  | 'lpc-full'
-  | 'lpc-walk'
+  | 'directional_3x4'
+  | 'tuxemon_legacy_3x4'
+  | 'multi_frame_directional'
+  | 'directional_walk'
   | 'portrait-1x1'
   | 'custom';
 
@@ -49,11 +49,11 @@ export interface SpriteDefinition {
 }
 
 /**
- * Standard Direction Row Mapping for LPC Standard Spritesheets:
+ * Standard Direction Row Mapping for Modular Standard Spritesheets:
  * Row offset within an action block:
  * North = +0, West = +1, South = +2, East = +3
  */
-export const LPC_DIRECTION_ROW_MAP = {
+export const DIRECTION_ROW_MAP = {
   up: 0,
   left: 1,
   down: 2,
@@ -61,9 +61,9 @@ export const LPC_DIRECTION_ROW_MAP = {
 };
 
 /**
- * Standard LPC Action Row Starting Indices (0-indexed)
+ * Standard Modular Action Row Starting Indices (0-indexed)
  */
-export const LPC_ACTION_ROWS: Record<string, { startRow: number; frameCount: number }> = {
+export const ACTION_ROWS: Record<string, { startRow: number; frameCount: number }> = {
   spellcast: { startRow: 0, frameCount: 7 },
   thrust: { startRow: 4, frameCount: 8 },
   walk: { startRow: 8, frameCount: 9 },
@@ -76,8 +76,8 @@ export const LPC_ACTION_ROWS: Record<string, { startRow: number; frameCount: num
  * Predefined Canonical Profiles
  */
 
-export const SAINTS_3X4_PROFILE: SpriteDefinition = {
-  profile: 'saints-3x4',
+export const DIRECTIONAL_3X4_PROFILE: SpriteDefinition = {
+  profile: 'directional_3x4',
   sheetWidth: 96,
   sheetHeight: 128,
   frameWidth: 32,
@@ -98,13 +98,13 @@ export const SAINTS_3X4_PROFILE: SpriteDefinition = {
   description: 'Classic 3-step walk cycle (Down, Left, Right, Up). 32x32 frames.',
 };
 
-export const TUXEMON_3X4_PROFILE: SpriteDefinition = {
-  ...SAINTS_3X4_PROFILE,
-  profile: 'tuxemon-3x4',
+export const LEGACY_3X4_PROFILE: SpriteDefinition = {
+  ...DIRECTIONAL_3X4_PROFILE,
+  profile: 'tuxemon_legacy_3x4',
 };
 
-export const LPC_FULL_PROFILE: SpriteDefinition = {
-  profile: 'lpc-full',
+export const MULTI_FRAME_DIRECTIONAL_PROFILE: SpriteDefinition = {
+  profile: 'multi_frame_directional',
   sheetWidth: 832,
   sheetHeight: 1344,
   frameWidth: 64,
@@ -121,14 +121,14 @@ export const LPC_FULL_PROFILE: SpriteDefinition = {
     down: 10,
     right: 11,
   },
-  actions: LPC_ACTION_ROWS,
+  actions: ACTION_ROWS,
   isLpc: true,
-  label: 'LPC Standard (13x21)',
-  description: 'Full LPC spritesheet with 9-frame walk, slash, thrust, spellcast, and hurt animations.',
+  label: 'Modular Standard (13x21)',
+  description: 'Full Modular spritesheet with 9-frame walk, slash, thrust, spellcast, and hurt animations.',
 };
 
-export const LPC_WALK_PROFILE: SpriteDefinition = {
-  profile: 'lpc-walk',
+export const DIRECTIONAL_WALK_PROFILE: SpriteDefinition = {
+  profile: 'directional_walk',
   sheetWidth: 576,
   sheetHeight: 256,
   frameWidth: 64,
@@ -138,7 +138,7 @@ export const LPC_WALK_PROFILE: SpriteDefinition = {
   idleFrame: 0,
   walkCycle: [0, 1, 2, 3, 4, 5, 6, 7, 8],
   walkSpeed: 9,
-  // Standard LPC 4-row walk: Up=0, Left=1, Down=2, Right=3
+  // Standard Modular 4-row walk: Up=0, Left=1, Down=2, Right=3
   directions: {
     up: 0,
     left: 1,
@@ -149,8 +149,8 @@ export const LPC_WALK_PROFILE: SpriteDefinition = {
     walk: { startRow: 0, frameCount: 9 },
   },
   isLpc: true,
-  label: 'LPC Walk-Only (9x4)',
-  description: 'Compact 9-frame LPC walk cycle without combat rows (64x64 frames).',
+  label: 'Modular Walk-Only (9x4)',
+  description: 'Compact 9-frame Modular walk cycle without combat rows (64x64 frames).',
 };
 
 export const PORTRAIT_1X1_PROFILE: SpriteDefinition = {
@@ -176,10 +176,10 @@ export const PORTRAIT_1X1_PROFILE: SpriteDefinition = {
 };
 
 export const ANIMATION_PROFILES: Record<SpriteAnimationProfile, SpriteDefinition> = {
-  'saints-3x4': SAINTS_3X4_PROFILE,
-  'tuxemon-3x4': TUXEMON_3X4_PROFILE,
-  'lpc-full': LPC_FULL_PROFILE,
-  'lpc-walk': LPC_WALK_PROFILE,
+  'directional_3x4': DIRECTIONAL_3X4_PROFILE,
+  'tuxemon_legacy_3x4': LEGACY_3X4_PROFILE,
+  'multi_frame_directional': MULTI_FRAME_DIRECTIONAL_PROFILE,
+  'directional_walk': DIRECTIONAL_WALK_PROFILE,
   'portrait-1x1': PORTRAIT_1X1_PROFILE,
   'custom': {
     profile: 'custom',
@@ -247,7 +247,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     const base = ANIMATION_PROFILES[animationProfile as SpriteAnimationProfile];
     const cellWidth = w > 0 ? Math.floor(w / base.columns) : base.frameWidth;
     const actualRows =
-      animationProfile === 'lpc-full' && h > 0 && cellWidth > 0
+      animationProfile === 'multi_frame_directional' && h > 0 && cellWidth > 0
         ? Math.floor(h / cellWidth)
         : base.rows;
 
@@ -264,11 +264,11 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
   // 2. Custom Explicit Columns & Rows
   if (columns && rows && columns > 0 && rows > 0) {
     if (columns === 1 && rows === 1) return { ...PORTRAIT_1X1_PROFILE, sheetWidth: w || 64, sheetHeight: h || 64, frameWidth: w || 64, frameHeight: h || 64 };
-    if (columns === 3 && rows === 4) return { ...TUXEMON_3X4_PROFILE, sheetWidth: w || 96, sheetHeight: h || 128, frameWidth: w ? Math.floor(w / 3) : 32, frameHeight: h ? Math.floor(h / 4) : 32 };
+    if (columns === 3 && rows === 4) return { ...LEGACY_3X4_PROFILE, sheetWidth: w || 96, sheetHeight: h || 128, frameWidth: w ? Math.floor(w / 3) : 32, frameHeight: h ? Math.floor(h / 4) : 32 };
     if (columns === 13 && rows >= 21) {
       const cellWidth = w > 0 ? Math.floor(w / 13) : 64;
       return {
-        ...LPC_FULL_PROFILE,
+        ...MULTI_FRAME_DIRECTIONAL_PROFILE,
         sheetWidth: w || 832,
         sheetHeight: h || rows * cellWidth,
         frameWidth: cellWidth,
@@ -279,7 +279,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     if (columns === 9 && rows === 4) {
       const cellWidth = w > 0 ? Math.floor(w / 9) : 64;
       return {
-        ...LPC_WALK_PROFILE,
+        ...DIRECTIONAL_WALK_PROFILE,
         sheetWidth: w || 576,
         sheetHeight: h || 256,
         frameWidth: cellWidth,
@@ -311,9 +311,9 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
   // 3. Check existing spriteConfig object
   if (spriteConfig && spriteConfig.columns && spriteConfig.rows) {
     if (spriteConfig.columns === 1 && spriteConfig.rows === 1) return PORTRAIT_1X1_PROFILE;
-    if (spriteConfig.columns === 3 && spriteConfig.rows === 4) return TUXEMON_3X4_PROFILE;
-    if (spriteConfig.columns === 13 && spriteConfig.rows >= 21) return { ...LPC_FULL_PROFILE, rows: spriteConfig.rows };
-    if (spriteConfig.columns === 9 && spriteConfig.rows === 4) return LPC_WALK_PROFILE;
+    if (spriteConfig.columns === 3 && spriteConfig.rows === 4) return LEGACY_3X4_PROFILE;
+    if (spriteConfig.columns === 13 && spriteConfig.rows >= 21) return { ...MULTI_FRAME_DIRECTIONAL_PROFILE, rows: spriteConfig.rows };
+    if (spriteConfig.columns === 9 && spriteConfig.rows === 4) return DIRECTIONAL_WALK_PROFILE;
   }
 
   // 4. URL Pattern Detection for Single Frame / Portraits
@@ -327,7 +327,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     };
   }
 
-  // 4.5 URL Pattern Detection for LPC Characters & Modular Components
+  // 4.5 URL Pattern Detection for Modular Characters & Modular Components
   if (spriteUrl) {
     const s = spriteUrl.toLowerCase();
     if (
@@ -343,7 +343,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       const cellWidth = w === 1664 ? 128 : 64;
       const actualRows = h && h >= cellWidth ? Math.floor(h / cellWidth) : 21;
       return {
-        ...LPC_FULL_PROFILE,
+        ...MULTI_FRAME_DIRECTIONAL_PROFILE,
         sheetWidth: w || 832,
         sheetHeight: h || actualRows * cellWidth,
         frameWidth: cellWidth,
@@ -355,11 +355,11 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
 
   // 5. Dimension-Based Fallback Inference
   if (w > 0 && h > 0) {
-    // High-Res LPC Full Sheet (1664x4992, 1664x6912, etc. 13 cols @ 128px)
+    // High-Res Modular Full Sheet (1664x4992, 1664x6912, etc. 13 cols @ 128px)
     if (w === 1664 && h >= 512) {
       const rowsCount = Math.floor(h / 128);
       return {
-        ...LPC_FULL_PROFILE,
+        ...MULTI_FRAME_DIRECTIONAL_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
         frameWidth: 128,
@@ -368,10 +368,10 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       };
     }
 
-    // High-Res LPC Walk Cycle (1152x512, 9 cols @ 128px)
+    // High-Res Modular Walk Cycle (1152x512, 9 cols @ 128px)
     if (w === 1152 && (h === 512 || h % 128 === 0)) {
       return {
-        ...LPC_WALK_PROFILE,
+        ...DIRECTIONAL_WALK_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
         frameWidth: 128,
@@ -380,10 +380,10 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       };
     }
 
-    // Standard LPC Full Sheet (832x1344, 832x1408, 832x2048, 832x3456, etc. 13 cols @ 64px)
+    // Standard Modular Full Sheet (832x1344, 832x1408, 832x2048, 832x3456, etc. 13 cols @ 64px)
     if (w === 832 && h >= 256) {
       return {
-        ...LPC_FULL_PROFILE,
+        ...MULTI_FRAME_DIRECTIONAL_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
         frameWidth: 64,
@@ -392,10 +392,10 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       };
     }
 
-    // Standard LPC Walk Cycle (576x256 or 9 cols x N rows @ 64px)
+    // Standard Modular Walk Cycle (576x256 or 9 cols x N rows @ 64px)
     if (w === 576 && (h === 256 || h % 64 === 0)) {
       return {
-        ...LPC_WALK_PROFILE,
+        ...DIRECTIONAL_WALK_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
         frameWidth: 64,
@@ -410,7 +410,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       const rowsCount = Math.floor(h / 64);
       if (cols === 13) {
         return {
-          ...LPC_FULL_PROFILE,
+          ...MULTI_FRAME_DIRECTIONAL_PROFILE,
           sheetWidth: w,
           sheetHeight: h,
           frameWidth: 64,
@@ -420,7 +420,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
       }
       if (cols === 9 && rowsCount === 4) {
         return {
-          ...LPC_WALK_PROFILE,
+          ...DIRECTIONAL_WALK_PROFILE,
           sheetWidth: w,
           sheetHeight: h,
           frameWidth: 64,
@@ -432,7 +432,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
     // Classic Tuxemon 3x4 (96x128, 48x128, 48x64, 96x96, etc.)
     if ((w === 96 && h === 128) || (w === 48 && h === 128) || (w % 3 === 0 && h % 4 === 0 && w < 300)) {
       return {
-        ...TUXEMON_3X4_PROFILE,
+        ...LEGACY_3X4_PROFILE,
         sheetWidth: w,
         sheetHeight: h,
         frameWidth: Math.floor(w / 3),
@@ -453,7 +453,7 @@ export function resolveSpriteDefinition(input: ResolveSpriteInput = {}): SpriteD
   }
 
   // Default fallback for general walking characters: Classic Tuxemon 3x4
-  return TUXEMON_3X4_PROFILE;
+  return LEGACY_3X4_PROFILE;
 }
 
 /**
@@ -510,15 +510,15 @@ export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
     displayName: 'Modular 4-Directional Pixel Character',
     shortDescription: 'Layered pixel-art character format designed for interchangeable body, hair, clothing, and accessory components across four directions.',
     technicalDescription: '13-column by 21-row layout (or 9-column by 4-row subset) containing standardized rows for walking, spellcasting, thrusting, slashing, and hurt animations.',
-    aliases: ['LPC', 'Liberated Pixel Cup', 'LPC sprite', 'LPC character'],
+    aliases: ['Modular', 'Liberated Pixel Cup', 'Modular sprite', 'Modular character'],
     searchTerms: ['modular pixel character', 'four directional modular character', 'lpc compatible'],
     examples: ['Liberated Pixel Cup', 'Open-source RPG character pipelines'],
     supportedEntityTypes: ['CHARACTER'],
     supportedRoles: ['idle', 'walk', 'attack', 'hurt', 'spellcast', 'thrust', 'slash', 'shoot'],
-    animationProfile: 'lpc-full',
+    animationProfile: 'multi_frame_directional',
     directionCount: 4,
     frameCount: 'variable',
-    layoutDescription: 'Standard LPC 13x21 grid or 9x4 walk cycle subset.',
+    layoutDescription: 'Standard Modular 13x21 grid or 9x4 walk cycle subset.',
     modular: true,
     isStatic: false,
   },
@@ -532,15 +532,15 @@ export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
     examples: ['Tuxemon'],
     supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER'],
     supportedRoles: ['overworld', 'idle', 'walk', 'battle_front', 'battle_back'],
-    animationProfile: 'tuxemon-3x4',
+    animationProfile: 'tuxemon_legacy_3x4',
     directionCount: 4,
     frameCount: 3,
     layoutDescription: 'Grid of 3 columns and 4 rows (Down, Left, Right, Up).',
     modular: false,
     isStatic: false,
   },
-  'saints-3x4': {
-    id: 'saints-3x4',
+  'directional_3x4': {
+    id: 'directional_3x4',
     displayName: 'Saints 3x4 Directional Entity',
     shortDescription: 'A modified 3x4 sheet with Saints Engine specific frame mappings.',
     technicalDescription: '3 columns by 4 rows grid. Uses a different walk cycle pacing or resting frame compared to classic Tuxemon sheets.',
@@ -549,7 +549,7 @@ export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
     examples: ['Saints Gaming default characters'],
     supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER'],
     supportedRoles: ['overworld', 'idle', 'walk'],
-    animationProfile: 'saints-3x4',
+    animationProfile: 'directional_3x4',
     directionCount: 4,
     frameCount: 3,
     layoutDescription: '3x4 grid with Saints engine walk loops.',

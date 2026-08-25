@@ -14,19 +14,13 @@ export type StudioTilesetMeta = {
   tileheight: number;
 };
 
-export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [
-  { firstgid: 1, imageSource: "Terrain_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
-  { firstgid: 1000, imageSource: "Furniture_and_Fittings_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-  { firstgid: 2000, imageSource: "Interior_Walls_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-  { firstgid: 3000, imageSource: "Interior_Floors_by_George.png", columns: 10, tilewidth: 16, tileheight: 16 },
-  { firstgid: 4000, imageSource: "Vegetation_and_Outdoor_Fittings_by_George.png", columns: 15, tilewidth: 16, tileheight: 16 },
-];
+export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [];
 
 /**
  * Solid grass on Terrain_by_George (localId 16 → GID 17).
  * Do NOT use GID 1 — that is a stair fragment and renders as green wedges on black.
  */
-export const DEFAULT_STUDIO_GROUND_GID = 17;
+export const DEFAULT_STUDIO_GROUND_GID = 0;
 
 /** Old bootstrap fill — stair fragment tiles. */
 export const LEGACY_BAD_GROUND_GIDS = new Set([1]);

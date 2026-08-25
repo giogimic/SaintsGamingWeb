@@ -6,7 +6,7 @@ import { getThumbnailFrameRect } from '@/shared/game/assetSheets';
 export interface SpriteThumbnailProps {
   src: string;
   alt: string;
-  /** LPC-standard cell size used to compute the representative frame. */
+  /** Modular-standard cell size used to compute the representative frame. */
   cellSize?: number;
   /** Explicit atlas frame bounding box if this asset is a sliced sub-region */
   atlasFrame?: { x: number; y: number; width?: number; height?: number; w?: number; h?: number } | null;

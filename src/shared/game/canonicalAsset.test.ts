@@ -5,7 +5,7 @@ import {
   formatCanonicalGameAsset,
 } from "./canonicalAsset";
 import { resolveSpriteDefinition } from "./spriteDefinitions";
-import { getLpcStandardSlices } from "./lpcPackage";
+import { getStandardSlices } from "./modularSpritePackage";
 
 describe("Canonical Asset Convergence (Bible 35)", () => {
   it("generates deterministic GameAsset and UsableAsset records for sliced spritesheets", () => {
@@ -159,7 +159,7 @@ describe("Canonical Asset Convergence (Bible 35)", () => {
 
   it("generates 128px slice coordinates for 1664px sheets and 64px coordinates for 832px sheets", () => {
     // 1664px High-Res LPC Sheet
-    const highResSlices = getLpcStandardSlices("lpc-full", {
+    const highResSlices = getStandardSlices("multi_frame_directional", {
       sheetWidth: 1664,
       sheetHeight: 4992,
     });
@@ -171,7 +171,7 @@ describe("Canonical Asset Convergence (Bible 35)", () => {
     expect(highResWalkSouth!.h).toBe(128);      // 128px
 
     // 832px Standard LPC Sheet
-    const standardSlices = getLpcStandardSlices("lpc-full", {
+    const standardSlices = getStandardSlices("multi_frame_directional", {
       sheetWidth: 832,
       sheetHeight: 1344,
     });

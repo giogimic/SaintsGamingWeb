@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   resolveSpriteDefinition,
   spriteDefinitionToBabylonConfig,
-  TUXEMON_3X4_PROFILE,
-  LPC_FULL_PROFILE,
-  LPC_WALK_PROFILE,
+  LEGACY_3X4_PROFILE,
+  MULTI_FRAME_DIRECTIONAL_PROFILE,
+  DIRECTIONAL_WALK_PROFILE,
   PORTRAIT_1X1_PROFILE,
 } from './spriteDefinitions';
 
@@ -20,8 +20,8 @@ describe('Sprite Definitions & Animation Profiles', () => {
   });
 
   it('resolves explicit lpc-full animation profile', () => {
-    const def = resolveSpriteDefinition({ animationProfile: 'lpc-full' });
-    expect(def.profile).toBe('lpc-full');
+    const def = resolveSpriteDefinition({ animationProfile: 'multi_frame_directional' });
+    expect(def.profile).toBe('multi_frame_directional');
     expect(def.columns).toBe(13);
     expect(def.rows).toBe(21);
     expect(def.frameWidth).toBe(64);
@@ -35,8 +35,8 @@ describe('Sprite Definitions & Animation Profiles', () => {
   });
 
   it('resolves explicit lpc-walk animation profile', () => {
-    const def = resolveSpriteDefinition({ animationProfile: 'lpc-walk' });
-    expect(def.profile).toBe('lpc-walk');
+    const def = resolveSpriteDefinition({ animationProfile: 'directional_walk' });
+    expect(def.profile).toBe('directional_walk');
     expect(def.columns).toBe(9);
     expect(def.rows).toBe(4);
     expect(def.isLpc).toBe(true);
@@ -56,7 +56,7 @@ describe('Sprite Definitions & Animation Profiles', () => {
 
   it('infers lpc-full from dimensions 832x1344 when profile is absent', () => {
     const def = resolveSpriteDefinition({ width: 832, height: 1344 });
-    expect(def.profile).toBe('lpc-full');
+    expect(def.profile).toBe('multi_frame_directional');
     expect(def.columns).toBe(13);
     expect(def.rows).toBe(21);
     expect(def.isLpc).toBe(true);
@@ -64,7 +64,7 @@ describe('Sprite Definitions & Animation Profiles', () => {
 
   it('infers lpc-walk from dimensions 576x256 when profile is absent', () => {
     const def = resolveSpriteDefinition({ width: 576, height: 256 });
-    expect(def.profile).toBe('lpc-walk');
+    expect(def.profile).toBe('directional_walk');
     expect(def.columns).toBe(9);
     expect(def.rows).toBe(4);
   });
@@ -85,7 +85,7 @@ describe('Sprite Definitions & Animation Profiles', () => {
 
   it('infers lpc-full from extended height 832x3456 when profile is absent', () => {
     const def = resolveSpriteDefinition({ width: 832, height: 3456 });
-    expect(def.profile).toBe('lpc-full');
+    expect(def.profile).toBe('multi_frame_directional');
     expect(def.columns).toBe(13);
     expect(def.rows).toBe(54);
     expect(def.isLpc).toBe(true);
@@ -93,19 +93,19 @@ describe('Sprite Definitions & Animation Profiles', () => {
 
   it('infers lpc-full from item- prefix in URL', () => {
     const def = resolveSpriteDefinition({ spriteUrl: '/game-assets/npc/item-hat-hood-white.png' });
-    expect(def.profile).toBe('lpc-full');
+    expect(def.profile).toBe('multi_frame_directional');
     expect(def.columns).toBe(13);
     expect(def.isLpc).toBe(true);
   });
 
   it('converts definition to Babylon SpriteSheetConfig', () => {
-    const lpcConfig = spriteDefinitionToBabylonConfig(LPC_FULL_PROFILE);
+    const lpcConfig = spriteDefinitionToBabylonConfig(MULTI_FRAME_DIRECTIONAL_PROFILE);
     expect(lpcConfig.columns).toBe(13);
     expect(lpcConfig.rows).toBe(21);
     expect(lpcConfig.directions.up).toBe(8);
     expect(lpcConfig.walkCycle).toHaveLength(9);
 
-    const tuxConfig = spriteDefinitionToBabylonConfig(TUXEMON_3X4_PROFILE);
+    const tuxConfig = spriteDefinitionToBabylonConfig(LEGACY_3X4_PROFILE);
     expect(tuxConfig.columns).toBe(3);
     expect(tuxConfig.rows).toBe(4);
     expect(tuxConfig.directions.down).toBe(0);

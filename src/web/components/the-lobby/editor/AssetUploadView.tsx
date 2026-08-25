@@ -38,10 +38,10 @@ import {
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
 import {
-  unpackLpcZipPackage,
-  UnpackedLpcPackage,
-  UnpackedLpcLayer,
-} from '@/shared/game/lpcPackage';
+  unpackModularZipPackage,
+  UnpackedModularPackage,
+  UnpackedModularLayer,
+} from '@/shared/game/modularSpritePackage';
 import {
   ANIMATION_PROFILES,
   SpriteAnimationProfile,
@@ -109,9 +109,9 @@ export function AssetUploadView({
   const [uploadSuccess, setUploadSuccess] = useState<any | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // LPC Detection & ZIP Package State
+  // Modular Detection & ZIP Package State
   const [detectedFormat, setDetectedFormat] = useState<AssetFormatDefinition | null>(null);
-  const [unpackedZip, setUnpackedZip] = useState<UnpackedLpcPackage | null>(null);
+  const [unpackedZip, setUnpackedZip] = useState<UnpackedModularPackage | null>(null);
   const [isUnpackingZip, setIsUnpackingZip] = useState(false);
   const [batchImportProgress, setBatchImportProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -159,7 +159,7 @@ export function AssetUploadView({
     setErrorMessage(null);
     setUploadSuccess(null);
 
-    // If a ZIP package is dropped/selected (e.g. from Universal LPC Generator)
+    // If a ZIP package is dropped/selected (e.g. from Universal Modular Generator)
     if (file.name.toLowerCase().endsWith('.zip') || file.type.includes('zip')) {
       await handleZipUpload(file);
       return;
@@ -221,7 +221,7 @@ export function AssetUploadView({
     setIsUnpackingZip(true);
     setErrorMessage(null);
     try {
-      const pkg = await unpackLpcZipPackage(zipFile);
+      const pkg = await unpackModularZipPackage(zipFile);
       setUnpackedZip(pkg);
 
       if (pkg.compositeFile) {
@@ -232,24 +232,24 @@ export function AssetUploadView({
         setImportProfile('character');
         setSlotRole('walk');
         setCategory('actor');
-        setAnimationProfile('lpc-full');
+        setAnimationProfile('multi_frame_directional');
         if (pkg.baseBodyType) {
           setBaseBodyType(pkg.baseBodyType);
         }
 
-        const tagList = ['lpc', 'lpc-studio-export', 'spritesheet', 'character', 'anim:lpc-full'];
+        const tagList = ['modular', 'modular-studio-export', 'spritesheet', 'character', 'anim:modular-full'];
         if (pkg.presetName) tagList.push(pkg.presetName.toLowerCase().replace(/\s+/g, '-'));
         if (pkg.baseBodyType) tagList.push(`body:${pkg.baseBodyType}`);
         setTagsInput(tagList.join(', '));
 
         setDetectedFormat(ASSET_FORMAT_TAXONOMY['modular-4dir-pixel']);
-        showToast(`Unpacked LPC Character Package: ${pkg.layers.length} modular layers found!`);
+        showToast(`Unpacked Modular Character Package: ${pkg.layers.length} modular layers found!`);
       } else {
         showToast(`Unpacked ZIP: ${pkg.layers.length} layers found.`);
       }
     } catch (err: any) {
-      console.error('Failed to unpack LPC ZIP:', err);
-      setErrorMessage(`Failed to unpack LPC ZIP file: ${err.message || 'Invalid archive'}`);
+      console.error('Failed to unpack Modular ZIP:', err);
+      setErrorMessage(`Failed to unpack Modular ZIP file: ${err.message || 'Invalid archive'}`);
     } finally {
       setIsUnpackingZip(false);
     }
@@ -281,10 +281,10 @@ export function AssetUploadView({
 
     const presetTags =
       preset === 'walk'
-        ? ['lpc', 'walk-cycle', 'spritesheet']
+        ? ['modular', 'walk-cycle', 'spritesheet']
         : preset === '2.5d'
-        ? ['lpc', 'saints-2.5d', 'walk-grid', 'spritesheet']
-        : ['lpc', 'spritesheet', 'character-sheet', 'full-animation'];
+        ? ['modular', 'directional_3x4', 'walk-grid', 'spritesheet']
+        : ['modular', 'spritesheet', 'character-sheet', 'full-animation'];
 
     setTagsInput((prev) => {
       const tokens = prev.split(',').map((v) => v.trim()).filter(Boolean);
@@ -293,7 +293,7 @@ export function AssetUploadView({
     });
 
     soundSynth?.playSelectSound?.();
-    showToast(`Applied ${preset === '2.5d' ? 'Saints 2.5D' : 'LPC'} character preset!`);
+    showToast(`Applied ${preset === '2.5d' ? 'Saints 2.5D' : 'Modular'} character preset!`);
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -365,7 +365,7 @@ export function AssetUploadView({
     }
   };
 
-  /** Ingests all unpacked modular layers from an LPC ZIP package as modular assets */
+  /** Ingests all unpacked modular layers from an Modular ZIP package as modular assets */
   const handleBatchIngestLayers = async () => {
     if (!unpackedZip || unpackedZip.layers.length === 0) return;
 
@@ -381,16 +381,16 @@ export function AssetUploadView({
 
         const formData = new FormData();
         formData.append('file', layer.file);
-        formData.append('name', `${unpackedZip.presetName || 'LPC'} — ${layer.name}`);
+        formData.append('name', `${unpackedZip.presetName || 'Modular'} — ${layer.name}`);
         formData.append('type', 'CHARACTER');
         formData.append('importProfile', 'character');
         formData.append('slotRole', layer.componentCategory);
-        formData.append('animationProfile', 'lpc-full');
+        formData.append('animationProfile', 'multi_frame_directional');
         formData.append('category', layer.componentCategory);
         formData.append('componentCategory', layer.componentCategory);
         formData.append('componentLayer', layer.componentLayer);
         formData.append('isModularComponent', 'true');
-        formData.append('variantFamily', unpackedZip.presetName || 'LPC Variant');
+        formData.append('variantFamily', unpackedZip.presetName || 'Modular Variant');
         formData.append('zOrderHint', String(layer.zOrderHint));
         if (layer.baseBodyType || unpackedZip.baseBodyType) {
           formData.append('baseBodyType', (layer.baseBodyType || unpackedZip.baseBodyType)!);
@@ -398,10 +398,10 @@ export function AssetUploadView({
         formData.append(
           'tags',
           JSON.stringify([
-            'lpc',
+            'modular',
             'modular',
             'sprite-component',
-            'anim:lpc-full',
+            'anim:modular-full',
             `component:${layer.componentCategory}`,
             `layer:${layer.componentLayer}`,
           ])
@@ -420,7 +420,7 @@ export function AssetUploadView({
       }
 
       soundSynth?.playSelectSound?.();
-      showToast(`Batch Ingested ${successCount}/${total} Modular LPC Layers!`);
+      showToast(`Batch Ingested ${successCount}/${total} Modular Modular Layers!`);
       AssetManager.getInstance().broadcastRefresh();
       setUploadSuccess({
         message: `Successfully ingested ${successCount} modular character layers into the asset library.`,
@@ -463,23 +463,23 @@ export function AssetUploadView({
       {/* HEADER */}
       <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded p-3 space-y-1">
         <div className="flex items-center gap-1.5 text-[#e2d5b3] font-bold text-sm">
-          <Upload className="w-4 h-4 text-amber-400" /> Asset Ingestion & LPC Studio Upload Pipeline
+          <Upload className="w-4 h-4 text-amber-400" /> Asset Ingestion & Modular Studio Upload Pipeline
         </div>
         <p className="text-[11px] text-slate-400 leading-relaxed">
-          Upload individual sprites, LPC character generator outputs (PNG or ZIP packages with layers & credits),
+          Upload individual sprites, Modular character generator outputs (PNG or ZIP packages with layers & credits),
           tilesets, or audio files into the unified game library.
         </p>
       </div>
 
-      {/* LPC SMART DETECTION / PRESETS BANNER */}
+      {/* Modular SMART DETECTION / PRESETS BANNER */}
       <div className="bg-[#07111c] border border-cyan-500/30 rounded p-3 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="space-y-1 max-w-[44rem]">
             <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-sm">
-              <Wand2 className="w-4 h-4 text-cyan-400" /> Universal LPC Character Studio Ingestion
+              <Wand2 className="w-4 h-4 text-cyan-400" /> Universal Modular Character Studio Ingestion
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Drop any spritesheet PNG or LPC Generator export ZIP. Slices and modular layers are extracted
+              Drop any spritesheet PNG or Modular Generator export ZIP. Slices and modular layers are extracted
               automatically with full author credits intact.
             </p>
           </div>
@@ -490,7 +490,7 @@ export function AssetUploadView({
               onClick={() => applyLpcPreset('character')}
               className="px-3 py-1.5 rounded bg-cyan-800 hover:bg-cyan-700 text-white font-bold transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <Wand2 className="w-3.5 h-3.5" /> Full LPC Preset
+              <Wand2 className="w-3.5 h-3.5" /> Full Modular Preset
             </button>
             <button
               type="button"
@@ -546,7 +546,7 @@ export function AssetUploadView({
               <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs">
                 <Package className="w-4 h-4 text-emerald-400" />
                 <span>
-                  Unpacked LPC Package: {unpackedZip.presetName} ({unpackedZip.layers.length} modular layers)
+                  Unpacked Modular Package: {unpackedZip.presetName} ({unpackedZip.layers.length} modular layers)
                 </span>
               </div>
               <button
@@ -674,10 +674,10 @@ export function AssetUploadView({
               <div className="flex flex-col items-center gap-2 py-2">
                 <Upload className="w-6 h-6 text-slate-400" />
                 <div className="text-slate-200 font-bold text-[11px]">
-                  Click or drag & drop asset file or LPC ZIP export here
+                  Click or drag & drop asset file or Modular ZIP export here
                 </div>
                 <div className="text-[10px] text-slate-500">
-                  Supports PNG, LPC Spritesheet ZIP packages, WebP, GIF, MP3, WAV, OGG
+                  Supports PNG, Modular Spritesheet ZIP packages, WebP, GIF, MP3, WAV, OGG
                 </div>
               </div>
             )}
@@ -895,9 +895,9 @@ export function AssetUploadView({
                   className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-slate-200 text-xs"
                 >
                   <option value="">Auto-Detect (from sheet format)</option>
-                  <option value="lpc-full">Universal LPC Full Sheet (13x21 · 64x64)</option>
-                  <option value="lpc-walk">LPC Walk Cycle (9x4 · 64x64)</option>
-                  <option value="tuxemon-3x4">Tuxemon Classic (3x4 · 32x32)</option>
+                  <option value="modular-full">Universal Modular Full Sheet (13x21 · 64x64)</option>
+                  <option value="directional_walk">Modular Walk Cycle (9x4 · 64x64)</option>
+                  <option value="directional_3x4">Tuxemon Classic (3x4 · 32x32)</option>
                   <option value="portrait-1x1">Single Frame Portrait / Billboard (1x1)</option>
                   <option value="custom">Custom Grid</option>
                 </select>
@@ -963,7 +963,7 @@ export function AssetUploadView({
                 type="text"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="e.g. lpc, character, hero, male, armor"
+                placeholder="e.g. modular, character, hero, male, armor"
                 className="w-full bg-[#0b1320] border border-slate-700 rounded px-2 py-1 text-white text-xs"
               />
             </div>

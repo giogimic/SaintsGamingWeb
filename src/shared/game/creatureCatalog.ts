@@ -560,7 +560,7 @@ export function emptyCreatureDef(): CreatureDefData {
 
 /**
  * Fetch animationProfile from asset metadata for a given sprite URL/key.
- * Returns the animationProfile string (e.g., 'lpc-full', 'tuxemon-3x4') or null.
+ * Returns the animationProfile string (e.g., 'lpc-full', 'directional_3x4') or null.
  * This queries the AssetManager to get stored metadata from upload.
  */
 export async function getAssetAnimationProfile(
@@ -590,7 +590,7 @@ export async function getAssetAnimationProfile(
 
   // Fast heuristic fallback from URL pattern if DB has no stored metadata
   const resolved = resolveSpriteDefinition({ spriteUrl: spriteUrlOrKey });
-  if (resolved && resolved.profile && resolved.profile !== 'tuxemon-3x4') {
+  if (resolved && resolved.profile && resolved.profile !== 'directional_3x4') {
     return resolved.profile;
   }
 
