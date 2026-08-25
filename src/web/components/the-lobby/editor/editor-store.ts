@@ -192,11 +192,18 @@ type PlaytestRestoreSnapshot = {
   studioMode: StudioMode;
   openPanelIds: PanelId[];
   activeBrushTileId: number;
+  activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
   mapDirty: boolean;
   brushRadius: number;
 };
+
+export interface BrushPattern {
+  w: number;
+  h: number;
+  gids: number[][];
+}
 
 interface EditorState {
   /** Legacy: true = editor runtime (tools on). Prefer getStudioRuntime(). */
@@ -235,6 +242,7 @@ interface EditorState {
   paintTransaction: PaintedCell[] | null;
 
   activeBrushTileId: number;
+  activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
   brushRadius: number;
@@ -288,6 +296,7 @@ interface EditorState {
   incrementDataVersion: () => void;
 
   setActiveBrushTileId: (id: number) => void;
+  setActiveBrushPattern: (pattern: BrushPattern | null) => void;
   setActiveLogicTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
   setClickedTile: (tile: { r: number; c: number } | null) => void;
@@ -641,6 +650,7 @@ function capturePlaytestSnapshot(state: {
   studioMode: StudioMode;
   panels: Record<PanelId, FloatingPanelState>;
   activeBrushTileId: number;
+  activeBrushPattern: BrushPattern | null;
   activeLogicTileId: number;
   activeLayerIdx: number;
   mapDirty: boolean;
@@ -653,6 +663,7 @@ function capturePlaytestSnapshot(state: {
     studioMode: state.studioMode === 'test' ? 'develop' : state.studioMode,
     openPanelIds,
     activeBrushTileId: state.activeBrushTileId,
+    activeBrushPattern: state.activeBrushPattern,
     activeLogicTileId: state.activeLogicTileId,
     activeLayerIdx: state.activeLayerIdx,
     mapDirty: state.mapDirty,
@@ -690,6 +701,7 @@ export const useEditorStore = create<EditorState>()(
           state.selectedAtlasNodeId = id;
         }),
       activeBrushTileId: DEFAULT_STUDIO_GROUND_GID,
+      activeBrushPattern: null,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
       brushRadius: 1,
@@ -755,6 +767,7 @@ export const useEditorStore = create<EditorState>()(
           if (snap) {
             state.studioMode = snap.studioMode;
             state.activeBrushTileId = snap.activeBrushTileId;
+            state.activeBrushPattern = snap.activeBrushPattern;
             state.activeLogicTileId = snap.activeLogicTileId;
             state.activeLayerIdx = snap.activeLayerIdx;
             state.mapDirty = snap.mapDirty;
@@ -913,6 +926,11 @@ export const useEditorStore = create<EditorState>()(
       setActiveBrushTileId: (id) =>
         set((state) => {
           state.activeBrushTileId = id;
+          state.activeBrushPattern = null;
+        }),
+      setActiveBrushPattern: (pattern) =>
+        set((state) => {
+          state.activeBrushPattern = pattern;
         }),
       setActiveLogicTileId: (id) =>
         set((state) => {

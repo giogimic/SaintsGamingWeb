@@ -15,6 +15,7 @@ interface TilesetPickerProps {
   tilesets: TilesetMeta[];
   activeBrushTileId: number;
   onBrushSelect: (gid: number) => void;
+  onBrushSelectPattern?: (pattern: { w: number, h: number, gids: number[][] }) => void;
   activeLayerIdx: number;
   onLayerChange: (idx: number) => void;
   tileLayers: Array<{ name: string; grid: number[][] }>;
@@ -26,6 +27,7 @@ export default function TilesetPicker({
   tilesets,
   activeBrushTileId,
   onBrushSelect,
+  onBrushSelectPattern,
   activeLayerIdx,
   onLayerChange,
   tileLayers,
@@ -36,6 +38,7 @@ export default function TilesetPicker({
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [imgError, setImgError] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [dragStart, setDragStart] = useState<{ r: number, c: number } | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number } | null>(null);
   const [tilesetSearch, setTilesetSearch] = useState('');
   
@@ -198,27 +201,69 @@ export default function TilesetPicker({
     };
   }, [ts, activeBrushTileId, natural, imgError]);
 
-  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLImageElement>) => {
     if (!ts || imgError || !imgRef.current) return;
     const rect = imgRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
     const scaleX = imgRef.current.naturalWidth / rect.width;
     const scaleY = imgRef.current.naturalHeight / rect.height;
-    
     const nativeX = Math.floor(x * scaleX);
     const nativeY = Math.floor(y * scaleY);
-    
     const col = Math.floor(nativeX / ts.tilewidth);
     const row = Math.floor(nativeY / ts.tileheight);
 
     if (col < 0 || row < 0 || col >= ts.columns) return;
     if (nativeY >= imgRef.current.naturalHeight) return;
     
+    setDragStart({ r: row, c: col });
+    
+    // Also trigger immediately for single clicks
     const gid = ts.firstgid + (row * ts.columns) + col;
     soundSynth?.playSelectSound?.();
     onBrushSelect(gid);
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLImageElement>) => {
+    if (!ts || imgError || !imgRef.current || !dragStart) {
+      setDragStart(null);
+      return;
+    }
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const scaleX = imgRef.current.naturalWidth / rect.width;
+    const scaleY = imgRef.current.naturalHeight / rect.height;
+    const nativeX = Math.floor(x * scaleX);
+    const nativeY = Math.floor(y * scaleY);
+    const col = Math.floor(nativeX / ts.tilewidth);
+    const row = Math.floor(nativeY / ts.tileheight);
+
+    if (col >= 0 && row >= 0 && col < ts.columns && nativeY < imgRef.current.naturalHeight) {
+      if (dragStart.r !== row || dragStart.c !== col) {
+        // Multi-tile select
+        const minRow = Math.min(dragStart.r, row);
+        const maxRow = Math.max(dragStart.r, row);
+        const minCol = Math.min(dragStart.c, col);
+        const maxCol = Math.max(dragStart.c, col);
+        
+        const gids: number[][] = [];
+        for (let r = minRow; r <= maxRow; r++) {
+          const rowGids: number[] = [];
+          for (let c = minCol; c <= maxCol; c++) {
+            rowGids.push(ts.firstgid + (r * ts.columns) + c);
+          }
+          gids.push(rowGids);
+        }
+        
+        soundSynth?.playSelectSound?.();
+        if (onBrushSelectPattern) {
+          onBrushSelectPattern({ w: maxCol - minCol + 1, h: maxRow - minRow + 1, gids });
+        }
+      }
+    }
+    
+    setDragStart(null);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -226,13 +271,10 @@ export default function TilesetPicker({
     const rect = imgRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
     const scaleX = imgRef.current.naturalWidth / rect.width;
     const scaleY = imgRef.current.naturalHeight / rect.height;
-    
     const nativeX = Math.floor(x * scaleX);
     const nativeY = Math.floor(y * scaleY);
-    
     const col = Math.floor(nativeX / ts.tilewidth);
     const row = Math.floor(nativeY / ts.tileheight);
 
@@ -241,12 +283,24 @@ export default function TilesetPicker({
       return;
     }
     
-    const gid = ts.firstgid + (row * ts.columns) + col;
+    let minRow = row;
+    let maxRow = row;
+    let minCol = col;
+    let maxCol = col;
+    
+    if (dragStart) {
+      minRow = Math.min(dragStart.r, row);
+      maxRow = Math.max(dragStart.r, row);
+      minCol = Math.min(dragStart.c, col);
+      maxCol = Math.max(dragStart.c, col);
+    }
+    
+    const gid = ts.firstgid + (minRow * ts.columns) + minCol;
     setHoveredTile({
-      leftPct: (col / ts.columns) * 100,
-      topPct: ((row * ts.tileheight) / natural.h) * 100,
-      widthPct: (1 / ts.columns) * 100,
-      heightPct: (ts.tileheight / natural.h) * 100,
+      leftPct: (minCol / ts.columns) * 100,
+      topPct: ((minRow * ts.tileheight) / natural.h) * 100,
+      widthPct: ((maxCol - minCol + 1) / ts.columns) * 100,
+      heightPct: (((maxRow - minRow + 1) * ts.tileheight) / natural.h) * 100,
       gid,
     });
   };
@@ -398,7 +452,9 @@ export default function TilesetPicker({
                    : `/game-assets/tilesets/${ts.imageSource}`
                }
                alt={ts.imageSource}
-               onClick={handleImageClick}
+               onMouseDown={handleMouseDown}
+                 onMouseUp={handleMouseUp}
+                 onMouseLeave={() => { setHoveredTile(null); setDragStart(null); }}
                draggable
                onDragStart={(e) => {
                  const gid = hoveredTile?.gid || activeBrushTileId;
@@ -413,7 +469,7 @@ export default function TilesetPicker({
                  e.dataTransfer.effectAllowed = 'copy';
                }}
                onMouseMove={handleMouseMove}
-               onMouseLeave={() => setHoveredTile(null)}
+               
                onLoad={(e) => {
                  const el = e.currentTarget;
                  setNatural({ w: el.naturalWidth, h: el.naturalHeight });

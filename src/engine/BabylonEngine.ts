@@ -317,6 +317,7 @@ export class BabylonEngine {
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
   private brushRadius: number = 1;
+  public activeBrushPattern: { w: number, h: number } | null = null;
   private activeBrushTileId: number = 0;
   private activeLayerIdx: number = 0;
   private brushMode: string = 'paint';
@@ -2318,7 +2319,7 @@ private resolveTilePick(
       lastKey = key;
 
       // Apply brush radius — emit all cells within radius.
-      if (this.brushRadius <= 1) {
+      if (this.brushRadius <= 1 || this.activeBrushPattern) {
         onTileClick(resolved.r, resolved.c, resolved.layerIdx, eventType);
       } else {
         const rad = this.brushRadius - 1;
@@ -2457,6 +2458,12 @@ private resolveTilePick(
 
   public setActiveBrushTileId(gid: number) {
     this.activeBrushTileId = gid;
+    this.activeBrushPattern = null;
+    this.refreshBrushPreview();
+  }
+
+  public setActiveBrushPattern(pattern: { w: number, h: number } | null) {
+    this.activeBrushPattern = pattern;
     this.refreshBrushPreview();
   }
 
@@ -2513,8 +2520,32 @@ private resolveTilePick(
     hoverPlane.parent = this.rootNode;
     this.brushPreviewMeshes.push(hoverPlane);
 
+    // 3. Multi-tile pattern footprint
+    if (this.activeBrushPattern) {
+      const pat = this.activeBrushPattern;
+      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * pat.w, height: s * pat.h }, this.scene);
+      patPlane.rotation.x = Math.PI / 2;
+      const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
+      const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;
+      patPlane.position = new Vector3(patPosX, SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR, patPosZ);
+      
+      let patMat = this.scene.getMaterialByName('brush_pattern_outline_mat') as StandardMaterial | null;
+      if (!patMat) {
+        patMat = new StandardMaterial('brush_pattern_outline_mat', this.scene);
+        patMat.diffuseColor = new Color3(0.7, 0.2, 0.9);
+        patMat.emissiveColor = new Color3(0.5, 0.1, 0.7);
+        patMat.alpha = 0.6;
+        patMat.disableLighting = true;
+        patMat.backFaceCulling = false;
+      }
+      patPlane.material = patMat;
+      patPlane.isPickable = false;
+      patPlane.parent = this.rootNode;
+      this.brushPreviewMeshes.push(patPlane);
+    }
+
     // 2. Multi-cell footprint grid if brushRadius > 1
-    if (this.brushRadius > 1) {
+    if (this.brushRadius > 1 && !this.activeBrushPattern) {
       const rad = this.brushRadius - 1;
       const isErase = this.brushMode === 'erase';
       const isFill = this.brushMode === 'fill';
