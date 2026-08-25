@@ -178,16 +178,17 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     // Prefer live Studio / socket document only when it matches currentMapId.
     // Gate warps that flip the id without clearing activeMapData used to keep DEMO.
     if (activeMapData && shouldKeepActiveMapData(activeMapData, currentMapId)) {
+      const ensured = ensureMapHasStudioTilesets(activeMapData as GameMapData);
       setMapData((prev) => {
         // Same object — no-op (avoids Babylon remount / remesh).
-        if (prev === activeMapData) return prev;
+        if (prev === ensured || prev === activeMapData) return prev;
         if (prev && shouldKeepActiveMapData(prev, currentMapId)) {
           // Stable ref unless next is a real visual/DB upgrade (never NPC-only churn).
-          if (!shouldAcceptMapDoc(prev, activeMapData as GameMapData)) {
+          if (!shouldAcceptMapDoc(prev, ensured)) {
             return prev;
           }
         }
-        return ensureMapHasStudioTilesets(activeMapData as GameMapData);
+        return ensured;
       });
       setIsEngineReady(true);
       return;

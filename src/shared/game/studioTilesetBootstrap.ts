@@ -131,7 +131,6 @@ export function buildEmptyGroundLayer(grid: number[][] | undefined): {
   return buildDefaultGroundLayer(grid);
 }
 
-/** Ensure in-memory map data can drive TilesetPicker + a visible ground mesh. */
 export function ensureMapHasStudioTilesets<
   T extends {
     grid?: number[][];
@@ -139,28 +138,36 @@ export function ensureMapHasStudioTilesets<
     tilesets?: StudioTilesetMeta[];
   },
 >(map: T): T {
-  const needsTilesets = !Array.isArray(map.tilesets) || map.tilesets.length === 0;
-  const layersBlank =
-    !Array.isArray(map.tileLayers) ||
-    map.tileLayers.length === 0 ||
+  const needsTilesets =
+    DEFAULT_STUDIO_TILESETS.length > 0 &&
+    (!Array.isArray(map.tilesets) || map.tilesets.length === 0);
+  const missingLayers = !Array.isArray(map.tileLayers) || map.tileLayers.length === 0;
+  const legacyBadFill = Array.isArray(map.tileLayers) && isLegacyBadGroundFill(map.tileLayers);
+  const needsFillZeros =
+    DEFAULT_STUDIO_GROUND_GID > 0 &&
+    Array.isArray(map.tileLayers) &&
+    map.tileLayers.length > 0 &&
     isVisualTileLayersBlank(map.tileLayers);
 
-  if (!layersBlank && !needsTilesets) return map;
+  if (!needsTilesets && !missingLayers && !legacyBadFill && !needsFillZeros) {
+    if (!Array.isArray(map.tilesets)) {
+      return { ...map, tilesets: [] };
+    }
+    return map;
+  }
 
-  // Prefer filling zeros in existing layers (keeps the 1–3 painted brush tests)
-  // over replacing the whole Ground when tilesets already exist.
   let nextLayers = map.tileLayers;
-  if (!Array.isArray(nextLayers) || nextLayers.length === 0) {
+  if (missingLayers) {
     nextLayers = [buildDefaultGroundLayer(map.grid)];
-  } else if (isLegacyBadGroundFill(nextLayers)) {
-    nextLayers = upgradeLegacyGroundGids(nextLayers);
-  } else if (layersBlank) {
-    nextLayers = fillZeroGidsInLayers(nextLayers);
+  } else if (legacyBadFill) {
+    nextLayers = upgradeLegacyGroundGids(nextLayers!);
+  } else if (needsFillZeros) {
+    nextLayers = fillZeroGidsInLayers(nextLayers!);
   }
 
   return {
     ...map,
     tileLayers: nextLayers,
-    tilesets: needsTilesets ? [...DEFAULT_STUDIO_TILESETS] : map.tilesets,
+    tilesets: needsTilesets ? [...DEFAULT_STUDIO_TILESETS] : (map.tilesets || []),
   };
 }
