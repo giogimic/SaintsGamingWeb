@@ -31,7 +31,7 @@ const inputCls =
   'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-[#806f47] transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
 
-export function ClassEditorPanel() {
+export function ClassEditorWorkspace() {
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const [list, setList] = useState<ClassDefData[]>([]);
   const [form, setForm] = useState<ClassDefData>({ ...emptyClassDef(), profileId: null });

@@ -6,7 +6,7 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'test';
+export type StudioMode = 'develop' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
@@ -17,7 +17,8 @@ export type StudioCanonicalMode =
   | 'script'
   | 'catalog'
   | 'atlas'
-  | 'assets';
+  | 'assets'
+  | 'hero';
 
 export type StudioDockId =
   | 'build'
@@ -49,6 +50,7 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
   quest: 'script',
   creature: 'catalog',
   assets: 'assets',
+  hero: 'hero',
 };
 
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
@@ -59,6 +61,7 @@ export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
   quest: ['npc', 'quest'],
   creature: ['creature', 'loot', 'items'],
   assets: [],
+  hero: [],
   test: [],
 };
 
@@ -95,6 +98,11 @@ export const STUDIO_MODE_META: Record<
     label: 'Assets',
     canonical: 'assets',
     blurb: 'Manage characters, creatures, tilesets, items, audio, and asset packs.',
+  },
+  hero: {
+    label: 'Hero Studio',
+    canonical: 'hero',
+    blurb: 'Unified editor for Archetypes, Classes, and Hero loadouts.',
   },
   test: {
     label: 'Play',

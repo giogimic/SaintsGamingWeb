@@ -1,3 +1,13 @@
+## [2.1.459-15] - 2026-08-25
+### Saints Gaming Hero Studio Unification
+- **Hero Studio Suite**:
+  - Migrated legacy `StarterHeroEditorPanel` and `ClassEditorPanel` into a unified `HeroStudioSuite`.
+  - Replaced hardcoded preset data with live database lookups for classes and world maps.
+  - Replaced the legacy Sprite Browser with the unified `AssetManager` integration for Archetype avatars.
+- **Cleanup & Optimization**:
+  - Removed deprecated flexlayout docks and floating modal mappings for characters and classes.
+  - Eliminated mock `GAME_SPRITES` arrays, tags, and predefined `ARCHETYPE_PRESETS`.
+
 ## [2.1.459-14] - 2026-08-25
 ### Saints Gaming Lobby Redesign & Character Creator Refactor
 - **Lobby Redesign**:

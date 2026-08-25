@@ -60,9 +60,7 @@ const AssetBrowserPanel = lazy(() => import('./panels/AssetBrowserPanel').then((
 const EntityEditorPanel = lazy(() => import('./panels/EntityEditorPanel').then((m) => ({ default: m.EntityEditorPanel })));
 const DevToolsPanel = lazy(() => import('./panels/DevToolsPanel').then((m) => ({ default: m.DevToolsPanel })));
 const StreamingInspectorPanel = lazy(() => import('./panels/StreamingInspectorPanel').then((m) => ({ default: m.StreamingInspectorPanel })));
-const StarterHeroEditorPanel = lazy(() => import('./panels/StarterHeroEditorPanel').then((m) => ({ default: m.StarterHeroEditorPanel })));
 const CreatureDefEditorPanel = lazy(() => import('./panels/CreatureDefEditorPanel').then((m) => ({ default: m.CreatureDefEditorPanel })));
-const ClassEditorPanel = lazy(() => import('./panels/ClassEditorPanel').then((m) => ({ default: m.ClassEditorPanel })));
 const QuestEditorPanel = lazy(() => import('./panels/QuestEditorPanel').then((m) => ({ default: m.QuestEditorPanel })));
 const DialogueEditorPanel = lazy(() => import('./panels/DialogueEditorPanel').then((m) => ({ default: m.DialogueEditorPanel })));
 const LootManagerPanel = lazy(() => import('./panels/LootManagerPanel').then((m) => ({ default: m.LootManagerPanel })));
@@ -761,9 +759,7 @@ export const StudioEditorShell: React.FC = () => {
             case 'assets': return <AssetBrowserPanel />;
             case 'npc': return <EntityEditorPanel />;
             case 'dev': return <DevToolsPanel />;
-            case 'characters': return <StarterHeroEditorPanel />;
             case 'creature': return <CreatureDefEditorPanel />;
-            case 'classes': return <ClassEditorPanel />;
             case 'quest': return <QuestEditorPanel />;
             case 'dialogue': return <DialogueEditorPanel />;
             case 'loot': return <LootManagerPanel />;
