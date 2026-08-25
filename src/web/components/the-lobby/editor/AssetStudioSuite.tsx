@@ -24,13 +24,16 @@ import { AssetUploadView } from './AssetUploadView';
 import { SpritesheetSlicer } from './SpritesheetSlicer';
 import { EntityAssetWorkspace } from './EntityAssetWorkspace';
 import AssetPackInstaller from './AssetPackInstaller';
+import { AnimationStudioPanel } from './panels/AnimationStudioPanel';
 import { useGameStore } from '../store';
 import type { GameAssetItem } from '@/engine/assets/AssetManager';
+import { Film } from 'lucide-react';
 
 // ─── Sub-Studio identifiers ───────────────────────────────────────────────────
 export type AssetWorkspaceId =
   | 'characters'
   | 'creatures'
+  | 'animations'
   | 'tilesets'
   | 'items'
   | 'audio'
@@ -53,6 +56,12 @@ const WORKSPACE_META: Record<
     icon: PawPrint,
     blurb: 'Battle sheets, overworld sprites, shiny variants, and boss encounters.',
     color: 'text-rose-400 border-rose-500/40 bg-rose-500/10',
+  },
+  animations: {
+    label: 'Animation Studio',
+    icon: Film,
+    blurb: 'Frame sequence timelines, sprite playback, onion skinning, and loop timing.',
+    color: 'text-pink-400 border-pink-500/40 bg-pink-500/10',
   },
   tilesets: {
     label: 'Tilesets & World Art',
@@ -89,6 +98,7 @@ const WORKSPACE_META: Record<
 const WORKSPACE_ORDER: AssetWorkspaceId[] = [
   'characters',
   'creatures',
+  'animations',
   'tilesets',
   'items',
   'audio',
@@ -213,6 +223,11 @@ export function AssetStudioSuite() {
           { id: 'upload', label: 'Upload Creature', icon: Upload },
           { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
         ];
+      case 'animations':
+        return [
+          { id: 'browse', label: 'Animation Studio', icon: Film },
+          { id: 'slicer', label: 'Sprite Slicer', icon: Scissors },
+        ];
       case 'tilesets':
         return [
           { id: 'browse', label: 'Browse Tilesets', icon: Layers },
@@ -266,6 +281,9 @@ export function AssetStudioSuite() {
         }
         return null;
       case 'browse':
+        if (activeWorkspace === 'animations') {
+          return <AnimationStudioPanel />;
+        }
         return (
           <AssetEditor
             workspaceId={activeWorkspace}
