@@ -77,14 +77,14 @@ export function GameInitializationWizard() {
   // 3. Environment & Default Tile
   const [environment, setEnvironment] = useState<SetupEnvironmentData>({
     enabledCategories: ['terrain', 'nature', 'structures', 'furniture'],
-    defaultGroundGid: 17, // Solid George Grass
+    defaultGroundGid: 1,
   });
 
   // 4. Starting Map & Spawn
   const [startingMap, setStartingMap] = useState<SetupStartingMapData>(() => {
     const w = 24;
     const h = 24;
-    const defaultGid = 17;
+    const defaultGid = 1;
     const grid = Array.from({ length: h }, (_, r) =>
       Array.from({ length: w }, (_, c) => (r === 0 || r === h - 1 || c === 0 || c === w - 1 ? 1 : 0))
     );

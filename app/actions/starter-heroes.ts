@@ -11,7 +11,7 @@ export type StarterHeroData = {
   name: string;
   classId: string;
   spriteKey: string;
-  /** Optional GameAsset bundle id for a full modular/composited character sprite (see lpcPackImporter). */
+  /** Optional GameAsset bundle id for a full modular/composited character sprite (see modular pack importer). */
   spriteBundleId?: string | null;
   flavor: string;
   tag: string;
@@ -272,7 +272,7 @@ export async function seedDefaultStarterHeroes() {
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
-    // Extra Tuxemon and thematic archetypes
+    // Extra thematic archetypes
     {
       slug: 'dragonrider', name: 'Dragon Rider', classId: 'WARRIOR', spriteKey: 'dragonrider',
       flavor: 'Bonded with dragons. Exceptional power and presence.',
@@ -309,8 +309,8 @@ export async function seedDefaultStarterHeroes() {
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'tuxemon_tamer', name: 'Beast Tamer', classId: 'WARRIOR', spriteKey: 'catgirl',
-      flavor: 'Tuxemon creature specialist. High beast synergy and capture speed.',
+      slug: 'creature_tamer', name: 'Beast Tamer', classId: 'WARRIOR', spriteKey: 'catgirl',
+      flavor: 'Creature specialist. High beast synergy and capture speed.',
       tag: 'Beast Master', tagColor: '#f472b6', sortOrder: 12, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":20,"patch_kit":10}',
@@ -324,7 +324,7 @@ export async function seedDefaultStarterHeroes() {
     },
     {
       slug: 'prof_researcher', name: 'Professor', classId: 'MAGE', spriteKey: 'professor',
-      flavor: 'Veteran Tuxemon scientist. Identifies stats and weak points.',
+      flavor: 'Veteran creature scientist. Identifies stats and weak points.',
       tag: 'Scholar', tagColor: '#60a5fa', sortOrder: 14, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":15,"patch_kit":15}',
@@ -345,7 +345,7 @@ export async function seedDefaultStarterHeroes() {
     },
     {
       slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl',
-      flavor: 'Starts in Azure Town — Tuxemon Spyder campaign playtest bed.',
+      flavor: 'Starts in Azure Town — Spyder campaign playtest bed.',
       tag: 'Campaign', tagColor: '#cbb26a', sortOrder: 17, isActive: true,
       startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25,
       startingInventory: '{"capture_script":20,"patch_kit":10}',

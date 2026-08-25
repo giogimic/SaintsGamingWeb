@@ -6,18 +6,18 @@ import {
   parseCreditsText,
 } from "./modularSpritePackage";
 
-describe("lpcPackage utilities", () => {
+describe("modularSpritePackage utilities", () => {
   describe("detectSpriteFormat", () => {
-    it("detects Universal LPC Full Character Sheets (832x1344)", () => {
+    it("detects Modular Full Character Sheets (832x1344)", () => {
       const detected = detectSpriteFormat(832, 1344);
       expect(detected.isRecognized).toBe(true);
-      expect(detected.variant).toBe("universal-full");
+      expect(detected.variant).toBe("multi_frame_directional");
       expect(detected.cols).toBe(13);
       expect(detected.rows).toBe(21);
       expect(detected.suggestedPresets).toContain("multi_frame_directional");
     });
 
-    it("detects LPC 4-Direction Walk Cycle (576x256)", () => {
+    it("detects Modular 4-Direction Walk Cycle (576x256)", () => {
       const detected = detectSpriteFormat(576, 256);
       expect(detected.isRecognized).toBe(true);
       expect(detected.variant).toBe("directional_walk");

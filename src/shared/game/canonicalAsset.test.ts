@@ -11,7 +11,7 @@ describe("Canonical Asset Convergence (Bible 35)", () => {
   it("generates deterministic GameAsset and UsableAsset records for sliced spritesheets", () => {
     const canonical = buildCanonicalAssetData({
       userId: "user_123",
-      gameId: "tuxemon",
+      gameId: "saints",
       name: "Warrior Headgear Slice",
       type: "CHARACTER",
       sourceUrl: "/uploads/warrior_sheet.png",
@@ -78,7 +78,7 @@ describe("Canonical Asset Convergence (Bible 35)", () => {
       animationState: "walk",
       animationFrames: 9,
       frameDurationMs: 100,
-      gameId: "tuxemon",
+      gameId: "saints",
       cdnUrl: "/game-assets/npc/boots.png",
     };
 

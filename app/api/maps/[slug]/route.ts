@@ -86,7 +86,26 @@ export async function GET(
     }
 
     if (!payload) {
-      return NextResponse.json({ error: `Map '${slug}' not found` }, { status: 404 });
+      // Pristine realm / missing map — return a blank canvas instead of 404
+      // so the lobby and Studio can always render something interactive.
+      const blankW = 30, blankH = 30;
+      payload = {
+        id: slug,
+        gameId: 'saints',
+        name: slug.replace(/_/g, ' '),
+        width: blankW,
+        height: blankH,
+        grid: Array.from({ length: blankH }, () => Array(blankW).fill(0)),
+        gates: [],
+        connections: undefined,
+        spawnPoint: { x: Math.floor(blankW / 2), y: Math.floor(blankH / 2) },
+        npcs: [],
+        encounterPool: [],
+        tileLayers: [],
+        tilesets: [],
+        version: 0,
+        source: 'worldMap' as const,
+      };
     }
     return NextResponse.json(payload);
   } catch (error) {
@@ -215,7 +234,7 @@ export async function POST(
       where: { id: slug },
       update: {
         name: body.name || slug,
-        gameId: body.gameId || "tuxemon",
+        gameId: body.gameId || "saints",
         ...(body.grid ? { gridData: JSON.stringify(body.grid) } : {}),
         ...(serializedGatesData !== undefined ? { gatesData: serializedGatesData } : {}),
         ...(body.npcs ? { npcsData: JSON.stringify(body.npcs) } : {}),
@@ -231,7 +250,7 @@ export async function POST(
       },
       create: {
         id: slug,
-        gameId: body.gameId || "tuxemon",
+        gameId: body.gameId || "saints",
         name: body.name || slug,
         gridData: JSON.stringify(body.grid || []),
         gatesData: serializedGatesData || JSON.stringify(body.gates || {}),

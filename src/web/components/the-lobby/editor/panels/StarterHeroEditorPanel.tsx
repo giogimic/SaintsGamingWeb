@@ -668,7 +668,7 @@ export function StarterHeroEditorPanel() {
                       value={form.slug}
                       onChange={e => f('slug', e.target.value.toLowerCase().replace(/\s+/g, '_'))}
                       className={inputCls}
-                      placeholder="e.g. tuxemon_beast_master"
+                      placeholder="e.g. creature_beast_master"
                       disabled={!isNew}
                       style={{ opacity: isNew ? 1 : 0.5 }}
                     />

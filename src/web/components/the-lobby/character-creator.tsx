@@ -738,7 +738,7 @@ export function CharacterCreator({
           </div>
         )}
 
-        {/* ── STEP 3: APPEARANCE / MODULAR LPC CUSTOMIZER ── */}
+        {/* ── STEP 3: APPEARANCE / MODULAR SPRITE CUSTOMIZER ── */}
         {step === 'APPEARANCE' && (
           <div className="w-full flex flex-col items-center">
             <div className="text-center mb-4">
@@ -753,7 +753,7 @@ export function CharacterCreator({
                 SAINT CUSTOMIZATION
               </h2>
               <p className="text-cyan-300/70 text-xs font-mono tracking-widest uppercase">
-                Modular LPC System: Assemble base Saint body, capes, headgear & armor
+                Modular Sprite System: Assemble base Saint body, capes, headgear & armor
               </p>
             </div>
 

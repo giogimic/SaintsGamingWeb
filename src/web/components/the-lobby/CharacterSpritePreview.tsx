@@ -29,8 +29,8 @@ export function resolveSpriteUrl(key: string): string {
   if (key.includes('.') || key.startsWith('upload_') || key.startsWith('asset_')) {
     return `/uploads/${key}`;
   }
-  // Check if it matches an LPC directory pack name
-  const lpcDirs = [
+  // Check if it matches a modular directory pack name
+  const modularDirs = [
     'good-paladin-templar-female',
     'good-cleric-highpriestess-female',
     'good-cleric-sanctuary-male',
@@ -54,7 +54,7 @@ export function resolveSpriteUrl(key: string): string {
     'item-hat-horned-iron',
     'item-hat-tricorne-black',
   ];
-  if (lpcDirs.includes(key)) {
+  if (modularDirs.includes(key)) {
     return `/game-assets/npc/${key}/${key}.png`;
   }
   return `/game-assets/npc/${key}.png`;
@@ -63,7 +63,7 @@ export function resolveSpriteUrl(key: string): string {
 /**
  * Universal character sprite preview component.
  * Supports:
- * - Single sprites or full layered modular LPC stacks (e.g. Base + Cape + Hat)
+ * - Single sprites or full layered modular stacks (e.g. Base + Cape + Hat)
  * - Intelligent frame calculation (Front idle / walk frame)
  * - Non-destructive pixelated scaling
  */

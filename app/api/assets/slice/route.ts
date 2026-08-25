@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       sourceAssetId,
-      gameId = "tuxemon",
+      gameId = "saints",
       regions,
       importProfile: bodyImportProfile,
       strictRequiredRoles,

@@ -7,9 +7,9 @@ describe("inferAssetPack", () => {
     expect(inferAssetPack("/game-assets/tilesets/Terrain_by_George.png")).toBe("legacy");
   });
 
-  it("classifies LPC overworld NPCs", () => {
-    expect(inferAssetPack("/game-assets/npc/37707_female.png")).toBe("lpc");
-    expect(inferAssetPack("npc/adventurer_beige.png")).toBe("lpc");
+  it("classifies modular overworld NPCs", () => {
+    expect(inferAssetPack("/game-assets/npc/37707_female.png")).toBe("modular");
+    expect(inferAssetPack("npc/adventurer_beige.png")).toBe("modular");
   });
 
   it("classifies Legacy monsters and tilesets", () => {
@@ -24,7 +24,7 @@ describe("inferAssetPack", () => {
   });
 
   it("builds pack tags", () => {
-    expect(packTag("lpc")).toBe("pack:lpc");
+    expect(packTag("modular")).toBe("pack:modular");
     expect(packTag("legacy")).toBe("pack:legacy");
   });
 });

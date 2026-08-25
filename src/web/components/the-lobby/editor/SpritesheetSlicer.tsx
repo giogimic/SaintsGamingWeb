@@ -349,7 +349,7 @@ export function SpritesheetSlicer({
     showToast(`Generated ${newRegions.length} grid cells!`);
   };
 
-  /** Applies smart LPC presets (Full Character, Walk Cycle, Saints 2.5D, Idles) */
+  /** Applies smart modular presets (Full Character, Walk Cycle, Saints 2.5D, Idles) */
   const applyPresetSlices = (preset: 'multi_frame_directional' | 'directional_walk' | 'directional_3x4' | 'directional_idles') => {
     if (!imageElement) {
       showToast('Load an image first before applying slicing presets.');
@@ -456,12 +456,12 @@ export function SpritesheetSlicer({
           <Scissors className="w-4 h-4 text-amber-400" /> Visual Spritesheet Slicer & Sprite Animation Extractor
         </div>
         <p className="text-[11px] text-slate-400">
-          Slice multi-frame spritesheets into categorized Usable Assets with directional metadata, LPC animation
+          Slice multi-frame spritesheets into categorized Usable Assets with directional metadata, modular animation
           presets, and MMO walk cycles.
         </p>
       </div>
 
-      {/* LPC AUTO-SLICING TOOLBAR */}
+      {/* MODULAR AUTO-SLICING TOOLBAR */}
       <div className="bg-[#07111c] border border-cyan-500/30 rounded p-2.5 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Wand2 className="w-4 h-4 text-cyan-400" />

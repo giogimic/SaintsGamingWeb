@@ -39,7 +39,7 @@ export interface AssetFilters {
   componentCategory?: string;
   componentLayer?: string;
   variantFamily?: string;
-  /** Approved pack filter: tuxemon | lpc | studio (bible 16 §7). */
+  /** Approved pack filter: legacy | modular | studio (bible 16 §7). */
   pack?: string;
   sortBy?: 'source' | 'createdAt' | 'fileSize' | 'usageCount';
   sortOrder?: 'asc' | 'desc';

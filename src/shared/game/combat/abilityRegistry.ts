@@ -172,8 +172,8 @@ export const CANONICAL_ABILITIES: Record<string, AbilityDef> = {
     tags: ['buff', 'support', 'shout'],
     isActive: true,
   },
-  tuxemon_capture: {
-    id: 'tuxemon_capture',
+  creature_capture: {
+    id: 'creature_capture',
     name: 'Binding Crystal Capture',
     description: 'Attempt to bind a weakened creature in turn-based battle. Forbidden in RT combat.',
     domain: 'creature_tb',

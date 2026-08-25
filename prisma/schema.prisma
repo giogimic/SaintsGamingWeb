@@ -1511,7 +1511,7 @@ model SaintsMap {
   width         Int
   height        Int
   tileSize      Int      @default(16)
-  tilesetData   String // JSON: tile layer data
+  tilesetData   String// JSON: tile layer data
   collisionData String // JSON: collision bitmask
   npcData       String // JSON: NPC placements
   triggerData   String? // JSON: trigger zones

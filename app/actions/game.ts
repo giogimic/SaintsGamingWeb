@@ -311,7 +311,7 @@ export async function getTopLobbyOperatives() {
       const skills: Record<string, { level: number; xp: number }> = state.skills || {};
       const totalXp = Object.values(skills).reduce((sum, s) => sum + (s.xp || 0), 0);
       const credits = state.credits || 0;
-      const caughtCount = (state.tuxemonSpeciesCaught || state.caughtDaemons || []).length;
+      const caughtCount = (state.creatureSpeciesCaught || state.tuxemonSpeciesCaught || state.caughtDaemons || []).length;
       const level = state.level || 1;
       const perk = state.perk || 'SWIFT_TRAVELER';
 

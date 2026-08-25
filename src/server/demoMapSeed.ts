@@ -11,7 +11,7 @@ export const DEMO_MAP_W = 30;
 export const DEMO_MAP_H = 30;
 
 /**
- * Default Tuxemon/George tilesets for Studio visual paint.
+ * Default standard tilesets for Studio visual paint.
  * DEMO_SANDBOX historically shipped logic-grid only (tileLayers=[], tilesets=[]),
  * which left TilesetPicker empty and made PR #18 paint overlays a no-op.
  * Keep in sync with WorldBuilderPanel / createBlankWorldProfile / studioTilesetBootstrap.

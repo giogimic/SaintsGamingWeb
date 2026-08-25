@@ -288,13 +288,15 @@ export async function GET(req: NextRequest) {
 
     if (pack && pack !== "ALL") {
       const p = pack.toLowerCase();
-      if (p === "tuxemon") {
+      if (p === "creatures" || p === "tuxemon") {
         whereClause.AND = [
           ...(whereClause.AND || []),
           {
             OR: [
               { metadata: { contains: '"pack":"tuxemon"' } },
+              { metadata: { contains: '"pack":"creatures"' } },
               { tags: { contains: "tuxemon" } },
+              { tags: { contains: "creatures" } },
               { source: { contains: "tuxemon" } },
               { source: { contains: "/monster/" } },
               { source: { contains: "/creatures/" } },
@@ -303,14 +305,17 @@ export async function GET(req: NextRequest) {
             ],
           },
         ];
-      } else if (p === "lpc") {
+      } else if (p === "modular" || p === "lpc") {
         whereClause.AND = [
           ...(whereClause.AND || []),
           {
             OR: [
               { metadata: { contains: '"pack":"lpc"' } },
+              { metadata: { contains: '"pack":"modular"' } },
               { tags: { contains: "lpc" } },
+              { tags: { contains: "modular" } },
               { categories: { contains: "lpc" } },
+              { categories: { contains: "modular" } },
               { source: { contains: "lpc" } },
               { source: { contains: "/npc/" } },
               { source: { contains: "female" } },

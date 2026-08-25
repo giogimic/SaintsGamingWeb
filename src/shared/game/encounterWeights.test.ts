@@ -13,7 +13,7 @@ describe("encounterWeights", () => {
     ]);
   });
 
-  it("normalizes tuxemon monsters blob", () => {
+  it("normalizes legacy monsters blob", () => {
     const entries = normalizeEncounterEntries({
       monsters: [{ monster: "budaye", encounter_rate: 0.2 }],
     });

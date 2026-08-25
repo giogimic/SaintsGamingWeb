@@ -63,8 +63,8 @@ const BUNDLE_THEMES: Record<AssetPackId | 'ALL', { label: string; activeColor: s
     activeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-sky-500/10',
     badgeColor: 'bg-sky-950/80 border-sky-500/40 text-sky-300',
   },
-  lpc: {
-    label: 'LPC (Liberated Pixel Cup)',
+  modular: {
+    label: 'Modular Sprites',
     activeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/10',
     badgeColor: 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300',
   },

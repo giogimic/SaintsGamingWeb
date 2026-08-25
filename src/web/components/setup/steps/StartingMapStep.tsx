@@ -63,24 +63,46 @@ export function StartingMapStep({
   const width = startingMap.width || 24;
   const height = startingMap.height || 24;
 
+  // Inherit tileset asset from environment step if not explicitly set
   useEffect(() => {
-    if (!startingMap.tilesetAsset?.source) {
+    if (!startingMap.tilesetAsset && environment.defaultTilesetAsset) {
+      const defaultGid = environment.defaultGroundGid || 1;
+      setActiveGid(defaultGid);
+
+      // Also ensure ground layer uses the chosen ground GID
+      const currentVisual = startingMap.tileLayers?.[0]?.grid;
+      const updatedVisual = currentVisual
+        ? currentVisual.map(row => row.map(cell => (cell === 17 || cell === 0 ? defaultGid : cell)))
+        : Array.from({ length: height }, () => Array.from({ length: width }, () => defaultGid));
+
+      onChange({
+        ...startingMap,
+        tilesetAsset: environment.defaultTilesetAsset,
+        tileLayers: [{ name: 'Ground', grid: updatedVisual }],
+      });
+    }
+  }, [environment.defaultTilesetAsset, environment.defaultGroundGid]);
+
+  const currentTileset = startingMap.tilesetAsset || environment.defaultTilesetAsset;
+
+  useEffect(() => {
+    if (!currentTileset?.source) {
       setTilesetLoaded(false);
       return;
     }
     const img = new Image();
-    img.src = startingMap.tilesetAsset.source;
+    img.src = currentTileset.source;
     img.onload = () => {
       tilesetImgRef.current = img;
       setTilesetLoaded(true);
     };
-  }, [startingMap.tilesetAsset?.source]);
+  }, [currentTileset?.source]);
 
   const handleResize = (newW: number, newH: number) => {
     const clampedW = Math.max(8, Math.min(64, newW));
     const clampedH = Math.max(8, Math.min(64, newH));
 
-    const defaultGid = environment.defaultGroundGid || 17;
+    const defaultGid = environment.defaultGroundGid || 1;
 
     const newGrid = Array.from({ length: clampedH }, (_, r) =>
       Array.from({ length: clampedW }, (_, c) => {
@@ -175,8 +197,8 @@ export function StartingMapStep({
     const img = tilesetLoaded ? tilesetImgRef.current : null;
 
     let cols = 1;
-    if (img && startingMap.tilesetAsset?.metadata?.tilewidth) {
-       cols = Math.floor(img.width / Number(startingMap.tilesetAsset.metadata.tilewidth));
+    if (img && currentTileset?.metadata?.tilewidth) {
+       cols = Math.floor(img.width / Number(currentTileset.metadata.tilewidth));
     } else if (img) {
        cols = Math.floor(img.width / 32);
     }
@@ -189,8 +211,8 @@ export function StartingMapStep({
         if (gid > 0) {
            if (img && cols > 0) {
               const localGid = gid - 1;
-              const tw = Number(startingMap.tilesetAsset?.metadata?.tilewidth || 32);
-              const th = Number(startingMap.tilesetAsset?.metadata?.tileheight || 32);
+              const tw = Number(currentTileset?.metadata?.tilewidth || 32);
+              const th = Number(currentTileset?.metadata?.tileheight || 32);
               const tx = (localGid % cols) * tw;
               const ty = Math.floor(localGid / cols) * th;
               ctx.drawImage(img, tx, ty, tw, th, x * cellSize, y * cellSize, cellSize, cellSize);
@@ -377,24 +399,28 @@ export function StartingMapStep({
 
           <button onClick={() => setIsPickerOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-800 text-white border border-slate-700 hover:border-slate-500">
             <ImageIcon className="w-4 h-4 text-indigo-400" />
-            {startingMap.tilesetAsset ? (startingMap.tilesetAsset.id.split('/').pop() || 'Selected') : 'Select Tile Sheet'}
+            {currentTileset ? (currentTileset.metadata?.name || currentTileset.id.split('/').pop() || 'Selected') : 'Select Tile Sheet'}
           </button>
         </div>
 
         <div className="flex gap-4">
-           {startingMap.tilesetAsset && toolMode === 'paint' && (
+           {currentTileset && toolMode === 'paint' && (
               <div className="w-64 bg-slate-950 border border-slate-800 rounded-xl flex flex-col p-2 max-h-[500px]">
-                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Palette</div>
+                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 flex items-center justify-between">
+                   <span>Palette</span>
+                   <span className="font-mono text-[10px] text-amber-300">GID #{activeGid}</span>
+                 </div>
                  <div className="flex-1 overflow-auto border border-slate-800 rounded relative cursor-crosshair">
                     <img 
-                       src={startingMap.tilesetAsset.source} 
+                       src={currentTileset.source} 
                        alt="Tileset Palette" 
-                       className="max-w-none select-none"
+                       className="max-w-none select-none pixelated"
+                       style={{ imageRendering: 'pixelated' }}
                        onMouseDown={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
-                          const tw = Number(startingMap.tilesetAsset?.metadata?.tilewidth || 32);
-                          const th = Number(startingMap.tilesetAsset?.metadata?.tileheight || 32);
-                          const cols = Math.floor(e.currentTarget.naturalWidth / tw);
+                          const tw = Number(currentTileset?.metadata?.tilewidth || 32);
+                          const th = Number(currentTileset?.metadata?.tileheight || 32);
+                          const cols = Math.max(1, Math.floor(e.currentTarget.naturalWidth / tw));
                           const x = Math.floor((e.clientX - rect.left) / tw);
                           const y = Math.floor((e.clientY - rect.top) / th);
                           const newGid = (y * cols + x) + 1;

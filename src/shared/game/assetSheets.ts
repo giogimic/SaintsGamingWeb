@@ -83,9 +83,9 @@ export interface ThumbnailFrameRect {
  * Determines the pixel rect of a representative single frame to use as a
  * gallery thumbnail for a spritesheet, instead of squashing the whole sheet.
  * Prefers the south-facing (front) "walk/idle" frame:
- * - LPC Full (rows >= 21): Row 10 (South walk/idle)
- * - LPC Walk (rows === 4, cols >= 9): Row 2 (South walk)
- * - Tuxemon Classic (rows === 4, cols === 3): Row 0 (South walk)
+ * - Modular Full (rows >= 21): Row 10 (South walk/idle)
+ * - Modular Walk (rows === 4, cols >= 9): Row 2 (South walk)
+ * - Classic Walk (rows === 4, cols === 3): Row 0 (South walk)
  * - Fallback: Row 0
  */
 export function getThumbnailFrameRect(
@@ -101,13 +101,13 @@ export function getThumbnailFrameRect(
 
   let row = 0;
   if (rows >= 21) {
-    // LPC Full Sheet: Walk South is Row 10 (0-indexed: 8=Up, 9=Left, 10=Down, 11=Right)
+    // Modular Full Sheet: Walk South is Row 10 (0-indexed: 8=Up, 9=Left, 10=Down, 11=Right)
     row = 10;
   } else if (rows === 4 && cols >= 8) {
-    // LPC Walk-only Sheet: Row 2 is Down/South
+    // Modular Walk-only Sheet: Row 2 is Down/South
     row = 2;
   } else if (rows === 4 && cols <= 4) {
-    // Classic 3x4 / 4x4 (Tuxemon style): Row 0 is Down/South
+    // Classic 3x4 / 4x4: Row 0 is Down/South
     row = 0;
   } else {
     row = 0;

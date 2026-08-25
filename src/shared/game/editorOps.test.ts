@@ -239,7 +239,7 @@ describe("editorOps", () => {
     });
 
     it("modifies map properties with reversible history", () => {
-      const map: any = { ...makeMap(), name: "Old Map", gameId: "tuxemon" };
+      const map: any = { ...makeMap(), name: "Old Map", gameId: "saints" };
       let stack = emptyEditorOpStack();
 
       const op = {

@@ -1,3 +1,20 @@
+## [2.1.459-3] - 2026-08-25
+### Comprehensive Architecture Fix: Structural Terminology Purge & Setup Wizard Tileset Workflow
+- **LPC / Tuxemon Terminology Purge**:
+  - Replaced legacy naming across asset managers, sprite definitions, ability registries, upload routes, admin pages, and wiki guides with structural terminology (`modular`, `creature`, `classic_3x4`).
+  - Migrated `/admin/game-dev/tuxemon` to canonical `/admin/game-dev/creatures`.
+  - Renamed `tuxemon_capture` to `creature_capture` in the ability registry.
+- **Setup Wizard Steps 4 & 5 Ground Tileset Workflow**:
+  - Removed hardcoded default tile options referencing non-existent GIDs in `EnvironmentSetupStep.tsx`.
+  - Added integrated tileset selector with catalog browsing (`SpriteBrowser`) and direct upload (`AssetUploadView`), with an interactive tile grid to click and select custom ground fill tiles.
+  - Step 5 (`StartingMapStep.tsx`) seamlessly inherits the selected tilesheet and default ground fill tile from Step 4.
+- **Production Errors & Warnings**:
+  - Confirmed blank map fallback on `/api/maps/[slug]` to prevent client 404s from triggering React #185 crashes.
+  - Suppressed noisy console warnings for missing adventurer fallback sprite in `BabylonEngine.ts`.
+- **Quality & Test Integrity**:
+  - All 187 test suites (859 unit/integration tests) pass cleanly.
+  - TypeScript zero-error compilation validated across entire project.
+
 ## [2.1.459-2] - 2026-08-24
 ### Bug Fix: MySQL Asset Uploads
 - **Pre-Push Schema Generation**: Addressed a critical crash on production MySQL deployments where uploading LPC spritesheets triggered a Prisma `VARCHAR(191)` limit.
