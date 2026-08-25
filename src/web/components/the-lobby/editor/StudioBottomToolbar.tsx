@@ -25,6 +25,7 @@ interface StudioBottomToolbarProps {
   model: Model;
   onOpenMapBrowser?: () => void;
   onOpenAssetBrowser?: () => void;
+  onOpenHeroStudio?: () => void;
 }
 
 export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
@@ -32,6 +33,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
   model,
   onOpenMapBrowser,
   onOpenAssetBrowser,
+  onOpenHeroStudio,
 }) => {
   const { data: session } = useSession();
   const permissionLevel = session?.user?.permissionLevel ?? 0;
@@ -465,12 +467,28 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
         <PanelDockButton id="npc" icon={<Users className="w-3.5 h-3.5" />} label="NPCs" onClick={() => openDockTab('npc')} />
         <PanelDockButton id="quest" icon={<ScrollText className="w-3.5 h-3.5" />} label="Quests" onClick={() => openDockTab('quest')} />
         <PanelDockButton id="dialogue" icon={<MessageSquare className="w-3.5 h-3.5" />} label="Dialogue" onClick={() => openDockTab('dialogue')} />
-        <PanelDockButton id="characters" icon={<Sword className="w-3.5 h-3.5" />} label="Heroes" onClick={() => openDockTab('characters')} />
+        <PanelDockButton
+          id="characters"
+          icon={<Sword className="w-3.5 h-3.5" />}
+          label="Heroes"
+          onClick={() => {
+            if (onOpenHeroStudio) onOpenHeroStudio();
+          }}
+          title="Hero Studio (Full Workspace)"
+        />
         <PanelDockButton id="creature" icon={<PawPrint className="w-3.5 h-3.5" />} label="Creatures" onClick={() => openDockTab('creature')} />
         <PanelDockButton id="spawner" icon={<Flame className="w-3.5 h-3.5" />} label="Spawners" onClick={() => openDockTab('spawner')} />
         <PanelDockButton id="loot" icon={<Coins className="w-3.5 h-3.5" />} label="Loot" onClick={() => openDockTab('loot')} />
         <PanelDockButton id="items" icon={<Package className="w-3.5 h-3.5" />} label="Items" onClick={() => openDockTab('items')} />
-        <PanelDockButton id="classes" icon={<UserCheck className="w-3.5 h-3.5" />} label="Classes" onClick={() => openDockTab('classes')} />
+        <PanelDockButton
+          id="classes"
+          icon={<UserCheck className="w-3.5 h-3.5" />}
+          label="Classes"
+          onClick={() => {
+            if (onOpenHeroStudio) onOpenHeroStudio();
+          }}
+          title="Hero Studio (Full Workspace)"
+        />
         <PanelDockButton id="gameplay" icon={<Activity className="w-3.5 h-3.5" />} label="Gameplay" onClick={() => openDockTab('gameplay')} />
         <PanelDockButton id="problems" icon={<AlertCircle className="w-3.5 h-3.5" />} label="Diagnostics" onClick={() => openDockTab('problems')} />
         {canDev && (
