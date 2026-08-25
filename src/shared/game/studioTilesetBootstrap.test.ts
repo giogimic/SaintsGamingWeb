@@ -27,7 +27,7 @@ describe("ensureMapHasStudioTilesets", () => {
     expect(next.tilesets).toEqual(DEFAULT_STUDIO_TILESETS);
   });
 
-  it("upgrades legacy GID-1 stair fill to solid grass", () => {
+  it("preserves painted tileset GIDs", () => {
     const map = {
       grid: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => 0)),
       tileLayers: [
@@ -36,10 +36,10 @@ describe("ensureMapHasStudioTilesets", () => {
           grid: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => 1)),
         },
       ],
-      tilesets: [...DEFAULT_STUDIO_TILESETS],
+      tilesets: [{ firstgid: 1, imageSource: "tiles.png", columns: 8, tilewidth: 16, tileheight: 16 }],
     };
     const next = ensureMapHasStudioTilesets(map);
-    expect(next.tileLayers![0].grid.every((row: number[]) => row.every((c: number) => c === DEFAULT_STUDIO_GROUND_GID))).toBe(
+    expect(next.tileLayers![0].grid.every((row: number[]) => row.every((c: number) => c === 1))).toBe(
       true
     );
   });

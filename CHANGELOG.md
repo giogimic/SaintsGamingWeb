@@ -1,3 +1,13 @@
+## [2.1.459-6] - 2026-08-25
+### Critical Fix: Studio Map Paint Saving & White Map Rendering
+- **Preserve User Paint on Save (`studioTilesetBootstrap.ts` & `studioMapCreate.ts`)**:
+  - Removed destructive `LEGACY_BAD_GROUND_GIDS` heuristic that automatically erased valid tile GID 1 (the first tile of a tileset) across the map upon saving.
+  - Updated `normalizeStudioMapVisuals` to never overwrite user-painted visual layers with blank default ground.
+- **Tileset Texture URL Resolution (`tileBatchHelpers.ts` & `BabylonEngine.ts`)**:
+  - Added unified `resolveTilesetTextureUrl` to cleanly resolve remote URLs (`https://...`), uploads (`/uploads/...` and `uploads/...`), and game assets without 404 URL encoding bugs.
+- **Unlit Material Shading Fix (`BabylonEngine.ts`)**:
+  - Fixed `applyTileMaterial` and `configureTilesetMaterial` where unlit materials (`disableLighting = true`) with missing or fallback textures defaulted to pure white `(1, 1, 1)` emissive color. Emissive color now correctly mirrors the target ground color.
+
 ## [2.1.459-5] - 2026-08-25
 ### Architectural Cleanup: Single Source of Truth for Map State & Hydration Protection
 - **Single Source of Truth (`GameCanvasBabylon.tsx`)**:

@@ -157,3 +157,37 @@ export function tilesetUvForOverlayPlane(
   const [u0, v0, u1, , , v1] = tilesetUvForGid(gid, ts, sizeLookup);
   return [u0, v1, u1, v1, u1, v0, u0, v0];
 }
+
+const CASE_FIXES: Record<string, string> = {
+  'terrain_by_george.png': 'Terrain_by_George.png',
+  'furniture_and_fittings_by_george.png': 'Furniture_and_Fittings_by_George.png',
+  'interior_walls_by_george.png': 'Interior_Walls_by_George.png',
+  'interior_floors_by_george.png': 'Interior_Floors_by_George.png',
+  'vegetation_and_outdoor_fittings_by_george.png': 'Vegetation_and_Outdoor_Fittings_by_George.png',
+};
+
+/**
+ * Resolves a tileset image source string into a browser-loadable URL.
+ * Handles remote URLs, uploaded assets, absolute and relative paths.
+ */
+export function resolveTilesetTextureUrl(source: string): string {
+  if (!source) return '';
+  const trimmed = source.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('/game-assets/')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('uploads/')) {
+    return `/${trimmed}`;
+  }
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  let rawSource = trimmed.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
+  if (CASE_FIXES[rawSource.toLowerCase()]) {
+    rawSource = CASE_FIXES[rawSource.toLowerCase()];
+  }
+  return `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+}

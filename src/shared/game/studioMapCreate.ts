@@ -144,7 +144,7 @@ export function isLogicGridCopiedToVisual(
 
 /**
  * Normalize create/save visual layers before persist.
- * Fixes missing tilesets, blank Ground, and logic→visual copies.
+ * Preserves user-painted layers and tilesets while bootstrapping missing structures.
  */
 export function normalizeStudioMapVisuals<
   T extends {
@@ -154,14 +154,12 @@ export function normalizeStudioMapVisuals<
   },
 >(map: T): T {
   let next = ensureMapHasStudioTilesets(map);
-  if (isLogicGridCopiedToVisual(next.grid, next.tileLayers)) {
+  const hasTilesets = Array.isArray(next.tilesets) && next.tilesets.length > 0;
+  if (!hasTilesets && isLogicGridCopiedToVisual(next.grid, next.tileLayers)) {
     next = {
       ...next,
       tileLayers: [buildDefaultGroundLayer(next.grid)],
-      tilesets:
-        Array.isArray(next.tilesets) && next.tilesets.length > 0
-          ? next.tilesets
-          : [...DEFAULT_STUDIO_TILESETS],
+      tilesets: [...DEFAULT_STUDIO_TILESETS],
     };
   }
   return next;

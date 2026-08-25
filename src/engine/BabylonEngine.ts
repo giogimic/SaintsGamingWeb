@@ -43,6 +43,7 @@ import {
   tilesetUvForGid,
   tilesetUvForOverlayPlane,
   worldToTileCoord,
+  resolveTilesetTextureUrl,
   type TilesetUvInput,
 } from "../shared/game/tileBatchHelpers";
 import {
@@ -351,10 +352,11 @@ export class BabylonEngine {
     if (tex) {
       mat.diffuseTexture = tex;
       mat.emissiveTexture = tex;
+      mat.emissiveColor = new Color3(1, 1, 1);
+    } else {
+      mat.emissiveColor = new Color3(0.18, 0.42, 0.22);
     }
     mat.disableLighting = true;
-    mat.emissiveColor = new Color3(1, 1, 1);
-    
     mat.specularColor = new Color3(0, 0, 0);
   }
 
@@ -1279,21 +1281,7 @@ export class BabylonEngine {
           mat = newMat;
           let tex = this.tilesetTextureCache.get(imageSource);
           if (!tex) {
-            let rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            // Fix legacy lowercase DB entries for Linux case-sensitive filesystems
-            const caseFixes: Record<string, string> = {
-              'terrain_by_george.png': 'Terrain_by_George.png',
-              'furniture_and_fittings_by_george.png': 'Furniture_and_Fittings_by_George.png',
-              'interior_walls_by_george.png': 'Interior_Walls_by_George.png',
-              'interior_floors_by_george.png': 'Interior_Floors_by_George.png',
-              'vegetation_and_outdoor_fittings_by_george.png': 'Vegetation_and_Outdoor_Fittings_by_George.png'
-            };
-            if (caseFixes[rawSource.toLowerCase()]) {
-              rawSource = caseFixes[rawSource.toLowerCase()];
-            }
-            
-            // Encode spaces / special chars (e.g. "core_set pieces.png") so Texture fetch succeeds.
-            const tilesetPath = imageSource.startsWith("/") ? imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+            const tilesetPath = resolveTilesetTextureUrl(imageSource);
             console.log(`[BabylonEngine] Requesting texture: ${tilesetPath}`);
             tex = new Texture(
               tilesetPath,
@@ -1304,7 +1292,7 @@ export class BabylonEngine {
               () => console.log(`[BabylonEngine] Texture loaded SUCCESS: ${tilesetPath}`),
               (message) => {
                 console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
-                newMat.diffuseColor = new Color3(0.2, 0.45, 0.2);
+                newMat.emissiveColor = new Color3(0.18, 0.42, 0.22);
               }
             );
             tex.hasAlpha = true;
@@ -1585,21 +1573,28 @@ export class BabylonEngine {
     mat.specularColor = new Color3(0.05, 0.05, 0.05);
     mat.specularPower = 32;
     mat.disableLighting = true; // 2D Pixel Art rendering
-    mat.emissiveColor = new Color3(1, 1, 1);
 
     if (isIndoor) {
       if (tileId === 0) {
         if (this.woodFloorTexture) {
           mat.diffuseTexture = this.woodFloorTexture;
+          mat.emissiveTexture = this.woodFloorTexture;
+          mat.emissiveColor = new Color3(1, 1, 1);
+          return;
         }
-        mat.diffuseColor = new Color3(1 + tone, 1 + tone, 1 + tone);
+        mat.diffuseColor = new Color3(0.55 + tone, 0.35 + tone, 0.2 + tone);
+        mat.emissiveColor = mat.diffuseColor;
         mat.specularColor = new Color3(0.12, 0.08, 0.04);
         return;
       } else if (tileId === 1) {
         if (isBlock && this.indoorWallTexture) {
           mat.diffuseTexture = this.indoorWallTexture;
+          mat.emissiveTexture = this.indoorWallTexture;
+          mat.emissiveColor = new Color3(1, 1, 1);
+          return;
         }
         mat.diffuseColor = new Color3(0.85 + tone, 0.88 + tone, 0.92 + tone);
+        mat.emissiveColor = mat.diffuseColor;
         return;
       }
     }
@@ -1619,7 +1614,6 @@ export class BabylonEngine {
       // Water — animated (handled separately)
       case 4:
         mat.diffuseColor = new Color3(0.15 + tone, 0.42 + tone, 0.72 + tone);
-        mat.emissiveColor = new Color3(0.02, 0.06, 0.12);
         mat.specularColor = new Color3(0.5, 0.6, 0.8);
         mat.specularPower = 64;
         break;
@@ -1630,19 +1624,10 @@ export class BabylonEngine {
       // Shop
       case 7:
         mat.diffuseColor = new Color3(0.52 + tone, 0.42 + tone, 0.22 + tone);
-        mat.emissiveColor = new Color3(0.05, 0.04, 0.01);
         break;
       // Clinic / Healing
       case 8:
         mat.diffuseColor = new Color3(0.18 + tone, 0.48 + tone, 0.58 + tone);
-        mat.emissiveColor = new Color3(0.02, 0.06, 0.08);
-        break;
-      // Fishing Water
-      case 10:
-        mat.diffuseColor = new Color3(0.08 + tone, 0.32 + tone, 0.65 + tone);
-        mat.emissiveColor = new Color3(0.01, 0.04, 0.10);
-        mat.specularColor = new Color3(0.4, 0.5, 0.7);
-        mat.specularPower = 48;
         break;
       // Crafting anvil
       case 9:
@@ -1650,18 +1635,23 @@ export class BabylonEngine {
         mat.specularColor = new Color3(0.3, 0.3, 0.35);
         mat.specularPower = 40;
         break;
+      // Fishing Water
+      case 10:
+        mat.diffuseColor = new Color3(0.08 + tone, 0.32 + tone, 0.65 + tone);
+        mat.specularColor = new Color3(0.4, 0.5, 0.7);
+        mat.specularPower = 48;
+        break;
       // Bramble barrier (Q4)
       case 11:
         mat.diffuseColor = new Color3(0.18 + tone, 0.32 + tone, 0.1 + tone);
-        mat.emissiveColor = new Color3(0.03, 0.06, 0.01);
         break;
       // Base terminal
       case 12:
         mat.diffuseColor = new Color3(0.08 + tone, 0.1 + tone, 0.22 + tone);
-        mat.emissiveColor = new Color3(0.03, 0.05, 0.15);
         break;
       default: mat.diffuseColor = new Color3(0.18 + tone, 0.44 + tone, 0.20 + tone); break;
     }
+    mat.emissiveColor = mat.diffuseColor;
   }
 
   /** Remove decorative prop instances for a cell (bramble/tree/ore after harvest/clear). */
@@ -1729,8 +1719,7 @@ export class BabylonEngine {
       mat = newMat;
       let tex = this.tilesetTextureCache.get(imageSource);
       if (!tex) {
-        const rawSource = imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const tilesetPath = imageSource.startsWith("/") ? imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+        const tilesetPath = resolveTilesetTextureUrl(imageSource);
         tex = new Texture(
           tilesetPath,
           this.scene,
@@ -1740,7 +1729,7 @@ export class BabylonEngine {
           undefined,
           (message) => {
             console.warn(`[BabylonEngine] Tileset image not found at ${tilesetPath}, using fallback color`, message);
-            newMat.diffuseColor = new Color3(0.2, 0.45, 0.2);
+            newMat.emissiveColor = new Color3(0.18, 0.42, 0.22);
           }
         );
         tex.hasAlpha = true;
@@ -1965,8 +1954,7 @@ export class BabylonEngine {
         mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
         let tex = this.tilesetTextureCache.get(ts.imageSource);
         if (!tex) {
-          const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const tilesetPath = ts.imageSource.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+          const tilesetPath = resolveTilesetTextureUrl(ts.imageSource);
           tex = new Texture(tilesetPath, this.scene, true, false, 1);
           tex.hasAlpha = true;
           this.tilesetTextureCache.set(ts.imageSource, tex);
@@ -2013,8 +2001,7 @@ export class BabylonEngine {
       mat = new StandardMaterial(`tileset_${ts.imageSource}`, this.scene);
       let tex = this.tilesetTextureCache.get(ts.imageSource);
       if (!tex) {
-        const rawSource = ts.imageSource.replace(/^(.*\/tilesets\/|tilesets\/)/i, '');
-            const tilesetPath = ts.imageSource.startsWith("/") ? ts.imageSource : `/game-assets/tilesets/${encodeURIComponent(rawSource)}`;
+        const tilesetPath = resolveTilesetTextureUrl(ts.imageSource);
         tex = new Texture(tilesetPath, this.scene, true, false, 1);
         tex.hasAlpha = true;
         this.tilesetTextureCache.set(ts.imageSource, tex);
