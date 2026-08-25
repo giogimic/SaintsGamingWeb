@@ -1,9 +1,9 @@
 /**
- * Saints Gaming — Universal LPC Asset Package & Slicing Helpers
+ * Saints Gaming — Universal Modular Asset Package & Slicing Helpers
  *
- * Provides pure utility functions to detect LPC spritesheet formats, generate
+ * Provides pure utility functions to detect Modular spritesheet formats, generate
  * predefined animation slice regions for the Studio Slicer, parse layer
- * attribution credits, and unpack multi-layer LPC Generator ZIP exports in the browser.
+ * attribution credits, and unpack multi-layer Modular Generator ZIP exports in the browser.
  */
 
 import JSZip from "jszip";
@@ -13,15 +13,15 @@ import {
   inferCharacterComponentLayerSlot,
 } from "./assetImportProfiles";
 
-export type LpcFormatVariant =
-  | "universal-full"
-  | "lpc-walk"
-  | "saints-2.5d"
+export type SpriteFormatVariant =
+  | "multi_frame_directional"
+  | "directional_walk"
+  | "directional_3x4"
   | "custom-grid";
 
-export interface LpcDetectedFormat {
-  isLpc: boolean;
-  variant: LpcFormatVariant;
+export interface DetectedSpriteFormat {
+  isRecognized: boolean;
+  variant: SpriteFormatVariant;
   label: string;
   description: string;
   frameWidth: number;
@@ -32,7 +32,7 @@ export interface LpcDetectedFormat {
   suggestedPresets: string[];
 }
 
-export interface LpcSliceRegion {
+export interface SpriteSliceRegion {
   id: string;
   name: string;
   type: string;
@@ -48,14 +48,14 @@ export interface LpcSliceRegion {
   animationFrames: number;
 }
 
-export interface LpcCreditEntry {
+export interface SpriteCreditEntry {
   fileName?: string;
   authors: string[];
   licenses: string[];
   urls: string[];
 }
 
-export interface UnpackedLpcLayer {
+export interface UnpackedModularLayer {
   file: File;
   name: string;
   componentCategory: CharacterComponentCategory | "other";
@@ -65,27 +65,27 @@ export interface UnpackedLpcLayer {
   previewUrl: string;
 }
 
-export interface UnpackedLpcPackage {
+export interface UnpackedModularPackage {
   compositeFile?: File;
   compositePreviewUrl?: string;
-  layers: UnpackedLpcLayer[];
-  credits: LpcCreditEntry[];
+  layers: UnpackedModularLayer[];
+  credits: SpriteCreditEntry[];
   metadata?: Record<string, any>;
   presetName?: string;
   baseBodyType?: string;
 }
 
 /**
- * Universal LPC Standard Row Offsets (0-indexed) on a 64x64 cell grid.
- * Each 4-direction action uses standard LPC row ordering:
+ * Universal Modular Standard Row Offsets (0-indexed) on a 64x64 cell grid.
+ * Each 4-direction action uses standard Modular row ordering:
  * Row + 0: North (Up)
  * Row + 1: West (Left)
  * Row + 2: South (Down)
  * Row + 3: East (Right)
  */
-export const LPC_ACTION_ROW_OFFSETS: Record<
+export const ACTION_ROW_OFFSETS: Record<
   string,
-  { startRow: number; frameCount: number; action: LpcSliceRegion["animationState"] }
+  { startRow: number; frameCount: number; action: SpriteSliceRegion["animationState"] }
 > = {
   spellcast: { startRow: 0, frameCount: 7, action: "spellcast" },
   thrust: { startRow: 4, frameCount: 8, action: "thrust" },
@@ -95,8 +95,8 @@ export const LPC_ACTION_ROW_OFFSETS: Record<
   hurt: { startRow: 20, frameCount: 6, action: "hurt" }, // South only (1 row)
 };
 
-/** Direction mapping for standard 4-row LPC action blocks */
-export const LPC_DIRECTION_ROW_MAP: { offset: number; facing: "N" | "W" | "S" | "E"; label: string }[] = [
+/** Direction mapping for standard 4-row Modular action blocks */
+export const DIRECTION_ROW_MAP: { offset: number; facing: "N" | "W" | "S" | "E"; label: string }[] = [
   { offset: 0, facing: "N", label: "north" },
   { offset: 1, facing: "W", label: "west" },
   { offset: 2, facing: "S", label: "south" },
@@ -104,12 +104,12 @@ export const LPC_DIRECTION_ROW_MAP: { offset: number; facing: "N" | "W" | "S" | 
 ];
 
 /**
- * Detects if given dimensions match standard LPC spritesheet layouts.
+ * Detects if given dimensions match standard Modular spritesheet layouts.
  */
-export function detectLpcFormat(width: number, height: number): LpcDetectedFormat {
+export function detectSpriteFormat(width: number, height: number): DetectedSpriteFormat {
   if (width <= 0 || height <= 0) {
     return {
-      isLpc: false,
+      isRecognized: false,
       variant: "custom-grid",
       label: "Unknown Dimensions",
       description: "Invalid image dimensions",
@@ -122,75 +122,75 @@ export function detectLpcFormat(width: number, height: number): LpcDetectedForma
     };
   }
 
-  // High-Resolution LPC Full Character Spritesheet (1664x... = 13 cols @ 128x128)
+  // High-Resolution Modular Full Character Spritesheet (1664x... = 13 cols @ 128x128)
   if (width === 1664 && height >= 512) {
     return {
-      isLpc: true,
-      variant: "universal-full",
-      label: "Universal LPC Character Sheet (High-Res 128x128)",
-      description: "High-resolution LPC spritesheet with 128x128 cells covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
+      isRecognized: true,
+      variant: "multi_frame_directional",
+      label: "Universal Modular Character Sheet (High-Res 128x128)",
+      description: "High-resolution Modular spritesheet with 128x128 cells covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
       frameWidth: 128,
       frameHeight: 128,
       cols: 13,
       rows: Math.floor(height / 128),
       totalFrames: 13 * Math.floor(height / 128),
-      suggestedPresets: ["lpc-full", "lpc-walk", "saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["multi_frame_directional", "directional_walk", "directional_3x4", "directional_idles"],
     };
   }
 
-  // High-Resolution LPC Walk Cycle (1152x512 = 9 cols x 4 rows at 128x128)
+  // High-Resolution Modular Walk Cycle (1152x512 = 9 cols x 4 rows at 128x128)
   if (width === 1152 && (height === 512 || height % 128 === 0)) {
     return {
-      isLpc: true,
-      variant: "lpc-walk",
-      label: "LPC 4-Direction Walk Cycle (High-Res 128x128)",
+      isRecognized: true,
+      variant: "directional_walk",
+      label: "Modular 4-Direction Walk Cycle (High-Res 128x128)",
       description: "High-resolution 4-direction 9-frame walk cycle sheet (North, West, South, East) at 128x128.",
       frameWidth: 128,
       frameHeight: 128,
       cols: 9,
       rows: Math.floor(height / 128),
       totalFrames: 9 * Math.floor(height / 128),
-      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["directional_walk", "directional_3x4", "directional_idles"],
     };
   }
 
-  // Universal LPC Full Character Spritesheet (832x1344 = 13 cols x 21 rows at 64x64, or 832x1408, or 832x2048, or 832x3456)
+  // Universal Modular Full Character Spritesheet (832x1344 = 13 cols x 21 rows at 64x64, or 832x1408, or 832x2048, or 832x3456)
   if (width === 832 && height >= 256) {
     return {
-      isLpc: true,
-      variant: "universal-full",
-      label: "Universal LPC Character Sheet (Full)",
-      description: "Full LPC spritesheet with 64x64 cells covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
+      isRecognized: true,
+      variant: "multi_frame_directional",
+      label: "Universal Modular Character Sheet (Full)",
+      description: "Full Modular spritesheet with 64x64 cells covering Walk, Slash, Thrust, Spellcast, Shoot, and Hurt.",
       frameWidth: 64,
       frameHeight: 64,
       cols: 13,
       rows: Math.floor(height / 64),
       totalFrames: 13 * Math.floor(height / 64),
-      suggestedPresets: ["lpc-full", "lpc-walk", "saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["multi_frame_directional", "directional_walk", "directional_3x4", "directional_idles"],
     };
   }
 
-  // Universal LPC 4-Direction Walk Cycle (576x256 = 9 cols x 4 rows at 64x64)
+  // Universal Modular 4-Direction Walk Cycle (576x256 = 9 cols x 4 rows at 64x64)
   if (width === 576 && (height === 256 || height % 64 === 0)) {
     return {
-      isLpc: true,
-      variant: "lpc-walk",
-      label: "LPC 4-Direction Walk Cycle (64x64)",
+      isRecognized: true,
+      variant: "directional_walk",
+      label: "Modular 4-Direction Walk Cycle (64x64)",
       description: "Standard 4-direction 9-frame walk cycle sheet (North, West, South, East) at 64x64.",
       frameWidth: 64,
       frameHeight: 64,
       cols: 9,
       rows: Math.floor(height / 64),
       totalFrames: 9 * Math.floor(height / 64),
-      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["directional_walk", "directional_3x4", "directional_idles"],
     };
   }
 
   // Saints / Tuxemon 2.5D Standard 3x4 Walk Grid (96x128 = 3 cols x 4 rows at 32x32)
   if (width === 96 && height === 128) {
     return {
-      isLpc: true,
-      variant: "saints-2.5d",
+      isRecognized: true,
+      variant: "directional_3x4",
       label: "Saints 2.5D MMO Walk Grid (3x4)",
       description: "Standard 3-frame 4-direction walk cycle (South, West, East, North) for the 2.5D game engine.",
       frameWidth: 32,
@@ -198,44 +198,44 @@ export function detectLpcFormat(width: number, height: number): LpcDetectedForma
       cols: 3,
       rows: 4,
       totalFrames: 12,
-      suggestedPresets: ["saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["directional_3x4", "directional_idles"],
     };
   }
 
   // 64x64 grid-aligned spritesheet
   if (width % 64 === 0 && height % 64 === 0 && width >= 128 && height >= 128) {
     return {
-      isLpc: true,
+      isRecognized: true,
       variant: "custom-grid",
-      label: `LPC-Compatible Grid (${width}x${height}) [64px]`,
+      label: `Modular-Compatible Grid (${width}x${height}) [64px]`,
       description: `64x64 pixel-aligned spritesheet with ${width / 64} cols x ${height / 64} rows.`,
       frameWidth: 64,
       frameHeight: 64,
       cols: width / 64,
       rows: height / 64,
       totalFrames: (width / 64) * (height / 64),
-      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["directional_walk", "directional_3x4", "directional_idles"],
     };
   }
 
   // 128x128 grid-aligned spritesheet (large custom sheets >= 512px)
   if (width % 128 === 0 && height % 128 === 0 && width >= 512 && height >= 512) {
     return {
-      isLpc: true,
+      isRecognized: true,
       variant: "custom-grid",
-      label: `LPC-Compatible Grid (${width}x${height}) [128px]`,
+      label: `Modular-Compatible Grid (${width}x${height}) [128px]`,
       description: `128x128 pixel-aligned spritesheet with ${width / 128} cols x ${height / 128} rows.`,
       frameWidth: 128,
       frameHeight: 128,
       cols: width / 128,
       rows: height / 128,
       totalFrames: (width / 128) * (height / 128),
-      suggestedPresets: ["lpc-walk", "saints-2.5d", "lpc-idles"],
+      suggestedPresets: ["directional_walk", "directional_3x4", "directional_idles"],
     };
   }
 
   return {
-    isLpc: false,
+    isRecognized: false,
     variant: "custom-grid",
     label: `Custom Spritesheet (${width}x${height})`,
     description: "Custom dimensions spritesheet.",
@@ -244,23 +244,23 @@ export function detectLpcFormat(width: number, height: number): LpcDetectedForma
     cols: Math.max(1, Math.floor(width / 32)),
     rows: Math.max(1, Math.floor(height / 32)),
     totalFrames: Math.max(1, Math.floor(width / 32) * Math.floor(height / 32)),
-    suggestedPresets: ["saints-2.5d"],
+    suggestedPresets: ["directional_3x4"],
   };
 }
 
 /**
- * Generates predefined slice regions for various LPC preset workflows.
+ * Generates predefined slice regions for various Modular preset workflows.
  */
-export function getLpcStandardSlices(
-  preset: "lpc-full" | "lpc-walk" | "saints-2.5d" | "lpc-idles",
+export function getStandardSlices(
+  preset: "multi_frame_directional" | "directional_walk" | "directional_3x4" | "directional_idles",
   options: {
     sheetWidth?: number;
     sheetHeight?: number;
     prefix?: string;
     cellSize?: number;
   } = {}
-): LpcSliceRegion[] {
-  const regions: LpcSliceRegion[] = [];
+): SpriteSliceRegion[] {
+  const regions: SpriteSliceRegion[] = [];
   const prefix = options.prefix ? `${options.prefix}_` : "";
 
   // Derive cell dimensions dynamically from options or sheet width
@@ -283,10 +283,10 @@ export function getLpcStandardSlices(
     }
   }
 
-  if (preset === "lpc-full") {
+  if (preset === "multi_frame_directional") {
     // 1. Walk Cycles (Rows 8..11)
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
-      const row = LPC_ACTION_ROW_OFFSETS.walk.startRow + dir.offset;
+    for (const dir of DIRECTION_ROW_MAP) {
+      const row = ACTION_ROW_OFFSETS.walk.startRow + dir.offset;
       regions.push({
         id: `slice_walk_${dir.facing.toLowerCase()}`,
         name: `${prefix}walk_${dir.label}`,
@@ -305,8 +305,8 @@ export function getLpcStandardSlices(
     }
 
     // 2. Slash Actions (Rows 12..15)
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
-      const row = LPC_ACTION_ROW_OFFSETS.slash.startRow + dir.offset;
+    for (const dir of DIRECTION_ROW_MAP) {
+      const row = ACTION_ROW_OFFSETS.slash.startRow + dir.offset;
       regions.push({
         id: `slice_slash_${dir.facing.toLowerCase()}`,
         name: `${prefix}slash_${dir.label}`,
@@ -325,8 +325,8 @@ export function getLpcStandardSlices(
     }
 
     // 3. Thrust Actions (Rows 4..7)
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
-      const row = LPC_ACTION_ROW_OFFSETS.thrust.startRow + dir.offset;
+    for (const dir of DIRECTION_ROW_MAP) {
+      const row = ACTION_ROW_OFFSETS.thrust.startRow + dir.offset;
       regions.push({
         id: `slice_thrust_${dir.facing.toLowerCase()}`,
         name: `${prefix}thrust_${dir.label}`,
@@ -345,8 +345,8 @@ export function getLpcStandardSlices(
     }
 
     // 4. Spellcast Actions (Rows 0..3)
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
-      const row = LPC_ACTION_ROW_OFFSETS.spellcast.startRow + dir.offset;
+    for (const dir of DIRECTION_ROW_MAP) {
+      const row = ACTION_ROW_OFFSETS.spellcast.startRow + dir.offset;
       regions.push({
         id: `slice_spellcast_${dir.facing.toLowerCase()}`,
         name: `${prefix}spellcast_${dir.label}`,
@@ -365,8 +365,8 @@ export function getLpcStandardSlices(
     }
 
     // 5. Shoot Actions (Rows 16..19)
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
-      const row = LPC_ACTION_ROW_OFFSETS.shoot.startRow + dir.offset;
+    for (const dir of DIRECTION_ROW_MAP) {
+      const row = ACTION_ROW_OFFSETS.shoot.startRow + dir.offset;
       regions.push({
         id: `slice_shoot_${dir.facing.toLowerCase()}`,
         name: `${prefix}shoot_${dir.label}`,
@@ -393,7 +393,7 @@ export function getLpcStandardSlices(
       importProfile: "character",
       slotRole: "attack",
       x: 0,
-      y: LPC_ACTION_ROW_OFFSETS.hurt.startRow * cellH,
+      y: ACTION_ROW_OFFSETS.hurt.startRow * cellH,
       w: 6 * cellW,
       h: cellH,
       facing: "S",
@@ -402,8 +402,8 @@ export function getLpcStandardSlices(
     });
 
     // 7. Standing Idles (Frame 0 of each Walk row)
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
-      const row = LPC_ACTION_ROW_OFFSETS.walk.startRow + dir.offset;
+    for (const dir of DIRECTION_ROW_MAP) {
+      const row = ACTION_ROW_OFFSETS.walk.startRow + dir.offset;
       regions.push({
         id: `slice_idle_${dir.facing.toLowerCase()}`,
         name: `${prefix}idle_${dir.label}`,
@@ -420,14 +420,14 @@ export function getLpcStandardSlices(
         animationFrames: 1,
       });
     }
-  } else if (preset === "lpc-walk") {
+  } else if (preset === "directional_walk") {
     // 4-Direction Walk Cycle (starts at row 0 for walk-only sheets, or row 8 for full sheets)
     const isFullSheet =
       (options.sheetHeight || 0) >= cellH * 21 ||
       (options.sheetWidth || 0) >= cellW * 13;
-    const startRowOffset = isFullSheet ? LPC_ACTION_ROW_OFFSETS.walk.startRow : 0;
+    const startRowOffset = isFullSheet ? ACTION_ROW_OFFSETS.walk.startRow : 0;
 
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
+    for (const dir of DIRECTION_ROW_MAP) {
       const row = startRowOffset + dir.offset;
       regions.push({
         id: `slice_walk_${dir.facing.toLowerCase()}`,
@@ -445,7 +445,7 @@ export function getLpcStandardSlices(
         animationFrames: 9,
       });
     }
-  } else if (preset === "saints-2.5d") {
+  } else if (preset === "directional_3x4") {
     // 3x4 Grid for 2.5D Engine (South, West, East, North)
     // If standard 96x128 sheet: 32x32 frames
     const is32Grid = (options.sheetWidth || 0) === 96 || (options.sheetHeight || 0) === 128;
@@ -474,14 +474,14 @@ export function getLpcStandardSlices(
         animationFrames: 3,
       });
     }
-  } else if (preset === "lpc-idles") {
+  } else if (preset === "directional_idles") {
     // 4-Direction Idles
     const isFullSheet =
       (options.sheetHeight || 0) >= cellH * 21 ||
       (options.sheetWidth || 0) >= cellW * 13;
-    const startRowOffset = isFullSheet ? LPC_ACTION_ROW_OFFSETS.walk.startRow : 0;
+    const startRowOffset = isFullSheet ? ACTION_ROW_OFFSETS.walk.startRow : 0;
 
-    for (const dir of LPC_DIRECTION_ROW_MAP) {
+    for (const dir of DIRECTION_ROW_MAP) {
       const row = startRowOffset + dir.offset;
       regions.push({
         id: `slice_idle_${dir.facing.toLowerCase()}`,
@@ -505,13 +505,13 @@ export function getLpcStandardSlices(
 }
 
 /**
- * Parses raw text from an LPC generator credits.txt file into structured credit entries.
+ * Parses raw text from an Modular generator credits.txt file into structured credit entries.
  */
-export function parseLpcCreditsText(rawText: string): LpcCreditEntry[] {
+export function parseCreditsText(rawText: string): SpriteCreditEntry[] {
   if (!rawText || !rawText.trim()) return [];
 
   const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const credits: LpcCreditEntry[] = [];
+  const credits: SpriteCreditEntry[] = [];
 
   for (const line of lines) {
     if (line.startsWith("#") || line.startsWith("//") || line.startsWith("---")) continue;
@@ -554,7 +554,7 @@ export function parseLpcCreditsText(rawText: string): LpcCreditEntry[] {
 }
 
 /**
- * Infers a Saints Gaming CharacterComponentCategory from a file/folder path in an LPC export.
+ * Infers a Saints Gaming CharacterComponentCategory from a file/folder path in an Modular export.
  */
 export function inferComponentCategoryFromPath(filePath: string): {
   category: CharacterComponentCategory | "other";
@@ -592,18 +592,18 @@ export function inferComponentCategoryFromPath(filePath: string): {
 }
 
 /**
- * In-browser LPC ZIP Package Unpacker.
- * Takes a .zip file exported by the Universal LPC Character Generator, extracts
+ * In-browser Modular ZIP Package Unpacker.
+ * Takes a .zip file exported by the Universal Modular Character Generator, extracts
  * the composite spritesheet image, all layer components, and metadata/credits.
  */
-export async function unpackLpcZipPackage(zipFile: File): Promise<UnpackedLpcPackage> {
+export async function unpackModularZipPackage(zipFile: File): Promise<UnpackedModularPackage> {
   const zip = await JSZip.loadAsync(zipFile);
   const entries = Object.keys(zip.files);
 
   let compositeFile: File | undefined;
   let compositePreviewUrl: string | undefined;
-  const layers: UnpackedLpcLayer[] = [];
-  let credits: LpcCreditEntry[] = [];
+  const layers: UnpackedModularLayer[] = [];
+  let credits: SpriteCreditEntry[] = [];
   let metadata: Record<string, any> | undefined;
   let presetName: string | undefined;
   let baseBodyType: string | undefined;
@@ -616,7 +616,7 @@ export async function unpackLpcZipPackage(zipFile: File): Promise<UnpackedLpcPac
 
     if (lower.endsWith("credits.txt") || lower.endsWith("attribution.txt") || lower.endsWith("credits.md")) {
       const text = await fileEntry.async("text");
-      credits = parseLpcCreditsText(text);
+      credits = parseCreditsText(text);
     } else if (lower.endsWith("metadata.json") || lower.endsWith("config.json") || lower.endsWith("character.json")) {
       try {
         const text = await fileEntry.async("text");

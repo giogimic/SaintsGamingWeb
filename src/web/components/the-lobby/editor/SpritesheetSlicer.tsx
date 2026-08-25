@@ -31,10 +31,10 @@ import {
   listSlotRolesForProfile,
 } from '@/shared/game/assetImportProfiles';
 import {
-  detectLpcFormat,
-  getLpcStandardSlices,
-  LpcDetectedFormat,
-} from '@/shared/game/lpcPackage';
+  detectSpriteFormat,
+  getStandardSlices,
+  DetectedSpriteFormat,
+} from '@/shared/game/modularSpritePackage';
 
 export interface SlicedRegion {
   id: string;
@@ -78,7 +78,7 @@ export function SpritesheetSlicer({
   const [imageUrl, setImageUrl] = useState<string>(sourceAsset?.storagePath || '');
   const [sourceId, setSourceId] = useState<string>(sourceAsset?.id || '');
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
-  const [detectedFormat, setDetectedFormat] = useState<LpcDetectedFormat | null>(null);
+  const [detectedFormat, setDetectedFormat] = useState<DetectedSpriteFormat | null>(null);
 
   // Slicing Mode
   const [sliceMode, setSliceMode] = useState<'grid' | 'box'>('grid');
@@ -157,9 +157,9 @@ export function SpritesheetSlicer({
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       setImageElement(img);
-      const detected = detectLpcFormat(img.naturalWidth, img.naturalHeight);
+      const detected = detectSpriteFormat(img.naturalWidth, img.naturalHeight);
       setDetectedFormat(detected);
-      if (detected.isLpc && detected.frameWidth) {
+      if (detected.isRecognized && detected.frameWidth) {
         setGridSize(detected.frameWidth);
       }
     };
@@ -350,14 +350,14 @@ export function SpritesheetSlicer({
   };
 
   /** Applies smart LPC presets (Full Character, Walk Cycle, Saints 2.5D, Idles) */
-  const applyLpcPresetSlices = (preset: 'lpc-full' | 'lpc-walk' | 'saints-2.5d' | 'lpc-idles') => {
+  const applyPresetSlices = (preset: 'multi_frame_directional' | 'directional_walk' | 'directional_3x4' | 'directional_idles') => {
     if (!imageElement) {
       showToast('Load an image first before applying slicing presets.');
       return;
     }
 
     soundSynth?.playSelectSound?.();
-    const slices = getLpcStandardSlices(preset, {
+    const slices = getStandardSlices(preset, {
       sheetWidth: imageElement.naturalWidth,
       sheetHeight: imageElement.naturalHeight,
       prefix: sourceAsset?.filename ? sourceAsset.filename.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ') : '',
@@ -370,7 +370,7 @@ export function SpritesheetSlicer({
       category: s.category,
       importProfile: 'character',
       slotRole: s.slotRole,
-      animationProfile: preset === 'saints-2.5d' ? 'tuxemon-3x4' : preset === 'lpc-walk' ? 'lpc-walk' : 'lpc-full',
+      animationProfile: preset === 'directional_3x4' ? 'directional_3x4' : preset === 'directional_walk' ? 'directional_walk' : 'multi_frame_directional',
       x: s.x,
       y: s.y,
       w: s.w,
@@ -382,10 +382,10 @@ export function SpritesheetSlicer({
 
     setRegions(mapped);
     const labels = {
-      'lpc-full': 'Full LPC Animation Suite',
-      'lpc-walk': 'LPC 4-Direction Walk Cycle',
-      'saints-2.5d': 'Saints 2.5D MMO 3x4 Grid',
-      'lpc-idles': '4-Direction Standing Idles',
+      'multi_frame_directional': 'Full Modular Animation Suite',
+      'directional_walk': '4-Direction Walk Cycle',
+      'directional_3x4': 'Saints 2.5D MMO 3x4 Grid',
+      'directional_idles': '4-Direction Standing Idles',
     };
     showToast(`Applied ${labels[preset]}: ${mapped.length} slice regions generated!`);
   };
@@ -453,7 +453,7 @@ export function SpritesheetSlicer({
       {/* HEADER */}
       <div className="bg-[#0b1320]/80 border border-[#cbb26a]/30 rounded p-3 space-y-1">
         <div className="flex items-center gap-1.5 text-[#e2d5b3] font-bold text-sm">
-          <Scissors className="w-4 h-4 text-amber-400" /> Visual Spritesheet Slicer & LPC Animation Extractor
+          <Scissors className="w-4 h-4 text-amber-400" /> Visual Spritesheet Slicer & Sprite Animation Extractor
         </div>
         <p className="text-[11px] text-slate-400">
           Slice multi-frame spritesheets into categorized Usable Assets with directional metadata, LPC animation
@@ -465,8 +465,8 @@ export function SpritesheetSlicer({
       <div className="bg-[#07111c] border border-cyan-500/30 rounded p-2.5 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Wand2 className="w-4 h-4 text-cyan-400" />
-          <span className="text-cyan-300 font-bold text-xs">LPC Auto-Slice Presets:</span>
-          {detectedFormat?.isLpc && (
+          <span className="text-cyan-300 font-bold text-xs">Auto-Slice Presets:</span>
+          {detectedFormat?.isRecognized && (
             <span className="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/40">
               {detectedFormat.label}
             </span>
@@ -476,28 +476,28 @@ export function SpritesheetSlicer({
         <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
-            onClick={() => applyLpcPresetSlices('lpc-full')}
+            onClick={() => applyPresetSlices('multi_frame_directional')}
             className="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-600 text-white rounded font-bold text-[10px] transition-all flex items-center gap-1 cursor-pointer"
           >
             <Sparkles className="w-3 h-3" /> Auto-Slice Full Sheet
           </button>
           <button
             type="button"
-            onClick={() => applyLpcPresetSlices('lpc-walk')}
+            onClick={() => applyPresetSlices('directional_walk')}
             className="px-2.5 py-1 bg-cyan-900/90 hover:bg-cyan-800 text-cyan-200 rounded font-bold text-[10px] transition-all cursor-pointer"
           >
             Extract Walk Cycle (4-Dir)
           </button>
           <button
             type="button"
-            onClick={() => applyLpcPresetSlices('saints-2.5d')}
+            onClick={() => applyPresetSlices('directional_3x4')}
             className="px-2.5 py-1 bg-amber-700 hover:bg-amber-600 text-white rounded font-bold text-[10px] transition-all cursor-pointer"
           >
             Extract Saints 2.5D (3x4)
           </button>
           <button
             type="button"
-            onClick={() => applyLpcPresetSlices('lpc-idles')}
+            onClick={() => applyPresetSlices('directional_idles')}
             className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold text-[10px] transition-all cursor-pointer"
           >
             Extract Idles (4-Dir)

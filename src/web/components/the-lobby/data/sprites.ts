@@ -1,5 +1,5 @@
-/** Official Full LPC Character Sprite Models (9-frame walk cycle, 832x1344 standard) */
-export const LPC_HERO_SPRITES = [
+/** Official Full Modular Character Sprite Models (9-frame walk cycle, 832x1344 standard) */
+export const MODULAR_HERO_SPRITES = [
   "good-paladin-templar-female",
   "good-ranger-grovekeeper-female",
   "good-cleric-highpriestess-female",
@@ -305,12 +305,12 @@ export const CANONICAL_HERO_SPRITES = [
 ];
 
 /** @deprecated Use CANONICAL_HERO_SPRITES */
-export const TUXEMON_HERO_SPRITES = CANONICAL_HERO_SPRITES;
+export const LEGACY_HERO_SPRITES = CANONICAL_HERO_SPRITES;
 
-/** Filtered list containing ONLY humanoid / character / LPC player models for Character Creation */
+/** Filtered list containing ONLY humanoid / character / Modular player models for Character Creation */
 export const CHARACTER_SPRITES = Array.from(
   new Set([
-    ...LPC_HERO_SPRITES,
+    ...MODULAR_HERO_SPRITES,
     ...CANONICAL_HERO_SPRITES,
   ])
 );

@@ -768,7 +768,7 @@ export function StarterHeroEditorPanel() {
                   style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}
                 >
                   <span className="text-[9px] font-black text-violet-500/60 uppercase tracking-[0.2em]">
-                    Sprite Selection ({GAME_SPRITES.length} Presets + LPC Catalog)
+                    Sprite Selection ({GAME_SPRITES.length} Presets + Modular Catalog)
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -777,7 +777,7 @@ export function StarterHeroEditorPanel() {
                       className="flex items-center gap-1 text-[9px] font-bold text-cyan-400 hover:text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded transition-all cursor-pointer shadow"
                     >
                       <ImageIcon size={10} />
-                      Pick from LPC / Catalog
+                      Pick from Modular / Catalog
                     </button>
                     <button
                       type="button"
@@ -812,10 +812,10 @@ export function StarterHeroEditorPanel() {
                       value={form.spriteKey}
                       onChange={e => f('spriteKey', e.target.value)}
                       className={inputCls}
-                      placeholder="e.g. warrior, catgirl, /uploads/lpc-hero.png"
+                      placeholder="e.g. warrior, catgirl, /uploads/modular-hero.png"
                     />
                     <p className="text-[8px] text-slate-500 mt-0.5">
-                      Enter classic NPC key, upload URL, or click "Pick from LPC / Catalog"
+                      Enter classic NPC key, upload URL, or click "Pick from Modular / Catalog"
                     </p>
                   </div>
                 </div>
@@ -1121,7 +1121,7 @@ export function StarterHeroEditorPanel() {
         </div>
       )}
 
-      {/* Catalog LPC Sprite Picker Modal */}
+      {/* Catalog Modular Sprite Picker Modal */}
       {showCatalogBrowser && (
         <div
           className="pointer-events-auto absolute inset-0 z-40 p-4 flex items-center justify-center animate-in fade-in duration-200"
@@ -1132,7 +1132,7 @@ export function StarterHeroEditorPanel() {
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-cyan-400" />
                 <h3 className="font-black text-cyan-200 text-sm">
-                  Select Character / LPC Sprite from Catalog
+                  Select Character / Modular Sprite from Catalog
                 </h3>
               </div>
               <button
