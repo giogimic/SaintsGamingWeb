@@ -1,3 +1,25 @@
+## [2.1.459-33] - 2026-08-25
+### Dev Seed Dummy Content Hardening & Author Resolution
+- **Dev Seed Route Hardening (`/api/dev/seed-dummy`)**:
+  - Re-engineered author user resolution in `app/api/dev/seed-dummy/route.ts` to cleanly prioritize the active session user, fallback to staff users, or general users with explicit error messaging.
+  - Eliminated undefined relational payload (`promoLinks: undefined`) that caused Prisma Client validation exceptions.
+  - Added robust category and subcategory upsert handling to prevent relational collisions.
+  - Updated permission checks to accept standard admin permissions alongside developer permissions.
+- **Hero Studio Class Presets Typing**:
+  - Corrected stat archetype delta preset typing in `ClassEditorWorkspace.tsx`.
+
+## [2.1.459-32] - 2026-08-25
+### Hero Studio Mode Navigation, Top Bar Tabs & Feature Wiring
+- **Studio Navigation & Mode Switching**:
+  - Added primary **Hero** mode switcher button (`UserCircle` icon with active purple/pink gradient styling) alongside `Edit`, `Atlas`, and `Assets` in `StudioMenuBar.tsx`.
+  - Added **Hero Studio (Full Workspace)** shortcut entry (`Ctrl+Shift+H`) to the `View` and `Mode` top-level menus.
+  - Added `Ctrl+Shift+H` global hotkey to `StudioEditorShell.tsx` and registered `action:hero` in `StudioOmnisearch.tsx`.
+  - Synced active mode highlighting in bottom toolbar launcher buttons (`StudioBottomToolbar.tsx`) when entering Hero Studio.
+- **Hero Studio Suite & Workspace Upgrades**:
+  - Re-architected `HeroStudioSuite.tsx` with a persistent top navigation bar, active profile indicator, fast tab switcher (`Archetypes` / `Classes`), and a quick "Back to Map Editor" exit button.
+  - Added **Archetype Cloning / Duplication** (`handleDuplicate`) and Spec Copying in `ArchetypeEditorWorkspace.tsx`.
+  - Added **Class Cloning** and **Quick Stat Archetype Presets** (`🛡️ Tank`, `⚔️ DPS`, `🔮 Mage`, `🏹 Scout`, `⚖️ Balanced`) in `ClassEditorWorkspace.tsx`.
+
 ## [2.1.459-31] - 2026-08-25
 ### Documentation, Wiki Synchronisation & Master Plan Completion
 - **Documentation & Wiki Architecture**:

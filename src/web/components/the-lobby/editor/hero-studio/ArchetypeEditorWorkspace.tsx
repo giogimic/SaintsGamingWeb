@@ -207,6 +207,20 @@ export function ArchetypeEditorWorkspace() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDuplicate = () => {
+    if (!form.slug) return;
+    const newSlug = `${form.slug}_copy_${Math.floor(Math.random() * 900 + 100)}`;
+    setSelected(null);
+    setForm({
+      ...form,
+      slug: newSlug,
+      name: `${form.name} (Copy)`,
+      sortOrder: heroes.length + 1,
+    });
+    setIsNew(true);
+    showStatus('success', 'Cloned archetype into new draft. Make your changes and Save.');
+  };
+
   const f = (key: keyof StarterHeroData, value: any) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
@@ -281,19 +295,30 @@ export function ArchetypeEditorWorkspace() {
                 {isNew ? 'New Archetype Template' : `Editing: ${selected?.name}`}
               </span>
               <div className="flex items-center gap-1.5">
+                {selected && !isNew && (
+                  <button
+                    type="button"
+                    onClick={handleDuplicate}
+                    className="rounded px-2 py-1 text-[10px] font-bold text-purple-300 hover:bg-purple-950/50 border border-purple-500/30 flex items-center gap-1 transition-all cursor-pointer"
+                    title="Duplicate archetype as new draft"
+                  >
+                    <Copy size={11} />
+                    <span>Clone</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={handleCopyFormJson}
-                  className="rounded px-2 py-1 text-[10px] font-bold text-slate-300 hover:bg-white/5 flex items-center gap-1"
+                  className="rounded px-2 py-1 text-[10px] font-bold text-slate-300 hover:bg-white/5 flex items-center gap-1 cursor-pointer"
                 >
-                  {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                  {copied ? <Check size={11} className="text-emerald-400" /> : <FileJson size={11} />}
                   {copied ? 'Copied!' : 'Copy Spec'}
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={loading || !isSpriteValid || !isSlugValid || !isJsonValid}
-                  className="rounded bg-pink-600/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-pink-100 hover:bg-pink-600/70 disabled:opacity-40 flex items-center gap-1"
+                  className="rounded bg-pink-600/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-pink-100 hover:bg-pink-600/70 disabled:opacity-40 flex items-center gap-1 cursor-pointer shadow-sm"
                 >
                   <Save size={11} />
                   {loading ? 'Saving…' : 'Save Archetype'}

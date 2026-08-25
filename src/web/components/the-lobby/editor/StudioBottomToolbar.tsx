@@ -38,6 +38,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
   const { data: session } = useSession();
   const permissionLevel = session?.user?.permissionLevel ?? 0;
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
+  const studioMode = useEditorStore((s) => s.studioMode);
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const setActiveGameId = useEditorStore((s) => s.setActiveGameId);
   const mapDirty = useEditorStore((s) => s.mapDirty);
@@ -473,6 +474,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           id="characters"
           icon={<Sword className="w-3.5 h-3.5" />}
           label="Heroes"
+          active={studioMode === 'hero'}
           onClick={() => {
             if (onOpenHeroStudio) onOpenHeroStudio();
           }}
@@ -486,6 +488,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
           id="classes"
           icon={<UserCheck className="w-3.5 h-3.5" />}
           label="Classes"
+          active={studioMode === 'hero'}
           onClick={() => {
             if (onOpenHeroStudio) onOpenHeroStudio();
           }}

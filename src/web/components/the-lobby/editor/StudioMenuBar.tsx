@@ -6,7 +6,7 @@ import { useGameStore } from '../store';
 import {
   FileText, Edit, Eye, Folder, Box, Globe, PlayCircle, Users, HelpCircle,
   Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle,
-  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell, Activity
+  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell, Activity, UserCircle
 } from 'lucide-react';
 import { RealmSettingsModal } from './RealmSettingsModal';
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
@@ -337,6 +337,14 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
                 useEditorStore.getState().setStudioMode('assets');
               }}
             />
+            <MenuItem
+              label="Hero Studio (Full Workspace)"
+              shortcut="Ctrl+Shift+H"
+              icon={UserCircle}
+              onClick={() => {
+                useEditorStore.getState().setStudioMode('hero');
+              }}
+            />
             <MenuItem divider />
             <MenuItem label="World Atlas (Dock)" shortcut="Ctrl+Shift+P" icon={Globe} onClick={() => useEditorStore.getState().openPanel('atlas')} />
             <MenuItem label="Inspector" onClick={() => useEditorStore.getState().openPanel('properties')} />
@@ -358,7 +366,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               return (
                 <MenuItem 
                   key={key} 
-                  label={meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1)} 
+                  label={meta.label || (meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1))} 
                   icon={studioMode === key ? CheckCircle2 : undefined}
                   onClick={() => handleSwitchMode(key as StudioMode)}
                 />
@@ -389,10 +397,10 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           onClick={() => {
             soundSynth?.playActionSound?.();
             if (!isCreationMode) toggleCreationMode();
-            if (studioMode === 'assets' || studioMode === 'atlas') setStudioMode('develop');
+            if (studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero') setStudioMode('develop');
           }}
           className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-            isCreationMode && studioMode !== 'assets' && studioMode !== 'atlas'
+            isCreationMode && studioMode !== 'assets' && studioMode !== 'atlas' && studioMode !== 'hero'
               ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
               : 'text-slate-400 hover:text-slate-200'
           }`}
@@ -432,6 +440,22 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         >
           <Layers className="w-3.5 h-3.5" />
           <span>Assets</span>
+        </button>
+        <button
+          onClick={() => {
+            soundSynth?.playActionSound?.();
+            if (!isCreationMode) toggleCreationMode();
+            setStudioMode('hero');
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+            isCreationMode && studioMode === 'hero'
+              ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+          title="Hero Studio — Archetypes, Classes, and Hero Loadouts (Ctrl+Shift+H)"
+        >
+          <UserCircle className="w-3.5 h-3.5" />
+          <span>Hero</span>
         </button>
         <div className="w-px h-4 bg-amber-500/30 mx-1" />
         <button

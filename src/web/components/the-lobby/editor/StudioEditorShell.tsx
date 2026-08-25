@@ -379,6 +379,14 @@ export const StudioEditorShell: React.FC = () => {
         return;
       }
 
+      // Ctrl+Shift+H toggles Hero Studio
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        const curMode = useEditorStore.getState().studioMode;
+        setStudioMode(curMode === 'hero' ? 'develop' : 'hero');
+        return;
+      }
+
       // Ctrl+Shift+O opens Problems & Diagnostics
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'o') {
         e.preventDefault();

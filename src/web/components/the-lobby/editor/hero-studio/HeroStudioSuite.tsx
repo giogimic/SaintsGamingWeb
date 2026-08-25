@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserCircle, Swords, Users } from 'lucide-react';
+import { UserCircle, Swords, Users, ArrowLeft, Sparkles, Shield, Layers } from 'lucide-react';
 import { ArchetypeEditorWorkspace } from './ArchetypeEditorWorkspace';
 import { ClassEditorWorkspace } from './ClassEditorWorkspace';
+import { useEditorStore } from '../editor-store';
+import { soundSynth } from '@/engine/sound-synth';
 
 export type HeroWorkspaceId = 'archetypes' | 'classes';
 
 export function HeroStudioSuite() {
   const [activeWorkspace, setActiveWorkspace] = useState<HeroWorkspaceId>('archetypes');
+  const setStudioMode = useEditorStore((s) => s.setStudioMode);
+  const activeGameId = useEditorStore((s) => s.activeGameId);
 
   const renderContent = () => {
     switch (activeWorkspace) {
@@ -22,79 +26,94 @@ export function HeroStudioSuite() {
   };
 
   return (
-    <div className="flex-1 flex h-full pointer-events-auto select-none overflow-hidden">
-      {/* ─── Left Sidebar: Workspace Navigation ─── */}
-      <div className="w-56 flex-shrink-0 flex flex-col bg-[#030810]/95 border-r border-slate-800/60 overflow-y-auto">
-        {/* Sidebar Header */}
-        <div className="px-4 py-3 border-b border-slate-800/60">
+    <div className="flex-1 flex flex-col h-full pointer-events-auto select-none overflow-hidden bg-[#030810]">
+      {/* ─── Top Studio Banner & Navigation ─── */}
+      <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 bg-[#050b14]/95 border-b border-slate-800/80 z-10">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setStudioMode('develop');
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 text-slate-300 hover:text-white text-[10px] font-bold font-mono transition-all cursor-pointer border border-slate-700/50"
+            title="Back to Map / World Editor"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Map Editor</span>
+          </button>
+
+          <div className="h-4 w-px bg-slate-800" />
+
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-pink-500/20 border border-pink-500/40 text-pink-400">
+            <div className="p-1 rounded-md bg-purple-500/20 border border-purple-500/40 text-purple-400">
               <UserCircle className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-[11px] font-black tracking-wider text-pink-400 uppercase">
+              <span className="text-xs font-black tracking-wider text-purple-300 font-mono uppercase">
                 Hero Studio
-              </h2>
-              <p className="text-[9px] text-slate-500">Manage Classes & Archetypes</p>
+              </span>
+              <span className="text-[9px] text-slate-500 font-mono ml-2 hidden sm:inline">
+                Profile: <span className="text-slate-400">{activeGameId}</span>
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Workspace List */}
-        <div className="flex-1 py-2 px-2 space-y-1">
+        {/* Top Center Workspace Switcher */}
+        <div className="flex items-center bg-black/60 p-0.5 rounded-lg border border-slate-800">
           <button
-            onClick={() => setActiveWorkspace('archetypes')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer group ${
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setActiveWorkspace('archetypes');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-mono font-bold uppercase transition-all cursor-pointer ${
               activeWorkspace === 'archetypes'
-                ? 'text-pink-400 border border-pink-500/40 bg-pink-500/10 shadow-lg'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+                ? 'bg-purple-600/90 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Users className={`w-4 h-4 flex-shrink-0 ${activeWorkspace === 'archetypes' ? '' : 'text-slate-500 group-hover:text-slate-300'}`} />
-            <div className="min-w-0">
-              <div className={`text-[11px] font-bold truncate ${activeWorkspace === 'archetypes' ? '' : 'group-hover:text-slate-200'}`}>
-                Archetypes
-              </div>
-              {activeWorkspace === 'archetypes' && (
-                <div className="text-[9px] text-inherit opacity-70 mt-0.5 line-clamp-2">
-                  Starter templates and loadouts.
-                </div>
-              )}
-            </div>
+            <Users className="w-3 h-3" />
+            <span>Archetypes</span>
           </button>
 
           <button
-            onClick={() => setActiveWorkspace('classes')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all cursor-pointer group ${
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setActiveWorkspace('classes');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-mono font-bold uppercase transition-all cursor-pointer ${
               activeWorkspace === 'classes'
-                ? 'text-cyan-400 border border-cyan-500/40 bg-cyan-500/10 shadow-lg'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+                ? 'bg-cyan-600/90 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Swords className={`w-4 h-4 flex-shrink-0 ${activeWorkspace === 'classes' ? '' : 'text-slate-500 group-hover:text-slate-300'}`} />
-            <div className="min-w-0">
-              <div className={`text-[11px] font-bold truncate ${activeWorkspace === 'classes' ? '' : 'group-hover:text-slate-200'}`}>
-                Classes
-              </div>
-              {activeWorkspace === 'classes' && (
-                <div className="text-[9px] text-inherit opacity-70 mt-0.5 line-clamp-2">
-                  Class definitions and combat stats.
-                </div>
-              )}
-            </div>
+            <Swords className="w-3 h-3" />
+            <span>Classes</span>
           </button>
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="px-3 py-2 border-t border-slate-800/60">
-          <div className="text-[9px] text-slate-600 text-center">
-            Hero Studio Workspace
-          </div>
+        {/* Right Info / Action */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              setStudioMode('assets');
+            }}
+            className="hidden sm:flex items-center gap-1 px-2 py-1 rounded text-[9px] font-mono text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-500/30 transition-all cursor-pointer"
+            title="Switch to Asset Manager to browse sprite packs"
+          >
+            <Layers className="w-3 h-3" />
+            <span>Asset Manager</span>
+          </button>
         </div>
       </div>
 
-      {/* ─── Main Content Area ─── */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#050b14]/90">
+      {/* ─── Main Content Workspace ─── */}
+      <div className="flex-1 flex min-w-0 min-h-0 overflow-hidden">
         <div className="flex-1 overflow-auto">{renderContent()}</div>
       </div>
     </div>
