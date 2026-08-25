@@ -35,18 +35,18 @@ export async function createGameCharacter(data: {
     const character = await prisma.gameCharacter.create({
       data: {
         userId: session.user.id,
-        name: data.name.slice(0, 32).trim(),
-        spriteId: data.spriteId.slice(0, 255),
-        classId: data.classId.slice(0, 50),
+        name: (data.name || 'Saint').slice(0, 32).trim(),
+        spriteId: (data.spriteId || 'human_base').slice(0, 255),
+        classId: (data.classId || 'WARRIOR').slice(0, 50),
         stateData: sanitizedStateStr,
       }
     });
 
     revalidatePath(`/user/[username]`);
     return { success: true, character };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to create character:', error);
-    return { success: false, error: 'Failed to create character' };
+    return { success: false, error: 'Failed to create character: ' + (error?.message || String(error)) };
   }
 }
 

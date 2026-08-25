@@ -141,7 +141,8 @@ type DbHero = {
 
 type CreatorStep = 'HERO_PICK' | 'NAME' | 'APPEARANCE' | 'GIFT' | 'REVIEW';
 
-const isModularSprite = (id: string) => {
+const isModularSprite = (id: string | null | undefined) => {
+  if (!id) return false;
   return id === 'human_base' || 
          id.startsWith('good-') || 
          id.startsWith('evil-') || 
