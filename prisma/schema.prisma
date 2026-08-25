@@ -733,7 +733,7 @@ model GameCharacter {
   name      String
   spriteId  String
   classId   String
-  stateData String @db.Text // JSON string of the Zustand store PlayerState
+  stateData String // JSON string of the Zustand store PlayerState
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
