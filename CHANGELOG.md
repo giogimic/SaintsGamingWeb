@@ -1,3 +1,7 @@
+## [2.1.459-16] - 2026-08-25
+### Hero Studio Button Fix
+- Properly routed "Heroes" and "Classes" dock buttons to the new full-screen `HeroStudioSuite` instead of attempting to spawn them as standard FlexLayout dock nodes.
+
 ## [2.1.459-15] - 2026-08-25
 ### Saints Gaming Hero Studio Unification
 - **Hero Studio Suite**:

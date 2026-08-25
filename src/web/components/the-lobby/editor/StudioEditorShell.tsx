@@ -50,6 +50,7 @@ import { StudioBottomToolbar } from './StudioBottomToolbar';
 import { FullScreenMapBrowser } from './FullScreenMapBrowser';
 import { AssetStudioSuite } from './AssetStudioSuite';
 import { AtlasStudioSuite } from './AtlasStudioSuite';
+import { HeroStudioSuite } from './hero-studio/HeroStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
 import { AtlasDiagnosticOverlay } from './AtlasDiagnosticOverlay';
 
@@ -806,8 +807,8 @@ export const StudioEditorShell: React.FC = () => {
         />
       )}
 
-      {/* FlexLayout Workspace Container — hidden when in Assets or Atlas mode */}
-      <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' ? 'hidden' : ''}`}>
+      {/* FlexLayout Workspace Container — hidden when in Assets, Atlas, or Hero mode */}
+      <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
         <Layout 
           ref={layoutRef} 
           model={model} 
@@ -826,12 +827,18 @@ export const StudioEditorShell: React.FC = () => {
         <AtlasStudioSuite />
       )}
 
+      {/* Hero Studio Mode — full workspace replacement */}
+      {studioMode === 'hero' && (
+        <HeroStudioSuite />
+      )}
+
       {/* Unified Bottom Studio Toolbar */}
       <StudioBottomToolbar
         layoutRef={layoutRef}
         model={model}
         onOpenMapBrowser={() => setStudioMode('atlas')}
         onOpenAssetBrowser={() => setStudioMode('assets')}
+        onOpenHeroStudio={() => setStudioMode('hero')}
       />
 
       {/* Developer Atlas Diagnostic Overlay */}
