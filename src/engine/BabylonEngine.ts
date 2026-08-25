@@ -78,6 +78,7 @@ export interface BabylonTileMapData {
   width: number;
   height: number;
   tileSize: number;
+  baseTileSizePx?: number;
   tiles: number[][]; // 2D array of tile IDs
   tilesetUrl?: string;
   tileLayers?: Array<{ name: string; grid: number[][] }>;
@@ -1057,7 +1058,7 @@ export class BabylonEngine {
           tilesetVertexData.set(chunkKey, vData);
         }
 
-        vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize));
+        vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize, ts.tilewidth, ts.tileheight, mapData.baseTileSizePx));
         vData.uvs.push(...uvPair);
 
         const vi = vData.vertexIndex;
@@ -1217,7 +1218,7 @@ export class BabylonEngine {
               tilesetVertexData.set(chunkKey, vData);
             }
 
-            vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize));
+            vData.positions.push(...groundQuadPositions(posX, posZ, y, tileSize, cellTs.tilewidth, cellTs.tileheight, mapData.baseTileSizePx));
             vData.uvs.push(...uvPair);
 
             const vi = vData.vertexIndex;
@@ -1872,7 +1873,7 @@ export class BabylonEngine {
       tileSize
     );
     const y = layerIdx * 0.02;
-    const positions = groundQuadPositions(posX, posZ, y, tileSize);
+    const positions = groundQuadPositions(posX, posZ, y, tileSize, ts.tilewidth, ts.tileheight, this.currentRawMapData?.baseTileSizePx);
 
     if (existing && existing.imageSource === ts.imageSource) {
       this.writeBatchedQuad(existing, positions, uvs);

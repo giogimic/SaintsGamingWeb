@@ -73,8 +73,16 @@ export const WorldBuilderPanel: React.FC = () => {
       gates: {},
       tileLayers: [],
       tilesets: [],
+      baseTileSizePx: 32,
     }
   );
+
+  const handleUpdateBaseTileSize = (val: number) => {
+    if (!activeMapData) return;
+    const updated = { ...activeMapData, baseTileSizePx: val };
+    useGameStore.getState().setActiveMapData(updated);
+    useEditorStore.getState().markMapDirty();
+  };
 
   // Fetch adjacent Atlas neighbors and load their edge strips for seamless bleed
   const refreshNeighbors = useCallback(async () => {
