@@ -16,13 +16,29 @@ export async function createGameCharacter(data: {
       return { success: false, error: 'Unauthorized' };
     }
 
+    let sanitizedStateStr = data.initialState;
+    try {
+      const parsedState = JSON.parse(data.initialState);
+      
+      // Server Validation & Sanitization against exploits
+      parsedState.level = 1;
+      parsedState.xp = 0;
+      if (typeof parsedState.credits === 'number' && parsedState.credits > 2000) parsedState.credits = 1000;
+      if (typeof parsedState.hp === 'number' && parsedState.hp > 200) parsedState.hp = 200;
+      if (typeof parsedState.maxHp === 'number' && parsedState.maxHp > 200) parsedState.maxHp = 200;
+      
+      sanitizedStateStr = JSON.stringify(parsedState);
+    } catch (e) {
+      console.warn('Failed to parse initialState for validation, continuing with raw string', e);
+    }
+
     const character = await prisma.gameCharacter.create({
       data: {
         userId: session.user.id,
-        name: data.name,
-        spriteId: data.spriteId,
-        classId: data.classId,
-        stateData: data.initialState,
+        name: data.name.slice(0, 32).trim(),
+        spriteId: data.spriteId.slice(0, 255),
+        classId: data.classId.slice(0, 50),
+        stateData: sanitizedStateStr,
       }
     });
 

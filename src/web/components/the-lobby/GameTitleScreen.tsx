@@ -478,7 +478,7 @@ export default function GameTitleScreen({
       return;
     }
 
-    if (setupStatus && !setupStatus.isSetupCompleted) {
+    if (setupStatus && !setupStatus.isSetupCompleted && canStartRealm) {
       window.location.href = '/setup';
       return;
     }
@@ -664,12 +664,10 @@ export default function GameTitleScreen({
       </header>
 
       {/* ── MAIN 3-COLUMN MMO COMMAND DECK ─────────────────────────────── */}
-      <main className="relative z-20 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-          
-          {/* ── COLUMN 1: HERO STAGE & PEDESTAL (Cols 1-4) ─────────────── */}
-          <div
-            className="lg:col-span-4 flex flex-col justify-between rounded-2xl border p-5 bg-[#0a031a]/85 backdrop-blur-xl shadow-2xl relative group overflow-hidden"
+      <main className="relative z-20 flex-1 flex flex-col justify-center items-center w-full mt-16 px-4">
+        {/* ── CENTERED CHARACTER SELECTION CARD ──────────── */}
+        <div
+          className="w-full max-w-lg flex flex-col justify-between rounded-2xl border border-pink-500/30 p-6 bg-[#0a0318]/90 backdrop-blur-xl shadow-2xl relative font-mono overflow-hidden"
             style={{
               borderColor: palette.border,
               boxShadow: `0 0 35px ${palette.glow}, inset 0 0 20px rgba(0,0,0,0.8)`,
@@ -685,7 +683,7 @@ export default function GameTitleScreen({
                 </span>
               </div>
               <div className="flex items-center gap-1 text-[10px] font-mono text-pink-400/70">
-                <span>HERO {characters.length > 0 ? activeIdx + 1 : 0} / {characters.length}</span>
+                <span>SAINT {characters.length > 0 ? activeIdx + 1 : 0} / {characters.length}</span>
               </div>
             </div>
 
@@ -745,14 +743,14 @@ export default function GameTitleScreen({
                   <button
                     onClick={handlePrevChar}
                     className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-pink-500/40 text-pink-300 hover:text-white hover:border-cyan-400 hover:scale-110 transition-all cursor-pointer shadow-lg"
-                    title="Previous Hero"
+                    title="Previous Saint"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={handleNextChar}
                     className="pointer-events-auto p-2 rounded-xl bg-black/70 border border-pink-500/40 text-pink-300 hover:text-white hover:border-cyan-400 hover:scale-110 transition-all cursor-pointer shadow-lg"
-                    title="Next Hero"
+                    title="Next Saint"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -807,7 +805,9 @@ export default function GameTitleScreen({
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                 <span className="relative flex items-center justify-center gap-2">
                   <Play size={18} fill="currentColor" className="group-hover:animate-pulse text-white" />
-                  {status !== 'authenticated' ? 'LOGIN TO PLAY' : activeChar ? 'ENTER REALM' : 'CREATE HERO'}
+                  <span className="relative z-10 font-mono tracking-widest">
+                    {status !== 'authenticated' ? 'LOGIN TO PLAY' : activeChar ? 'ENTER REALM' : 'CREATE SAINT'}
+                  </span>
                 </span>
               </button>
 
@@ -825,7 +825,7 @@ export default function GameTitleScreen({
                   className="py-2 px-3 rounded-lg bg-black/60 border border-pink-500/30 hover:border-cyan-400 text-pink-200 hover:text-white flex items-center justify-center gap-1.5 font-bold uppercase transition-all cursor-pointer"
                 >
                   <Layers size={13} />
-                  Hero Vault
+                  Saint Vault
                 </button>
                 <button
                   onClick={() => {
@@ -839,260 +839,11 @@ export default function GameTitleScreen({
                   className="py-2 px-3 rounded-lg bg-pink-950/40 border border-pink-500/40 hover:border-pink-400 text-[#00f5d4] hover:text-white flex items-center justify-center gap-1.5 font-bold uppercase transition-all cursor-pointer shadow-[0_0_10px_rgba(242,0,137,0.2)]"
                 >
                   <Plus size={13} />
-                  Forge Hero
+                  Forge Saint
                 </button>
               </div>
             </div>
           </div>
-
-          {/* ── COLUMN 2: LIVE GLOBAL LOBBY CHAT (Cols 5-8) ─────────────── */}
-          <div
-            className="lg:col-span-4 flex flex-col justify-between rounded-2xl border border-cyan-500/30 p-5 bg-[#060e18]/85 backdrop-blur-xl shadow-2xl relative font-mono overflow-hidden"
-            style={{
-              boxShadow: '0 0 35px rgba(0,245,212,0.2), inset 0 0 20px rgba(0,0,0,0.8)',
-              clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-            }}
-          >
-            {/* Chat header */}
-            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mb-3">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-black text-cyan-200 uppercase tracking-widest">
-                  GLOBAL LOBBY CHAT
-                </span>
-              </div>
-              <div className="flex items-center gap-1 text-[10px] text-cyan-400/70">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>CH: LIVE</span>
-              </div>
-            </div>
-
-            {/* Chat messages stream */}
-            <div
-              ref={chatScrollRef}
-              className="flex-1 min-h-[220px] max-h-[320px] overflow-y-auto space-y-2 pr-1 custom-scrollbar text-xs"
-            >
-              {chatMessages.map((m) => {
-                const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                if (m.type === 'SYSTEM') {
-                  return (
-                    <div key={m.id} className="p-2 rounded bg-amber-950/30 border border-amber-500/30 text-amber-200 text-[11px]">
-                      <div className="flex items-center gap-1 text-[9px] text-amber-400/80 font-bold uppercase mb-0.5">
-                        <Flame className="w-2.5 h-2.5" />
-                        <span>[SYSTEM] {timeStr}</span>
-                      </div>
-                      <p>{m.text}</p>
-                    </div>
-                  );
-                }
-
-                if (m.type === 'ANNOUNCE') {
-                  return (
-                    <div key={m.id} className="p-2 rounded bg-pink-950/40 border border-pink-500/40 text-pink-100 text-[11px] shadow-[0_0_10px_rgba(242,0,137,0.2)]">
-                      <div className="flex items-center gap-1 text-[9px] text-pink-300 font-bold uppercase mb-0.5">
-                        <Radio className="w-2.5 h-2.5 animate-pulse text-pink-400" />
-                        <span>[REALM BROADCAST]</span>
-                      </div>
-                      <p>{m.text}</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div key={m.id} className="p-2 rounded bg-black/40 border border-cyan-500/10 text-slate-200 text-[11px]">
-                    <div className="flex items-center justify-between text-[9px] text-slate-400 mb-0.5">
-                      <div className="flex items-center gap-1">
-                        {m.badge && (
-                          <span className="px-1 py-0.2 rounded bg-pink-950 text-pink-300 border border-pink-500/40 font-bold uppercase">
-                            {m.badge}
-                          </span>
-                        )}
-                        <strong className="text-cyan-300">{m.sender}</strong>
-                      </div>
-                      <span>{timeStr}</span>
-                    </div>
-                    <p className="text-slate-100 break-words">{m.text}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Chat Input Bar */}
-            <form onSubmit={handleSendChat} className="mt-3 flex items-center gap-2 pt-3 border-t border-cyan-500/20">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder={status === 'authenticated' ? 'Chat in lobby... (Enter)' : 'Sign in to chat...'}
-                disabled={status !== 'authenticated'}
-                className="flex-1 bg-black/60 border border-cyan-500/30 rounded-lg px-3 py-2 text-xs font-mono text-cyan-100 placeholder:text-cyan-600/50 focus:outline-none focus:border-[#00f5d4] transition-colors"
-                maxLength={200}
-              />
-              <button
-                type="submit"
-                disabled={!chatInput.trim() || status !== 'authenticated'}
-                className="p-2 rounded-lg bg-cyan-500/20 border border-cyan-400/50 text-[#00f5d4] hover:bg-cyan-500/40 hover:text-white disabled:opacity-30 transition-all cursor-pointer shadow-[0_0_10px_rgba(0,245,212,0.2)]"
-                title="Send Message"
-              >
-                <Send size={14} />
-              </button>
-            </form>
-          </div>
-
-          {/* ── COLUMN 3: REALM & HALL OF CHAMPIONS (Cols 9-12) ─────────── */}
-          <div
-            className="lg:col-span-4 flex flex-col justify-between rounded-2xl border border-amber-500/30 p-5 bg-[#120902]/85 backdrop-blur-xl shadow-2xl relative font-mono overflow-hidden"
-            style={{
-              boxShadow: '0 0 35px rgba(251,191,36,0.2), inset 0 0 20px rgba(0,0,0,0.8)',
-              clipPath: 'polygon(14px 0%, 100% 0%, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0% 100%, 0% 14px)',
-            }}
-          >
-            {/* Top: Realm Status */}
-            <div>
-              <div className="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-black text-amber-200 uppercase tracking-widest">
-                    REALM GATEWAY
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    soundSynth?.playSelectSound?.();
-                    if (onOpenServerSelect) {
-                      onOpenServerSelect();
-                    } else {
-                      setGameMode('SERVER_SELECT');
-                    }
-                  }}
-                  className="text-[10px] text-amber-300/80 hover:text-white border border-amber-500/30 px-2 py-0.5 rounded bg-black/40 uppercase transition-colors cursor-pointer"
-                >
-                  Switch
-                </button>
-              </div>
-
-              {/* Live Shard Status Widget */}
-              <div className="p-3 bg-black/60 border border-amber-500/30 rounded-xl mb-4 shadow-inner">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Server className="w-4 h-4 text-amber-400" />
-                    <div>
-                      <h4 className="text-xs font-bold text-white leading-tight">Saints Realm</h4>
-                      <p className="text-[9px] text-slate-400">Global Shard 01</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-[10px] font-bold uppercase shadow-[0_0_8px_rgba(16,185,129,0.3)]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>ONLINE</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-slate-300 pt-2 border-t border-white/5">
-                  <div className="flex items-center gap-1">
-                    <Wifi className="w-3 h-3 text-cyan-400" />
-                    <span>Latency: <strong className="text-emerald-400">18ms</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>Pop: <strong className="text-amber-300">{serverStatus.players} / {serverStatus.capacity}</strong></span>
-                  </div>
-                </div>
-
-                {canStartRealm && (
-                  <div className="space-y-1.5 mt-2">
-                    <button
-                      onClick={() => {
-                        soundSynth?.playActionSound?.();
-                        window.location.href = '/setup';
-                      }}
-                      className="w-full py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-300 text-[10px] font-bold uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-[0_0_10px_rgba(251,191,36,0.2)]"
-                    >
-                      <Sparkles size={12} className="text-amber-400" />
-                      Realm Setup Wizard
-                    </button>
-                    <button
-                      onClick={handleStartDevServer}
-                      disabled={isStartingServer}
-                      className="w-full py-1 rounded bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-200 text-[10px] font-bold uppercase transition-all cursor-pointer"
-                    >
-                      {isStartingServer ? 'Starting Realm...' : 'Restart Dev Realm'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom: Hall of Champions Mini-Leaderboard */}
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-xs font-black text-amber-200 uppercase tracking-wider">
-                    HALL OF CHAMPIONS
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    soundSynth?.playSelectSound?.();
-                    fetchLeaderboards();
-                  }}
-                  className="p-1 text-amber-400 hover:text-white cursor-pointer"
-                  title="Refresh Leaderboards"
-                >
-                  <RefreshCw size={12} className={loadingLeaderboards ? 'animate-spin' : ''} />
-                </button>
-              </div>
-
-              {/* Leaderboard Top List */}
-              <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar text-[11px]">
-                {loadingLeaderboards ? (
-                  <p className="text-center text-slate-400 italic py-4">Syncing top saints...</p>
-                ) : topOperatives.length === 0 ? (
-                  <p className="text-center text-slate-500 italic py-4">No rankings yet.</p>
-                ) : (
-                  topOperatives.map((op, idx) => (
-                    <div
-                      key={op.id}
-                      className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between ${
-                        idx === 0
-                          ? 'bg-amber-950/40 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.25)]'
-                          : idx === 1
-                          ? 'bg-slate-900/60 border-slate-400/40'
-                          : idx === 2
-                          ? 'bg-amber-950/20 border-amber-700/30'
-                          : 'bg-black/40 border-white/5'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 font-bold text-xs text-center">
-                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
-                        </span>
-                        <span className="font-bold text-white truncate max-w-[90px]">{op.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px]">
-                        <span className="text-cyan-300 font-bold">LVL {op.level}</span>
-                        <span className="text-amber-300/80">{(op.totalXp || 0).toLocaleString()} XP</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* View Full Leaderboards button */}
-              <button
-                onClick={() => {
-                  soundSynth?.playSelectSound?.();
-                  setGameMode('LEADERBOARD');
-                }}
-                className="w-full mt-3 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/40 text-amber-200 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_10px_rgba(251,191,36,0.15)] flex items-center justify-center gap-1.5"
-              >
-                <Crown size={12} className="text-amber-400" />
-                View Full Leaderboards
-              </button>
-            </div>
-          </div>
-
-        </div>
       </main>
 
       {/* ── FOOTER STATUS / SHORTCUTS BAR ──────────────────────────────── */}
@@ -1104,9 +855,9 @@ export default function GameTitleScreen({
         </div>
 
         <div className="flex items-center gap-4 mt-1 sm:mt-0 text-[10px] text-pink-300/70">
-          <span>[ENTER] Enter Realm</span>
-          <span>[C] Hero Vault</span>
-          <span>[ESC] Options</span>
+          <span>[Enter] Chat</span>
+          <span>[C] Saint Vault</span>
+          <span>[E] Settings</span>
         </div>
       </footer>
 

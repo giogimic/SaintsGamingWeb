@@ -36,16 +36,7 @@ export default function GameLogin() {
         setError('Invalid credentials. Check your email/username and password.');
       } else {
         soundSynth?.playLevelUpSound?.();
-        try {
-          const statusRes = await fetch('/api/setup/status');
-          if (statusRes.ok) {
-            const data = await statusRes.json();
-            if (data.canSetup && (data.status?.isFreshInstall || !data.status?.isSetupCompleted)) {
-              window.location.href = '/setup';
-              return;
-            }
-          }
-        } catch {}
+        // No auto-redirect here, if setup is missing TheLobby will render GameOfflineScreen
         setGameMode('TITLE_SCREEN');
       }
     } catch {
