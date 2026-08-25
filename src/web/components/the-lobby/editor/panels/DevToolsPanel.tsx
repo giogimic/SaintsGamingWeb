@@ -2,23 +2,21 @@
 
 import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { ClassEditorPanel } from './ClassEditorPanel';
 import ServerControl from '../ServerControl';
-import { UserCheck, Server, ShieldAlert } from 'lucide-react';
+import { Server, ShieldAlert } from 'lucide-react';
 import {
   canUseStudioEngineConfig,
   canUseStudioServerControls,
 } from '@/shared/game/studioPermissions';
 
-/** Dev Tools: server controls + canonical ClassEditorPanel (Catalog stack). */
+/** Dev Tools: server controls. */
 export const DevToolsPanel: React.FC = () => {
   const { data: session } = useSession();
   const level = session?.user?.permissionLevel ?? 0;
   const canServer = canUseStudioServerControls(level);
   const canEngine = canUseStudioEngineConfig(level);
 
-  const defaultTab: 'classes' | 'server' = canServer ? 'server' : 'classes';
-  const [activeTab, setActiveTab] = useState<'classes' | 'server'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'server'>('server');
 
   if (!canServer && !canEngine) {
     return (
@@ -44,23 +42,10 @@ export const DevToolsPanel: React.FC = () => {
             <Server className="w-3 h-3 text-amber-400" /> Server Controls
           </button>
         )}
-        {canEngine && (
-          <button
-            onClick={() => setActiveTab('classes')}
-            className={`flex-1 py-1 px-1.5 rounded flex items-center justify-center gap-1 transition-all ${
-              activeTab === 'classes'
-                ? 'bg-gradient-to-r from-amber-600 to-amber-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-            }`}
-          >
-            <UserCheck className="w-3 h-3" /> Class Registry
-          </button>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
         {activeTab === 'server' && canServer && <ServerControl />}
-        {activeTab === 'classes' && canEngine && <ClassEditorPanel />}
       </div>
     </div>
   );
