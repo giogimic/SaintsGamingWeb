@@ -142,6 +142,7 @@ export default function TheLobby({
   const socketRef = useRef<Socket | null>(null);
   /** Last successful lobby/studio join contract — used to coalesce join storms. */
   const lastJoinKeyRef = useRef<string | null>(null);
+  const hasAuthInitializedRef = useRef(false);
   const recentChatEventKeysRef = useRef<Map<string, number>>(new Map());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -550,26 +551,24 @@ export default function TheLobby({
   useEffect(() => {
     if (status === 'authenticated') {
       setPermissionLevel(session?.user?.permissionLevel ?? 0);
+      if (hasAuthInitializedRef.current) return;
+      hasAuthInitializedRef.current = true;
       loadCharactersList().then(() => {
-        if (initialCharacterId && isInitializing) {
+        if (initialCharacterId) {
           selectAndLoadCharacter(initialCharacterId);
-        } else if (isInitializing) {
+        } else if (enableStudio) {
           // Studio: avatar-free author session by default (no character required).
           // Pass ?characterId= to load a real character for Playtest instead.
-          if (enableStudio) {
-            void enterStudioAuthorSession('STARTING_MAP');
-          } else {
-            setIsInitializing(false);
-          }
+          void enterStudioAuthorSession('STARTING_MAP');
+        } else {
+          setIsInitializing(false);
         }
       });
     } else if (status === 'unauthenticated') {
       setPermissionLevel(0);
-      if (isInitializing) {
-        setIsInitializing(false);
-      }
+      setIsInitializing(false);
     }
-  }, [status, initialCharacterId, isInitializing, session?.user?.permissionLevel, enableStudio]);
+  }, [status, initialCharacterId, session?.user?.permissionLevel, enableStudio]);
 
   // Handle fallback events like unauthorized creation
   useEffect(() => {

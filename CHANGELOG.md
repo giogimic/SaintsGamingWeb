@@ -1,3 +1,13 @@
+## [2.1.459-5] - 2026-08-25
+### Architectural Cleanup: Single Source of Truth for Map State & Hydration Protection
+- **Single Source of Truth (`GameCanvasBabylon.tsx`)**:
+  - Eliminated redundant local `useState(mapData)` in `GameCanvasBabylon.tsx` in favor of directly consuming the authoritative `activeMapData` from `useGameStore`.
+  - Removed all two-way state synchronization effects, preventing any nested setState cascades between Canvas rendering and the global store.
+- **Session Init Guard (`TheLobby`)**:
+  - Added `hasAuthInitializedRef` guard to prevent character/author session initialization from re-executing upon state transitions.
+- **Hydration Mismatch Mitigation**:
+  - Added `suppressHydrationWarning` to the root `body` tag in `app/layout.tsx` to handle browser extension and theme attributes cleanly.
+
 ## [2.1.459-4] - 2026-08-25
 ### Critical Fix: React Error #185 (Maximum Update Depth Exceeded) in Studio & Lobby
 - **Reference Equality Stabilization**:

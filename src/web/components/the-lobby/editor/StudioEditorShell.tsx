@@ -157,8 +157,8 @@ export const StudioEditorShell: React.FC = () => {
   useEffect(() => {
     // Restore dock geometry, then enter Development Mode (tools on by default).
     useEditorStore.getState().hydratePanelLayouts();
-    enterDevelopmentMode();
-  }, [enterDevelopmentMode]);
+    useEditorStore.getState().enterDevelopmentMode();
+  }, []);
 
   // Handle dynamic dock panel opening (from menus, shortcuts, omnisearch)
   useEffect(() => {

@@ -139,8 +139,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const editorToolsRef = useRef(isDevEditorOpen);
   editorToolsRef.current = isDevEditorOpen;
 
-  // Async map state — engine only mounts AFTER map data is ready
-  const [mapData, setMapData] = useState<GameMapData | null>(null);
+  // Authoritative map state from the global game store
+  const mapData = activeMapData as GameMapData | null;
   const mapDataRef = useRef<GameMapData | null>(null);
   mapDataRef.current = mapData;
 
@@ -174,80 +174,45 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     autoWalkPathRef.current = [];
   }, []);
 
+  // Ensure current map is loaded into store when map ID changes
   useEffect(() => {
-    // Prefer live Studio / socket document only when it matches currentMapId.
-    // Gate warps that flip the id without clearing activeMapData used to keep DEMO.
-    if (activeMapData && shouldKeepActiveMapData(activeMapData, currentMapId)) {
-      const ensured = ensureMapHasStudioTilesets(activeMapData as GameMapData);
-      setMapData((prev) => {
-        // Same object — no-op (avoids Babylon remount / remesh).
-        if (prev === ensured || prev === activeMapData) return prev;
-        if (prev && shouldKeepActiveMapData(prev, currentMapId)) {
-          // Stable ref unless next is a real visual/DB upgrade (never NPC-only churn).
-          if (!shouldAcceptMapDoc(prev, ensured)) {
-            return prev;
-          }
-        }
-        return ensured;
-      });
-      setIsEngineReady(true);
-      return;
-    }
-
-    // Keep prior mapData while fetching the same base map — setMapData(null)
-    // disposed Babylon with no replacement and hid peer sprites mid-join.
-    setIsEngineReady(false);
-    setMapData((prev) => {
-      if (prev && shouldKeepActiveMapData(prev, currentMapId)) {
-        return prev;
-      }
-      return null;
-    });
-    loadMap(currentMapId).then((data) => {
-      const ensured = ensureMapHasStudioTilesets(data);
-      setMapData((prev) => {
-        if (prev && shouldKeepActiveMapData(prev, currentMapId) && !shouldAcceptMapDoc(prev, ensured)) {
-          return prev;
-        }
-        return ensured;
-      });
-      const store = useGameStore.getState();
-      if (!shouldKeepActiveMapData(store.activeMapData, currentMapId)) {
-        store.setActiveMapData(ensured);
-      }
-      setIsEngineReady(true);
-    }).catch(() => {
-      // Fallback map if API fails
-      setMapData({
-        id: currentMapId,
-        name: 'Tamer Grounds',
-        grid: Array(24).fill(0).map((_, r) =>
-          Array(24).fill(0).map((_, c) =>
-            (r === 0 || r === 23 || c === 0 || c === 23) ? 1 : (r % 5 === 0 && c % 5 === 0) ? 2 : 0
-          )
-        ),
-        gates: {},
-        npcs: [],
-      });
-      setIsEngineReady(true);
-    });
-  }, [currentMapId, activeMapData]);
-
-  // Studio paints by mutating `mapData` in place, and Save Map reads
-  // `activeMapData` from the store. When this component loaded the map itself
-  // the two were different objects, so every stroke was silently dropped on
-  // save. Publish the loaded map so both sides share one reference — and replace
-  // proxy shells still sitting in the store.
-  useEffect(() => {
-    if (!isDevEditorOpen || !mapData) return;
     const store = useGameStore.getState();
-    const cur = store.activeMapData as GameMapData | null;
-    if (cur === mapData) return;
-    if (cur && shouldKeepActiveMapData(cur, currentMapId) && !shouldAcceptMapDoc(cur, mapData)) {
+    if (store.activeMapData && shouldKeepActiveMapData(store.activeMapData, currentMapId)) {
+      setIsEngineReady(true);
       return;
     }
-    store.setActiveMapData(mapData);
-  }, [isDevEditorOpen, mapData, currentMapId]);
+
+    setIsEngineReady(false);
+    let isCancelled = false;
+    loadMap(currentMapId)
+      .then((data) => {
+        if (isCancelled) return;
+        const ensured = ensureMapHasStudioTilesets(data);
+        useGameStore.getState().setActiveMapData(ensured);
+        setIsEngineReady(true);
+      })
+      .catch(() => {
+        if (isCancelled) return;
+        const fallback = ensureMapHasStudioTilesets({
+          id: currentMapId,
+          name: currentMapId.replace(/_/g, ' '),
+          width: 30,
+          height: 30,
+          grid: Array(30).fill(0).map(() => Array(30).fill(0)),
+          tileLayers: [],
+          tilesets: [],
+          gates: {},
+          npcs: [],
+          encounters: [],
+        });
+        useGameStore.getState().setActiveMapData(fallback);
+        setIsEngineReady(true);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentMapId]);
 
   // Derive dimensions — tileLayers first (see resolveMapDimensions), then grid / meta.
   const activeMap = mapData as GameMapData | null;
@@ -647,13 +612,13 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const tileId = typeof data.tileId === 'number' ? data.tileId : 0;
       if (typeof x !== 'number' || typeof y !== 'number') return;
 
-      setMapData((prev) => {
-        if (!prev?.grid?.[y]) return prev;
-        const nextGrid = prev.grid.map((row, rowIdx) =>
-          rowIdx === y ? row.map((cell, colIdx) => (colIdx === x ? tileId : cell)) : row
+      const cur = useGameStore.getState().activeMapData;
+      if (cur?.grid?.[y]) {
+        const nextGrid = (cur.grid as number[][]).map((row: number[], rowIdx: number) =>
+          rowIdx === y ? row.map((cell: number, colIdx: number) => (colIdx === x ? tileId : cell)) : row
         );
-        return { ...prev, grid: nextGrid };
-      });
+        useGameStore.getState().setActiveMapData({ ...cur, grid: nextGrid });
+      }
 
       if (engineRef.current?.setLogicTile) {
         engineRef.current.setLogicTile(y, x, tileId);
@@ -1799,7 +1764,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         if (Array.isArray(map.grid)) {
           engine.enableLogicGridOverlay?.(map.grid);
         }
-        setMapData(map);
+        useGameStore.getState().setActiveMapData(map);
         mapDataRef.current = map;
         return;
       }
@@ -1816,7 +1781,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       });
       // loadTilemap clears author overlays — re-seed pins/sprites.
       setMapMeshEpoch((n) => n + 1);
-      setMapData(map);
+      useGameStore.getState().setActiveMapData(map);
       mapDataRef.current = map;
     };
     window.addEventListener(STUDIO_MAP_HOT_RELOAD_EVENT, onHotReload);
