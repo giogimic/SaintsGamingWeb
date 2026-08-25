@@ -51,6 +51,23 @@ export default function TilesetPicker({
   const ts = tilesets && tilesets.length > 0 ? tilesets[Math.min(activeTsIdx, tilesets.length - 1)] : null;
   const imgRef = useRef<HTMLImageElement>(null);
 
+
+  // Auto-select tileset tab if activeBrushTileId changes (e.g. via Eyedropper or on mount)
+  useEffect(() => {
+    if (!tilesets || tilesets.length === 0 || activeBrushTileId <= 0) return;
+    for (let i = tilesets.length - 1; i >= 0; i--) {
+      if (activeBrushTileId >= tilesets[i].firstgid) {
+        if (activeTsIdx !== i) {
+          setActiveTsIdx(i);
+          setNatural({ w: 0, h: 0 });
+          setHoveredTile(null);
+          setImgError(false);
+        }
+        break;
+      }
+    }
+  }, [activeBrushTileId, tilesets]);
+
   // Listen for studio_add_tileset event from Asset Browser or other panels
   useEffect(() => {
     const handleAddEvent = (e: Event) => {
