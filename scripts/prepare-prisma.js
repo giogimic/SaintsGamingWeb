@@ -33,13 +33,13 @@ if (isSqlite) {
     
     // The schema is authored with @db.Text natively, but we enforce it just in case
     const longTextCols = [
-        'gridData', 'tileLayersData'
+        'gridData', 'tileLayersData', 'body'
     ];
     const textCols = [
         'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
         'gatesData', 'npcsData', 'encountersData', 'entitiesData', 
         'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'dialogueGraph', 'questsData',
-        'tilesetData', 'npcs', 'encounters', 'gates', 'stateData'
+        'tilesetData', 'npcs', 'encounters', 'gates', 'stateData', 'excerpt', 'description'
     ];
 
     for (const col of longTextCols) {
