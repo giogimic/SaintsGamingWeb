@@ -276,51 +276,51 @@ export async function seedDummyContentAction() {
     // 2. Dummy News Articles
     const dummyArticles = [
       {
-        title: "The Evolution of Esports: Major Tournaments and the Push for Sustainability",
+        title: "The Evolution of Esports: Major Tournaments and Sustainability",
         slug: "esports-world-cup",
-        excerpt: "Competitive gaming has transformed from grassroots LAN parties into massive, globally televised stadium events. The era of unsustainable spending has shifted toward survival and long-term sustainability.",
-        body: "# The Evolution of Esports: Major Tournaments and the Push for Sustainability\n\nCompetitive gaming has transformed from grassroots LAN parties into massive, globally televised stadium events. But after a turbulent few years of bursting bubbles and VC funding drying up, the industry is finally waking up to reality.\n\n## Counter-Strike 2: Refining Perfection\n\nFollowing a transition period, the professional scene for **Counter-Strike 2 (CS2)** has officially hit its stride. Valve's updates are hyper-focused on microscopic refinements—sub-tick server rates, volumetric smoke physics, and minor economy tweaks.\n\n## Fighting Games: Steady, Sustainable Growth\n\nWith the launch of *Tekken 8* and ongoing support for *Street Fighter 6*, the FGC is experiencing a golden age.",
+        excerpt: "Competitive gaming transitions toward long-term sustainability and grassroots momentum.",
+        body: "# The Evolution of Esports: Major Tournaments and Sustainability\n\nCompetitive gaming has transformed from grassroots LAN parties into massive stadium events. The era of unsustainable spending has shifted toward survival and long-term sustainability.\n\n## Counter-Strike 2: Refining Perfection\n\nFollowing a transition period, the professional scene for **Counter-Strike 2 (CS2)** has officially hit its stride. Valve's updates are hyper-focused on microscopic refinements—sub-tick server rates, volumetric smoke physics, and minor economy tweaks.\n\n## Fighting Games: Steady, Sustainable Growth\n\nWith the launch of *Tekken 8* and ongoing support for *Street Fighter 6*, the FGC is experiencing a golden age.",
         coverImage: "/images/articles/esports-world-cup.svg",
       },
       {
         title: "Breaking Down the Latest GTA VI Trailer: Secrets You Missed",
         slug: "gta-6-trailer",
-        excerpt: "Rockstar Games has dropped a deep look into the modern rendition of Vice City and the state of Leonida. Here is what we spotted in the footage.",
+        excerpt: "Rockstar Games drops a deep look into the modern rendition of Vice City and Leonida.",
         body: "# Breaking Down the Latest GTA VI Trailer: Secrets You Missed\n\nRockstar Games has once again delivered an unprecedented look at open-world fidelity in Vice City.\n\n## Dynamic Social Media Integration\n\nThe trailer heavily featured in-universe social media platforms mirroring dynamic comments, follower counts, and real-time world events.\n\n## Seamless Interior Transitions\n\nNo camera cuts or loading screens when transitioning into buildings.",
         coverImage: "/images/articles/gta-6-trailer.svg",
       },
       {
         title: "Xbox Game Pass Expanding: New Tiers and Massive Day-One Releases",
         slug: "microsoft-xbox-game-pass",
-        excerpt: "Microsoft outlines new tiers and blockbuster day-one releases arriving on Xbox Game Pass this season.",
+        excerpt: "Microsoft outlines new subscription tiers and blockbuster day-one releases arriving on Game Pass.",
         body: "# Xbox Game Pass Expanding: New Tiers and Massive Day-One Releases\n\nMicrosoft's subscription service continues to expand with day-one first-party titles, cloud streaming enhancements, and multi-device access.",
         coverImage: "/images/articles/microsoft-xbox-game-pass.svg",
       },
       {
         title: "Nintendo's Next Move: Everything We Know About the 'Switch 2'",
         slug: "nintendo-switch-2",
-        excerpt: "From hybrid console continuity to backwards compatibility and next-gen 3D titles, here is what is expected from the upcoming hardware.",
+        excerpt: "Hybrid form factor, backward compatibility, and next-gen 3D titles power Nintendo's next generation.",
         body: "# Nintendo's Next Move: Everything We Know About the 'Switch 2'\n\nNintendo continues to build on the hybrid form factor with enhanced resolution, backwards compatibility, and custom NVIDIA silicon.",
         coverImage: "/images/articles/nintendo-switch-2.svg",
       },
       {
         title: "Sony Unveils the PlayStation 5 Pro: Specs, Pricing, and Release Date",
         slug: "sony-ps5-pro",
-        excerpt: "Sony officially details the PlayStation 5 Pro with upgraded GPU power, advanced ray tracing, and PSSR upscaling.",
+        excerpt: "Sony details upgraded GPU power, advanced ray tracing, and PSSR AI upscaling for PS5 Pro.",
         body: "# Sony Unveils the PlayStation 5 Pro: Specs, Pricing, and Release Date\n\nFaster rendering, AI upscaling with PlayStation Spectral Super Resolution (PSSR), and enhanced fidelity modes.",
         coverImage: "/images/articles/sony-ps5-pro.svg",
       },
       {
         title: "The Steam Deck OLED Review: Valve's Masterpiece Refined",
         slug: "steam-deck-oled",
-        excerpt: "Valve refines portable PC gaming with a 90Hz HDR OLED display, improved battery efficiency, and silent cooling.",
+        excerpt: "Valve refines portable PC gaming with a 90Hz HDR OLED display and improved battery life.",
         body: "# The Steam Deck OLED Review: Valve's Masterpiece Refined\n\nVibrant HDR OLED panel, 6nm APU efficiency, and a redesigned whisper-quiet cooling fan.",
         coverImage: "/images/articles/steam-deck-oled.svg",
       },
       {
         title: "The Future of VR Gaming: Pragmatism Over Promises",
         slug: "vr-gaming-future",
-        excerpt: "Standalone headsets, lighter form factors, and realistic expectations define the next phase of virtual reality.",
+        excerpt: "Standalone headsets, lighter form factors, and realistic expectations define the next phase of VR.",
         body: "# The Future of VR Gaming: Pragmatism Over Promises\n\nConvenience and standalone comfort take priority as manufacturers optimize display optics and battery performance.",
         coverImage: "/images/articles/vr-gaming-future.svg",
       },
@@ -330,21 +330,26 @@ export async function seedDummyContentAction() {
     for (let i = 0; i < dummyArticles.length; i++) {
       const a = dummyArticles[i];
       const publishedAt = new Date(Date.now() - (dummyArticles.length - i) * 86400000);
+      const safeTitle = (a.title || "").slice(0, 140);
+      const safeSlug = (a.slug || "").slice(0, 100);
+      const safeExcerpt = a.excerpt ? a.excerpt.slice(0, 140) : null;
+      const safeBody = a.body || "";
+
       await prisma.newsArticle.upsert({
-        where: { slug: a.slug },
+        where: { slug: safeSlug },
         update: {
-          title: a.title,
-          excerpt: a.excerpt,
-          body: a.body,
+          title: safeTitle,
+          excerpt: safeExcerpt,
+          body: safeBody,
           coverImage: a.coverImage,
           isPublished: true,
           publishedAt,
         },
         create: {
-          title: a.title,
-          slug: a.slug,
-          excerpt: a.excerpt,
-          body: a.body,
+          title: safeTitle,
+          slug: safeSlug,
+          excerpt: safeExcerpt,
+          body: safeBody,
           coverImage: a.coverImage,
           isPublished: true,
           publishedAt,

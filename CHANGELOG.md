@@ -1,3 +1,9 @@
+## [2.1.459-35] - 2026-08-25
+### MariaDB/MySQL Column Length Constraints Hardening for Dummy Content
+- **Column Length Hardening**:
+  - Defensively sanitized and trimmed `excerpt` (max 140 chars), `title` (max 140 chars), and `slug` (max 100 chars) in `app/actions/game-dev.ts` and `prisma/seed.ts` to strictly adhere to MariaDB/MySQL `VARCHAR(191)` column limits.
+  - Resolved `The provided value for the column is too long for the column's type. Column: excerpt` Prisma exception on production MySQL/MariaDB database instances.
+
 ## [2.1.459-34] - 2026-08-25
 ### Server Action Seed Dummy Content & Admin Dual-Execution Engine
 - **Server Action Seeding (`seedDummyContentAction`)**:
