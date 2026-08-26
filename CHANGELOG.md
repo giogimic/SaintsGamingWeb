@@ -1,3 +1,9 @@
+## [2.1.459-41] - 2026-08-25
+### Tileset Picker Alignment & Navigation Fix
+- **Tileset Picker UI**: 
+  - Fixed a math bug where the visual cyan/yellow selection bounding boxes were calculated based on grid columns instead of the actual pixels. This caused the selection box to misalign when large tiles (e.g. 32x32) were uploaded over the default 16x16 grid.
+  - Arrow key navigation in the tileset picker now steps by the dimensions of the selected brush pattern (e.g., jumping 2 tiles over if a 2x2 brush is selected) rather than always moving by a single 16px tile, ensuring large selections remain snapped to their visual grid.
+
 ## [2.1.459-40] - 2026-08-25
 ### Prisma Schema Prep Regex Fix
 - **Fix**: The regex in `prepare-prisma.js` that dynamically adds `@db.Text` to text columns for MySQL was accidentally capturing the newline character (`\s*` matched `\r\n`), causing the `@db.Text` modifier to be incorrectly applied to adjacent fields on the next line (like `createdAt` or `levelReq`). This corrupted the Prisma schema internally on boot and caused the server to fail to start. The regex now explicitly checks for spaces and tabs `[ \\t]*` instead of any whitespace to keep the modifications strictly on the same line.
