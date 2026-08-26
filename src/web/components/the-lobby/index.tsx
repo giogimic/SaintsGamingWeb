@@ -320,7 +320,7 @@ export default function TheLobby({
         ...parsedState,
         currentMapId: validMapId,
         name: res.data.name,
-        spriteId: res.data.spriteId || 'adventurer',
+        assetProfileId: res.data.assetProfileId || 'adventurer',
         position: validPosition
       });
       useGameStore.setState({
@@ -348,7 +348,7 @@ export default function TheLobby({
           },
           position: validPosition,
           name: res.data.name,
-          spriteId: res.data.spriteId || 'adventurer',
+          assetProfileId: res.data.assetProfileId || 'adventurer',
           worldSessionState: store.worldSessionState,
           currentInstanceId: store.instanceId,
           worldJoinSeq: store.worldJoinSeq,
@@ -425,7 +425,7 @@ export default function TheLobby({
     useGameStore.getState().hydratePlayer({
       accountId: accountId || undefined,
       name: authorName,
-      spriteId: 'adventurer',
+      assetProfileId: 'adventurer',
       position: validPosition,
     });
     useGameStore.setState({
@@ -449,7 +449,7 @@ export default function TheLobby({
         },
         position: validPosition,
         name: authorName,
-        spriteId: 'adventurer',
+        assetProfileId: 'adventurer',
         worldSessionState: store.worldSessionState,
         currentInstanceId: store.instanceId,
         worldJoinSeq: store.worldJoinSeq,
@@ -669,7 +669,7 @@ export default function TheLobby({
               y: state.player.position?.y ?? 15,
             },
             name: state.player.name || 'Player',
-            spriteId: state.player.spriteId || 'adventurer',
+            assetProfileId: state.player.assetProfileId || 'adventurer',
             worldSessionState: state.worldSessionState,
             currentInstanceId: state.instanceId,
             worldJoinSeq: state.worldJoinSeq,
@@ -982,6 +982,10 @@ export default function TheLobby({
       // In the future, we can add a cursor tracker or presence list.
     });
     
+    socket.on('rule_trace', (trace: any) => {
+      window.dispatchEvent(new CustomEvent('studio_rule_trace', { detail: trace }));
+    });
+    
     // Phase 9: Real-Time Map Editor Synchronization (hot remesh, no remount blast)
     socket.on('content_reload', async (data: any) => {
       if (!data || (data.type !== 'map' && data.type !== 'map_entities')) return;
@@ -1068,7 +1072,7 @@ export default function TheLobby({
           hp: data?.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
           maxHp: data?.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
           level: state.player?.level || 5,
-          spriteKey: state.player?.spriteId ? `/assets/sprites/player/${state.player.spriteId}.png` : '/assets/sprites/creatures/budaye.png',
+          spriteKey: state.player?.assetProfileId ? `/assets/sprites/player/${state.player.assetProfileId}.png` : '/assets/sprites/creatures/budaye.png',
         },
         log: data?.log || ['Battle commenced!'],
       };
@@ -1105,7 +1109,7 @@ export default function TheLobby({
               hp: data.playerHp !== undefined ? data.playerHp : (state.player?.hp || 100),
               maxHp: data.playerMaxHp !== undefined ? data.playerMaxHp : (state.player?.maxHp || 100),
               level: state.player?.level || 5,
-              spriteKey: state.player?.spriteId ? `/assets/sprites/player/${state.player.spriteId}.png` : '/assets/sprites/creatures/budaye.png',
+              spriteKey: state.player?.assetProfileId ? `/assets/sprites/player/${state.player.assetProfileId}.png` : '/assets/sprites/creatures/budaye.png',
             },
             log: data.log || ['Battle updated.'],
           };
@@ -1538,7 +1542,7 @@ export default function TheLobby({
         y: state.player.position?.y ?? 15,
       },
       name: state.player.name || 'Player',
-      spriteId: state.player.spriteId || 'adventurer',
+      assetProfileId: state.player.assetProfileId || 'adventurer',
       worldSessionState: state.worldSessionState,
       currentInstanceId: state.instanceId,
       worldJoinSeq: state.worldJoinSeq,
@@ -1587,7 +1591,7 @@ export default function TheLobby({
           y: state.player.position?.y ?? 15,
         },
         name: state.player.name || (pie ? 'Dev Explorer' : 'Studio Author'),
-        spriteId: state.player.spriteId || 'adventurer',
+        assetProfileId: state.player.assetProfileId || 'adventurer',
         worldSessionState: state.worldSessionState,
         currentInstanceId: state.instanceId,
         worldJoinSeq: state.worldJoinSeq,

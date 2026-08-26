@@ -128,7 +128,7 @@ type DbHero = {
   slug: string;
   name: string;
   classId: string;
-  spriteKey: string;
+  assetProfileId: string;
   spriteBundleId?: string | null;
   flavor: string;
   tag: string;
@@ -169,7 +169,7 @@ export function CharacterCreator({
 }) {
   const [step, setStep] = useState<CreatorStep>('HERO_PICK');
   const [name, setName] = useState('');
-  const [spriteId, setSpriteId] = useState('evil-berserker-bloodaxe-male');
+  const [assetProfileId, setassetProfileId] = useState('evil-berserker-bloodaxe-male');
   const [selectedCape, setSelectedCape] = useState<string | null>(null);
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [selectedArmor, setSelectedArmor] = useState<string | null>(null);
@@ -224,7 +224,7 @@ export function CharacterCreator({
 
   // Computed multi-layer stack
   const activeLayers = [
-    spriteId,
+    assetProfileId,
     selectedCape,
     selectedArmor,
     selectedHat,
@@ -300,7 +300,7 @@ export function CharacterCreator({
 
   const handleHeroPick = (hero: DbHero) => {
     soundSynth?.playSelectSound?.();
-    setSpriteId(hero.spriteKey);
+    setassetProfileId(hero.assetProfileId);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -321,7 +321,7 @@ export function CharacterCreator({
     const num = Math.floor(Math.random() * 90 + 10);
     const randomPerk = PERKS[Math.floor(Math.random() * PERKS.length)];
 
-    setSpriteId(hero.spriteKey);
+    setassetProfileId(hero.assetProfileId);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
@@ -362,7 +362,7 @@ export function CharacterCreator({
 
     const hero =
       starterHeroes.find((h) => h.slug === selectedHeroSlug) ||
-      starterHeroes.find((h) => h.classId === classId && h.spriteKey === spriteId);
+      starterHeroes.find((h) => h.classId === classId && h.assetProfileId === assetProfileId);
 
     let startMap = hero?.startingMap && hero.startingMap !== 'DEMO_SANDBOX' ? hero.startingMap : '';
     let startX = hero?.startingX;
@@ -438,14 +438,14 @@ export function CharacterCreator({
         shirtColor: '#10b981',
         pantsColor: '#18181b',
         layers: activeLayers,
-        base: spriteId,
+        base: assetProfileId,
         cape: selectedCape,
         hat: selectedHat,
         armor: selectedArmor,
       },
       appearance: {
         layers: activeLayers,
-        base: spriteId,
+        base: assetProfileId,
         cape: selectedCape,
         hat: selectedHat,
         armor: selectedArmor,
@@ -462,7 +462,7 @@ export function CharacterCreator({
 
     const result = await createGameCharacter({
       name: name.trim(),
-      spriteId,
+      assetProfileId,
       classId,
       initialState: JSON.stringify(initialState),
     });
@@ -515,7 +515,7 @@ export function CharacterCreator({
             } else if (step === 'NAME') setStep('HERO_PICK');
             else if (step === 'APPEARANCE') setStep('NAME');
             else if (step === 'GIFT') {
-              if (detectPresentationMode(spriteId, allSprites) === 'modular') setStep('APPEARANCE');
+              if (detectPresentationMode(assetProfileId, allSprites) === 'modular') setStep('APPEARANCE');
               else setStep('NAME');
             }
             else if (step === 'REVIEW') setStep('GIFT');
@@ -529,7 +529,7 @@ export function CharacterCreator({
         {/* Steps Breadcrumb */}
         <div className="flex items-center gap-2 font-mono text-xs">
           {(['HERO_PICK', 'NAME', 'APPEARANCE', 'GIFT', 'REVIEW'] as CreatorStep[])
-            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(spriteId, allSprites) === 'modular')
+            .filter(s => s !== 'APPEARANCE' || detectPresentationMode(assetProfileId, allSprites) === 'modular')
             .map((s, i, arr) => {
             const isDone = stepToNum[step] > stepToNum[s];
             const isCur = step === s;
@@ -761,13 +761,13 @@ export function CharacterCreator({
                   disabled={!name || name.trim().length < 3}
                   onClick={() => {
                     soundSynth?.playActionSound?.();
-                    const mode = detectPresentationMode(spriteId, allSprites);
+                    const mode = detectPresentationMode(assetProfileId, allSprites);
                     if (mode === 'modular') setStep('APPEARANCE');
                     else setStep('GIFT');
                   }}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl font-mono font-bold text-xs uppercase tracking-widest bg-gradient-to-r from-pink-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 text-white shadow-[0_0_20px_rgba(0,245,212,0.4)] disabled:opacity-40 cursor-pointer"
                 >
-                  {detectPresentationMode(spriteId, allSprites) === 'modular' ? 'Proceed to Avatar' : 'Proceed to Blessing'} <ArrowRight size={14} />
+                  {detectPresentationMode(assetProfileId, allSprites) === 'modular' ? 'Proceed to Avatar' : 'Proceed to Blessing'} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
@@ -816,7 +816,7 @@ export function CharacterCreator({
                 {/* Layer Badges */}
                 <div className="flex flex-wrap gap-1.5 justify-center mb-3">
                   <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-cyan-950/60 border border-cyan-500/30 text-cyan-200">
-                    Base: {dynamicBases.find((b: any) => b.id === spriteId)?.label || spriteId}
+                    Base: {dynamicBases.find((b: any) => b.id === assetProfileId)?.label || assetProfileId}
                   </span>
                   {selectedCape && (
                     <span className="px-2 py-0.5 rounded text-[9px] font-mono bg-purple-950/60 border border-purple-500/30 text-purple-200">
@@ -893,13 +893,13 @@ export function CharacterCreator({
                   {appearanceTab === 'BASE' && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {dynamicBases.map((b: any) => {
-                        const isCur = spriteId === b.id;
+                        const isCur = assetProfileId === b.id;
                         return (
                           <div
                             key={b.id}
                             onClick={() => {
                               soundSynth?.playSelectSound?.();
-                              setSpriteId(b.id);
+                              setassetProfileId(b.id);
                             }}
                             className={`p-2.5 rounded-xl border flex flex-col items-center justify-between cursor-pointer transition-all ${
                               isCur
@@ -908,7 +908,7 @@ export function CharacterCreator({
                             }`}
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
-                              <CharacterSpritePreview spriteKey={b.id} size={32} scale={1.4} />
+                              <CharacterSpritePreview assetProfileId={b.id} size={32} scale={1.4} />
                             </div>
                             <span className="text-[11px] font-mono font-bold text-white mt-1 text-center line-clamp-1">
                               {b.label}
@@ -942,7 +942,7 @@ export function CharacterCreator({
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               {cape.id ? (
-                                <CharacterSpritePreview spriteKey={cape.id} size={32} scale={1.4} />
+                                <CharacterSpritePreview assetProfileId={cape.id} size={32} scale={1.4} />
                               ) : (
                                 <span className="text-xs font-mono text-slate-500">None</span>
                               )}
@@ -976,7 +976,7 @@ export function CharacterCreator({
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               {hat.id ? (
-                                <CharacterSpritePreview spriteKey={hat.id} size={32} scale={1.4} />
+                                <CharacterSpritePreview assetProfileId={hat.id} size={32} scale={1.4} />
                               ) : (
                                 <span className="text-xs font-mono text-slate-500">None</span>
                               )}
@@ -1010,7 +1010,7 @@ export function CharacterCreator({
                           >
                             <div className="w-14 h-14 flex items-center justify-center">
                               {armor.id ? (
-                                <CharacterSpritePreview spriteKey={armor.id} size={32} scale={1.4} />
+                                <CharacterSpritePreview assetProfileId={armor.id} size={32} scale={1.4} />
                               ) : (
                                 <span className="text-xs font-mono text-slate-500">None</span>
                               )}
@@ -1066,13 +1066,13 @@ export function CharacterCreator({
                       {/* Sprite Grid */}
                       <div className="grid grid-cols-6 gap-2 max-h-[200px] overflow-y-auto p-1">
                         {currentSprites.map((sprite: string) => {
-                          const isCur = spriteId === sprite;
+                          const isCur = assetProfileId === sprite;
                           return (
                             <div
                               key={sprite}
                               onClick={() => {
                                 soundSynth?.playSelectSound?.();
-                                setSpriteId(sprite);
+                                setassetProfileId(sprite);
                               }}
                               className={`p-2 rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${
                                 isCur
@@ -1080,7 +1080,7 @@ export function CharacterCreator({
                                   : 'bg-black/50 border-pink-500/20 hover:border-pink-400 hover:scale-105'
                               }`}
                             >
-                              <CharacterSpritePreview spriteKey={sprite} size={32} scale={1.5} />
+                              <CharacterSpritePreview assetProfileId={sprite} size={32} scale={1.5} />
                             </div>
                           );
                         })}

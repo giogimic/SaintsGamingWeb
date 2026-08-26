@@ -8,7 +8,7 @@ import {
   ScrollText, MessageSquare, Sword, PawPrint, Flame,
   Coins, UserCheck, AlertCircle, TerminalSquare, UserRound,
   Play, Shield, Grid3X3, MapPin, CheckCircle2, ChevronUp,
-  FlipHorizontal, FlipVertical, RotateCw, Activity, Sparkles
+  FlipHorizontal, FlipVertical, RotateCw, Activity, Sparkles, UploadCloud
 } from 'lucide-react';
 import { useEditorStore, PanelId, STUDIO_DOCK_META } from './editor-store';
 import { useGameStore } from '../store';
@@ -484,6 +484,11 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
         <PanelDockButton id="spawner" icon={<Flame className="w-3.5 h-3.5" />} label="Spawners" active={Boolean(model?.getNodeById('spawner'))} onClick={() => openDockTab('spawner')} />
         <PanelDockButton id="loot" icon={<Coins className="w-3.5 h-3.5" />} label="Loot" active={Boolean(model?.getNodeById('loot'))} onClick={() => openDockTab('loot')} />
         <PanelDockButton id="items" icon={<Package className="w-3.5 h-3.5" />} label="Items" active={Boolean(model?.getNodeById('items'))} onClick={() => openDockTab('items')} />
+        <PanelDockButton id="professions" icon={<UserCheck className="w-3.5 h-3.5" />} label="Professions" active={Boolean(model?.getNodeById('professions'))} onClick={() => openDockTab('professions')} />
+        <PanelDockButton id="recipes" icon={<Flame className="w-3.5 h-3.5" />} label="Recipes" active={Boolean(model?.getNodeById('recipes'))} onClick={() => openDockTab('recipes')} />
+        <PanelDockButton id="dungeons" icon={<DoorOpen className="w-3.5 h-3.5" />} label="Dungeons" active={Boolean(model?.getNodeById('dungeons'))} onClick={() => openDockTab('dungeons')} />
+        <PanelDockButton id="shop" icon={<Coins className="w-3.5 h-3.5" />} label="Shops" active={Boolean(model?.getNodeById('shop'))} onClick={() => openDockTab('shop')} />
+        <PanelDockButton id="mounts" icon={<Sparkles className="w-3.5 h-3.5" />} label="Mounts" active={Boolean(model?.getNodeById('mounts'))} onClick={() => openDockTab('mounts')} />
         <PanelDockButton
           id="classes"
           icon={<UserCheck className="w-3.5 h-3.5" />}
@@ -496,6 +501,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = ({
         />
         <PanelDockButton id="gameplay" icon={<Activity className="w-3.5 h-3.5" />} label="Gameplay" active={Boolean(model?.getNodeById('gameplay'))} onClick={() => openDockTab('gameplay')} />
         <PanelDockButton id="problems" icon={<AlertCircle className="w-3.5 h-3.5" />} label="Diagnostics" active={Boolean(model?.getNodeById('problems'))} onClick={() => openDockTab('problems')} />
+        <PanelDockButton id="publishing" icon={<UploadCloud className="w-3.5 h-3.5 text-amber-400" />} label="Publish" active={Boolean(model?.getNodeById('publishing'))} onClick={() => openDockTab('publishing')} />
         {canDev && (
           <PanelDockButton id="dev" icon={<TerminalSquare className="w-3.5 h-3.5" />} label="Dev" active={Boolean(model?.getNodeById('dev'))} onClick={() => openDockTab('dev')} />
         )}

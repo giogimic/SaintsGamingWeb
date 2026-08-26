@@ -58,7 +58,7 @@ export const EntityEditorPanel: React.FC = () => {
   const [entityProps, setEntityProps] = useState<Record<string, unknown>>(() => ({
     ...defaultEntityProps(kind as any),
     displayName: 'New Entity',
-    spriteId: 'chest',
+    assetProfileId: 'chest',
   }));
   const [npcDialogue, setNpcDialogue] = useState('Welcome to the animist grounds, Saint!');
   const [questSlug, setQuestSlug] = useState('');
@@ -140,7 +140,7 @@ export const EntityEditorPanel: React.FC = () => {
     const handleSpritePicked = (e: Event) => {
       const customEv = e as CustomEvent<{ key: string; source: string }>;
       if (customEv.detail?.key) {
-        setEntityProps((prev) => ({ ...prev, spriteId: customEv.detail.key }));
+        setEntityProps((prev) => ({ ...prev, assetProfileId: customEv.detail.key }));
         showToast(`Assigned sprite: ${customEv.detail.key}`);
       }
     };
@@ -153,7 +153,7 @@ export const EntityEditorPanel: React.FC = () => {
     setEntityProps((prev) => ({
       ...prev,
       displayName: npc.name,
-      spriteId: npc.sprite || 'adventurer',
+      assetProfileId: npc.sprite || 'adventurer',
     }));
     setSpawnX(npc.x);
     setSpawnY(npc.y);
@@ -224,7 +224,7 @@ export const EntityEditorPanel: React.FC = () => {
     setEntityProps({
       ...defaultEntityProps(kind as any),
       displayName: 'New ' + kind,
-      spriteId: kind === 'npc' ? 'heroine' : 'chest',
+      assetProfileId: kind === 'npc' ? 'heroine' : 'chest',
     });
     setNpcDialogue('Welcome to the animist grounds, Saint!');
     setQuestSlug('');
@@ -259,7 +259,7 @@ export const EntityEditorPanel: React.FC = () => {
       return;
     }
     const npcName = String(entityProps.displayName || 'Villager');
-    const npcSprite = normalizeSpriteKey(String(entityProps.spriteId || 'adventurer'));
+    const npcSprite = normalizeSpriteKey(String(entityProps.assetProfileId || 'adventurer'));
     setSaving(true);
 
     if (selectedId) {

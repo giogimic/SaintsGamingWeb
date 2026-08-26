@@ -116,7 +116,7 @@ export default function GameOptionsMenu({
             },
             position: { x: 32, y: 32 },
             name: store.player.name || 'Player',
-            spriteId: store.player.spriteId || 'adventurer',
+            assetProfileId: store.player.assetProfileId || 'adventurer',
             currentInstanceId: store.instanceId,
             worldJoinSeq: store.worldJoinSeq,
             onSetWorldSessionState: store.setWorldSessionState,

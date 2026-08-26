@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   AlertTriangle,
   AlertCircle,
@@ -14,6 +14,7 @@ import {
   Layers,
   Sparkles,
   ShieldAlert,
+  Link2,
 } from 'lucide-react';
 import { useGameStore } from '../../store';
 import { useEditorStore } from '../editor-store';
@@ -22,11 +23,12 @@ import { toBaseMapId } from '@/shared/net/mapIds';
 import { normalizeGatesToArray } from '@/shared/game/mapGates';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { PLAYABLE_CLASS_IDS } from '@/shared/game/classCatalog';
+import { getOrphanedReferences, type OrphanedReference } from '@/app/actions/cross-references';
 
 export interface MapProblem {
   id: string;
   type: 'ERROR' | 'WARNING' | 'INFO';
-  category: 'GATE' | 'ENTITY' | 'LAYER' | 'SPAWN' | 'CONNECTION' | 'ASSET' | 'LIFECYCLE';
+  category: 'GATE' | 'ENTITY' | 'LAYER' | 'SPAWN' | 'CONNECTION' | 'ASSET' | 'LIFECYCLE' | 'RELATION';
   message: string;
   detail?: string;
   coordinate?: { r: number; c: number };
@@ -34,7 +36,9 @@ export interface MapProblem {
 }
 
 export function StudioProblemsPanel() {
-  const [activeTab, setActiveTab] = React.useState<'map' | 'runtime_assets'>('map');
+  const [activeTab, setActiveTab] = React.useState<'map' | 'runtime_assets' | 'references'>('map');
+  const [orphanedRefs, setOrphanedRefs] = useState<OrphanedReference[]>([]);
+  const dataVersion = useEditorStore((s) => s.dataVersion);
   const activeMapData = useGameStore((s) => s.activeMapData);
   const currentMapId = useGameStore((s) => s.currentMapId);
   const mapEntities = useGameStore((s) => s.mapEntities);
@@ -264,15 +268,38 @@ export function StudioProblemsPanel() {
     return list;
   }, [mapData, mapEntities, logicTiles]);
 
+  useEffect(() => {
+    let active = true;
+    getOrphanedReferences().then((orphans) => {
+      if (active) {
+        setOrphanedRefs(orphans);
+      }
+    });
+    return () => { active = false; };
+  }, [dataVersion]);
+
   const mapProblems = useMemo(() => problems.filter((p) => p.category !== 'ASSET' && p.category !== 'LIFECYCLE'), [problems]);
   const assetProblems = useMemo(() => problems.filter((p) => p.category === 'ASSET' || p.category === 'LIFECYCLE'), [problems]);
+  
+  const referenceProblems = useMemo<MapProblem[]>(() => {
+    return orphanedRefs.map((orph, i) => ({
+      id: `orphan_${orph.source.type}_${orph.source.slug}_${i}`,
+      type: 'ERROR',
+      category: 'RELATION',
+      message: orph.reason,
+      detail: `Source: ${orph.source.type} "${orph.source.slug}" -> Target: ${orph.target.type} "${orph.target.slug}" (${orph.relationship})`,
+    }));
+  }, [orphanedRefs]);
 
-  const activeProblemList = activeTab === 'map' ? mapProblems : assetProblems;
+  const activeProblemList = activeTab === 'map' ? mapProblems : (activeTab === 'runtime_assets' ? assetProblems : referenceProblems);
 
   const [isScanning, setIsScanning] = React.useState(false);
   const handleScan = () => {
     setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 400);
+    getOrphanedReferences().then((orphans) => {
+      setOrphanedRefs(orphans);
+      setIsScanning(false);
+    });
   };
 
   const errorCount = activeProblemList.filter((p) => p.type === 'ERROR').length;
@@ -318,7 +345,7 @@ export function StudioProblemsPanel() {
               type="button"
               onClick={handleScan}
               className="flex items-center gap-1 text-[10px] px-2 py-0.5 bg-[#1a2333] hover:bg-[#253247] text-[#cbb26a] rounded border border-[#806f47]/30 transition-all cursor-pointer"
-              title="Scan map for issues"
+              title="Scan map and references for issues"
             >
               <RefreshCw className={`w-3 h-3 ${isScanning ? 'animate-spin' : ''}`} />
               <span>Scan</span>
@@ -354,6 +381,18 @@ export function StudioProblemsPanel() {
             <Sparkles className="w-3 h-3 text-cyan-400" />
             Runtime Asset Health ({assetProblems.length})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('references')}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
+              activeTab === 'references'
+                ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 shadow-sm'
+                : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Link2 className="w-3 h-3 text-blue-400" />
+            Cross-References ({referenceProblems.length})
+          </button>
         </div>
       </div>
 
@@ -363,12 +402,18 @@ export function StudioProblemsPanel() {
           <div className="flex flex-col items-center justify-center h-full text-emerald-400 gap-2 p-6 text-center">
             <CheckCircle2 className="w-8 h-8 text-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
             <span className="font-bold text-sm">
-              {activeTab === 'map' ? 'No map validation issues found' : 'All runtime assets healthy'}
+              {activeTab === 'map'
+                ? 'No map validation issues found'
+                : activeTab === 'runtime_assets'
+                ? 'All runtime assets healthy'
+                : 'No broken cross-references detected'}
             </span>
             <span className="text-[11px] text-slate-400 max-w-xs">
               {activeTab === 'map'
                 ? 'All gates, entity placements, spawners, and layer bounds conform to engine specifications.'
-                : 'All tilesets, presentations, and entity sprite dependencies are resolved.'}
+                : activeTab === 'runtime_assets'
+                ? 'All tilesets, presentations, and entity sprite dependencies are resolved.'
+                : 'All dungeons, shops, mounts, and world events reference valid, existing definitions.'}
             </span>
           </div>
         ) : (

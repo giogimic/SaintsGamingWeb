@@ -260,7 +260,7 @@ export const PropertiesPanel: React.FC = () => {
               <div key={npc.id} className="bg-emerald-950/30 border border-emerald-500/40 p-2 rounded flex items-center justify-between">
                 <div>
                   <span className="text-emerald-300 font-bold block">{npc.name}</span>
-                  <span className="text-[9px] text-slate-400">Sprite: {npc.spriteId} · {npc.dialogId ? `Dialog: ${npc.dialogId}` : 'No Dialog'}</span>
+                  <span className="text-[9px] text-slate-400">Sprite: {npc.assetProfileId} · {npc.dialogId ? `Dialog: ${npc.dialogId}` : 'No Dialog'}</span>
                 </div>
               </div>
             ))}

@@ -33,6 +33,9 @@ export type StudioDockId =
   | 'characters'
   | 'classes'
   | 'items'
+  | 'professions'
+  | 'recipes'
+  | 'dungeons'
   | 'spawner'
   | 'prefab'
   | 'atlas'
@@ -42,8 +45,10 @@ export type StudioDockId =
   | 'settings'
   | 'dungeon'
   | 'shop'
+  | 'mounts'
   | 'worldevent'
-  | 'simulation';
+  | 'simulation'
+  | 'publishing';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -162,15 +167,27 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   },
   classes: {
     label: 'Classes',
-    blurb: 'Class and skill definitions.',
+    blurb: 'Hero classes and skills',
   },
   items: {
     label: 'Items',
-    blurb: 'Item definitions and economy values.',
+    blurb: 'Manage items and equipment',
+  },
+  professions: {
+    label: 'Professions',
+    blurb: 'Manage crafting professions',
+  },
+  recipes: {
+    label: 'Recipes',
+    blurb: 'Manage crafting recipes',
+  },
+  dungeons: {
+    label: 'Dungeons',
+    blurb: 'Manage dungeon sequences and instances',
   },
   spawner: {
     label: 'Spawners',
-    blurb: 'Monster spawners for hostile roaming enemies.',
+    blurb: 'Configure enemy spawn points',
   },
   prefab: {
     label: 'Prefabs',
@@ -204,6 +221,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
     label: 'Economy & Shops',
     blurb: 'Manage in-game merchants and item economies.',
   },
+  mounts: {
+    label: 'Mounts',
+    blurb: 'Define rideable mounts, flying, swimming, and collection integration.',
+  },
   worldevent: {
     label: 'World Events',
     blurb: 'Global events that mutate spawn rates or weather.',
@@ -211,5 +232,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   simulation: {
     label: 'Simulation Presets',
     blurb: 'Configure hardcore rules and experience multipliers.',
+  },
+  publishing: {
+    label: 'Publish & Releases',
+    blurb: 'Pre-flight validation gates, release snapshot history, and rollback.',
   },
 };

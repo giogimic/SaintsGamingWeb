@@ -61,7 +61,6 @@ describe('ProjectValidationRegistry (Phase 1D)', () => {
           nodes: [
             {
               id: 'node_start',
-              speakerName: 'Elder',
               text: 'Hello traveler!',
               options: [
                 {

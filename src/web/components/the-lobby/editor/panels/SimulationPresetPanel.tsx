@@ -1,128 +1,287 @@
 'use client';
 
-import React from 'react';
-import { Save, Plus, Trash2, ShieldAlert } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useEditorStore } from '../editor-store';
+import {
+  listSimulationPresets,
+  getSimulationPreset,
+  upsertSimulationPreset,
+  deleteSimulationPreset,
+  type SimulationPresetInput,
+} from '@/app/actions/simulation-presets';
+import type { SimulationPreset } from '@prisma/client';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
+
+function simResourceKey(form: SimulationPresetInput, activeSlug: string | null): string {
+  if (!activeSlug || !form.slug) return 'simulation:new';
+  return `simulation:${form.slug}`;
+}
+
+const EMPTY_FORM: SimulationPresetInput = {
+  slug: '',
+  name: '',
+  description: '',
+  isActive: false,
+  xpMultiplier: 1.0,
+  dropMultiplier: 1.0,
+  goldMultiplier: 1.0,
+};
 
 export const SimulationPresetPanel: React.FC = () => {
-  const { data: session } = useSession();
-  const isAdmin = (session?.user?.permissionLevel ?? 0) >= 3;
+  const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
+  const dataVersion = useEditorStore((s) => s.dataVersion);
 
-  if (!isAdmin) {
+  const [presets, setPresets] = useState<SimulationPreset[]>([]);
+  const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const [formData, setFormData] = useState<SimulationPresetInput>({ ...EMPTY_FORM });
+
+  const resourceKey = simResourceKey(formData, activeSlug);
+  const {
+    canUndoDefinition,
+    canRedoDefinition,
+    syncFormRef,
+    onFieldFocus,
+    onFieldBlur,
+    commitStructural,
+    applyHistory,
+  } = useDefinitionFormHistory<SimulationPresetInput>(resourceKey);
+
+  syncFormRef(formData);
+
+  const originalPreset = useMemo(() => presets.find(p => p.slug === activeSlug), [presets, activeSlug]);
+
+  const isDirty = useMemo(() => {
+    if (!activeSlug) return true;
+    if (!originalPreset) return false;
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400 font-mono text-xs">
-        <ShieldAlert className="w-8 h-8 mb-2 text-red-500/50" />
-        <p>Admin permissions required to modify Simulation Presets.</p>
-      </div>
+      formData.name !== originalPreset.name ||
+      formData.description !== (originalPreset.description || '') ||
+      formData.isActive !== originalPreset.isActive ||
+      formData.xpMultiplier !== originalPreset.xpMultiplier ||
+      formData.dropMultiplier !== originalPreset.dropMultiplier ||
+      formData.goldMultiplier !== originalPreset.goldMultiplier
     );
-  }
+  }, [formData, originalPreset, activeSlug]);
+
+  useEffect(() => {
+    let active = true;
+    listSimulationPresets(search).then((res) => {
+      if (!active) return;
+      if (res.success && res.data) {
+        setPresets(res.data);
+      }
+    });
+    return () => { active = false; };
+  }, [search, dataVersion]);
+
+  const handleSelect = async (slug: string) => {
+    const res = await getSimulationPreset(slug);
+    if (res.success && res.data) {
+      setActiveSlug(res.data.slug);
+      setFormData({
+        slug: res.data.slug,
+        name: res.data.name,
+        description: res.data.description || '',
+        isActive: res.data.isActive,
+        xpMultiplier: res.data.xpMultiplier,
+        dropMultiplier: res.data.dropMultiplier,
+        goldMultiplier: res.data.goldMultiplier,
+      });
+      setValidationError(null);
+    } else {
+      setValidationError(res.error || 'Failed to load preset');
+    }
+  };
+
+  const handleCreateNew = () => {
+    setActiveSlug(null);
+    setFormData({ ...EMPTY_FORM });
+    setValidationError(null);
+  };
+
+  const handleRevert = () => {
+    if (activeSlug) handleSelect(activeSlug);
+  };
+
+  const handleDelete = async () => {
+    if (!activeSlug) return;
+    if (!confirm(`Delete simulation preset ${activeSlug}?`)) return;
+    const res = await deleteSimulationPreset(activeSlug);
+    if (res.success) {
+      handleCreateNew();
+      incrementDataVersion();
+    } else {
+      setValidationError(res.error || 'Failed to delete');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.slug.trim()) {
+      setValidationError('Slug is required.');
+      return;
+    }
+    setSaving(true);
+    setValidationError(null);
+
+    const res = await upsertSimulationPreset({
+      ...formData,
+      slug: formData.slug.trim().toLowerCase(),
+    });
+    setSaving(false);
+    if (res.success && res.data) {
+      setActiveSlug(res.data.slug);
+      incrementDataVersion();
+    } else {
+      setValidationError(res.error || 'Failed to save preset.');
+    }
+  };
+
+  const handleChange = (field: keyof SimulationPresetInput, value: string | number | boolean) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const filteredPresets = presets.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.slug.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-300 font-mono text-xs">
-      <div className="flex items-center justify-between p-2 border-b border-slate-800 bg-[#0a1120]">
-        <h2 className="font-bold text-slate-100 flex items-center gap-2">
-          <span>⚙️ Simulation Presets</span>
-        </h2>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1 px-2 py-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-colors border border-blue-500/30">
-            <Plus className="w-3 h-3" /> New Preset
-          </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded bg-green-600/20 text-green-400 hover:bg-green-600/40 transition-colors border border-green-500/30">
-            <Save className="w-3 h-3" /> Save Changes
-          </button>
+    <CatalogEditorShell<SimulationPreset>
+      title="Simulation Presets"
+      search={search}
+      onSearchChange={setSearch}
+      items={filteredPresets}
+      activeId={activeSlug}
+      getItemId={(it) => it.slug}
+      getItemName={(it) => it.name}
+      onSelect={handleSelect}
+      onCreateNew={handleCreateNew}
+      onSave={handleSave}
+      onRevert={handleRevert}
+      onDelete={handleDelete}
+      saving={saving}
+      isDirty={(it) => it.slug === activeSlug ? isDirty : false}
+      validationError={validationError}
+      canUndoDefinition={canUndoDefinition}
+      canRedoDefinition={canRedoDefinition}
+      onUndoDefinition={() => applyHistory('undo', setFormData)}
+      onRedoDefinition={() => applyHistory('redo', setFormData)}
+    >
+      <div className="flex h-full flex-col p-4 overflow-y-auto">
+        <div className="mb-4 text-xs font-mono text-slate-500">
+          Simulation Configuration
         </div>
-      </div>
-      
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-64 border-r border-slate-800 bg-[#0a1120] flex flex-col">
-          <div className="p-2 border-b border-slate-800">
-            <input 
-              type="text" 
-              placeholder="Search presets..." 
-              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-300"
+
+        {/* ── Identity ────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+            Slug (ID)
+            <input
+              type="text"
+              disabled={!!activeSlug}
+              value={formData.slug}
+              onChange={(e) => handleChange('slug', e.target.value)}
+              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 disabled:opacity-50"
+              placeholder="e.g. hardcore_mode"
             />
-          </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            <div className="p-2 rounded hover:bg-slate-800/50 cursor-pointer flex justify-between group">
-              <span>Classic Experience</span>
-              <Trash2 className="w-3 h-3 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="p-2 rounded bg-blue-900/30 border border-blue-500/50 cursor-pointer flex justify-between group">
-              <span>Hardcore Mode</span>
-              <Trash2 className="w-3 h-3 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="p-2 rounded hover:bg-slate-800/50 cursor-pointer flex justify-between group">
-              <span>Seasonal Server</span>
-              <Trash2 className="w-3 h-3 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </div>
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+            Name
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
+              className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800"
+              placeholder="e.g. Hardcore Mode"
+            />
+          </label>
         </div>
 
-        {/* Editor */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="max-w-3xl space-y-6">
-            
-            <div className="space-y-4 bg-slate-900/50 p-4 rounded border border-slate-800">
-              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
-                <h3 className="text-sm font-semibold text-blue-400">Basic Info</h3>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-slate-300">Set as Global Default</span>
-                  <input type="checkbox" className="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500" />
-                </label>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-slate-500">ID</label>
-                  <input type="text" className="w-full bg-black/50 border border-slate-700 rounded px-2 py-1 text-slate-300" disabled value="sim_hardcore" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-500">Name</label>
-                  <input type="text" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 focus:border-blue-500 outline-none" defaultValue="Hardcore Mode" />
-                </div>
-                <div className="space-y-1 col-span-2">
-                  <label className="text-slate-500">Description</label>
-                  <textarea className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 focus:border-blue-500 outline-none h-16" defaultValue="A punishing simulation where drops and gold are incredibly rare." />
-                </div>
-              </div>
+        <label className="flex flex-col gap-1 mb-4 text-[11px] font-bold text-slate-400">
+          Description
+          <textarea
+            value={formData.description || ''}
+            onChange={(e) => handleChange('description', e.target.value)}
+            onFocus={onFieldFocus}
+            onBlur={onFieldBlur}
+            className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800 min-h-[60px]"
+          />
+        </label>
+
+        {/* ── Active Toggle ───────────────────────── */}
+        <label className="flex items-center gap-2 mb-6 text-[11px] font-bold text-slate-400">
+          <input
+            type="checkbox"
+            checked={formData.isActive}
+            onChange={(e) => handleChange('isActive', e.target.checked)}
+            className="accent-emerald-500"
+          />
+          Set as Active Preset
+          <span className="text-[10px] text-slate-500 font-normal ml-2">Only one preset should be active at a time.</span>
+        </label>
+
+        {/* ── Multipliers ─────────────────────────── */}
+        <div className="grid grid-cols-3 gap-6 mb-4">
+          <label className="flex flex-col gap-2 text-[11px] font-bold text-slate-400">
+            <div className="flex justify-between">
+              <span>XP Yield</span>
+              <span className="text-amber-300 font-mono">{formData.xpMultiplier}x</span>
             </div>
+            <input
+              type="range"
+              min="0.1"
+              max="5.0"
+              step="0.1"
+              value={formData.xpMultiplier}
+              onChange={(e) => handleChange('xpMultiplier', parseFloat(e.target.value))}
+              className="w-full accent-amber-500"
+            />
+            <span className="text-[10px] text-slate-500 font-normal">Globally modifies all experience gained.</span>
+          </label>
 
-            <div className="space-y-4 bg-slate-900/50 p-4 rounded border border-slate-800">
-              <h3 className="text-sm font-semibold text-amber-400 border-b border-slate-800 pb-2">Global Multipliers</h3>
-              <div className="grid grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-slate-500 flex justify-between">
-                    <span>XP Yield</span>
-                    <span className="text-amber-300 font-mono">0.5x</span>
-                  </label>
-                  <input type="range" min="0.1" max="5.0" step="0.1" defaultValue="0.5" className="w-full accent-amber-500" />
-                  <p className="text-[10px] text-slate-500 leading-tight">Globally modifies all experience gained by characters.</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-slate-500 flex justify-between">
-                    <span>Drop Rate</span>
-                    <span className="text-amber-300 font-mono">0.25x</span>
-                  </label>
-                  <input type="range" min="0.1" max="5.0" step="0.05" defaultValue="0.25" className="w-full accent-amber-500" />
-                  <p className="text-[10px] text-slate-500 leading-tight">Modifies base drop probability for all loot tables.</p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-slate-500 flex justify-between">
-                    <span>Gold Yield</span>
-                    <span className="text-amber-300 font-mono">0.1x</span>
-                  </label>
-                  <input type="range" min="0.1" max="5.0" step="0.1" defaultValue="0.1" className="w-full accent-amber-500" />
-                  <p className="text-[10px] text-slate-500 leading-tight">Modifies all gold drops and quest rewards.</p>
-                </div>
-              </div>
+          <label className="flex flex-col gap-2 text-[11px] font-bold text-slate-400">
+            <div className="flex justify-between">
+              <span>Drop Rate</span>
+              <span className="text-amber-300 font-mono">{formData.dropMultiplier}x</span>
             </div>
+            <input
+              type="range"
+              min="0.1"
+              max="5.0"
+              step="0.05"
+              value={formData.dropMultiplier}
+              onChange={(e) => handleChange('dropMultiplier', parseFloat(e.target.value))}
+              className="w-full accent-amber-500"
+            />
+            <span className="text-[10px] text-slate-500 font-normal">Modifies base drop probability for all loot tables.</span>
+          </label>
 
-          </div>
+          <label className="flex flex-col gap-2 text-[11px] font-bold text-slate-400">
+            <div className="flex justify-between">
+              <span>Gold Yield</span>
+              <span className="text-amber-300 font-mono">{formData.goldMultiplier}x</span>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="5.0"
+              step="0.1"
+              value={formData.goldMultiplier}
+              onChange={(e) => handleChange('goldMultiplier', parseFloat(e.target.value))}
+              className="w-full accent-amber-500"
+            />
+            <span className="text-[10px] text-slate-500 font-normal">Modifies all gold drops and quest rewards.</span>
+          </label>
         </div>
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 };
 

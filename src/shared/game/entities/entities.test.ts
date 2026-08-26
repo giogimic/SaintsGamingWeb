@@ -18,7 +18,7 @@ describe('Entity System E1 Contracts (Bible 20 §20 & Bible 34)', () => {
     expect(entity.components.identity?.name).toBe('Shadow Wolf');
     expect(entity.components.transform?.x).toBe(10);
     expect(entity.components.transform?.y).toBe(15);
-    expect(entity.components.sprite?.spriteId).toBe('wolf_dark');
+    expect(entity.components.appearance?.assetProfileId).toBe('wolf_dark');
     expect(entity.components.combatant?.faction).toBe('hostile');
     expect(entity.components.capabilities?.capturable).toBe(true);
     expect(entity.components.enabled).toBe(true);
@@ -60,7 +60,7 @@ describe('Entity System E1 Contracts (Bible 20 §20 & Bible 34)', () => {
     expect(entity.components.identity?.name).toBe('Elder Aaron');
     expect(entity.components.transform?.x).toBe(12);
     expect(entity.components.transform?.y).toBe(8);
-    expect(entity.components.sprite?.spriteId).toBe('npc_elder');
+    expect(entity.components.appearance?.assetProfileId).toBe('npc_elder');
     expect(entity.components.dialogue?.dialogueKey).toBe('elder_intro');
 
     const restoredNpc = entityToNpc(entity);

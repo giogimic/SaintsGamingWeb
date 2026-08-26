@@ -42,6 +42,7 @@ export const ItemEditorPanel: React.FC = () => {
     baseDurability: 100,
     baseStats: '',
     stackable: false,
+    iconAssetId: '',
   });
   const [dependencies, setDependencies] = useState<{ type: string; id: string; name: string }[]>([]);
 
@@ -73,7 +74,8 @@ export const ItemEditorPanel: React.FC = () => {
       formData.tier !== originalItem.tier ||
       formData.baseDurability !== (originalItem.baseDurability ?? undefined) ||
       formData.baseStats !== (originalItem.baseStats || '') ||
-      formData.stackable !== originalItem.stackable
+      formData.stackable !== originalItem.stackable ||
+      formData.iconAssetId !== (originalItem.iconAssetId || '')
     );
   }, [formData, originalItem, activeSlug]);
 
@@ -108,6 +110,7 @@ export const ItemEditorPanel: React.FC = () => {
           baseDurability: res.data.baseDurability ?? undefined,
           baseStats: res.data.baseStats || '',
           stackable: res.data.stackable,
+          iconAssetId: res.data.iconAssetId || '',
         });
         const deps = await getItemDependencies(targetSlug);
         if (deps.success && deps.data) {
@@ -137,6 +140,7 @@ export const ItemEditorPanel: React.FC = () => {
         baseDurability: res.data.baseDurability ?? undefined,
         baseStats: res.data.baseStats || '',
         stackable: res.data.stackable,
+        iconAssetId: res.data.iconAssetId || '',
       });
       // Load dependencies
       const deps = await getItemDependencies(slug);
@@ -162,6 +166,7 @@ export const ItemEditorPanel: React.FC = () => {
       baseDurability: undefined,
       baseStats: '{\n  "attackPower": 10\n}',
       stackable: false,
+      iconAssetId: '',
     });
     setDependencies([]);
   };
@@ -307,14 +312,23 @@ export const ItemEditorPanel: React.FC = () => {
             />
           </div>
           <div className="w-24">
-            <label className="block text-[10px] font-bold text-[#806f47] mb-1 uppercase tracking-wider">
-              Tier
-            </label>
+            <label className="text-xs text-blue-300 uppercase tracking-widest font-semibold">Tier / Rank</label>
             <input
               type="number"
               className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3]"
               value={formData.tier}
               onChange={(e) => setFormData({ ...formData, tier: parseInt(e.target.value) || 1 })}
+            />
+          </div>
+
+          <div className="flex-1">
+            <label className="text-xs text-blue-300 uppercase tracking-widest font-semibold">Icon Asset ID</label>
+            <input
+              type="text"
+              className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3]"
+              placeholder="e.g. icon_sword_01"
+              value={formData.iconAssetId || ''}
+              onChange={(e) => setFormData({ ...formData, iconAssetId: e.target.value })}
             />
           </div>
         </div>

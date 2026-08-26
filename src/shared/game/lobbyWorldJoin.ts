@@ -21,7 +21,7 @@ export interface JoinWorldOptions {
   contract: JoinContract;
   position?: { x?: number; y?: number };
   name?: string;
-  spriteId?: string;
+  assetProfileId?: string;
   worldSessionState: WorldSessionState;
   currentInstanceId?: string | null;
   worldJoinSeq: number;
@@ -95,7 +95,7 @@ export function joinWorld(opts: JoinWorldOptions): JoinWorldResult {
     x: typeof opts.position?.x === 'number' ? opts.position.x : 14,
     y: typeof opts.position?.y === 'number' ? opts.position.y : 15,
     name: opts.name || 'Player',
-    spriteId: opts.spriteId || 'adventurer',
+    assetProfileId: opts.assetProfileId || 'adventurer',
     joinSeq: nextSeq,
   };
 

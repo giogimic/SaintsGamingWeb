@@ -19,8 +19,8 @@ export interface InitializeGamePayload {
     slug: string;
     name: string;
     classId: string;
-    spriteKey: string;
-    spriteBundleId?: string | null;
+    assetProfileId: string;
+    assetBundleId?: string | null;
     flavor?: string;
     tag?: string;
     tagColor?: string;
@@ -91,16 +91,16 @@ export async function POST(req: Request) {
     }
 
     for (const char of body.characters) {
-      if (!char.name?.trim() || !char.slug?.trim() || !char.spriteKey?.trim()) {
+      if (!char.name?.trim() || !char.slug?.trim() || !char.assetProfileId?.trim()) {
         return NextResponse.json(
           { error: `Invalid character configuration for '${char.name || 'Unnamed'}'` },
           { status: 400 }
         );
       }
-      const asset = await prisma.gameAsset.findUnique({ where: { id: char.spriteKey } });
+      const asset = await prisma.gameAsset.findUnique({ where: { id: char.assetProfileId } });
       if (!asset) {
         return NextResponse.json(
-          { error: `Strict Validation Failed: Canonical Asset ID '${char.spriteKey}' not found in library.` },
+          { error: `Strict Validation Failed: Canonical Asset ID '${char.assetProfileId}' not found in library.` },
           { status: 400 }
         );
       }
@@ -199,8 +199,8 @@ export async function POST(req: Request) {
             gameId: 'saints',
             name: char.name.trim(),
             classId: char.classId || 'WARRIOR',
-            spriteKey: char.spriteKey,
-            spriteBundleId: char.spriteBundleId || null,
+            assetProfileId: char.assetProfileId,
+            assetBundleId: char.assetBundleId || null,
             flavor: char.flavor?.trim() || `${char.name} the ${char.classId || 'Adventurer'}`,
             tag: char.tag || (i === 0 ? 'Primary' : 'Hero'),
             tagColor: char.tagColor || '#38bdf8',
@@ -214,8 +214,8 @@ export async function POST(req: Request) {
           update: {
             name: char.name.trim(),
             classId: char.classId || 'WARRIOR',
-            spriteKey: char.spriteKey,
-            spriteBundleId: char.spriteBundleId || null,
+            assetProfileId: char.assetProfileId,
+            assetBundleId: char.assetBundleId || null,
             flavor: char.flavor?.trim() || `${char.name} the ${char.classId || 'Adventurer'}`,
             tag: char.tag || (i === 0 ? 'Primary' : 'Hero'),
             tagColor: char.tagColor || '#38bdf8',
