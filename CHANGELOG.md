@@ -1,3 +1,8 @@
+## [2.1.459-37] - 2026-08-25
+### Docker Compose Network Subnet Fix
+- **Docker Compose Network IPAM**:
+  - Removed the hardcoded custom bridge subnet (`172.28.0.0/16`) in `setup.sh` and `update.sh` to prevent `Pool overlaps with other one on this address space` daemon errors when that subnet is already in use by another docker network (like the lobby server). Docker will now auto-allocate a safe subnet while still retaining the deterministic network name.
+
 ## [2.1.459-36] - 2026-08-25
 ### Docker Compose Network IPAM Subnet Specification & Compose v2 Modernization
 - **Docker Compose Network IPAM**:
