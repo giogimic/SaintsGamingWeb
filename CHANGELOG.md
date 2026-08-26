@@ -1,3 +1,8 @@
+## [2.1.459-39] - 2026-08-25
+### MariaDB LongText Schema Preparation Fix
+- **Database Schema Validation**:
+  - Added `body`, `excerpt`, and `description` to the `prepare-prisma.js` script so that they are correctly mapped to MySQL `@db.Text` or `@db.LongText` rather than Prisma's default `VARCHAR(191)`. This fixes the `Invalid 'prisma.newsArticle.upsert()' invocation: The provided value for the column is too long` error when pushing dummy data containing full markdown bodies.
+
 ## [2.1.459-38] - 2026-08-25
 ### Docker Compose Network Subnet Fix (Round 2)
 - **Docker Compose Network IPAM**:
