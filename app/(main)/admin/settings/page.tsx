@@ -8,7 +8,7 @@ import { updateSiteSettings } from "../actions";
 
 export default async function AdminSettingsPage() {
 
-  
+
   const session = await auth();
   const user = session?.user?.id ? await prisma.user.findUnique({ where: { id: session.user.id } }) : null;
   if (!user || user.permissionLevel < 1000) {
@@ -16,14 +16,14 @@ export default async function AdminSettingsPage() {
   }
 
   const settings = await prisma.siteSetting.findMany();
-  
+
   // Convert array to a key-value map for easy access
   const configMap = settings.reduce((acc, curr) => {
     acc[curr.key] = curr.value;
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.459-36";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.459-35";
 
 
 
@@ -35,7 +35,7 @@ export default async function AdminSettingsPage() {
   const startingCash = configMap["ucp_starting_cash"] || "5000";
   const startingBank = configMap["ucp_starting_bank"] || "10000";
   const registrationEnabled = configMap["ucp_registration_enabled"] || "true";
-  
+
   const fivemServerIp = configMap["fivem_server_ip"] || "";
   const discordGuildId = configMap["discord_guild_id"] || "";
   const discordInviteUrl = configMap["DISCORD_INVITE_URL"] || "https://discord.saintsgaming.net";
@@ -53,20 +53,20 @@ export default async function AdminSettingsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="REALM_NAME">Realm / Game Name</Label>
-              <Input 
-                id="REALM_NAME" 
-                name="REALM_NAME" 
-                defaultValue={realmName} 
+              <Input
+                id="REALM_NAME"
+                name="REALM_NAME"
+                defaultValue={realmName}
               />
               <p className="text-xs text-muted-foreground">The game title displayed on the home page showcase, server select, and navigation.</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="REALM_DESCRIPTION">Game Description / Tagline</Label>
-              <Input 
-                id="REALM_DESCRIPTION" 
-                name="REALM_DESCRIPTION" 
-                defaultValue={realmDescription} 
+              <Input
+                id="REALM_DESCRIPTION"
+                name="REALM_DESCRIPTION"
+                defaultValue={realmDescription}
               />
               <p className="text-xs text-muted-foreground">The game description displayed on the home page showcase card.</p>
             </div>
@@ -74,14 +74,14 @@ export default async function AdminSettingsPage() {
 
           <div className="space-y-4 border-b pb-6">
             <h2 className="text-xl font-semibold">User Control Panel Limits</h2>
-            
+
             <div className="space-y-2">
               <Label htmlFor="ucp_max_characters">Maximum Characters Per User</Label>
-              <Input 
-                id="ucp_max_characters" 
-                name="ucp_max_characters" 
-                type="number" 
-                defaultValue={maxCharacters} 
+              <Input
+                id="ucp_max_characters"
+                name="ucp_max_characters"
+                type="number"
+                defaultValue={maxCharacters}
               />
               <p className="text-xs text-muted-foreground">The maximum number of character slots available to a standard user.</p>
             </div>
@@ -131,60 +131,60 @@ export default async function AdminSettingsPage() {
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Starting Economy Variables</h2>
-            
+
             <div className="space-y-2">
               <Label htmlFor="ucp_starting_cash">Starting Cash</Label>
-              <Input 
-                id="ucp_starting_cash" 
-                name="ucp_starting_cash" 
-                type="number" 
-                defaultValue={startingCash} 
+              <Input
+                id="ucp_starting_cash"
+                name="ucp_starting_cash"
+                type="number"
+                defaultValue={startingCash}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="ucp_starting_bank">Starting Bank Balance</Label>
-              <Input 
-                id="ucp_starting_bank" 
-                name="ucp_starting_bank" 
-                type="number" 
-                defaultValue={startingBank} 
+              <Input
+                id="ucp_starting_bank"
+                name="ucp_starting_bank"
+                type="number"
+                defaultValue={startingBank}
               />
             </div>
           </div>
 
           <div className="space-y-4 pt-6 border-t">
             <h2 className="text-xl font-semibold">Integrations</h2>
-            
+
             <div className="space-y-2">
               <Label htmlFor="fivem_server_ip">FiveM Server IP:Port</Label>
-              <Input 
-                id="fivem_server_ip" 
-                name="fivem_server_ip" 
+              <Input
+                id="fivem_server_ip"
+                name="fivem_server_ip"
                 placeholder="e.g. 54.39.51.108:30120"
-                defaultValue={fivemServerIp} 
+                defaultValue={fivemServerIp}
               />
               <p className="text-xs text-muted-foreground">Used for the live server status widget.</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="discord_guild_id">Discord Guild (Server) ID</Label>
-              <Input 
-                id="discord_guild_id" 
-                name="discord_guild_id" 
+              <Input
+                id="discord_guild_id"
+                name="discord_guild_id"
                 placeholder="e.g. 123456789012345678"
-                defaultValue={discordGuildId} 
+                defaultValue={discordGuildId}
               />
               <p className="text-xs text-muted-foreground">Used for Discord role synchronization.</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="DISCORD_INVITE_URL">Discord Invite URL</Label>
-              <Input 
-                id="DISCORD_INVITE_URL" 
-                name="DISCORD_INVITE_URL" 
+              <Input
+                id="DISCORD_INVITE_URL"
+                name="DISCORD_INVITE_URL"
                 placeholder="e.g. https://discord.saintsgaming.net"
-                defaultValue={discordInviteUrl} 
+                defaultValue={discordInviteUrl}
               />
               <p className="text-xs text-muted-foreground">Used for the Join Discord buttons.</p>
             </div>

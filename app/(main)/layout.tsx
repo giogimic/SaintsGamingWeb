@@ -15,7 +15,7 @@ export default async function MainLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  
+
   let dbPermissionLevel = undefined;
   let dbIsWriter = false;
   if (session?.user?.id) {
@@ -38,7 +38,7 @@ export default async function MainLayout({
   let showUcpInNav = false;
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.459-36";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.459-35";
 
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;

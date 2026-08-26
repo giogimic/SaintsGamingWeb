@@ -41,12 +41,3 @@ services:
       start_period: 40s
     # Socket.io + GameEngine run inside web via server.ts (npm start).
     # Legacy separate game-server.js on :3001 was removed — do not resurrect it.
-
-networks:
-  default:
-    name: saintsgamingweb_default
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16

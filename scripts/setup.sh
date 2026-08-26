@@ -492,6 +492,21 @@ elif [ "$DB_PROVIDER_OPT" = "3" ]; then
     DATABASE_URL="mysql://${EXT_USER}:${EXT_PASS}@${EXT_HOST}:${EXT_PORT}/${EXT_DB}"
 fi
 
+# --- Append explicit network IPAM block (must come AFTER all services, including optional db) ---
+if ! grep -q "^networks:" docker-compose.yml 2>/dev/null; then
+    cat >> docker-compose.yml <<'NETEOF'
+
+networks:
+  default:
+    name: saintsgamingweb_default
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+NETEOF
+fi
+
 # Write the .env file — pure bash, guaranteed to work on any Linux system
 cat > .env <<ENVEOF
 NEXT_PUBLIC_SITE_URL=${SITE_URL}
