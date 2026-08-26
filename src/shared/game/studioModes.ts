@@ -39,7 +39,11 @@ export type StudioDockId =
   | 'problems'
   | 'streaming'
   | 'gameplay'
-  | 'settings';
+  | 'settings'
+  | 'dungeon'
+  | 'shop'
+  | 'worldevent'
+  | 'simulation';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -191,5 +195,21 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   settings: {
     label: 'Server Settings',
     blurb: 'Configure realm identity, Saint/Hero terminology, Soul Link chat, and capture mechanics.',
+  },
+  dungeon: {
+    label: 'Dungeons',
+    blurb: 'Manage instanced dungeons and their parameters.',
+  },
+  shop: {
+    label: 'Economy & Shops',
+    blurb: 'Manage in-game merchants and item economies.',
+  },
+  worldevent: {
+    label: 'World Events',
+    blurb: 'Global events that mutate spawn rates or weather.',
+  },
+  simulation: {
+    label: 'Simulation Presets',
+    blurb: 'Configure hardcore rules and experience multipliers.',
   },
 };

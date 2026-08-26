@@ -66,7 +66,7 @@ describe('ProjectValidationRegistry (Phase 1D)', () => {
               options: [
                 {
                   id: 'opt_1',
-                  text: 'Take quest',
+                  label: 'Take quest',
                   nextNodeId: 'node_missing_404',
                 },
               ],

@@ -1867,3 +1867,52 @@ model UsableAsset {
   @@index([sourceAssetId])
 }
 
+
+model DungeonTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  minLevel        Int      @default(1)
+  maxLevel        Int?
+  maxPlayers      Int      @default(4)
+  isInstanced     Boolean  @default(true)
+  entryConditions String?  
+  mapIdsData      String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ShopTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  currency        String   @default("gold")
+  refreshInterval Int?     
+  itemsSoldData   String   @default("[]") 
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model WorldEventTemplate {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  isActive        Boolean  @default(false)
+  scheduleCron    String?
+  durationSeconds Int?
+  mutationsData   String   @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SimulationPreset {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  isActive        Boolean  @default(false)
+  xpMultiplier    Float    @default(1.0)
+  dropMultiplier  Float    @default(1.0)
+  goldMultiplier  Float    @default(1.0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
