@@ -500,6 +500,10 @@ networks:
   default:
     name: saintsgamingweb_default
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.254.254.0/24
 NETEOF
 fi
 
