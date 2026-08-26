@@ -30,8 +30,8 @@ export function npcToEntity(npc: NPCPlacement): EntityInstanceV1 {
         elevation: 0,
         facing: (npc.direction as any) || 'S',
       },
-      sprite: {
-        spriteId: npc.sprite || 'hero_male',
+      appearance: {
+        assetProfileId: npc.sprite || 'hero_male',
         scale: 1,
       },
       interact: {
@@ -63,7 +63,7 @@ export function entityToNpc(entity: EntityInstanceV1): NPCPlacement | null {
   if (!transform) return null;
 
   const identity = entity.components.identity;
-  const sprite = entity.components.sprite;
+  const appearance = entity.components.appearance;
   const dialogue = entity.components.dialogue;
 
   return {
@@ -72,7 +72,7 @@ export function entityToNpc(entity: EntityInstanceV1): NPCPlacement | null {
     name: identity?.name || 'NPC',
     x: transform.x,
     y: transform.y,
-    sprite: sprite?.spriteId || 'hero_male',
+    sprite: appearance?.assetProfileId || 'hero_male',
     direction: transform.facing || 'down',
     dialogueKey: dialogue?.dialogueKey,
   };

@@ -22,7 +22,7 @@ describe('lobbyWorldJoin', () => {
       },
       position: { x: 14, y: 15 },
       name: 'Hero',
-      spriteId: 'adventurer',
+      assetProfileId: 'adventurer',
       worldSessionState: worldState,
       currentInstanceId: null,
       worldJoinSeq: seq,

@@ -226,7 +226,7 @@ export default async function ProfilePage() {
                       if (char.stateData) charState = JSON.parse(char.stateData);
                     } catch {}
 
-                    const isCustomSprite = char.spriteId && (char.spriteId.startsWith('/') || char.spriteId.startsWith('http'));
+                    const isCustomSprite = char.assetProfileId && (char.assetProfileId.startsWith('/') || char.assetProfileId.startsWith('http'));
 
                     return (
                       <Link 
@@ -237,7 +237,7 @@ export default async function ProfilePage() {
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-14 h-14 bg-black/60 rounded-lg flex items-center justify-center shrink-0 border border-emerald-500/30 overflow-hidden shadow-inner">
                             {isCustomSprite ? (
-                              <img src={char.spriteId} alt={char.name} className="w-10 h-10 object-contain pixelated" />
+                              <img src={char.assetProfileId} alt={char.name} className="w-10 h-10 object-contain pixelated" />
                             ) : (
                               <Gamepad2 className="w-7 h-7 text-emerald-400" />
                             )}

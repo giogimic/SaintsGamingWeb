@@ -67,6 +67,8 @@ export const RealtimeEvents = {
   STUDIO_UNLOCK: "studio_unlock",
   STUDIO_PRESENCE: "studio_presence",
   CONTENT_RELOAD: "content_reload",
+  STUDIO_TEST_RULE: "studio_test_rule",
+  RULE_TRACE: "rule_trace",
 
   // State Resynchronization
   RESYNC_REQUEST: "resync_request",
@@ -88,7 +90,7 @@ export interface JoinMapPayload {
   isPrivate?: boolean;
   pie?: boolean;
   name?: string;
-  spriteId?: string;
+  assetProfileId?: string;
   x?: number;
   y?: number;
   direction?: string;
@@ -109,7 +111,7 @@ export interface PlayerPublicSnapshot {
   socketId: string;
   accountId: string;
   name: string;
-  spriteId: string;
+  assetProfileId: string;
   x: number;
   y: number;
   direction: string;
@@ -215,4 +217,18 @@ export interface ResyncStatePayload {
   revision: number;
   players: Record<string, PlayerPublicSnapshot>;
   locks: Record<string, StudioSoftLock>;
+}
+
+export interface RuleTracePayload {
+  ruleId: string;
+  nodeType: string;
+  expected?: any;
+  actual?: any;
+  passed: boolean;
+  timestamp: number;
+}
+
+export interface TestRuleCommand {
+  ruleId: string;
+  mockContext?: any;
 }

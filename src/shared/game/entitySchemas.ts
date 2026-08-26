@@ -83,7 +83,7 @@ const NPC_FIELDS: SchemaField[] = [
   { key: "harvestable", label: "Harvestable", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can be gathered with gathering tools/skills" },
   { key: "destructible", label: "Destructible", type: "boolean", category: "Capabilities", defaultValue: false, description: "Can take damage and break in real-time" },
   { key: "interactable", label: "Interactable", type: "boolean", category: "Capabilities", defaultValue: true, description: "Responds to interact key / click" },
-  { key: "spriteId", label: "Sprite", type: "string", category: "Appearance", defaultValue: "adventurer" },
+  { key: "assetProfileId", label: "Asset Profile", type: "string", category: "Appearance", defaultValue: "adventurer" },
   { key: "scale", label: "Scale", type: "number", category: "Appearance", defaultValue: 1, min: 0.25, max: 4 },
   {
     key: "behaviour",
@@ -263,7 +263,7 @@ export const ENTITY_SCHEMAS: Record<EntitySchemaKind, EntitySchema> = {
     fields: [
       { key: "id", label: "Internal ID", type: "string", category: "General" },
       { key: "displayName", label: "Display Name", type: "string", category: "General", defaultValue: "Door" },
-      { key: "spriteId", label: "Sprite", type: "string", category: "Appearance" },
+      { key: "assetProfileId", label: "Asset Profile", type: "string", category: "Appearance" },
       { key: "locked", label: "Locked", type: "boolean", category: "Permissions", defaultValue: false },
       { key: "onOpen", label: "On Open", type: "string", category: "Events" },
     ],
@@ -288,7 +288,7 @@ export const ENTITY_SCHEMAS: Record<EntitySchemaKind, EntitySchema> = {
     fields: [
       { key: "id", label: "Internal ID", type: "string", category: "General" },
       { key: "displayName", label: "Display Name", type: "string", category: "General", defaultValue: "Decor" },
-      { key: "spriteId", label: "Sprite", type: "string", category: "Appearance" },
+      { key: "assetProfileId", label: "Asset Profile", type: "string", category: "Appearance" },
     ],
   },
   warp: {

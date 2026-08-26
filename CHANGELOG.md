@@ -1,3 +1,18 @@
+## [2.1.459-52] - 2026-08-26
+### Studio Master Plan: Vertical Slices & Shared Platform Layer
+- **Content Studio Vertical Slices (A–H)**:
+  - Upgraded models and panels for Asset, Atlas, Hero, Profession, Recipe, Dungeon, Shop, Mount, World Event, and Simulation systems to canonical `slug/gameId/profileId` and `CatalogEditorShell`.
+- **Phase 2: Cross-Reference & Dependency Graph**:
+  - Added `definitionRegistry.ts`, `cross-references.ts` server graph builder, `DefinitionRefBadge.tsx` for reverse reference inspection ("Used by N"), and broken reference diagnostics in `StudioProblemsPanel.tsx`.
+- **Phase 3: Shared Rules & Conditions Engine**:
+  - Implemented `RuleConditionBuilder.tsx` and `RuleActionBuilder.tsx` visual editors; integrated into `DungeonEditorPanel` (Clear Conditions) and `MountEditorPanel` (Requirements).
+- **Phase 4: Asset Ingestion & Reference Pickers**:
+  - Added `assets.ts` querying UsableAssets; built `AssetRefPicker.tsx` with modal browser and integrated into Mount Studio.
+- **Phase 5: Publishing Pipeline & Validation Gates**:
+  - Added `WorldPublishSnapshot` model, `publishing.ts` pre-flight gate actions, `PublishManagerPanel.tsx`, release history timeline, and 1-click snapshot rollback.
+- **Phase 6: Simulation & Balance Scaling**:
+  - Created `simulationModifiers.ts`, integrated multiplier scaling into `ruleEngine.ts` action execution, and verified via Vitest unit test suite.
+
 ## [2.1.459-50] - 2026-08-26
 ### Tileset Picker Bug Fixes
 - **Tileset Picker UI**:

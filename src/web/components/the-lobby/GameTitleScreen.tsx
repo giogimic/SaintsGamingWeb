@@ -712,7 +712,7 @@ export default function GameTitleScreen({
               <div className="relative z-10 w-24 h-24 flex items-center justify-center">
                 {activeChar ? (
                   <CharacterSpritePreview
-                    spriteKey={activeChar.spriteId}
+                    assetProfileId={activeChar.spriteId}
                     size={32}
                     scale={2.4}
                   />

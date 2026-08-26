@@ -341,7 +341,7 @@ export function CharacterSelector({
                       >
                         <CharacterSpritePreview
                           layers={charLayers}
-                          spriteKey={char.spriteId || 'adventurer'}
+                          assetProfileId={char.spriteId || 'adventurer'}
                           size={32}
                           scale={1.8}
                           className="transition-transform group-hover:scale-110 duration-200 drop-shadow-[0_0_10px_rgba(242,0,137,0.6)]"

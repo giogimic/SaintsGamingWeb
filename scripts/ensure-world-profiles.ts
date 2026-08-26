@@ -46,6 +46,20 @@ async function main() {
     console.warn("[skip] hero gameId tag", e);
   }
 
+  // Tag Dungeons, Shops, Mounts, Events, Simulation presets
+  try {
+    await Promise.all([
+      prisma.dungeonTemplate.updateMany({ data: { gameId: "saints" } }),
+      prisma.shopTemplate.updateMany({ data: { gameId: "saints" } }),
+      prisma.mountTemplate.updateMany({ data: { gameId: "saints" } }),
+      prisma.worldEventTemplate.updateMany({ data: { gameId: "saints" } }),
+      prisma.simulationPreset.updateMany({ data: { gameId: "saints" } }),
+    ]);
+    console.log("[ok] tagged dungeons, shops, mounts, events, presets → saints");
+  } catch (e) {
+    console.warn("[skip] definition models gameId tag", e);
+  }
+
   await prisma.$disconnect();
   console.log("[done] world profiles ready");
 }

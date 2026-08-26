@@ -1,142 +1,279 @@
 'use client';
 
-import React from 'react';
-import { Save, Plus, Trash2, ShieldAlert } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useEditorStore } from '../editor-store';
+import {
+  listShops,
+  getShop,
+  upsertShop,
+  deleteShop,
+  type ShopTemplateInput,
+} from '@/app/actions/shops';
+import type { ShopTemplate } from '@prisma/client';
+import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
+import { DefinitionRefBadge } from '../components/DefinitionRefBadge';
+
+function shopResourceKey(form: ShopTemplateInput, activeSlug: string | null): string {
+  if (!activeSlug || !form.slug) return 'shop:new';
+  return `shop:${form.slug}`;
+}
 
 export const ShopEditorPanel: React.FC = () => {
-  const { data: session } = useSession();
-  const isAdmin = (session?.user?.permissionLevel ?? 0) >= 3;
+  const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
+  const dataVersion = useEditorStore((s) => s.dataVersion);
 
-  if (!isAdmin) {
+  const [shops, setShops] = useState<ShopTemplate[]>([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const [formData, setFormData] = useState<ShopTemplateInput>({
+    slug: '',
+    name: '',
+    description: '',
+    currency: 'gold',
+    refreshInterval: 0,
+    itemsSoldData: '[]',
+  });
+
+  const resourceKey = shopResourceKey(formData, activeSlug);
+  const {
+    canUndoDefinition,
+    canRedoDefinition,
+    syncFormRef,
+    onFieldFocus,
+    onFieldBlur,
+    commitStructural,
+    applyHistory,
+  } = useDefinitionFormHistory<ShopTemplateInput>(resourceKey);
+
+  syncFormRef(formData);
+
+  const originalShop = useMemo(() => shops.find(s => s.slug === activeSlug), [shops, activeSlug]);
+
+  const isDirty = useMemo(() => {
+    if (!activeSlug) return true;
+    if (!originalShop) return false;
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4 text-center text-slate-400 font-mono text-xs">
-        <ShieldAlert className="w-8 h-8 mb-2 text-red-500/50" />
-        <p>Admin permissions required to modify Shop definitions.</p>
-      </div>
+      formData.name !== originalShop.name ||
+      formData.description !== (originalShop.description || '') ||
+      formData.currency !== originalShop.currency ||
+      formData.refreshInterval !== (originalShop.refreshInterval || 0) ||
+      formData.itemsSoldData !== originalShop.itemsSoldData
     );
-  }
+  }, [formData, originalShop, activeSlug]);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    listShops(search).then((res) => {
+      if (!active) return;
+      if (res.success && res.data) {
+        setShops(res.data);
+      }
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [search, dataVersion]);
+
+  const handleSelect = async (slug: string) => {
+    setLoading(true);
+    const res = await getShop(slug);
+    setLoading(false);
+    if (res.success && res.data) {
+      setActiveSlug(res.data.slug);
+      setFormData({
+        slug: res.data.slug,
+        name: res.data.name,
+        description: res.data.description || '',
+        currency: res.data.currency || 'gold',
+        refreshInterval: res.data.refreshInterval || 0,
+        itemsSoldData: res.data.itemsSoldData || '[]',
+      });
+      setValidationError(null);
+    } else {
+      setValidationError(res.error || 'Failed to load shop');
+    }
+  };
+
+  const handleCreateNew = () => {
+    setActiveSlug(null);
+    setFormData({
+      slug: '',
+      name: '',
+      description: '',
+      currency: 'gold',
+      refreshInterval: 0,
+      itemsSoldData: '[]',
+    });
+    setValidationError(null);
+  };
+
+  const handleRevert = () => {
+    if (activeSlug) {
+      handleSelect(activeSlug);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!activeSlug) return;
+    if (!confirm(`Delete shop ${activeSlug}?`)) return;
+    setLoading(true);
+    const res = await deleteShop(activeSlug);
+    setLoading(false);
+    if (res.success) {
+      handleCreateNew();
+      incrementDataVersion();
+    } else {
+      setValidationError(res.error || 'Failed to delete');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.slug.trim()) {
+      setValidationError('Slug is required.');
+      return;
+    }
+    setSaving(true);
+    setValidationError(null);
+
+    const input: ShopTemplateInput = {
+      ...formData,
+      slug: formData.slug.trim().toLowerCase(),
+    };
+
+    const res = await upsertShop(input);
+    setSaving(false);
+    if (res.success && res.data) {
+      setActiveSlug(res.data.slug);
+      incrementDataVersion();
+    } else {
+      setValidationError(res.error || 'Failed to save shop.');
+    }
+  };
+
+  const handleChange = (field: keyof ShopTemplateInput, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const filteredShops = shops.filter(s => 
+    s.name.toLowerCase().includes(search.toLowerCase()) || 
+    s.slug.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="flex flex-col h-full bg-[#050b14] text-slate-300 font-mono text-xs">
-      <div className="flex items-center justify-between p-2 border-b border-slate-800 bg-[#0a1120]">
-        <h2 className="font-bold text-slate-100 flex items-center gap-2">
-          <span>💰 Economy & Shops Studio</span>
-        </h2>
-        <div className="flex gap-2">
-          <button className="flex items-center gap-1 px-2 py-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-colors border border-blue-500/30">
-            <Plus className="w-3 h-3" /> New Shop
-          </button>
-          <button className="flex items-center gap-1 px-2 py-1 rounded bg-green-600/20 text-green-400 hover:bg-green-600/40 transition-colors border border-green-500/30">
-            <Save className="w-3 h-3" /> Save Changes
-          </button>
+    <CatalogEditorShell<ShopTemplate>
+      title="Shop Studio"
+      search={search}
+      onSearchChange={setSearch}
+      items={filteredShops}
+      activeId={activeSlug}
+      getItemId={(it) => it.slug}
+      getItemName={(it) => it.name}
+      onSelect={handleSelect}
+      onCreateNew={handleCreateNew}
+      onSave={handleSave}
+      onRevert={handleRevert}
+      onDelete={handleDelete}
+      saving={saving}
+      isDirty={(it) => it.slug === activeSlug ? isDirty : false}
+      validationError={validationError}
+      canUndoDefinition={canUndoDefinition}
+      canRedoDefinition={canRedoDefinition}
+      onUndoDefinition={() => applyHistory('undo', setFormData)}
+      onRedoDefinition={() => applyHistory('redo', setFormData)}
+    >
+      <div className="flex h-full flex-col p-4 overflow-y-auto">
+        <div className="mb-4 flex items-center justify-between">
+          <span className="text-xs font-mono text-slate-500">Shop Configurations</span>
+          <DefinitionRefBadge type="shop" slug={activeSlug || formData.slug} />
         </div>
-      </div>
-      
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-64 border-r border-slate-800 bg-[#0a1120] flex flex-col">
-          <div className="p-2 border-b border-slate-800">
-            <input 
-              type="text" 
-              placeholder="Search shops..." 
-              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-300"
+        
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+            Slug (ID)
+            <input
+              type="text"
+              disabled={!!activeSlug}
+              value={formData.slug}
+              onChange={(e) => handleChange('slug', e.target.value)}
+              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 disabled:opacity-50"
+              placeholder="e.g. global_blacksmith"
             />
-          </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            <div className="p-2 rounded bg-blue-900/30 border border-blue-500/50 cursor-pointer flex justify-between group">
-              <span>Pallet Town Mart</span>
-              <Trash2 className="w-3 h-3 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-            <div className="p-2 rounded hover:bg-slate-800/50 cursor-pointer flex justify-between group">
-              <span>Event Token Vendor</span>
-              <Trash2 className="w-3 h-3 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </div>
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+            Name
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
+              className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800"
+              placeholder="e.g. Town Blacksmith"
+            />
+          </label>
         </div>
 
-        {/* Editor */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="max-w-3xl space-y-6">
-            
-            <div className="space-y-4 bg-slate-900/50 p-4 rounded border border-slate-800">
-              <h3 className="text-sm font-semibold text-blue-400 border-b border-slate-800 pb-2">Shop Configuration</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-slate-500">ID</label>
-                  <input type="text" className="w-full bg-black/50 border border-slate-700 rounded px-2 py-1 text-slate-300" disabled value="shop_pallet_mart" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-500">Name</label>
-                  <input type="text" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 focus:border-blue-500 outline-none" defaultValue="Pallet Town Mart" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-500">Primary Currency</label>
-                  <input type="text" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 focus:border-blue-500 outline-none" defaultValue="gold" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-slate-500">Refresh Interval (Seconds)</label>
-                  <input type="number" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 focus:border-blue-500 outline-none" placeholder="Never (Static Inventory)" />
-                </div>
-              </div>
-            </div>
+        <label className="flex flex-col gap-1 mb-4 text-[11px] font-bold text-slate-400">
+          Description
+          <textarea
+            value={formData.description || ''}
+            onChange={(e) => handleChange('description', e.target.value)}
+            onFocus={onFieldFocus}
+            onBlur={onFieldBlur}
+            className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800 min-h-[60px]"
+          />
+        </label>
+        
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+            Currency Override
+            <input
+              type="text"
+              value={formData.currency}
+              onChange={(e) => handleChange('currency', e.target.value)}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
+              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+              placeholder="gold"
+            />
+            <span className="text-[10px] text-slate-500 font-normal">Default: gold</span>
+          </label>
+          <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-400">
+            Refresh Interval (sec)
+            <input
+              type="number"
+              value={formData.refreshInterval || 0}
+              onChange={(e) => handleChange('refreshInterval', parseInt(e.target.value) || 0)}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
+              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+            />
+            <span className="text-[10px] text-slate-500 font-normal">0 = Never respawns automatically</span>
+          </label>
+        </div>
 
-            <div className="space-y-4 bg-slate-900/50 p-4 rounded border border-slate-800">
-              <h3 className="text-sm font-semibold text-amber-400 border-b border-slate-800 pb-2 flex justify-between items-center">
-                <span>Inventory Items</span>
-                <button className="px-2 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700 hover:bg-slate-700 flex items-center gap-1">
-                  <Plus className="w-3 h-3" /> Add Item
-                </button>
-              </h3>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-500">
-                      <th className="py-2 px-2 font-medium">Item ID</th>
-                      <th className="py-2 px-2 font-medium w-32">Price</th>
-                      <th className="py-2 px-2 font-medium w-32">Stock</th>
-                      <th className="py-2 px-2 font-medium w-16"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800">
-                    <tr className="hover:bg-slate-800/30">
-                      <td className="py-2 px-2 text-blue-300 font-medium">item_potion</td>
-                      <td className="py-2 px-2"><input type="number" defaultValue="50" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300" /></td>
-                      <td className="py-2 px-2"><input type="number" placeholder="Infinite" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300" /></td>
-                      <td className="py-2 px-2 text-right">
-                        <button className="p-1 hover:bg-red-900/50 rounded text-red-500"><Trash2 className="w-3 h-3" /></button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/30">
-                      <td className="py-2 px-2 text-blue-300 font-medium">item_pokeball</td>
-                      <td className="py-2 px-2"><input type="number" defaultValue="200" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300" /></td>
-                      <td className="py-2 px-2"><input type="number" placeholder="Infinite" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300" /></td>
-                      <td className="py-2 px-2 text-right">
-                        <button className="p-1 hover:bg-red-900/50 rounded text-red-500"><Trash2 className="w-3 h-3" /></button>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-slate-800/30">
-                      <td className="py-2 px-2 text-blue-300 font-medium">item_rare_candy</td>
-                      <td className="py-2 px-2"><input type="number" defaultValue="5000" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300" /></td>
-                      <td className="py-2 px-2"><input type="number" defaultValue="1" className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300" /></td>
-                      <td className="py-2 px-2 text-right">
-                        <button className="p-1 hover:bg-red-900/50 rounded text-red-500"><Trash2 className="w-3 h-3" /></button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-slate-500 mt-2 leading-tight">
-                Stock is decremented globally if specified. If stock is empty, the item will show as Sold Out. If left blank, supply is infinite.
-              </p>
-            </div>
-
-          </div>
+        <div className="flex-1 mt-2">
+          <label className="flex flex-col gap-1 h-full text-[11px] font-bold text-slate-400">
+            Items Sold (JSON)
+            <textarea
+              value={formData.itemsSoldData}
+              onChange={(e) => handleChange('itemsSoldData', e.target.value)}
+              onFocus={onFieldFocus}
+              onBlur={onFieldBlur}
+              className="rounded bg-black/50 px-2 py-2 font-mono text-slate-200 border border-slate-800 h-full min-h-[250px] resize-none"
+              placeholder={'[\n  { "itemId": "iron_sword", "price": 100, "stock": -1 }\n]'}
+            />
+            <span className="text-[10px] text-slate-500 font-normal">Array of objects: itemId, price, stock (-1 = infinite).</span>
+          </label>
         </div>
       </div>
-    </div>
+    </CatalogEditorShell>
   );
 };
-
-export default ShopEditorPanel;

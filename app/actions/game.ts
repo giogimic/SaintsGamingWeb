@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function createGameCharacter(data: {
   name: string;
-  spriteId: string;
+  assetProfileId: string;
   classId: string;
   initialState: string;
 }) {
@@ -54,7 +54,7 @@ export async function createGameCharacter(data: {
     }
 
     // 4. Sprite / Presentation Sanitization
-    const cleanSpriteId = String(data.spriteId || 'human_base')
+    const cleanassetProfileId = String(data.assetProfileId || 'human_base')
       .replace(/(\.\.[\/\\])+/g, '')
       .slice(0, 255)
       .trim();
@@ -91,7 +91,7 @@ export async function createGameCharacter(data: {
       data: {
         userId: session.user.id,
         name: cleanName,
-        spriteId: cleanSpriteId || 'human_base',
+        assetProfileId: cleanassetProfileId || 'human_base',
         classId: validClass?.classId || normalizedClassId,
         stateData: sanitizedStateStr,
       }
@@ -391,7 +391,7 @@ export async function getTopLobbyOperatives() {
         id: c.id,
         name: c.name,
         classId: c.classId,
-        spriteId: c.spriteId,
+        assetProfileId: c.assetProfileId,
         level,
         totalXp,
         credits,

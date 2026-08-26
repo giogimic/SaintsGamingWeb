@@ -117,6 +117,9 @@ export function createEntityFromArchetype(
       spriteId,
       scale: 1,
     };
+    entity.components.appearance = {
+      assetProfileId: spriteId,
+    };
   }
 
   // Populate archetype-specific defaults

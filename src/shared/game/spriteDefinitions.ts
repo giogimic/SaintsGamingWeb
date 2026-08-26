@@ -484,7 +484,7 @@ export function spriteDefinitionToBabylonConfig(def: SpriteDefinition): any {
 // ASSET FORMAT TAXONOMY (GAME SETUP 2.0)
 // ==========================================
 
-export type EntityType = 'CHARACTER' | 'CREATURE' | 'MONSTER' | 'OBJECT' | 'TILE';
+export type EntityType = 'CHARACTER' | 'CREATURE' | 'MONSTER' | 'OBJECT' | 'TILE' | 'UI' | 'EFFECT' | 'AUDIO';
 
 export interface AssetFormatDefinition {
   id: string;
@@ -606,6 +606,57 @@ export const ASSET_FORMAT_TAXONOMY: Record<string, AssetFormatDefinition> = {
     layoutDescription: 'Manual grid definition required.',
     modular: false,
     isStatic: false,
+  },
+  '3d-model': {
+    id: '3d-model',
+    displayName: '3D Model (GLTF/GLB)',
+    shortDescription: 'A 3D model representation for 3D environments.',
+    technicalDescription: 'Standard GLTF or GLB format with internal skeletal animations.',
+    aliases: ['3D Mesh', 'Model'],
+    searchTerms: ['3d model', 'mesh', 'gltf', 'glb'],
+    examples: ['Creature 3D Mesh', 'Hero 3D Model'],
+    supportedEntityTypes: ['CHARACTER', 'CREATURE', 'MONSTER', 'OBJECT'],
+    supportedRoles: ['world_mesh'],
+    animationProfile: 'custom',
+    directionCount: 360,
+    frameCount: 'variable',
+    layoutDescription: '3D spatial geometry.',
+    modular: true,
+    isStatic: false,
+  },
+  'ui-portrait': {
+    id: 'ui-portrait',
+    displayName: 'UI Portrait / Avatar',
+    shortDescription: 'High-resolution image for dialogue and UI.',
+    technicalDescription: 'A 2D image intended exclusively for screen-space UI rendering.',
+    aliases: ['Avatar', 'Dialogue Bust'],
+    searchTerms: ['portrait', 'avatar', 'ui bust'],
+    examples: ['Dialogue Portrait', 'Player Avatar'],
+    supportedEntityTypes: ['CHARACTER', 'MONSTER', 'UI'],
+    supportedRoles: ['dialogue_portrait', 'ui_avatar'],
+    animationProfile: 'portrait-1x1',
+    directionCount: 1,
+    frameCount: 1,
+    layoutDescription: 'Single high-res image.',
+    modular: false,
+    isStatic: true,
+  },
+  'audio-sfx': {
+    id: 'audio-sfx',
+    displayName: 'Audio Sound Effect',
+    shortDescription: 'Sound effect or ambient audio.',
+    technicalDescription: 'An audio file (mp3, wav, ogg) used for actions or ambience.',
+    aliases: ['SFX', 'Sound'],
+    searchTerms: ['audio', 'sfx', 'sound'],
+    examples: ['Sword Slash SFX', 'Ambient Wind'],
+    supportedEntityTypes: ['AUDIO', 'EFFECT'],
+    supportedRoles: ['combat_sfx', 'ambient_sfx'],
+    animationProfile: 'custom',
+    directionCount: 0,
+    frameCount: 0,
+    layoutDescription: 'Audio track.',
+    modular: false,
+    isStatic: true,
   }
 };
 

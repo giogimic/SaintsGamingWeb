@@ -61,7 +61,7 @@ export async function getPublicProfile(username: string) {
         select: {
           id: true,
           name: true,
-          spriteId: true,
+          assetProfileId: true,
           classId: true,
           stateData: true,
         }

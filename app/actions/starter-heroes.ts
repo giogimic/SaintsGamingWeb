@@ -10,9 +10,10 @@ export type StarterHeroData = {
   gameId?: string;
   name: string;
   classId: string;
-  spriteKey: string;
+  assetProfileId: string;
   /** Optional GameAsset bundle id for a full modular/composited character sprite (see modular pack importer). */
-  spriteBundleId?: string | null;
+  assetBundleId?: string | null;
+  visualData?: string;
   flavor: string;
   tag: string;
   tagColor: string;
@@ -101,8 +102,9 @@ export async function upsertStarterHero(data: StarterHeroData) {
         gameId,
         name: data.name,
         classId: data.classId,
-        spriteKey: data.spriteKey,
-        spriteBundleId: data.spriteBundleId || null,
+        assetProfileId: data.assetProfileId,
+        assetBundleId: data.assetBundleId || null,
+        visualData: data.visualData || '[]',
         flavor: data.flavor,
         tag: data.tag,
         tagColor: data.tagColor,
@@ -117,8 +119,9 @@ export async function upsertStarterHero(data: StarterHeroData) {
         gameId,
         name: data.name,
         classId: data.classId,
-        spriteKey: data.spriteKey,
-        spriteBundleId: data.spriteBundleId || null,
+        assetProfileId: data.assetProfileId,
+        assetBundleId: data.assetBundleId || null,
+        visualData: data.visualData || '[]',
         flavor: data.flavor,
         tag: data.tag,
         tagColor: data.tagColor,
@@ -149,14 +152,15 @@ export async function importStarterHeroesJson(jsonString: string) {
 
     let imported = 0;
     for (const h of heroesArray) {
-      if (!h.slug || !h.name || !h.spriteKey) continue;
+      if (!h.slug || !h.name || !h.assetProfileId) continue;
       await prisma.starterHero.upsert({
         where: { slug: h.slug },
         create: {
           slug: h.slug,
           name: h.name,
           classId: h.classId || 'WARRIOR',
-          spriteKey: h.spriteKey,
+          assetProfileId: h.assetProfileId,
+          visualData: h.visualData || '[]',
           flavor: h.flavor || '',
           tag: h.tag || 'Custom',
           tagColor: h.tagColor || '#a78bfa',
@@ -172,7 +176,8 @@ export async function importStarterHeroesJson(jsonString: string) {
         update: {
           name: h.name,
           classId: h.classId || 'WARRIOR',
-          spriteKey: h.spriteKey,
+          assetProfileId: h.assetProfileId,
+          visualData: h.visualData || '[]',
           flavor: h.flavor || '',
           tag: h.tag || 'Custom',
           tagColor: h.tagColor || '#a78bfa',
@@ -224,49 +229,49 @@ export async function seedDefaultStarterHeroes() {
 
   const defaults: StarterHeroData[] = [
     {
-      slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', spriteKey: 'evil-berserker-bloodaxe-male',
+      slug: 'warrior', name: 'Warrior', classId: 'WARRIOR', assetProfileId: 'evil-berserker-bloodaxe-male',
       flavor: 'Frontline champion. High HP, unstoppable in melee.',
       tag: 'Beginner Friendly', tagColor: '#34d399', sortOrder: 1, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', spriteKey: 'good-paladin-templar-female',
+      slug: 'paladin', name: 'Paladin', classId: 'WARRIOR', assetProfileId: 'good-paladin-templar-female',
       flavor: 'Holy guardian. Superior defense, supports allies.',
       tag: 'Defensive', tagColor: '#60a5fa', sortOrder: 2, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'mystic', name: 'Mystic', classId: 'MAGE', spriteKey: 'good-wizard-archmage-male',
+      slug: 'mystic', name: 'Mystic', classId: 'MAGE', assetProfileId: 'good-wizard-archmage-male',
       flavor: 'Master of arcane arts. High burst, low defense.',
       tag: 'Advanced', tagColor: '#a78bfa', sortOrder: 3, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'shadow', name: 'Shadow', classId: 'THIEF', spriteKey: 'evil-assassin-nightstalker-female',
+      slug: 'shadow', name: 'Shadow', classId: 'THIEF', assetProfileId: 'evil-assassin-nightstalker-female',
       flavor: "Swift and lethal. Strike before you're seen.",
       tag: 'Skill Cap', tagColor: '#f472b6', sortOrder: 4, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'ranger', name: 'Ranger', classId: 'RANGER', spriteKey: 'good-ranger-grovekeeper-female',
+      slug: 'ranger', name: 'Ranger', classId: 'RANGER', assetProfileId: 'good-ranger-grovekeeper-female',
       flavor: 'Agile hunter. Precision strikes from distance.',
       tag: 'Mobile', tagColor: '#fbbf24', sortOrder: 5, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'priest', name: 'Priest', classId: 'PRIEST', spriteKey: 'good-cleric-highpriestess-female',
+      slug: 'priest', name: 'Priest', classId: 'PRIEST', assetProfileId: 'good-cleric-highpriestess-female',
       flavor: 'Devoted healer. Wisdom and vitality over raw attack.',
       tag: 'Support', tagColor: '#e2d5b3', sortOrder: 6, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'monk', name: 'Monk', classId: 'WARRIOR', spriteKey: 'monk',
+      slug: 'monk', name: 'Monk', classId: 'WARRIOR', assetProfileId: 'monk',
       flavor: 'Inner strength fighter. Balanced offense and utility.',
       tag: 'Balanced', tagColor: '#fb923c', sortOrder: 7, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
@@ -274,77 +279,77 @@ export async function seedDefaultStarterHeroes() {
     },
     // Extra thematic archetypes
     {
-      slug: 'dragonrider', name: 'Dragon Rider', classId: 'WARRIOR', spriteKey: 'dragonrider',
+      slug: 'dragonrider', name: 'Dragon Rider', classId: 'WARRIOR', assetProfileId: 'dragonrider',
       flavor: 'Bonded with dragons. Exceptional power and presence.',
       tag: 'Epic', tagColor: '#f87171', sortOrder: 7, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'witchcraft', name: 'Witch', classId: 'MAGE', spriteKey: 'witch',
+      slug: 'witchcraft', name: 'Witch', classId: 'MAGE', assetProfileId: 'witch',
       flavor: 'Dark magic wielder. Curse enemies and summon spirits.',
       tag: 'Dark Arts', tagColor: '#818cf8', sortOrder: 8, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'disciple', name: 'Disciple', classId: 'MAGE', spriteKey: 'disciple',
+      slug: 'disciple', name: 'Disciple', classId: 'MAGE', assetProfileId: 'disciple',
       flavor: 'Devoted scholar of ancient arts. Support and healer.',
       tag: 'Support', tagColor: '#34d399', sortOrder: 9, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'knightlord', name: 'Knight Lord', classId: 'WARRIOR', spriteKey: 'knightlord',
+      slug: 'knightlord', name: 'Knight Lord', classId: 'WARRIOR', assetProfileId: 'knightlord',
       flavor: 'Commander of armies. Unbreakable defense, rally allies.',
       tag: 'Commander', tagColor: '#fbbf24', sortOrder: 10, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'heroine', name: 'Heroine', classId: 'THIEF', spriteKey: 'heroine',
+      slug: 'heroine', name: 'Heroine', classId: 'THIEF', assetProfileId: 'heroine',
       flavor: 'Fearless adventurer. Versatile and fast in combat.',
       tag: 'Versatile', tagColor: '#38bdf8', sortOrder: 11, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'creature_tamer', name: 'Beast Tamer', classId: 'WARRIOR', spriteKey: 'catgirl',
+      slug: 'creature_tamer', name: 'Beast Tamer', classId: 'WARRIOR', assetProfileId: 'catgirl',
       flavor: 'Creature specialist. High beast synergy and capture speed.',
       tag: 'Beast Master', tagColor: '#f472b6', sortOrder: 12, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":20,"patch_kit":10}',
     },
     {
-      slug: 'goth_animist', name: 'Shadow Animist', classId: 'MAGE', spriteKey: 'goth',
+      slug: 'goth_animist', name: 'Shadow Animist', classId: 'MAGE', assetProfileId: 'goth',
       flavor: 'Attuned to nether spirits and dark elements.',
       tag: 'Spiritualist', tagColor: '#a78bfa', sortOrder: 13, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":5}',
     },
     {
-      slug: 'prof_researcher', name: 'Professor', classId: 'MAGE', spriteKey: 'professor',
+      slug: 'prof_researcher', name: 'Professor', classId: 'MAGE', assetProfileId: 'professor',
       flavor: 'Veteran creature scientist. Identifies stats and weak points.',
       tag: 'Scholar', tagColor: '#60a5fa', sortOrder: 14, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":15,"patch_kit":15}',
     },
     {
-      slug: 'cyber_soldier', name: 'Xero Soldier', classId: 'WARRIOR', spriteKey: 'soldier',
+      slug: 'cyber_soldier', name: 'Xero Soldier', classId: 'WARRIOR', assetProfileId: 'soldier',
       flavor: 'Heavy combat specialist equipped with tactical armor.',
       tag: 'Tactical', tagColor: '#fb923c', sortOrder: 15, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":10}',
     },
     {
-      slug: 'florist_druid', name: 'Nature Druid', classId: 'THIEF', spriteKey: 'florist',
+      slug: 'florist_druid', name: 'Nature Druid', classId: 'THIEF', assetProfileId: 'florist',
       flavor: 'Botanical guardian. Uses nature remedies and evasive spores.',
       tag: 'Nature', tagColor: '#34d399', sortOrder: 16, isActive: true,
       startingMap: 'LOBBY', startingX: 32, startingY: 32,
       startingInventory: '{"capture_script":10,"patch_kit":8}',
     },
     {
-      slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', spriteKey: 'catgirl',
+      slug: 'spyder_tamer', name: 'Spyder Tamer', classId: 'RANGER', assetProfileId: 'catgirl',
       flavor: 'Starts in Azure Town — Spyder campaign playtest bed.',
       tag: 'Campaign', tagColor: '#cbb26a', sortOrder: 17, isActive: true,
       startingMap: 'AZURE_TOWN', startingX: 25, startingY: 25,

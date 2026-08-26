@@ -126,7 +126,7 @@ export interface PartyMember {
   userId: string;
   socketId: string;
   name: string;
-  spriteId: string;
+  assetProfileId: string;
   position: { x: number; y: number };
   creatureParty: CreaturePartyMember[];
 }
@@ -149,7 +149,7 @@ const DIRECTION_DELTA: Record<string, { dx: number, dy: number }> = {
 export interface PlayerState {
   accountId?: string;
   name?: string;
-  spriteId?: string;
+  assetProfileId?: string;
   spriteConfig?: import('@/engine/BabylonEngine').SpriteSheetConfig;
   position: Point;
   direction?: 'up' | 'down' | 'left' | 'right';
@@ -236,7 +236,7 @@ export interface GameState {
   logicTiles: Record<number, MapLogicTile>;
   gameMode: GameMode;
   player: PlayerState;
-  otherPlayers: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
+  otherPlayers: Record<string, { x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>;
   pathQueue: Point[];
   worldOriginOffset: { x: number; y: number };
   currentMapId: string;
@@ -257,8 +257,8 @@ export interface GameState {
   setActiveDialog: (dialog: { npcId: string; node?: string; text: string; options?: { label: string; nextNode: string }[] } | null) => void;
   acceptQuest: (questId: string) => void;
   completeQuest: (questId: string) => void;
-  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; spriteId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
-  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; spriteId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
+  setOtherPlayers: (players: Record<string, { x: number; y: number; name: string; assetProfileId: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }>) => void;
+  updateOtherPlayer: (socketId: string, data: { x?: number; y?: number; name?: string; assetProfileId?: string; direction?: 'up' | 'down' | 'left' | 'right'; isMoving?: boolean; chatMessage?: string; customization?: { skinTone: string; hairColor: string; shirtColor: string; pantsColor: string } }) => void;
   removeOtherPlayer: (socketId: string) => void;
   setPlayerChat: (message: string) => void;
   localChat: string | null;
@@ -401,7 +401,7 @@ export const useGameStore = create<GameState>()(
 
       gameMode: 'TITLE_SCREEN',
       player: {
-        spriteId: 'adventurer',
+        assetProfileId: 'adventurer',
         position: { x: 14, y: 15 },
         level: 1,
         xp: 0,
@@ -838,7 +838,7 @@ export const useGameStore = create<GameState>()(
             x: data.x ?? 0,
             y: data.y ?? 0,
             name: data.name || 'Unknown',
-            spriteId: data.spriteId || 'adventurer',
+            assetProfileId: data.assetProfileId || 'adventurer',
             direction: data.direction,
             isMoving: data.isMoving,
             chatMessage: data.chatMessage,
@@ -848,7 +848,7 @@ export const useGameStore = create<GameState>()(
           if (data.x !== undefined) state.otherPlayers[socketId].x = data.x;
           if (data.y !== undefined) state.otherPlayers[socketId].y = data.y;
           if (data.name !== undefined) state.otherPlayers[socketId].name = data.name;
-          if (data.spriteId !== undefined) state.otherPlayers[socketId].spriteId = data.spriteId;
+          if (data.assetProfileId !== undefined) state.otherPlayers[socketId].assetProfileId = data.assetProfileId;
           if (data.direction !== undefined) state.otherPlayers[socketId].direction = data.direction;
           if (data.isMoving !== undefined) state.otherPlayers[socketId].isMoving = data.isMoving;
           if (data.customization !== undefined) state.otherPlayers[socketId].customization = data.customization;
@@ -939,7 +939,7 @@ export const useGameStore = create<GameState>()(
       hydratePlayer: (data) =>
         set((state) => {
           if (data.name) state.player.name = data.name;
-          if (data.spriteId) state.player.spriteId = data.spriteId;
+          if (data.assetProfileId) state.player.assetProfileId = data.assetProfileId;
           if (data.accountId) state.player.accountId = data.accountId;
           if (data.position) state.player.position = data.position;
           if (data.level !== undefined) state.player.level = data.level;

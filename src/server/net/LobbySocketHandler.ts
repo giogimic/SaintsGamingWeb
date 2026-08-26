@@ -14,7 +14,10 @@ import {
   type StudioTileChangeOp,
   type WhisperCommand,
   type PaintTilesCommand,
+  type TestRuleCommand,
+  type RuleTracePayload,
 } from "../../shared/net/protocol";
+import { evaluateAndExecuteRule, type RuleDefinition, type RuleEvaluationContext } from "../../shared/game/rules/ruleEngine";
 import { SessionManager } from "./SessionManager";
 import { ShardManager } from "./ShardManager";
 import { StudioCollaborationService } from "./StudioCollaborationService";
@@ -372,9 +375,40 @@ export class LobbySocketHandler {
         }
       });
 
-      // --- STUDIO: CONTENT RELOAD ---
+      // --- CONTENT RELOAD ---
       socket.on(RealtimeEvents.CONTENT_RELOAD, (data: any) => {
         this.io.emit(RealtimeEvents.CONTENT_RELOAD, data);
+      });
+
+      // --- STUDIO: RULE TESTING SANDBOX ---
+      socket.on(RealtimeEvents.STUDIO_TEST_RULE, (cmd: TestRuleCommand & { ruleDef?: RuleDefinition }) => {
+        try {
+          if (!cmd || !cmd.ruleDef) return;
+
+          // Build a mock sandbox context for the rule evaluation
+          const mockContext: RuleEvaluationContext = {
+            player: cmd.mockContext?.player || { level: 1, gold: 0, items: {}, skills: {}, reputation: {}, quests: {} },
+            worldState: cmd.mockContext?.worldState || {},
+            timeSlot: cmd.mockContext?.timeSlot || "DAY",
+            customPredicates: cmd.mockContext?.customPredicates || {},
+            tracer: (trace: RuleTracePayload) => {
+              socket.emit(RealtimeEvents.RULE_TRACE, trace);
+            },
+          };
+
+          // Evaluate the rule safely on the server
+          evaluateAndExecuteRule(cmd.ruleDef, mockContext);
+        } catch (err) {
+          console.error("[LobbySocket] studio_test_rule error:", err);
+          socket.emit(RealtimeEvents.RULE_TRACE, {
+            ruleId: cmd.ruleId || "unknown",
+            nodeType: "ERROR",
+            expected: "Execution",
+            actual: String(err),
+            passed: false,
+            timestamp: Date.now(),
+          });
+        }
       });
 
       // --- RESYNC REQUEST ---

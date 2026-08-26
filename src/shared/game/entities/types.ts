@@ -6,7 +6,7 @@
 export type ComponentTypeId =
   | 'identity'
   | 'transform'
-  | 'sprite'
+  | 'appearance'
   | 'interact'
   | 'dialogue'
   | 'combatant'
@@ -50,8 +50,8 @@ export interface ComponentTransform {
   facing?: 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW' | string;
 }
 
-export interface ComponentSprite {
-  spriteId: string;
+export interface ComponentAppearance {
+  assetProfileId: string;
   assetId?: string;
   animSet?: string;
   frameIndex?: number;
@@ -139,7 +139,7 @@ export interface ComponentCapabilities {
 export interface ComponentMap {
   identity: ComponentIdentity;
   transform: ComponentTransform;
-  sprite?: ComponentSprite;
+  appearance?: ComponentAppearance;
   interact?: ComponentInteract;
   dialogue?: ComponentDialogue;
   combatant?: ComponentCombatant;

@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { getThumbnailFrameRect } from '@/shared/game/assetSheets';
 
 export interface CharacterSpritePreviewProps {
-  spriteKey?: string;
+  assetProfileId?: string;
   layers?: string[];
-  spriteBundleId?: string | null;
+  assetBundleId?: string | null;
   className?: string;
   size?: number;
   scale?: number;
@@ -44,17 +44,17 @@ export function resolveSpriteUrl(key: string): string {
  * - Non-destructive pixelated scaling
  */
 export function CharacterSpritePreview({
-  spriteKey,
+  assetProfileId,
   layers,
-  spriteBundleId,
+  assetBundleId,
   className,
   size = 32,
   scale = 1.5,
 }: CharacterSpritePreviewProps) {
   const activeLayers = (layers && layers.length > 0)
     ? layers.filter(Boolean)
-    : spriteKey
-    ? [spriteKey]
+    : assetProfileId
+    ? [assetProfileId]
     : ['adventurer'];
 
   const baseSrc = resolveSpriteUrl(activeLayers[0]);

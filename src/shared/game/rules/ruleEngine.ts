@@ -5,6 +5,12 @@
  * Condition -> Requirement -> Action
  * Reusable across Quests, NPCs, Dungeons, World Events, Professions, and Logic Tiles.
  */
+import type { RuleTracePayload } from '../../net/protocol';
+import {
+  type SimulationMultipliers,
+  scaleSimulationXp,
+  scaleSimulationGold,
+} from '../simulation/simulationModifiers';
 
 export type ComparisonOperator = 'EQ' | 'NEQ' | 'GT' | 'GTE' | 'LT' | 'LTE' | 'IN' | 'NOT_IN';
 
@@ -148,6 +154,9 @@ export interface RuleEvaluationContext {
   worldState?: Record<string, any>;
   timeSlot?: 'DAY' | 'DUSK' | 'NIGHT' | 'DAWN';
   customPredicates?: Record<string, any>;
+  tracer?: (trace: RuleTracePayload) => void;
+  ruleId?: string;
+  simulationMultipliers?: SimulationMultipliers;
 }
 
 export interface RuleDefinition {
@@ -213,73 +222,122 @@ export function evaluateCondition(
 
   const player = ctx.player || {};
 
+  let passed = false;
+  let expected: any = undefined;
+  let actual: any = undefined;
+
   switch (condition.kind) {
     case 'PLAYER_ITEM': {
       const held = (player.items && player.items[condition.itemId]) || 0;
       const op = condition.operator || 'GTE';
-      return compareNumbers(held, condition.amount, op);
+      expected = condition.amount;
+      actual = held;
+      passed = compareNumbers(held, condition.amount, op);
+      break;
     }
 
     case 'PLAYER_GOLD': {
       const gold = player.gold || 0;
       const op = condition.operator || 'GTE';
-      return compareNumbers(gold, condition.amount, op);
+      expected = condition.amount;
+      actual = gold;
+      passed = compareNumbers(gold, condition.amount, op);
+      break;
     }
 
     case 'PLAYER_LEVEL': {
       const level = player.level || 1;
-      return compareNumbers(level, condition.level, condition.operator || 'GTE');
+      expected = condition.level;
+      actual = level;
+      passed = compareNumbers(level, condition.level, condition.operator || 'GTE');
+      break;
     }
 
     case 'PLAYER_SKILL_LEVEL': {
       const skillLevel = (player.skills && player.skills[condition.skillId]) || 1;
-      return compareNumbers(skillLevel, condition.level, condition.operator || 'GTE');
+      expected = condition.level;
+      actual = skillLevel;
+      passed = compareNumbers(skillLevel, condition.level, condition.operator || 'GTE');
+      break;
     }
 
     case 'QUEST_STATE': {
       const q = player.quests && player.quests[condition.questId];
+      expected = condition.state;
       if (condition.state === 'NOT_STARTED') {
-        return !q || (!q.isActive && !q.isCompleted);
-      }
-      if (condition.state === 'ACTIVE') {
-        if (!q || !q.isActive || q.isCompleted) return false;
-        if (typeof condition.stage === 'number') {
-          return q.stage === condition.stage;
+        passed = !q || (!q.isActive && !q.isCompleted);
+        actual = passed ? 'NOT_STARTED' : q?.isCompleted ? 'COMPLETED' : 'ACTIVE';
+      } else if (condition.state === 'ACTIVE') {
+        if (!q || !q.isActive || q.isCompleted) {
+          passed = false;
+          actual = !q ? 'NOT_STARTED' : 'COMPLETED';
+        } else if (typeof condition.stage === 'number') {
+          passed = q.stage === condition.stage;
+          actual = q.stage;
+        } else {
+          passed = true;
+          actual = 'ACTIVE';
         }
-        return true;
+      } else if (condition.state === 'COMPLETED') {
+        passed = Boolean(q && q.isCompleted);
+        actual = passed ? 'COMPLETED' : q?.isActive ? 'ACTIVE' : 'NOT_STARTED';
       }
-      if (condition.state === 'COMPLETED') {
-        return Boolean(q && q.isCompleted);
-      }
-      return false;
+      break;
     }
 
     case 'REPUTATION': {
       const rep = (player.reputation && player.reputation[condition.factionId]) || 0;
-      return compareNumbers(rep, condition.value, condition.operator || 'GTE');
+      expected = condition.value;
+      actual = rep;
+      passed = compareNumbers(rep, condition.value, condition.operator || 'GTE');
+      break;
     }
 
     case 'WORLD_STATE': {
       const val = ctx.worldState ? ctx.worldState[condition.key] : undefined;
       const op = condition.operator || 'EQ';
+      expected = condition.value;
+      actual = val;
       if (op === 'NEQ') {
-        return val !== condition.value;
+        passed = val !== condition.value;
+      } else {
+        passed = val === condition.value;
       }
-      return val === condition.value;
+      break;
     }
 
     case 'TIME_OF_DAY': {
-      return ctx.timeSlot === condition.timeSlot;
+      expected = condition.timeSlot;
+      actual = ctx.timeSlot;
+      passed = ctx.timeSlot === condition.timeSlot;
+      break;
     }
 
     case 'CUSTOM': {
       const customVal = ctx.customPredicates ? ctx.customPredicates[condition.predicateKey] : undefined;
-      return customVal === condition.expectedValue;
+      expected = condition.expectedValue;
+      actual = customVal;
+      passed = customVal === condition.expectedValue;
+      break;
     }
 
     default:
-      return true;
+      passed = true;
+      break;
   }
+
+  if (ctx.tracer && ctx.ruleId) {
+    ctx.tracer({
+      ruleId: ctx.ruleId,
+      nodeType: condition.kind,
+      expected,
+      actual,
+      passed,
+      timestamp: Date.now()
+    });
+  }
+
+  return passed;
 }
 
 /**
@@ -309,10 +367,13 @@ export function executeAction(
     }
 
     case 'GIVE_GOLD': {
+      const scaledAmount = ctx.simulationMultipliers
+        ? scaleSimulationGold(action.amount, ctx.simulationMultipliers)
+        : action.amount;
       if (player) {
-        player.gold = (player.gold || 0) + action.amount;
+        player.gold = (player.gold || 0) + scaledAmount;
       }
-      return { kind: action.kind, success: true, appliedData: { amount: action.amount } };
+      return { kind: action.kind, success: true, appliedData: { amount: scaledAmount, baseAmount: action.amount } };
     }
 
     case 'REMOVE_GOLD': {
@@ -323,15 +384,18 @@ export function executeAction(
     }
 
     case 'GRANT_XP': {
+      const scaledAmount = ctx.simulationMultipliers
+        ? scaleSimulationXp(action.amount, ctx.simulationMultipliers)
+        : action.amount;
       if (player) {
         if (action.skillId) {
           if (!player.skills) player.skills = {};
-          player.skills[action.skillId] = (player.skills[action.skillId] || 1) + Math.floor(action.amount / 100);
+          player.skills[action.skillId] = (player.skills[action.skillId] || 1) + Math.floor(scaledAmount / 100);
         } else {
-          player.level = (player.level || 1) + Math.floor(action.amount / 500);
+          player.level = (player.level || 1) + Math.floor(scaledAmount / 500);
         }
       }
-      return { kind: action.kind, success: true, appliedData: { amount: action.amount, skillId: action.skillId } };
+      return { kind: action.kind, success: true, appliedData: { amount: scaledAmount, baseAmount: action.amount, skillId: action.skillId } };
     }
 
     case 'SET_QUEST_STATE': {
@@ -395,9 +459,32 @@ export function evaluateAndExecuteRule(
     return { passed: false, executed: false, results: [] };
   }
 
+  ctx.ruleId = rule.id;
+
   const passed = evaluateCondition(rule.condition, ctx);
   if (!passed) {
+    if (ctx.tracer) {
+      ctx.tracer({
+        ruleId: rule.id,
+        nodeType: 'RULE_EVALUATION',
+        expected: 'PASSED',
+        actual: 'FAILED',
+        passed: false,
+        timestamp: Date.now()
+      });
+    }
     return { passed: false, executed: false, results: [] };
+  }
+
+  if (ctx.tracer) {
+    ctx.tracer({
+      ruleId: rule.id,
+      nodeType: 'RULE_EVALUATION',
+      expected: 'PASSED',
+      actual: 'PASSED',
+      passed: true,
+      timestamp: Date.now()
+    });
   }
 
   const results = rule.actions.map((act) => executeAction(act, ctx));

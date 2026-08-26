@@ -66,16 +66,20 @@ const QuestEditorPanel = lazy(() => import('./panels/QuestEditorPanel').then((m)
 const DialogueEditorPanel = lazy(() => import('./panels/DialogueEditorPanel').then((m) => ({ default: m.DialogueEditorPanel })));
 const LootManagerPanel = lazy(() => import('./panels/LootManagerPanel').then((m) => ({ default: m.LootManagerPanel })));
 const ItemEditorPanel = lazy(() => import('./panels/ItemEditorPanel').then((m) => ({ default: m.ItemEditorPanel })));
+const ProfessionEditorPanel = lazy(() => import('./panels/ProfessionEditorPanel').then((m) => ({ default: m.ProfessionEditorPanel })));
+const RecipeEditorPanel = lazy(() => import('./panels/RecipeEditorPanel').then((m) => ({ default: m.RecipeEditorPanel })));
 const MonsterSpawnerPanel = lazy(() => import('./panels/MonsterSpawnerPanel').then((m) => ({ default: m.MonsterSpawnerPanel })));
 const PrefabBuilderPanel = lazy(() => import('./panels/PrefabBuilderPanel').then((m) => ({ default: m.PrefabBuilderPanel })));
 const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) => ({ default: m.WorldAtlasPanel })));
 const StudioProblemsPanel = lazy(() => import('./panels/StudioProblemsPanel').then((m) => ({ default: m.StudioProblemsPanel })));
 const GameplayStudioPanels = lazy(() => import('./panels/GameplayStudioPanels'));
 const RealmSettingsPanel = lazy(() => import('./panels/RealmSettingsPanel').then((m) => ({ default: m.RealmSettingsPanel })));
-const DungeonStudioPanel = lazy(() => import('./panels/DungeonStudioPanel').then((m) => ({ default: m.DungeonStudioPanel })));
+const DungeonEditorPanel = lazy(() => import('./panels/DungeonEditorPanel').then((m) => ({ default: m.DungeonEditorPanel })));
 const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
+const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m) => ({ default: m.MountEditorPanel })));
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
+const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 
@@ -779,6 +783,8 @@ export const StudioEditorShell: React.FC = () => {
             case 'dialogue': return <DialogueEditorPanel />;
             case 'loot': return <LootManagerPanel />;
             case 'items': return <ItemEditorPanel />;
+            case 'professions': return <ProfessionEditorPanel />;
+            case 'recipes': return <RecipeEditorPanel />;
             case 'spawner': return <MonsterSpawnerPanel />;
             case 'prefab': return <PrefabBuilderPanel />;
             case 'atlas': return <WorldAtlasPanel />;
@@ -786,10 +792,12 @@ export const StudioEditorShell: React.FC = () => {
             case 'streaming': return <StreamingInspectorPanel />;
             case 'gameplay': return <GameplayStudioPanels />;
             case 'settings': return <RealmSettingsPanel />;
-            case 'dungeon': return <DungeonStudioPanel />;
+            case 'dungeons': return <DungeonEditorPanel />;
             case 'shop': return <ShopEditorPanel />;
+            case 'mounts': return <MountEditorPanel />;
             case 'worldevent': return <WorldEventPanel />;
             case 'simulation': return <SimulationPresetPanel />;
+            case 'publishing': return <PublishManagerPanel />;
             default: return <div>Unknown component: {component}</div>;
           }
         })()}

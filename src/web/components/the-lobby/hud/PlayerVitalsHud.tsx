@@ -117,8 +117,8 @@ export const PlayerVitalsHud: React.FC = () => {
         {/* 1. Identity Header with Sprite Avatar */}
         <div className="flex items-center gap-2.5 pb-2.5 mb-2.5 border-b border-pink-500/20">
           <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#00f5d4]/50 bg-black/80 shadow-inner overflow-hidden">
-            {player.spriteId ? (
-              <CharacterSpritePreview spriteKey={player.spriteId} size={28} scale={1.5} />
+            {player.assetProfileId ? (
+              <CharacterSpritePreview assetProfileId={player.assetProfileId} size={28} scale={1.5} />
             ) : (
               <User className="h-5 w-5 text-[#00f5d4]" />
             )}

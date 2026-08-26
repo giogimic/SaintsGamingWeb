@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { checkAdminPermission } from "./game-admin";
 
 export type ItemTemplateInput = {
+  gameId?: string;
+  profileId?: string;
   slug: string;
   name: string;
   description?: string;
@@ -14,6 +16,7 @@ export type ItemTemplateInput = {
   baseDurability?: number;
   baseStats?: string;
   stackable: boolean;
+  iconAssetId?: string;
 };
 
 export async function listItemTemplates(searchQuery?: string) {
@@ -59,6 +62,8 @@ export async function upsertItemTemplate(input: ItemTemplateInput) {
     const saved = await prisma.itemTemplate.upsert({
       where: { slug },
       create: {
+        gameId: input.gameId || "saints",
+        profileId: input.profileId,
         slug,
         name: input.name.trim() || slug,
         description: input.description,
@@ -68,8 +73,11 @@ export async function upsertItemTemplate(input: ItemTemplateInput) {
         baseDurability: input.baseDurability,
         baseStats: input.baseStats,
         stackable: input.stackable,
+        iconAssetId: input.iconAssetId,
       },
       update: {
+        gameId: input.gameId || "saints",
+        profileId: input.profileId,
         name: input.name.trim() || slug,
         description: input.description,
         category: input.category,
@@ -78,6 +86,7 @@ export async function upsertItemTemplate(input: ItemTemplateInput) {
         baseDurability: input.baseDurability,
         baseStats: input.baseStats,
         stackable: input.stackable,
+        iconAssetId: input.iconAssetId,
       },
     });
 

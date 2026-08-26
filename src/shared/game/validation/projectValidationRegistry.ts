@@ -15,6 +15,8 @@ import { lintWorldAtlasConnectivity, MapDataSummary } from '../atlas/atlasLinter
 import { AtlasGridData } from '../atlas/spatialAtlas';
 import { lintDialogueTree } from '../quests/dialogueLinter';
 import { DialogueNode } from '../quests/dialogueEngine';
+import { EntityInstanceV1 } from '../entities/types';
+import { RuntimeAssetRecord } from '../assetRuntimeManager';
 
 export type ValidationSeverity = 'ERROR' | 'WARNING' | 'INFO';
 
@@ -43,6 +45,8 @@ export type DomainValidatorFn = (
     maps?: MapDataSummary[];
     atlas?: AtlasGridData;
     dialogues?: { treeId: string; startNodeId?: string; nodes: DialogueNode[] }[];
+    entities?: EntityInstanceV1[];
+    assets?: RuntimeAssetRecord[];
   }
 ) => Promise<ValidationIssue[]> | ValidationIssue[];
 
@@ -180,6 +184,31 @@ export class ProjectValidationRegistry {
 
       return issues;
     });
+
+    // 5. Entity & Asset integrity validator
+    this.registerValidator('entity_asset_integrity', 'ASSET', (_graph, context) => {
+      if (!context?.entities || !context?.assets) return [];
+      const issues: ValidationIssue[] = [];
+      const assetMap = new Set(context.assets.map((a) => a.id));
+
+      for (const entity of context.entities) {
+        if (entity.components?.appearance?.assetProfileId) {
+          const profileId = entity.components.appearance.assetProfileId;
+          if (!assetMap.has(profileId)) {
+            issues.push({
+              code: 'ERR_MISSING_ASSET_PROFILE',
+              category: 'ASSET',
+              severity: 'ERROR',
+              message: `Entity "${entity.id}" references missing asset profile "${profileId}".`,
+              entityId: entity.id,
+              entityType: entity.archetype,
+              suggestedAction: `Ensure the asset profile "${profileId}" is imported and published.`,
+            });
+          }
+        }
+      }
+      return issues;
+    });
   }
 
   /**
@@ -191,6 +220,8 @@ export class ProjectValidationRegistry {
       maps?: MapDataSummary[];
       atlas?: AtlasGridData;
       dialogues?: { treeId: string; startNodeId?: string; nodes: DialogueNode[] }[];
+      entities?: EntityInstanceV1[];
+      assets?: RuntimeAssetRecord[];
     }
   ): Promise<ProjectHealthReport> {
     const allIssues: ValidationIssue[] = [];

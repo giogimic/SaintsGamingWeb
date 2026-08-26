@@ -131,7 +131,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const autoWalkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isEngineReady, setIsEngineReady] = useState(false);
   const playerAnimationProfileRef = useRef<string | null>(null);
-  const lastSpriteIdRef = useRef<string | null>(null);
+  const lastassetProfileIdRef = useRef<string | null>(null);
   const multiplayerAnimationProfilesRef = useRef<Map<string, string | null>>(new Map());
   const entityAnimationProfilesRef = useRef<Map<string, string | null>>(new Map());
   const tryMoveDirectionRef = useRef<(dx: number, dy: number) => void>(() => {});
@@ -144,18 +144,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const mapDataRef = useRef<GameMapData | null>(null);
   mapDataRef.current = mapData;
 
-  // Fetch animationProfile when player spriteId changes
-  const playerSpriteId = useGameStore((s) => s.player?.spriteId);
+  // Fetch animationProfile when player assetProfileId changes
+  const playerassetProfileId = useGameStore((s) => s.player?.assetProfileId);
   useEffect(() => {
-    if (playerSpriteId && playerSpriteId !== lastSpriteIdRef.current) {
-      lastSpriteIdRef.current = playerSpriteId;
+    if (playerassetProfileId && playerassetProfileId !== lastassetProfileIdRef.current) {
+      lastassetProfileIdRef.current = playerassetProfileId;
       
       // Fetch animationProfile from asset metadata
-      getAssetAnimationProfile(playerSpriteId).then((profile) => {
+      getAssetAnimationProfile(playerassetProfileId).then((profile) => {
         playerAnimationProfileRef.current = profile;
       });
     }
-  }, [playerSpriteId]);
+  }, [playerassetProfileId]);
   /** Last doc whose tile geometry was pushed into Babylon (identity + fingerprint). */
   const lastLoadedMapDataRef = useRef<GameMapData | null>(null);
   const lastVisualFingerprintRef = useRef<string>('');
@@ -351,7 +351,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 },
                 position: { x: spawn.x, y: spawn.y },
                 name: p.name || 'Player',
-                spriteId: p.spriteId || 'adventurer',
+                assetProfileId: p.assetProfileId || 'adventurer',
                 currentInstanceId: liveStore.instanceId,
                 worldJoinSeq: liveStore.worldJoinSeq,
                 onSetWorldSessionState: liveStore.setWorldSessionState,
@@ -816,7 +816,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           name: freshPlayer.name || 'Hero',
           x: worldX,
           y: worldZ,
-          spriteUrl: resolveEntitySpriteUrl(freshPlayer.spriteId, {
+          spriteUrl: resolveEntitySpriteUrl(freshPlayer.assetProfileId, {
             kind: 'player',
             fallback: '/game-assets/npc/adventurer.png',
           }),
@@ -864,9 +864,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           const oz = liveH / 2 - targetY - offset.y;
 
           // Fetch animationProfile if not cached (non-blocking)
-          if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.spriteId) {
+          if (!multiplayerAnimationProfilesRef.current.has(socketId) && other.assetProfileId) {
             multiplayerAnimationProfilesRef.current.set(socketId, null);
-            getAssetAnimationProfile(other.spriteId).then((profile) => {
+            getAssetAnimationProfile(other.assetProfileId).then((profile) => {
               if (profile) multiplayerAnimationProfilesRef.current.set(socketId, profile);
             });
           }
@@ -876,7 +876,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             name: other.name || 'Saint',
             x: ox,
             y: oz,
-            spriteUrl: resolveEntitySpriteUrl(other.spriteId, {
+            spriteUrl: resolveEntitySpriteUrl(other.assetProfileId, {
               kind: 'player',
               fallback: '/game-assets/npc/adventurer.png',
             }),
