@@ -12,6 +12,8 @@ export type StudioTilesetMeta = {
   columns: number;
   tilewidth: number;
   tileheight: number;
+  imagewidth?: number;
+  imageheight?: number;
 };
 
 export const DEFAULT_STUDIO_TILESETS: StudioTilesetMeta[] = [];

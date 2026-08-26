@@ -32,6 +32,8 @@ export interface TilesetMeta {
   columns: number;
   tilewidth: number;
   tileheight: number;
+  imagewidth?: number;
+  imageheight?: number;
 }
 
 export interface TileDefinition {
