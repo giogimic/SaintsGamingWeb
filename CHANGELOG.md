@@ -1,3 +1,8 @@
+## [2.1.459-38] - 2026-08-25
+### Docker Compose Network Subnet Fix (Round 2)
+- **Docker Compose Network IPAM**:
+  - Re-added explicit IPAM subnet but configured it to use `10.254.254.0/24`. Removing IPAM entirely in `-37` still resulted in a pool exhaustion error, which implies the Docker host has entirely exhausted its default `172.17.x-31.x` and `192.168.x` pools. Using a high `10.x.x.x` range virtually guarantees a conflict-free subnet on a Debian VPS.
+
 ## [2.1.459-37] - 2026-08-25
 ### Docker Compose Network Subnet Fix
 - **Docker Compose Network IPAM**:
