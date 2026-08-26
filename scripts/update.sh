@@ -57,21 +57,6 @@ if [ ! -f docker-compose.yml ]; then
     fi
 fi
 
-# --- Ensure explicit IPAM network block exists ---
-if ! grep -q "^networks:" docker-compose.yml 2>/dev/null; then
-    cat >> docker-compose.yml <<'NETEOF'
-
-networks:
-  default:
-    name: saintsgamingweb_default
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16
-NETEOF
-    echo -e "${GREEN}[✓] Added explicit Docker network config.${NC}"
-fi
 
 # --- Automated Database Backup ---
 if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
@@ -140,6 +125,83 @@ fi
 echo -e "${CYAN}[*] Pulling latest code (resetting to origin/main)...${NC}"
 git reset --hard origin/main
 echo -e "${GREEN}[✓] Code updated.${NC}\n"
+
+# --- Validate docker-compose.yml and auto-repair if corrupted ---
+# Previous versions accidentally placed `networks:` before the db service in the
+# base file, causing `setup.sh` to append `db:` under `networks:` instead of
+# `services:`.  Detect this and rebuild from the clean base if found.
+# This runs AFTER git pull so the base file is the latest clean version.
+if docker compose config > /dev/null 2>&1; then
+    : # compose file is valid
+else
+    echo -e "${YELLOW}[!] docker-compose.yml failed validation. Attempting auto-repair...${NC}"
+
+    # Preserve the db service block if it exists (MariaDB users)
+    HAS_DB_SERVICE=0
+    if grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
+        HAS_DB_SERVICE=1
+        # Extract the db container name
+        DB_CN=$(grep -A1 "image: mariadb" docker-compose.yml | grep "container_name:" | awk '{print $2}' 2>/dev/null)
+        DB_CN=${DB_CN:-saints-gaming-db}
+    fi
+
+    # Preserve the web container name
+    WEB_CN=$(grep "container_name:" docker-compose.yml | head -1 | awk '{print $2}' 2>/dev/null)
+    WEB_CN=${WEB_CN:-saints-gaming-web}
+
+    # Preserve port mapping
+    WEB_PORT_MAP=$(grep -E '^\s+- "[0-9]+:3000"' docker-compose.yml | head -1 | sed 's/.*"\(.*\)".*/\1/' 2>/dev/null)
+    WEB_PORT_MAP=${WEB_PORT_MAP:-3000:3000}
+
+    # Rebuild from clean base
+    cp docker-compose.base.yml docker-compose.yml
+    sed -i "s/container_name: saints-gaming-web/container_name: ${WEB_CN}/g" docker-compose.yml
+    sed -i "s/- \"3000:3000\"/- \"${WEB_PORT_MAP}\"/g" docker-compose.yml
+
+    # Re-add MariaDB db service if it was present
+    if [ "$HAS_DB_SERVICE" = "1" ]; then
+        # Read DB password from .env
+        DB_PASS_ENV=$(grep '^DATABASE_URL=' .env 2>/dev/null | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+        DB_PASS_ENV=${DB_PASS_ENV:-changeme}
+        cat >> docker-compose.yml <<DCEOF
+
+  db:
+    image: mariadb:10.11
+    container_name: ${DB_CN}
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: saints_gaming
+      MARIADB_USER: saints
+      MARIADB_PASSWORD: ${DB_PASS_ENV}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS_ENV}
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+DCEOF
+    fi
+
+    echo -e "${GREEN}[✓] docker-compose.yml rebuilt from clean base.${NC}"
+fi
+
+# --- Ensure explicit IPAM network block is at the end ---
+if ! grep -q "^networks:" docker-compose.yml 2>/dev/null; then
+    cat >> docker-compose.yml <<'NETEOF'
+
+networks:
+  default:
+    name: saintsgamingweb_default
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+NETEOF
+    echo -e "${GREEN}[✓] Added explicit Docker network config.${NC}"
+fi
 
 # --- Docker Environment ---
 if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
