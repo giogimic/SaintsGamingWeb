@@ -1,3 +1,58 @@
+## [2.1.459-47] - 2026-08-26
+### Master Roadmap Phase 5: Playtest, Diagnostics & Operations
+- **Phase 5A (Playtest Simulation & Shard Isolation)**:
+  - Validated PIE session lifecycle (`pieOptions.ts` & `studioSession.ts`) ensuring automatic dock suppression, playtest snapshot restoration, and private room isolation.
+- **Phase 5B (Multi-User Collaboration & Soft Locking)**:
+  - Verified collaborative soft-lock manager (`softLockEngine.ts`) with resource lease expirations, heartbeat presence pings, and author conflict resolution.
+- **Phase 5C (Publishing, Export & Versioning)**:
+  - Confirmed immutable content revision snapshots (`revisionStore.ts`) with checksum generation, draft-to-live promotion, and rollback safety.
+- **Phase 5D (Project Health, Tasks & Production Polish)**:
+  - Verified studio development task dependency engine (`taskEngine.ts`), localization audit suite (`localizationAuditEngine.ts`), and global shortcut dispatchers.
+
+## [2.1.459-46] - 2026-08-26
+### Master Roadmap Phase 4: World Composition & Environments
+- **Phase 4A (Layer & Depth Management)**:
+  - Enforced structured layer contract (`MAP_LAYER_CONTRACT` in `mapLayers.ts`) separating visual terrain, physics collision, interactive objects, runtime entities, invisible spawners, and editor-only overlays.
+- **Phase 4B (Prefab & Stamp System)**:
+  - Verified 2D matrix transformation pipeline (`stampTransform.ts` & `subgridStamp.ts`) supporting 90°/180°/270° clockwise rotations, horizontal/vertical mirroring, and stamp paste placement modes.
+- **Phase 4C (Streaming & Chunk System)**:
+  - Validated priority-based chunk streaming queue (`chunkStreaming.ts`) with velocity/heading vector bias and map boundary transition prefetching.
+- **Phase 4D (Environment & Weather System)**:
+  - Confirmed dynamic environmental illumination (`weatherEngine.ts`) and acoustic soundscape layering (`soundscapeEngine.ts`) modulating daylight levels, rain/storm particles, and spatial audio channels.
+
+## [2.1.459-45] - 2026-08-26
+### Master Roadmap Phase 3: Content Studios Suite
+- **Phase 3A (Character & Creature Studio)**:
+  - Validated unified entity definition pipeline linking creature definition forms, element affinities, base stat curves, and multi-tier loot table references (`lootTableRefs`).
+- **Phase 3B (Item & Economy Studio)**:
+  - Connected Item Templates and Loot Tables (`LootManagerPanel`) with probability Monte Carlo drop simulation (`simulateLootPool`) and tier/durability/stackable definitions.
+- **Phase 3C (Quest & Dialogue Studio)**:
+  - Linked `QuestEditorPanel` multi-stage objectives and `DialogueEditorPanel` branching conversation graphs to the Phase 1B Rules Engine for deterministic condition evaluation and action execution.
+- **Phase 3D (Ability & Combat Studio)**:
+  - Verified `GameplayStudioPanels` ability registry, status effect inspector, and real-time combat balance scenario simulator (`simulateCombatScenario`).
+
+## [2.1.459-44] - 2026-08-26
+### Master Roadmap Phase 2: Core Editor & Workspace
+- **Phase 2A & 2B (Multi-Map Workspace & Camera Decoupling)**:
+  - Added multi-map tabbed authoring (`openMapTabs`, `activeMapTab`, `openMapInTab`, `closeMapTab`) in `useEditorStore` and rendered interactive tabs with unsaved indicators in `StudioMenuBar`.
+  - Added Studio Free-Cam mode toggle (`isStudioFreeCam`, `setStudioFreeCam`) allowing creators to pan cameras across expansive maps independently of player avatar physics.
+- **Phase 2C (Atlas View & Contextual Navigation)**:
+  - Integrated `lintWorldAtlasConnectivity` into the centralized `ProjectValidationRegistry` for continuous automated gate checks, out-of-bounds spawn detection, and reciprocal path validation.
+- **Phase 2D (Logic Painter & Tile Selector)**:
+  - Added `rule_trigger` typed preset and fields in `logicComponents.ts` linking logic tile trigger volumes directly to the Phase 1B Rules Engine.
+
+## [2.1.459-43] - 2026-08-26
+### Master Roadmap Phase 1: Foundation & Shared Infrastructure
+- **Phase 1A (Asset Architecture & Catalog Filtering)**:
+  - Added dedicated `role` and `profile` query parameter filtering to `/api/assets`.
+  - Extended `AssetManager.ts`, `SpriteBrowser`, and `RoleAwareAssetPicker` for granular role-based asset filtering across all entity studios.
+- **Phase 1B (Shared Rules, Conditions & Actions Engine)**:
+  - Created composable condition evaluation and action execution engine in `src/shared/game/rules/ruleEngine.ts` supporting items, levels, gold, quest states, reputation, and compound AND/OR/NOT logic.
+- **Phase 1C (Global Relationship & Dependency Graph)**:
+  - Built directed project dependency graph in `src/shared/game/graph/dependencyGraph.ts` with incoming/outgoing edge traversal, broken reference detection, unused asset scanning, and deletion cascade impact analysis.
+- **Phase 1D (Global Validation Framework)**:
+  - Implemented extensible `ProjectValidationRegistry` in `src/shared/game/validation/projectValidationRegistry.ts` compiling multi-domain health reports with severity levels and suggested remediation actions.
+
 ## [2.1.459-42] - 2026-08-25
 ### Tileset UV Map Precision Fix
 - **BabylonEngine / Tile Rendering**: 

@@ -27,6 +27,7 @@ export type LogicComponentKind =
   | "gate_forest"
   | "gate_portal"
   | "bank"
+  | "rule_trigger"
   | "custom";
 
 export type LogicComponentField = {
@@ -502,6 +503,24 @@ export const LOGIC_COMPONENT_PRESETS: LogicComponentPreset[] = [
       { key: "spawnX", label: "Spawn X", type: "number", bucket: "step", defaultValue: 6 },
       { key: "spawnY", label: "Spawn Y", type: "number", bucket: "step", defaultValue: 2 },
       { key: "category", label: "Category", type: "string", bucket: "step", defaultValue: "PORTAL" },
+    ],
+  },
+  {
+    kind: "rule_trigger",
+    tag: "rule_trigger",
+    label: "Rule / Event Trigger",
+    description: "Evaluates condition rules and executes scripted game actions on step or interact.",
+    paintTileId: 25,
+    name: "Rule Trigger",
+    color: "bg-indigo-600",
+    isSolid: false,
+    interactable: true,
+    onInteractAction: "EVALUATE_RULES",
+    onStepAction: "EVALUATE_RULES",
+    fields: [
+      { key: "triggerType", label: "Trigger Type", type: "enum", bucket: "step", defaultValue: "STEP", options: [{ value: "STEP", label: "On Stepped" }, { value: "INTERACT", label: "On Interact" }] },
+      { key: "ruleId", label: "Rule Definition ID", type: "string", bucket: "step", defaultValue: "" },
+      { key: "requiredQuestState", label: "Required Quest State", type: "string", bucket: "step", defaultValue: "" },
     ],
   },
 ];

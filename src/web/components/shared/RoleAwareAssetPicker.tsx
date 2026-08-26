@@ -117,9 +117,11 @@ export function RoleAwareAssetPicker({ entityType, assetRole, onSelectAsset, onC
             <div className="absolute inset-0 overflow-y-auto">
                 <SpriteBrowser 
                   filterType={profileTypeHint}
+                  filterRole={assetRole}
+                  filterProfile={importProfile}
                   onSelect={(assets: GameAssetItem[]) => {
                     if (assets.length === 0) return;
-                    const match = assets.find(a => a.metadata?.slotRole === assetRole);
+                    const match = assets.find(a => a.metadata?.slotRole === assetRole || a.metadata?.role === assetRole);
                     if (match) {
                       onSelectAsset(match);
                     } else {

@@ -31,6 +31,8 @@ export interface SpriteBrowserProps {
   classDef?: SpriteClassFilter;
   filterTags?: string[];
   filterType?: string;
+  filterRole?: string;
+  filterProfile?: string;
   multiSelect?: boolean;
   selectedAssetIds?: string[];
   onSelect: (assets: GameAssetItem[]) => void;
@@ -70,6 +72,8 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   classDef,
   filterTags = [],
   filterType = 'SPRITE',
+  filterRole,
+  filterProfile,
   multiSelect = false,
   selectedAssetIds = [],
   onSelect,
@@ -96,7 +100,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
   useEffect(() => {
     setPage(0);
     void fetchSprites(0, false);
-  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, stableClassDef, packFilter, filterType, stableFilterTags]);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, stableClassDef, packFilter, filterType, filterRole, filterProfile, stableFilterTags]);
 
   useEffect(() => {
     const handleRefreshed = () => {
@@ -105,7 +109,7 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
     };
     window.addEventListener('assets:refreshed', handleRefreshed);
     return () => window.removeEventListener('assets:refreshed', handleRefreshed);
-  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, stableClassDef, packFilter, filterType, stableFilterTags]);
+  }, [searchQuery, selectedTag, creatureSubFilter, activeClassFilter, stableClassDef, packFilter, filterType, filterRole, filterProfile, stableFilterTags]);
 
   const fetchSprites = async (pageNum: number, append: boolean) => {
     if (append) setLoadingMore(true);
@@ -130,6 +134,8 @@ export const SpriteBrowser: React.FC<SpriteBrowserProps> = ({
         const res = await manager.searchAssets(
           {
             type: filterType,
+            role: filterRole || undefined,
+            profile: filterProfile || undefined,
             query: searchQuery || undefined,
             tags: tagsToQuery.length > 0 ? tagsToQuery : undefined,
             pack: packFilter === 'ALL' ? undefined : packFilter,

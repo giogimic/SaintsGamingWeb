@@ -6,7 +6,7 @@ import { useGameStore } from '../store';
 import {
   FileText, Edit, Eye, Folder, Box, Globe, PlayCircle, Users, HelpCircle,
   Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle,
-  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell, Activity, UserCircle
+  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell, Activity, UserCircle, Camera
 } from 'lucide-react';
 import { RealmSettingsModal } from './RealmSettingsModal';
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
@@ -14,6 +14,7 @@ import { NotificationHistoryModal } from './components/NotificationHistoryModal'
 import { STUDIO_MODE_META, type StudioMode } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
+import { loadMap } from '../data/maps';
 
 type MenuState = string | null;
 
@@ -34,8 +35,23 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
   const toggleCreationMode = useEditorStore((s) => s.toggleCreationMode);
   const mapDirty = useEditorStore((s) => s.mapDirty);
+  const openMapTabs = useEditorStore((s) => s.openMapTabs);
+  const activeMapTab = useEditorStore((s) => s.activeMapTab);
+  const openMapInTab = useEditorStore((s) => s.openMapInTab);
+  const closeMapTab = useEditorStore((s) => s.closeMapTab);
+  const setActiveMapTab = useEditorStore((s) => s.setActiveMapTab);
+  const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
+  const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
+
   const currentMapId = useGameStore((s) => s.currentMapId);
   const showToast = useGameStore((s) => s.showToast);
+
+  // Keep open map tabs synchronized with active map
+  useEffect(() => {
+    if (currentMapId && !openMapTabs.includes(currentMapId)) {
+      openMapInTab(currentMapId);
+    }
+  }, [currentMapId, openMapTabs, openMapInTab]);
 
   const handleSwitchMode = (mode: StudioMode) => {
     setStudioMode(mode);
@@ -126,15 +142,67 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     >
       {/* Zone 1: Left - Identity & Menus */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 pr-2 border-r border-amber-500/30">
+        <div className="flex items-center gap-1.5 pr-2 border-r border-amber-500/30">
           <span className="font-mono font-black text-xs tracking-wider text-amber-400">STUDIO</span>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/60 border border-amber-500/30 text-[10px] font-mono text-slate-300">
-            <Globe className="w-3 h-3 text-amber-400" />
-            <span>{currentMapId || 'LOBBY'}</span>
-            {mapDirty && (
-              <span className="text-amber-400 font-bold" title="Unsaved changes">*</span>
-            )}
+
+          {/* Map Tabs */}
+          <div className="flex items-center gap-1">
+            {openMapTabs.map((tabMapId) => {
+              const isActive = (currentMapId || 'DEMO_SANDBOX') === tabMapId;
+              return (
+                <div
+                  key={tabMapId}
+                  onClick={() => {
+                    if (!isActive) {
+                      setActiveMapTab(tabMapId);
+                      loadMap(tabMapId);
+                      showToast(`Switched map: ${tabMapId}`);
+                    }
+                  }}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
+                    isActive
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 font-bold'
+                      : 'bg-black/40 text-slate-400 hover:text-slate-200 border border-amber-500/10'
+                  }`}
+                  title={`Map: ${tabMapId}`}
+                >
+                  <Globe className="w-2.5 h-2.5 text-amber-400" />
+                  <span>{tabMapId}</span>
+                  {isActive && mapDirty && (
+                    <span className="text-amber-400 font-bold" title="Unsaved changes">*</span>
+                  )}
+                  {openMapTabs.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeMapTab(tabMapId);
+                      }}
+                      className="ml-1 text-slate-500 hover:text-red-400 rounded"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {/* Free-Cam Toggle */}
+          <button
+            onClick={() => {
+              setStudioFreeCam(!isStudioFreeCam);
+              showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Studio Free-Cam unlocked (WASD pan)');
+            }}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+              isStudioFreeCam
+                ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/60 font-bold'
+                : 'bg-black/40 text-slate-400 hover:text-slate-200 border border-amber-500/10'
+            }`}
+            title="Studio Free-Cam (Decouples camera from player position for broad map editing)"
+          >
+            <Camera className="w-3 h-3" />
+            <span className="hidden sm:inline">{isStudioFreeCam ? 'FreeCam' : 'PlayerCam'}</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-0.5">
