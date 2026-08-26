@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
     const componentCategory = (searchParams.get("componentCategory") || "").trim();
     const componentLayer = (searchParams.get("componentLayer") || "").trim();
     const variantFamily = (searchParams.get("variantFamily") || "").trim();
+    const role = (searchParams.get("role") || "").trim();
+    const profile = (searchParams.get("profile") || "").trim();
     const showInCharacterCreationParam = searchParams.get("showInCharacterCreation");
     const showInCharacterCreation = showInCharacterCreationParam === "true";
     const sortBy = (searchParams.get("sortBy") || "source").trim();
@@ -250,6 +252,40 @@ export async function GET(req: NextRequest) {
             { metadata: { contains: `"variantFamily":"${variantFamily}"` } },
             { metadata: { contains: `"variant":"${variantFamily}"` } },
             { tags: { contains: `"variant:${variantFamily.toLowerCase()}"` } },
+          ],
+        },
+      ];
+    }
+
+    if (role) {
+      const lowerRole = role.toLowerCase();
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `"role":"${lowerRole}"` } },
+            { metadata: { contains: `"role": "${lowerRole}"` } },
+            { metadata: { contains: `"slotRole":"${lowerRole}"` } },
+            { metadata: { contains: `"slotRole": "${lowerRole}"` } },
+            { tags: { contains: `"role:${lowerRole}"` } },
+            { tags: { contains: `role:${lowerRole}` } },
+          ],
+        },
+      ];
+    }
+
+    if (profile) {
+      const lowerProfile = profile.toLowerCase();
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { metadata: { contains: `"profile":"${lowerProfile}"` } },
+            { metadata: { contains: `"profile": "${lowerProfile}"` } },
+            { metadata: { contains: `"importProfile":"${lowerProfile}"` } },
+            { metadata: { contains: `"importProfile": "${lowerProfile}"` } },
+            { tags: { contains: `"profile:${lowerProfile}"` } },
+            { tags: { contains: `profile:${lowerProfile}` } },
           ],
         },
       ];

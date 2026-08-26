@@ -40,6 +40,8 @@ export interface AssetFilters {
   categories?: string[];
   gameId?: string;
   query?: string;
+  role?: string;
+  profile?: string;
   modular?: boolean;
   componentCategory?: string;
   componentLayer?: string;
@@ -89,12 +91,22 @@ export class AssetManager {
   /**
    * Fetch assets specifically compatible with a given entity type and role.
    */
-  async getAssetsForRole(entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER', role: string, page = 0): Promise<GameAssetItem[]> {
+  async getAssetsForRole(entityType: 'CHARACTER' | 'CREATURE' | 'MONSTER', role?: string, page = 0): Promise<GameAssetItem[]> {
     let typeFilter = 'ALL';
-    if (entityType === 'CHARACTER') typeFilter = 'CHARACTER';
-    else if (entityType === 'CREATURE' || entityType === 'MONSTER') typeFilter = 'CREATURE';
+    let profileFilter: string | undefined = undefined;
+    if (entityType === 'CHARACTER') {
+      typeFilter = 'CHARACTER';
+      profileFilter = 'character';
+    } else if (entityType === 'CREATURE' || entityType === 'MONSTER') {
+      typeFilter = 'CREATURE';
+      profileFilter = 'creature';
+    }
 
-    const data = await this.searchAssets({ type: typeFilter as any }, page, 50);
+    const data = await this.searchAssets({
+      type: typeFilter as any,
+      profile: profileFilter,
+      role: role || undefined,
+    }, page, 50);
     return data.items;
   }
 
@@ -175,6 +187,8 @@ export class AssetManager {
     if (filters.componentCategory) params.set('componentCategory', filters.componentCategory);
     if (filters.componentLayer) params.set('componentLayer', filters.componentLayer);
     if (filters.variantFamily) params.set('variantFamily', filters.variantFamily);
+    if (filters.role) params.set('role', filters.role);
+    if (filters.profile) params.set('profile', filters.profile);
     if (filters.pack) params.set('pack', filters.pack);
     if (filters.sortBy) params.set('sortBy', filters.sortBy);
     if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);

@@ -407,6 +407,15 @@ interface EditorState {
   setSoftLock: (lock: SoftLock) => void;
   removeSoftLock: (resource: string) => void;
   clearExpiredLocks: () => void;
+
+  /** Multi-Map Workspace Tabs (Phase 2B) */
+  openMapTabs: string[];
+  activeMapTab: string | null;
+  isStudioFreeCam: boolean;
+  openMapInTab: (mapId: string) => void;
+  closeMapTab: (mapId: string) => void;
+  setActiveMapTab: (mapId: string) => void;
+  setStudioFreeCam: (enabled: boolean) => void;
 }
 
 const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
@@ -721,6 +730,35 @@ export const useEditorStore = create<EditorState>()(
       showEditorCoords: true,
       showWarpOverlays: true,
       showSpawnOverlays: true,
+
+      openMapTabs: ['DEMO_SANDBOX'],
+      activeMapTab: 'DEMO_SANDBOX',
+      isStudioFreeCam: false,
+      openMapInTab: (mapId: string) =>
+        set((state) => {
+          if (!state.openMapTabs.includes(mapId)) {
+            state.openMapTabs.push(mapId);
+          }
+          state.activeMapTab = mapId;
+        }),
+      closeMapTab: (mapId: string) =>
+        set((state) => {
+          state.openMapTabs = state.openMapTabs.filter((id) => id !== mapId);
+          if (state.activeMapTab === mapId) {
+            state.activeMapTab = state.openMapTabs[state.openMapTabs.length - 1] || null;
+          }
+        }),
+      setActiveMapTab: (mapId: string) =>
+        set((state) => {
+          if (!state.openMapTabs.includes(mapId)) {
+            state.openMapTabs.push(mapId);
+          }
+          state.activeMapTab = mapId;
+        }),
+      setStudioFreeCam: (enabled: boolean) =>
+        set((state) => {
+          state.isStudioFreeCam = enabled;
+        }),
 
       getStudioRuntime: () => studioRuntimeFromCreation(get().isCreationMode),
 
