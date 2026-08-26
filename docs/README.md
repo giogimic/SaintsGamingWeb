@@ -3,7 +3,7 @@
 # 📖 Saints Gaming Documentation Wiki
 ### *Technical Specification, Game Architecture & Studio Manual*
 
-🌐 **Official Site:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.459-35`
+🌐 **Official Site:** [**SaintsGaming.net**](https://SaintsGaming.net) &nbsp;•&nbsp; 🕹️ **Author:** **GioGimic** &nbsp;•&nbsp; 📦 **Release:** `v2.1.459-37`
 
 ---
 

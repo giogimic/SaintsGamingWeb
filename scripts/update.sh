@@ -187,7 +187,7 @@ DCEOF
     echo -e "${GREEN}[✓] docker-compose.yml rebuilt from clean base.${NC}"
 fi
 
-# --- Ensure explicit IPAM network block is at the end ---
+# --- Ensure explicit network block is at the end ---
 if ! grep -q "^networks:" docker-compose.yml 2>/dev/null; then
     cat >> docker-compose.yml <<'NETEOF'
 
@@ -195,10 +195,6 @@ networks:
   default:
     name: saintsgamingweb_default
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16
 NETEOF
     echo -e "${GREEN}[✓] Added explicit Docker network config.${NC}"
 fi
