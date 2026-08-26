@@ -49,4 +49,36 @@ describe('ProjectValidationRegistry (Phase 1D)', () => {
     const report2 = await registry.validateProject();
     expect(report2.issues.find((i) => i.code === 'WARN_FREE_SHOP_ITEM')).toBeUndefined();
   });
+
+  it('validates dialogue trees when provided in context', async () => {
+    const registry = new ProjectValidationRegistry();
+
+    const report = await registry.validateProject(undefined, {
+      dialogues: [
+        {
+          treeId: 'tree_test',
+          startNodeId: 'node_start',
+          nodes: [
+            {
+              id: 'node_start',
+              speakerName: 'Elder',
+              text: 'Hello traveler!',
+              options: [
+                {
+                  id: 'opt_1',
+                  text: 'Take quest',
+                  nextNodeId: 'node_missing_404',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const dialogueError = report.issues.find((i) => i.code === 'ERR_DIALOGUE_MISSING_TARGET_NODE');
+    expect(dialogueError).toBeDefined();
+    expect(dialogueError?.severity).toBe('ERROR');
+    expect(dialogueError?.message).toContain('node_missing_404');
+  });
 });
