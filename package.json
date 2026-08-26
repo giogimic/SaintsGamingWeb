@@ -20,6 +20,7 @@
     "sync:assets": "tsx scripts/sync-local-assets.ts",
     "ensure:starter-heroes": "tsx scripts/ensure-starter-heroes.ts",
     "ensure:world-profiles": "tsx scripts/ensure-world-profiles.ts",
+    "seed:starter-content": "tsx scripts/seed-starter-content.ts",
     "seed:saints-trail": "tsx scripts/seed-saints-trail.ts",
     "smoke:saints-trail": "tsx scripts/smoke-saints-trail.ts",
     "smoke:saints-trail:play": "tsx scripts/smoke-saints-trail-playthrough.ts",
