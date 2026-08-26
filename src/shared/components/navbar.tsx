@@ -48,7 +48,7 @@ const NAV_ITEMS = [
   { href: "/lobby", label: "Play Now", icon: Gamepad2 },
 ];
 
-export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion: _siteVersion = "2.1.364" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
+export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = false, siteVersion = "v2.1.459-41" }: { session: any | null, dbPermissionLevel?: number, discordLink?: string, showUcpLink?: boolean, siteVersion?: string }) {
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
