@@ -325,9 +325,9 @@ export default function TilesetPicker({
     const spanH = activeBrushPattern?.h || 1;
 
     return {
-      leftPct: (col / ts.columns) * 100,
+      leftPct: ((col * ts.tilewidth) / natural.w) * 100,
       topPct: ((row * ts.tileheight) / natural.h) * 100,
-      widthPct: (spanW / ts.columns) * 100,
+      widthPct: ((spanW * ts.tilewidth) / natural.w) * 100,
       heightPct: ((spanH * ts.tileheight) / natural.h) * 100,
       local,
       w: spanW,
@@ -426,9 +426,9 @@ export default function TilesetPicker({
     const spanH = maxRow - minRow + 1;
     const gid = ts.firstgid + minRow * ts.columns + minCol;
     setHoveredTile({
-      leftPct: (minCol / ts.columns) * 100,
+      leftPct: ((minCol * ts.tilewidth) / natural.w) * 100,
       topPct: ((minRow * ts.tileheight) / natural.h) * 100,
-      widthPct: (spanW / ts.columns) * 100,
+      widthPct: ((spanW * ts.tilewidth) / natural.w) * 100,
       heightPct: ((spanH * ts.tileheight) / natural.h) * 100,
       gid,
       col: minCol,
@@ -466,9 +466,9 @@ export default function TilesetPicker({
       const spanH = maxRow - minRow + 1;
       const gid = ts.firstgid + minRow * ts.columns + minCol;
       setHoveredTile({
-        leftPct: (minCol / ts.columns) * 100,
+        leftPct: ((minCol * ts.tilewidth) / natural.w) * 100,
         topPct: ((minRow * ts.tileheight) / natural.h) * 100,
-        widthPct: (spanW / ts.columns) * 100,
+        widthPct: ((spanW * ts.tilewidth) / natural.w) * 100,
         heightPct: ((spanH * ts.tileheight) / natural.h) * 100,
         gid,
         col: minCol,
@@ -539,10 +539,12 @@ export default function TilesetPicker({
         let col = local % ts.columns;
         let row = Math.floor(local / ts.columns);
 
-        if (e.key === 'ArrowLeft') col = Math.max(0, col - 1);
-        if (e.key === 'ArrowRight') col = Math.min(ts.columns - 1, col + 1);
-        if (e.key === 'ArrowUp') row = Math.max(0, row - 1);
-        if (e.key === 'ArrowDown') row = Math.min(maxRows - 1, row + 1);
+        const stepX = regionPreset.w || 1;
+        const stepY = regionPreset.h || 1;
+        if (e.key === 'ArrowLeft') col = Math.max(0, col - stepX);
+        if (e.key === 'ArrowRight') col = Math.min(ts.columns - stepX, col + stepX);
+        if (e.key === 'ArrowUp') row = Math.max(0, row - stepY);
+        if (e.key === 'ArrowDown') row = Math.min(maxRows - stepY, row + stepY);
 
         e.preventDefault();
         selectTileRegion(row, col, regionPreset.w, regionPreset.h);
