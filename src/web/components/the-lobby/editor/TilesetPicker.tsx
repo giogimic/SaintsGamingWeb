@@ -254,6 +254,8 @@ export default function TilesetPicker({
         columns,
         tilewidth,
         tileheight,
+        imagewidth: img.width,
+        imageheight: img.height,
       };
 
       const updated = [...tilesets, newTileset];
@@ -881,7 +883,7 @@ export default function TilesetPicker({
                       onClick={() => {
                         soundSynth?.playUiClick?.();
                         const cols = Math.max(1, Math.floor((natural.w || ts.columns * ts.tilewidth) / 16));
-                        handleUpdateTilesetSettings({ tilewidth: 16, tileheight: 16, columns: cols });
+                        handleUpdateTilesetSettings({ tilewidth: 16, tileheight: 16, columns: cols, imagewidth: natural.w, imageheight: natural.h });
                         showToast('Grid: 16×16px (1-block granularity)');
                       }}
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition border cursor-pointer ${
@@ -898,7 +900,7 @@ export default function TilesetPicker({
                       onClick={() => {
                         soundSynth?.playUiClick?.();
                         const cols = Math.max(1, Math.floor((natural.w || ts.columns * ts.tilewidth) / 32));
-                        handleUpdateTilesetSettings({ tilewidth: 32, tileheight: 32, columns: cols });
+                        handleUpdateTilesetSettings({ tilewidth: 32, tileheight: 32, columns: cols, imagewidth: natural.w, imageheight: natural.h });
                         showToast('Grid: 32×32px (2-block chunk)');
                       }}
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition border cursor-pointer ${
@@ -1299,7 +1301,9 @@ export default function TilesetPicker({
                     const val = parseInt(e.target.value) || 16;
                     handleUpdateTilesetSettings({ 
                       tilewidth: val,
-                      columns: Math.max(1, Math.floor(natural.w / val))
+                      columns: Math.max(1, Math.floor(natural.w / val)),
+                      imagewidth: natural.w,
+                      imageheight: natural.h
                     });
                   }}
                   className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
