@@ -1,0 +1,1869 @@
+// Saints Gaming — Prisma Schema
+// Database: MariaDB / MySQL (Primary) + SQLite (Fallback)
+// To switch: set DB_PROVIDER="sqlite" and DATABASE_URL="file:..." in .env
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth.js Models ─────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+// ─── Roles & Permissions ──────────────────────────────────────────
+
+model Role {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  level     Int      @unique
+  color     String   @default("text-zinc-500")
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── User ───────────────────────────────────────────────────────
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  emailVerified       DateTime?
+  username            String    @unique
+  displayName         String?
+  passwordHash        String?
+  image               String? // avatar URL or path
+  bio                 String?
+  permissionLevel     Int       @default(20)
+  roleId              String?
+  role                Role?     @relation(fields: [roleId], references: [id])
+  isBanned            Boolean   @default(false)
+  banReason           String?
+  forumPin            String? // User's custom PIN to prevent spam
+  canPostToForum      Boolean   @default(true) // Revocable for moderation
+  forcePasswordChange Boolean   @default(false)
+  devConsoleEnabled   Boolean   @default(false)
+  isWriter            Boolean   @default(false)
+  isVIP               Boolean   @default(false)
+  isFounder           Boolean   @default(false)
+  isTrusted           Boolean   @default(false)
+  coins               Int       @default(500)
+  xp                  Int       @default(0)
+  level               Int       @default(1)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  playerStructures    PlayerStructure[]
+
+  // Relations
+  accounts       Account[]
+  sessions       Session[]
+  threads        Thread[]
+  replies        Reply[]
+  reactions      Reaction[]
+  newsArticles   NewsArticle[]
+  streamProfiles StreamProfile[]
+  notifications  Notification[]
+  realtimeEvents RealtimeEvent[]
+  supportTickets SupportTicket[]
+  ticketMessages TicketMessage[]
+
+  // FiveM
+  fivemLicense  String?             @unique
+  discordId     String?             @unique
+  characters    Character[]
+  steamWishlist SteamWishlistItem[]
+
+  // E2EE Messenger
+  sentFriendships     Friendship[]      @relation("SentFriendships")
+  receivedFriendships Friendship[]      @relation("ReceivedFriendships")
+  publicKey           UserPublicKey?
+  sentMessages        DirectMessage[]   @relation("SentMessages")
+  receivedMessages    DirectMessage[]   @relation("ReceivedMessages")
+  groupMemberships    GroupChatMember[]
+  groupMessages       GroupMessage[]
+
+  // Profile Customization
+  gameCharacters  GameCharacter[]
+  youtubeVideoUrl String?
+  youtubeMusicUrl String?
+  profileImages   ProfileImage[]
+  pinnedBeastId   String? // ID of the Beast/Creature to display on profile
+
+  // Guilds
+  guildMemberships GuildMember[]
+  ledGuilds        Guild[]       @relation("GuildLeader")
+
+  // Generic Creature System
+  // Generic Creature System
+  playerCreatures PlayerCreature[]
+  playerInventory PlayerInventoryItem[]
+  playerStats     PlayerStats?
+  playerSkills    PlayerSkill[]
+  playerQuestStates PlayerQuestState[]
+
+  // Social
+  socialPosts           SocialPost[]
+  socialReactions       SocialReaction[]
+  socialBookmarks       SocialBookmark[]
+  socialWatchHistory    SocialWatchHistory[]
+  socialBookmarkFolders SocialBookmarkFolder[]
+  socialMutedKeywords   SocialMutedKeyword[]
+  socialPreferences     SocialUserPreference?
+  tipsSent              SocialTip[]            @relation("TipsSent")
+  tipsReceived          SocialTip[]            @relation("TipsReceived")
+  subscriptions         SocialSubscription[]   @relation("Subscriber")
+  subscribers           SocialSubscription[]   @relation("SubscribedTo")
+  reports               Report[]
+  pollVotes             PollVote[]
+  threadSubscriptions   ThreadSubscription[]
+  replyLikes            ReplyLike[]
+  achievements          UserAchievement[]
+  uiPresets             UiPreset[]
+  mapPrefabs            MapPrefab[]
+  sourceAssets          SourceAsset[]          @relation("SourceAssetsUploaded")
+  usableAssets          UsableAsset[]          @relation("UsableAssetsCreated")
+
+  @@index([createdAt])
+}
+
+model ProfileImage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── Forum ──────────────────────────────────────────────────────
+
+model ForumCategory {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  description   String? @db.Text @db.Text
+  icon          String? // SVG icon name or emoji
+  order         Int           @default(0)
+  isLocked      Boolean       @default(false)
+  reqWriter     Boolean       @default(false)
+  reqVIP        Boolean       @default(false)
+  reqFounder    Boolean       @default(false)
+  reqTrusted    Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  subcategories SubCategory[]
+}
+
+model SubCategory {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String? @db.Text @db.Text
+  order       Int           @default(0)
+  isLocked    Boolean       @default(false)
+  reqWriter   Boolean       @default(false)
+  reqVIP      Boolean       @default(false)
+  reqFounder  Boolean       @default(false)
+  reqTrusted  Boolean       @default(false)
+  categoryId  String
+  category    ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  threads     Thread[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Thread {
+  id               String               @id @default(cuid())
+  title            String
+  slug             String               @unique
+  body             String @db.LongText// markdown content
+  iconImage        String? // optional thread icon/image
+  isPinned         Boolean              @default(false)
+  isLocked         Boolean              @default(false)
+  viewCount        Int                  @default(0)
+  acceptedAnswerId String? // Q&A Best Answer format
+  authorId         String
+  author           User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subcategoryId    String
+  subcategory      SubCategory          @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  replies          Reply[]
+  reactions        Reaction[]
+  images           Image[]
+  hashtags         ThreadHashtag[]
+  polls            Poll[]
+  subscriptions    ThreadSubscription[]
+  reports          Report[]
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([authorId])
+  @@index([subcategoryId])
+  @@index([subcategoryId, createdAt])
+}
+
+model Reply {
+  id        String      @id @default(cuid())
+  body      String @db.LongText// markdown content
+  authorId  String
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  threadId  String
+  thread    Thread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  quotedId  String? // ID of the reply being quoted
+  reactions Reaction[]
+  likes     ReplyLike[]
+  reports   Report[]
+  images    Image[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([authorId])
+  @@index([threadId])
+}
+
+model Reaction {
+  id       String  @id @default(cuid())
+  emoji    String // "👍", "🔥", "😂", "❤️", "💀", "🎮"
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId String?
+  thread   Thread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  replyId  String?
+  reply    Reply?  @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, emoji, threadId])
+  @@unique([userId, emoji, replyId])
+  @@index([userId])
+  @@index([threadId])
+  @@index([replyId])
+}
+
+// ─── Phase 2: Polls & Subscriptions ─────────────────────────────
+
+model Poll {
+  id        String       @id @default(cuid())
+  question  String
+  threadId  String?
+  thread    Thread?      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      SocialPost?  @relation("PostPoll", fields: [postId], references: [id], onDelete: Cascade)
+  options   PollOption[]
+  createdAt DateTime     @default(now())
+
+  @@index([threadId])
+  @@index([postId])
+}
+
+model PollOption {
+  id     String     @id @default(cuid())
+  text   String
+  pollId String
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes  PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+
+  @@unique([userId, optionId])
+  @@index([userId])
+  @@index([optionId])
+}
+
+model ThreadSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, threadId])
+  @@index([userId])
+  @@index([threadId])
+}
+
+model ReplyLike {
+  id        String   @id @default(cuid())
+  userId    String
+  replyId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reply Reply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, replyId])
+}
+
+// ─── Hashtags (join tables for SQLite compatibility) ────────────
+
+model Hashtag {
+  id      String          @id @default(cuid())
+  name    String          @unique // stored lowercase, without #
+  threads ThreadHashtag[]
+  news    NewsHashtag[]
+}
+
+model ThreadHashtag {
+  threadId  String
+  hashtagId String
+  thread    Thread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, hashtagId])
+}
+
+model NewsHashtag {
+  articleId String
+  hashtagId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag     @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, hashtagId])
+}
+
+// ─── News ───────────────────────────────────────────────────────
+
+model NewsArticle {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  excerpt     String? @db.Text
+  body        String @db.LongText// markdown content
+  coverImage  String? // optional cover image path or raw SVG
+  icon        String? // raw SVG markup for icons
+  isPublished Boolean       @default(false)
+  authorId    String
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  hashtags    NewsHashtag[]
+  promoLinks  PromoLink[]
+  mediaAssets MediaAsset[]
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PromoLink {
+  id        String      @id @default(cuid())
+  title     String // e.g. "Pre-order on Steam"
+  url       String
+  type      String // "store", "website", "social", "download"
+  articleId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model MediaAsset {
+  id        String      @id @default(cuid())
+  title     String // e.g. "Official 4K Wallpaper"
+  url       String
+  type      String // "image", "video", "youtube", "archive"
+  articleId String
+  article   NewsArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+// ─── Modpacks ───────────────────────────────────────────────────
+
+model Modpack {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  game         String   @default("Minecraft")
+  description  String? @db.Text @db.Text
+  version      String?
+  status       String   @default("Active") // Active, Inactive, Archived
+  logoImage    String? // optional logo
+  downloadUrl  String?
+  installNotes String? // markdown installation instructions
+  changelog    String? // markdown changelog
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─── Game Servers ─────────────────────────────────────────────────
+
+model GameServer {
+  id        String   @id @default(cuid())
+  name      String // e.g., "Saints Gaming - Palworld #1"
+  game      String // e.g., "Palworld"
+  ip        String // e.g., "192.168.1.100" or domain
+  port      Int // e.g., 8211, 8214, 8215
+  queryPort Int? // Palworld uses a specific port for RCON/Query
+  isActive  Boolean  @default(true)
+  trackerId String? // Optional: ID for Battlemetrics or similar API
+  order     Int      @default(0) // For sorting on the UI
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── Streams ────────────────────────────────────────────────────
+
+model StreamProfile {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String // "twitch", "youtube", "kick"
+  channelUrl  String
+  channelId   String? // platform-specific channel ID for API lookups
+  priority    Int       @default(0)
+  isApproved  Boolean   @default(false)
+  isLive      Boolean   @default(false)
+  streamTitle String?
+  lastChecked DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ─── Support Tickets ──────────────────────────────────────────────
+
+model SupportTicket {
+  id        String          @id @default(cuid())
+  title     String
+  status    String          @default("OPEN") // OPEN, IN_PROGRESS, CLOSED
+  category  String          @default("GENERAL") // GENERAL, BAN_APPEAL, BUG_REPORT, STORE
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  messages  TicketMessage[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model TicketMessage {
+  id        String        @id @default(cuid())
+  body      String @db.LongText// Markdown
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+// ─── Images (uploads) ───────────────────────────────────────────
+
+model Image {
+  id        String   @id @default(cuid())
+  url       String // relative path to uploaded file
+  filename  String // original filename (sanitized)
+  mimeType  String
+  sizeBytes Int
+  alt       String?
+  threadId  String?
+  thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  replyId   String?
+  reply     Reply?   @relation(fields: [replyId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+}
+
+// ─── Site Settings ──────────────────────────────────────────────
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model LevelTier {
+  id         String   @id @default(cuid())
+  level      Int      @unique
+  name       String // e.g., "Newbie", "Veteran", "Saint"
+  xpRequired Int
+  icon       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─── Notifications ──────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // e.g. "REPLY", "MENTION", "SYSTEM"
+  message   String
+  link      String? // optional URL to redirect to when clicked
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ─── Realtime Event Log ─────────────────────────────────────────
+// Stores CRITICAL priority events for client reconnection catch-up.
+// EPHEMERAL events (typing, presence heartbeat, movement) are NEVER written here.
+// Rows older than 7 days should be purged via cleanup script.
+
+model RealtimeEvent {
+  id        String   @id @default(cuid())
+  eventType String   // e.g. "notification.created"
+  userId    String?  // nullable — some events are broadcast globally
+  payload   String   // JSON string of the event payload
+  priority  String   @default("CRITICAL") // always CRITICAL or NORMAL
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// ─── FiveM Roleplay Server Models ───────────────────────────────
+
+model Character {
+  id             String  @id @default(cuid())
+  userId         String
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  phoneNumber    String? @unique
+  appearanceData String? // JSON string
+  lastCoords     String? // JSON string: {x, y, z, heading}
+  cash           Int     @default(0)
+  bank           Int     @default(0)
+  health         Int     @default(200)
+  armor          Int     @default(0)
+  isDead         Boolean @default(false)
+  drugStats      String? // JSON string: {addictions: {}, activeEffects: {}}
+
+  // Faction / Gang
+  factionId   String?
+  factionRank Int?
+  faction     Faction? @relation(fields: [factionId], references: [id], onDelete: SetNull)
+  gangId      String?
+  gangRank    Int?
+  gang        Gang?    @relation(fields: [gangId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties   Property[]
+  vehicles     Vehicle[]
+  businesses   BusinessEmployee[]
+  inventory    InventoryItem[]
+  transactions BankTransaction[]
+}
+
+model BankTransaction {
+  id          String    @id @default(cuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  type        String // "DEPOSIT", "WITHDRAWAL", "WIRE_TRANSFER", "SALARY"
+  amount      Int
+  description String? @db.Text @db.Text
+  createdAt   DateTime  @default(now())
+}
+
+model Property {
+  id        String    @id @default(cuid())
+  type      String // "HOUSE", "APARTMENT"
+  name      String
+  coords    String? // JSON string
+  ownerId   String
+  owner     Character @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Vehicle {
+  id           String    @id @default(cuid())
+  plate        String    @unique
+  modelName    String
+  activeCoords String? // JSON string
+  garageId     String?
+  ownerId      String
+  owner        Character @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Faction {
+  id         String      @id @default(cuid())
+  name       String
+  type       String // "LEO", "EMS", etc.
+  characters Character[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Gang {
+  id         String      @id @default(cuid())
+  name       String
+  characters Character[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Business {
+  id        String             @id @default(cuid())
+  name      String
+  bank      Int                @default(0)
+  employees BusinessEmployee[]
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model BusinessEmployee {
+  id            String @id @default(cuid())
+  characterId   String
+  businessId    String
+  role          String // e.g. "Owner", "Manager", "Employee"
+  hierarchyRank Int    @default(0)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([characterId, businessId])
+}
+
+model InventoryItem {
+  id          String  @id @default(cuid())
+  characterId String
+  itemKey     String // e.g. "marijuana", "water", "pistol"
+  quantity    Int     @default(1)
+  metadata    String? @db.Text // JSON string for extra data like durability, weapon ammo
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([characterId, itemKey]) // Assuming items stack. If they don't, remove this unique constraint.
+}
+
+// ─── RSS Feeds ──────────────────────────────────────────────────
+
+model RssFeed {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  category  String // e.g. "Gaming", "PC", "Xbox"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── User Profile Integrations ────────────────────────────────────
+
+model UserAchievement {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId  String // The string identifier for the achievement (e.g. "beta_tester")
+  isPinned Boolean  @default(false)
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+model SteamWishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appId     String
+  name      String
+  image     String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, appId])
+}
+
+// ─── Saints Tamer Minigame (MMO Architecture) ─────────────────────────
+
+model GameCharacter {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  spriteId  String
+  classId   String
+  stateData String @db.Text// JSON string of the Zustand store PlayerState
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  gtcListings GtcListing[]
+
+  @@index([userId])
+}
+
+model MapPrefab {
+  id         String   @id @default(cuid())
+  authorId   String
+  name       String
+  category   String   @default("decor")
+  width      Int
+  height     Int
+  visualData String // JSON array of tiles: [{ layerOffset, r, c, tileId }]
+  logicData  String // JSON array of logic tags: [{ r, c, tileId }]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+}
+
+model WorldMap {
+  id             String   @id // e.g. "SAINTS_VILLAGE"
+  gameId         String?  @default("saints")
+  name           String
+  gridData       String @db.LongText// JSON 2D Array
+  gatesData      String @db.Text// JSON
+  npcsData       String @db.Text// JSON for NPC dialogues/teams
+  encountersData String   @default("[]") @db.Text // JSON for wild beast encounters
+  entitiesData   String   @default("[]") @db.Text // JSON for EntityInstanceV1 records (Bible 20 E2)
+  tileLayersData String   @default("[]") @db.LongText // JSON for TMX tile layers
+  tilesetsData   String   @default("[]") @db.Text // JSON for tilesets metadata
+  version        Int      @default(1)
+  
+  // Rich Map Metadata
+  musicTrack        String?
+  weatherType       String?  // 'clear' | 'rain' | 'snow' | 'fog' | 'storm'
+  recommendedLevel  Int?
+  lightingPreset    String?  // 'day' | 'dusk' | 'night' | 'cave'
+  respawnRulesJson  String? @db.Text
+  entryRequirements String? @db.Text
+  biome             String?
+  description       String? @db.Text @db.Text
+
+  updatedAt      DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+model GameQuest {
+  id             String   @id @default(cuid())
+  name           String
+  npcId          String
+  description    String
+  dialogStart    String @db.Text @db.Text
+  dialogProgress String
+  dialogComplete String
+  reqItemId      String?
+  reqAmount      Int      @default(0)
+  reqSkillId     String?
+  reqLevel       Int      @default(0)
+  rewardXp       Int      @default(0)
+  rewardCredits  Int      @default(0)
+  rewardItemId   String?
+  rewardAmount   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model GameAsset {
+  id            String   @id @default(cuid())
+  gameId        String?  // null = shared across all games
+  type          String   @default("SPRITE") // SPRITE, TILESET, AUDIO, ITEM_ICON, MONSTER, UI_ELEMENT, EFFECT, BACKGROUND, PARTICLE
+  source        String   @default("") // canonical file path
+  atlasSource   String?  // atlas file if from atlas
+  atlasFrame    String? @db.Text  // JSON: {x, y, width, height} for atlas extraction
+  tags          String   @default("[]") @db.Text // JSON string: ["saints", "npc", "male"] for SQLite compat
+  categories    String   @default("[]") @db.Text // JSON string: ["npcs", "heroes"] for SQLite compat
+  metadata      String   @default("{}") @db.Text // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
+  customLabels  String? @db.Text  // JSON string: {en: "Hero", es: "Héroe"}
+  isActive      Boolean  @default(true)
+  usageCount    Int      @default(0)
+  fileSize      Int      @default(0)
+  cdnUrl        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@index([gameId])
+  @@index([type])
+}
+
+model GameConfig {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  version       String   @default("1.0.0")
+  description   String? @db.Text @db.Text
+  isActive      Boolean  @default(false)
+
+  // Game rules
+  maxLevel      Int      @default(100)
+  baseStats     String   @default("{}") // JSON: {hp: 100, atk: 50, ...}
+  combatFormula String   @default("saints-standard")
+  skillFormula  String   @default("runescape-style")
+  xpCurve       String   @default("exponential")
+  xpCurveData   String?  // JSON: custom XP table
+  /// Global shiny spawn chance percent (0–100). Creatures can sync or override.
+  globalShinyChancePercent Float @default(0.5)
+
+  // Asset pack references
+  spritePackIds  String   @default("[]") // JSON: ["saints-npcs", "saints-monsters"]
+  tilesetPackIds String   @default("[]") // JSON: ["saints-outdoor", "saints-indoor"]
+
+  // Performance settings
+  maxEntitiesPerMap  Int    @default(100)
+  maxPlayersPerMap   Int    @default(50)
+  chunkSize          Int    @default(32)
+  optimizationLevel  String @default("medium")
+
+  // Social settings
+  enableChat     Boolean @default(true)
+  enableParties  Boolean @default(true)
+  enableTrading  Boolean @default(true)
+  enablePvP      Boolean @default(true)
+  maxPartySize   Int     @default(4)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  classes       CharacterClass[]
+
+  @@index([isActive])
+}
+
+model CharacterClass {
+  id            String    @id @default(cuid())
+  gameId        String
+  game          GameConfig @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  /// World profile id (saints / custom_1 / custom_2). null/empty = shared across profiles.
+  /// Distinct from gameId, which is the GameConfig FK (slug "saints").
+  profileId     String?
+  slug          String
+  name          String
+  description   String    @default("") @db.Text @db.Text
+  icon          String?   // emoji or asset path
+  color         String    @default("#6366f1")
+  iconAssetId   String?
+
+  baseStats     String    @default("{}") // JSON: resolved combat sheet OR { shared+deltas encoded as final }
+  /// Additive deltas on SHARED_BASE_STATS: { hp, atk, def, spd, ratk, rdef }
+  statDeltas    String    @default("{}")
+  /// Additive starting combat skill level deltas: { attack: 14, wisdom: 9, ... }
+  skillDeltas   String    @default("{}")
+  /// Canonical class id for creator / heroes: WARRIOR | MAGE | THIEF | RANGER | PRIEST
+  classId       String    @default("")
+  growthRates   String    @default("{}") // JSON: {hp: 1.5, atk: 1.2, ...}
+
+  allowedSpriteTags String @default("[]") // JSON: ["hero", "player", "male"]
+  spriteFilters     String @default("{}") // JSON: {gender: ["male"], style: ["warrior"]}
+
+  startingEquipment  String @default("[]") // JSON
+  learnableSkills    String @default("[]") // JSON
+
+  perks         String @default("[]") // JSON: ["MASTER_TAMER"]
+  abilities     String @default("[]") // JSON: ["beast_empathy"]
+
+  // RPG progression
+  skillProgression   String @default("[]") // JSON: skill unlocks per level
+  abilityProgression String @default("[]") // JSON: ability unlocks per level
+  perkProgression    String @default("[]") // JSON: perk unlocks per level
+
+  isPlayable    Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([gameId, slug])
+  @@index([gameId])
+  @@index([profileId])
+  @@index([classId])
+}
+
+model LootTable {
+  id            String   @id @default(cuid())
+  gameId        String
+  name          String
+  description   String? @db.Text @db.Text
+
+  entries       String   // JSON: array of loot entries
+  rollsPerDrop  Int      @default(1)
+  guaranteedDrops String @default("[]") // JSON
+
+  commonWeight    Int @default(60)
+  uncommonWeight  Int @default(25)
+  rareWeight      Int @default(10)
+  epicWeight      Int @default(4)
+  legendaryWeight Int @default(1)
+
+  minLevel      Int?
+  maxLevel      Int?
+  requiredTags  String   @default("[]") // JSON
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+model MonsterSpritePool {
+  id                     String   @id @default(cuid())
+  gameId                 String
+  speciesSlug            String   // references CreatureDef.slug
+  spriteAssetId          String   // primary sprite (front)
+  shinySpriteAssetId     String?
+  backSpriteAssetId      String?
+  overworldSpriteAssetId String? // overworld (directional)
+
+  frameCount    Int      @default(4)
+  directions    Int      @default(4)
+  frameRate     Int      @default(8)
+
+  variants      String   @default("{}") // JSON: { male: spriteId, female: spriteId }
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([gameId])
+  @@index([speciesSlug])
+}
+
+model GtcListing {
+  id          String   @id @default(cuid())
+  sellerId    String
+  seller      GameCharacter @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  itemType    String   // "BEAST", "EQUIPMENT", "MATERIAL"
+  title       String
+  price       Int
+  rarity      String?
+  affixes     String?
+  itemId      String?  
+  createdAt   DateTime @default(now())
+}
+
+// ─── E2EE Messenger & Friends ──────────────────────────────────────
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  status    String   @default("PENDING") // PENDING, ACCEPTED, BLOCKED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User @relation("SentFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("ReceivedFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+model UserPublicKey {
+  userId    String   @id
+  publicKey String // SPKI format, base64 encoded
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DirectMessage {
+  id         String @id @default(cuid())
+  senderId   String
+  receiverId String
+
+  ciphertext String
+  iv         String
+
+  senderCiphertext String
+  senderIv         String
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, senderId])
+}
+
+model GroupChat {
+  id        String   @id @default(cuid())
+  name      String?
+  createdAt DateTime @default(now())
+
+  members  GroupChatMember[]
+  messages GroupMessage[]
+}
+
+model GroupChatMember {
+  id          String   @id @default(cuid())
+  groupChatId String
+  userId      String
+  joinedAt    DateTime @default(now())
+  role        String   @default("MEMBER") // ADMIN or MEMBER
+
+  groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupChatId, userId])
+}
+
+model GroupMessage {
+  id          String   @id @default(cuid())
+  groupChatId String
+  senderId    String
+  body        String
+  createdAt   DateTime @default(now()) @db.LongText
+
+  groupChat GroupChat @relation(fields: [groupChatId], references: [id], onDelete: Cascade)
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+// ─── The Feed ────────────────────────────────────────────────
+
+model SocialPost {
+  id         String   @id @default(cuid())
+  authorId   String
+  body       String @db.LongText// Max ~280 chars
+  visibility String   @default("PUBLIC") // PUBLIC or FRIENDS
+  mediaUrl   String?
+  parentId   String?
+  viewCount  Int      @default(0)
+  shareCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  author       User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent       SocialPost?          @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      SocialPost[]         @relation("PostReplies")
+  hashtags     SocialPostHashtag[]
+  reactions    SocialReaction[]
+  bookmarks    SocialBookmark[]
+  watchHistory SocialWatchHistory[]
+  tips         SocialTip[]
+  polls        Poll[]               @relation("PostPoll")
+
+  // Phase 2 Upgrade Fields
+  isPinned              Boolean @default(false)
+  revenueEarned         Float   @default(0)
+  isSubscriberOnly      Boolean @default(false)
+  voiceoverUrl          String?
+  backgroundTrackUrl    String?
+  voiceoverVolume       Float   @default(1.0)
+  backgroundTrackVolume Float   @default(1.0)
+  copyrightStrike       Boolean @default(false)
+  chapters              String?
+  captionsText          String?
+  originalityScore      Int     @default(100)
+  flagReason            String?
+  throttleStatus        String?
+
+  // Phase 3 Upgrade Fields
+  isForumThread Boolean @default(false)
+  threadUrl     String?
+  threadId      String? @unique
+
+  @@index([createdAt])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model SocialHashtag {
+  id         String   @id @default(cuid())
+  name       String   @unique // lowercase without #
+  usageCount Int      @default(0) // Light denormalized count for trending
+  createdAt  DateTime @default(now())
+
+  posts SocialPostHashtag[]
+}
+
+model SocialPostHashtag {
+  postId    String
+  hashtagId String
+
+  post    SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag SocialHashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+}
+
+model SocialReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId]) // 1 like per user per post
+}
+
+model SocialBookmark {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  folderId  String?
+  createdAt DateTime @default(now())
+
+  post   SocialPost            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder SocialBookmarkFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@unique([postId, userId]) // 1 bookmark per user per post
+  @@index([folderId])
+}
+
+// ─── Feed Upgrade: Watch History ────────────────────────────────────
+
+model SocialWatchHistory {
+  id       String   @id @default(cuid())
+  userId   String
+  postId   String
+  viewedAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId, viewedAt])
+}
+
+// ─── Feed Upgrade: Bookmark Folders ─────────────────────────────────
+
+model SocialBookmarkFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks SocialBookmark[]
+
+  @@unique([userId, name])
+}
+
+// ─── Feed Upgrade: Negative Filtering ───────────────────────────────
+
+model SocialMutedKeyword {
+  id        String   @id @default(cuid())
+  userId    String
+  keyword   String // either hashtag name or random word
+  type      String   @default("KEYWORD") // KEYWORD or HASHTAG
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, keyword])
+}
+
+model SocialTip {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  postId     String?
+  amount     Float
+  message    String?
+  createdAt  DateTime @default(now())
+
+  sender   User        @relation("TipsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User        @relation("TipsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  post     SocialPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([receiverId])
+  @@index([postId])
+}
+
+model SocialSubscription {
+  id             String   @id @default(cuid())
+  subscriberId   String
+  subscribedToId String
+  tier           String   @default("STANDARD")
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  subscriber   User @relation("Subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscribedTo User @relation("SubscribedTo", fields: [subscribedToId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, subscribedToId])
+}
+
+// ─── Feed Upgrade: User Feed Preferences ────────────────────────────
+
+model SocialUserPreference {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  broadenFeed Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Moderation & Governance ────────────────────────────────────
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  threadId   String?
+  thread     Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  replyId    String?
+  reply      Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  reason     String
+  status     String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([reporterId])
+  @@index([threadId])
+  @@index([replyId])
+  @@index([status])
+}
+
+// ─── Generic Creature Engine ──────────────────────────────────────
+
+model CreatureTemplate {
+  id                   String             @id @default(cuid())
+  slug                 String             @unique
+  dexNumber            Int                // Replaces txmnId
+  speciesName          String             // Replaces species
+  height               Int
+  weight               Float
+  catchRate            Float
+  lowerCatchResistance Float
+  upperCatchResistance Float
+  stage                String
+  shape                String
+  types                String // JSON array of element slugs
+  tags                 String @db.Text// JSON array of tags
+  terrains             String // JSON array
+  genderWeights        String // JSON object
+  sounds               String // JSON object
+  spriteFront          String? // path to front battle sprite
+  spriteBack           String? // path to back battle sprite
+  spriteOverworld      String? // path to overworld sprite
+  learnedAbilities     CreatureLearnedAbility[]
+  evolutions           CreatureEvolution[]
+  stats                CreatureBaseStats?
+}
+
+model CreatureBaseStats {
+  id        String           @id @default(cuid())
+  speciesId String           @unique
+  species   CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  hp        Int
+  physicalPower   Int        // Replaces meleeAtk
+  physicalDefense Int        // Replaces meleeDef
+  abilityPower    Int        // Replaces rangedAtk
+  abilityDefense  Int        // Replaces rangedDef
+  combatTempo     Int        // Replaces speed
+}
+
+model CreatureLearnedAbility {
+  id             String           @id @default(cuid())
+  speciesId      String
+  species        CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  abilitySlug    String
+  levelLearned   Int
+  learningMethod String           @default("level_up")
+
+  @@unique([speciesId, abilitySlug])
+  @@index([speciesId])
+}
+
+model CreatureEvolution {
+  id           String           @id @default(cuid())
+  speciesId    String
+  species      CreatureTemplate @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  targetSlug   String
+  atLevel      Int?
+  itemRequired String?
+  spriteOverworld String?
+
+  @@index([speciesId])
+}
+
+model AbilityDictionary {
+  slug        String  @id
+  name        String
+  type        String
+  power       Int?
+  accuracy    Float?
+  cooldown    Int?    // Replaces ppCost (GCD mechanic)
+  effects     String  // JSON array of effect slugs
+  animation   String?
+  description String? @db.Text @db.Text
+  isCapture   Boolean @default(false)
+  target      String? // "enemy", "self", "ally", etc.
+}
+
+model CreatureElement {
+  slug String  @id
+  name String
+  icon String?
+}
+
+model ElementEffectiveness {
+  id            String @id @default(cuid())
+  attackElement String
+  defendElement String
+  multiplier    Float
+
+  @@unique([attackElement, defendElement])
+}
+
+model GameItem {
+  slug           String  @id
+  name           String
+  category       String
+  description    String? @db.Text @db.Text
+  effects        String // JSON
+  price          Int?
+  sprite         String?
+  usableInBattle Boolean @default(false)
+  usableInField  Boolean @default(false)
+}
+
+model EncounterTable {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  mapName String?
+  data    String // JSON: encounter table
+
+  @@index([mapName])
+}
+
+model StatusEffectDictionary {
+  slug        String  @id
+  name        String
+  description String? @db.Text @db.Text
+  duration    String? // "permanent", "turns", etc.
+  effects     String? // JSON
+}
+
+// ─── Player's Creature Party & Inventory ──────────────────────────
+
+model PlayerCreature {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  speciesSlug String
+  nickname    String?
+  level       Int      @default(1)
+  xp          Int      @default(0)
+  currentHp   Int
+  maxHp       Int
+  stats       String   // JSON: {physicalPower, physicalDefense, abilityPower, abilityDefense, combatTempo}
+  abilities   String   // JSON array of {abilitySlug, currentCooldown}
+  status      String?
+  isParty     Boolean  @default(false)
+  slotIndex   Int?
+  /// Shiny variant rolled at encounter / capture
+  isShiny     Boolean  @default(false)
+  /// Instance tags e.g. ["shiny"] for display/filter
+  tagsJson    String   @default("[]")
+  capturedAt  DateTime @default(now())
+
+  // Base automation
+  assignedStructure  PlayerStructure?
+
+  @@index([userId])
+  @@index([speciesSlug])
+  @@index([isShiny])
+}
+
+model PlayerInventoryItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemSlug    String
+  quantity    Int      @default(1)
+  
+  // Phase 7: ARPG Gear System
+  durability  Int?     // Current durability. Null if item is indestructible (e.g. wood, stone)
+  affixes     String?  // JSON: { "attackPower": +5, "lifesteal": 0.05 }
+
+  @@unique([userId, itemSlug, id]) // Remove old unique constraint that prevented duplicates. Players can have multiple identical swords with different durability/affixes.
+  @@index([userId])
+}
+
+model InventoryLog {
+  id        String   @id @default(cuid())
+  userId    String
+  itemSlug  String
+  quantity  Int
+  reason    String   // 'gather', 'craft', 'quest_reward', 'shop_buy', 'shop_sell', 'trade', 'loot', etc.
+  source    String?  // Context, e.g. 'shop:merchant_01'
+  metadata  String? @db.Text  // JSON string for additional context
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([itemSlug])
+  @@index([reason])
+  @@index([createdAt])
+}
+
+model PlayerStats {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  creaturesOwned  Int      @default(0)
+  questsCompleted Int      @default(0)
+  itemsCrafted    Int      @default(0)
+  combatXpTotal   Int      @default(0)
+  tradesCompleted Int      @default(0)
+  creditsEarned   Int      @default(0)
+  
+  updatedAt       DateTime @updatedAt
+
+  @@index([creaturesOwned])
+  @@index([questsCompleted])
+  @@index([itemsCrafted])
+  @@index([combatXpTotal])
+  @@index([creditsEarned])
+}
+
+// ─── Phase 7: The 27-Skill Matrix & Economy ─────────────────────
+
+model PlayerSkill {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillSlug String   // e.g. "woodcutting", "mining", "combat_melee"
+  level     Int      @default(1)
+  xp        Int      @default(0)
+
+  @@unique([userId, skillSlug])
+  @@index([userId])
+}
+
+model ItemTemplate {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String? @db.Text @db.Text
+  category       String   // "WEAPON", "ARMOR", "RESOURCE", "TOOL", "CONSUMABLE"
+  subCategory    String?  // "SWORD", "PICKAXE", "ORE"
+  tier           Int      @default(1)
+  baseDurability Int?     // If null, indestructible
+  baseStats      String?  // JSON: { "attackPower": 10, "gatherSpeed": 1.5 }
+  stackable      Boolean  @default(true)
+}
+
+model CraftingRecipe {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  outputItemSlug String
+  outputQuantity Int      @default(1)
+  skillSlug      String   // e.g. "smithing", "fletching"
+  levelReq       Int      @default(1)
+  xpReward       Int      @default(10)
+  ingredients    String   // JSON: [{ "itemSlug": "iron_ore", "qty": 2 }]
+  timeMs         Int      @default(3000) // Time it takes to craft
+}
+
+// ─── Saints World Maps ──────────────────────────────────────────
+
+model SaintsMap {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  width         Int
+  height        Int
+  tileSize      Int      @default(16)
+  tilesetData   String @db.Text// JSON: tile layer data
+  collisionData String // JSON: collision bitmask
+  npcData       String // JSON: NPC placements
+  triggerData   String? // JSON: trigger zones
+  encounterZone String? // links to EncounterTable slug
+  music         String?
+  parentMap     String?
+  environment   String? // e.g. "forest", "cave", "beach"
+  isIndoors     Boolean  @default(false)
+  version       Int      @default(1)
+  updatedAt     DateTime @updatedAt
+
+  @@index([slug])
+}
+
+// ─── Tile Registry (Saints Tilesets) ─────────────────────────────
+
+model TileRegistry {
+  id              String  @id @default(cuid())
+  tileId          Int     @unique
+  tilesetName     String
+  tilesetPath     String
+  srcX            Int
+  srcY            Int
+  width           Int     @default(16)
+  height          Int     @default(16)
+  name            String
+  category        String // outdoor_grass, indoor_floor, cave, etc.
+  terrainType     String // grass, water, sand, snow, stone, wood, lava
+  isCollidable    Boolean @default(false)
+  isAnimated      Boolean @default(false)
+  animationFrames String? // JSON: [{srcX, srcY, duration}]
+  encounterRate   Float? // 0.05 = 5% per step
+  environment     String? // forest, cave, beach
+  sortOrder       Int     @default(0)
+
+  @@index([category])
+  @@index([terrainType])
+}
+//  Map Logic Tile Registry (Modular Interaction Events) 
+model MapLogicTile {
+  id                Int     @id // e.g., 0, 1, 5, etc.
+  name              String
+  color             String
+  isSolid           Boolean @default(false)
+  interactable      Boolean @default(false)
+  onInteractAction  String? // e.g. "HARVEST", "SHOP", "CLINIC"
+  onInteractPayload String? // JSON string: { xp: 25, item: "wood", transformTo: 6 }
+  onStepAction      String? // e.g. "ENCOUNTER"
+  onStepPayload     String? // JSON string: { chance: 0.1 }
+}
+
+model UiPreset {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  data        String   // JSON string containing UI settings
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+
+// ─── Quests & Narrative Engine ──────────────────────────────────────
+
+model NpcDialogueTree {
+  id        String   @id @default(cuid())
+  npcId     String   @unique
+  name      String   // Internal reference name
+  data      String   // JSON containing the node_start branching tree
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuestTemplate {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  /// World profile id (matches WorldMap.gameId / Studio active profile)
+  gameId         String           @default("saints")
+  title          String
+  description    String
+  levelReq       Int              @default(1) @db.Text @db.Text
+  isRepeatable   Boolean          @default(false)
+  timeLimitMins  Int?             // Optional time limit
+  rewards        String           // JSON: { xp: 100, gold: 50, items: [{slug: "iron_sword", qty: 1}] }
+  objectives     QuestObjective[]
+  createdAt      DateTime         @default(now())
+
+  @@index([gameId])
+}
+
+model QuestObjective {
+  id          String        @id @default(cuid())
+  questId     String
+  quest       QuestTemplate @relation(fields: [questId], references: [id], onDelete: Cascade)
+  stage       Int           // 1, 2, 3...
+  type        String        // "KILL", "GATHER", "TALK", "EXPLORE"
+  targetSlug  String        // e.g. "goblin", "iron_ore", "npc_blacksmith"
+  requiredQty Int           @default(1)
+  description String
+
+  @@unique([questId, stage]) @db.Text @db.Text
+  @@index([questId])
+}
+
+model PlayerQuestState {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questSlug      String
+  status         String        @default("ACTIVE") // "ACTIVE", "COMPLETED", "FAILED"
+  currentStage   Int           @default(1)
+  progress       Int           @default(0) // How many of the requiredQty have been collected/killed
+  acceptedAt     DateTime      @default(now())
+  completedAt    DateTime?
+
+  @@unique([userId, questSlug])
+  @@index([userId])
+}
+
+// ─── Phase 8: Guilds ──────────────────────────────────────────────
+
+model Guild {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tag       String   @unique
+  leaderId  String
+  leader    User     @relation("GuildLeader", fields: [leaderId], references: [id])
+  bankJson  String?  @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   GuildMember[]
+}
+
+model GuildMember {
+  id        String   @id @default(cuid())
+  guildId   String
+  guild     Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rank      String   @default("MEMBER") // "LEADER", "OFFICER", "MEMBER"
+  joinedAt  DateTime @default(now())
+
+  @@unique([guildId, userId])
+  @@index([userId])
+}
+
+// ─── Game Content ───────────────────────────────────────────────
+
+model GameMap {
+  id            String   @id // e.g. 'SAINTS_VILLAGE'
+  name          String
+  width         Int      @default(24)
+  height        Int      @default(24)
+  tilesetData   String? @db.Text
+  npcs          String? @db.Text
+  encounters    String? @db.Text
+  gates         String? @db.Text
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── Character Creator: Starter Heroes ──────────────────────────
+// Each row is one archetype card shown on the HERO_PICK step.
+// Managed entirely through Studio. No code changes needed to add heroes.
+
+model StarterHero {
+  id          String   @id @default(cuid())
+  slug        String   @unique          // e.g. "warrior", "mystic" — used as stable key
+  /// World profile id (Studio active profile / WorldMap.gameId)
+  gameId      String   @default("saints")
+  name        String                    // Display name on card
+  classId     String                    // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
+  spriteKey   String                    // Key in GAME_SPRITES (no extension), e.g. "warrior"
+  /// Optional: id of a GameAsset bundle (see AssetIngestOptions.bundleId / lpcPackImporter)
+  /// representing a full modular/composited character sprite. When set, renderers may
+  /// prefer this over spriteKey; spriteKey remains required as the legacy fallback.
+  spriteBundleId String?
+  flavor      String                    // Short 1-line description shown on card
+  tag         String   @default("Balanced")  // Difficulty/style badge text
+  tagColor    String   @default("#a78bfa")   // Hex color for the badge
+  sortOrder   Int      @default(0)      // Display order in HERO_PICK grid
+  isActive    Boolean  @default(true)   // Toggle off to hide without deleting
+  startingMap String   @default("DEMO_SANDBOX")
+  startingX   Int      @default(14)
+  startingY   Int      @default(15)
+  startingInventory String @default("{\"capture_script\":10,\"patch_kit\":5}") // JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+// Studio-editable creature catalog (mirrors StarterHero ease-of-edit).
+// Add rows via Studio Creatures panel — no code change required for new species.
+model CreatureDef {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique // e.g. "agnite", "rockitten"
+  /// World profile id; null/empty = shared across all Studio profiles
+  gameId                String?  @default("saints")
+  name                  String            // Display name
+  dexNumber             Int      @default(0)
+  // Types (Saints elements). Secondary may be "None".
+  typePrimary           String            // Solar | Hydro | Bio | Volt | Geo | Cryo | Aero | Cyber
+  typeSecondary         String   @default("None")
+  // Image assets (paths under /game-assets/ or relative keys)
+  spriteOverworld       String            // e.g. "npc/rockitten" or "monster/battle/agnite-sheet"
+  spriteBattle          String?           // front / battle sheet
+  spriteBack            String?
+  // Shiny variant (easy Studio edit). Empty shiny sprites → use default look.
+  shinyEnabled          Boolean  @default(true)
+  shinyUseGlobalChance  Boolean  @default(true)
+  shinyChancePercent    Float    @default(0.5) // used when shinyUseGlobalChance = false
+  shinySpriteOverworld  String?
+  shinySpriteBattle     String?
+  shinySpriteBack       String?
+  // Base combat stats (full block)
+  baseHp                Int      @default(100)
+  physicalPower         Int      @default(10)
+  physicalDefense       Int      @default(10)
+  abilityPower          Int      @default(10)
+  abilityDefense        Int      @default(10)
+  combatTempo           Int      @default(100)
+  catchRate             Float    @default(1)
+  starterLevel          Int      @default(5)
+  // Passives: default + potential pool (JSON array)
+  // [{ "id", "name", "description", "isDefault": bool }]
+  passivesJson          String   @default("[]")
+  // World / overworld synergy skill
+  worldSkillName        String   @default("")
+  worldSkillDescription String   @default("")
+  // Starting TB abilities JSON: [{ "abilitySlug", "currentCooldown" }]
+  abilitiesJson         String   @default("[{\"abilitySlug\":\"ram\",\"currentCooldown\":0}]")
+  flavor                String   @default("")
+  tag                   String   @default("Standard")
+  tagColor              String   @default("#34d399")
+  stage                 String   @default("basic")
+  isStarter             Boolean  @default(false)
+  isWildSpawn           Boolean  @default(false)
+  isActive              Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([isStarter, isActive])
+  @@index([typePrimary])
+  @@index([isWildSpawn, isActive])
+  @@index([gameId])
+}
+
+model PlayerStructure {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mapId            String
+  x                Int
+  y                Int
+  structureType    String   // "FURNACE", "WORKBENCH", "LUMBER_MILL"
+  workerCreatureId String?  @unique // A creature can only work at one station
+  worker           PlayerCreature? @relation(fields: [workerCreatureId], references: [id], onDelete: SetNull)
+  lastTickAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+  @@index([mapId])
+}
+
+model WorldAtlas {
+  id            String   @id @default(cuid())
+  gameId        String   @unique @default("saints")
+  lobbyMapId    String?  @default("LOBBY")
+  atlasData     String   @default("{}") // JSON blob of nodes, edges, bufferPresets, options
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([gameId])
+}
+
+// ─── Phase 9: Bible 35 Asset Ingestion & Organization Pipeline ──────
+
+model SourceAsset {
+  id              String        @id @default(cuid())
+  filename        String
+  mimeType        String
+  width           Int           @default(0)
+  height          Int           @default(0)
+  fileSize        Int           @default(0)
+  storagePath     String        // local path or S3 key
+  uploadedById    String
+  uploadedBy      User          @relation("SourceAssetsUploaded", fields: [uploadedById], references: [id], onDelete: Cascade)
+  version         Int           @default(1)
+  metadata        String        @default("{}") @db.Text // JSON string: { originalName, hash, tags, etc. }
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  usableAssets    UsableAsset[]
+
+  @@index([uploadedById])
+  @@index([mimeType])
+}
+
+model UsableAsset {
+  id                String       @id @default(cuid())
+  sourceAssetId     String?      // Optional: null for direct single uploads, set for sliced sprites
+  sourceAsset       SourceAsset? @relation(fields: [sourceAssetId], references: [id], onDelete: SetNull)
+  name              String
+  type              String       @default("OBJECT") // CHARACTER, CREATURE, TERRAIN, TILE, ITEM, OBJECT, UI, EFFECT, MODEL, ANIMATION, AUDIO
+  category          String?      // Sub-classification e.g. "chair", "sword", "tree"
+  tags              String       @default("[]") @db.Text // JSON array of string tags
+  width             Int          @default(16)
+  height            Int          @default(16)
+  
+  // Slicing region from SourceAsset (null if direct individual asset)
+  sourceRegion      String? @db.Text      // JSON string: { "x": 0, "y": 0, "w": 32, "h": 32 }
+  
+  // Directional & Animation Metadata
+  facing            String?      // "N", "S", "E", "W", "NE", "NW", "SE", "SW"
+  animationState    String?      // "idle", "walk", "attack", "hurt"
+  animationFrames   Int          @default(1)
+  frameDurationMs   Int          @default(100)
+  
+  // Ownership, Community & Moderation (Bible 35 §7)
+  createdById       String
+  createdBy         User         @relation("UsableAssetsCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  gameId            String?      @default("saints") // World profile or game ID
+  visibility        String       @default("COMMUNITY") // "PERSONAL", "PROJECT", "COMMUNITY", "PUBLIC"
+  moderationStatus  String       @default("APPROVED")  // "PENDING", "APPROVED", "REJECTED"
+  license           String?      @default("CC0")
+  
+  // Asset Versioning & Lifecycle (Bible 35 §3)
+  version           Int          @default(1)
+  replacedById      String?
+  replacedBy        UsableAsset? @relation("AssetRevisions", fields: [replacedById], references: [id], onDelete: SetNull)
+  revisions         UsableAsset[] @relation("AssetRevisions")
+  
+  // Presentation
+  thumbnailPath     String?
+  cdnUrl            String?
+  usageCount        Int          @default(0)
+  isActive          Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([type])
+  @@index([gameId])
+  @@index([createdById])
+  @@index([visibility])
+  @@index([moderationStatus])
+  @@index([sourceAssetId])
+}
+
