@@ -1,3 +1,9 @@
+## [2.1.459-42] - 2026-08-25
+### Tileset UV Map Precision Fix
+- **BabylonEngine / Tile Rendering**: 
+  - Fixed a critical texture mapping bug where the 3D engine assumed uploaded tilesets perfectly fit a grid width multiple (e.g. exactly 16x16 with no remainder). If a tileset had custom margins or un-padded edges on the right side, the UV coordinates would drift.
+  - The engine now saves and uses the exact pixel dimensions (`imagewidth`, `imageheight`) of the uploaded image to generate precise UV coordinates, fixing the "ugly mess" glitch where half of one tile and half of another were painted together.
+
 ## [2.1.459-41] - 2026-08-25
 ### Tileset Picker Alignment & Navigation Fix
 - **Tileset Picker UI**: 

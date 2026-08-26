@@ -138,14 +138,14 @@ export function tilesetUvForGid(
   const col = localGid % ts.columns;
   const row = Math.floor(localGid / ts.columns);
   const estimatedRows = estimateTilesetRows(ts, localGid, sizeLookup);
-  const imgW = ts.columns * (ts.tilewidth || 16);
-  const imgH = estimatedRows * (ts.tileheight || 16);
+  const imgW = (ts as any).imagewidth || (ts.columns * (ts.tilewidth || 16));
+  const imgH = (ts as any).imageheight || (estimatedRows * (ts.tileheight || 16));
   const hpU = 0.5 / imgW;
   const hpV = 0.5 / imgH;
-  const u0 = col / ts.columns + hpU;
-  const u1 = (col + 1) / ts.columns - hpU;
-  const v0 = row / estimatedRows + hpV;
-  const v1 = (row + 1) / estimatedRows - hpV;
+  const u0 = (col * (ts.tilewidth || 16)) / imgW + hpU;
+  const u1 = ((col + 1) * (ts.tilewidth || 16)) / imgW - hpU;
+  const v0 = (row * (ts.tileheight || 16)) / imgH + hpV;
+  const v1 = ((row + 1) * (ts.tileheight || 16)) / imgH - hpV;
   return [u0, v0, u1, v0, u1, v1, u0, v1];
 }
 
