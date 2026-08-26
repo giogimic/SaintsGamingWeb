@@ -72,6 +72,12 @@ const WorldAtlasPanel = lazy(() => import('./panels/WorldAtlasPanel').then((m) =
 const StudioProblemsPanel = lazy(() => import('./panels/StudioProblemsPanel').then((m) => ({ default: m.StudioProblemsPanel })));
 const GameplayStudioPanels = lazy(() => import('./panels/GameplayStudioPanels'));
 const RealmSettingsPanel = lazy(() => import('./panels/RealmSettingsPanel').then((m) => ({ default: m.RealmSettingsPanel })));
+const DungeonStudioPanel = lazy(() => import('./panels/DungeonStudioPanel').then((m) => ({ default: m.DungeonStudioPanel })));
+const ShopEditorPanel = lazy(() => import('./panels/ShopEditorPanel').then((m) => ({ default: m.ShopEditorPanel })));
+const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
+const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
+
+import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 
 const initialLayout: IJsonModel = {
   global: {
@@ -780,6 +786,10 @@ export const StudioEditorShell: React.FC = () => {
             case 'streaming': return <StreamingInspectorPanel />;
             case 'gameplay': return <GameplayStudioPanels />;
             case 'settings': return <RealmSettingsPanel />;
+            case 'dungeon': return <DungeonStudioPanel />;
+            case 'shop': return <ShopEditorPanel />;
+            case 'worldevent': return <WorldEventPanel />;
+            case 'simulation': return <SimulationPresetPanel />;
             default: return <div>Unknown component: {component}</div>;
           }
         })()}
@@ -792,65 +802,69 @@ export const StudioEditorShell: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10">
-      <StudioMenuBar
-        onOpenMapBrowser={() => setMapBrowserOpen(true)}
-        onOpenAssetBrowser={() => setStudioMode('assets')}
-      />
-      <PasteOptionsToolbar />
-      <StudioFavoritesStrip />
-      <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
-      
-      {/* Full-Screen Overlay Modals */}
-      <FullScreenMapBrowser isOpen={mapBrowserOpen} onClose={() => setMapBrowserOpen(false)} />
-
-      {/* Context Menu */}
-      {contextMenu && (
-        <StudioContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          tileR={contextMenu.tileR}
-          tileC={contextMenu.tileC}
-          onClose={() => setContextMenu(null)}
+    <>
+      <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10">
+        <StudioMenuBar
+          onOpenMapBrowser={() => setMapBrowserOpen(true)}
+          onOpenAssetBrowser={() => setStudioMode('assets')}
         />
-      )}
+        <PasteOptionsToolbar />
+        <StudioFavoritesStrip />
+        <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
+        
+        {/* Full-Screen Overlay Modals */}
+        <FullScreenMapBrowser isOpen={mapBrowserOpen} onClose={() => setMapBrowserOpen(false)} />
 
-      {/* FlexLayout Workspace Container — hidden when in Assets, Atlas, or Hero mode */}
-      <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
-        <Layout 
-          ref={layoutRef} 
-          model={model} 
-          factory={factory} 
-          onAction={handleAction} 
+        {/* Context Menu */}
+        {contextMenu && (
+          <StudioContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            tileR={contextMenu.tileR}
+            tileC={contextMenu.tileC}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+
+        {/* FlexLayout Workspace Container — hidden when in Assets, Atlas, or Hero mode */}
+        <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
+          <Layout 
+            ref={layoutRef} 
+            model={model} 
+            factory={factory} 
+            onAction={handleAction} 
+          />
+        </div>
+
+        {/* Asset Management Mode — full workspace replacement */}
+        {studioMode === 'assets' && (
+          <AssetStudioSuite />
+        )}
+
+        {/* Atlas World Mode — full workspace replacement */}
+        {studioMode === 'atlas' && (
+          <AtlasStudioSuite />
+        )}
+
+        {/* Hero Studio Mode — full workspace replacement */}
+        {studioMode === 'hero' && (
+          <HeroStudioSuite />
+        )}
+
+        {/* Unified Bottom Studio Toolbar */}
+        <StudioBottomToolbar
+          layoutRef={layoutRef}
+          model={model}
+          onOpenMapBrowser={() => setStudioMode('atlas')}
+          onOpenAssetBrowser={() => setStudioMode('assets')}
+          onOpenHeroStudio={() => setStudioMode('hero')}
         />
+
+        {/* Developer Atlas Diagnostic Overlay */}
+        <AtlasDiagnosticOverlay />
       </div>
 
-      {/* Asset Management Mode — full workspace replacement */}
-      {studioMode === 'assets' && (
-        <AssetStudioSuite />
-      )}
-
-      {/* Atlas World Mode — full workspace replacement */}
-      {studioMode === 'atlas' && (
-        <AtlasStudioSuite />
-      )}
-
-      {/* Hero Studio Mode — full workspace replacement */}
-      {studioMode === 'hero' && (
-        <HeroStudioSuite />
-      )}
-
-      {/* Unified Bottom Studio Toolbar */}
-      <StudioBottomToolbar
-        layoutRef={layoutRef}
-        model={model}
-        onOpenMapBrowser={() => setStudioMode('atlas')}
-        onOpenAssetBrowser={() => setStudioMode('assets')}
-        onOpenHeroStudio={() => setStudioMode('hero')}
-      />
-
-      {/* Developer Atlas Diagnostic Overlay */}
-      <AtlasDiagnosticOverlay />
-    </div>
+      <RuleDebuggerOverlay />
+    </>
   );
 };

@@ -8,6 +8,7 @@ import {
   STUDIO_MODE_DEFAULTS,
   STUDIO_MODE_META,
   type StudioMode,
+  type StudioDockId,
 } from '@/shared/game/studioModes';
 import {
   extractPanelLayouts,
@@ -76,26 +77,7 @@ export type SoftLock = {
   expiresAt: string;
 };
 
-export type PanelId =
-  | 'build'
-  | 'properties'
-  | 'assets'
-  | 'npc'
-  | 'quest'
-  | 'dialogue'
-  | 'creature'
-  | 'loot'
-  | 'dev'
-  | 'characters'
-  | 'classes'
-  | 'items'
-  | 'spawner'
-  | 'prefab'
-  | 'atlas'
-  | 'problems'
-  | 'streaming'
-  | 'gameplay'
-  | 'settings';
+export type PanelId = StudioDockId;
 
 export type { StudioMode };
 export { STUDIO_MODE_DEFAULTS, STUDIO_MODE_META, STUDIO_DOCK_META };
@@ -626,6 +608,50 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     y: 60,
     width: 720,
     height: 600,
+    zIndex: 10,
+  },
+  dungeon: {
+    id: 'dungeon',
+    title: 'Dungeon Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 220,
+    y: 80,
+    width: 760,
+    height: 600,
+    zIndex: 10,
+  },
+  shop: {
+    id: 'shop',
+    title: 'Economy & Shops',
+    isOpen: false,
+    isCollapsed: false,
+    x: 240,
+    y: 100,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
+  worldevent: {
+    id: 'worldevent',
+    title: 'World Events',
+    isOpen: false,
+    isCollapsed: false,
+    x: 260,
+    y: 120,
+    width: 700,
+    height: 560,
+    zIndex: 10,
+  },
+  simulation: {
+    id: 'simulation',
+    title: 'Simulation Presets',
+    isOpen: false,
+    isCollapsed: false,
+    x: 280,
+    y: 140,
+    width: 700,
+    height: 500,
     zIndex: 10,
   },
 };
