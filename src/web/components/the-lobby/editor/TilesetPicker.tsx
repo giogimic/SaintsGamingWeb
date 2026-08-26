@@ -390,7 +390,9 @@ export default function TilesetPicker({
     if (nativeY >= imgRef.current.naturalHeight) return;
 
     setDragStart({ r: row, c: col });
-    selectTileRegion(row, col, regionPreset.w, regionPreset.h);
+    const patW = activeBrushPattern?.w || regionPreset.w || 1;
+    const patH = activeBrushPattern?.h || regionPreset.h || 1;
+    selectTileRegion(row, col, patW, patH);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -507,10 +509,12 @@ export default function TilesetPicker({
       const spanW = maxCol - minCol + 1;
       const spanH = maxRow - minRow + 1;
 
-      if (spanW > 1 || spanH > 1 || regionPreset.w > 1 || regionPreset.h > 1) {
+      if (spanW > 1 || spanH > 1) {
         selectTileRegion(minRow, minCol, spanW, spanH);
       } else {
-        selectTileRegion(minRow, minCol, 1, 1);
+        const patW = activeBrushPattern?.w || regionPreset.w || 1;
+        const patH = activeBrushPattern?.h || regionPreset.h || 1;
+        selectTileRegion(minRow, minCol, patW, patH);
       }
 
       setDragStart(null);
@@ -543,15 +547,17 @@ export default function TilesetPicker({
         let col = local % ts.columns;
         let row = Math.floor(local / ts.columns);
 
-        const stepX = regionPreset.w || 1;
-        const stepY = regionPreset.h || 1;
+        const stepX = 1;
+        const stepY = 1;
         if (e.key === 'ArrowLeft') col = Math.max(0, col - stepX);
         if (e.key === 'ArrowRight') col = Math.min(ts.columns - stepX, col + stepX);
         if (e.key === 'ArrowUp') row = Math.max(0, row - stepY);
         if (e.key === 'ArrowDown') row = Math.min(maxRows - stepY, row + stepY);
 
         e.preventDefault();
-        selectTileRegion(row, col, regionPreset.w, regionPreset.h);
+        const patW = activeBrushPattern?.w || regionPreset.w || 1;
+        const patH = activeBrushPattern?.h || regionPreset.h || 1;
+        selectTileRegion(row, col, patW, patH);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

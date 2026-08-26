@@ -1,3 +1,9 @@
+## [2.1.459-50] - 2026-08-26
+### Tileset Picker Bug Fixes
+- **Tileset Picker UI**:
+  - Fixed an issue where click-and-drag multi-tile selection was ignoring the dragged region size when releasing the mouse button without a configured brush preset.
+  - Fixed keyboard navigation (arrow keys) to correctly step by 1 tile at a time rather than skipping tiles when using a larger brush pattern.
+
 ## [2.1.459-49] - 2026-08-26
 ### Studio Validation Framework Expansion
 - **Project Validation Registry**:
