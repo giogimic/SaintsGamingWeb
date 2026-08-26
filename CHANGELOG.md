@@ -1,3 +1,9 @@
+## [2.1.459-48] - 2026-08-26
+### Tooling & Script Optimization
+- **Package Scripts**:
+  - Fixed `validate:maps` CLI script in `package.json` to correctly execute `scripts/validate-maps.ts` for database-wide WorldMap inspection.
+  - Cleaned up obsolete references to ensure clean and deterministic developer workflows.
+
 ## [2.1.459-47] - 2026-08-26
 ### Master Roadmap Phase 5: Playtest, Diagnostics & Operations
 - **Phase 5A (Playtest Simulation & Shard Isolation)**:
