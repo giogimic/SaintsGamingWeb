@@ -13,6 +13,8 @@ import { ProjectDependencyGraph } from '../graph/dependencyGraph';
 import { validateGameplayIntegrity } from './gameplayValidator';
 import { lintWorldAtlasConnectivity, MapDataSummary } from '../atlas/atlasLinter';
 import { AtlasGridData } from '../atlas/spatialAtlas';
+import { lintDialogueTree } from '../quests/dialogueLinter';
+import { DialogueNode } from '../quests/dialogueEngine';
 
 export type ValidationSeverity = 'ERROR' | 'WARNING' | 'INFO';
 
@@ -37,7 +39,11 @@ export interface ProjectHealthReport {
 
 export type DomainValidatorFn = (
   graph?: ProjectDependencyGraph,
-  context?: { maps?: MapDataSummary[]; atlas?: AtlasGridData }
+  context?: {
+    maps?: MapDataSummary[];
+    atlas?: AtlasGridData;
+    dialogues?: { treeId: string; startNodeId?: string; nodes: DialogueNode[] }[];
+  }
 ) => Promise<ValidationIssue[]> | ValidationIssue[];
 
 export class ProjectValidationRegistry {
@@ -142,6 +148,38 @@ export class ProjectValidationRegistry {
 
       return issues;
     });
+
+    // 4. Dialogue tree graph integrity validator
+    this.registerValidator('dialogue_integrity', 'QUEST', (_graph, context) => {
+      if (!context?.dialogues || context.dialogues.length === 0) return [];
+      const issues: ValidationIssue[] = [];
+
+      for (const tree of context.dialogues) {
+        const report = lintDialogueTree(tree.nodes, tree.startNodeId || 'node_start');
+        for (const err of report.errors) {
+          issues.push({
+            code: `ERR_DIALOGUE_${err.code}`,
+            category: 'QUEST',
+            severity: 'ERROR',
+            message: `[Tree ${tree.treeId}] ${err.message}`,
+            entityId: err.nodeId,
+            suggestedAction: 'Fix broken target node pointer or duplicate ID in Dialogue Editor.',
+          });
+        }
+        for (const warn of report.warnings) {
+          issues.push({
+            code: `WARN_DIALOGUE_${warn.code}`,
+            category: 'QUEST',
+            severity: 'WARNING',
+            message: `[Tree ${tree.treeId}] ${warn.message}`,
+            entityId: warn.nodeId,
+            suggestedAction: 'Review node branching or add exit option.',
+          });
+        }
+      }
+
+      return issues;
+    });
   }
 
   /**
@@ -149,7 +187,11 @@ export class ProjectValidationRegistry {
    */
   public async validateProject(
     graph?: ProjectDependencyGraph,
-    context?: { maps?: MapDataSummary[]; atlas?: AtlasGridData }
+    context?: {
+      maps?: MapDataSummary[];
+      atlas?: AtlasGridData;
+      dialogues?: { treeId: string; startNodeId?: string; nodes: DialogueNode[] }[];
+    }
   ): Promise<ProjectHealthReport> {
     const allIssues: ValidationIssue[] = [];
 

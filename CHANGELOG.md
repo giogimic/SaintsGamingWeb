@@ -1,3 +1,9 @@
+## [2.1.459-49] - 2026-08-26
+### Studio Validation Framework Expansion
+- **Project Validation Registry**:
+  - Integrated `lintDialogueTree` validator into the centralized `ProjectValidationRegistry` allowing continuous automated diagnosis of broken conversation nodes, duplicate IDs, and dead-end dialogues.
+  - Added unit test suite coverage in `projectValidationRegistry.test.ts`.
+
 ## [2.1.459-48] - 2026-08-26
 ### Tooling & Script Optimization
 - **Package Scripts**:
