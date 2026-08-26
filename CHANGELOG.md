@@ -1,8 +1,10 @@
 ## [2.1.459-36] - 2026-08-25
 ### Docker Compose Network IPAM Subnet Specification & Compose v2 Modernization
 - **Docker Compose Network IPAM**:
-  - Configured explicit custom bridge subnet (`172.28.0.0/16`) in `docker-compose.yml` and `docker-compose.base.yml` to prevent `failed to create network: could not find an available, non-overlapping IPv4 address pool` daemon errors during deployment.
-  - Removed deprecated `version: '3.8'` key across compose definitions for full Compose v2 specification compliance.
+  - Configured explicit custom bridge subnet (`172.28.0.0/16`) via `setup.sh` and `update.sh` to prevent `failed to create network: could not find an available, non-overlapping IPv4 address pool` daemon errors during deployment.
+  - Removed deprecated `version: '3.8'` key from `docker-compose.base.yml` for full Compose v2 specification compliance.
+  - Fixed `networks.db: container_name is not allowed` validation error caused by the `networks:` block being in `docker-compose.base.yml` — `setup.sh` appends the `db:` service after it, placing `db` under `networks` instead of `services`. The IPAM block is now appended last by `setup.sh` and `update.sh`.
+  - Added automatic `docker network prune -f` before build in `update.sh` to clear orphaned bridge networks.
 
 ## [2.1.459-35] - 2026-08-25
 ### MariaDB/MySQL Column Length Constraints Hardening for Dummy Content

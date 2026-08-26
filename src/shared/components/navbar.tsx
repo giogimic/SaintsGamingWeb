@@ -94,219 +94,217 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
             </span>
           </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || pathname?.startsWith(href + "/");
-            const isLobby = href === "/lobby";
-            const displayLabel = isLobby && !user ? "Enter Game" : label;
-            return (
-              <Link key={href} href={href} prefetch={true}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  size="sm"
-                  className={`gap-2 transition-all duration-200 ${
-                    isLobby
-                      ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 hover:from-amber-500 hover:to-emerald-500 hover:text-black font-bold shadow-sm hover:scale-105"
-                      : isActive
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : "text-muted-foreground hover:text-foreground hover:scale-105"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {displayLabel}
-                </Button>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right side — Auth + Mobile menu */}
-        <div className="flex items-center gap-2">
-          {/* Auth controls */}
-          <div className="hidden lg:flex items-center gap-4">
-            <div className="w-48 lg:w-64">
-              <GlobalSearch />
-            </div>
-            <ThemeSwitcher />
-            {!user ? (
-              <>
-                <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                  Log in
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href || pathname?.startsWith(href + "/");
+              const isLobby = href === "/lobby";
+              const displayLabel = isLobby && !user ? "Enter Game" : label;
+              return (
+                <Link key={href} href={href} prefetch={true}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    size="sm"
+                    className={`gap-2 transition-all duration-200 ${isLobby
+                        ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 hover:from-amber-500 hover:to-emerald-500 hover:text-black font-bold shadow-sm hover:scale-105"
+                        : isActive
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : "text-muted-foreground hover:text-foreground hover:scale-105"
+                      }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {displayLabel}
+                  </Button>
                 </Link>
-                <Link href="/register" className={buttonVariants({ size: "sm", className: "bg-primary text-primary-foreground hover:bg-primary/90" })}>
-                  Sign up
-                </Link>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                <NotificationsMenu />
-                <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full" />}>
-                  <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.image || ""} alt={user.name || "Avatar"} />
-                      <AvatarFallback className="bg-primary/20 text-primary">
-                        {user.username?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.username || user.name}</p>
-                        <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                      </div>
-                    </DropdownMenuLabel>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem render={<Link href="/profile" className="cursor-pointer" />}>
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem render={<Link href="/profile/inbox" className="cursor-pointer text-primary font-medium" />}>
-                    <Flame className="mr-2 h-4 w-4 text-primary" />
-                    The Feed
-                  </DropdownMenuItem>
-                  {showUcpLink && (
-                    <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
-                      <Gamepad2 className="mr-2 h-4 w-4" />
-                      FiveM UCP
-                    </DropdownMenuItem>
-                  )}
-                  {canAccessStudio && (
-                    <DropdownMenuItem render={<Link href="/studio" className="cursor-pointer text-purple-400 font-medium" />}>
-                      <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
-                      2.5D World Studio
-                    </DropdownMenuItem>
-                  )}
-                  {isOperator && (
-                    <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer text-primary font-medium" />}>
-                      <Settings className="mr-2 h-4 w-4 text-primary" />
-                      Admin Command Center
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-400/10" onClick={() => signOut({ callbackUrl: '/' })}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            )}
-          </div>
+              );
+            })}
+          </nav>
 
-          {/* Mobile menu */}
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger className="lg:hidden" render={<Button variant="ghost" size="icon" />}>
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-card/95 backdrop-blur-xl border-l-border/50">
-              <div className="flex flex-col h-full">
-                <SheetTitle className="sr-only">Menu</SheetTitle>
-                
-                {/* User Profile Section or Brand */}
-                <div className="flex items-center gap-3 pb-6 border-b border-border/50 mt-4">
-                  {user ? (
-                    <>
-                      <Avatar className="h-10 w-10 border border-primary/20">
-                        <AvatarImage src={user.image || ""} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
+          {/* Right side — Auth + Mobile menu */}
+          <div className="flex items-center gap-2">
+            {/* Auth controls */}
+            <div className="hidden lg:flex items-center gap-4">
+              <div className="w-48 lg:w-64">
+                <GlobalSearch />
+              </div>
+              <ThemeSwitcher />
+              {!user ? (
+                <>
+                  <Link href="/login" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                    Log in
+                  </Link>
+                  <Link href="/register" className={buttonVariants({ size: "sm", className: "bg-primary text-primary-foreground hover:bg-primary/90" })}>
+                    Sign up
+                  </Link>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <NotificationsMenu />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full" />}>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.image || ""} alt={user.name || "Avatar"} />
+                        <AvatarFallback className="bg-primary/20 text-primary">
                           {user.username?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="font-semibold text-sm truncate">{user.username || user.name}</span>
-                        <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      <SGVoxelSvgLogo size={32} animate={false} />
-                      <span className="font-bold text-lg sg-text-gradient tracking-tight">Saints Gaming</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 py-6 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Navigation</span>
-                  {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                    const isActive = pathname === href || pathname?.startsWith(href + "/");
-                    const isLobby = href === "/lobby";
-                    const displayLabel = isLobby && !user ? "Enter Game" : label;
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
-                          isLobby
-                            ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 shadow-sm"
-                            : isActive
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        {displayLabel}
-                      </Link>
-                    );
-                  })}
-                  
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-2 px-2">Community</span>
-                  <a href={discordLink || "https://discord.saintsgaming.net"} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-[#5865F2]/10 hover:text-[#5865F2] transition-colors">
-                    <MessageSquare className="h-4 w-4" />
-                    Discord
-                  </a>
-
-                  {user && (
-                    <>
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-2 px-2">Account</span>
-                      <Link href="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
-                        <UserIcon className="h-4 w-4" /> Profile
-                      </Link>
-                      <Link href="/profile/inbox" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors">
-                        <Flame className="h-4 w-4 text-primary" /> The Feed
-                      </Link>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end">
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none">{user.username || user.name}</p>
+                            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                          </div>
+                        </DropdownMenuLabel>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem render={<Link href="/profile" className="cursor-pointer" />}>
+                        <UserIcon className="mr-2 h-4 w-4" />
+                        Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem render={<Link href="/profile/inbox" className="cursor-pointer text-primary font-medium" />}>
+                        <Flame className="mr-2 h-4 w-4 text-primary" />
+                        The Feed
+                      </DropdownMenuItem>
                       {showUcpLink && (
-                        <Link href="/ucp" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
-                          <Gamepad2 className="h-4 w-4" /> FiveM UCP
-                        </Link>
+                        <DropdownMenuItem render={<Link href="/ucp" className="cursor-pointer" />}>
+                          <Gamepad2 className="mr-2 h-4 w-4" />
+                          FiveM UCP
+                        </DropdownMenuItem>
                       )}
                       {canAccessStudio && (
-                        <Link href="/studio" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-purple-400 font-medium hover:bg-purple-500/10 transition-colors">
-                          <Sparkles className="h-4 w-4 text-purple-400" /> 2.5D Studio
-                        </Link>
+                        <DropdownMenuItem render={<Link href="/studio" className="cursor-pointer text-purple-400 font-medium" />}>
+                          <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
+                          2.5D World Studio
+                        </DropdownMenuItem>
                       )}
                       {isOperator && (
-                        <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors">
-                          <Settings className="h-4 w-4 text-primary" /> Admin Command Center
-                        </Link>
+                        <DropdownMenuItem render={<Link href="/admin" className="cursor-pointer text-primary font-medium" />}>
+                          <Settings className="mr-2 h-4 w-4 text-primary" />
+                          Admin Command Center
+                        </DropdownMenuItem>
                       )}
-                    </>
-                  )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-400/10" onClick={() => signOut({ callbackUrl: '/' })}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Log out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
+              )}
+            </div>
 
-                <div className="pt-6 border-t border-border/50 mt-auto">
-                  {!user ? (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Link href="/login" onClick={() => setMobileOpen(false)} className={buttonVariants({ variant: "outline", className: "w-full" })}>Log in</Link>
-                      <Link href="/register" onClick={() => setMobileOpen(false)} className={buttonVariants({ className: "w-full" })}>Sign up</Link>
-                    </div>
-                  ) : (
-                    <button className="flex w-full items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-500/90 hover:bg-red-500/10 hover:text-red-500 font-medium transition-colors" onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}>
-                      <LogOut className="h-4 w-4" />
-                      Log out
-                    </button>
-                  )}
+            {/* Mobile menu */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger className="lg:hidden" render={<Button variant="ghost" size="icon" />}>
+                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[350px] bg-card/95 backdrop-blur-xl border-l-border/50">
+                <div className="flex flex-col h-full">
+                  <SheetTitle className="sr-only">Menu</SheetTitle>
+
+                  {/* User Profile Section or Brand */}
+                  <div className="flex items-center gap-3 pb-6 border-b border-border/50 mt-4">
+                    {user ? (
+                      <>
+                        <Avatar className="h-10 w-10 border border-primary/20">
+                          <AvatarImage src={user.image || ""} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {user.username?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className="font-semibold text-sm truncate">{user.username || user.name}</span>
+                          <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <SGVoxelSvgLogo size={32} animate={false} />
+                        <span className="font-bold text-lg sg-text-gradient tracking-tight">Saints Gaming</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 py-6 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Navigation</span>
+                    {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+                      const isActive = pathname === href || pathname?.startsWith(href + "/");
+                      const isLobby = href === "/lobby";
+                      const displayLabel = isLobby && !user ? "Enter Game" : label;
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setMobileOpen(false)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${isLobby
+                              ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 shadow-sm"
+                              : isActive
+                                ? "bg-primary/10 text-primary font-medium"
+                                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                            }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {displayLabel}
+                        </Link>
+                      );
+                    })}
+
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-2 px-2">Community</span>
+                    <a href={discordLink || "https://discord.saintsgaming.net"} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-[#5865F2]/10 hover:text-[#5865F2] transition-colors">
+                      <MessageSquare className="h-4 w-4" />
+                      Discord
+                    </a>
+
+                    {user && (
+                      <>
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6 mb-2 px-2">Account</span>
+                        <Link href="/profile" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
+                          <UserIcon className="h-4 w-4" /> Profile
+                        </Link>
+                        <Link href="/profile/inbox" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors">
+                          <Flame className="h-4 w-4 text-primary" /> The Feed
+                        </Link>
+                        {showUcpLink && (
+                          <Link href="/ucp" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors">
+                            <Gamepad2 className="h-4 w-4" /> FiveM UCP
+                          </Link>
+                        )}
+                        {canAccessStudio && (
+                          <Link href="/studio" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-purple-400 font-medium hover:bg-purple-500/10 transition-colors">
+                            <Sparkles className="h-4 w-4 text-purple-400" /> 2.5D Studio
+                          </Link>
+                        )}
+                        {isOperator && (
+                          <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary font-medium hover:bg-primary/10 transition-colors">
+                            <Settings className="h-4 w-4 text-primary" /> Admin Command Center
+                          </Link>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="pt-6 border-t border-border/50 mt-auto">
+                    {!user ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <Link href="/login" onClick={() => setMobileOpen(false)} className={buttonVariants({ variant: "outline", className: "w-full" })}>Log in</Link>
+                        <Link href="/register" onClick={() => setMobileOpen(false)} className={buttonVariants({ className: "w-full" })}>Sign up</Link>
+                      </div>
+                    ) : (
+                      <button className="flex w-full items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-500/90 hover:bg-red-500/10 hover:text-red-500 font-medium transition-colors" onClick={() => { setMobileOpen(false); signOut({ callbackUrl: '/' }); }}>
+                        <LogOut className="h-4 w-4" />
+                        Log out
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
     </div>
   );
 }
@@ -392,7 +390,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.459-36"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.459-35"}</span>
           </div>
 
 

@@ -57,6 +57,22 @@ if [ ! -f docker-compose.yml ]; then
     fi
 fi
 
+# --- Ensure explicit IPAM network block exists ---
+if ! grep -q "^networks:" docker-compose.yml 2>/dev/null; then
+    cat >> docker-compose.yml <<'NETEOF'
+
+networks:
+  default:
+    name: saintsgamingweb_default
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+NETEOF
+    echo -e "${GREEN}[✓] Added explicit Docker network config.${NC}"
+fi
+
 # --- Automated Database Backup ---
 if grep -q "^DATABASE_URL=.*@db:3306" .env 2>/dev/null && command -v docker &>/dev/null; then
     if docker ps | grep -q "saints-gaming-db"; then
@@ -163,6 +179,9 @@ if [ -f "docker-compose.yml" ] && command -v docker &>/dev/null; then
             echo -e "${YELLOW}[*] saints-gaming-db container not running, skipping credential check.${NC}"
         fi
     fi
+
+    # Prune orphaned networks to prevent IPv4 pool exhaustion
+    docker network prune -f 2>/dev/null || true
 
     docker compose build web > docker_build.log 2>&1
     if [ $? -ne 0 ]; then
