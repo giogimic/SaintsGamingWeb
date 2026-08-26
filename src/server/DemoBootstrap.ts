@@ -124,6 +124,8 @@ async function seedSimulationPresetsAndEvents() {
   }
 }
 
+import { bootstrapDynamicStarterContent } from "./starterContentBootstrap";
+
 /** Idempotent foundation seed for Studio logic tiles and baseline catalog. */
 export async function bootstrapDemoContent() {
   console.log("[DemoBootstrap] Seeding studio logic tiles foundation…");
@@ -134,6 +136,7 @@ export async function bootstrapDemoContent() {
   }
 
   await seedSimulationPresetsAndEvents();
+  await bootstrapDynamicStarterContent();
 
   console.log("[DemoBootstrap] Done");
 }
