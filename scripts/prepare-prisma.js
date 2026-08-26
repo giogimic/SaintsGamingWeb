@@ -43,7 +43,7 @@ if (isSqlite) {
     ];
 
     for (const col of longTextCols) {
-        const regex = new RegExp(`^(\\s*${col}\\s+String\\s*[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
+        const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String[ \\t]*[^\\n\\/]*?)([ \\t]*\\/\\/.*)?$`, 'gm');
         schema = schema.replace(regex, (match, p1, p2) => {
             if (p1.includes('@db.LongText')) return match;
             if (p1.includes('@db.Text')) return match.replace('@db.Text', '@db.LongText');
@@ -52,7 +52,7 @@ if (isSqlite) {
     }
 
     for (const col of textCols) {
-        const regex = new RegExp(`^(\\s*${col}\\s+String\\s*[^\\n\\/]*?)(\\s*\\/\\/.*)?$`, 'gm');
+        const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String[ \\t]*[^\\n\\/]*?)([ \\t]*\\/\\/.*)?$`, 'gm');
         schema = schema.replace(regex, (match, p1, p2) => {
             if (p1.includes('@db.Text') || p1.includes('@db.LongText')) return match;
             return `${p1.trimRight()} @db.Text${p2 || ''}`;

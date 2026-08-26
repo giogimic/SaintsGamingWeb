@@ -1,3 +1,7 @@
+## [2.1.459-40] - 2026-08-25
+### Prisma Schema Prep Regex Fix
+- **Fix**: The regex in `prepare-prisma.js` that dynamically adds `@db.Text` to text columns for MySQL was accidentally capturing the newline character (`\s*` matched `\r\n`), causing the `@db.Text` modifier to be incorrectly applied to adjacent fields on the next line (like `createdAt` or `levelReq`). This corrupted the Prisma schema internally on boot and caused the server to fail to start. The regex now explicitly checks for spaces and tabs `[ \\t]*` instead of any whitespace to keep the modifications strictly on the same line.
+
 ## [2.1.459-39] - 2026-08-25
 ### MariaDB LongText Schema Preparation Fix
 - **Database Schema Validation**:
