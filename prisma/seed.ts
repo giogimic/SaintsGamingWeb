@@ -575,13 +575,14 @@ async function main() {
       const a = newsArticles[i];
       // Stagger publishedAt so articles appear in a natural chronological order
       const publishedAt = new Date(Date.now() - (newsArticles.length - i) * 86400000);
+      const safeExcerpt = a.excerpt ? a.excerpt.slice(0, 140) : null;
       await prisma.newsArticle.upsert({
         where: { slug: `news-article-${i}` },
-        update: { publishedAt, title: a.title, excerpt: a.excerpt, body: a.body },
+        update: { publishedAt, title: a.title, excerpt: safeExcerpt, body: a.body },
         create: {
           title: a.title,
           slug: `news-article-${i}`,
-          excerpt: a.excerpt,
+          excerpt: safeExcerpt,
           body: a.body,
           isPublished: true,
           publishedAt,
