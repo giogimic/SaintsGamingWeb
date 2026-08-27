@@ -11,23 +11,26 @@ import {
 import {
   CREATURE_ELEMENT_TYPES,
   CREATURE_ASSET_OPTIONS,
+  CREATURE_CATEGORIES,
+  CreatureCategory,
   CreatureDefData,
   CreaturePassive,
   emptyCreatureDef,
   creatureAssetUrl,
-
 } from '@/shared/game/creatureCatalog';
 import {
-  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink,
+  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink, Filter, PawPrint, Skull, Shield,
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import { useGameStore } from '../../store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
+import { RegistryCombobox } from '../components/RegistryCombobox';
+import { DroppableAssetInput } from '../components/DroppableAssetInput';
 
 const inputCls =
-  'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-emerald-700 transition-colors';
-const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
+  'w-full bg-input border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-foreground font-mono outline-none focus:border-sg-gold transition-colors';
+const labelCls = 'block text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1';
 
 function creatureResourceKey(form: CreatureDefData, isNew: boolean): string {
   if (isNew || !form.slug) return 'creature:new';
@@ -41,6 +44,7 @@ function isCreatureForm(value: unknown): value is CreatureDefData {
 export function CreatureDefEditorPanel() {
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const [list, setList] = useState<CreatureDefData[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | CreatureCategory>('all');
   const [form, setForm] = useState<CreatureDefData>({ ...emptyCreatureDef(), gameId: activeGameId });
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -242,49 +246,108 @@ export function CreatureDefEditorPanel() {
         </div>
       }
       list={
-        <div className="space-y-0.5">
-          {list.map((c) => (
-            <div
-              key={c.slug}
-              onClick={() => handleSelect(c)}
-              className={`cursor-pointer border-b border-slate-900 p-2 hover:bg-emerald-950/30 ${form.slug === c.slug ? 'bg-emerald-950/50' : ''}`}
+        <div className="space-y-1">
+          {/* Category Filter Tabs */}
+          <div className="grid grid-cols-4 gap-1 p-1 bg-black/40 border-b border-slate-900 text-[9px] font-mono">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('all')}
+              className={`py-1 rounded text-center transition-all ${
+                categoryFilter === 'all'
+                  ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
             >
-              <div className="flex items-center gap-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={creatureAssetUrl(c.spriteOverworld)} alt="" className="h-6 w-6 object-contain" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-bold text-[10px] text-slate-200">{c.name}</div>
-                  <div className="truncate text-[9px] text-slate-500">
-                    {c.typePrimary}
-                    {c.typeSecondary !== 'None' ? `/${c.typeSecondary}` : ''}
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('beast')}
+              className={`py-1 rounded text-center transition-all ${
+                categoryFilter === 'beast'
+                  ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Beasts
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('monster')}
+              className={`py-1 rounded text-center transition-all ${
+                categoryFilter === 'monster'
+                  ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Monsters
+            </button>
+            <button
+              type="button"
+              onClick={() => setCategoryFilter('mercenary')}
+              className={`py-1 rounded text-center transition-all ${
+                categoryFilter === 'mercenary'
+                  ? 'bg-violet-500/20 text-violet-300 font-bold border border-violet-500/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Mercs
+            </button>
+          </div>
+
+          <div className="space-y-0.5">
+            {list
+              .filter((c) => categoryFilter === 'all' || (c.category || 'beast') === categoryFilter)
+              .map((c) => (
+                <div
+                  key={c.slug}
+                  onClick={() => handleSelect(c)}
+                  className={`cursor-pointer border-b border-slate-900 p-2 hover:bg-emerald-950/30 ${
+                    form.slug === c.slug ? 'bg-emerald-950/50' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={creatureAssetUrl(c.spriteOverworld)} alt="" className="h-6 w-6 object-contain" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-bold text-[10px] text-slate-200 flex items-center gap-1.5">
+                        <span>{c.name}</span>
+                        <span className="text-[8px] uppercase tracking-wider px-1 rounded bg-black/60 text-slate-400 border border-slate-800">
+                          {c.category || 'beast'}
+                        </span>
+                      </div>
+                      <div className="truncate text-[9px] text-slate-500">
+                        {c.typePrimary}
+                        {c.typeSecondary !== 'None' ? `/${c.typeSecondary}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-slate-500 hover:text-emerald-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void toggleCreatureDefActive(c.slug, !c.isActive).then(load);
+                      }}
+                    >
+                      {c.isActive ? <Eye size={10} /> : <EyeOff size={10} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-slate-500 hover:text-red-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleDelete(c.slug);
+                      }}
+                    >
+                      <Trash2 size={10} />
+                    </button>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="text-slate-500 hover:text-emerald-400"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void toggleCreatureDefActive(c.slug, !c.isActive).then(load);
-                  }}
-                >
-                  {c.isActive ? <Eye size={10} /> : <EyeOff size={10} />}
-                </button>
-                <button
-                  type="button"
-                  className="text-slate-500 hover:text-red-400"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void handleDelete(c.slug);
-                  }}
-                >
-                  <Trash2 size={10} />
-                </button>
-              </div>
-            </div>
-          ))}
-          {list.length === 0 && (
-            <p className="p-2 text-[10px] text-slate-500">No defs — Seed or New.</p>
-          )}
+              ))}
+            {list.filter((c) => categoryFilter === 'all' || (c.category || 'beast') === categoryFilter).length === 0 && (
+              <p className="p-2 text-[10px] text-slate-500">No definitions found for this filter.</p>
+            )}
+          </div>
         </div>
       }
     >
@@ -335,17 +398,129 @@ export function CreatureDefEditorPanel() {
       <div className="space-y-3 pr-1">
           {(isNew || form.slug) && (
             <>
-              <div className="grid grid-cols-2 gap-2">
+              {/* Category & Identity */}
+              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                <div>
+                  <label className={labelCls}>Taxonomy Category</label>
+                  <select
+                    className={inputCls}
+                    value={form.category || 'beast'}
+                    onFocus={onFieldFocus}
+                    onBlur={onFieldBlur}
+                    onChange={(e) => {
+                      const nextCat = e.target.value as CreatureCategory;
+                      const next = { ...form, category: nextCat };
+                      commitStructural(next);
+                      setForm(next);
+                    }}
+                  >
+                    {CREATURE_CATEGORIES.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label className={labelCls}>Profile (gameId)</label>
                   <input
-                    className={inputCls + ' mb-2'}
+                    className={inputCls}
                     value={form.gameId ?? ''}
                     onFocus={onFieldFocus}
                     onBlur={onFieldBlur}
                     onChange={(e) => f('gameId', e.target.value || null)}
-                    placeholder="saints / custom_1 / empty=shared"
+                    placeholder="saints / custom / empty=shared"
                   />
+                </div>
+              </div>
+
+              {/* Monster Specific Controls */}
+              {form.category === 'monster' && (
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/5">
+                  <div>
+                    <label className={labelCls + ' text-rose-300'}>Aggro Radius (Tiles)</label>
+                    <input
+                      type="number"
+                      className={inputCls}
+                      value={form.aggroRadius ?? 5}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) => f('aggroRadius', Number(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls + ' text-rose-300'}>Respawn Timer (Sec)</label>
+                    <input
+                      type="number"
+                      className={inputCls}
+                      value={form.respawnSec ?? 30}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) => f('respawnSec', Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Mercenary Specific Controls */}
+              {form.category === 'mercenary' && (
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-violet-500/30 bg-violet-500/5">
+                  <div>
+                    <label className={labelCls + ' text-violet-300'}>Hire Cost (Gold)</label>
+                    <input
+                      type="number"
+                      className={inputCls}
+                      value={form.hireCost ?? 100}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) => f('hireCost', Number(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls + ' text-violet-300'}>Faction / Guild ID</label>
+                    <input
+                      className={inputCls}
+                      value={form.factionId || ''}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) => f('factionId', e.target.value || undefined)}
+                      placeholder="e.g. iron_vanguard"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Beast Specific Controls */}
+              {(!form.category || form.category === 'beast') && (
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+                  <div>
+                    <label className={labelCls + ' text-emerald-300'}>Dex Number</label>
+                    <input
+                      type="number"
+                      className={inputCls}
+                      value={form.dexNumber || 0}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) => f('dexNumber', Number(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls + ' text-emerald-300'}>Catch Rate (Multiplier)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      className={inputCls}
+                      value={form.catchRate ?? 1}
+                      onFocus={onFieldFocus}
+                      onBlur={onFieldBlur}
+                      onChange={(e) => f('catchRate', Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
                   <label className={labelCls}>Slug</label>
                   <input
                     className={inputCls}
@@ -398,20 +573,22 @@ export function CreatureDefEditorPanel() {
 
               <div>
                 <label className={labelCls}>Overworld / card sprite</label>
-                <input
+                <DroppableAssetInput
                   className={inputCls + ' mb-1'}
                   value={form.spriteOverworld}
                   onFocus={onFieldFocus}
                   onBlur={onFieldBlur}
                   onChange={(e) => f('spriteOverworld', e.target.value)}
+                  onAssetDropped={(key) => f('spriteOverworld', key)}
                 />
                 <label className={labelCls}>Battle sprite</label>
-                <input
+                <DroppableAssetInput
                   className={inputCls + ' mb-1'}
                   value={form.spriteBattle || ''}
                   onFocus={onFieldFocus}
                   onBlur={onFieldBlur}
                   onChange={(e) => f('spriteBattle', e.target.value)}
+                  onAssetDropped={(key) => f('spriteBattle', key)}
                 />
                 <input
                   className={inputCls + ' mb-1'}
@@ -618,17 +795,12 @@ export function CreatureDefEditorPanel() {
                         </select>
 
                         {lootTables.length > 0 ? (
-                          <select
+                          <RegistryCombobox
                             value={ref.tableId}
-                            onChange={(e) => updateLootRef(idx, { tableId: e.target.value })}
-                            className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-200 outline-none cursor-pointer"
-                          >
-                            {lootTables.map((t) => (
-                              <option key={t.id} value={t.id}>
-                                {t.name} ({t.id})
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(val) => updateLootRef(idx, { tableId: val })}
+                            options={lootTables.map(t => ({ value: t.id, label: `${t.name} (${t.id})` }))}
+                            className="flex-1"
+                          />
                         ) : (
                           <input
                             type="text"
@@ -788,7 +960,7 @@ export function CreatureDefEditorPanel() {
                 <button
                   disabled={loading}
                   onClick={() => void handleSave()}
-                  className="px-4 py-2 bg-[#806f47]/50 hover:bg-[#806f47]/70 text-[#e2d5b3] font-bold rounded flex items-center gap-1"
+                  className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded flex items-center gap-1"
                 >
                   <Save size={12} /> {loading ? 'Saving…' : 'Save Creature'}
                 </button>

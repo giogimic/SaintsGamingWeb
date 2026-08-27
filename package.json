@@ -1,6 +1,6 @@
 {
   "name": "saints-gaming-web",
-  "version": "2.1.459-52",
+  "version": "2.1.460-05",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -72,6 +72,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
+    "react-virtuoso": "^4.18.12",
     "redis": "^6.2.0",
     "remark-gfm": "^4.0.1",
     "resend": "^6.16.0",

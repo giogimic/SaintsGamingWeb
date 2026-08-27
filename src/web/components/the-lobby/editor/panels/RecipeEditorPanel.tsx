@@ -22,7 +22,7 @@ export const RecipeEditorPanel: React.FC = () => {
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
   const dataVersion = useEditorStore((s) => s.dataVersion);
 
-  const [recipes, setRecipes] = useState<CraftingRecipe[]>([]);
+  const [recipes, setRecipes] = useState<CraftingRecipeInput[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,7 +72,7 @@ export const RecipeEditorPanel: React.FC = () => {
   const loadList = async (q = search) => {
     setLoading(true);
     const res = await listCraftingRecipes(q);
-    if (res.success && res.data) setRecipes(res.data);
+    if (res.success && res.data) setRecipes(res.data as unknown as CraftingRecipeInput[]);
     setLoading(false);
   };
 
@@ -171,7 +171,7 @@ export const RecipeEditorPanel: React.FC = () => {
   };
 
   return (
-    <CatalogEditorShell<CraftingRecipe>
+    <CatalogEditorShell<CraftingRecipeInput>
       title="Recipe Studio"
       items={recipes}
       activeId={activeSlug}

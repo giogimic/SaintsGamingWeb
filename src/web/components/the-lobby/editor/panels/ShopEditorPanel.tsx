@@ -23,7 +23,7 @@ export const ShopEditorPanel: React.FC = () => {
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
   const dataVersion = useEditorStore((s) => s.dataVersion);
 
-  const [shops, setShops] = useState<ShopTemplate[]>([]);
+  const [shops, setShops] = useState<ShopTemplateInput[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,7 +72,7 @@ export const ShopEditorPanel: React.FC = () => {
     listShops(search).then((res) => {
       if (!active) return;
       if (res.success && res.data) {
-        setShops(res.data);
+        setShops(res.data as unknown as ShopTemplateInput[]);
       }
       setLoading(false);
     });
@@ -167,7 +167,7 @@ export const ShopEditorPanel: React.FC = () => {
   );
 
   return (
-    <CatalogEditorShell<ShopTemplate>
+    <CatalogEditorShell<ShopTemplateInput>
       title="Shop Studio"
       search={search}
       onSearchChange={setSearch}

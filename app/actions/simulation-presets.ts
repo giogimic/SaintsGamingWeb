@@ -106,3 +106,45 @@ export async function deleteSimulationPreset(slug: string) {
     return { success: false as const, error: "Failed to delete simulation preset" };
   }
 }
+
+/**
+ * Live Operations: Exclusively activates one baseline simulation preset.
+ */
+export async function setActiveSimulationPreset(slug: string) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  try {
+    const target = await prisma.simulationPreset.findUnique({ where: { slug } });
+    if (!target) return { success: false, error: `Simulation preset '${slug}' not found` };
+
+    // Deactivate all presets for the gameId
+    await prisma.simulationPreset.updateMany({
+      where: { gameId: target.gameId },
+      data: { isActive: false },
+    });
+
+    // Exclusively activate the selected preset
+    const active = await prisma.simulationPreset.update({
+      where: { slug },
+      data: { isActive: true },
+    });
+
+    revalidatePath("/studio");
+    revalidatePath("/lobby");
+    return {
+      success: true as const,
+      data: {
+        slug: active.slug,
+        name: active.name,
+        isActive: true,
+        xpMultiplier: active.xpMultiplier,
+        dropMultiplier: active.dropMultiplier,
+        goldMultiplier: active.goldMultiplier,
+      },
+    };
+  } catch (err: any) {
+    console.error("[setActiveSimulationPreset] Error:", err.message);
+    return { success: false as const, error: "Failed to set active simulation preset" };
+  }
+}

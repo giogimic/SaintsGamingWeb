@@ -22,6 +22,7 @@ export async function listCraftingRecipes(searchQuery?: string) {
     const rows = await prisma.craftingRecipe.findMany({
       orderBy: { slug: "asc" },
       take: 200,
+      include: { ingredients: true }
     });
     const needle = (searchQuery || "").trim().toLowerCase();
     const data = needle
@@ -31,7 +32,14 @@ export async function listCraftingRecipes(searchQuery?: string) {
             r.outputItemSlug.toLowerCase().includes(needle)
         )
       : rows;
-    return { success: true as const, data };
+      
+    // Transform rows to match the expected flat JSON string format
+    const transformedData = data.map(r => ({
+      ...r,
+      ingredients: JSON.stringify(r.ingredients)
+    }));
+      
+    return { success: true as const, data: transformedData };
   } catch (err) {
     console.error("[listCraftingRecipes]", err);
     return { success: false as const, data: [], error: "Failed to list crafting recipes" };
@@ -40,9 +48,18 @@ export async function listCraftingRecipes(searchQuery?: string) {
 
 export async function getCraftingRecipe(slug: string) {
   try {
-    const row = await prisma.craftingRecipe.findUnique({ where: { slug } });
+    const row = await prisma.craftingRecipe.findUnique({ 
+      where: { slug },
+      include: { ingredients: true }
+    });
     if (!row) return { success: false as const, error: "Not found" };
-    return { success: true as const, data: row };
+    
+    const transformedRow = {
+      ...row,
+      ingredients: JSON.stringify(row.ingredients)
+    };
+    
+    return { success: true as const, data: transformedRow };
   } catch (err) {
     console.error("[getCraftingRecipe]", err);
     return { success: false as const, error: "Failed to load crafting recipe" };
@@ -57,6 +74,18 @@ export async function upsertCraftingRecipe(input: CraftingRecipeInput) {
   if (!slug) return { success: false, error: "slug required" };
 
   try {
+    let parsedIngredients = [];
+    try {
+      if (input.ingredients) {
+        parsedIngredients = JSON.parse(input.ingredients).map((ing: any) => ({
+          itemSlug: ing.itemSlug || ing.itemId, // support both for backward compatibility
+          quantity: ing.quantity || ing.qty || 1
+        }));
+      }
+    } catch (e) {
+      console.error("Invalid ingredients JSON", e);
+    }
+
     const saved = await prisma.craftingRecipe.upsert({
       where: { slug },
       create: {
@@ -68,8 +97,10 @@ export async function upsertCraftingRecipe(input: CraftingRecipeInput) {
         skillSlug: input.skillSlug,
         levelReq: input.levelReq || 1,
         xpReward: input.xpReward || 10,
-        ingredients: input.ingredients || "[]",
         timeMs: input.timeMs || 3000,
+        ingredients: {
+          create: parsedIngredients
+        }
       },
       update: {
         gameId: input.gameId || "saints",
@@ -79,8 +110,11 @@ export async function upsertCraftingRecipe(input: CraftingRecipeInput) {
         skillSlug: input.skillSlug,
         levelReq: input.levelReq || 1,
         xpReward: input.xpReward || 10,
-        ingredients: input.ingredients || "[]",
         timeMs: input.timeMs || 3000,
+        ingredients: {
+          deleteMany: {},
+          create: parsedIngredients
+        }
       },
     });
 

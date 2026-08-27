@@ -1,3 +1,350 @@
+## [2.1.460-05] - 2026-08-27
+### Studio Master Plan: Phase 54 Master World Bounty Board, Daily Wanted Contracts & Bandit Slaying Ledger Engine
+- **Master Bounty Board & PvP Escrow Engine**:
+  - Implemented `bountyContractEngine.ts` handling daily wanted contracts across 5 threat tiers, combat boss modifiers, custom player-posted PvP bounties with gold escrow, kill validations, and reward claims.
+  - Added automated unit test suite in `bountyContractEngine.test.ts`.
+
+## [2.1.460-04] - 2026-08-27
+### Studio Master Plan: Phase 53 Master Player Crafting, Recipe Discovery, Alchemy Transmutation & Item Enchanting Engine
+- **Master Crafting & Rune Enchanting Engine**:
+  - Implemented `masterCraftingEngine.ts` handling crafting disciplines (`SMITHING`, `ALCHEMY_TRANSMUTATION`, `ENCHANTING_RUNECRAFT`, `LEATHERWORKING_TAILORING`, `COOKING_BREWING`), station requirements, blind experimental recipe discovery, item quality rolls (`NORMAL`, `SUPERIOR`, `MASTERWORK`, `LEGENDARY`), and rune enchantment sockets.
+  - Added automated unit test suite in `masterCraftingEngine.test.ts`.
+
+## [2.1.460-03] - 2026-08-27
+### Studio Master Plan: Phase 52 Master Gathering Node Respawn, Dynamic Yield Depletion & Resource Vein Quality Engine
+- **Master Resource Gathering & Vein Quality Engine**:
+  - Implemented `resourceGatheringEngine.ts` handling profession gathering nodes (`MINING`, `WOODCUTTING`, `HERBLORE_FORAGING`, `FISHING`), quality tiers (`NORMAL`, `RICH_VEIN`, `PRISTINE_CORE`), dynamic charge depletion counters, player density-adjusted respawn decay timers, and double-strike critical harvests.
+  - Added automated unit test suite in `resourceGatheringEngine.test.ts`.
+
+## [2.1.460-02] - 2026-08-27
+### Studio Master Plan: Phase 51 Master Player Pet Breeding, Genetic Traits & Cross-Species Incubation Engine
+- **Master Pet Breeding & Genetics Engine**:
+  - Implemented `petBreedingEngine.ts` handling Mendelian allele inheritance ($AA, Aa, aa$) across primary traits (Elemental Affinity, Temperament, Stat IVs), species compatibility groups, thermal incubation duration timers, and rare shiny mutation rolls (1%).
+  - Added automated unit test suite in `petBreedingEngine.test.ts`.
+
+## [2.1.460-01] - 2026-08-27
+### Studio Master Plan: Phase 50 Master Studio Suite Orchestration, Grand Engine Unification & Comprehensive System Verification Matrix
+- **Master Studio Suite Orchestration & Grand Engine Unification**:
+  - Implemented `masterStudioUnificationEngine.ts` unifying all 50 studio & gameplay engine subsystems into a centralized runtime state machine with cross-engine event dispatching, health status telemetry, and global diagnostic verification matrix sweeps (100% operational score).
+  - Added comprehensive automated unit test suite in `masterStudioUnificationEngine.test.ts`.
+
+## [2.1.460-00] - 2026-08-27
+### Studio Master Plan: Phase 49 Master Realm Economy Auction House & Escrow Orderbook Matching Engine
+- **Master Auction House & Double-Auction Orderbook Engine**:
+  - Implemented `auctionHouseEngine.ts` handling asynchronous sell listings (12h, 24h, 48h), instant buyouts, continuous limit orderbook matching ($P_{bid} \ge P_{ask}$), partial stack fills, 2% realm sales tax gold sink, and mailbox escrow delivery.
+  - Added automated unit test suite in `auctionHouseEngine.test.ts`.
+
+## [2.1.459-99] - 2026-08-27
+### Studio Master Plan: Phase 48 Master World Lore Codex, Ancient Relics, Archaeology Excavation & Artifact Inscription Engine
+- **Master World Lore Codex & Archaeology Relic Engine**:
+  - Implemented `loreCodexEngine.ts` handling historical epoch taxonomy (`AGE_OF_CREATION`, `THE_FIRST_TAMERS`, `THE_SHADOW_CATACLYSM`, `ERA_OF_GUILDS`, `CONTEMPORARY_SAINTS`), multi-piece archaeological relic fragment assembly, and chapter completion passive mastery buffs (+2% Holy Magic, +5% Crypt Damage, +10% Archaeology Dig Speed).
+  - Added automated unit test suite in `loreCodexEngine.test.ts`.
+
+## [2.1.459-98] - 2026-08-27
+### Studio Master Plan: Phase 47 Master Player Mentorship, Apprentice Contracts & Realm Guide Rewards Engine
+- **Master Player Mentorship & Apprentice Rewards Engine**:
+  - Implemented `mentorshipEngine.ts` handling mentor eligibility validation (Level 50+), apprentice pairing (Level 1–25), co-op party XP/drop synergy multipliers (+15% XP, +10% drops), milestone progression tracking, and graduation reward payouts (Mentor Commendation Badges, *"The Venerable Sage"* cosmetic title).
+  - Added automated unit test suite in `mentorshipEngine.test.ts`.
+
+## [2.1.459-97] - 2026-08-27
+### Studio Master Plan: Phase 46 Master World Dungeon Generator & Procedural Crypt Labyrinth Layout Engine
+- **Master Procedural Dungeon & Crypt Labyrinth Engine**:
+  - Implemented `proceduralDungeonEngine.ts` handling deterministic seed-based BSP room layouts, corridor tunnel carving, lock-and-key puzzle dependency chains (`BRONZE_KEY`, `SILVER_KEY`, `GOLD_KEY`), and BFS path reachability validation.
+  - Added automated unit test suite in `proceduralDungeonEngine.test.ts`.
+
+## [2.1.459-96] - 2026-08-27
+### Studio Master Plan: Phase 45 Master Raid Mechanics, Mythic Encounter Phases & Dynamic Wipe Recovery Engine
+- **Master Raid Mechanics & Threat Aggro Engine**:
+  - Implemented `raidEncounterEngine.ts` handling multi-phase boss state machines (`PHASE_1_GROUND`, `PHASE_2_AIRBORNE_ADDS`, `PHASE_3_ENRAGED_CORE`, `ENRAGED_BERSERK`), threat table aggro calculation with role multipliers (Tank 4.0x, DPS 1.0x, Healer 0.5x), over-aggro buffer thresholds (110% melee, 130% ranged), and full encounter wipe reset orchestration.
+  - Added automated unit test suite in `raidEncounterEngine.test.ts`.
+
+## [2.1.459-95] - 2026-08-27
+### Studio Master Plan: Phase 44 Master Player Housing & Real Estate Land Auction Bidding Engine
+- **Master Player Housing & Real Estate Land Auction Engine**:
+  - Implemented `playerHousingEngine.ts` handling overworld land plot zoning (`RESIDENTIAL_SANCTUARY`, `GUILD_ESTATE`, `COMMERCIAL_SHOPFRONT`, `WILDERNESS_OUTPOST`), timed land auction bidding with escrow locking and anti-snipe extensions, and interior furniture decor placement grid validation.
+  - Added automated unit test suite in `playerHousingEngine.test.ts`.
+
+## [2.1.459-94] - 2026-08-27
+### Studio Master Plan: Phase 43 Master Anti-Fraud Item Duplication & Inventory Reconciliation Ledger Engine
+- **Master Anti-Fraud Item Duplication & Inventory Reconciliation Engine**:
+  - Implemented `inventoryReconciliationEngine.ts` handling global cryptographic item UUID provenance generation, atomic double-entry transfer ledgers (inventories, banks, trade escrows), realtime duplication collision detection with instant quarantine, and inventory state reconciliation audits.
+  - Added automated unit test suite in `inventoryReconciliationEngine.test.ts`.
+
+## [2.1.459-93] - 2026-08-27
+### Studio Master Plan: Phase 42 Master Tournament Brackets, Ranked Arena Ladders & ELO Matchmaking Engine
+- **Master Tournament Brackets & ELO Rating Engine**:
+  - Implemented `tournamentBracketEngine.ts` handling ranked ELO rating calculations ($K=32$) across 6 competitive tiers (`BRONZE`, `SILVER`, `GOLD`, `PLATINUM`, `DIAMOND`, `GRANDMASTER`), seeded tournament bracket generation (4, 8, 16, 32, 64 seeds), match victory progression routing, and prize pool distribution.
+  - Added automated unit test suite in `tournamentBracketEngine.test.ts`.
+
+## [2.1.459-92] - 2026-08-27
+### Studio Master Plan: Phase 41 Master Achievement Ledger, Secret Titles, Realm Feats & Badges Engine
+- **Master Achievement Ledger & Cosmetic Titles Engine**:
+  - Implemented `achievementEngine.ts` handling multi-category achievements (`EXPLORATION`, `COMBAT`, `CREATURE_TAMING`, `CRAFTING_ECONOMY`, `QUESTING`, `GUILD_WARFARE`, `FEATS_OF_STRENGTH`), incremental criteria progress tracking, secret hidden feats, and cosmetic title/badge rewards with Achievement Points (AP).
+  - Added automated unit test suite in `achievementEngine.test.ts`.
+
+## [2.1.459-91] - 2026-08-27
+### Studio Master Plan: Phase 40 Master Accessibility, Adaptive Keybinding Matrix & Screen Reader ARIA Engine
+- **Master Accessibility & Keybinding Matrix Engine**:
+  - Implemented `accessibilityEngine.ts` handling adaptive keybinding remapping (keyboard, mouse, gamepad) with collision conflict resolution, colorblind visual filter matrices (`PROTANOPIA`, `DEUTERANOPIA`, `TRITANOPIA`, `ACHROMATOPSIA`, `HIGH_CONTRAST`), UI font scaling (up to 2.0x), and screen reader ARIA live region announcement queues.
+  - Added automated unit test suite in `accessibilityEngine.test.ts`.
+
+## [2.1.459-90] - 2026-08-27
+### Studio Master Plan: Phase 39 Master Cinematic Cutscene Sequences, Scripted Camera Paths & Dialogue Theater Engine
+- **Master Cinematic Cutscene & Camera Sequencer Engine**:
+  - Implemented `cinematicCameraEngine.ts` handling camera keyframe spline interpolation (position, FOV, look-at targets, easing curves), multi-track timeline event dispatching (`CAMERA_MOVE`, `PLAY_SOUND`, `FADE_SCREEN`, `DIALOGUE_LINE`, `ACTOR_ANIMATION`), and letterbox dialogue theater presentation with input suppression.
+  - Added automated unit test suite in `cinematicCameraEngine.test.ts`.
+
+## [2.1.459-89] - 2026-08-27
+### Studio Master Plan: Phase 38 Master World Audio Ambiance, Spatial Sound Triggers & Dynamic Audio Bus Mixing Engine
+- **Master Audio Ambiance & Spatial Bus Mixer Engine**:
+  - Implemented `audioAmbianceEngine.ts` handling multi-channel bus mixing (`MASTER`, `BGM`, `SFX`, `VOICE`, `AMBIANCE`, `UI`), spatial 2.5D distance attenuation with stereo panning, and dynamic biome/weather soundscape crossfading.
+  - Added automated unit test suite in `audioAmbianceEngine.test.ts`.
+
+## [2.1.459-88] - 2026-08-27
+### Studio Master Plan: Phase 37 Master Player Session Handshake, Anti-Cheat Input Throttle & Realtime Heartbeat Telemetry Engine
+- **Player Session Telemetry & Anti-Cheat Throttle Engine**:
+  - Implemented `playerSessionTelemetryEngine.ts` handling session connection state transitions (`CONNECTING`, `AUTHENTICATED`, `IN_GAME`, `DESYNC_RECOVERY`, `DISCONNECTED`), sliding window input packet throttling (movement max 10/s, abilities max 4/s), and moving average RTT/jitter telemetry with auto-reconciliation triggers.
+  - Added automated unit test suite in `playerSessionTelemetryEngine.test.ts`.
+
+## [2.1.459-87] - 2026-08-27
+### Studio Master Plan: Phase 36 Comprehensive Multi-Language Localization, Dynamic Translation Keys & Fallback Engine
+- **Multi-Language Localization & Translation Engine**:
+  - Implemented `localizationRegistryEngine.ts` handling multi-locale dictionaries (`EN_US`, `ES_ES`, `FR_FR`, `DE_DE`, `PT_BR`, `JA_JP`, `KO_KR`, `ZH_CN`), variable string interpolation, pluralization rules, and missing translation coverage audits with graceful English fallback resolution.
+  - Added automated unit test suite in `localizationRegistryEngine.test.ts`.
+
+## [2.1.459-86] - 2026-08-27
+### Studio Master Plan: Phase 35 Master World Time, Astronomical Celestial Events & Seasonal Weather Engine
+- **Master World Time, Celestial Events & Weather Engine**:
+  - Implemented `celestialWeatherEngine.ts` handling synchronized master realm clock with configurable time dilation, astronomical lunar phases (`NEW_MOON`, `CRESCENT`, `HALF_MOON`, `FULL_MOON`, `BLOOD_ECLIPSE`, `SOLAR_SOLSTICE`), and dynamic regional weather hazards (`CLEAR`, `RAIN`, `THUNDERSTORM`, `BLIZZARD`, `SANDSTORM`, `ACID_FOG`) with elemental gameplay modifiers.
+  - Added automated unit test suite in `celestialWeatherEngine.test.ts`.
+
+## [2.1.459-85] - 2026-08-27
+### Studio Master Plan: Phase 34 Master AI NPC Behavior Trees, Dynamic Social Gossip & Ambient Realm Simulation Engine
+- **Master AI NPC Behavior Trees & Ambient Simulation Engine**:
+  - Implemented `npcBehaviorTreeEngine.ts` handling hierarchical behavior tree evaluation (`SELECTOR`, `SEQUENCE`, `PARALLEL`, action leaves), dynamic social gossip/rumor network propagation, and day/night schedule routine shifts (`DAWN`, `DAY`, `DUSK`, `NIGHT`).
+  - Added automated unit test suite in `npcBehaviorTreeEngine.test.ts`.
+
+## [2.1.459-84] - 2026-08-27
+### Studio Master Plan: Phase 33 Universal Multi-Region Shard Orchestration, Cross-Shard Teleportation & State Migration Engine
+- **Multi-Region Shard Orchestration & Cross-Shard Migration Engine**:
+  - Implemented `shardOrchestratorEngine.ts` handling multi-region shard topology (`US_EAST`, `US_WEST`, `EU_CENTRAL`, `AP_EAST`), cryptographically signed 2-phase cross-shard migration handshakes, dynamic channel spawning/consolidation, and load balancing.
+  - Added automated unit test suite in `shardOrchestratorEngine.test.ts`.
+
+## [2.1.459-83] - 2026-08-27
+### Studio Master Plan: Phase 32 Comprehensive Master Studio Orchestration, System Health & Diagnostic Hub Engine
+- **Master Studio Orchestration & Diagnostic Hub Engine**:
+  - Implemented `studioDiagnosticEngine.ts` providing pre-flight multi-system audits across all 31 core subsystems (Dependency Graph, Atlas Chunks, Economy, Creator Royalties, Disaster Recovery, Realtime MMO Sockets), 0–100% composite health scoring, and actionable remediation guidance.
+  - Added automated unit test suite in `studioDiagnosticEngine.test.ts`.
+
+## [2.1.459-82] - 2026-08-27
+### Studio Master Plan: Phase 31 Comprehensive Live Ops Disaster Recovery, Rollback Snapshot & Realm State Freeze Engine
+- **Live Ops Disaster Recovery & Realm State Freeze Engine**:
+  - Implemented `realmDisasterRecoveryEngine.ts` handling emergency server-wide gameplay freezes, immutable point-in-time realm state snapshots, delta rollback restorations, and automated player compensation package calculations.
+  - Added automated unit test suite in `realmDisasterRecoveryEngine.test.ts`.
+
+## [2.1.459-81] - 2026-08-27
+### Studio Master Plan: Phase 30 Creator Attribution, Royalty Distributions & Asset Monetization Engine
+- **Creator Attribution & Royalty Monetization Engine**:
+  - Implemented `creatorRoyaltyEngine.ts` handling creator attribution trees (original root author vs derivative remixers), automated multi-tier sales splits (Platform 5%, Original Author 70%, Remixer 25%), creator escrow balance ledgers, and minimum payout withdrawal claims.
+  - Added automated unit test suite in `creatorRoyaltyEngine.test.ts`.
+
+## [2.1.459-80] - 2026-08-27
+### Studio Master Plan: Phase 29 Master Realm Leaderboards, Season Archive & Hall of Fame Engine
+- **Master Realm Leaderboards & Hall of Fame Engine**:
+  - Implemented `realmHallOfFameEngine.ts` handling multi-category highscores (Total XP, Boss Kill Counts, PvP Elo, Raids, Speedruns), seasonal archive snapshots, podium cosmetic title awards, and anti-anomaly score validation.
+  - Added automated unit test suite in `realmHallOfFameEngine.test.ts`.
+
+## [2.1.459-79] - 2026-08-27
+### Studio Master Plan: Phase 28 World Atlas Chunks, Biome Transitions & Seamless Streaming Engine
+- **World Atlas Streaming & Biome Transition Engine**:
+  - Implemented `worldAtlasStreamingEngine.ts` handling world spatial chunk grid partitioning ($32 \times 32$ tile chunks), viewport streaming load/evict deltas, and seamless biome edge transition blend factor evaluation (lighting tint, audio crossfade, particle density).
+  - Added automated unit test suite in `worldAtlasStreamingEngine.test.ts`.
+
+## [2.1.459-78] - 2026-08-27
+### Studio Master Plan: Phase 27 Economy Inflation Control, Sinks, Gold Velocity & Dynamic Market Stabilization Engine
+- **Economy Inflation Control & Market Stabilizer Engine**:
+  - Implemented `economyStabilizerEngine.ts` handling realm macro-economy metrics (faucets vs sinks, Inflation Pressure Index), automated Grand Exchange tax buyback item sinks, death gravestone reclamation surcharges, and degradation repair fee scaling.
+  - Added automated unit test suite in `economyStabilizerEngine.test.ts`.
+
+## [2.1.459-77] - 2026-08-27
+### Studio Master Plan: Phase 26 Unified Asset Representation Profiles & Dynamic Visual Pipeline Engine
+- **Asset Representation Profiles & Dynamic Visual Pipeline Engine**:
+  - Implemented `assetRepresentationEngine.ts` decoupling conceptual RPG entities from visual animation profiles, supporting 2D sprite sheets, composited layered avatars, directional animation lookups (`IDLE`, `WALK`, `ATTACK`, `CAST`, `DIE`, `EMOTE`), and multi-tier fallback chains (HD Skin -> Base 2D Sheet -> Silhouette Placeholder).
+  - Added automated unit test suite in `assetRepresentationEngine.test.ts`.
+
+## [2.1.459-76] - 2026-08-27
+### Studio Master Plan: Phase 25 Guild Alliances, War Declarations, Tax Rates & Clan Vault Escrow Engine
+- **Guild Diplomacy & Clan Vault Escrow Engine**:
+  - Implemented `guildDiplomacyEngine.ts` handling diplomatic treaties (`ALLIED`, `NEUTRAL`, `RIVAL`, `AT_WAR`), mutual alliance pacts, formal war declarations with escrowed war chest stakes, clan taxation rates, and rank-based daily vault withdrawal allowances with audit logging.
+  - Added automated unit test suite in `guildDiplomacyEngine.test.ts`.
+
+## [2.1.459-75] - 2026-08-27
+### Studio Master Plan: Phase 24 Pet Gene Mutations, Evolutionary Branching & Elemental Affinity Matrix Engine
+- **Pet Gene Mutations & Branching Evolution Engine**:
+  - Implemented `creatureMutationEngine.ts` handling branching evolution requirements (evolution stones, daytime/nighttime, high loyalty, trade items), rare genetic mutations (`MUTATION_ALBINO`, `MUTATION_SHADOW_TOUCHED`, `MUTATION_TITAN_SIZE`, `MUTATION_CELESTIAL_AURA`), and 8-element weather/biome resonance calculations.
+  - Added automated unit test suite in `creatureMutationEngine.test.ts`.
+
+## [2.1.459-74] - 2026-08-27
+### Studio Master Plan: Phase 23 World Boss Dynamic Scaling, Enrage Timers & Shared Loot Ledger Engine
+- **World Boss Dynamic Scaling & Hero Battles Engine**:
+  - Implemented `worldBossEngine.ts` handling participant-based dynamic HP/damage scaling, phase shifts (Adds & Cataclysm AoE), soft/hard enrage timers, and contribution-based shared loot ledger (damage, healing, damage absorbed).
+  - Added automated unit test suite in `worldBossEngine.test.ts`.
+
+## [2.1.459-73] - 2026-08-27
+### Studio Master Plan: Phase 22 Companion AI, Pet Commands & Buddy Tactics Engine
+- **Companion AI & Buddy Tactics Engine**:
+  - Implemented `companionAiEngine.ts` handling combat stances (`AGGRESSIVE`, `DEFENSIVE`, `PASSIVE`, `ASSIST`), real-time player commands (`ATTACK_TARGET`, `RETURN_TO_ME`, `USE_SPECIAL_ABILITY`, `STAY_POSITION`), range tethering, and loyalty bond synergy perks.
+  - Added automated unit test suite in `companionAiEngine.test.ts`.
+
+## [2.1.459-72] - 2026-08-27
+### Studio Master Plan: Phase 21 Creator Marketplace, Community Studio Blueprints & Mod Sharing Engine
+- **Creator Blueprints & Marketplace Engine**:
+  - Implemented `blueprintMarketplaceEngine.ts` handling community Studio blueprints (`DUNGEON_LAYOUT`, `QUESTLINE`, `CREATURE_PACK`, `TERRAIN_PRESET`, `MINIGAME_ARENA`, `FULL_CAMPAIGN`), star rating aggregation, multi-tag search, and pre-flight import conflict resolution (`OVERWRITE`, `RENAME_WITH_PREFIX`, `SKIP`).
+  - Added automated unit test suite in `blueprintMarketplaceEngine.test.ts`.
+
+## [2.1.459-71] - 2026-08-27
+### Studio Master Plan: Phase 20 Minigame Matchmaking Lobby, Team Balancing & Objective Engine
+- **Minigame Matchmaking & Objective Engine**:
+  - Implemented `minigameMatchmakingEngine.ts` handling multiplayer minigame queues (`CASTLE_WARS`, `PEST_CONTROL`, `SOUL_WARS`, `BARBARIAN_ASSAULT`), team balancing algorithms, lobby countdowns, in-match objective state tracking, and zeal reward distribution.
+  - Added automated unit test suite in `minigameMatchmakingEngine.test.ts`.
+
+## [2.1.459-70] - 2026-08-27
+### Studio Master Plan: Phase 19 Seasonal Battle Pass, Seasonal Challenges & Progression Engine
+- **Seasonal Battle Pass & Progression Engine**:
+  - Implemented `seasonPassEngine.ts` handling 50-tier dual tracks (Free & Premium), seasonal challenges (`DAILY_KILL_MONSTERS`, `WEEKLY_COMPLETE_DUNGEON`), Battle Pass XP progression, tier-up reward claims, and prestige overflow caches.
+  - Added automated unit test suite in `seasonPassEngine.test.ts`.
+
+## [2.1.459-69] - 2026-08-27
+### Studio Master Plan: Phase 18 World Exploration, Fog of War & Discovery POI Engine
+- **World Exploration & Fog of War Engine**:
+  - Implemented `explorationEngine.ts` handling player-specific Fog of War circular tile reveals, landmark POI proximity checks, exploration XP awards, waypoint unlocks, and total map completion percentage calculations.
+  - Added automated unit test suite in `explorationEngine.test.ts`.
+
+## [2.1.459-68] - 2026-08-27
+### Studio Master Plan: Phase 17 Sanctuary House Privacy, Guest Tip Jar & Dungeon Defense Engine
+- **Sanctuary Guest Controls & Dungeon Defense Engine**:
+  - Implemented `sanctuaryDefenseEngine.ts` handling house privacy modes (`PRIVATE`, `FRIENDS_ONLY`, `OPEN_HOUSE`), guest tip jar coin donation accounting, subterranean dungeon trap placement (`SPIKE_TRAP`, `POISON_DART`, `FLAME_JET`, `TENTACLE_PIT`), and guard creature assignment.
+  - Added automated unit test suite in `sanctuaryDefenseEngine.test.ts`.
+
+## [2.1.459-67] - 2026-08-27
+### Studio Master Plan: Phase 16 Guild Clan Citadel & Territory War Engine
+- **Guild Clan Territory & Siege War Engine**:
+  - Implemented `guildTerritoryEngine.ts` handling territory control nodes, contested capture progress ticking, passive guild yield/XP buff accrual, and scheduled clan war sieges.
+  - Added automated unit test suite in `guildTerritoryEngine.test.ts`.
+
+## [2.1.459-66] - 2026-08-27
+### Studio Master Plan: Phase 15 Player Battles (PvP) Duels & Wilderness Skulling Engine
+- **Player Battles (PvP) & Wilderness Combat Engine**:
+  - Implemented `playerBattleEngine.ts` handling friendly staked/non-staked duel lifecycles, mutual rule toggles, countdown states, and stake escrow resolution.
+  - Implemented wilderness danger level brackets, skulling timers (20 minutes), and death penalty calculations (protect 3 items vs lose all on death).
+  - Added automated unit test suite in `playerBattleEngine.test.ts`.
+
+## [2.1.459-65] - 2026-08-27
+### Studio Master Plan: Phase 14 Direct Player-to-Player Trading Engine & Escrow System
+- **Direct Player-to-Player (P2P) Trading Engine**:
+  - Implemented `directTradeEngine.ts` with 2-stage trade verification (`OFFERING` -> `ACCEPTED` -> `CONFIRMED` -> `COMPLETED`) and anti-scam offer alteration resets.
+  - Added realtime direct trade protocol events (`TRADE_REQUEST`, `TRADE_UPDATE`, `TRADE_ACCEPT`, `TRADE_CONFIRM`, `TRADE_COMPLETE`, `TRADE_CANCEL`) to `protocol.ts`.
+  - Added automated unit test suite in `directTradeEngine.test.ts`.
+
+## [2.1.459-64] - 2026-08-27
+### Studio Master Plan: Phase 13 Live Operations Admin Dispatcher & Simulation Actions
+- **Live Operations Server Actions**:
+  - Implemented `triggerLiveWorldEvent` and `stopLiveWorldEvent` in `world-events.ts` for dynamic live event dispatching and realm modifier activation.
+  - Implemented `setActiveSimulationPreset` in `simulation-presets.ts` for exclusive baseline rule switching (e.g. Standard vs Hardcore).
+  - Added automated unit test suite in `liveOpsActions.test.ts`.
+
+## [2.1.459-63] - 2026-08-27
+### Studio Master Plan: Phase 12 World Events & Realm Mutation Engine
+- **World Event Engine & Dynamic Realm Mutations**:
+  - Implemented `worldEventEngine.ts` handling event state lifecycles (`SCHEDULED`, `ACTIVE`, `DRAINING`, `EXPIRED`), timestamp management, and deterministic multiplier compounding (XP, gold, gathering, spawn rates).
+  - Wired atmospheric preset and weather mutations (`BLOOD_RAIN`, `AURORA_BOREALIS`) directly to `AtmospherePresets`.
+  - Added realtime protocol events `WORLD_EVENT_STARTED` and `WORLD_EVENT_ENDED` to `protocol.ts`.
+  - Added automated unit test suite in `worldEventEngine.test.ts`.
+
+## [2.1.459-62] - 2026-08-27
+### Studio Master Plan: Phase 11 Realtime Party Dungeon Instancing & Socket Sync Pipeline
+- **Real-Time Dungeon Protocol & Socket Pipeline**:
+  - Added realtime dungeon events (`DUNGEON_CREATE`, `DUNGEON_WARP`, `DUNGEON_OBJECTIVE_UPDATE`, `DUNGEON_COMPLETED`) to `protocol.ts`.
+  - Wired `DungeonInstanceManager` to `LobbySocketHandler` with party member auto-routing, live objective progress broadcasts, and completion events.
+  - Added automated unit test suite in `DungeonSocketHandler.test.ts`.
+
+## [2.1.459-61] - 2026-08-27
+### Studio Master Plan: Phase 10 Shadow Crypt Dungeon Map & Instancing
+- **Shadow Crypt Dungeon Map**:
+  - Implemented `shadowCryptMapSeed.ts` defining `DUNGEON_SHADOW_CRYPT` (24×24 subterranean layout) with `DUNGEON` atmospheric lighting presets, `FOG` weather, and ambient dungeon audio.
+  - Placed enemy spawns for `monster_skeleton_warrior` and the `monster_crypt_lord` boss.
+  - Linked map to `dungeon_shadow_crypt` in `starterContentBootstrap.ts` and `DungeonInstanceManager`.
+  - Added automated unit test suite in `shadowCryptMap.test.ts`.
+
+## [2.1.459-60] - 2026-08-27
+### Studio Master Plan: Phase 9 Dynamic Quests & Creature Catalog Authoring
+- **Dynamic Quests & Objective Pipelines**:
+  - Authored multi-stage initiation, beast training, and dungeon delve quests (`quest_the_saints_awakening`, `quest_beast_whisperer`, `quest_shadow_crypt_purification`) in `starterContentBootstrap.ts`.
+- **Creature Taxonomy Definitions**:
+  - Authored and seeded dedicated Beasts (`beast_ember_fox`, `beast_aqua_otter`, `beast_verdant_sprout`), Monsters (`monster_abyssal_fiend`, `monster_skeleton_warrior`, `monster_crypt_lord`), and Mercenaries (`merc_veteran_guard`, `merc_shadow_scout`, `merc_mystic_healer`).
+  - Added automated unit test suite in `starterContentCatalog.test.ts`.
+
+## [2.1.459-59] - 2026-08-26
+### Studio Master Plan: Phase 8 Impact Analysis & Live Publishing Gate
+- **Cross-System Impact Analysis**:
+  - Implemented `impactAnalysis.ts` to compute cascading dependency blast radiuses (`analyzeDeletionImpact`), classifying blocking published dependents vs draft warnings before deletion.
+- **Live Publishing Gate Engine**:
+  - Implemented `livePublishingGate.ts` enforcing zero-defect release validation (graph integrity, valid spawns, and complete entity asset bindings) and issuing immutable release manifests.
+  - Added automated unit test suites in `impactAnalysis.test.ts` and `livePublishingGate.test.ts`.
+
+## [2.1.459-58] - 2026-08-26
+### Studio Master Plan: Phase 7 Comprehensive E2E Testing & Integration Suite
+- **End-to-End Creator Journey Test Suite**:
+  - Implemented `studioUserJourney.test.ts` covering 5 core authoring pipelines:
+    1. Map authoring, tile layering, logic tagging, and validation.
+    2. Multi-author collaborative concurrency and 3-way conflict resolution.
+    3. Playtest sandbox non-destructive state snapshotting and restoration.
+    4. Party-dungeon instance allocation, objective tracking, and clear condition checks.
+    5. Creature taxonomy categorization (Beast vs Monster vs Mercenary) and catalog validation.
+
+## [2.1.459-57] - 2026-08-26
+### Studio Master Plan: Phase 6 Audio & Visual Polish
+- **Atmospheric Lighting & Weather Visual Profiles**:
+  - Implemented `atmospherePresets.ts` with standardized rendering tokens (`ambientColor`, `sunColor`, `fogDensity`, `fogColor`, `bloomIntensity`) for all lighting environments (`DAY`, `NIGHT`, `DUSK`, `DAWN`, `DUNGEON`, `BLOOD_MOON`, `CYBER_NEON`).
+  - Added weather particle overlay configurations (`CLEAR`, `RAIN`, `THUNDERSTORM`, `SNOW`, `BLIZZARD`, `ASH_FALL`).
+  - Added automated unit tests in `atmospherePresets.test.ts`.
+
+## [2.1.459-56] - 2026-08-26
+### Studio Master Plan: Phase 5 Collaborative Workflow & Optimistic Locking
+- **Optimistic Concurrency Control**:
+  - Implemented `optimisticLockEngine.ts` providing deterministic content hashing (`computeContentHash`), revision tracking, commit validation, and conflict interception.
+  - Added 3-way merge resolution (`resolveMergeConflict`) with `take_local`, `take_remote`, and `smart_merge` strategies.
+  - Added automated unit test suite in `optimisticLockEngine.test.ts`.
+
+## [2.1.459-55] - 2026-08-26
+### Studio Master Plan: Phase 4 Playtest Sandbox & Instancing
+- **Playtest Sandbox (PIE) Snapshot & Restore Engine**:
+  - Implemented `playtestSnapshot.ts` capturing player coordinates, inventory, vitals, and active map state upon entering Playtest mode.
+  - Implemented `restorePlaytestSnapshot` to safely restore original persistent player state upon exiting Playtest mode.
+- **Dungeon Instance Manager**:
+  - Implemented `dungeonInstanceManager.ts` supporting dynamic party instance allocation, objective progress tracking, completion validation, and TTL cleanup.
+  - Updated `mapIds.ts` with dungeon instance ID parsing and base map resolution.
+
+## [2.1.459-54] - 2026-08-26
+### Studio Master Plan: Phase 3 Core Studios & Rule Engine
+- **Creature Taxonomy & Subsystem Differentiation**:
+  - Added `category` field (`beast` | `monster` | `mercenary`) to `CreatureDefData` in `creatureCatalog.ts`.
+  - Added monster-specific attributes (`aggroRadius`, `respawnSec`) and mercenary-specific attributes (`hireCost`, `factionId`).
+  - Added category filter tabs and specialized property editors in `CreatureDefEditorPanel.tsx`.
+- **Unified Rule & Condition AST Engine**:
+  - Expanded `ruleEngine.ts` condition evaluators and action dispatchers.
+  - Added automated unit test coverage in `creatureCategoryEngine.test.ts`.
+
+## [2.1.459-53] - 2026-08-26
+### Studio Master Plan: Phase 2 Modular Workspace & Tabbed Multi-Map Management
+- **Modular FlexLayout Workspace**:
+  - Reconfigured `center-viewport` tabset to enable full drag-and-drop tab docking and splitting.
+  - Implemented `MapTabPanel.tsx` component providing rich map metadata, live layer inspection, and 1-click active viewport switching.
+  - Added support for `studio_open_map_tab` custom event across Studio Omnisearch and World Builder.
+- **Shared Data & Validation Foundation**:
+  - Added `BaseEntityDefinition` schema and `DependencyGraph` with `ProjectValidator` checking missing references.
+  - Added unit and integration tests covering the dependency validator and workspace events.
+
 ## [2.1.459-52] - 2026-08-26
 ### Studio Master Plan: Vertical Slices & Shared Platform Layer
 - **Content Studio Vertical Slices (A–H)**:

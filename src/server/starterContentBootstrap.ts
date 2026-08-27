@@ -234,12 +234,26 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         entryLevelReq: 5,
         maxPartySize: 4,
         rewardLootPoolId: "crypt_boss_loot",
-        mapReferences: JSON.stringify(["crypt_entrance", "crypt_hall_of_bones", "crypt_boss_sanctum"]),
+        mapReferences: ["crypt_entrance", "crypt_hall_of_bones", "crypt_boss_sanctum"],
         clearConditions: JSON.stringify({
           kind: "PLAYER_STAT",
           statKey: "level",
           op: "GTE",
           expectedValue: 5,
+        }),
+      },
+      {
+        slug: "dungeon_shadow_crypt",
+        name: "Shadow Crypt",
+        description: "Subterranean crypt harboring skeletal sentinels and the formidable Crypt Lord.",
+        entryLevelReq: 10,
+        maxPartySize: 4,
+        rewardLootPoolId: "shadow_crypt_boss_loot",
+        mapReferences: ["DUNGEON_SHADOW_CRYPT"],
+        clearConditions: JSON.stringify({
+          kind: "DEFEAT_ENTITY",
+          targetSlug: "monster_crypt_lord",
+          requiredQty: 1,
         }),
       },
       {
@@ -249,7 +263,7 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         entryLevelReq: 15,
         maxPartySize: 4,
         rewardLootPoolId: "sunken_boss_loot",
-        mapReferences: JSON.stringify(["sunken_temple_foyer", "sunken_abyssal_depths"]),
+        mapReferences: ["sunken_temple_foyer", "sunken_abyssal_depths"],
         clearConditions: JSON.stringify({
           kind: "HAS_ITEM",
           itemId: "water_breathing_potion",
@@ -259,10 +273,26 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
     ];
 
     for (const d of starterDungeons) {
+      const { mapReferences, ...dungeonData } = d;
       await prisma.dungeonTemplate.upsert({
         where: { slug: d.slug },
-        create: { ...d, gameId, profileId },
-        update: { ...d, gameId, profileId },
+        create: { 
+          ...dungeonData, 
+          gameId, 
+          profileId,
+          mapReferences: {
+            create: mapReferences.map((ref, idx) => ({ mapSlug: ref, orderIndex: idx }))
+          }
+        },
+        update: { 
+          ...dungeonData, 
+          gameId, 
+          profileId,
+          mapReferences: {
+            deleteMany: {},
+            create: mapReferences.map((ref, idx) => ({ mapSlug: ref, orderIndex: idx }))
+          }
+        },
       });
     }
 
@@ -274,12 +304,12 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         description: "Stocked with restorative potions, elixirs, and raw herbal remedies.",
         currency: "gold",
         refreshInterval: 300,
-        itemsSoldData: JSON.stringify([
-          { itemId: "health_potion_minor", price: 25, stock: 50, restockSec: 300 },
-          { itemId: "mana_potion_minor", price: 30, stock: 50, restockSec: 300 },
-          { itemId: "antidote", price: 40, stock: 20, restockSec: 600 },
-          { itemId: "water_breathing_potion", price: 150, stock: 5, restockSec: 1800 },
-        ]),
+        inventory: [
+          { itemSlug: "health_potion_minor", price: 25, stock: 50, restockSec: 300 },
+          { itemSlug: "mana_potion_minor", price: 30, stock: 50, restockSec: 300 },
+          { itemSlug: "antidote", price: 40, stock: 20, restockSec: 600 },
+          { itemSlug: "water_breathing_potion", price: 150, stock: 5, restockSec: 1800 },
+        ],
       },
       {
         slug: "armory_of_the_saint",
@@ -287,20 +317,36 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         description: "Hardened steel weapons, sturdy shields, and protective breastplates.",
         currency: "gold",
         refreshInterval: 600,
-        itemsSoldData: JSON.stringify([
-          { itemId: "iron_sword", price: 120, stock: 10 },
-          { itemId: "iron_shield", price: 90, stock: 10 },
-          { itemId: "leather_armor", price: 150, stock: 5 },
-          { itemId: "steel_greatsword", price: 450, stock: 3 },
-        ]),
+        inventory: [
+          { itemSlug: "iron_sword", price: 120, stock: 10, restockSec: null },
+          { itemSlug: "iron_shield", price: 90, stock: 10, restockSec: null },
+          { itemSlug: "leather_armor", price: 150, stock: 5, restockSec: null },
+          { itemSlug: "steel_greatsword", price: 450, stock: 3, restockSec: null },
+        ],
       },
     ];
 
     for (const s of starterShops) {
+      const { inventory, ...shopData } = s;
       await prisma.shopTemplate.upsert({
         where: { slug: s.slug },
-        create: { ...s, gameId, profileId },
-        update: { ...s, gameId, profileId },
+        create: { 
+          ...shopData, 
+          gameId, 
+          profileId,
+          inventory: {
+            create: inventory
+          }
+        },
+        update: { 
+          ...shopData, 
+          gameId, 
+          profileId,
+          inventory: {
+            deleteMany: {},
+            create: inventory
+          }
+        },
       });
     }
 
@@ -340,7 +386,7 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         skillSlug: "blacksmithing",
         levelReq: 1,
         xpReward: 15,
-        ingredients: JSON.stringify([{ itemId: "copper_ore", quantity: 3 }]),
+        ingredients: [{ itemSlug: "copper_ore", quantity: 3 }],
         timeMs: 2000,
       },
       {
@@ -350,19 +396,35 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         skillSlug: "blacksmithing",
         levelReq: 10,
         xpReward: 65,
-        ingredients: JSON.stringify([
-          { itemId: "iron_bar", quantity: 4 },
-          { itemId: "leather_strip", quantity: 2 },
-        ]),
+        ingredients: [
+          { itemSlug: "iron_bar", quantity: 4 },
+          { itemSlug: "leather_strip", quantity: 2 },
+        ],
         timeMs: 5000,
       },
     ];
 
     for (const r of starterRecipes) {
+      const { ingredients, ...recipeData } = r;
       await prisma.craftingRecipe.upsert({
         where: { slug: r.slug },
-        create: { ...r, gameId, profileId },
-        update: { ...r, gameId, profileId },
+        create: { 
+          ...recipeData, 
+          gameId, 
+          profileId,
+          ingredients: {
+            create: ingredients
+          }
+        },
+        update: { 
+          ...recipeData, 
+          gameId, 
+          profileId,
+          ingredients: {
+            deleteMany: {},
+            create: ingredients
+          }
+        },
       });
     }
 
@@ -402,6 +464,339 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
         where: { slug: e.slug },
         create: { ...e, gameId, profileId },
         update: { ...e, gameId, profileId },
+      });
+    }
+
+    // ── 6. CREATURE DEFINITIONS (Beasts, Monsters, Mercenaries) ────────────
+    const starterCreatures = [
+      // Beasts (Capturable Companions)
+      {
+        slug: "beast_ember_fox",
+        name: "Ember Fox",
+        dexNumber: 1,
+        typePrimary: "Fire",
+        typeSecondary: "None",
+        baseHp: 45,
+        physicalPower: 52,
+        physicalDefense: 40,
+        abilityPower: 60,
+        abilityDefense: 45,
+        combatTempo: 110,
+        catchRate: 0.45,
+        starterLevel: 5,
+        passivesJson: JSON.stringify([{ id: "flame_trail", name: "Flame Trail", description: "Burns attackers on hit" }]),
+        worldSkillName: "Campfire Kindle",
+        worldSkillDescription: "Ignites campfires and warms party members in blizzards.",
+        abilitiesJson: JSON.stringify([{ abilityId: "ember_burst", unlockLevel: 1 }, { abilityId: "flame_charge", unlockLevel: 8 }]),
+        flavor: "A nimble fiery companion with an ember-tipped tail.",
+        tag: "BEAST",
+        tagColor: "#f97316",
+        stage: "BASIC",
+        isStarter: true,
+        isWildSpawn: true,
+        isActive: true,
+        sortOrder: 1,
+        spriteOverworld: "/sprites/creatures/ember_fox.png",
+      },
+      {
+        slug: "beast_aqua_otter",
+        name: "Aqua Otter",
+        dexNumber: 2,
+        typePrimary: "Water",
+        typeSecondary: "None",
+        baseHp: 50,
+        physicalPower: 48,
+        physicalDefense: 55,
+        abilityPower: 50,
+        abilityDefense: 55,
+        combatTempo: 95,
+        catchRate: 0.45,
+        starterLevel: 5,
+        passivesJson: JSON.stringify([{ id: "swift_swim", name: "Swift Swim", description: "Increases evasion in rain" }]),
+        worldSkillName: "Stream Fisher",
+        worldSkillDescription: "Finds rare water items and assists in river crossing.",
+        abilitiesJson: JSON.stringify([{ abilityId: "water_pulse", unlockLevel: 1 }, { abilityId: "tidal_wave", unlockLevel: 8 }]),
+        flavor: "Playful aquatic mammal capable of water jet propulsion.",
+        tag: "BEAST",
+        tagColor: "#38bdf8",
+        stage: "BASIC",
+        isStarter: true,
+        isWildSpawn: true,
+        isActive: true,
+        sortOrder: 2,
+        spriteOverworld: "/sprites/creatures/aqua_otter.png",
+      },
+      {
+        slug: "beast_verdant_sprout",
+        name: "Verdant Sprout",
+        dexNumber: 3,
+        typePrimary: "Nature",
+        typeSecondary: "Earth",
+        baseHp: 55,
+        physicalPower: 45,
+        physicalDefense: 60,
+        abilityPower: 45,
+        abilityDefense: 60,
+        combatTempo: 85,
+        catchRate: 0.5,
+        starterLevel: 5,
+        passivesJson: JSON.stringify([{ id: "photosynthesis", name: "Photosynthesis", description: "Regenerates HP in sunlight" }]),
+        worldSkillName: "Herbal Sense",
+        worldSkillDescription: "Detects hidden foraging nodes across fields and forests.",
+        abilitiesJson: JSON.stringify([{ abilityId: "seed_shot", unlockLevel: 1 }, { abilityId: "root_bind", unlockLevel: 8 }]),
+        flavor: "A resilient nature creature that draws vitality from the earth.",
+        tag: "BEAST",
+        tagColor: "#22c55e",
+        stage: "BASIC",
+        isStarter: true,
+        isWildSpawn: true,
+        isActive: true,
+        sortOrder: 3,
+        spriteOverworld: "/sprites/creatures/verdant_sprout.png",
+      },
+      // Monsters (Hostile Enemies)
+      {
+        slug: "monster_abyssal_fiend",
+        name: "Abyssal Fiend",
+        dexNumber: 101,
+        typePrimary: "Shadow",
+        typeSecondary: "Fire",
+        baseHp: 120,
+        physicalPower: 65,
+        physicalDefense: 45,
+        abilityPower: 70,
+        abilityDefense: 40,
+        combatTempo: 105,
+        catchRate: 0.0,
+        starterLevel: 10,
+        passivesJson: JSON.stringify([]),
+        worldSkillName: "",
+        worldSkillDescription: "",
+        abilitiesJson: JSON.stringify([{ abilityId: "shadow_claw", unlockLevel: 1 }, { abilityId: "abyssal_flame", unlockLevel: 5 }]),
+        flavor: "Hostile demon scouring dark ruins for unsuspecting prey.",
+        tag: "MONSTER",
+        tagColor: "#dc2626",
+        stage: "ENEMY",
+        isStarter: false,
+        isWildSpawn: true,
+        isActive: true,
+        sortOrder: 101,
+        spriteOverworld: "/sprites/monsters/abyssal_fiend.png",
+      },
+      {
+        slug: "monster_skeleton_warrior",
+        name: "Skeleton Warrior",
+        dexNumber: 102,
+        typePrimary: "Undead",
+        typeSecondary: "None",
+        baseHp: 160,
+        physicalPower: 80,
+        physicalDefense: 70,
+        abilityPower: 20,
+        abilityDefense: 35,
+        combatTempo: 90,
+        catchRate: 0.0,
+        starterLevel: 15,
+        passivesJson: JSON.stringify([]),
+        worldSkillName: "",
+        worldSkillDescription: "",
+        abilitiesJson: JSON.stringify([{ abilityId: "bone_slash", unlockLevel: 1 }, { abilityId: "shield_bash", unlockLevel: 5 }]),
+        flavor: "Ancient armed skeleton guarding subterranean crypts and tombs.",
+        tag: "MONSTER",
+        tagColor: "#94a3b8",
+        stage: "ENEMY",
+        isStarter: false,
+        isWildSpawn: true,
+        isActive: true,
+        sortOrder: 102,
+        spriteOverworld: "/sprites/monsters/skeleton_warrior.png",
+      },
+      {
+        slug: "monster_crypt_lord",
+        name: "Crypt Lord",
+        dexNumber: 103,
+        typePrimary: "Undead",
+        typeSecondary: "Shadow",
+        baseHp: 650,
+        physicalPower: 120,
+        physicalDefense: 110,
+        abilityPower: 95,
+        abilityDefense: 90,
+        combatTempo: 115,
+        catchRate: 0.0,
+        starterLevel: 25,
+        passivesJson: JSON.stringify([]),
+        worldSkillName: "",
+        worldSkillDescription: "",
+        abilitiesJson: JSON.stringify([{ abilityId: "death_strike", unlockLevel: 1 }, { abilityId: "summon_skeletons", unlockLevel: 10 }]),
+        flavor: "Formidable boss ruler of the subterranean shadow crypt.",
+        tag: "BOSS",
+        tagColor: "#7e22ce",
+        stage: "BOSS",
+        isStarter: false,
+        isWildSpawn: false,
+        isActive: true,
+        sortOrder: 103,
+        spriteOverworld: "/sprites/monsters/crypt_lord.png",
+      },
+      // Mercenaries (Recruitable Operatives)
+      {
+        slug: "merc_veteran_guard",
+        name: "Veteran Guard",
+        dexNumber: 201,
+        typePrimary: "Martial",
+        typeSecondary: "None",
+        baseHp: 200,
+        physicalPower: 75,
+        physicalDefense: 85,
+        abilityPower: 20,
+        abilityDefense: 50,
+        combatTempo: 95,
+        catchRate: 0.0,
+        starterLevel: 10,
+        passivesJson: JSON.stringify([{ id: "taunt_aura", name: "Taunt Aura", description: "Redirects monster aggro to self" }]),
+        worldSkillName: "Guard Post",
+        worldSkillDescription: "Defends campsite areas against nocturnal wild attacks.",
+        abilitiesJson: JSON.stringify([{ abilityId: "shield_wall", unlockLevel: 1 }, { abilityId: "cleave", unlockLevel: 5 }]),
+        flavor: "Disciplined guard operative providing defensive frontline protection.",
+        tag: "MERCENARY",
+        tagColor: "#3b82f6",
+        stage: "COMPANION",
+        isStarter: false,
+        isWildSpawn: false,
+        isActive: true,
+        sortOrder: 201,
+        spriteOverworld: "/sprites/npcs/guard.png",
+      },
+      {
+        slug: "merc_shadow_scout",
+        name: "Shadow Scout",
+        dexNumber: 202,
+        typePrimary: "Agility",
+        typeSecondary: "Shadow",
+        baseHp: 140,
+        physicalPower: 90,
+        physicalDefense: 45,
+        abilityPower: 40,
+        abilityDefense: 45,
+        combatTempo: 130,
+        catchRate: 0.0,
+        starterLevel: 12,
+        passivesJson: JSON.stringify([{ id: "stealth_strike", name: "Stealth Strike", description: "Guaranteed critical strike on opener" }]),
+        worldSkillName: "Tracking",
+        worldSkillDescription: "Highlights rare monster locations on the mini-map.",
+        abilitiesJson: JSON.stringify([{ abilityId: "poison_arrow", unlockLevel: 1 }, { abilityId: "smoke_bomb", unlockLevel: 5 }]),
+        flavor: "Nimble marksman specializing in critical strikes and reconnaissance.",
+        tag: "MERCENARY",
+        tagColor: "#64748b",
+        stage: "COMPANION",
+        isStarter: false,
+        isWildSpawn: false,
+        isActive: true,
+        sortOrder: 202,
+        spriteOverworld: "/sprites/npcs/scout.png",
+      },
+      {
+        slug: "merc_mystic_healer",
+        name: "Mystic Healer",
+        dexNumber: 203,
+        typePrimary: "Holy",
+        typeSecondary: "Magic",
+        baseHp: 130,
+        physicalPower: 30,
+        physicalDefense: 40,
+        abilityPower: 85,
+        abilityDefense: 75,
+        combatTempo: 100,
+        catchRate: 0.0,
+        starterLevel: 12,
+        passivesJson: JSON.stringify([{ id: "restoration_aura", name: "Restoration Aura", description: "Passively heals party members over time" }]),
+        worldSkillName: "Sanctuary",
+        worldSkillDescription: "Cleanses all negative party debuffs when resting.",
+        abilitiesJson: JSON.stringify([{ abilityId: "holy_light", unlockLevel: 1 }, { abilityId: "divine_blessing", unlockLevel: 5 }]),
+        flavor: "Cleric devoted to restoring health and dispelling foul afflictions.",
+        tag: "MERCENARY",
+        tagColor: "#eab308",
+        stage: "COMPANION",
+        isStarter: false,
+        isWildSpawn: false,
+        isActive: true,
+        sortOrder: 203,
+        spriteOverworld: "/sprites/npcs/healer.png",
+      },
+    ];
+
+    for (const c of starterCreatures) {
+      await prisma.creatureDef.upsert({
+        where: { slug: c.slug },
+        create: { ...c, gameId },
+        update: { ...c, gameId },
+      });
+    }
+
+    // ── 7. QUEST TEMPLATES & OBJECTIVES ────────────────────────────────────
+    const starterQuests = [
+      {
+        slug: "quest_the_saints_awakening",
+        title: "The Saint's Awakening",
+        description: "Embark on your journey: consult Elder Marcus, gather copper ore, and defeat wandering fiends.",
+        levelReq: 1,
+        isRepeatable: false,
+        rewards: JSON.stringify({ xp: 250, gold: 100, items: [{ itemSlug: "health_potion_minor", quantity: 3 }] }),
+        objectives: [
+          { stage: 1, type: "TALK", targetSlug: "npc_elder_marcus", requiredQty: 1, description: "Speak with Elder Marcus in the village square" },
+          { stage: 2, type: "GATHER", targetSlug: "copper_ore", requiredQty: 5, description: "Mine 5 Copper Ores from nearby surface veins" },
+          { stage: 3, type: "DEFEAT", targetSlug: "monster_abyssal_fiend", requiredQty: 3, description: "Defeat 3 Abyssal Fiends encroaching on the valley" },
+          { stage: 4, type: "TALK", targetSlug: "npc_elder_marcus", requiredQty: 1, description: "Return to Elder Marcus to claim your reward" },
+        ],
+      },
+      {
+        slug: "quest_beast_whisperer",
+        title: "Beast Whisperer",
+        description: "Form a bond with your first wild companion and learn creature battle fundamentals.",
+        levelReq: 3,
+        isRepeatable: false,
+        rewards: JSON.stringify({ xp: 350, gold: 150, items: [{ itemSlug: "aquatic_charm", quantity: 1 }] }),
+        objectives: [
+          { stage: 1, type: "TALK", targetSlug: "npc_beastmaster_aria", requiredQty: 1, description: "Consult Beastmaster Aria" },
+          { stage: 2, type: "CAPTURE", targetSlug: "beast_ember_fox", requiredQty: 1, description: "Capture an Ember Fox in the wilderness" },
+          { stage: 3, type: "TALK", targetSlug: "npc_beastmaster_aria", requiredQty: 1, description: "Report your successful bond to Aria" },
+        ],
+      },
+      {
+        slug: "quest_shadow_crypt_purification",
+        title: "Purification of the Shadow Crypt",
+        description: "Infiltrate the subterranean crypt and destroy the Crypt Lord commanding the undead horde.",
+        levelReq: 10,
+        isRepeatable: true,
+        rewards: JSON.stringify({ xp: 1200, gold: 500, items: [{ itemSlug: "iron_bar", quantity: 5 }] }),
+        objectives: [
+          { stage: 1, type: "ENTER_INSTANCE", targetSlug: "dungeon_shadow_crypt", requiredQty: 1, description: "Form a party and enter the Shadow Crypt instance" },
+          { stage: 2, type: "DEFEAT", targetSlug: "monster_skeleton_warrior", requiredQty: 5, description: "Destroy 5 Skeleton Warriors in the crypt halls" },
+          { stage: 3, type: "DEFEAT", targetSlug: "monster_crypt_lord", requiredQty: 1, description: "Slay the Crypt Lord in the inner sanctum" },
+        ],
+      },
+    ];
+
+    for (const q of starterQuests) {
+      const { objectives, ...questData } = q;
+      await prisma.questTemplate.upsert({
+        where: { slug: q.slug },
+        create: {
+          ...questData,
+          gameId,
+          objectives: {
+            create: objectives,
+          },
+        },
+        update: {
+          ...questData,
+          gameId,
+          objectives: {
+            deleteMany: {},
+            create: objectives,
+          },
+        },
       });
     }
 

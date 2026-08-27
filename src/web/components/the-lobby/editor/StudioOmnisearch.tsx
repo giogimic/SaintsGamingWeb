@@ -208,7 +208,14 @@ export function StudioOmnisearch({ open, onClose }: { open: boolean; onClose: ()
                 const loaded = ensureMapHasStudioTilesets(await loadMap(mapId));
                 useGameStore.getState().setCurrentMapId(mapId);
                 useGameStore.getState().setActiveMapData(loaded);
-                useGameStore.getState().showToast(`Warped to ${map.name || mapId}`);
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(
+                    new CustomEvent('studio_open_map_tab', {
+                      detail: { mapId, mapName: map.name || mapId },
+                    })
+                  );
+                }
+                useGameStore.getState().showToast(`Opened ${map.name || mapId} in workspace`);
               } catch {
                 useGameStore.getState().showToast(`Failed to load map ${mapId}`);
               }

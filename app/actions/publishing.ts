@@ -41,8 +41,8 @@ export async function validateWorldForPublish(
 
     // 2. Query all templates for baseline integrity
     const [dungeons, shops, mounts, events, simulations] = await Promise.all([
-      prisma.dungeonTemplate.findMany({ where: { gameId, profileId } }),
-      prisma.shopTemplate.findMany({ where: { gameId, profileId } }),
+      prisma.dungeonTemplate.findMany({ where: { gameId, profileId }, include: { mapReferences: true } }),
+      prisma.shopTemplate.findMany({ where: { gameId, profileId }, include: { inventory: true } }),
       prisma.mountTemplate.findMany({ where: { gameId, profileId } }),
       prisma.worldEventTemplate.findMany({ where: { gameId, profileId } }),
       prisma.simulationPreset.findMany({ where: { gameId, profileId } }),
@@ -56,25 +56,15 @@ export async function validateWorldForPublish(
 
     // Check shop item pricing
     for (const shop of shops) {
-      try {
-        const items = JSON.parse(shop.itemsSoldData || "[]");
-        if (Array.isArray(items) && items.length === 0) {
-          warnings.push(`Shop "${shop.slug}" has no items configured in stock.`);
-        }
-      } catch {
-        errors.push(`Shop "${shop.slug}" has invalid itemsSoldData JSON.`);
+      if (!shop.inventory || shop.inventory.length === 0) {
+        warnings.push(`Shop "${shop.slug}" has no items configured in stock.`);
       }
     }
 
     // Check dungeon map references
     for (const d of dungeons) {
-      try {
-        const maps = JSON.parse(d.mapReferences || "[]");
-        if (!Array.isArray(maps) || maps.length === 0) {
-          warnings.push(`Dungeon "${d.slug}" has no map references configured.`);
-        }
-      } catch {
-        errors.push(`Dungeon "${d.slug}" has invalid mapReferences JSON.`);
+      if (!d.mapReferences || d.mapReferences.length === 0) {
+        warnings.push(`Dungeon "${d.slug}" has no map references configured.`);
       }
     }
 

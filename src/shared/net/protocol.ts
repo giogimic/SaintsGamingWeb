@@ -60,6 +60,24 @@ export const RealtimeEvents = {
   PARTY_LEAVE: "party_leave",
   PARTY_UPDATE: "party_update",
 
+  // Dungeons & Instancing
+  DUNGEON_CREATE: "dungeon_create",
+  DUNGEON_WARP: "dungeon_warp",
+  DUNGEON_OBJECTIVE_UPDATE: "dungeon_objective_update",
+  DUNGEON_COMPLETED: "dungeon_completed",
+
+  // World Events & Dynamic Realm Mutations
+  WORLD_EVENT_STARTED: "world_event_started",
+  WORLD_EVENT_ENDED: "world_event_ended",
+
+  // Direct Player-to-Player Trading
+  TRADE_REQUEST: "trade_request",
+  TRADE_UPDATE: "trade_update",
+  TRADE_ACCEPT: "trade_accept",
+  TRADE_CONFIRM: "trade_confirm",
+  TRADE_COMPLETE: "trade_complete",
+  TRADE_CANCEL: "trade_cancel",
+
   // Studio Collaboration
   PAINT_TILES: "paint_tiles",
   TILE_CHANGED: "tile_changed",
