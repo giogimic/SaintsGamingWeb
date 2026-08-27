@@ -27,7 +27,19 @@ export type StudioDockId =
   | "prefab"
   | "atlas"
   | "problems"
-  | "gameplay";
+  | "gameplay"
+  | "tileset"
+  | "logic"
+  | "streaming"
+  | "settings"
+  | "dungeons"
+  | "shop"
+  | "mounts"
+  | "worldevent"
+  | "simulation"
+  | "publishing"
+  | "professions"
+  | "recipes";
 
 /** Minimum level to enter `/studio` and use create docks (= ADMIN). */
 export const STUDIO_ENTRY_LEVEL = 400;
@@ -60,6 +72,18 @@ export const STUDIO_DOCK_MIN_LEVEL: Record<StudioDockId, number> = {
   problems: STUDIO_ENTRY_LEVEL,
   gameplay: STUDIO_ENTRY_LEVEL,
   dev: STUDIO_SERVER_CONTROLS_LEVEL,
+  tileset: STUDIO_ENTRY_LEVEL,
+  logic: STUDIO_ENTRY_LEVEL,
+  streaming: STUDIO_ENTRY_LEVEL,
+  settings: STUDIO_ENTRY_LEVEL,
+  dungeons: STUDIO_ENTRY_LEVEL,
+  shop: STUDIO_ENTRY_LEVEL,
+  mounts: STUDIO_ENTRY_LEVEL,
+  worldevent: STUDIO_ENTRY_LEVEL,
+  simulation: STUDIO_ENTRY_LEVEL,
+  publishing: STUDIO_ENTRY_LEVEL,
+  professions: STUDIO_ENTRY_LEVEL,
+  recipes: STUDIO_ENTRY_LEVEL,
 };
 
 export function canEnterStudio(permissionLevel: number | null | undefined): boolean {

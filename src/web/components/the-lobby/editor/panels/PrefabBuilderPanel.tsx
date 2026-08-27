@@ -109,8 +109,8 @@ export const PrefabBuilderPanel: React.FC = () => {
   const hasSelection = selectionStart && selectionEnd;
 
   const sidebar = (
-    <div className="flex flex-col h-full bg-slate-900 border-r border-slate-700 w-56 text-xs text-slate-300">
-      <div className="p-3 border-b border-slate-700 bg-slate-800/50 flex flex-col gap-2">
+    <div className="flex flex-col h-full bg-transparent border-r border-[#806f47]/30 w-56 text-xs text-slate-300">
+      <div className="p-3 border-b border-[#806f47]/30 bg-slate-800/50 flex flex-col gap-2">
         <button
           onClick={() => {
             setBrushMode(isSelecting ? 'paint' : 'select');
@@ -135,7 +135,7 @@ export const PrefabBuilderPanel: React.FC = () => {
                   placeholder="Prefab Name..."
                   value={newPrefabName}
                   onChange={(e) => setNewPrefabName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1"
+                  className="w-full bg-transparent border border-[#806f47]/30 rounded px-2 py-1"
                 />
                 <button
                   onClick={handleSaveSelection}

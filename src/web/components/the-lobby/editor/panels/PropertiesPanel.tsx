@@ -294,7 +294,7 @@ export const PropertiesPanel: React.FC = () => {
               className={`rounded border px-2 py-1.5 text-left transition-all ${
                 componentKind === p.kind
                   ? 'border-[#cbb26a] bg-[#806f47]/25 text-white'
-                  : 'border-slate-800 bg-[#050b14] text-slate-300 hover:border-[#806f47]/40'
+                  : 'border-[#806f47]/20 bg-[#050b14] text-slate-300 hover:border-[#806f47]/40'
               }`}
               title={p.description}
             >
@@ -357,7 +357,7 @@ export const PropertiesPanel: React.FC = () => {
           <select
             value={warpCategory}
             onChange={(e) => setWarpCategory(e.target.value as any)}
-            className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-slate-200 text-[10px]"
+            className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1 text-slate-200 text-[10px]"
           >
             <option value="CUSTOM">Custom Warp (Classic)</option>
             <option value="ATLAS_NORTH">🧭 Atlas North Gate (Northern Map Boundary)</option>
@@ -378,7 +378,7 @@ export const PropertiesPanel: React.FC = () => {
           type="text"
           value={warpTarget}
           onChange={(e) => setWarpTarget(e.target.value)}
-          className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1"
+          className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1"
         />
         <div className="flex items-end gap-1">
           <div className="flex-1 grid grid-cols-2 gap-1">
@@ -388,7 +388,7 @@ export const PropertiesPanel: React.FC = () => {
                 type="number"
                 value={warpSpawnX}
                 onChange={(e) => setWarpSpawnX(Number(e.target.value))}
-                className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
               />
             </div>
             <div>
@@ -397,7 +397,7 @@ export const PropertiesPanel: React.FC = () => {
                 type="number"
                 value={warpSpawnY}
                 onChange={(e) => setWarpSpawnY(Number(e.target.value))}
-                className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
               />
             </div>
           </div>
@@ -433,7 +433,7 @@ export const PropertiesPanel: React.FC = () => {
         {mapGates.length > 0 && (
           <div className="max-h-24 space-y-1 overflow-y-auto text-[10px]">
             {mapGates.map((g, idx) => (
-              <div key={`${g.id}_${idx}`} className="rounded border border-slate-800 bg-[#050b14] px-2 py-1 text-slate-300">
+              <div key={`${g.id}_${idx}`} className="rounded border border-[#806f47]/20 bg-[#050b14] px-2 py-1 text-slate-300">
                 ({g.position.x},{g.position.y}) → {g.targetMapId}
               </div>
             ))}
@@ -458,7 +458,7 @@ export const PropertiesPanel: React.FC = () => {
                 className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left ${
                   brushId === tile.id
                     ? 'border-[#cbb26a] bg-[#806f47]/20 text-white'
-                    : 'border-slate-800 bg-[#050b14] text-slate-300 hover:border-[#806f47]/40'
+                    : 'border-[#806f47]/20 bg-[#050b14] text-slate-300 hover:border-[#806f47]/40'
                 }`}
               >
                 <span className={`h-3 w-3 shrink-0 rounded-sm ${tile.color || 'bg-slate-600'}`} />
@@ -502,7 +502,7 @@ export const PropertiesPanel: React.FC = () => {
               type="text"
               value={selectedSpecies}
               onChange={(e) => setSelectedSpecies(e.target.value)}
-              className="bg-[#050b14] border border-slate-700 rounded px-1 py-1 text-slate-200"
+              className="bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1 text-slate-200"
               placeholder="species_slug"
             />
             <div className="flex gap-1">
@@ -510,14 +510,14 @@ export const PropertiesPanel: React.FC = () => {
                 type="number"
                 value={minLevel}
                 onChange={(e) => setMinLevel(parseInt(e.target.value))}
-                className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
                 placeholder="Min"
               />
               <input
                 type="number"
                 value={maxLevel}
                 onChange={(e) => setMaxLevel(parseInt(e.target.value))}
-                className="w-full bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
                 placeholder="Max"
               />
             </div>
@@ -526,14 +526,14 @@ export const PropertiesPanel: React.FC = () => {
                 type="number"
                 value={weight}
                 onChange={(e) => setWeight(parseInt(e.target.value))}
-                className="w-1/2 bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+                className="w-1/2 bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
                 placeholder="Weight"
                 title="Spawn Weight (higher = more common)"
               />
               <select
                 value={timeOfDay}
                 onChange={(e) => setTimeOfDay(e.target.value as 'any'|'day'|'night')}
-                className="w-1/2 bg-[#050b14] border border-slate-700 rounded px-1 py-1 text-slate-300"
+                className="w-1/2 bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1 text-slate-300"
               >
                 <option value="any">Any Time</option>
                 <option value="day">Day Only</option>
@@ -560,7 +560,7 @@ export const PropertiesPanel: React.FC = () => {
         <select
           value={componentKind}
           onChange={(e) => setComponentKind(e.target.value as LogicComponentKind)}
-          className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1.5 text-slate-200"
+          className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1.5 text-slate-200"
         >
           {LOGIC_COMPONENT_PRESETS.map((p) => (
             <option key={p.kind} value={p.kind}>
@@ -576,13 +576,13 @@ export const PropertiesPanel: React.FC = () => {
             type="number"
             value={templateId}
             onChange={(e) => setTemplateId(parseInt(e.target.value) || 20)}
-            className="w-16 bg-[#050b14] border border-slate-700 rounded px-1 py-1 text-center"
+            className="w-16 bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1 text-center"
           />
           <input
             type="text"
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            className="flex-1 bg-[#050b14] border border-slate-700 rounded px-1 py-1"
+            className="flex-1 bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
           />
         </div>
 
@@ -600,7 +600,7 @@ export const PropertiesPanel: React.FC = () => {
                         [f.key]: e.target.value,
                       }))
                     }
-                    className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-[11px]"
+                    className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1 text-[11px]"
                   >
                     {f.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -619,7 +619,7 @@ export const PropertiesPanel: React.FC = () => {
                         [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value,
                       }))
                     }
-                    className="w-full bg-[#050b14] border border-slate-700 rounded px-2 py-1 text-[11px]"
+                    className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1 text-[11px]"
                   />
                 )}
                 {f.key === 'lootPoolId' && (
@@ -659,7 +659,7 @@ export const PropertiesPanel: React.FC = () => {
           {showAdvancedJson ? 'Hide' : 'Show'} advanced action preview
         </button>
         {showAdvancedJson && (
-          <pre className="max-h-24 overflow-auto rounded bg-black/50 p-2 text-[9px] text-slate-400">
+          <pre className="max-h-24 overflow-auto rounded bg-black/50/50 p-2 text-[9px] text-slate-400">
             {JSON.stringify(
               {
                 onInteractAction: preset.onInteractAction,

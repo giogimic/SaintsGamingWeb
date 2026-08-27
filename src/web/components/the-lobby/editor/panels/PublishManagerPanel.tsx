@@ -133,7 +133,7 @@ export const PublishManagerPanel: React.FC = () => {
             type="button"
             onClick={runValidation}
             disabled={validating}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-[#806f47]/30 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${validating ? 'animate-spin' : ''}`} />
             <span>Re-validate</span>
@@ -150,7 +150,7 @@ export const PublishManagerPanel: React.FC = () => {
       </div>
 
       {/* ── Validation Gate Status Banner ───────────────── */}
-      <div className="rounded-xl border border-slate-800 bg-[#0a1120] p-4 space-y-3">
+      <div className="rounded-xl border border-[#806f47]/20 bg-[#0a1120] p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -222,7 +222,7 @@ export const PublishManagerPanel: React.FC = () => {
         {loadingSnapshots ? (
           <div className="text-slate-500 text-center py-6">Loading snapshot history...</div>
         ) : snapshots.length === 0 ? (
-          <div className="rounded-xl border border-slate-800 bg-[#0a1120] p-8 text-center text-slate-500 space-y-2">
+          <div className="rounded-xl border border-[#806f47]/20 bg-[#0a1120] p-8 text-center text-slate-500 space-y-2">
             <Package className="w-8 h-8 text-slate-600 mx-auto" />
             <p>No snapshots published yet.</p>
             <p className="text-[10px] text-slate-600">
@@ -242,7 +242,7 @@ export const PublishManagerPanel: React.FC = () => {
               return (
                 <div
                   key={snap.id}
-                  className="rounded-xl border border-slate-800 bg-[#0a1120] p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                  className="rounded-xl border border-[#806f47]/20 bg-[#0a1120] p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-[#806f47]/30 transition-colors"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export const PublishManagerPanel: React.FC = () => {
                     type="button"
                     onClick={() => handleRollback(snap)}
                     disabled={isRollingBack}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-500/40 text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer"
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-300 border border-[#806f47]/30 hover:border-rose-500/40 text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer"
                     title="Restore world templates to this snapshot version"
                   >
                     <RotateCcw className={`w-3 h-3 ${isRollingBack ? 'animate-spin' : ''}`} />
@@ -299,12 +299,12 @@ export const PublishManagerPanel: React.FC = () => {
 
       {/* ── Create Release Modal ───────────────────────── */}
       {showPublishModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 bg-black/50/80 flex items-center justify-center p-4 backdrop-blur-sm">
           <form
             onSubmit={handlePublish}
-            className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col w-full max-w-lg overflow-hidden font-mono text-xs"
+            className="bg-transparent border border-[#806f47]/30 rounded-xl shadow-2xl flex flex-col w-full max-w-lg overflow-hidden font-mono text-xs"
           >
-            <div className="px-5 py-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+            <div className="px-5 py-4 border-b border-[#806f47]/20 bg-transparent flex items-center justify-between">
               <span className="font-bold text-slate-100 flex items-center gap-2 text-sm">
                 <UploadCloud className="w-4 h-4 text-amber-400" />
                 Publish Release Snapshot
@@ -333,7 +333,7 @@ export const PublishManagerPanel: React.FC = () => {
                   value={titleInput}
                   onChange={(e) => setTitleInput(e.target.value)}
                   placeholder="e.g. Copper Mines & Mount Expansion"
-                  className="rounded bg-black/50 px-2.5 py-1.5 border border-slate-700 text-slate-200 text-xs"
+                  className="rounded bg-black/50/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs"
                 />
               </label>
 
@@ -344,7 +344,7 @@ export const PublishManagerPanel: React.FC = () => {
                   value={versionInput}
                   onChange={(e) => setVersionInput(e.target.value)}
                   placeholder="e.g. v1.1.0 (auto-generated if empty)"
-                  className="rounded bg-black/50 px-2.5 py-1.5 border border-slate-700 text-slate-200 text-xs font-mono"
+                  className="rounded bg-black/50/50 px-2.5 py-1.5 border border-[#806f47]/30 text-slate-200 text-xs font-mono"
                 />
               </label>
 
@@ -354,12 +354,12 @@ export const PublishManagerPanel: React.FC = () => {
                   value={descInput}
                   onChange={(e) => setDescInput(e.target.value)}
                   placeholder="Summary of changes included in this release..."
-                  className="rounded bg-black/50 px-2.5 py-2 border border-slate-700 text-slate-200 text-xs min-h-[80px]"
+                  className="rounded bg-black/50/50 px-2.5 py-2 border border-[#806f47]/30 text-slate-200 text-xs min-h-[80px]"
                 />
               </label>
             </div>
 
-            <div className="px-5 py-3 border-t border-slate-800 bg-slate-950 flex items-center justify-end gap-2">
+            <div className="px-5 py-3 border-t border-[#806f47]/20 bg-transparent flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowPublishModal(false)}

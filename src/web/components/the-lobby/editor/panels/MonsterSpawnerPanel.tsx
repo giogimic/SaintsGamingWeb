@@ -183,7 +183,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
 
   const formSection = (
     <div className="space-y-4">
-      <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+      <div className="p-3 bg-transparent/50 rounded-xl border border-[#806f47]/20">
         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
           Placement Location
         </label>
@@ -194,7 +194,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
               type="number"
               value={spawnX}
               onChange={(e) => setSpawnX(parseInt(e.target.value) || 0)}
-              className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
+              className="w-full bg-black/50/40 border border-[#806f47]/20 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
             />
           </div>
           <div className="flex-1">
@@ -203,7 +203,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
               type="number"
               value={spawnY}
               onChange={(e) => setSpawnY(parseInt(e.target.value) || 0)}
-              className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
+              className="w-full bg-black/50/40 border border-[#806f47]/20 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
             />
           </div>
         </div>
@@ -212,7 +212,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
         </p>
       </div>
 
-      <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+      <div className="p-3 bg-transparent/50 rounded-xl border border-[#806f47]/20">
         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
           Spawner Identity
         </label>
@@ -222,13 +222,13 @@ export const MonsterSpawnerPanel: React.FC = () => {
             type="text"
             value={(entityProps.name as string) || ''}
             onChange={(e) => onFieldChange('name', e.target.value)}
-            className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
+            className="w-full bg-black/50/40 border border-[#806f47]/20 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
           />
         </div>
       </div>
 
       {preset?.fields && preset.fields.length > 0 && (
-        <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+        <div className="p-3 bg-transparent/50 rounded-xl border border-[#806f47]/20">
           <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">
             Spawner Configuration
           </label>
@@ -255,7 +255,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
                     <select
                       value={String(entityProps.monsterPool || 'slime')}
                       onChange={(e) => onFieldChange('monsterPool', e.target.value)}
-                      className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-rose-500/50 cursor-pointer"
+                      className="w-full bg-black/50/40 border border-[#806f47]/20 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-rose-500/50 cursor-pointer"
                     >
                       {creatures.map((c) => (
                         <option key={c.slug} value={c.slug}>
@@ -268,7 +268,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
                   <select
                     value={String(entityProps[f.key] ?? f.defaultValue)}
                     onChange={(e) => onFieldChange(f.key, e.target.value)}
-                    className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
+                    className="w-full bg-black/50/40 border border-[#806f47]/20 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
                   >
                     {f.options.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -286,7 +286,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
                         f.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value
                       )
                     }
-                    className="w-full bg-black/40 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
+                    className="w-full bg-black/50/40 border border-[#806f47]/20 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-rose-500/50"
                   />
                 )}
               </div>
@@ -356,7 +356,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
           className={`w-full text-left px-3 py-2 rounded-lg text-sm flex flex-col gap-1 transition-colors ${
             selectedId === spawner.id
               ? 'bg-rose-500/20 border border-rose-500/30 text-rose-300'
-              : 'hover:bg-slate-800/50 text-slate-300 border border-transparent'
+              : 'hover:bg-white/5/50 text-slate-300 border border-transparent'
           }`}
         >
           <div className="font-medium truncate">{spawner.name}</div>

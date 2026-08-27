@@ -364,7 +364,7 @@ export function StudioProblemsPanel() {
             className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
               activeTab === 'map'
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm'
-                : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-slate-200'
             }`}
           >
             Map Topology ({mapProblems.length})
@@ -375,7 +375,7 @@ export function StudioProblemsPanel() {
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
               activeTab === 'runtime_assets'
                 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm'
-                : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-slate-200'
             }`}
           >
             <Sparkles className="w-3 h-3 text-cyan-400" />
@@ -387,7 +387,7 @@ export function StudioProblemsPanel() {
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border cursor-pointer ${
               activeTab === 'references'
                 ? 'bg-blue-500/20 text-blue-300 border-blue-500/50 shadow-sm'
-                : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'
+                : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-slate-200'
             }`}
           >
             <Link2 className="w-3 h-3 text-blue-400" />

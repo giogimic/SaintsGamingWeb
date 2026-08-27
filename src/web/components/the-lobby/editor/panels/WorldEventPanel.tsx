@@ -186,7 +186,7 @@ export const WorldEventPanel: React.FC = () => {
               disabled={!!activeSlug}
               value={formData.slug}
               onChange={(e) => handleChange('slug', e.target.value)}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 disabled:opacity-50"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20 disabled:opacity-50"
               placeholder="e.g. nightfall"
             />
           </label>
@@ -198,7 +198,7 @@ export const WorldEventPanel: React.FC = () => {
               onChange={(e) => handleChange('name', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20"
               placeholder="e.g. Nightfall"
             />
           </label>
@@ -211,7 +211,7 @@ export const WorldEventPanel: React.FC = () => {
             onChange={(e) => handleChange('description', e.target.value)}
             onFocus={onFieldFocus}
             onBlur={onFieldBlur}
-            className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800 min-h-[60px]"
+            className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20 min-h-[60px]"
           />
         </label>
 
@@ -234,7 +234,7 @@ export const WorldEventPanel: React.FC = () => {
               onChange={(e) => handleChange('scheduleCron', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-blue-300 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-blue-300 border border-[#806f47]/20"
               placeholder="0 20 * * *"
             />
             <span className="text-[10px] text-slate-500 font-normal">e.g. &quot;0 20 * * *&quot; for 8 PM daily</span>
@@ -247,7 +247,7 @@ export const WorldEventPanel: React.FC = () => {
               onChange={(e) => handleChange('durationSeconds', parseInt(e.target.value) || 0)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20"
             />
             <span className="text-[10px] text-slate-500 font-normal">How long the event lasts (3600 = 1 hr)</span>
           </label>
@@ -262,7 +262,7 @@ export const WorldEventPanel: React.FC = () => {
               onChange={(e) => handleChange('mutationsData', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-2 font-mono text-slate-200 border border-slate-800 h-full min-h-[200px] resize-none"
+              className="rounded bg-black/50/50 px-2 py-2 font-mono text-slate-200 border border-[#806f47]/20 h-full min-h-[200px] resize-none"
               placeholder={'{\n  "spawnRateMult": 2.0,\n  "weather": "night",\n  "monsterStrengthMult": 1.2\n}'}
             />
             <span className="text-[10px] text-slate-500 font-normal">Key-value pairs that modify global world state while the event is active.</span>

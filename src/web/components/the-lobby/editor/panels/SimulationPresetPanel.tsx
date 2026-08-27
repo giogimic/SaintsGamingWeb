@@ -186,7 +186,7 @@ export const SimulationPresetPanel: React.FC = () => {
               disabled={!!activeSlug}
               value={formData.slug}
               onChange={(e) => handleChange('slug', e.target.value)}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 disabled:opacity-50"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20 disabled:opacity-50"
               placeholder="e.g. hardcore_mode"
             />
           </label>
@@ -198,7 +198,7 @@ export const SimulationPresetPanel: React.FC = () => {
               onChange={(e) => handleChange('name', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20"
               placeholder="e.g. Hardcore Mode"
             />
           </label>
@@ -211,7 +211,7 @@ export const SimulationPresetPanel: React.FC = () => {
             onChange={(e) => handleChange('description', e.target.value)}
             onFocus={onFieldFocus}
             onBlur={onFieldBlur}
-            className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800 min-h-[60px]"
+            className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20 min-h-[60px]"
           />
         </label>
 

@@ -92,7 +92,7 @@ export function RealmSettingsPanel() {
   return (
     <div className="flex flex-col h-full bg-[#050b14]/95 text-slate-200 font-mono text-xs overflow-hidden">
       {/* Top Header */}
-      <div className="flex items-center justify-between p-3 border-b border-amber-500/20 bg-black/40 shrink-0">
+      <div className="flex items-center justify-between p-3 border-b border-amber-500/20 bg-black/50/40 shrink-0">
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-amber-400" />
           <span className="font-bold text-white uppercase tracking-wider text-[11px]">Server & Game Settings</span>
@@ -138,7 +138,7 @@ export function RealmSettingsPanel() {
       )}
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex border-b border-slate-800 bg-[#070e1a]/80 p-1 gap-1 text-[11px] shrink-0">
+      <div className="flex border-b border-[#806f47]/20 bg-[#070e1a]/80 p-1 gap-1 text-[11px] shrink-0">
         {[
           { id: 'heroes', label: 'Hero Identity', icon: Shield },
           { id: 'comms', label: 'Soul Link Chat', icon: Radio },
@@ -190,7 +190,7 @@ export function RealmSettingsPanel() {
                   value={settings.playerClassName}
                   onChange={(e) => setSettings({ ...settings, playerClassName: e.target.value })}
                   placeholder="Saint"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
 
@@ -203,13 +203,13 @@ export function RealmSettingsPanel() {
                   value={settings.playerClassNamePlural}
                   onChange={(e) => setSettings({ ...settings, playerClassNamePlural: e.target.value })}
                   placeholder="Saints"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-1.5">
+            <div className="p-3 rounded-xl bg-black/50/20 border border-[#806f47]/20 space-y-1.5">
               <div className="text-[10px] font-bold text-cyan-300 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-cyan-400" /> Live In-Game Preview
               </div>
@@ -249,7 +249,7 @@ export function RealmSettingsPanel() {
                   value={settings.chatTitle}
                   onChange={(e) => setSettings({ ...settings, chatTitle: e.target.value })}
                   placeholder="Soul Link"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-teal-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-teal-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
 
@@ -262,17 +262,17 @@ export function RealmSettingsPanel() {
                   value={settings.motd}
                   onChange={(e) => setSettings({ ...settings, motd: e.target.value })}
                   placeholder="Welcome to Saints MMO — where spirit captures and heroic battles unfold!"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-teal-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-teal-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
                 />
               </div>
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-2">
+            <div className="p-3 rounded-xl bg-black/50/20 border border-[#806f47]/20 space-y-2">
               <div className="text-[10px] font-bold text-teal-300 flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-teal-400" /> Chat Header Preview
               </div>
-              <div className="p-2 rounded bg-black/80 border border-teal-500/30 flex items-center justify-between">
+              <div className="p-2 rounded bg-black/50/80 border border-teal-500/30 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold uppercase tracking-widest text-teal-300 text-[10px]">
                   <Radio className="w-3 h-3 text-teal-400" />
                   <span>{settings.chatTitle || 'Soul Link'}</span>
@@ -306,7 +306,7 @@ export function RealmSettingsPanel() {
                   value={settings.creatureIdentity}
                   onChange={(e) => setSettings({ ...settings, creatureIdentity: e.target.value })}
                   placeholder="Soul"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
 
@@ -319,7 +319,7 @@ export function RealmSettingsPanel() {
                   value={settings.creatureIdentityPlural}
                   onChange={(e) => setSettings({ ...settings, creatureIdentityPlural: e.target.value })}
                   placeholder="Souls"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
 
@@ -332,7 +332,7 @@ export function RealmSettingsPanel() {
                   value={settings.captureToolName}
                   onChange={(e) => setSettings({ ...settings, captureToolName: e.target.value })}
                   placeholder="Camera"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
 
@@ -345,13 +345,13 @@ export function RealmSettingsPanel() {
                   value={settings.captureAmmoName}
                   onChange={(e) => setSettings({ ...settings, captureAmmoName: e.target.value })}
                   placeholder="Film"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-amber-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 rounded-xl bg-black/60 border border-slate-800 space-y-1.5">
+            <div className="p-3 rounded-xl bg-black/50/20 border border-[#806f47]/20 space-y-1.5">
               <div className="text-[10px] font-bold text-amber-300 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-amber-400" /> Encounter Dialogue Preview
               </div>
@@ -385,7 +385,7 @@ export function RealmSettingsPanel() {
                   value={settings.realmName}
                   onChange={(e) => setSettings({ ...settings, realmName: e.target.value })}
                   placeholder="The Lobby"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none"
                 />
               </div>
 
@@ -398,11 +398,11 @@ export function RealmSettingsPanel() {
                   value={settings.realmDescription}
                   onChange={(e) => setSettings({ ...settings, realmDescription: e.target.value })}
                   placeholder="The Lobby ~ Socialize, Battle, Capture, Explore! ~ Coming Soon ~"
-                  className="w-full bg-black/60 border border-slate-700 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
+                  className="w-full bg-black/50/20 border border-[#806f47]/30 focus:border-blue-400 rounded-lg p-2 text-white text-xs outline-none resize-none"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-black/40 border border-slate-800">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-black/50/40 border border-[#806f47]/20">
                 <div>
                   <div className="text-xs font-bold text-white">Allow Guest Access</div>
                   <div className="text-[10px] text-slate-400">Allow unregistered visitors to explore the world as guests.</div>

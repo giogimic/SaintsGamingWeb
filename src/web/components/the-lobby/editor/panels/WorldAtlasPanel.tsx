@@ -269,7 +269,7 @@ export const WorldAtlasPanel: React.FC = () => {
             <span className="text-amber-400">Available Maps</span>
             <span className="text-[10px] text-slate-500 font-normal">{allMaps.length} maps</span>
           </div>
-          <div className="p-2 text-[10px] text-slate-400 bg-black/40 border-b border-amber-500/10">
+          <div className="p-2 text-[10px] text-slate-400 bg-black/50/40 border-b border-amber-500/10">
             Select a map below, then click a grid cell to place it. Adjacent cells auto-wire 4-way border transitions.
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5 custom-scrollbar">
@@ -288,7 +288,7 @@ export const WorldAtlasPanel: React.FC = () => {
                       ? 'bg-amber-500/20 border-amber-400 text-white shadow-lg' 
                       : isPlaced
                       ? 'border-emerald-500/30 bg-emerald-950/30 text-emerald-300 hover:bg-emerald-950/50'
-                      : 'border-slate-800/80 bg-black/40 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                      : 'border-[#806f47]/20/80 bg-black/50/40 text-slate-400 hover:bg-white/5 hover:text-slate-200'
                   }`}
                 >
                   <div className="flex justify-between items-center">
@@ -398,7 +398,7 @@ export const WorldAtlasPanel: React.FC = () => {
                   Grid Position: [{selectedNode.y}, {selectedNode.x}]
                 </span>
                 {activeConnections && (
-                  <div className="flex items-center gap-2 bg-black/60 px-2.5 py-1 rounded-lg border border-amber-500/20 text-[10px]">
+                  <div className="flex items-center gap-2 bg-black/50/20 px-2.5 py-1 rounded-lg border border-amber-500/20 text-[10px]">
                     <span className="text-slate-400 font-bold">Adjacency:</span>
                     <span className={activeConnections.north ? 'text-cyan-300 font-bold' : 'text-slate-600'}>N: {activeConnections.north || '—'}</span>
                     <span className={activeConnections.east ? 'text-cyan-300 font-bold' : 'text-slate-600'}>E: {activeConnections.east || '—'}</span>

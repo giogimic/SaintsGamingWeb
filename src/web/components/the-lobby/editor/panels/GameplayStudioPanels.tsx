@@ -70,15 +70,15 @@ export default function GameplayStudioPanels() {
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#05080e] text-slate-200 font-mono text-xs select-none">
+    <div className="flex flex-col h-full bg-transparent text-slate-200 font-mono text-xs select-none">
       {/* Top Dock Navigation Tabs */}
-      <div className="flex border-b border-slate-800 bg-black/60 px-2 pt-2 gap-1 shrink-0 overflow-x-auto">
+      <div className="flex border-b border-[#806f47]/20 bg-black/50/20 px-2 pt-2 gap-1 shrink-0 overflow-x-auto">
         <button
           onClick={() => setActiveTab('abilities')}
           className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
             activeTab === 'abilities'
-              ? 'bg-amber-500/20 text-amber-300 border-t border-x border-amber-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
           <Sword className="w-3.5 h-3.5" /> Abilities ({abilities.length})
@@ -88,8 +88,8 @@ export default function GameplayStudioPanels() {
           onClick={() => setActiveTab('status')}
           className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
             activeTab === 'status'
-              ? 'bg-rose-500/20 text-rose-300 border-t border-x border-rose-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
           <Activity className="w-3.5 h-3.5" /> Status ({statuses.length})
@@ -99,8 +99,8 @@ export default function GameplayStudioPanels() {
           onClick={() => setActiveTab('skills')}
           className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
             activeTab === 'skills'
-              ? 'bg-cyan-500/20 text-cyan-300 border-t border-x border-cyan-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
           <Sparkles className="w-3.5 h-3.5" /> Skills ({skills.length})
@@ -110,8 +110,8 @@ export default function GameplayStudioPanels() {
           onClick={() => setActiveTab('professions')}
           className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
             activeTab === 'professions'
-              ? 'bg-emerald-500/20 text-emerald-300 border-t border-x border-emerald-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
           <Zap className="w-3.5 h-3.5" /> Professions ({professions.length})
@@ -121,8 +121,8 @@ export default function GameplayStudioPanels() {
           onClick={() => setActiveTab('balance')}
           className={`px-3 py-1.5 rounded-t-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
             activeTab === 'balance'
-              ? 'bg-purple-500/20 text-purple-300 border-t border-x border-purple-500/40'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              ? 'bg-[#cbb26a]/20 text-[#e2d5b3] border-t border-x border-[#cbb26a]/40'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
           }`}
         >
           <Crosshair className="w-3.5 h-3.5" /> Combat Simulator
@@ -135,13 +135,13 @@ export default function GameplayStudioPanels() {
         {activeTab === 'abilities' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-full">
             {/* List */}
-            <div className="border border-slate-800 rounded-xl bg-black/40 p-2.5 flex flex-col space-y-2">
-              <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+            <div className="border border-[#806f47]/20 rounded-xl bg-black/50/40 p-2.5 flex flex-col space-y-2">
+              <div className="flex justify-between items-center pb-2 border-b border-[#806f47]/20">
                 <span className="font-bold text-[11px] text-amber-400">ABILITY REGISTRY</span>
                 <select
                   value={abilityDomainFilter}
                   onChange={(e) => setAbilityDomainFilter(e.target.value)}
-                  className="bg-black border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-300"
+                  className="bg-black/50 border border-[#806f47]/30 rounded px-1.5 py-0.5 text-[10px] text-slate-300"
                 >
                   <option value="all">All Domains</option>
                   <option value="player_rt">Player RT</option>
@@ -158,7 +158,7 @@ export default function GameplayStudioPanels() {
                     className={`w-full text-left p-2 rounded-lg border transition-all cursor-pointer flex justify-between items-center ${
                       selectedAbility?.id === ab.id
                         ? 'border-amber-500 bg-amber-950/30 text-amber-200'
-                        : 'border-slate-800 bg-black/20 hover:border-slate-700 text-slate-300'
+                        : 'border-[#806f47]/20 bg-black/50/20 hover:border-[#806f47]/30 text-slate-300'
                     }`}
                   >
                     <div>
@@ -176,16 +176,16 @@ export default function GameplayStudioPanels() {
             </div>
 
             {/* Inspector */}
-            <div className="md:col-span-2 border border-slate-800 rounded-xl bg-black/40 p-3 flex flex-col justify-between space-y-3">
+            <div className="md:col-span-2 border border-[#806f47]/20 rounded-xl bg-black/50/40 p-3 flex flex-col justify-between space-y-3">
               {selectedAbility ? (
                 <>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-start border-b border-slate-800 pb-2">
+                    <div className="flex justify-between items-start border-b border-[#806f47]/20 pb-2">
                       <div>
                         <h3 className="font-bold text-sm text-amber-300">{selectedAbility.name}</h3>
                         <span className="text-[10px] text-slate-400 font-mono">ID: {selectedAbility.id}</span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-bold uppercase">
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-transparent border border-[#806f47]/30 text-slate-300 font-bold uppercase">
                         {selectedAbility.style}
                       </span>
                     </div>
@@ -195,19 +195,19 @@ export default function GameplayStudioPanels() {
                     </p>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-                      <div className="bg-black/60 p-2 rounded border border-slate-800 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-[#806f47]/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Domain</span>
                         <span className="font-bold text-amber-400">{selectedAbility.domain}</span>
                       </div>
-                      <div className="bg-black/60 p-2 rounded border border-slate-800 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-[#806f47]/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Target</span>
                         <span className="font-bold text-cyan-400">{selectedAbility.target}</span>
                       </div>
-                      <div className="bg-black/60 p-2 rounded border border-slate-800 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-[#806f47]/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Cooldown</span>
                         <span className="font-bold text-slate-300">{selectedAbility.cooldownMs || 0}ms</span>
                       </div>
-                      <div className="bg-black/60 p-2 rounded border border-slate-800 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-[#806f47]/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Accuracy</span>
                         <span className="font-bold text-emerald-400">{selectedAbility.accuracy ?? 100}%</span>
                       </div>
@@ -220,7 +220,7 @@ export default function GameplayStudioPanels() {
                       </span>
                       <div className="space-y-1">
                         {selectedAbility.effects.map((eff, i) => (
-                          <div key={i} className="p-2 rounded bg-black/60 border border-slate-800 text-[11px] flex justify-between">
+                          <div key={i} className="p-2 rounded bg-black/50/20 border border-[#806f47]/20 text-[11px] flex justify-between">
                             <span className="font-bold text-amber-300 uppercase">{eff.type}</span>
                             <span className="text-slate-400 font-mono">
                               {JSON.stringify(eff)}
@@ -231,7 +231,7 @@ export default function GameplayStudioPanels() {
                     </div>
                   </div>
 
-                  <div className="p-2.5 bg-black/60 rounded border border-amber-500/20 flex justify-between items-center text-[10px]">
+                  <div className="p-2.5 bg-black/50/20 rounded border border-amber-500/20 flex justify-between items-center text-[10px]">
                     <span className="text-emerald-400 font-bold flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Canonical Gameplay Registry Synced
                     </span>
@@ -247,8 +247,8 @@ export default function GameplayStudioPanels() {
         {/* STATUS DOCK */}
         {activeTab === 'status' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-full">
-            <div className="border border-slate-800 rounded-xl bg-black/40 p-2.5 space-y-1 overflow-y-auto">
-              <span className="font-bold text-[11px] text-rose-400 pb-2 border-b border-slate-800 block">
+            <div className="border border-[#806f47]/20 rounded-xl bg-black/50/40 p-2.5 space-y-1 overflow-y-auto">
+              <span className="font-bold text-[11px] text-rose-400 pb-2 border-b border-[#806f47]/20 block">
                 STATUS CONDITIONS
               </span>
               {statuses.map((st) => (
@@ -258,21 +258,21 @@ export default function GameplayStudioPanels() {
                   className={`w-full text-left p-2 rounded-lg border transition-all cursor-pointer flex justify-between items-center ${
                     selectedStatus?.id === st.id
                       ? 'border-rose-500 bg-rose-950/30 text-rose-200'
-                      : 'border-slate-800 bg-black/20 hover:border-slate-700 text-slate-300'
+                      : 'border-[#806f47]/20 bg-black/50/20 hover:border-[#806f47]/30 text-slate-300'
                   }`}
                 >
                   <span className="font-bold text-xs">{st.name}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-black border border-slate-800 text-slate-400">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/50 border border-[#806f47]/20 text-slate-400">
                     {st.category}
                   </span>
                 </button>
               ))}
             </div>
 
-            <div className="md:col-span-2 border border-slate-800 rounded-xl bg-black/40 p-3 space-y-3">
+            <div className="md:col-span-2 border border-[#806f47]/20 rounded-xl bg-black/50/40 p-3 space-y-3">
               {selectedStatus && (
                 <>
-                  <div className="flex justify-between items-start border-b border-slate-800 pb-2">
+                  <div className="flex justify-between items-start border-b border-[#806f47]/20 pb-2">
                     <div>
                       <h3 className="font-bold text-sm" style={{ color: selectedStatus.colorHex }}>
                         {selectedStatus.name}
@@ -289,11 +289,11 @@ export default function GameplayStudioPanels() {
                   <p className="text-xs text-slate-300">{selectedStatus.description}</p>
 
                   <div className="grid grid-cols-2 gap-2 pt-2">
-                    <div className="bg-black/60 p-2 rounded border border-slate-800">
+                    <div className="bg-black/50/20 p-2 rounded border border-[#806f47]/20">
                       <span className="text-[9px] text-slate-500 block">RT Duration</span>
                       <span className="font-bold text-slate-200">{selectedStatus.durationMsDefault}ms</span>
                     </div>
-                    <div className="bg-black/60 p-2 rounded border border-slate-800">
+                    <div className="bg-black/50/20 p-2 rounded border border-[#806f47]/20">
                       <span className="text-[9px] text-slate-500 block">TB Turns</span>
                       <span className="font-bold text-slate-200">{selectedStatus.durationTurnsDefault} turns</span>
                     </div>
@@ -310,7 +310,7 @@ export default function GameplayStudioPanels() {
             {skills.map((sk) => (
               <div
                 key={sk.id}
-                className="p-2.5 rounded-xl border border-slate-800 bg-black/40 hover:border-cyan-500/50 transition-all flex flex-col justify-between space-y-2"
+                className="p-2.5 rounded-xl border border-[#806f47]/20 bg-black/50/40 hover:border-cyan-500/50 transition-all flex flex-col justify-between space-y-2"
               >
                 <div>
                   <span className="text-[8px] uppercase tracking-wider text-slate-500 block">
@@ -338,7 +338,7 @@ export default function GameplayStudioPanels() {
             {professions.map((prof) => (
               <div
                 key={prof.id}
-                className="p-3 rounded-xl border border-slate-800 bg-black/40 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-all"
+                className="p-3 rounded-xl border border-[#806f47]/20 bg-black/50/40 flex flex-col justify-between space-y-2 hover:border-[#806f47]/30 transition-all"
                 style={{ borderLeft: `3px solid ${prof.themeColor || '#64748b'}` }}
               >
                 <div>
@@ -355,7 +355,7 @@ export default function GameplayStudioPanels() {
                   <span className="text-slate-500 block">Stations:</span>
                   <div className="flex flex-wrap gap-1">
                     {prof.stationTags.map((st) => (
-                      <span key={st} className="px-1.5 py-0.5 rounded bg-black border border-slate-800 text-slate-300">
+                      <span key={st} className="px-1.5 py-0.5 rounded bg-black/50 border border-[#806f47]/20 text-slate-300">
                         #{st}
                       </span>
                     ))}
@@ -369,7 +369,7 @@ export default function GameplayStudioPanels() {
         {/* BALANCE SIMULATOR DOCK */}
         {activeTab === 'balance' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            <div className="p-4 rounded-xl border border-purple-500/40 bg-black/50 space-y-3">
+            <div className="p-4 rounded-xl border border-purple-500/40 bg-black/50/50 space-y-3">
               <h3 className="font-bold text-xs text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Crosshair className="w-3.5 h-3.5" /> Simulation Parameters
               </h3>
@@ -381,7 +381,7 @@ export default function GameplayStudioPanels() {
                     type="number"
                     value={simLevel}
                     onChange={(e) => setSimLevel(Number(e.target.value))}
-                    className="w-full bg-black border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                    className="w-full bg-black/50 border border-[#806f47]/30 rounded p-1.5 text-xs text-slate-200"
                   />
                 </div>
 
@@ -390,7 +390,7 @@ export default function GameplayStudioPanels() {
                   <select
                     value={simAbilityId}
                     onChange={(e) => setSimAbilityId(e.target.value)}
-                    className="w-full bg-black border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                    className="w-full bg-black/50 border border-[#806f47]/30 rounded p-1.5 text-xs text-slate-200"
                   >
                     {abilities.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -406,7 +406,7 @@ export default function GameplayStudioPanels() {
                     type="number"
                     value={simHp}
                     onChange={(e) => setSimHp(Number(e.target.value))}
-                    className="w-full bg-black border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                    className="w-full bg-black/50 border border-[#806f47]/30 rounded p-1.5 text-xs text-slate-200"
                   />
                 </div>
 
@@ -416,7 +416,7 @@ export default function GameplayStudioPanels() {
                     type="number"
                     value={simDef}
                     onChange={(e) => setSimDef(Number(e.target.value))}
-                    className="w-full bg-black border border-slate-700 rounded p-1.5 text-xs text-slate-200"
+                    className="w-full bg-black/50 border border-[#806f47]/30 rounded p-1.5 text-xs text-slate-200"
                   />
                 </div>
               </div>
@@ -430,7 +430,7 @@ export default function GameplayStudioPanels() {
             </div>
 
             {/* Results */}
-            <div className="p-4 rounded-xl border border-slate-800 bg-black/40 flex flex-col justify-between space-y-3">
+            <div className="p-4 rounded-xl border border-[#806f47]/20 bg-black/50/40 flex flex-col justify-between space-y-3">
               <div>
                 <h3 className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-2">
                   Simulation Projections
@@ -439,19 +439,19 @@ export default function GameplayStudioPanels() {
                 {simReport ? (
                   <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-black/60 p-2 rounded border border-purple-500/20 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-purple-500/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Average Damage</span>
                         <span className="font-bold text-sm text-purple-300">{simReport.avgDamage}</span>
                       </div>
-                      <div className="bg-black/60 p-2 rounded border border-purple-500/20 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-purple-500/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Sustained DPS</span>
                         <span className="font-bold text-sm text-purple-300">{simReport.dps}</span>
                       </div>
-                      <div className="bg-black/60 p-2 rounded border border-purple-500/20 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-purple-500/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Time-to-Kill (TTK)</span>
                         <span className="font-bold text-sm text-emerald-400">{simReport.timeToKillSec}s</span>
                       </div>
-                      <div className="bg-black/60 p-2 rounded border border-purple-500/20 text-center">
+                      <div className="bg-black/50/20 p-2 rounded border border-purple-500/20 text-center">
                         <span className="text-[9px] text-slate-500 block">Est. XP / Hour</span>
                         <span className="font-bold text-sm text-amber-400">{simReport.xpPerHourEstimate}</span>
                       </div>

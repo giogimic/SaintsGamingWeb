@@ -1,3 +1,10 @@
+## [2.1.462] - 2026-08-27
+### Studio Multi-Document Interface (MDI) Restoration
+- **Restored Floating Windowed Workspace**: Stripped away the lexlayout-react engine and restored the DraggablePanel system. Editor tools (World Builder, Tile Selector, etc.) now open as independent, draggable, resizable, and overlapping windows over the map canvas.
+- **Tile Selector Usability Fix**: Addressed pointer-event deadzones caused by previous tab groups. Tool windows now properly intercept clicks while allowing click-through to the Babylon canvas when clicking outside panels.
+- **Unified Inner Tool Tabs**: Reviewed 23 nested studio tools and stripped legacy hardcoded dark backgrounds (g-[#05080e]) and rainbow/generic tailwind tabs, updating them to inherit the unified sg-glass aesthetics (g-[#cbb26a]/20, 	ext-[#e2d5b3]).
+- **Permissions Synced**: Re-registered newly added studio tools to the canUseStudioDock permissions matrix so they successfully launch from the dock.
+
 ## [2.1.460-07] - 2026-08-27
 ### Studio UI Shell, Style Integration & Windowed World Editing Architecture
 - **Global Studio Backdrop Layering**:
@@ -3865,6 +3872,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

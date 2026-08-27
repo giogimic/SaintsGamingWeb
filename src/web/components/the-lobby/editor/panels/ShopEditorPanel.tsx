@@ -202,7 +202,7 @@ export const ShopEditorPanel: React.FC = () => {
               disabled={!!activeSlug}
               value={formData.slug}
               onChange={(e) => handleChange('slug', e.target.value)}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 disabled:opacity-50"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20 disabled:opacity-50"
               placeholder="e.g. global_blacksmith"
             />
           </label>
@@ -214,7 +214,7 @@ export const ShopEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('name', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20"
               placeholder="e.g. Town Blacksmith"
             />
           </label>
@@ -227,7 +227,7 @@ export const ShopEditorPanel: React.FC = () => {
             onChange={(e) => handleChange('description', e.target.value)}
             onFocus={onFieldFocus}
             onBlur={onFieldBlur}
-            className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800 min-h-[60px]"
+            className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20 min-h-[60px]"
           />
         </label>
         
@@ -240,7 +240,7 @@ export const ShopEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('currency', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20"
               placeholder="gold"
             />
             <span className="text-[10px] text-slate-500 font-normal">Default: gold</span>
@@ -253,7 +253,7 @@ export const ShopEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('refreshInterval', parseInt(e.target.value) || 0)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20"
             />
             <span className="text-[10px] text-slate-500 font-normal">0 = Never respawns automatically</span>
           </label>
@@ -267,7 +267,7 @@ export const ShopEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('itemsSoldData', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-2 font-mono text-slate-200 border border-slate-800 h-full min-h-[250px] resize-none"
+              className="rounded bg-black/50/50 px-2 py-2 font-mono text-slate-200 border border-[#806f47]/20 h-full min-h-[250px] resize-none"
               placeholder={'[\n  { "itemId": "iron_sword", "price": 100, "stock": -1 }\n]'}
             />
             <span className="text-[10px] text-slate-500 font-normal">Array of objects: itemId, price, stock (-1 = infinite).</span>
