@@ -136,24 +136,14 @@ export async function getItemDependencies(slug: string) {
       where: {
         OR: [
           { outputItemSlug: slug },
-          { ingredients: { contains: `"${slug}"` } }
+          { ingredients: { some: { itemSlug: slug } } }
         ]
-      }
+      },
+      include: { ingredients: true }
     });
     
-    // We filter exact matches for ingredients to avoid substring matches on other slugs
-    const recipeMatches = recipes.filter(r => {
-      if (r.outputItemSlug === slug) return true;
-      try {
-        const parsed = JSON.parse(r.ingredients);
-        if (Array.isArray(parsed)) {
-          return parsed.some((e: any) => e.itemSlug === slug);
-        }
-      } catch (e) {
-        // ignore invalid json
-      }
-      return false;
-    }).map(r => ({ type: 'Recipe', id: r.slug, name: r.slug }));
+    // We already filtered via the DB query
+    const recipeMatches = recipes.map(r => ({ type: 'Recipe', id: r.slug, name: r.slug }));
 
     return { success: true as const, data: [...lootMatches, ...recipeMatches] };
   } catch (err) {

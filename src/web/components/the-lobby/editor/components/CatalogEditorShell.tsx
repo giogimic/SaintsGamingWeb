@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   FileJson,
 } from 'lucide-react';
+import { Virtuoso } from 'react-virtuoso';
 
 export type CatalogEditorShellProps<T = any> = {
   /** Catalog title (e.g. Creatures, NPCs, Items, Loot). */
@@ -95,23 +96,23 @@ export function CatalogEditorShell<T = any>({
         : false;
 
     return (
-      <div className="flex flex-col h-full bg-[#0b1320] text-[#e2d5b3] font-mono text-[11px] select-none">
+      <div className="flex flex-col h-full bg-background text-foreground font-mono text-[11px] select-none">
         {/* Master Header */}
-        <div className="flex items-center justify-between p-2 bg-[#050b14] border-b border-[#806f47]/30 shrink-0">
+        <div className="flex items-center justify-between p-2 bg-card border-b border-border shrink-0">
           <div className="flex items-center gap-4">
-            <h2 className="text-[13px] font-bold text-[#cbb26a] tracking-wide uppercase">
+            <h2 className="text-[13px] font-bold text-sg-gold tracking-wide uppercase">
               {title}
             </h2>
 
             {onSearchChange && (
               <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-[#806f47]" />
+                <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Search..."
                   value={search ?? ''}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="bg-[#111a2a] border border-[#806f47]/40 rounded pl-7 pr-2 py-1 outline-none focus:border-[#cbb26a] w-48 text-[#e2d5b3]"
+                  className="bg-input border border-border rounded pl-7 pr-2 py-1 outline-none focus:border-sg-gold focus:ring-1 focus:ring-sg-gold/50 w-48 text-foreground transition-all duration-200"
                 />
               </div>
             )}
@@ -149,7 +150,7 @@ export function CatalogEditorShell<T = any>({
             {onCreateNew && (
               <button
                 onClick={onCreateNew}
-                className="flex items-center gap-1.5 px-2 py-1 bg-[#23354f] hover:bg-[#2d4263] border border-[#405c87] rounded transition-colors text-white shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 bg-primary text-primary-foreground hover:bg-primary/90 border border-border rounded transition-all duration-200 shadow-sm cursor-pointer hover:scale-105 active:scale-95 outline-none focus:ring-2 focus:ring-sg-gold/50"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>New</span>
@@ -158,50 +159,55 @@ export function CatalogEditorShell<T = any>({
           </div>
         </div>
 
-        {/* Master Body */}
         <div className="flex flex-1 min-h-0">
           {/* Left item list */}
-          <div className="w-64 border-r border-[#806f47]/30 flex flex-col bg-[#050b14]/50 shrink-0 overflow-y-auto custom-scrollbar">
+          <div className="w-64 border-r border-border flex flex-col bg-muted/30 shrink-0">
             {items.length === 0 ? (
-              <div className="p-4 text-[#806f47]/60 italic text-center">No items found.</div>
+              <div className="p-4 text-muted-foreground italic text-center">No items found.</div>
             ) : (
-              <div className="flex flex-col p-1 gap-0.5">
-                {items.map((item) => {
-                  const id = getItemId(item);
-                  const isActive = id === activeId;
-                  const itemDirty =
-                    typeof isDirty === 'function' ? isDirty(item) : false;
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => onSelect?.(id)}
-                      className={`flex items-center justify-between px-2 py-1.5 rounded text-left transition-colors truncate cursor-pointer ${
-                        isActive
-                          ? 'bg-[#cbb26a]/20 text-[#cbb26a] font-bold shadow-[inset_2px_0_0_#cbb26a]'
-                          : 'hover:bg-[#806f47]/10 text-[#a59981]'
-                      }`}
-                    >
-                      <span className="truncate">{getItemName(item)}</span>
-                      {itemDirty && <span className="text-[#e5c07b] font-bold shrink-0">*</span>}
-                    </button>
-                  );
-                })}
+              <div className="flex-1 min-h-0 relative">
+                <Virtuoso
+                  className="w-full h-full custom-scrollbar absolute inset-0"
+                  data={items}
+                  itemContent={(index, item) => {
+                    const id = getItemId(item);
+                    const isActive = id === activeId;
+                    const itemDirty =
+                      typeof isDirty === 'function' ? isDirty(item) : false;
+                    return (
+                      <div className="px-1 py-0.5">
+                        <button
+                          key={id}
+                          onClick={() => onSelect?.(id)}
+                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded-r text-left transition-colors truncate cursor-pointer ${
+                            isActive
+                              ? 'bg-sg-gold/20 text-sg-gold font-bold border-l-2 border-sg-gold'
+                              : 'hover:bg-accent hover:text-accent-foreground text-muted-foreground border-l-2 border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{getItemName(item)}</span>
+                          {itemDirty && <span className="text-sg-gold font-bold shrink-0">*</span>}
+                        </button>
+                      </div>
+                    );
+                  }}
+                />
               </div>
             )}
           </div>
 
           {/* Right detail view */}
-          <div className="flex-1 flex flex-col min-w-0 bg-[#0b1320]">
+          <div className="flex-1 flex flex-col min-w-0 bg-background">
             {activeId !== null && activeId !== undefined ? (
               <>
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                   {children}
                 </div>
                 {(onSave || onDelete || onRevert || validationError) && (
-                  <div className="flex items-center justify-between p-2 bg-[#050b14] border-t border-[#806f47]/30 shrink-0">
+                  <div className="flex items-center justify-between p-2 bg-card border-t border-border shrink-0">
                     <div className="flex items-center gap-3">
                       {validationError && (
-                        <div className="flex items-center gap-1.5 text-[#e06c75] bg-[#e06c75]/10 px-2 py-1 rounded border border-[#e06c75]/30">
+                        <div className="flex items-center gap-1.5 text-destructive bg-destructive/10 px-2 py-1 rounded border border-destructive/30">
                           <AlertTriangle className="w-3.5 h-3.5" />
                           <span>{validationError}</span>
                         </div>
@@ -211,7 +217,7 @@ export function CatalogEditorShell<T = any>({
                       {onDelete && (
                         <button
                           onClick={onDelete}
-                          className="flex items-center gap-1.5 px-3 py-1 bg-[#1a0b0b] hover:bg-[#331111] text-[#e06c75] border border-[#e06c75]/40 rounded transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/40 rounded transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>Delete</span>
@@ -220,9 +226,9 @@ export function CatalogEditorShell<T = any>({
                       {onRevert && (
                         <button
                           onClick={onRevert}
-                          className="flex items-center gap-1.5 px-3 py-1 bg-[#1a2333] hover:bg-[#23354f] border border-[#806f47]/40 rounded transition-colors cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-1 bg-secondary hover:bg-secondary/80 border border-border rounded transition-colors cursor-pointer text-secondary-foreground"
                         >
-                          <RotateCcw className="w-3.5 h-3.5 text-[#a59981]" />
+                          <RotateCcw className="w-3.5 h-3.5" />
                           <span>Revert</span>
                         </button>
                       )}
@@ -232,8 +238,8 @@ export function CatalogEditorShell<T = any>({
                           disabled={saving}
                           className={`flex items-center gap-1.5 px-4 py-1 rounded font-bold shadow-sm transition-colors cursor-pointer ${
                             saving
-                              ? 'bg-[#1a2333] text-[#5c6370] cursor-not-allowed'
-                              : 'bg-[#cbb26a] text-[#050b14] hover:bg-[#d4c38d] shadow-[0_0_10px_rgba(203,178,106,0.3)]'
+                              ? 'bg-secondary text-muted-foreground cursor-not-allowed'
+                              : 'bg-sg-gold text-background hover:bg-sg-gold-dim shadow-lg shadow-sg-gold/20'
                           }`}
                         >
                           <Save className="w-3.5 h-3.5" />
@@ -245,7 +251,7 @@ export function CatalogEditorShell<T = any>({
                 )}
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-[#806f47]/60 p-8 text-center">
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground p-8 text-center">
                 <FileJson className="w-12 h-12 mb-4 opacity-20" />
                 <p>Select an item from the list to view its properties.</p>
                 <p className="mt-2 text-[10px]">Or click + New to create a blank definition.</p>

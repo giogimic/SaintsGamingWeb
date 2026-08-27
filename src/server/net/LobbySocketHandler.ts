@@ -6,7 +6,7 @@
  */
 
 import type { Server, Socket } from "socket.io";
-import { toBaseMapId } from "../../shared/net/mapIds";
+import { toBaseMapId, isDungeonInstanceId } from "../../shared/net/mapIds";
 import {
   REALTIME_PROTOCOL_VERSION,
   RealtimeEvents,
@@ -18,6 +18,7 @@ import {
   type RuleTracePayload,
 } from "../../shared/net/protocol";
 import { evaluateAndExecuteRule, type RuleDefinition, type RuleEvaluationContext } from "../../shared/game/rules/ruleEngine";
+import { DungeonInstanceManager } from "../../shared/game/instances/dungeonInstanceManager";
 import { SessionManager } from "./SessionManager";
 import { ShardManager } from "./ShardManager";
 import { StudioCollaborationService } from "./StudioCollaborationService";
@@ -45,10 +46,15 @@ export class LobbySocketHandler {
   private shards = new ShardManager();
   private studio = new StudioCollaborationService();
   private chat = new ChatService();
+  private dungeonManager = new DungeonInstanceManager();
 
   constructor(io: Server) {
     this.io = io;
     this.attach();
+  }
+
+  public getDungeonManager(): DungeonInstanceManager {
+    return this.dungeonManager;
   }
 
   private attach() {
@@ -89,12 +95,15 @@ export class LobbySocketHandler {
           const isLobby = Boolean(data?.lobby);
           const isPrivate = Boolean(data?.isPrivate);
           const isPie = Boolean(data?.pie);
+          const isDungeon = isDungeonInstanceId(rawMapId);
 
-          const targetInstanceId = this.shards.resolveInstanceId(baseMapId, playerAccountId, {
-            isLobby,
-            isPrivate,
-            pie: isPie,
-          });
+          const targetInstanceId = isDungeon
+            ? rawMapId
+            : this.shards.resolveInstanceId(baseMapId, playerAccountId, {
+                isLobby,
+                isPrivate,
+                pie: isPie,
+              });
 
           const existingPlayer = this.shards.getPlayer(socket.id);
           const isSoftRejoin = existingPlayer && existingPlayer.instanceId === targetInstanceId;
@@ -378,6 +387,87 @@ export class LobbySocketHandler {
       // --- CONTENT RELOAD ---
       socket.on(RealtimeEvents.CONTENT_RELOAD, (data: any) => {
         this.io.emit(RealtimeEvents.CONTENT_RELOAD, data);
+      });
+
+      // --- DUNGEON & INSTANCING ---
+      socket.on(RealtimeEvents.DUNGEON_CREATE, (data: any) => {
+        try {
+          const player = this.shards.getPlayer(socket.id);
+          const leaderId = player?.accountId || accountId || socket.id;
+          const dungeonSlug = String(data?.dungeonSlug || "dungeon_shadow_crypt");
+          const baseMapId = String(data?.baseMapId || "DUNGEON_SHADOW_CRYPT");
+          const partyId = String(data?.partyId || `party_${leaderId}`);
+          const partyMembers: string[] = Array.isArray(data?.partyMembers) && data.partyMembers.length > 0
+            ? data.partyMembers
+            : [leaderId];
+          const objectives = Array.isArray(data?.objectives) ? data.objectives : [];
+          const durationMinutes = typeof data?.durationMinutes === "number" ? data.durationMinutes : 60;
+
+          const instance = this.dungeonManager.createInstance({
+            dungeonSlug,
+            baseMapId,
+            partyId,
+            leaderId,
+            partyMembers,
+            durationMinutes,
+            objectives,
+          });
+
+          // Warp the creator
+          socket.emit(RealtimeEvents.DUNGEON_WARP, {
+            instanceId: instance.instanceId,
+            baseMapId: instance.baseMapId,
+            dungeonSlug: instance.dungeonSlug,
+            spawnPoint: { x: 12, y: 2 },
+          });
+
+          // Warp all party members in the session pool
+          for (const memberId of partyMembers) {
+            const memberSocketId = this.sessions.getSocketId(memberId);
+            if (memberSocketId && memberSocketId !== socket.id) {
+              this.io.to(memberSocketId).emit(RealtimeEvents.DUNGEON_WARP, {
+                instanceId: instance.instanceId,
+                baseMapId: instance.baseMapId,
+                dungeonSlug: instance.dungeonSlug,
+                spawnPoint: { x: 12, y: 2 },
+              });
+            }
+          }
+        } catch (err) {
+          console.error("[LobbySocket] dungeon_create error:", err);
+        }
+      });
+
+      socket.on(RealtimeEvents.DUNGEON_OBJECTIVE_UPDATE, (data: any) => {
+        try {
+          const instanceId = String(data?.instanceId || "");
+          const objectiveKey = String(data?.objectiveKey || "");
+          const amount = typeof data?.amount === "number" ? data.amount : 1;
+
+          if (!instanceId || !objectiveKey) return;
+
+          const success = this.dungeonManager.updateObjective(instanceId, objectiveKey, amount);
+          const inst = this.dungeonManager.getInstance(instanceId);
+          if (success && inst) {
+            this.io.to(instanceId).emit(RealtimeEvents.DUNGEON_OBJECTIVE_UPDATE, {
+              instanceId,
+              objectiveKey,
+              current: inst.objectives[objectiveKey]?.current,
+              required: inst.objectives[objectiveKey]?.required,
+              isCompleted: inst.isCompleted,
+            });
+
+            if (inst.isCompleted) {
+              this.io.to(instanceId).emit(RealtimeEvents.DUNGEON_COMPLETED, {
+                instanceId,
+                dungeonSlug: inst.dungeonSlug,
+                clearedAt: Date.now(),
+              });
+            }
+          }
+        } catch (err) {
+          console.error("[LobbySocket] dungeon_objective_update error:", err);
+        }
       });
 
       // --- STUDIO: RULE TESTING SANDBOX ---

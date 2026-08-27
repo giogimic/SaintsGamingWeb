@@ -26,9 +26,9 @@ export function HeroStudioSuite() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full pointer-events-auto select-none overflow-hidden bg-[#030810]">
+    <div className="flex-1 flex flex-col h-full pointer-events-auto select-none overflow-hidden bg-background">
       {/* ─── Top Studio Banner & Navigation ─── */}
-      <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 bg-[#050b14]/95 border-b border-slate-800/80 z-10">
+      <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 bg-card/95 border-b border-border z-10">
         <div className="flex items-center gap-3">
           <button
             type="button"

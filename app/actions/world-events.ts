@@ -106,3 +106,66 @@ export async function deleteWorldEvent(slug: string) {
     return { success: false as const, error: "Failed to delete world event" };
   }
 }
+
+/**
+ * Live Operations: Triggers an active world event and activates its realm mutations.
+ */
+export async function triggerLiveWorldEvent(slug: string, durationSeconds?: number) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  try {
+    const template = await prisma.worldEventTemplate.findUnique({ where: { slug } });
+    if (!template) return { success: false, error: `Event template '${slug}' not found` };
+
+    const dur = durationSeconds ?? template.durationSeconds ?? 3600;
+
+    const updated = await prisma.worldEventTemplate.update({
+      where: { slug },
+      data: {
+        isActive: true,
+        durationSeconds: dur,
+      },
+    });
+
+    revalidatePath("/studio");
+    revalidatePath("/lobby");
+    return {
+      success: true as const,
+      data: {
+        slug: updated.slug,
+        name: updated.name,
+        isActive: true,
+        durationSeconds: dur,
+        startedAt: Date.now(),
+        endsAt: Date.now() + dur * 1000,
+        mutations: JSON.parse(updated.mutationsData || "{}"),
+      },
+    };
+  } catch (err: any) {
+    console.error("[triggerLiveWorldEvent] Error:", err.message);
+    return { success: false as const, error: "Failed to trigger live world event" };
+  }
+}
+
+/**
+ * Live Operations: Manually stops an active world event.
+ */
+export async function stopLiveWorldEvent(slug: string) {
+  const isAdmin = await checkAdminPermission();
+  if (!isAdmin) return { success: false, error: "Unauthorized" };
+
+  try {
+    await prisma.worldEventTemplate.update({
+      where: { slug },
+      data: { isActive: false },
+    });
+
+    revalidatePath("/studio");
+    revalidatePath("/lobby");
+    return { success: true as const, slug };
+  } catch (err: any) {
+    console.error("[stopLiveWorldEvent] Error:", err.message);
+    return { success: false as const, error: "Failed to stop live world event" };
+  }
+}

@@ -107,15 +107,15 @@ const COMMON_KEY_MAP: Record<string, DefinitionType> = {
 
 async function scanDungeonRefs(): Promise<CrossReference[]> {
   const refs: CrossReference[] = [];
-  const dungeons = await prisma.dungeonTemplate.findMany();
+  const dungeons = await prisma.dungeonTemplate.findMany({
+    include: { mapReferences: true }
+  });
 
   for (const d of dungeons) {
-    // mapReferences is a JSON array of map slug strings
-    const maps = tryParseJson(d.mapReferences);
-    if (Array.isArray(maps)) {
-      for (const mapSlug of maps) {
-        if (typeof mapSlug === "string" && mapSlug.trim()) {
-          refs.push(crossRef("dungeon", d.slug, "map", mapSlug, "contains", "mapReferences"));
+    if (d.mapReferences && Array.isArray(d.mapReferences)) {
+      for (const mapRef of d.mapReferences) {
+        if (mapRef.mapSlug) {
+          refs.push(crossRef("dungeon", d.slug, "map", mapRef.mapSlug, "contains", "mapReferences"));
         }
       }
     }
@@ -131,14 +131,16 @@ async function scanDungeonRefs(): Promise<CrossReference[]> {
 
 async function scanShopRefs(): Promise<CrossReference[]> {
   const refs: CrossReference[] = [];
-  const shops = await prisma.shopTemplate.findMany();
+  const shops = await prisma.shopTemplate.findMany({
+    include: { inventory: true }
+  });
 
   for (const s of shops) {
-    const items = tryParseJson(s.itemsSoldData);
-    if (Array.isArray(items)) {
-      const keyedRefs = extractKeyedRefs(items, COMMON_KEY_MAP);
-      for (const r of keyedRefs) {
-        refs.push(crossRef("shop", s.slug, r.type, r.slug, "sells", "itemsSoldData"));
+    if (s.inventory && Array.isArray(s.inventory)) {
+      for (const inv of s.inventory) {
+        if (inv.itemSlug) {
+          refs.push(crossRef("shop", s.slug, "item", inv.itemSlug, "sells", "itemsSoldData"));
+        }
       }
     }
   }

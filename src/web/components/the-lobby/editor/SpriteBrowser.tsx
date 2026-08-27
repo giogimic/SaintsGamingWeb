@@ -433,6 +433,19 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
 }) => {
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const [frameIdx, setFrameIdx] = useState<number>(0);
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    const key = spriteKeyFromAsset(asset);
+    e.dataTransfer.setData(
+      'application/json',
+      JSON.stringify({
+        type: 'STUDIO_SPRITE_DROP',
+        key,
+        source: asset.source,
+      })
+    );
+    e.dataTransfer.effectAllowed = 'copy';
+  };
   const walkSequence = [0, 1, 0, 2];
   const [seqIndex, setSeqIndex] = useState<number>(0);
 
@@ -464,19 +477,7 @@ const SpriteThumbnailCard: React.FC<SpriteThumbnailCardProps> = ({
     <div
       onClick={onClick}
       draggable
-      onDragStart={(e) => {
-        const key = spriteKeyFromAsset(asset);
-        e.dataTransfer.setData(
-          'application/json',
-          JSON.stringify({
-            type: 'STUDIO_SPRITE_DROP',
-            key,
-            source: asset.source,
-            id: asset.id,
-          })
-        );
-        e.dataTransfer.effectAllowed = 'copy';
-      }}
+      onDragStart={handleDragStart}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       className={`relative group flex flex-col items-center justify-center p-2 rounded-lg border transition cursor-pointer select-none bg-[#0b1320]/80 ${

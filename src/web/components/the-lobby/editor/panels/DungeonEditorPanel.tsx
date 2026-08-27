@@ -14,6 +14,7 @@ import { CatalogEditorShell } from '../components/CatalogEditorShell';
 import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
 import { DefinitionRefBadge } from '../components/DefinitionRefBadge';
 import { RuleConditionBuilder } from '../components/RuleConditionBuilder';
+import { RegistryCombobox } from '../components/RegistryCombobox';
 
 function dungeonResourceKey(form: DungeonTemplateInput, activeSlug: string | null): string {
   if (!activeSlug || !form.slug) return 'dungeon:new';
@@ -24,7 +25,8 @@ export const DungeonEditorPanel: React.FC = () => {
   const incrementDataVersion = useEditorStore((s) => s.incrementDataVersion);
   const dataVersion = useEditorStore((s) => s.dataVersion);
 
-  const [dungeons, setDungeons] = useState<DungeonTemplate[]>([]);
+  const [dungeons, setDungeons] = useState<DungeonTemplateInput[]>([]);
+  const [lootTables, setLootTables] = useState<Array<{ id: string; name: string }>>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -75,10 +77,26 @@ export const DungeonEditorPanel: React.FC = () => {
     setLoading(true);
     const res = await listDungeons();
     if (res.success && res.data) {
-      setDungeons(res.data);
+      setDungeons(res.data as unknown as DungeonTemplateInput[]);
     }
     setLoading(false);
   };
+
+  const loadLootTables = async () => {
+    try {
+      const lootRes = await fetch('/api/loot/tables');
+      const lootData = await lootRes.json();
+      if (lootRes.ok && lootData.items) {
+        setLootTables(lootData.items.map((t: any) => ({ id: t.id, name: t.name })));
+      }
+    } catch {
+      // fallback
+    }
+  };
+
+  useEffect(() => {
+    loadLootTables();
+  }, []);
 
   useEffect(() => {
     loadList();
@@ -169,7 +187,7 @@ export const DungeonEditorPanel: React.FC = () => {
   );
 
   return (
-    <CatalogEditorShell<DungeonTemplate>
+    <CatalogEditorShell<DungeonTemplateInput>
       title="Dungeon Studio"
       items={filteredDungeons}
       activeId={activeSlug}
@@ -258,13 +276,11 @@ export const DungeonEditorPanel: React.FC = () => {
           </div>
           <div className="flex-1">
             <label className="text-xs text-blue-300 uppercase tracking-widest font-semibold">Reward Loot Pool</label>
-            <input
-              type="text"
-              className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3] mt-1"
+            <RegistryCombobox
+              className="mt-1"
               value={formData.rewardLootPoolId || ''}
-              onFocus={onFieldFocus}
-              onBlur={onFieldBlur}
-              onChange={(e) => setFormData({ ...formData, rewardLootPoolId: e.target.value })}
+              options={lootTables.map(t => ({ value: t.id, label: `${t.name} (${t.id})` }))}
+              onChange={(val) => setFormData({ ...formData, rewardLootPoolId: val })}
               placeholder="e.g. boss_copper"
             />
           </div>

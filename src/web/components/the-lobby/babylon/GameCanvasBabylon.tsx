@@ -804,34 +804,34 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const liveH = babylonEngine.getMapHeight() || mapHeight;
       const liveStore = useGameStore.getState();
       const offset = liveStore.worldOriginOffset;
-      const freshPlayer = liveStore.player;
-      if (freshPlayer && freshPlayer.position) {
-        const px = freshPlayer.position.x ?? 6;
-        const py = freshPlayer.position.y ?? 2;
-        const worldX = px - liveW / 2 + offset.x;
-        const worldZ = liveH / 2 - py - offset.y;
 
-        babylonEngine.updateEntity({
-          id: 'player_main',
-          name: freshPlayer.name || 'Hero',
-          x: worldX,
-          y: worldZ,
-          spriteUrl: resolveEntitySpriteUrl(freshPlayer.assetProfileId, {
-            kind: 'player',
-            fallback: '/game-assets/npc/adventurer.png',
-          }),
-          animationProfile: playerAnimationProfileRef.current as any,
-          isPlayer: true,
-          direction: freshPlayer.direction,
-          isMoving: freshPlayer.isMoving,
-          chatMessage: liveStore.localChat || undefined,
-          spriteConfig: freshPlayer.spriteConfig
-        });
-        // Keep avatar hidden while editor tools are active (avatar-free viewport)
-        babylonEngine.setEntityVisible('player_main', !editorToolsRef.current);
+      if (!editorToolsRef.current) {
+        // --- LIVE MMO RENDER PIPELINE ---
+        const freshPlayer = liveStore.player;
+        if (freshPlayer && freshPlayer.position) {
+          const px = freshPlayer.position.x ?? 6;
+          const py = freshPlayer.position.y ?? 2;
+          const worldX = px - liveW / 2 + offset.x;
+          const worldZ = liveH / 2 - py - offset.y;
 
-        // Camera: follow player in Playtest only; Editor uses free pan/zoom
-        if (!editorToolsRef.current) {
+          babylonEngine.updateEntity({
+            id: 'player_main',
+            name: freshPlayer.name || 'Hero',
+            x: worldX,
+            y: worldZ,
+            spriteUrl: resolveEntitySpriteUrl(freshPlayer.assetProfileId, {
+              kind: 'player',
+              fallback: '/game-assets/npc/adventurer.png',
+            }),
+            animationProfile: playerAnimationProfileRef.current as any,
+            isPlayer: true,
+            direction: freshPlayer.direction,
+            isMoving: freshPlayer.isMoving,
+            chatMessage: liveStore.localChat || undefined,
+            spriteConfig: freshPlayer.spriteConfig
+          });
+          babylonEngine.setEntityVisible('player_main', true);
+
           const playerMesh = babylonEngine.getEntityMesh('player_main');
           if (playerMesh) {
             babylonEngine.setCameraPosition(playerMesh.position.x, playerMesh.position.z, 0.15);
@@ -839,10 +839,14 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             babylonEngine.setCameraPosition(worldX, worldZ, 0.15);
           }
         }
+      } else {
+        // --- STUDIO ISOLATION ---
+        // Hide avatar and ignore live camera tracking
+        babylonEngine.setEntityVisible('player_main', false);
       }
 
-      // Render connected multiplayer players
-      const freshOtherPlayers = useGameStore.getState().otherPlayers;
+      // Render connected multiplayer players (Live MMO only)
+      const freshOtherPlayers = !editorToolsRef.current ? useGameStore.getState().otherPlayers : {};
       if (freshOtherPlayers) {
         const activeSockets = new Set(Object.keys(freshOtherPlayers));
         
@@ -894,7 +898,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       // (socket snapshot can miss if join races; map JSON still has placements).
       // Read live store doc — mount closure activeMap.npcs goes stale when we
       // keep the Babylon engine across setActiveMapData refreshes.
-      const mapEntities = liveStore.mapEntities || [];
+      const mapEntities = !editorToolsRef.current ? (liveStore.mapEntities || []) : [];
       const liveMapDoc =
         (liveStore.activeMapData as {
           npcs?: Array<{ id: string; name?: string; x: number; y: number; sprite?: string }>;

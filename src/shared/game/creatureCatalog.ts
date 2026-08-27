@@ -58,12 +58,22 @@ export type CreatureLootRef = {
   label?: string;
 };
 
+export type CreatureCategory = 'beast' | 'monster' | 'mercenary';
+
+export const CREATURE_CATEGORIES: { id: CreatureCategory; label: string; blurb: string }[] = [
+  { id: 'beast', label: 'Beast (Buddy)', blurb: 'Capturable creatures with evolution, Dex entries & collection encounters.' },
+  { id: 'monster', label: 'Monster (Enemy)', blurb: 'Standard hostile world combatants focused on MMO defeat & loot drops.' },
+  { id: 'mercenary', label: 'Mercenary (Companion)', blurb: 'Recruitable party operatives and combat companions.' },
+];
+
 /** Full editable creature definition (shared by seed, Studio, gameplay). */
 export type CreatureDefData = {
   slug: string;
   /** World profile id; null/empty = shared across Studio profiles */
   gameId?: string | null;
   name: string;
+  /** Creature taxonomy category: beast (buddy), monster (enemy), or mercenary (companion) */
+  category?: CreatureCategory;
   dexNumber: number;
   typePrimary: CreatureElementType | string;
   typeSecondary: CreatureElementType | string;
@@ -100,6 +110,12 @@ export type CreatureDefData = {
   isActive: boolean;
   sortOrder: number;
   lootTableRefs?: CreatureLootRef[];
+  // Monster specific attributes (Bible 20)
+  aggroRadius?: number;
+  respawnSec?: number;
+  // Mercenary specific attributes (Bible 20)
+  hireCost?: number;
+  factionId?: string;
 };
 
 const DEFAULT_SHINY_FIELDS = {
@@ -190,6 +206,7 @@ export function emptyCreatureDef(): CreatureDefData {
   return {
     slug: "",
     name: "",
+    category: "beast",
     dexNumber: 0,
     typePrimary: "None",
     typeSecondary: "None",
@@ -217,6 +234,9 @@ export function emptyCreatureDef(): CreatureDefData {
     isWildSpawn: false,
     isActive: true,
     sortOrder: 0,
+    aggroRadius: 5,
+    respawnSec: 30,
+    hireCost: 100,
   };
 }
 

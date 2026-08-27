@@ -22,6 +22,7 @@ export async function listDungeons(searchQuery?: string) {
     const rows = await prisma.dungeonTemplate.findMany({
       orderBy: { name: "asc" },
       take: 200,
+      include: { mapReferences: true }
     });
     const needle = (searchQuery || "").trim().toLowerCase();
     const data = needle
@@ -31,7 +32,17 @@ export async function listDungeons(searchQuery?: string) {
             r.name.toLowerCase().includes(needle)
         )
       : rows;
-    return { success: true as const, data };
+      
+    const transformedData = data.map(r => {
+      const { mapReferences, ...rest } = r;
+      // Sort by orderIndex to ensure stable order
+      const sortedRefs = [...mapReferences].sort((a, b) => a.orderIndex - b.orderIndex);
+      return {
+        ...rest,
+        mapReferences: JSON.stringify(sortedRefs.map((ref: any) => ref.mapSlug))
+      };
+    });
+    return { success: true as const, data: transformedData };
   } catch (err) {
     console.error("[listDungeons]", err);
     return { success: false as const, data: [], error: "Failed to list dungeons" };
@@ -40,9 +51,20 @@ export async function listDungeons(searchQuery?: string) {
 
 export async function getDungeon(slug: string) {
   try {
-    const row = await prisma.dungeonTemplate.findUnique({ where: { slug } });
+    const row = await prisma.dungeonTemplate.findUnique({ 
+      where: { slug },
+      include: { mapReferences: true }
+    });
     if (!row) return { success: false as const, error: "Not found" };
-    return { success: true as const, data: row };
+    
+    const { mapReferences, ...rest } = row;
+    const sortedRefs = [...mapReferences].sort((a, b) => a.orderIndex - b.orderIndex);
+    const transformedRow = {
+      ...rest,
+      mapReferences: JSON.stringify(sortedRefs.map((ref: any) => ref.mapSlug))
+    };
+    
+    return { success: true as const, data: transformedRow };
   } catch (err) {
     console.error("[getDungeon]", err);
     return { success: false as const, error: "Failed to load dungeon" };
@@ -57,6 +79,20 @@ export async function upsertDungeon(input: DungeonTemplateInput) {
   if (!slug) return { success: false, error: "slug required" };
 
   try {
+    let parsedMapRefs: string[] = [];
+    try {
+      if (input.mapReferences) {
+        parsedMapRefs = JSON.parse(input.mapReferences);
+      }
+    } catch (e) {
+      console.error("Invalid mapReferences JSON", e);
+    }
+    
+    const mapRefsToCreate = parsedMapRefs.map((slug, index) => ({
+      mapSlug: slug,
+      orderIndex: index
+    }));
+
     const saved = await prisma.dungeonTemplate.upsert({
       where: { slug },
       create: {
@@ -68,8 +104,10 @@ export async function upsertDungeon(input: DungeonTemplateInput) {
         entryLevelReq: input.entryLevelReq || 1,
         maxPartySize: input.maxPartySize || 4,
         rewardLootPoolId: input.rewardLootPoolId,
-        mapReferences: input.mapReferences || "[]",
         clearConditions: input.clearConditions || "{}",
+        mapReferences: {
+          create: mapRefsToCreate
+        }
       },
       update: {
         gameId: input.gameId || "saints",
@@ -79,8 +117,11 @@ export async function upsertDungeon(input: DungeonTemplateInput) {
         entryLevelReq: input.entryLevelReq || 1,
         maxPartySize: input.maxPartySize || 4,
         rewardLootPoolId: input.rewardLootPoolId,
-        mapReferences: input.mapReferences || "[]",
         clearConditions: input.clearConditions || "{}",
+        mapReferences: {
+          deleteMany: {},
+          create: mapRefsToCreate
+        }
       },
     });
 

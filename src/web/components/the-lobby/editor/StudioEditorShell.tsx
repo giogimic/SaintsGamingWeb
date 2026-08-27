@@ -80,13 +80,14 @@ const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m)
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
 const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
+const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 
 const initialLayout: IJsonModel = {
   global: {
     tabEnableClose: true,
-    tabSetEnableMaximize: false
+    tabSetEnableMaximize: true,
   },
   layout: {
     type: "row",
@@ -104,13 +105,11 @@ const initialLayout: IJsonModel = {
         type: "tabset",
         weight: 60,
         id: "center-viewport",
-        enableDrop: false,
-        enableDrag: false,
         children: [
           {
             type: "tab",
             id: "viewport",
-            name: "Viewport",
+            name: "Primary Viewport",
             component: "viewport",
             enableClose: false,
             className: "sg-viewport-tab",
@@ -207,6 +206,56 @@ export const StudioEditorShell: React.FC = () => {
 
     window.addEventListener('studio_open_dock', handleOpenDock);
     return () => window.removeEventListener('studio_open_dock', handleOpenDock);
+  }, [model]);
+
+  // Handle dynamic map tab opening (Phase 2 Modular Workspace)
+  useEffect(() => {
+    const handleOpenMapTab = (e: Event) => {
+      const customEv = e as CustomEvent<{ mapId: string; mapName?: string }>;
+      const { mapId, mapName } = customEv.detail || {};
+      if (!mapId || !model) return;
+
+      const tabId = `map_${mapId}`;
+      const existingNode = model.getNodeById(tabId);
+      if (existingNode) {
+        model.doAction(Actions.selectTab(tabId));
+      } else {
+        try {
+          model.doAction(
+            Actions.addNode(
+              {
+                type: 'tab',
+                id: tabId,
+                name: mapName || `Map: ${mapId}`,
+                component: 'map',
+                config: { mapId },
+              },
+              'center-viewport',
+              DockLocation.CENTER,
+              -1
+            )
+          );
+        } catch {
+          model.doAction(
+            Actions.addNode(
+              {
+                type: 'tab',
+                id: tabId,
+                name: mapName || `Map: ${mapId}`,
+                component: 'map',
+                config: { mapId },
+              },
+              'left-dock',
+              DockLocation.CENTER,
+              -1
+            )
+          );
+        }
+      }
+    };
+
+    window.addEventListener('studio_open_map_tab', handleOpenMapTab);
+    return () => window.removeEventListener('studio_open_map_tab', handleOpenMapTab);
   }, [model]);
 
   // Context menu on right click in canvas / viewport area
@@ -744,7 +793,7 @@ export const StudioEditorShell: React.FC = () => {
         <button
           type="button"
           onClick={() => useEditorStore.getState().exitPlaytest()}
-          className="sg-glass flex items-center gap-2 rounded-full border border-[#806f47]/50 bg-[#050b14]/95 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-[#cbb26a] shadow-2xl hover:bg-[#806f47]/20 cursor-pointer"
+          className="sg-glass flex items-center gap-2 rounded-full border border-sg-gold/50 bg-card/95 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-sg-gold shadow-2xl hover:bg-sg-gold/20 cursor-pointer"
           title="Return to Editor (Ctrl+E)"
         >
           <Wrench className="h-4 w-4" />
@@ -763,7 +812,7 @@ export const StudioEditorShell: React.FC = () => {
     return (
       <Suspense
         fallback={
-          <div className="flex h-full w-full items-center justify-center bg-[#050b14]/80 p-4">
+          <div className="flex h-full w-full items-center justify-center bg-card/80 p-4">
             <div className="flex items-center gap-2 text-xs font-mono text-amber-400/80">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Loading panel...</span>
@@ -798,6 +847,11 @@ export const StudioEditorShell: React.FC = () => {
             case 'worldevent': return <WorldEventPanel />;
             case 'simulation': return <SimulationPresetPanel />;
             case 'publishing': return <PublishManagerPanel />;
+            case 'map': {
+              const cfg = (node.getConfig() as { mapId?: string }) || {};
+              const mapId = cfg.mapId || node.getId().replace(/^map_/, '');
+              return <MapTabPanel mapId={mapId} />;
+            }
             default: return <div>Unknown component: {component}</div>;
           }
         })()}

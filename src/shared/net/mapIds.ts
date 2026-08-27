@@ -4,11 +4,13 @@
  * Studio PIE like `studio_pie_<userId>`.
  */
 
-/** Strip shard / channel suffix so peers compare on the same logical map. */
+/** Strip shard / channel / instance suffix so peers compare on the same logical map. */
 export function toBaseMapId(mapOrInstanceId: string): string {
   if (!mapOrInstanceId) return mapOrInstanceId;
   const channel = mapOrInstanceId.match(/^(.*)_ch\d+$/);
   if (channel?.[1]) return channel[1];
+  const instMatch = mapOrInstanceId.match(/^(.*)_inst_.*$/);
+  if (instMatch?.[1]) return instMatch[1];
   return mapOrInstanceId;
 }
 
@@ -17,7 +19,7 @@ export function isSameBaseMap(a: string, b: string): boolean {
 }
 
 /**
- * Public multiplayer channel: `MAPID_chN` only (never private / PIE rooms).
+ * Public multiplayer channel: `MAPID_chN` only (never private / PIE / dungeon rooms).
  */
 export function isPublicChannelInstanceId(instanceId: string | null | undefined): boolean {
   if (!instanceId) return false;
@@ -28,6 +30,12 @@ export function isPublicChannelInstanceId(instanceId: string | null | undefined)
 export function isStudioPieInstanceId(instanceId: string | null | undefined): boolean {
   if (!instanceId) return false;
   return instanceId.startsWith("studio_pie_");
+}
+
+/** Instanced party dungeon room (`dungeon_{slug}_{partyId}_{ts}` or `{map}_inst_{id}`). */
+export function isDungeonInstanceId(instanceId: string | null | undefined): boolean {
+  if (!instanceId) return false;
+  return instanceId.startsWith("dungeon_") || instanceId.includes("_inst_");
 }
 
 /**

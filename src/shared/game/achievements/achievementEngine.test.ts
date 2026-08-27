@@ -1,18 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  recordAchievementProgress,
+  AchievementDefinition,
+  AchievementEngine,
   calculateTotalAchievementPoints,
   getUnlockedAchievements,
-  AchievementDefinition,
   PlayerAchievementProgress,
+  recordAchievementProgress,
 } from './achievementEngine';
 
-describe('Achievement Tracker & Unlock Engine (Bible 25)', () => {
+describe('Achievement Tracker & Unlock Engine (Bible 05, 13, 20, 25, 29)', () => {
   const monsterSlayer: AchievementDefinition = {
     id: 'ach_monster_slayer',
     name: 'Master Slayer',
     description: 'Defeat 50 monsters in the overworld.',
     category: 'COMBAT',
+    tier: 'SILVER',
     points: 25,
     targetCount: 50,
     rewardTitleId: 'title_slayer',
@@ -23,8 +25,21 @@ describe('Achievement Tracker & Unlock Engine (Bible 25)', () => {
     name: 'Master Angler',
     description: 'Catch 100 fish.',
     category: 'SKILLING',
+    tier: 'GOLD',
     points: 50,
     targetCount: 100,
+  };
+
+  const secretFeat: AchievementDefinition = {
+    id: 'ach_hidden_dragon',
+    name: 'Dragon Whisperer',
+    description: 'Defeat the secret dungeon dragon solo.',
+    category: 'FEATS_OF_STRENGTH',
+    tier: 'MYTHIC',
+    points: 100,
+    targetCount: 1,
+    isSecret: true,
+    rewardTitleId: 'title_dragon_whisperer',
   };
 
   const defs = {
@@ -64,5 +79,32 @@ describe('Achievement Tracker & Unlock Engine (Bible 25)', () => {
 
     const unlocked = getUnlockedAchievements(progressMap);
     expect(unlocked.length).toBe(2);
+  });
+
+  it('evaluates player achievement profile with secret feats, titles, and AP via AchievementEngine', () => {
+    const engine = new AchievementEngine();
+    engine.registerAchievement(monsterSlayer);
+    engine.registerAchievement(secretFeat);
+
+    const profile = engine.createProfile('player_saint_1');
+    expect(profile.totalPoints).toBe(0);
+    expect(profile.unlockedTitles).toHaveLength(0);
+
+    // Check visible achievements before secret unlock
+    const visibleBefore = engine.getVisibleAchievements(profile);
+    const secretBefore = visibleBefore.find((a) => a.id === 'ach_hidden_dragon');
+    expect(secretBefore?.name).toBe('???');
+
+    // Unlock secret feat
+    const unlockSecret = engine.recordProgress(profile, 'ach_hidden_dragon', 1);
+    expect(unlockSecret.justUnlocked).toBe(true);
+    expect(profile.totalPoints).toBe(100);
+    expect(profile.unlockedTitles).toContain('title_dragon_whisperer');
+    expect(profile.activeTitleId).toBe('title_dragon_whisperer');
+
+    // Check visible achievements after secret unlock
+    const visibleAfter = engine.getVisibleAchievements(profile);
+    const secretAfter = visibleAfter.find((a) => a.id === 'ach_hidden_dragon');
+    expect(secretAfter?.name).toBe('Dragon Whisperer');
   });
 });

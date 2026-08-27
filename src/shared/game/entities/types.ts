@@ -155,9 +155,6 @@ export interface ComponentMap {
   [key: string]: unknown;
 }
 
-/**
- * EntityInstanceV1 — The single canonical entity structure (Bible 20 §5).
- */
 export interface EntityInstanceV1 {
   schemaVersion: 1;
   id: string;
@@ -167,4 +164,22 @@ export interface EntityInstanceV1 {
   locked?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/**
+ * BaseEntityDefinition — The unified JSON blob structure for Studio entity definitions
+ * (e.g. Monsters, Quests, NPCs, Items).
+ */
+export interface BaseEntityDefinition {
+  id: string;                 // e.g. "mon_goblin_01"
+  version: number;
+  type: 'monster' | 'creature' | 'npc' | 'quest' | 'item' | 'ability' | 'dialogue';
+  name: string;
+  description?: string;
+  tags?: string[];
+  components: Partial<ComponentMap>; // Reusing ComponentMap for data-driven configuration
+  assetReferences: string[];  // Explicitly declared dependencies (e.g. asset IDs, ability IDs)
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

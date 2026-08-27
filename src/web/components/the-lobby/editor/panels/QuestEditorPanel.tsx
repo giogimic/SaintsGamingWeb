@@ -9,7 +9,9 @@ import {
 } from '@/app/actions/quest-templates';
 import { useEditorStore } from '../editor-store';
 import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import { RegistryCombobox } from '../components/RegistryCombobox';
 import { definitionOpValue } from '@/shared/game/definitionOps';
+import { getAllCreatureDefs } from '@/app/actions/creature-defs';
 import {
   Plus, Trash2, Save, RefreshCw, CheckCircle2, AlertCircle, LayoutTemplate, Play, ArrowRight
 } from 'lucide-react';
@@ -69,6 +71,7 @@ export function QuestEditorPanel() {
   const clearDefinitionStackFor = useEditorStore((s) => s.clearDefinitionStackFor);
 
   const [list, setList] = useState<QuestRow[]>([]);
+  const [creatures, setCreatures] = useState<Array<{ slug: string; name: string }>>([]);
   const [form, setForm] = useState(emptyQuest(activeGameId));
   const [isNew, setIsNew] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,8 +90,12 @@ export function QuestEditorPanel() {
   const canRedoDefinition = topRedo?.resourceKey === resourceKey;
 
   const load = useCallback(async () => {
-    const res = await listQuestTemplates(activeGameId);
+    const [res, creaturesRes] = await Promise.all([
+      listQuestTemplates(activeGameId),
+      getAllCreatureDefs(activeGameId)
+    ]);
     if (res.success) setList(res.data as QuestRow[]);
+    if (creaturesRes.success) setCreatures(creaturesRes.data);
   }, [activeGameId]);
 
   useEffect(() => {
@@ -491,16 +498,17 @@ export function QuestEditorPanel() {
                   </div>
                   <div className="col-span-2">
                     <label className={labelCls}>Target</label>
-                    <input
-                      className={inputCls}
+                    <RegistryCombobox
+                      className="w-full"
                       value={o.targetSlug}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) =>
+                      options={
+                        creatures.map(c => ({ value: c.slug, label: `${c.name} (${c.slug})` }))
+                      }
+                      onChange={(val) =>
                         setForm((prev) => ({
                           ...prev,
                           objectives: prev.objectives.map((obj, i) =>
-                            i === idx ? { ...obj, targetSlug: e.target.value } : obj
+                            i === idx ? { ...obj, targetSlug: val } : obj
                           ),
                         }))
                       }
