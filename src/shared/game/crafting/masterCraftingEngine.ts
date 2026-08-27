@@ -8,7 +8,17 @@ export type CraftingDiscipline =
   | 'ALCHEMY_TRANSMUTATION'
   | 'ENCHANTING_RUNECRAFT'
   | 'LEATHERWORKING_TAILORING'
-  | 'COOKING_BREWING';
+  | 'COOKING_BREWING'
+  | 'smithing'
+  | 'cooking'
+  | 'crafting'
+  | 'herblore'
+  | 'fletching'
+  | 'firemaking'
+  | 'runecrafting'
+  | 'construction'
+  | 'magic'
+  | 'necromancy';
 
 export type CraftingStation =
   | 'FORGE'

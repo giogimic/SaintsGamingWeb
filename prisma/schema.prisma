@@ -1526,20 +1526,29 @@ model RecipeIngredient {
 }
 
 model ProfessionTemplate {
-  id          String   @id @default(cuid())
-  gameId      String   @default("saints")
-  profileId   String?
-  slug        String   @unique
-  name        String
-  description String?
-  iconAssetId String?
-  xpCurve     String   @default("exponential")
-  maxLevel    Int      @default(99)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  gameId              String   @default("saints")
+  profileId           String?
+  slug                String   @unique
+  name                String
+  description         String?
+  iconAssetId         String?
+  category            String   @default("Life") // Combat, Gathering, Artisan, Support
+  themeColor          String   @default("#64748b")
+  tagline             String?
+  stationTags         String   @default("[]") // JSON array of station string tags
+  xpCurve             String   @default("exponential")
+  maxLevel            Int      @default(99)
+  trainingMethodsJson String   @default("[]") // JSON array of strings
+  perksJson           String   @default("[]") // JSON array of strings
+  milestonesJson      String   @default("[]") // JSON array of SkillUnlockMilestone
+  battlepassTiersJson String   @default("[]") // JSON array of BattlepassTier
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@index([gameId])
   @@index([profileId])
+  @@index([category])
 }
 
 // ─── Saints World Maps ──────────────────────────────────────────
