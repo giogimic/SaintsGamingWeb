@@ -3,18 +3,54 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
+import { useTheme } from 'next-themes';
 import {
-  FileText, Edit, Eye, Folder, Box, Globe, PlayCircle, Users, HelpCircle,
-  Save, Undo, Redo, LogOut, CheckCircle2, ChevronRight, X, Wrench, Play, Search, AlertCircle,
-  Scissors, Copy, Clipboard, Pin, Layers, Settings, Keyboard, Bell, Activity, UserCircle, Camera
+  Folder,
+  Box,
+  Globe,
+  Save,
+  Undo2,
+  Redo2,
+  LogOut,
+  CheckCircle2,
+  AlertCircle,
+  Play,
+  Search,
+  Scissors,
+  Copy,
+  Clipboard,
+  Pin,
+  Layers,
+  Settings,
+  Keyboard,
+  Bell,
+  Activity,
+  UserCircle,
+  Camera,
+  Sun,
+  Moon,
+  Sparkles,
+  CloudUpload,
+  ChevronDown,
+  LayoutGrid,
+  Shield,
+  Tag,
+  Users,
+  ScrollText,
+  MessageSquare,
+  PawPrint,
+  Coins,
+  Wrench,
 } from 'lucide-react';
 import { RealmSettingsModal } from './RealmSettingsModal';
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
 import { NotificationHistoryModal } from './components/NotificationHistoryModal';
-import { STUDIO_MODE_META, type StudioMode } from '@/shared/game/studioModes';
+import { STUDIO_MODE_META, STUDIO_DOCK_META, type StudioMode, type StudioDockId } from '@/shared/game/studioModes';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { soundSynth } from '@/engine/sound-synth';
 import { loadMap } from '../data/maps';
+import { WORLD_PROFILES } from '@/shared/game/worldProfiles';
+import { ensureWorldProfiles, setActiveWorldProfile } from '@/app/actions/world-profiles';
 
 type MenuState = string | null;
 
@@ -24,41 +60,40 @@ interface StudioMenuBarProps {
 }
 
 export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMenuBarProps) {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuState>(null);
   const [realmSettingsOpen, setRealmSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
+  const [worldDropdownOpen, setWorldDropdownOpen] = useState(false);
+  const [profiles, setProfiles] = useState(WORLD_PROFILES);
   const menuRef = useRef<HTMLDivElement>(null);
-  
+
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
   const studioMode = useEditorStore((s) => s.studioMode);
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
   const toggleCreationMode = useEditorStore((s) => s.toggleCreationMode);
   const mapDirty = useEditorStore((s) => s.mapDirty);
-  const openMapTabs = useEditorStore((s) => s.openMapTabs);
-  const activeMapTab = useEditorStore((s) => s.activeMapTab);
-  const openMapInTab = useEditorStore((s) => s.openMapInTab);
-  const closeMapTab = useEditorStore((s) => s.closeMapTab);
-  const setActiveMapTab = useEditorStore((s) => s.setActiveMapTab);
+  const isSavingMap = useEditorStore((s) => s.isSavingMap);
+  const activeGameId = useEditorStore((s) => s.activeGameId);
+  const setActiveGameId = useEditorStore((s) => s.setActiveGameId);
+  const openPanel = useEditorStore((s) => s.openPanel);
   const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
   const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
 
   const currentMapId = useGameStore((s) => s.currentMapId);
   const showToast = useGameStore((s) => s.showToast);
 
-  // Keep open map tabs synchronized with active map
   useEffect(() => {
-    if (currentMapId && !openMapTabs.includes(currentMapId)) {
-      openMapInTab(currentMapId);
-    }
-  }, [currentMapId, openMapTabs, openMapInTab]);
-
-  const handleSwitchMode = (mode: StudioMode) => {
-    setStudioMode(mode);
-    const meta = STUDIO_MODE_META[mode];
-    const name = meta ? meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1) : mode;
-    showToast(`Switched to ${name} Mode`);
-  };
+    setMounted(true);
+    void (async () => {
+      const res = await ensureWorldProfiles();
+      if (res.success) {
+        setProfiles(res.profiles);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     const handleOpen = () => setShortcutsOpen(true);
@@ -71,23 +106,40 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setActiveMenu(null);
+        setWorldDropdownOpen(false);
       }
     }
-    if (activeMenu) {
+    if (activeMenu || worldDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [activeMenu]);
+  }, [activeMenu, worldDropdownOpen]);
 
   const handleMenuClick = (menuId: string) => {
     soundSynth?.playSelectSound?.();
     setActiveMenu((prev) => (prev === menuId ? null : menuId));
+    setWorldDropdownOpen(false);
   };
 
   const handleItemClick = (action: () => void) => {
     soundSynth?.playActionSound?.();
     setActiveMenu(null);
+    setWorldDropdownOpen(false);
     action();
+  };
+
+  const handleSwitchMode = (mode: StudioMode) => {
+    setStudioMode(mode);
+    const meta = STUDIO_MODE_META[mode];
+    const name = meta ? meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1) : mode;
+    showToast(`Switched to ${name} Mode`);
+  };
+
+  const cycleTheme = () => {
+    soundSynth?.playUiClick?.();
+    if (theme === 'dark') setTheme('light');
+    else if (theme === 'light') setTheme('vice');
+    else setTheme('dark');
   };
 
   const TopLevelMenu = ({ id, label, children }: { id: string; label: string; children: React.ReactNode }) => {
@@ -99,14 +151,16 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           onMouseEnter={() => {
             if (activeMenu && activeMenu !== id) setActiveMenu(id);
           }}
-          className={`px-2.5 py-1 text-[11px] font-bold tracking-wider uppercase font-mono rounded transition-colors cursor-pointer ${
-            isActive ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10'
+          className={`px-2 py-1 text-[11px] font-bold tracking-wider uppercase font-mono rounded transition-colors cursor-pointer ${
+            isActive
+              ? 'bg-primary/20 text-primary'
+              : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
           }`}
         >
           {label}
         </button>
         {isActive && (
-          <div className="absolute top-full left-0 mt-1 min-w-[220px] bg-[#050b14]/95 border border-amber-500/40 shadow-2xl rounded-lg py-1 backdrop-blur-xl z-[150] flex flex-col pointer-events-auto font-mono">
+          <div className="absolute top-full left-0 mt-1 min-w-[230px] bg-card/95 border border-border/80 shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[150] flex flex-col pointer-events-auto font-mono">
             {children}
           </div>
         )}
@@ -116,111 +170,165 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
 
   const MenuItem = ({ label, shortcut, icon: Icon, onClick, disabled, divider }: any) => {
     if (divider) {
-      return <div className="h-px w-full bg-amber-500/20 my-1" />;
+      return <div className="h-px w-full bg-border/40 my-1" />;
     }
     return (
       <button
         onClick={() => handleItemClick(onClick)}
         disabled={disabled}
         className={`w-full text-left px-3 py-1.5 text-[11px] font-mono flex items-center justify-between group transition-colors cursor-pointer ${
-          disabled ? 'opacity-40 cursor-not-allowed text-slate-500' : 'text-slate-300 hover:bg-amber-500/20 hover:text-white'
+          disabled
+            ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+            : 'text-foreground/90 hover:bg-primary/20 hover:text-foreground'
         }`}
       >
-        <div className="flex items-center gap-2">
-          {Icon ? <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-300" /> : <div className="w-3.5 h-3.5" />}
+        <div className="flex items-center gap-2.5">
+          {Icon ? <Icon className="w-3.5 h-3.5 text-primary group-hover:scale-110 transition-transform" /> : <div className="w-3.5 h-3.5" />}
           <span>{label}</span>
         </div>
-        {shortcut && <span className="text-slate-500 text-[10px]">{shortcut}</span>}
+        {shortcut && <span className="text-muted-foreground text-[10px]">{shortcut}</span>}
       </button>
     );
   };
 
+  const activeProfile = profiles.find((p) => p.id === activeGameId) || profiles[0];
+
   return (
-    <div 
+    <div
       ref={menuRef}
-      className="pointer-events-auto absolute top-0 left-0 right-0 h-9 z-[110] bg-[#050b14]/95 border-b border-amber-500/30 flex items-center justify-between px-3 select-none backdrop-blur-md shadow-md font-mono"
+      className="pointer-events-auto absolute top-0 left-0 right-0 h-10 z-[110] bg-card/85 border-b border-border/60 flex items-center justify-between px-3 select-none backdrop-blur-xl shadow-lg font-mono"
     >
-      {/* Zone 1: Left - Identity & Menus */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 pr-2 border-r border-amber-500/30">
-          <span className="font-mono font-black text-xs tracking-wider text-amber-400">STUDIO</span>
+      {/* ─── ZONE 1: Identity, Project Context & Primary Menus ─── */}
+      <div className="flex items-center gap-2.5">
+        {/* Studio Brand */}
+        <div className="flex items-center gap-1.5 pr-2.5 border-r border-border/40">
+          <span className="font-mono font-black text-xs tracking-wider text-primary">SAINTS STUDIO</span>
+        </div>
 
-          {/* Map Tabs */}
-          <div className="flex items-center gap-1">
-            {openMapTabs.map((tabMapId) => {
-              const isActive = (currentMapId || 'DEMO_SANDBOX') === tabMapId;
-              return (
-                <div
-                  key={tabMapId}
-                  onClick={() => {
-                    if (!isActive) {
-                      setActiveMapTab(tabMapId);
-                      loadMap(tabMapId);
-                      showToast(`Switched map: ${tabMapId}`);
-                    }
-                  }}
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors ${
-                    isActive
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 font-bold'
-                      : 'bg-black/40 text-slate-400 hover:text-slate-200 border border-amber-500/10'
-                  }`}
-                  title={`Map: ${tabMapId}`}
-                >
-                  <Globe className="w-2.5 h-2.5 text-amber-400" />
-                  <span>{tabMapId}</span>
-                  {isActive && mapDirty && (
-                    <span className="text-amber-400 font-bold" title="Unsaved changes">*</span>
-                  )}
-                  {openMapTabs.length > 1 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeMapTab(tabMapId);
-                      }}
-                      className="ml-1 text-slate-500 hover:text-red-400 rounded"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Free-Cam Toggle */}
+        {/* Project / World Profile Selector */}
+        <div className="relative">
           <button
-            onClick={() => {
-              setStudioFreeCam(!isStudioFreeCam);
-              showToast(isStudioFreeCam ? 'Camera locked to Player' : 'Studio Free-Cam unlocked (WASD pan)');
-            }}
-            className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
-              isStudioFreeCam
-                ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/60 font-bold'
-                : 'bg-black/40 text-slate-400 hover:text-slate-200 border border-amber-500/10'
-            }`}
-            title="Studio Free-Cam (Decouples camera from player position for broad map editing)"
+            onClick={() => setWorldDropdownOpen((prev) => !prev)}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-[10px] text-foreground transition-all cursor-pointer"
+            title="Switch World Profile / Project Identity"
           >
-            <Camera className="w-3 h-3" />
-            <span className="hidden sm:inline">{isStudioFreeCam ? 'FreeCam' : 'PlayerCam'}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="font-bold truncate max-w-[110px]">{activeProfile?.name || 'Default Realm'}</span>
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
+          </button>
+
+          {worldDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-card/95 border border-border shadow-2xl rounded-xl py-1.5 backdrop-blur-2xl z-[160] flex flex-col font-mono text-xs">
+              <div className="px-3 py-1 text-[9px] font-bold text-muted-foreground uppercase border-b border-border/40">
+                World Profiles
+              </div>
+              {profiles.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={async () => {
+                    soundSynth?.playSelectSound?.();
+                    setActiveGameId(p.id);
+                    await setActiveWorldProfile(p.id);
+                    setWorldDropdownOpen(false);
+                    showToast(`Active World: ${p.name}`);
+                  }}
+                  className={`px-3 py-1.5 text-left text-[11px] flex items-center justify-between hover:bg-primary/20 ${
+                    p.id === activeGameId ? 'text-primary font-bold bg-primary/10' : 'text-foreground'
+                  }`}
+                >
+                  <span>{p.name}</span>
+                  {p.id === activeGameId && <CheckCircle2 className="w-3 h-3 text-primary" />}
+                </button>
+              ))}
+              <div className="h-px bg-border/40 my-1" />
+              <button
+                onClick={() => {
+                  setWorldDropdownOpen(false);
+                  setRealmSettingsOpen(true);
+                }}
+                className="px-3 py-1 text-left text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1.5"
+              >
+                <Settings className="w-3 h-3" />
+                <span>Realm Settings...</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Active Document Breadcrumb & Save Indicator */}
+        <div className="flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-2 py-0.5 text-[10px]">
+          <Globe className="w-3 h-3 text-primary" />
+          <span className="font-bold text-foreground truncate max-w-[120px]">
+            {currentMapId || 'DEMO_SANDBOX'}
+          </span>
+          {mapDirty && (
+            <span className="text-primary font-bold animate-pulse" title="Unsaved changes">
+              *
+            </span>
+          )}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT))}
+            disabled={isSavingMap}
+            className={`ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+              mapDirty
+                ? 'bg-primary text-primary-foreground shadow-sm hover:opacity-90'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Save Active Map (Ctrl+S)"
+          >
+            {isSavingMap ? 'Saving...' : 'Save'}
           </button>
         </div>
 
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-0.5 border-r border-border/40 pr-2">
+          <button
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              const map = useGameStore.getState().activeMapData;
+              if (!map) return;
+              const res = useEditorStore.getState().triggerUndo(map);
+              if (res.ok) showToast('Undo');
+              else showToast('Nothing to undo');
+            }}
+            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => {
+              soundSynth?.playUiClick?.();
+              const map = useGameStore.getState().activeMapData;
+              if (!map) return;
+              const res = useEditorStore.getState().triggerRedo(map);
+              if (res.ok) showToast('Redo');
+              else showToast('Nothing to redo');
+            }}
+            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer"
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Primary Menus */}
         <div className="flex items-center gap-0.5">
           <TopLevelMenu id="file" label="File">
             <MenuItem
-              label="Browse All Maps..."
+              label="Browse All Maps (Atlas)..."
               shortcut="Ctrl+Shift+M"
               icon={Globe}
               onClick={() => {
                 if (onOpenMapBrowser) onOpenMapBrowser();
-                else useEditorStore.getState().openPanel('atlas');
+                else openPanel('atlas');
               }}
             />
             <MenuItem
               label="New Map..."
               icon={Folder}
               onClick={() => {
-                useEditorStore.getState().openPanel('build');
+                openPanel('build');
                 showToast('Opened World Builder (Create Map)');
               }}
             />
@@ -235,33 +343,34 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="Map Diagnostics & Problems"
               icon={CheckCircle2}
-              onClick={() => {
-                useEditorStore.getState().openPanel('problems');
-              }}
+              onClick={() => openPanel('problems')}
             />
             <MenuItem
               label="Realm Settings & Identity..."
               icon={Settings}
-              onClick={() => {
-                setRealmSettingsOpen(true);
-              }}
+              onClick={() => setRealmSettingsOpen(true)}
             />
             <MenuItem divider />
-            <MenuItem label="Save Map" shortcut="Ctrl+S" icon={Save} onClick={() => {
-              window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
-            }} />
+            <MenuItem
+              label="Save Map"
+              shortcut="Ctrl+S"
+              icon={Save}
+              onClick={() => window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT))}
+            />
             <MenuItem divider />
             <MenuItem
-              label="Save & Exit to Character Select"
+              label="Save & Exit to Lobby"
               shortcut="Ctrl+Shift+Q"
               icon={LogOut}
               onClick={() => {
                 window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
-                setTimeout(() => { window.location.href = '/lobby'; }, 500);
+                setTimeout(() => {
+                  window.location.href = '/lobby';
+                }, 500);
               }}
             />
             <MenuItem
-              label="Exit to Character Select"
+              label="Exit to Lobby"
               icon={LogOut}
               onClick={() => {
                 const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
@@ -277,59 +386,45 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </TopLevelMenu>
 
           <TopLevelMenu id="edit" label="Edit">
-            <MenuItem 
-              label="Undo" 
-              shortcut="Ctrl+Z" 
-              icon={Undo} 
+            <MenuItem
+              label="Undo"
+              shortcut="Ctrl+Z"
+              icon={Undo2}
               onClick={() => {
                 const map = useGameStore.getState().activeMapData;
                 if (!map) return;
-                const res = useEditorStore.getState().triggerUndo(map);
-                if (res.ok) showToast('Undo');
-                else showToast('Nothing to undo');
-              }} 
+                useEditorStore.getState().triggerUndo(map);
+              }}
             />
-            <MenuItem 
-              label="Redo" 
-              shortcut="Ctrl+Y" 
-              icon={Redo} 
+            <MenuItem
+              label="Redo"
+              shortcut="Ctrl+Y"
+              icon={Redo2}
               onClick={() => {
                 const map = useGameStore.getState().activeMapData;
                 if (!map) return;
-                const res = useEditorStore.getState().triggerRedo(map);
-                if (res.ok) showToast('Redo');
-                else showToast('Nothing to redo');
-              }} 
+                useEditorStore.getState().triggerRedo(map);
+              }}
             />
             <MenuItem divider />
             <MenuItem
-              label="Cut"
+              label="Cut Selection"
               shortcut="Ctrl+X"
               icon={Scissors}
               onClick={() => {
                 const map = useGameStore.getState().activeMapData;
                 if (!map) return;
-                const res = useEditorStore.getState().cutSelection(map);
-                if (res.ok) {
-                  showToast(`Cut ${res.width}×${res.height} tiles (${res.count} cleared)`);
-                } else {
-                  showToast(res.error || 'Cut failed');
-                }
+                useEditorStore.getState().cutSelection(map);
               }}
             />
             <MenuItem
-              label="Copy"
+              label="Copy Selection"
               shortcut="Ctrl+C"
               icon={Copy}
               onClick={() => {
                 const map = useGameStore.getState().activeMapData;
                 if (!map) return;
-                const res = useEditorStore.getState().copySelection(map);
-                if (res.ok) {
-                  showToast(`Copied ${res.width}×${res.height} tiles to clipboard`);
-                } else {
-                  showToast(res.error || 'Copy failed');
-                }
+                useEditorStore.getState().copySelection(map);
               }}
             />
             <MenuItem
@@ -337,14 +432,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               shortcut="Ctrl+V"
               icon={Clipboard}
               onClick={() => {
-                const clip = useEditorStore.getState().tileClipboard;
-                if (!clip) {
-                  showToast('Clipboard is empty. Copy tiles first (Ctrl+C).');
-                  return;
-                }
                 useEditorStore.getState().setIsPasting(true);
                 useEditorStore.getState().setBrushMode('paste');
-                showToast(`Paste active (${clip.width}×${clip.height}) — click to place`);
               }}
             />
             <MenuItem
@@ -354,91 +443,48 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               onClick={() => {
                 const map = useGameStore.getState().activeMapData;
                 const clip = useEditorStore.getState().tileClipboard;
-                if (!map || !clip) {
-                  showToast('Clipboard is empty.');
-                  return;
-                }
-                const res = useEditorStore.getState().pasteClipboard(
-                  map,
-                  null,
-                  clip.sourceOrigin.r,
-                  clip.sourceOrigin.c
-                );
-                if (res.ok) {
-                  showToast(`Pasted in place at [${clip.sourceOrigin.c}, ${clip.sourceOrigin.r}]`);
-                } else {
-                  showToast(res.error || 'Paste failed');
-                }
-              }}
-            />
-            <MenuItem
-              label="Paste to New Layer"
-              icon={Layers}
-              onClick={() => {
-                const clip = useEditorStore.getState().tileClipboard;
-                if (!clip) {
-                  showToast('Clipboard is empty.');
-                  return;
-                }
-                useEditorStore.getState().setPasteMode('new_layer');
-                useEditorStore.getState().setIsPasting(true);
-                useEditorStore.getState().setBrushMode('paste');
-                showToast('Pasting onto a New Layer — click to place');
+                if (!map || !clip) return;
+                useEditorStore.getState().pasteClipboard(map, null, clip.sourceOrigin.r, clip.sourceOrigin.c);
               }}
             />
           </TopLevelMenu>
 
-          <TopLevelMenu id="view" label="View">
-            <MenuItem
-              label="World Atlas (Full Workspace)"
-              shortcut="Ctrl+Shift+M"
-              icon={Globe}
-              onClick={() => {
-                useEditorStore.getState().setStudioMode('atlas');
-              }}
-            />
-            <MenuItem
-              label="Asset Studio (Full Workspace)"
-              shortcut="Ctrl+Shift+A"
-              icon={Box}
-              onClick={() => {
-                useEditorStore.getState().setStudioMode('assets');
-              }}
-            />
-            <MenuItem
-              label="Hero Studio (Full Workspace)"
-              shortcut="Ctrl+Shift+H"
-              icon={UserCircle}
-              onClick={() => {
-                useEditorStore.getState().setStudioMode('hero');
-              }}
-            />
+          <TopLevelMenu id="windows" label="Windows">
+            <MenuItem label="Tile Selector" icon={LayoutGrid} onClick={() => openPanel('tileset')} />
+            <MenuItem label="Logic Painter" icon={Shield} onClick={() => openPanel('logic')} />
+            <MenuItem label="Properties / Inspector" icon={Settings} onClick={() => openPanel('properties')} />
+            <MenuItem label="World Builder" icon={Folder} onClick={() => openPanel('build')} />
+            <MenuItem label="World Atlas" icon={Globe} onClick={() => openPanel('atlas')} />
+            <MenuItem label="Asset Browser" icon={Box} onClick={() => openPanel('assets')} />
             <MenuItem divider />
-            <MenuItem label="World Atlas (Dock)" shortcut="Ctrl+Shift+P" icon={Globe} onClick={() => useEditorStore.getState().openPanel('atlas')} />
-            <MenuItem label="Inspector" onClick={() => useEditorStore.getState().openPanel('properties')} />
-            <MenuItem label="World Builder" onClick={() => useEditorStore.getState().openPanel('build')} />
-            <MenuItem label="Problems & Diagnostics" shortcut="Ctrl+Shift+O" icon={AlertCircle} onClick={() => useEditorStore.getState().openPanel('problems')} />
-            <MenuItem label="Streaming Inspector" icon={Activity} onClick={() => useEditorStore.getState().openPanel('streaming')} />
-            <MenuItem label="Server & Game Settings" icon={Settings} onClick={() => useEditorStore.getState().openPanel('settings')} />
-            <MenuItem label="Dungeons" onClick={() => useEditorStore.getState().openPanel('dungeon')} />
-            <MenuItem label="Economy & Shops" onClick={() => useEditorStore.getState().openPanel('shop')} />
-            <MenuItem label="World Events" onClick={() => useEditorStore.getState().openPanel('worldevent')} />
-            <MenuItem label="Simulation Presets" onClick={() => useEditorStore.getState().openPanel('simulation')} />
+            <MenuItem label="NPC Studio" icon={Users} onClick={() => openPanel('npc')} />
+            <MenuItem label="Creature Studio" icon={PawPrint} onClick={() => openPanel('creature')} />
+            <MenuItem label="Quest Studio" icon={ScrollText} onClick={() => openPanel('quest')} />
+            <MenuItem label="Dialogue Editor" icon={MessageSquare} onClick={() => openPanel('dialogue')} />
+            <MenuItem label="Loot Manager" icon={Coins} onClick={() => openPanel('loot')} />
+            <MenuItem label="Monster Spawners" icon={PawPrint} onClick={() => openPanel('spawner')} />
+            <MenuItem label="Prefabs" icon={Box} onClick={() => openPanel('prefab')} />
             <MenuItem divider />
-            <MenuItem label="Reset Layout" onClick={() => {
-              window.localStorage.removeItem('saints.panelLayouts');
-              window.location.reload();
-            }} />
+            <MenuItem label="Problems & Diagnostics" icon={AlertCircle} onClick={() => openPanel('problems')} />
+            <MenuItem label="Publish & Releases" icon={CloudUpload} onClick={() => openPanel('publishing')} />
+            <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
+            <MenuItem divider />
+            <MenuItem
+              label="Reset Workspace Layout"
+              onClick={() => {
+                window.localStorage.removeItem('saints.panelLayouts');
+                window.location.reload();
+              }}
+            />
           </TopLevelMenu>
-
 
           <TopLevelMenu id="mode" label="Mode">
             {Object.entries(STUDIO_MODE_META).map(([key, meta]) => {
               if (key === 'test') return null;
               return (
-                <MenuItem 
-                  key={key} 
-                  label={meta.label || (meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1))} 
+                <MenuItem
+                  key={key}
+                  label={meta.label || (meta.canonical.charAt(0).toUpperCase() + meta.canonical.slice(1))}
                   icon={studioMode === key ? CheckCircle2 : undefined}
                   onClick={() => handleSwitchMode(key as StudioMode)}
                 />
@@ -447,178 +493,190 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </TopLevelMenu>
 
           <TopLevelMenu id="help" label="Help">
-            <MenuItem 
-              label="Keyboard Shortcuts" 
-              shortcut="?" 
-              icon={Keyboard} 
-              onClick={() => setShortcutsOpen(true)} 
+            <MenuItem label="Keyboard Shortcuts" shortcut="?" icon={Keyboard} onClick={() => setShortcutsOpen(true)} />
+            <MenuItem label="Activity Log" icon={Bell} onClick={() => setNotificationHistoryOpen(true)} />
+            <MenuItem
+              label="Studio Documentation"
+              onClick={() => window.open('https://github.com/giogimic/SaintsGamingWeb', '_blank')}
             />
-            <MenuItem 
-              label="Activity & Notice Log" 
-              icon={Bell} 
-              onClick={() => setNotificationHistoryOpen(true)} 
-            />
-            <MenuItem label="Studio Documentation" onClick={() => window.open('https://github.com/giogimic/SaintsGamingWeb', '_blank')} />
           </TopLevelMenu>
         </div>
       </div>
 
-      {/* Zone 2: Center - Mode Transition Switcher */}
-      <div className="flex items-center bg-black/80 p-0.5 rounded-lg border border-amber-500/40 shadow-inner">
+      {/* ─── ZONE 2: Command Search & Segmented Mode Switcher ─── */}
+      <div className="flex items-center gap-2">
+        {/* Omnisearch Bar */}
         <button
           onClick={() => {
-            soundSynth?.playActionSound?.();
-            if (!isCreationMode) toggleCreationMode();
-            if (studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero') setStudioMode('develop');
+            soundSynth?.playSelectSound?.();
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
           }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-            isCreationMode && studioMode !== 'assets' && studioMode !== 'atlas' && studioMode !== 'hero'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-          title="Editor Mode — World & Entity Tools (Ctrl+E)"
+          className="flex items-center gap-2 px-3 py-1 rounded-lg bg-background/60 hover:bg-background/90 text-muted-foreground hover:text-foreground transition-all text-[10px] font-mono border border-border/60 shadow-sm cursor-pointer"
         >
-          <Wrench className="w-3.5 h-3.5" />
-          <span>Edit</span>
+          <Search className="w-3.5 h-3.5 text-primary" />
+          <span className="hidden sm:inline">Omnisearch...</span>
+          <span className="bg-card px-1 py-0.5 rounded border border-border/60 text-[9px] font-bold">Ctrl+K</span>
         </button>
+
+        {/* Mode Segmented Switcher */}
+        <div className="hidden lg:flex items-center bg-background/70 p-0.5 rounded-lg border border-border/60 shadow-inner">
+          <button
+            onClick={() => handleSwitchMode('develop')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'develop'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Paint Terrain & Logic (Develop)"
+          >
+            Paint
+          </button>
+          <button
+            onClick={() => handleSwitchMode('atlas')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'atlas'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="World Atlas (Ctrl+Shift+M)"
+          >
+            Atlas
+          </button>
+          <button
+            onClick={() => handleSwitchMode('npc')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'npc'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Populate NPCs & Spawners"
+          >
+            Populate
+          </button>
+          <button
+            onClick={() => handleSwitchMode('quest')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'quest'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Script Quests & Dialogues"
+          >
+            Script
+          </button>
+          <button
+            onClick={() => handleSwitchMode('creature')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'creature'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Creatures & Loot Catalog"
+          >
+            Catalog
+          </button>
+          <button
+            onClick={() => handleSwitchMode('assets')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'assets'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Asset Manager"
+          >
+            Assets
+          </button>
+          <button
+            onClick={() => handleSwitchMode('hero')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+              studioMode === 'hero'
+                ? 'bg-primary text-primary-foreground shadow'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+            title="Hero Studio"
+          >
+            Hero
+          </button>
+        </div>
+      </div>
+
+      {/* ─── ZONE 3: Problems Badge, PIE Playtest, Theme & Settings ─── */}
+      <div className="flex items-center gap-2">
+        {/* Problems & Validation Counter Badge */}
         <button
           onClick={() => {
-            soundSynth?.playActionSound?.();
-            if (!isCreationMode) toggleCreationMode();
-            setStudioMode('atlas');
+            soundSynth?.playSelectSound?.();
+            openPanel('problems');
           }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-            isCreationMode && studioMode === 'atlas'
-              ? 'bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-          title="World Atlas — Macro Layout, Map Library, and Seam Management (Ctrl+Shift+M)"
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-[10px] text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+          title="Validation & Problems Diagnostics (Ctrl+Shift+O)"
         >
-          <Globe className="w-3.5 h-3.5" />
-          <span>Atlas</span>
+          <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+          <span className="font-bold">Diagnostics</span>
         </button>
-        <button
-          onClick={() => {
-            soundSynth?.playActionSound?.();
-            if (!isCreationMode) toggleCreationMode();
-            setStudioMode('assets');
-          }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-            isCreationMode && studioMode === 'assets'
-              ? 'bg-gradient-to-r from-cyan-600 to-cyan-500 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-          title="Asset Manager — Characters, Audio, Packs, and Catalog (Ctrl+Shift+A)"
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Assets</span>
-        </button>
-        <button
-          onClick={() => {
-            soundSynth?.playActionSound?.();
-            if (!isCreationMode) toggleCreationMode();
-            setStudioMode('hero');
-          }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-            isCreationMode && studioMode === 'hero'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-          title="Hero Studio — Archetypes, Classes, and Hero Loadouts (Ctrl+Shift+H)"
-        >
-          <UserCircle className="w-3.5 h-3.5" />
-          <span>Hero</span>
-        </button>
-        <div className="w-px h-4 bg-amber-500/30 mx-1" />
+
+        {/* Playtest Toggle (PIE) */}
         <button
           onClick={async () => {
             soundSynth?.playActionSound?.();
             if (isCreationMode) {
               const hasUnsaved = useEditorStore.getState().hasUnsavedChanges || useEditorStore.getState().mapDirty;
               if (hasUnsaved) {
-                if (confirm('You have unsaved changes. They will be lost if the map reloads during playtesting. Save before playing?')) {
+                if (
+                  confirm(
+                    'You have unsaved changes. They will be lost if the map reloads during playtesting. Save before playing?'
+                  )
+                ) {
                   window.dispatchEvent(new CustomEvent(STUDIO_TRIGGER_SAVE_MAP_EVENT));
                   await new Promise((r) => setTimeout(r, 400));
                 }
               }
-              toggleCreationMode();
             }
+            toggleCreationMode();
           }}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer shadow-md ${
             !isCreationMode
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-md'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+              : 'bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30'
           }`}
-          title="Playtest Mode — Test in Private Shard (Ctrl+E)"
+          title="Toggle Playtest Mode (Ctrl+E)"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
-          <span>Play Test</span>
-        </button>
-      </div>
-
-      {/* Zone 3: Right - Quick Global Actions */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => {
-            soundSynth?.playUiClick?.();
-            const map = useGameStore.getState().activeMapData;
-            if (!map) return;
-            const res = useEditorStore.getState().triggerUndo(map);
-            if (res.ok) showToast('Undo');
-          }}
-          className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo className="w-3.5 h-3.5" />
-        </button>
-        <button
-          onClick={() => {
-            soundSynth?.playUiClick?.();
-            const map = useGameStore.getState().activeMapData;
-            if (!map) return;
-            const res = useEditorStore.getState().triggerRedo(map);
-            if (res.ok) showToast('Redo');
-          }}
-          className="p-1 rounded text-slate-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-          title="Redo (Ctrl+Y)"
-        >
-          <Redo className="w-3.5 h-3.5" />
+          <span>{isCreationMode ? 'Playtest' : 'Stop Play'}</span>
         </button>
 
-        <button 
-          onClick={() => {
-            soundSynth?.playSelectSound?.();
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }));
-          }} 
-          className="flex items-center gap-2 px-2.5 py-1 rounded bg-amber-500/15 text-slate-300 hover:text-white hover:bg-amber-500/30 transition-colors text-[10px] font-mono border border-amber-500/40 shadow-sm cursor-pointer"
-        >
-          <Search className="w-3 h-3 text-amber-400" />
-          <span>Omnisearch</span>
-          <span className="bg-black/60 px-1 rounded text-slate-400 text-[9px]">Ctrl+K</span>
-        </button>
+        {/* Theme Switcher Toggle (Dark / Sunset / Vice) */}
+        {mounted && (
+          <button
+            onClick={cycleTheme}
+            className="p-1.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title={`Studio Style: ${theme?.toUpperCase()} — click to switch`}
+          >
+            {theme === 'light' ? (
+              <Sun className="w-3.5 h-3.5 text-amber-400" />
+            ) : theme === 'vice' ? (
+              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+            ) : (
+              <Moon className="w-3.5 h-3.5 text-indigo-400" />
+            )}
+          </button>
+        )}
 
+        {/* Notifications Activity Bell */}
         <button
           onClick={() => {
             soundSynth?.playSelectSound?.();
             setNotificationHistoryOpen(true);
           }}
-          className="p-1 rounded text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors cursor-pointer"
-          title="Studio Activity & Notification Log"
+          className="p-1.5 rounded-lg bg-background/50 border border-border/60 hover:border-primary/50 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          title="Notification History"
         >
           <Bell className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      <RealmSettingsModal
-        isOpen={realmSettingsOpen}
-        onClose={() => setRealmSettingsOpen(false)}
-      />
-
-      <StudioShortcutsModal
-        isOpen={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
-
+      <RealmSettingsModal isOpen={realmSettingsOpen} onClose={() => setRealmSettingsOpen(false)} />
+      <StudioShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <NotificationHistoryModal
         isOpen={notificationHistoryOpen}
         onClose={() => setNotificationHistoryOpen(false)}
@@ -626,4 +684,3 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
     </div>
   );
 }
-

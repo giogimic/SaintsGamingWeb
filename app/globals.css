@@ -424,46 +424,113 @@
   box-shadow: 1.4em 0, 2.8em 0, 4.2em 0;
 }
 
-/* Studio FlexLayout Overrides */
-.flexlayout__layout { pointer-events: none !important; background: transparent !important; }
-.flexlayout__tabset { pointer-events: auto !important; }
-.flexlayout__splitter { pointer-events: auto !important; }
-.flexlayout__border { pointer-events: auto !important; }
-.flexlayout__tab { pointer-events: auto !important; background: transparent !important; }
-.flexlayout__tabset_header { pointer-events: auto !important; }
-.flexlayout__popup { pointer-events: auto !important; }
-
-/*
- * Viewport Pass-through
- * Newer flexlayout-react keeps tab *body* under `.flexlayout__tab_moveable` as a
- * sibling of the tabset chrome — `:has(.sg-viewport-container)` on the tabset
- * never matches. The Viewport tab *button* still carries `.sg-viewport-tab` inside
- * the center tabset strip, so `:has(.sg-viewport-tab)` is the reliable selector.
- */
-.flexlayout__tabset:has(.sg-viewport-tab),
-.flexlayout__tabset.sg-viewport-tabset {
-  background: transparent !important;
+/* ─── Studio Window & FlexLayout Design System (Theme-Aware) ─── */
+.flexlayout__layout {
   pointer-events: none !important;
+  background: transparent !important;
+}
+.flexlayout__tabset {
+  pointer-events: auto !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45) !important;
+  overflow: hidden !important;
+}
+.flexlayout__splitter {
+  pointer-events: auto !important;
+  background: transparent !important;
+  transition: background 0.15s ease;
+}
+.flexlayout__splitter:hover,
+.flexlayout__splitter_drag {
+  background: var(--primary) !important;
+  opacity: 0.7;
+}
+.flexlayout__border {
+  pointer-events: auto !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--border) !important;
+}
+.flexlayout__tab {
+  pointer-events: auto !important;
+  background: transparent !important;
+}
+.flexlayout__tabset_header {
+  pointer-events: auto !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-family: var(--font-geist-mono), monospace !important;
+}
+.flexlayout__tabset_tabbar_outer {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.flexlayout__tab_button {
+  font-family: var(--font-geist-mono), monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  color: var(--muted-foreground) !important;
+  background: transparent !important;
   border: none !important;
-  box-shadow: none !important;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+  padding: 4px 10px !important;
+  transition: all 0.15s ease !important;
 }
-.flexlayout__tabset:has(.sg-viewport-tab) > .flexlayout__tabset_tabbar_outer,
-.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_header,
-.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_tabbar_inner,
-.flexlayout__tabset.sg-viewport-tabset > .flexlayout__tabset_tabbar_outer,
-.flexlayout__tabset.sg-viewport-tabset .flexlayout__tabset_header,
-.flexlayout__tabset.sg-viewport-tabset .flexlayout__tabset_tabbar_inner {
-  display: none !important;
+.flexlayout__tab_button:hover {
+  color: var(--foreground) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
-.flexlayout__tabset:has(.sg-viewport-tab) .flexlayout__tabset_content,
-.flexlayout__tabset.sg-viewport-tabset .flexlayout__tabset_content {
-  pointer-events: none !important;
-  background: transparent !important;
+.flexlayout__tab_button--selected {
+  color: var(--primary) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 2px solid var(--primary) !important;
+  font-weight: 700 !important;
 }
-/* Fallbacks if content is nested / moved */
-.flexlayout__tabset:has(.sg-viewport-container) { background: transparent !important; pointer-events: none !important; border: none !important; }
-.flexlayout__tabset_content:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
-.flexlayout__tab:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
-.flexlayout__tab_moveable:has(.sg-viewport-container) { pointer-events: none !important; background: transparent !important; }
-.sg-viewport-tab { pointer-events: none !important; background: transparent !important; }
-.sg-viewport-container { pointer-events: none !important; background: transparent !important; }
+.flexlayout__tab_button_trailing {
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+.flexlayout__tab_button_trailing:hover {
+  opacity: 1;
+  color: var(--destructive) !important;
+}
+.flexlayout__popup {
+  pointer-events: auto !important;
+  background: var(--card) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ─── Windowed Map Viewport Styling ─── */
+.sg-viewport-container {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6) !important;
+  overflow: hidden !important;
+}
+
+/* Custom Scrollbar for Studio surfaces */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+

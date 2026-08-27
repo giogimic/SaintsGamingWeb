@@ -48,6 +48,8 @@ export type StudioDockId =
   | 'mounts'
   | 'worldevent'
   | 'simulation'
+  | 'tileset'
+  | 'logic'
   | 'publishing';
 
 /** Map stable internal ids → canonical engine-editor labels. */
@@ -232,6 +234,14 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   simulation: {
     label: 'Simulation Presets',
     blurb: 'Configure hardcore rules and experience multipliers.',
+  },
+  tileset: {
+    label: 'Tile Selector',
+    blurb: 'Visual tileset picker, GID brush selection, layer selection, and tileset swapping.',
+  },
+  logic: {
+    label: 'Logic Painter',
+    blurb: 'Author gameplay tags, collision boundaries, and interactive triggers directly onto the map.',
   },
   publishing: {
     label: 'Publish & Releases',

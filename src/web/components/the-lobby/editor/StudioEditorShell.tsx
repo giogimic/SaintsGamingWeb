@@ -80,6 +80,8 @@ const MountEditorPanel = lazy(() => import('./panels/MountEditorPanel').then((m)
 const WorldEventPanel = lazy(() => import('./panels/WorldEventPanel').then((m) => ({ default: m.WorldEventPanel })));
 const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel').then((m) => ({ default: m.SimulationPresetPanel })));
 const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
+const TileSelectorPanel = lazy(() => import('./panels/TileSelectorPanel').then((m) => ({ default: m.TileSelectorPanel })));
+const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
@@ -95,15 +97,17 @@ const initialLayout: IJsonModel = {
     children: [
       {
         type: "tabset",
-        weight: 20,
+        weight: 22,
         id: "left-dock",
         children: [
-          { type: "tab", id: "build", name: "World Builder", component: "build" }
+          { type: "tab", id: "build", name: "World Builder", component: "build" },
+          { type: "tab", id: "tileset", name: "Tile Selector", component: "tileset" },
+          { type: "tab", id: "logic", name: "Logic Painter", component: "logic" }
         ]
       },
       {
         type: "tabset",
-        weight: 60,
+        weight: 56,
         id: "center-viewport",
         children: [
           {
@@ -119,10 +123,11 @@ const initialLayout: IJsonModel = {
       },
       {
         type: "tabset",
-        weight: 20,
+        weight: 22,
         id: "right-dock",
         children: [
-          { type: "tab", id: "properties", name: "Properties", component: "properties" }
+          { type: "tab", id: "properties", name: "Properties", component: "properties" },
+          { type: "tab", id: "problems", name: "Diagnostics", component: "problems" }
         ]
       }
     ]
@@ -131,9 +136,10 @@ const initialLayout: IJsonModel = {
     {
       type: "border",
       location: "bottom",
-      size: 300,
+      size: 280,
       children: [
-        { type: "tab", id: "assets", name: "Sprite Picker", component: "assets" },
+        { type: "tab", id: "assets", name: "Asset Browser", component: "assets" },
+        { type: "tab", id: "atlas", name: "World Atlas", component: "atlas" },
         { type: "tab", id: "dev", name: "Dev Tools", component: "dev" }
       ]
     }
@@ -823,6 +829,8 @@ export const StudioEditorShell: React.FC = () => {
         {(() => {
           switch (component) {
             case 'build': return <WorldBuilderPanel />;
+            case 'tileset': return <TileSelectorPanel />;
+            case 'logic': return <LogicPainterPanel />;
             case 'properties': return <PropertiesPanel />;
             case 'assets': return <AssetBrowserPanel />;
             case 'npc': return <EntityEditorPanel />;
