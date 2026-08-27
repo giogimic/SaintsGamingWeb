@@ -32,6 +32,7 @@ import {
   Loader2,
   Grid3X3,
   Layers,
+  Settings,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -48,12 +49,9 @@ import { PasteOptionsToolbar } from './PasteOptionsToolbar';
 import { StudioOmnisearch } from './StudioOmnisearch';
 import { StudioFavoritesStrip } from './StudioFavoritesStrip';
 import { StudioBottomToolbar } from './StudioBottomToolbar';
-import { FullScreenMapBrowser } from './FullScreenMapBrowser';
 import { AssetStudioSuite } from './AssetStudioSuite';
-import { AtlasStudioSuite } from './AtlasStudioSuite';
 import { HeroStudioSuite } from './hero-studio/HeroStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
-import { AtlasDiagnosticOverlay } from './AtlasDiagnosticOverlay';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
 const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
@@ -84,6 +82,7 @@ const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').th
 const TileSelectorPanel = lazy(() => import('./panels/TileSelectorPanel').then((m) => ({ default: m.TileSelectorPanel })));
 const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
+const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
 import { DraggablePanel } from './DraggablePanel';
@@ -106,7 +105,7 @@ export const StudioEditorShell: React.FC = () => {
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
-  const [mapBrowserOpen, setMapBrowserOpen] = useState(false);
+
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 
   useEffect(() => {
@@ -688,16 +687,13 @@ export const StudioEditorShell: React.FC = () => {
     <>
       <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10">
         <StudioMenuBar
-          onOpenMapBrowser={() => setMapBrowserOpen(true)}
+          onOpenMapBrowser={() => useEditorStore.getState().openPanel('maps')}
           onOpenAssetBrowser={() => setStudioMode('assets')}
         />
         <PasteOptionsToolbar />
         <StudioFavoritesStrip />
         <StudioOmnisearch open={omnisearchOpen} onClose={() => setOmnisearchOpen(false)} />
         
-        {/* Full-Screen Overlay Modals */}
-        <FullScreenMapBrowser isOpen={mapBrowserOpen} onClose={() => setMapBrowserOpen(false)} />
-
         {/* Context Menu */}
         {contextMenu && (
           <StudioContextMenu
@@ -806,16 +802,29 @@ export const StudioEditorShell: React.FC = () => {
               <Suspense fallback={<div>Loading...</div>}><StudioProblemsPanel /></Suspense>
             </DraggablePanel>
           )}
+
+          {canUseStudioDock(permissionLevel, 'atlas') && (
+            <DraggablePanel id="atlas" icon={<Globe className="w-4 h-4" />} title="World Atlas">
+              <Suspense fallback={<div>Loading...</div>}><WorldAtlasPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'settings') && (
+            <DraggablePanel id="settings" icon={<Settings className="w-4 h-4" />} title="Server Settings">
+              <Suspense fallback={<div>Loading...</div>}><RealmSettingsPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'atlas') && (
+            <DraggablePanel id="maps" icon={<Globe className="w-4 h-4" />} title="Map Browser">
+              <Suspense fallback={<div>Loading...</div>}><MapListPanel /></Suspense>
+            </DraggablePanel>
+          )}
         </div>
 
         {/* Asset Management Mode — full workspace replacement */}
         {studioMode === 'assets' && (
           <AssetStudioSuite />
-        )}
-
-        {/* Atlas World Mode — full workspace replacement */}
-        {studioMode === 'atlas' && (
-          <AtlasStudioSuite />
         )}
 
         {/* Hero Studio Mode — full workspace replacement */}
@@ -829,9 +838,6 @@ export const StudioEditorShell: React.FC = () => {
           onOpenAssetBrowser={() => setStudioMode('assets')}
           onOpenHeroStudio={() => setStudioMode('hero')}
         />
-
-        {/* Developer Atlas Diagnostic Overlay */}
-        <AtlasDiagnosticOverlay />
       </div>
 
       <RuleDebuggerOverlay />

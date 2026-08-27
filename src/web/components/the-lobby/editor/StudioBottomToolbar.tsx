@@ -20,12 +20,49 @@ import {
   Activity,
   Radio,
   Users,
+  Compass,
 } from 'lucide-react';
 import { useEditorStore } from './editor-store';
 import { useGameStore } from '../store';
 import { soundSynth } from '@/engine/sound-synth';
 import { LOGIC_COMPONENT_PRESETS } from '@/shared/game/logicComponents';
+import { getClientAtlas } from '../data/maps';
+import { type AtlasGridData, getAdjacentAtlasNeighbors } from '@/shared/game/atlas/spatialAtlas';
 
+const InlineAtlasStatus = () => {
+  const currentMapId = useGameStore((s) => s.currentMapId);
+  const activeAtlasNodeId = useGameStore((s) => s.activeAtlasNodeId);
+  const [atlas, setAtlas] = useState<AtlasGridData | null>(null);
+
+  useEffect(() => {
+    getClientAtlas().then(setAtlas).catch(() => {});
+  }, [currentMapId, activeAtlasNodeId]);
+
+  const node = atlas?.nodes.find((n) => (activeAtlasNodeId ? n.id === activeAtlasNodeId : n.mapId === currentMapId));
+  const neighbors = node && atlas ? getAdjacentAtlasNeighbors(atlas, node) : null;
+
+  if (!node) {
+    return (
+      <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-background/50 border border-border/40 text-[9px] text-muted-foreground" title="Unbound Map">
+        <Compass className="w-3 h-3 text-amber-500/50" />
+        <span>Unbound</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hidden md:flex items-center gap-2 text-[9px] bg-background/50 border border-border/40 px-2 py-0.5 rounded">
+      <Compass className="w-3 h-3 text-amber-400" />
+      <span className="text-amber-400 font-bold truncate max-w-[60px]">{node.mapId}</span>
+      <div className="flex gap-1.5 text-muted-foreground border-l border-border/40 pl-1.5">
+        <span title={`North: ${neighbors?.north?.mapId || 'none'}`}>N:{neighbors?.north ? '✓' : '×'}</span>
+        <span title={`East: ${neighbors?.east?.mapId || 'none'}`}>E:{neighbors?.east ? '✓' : '×'}</span>
+        <span title={`South: ${neighbors?.south?.mapId || 'none'}`}>S:{neighbors?.south ? '✓' : '×'}</span>
+        <span title={`West: ${neighbors?.west?.mapId || 'none'}`}>W:{neighbors?.west ? '✓' : '×'}</span>
+      </div>
+    </div>
+  );
+};
 interface StudioBottomToolbarProps {
   layoutRef?: React.RefObject<any>;
   model?: any;
@@ -66,6 +103,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const showToast = useGameStore((s) => s.showToast);
 
   const [zoomPercent, setZoomPercent] = useState<number>(100);
+  const [atlasInspectorOpen, setAtlasInspectorOpen] = useState<boolean>(false);
 
   const selectedCount = useEditorStore.getState().getSelectedCount();
   const bounds = useEditorStore.getState().getSelectedBounds();
@@ -379,6 +417,9 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <span className="hidden sm:inline">{isStudioFreeCam ? 'FreeCam' : 'Locked'}</span>
         </button>
 
+        {/* Inline Atlas Status */}
+        <InlineAtlasStatus />
+
         {/* Zoom Controls */}
         <div className="flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-1.5 py-0.5 text-[10px]">
           <button onClick={handleZoomOut} className="hover:text-primary px-0.5 cursor-pointer font-bold" title="Zoom Out">
@@ -418,6 +459,8 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           )}
         </div>
       </div>
+
+
     </div>
   );
 };

@@ -143,9 +143,12 @@ export async function POST(request: Request) {
     const normalizedData = normalizeAtlasGridData(rawAtlasData);
     const atlasData = JSON.stringify(normalizedData);
 
-    let atlasResult: any = null;
+    console.log(`[Atlas] Saving atlas for gameId=${gameId}, nodes=${normalizedData.nodes?.length || 0}, lobbyMapId=${lobbyMapId}`);
 
-    // 1. Save directly to canonical WorldAtlas table
+    let atlasResult: any = null;
+    let savedVia = 'none';
+
+    // 1. Try WorldAtlas table first
     try {
       if ((prisma as any).worldAtlas) {
         atlasResult = await (prisma as any).worldAtlas.upsert({
@@ -160,33 +163,42 @@ export async function POST(request: Request) {
             atlasData,
           },
         });
+        savedVia = 'WorldAtlas';
+        console.log(`[Atlas] Saved via WorldAtlas table (id=${atlasResult?.id})`);
+      } else {
+        console.warn("[Atlas] prisma.worldAtlas is not available — Prisma client may need regeneration");
       }
     } catch (err) {
-      console.warn("[Atlas] WorldAtlas table upsert failed, attempting SiteSetting fallback:", err);
+      console.error("[Atlas] WorldAtlas table upsert failed:", err);
     }
 
-    // 2. Fallback to SiteSetting only if WorldAtlas table is not available
-    if (!atlasResult) {
-      try {
-        await prisma.siteSetting.upsert({
-          where: { key: `WORLD_ATLAS_${gameId}` },
-          create: {
-            key: `WORLD_ATLAS_${gameId}`,
-            value: JSON.stringify({ lobbyMapId, atlasData }),
-          },
-          update: {
-            value: JSON.stringify({ lobbyMapId, atlasData }),
-          },
-        });
+    // 2. Always mirror to SiteSetting as a secondary backup
+    try {
+      await prisma.siteSetting.upsert({
+        where: { key: `WORLD_ATLAS_${gameId}` },
+        create: {
+          key: `WORLD_ATLAS_${gameId}`,
+          value: JSON.stringify({ lobbyMapId, atlasData }),
+        },
+        update: {
+          value: JSON.stringify({ lobbyMapId, atlasData }),
+        },
+      });
+      if (!atlasResult) {
         atlasResult = { gameId, lobbyMapId, atlasData };
-      } catch (siteErr) {
-        console.error("[Atlas] SiteSetting save failed:", siteErr);
+        savedVia = 'SiteSetting';
+      }
+      console.log(`[Atlas] Mirrored to SiteSetting (primary=${savedVia})`);
+    } catch (siteErr) {
+      console.error("[Atlas] SiteSetting mirror save failed:", siteErr);
+      if (!atlasResult) {
         throw siteErr;
       }
     }
 
     return NextResponse.json({
       ok: true,
+      savedVia,
       atlas: {
         gameId: atlasResult.gameId || gameId,
         lobbyMapId: atlasResult.lobbyMapId || lobbyMapId,
@@ -195,6 +207,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Failed to save world atlas:", error);
-    return NextResponse.json({ error: "Failed to save atlas" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save atlas", details: String(error) }, { status: 500 });
   }
 }
