@@ -110,6 +110,7 @@ import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import GameToastStack from './GameToastStack';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
+import { MidnightTropicalBackground } from './MidnightTropicalBackground';
 import { MobileGameLauncher } from './MobileGameLauncher';
 
 const StudioEditorShell = dynamic(
@@ -1807,8 +1808,9 @@ export default function TheLobby({
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full touch-none select-none bg-[#0a0a0f] overflow-hidden"
+      className={`relative w-full h-full touch-none select-none overflow-hidden ${enableStudio ? 'bg-transparent' : 'bg-[#0a0a0f]'}`}
     >
+      {enableStudio && <MidnightTropicalBackground />}
       <GameCanvasBabylon 
         activeBrushTileId={activeBrushTileId}
         activeLayerIdx={activeLayerIdx}

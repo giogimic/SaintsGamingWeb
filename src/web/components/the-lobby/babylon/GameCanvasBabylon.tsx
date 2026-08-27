@@ -1958,7 +1958,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   }
 
   return (
-    <div className="absolute inset-0 w-full h-full bg-[#050508] overflow-hidden select-none">
+    <div className={`absolute inset-0 w-full h-full overflow-hidden select-none ${isDevEditorOpen ? 'bg-transparent' : 'bg-[#050508]'}`}>
       {/* Loading screen while async map data is fetching */}
       {!mapData && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#050508]">

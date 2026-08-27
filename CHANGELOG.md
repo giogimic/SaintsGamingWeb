@@ -1,3 +1,21 @@
+## [2.1.460-07] - 2026-08-27
+### Studio UI Shell, Style Integration & Windowed World Editing Architecture
+- **Global Studio Backdrop Layering**:
+  - Integrated `MidnightTropicalBackground` as the canonical Layer 1 environment behind `/studio` across all three theme styles (`dark`, `light` sunset, and `vice` neon).
+  - Unbundled the 3D map canvas from acting as the full-screen app backdrop, framing it as a first-class windowed viewport document inside FlexLayout.
+- **Studio Theme System & Visual Identity Integration**:
+  - Implemented comprehensive theme-aware styling for FlexLayout window chrome, glassmorphism containers (`var(--card)` with backdrop blur), theme-aware borders (`var(--border)`), tab headers, splitters, toolbars, and popups.
+  - Studio surfaces now visibly and cohesively adapt to `dark`, `light` (sunset twilight), and `vice` (Miami neon) palettes.
+- **Redesigned Command Top Bar (`StudioMenuBar`)**:
+  - Structured into 3 clear zones: Identity & Project Context (World Profile switcher + Save state + Quick Save + Undo/Redo), Command & Modes (Omnisearch Ctrl+K + Segmented Mode Switcher), and Status & Controls (Validation/Problems badge + Playtest PIE toggle + Theme cycle + Windows launcher menu).
+- **Redesigned Contextual Bottom Bar (`StudioBottomToolbar`)**:
+  - Replaced overcrowded 15+ launcher button strip with a quiet contextual surface: Tool Mode buttons, Brush Size, Stamp Transforms (X, Y, Z), Live Selection bounds, Hover Coordinates, Active Layer chip, Brush GID/Logic tag preview, Viewport zoom & overlay toggles, and latency/FPS telemetry.
+- **First-Class Dockable Tool Panels**:
+  - Created `TileSelectorPanel` and `LogicPainterPanel` as persistent, dockable windows that creators can keep open alongside active map documents.
+  - Enabled multi-window co-existence for World Atlas, Tile Selector, Logic Painter, Inspectors, and Map Editor.
+- **Smart Contextual Right-Click Actions (`StudioContextMenu`)**:
+  - Upgraded right-click context menu with direct links to NPC Studio, Dialogue Trees, Quest Attachments, Creature Studio, Loot Tables, Monster Spawners, Logic Painter, and Warp Gate editors.
+
 ## [2.1.460-06] - 2026-08-27
 ### Studio Master Plan: 27-Skill Profession Matrix & Studio Skill Guide Editor
 - **27-Skill Combat & Life Profession Architecture**:
