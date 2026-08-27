@@ -42,7 +42,7 @@ import {
   Coins,
   Wrench,
 } from 'lucide-react';
-import { RealmSettingsModal } from './RealmSettingsModal';
+
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
 import { NotificationHistoryModal } from './components/NotificationHistoryModal';
 import { STUDIO_MODE_META, STUDIO_DOCK_META, type StudioMode, type StudioDockId } from '@/shared/game/studioModes';
@@ -63,7 +63,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [activeMenu, setActiveMenu] = useState<MenuState>(null);
-  const [realmSettingsOpen, setRealmSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [notificationHistoryOpen, setNotificationHistoryOpen] = useState(false);
   const [worldDropdownOpen, setWorldDropdownOpen] = useState(false);
@@ -244,7 +243,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
               <button
                 onClick={() => {
                   setWorldDropdownOpen(false);
-                  setRealmSettingsOpen(true);
+                  openPanel('settings');
                 }}
                 className="px-3 py-1 text-left text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1.5"
               >
@@ -348,7 +347,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             <MenuItem
               label="Realm Settings & Identity..."
               icon={Settings}
-              onClick={() => setRealmSettingsOpen(true)}
+              onClick={() => openPanel('settings')}
             />
             <MenuItem divider />
             <MenuItem
@@ -675,7 +674,6 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         </button>
       </div>
 
-      <RealmSettingsModal isOpen={realmSettingsOpen} onClose={() => setRealmSettingsOpen(false)} />
       <StudioShortcutsModal isOpen={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <NotificationHistoryModal
         isOpen={notificationHistoryOpen}

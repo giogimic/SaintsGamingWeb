@@ -50,7 +50,8 @@ export type StudioDockId =
   | 'simulation'
   | 'tileset'
   | 'logic'
-  | 'publishing';
+  | 'publishing'
+  | 'maps';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -246,5 +247,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   publishing: {
     label: 'Publish & Releases',
     blurb: 'Pre-flight validation gates, release snapshot history, and rollback.',
+  },
+  maps: {
+    label: 'Map Browser',
+    blurb: 'Manage, search, and switch between available map files.',
   },
 };

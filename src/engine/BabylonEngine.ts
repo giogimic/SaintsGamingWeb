@@ -383,7 +383,7 @@ export class BabylonEngine {
     });
 
     this.scene = new Scene(this.engine);
-    this.scene.clearColor = new Color4(0.02, 0.04, 0.06, 1.0);
+    this.scene.clearColor = new Color4(0, 0, 0, 0);
 
     this.guiTexture = AdvancedDynamicTexture.CreateFullscreenUI('UI', true, this.scene);
 

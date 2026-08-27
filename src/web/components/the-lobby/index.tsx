@@ -111,6 +111,7 @@ import GameToastStack from './GameToastStack';
 import GameOptionsMenu from './hud/GameOptionsMenu';
 import { ViewfinderOverlay } from './hud/ViewfinderOverlay';
 import { MidnightTropicalBackground } from './MidnightTropicalBackground';
+import { StudioCanvasViewport } from './StudioCanvasViewport';
 import { MobileGameLauncher } from './MobileGameLauncher';
 
 const StudioEditorShell = dynamic(
@@ -1811,15 +1812,27 @@ export default function TheLobby({
       className={`relative w-full h-full touch-none select-none overflow-hidden ${enableStudio ? 'bg-transparent' : 'bg-[#0a0a0f]'}`}
     >
       {enableStudio && <MidnightTropicalBackground />}
-      <GameCanvasBabylon 
-        activeBrushTileId={activeBrushTileId}
-        activeLayerIdx={activeLayerIdx}
-        isDevEditorOpen={studioToolsOpen}
-        suppressGameplay={suppressGameplay}
-        onMapClick={(r, c) => {
-          if (studioToolsOpen) setClickedTile({r, c});
-        }}
-      />
+      {enableStudio ? (
+        <StudioCanvasViewport
+          activeBrushTileId={activeBrushTileId}
+          activeLayerIdx={activeLayerIdx}
+          isDevEditorOpen={studioToolsOpen}
+          suppressGameplay={suppressGameplay}
+          onMapClick={(r: number, c: number) => {
+            if (studioToolsOpen) setClickedTile({r, c});
+          }}
+        />
+      ) : (
+        <GameCanvasBabylon 
+          activeBrushTileId={activeBrushTileId}
+          activeLayerIdx={activeLayerIdx}
+          isDevEditorOpen={studioToolsOpen}
+          suppressGameplay={suppressGameplay}
+          onMapClick={(r, c) => {
+            if (studioToolsOpen) setClickedTile({r, c});
+          }}
+        />
+      )}
 
       {/* Touch controls — only in-world. Do NOT wrap in a full-screen
           pointer-events-auto layer: that sat above the title UI (z-30 vs sibling

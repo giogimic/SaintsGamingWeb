@@ -394,6 +394,8 @@ interface EditorState {
   openMapTabs: string[];
   activeMapTab: string | null;
   isStudioFreeCam: boolean;
+  canvasViewport: { x: number; y: number; w: number; h: number };
+  setCanvasViewport: (vp: { x: number; y: number; w: number; h: number }) => void;
   openMapInTab: (mapId: string) => void;
   closeMapTab: (mapId: string) => void;
   setActiveMapTab: (mapId: string) => void;
@@ -731,6 +733,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 620,
     zIndex: 10,
   },
+  maps: {
+    id: 'maps',
+    title: 'Map Browser',
+    isOpen: false,
+    isCollapsed: false,
+    x: 300,
+    y: 100,
+    width: 700,
+    height: 600,
+    zIndex: 10,
+  },
 };
 
 function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {
@@ -837,6 +850,11 @@ export const useEditorStore = create<EditorState>()(
       openMapTabs: ['DEMO_SANDBOX'],
       activeMapTab: 'DEMO_SANDBOX',
       isStudioFreeCam: false,
+      canvasViewport: { x: 0, y: 36, w: typeof window !== 'undefined' ? window.innerWidth : 1280, h: typeof window !== 'undefined' ? window.innerHeight - 76 : 644 },
+      setCanvasViewport: (vp: { x: number; y: number; w: number; h: number }) =>
+        set((state) => {
+          state.canvasViewport = vp;
+        }),
       openMapInTab: (mapId: string) =>
         set((state) => {
           if (!state.openMapTabs.includes(mapId)) {

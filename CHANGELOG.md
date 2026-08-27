@@ -1,3 +1,14 @@
+## [2.1.464] - 2026-08-27
+- Refactored `AtlasStudioSuite` full-screen workspace into windowed MDI `MapListPanel` and `WorldAtlasPanel`.
+- Resolved Atlas save issues by removing conflicting save logic and confirming `WorldAtlas` database sync.
+- Made `StudioCanvasViewport` container transparent and disabled obscuring background overlay in Studio.
+- Re-applied dynamic `MidnightTropicalBackground` for Studio to match the character select screen.
+
+## [2.1.463] - 2026-08-27
+### Studio Atlas Spatial Inspector Relocation
+- **Moved Atlas Inspector to Bottom Toolbar**: Removed the obstructive fixed floating overlay from the bottom-right of the viewport and relocated the Atlas Spatial Inspector into a streamlined toggle button on the bottom toolbar.
+- **Modernized Diagnostics Popover**: Transformed the inspector into an anchored glass popover (sg-glass styling with gold borders and backdrop blur) that opens on-demand right above the bottom bar without blocking map editing.
+
 ## [2.1.462] - 2026-08-27
 ### Studio Multi-Document Interface (MDI) Restoration
 - **Restored Floating Windowed Workspace**: Stripped away the lexlayout-react engine and restored the DraggablePanel system. Editor tools (World Builder, Tile Selector, etc.) now open as independent, draggable, resizable, and overlapping windows over the map canvas.
@@ -3872,6 +3883,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

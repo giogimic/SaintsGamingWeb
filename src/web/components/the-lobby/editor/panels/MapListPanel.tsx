@@ -5,25 +5,17 @@ import {
   X, Search, Globe, Plus, Trash2, ArrowRight, Grid3X3, Layers, Compass,
   DoorOpen, Users, Swords, AlertTriangle, Check
 } from 'lucide-react';
-import { useGameStore } from '../store';
-import { useEditorStore } from './editor-store';
-import { MapIndexEntry, searchMapIndex, unregisterMap } from '../data/map-index';
-import { loadMap } from '../data/maps';
+import { useGameStore } from '../../store';
+import { useEditorStore } from '../editor-store';
+import { MapIndexEntry, searchMapIndex, unregisterMap } from '../../data/map-index';
+import { loadMap } from '../../data/maps';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { buildNewStudioMap } from '@/shared/game/studioMapCreate';
 import { soundSynth } from '@/engine/sound-synth';
 import { useSession } from 'next-auth/react';
 import { canWriteStudioContent } from '@/shared/game/studioPermissions';
 
-interface FullScreenMapBrowserProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export const FullScreenMapBrowser: React.FC<FullScreenMapBrowserProps> = ({
-  isOpen,
-  onClose,
-}) => {
+export const MapListPanel: React.FC = () => {
   const { data: session } = useSession();
   const userPermission = session?.user?.permissionLevel ?? 0;
   const canEdit = canWriteStudioContent(userPermission);
@@ -76,24 +68,19 @@ export const FullScreenMapBrowser: React.FC<FullScreenMapBrowserProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
-      void fetchMaps();
-    }
-  }, [isOpen]);
+    void fetchMaps();
+  }, []);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         if (showCreateModal) setShowCreateModal(false);
         else if (deleteTargetMapId) setDeleteTargetMapId(null);
-        else onClose();
       }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, showCreateModal, deleteTargetMapId, onClose]);
-
-  if (!isOpen) return null;
+  }, [showCreateModal, deleteTargetMapId]);
 
   const localList = searchMapIndex(searchQuery);
   const q = searchQuery.trim().toLowerCase();
@@ -119,11 +106,11 @@ export const FullScreenMapBrowser: React.FC<FullScreenMapBrowserProps> = ({
       useGameStore.setState({ currentMapId: mapId, activeMapData: loaded });
       useGameStore.getState().setPlayerPosition({ x: cx, y: cy }, 'down', false);
       showToast(`Warped to ${mapId}`);
-      onClose();
+      useEditorStore.getState().closePanel('maps');
     } catch {
       useGameStore.setState({ currentMapId: mapId });
       showToast(`Warped to ${mapId} (loading…)`);
-      onClose();
+      useEditorStore.getState().closePanel('maps');
     }
   };
 
@@ -201,7 +188,7 @@ export const FullScreenMapBrowser: React.FC<FullScreenMapBrowserProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-[#02050b]/95 backdrop-blur-2xl text-slate-200 font-mono pointer-events-auto select-none">
+    <div className="flex flex-col h-full bg-[#050b14] text-slate-200 font-mono select-none overflow-hidden rounded-b-xl">
       {/* Top Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-amber-500/30 bg-[#050b14]/80">
         <div className="flex items-center gap-3">
@@ -229,14 +216,6 @@ export const FullScreenMapBrowser: React.FC<FullScreenMapBrowserProps> = ({
               <span>Create New Map</span>
             </button>
           )}
-
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-            title="Close (Esc)"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
       </div>
 

@@ -241,16 +241,7 @@ export const WorldAtlasPanel: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setStudioMode('atlas')}
-            className="px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold cursor-pointer"
-            title="Open full Atlas Studio workspace"
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>Atlas Studio</span>
-            <ArrowUpRight className="w-3 h-3" />
-          </button>
+
           <button
             onClick={() => void handleSaveAtlas()}
             disabled={isSaving}
