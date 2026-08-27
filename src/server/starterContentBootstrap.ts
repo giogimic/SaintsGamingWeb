@@ -7,6 +7,8 @@
  */
 
 import { prisma } from "@/web/lib/prisma";
+import { getAllProfessionDefs } from "@/shared/game/professions/professionRegistry";
+import { getSkillGuide } from "@/shared/game/skillGuideData";
 
 export async function bootstrapDynamicStarterContent(gameId: string = "saints", profileId: string = "default") {
   console.log("[StarterContentBootstrap] Seeding dynamic RPG definitions…");
@@ -351,30 +353,45 @@ export async function bootstrapDynamicStarterContent(gameId: string = "saints", 
     }
 
     // ── 4. PROFESSIONS & RECIPES ───────────────────────────────────────────
-    const starterProfessions = [
-      {
-        slug: "mining",
-        name: "Mining",
-        description: "Extracting ores, gemstones, and minerals from mountain veins.",
-        iconAssetId: "icon_pickaxe",
-        xpCurve: "STANDARD",
-        maxLevel: 100,
-      },
-      {
-        slug: "blacksmithing",
-        name: "Blacksmithing",
-        description: "Smelting metals and forging weapons, armor, and specialized tools.",
-        iconAssetId: "icon_hammer",
-        xpCurve: "STANDARD",
-        maxLevel: 100,
-      },
-    ];
-
-    for (const p of starterProfessions) {
+    const allDefs = getAllProfessionDefs();
+    for (const def of allDefs) {
+      const guide = getSkillGuide(def.id);
       await prisma.professionTemplate.upsert({
-        where: { slug: p.slug },
-        create: { ...p, gameId, profileId },
-        update: { ...p, gameId, profileId },
+        where: { slug: def.id },
+        create: {
+          slug: def.id,
+          name: def.name,
+          description: def.description || guide?.summary || "",
+          iconAssetId: def.iconName || guide?.iconName || "Zap",
+          category: def.subCategory,
+          themeColor: def.themeColor,
+          tagline: def.tagline || guide?.tagline || "",
+          stationTags: JSON.stringify(def.stationTags),
+          xpCurve: "exponential",
+          maxLevel: def.maxLevel || guide?.maxLevel || 99,
+          trainingMethodsJson: JSON.stringify(guide?.trainingMethods || []),
+          perksJson: JSON.stringify(guide?.perLevelPerks || []),
+          milestonesJson: JSON.stringify(guide?.staticMilestones || []),
+          battlepassTiersJson: JSON.stringify(guide?.battlepassTiers || []),
+          gameId,
+          profileId,
+        },
+        update: {
+          name: def.name,
+          description: def.description || guide?.summary || "",
+          iconAssetId: def.iconName || guide?.iconName || "Zap",
+          category: def.subCategory,
+          themeColor: def.themeColor,
+          tagline: def.tagline || guide?.tagline || "",
+          stationTags: JSON.stringify(def.stationTags),
+          maxLevel: def.maxLevel || guide?.maxLevel || 99,
+          trainingMethodsJson: JSON.stringify(guide?.trainingMethods || []),
+          perksJson: JSON.stringify(guide?.perLevelPerks || []),
+          milestonesJson: JSON.stringify(guide?.staticMilestones || []),
+          battlepassTiersJson: JSON.stringify(guide?.battlepassTiers || []),
+          gameId,
+          profileId,
+        },
       });
     }
 

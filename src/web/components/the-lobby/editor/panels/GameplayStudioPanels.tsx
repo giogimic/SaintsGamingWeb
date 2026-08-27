@@ -334,23 +334,29 @@ export default function GameplayStudioPanels() {
 
         {/* PROFESSIONS DOCK */}
         {activeTab === 'professions' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {professions.map((prof) => (
               <div
                 key={prof.id}
-                className="p-3 rounded-xl border border-slate-800 bg-black/40 flex flex-col justify-between space-y-2"
+                className="p-3 rounded-xl border border-slate-800 bg-black/40 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-all"
+                style={{ borderLeft: `3px solid ${prof.themeColor || '#64748b'}` }}
               >
                 <div>
-                  <span className="font-bold text-xs text-emerald-400">{prof.name}</span>
-                  <span className="text-[9px] text-slate-500 block">Primary: {prof.primarySkillId}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-amber-300">{prof.name}</span>
+                    <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      {prof.subCategory}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-500 block font-mono">Primary: {prof.primarySkillId}</span>
                 </div>
-                <p className="text-[10px] text-slate-400">{prof.description}</p>
+                <p className="text-[10px] text-slate-400 line-clamp-3">{prof.description}</p>
                 <div className="pt-2 border-t border-slate-900 space-y-1 text-[9px]">
                   <span className="text-slate-500 block">Stations:</span>
                   <div className="flex flex-wrap gap-1">
                     {prof.stationTags.map((st) => (
                       <span key={st} className="px-1.5 py-0.5 rounded bg-black border border-slate-800 text-slate-300">
-                        {st}
+                        #{st}
                       </span>
                     ))}
                   </div>

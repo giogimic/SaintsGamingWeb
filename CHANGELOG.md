@@ -1,3 +1,11 @@
+## [2.1.460-06] - 2026-08-27
+### Studio Master Plan: 27-Skill Profession Matrix & Studio Skill Guide Editor
+- **27-Skill Combat & Life Profession Architecture**:
+  - Unified all 27 in-game skills (`attack`, `strength`, `defence`, `hitpoints`, `ranged`, `agility`, `perception`, `wisdom`, `intelligence`, `mining`, `woodcutting`, `fishing`, `farming`, `hunter`, `smithing`, `cooking`, `crafting`, `herblore`, `fletching`, `firemaking`, `runecrafting`, `construction`, `thieving`, `magic`, `prayer`, `summoning`, `necromancy`) into formal Combat & Life professions in `professionRegistry.ts`.
+  - Upgraded `ProfessionTemplate` in `prisma/schema.prisma` with `category`, `themeColor`, `tagline`, `stationTags`, `trainingMethodsJson`, `perksJson`, `milestonesJson`, `battlepassTiersJson`.
+  - Redesigned `ProfessionEditorPanel.tsx` in the Studio to view, create, and edit the complete rich Skill Guide data (including station tags, level-by-level milestone unlocks, and 10-tier battlepass cosmetic reward tracks).
+  - Seeded all 27 Combat and Life professions in `starterContentBootstrap.ts`.
+
 ## [2.1.460-05] - 2026-08-27
 ### Studio Master Plan: Phase 54 Master World Bounty Board, Daily Wanted Contracts & Bandit Slaying Ledger Engine
 - **Master Bounty Board & PvP Escrow Engine**:

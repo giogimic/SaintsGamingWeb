@@ -7,7 +7,15 @@ export type GatheringProfession =
   | 'MINING'
   | 'WOODCUTTING'
   | 'HERBLORE_FORAGING'
-  | 'FISHING';
+  | 'FISHING'
+  | 'FARMING'
+  | 'HUNTER'
+  | 'mining'
+  | 'woodcutting'
+  | 'fishing'
+  | 'farming'
+  | 'hunter'
+  | 'herblore';
 
 export type VeinQuality = 'NORMAL' | 'RICH_VEIN' | 'PRISTINE_CORE';
 
