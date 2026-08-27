@@ -212,7 +212,7 @@ export const MountEditorPanel: React.FC = () => {
               disabled={!!activeSlug}
               value={formData.slug}
               onChange={(e) => handleChange('slug', e.target.value)}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 disabled:opacity-50"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20 disabled:opacity-50"
               placeholder="e.g. swift_stallion"
             />
           </label>
@@ -224,7 +224,7 @@ export const MountEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('name', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20"
               placeholder="e.g. Swift Stallion"
             />
           </label>
@@ -237,7 +237,7 @@ export const MountEditorPanel: React.FC = () => {
             onChange={(e) => handleChange('description', e.target.value)}
             onFocus={onFieldFocus}
             onBlur={onFieldBlur}
-            className="rounded bg-black/50 px-2 py-1.5 font-sans text-slate-200 border border-slate-800 min-h-[60px]"
+            className="rounded bg-black/50/50 px-2 py-1.5 font-sans text-slate-200 border border-[#806f47]/20 min-h-[60px]"
           />
         </label>
 
@@ -253,7 +253,7 @@ export const MountEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('speedMultiplier', parseFloat(e.target.value) || 1.0)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+              className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20"
             />
             <span className="text-[10px] text-slate-500 font-normal">1.0 = walk speed, 1.5 = default mount</span>
           </label>
@@ -286,7 +286,7 @@ export const MountEditorPanel: React.FC = () => {
             onChange={(e) => handleChange('collectionCategory', e.target.value)}
             onFocus={onFieldFocus}
             onBlur={onFieldBlur}
-            className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800"
+            className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20"
             placeholder="mount"
           />
           <span className="text-[10px] text-slate-500 font-normal">Category for the player&apos;s collection log (e.g. mount, flying_mount).</span>
@@ -301,7 +301,7 @@ export const MountEditorPanel: React.FC = () => {
               onChange={(e) => handleChange('acquisitionData', e.target.value)}
               onFocus={onFieldFocus}
               onBlur={onFieldBlur}
-              className="rounded bg-black/50 px-2 py-2 font-mono text-slate-200 border border-slate-800 min-h-[80px] resize-none"
+              className="rounded bg-black/50/50 px-2 py-2 font-mono text-slate-200 border border-[#806f47]/20 min-h-[80px] resize-none"
               placeholder={'{ "method": "quest", "sourceId": "mount_quest_01" }'}
             />
             <span className="text-[10px] text-slate-500 font-normal">How to acquire: method (quest, shop, drop, craft) + sourceId.</span>
@@ -315,7 +315,7 @@ export const MountEditorPanel: React.FC = () => {
             />
           </div>
 
-          <div className="rounded border border-slate-800 bg-[#0a1120] p-3 space-y-2">
+          <div className="rounded border border-[#806f47]/20 bg-[#0a1120] p-3 space-y-2">
             <span className="font-bold text-slate-300 text-xs">Visual Representation</span>
             <AssetRefPicker
               label="Mount Sprite / Creature Asset"
@@ -349,7 +349,7 @@ export const MountEditorPanel: React.FC = () => {
                 onChange={(e) => handleChange('visualData', e.target.value)}
                 onFocus={onFieldFocus}
                 onBlur={onFieldBlur}
-                className="rounded bg-black/50 px-2 py-1.5 font-mono text-slate-200 border border-slate-800 min-h-[60px] text-[10px]"
+                className="rounded bg-black/50/50 px-2 py-1.5 font-mono text-slate-200 border border-[#806f47]/20 min-h-[60px] text-[10px]"
                 placeholder={'{ "spriteAssetId": "horse_01", "ridingAnimation": "riding_horse", "scale": 1.0 }'}
               />
             </label>

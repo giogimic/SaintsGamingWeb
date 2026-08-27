@@ -360,10 +360,10 @@ export const EntityEditorPanel: React.FC = () => {
               className={`w-full rounded-lg border px-2 py-1.5 text-left transition-colors flex items-center gap-2 cursor-pointer ${
                 selectedId === npc.id
                   ? 'border-amber-500/60 bg-amber-500/15 text-amber-100 shadow-sm'
-                  : 'border-slate-800/80 hover:border-slate-700 text-slate-300 hover:bg-white/5'
+                  : 'border-[#806f47]/20/80 hover:border-[#806f47]/30 text-slate-300 hover:bg-white/5'
               }`}
             >
-              <div className="w-7 h-7 rounded-md bg-black/60 border border-slate-700/80 flex items-center justify-center shrink-0 overflow-hidden text-amber-400">
+              <div className="w-7 h-7 rounded-md bg-black/50/20 border border-[#806f47]/30/80 flex items-center justify-center shrink-0 overflow-hidden text-amber-400">
                 <Users className="w-3.5 h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -405,7 +405,7 @@ export const EntityEditorPanel: React.FC = () => {
         </div>
 
         {kind === 'npc' && (
-          <div className="space-y-3 rounded border border-slate-800 bg-black/30 p-2.5">
+          <div className="space-y-3 rounded border border-[#806f47]/20 bg-black/50/30 p-2.5">
             {/* Dialogue / Greeting Hook */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -426,12 +426,12 @@ export const EntityEditorPanel: React.FC = () => {
                 value={npcDialogue}
                 onChange={(e) => setNpcDialogue(e.target.value)}
                 placeholder="Greeting line"
-                className="custom-scrollbar h-16 w-full resize-none rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
+                className="custom-scrollbar h-16 w-full resize-none rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
               />
             </div>
 
             {/* Quest Hook */}
-            <div className="space-y-1.5 border-t border-slate-800/80 pt-2">
+            <div className="space-y-1.5 border-t border-[#806f47]/20/80 pt-2">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Quest Hook
@@ -466,7 +466,7 @@ export const EntityEditorPanel: React.FC = () => {
                   <select
                     value={questSlug}
                     onChange={(e) => setQuestSlug(e.target.value)}
-                    className="flex-1 rounded-md border border-slate-700 bg-black/40 px-2 py-1 font-mono text-[10px] text-slate-200 outline-none focus:border-[#cbb26a]/60 cursor-pointer"
+                    className="flex-1 rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1 font-mono text-[10px] text-slate-200 outline-none focus:border-[#cbb26a]/60 cursor-pointer"
                   >
                     <option value="">-- Pick from Existing Quests --</option>
                     {availableQuests.map((q) => (
@@ -483,7 +483,7 @@ export const EntityEditorPanel: React.FC = () => {
                 value={questSlug}
                 onChange={(e) => setQuestSlug(e.target.value)}
                 placeholder="Or type questSlug manually (ACCEPT_QUEST)"
-                className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
+                className="w-full rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1.5 font-mono text-[11px] text-slate-100 outline-none focus:border-[#cbb26a]/60"
               />
             </div>
           </div>
@@ -496,7 +496,7 @@ export const EntityEditorPanel: React.FC = () => {
               type="number"
               value={spawnX}
               onChange={(e) => setSpawnX(parseInt(e.target.value, 10) || 0)}
-              className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px]"
+              className="w-full rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1.5 font-mono text-[11px]"
             />
           </div>
           <div className="flex-1">
@@ -505,7 +505,7 @@ export const EntityEditorPanel: React.FC = () => {
               type="number"
               value={spawnY}
               onChange={(e) => setSpawnY(parseInt(e.target.value, 10) || 0)}
-              className="w-full rounded-md border border-slate-700 bg-black/40 px-2 py-1.5 font-mono text-[11px]"
+              className="w-full rounded-md border border-[#806f47]/30 bg-black/50/40 px-2 py-1.5 font-mono text-[11px]"
             />
           </div>
         </div>

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const inputCls =
-  'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-700 transition-colors';
+  'w-full bg-[#050b14] border border-[#806f47]/20 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-700 transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
 
 type QuestRow = {
@@ -359,7 +359,7 @@ export function QuestEditorPanel() {
           <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar py-1">
             {form.objectives.map((obj, idx) => (
               <React.Fragment key={idx}>
-                <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#0b1320] border border-slate-700/80 text-[10px] shrink-0 font-mono">
+                <div className="flex items-center gap-1 px-2 py-1 rounded bg-[#0b1320] border border-[#806f47]/30/80 text-[10px] shrink-0 font-mono">
                   <span className="w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center text-[9px]">
                     {obj.stage || idx + 1}
                   </span>
@@ -453,7 +453,7 @@ export function QuestEditorPanel() {
               </button>
             </div>
             {form.objectives.map((o, idx) => (
-              <div key={idx} className="border border-slate-800 rounded-lg p-2 space-y-1.5 bg-[#0b1320]/40">
+              <div key={idx} className="border border-[#806f47]/20 rounded-lg p-2 space-y-1.5 bg-[#0b1320]/40">
                 <div className="grid grid-cols-4 gap-1.5">
                   <div>
                     <label className={labelCls}>Stage</label>

@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
+import { Layout, Model, TabNode, IJsonModel, Action, Actions, DockLocation } from 'flexlayout-react';
 import {
   useEditorStore,
   PanelId,
@@ -30,8 +31,6 @@ import {
   AlertCircle,
   Flame,
   Loader2,
-  Grid3X3,
-  Layers,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -86,8 +85,66 @@ const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 
 import { RuleDebuggerOverlay } from './RuleDebuggerOverlay';
-import { DraggablePanel } from './DraggablePanel';
 
+const initialLayout: IJsonModel = {
+  global: {
+    tabEnableClose: true,
+    tabSetEnableMaximize: true,
+  },
+  layout: {
+    type: "row",
+    weight: 100,
+    children: [
+      {
+        type: "tabset",
+        weight: 22,
+        id: "left-dock",
+        children: [
+          { type: "tab", id: "build", name: "World Builder", component: "build" },
+          { type: "tab", id: "tileset", name: "Tile Selector", component: "tileset" },
+          { type: "tab", id: "logic", name: "Logic Painter", component: "logic" }
+        ]
+      },
+      {
+        type: "tabset",
+        weight: 56,
+        id: "center-viewport",
+        children: [
+          {
+            type: "tab",
+            id: "viewport",
+            name: "Primary Viewport",
+            component: "viewport",
+            enableClose: false,
+            className: "sg-viewport-tab",
+            tabsetClassName: "sg-viewport-tabset",
+          }
+        ]
+      },
+      {
+        type: "tabset",
+        weight: 22,
+        id: "right-dock",
+        children: [
+          { type: "tab", id: "properties", name: "Properties", component: "properties" },
+          { type: "tab", id: "problems", name: "Diagnostics", component: "problems" }
+        ]
+      }
+    ]
+  },
+  borders: [
+    {
+      type: "border",
+      location: "bottom",
+      size: 280,
+      children: [
+        { type: "tab", id: "assets", name: "Asset Browser", component: "assets" },
+        { type: "tab", id: "atlas", name: "World Atlas", component: "atlas" },
+        { type: "tab", id: "dev", name: "Dev Tools", component: "dev" }
+      ]
+    }
+  ]
+};
 
 export const StudioEditorShell: React.FC = () => {
   const { data: session } = useSession();
@@ -105,6 +162,8 @@ export const StudioEditorShell: React.FC = () => {
 
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   
+  const layoutRef = useRef<any>(null);
+  const [model] = useState(() => Model.fromJson(initialLayout));
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
   const [mapBrowserOpen, setMapBrowserOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
@@ -115,27 +174,95 @@ export const StudioEditorShell: React.FC = () => {
     useEditorStore.getState().enterDevelopmentMode();
   }, []);
 
-  // Handle dynamic dock panel opening
+  // Handle dynamic dock panel opening (from menus, shortcuts, omnisearch)
   useEffect(() => {
     const handleOpenDock = (e: Event) => {
       const customEv = e as CustomEvent<{ panelId: PanelId }>;
       const panelId = customEv.detail?.panelId;
-      if (!panelId) return;
-      useEditorStore.getState().openPanel(panelId);
+      if (!panelId || !model) return;
+
+      const meta = STUDIO_DOCK_META[panelId];
+      if (!meta) return;
+
+      const existingNode = model.getNodeById(panelId);
+      if (existingNode) {
+        model.doAction(Actions.selectTab(panelId));
+      } else {
+        const isRightDock = panelId === 'properties' || panelId === 'problems';
+        const targetTabsetId = isRightDock ? 'right-dock' : 'left-dock';
+        
+        try {
+          model.doAction(Actions.addNode({
+            type: "tab",
+            id: panelId,
+            name: meta.label,
+            component: panelId,
+          }, targetTabsetId, DockLocation.CENTER, -1));
+        } catch {
+          // Fallback to active tabset
+          model.doAction(Actions.addNode({
+            type: "tab",
+            id: panelId,
+            name: meta.label,
+            component: panelId,
+          }, "left-dock", DockLocation.CENTER, -1));
+        }
+      }
     };
 
     window.addEventListener('studio_open_dock', handleOpenDock);
     return () => window.removeEventListener('studio_open_dock', handleOpenDock);
-  }, []);
+  }, [model]);
 
-  // Handle dynamic map tab opening
+  // Handle dynamic map tab opening (Phase 2 Modular Workspace)
   useEffect(() => {
     const handleOpenMapTab = (e: Event) => {
-      // Maps are singletons in the MDI setup - use map browser or world profile bar
+      const customEv = e as CustomEvent<{ mapId: string; mapName?: string }>;
+      const { mapId, mapName } = customEv.detail || {};
+      if (!mapId || !model) return;
+
+      const tabId = `map_${mapId}`;
+      const existingNode = model.getNodeById(tabId);
+      if (existingNode) {
+        model.doAction(Actions.selectTab(tabId));
+      } else {
+        try {
+          model.doAction(
+            Actions.addNode(
+              {
+                type: 'tab',
+                id: tabId,
+                name: mapName || `Map: ${mapId}`,
+                component: 'map',
+                config: { mapId },
+              },
+              'center-viewport',
+              DockLocation.CENTER,
+              -1
+            )
+          );
+        } catch {
+          model.doAction(
+            Actions.addNode(
+              {
+                type: 'tab',
+                id: tabId,
+                name: mapName || `Map: ${mapId}`,
+                component: 'map',
+                config: { mapId },
+              },
+              'left-dock',
+              DockLocation.CENTER,
+              -1
+            )
+          );
+        }
+      }
     };
+
     window.addEventListener('studio_open_map_tab', handleOpenMapTab);
     return () => window.removeEventListener('studio_open_map_tab', handleOpenMapTab);
-  }, []);
+  }, [model]);
 
   // Context menu on right click in canvas / viewport area
   useEffect(() => {
@@ -683,6 +810,66 @@ export const StudioEditorShell: React.FC = () => {
     );
   }
 
+  const factory = (node: TabNode) => {
+    const component = node.getComponent();
+    if (component === 'viewport') {
+      return <div className="sg-viewport-container w-full h-full pointer-events-none" />;
+    }
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-full w-full items-center justify-center bg-card/80 p-4">
+            <div className="flex items-center gap-2 text-xs font-mono text-amber-400/80">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading panel...</span>
+            </div>
+          </div>
+        }
+      >
+        {(() => {
+          switch (component) {
+            case 'build': return <WorldBuilderPanel />;
+            case 'tileset': return <TileSelectorPanel />;
+            case 'logic': return <LogicPainterPanel />;
+            case 'properties': return <PropertiesPanel />;
+            case 'assets': return <AssetBrowserPanel />;
+            case 'npc': return <EntityEditorPanel />;
+            case 'dev': return <DevToolsPanel />;
+            case 'creature': return <CreatureDefEditorPanel />;
+            case 'quest': return <QuestEditorPanel />;
+            case 'dialogue': return <DialogueEditorPanel />;
+            case 'loot': return <LootManagerPanel />;
+            case 'items': return <ItemEditorPanel />;
+            case 'professions': return <ProfessionEditorPanel />;
+            case 'recipes': return <RecipeEditorPanel />;
+            case 'spawner': return <MonsterSpawnerPanel />;
+            case 'prefab': return <PrefabBuilderPanel />;
+            case 'atlas': return <WorldAtlasPanel />;
+            case 'problems': return <StudioProblemsPanel />;
+            case 'streaming': return <StreamingInspectorPanel />;
+            case 'gameplay': return <GameplayStudioPanels />;
+            case 'settings': return <RealmSettingsPanel />;
+            case 'dungeons': return <DungeonEditorPanel />;
+            case 'shop': return <ShopEditorPanel />;
+            case 'mounts': return <MountEditorPanel />;
+            case 'worldevent': return <WorldEventPanel />;
+            case 'simulation': return <SimulationPresetPanel />;
+            case 'publishing': return <PublishManagerPanel />;
+            case 'map': {
+              const cfg = (node.getConfig() as { mapId?: string }) || {};
+              const mapId = cfg.mapId || node.getId().replace(/^map_/, '');
+              return <MapTabPanel mapId={mapId} />;
+            }
+            default: return <div>Unknown component: {component}</div>;
+          }
+        })()}
+      </Suspense>
+    );
+  };
+
+  const handleAction = (action: Action) => {
+    return action;
+  };
 
   return (
     <>
@@ -709,103 +896,14 @@ export const StudioEditorShell: React.FC = () => {
           />
         )}
 
-        {/* MDI Free-Floating Windows Workspace Container */}
-        <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
-          {canUseStudioDock(permissionLevel, 'build') && (
-            <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
-              <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'tileset') && (
-            <DraggablePanel id="tileset" icon={<Grid3X3 className="w-4 h-4" />} title="Tile Selector">
-              <Suspense fallback={<div>Loading...</div>}><TileSelectorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'logic') && (
-            <DraggablePanel id="logic" icon={<Layers className="w-4 h-4" />} title="Logic Painter">
-              <Suspense fallback={<div>Loading...</div>}><LogicPainterPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'properties') && (
-            <DraggablePanel id="properties" icon={<Settings2 className="w-4 h-4" />} title="Properties">
-              <Suspense fallback={<div>Loading...</div>}><PropertiesPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'assets') && (
-            <DraggablePanel id="assets" icon={<ImageIcon className="w-4 h-4" />} title="Asset Browser">
-              <Suspense fallback={<div>Loading...</div>}><AssetBrowserPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'npc') && (
-            <DraggablePanel id="npc" icon={<Users className="w-4 h-4" />} title="NPC Editor">
-              <Suspense fallback={<div>Loading...</div>}><EntityEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'quest') && (
-            <DraggablePanel id="quest" icon={<ScrollText className="w-4 h-4" />} title="Quests">
-              <Suspense fallback={<div>Loading...</div>}><QuestEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'dialogue') && (
-            <DraggablePanel id="dialogue" icon={<MessageSquare className="w-4 h-4" />} title="Dialogue">
-              <Suspense fallback={<div>Loading...</div>}><DialogueEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canDev && (
-            <DraggablePanel id="dev" icon={<TerminalSquare className="w-4 h-4" />} title="Dev Tools">
-              <Suspense fallback={<div>Loading...</div>}><DevToolsPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'creature') && (
-            <DraggablePanel id="creature" icon={<PawPrint className="w-4 h-4" />} title="Creatures">
-              <Suspense fallback={<div>Loading...</div>}><CreatureDefEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'loot') && (
-            <DraggablePanel id="loot" icon={<Coins className="w-4 h-4" />} title="Loot Manager">
-              <Suspense fallback={<div>Loading...</div>}><LootManagerPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'items') && (
-            <DraggablePanel id="items" icon={<Package className="w-4 h-4" />} title="Items">
-              <Suspense fallback={<div>Loading...</div>}><ItemEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'classes') && (
-            <DraggablePanel id="classes" icon={<UserCheck className="w-4 h-4" />} title="Professions">
-              <Suspense fallback={<div>Loading...</div>}><ProfessionEditorPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'spawner') && (
-            <DraggablePanel id="spawner" icon={<Sword className="w-4 h-4" />} title="Monster Spawner">
-              <Suspense fallback={<div>Loading...</div>}><MonsterSpawnerPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'prefab') && (
-            <DraggablePanel id="prefab" icon={<Package className="w-4 h-4" />} title="Prefab Builder">
-              <Suspense fallback={<div>Loading...</div>}><PrefabBuilderPanel /></Suspense>
-            </DraggablePanel>
-          )}
-
-          {canUseStudioDock(permissionLevel, 'problems') && (
-            <DraggablePanel id="problems" icon={<AlertCircle className="w-4 h-4" />} title="Diagnostics">
-              <Suspense fallback={<div>Loading...</div>}><StudioProblemsPanel /></Suspense>
-            </DraggablePanel>
-          )}
+        {/* FlexLayout Workspace Container — hidden when in Assets, Atlas, or Hero mode */}
+        <div className={`flex-1 relative pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
+          <Layout 
+            ref={layoutRef} 
+            model={model} 
+            factory={factory} 
+            onAction={handleAction} 
+          />
         </div>
 
         {/* Asset Management Mode — full workspace replacement */}
@@ -825,6 +923,8 @@ export const StudioEditorShell: React.FC = () => {
 
         {/* Unified Bottom Studio Toolbar */}
         <StudioBottomToolbar
+          layoutRef={layoutRef}
+          model={model}
           onOpenMapBrowser={() => setStudioMode('atlas')}
           onOpenAssetBrowser={() => setStudioMode('assets')}
           onOpenHeroStudio={() => setStudioMode('hero')}

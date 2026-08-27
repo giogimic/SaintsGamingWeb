@@ -388,13 +388,13 @@ export const LootManagerPanel: React.FC = () => {
               {draftEntries.map((entry, idx) => {
                 const pct = totalWeight > 0 ? (((Number(entry.weight) || 0) / totalWeight) * 100).toFixed(1) : '0.0';
                 return (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-[#050b14] border border-slate-800 rounded p-1.5 text-[11px]">
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-[#050b14] border border-[#806f47]/20 rounded p-1.5 text-[11px]">
                     <div className="col-span-5 flex items-center gap-1.5">
                       {itemsList.length > 0 ? (
                         <select
                           value={entry.itemId}
                           onChange={(e) => updateEntry(idx, { itemId: e.target.value })}
-                          className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-amber-300 font-mono outline-none cursor-pointer"
+                          className="flex-1 bg-[#111a2a] border border-[#806f47]/30 rounded px-2 py-1 text-[10px] text-amber-300 font-mono outline-none cursor-pointer"
                         >
                           {itemsList.map((item) => (
                             <option key={item.slug} value={item.slug}>
@@ -408,7 +408,7 @@ export const LootManagerPanel: React.FC = () => {
                           value={entry.itemId}
                           onChange={(e) => updateEntry(idx, { itemId: e.target.value })}
                           placeholder="item_slug"
-                          className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-200 outline-none font-mono"
+                          className="flex-1 bg-[#111a2a] border border-[#806f47]/30 rounded px-2 py-1 text-[10px] text-slate-200 outline-none font-mono"
                         />
                       )}
                       <button
@@ -427,7 +427,7 @@ export const LootManagerPanel: React.FC = () => {
                         min={1}
                         value={entry.min}
                         onChange={(e) => updateEntry(idx, { min: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className="w-full text-center bg-[#111a2a] border border-slate-700 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
+                        className="w-full text-center bg-[#111a2a] border border-[#806f47]/30 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
                       />
                     </div>
 
@@ -437,7 +437,7 @@ export const LootManagerPanel: React.FC = () => {
                         min={1}
                         value={entry.max}
                         onChange={(e) => updateEntry(idx, { max: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className="w-full text-center bg-[#111a2a] border border-slate-700 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
+                        className="w-full text-center bg-[#111a2a] border border-[#806f47]/30 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
                       />
                     </div>
 
@@ -447,7 +447,7 @@ export const LootManagerPanel: React.FC = () => {
                         min={1}
                         value={entry.weight}
                         onChange={(e) => updateEntry(idx, { weight: Math.max(1, parseInt(e.target.value) || 1) })}
-                        className="w-full text-center bg-[#111a2a] border border-slate-700 rounded px-1 py-1 text-[10px] text-amber-400 font-bold outline-none"
+                        className="w-full text-center bg-[#111a2a] border border-[#806f47]/30 rounded px-1 py-1 text-[10px] text-amber-400 font-bold outline-none"
                       />
                       <span className="text-[9px] text-slate-500 shrink-0 font-mono">{pct}%</span>
                     </div>
@@ -502,13 +502,13 @@ export const LootManagerPanel: React.FC = () => {
               </div>
 
               {draftGuaranteed.map((entry, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-[#050b14] border border-slate-800 rounded p-1.5 text-[11px]">
+                <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-[#050b14] border border-[#806f47]/20 rounded p-1.5 text-[11px]">
                   <div className="col-span-6 flex items-center gap-1.5">
                     {itemsList.length > 0 ? (
                       <select
                         value={entry.itemId}
                         onChange={(e) => updateGuaranteed(idx, { itemId: e.target.value })}
-                        className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-amber-300 font-mono outline-none cursor-pointer"
+                        className="flex-1 bg-[#111a2a] border border-[#806f47]/30 rounded px-2 py-1 text-[10px] text-amber-300 font-mono outline-none cursor-pointer"
                       >
                         {itemsList.map((item) => (
                           <option key={item.slug} value={item.slug}>
@@ -522,7 +522,7 @@ export const LootManagerPanel: React.FC = () => {
                         value={entry.itemId}
                         onChange={(e) => updateGuaranteed(idx, { itemId: e.target.value })}
                         placeholder="item_slug"
-                        className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-200 outline-none font-mono"
+                        className="flex-1 bg-[#111a2a] border border-[#806f47]/30 rounded px-2 py-1 text-[10px] text-slate-200 outline-none font-mono"
                       />
                     )}
                     <button
@@ -541,7 +541,7 @@ export const LootManagerPanel: React.FC = () => {
                       min={1}
                       value={entry.min}
                       onChange={(e) => updateGuaranteed(idx, { min: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-full text-center bg-[#111a2a] border border-slate-700 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
+                      className="w-full text-center bg-[#111a2a] border border-[#806f47]/30 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
                     />
                   </div>
 
@@ -551,7 +551,7 @@ export const LootManagerPanel: React.FC = () => {
                       min={1}
                       value={entry.max}
                       onChange={(e) => updateGuaranteed(idx, { max: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="w-full text-center bg-[#111a2a] border border-slate-700 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
+                      className="w-full text-center bg-[#111a2a] border border-[#806f47]/30 rounded px-1 py-1 text-[10px] text-slate-200 outline-none"
                     />
                   </div>
 

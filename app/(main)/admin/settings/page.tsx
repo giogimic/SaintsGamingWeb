@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.460-07";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.1.462-07";
 
 
 
@@ -196,5 +196,7 @@ export default async function AdminSettingsPage() {
     </div>
   );
 }
+
+
 
 

@@ -410,7 +410,7 @@ export const ProfessionEditorPanel: React.FC = () => {
     >
       <div className="space-y-4 max-w-4xl pb-12">
         {/* Category Filter Badges */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-900/80 border border-amber-500/20 rounded-lg">
+        <div className="flex items-center gap-1.5 p-1 bg-transparent/80 border border-amber-500/20 rounded-lg">
           {['ALL', 'Combat', 'Gathering', 'Artisan', 'Support'].map((cat) => (
             <button
               key={cat}
@@ -418,7 +418,7 @@ export const ProfessionEditorPanel: React.FC = () => {
               className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
                 activeCategoryFilter === cat
                   ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5/60'
               }`}
             >
               {cat === 'ALL' ? 'All Skills (27)' : cat}
@@ -427,12 +427,12 @@ export const ProfessionEditorPanel: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+        <div className="flex items-center gap-2 border-b border-[#806f47]/20 pb-2">
           <button
             onClick={() => setActiveTab('OVERVIEW')}
             className={`px-3 py-1.5 text-xs font-bold rounded-t-md flex items-center gap-1.5 transition-all ${
               activeTab === 'OVERVIEW'
-                ? 'bg-slate-800 text-amber-300 border-b-2 border-amber-400'
+                ? 'bg-[#cbb26a]/10 text-[#e2d5b3] border-b-2 border-[#cbb26a]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -442,7 +442,7 @@ export const ProfessionEditorPanel: React.FC = () => {
             onClick={() => setActiveTab('STATIONS')}
             className={`px-3 py-1.5 text-xs font-bold rounded-t-md flex items-center gap-1.5 transition-all ${
               activeTab === 'STATIONS'
-                ? 'bg-slate-800 text-amber-300 border-b-2 border-amber-400'
+                ? 'bg-[#cbb26a]/10 text-[#e2d5b3] border-b-2 border-[#cbb26a]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -452,7 +452,7 @@ export const ProfessionEditorPanel: React.FC = () => {
             onClick={() => setActiveTab('MILESTONES')}
             className={`px-3 py-1.5 text-xs font-bold rounded-t-md flex items-center gap-1.5 transition-all ${
               activeTab === 'MILESTONES'
-                ? 'bg-slate-800 text-amber-300 border-b-2 border-amber-400'
+                ? 'bg-[#cbb26a]/10 text-[#e2d5b3] border-b-2 border-[#cbb26a]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -462,7 +462,7 @@ export const ProfessionEditorPanel: React.FC = () => {
             onClick={() => setActiveTab('BATTLEPASS')}
             className={`px-3 py-1.5 text-xs font-bold rounded-t-md flex items-center gap-1.5 transition-all ${
               activeTab === 'BATTLEPASS'
-                ? 'bg-slate-800 text-amber-300 border-b-2 border-amber-400'
+                ? 'bg-[#cbb26a]/10 text-[#e2d5b3] border-b-2 border-[#cbb26a]'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -472,7 +472,7 @@ export const ProfessionEditorPanel: React.FC = () => {
 
         {/* ─── TAB 1: OVERVIEW & THEMING ────────────────────────────────────── */}
         {activeTab === 'OVERVIEW' && (
-          <div className="space-y-4 bg-slate-900/60 p-4 border border-slate-800 rounded-lg">
+          <div className="space-y-4 sg-glass p-4 rounded-lg">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-amber-300 uppercase tracking-widest font-semibold">
@@ -576,7 +576,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="color"
-                    className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer"
+                    className="w-8 h-8 rounded border border-[#806f47]/30 bg-transparent cursor-pointer"
                     value={formData.themeColor || '#64748b'}
                     onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })}
                   />
@@ -595,7 +595,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                 Icon Identifier
               </label>
               <div className="flex items-center gap-3 mt-1">
-                <div className="p-2 bg-slate-800 border border-slate-700 rounded-lg text-amber-400">
+                <div className="p-2 bg-slate-800 border border-[#806f47]/30 rounded-lg text-amber-400">
                   {renderSkillIcon(formData.iconAssetId || 'Zap', 'w-6 h-6')}
                 </div>
                 <input
@@ -643,7 +643,7 @@ export const ProfessionEditorPanel: React.FC = () => {
 
         {/* ─── TAB 2: STATIONS & TRAINING ─────────────────────────────────── */}
         {activeTab === 'STATIONS' && (
-          <div className="space-y-4 bg-slate-900/60 p-4 border border-slate-800 rounded-lg">
+          <div className="space-y-4 sg-glass p-4 rounded-lg">
             <div>
               <label className="text-xs text-amber-300 uppercase tracking-widest font-semibold">
                 Station & Node Tags (JSON Array)
@@ -661,7 +661,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                 {stationTagsArray.map((t, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs text-amber-400 font-mono"
+                    className="px-2 py-0.5 bg-slate-800 border border-[#806f47]/30 rounded text-xs text-amber-400 font-mono"
                   >
                     #{t}
                   </span>
@@ -699,7 +699,7 @@ export const ProfessionEditorPanel: React.FC = () => {
 
         {/* ─── TAB 3: MILESTONE UNLOCKS ────────────────────────────────────── */}
         {activeTab === 'MILESTONES' && (
-          <div className="space-y-4 bg-slate-900/60 p-4 border border-slate-800 rounded-lg">
+          <div className="space-y-4 sg-glass p-4 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">
                 Configure level-by-level equipment, ability, recipe, and gathering node unlocks.
@@ -716,13 +716,13 @@ export const ProfessionEditorPanel: React.FC = () => {
               {milestonesArray.map((m, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-2.5 bg-slate-800/80 border border-slate-700 rounded-lg text-xs"
+                  className="flex items-center gap-3 p-2.5 bg-slate-800/80 border border-[#806f47]/30 rounded-lg text-xs"
                 >
                   <div className="w-16">
                     <span className="text-[10px] text-slate-400 block uppercase">Level</span>
                     <input
                       type="number"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-amber-400"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-1.5 py-0.5 text-center font-bold text-amber-400"
                       value={m.level}
                       onChange={(e) =>
                         handleUpdateMilestone(idx, { level: parseInt(e.target.value) || 1 })
@@ -733,7 +733,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                   <div className="w-28">
                     <span className="text-[10px] text-slate-400 block uppercase">Type</span>
                     <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-slate-200"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-1 py-0.5 text-[11px] text-slate-200"
                       value={m.type}
                       onChange={(e) =>
                         handleUpdateMilestone(idx, { type: e.target.value as any })
@@ -752,14 +752,14 @@ export const ProfessionEditorPanel: React.FC = () => {
                   <div className="flex-1 space-y-1">
                     <input
                       type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs font-semibold text-amber-200"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-2 py-0.5 text-xs font-semibold text-amber-200"
                       value={m.title}
                       onChange={(e) => handleUpdateMilestone(idx, { title: e.target.value })}
                       placeholder="Title"
                     />
                     <input
                       type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-300"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-2 py-0.5 text-[11px] text-slate-300"
                       value={m.description}
                       onChange={(e) =>
                         handleUpdateMilestone(idx, { description: e.target.value })
@@ -782,7 +782,7 @@ export const ProfessionEditorPanel: React.FC = () => {
 
         {/* ─── TAB 4: BATTLEPASS TRACK ─────────────────────────────────────── */}
         {activeTab === 'BATTLEPASS' && (
-          <div className="space-y-4 bg-slate-900/60 p-4 border border-slate-800 rounded-lg">
+          <div className="space-y-4 sg-glass p-4 rounded-lg">
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">
                 Configure 10-tier cosmetic reward tracks (titles, emotes, capes, banners, auras).
@@ -799,13 +799,13 @@ export const ProfessionEditorPanel: React.FC = () => {
               {battlepassTiersArray.map((t, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-2.5 bg-slate-800/80 border border-slate-700 rounded-lg text-xs"
+                  className="flex items-center gap-3 p-2.5 bg-slate-800/80 border border-[#806f47]/30 rounded-lg text-xs"
                 >
                   <div className="w-14">
                     <span className="text-[10px] text-slate-400 block uppercase">Tier</span>
                     <input
                       type="number"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-amber-400"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-1.5 py-0.5 text-center font-bold text-amber-400"
                       value={t.tier}
                       onChange={(e) =>
                         handleUpdateBattlepassTier(idx, { tier: parseInt(e.target.value) || 1 })
@@ -817,7 +817,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                     <span className="text-[10px] text-slate-400 block uppercase">Level</span>
                     <input
                       type="number"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center font-bold text-slate-200"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-1.5 py-0.5 text-center font-bold text-slate-200"
                       value={t.level}
                       onChange={(e) =>
                         handleUpdateBattlepassTier(idx, { level: parseInt(e.target.value) || 1 })
@@ -828,7 +828,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                   <div className="w-24">
                     <span className="text-[10px] text-slate-400 block uppercase">Rarity</span>
                     <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-slate-200"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-1 py-0.5 text-[11px] text-slate-200"
                       value={t.rarity}
                       onChange={(e) =>
                         handleUpdateBattlepassTier(idx, { rarity: e.target.value as any })
@@ -846,7 +846,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                   <div className="w-24">
                     <span className="text-[10px] text-slate-400 block uppercase">Type</span>
                     <select
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-slate-200"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-1 py-0.5 text-[11px] text-slate-200"
                       value={t.rewardType}
                       onChange={(e) =>
                         handleUpdateBattlepassTier(idx, { rewardType: e.target.value as any })
@@ -864,7 +864,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                   <div className="flex-1 space-y-1">
                     <input
                       type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-xs font-semibold text-amber-200"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-2 py-0.5 text-xs font-semibold text-amber-200"
                       value={t.rewardName}
                       onChange={(e) =>
                         handleUpdateBattlepassTier(idx, { rewardName: e.target.value })
@@ -873,7 +873,7 @@ export const ProfessionEditorPanel: React.FC = () => {
                     />
                     <input
                       type="text"
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-300"
+                      className="w-full bg-transparent border border-[#806f47]/30 rounded px-2 py-0.5 text-[11px] text-slate-300"
                       value={t.description}
                       onChange={(e) =>
                         handleUpdateBattlepassTier(idx, { description: e.target.value })

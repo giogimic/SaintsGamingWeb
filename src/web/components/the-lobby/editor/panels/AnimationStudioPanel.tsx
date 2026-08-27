@@ -370,8 +370,8 @@ export function AnimationStudioPanel() {
   return (
     <div className="flex h-full w-full bg-[#050b14]/95 text-slate-200 font-mono text-xs select-none overflow-hidden">
       {/* ─── LEFT COLUMN: ANIMATION SEQUENCES ─── */}
-      <div className="w-56 flex flex-col border-r border-[#806f47]/30 bg-black/40">
-        <div className="flex items-center justify-between p-3 border-b border-[#806f47]/30 bg-black/60">
+      <div className="w-56 flex flex-col border-r border-[#806f47]/30 bg-black/50/40">
+        <div className="flex items-center justify-between p-3 border-b border-[#806f47]/30 bg-black/50/20">
           <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
             <Film className="w-4 h-4 text-amber-400" />
             <span>Animations</span>
@@ -401,7 +401,7 @@ export function AnimationStudioPanel() {
                 className={`group flex items-center justify-between p-2 rounded-xl border transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-amber-500/20 border-amber-500/60 text-amber-200 shadow-sm'
-                    : 'bg-[#0b1320] border-slate-800 text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    : 'bg-[#0b1320] border-[#806f47]/20 text-slate-400 hover:bg-white/5 hover:text-slate-200'
                 }`}
               >
                 <div className="flex flex-col min-w-0">
@@ -429,7 +429,7 @@ export function AnimationStudioPanel() {
           })}
         </div>
 
-        <div className="p-2 border-t border-[#806f47]/30 bg-black/60">
+        <div className="p-2 border-t border-[#806f47]/30 bg-black/50/20">
           <button
             type="button"
             onClick={handleSaveAnimations}
@@ -444,7 +444,7 @@ export function AnimationStudioPanel() {
       {/* ─── CENTER COLUMN: TIMELINE & FRAME STRIP ─── */}
       <div className="flex-1 flex flex-col border-r border-[#806f47]/30 bg-[#070e1a]/80 overflow-hidden">
         {/* Header Settings Strip */}
-        <div className="p-3 border-b border-[#806f47]/30 bg-black/60 flex items-center justify-between gap-4">
+        <div className="p-3 border-b border-[#806f47]/30 bg-black/50/20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
               <label className="block text-[9px] uppercase font-bold text-slate-400 mb-0.5">Name</label>
@@ -457,7 +457,7 @@ export function AnimationStudioPanel() {
                     prev.map((a) => (a.id === activeAnim.id ? { ...a, name: val } : a))
                   );
                 }}
-                className="bg-[#050b14] border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500"
+                className="bg-[#050b14] border border-[#806f47]/30 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-amber-500"
               />
             </div>
 
@@ -474,7 +474,7 @@ export function AnimationStudioPanel() {
                       prev.map((a) => (a.id === activeAnim.id ? { ...a, frameWidth: val } : a))
                     );
                   }}
-                  className="w-14 bg-[#050b14] border border-slate-700 rounded-lg px-2 py-1 text-xs text-white text-center"
+                  className="w-14 bg-[#050b14] border border-[#806f47]/30 rounded-lg px-2 py-1 text-xs text-white text-center"
                 />
                 <span className="text-slate-500">×</span>
                 <input
@@ -487,7 +487,7 @@ export function AnimationStudioPanel() {
                       prev.map((a) => (a.id === activeAnim.id ? { ...a, frameHeight: val } : a))
                     );
                   }}
-                  className="w-14 bg-[#050b14] border border-slate-700 rounded-lg px-2 py-1 text-xs text-white text-center"
+                  className="w-14 bg-[#050b14] border border-[#806f47]/30 rounded-lg px-2 py-1 text-xs text-white text-center"
                 />
               </div>
             </div>
@@ -523,7 +523,7 @@ export function AnimationStudioPanel() {
               className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeAnim.loop
                   ? 'bg-amber-500/20 text-amber-300 border-amber-500/60'
-                  : 'bg-black/40 text-slate-500 border-slate-800'
+                  : 'bg-black/50/40 text-slate-500 border-[#806f47]/20'
               }`}
             >
               <Repeat className="w-3.5 h-3.5" />
@@ -539,7 +539,7 @@ export function AnimationStudioPanel() {
               className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeAnim.pingPong
                   ? 'bg-purple-500/20 text-purple-300 border-purple-500/60'
-                  : 'bg-black/40 text-slate-500 border-slate-800'
+                  : 'bg-black/50/40 text-slate-500 border-[#806f47]/20'
               }`}
             >
               <span>Ping-Pong</span>
@@ -574,7 +574,7 @@ export function AnimationStudioPanel() {
                   className={`shrink-0 w-28 p-2 rounded-xl border flex flex-col gap-2 transition-all cursor-pointer ${
                     isCurrent
                       ? 'bg-amber-500/20 border-amber-500 shadow-md ring-1 ring-amber-400'
-                      : 'bg-black/50 border-slate-800 hover:border-slate-700 text-slate-400'
+                      : 'bg-black/50/50 border-[#806f47]/20 hover:border-[#806f47]/30 text-slate-400'
                   }`}
                 >
                   <div className="flex items-center justify-between text-[10px]">
@@ -606,7 +606,7 @@ export function AnimationStudioPanel() {
                             prev.map((a) => (a.id === activeAnim.id ? { ...a, frames: updated } : a))
                           );
                         }}
-                        className="w-14 bg-black border border-slate-700 rounded px-1 text-right text-white"
+                        className="w-14 bg-black/50 border border-[#806f47]/30 rounded px-1 text-right text-white"
                       />
                     </div>
 
@@ -623,7 +623,7 @@ export function AnimationStudioPanel() {
                             prev.map((a) => (a.id === activeAnim.id ? { ...a, frames: updated } : a))
                           );
                         }}
-                        className="w-14 bg-black border border-slate-700 rounded px-1 text-right text-white"
+                        className="w-14 bg-black/50 border border-[#806f47]/30 rounded px-1 text-right text-white"
                       />
                     </div>
 
@@ -640,7 +640,7 @@ export function AnimationStudioPanel() {
                             prev.map((a) => (a.id === activeAnim.id ? { ...a, frames: updated } : a))
                           );
                         }}
-                        className="w-14 bg-black border border-slate-700 rounded px-1 text-right text-amber-300"
+                        className="w-14 bg-black/50 border border-[#806f47]/30 rounded px-1 text-right text-amber-300"
                       />
                     </div>
                   </div>
@@ -652,8 +652,8 @@ export function AnimationStudioPanel() {
       </div>
 
       {/* ─── RIGHT COLUMN: REAL-TIME PREVIEW CANVAS ─── */}
-      <div className="w-80 flex flex-col bg-black/60">
-        <div className="p-3 border-b border-[#806f47]/30 bg-black/60 flex items-center justify-between">
+      <div className="w-80 flex flex-col bg-black/50/20">
+        <div className="p-3 border-b border-[#806f47]/30 bg-black/50/20 flex items-center justify-between">
           <span className="font-bold text-amber-400 text-xs uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-4 h-4 text-amber-400" />
             Live Preview
@@ -662,7 +662,7 @@ export function AnimationStudioPanel() {
             <button
               type="button"
               onClick={() => setPreviewZoom((z) => Math.max(1, z - 1))}
-              className="p-1 rounded bg-black/40 border border-slate-700 text-slate-300 hover:text-white"
+              className="p-1 rounded bg-black/50/40 border border-[#806f47]/30 text-slate-300 hover:text-white"
               title="Zoom out"
             >
               <ZoomOut className="w-3 h-3" />
@@ -671,7 +671,7 @@ export function AnimationStudioPanel() {
             <button
               type="button"
               onClick={() => setPreviewZoom((z) => Math.min(8, z + 1))}
-              className="p-1 rounded bg-black/40 border border-slate-700 text-slate-300 hover:text-white"
+              className="p-1 rounded bg-black/50/40 border border-[#806f47]/30 text-slate-300 hover:text-white"
               title="Zoom in"
             >
               <ZoomIn className="w-3 h-3" />
@@ -688,19 +688,19 @@ export function AnimationStudioPanel() {
               ? 'bg-[#1b432a]'
               : bgBackdrop === 'light'
               ? 'bg-[#cbd5e1]'
-              : 'bg-black'
+              : 'bg-black/50'
           }`}
         >
           <canvas ref={canvasRef} className="shadow-2xl rounded" style={{ imageRendering: 'pixelated' }} />
         </div>
 
         {/* Playback Controls Strip */}
-        <div className="p-3 border-t border-[#806f47]/30 bg-black/80 space-y-3">
+        <div className="p-3 border-t border-[#806f47]/30 bg-black/50/80 space-y-3">
           <div className="flex items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => setCurrentFrameIdx((prev) => Math.max(0, prev - 1))}
-              className="p-2 rounded-xl bg-black/60 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              className="p-2 rounded-xl bg-black/50/20 border border-[#806f47]/30 text-slate-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
               title="Previous Frame"
             >
               <SkipBack className="w-4 h-4" />
@@ -724,14 +724,14 @@ export function AnimationStudioPanel() {
               onClick={() =>
                 setCurrentFrameIdx((prev) => (prev + 1) % (activeAnim.frames.length || 1))
               }
-              className="p-2 rounded-xl bg-black/60 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+              className="p-2 rounded-xl bg-black/50/20 border border-[#806f47]/30 text-slate-300 hover:text-white hover:bg-white/5 transition cursor-pointer"
               title="Next Frame"
             >
               <SkipForward className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-[#806f47]/20">
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
@@ -739,7 +739,7 @@ export function AnimationStudioPanel() {
                 className={`px-2 py-1 rounded border text-[10px] font-bold transition cursor-pointer ${
                   showOnionSkin
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60'
-                    : 'bg-black/40 text-slate-500 border-slate-800'
+                    : 'bg-black/50/40 text-slate-500 border-[#806f47]/20'
                 }`}
               >
                 Onion Skin
@@ -751,19 +751,19 @@ export function AnimationStudioPanel() {
               <button
                 type="button"
                 onClick={() => setBgBackdrop('dark')}
-                className={`w-4 h-4 rounded-full border ${bgBackdrop === 'dark' ? 'border-amber-400 bg-slate-800' : 'border-slate-700 bg-slate-900'}`}
+                className={`w-4 h-4 rounded-full border ${bgBackdrop === 'dark' ? 'border-amber-400 bg-slate-800' : 'border-[#806f47]/30 bg-transparent'}`}
                 title="Dark Grid"
               />
               <button
                 type="button"
                 onClick={() => setBgBackdrop('grass')}
-                className={`w-4 h-4 rounded-full border ${bgBackdrop === 'grass' ? 'border-amber-400 bg-emerald-800' : 'border-slate-700 bg-emerald-950'}`}
+                className={`w-4 h-4 rounded-full border ${bgBackdrop === 'grass' ? 'border-amber-400 bg-emerald-800' : 'border-[#806f47]/30 bg-emerald-950'}`}
                 title="Grass"
               />
               <button
                 type="button"
                 onClick={() => setBgBackdrop('black')}
-                className={`w-4 h-4 rounded-full border ${bgBackdrop === 'black' ? 'border-amber-400 bg-black' : 'border-slate-700 bg-black'}`}
+                className={`w-4 h-4 rounded-full border ${bgBackdrop === 'black' ? 'border-amber-400 bg-black/50' : 'border-[#806f47]/30 bg-black/50'}`}
                 title="Black"
               />
             </div>

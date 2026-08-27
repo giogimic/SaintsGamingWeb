@@ -234,13 +234,13 @@ export function CreatureDefEditorPanel() {
       }
       toolbar={
         <div className="flex flex-wrap gap-1">
-          <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">
+          <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-[#806f47]/30 bg-transparent px-2 py-1 text-slate-300">
             <FileJson size={10} /> JSON
           </button>
           <button type="button" onClick={handleNew} className="flex items-center gap-1 rounded bg-emerald-700 px-2 py-1 text-white">
             <Plus size={10} /> New
           </button>
-          <button type="button" onClick={() => void load()} className="rounded border border-slate-700 p-1 text-slate-400">
+          <button type="button" onClick={() => void load()} className="rounded border border-[#806f47]/30 p-1 text-slate-400">
             <RefreshCw size={12} />
           </button>
         </div>
@@ -248,7 +248,7 @@ export function CreatureDefEditorPanel() {
       list={
         <div className="space-y-1">
           {/* Category Filter Tabs */}
-          <div className="grid grid-cols-4 gap-1 p-1 bg-black/40 border-b border-slate-900 text-[9px] font-mono">
+          <div className="grid grid-cols-4 gap-1 p-1 bg-black/50/40 border-b border-slate-900 text-[9px] font-mono">
             <button
               type="button"
               onClick={() => setCategoryFilter('all')}
@@ -312,7 +312,7 @@ export function CreatureDefEditorPanel() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-bold text-[10px] text-slate-200 flex items-center gap-1.5">
                         <span>{c.name}</span>
-                        <span className="text-[8px] uppercase tracking-wider px-1 rounded bg-black/60 text-slate-400 border border-slate-800">
+                        <span className="text-[8px] uppercase tracking-wider px-1 rounded bg-black/50/20 text-slate-400 border border-[#806f47]/20">
                           {c.category || 'beast'}
                         </span>
                       </div>
@@ -359,7 +359,7 @@ export function CreatureDefEditorPanel() {
       )}
 
       {showJson && (
-        <div className="mb-3 space-y-2 border-b border-slate-800 pb-3">
+        <div className="mb-3 space-y-2 border-b border-[#806f47]/20 pb-3">
           <textarea
             className={`${inputCls} h-24`}
             placeholder="Paste CreatureDef JSON array…"
@@ -602,7 +602,7 @@ export function CreatureDefEditorPanel() {
                       key={a.key}
                       type="button"
                       onClick={() => setSpriteKey(a.kind === 'overworld' ? 'overworld' : 'battle', a.key)}
-                      className="border border-slate-800 rounded p-1 hover:border-emerald-600 bg-black/40"
+                      className="border border-[#806f47]/20 rounded p-1 hover:border-emerald-600 bg-black/50/40"
                       title={a.label}
                     >
                       <img src={creatureAssetUrl(a.key)} alt={a.key} className="w-full h-10 object-contain pixelated" />
@@ -610,8 +610,8 @@ export function CreatureDefEditorPanel() {
                   ))}
                 </div>
                 <div className="flex gap-2 mt-2">
-                  <img src={creatureAssetUrl(form.spriteOverworld)} className="w-16 h-16 object-contain bg-black/50 rounded border border-slate-800" alt="ow" />
-                  <img src={creatureAssetUrl(form.spriteBattle || form.spriteOverworld)} className="w-16 h-16 object-contain bg-black/50 rounded border border-slate-800" alt="bt" />
+                  <img src={creatureAssetUrl(form.spriteOverworld)} className="w-16 h-16 object-contain bg-black/50/50 rounded border border-[#806f47]/20" alt="ow" />
+                  <img src={creatureAssetUrl(form.spriteBattle || form.spriteOverworld)} className="w-16 h-16 object-contain bg-black/50/50 rounded border border-[#806f47]/20" alt="bt" />
                 </div>
               </div>
 
@@ -646,7 +646,7 @@ export function CreatureDefEditorPanel() {
                 </div>
 
                 {/* Visual Stat Breakdown & BST (Phase 8 Track E5) */}
-                <div className="mt-2.5 p-2 rounded bg-black/50 border border-slate-800 space-y-1.5">
+                <div className="mt-2.5 p-2 rounded bg-black/50/50 border border-[#806f47]/20 space-y-1.5">
                   <div className="flex items-center justify-between text-[9px] font-bold text-slate-400">
                     <span className="uppercase tracking-wider">Stat Distribution</span>
                     <span className="text-amber-300 font-mono">
@@ -664,7 +664,7 @@ export function CreatureDefEditorPanel() {
                     ].map((st) => (
                       <div key={st.label} className="flex items-center gap-2 text-[8px] font-mono">
                         <span className="w-6 text-slate-400 font-bold">{st.label}</span>
-                        <div className="flex-1 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                        <div className="flex-1 h-1.5 bg-transparent rounded-full overflow-hidden border border-[#806f47]/20">
                           <div
                             className={`h-full ${st.color} rounded-full transition-all duration-300`}
                             style={{ width: `${Math.min(100, Math.round((st.val / st.max) * 100))}%` }}
@@ -684,7 +684,7 @@ export function CreatureDefEditorPanel() {
                 </div>
                 <div className="space-y-2">
                   {form.passives.map((p, idx) => (
-                    <div key={idx} className="border border-slate-800 rounded p-2 space-y-1">
+                    <div key={idx} className="border border-[#806f47]/20 rounded p-2 space-y-1">
                       <div className="flex gap-1 items-center">
                         <input
                           className={inputCls}
@@ -782,11 +782,11 @@ export function CreatureDefEditorPanel() {
                 ) : (
                   <div className="space-y-1.5">
                     {form.lootTableRefs.map((ref, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 bg-black/40 border border-slate-800 rounded p-1.5 text-[11px]">
+                      <div key={idx} className="flex items-center gap-1.5 bg-black/50/40 border border-[#806f47]/20 rounded p-1.5 text-[11px]">
                         <select
                           value={ref.label || 'normal'}
                           onChange={(e) => updateLootRef(idx, { label: e.target.value })}
-                          className="bg-[#111a2a] border border-slate-700 rounded px-1.5 py-1 text-[10px] text-amber-300 font-bold outline-none cursor-pointer"
+                          className="bg-[#111a2a] border border-[#806f47]/30 rounded px-1.5 py-1 text-[10px] text-amber-300 font-bold outline-none cursor-pointer"
                         >
                           <option value="normal">Normal</option>
                           <option value="rare">Rare Drop</option>
@@ -807,7 +807,7 @@ export function CreatureDefEditorPanel() {
                             value={ref.tableId}
                             onChange={(e) => updateLootRef(idx, { tableId: e.target.value })}
                             placeholder="table_id"
-                            className="flex-1 bg-[#111a2a] border border-slate-700 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                            className="flex-1 bg-[#111a2a] border border-[#806f47]/30 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
                           />
                         )}
 

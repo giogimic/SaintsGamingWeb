@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const inputCls =
-  'w-full bg-[#050b14] border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-sky-700 transition-colors';
+  'w-full bg-[#050b14] border border-[#806f47]/20 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-sky-700 transition-colors';
 const labelCls = 'block text-[9px] font-black text-slate-500 uppercase tracking-[0.15em] mb-1';
 
 type DialogueForm = {
@@ -431,7 +431,7 @@ export function DialogueEditorPanel() {
               type="button"
               onClick={() => setForm((p) => ({ ...p, rawMode: false }))}
               className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border ${
-                !form.rawMode ? 'border-sky-700 text-sky-300' : 'border-slate-800 text-slate-500'
+                !form.rawMode ? 'border-sky-700 text-sky-300' : 'border-[#806f47]/20 text-slate-500'
               }`}
             >
               Nodes
@@ -449,7 +449,7 @@ export function DialogueEditorPanel() {
                 setForm(next);
               }}
               className={`text-[9px] font-bold uppercase px-2 py-1 rounded-lg border ${
-                form.rawMode ? 'border-sky-700 text-sky-300' : 'border-slate-800 text-slate-500'
+                form.rawMode ? 'border-sky-700 text-sky-300' : 'border-[#806f47]/20 text-slate-500'
               }`}
             >
               Raw JSON
@@ -469,7 +469,7 @@ export function DialogueEditorPanel() {
               {form.nodes.map((node, ni) => (
                 <div
                   key={`${node.id}-${ni}`}
-                  className="rounded-xl border border-slate-800 bg-[#080e18] p-2.5 space-y-2"
+                  className="rounded-xl border border-[#806f47]/20 bg-[#080e18] p-2.5 space-y-2"
                 >
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -506,7 +506,7 @@ export function DialogueEditorPanel() {
                     {node.options.map((opt, oi) => (
                       <div
                         key={oi}
-                        className="grid grid-cols-2 gap-1.5 p-2 rounded-lg border border-slate-900 bg-black/20"
+                        className="grid grid-cols-2 gap-1.5 p-2 rounded-lg border border-slate-900 bg-black/50/20"
                       >
                         <input
                           className={inputCls}

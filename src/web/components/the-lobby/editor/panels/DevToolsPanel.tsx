@@ -29,7 +29,7 @@ export const DevToolsPanel: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden font-mono">
-      <div className="flex bg-[#050b14]/80 border-b border-slate-800/80 p-1 gap-1 text-xs font-medium shrink-0">
+      <div className="flex bg-[#050b14]/80 border-b border-[#806f47]/20/80 p-1 gap-1 text-xs font-medium shrink-0">
         {canServer && (
           <button
             onClick={() => setActiveTab('server')}
