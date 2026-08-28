@@ -77,6 +77,8 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const setBrushRadius = useEditorStore((s) => s.setBrushRadius);
   const brushMode = useEditorStore((s) => s.brushMode);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
+  const paintMode = useEditorStore((s) => s.paintMode);
+  const setPaintMode = useEditorStore((s) => s.setPaintMode);
   const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
   const setActiveLayerIdx = useEditorStore((s) => s.setActiveLayerIdx);
   const activeBrushTileId = useEditorStore((s) => s.activeBrushTileId);
@@ -231,6 +233,42 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             <DoorOpen className="h-3.5 w-3.5" />
           </button>
         </div>
+
+        {/* Paint Mode Toggle (Stamp vs Paste) */}
+        {brushMode === 'paint' && (
+          <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                setPaintMode('stamp');
+                soundSynth?.playUiClick?.();
+              }}
+              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                paintMode === 'stamp'
+                  ? 'bg-amber-500 text-black shadow'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Stamp (squish to 1 tile)"
+            >
+              STAMP
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaintMode('paste');
+                soundSynth?.playUiClick?.();
+              }}
+              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                paintMode === 'paste'
+                  ? 'bg-amber-500 text-black shadow'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Paste (paint full region)"
+            >
+              PASTE
+            </button>
+          </div>
+        )}
 
         {/* Brush Size */}
         <div className="flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg px-2 py-0.5 text-[10px]">

@@ -232,6 +232,8 @@ interface EditorState {
   activePrefabId: string | null;
   prefabs: any[];
   tileClipboard: TileClipboardData | null;
+  paintMode: 'stamp' | 'paste';
+  setPaintMode: (mode: 'stamp' | 'paste') => void;
   pasteMode: PasteMode;
   isPasting: boolean;
   selectionStart: { r: number; c: number } | null;
@@ -829,8 +831,13 @@ export const useEditorStore = create<EditorState>()(
       activeBrushPattern: null,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
-      brushRadius: 1,
+      brushRadius: 0,
       brushMode: 'paint',
+      paintMode: 'stamp',
+      setPaintMode: (mode: 'stamp' | 'paste') =>
+        set((state) => {
+          state.paintMode = mode;
+        }),
       activePrefabId: null,
       prefabs: [],
       tileClipboard: null,
@@ -850,7 +857,12 @@ export const useEditorStore = create<EditorState>()(
       openMapTabs: ['DEMO_SANDBOX'],
       activeMapTab: 'DEMO_SANDBOX',
       isStudioFreeCam: false,
-      canvasViewport: { x: 0, y: 36, w: typeof window !== 'undefined' ? window.innerWidth : 1280, h: typeof window !== 'undefined' ? window.innerHeight - 76 : 644 },
+      canvasViewport: { 
+        x: typeof window !== 'undefined' ? (window.innerWidth - 800) / 2 : 240, 
+        y: typeof window !== 'undefined' ? (window.innerHeight - 600) / 2 : 36, 
+        w: 800, 
+        h: 600 
+      },
       setCanvasViewport: (vp: { x: number; y: number; w: number; h: number }) =>
         set((state) => {
           state.canvasViewport = vp;
@@ -1447,7 +1459,7 @@ export const useEditorStore = create<EditorState>()(
 
         if (!map) return { count: 0, layerIdx, error: 'No active map.' };
 
-        let paintResult;
+        let paintResult: { ok: boolean; count?: number; cells?: PaintedCell[]; reason?: string } = { ok: false };
         if (hasSparseSelection) {
           paintResult = paintSparseCells({
             map,
@@ -1456,25 +1468,85 @@ export const useEditorStore = create<EditorState>()(
             tileId,
           });
         } else if (start && end) {
-          paintResult = paintTilesInRegion({
-            map,
-            layerIdx,
-            minR: Math.min(start.r, end.r),
-            maxR: Math.max(start.r, end.r),
-            minC: Math.min(start.c, end.c),
-            maxC: Math.max(start.c, end.c),
-            tileId,
-          });
+          if (get().paintMode === 'paste' && get().activeBrushPattern) {
+            const pat = get().activeBrushPattern!;
+            const r0 = Math.min(start.r, end.r);
+            const c0 = Math.min(start.c, end.c);
+            const r1 = Math.max(start.r, end.r);
+            const c1 = Math.max(start.c, end.c);
+            
+            const changed: any[] = [];
+            const targetGrid = layerIdx === -1 ? map.grid : map.tileLayers?.[layerIdx]?.grid;
+            
+            if (targetGrid) {
+              for (let r = r0; r <= r1; r++) {
+                if (!targetGrid[r] || Object.isFrozen(targetGrid[r])) continue;
+                for (let c = c0; c <= c1; c++) {
+                  const pr = (r - r0) % pat.h;
+                  const pc = (c - c0) % pat.w;
+                  const patGid = pat.gids[pr]?.[pc] || 0;
+                  if (patGid > 0) {
+                    const prev = targetGrid[r][c] || 0;
+                    if (prev !== patGid) {
+                      targetGrid[r][c] = patGid;
+                      changed.push({ layerIdx, r, c, before: prev, after: patGid });
+                    }
+                  }
+                }
+              }
+              paintResult = { ok: true, cells: changed };
+            } else {
+              paintResult = { ok: false, reason: 'Target grid missing' };
+            }
+          } else {
+            paintResult = paintTilesInRegion({
+              map,
+              layerIdx,
+              minR: Math.min(start.r, end.r),
+              maxR: Math.max(start.r, end.r),
+              minC: Math.min(start.c, end.c),
+              maxC: Math.max(start.c, end.c),
+              tileId,
+            });
+          }
         } else if (hovered) {
-          paintResult = paintTilesInRegion({
-            map,
-            layerIdx,
-            minR: hovered.r,
-            maxR: hovered.r,
-            minC: hovered.c,
-            maxC: hovered.c,
-            tileId,
-          });
+          if (get().paintMode === 'paste' && get().activeBrushPattern) {
+            const pat = get().activeBrushPattern!;
+            const changed: any[] = [];
+            const targetGrid = layerIdx === -1 ? map.grid : map.tileLayers?.[layerIdx]?.grid;
+            
+            if (targetGrid) {
+              for (let pr = 0; pr < pat.h; pr++) {
+                for (let pc = 0; pc < pat.w; pc++) {
+                  const r = hovered.r + pr;
+                  const c = hovered.c + pc;
+                  if (targetGrid[r] && !Object.isFrozen(targetGrid[r]) && c < targetGrid[r].length) {
+                    const patGid = pat.gids[pr]?.[pc] || 0;
+                    if (patGid > 0) {
+                      const prev = targetGrid[r][c] || 0;
+                      if (prev !== patGid) {
+                        targetGrid[r][c] = patGid;
+                        changed.push({ layerIdx, r, c, before: prev, after: patGid });
+                      }
+                    }
+                  }
+                }
+              }
+              paintResult = { ok: true, cells: changed };
+            } else {
+              paintResult = { ok: false, reason: 'Target grid missing' };
+            }
+          } else {
+            paintResult = paintTilesInRegion({
+              map,
+              layerIdx,
+              minR: hovered.r,
+              maxR: hovered.r,
+              minC: hovered.c,
+              maxC: hovered.c,
+              tileId,
+            });
+          }
         } else {
           return { count: 0, layerIdx, error: 'No selection or tile to paint.' };
         }
@@ -1483,7 +1555,7 @@ export const useEditorStore = create<EditorState>()(
           return { count: 0, layerIdx, error: paintResult.reason };
         }
 
-        const paintedCells = paintResult.cells;
+        const paintedCells = paintResult.cells || [];
         if (paintedCells.length > 0) {
           set((state) => {
             state.opStack = pushEditorOp(state.opStack, {

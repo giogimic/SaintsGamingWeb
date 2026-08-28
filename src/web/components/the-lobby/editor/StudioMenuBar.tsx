@@ -201,7 +201,7 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
       <div className="flex items-center gap-2.5">
         {/* Studio Brand */}
         <div className="flex items-center gap-1.5 pr-2.5 border-r border-border/40">
-          <span className="font-mono font-black text-xs tracking-wider text-primary">SAINTS STUDIO</span>
+          <span className="font-mono font-black text-xs tracking-wider text-primary">STUDIO</span>
         </div>
 
         {/* Project / World Profile Selector */}
@@ -531,12 +531,8 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             Paint
           </button>
           <button
-            onClick={() => handleSwitchMode('atlas')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-              studioMode === 'atlas'
-                ? 'bg-primary text-primary-foreground shadow'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            onClick={() => openPanel('atlas')}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-muted-foreground hover:text-foreground`}
             title="World Atlas (Ctrl+Shift+M)"
           >
             Atlas

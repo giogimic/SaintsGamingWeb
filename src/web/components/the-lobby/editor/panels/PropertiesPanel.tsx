@@ -48,20 +48,9 @@ export const PropertiesPanel: React.FC = () => {
   const [templateName, setTemplateName] = useState(LOGIC_COMPONENT_PRESETS[0].name);
   const [showAdvancedJson, setShowAdvancedJson] = useState(false);
 
-  const [warpTarget, setWarpTarget] = useState('DEMO_SANDBOX');
-  const [warpCategory, setWarpCategory] = useState<'ATLAS_NORTH' | 'ATLAS_EAST' | 'ATLAS_SOUTH' | 'ATLAS_WEST' | 'DUNGEON' | 'RAID' | 'EVENT' | 'MINE' | 'DEEP_FOREST' | 'PORTAL' | 'CUSTOM'>('CUSTOM');
-  const [warpSpawnX, setWarpSpawnX] = useState(14);
-  const [warpSpawnY, setWarpSpawnY] = useState(15);
-  const [isPickingTarget, setIsPickingTarget] = useState(false);
 
-  const [encounterPool, setEncounterPool] = useState<
-    Array<{ speciesId: string; minLevel: number; maxLevel: number; weight: number; timeOfDay?: 'any'|'day'|'night' }>
-  >(currentMapData.encounterPool || []);
-  const [selectedSpecies, setSelectedSpecies] = useState('rockitten');
-  const [minLevel, setMinLevel] = useState(2);
-  const [maxLevel, setMaxLevel] = useState(5);
-  const [weight, setWeight] = useState(30);
-  const [timeOfDay, setTimeOfDay] = useState<'any'|'day'|'night'>('any');
+
+
 
   useEffect(() => {
     if (Object.keys(logicTiles).length === 0) {
@@ -74,31 +63,7 @@ export const PropertiesPanel: React.FC = () => {
     setTemplateName(preset.name);
   }, [preset]);
 
-  // Auto-sync gate properties when clicking an existing gate tile
-  useEffect(() => {
-    if (!clickedTile) return;
 
-    if (isPickingTarget) {
-      setWarpSpawnX(clickedTile.c);
-      setWarpSpawnY(clickedTile.r);
-      setIsPickingTarget(false);
-      showToast(`Gate target set to (${clickedTile.c}, ${clickedTile.r})`);
-      return;
-    }
-
-    const currentGates = normalizeGates(currentMapData.gates);
-    const existingGate = currentGates.find(
-      (g) => g.position.x === clickedTile.c && g.position.y === clickedTile.r
-    );
-    if (existingGate) {
-      setWarpTarget(existingGate.targetMapId || 'DEMO_SANDBOX');
-      setWarpSpawnX(existingGate.spawnPoint?.x ?? 14);
-      setWarpSpawnY(existingGate.spawnPoint?.y ?? 15);
-      if ((existingGate as any).category) {
-        setWarpCategory((existingGate as any).category as any);
-      }
-    }
-  }, [clickedTile, currentMapData.gates]);
 
   const applyPresetBrush = (p: LogicComponentPreset) => {
     if (p.paintTileId == null) {
@@ -147,63 +112,6 @@ export const PropertiesPanel: React.FC = () => {
     setLayer(-1);
     setBrush(id);
     showToast(`Brush: ${name} (#${id}) on Logic (−1)`);
-  };
-
-  const handleAddEncounterSpecies = () => {
-    const next = [...encounterPool, { speciesId: selectedSpecies, minLevel, maxLevel, weight, timeOfDay }];
-    setEncounterPool(next);
-    useGameStore.setState({ activeMapData: { ...currentMapData, encounterPool: next } });
-    showToast(`Added ${selectedSpecies} to map pool — Save Map to persist`);
-  };
-
-  const handlePlaceWarp = () => {
-    if (!clickedTile) {
-      showToast('Click a map tile first (in Build mode), then Place Warp.');
-      return;
-    }
-    const x = clickedTile.c;
-    const y = clickedTile.r;
-
-    // Determine appropriate logic tile ID based on gate category
-    let tileBrush = 3;
-    if (warpCategory === 'ATLAS_NORTH') tileBrush = 14;
-    else if (warpCategory === 'ATLAS_EAST') tileBrush = 15;
-    else if (warpCategory === 'ATLAS_SOUTH') tileBrush = 16;
-    else if (warpCategory === 'ATLAS_WEST') tileBrush = 17;
-    else if (warpCategory === 'DUNGEON') tileBrush = 18;
-    else if (warpCategory === 'RAID') tileBrush = 19;
-    else if (warpCategory === 'EVENT') tileBrush = 20;
-    else if (warpCategory === 'MINE') tileBrush = 21;
-    else if (warpCategory === 'DEEP_FOREST') tileBrush = 22;
-    else if (warpCategory === 'PORTAL') tileBrush = 23;
-
-    const gate = {
-      id: `gate_${x}_${y}`,
-      position: { x, y },
-      targetMapId: warpTarget.trim().toUpperCase() || 'DEMO_SANDBOX',
-      spawnPoint: { x: warpSpawnX, y: warpSpawnY },
-      category: warpCategory,
-    };
-    const nextGates = upsertWarpGate(currentMapData.gates, gate);
-    const nextGrid = (currentMapData.grid || []).map((row: number[], ri: number) =>
-      row.map((cell: number, ci: number) => (ri === y && ci === x ? tileBrush : cell))
-    );
-    const next = { ...currentMapData, gates: nextGates, grid: nextGrid };
-    useGameStore.setState({ activeMapData: next });
-    setLayer(-1);
-    setBrush(tileBrush);
-    useEditorStore.getState().markMapDirty();
-    showToast(`Placed ${warpCategory} Gate @ (${x},${y}) → ${gate.targetMapId}`);
-  };
-
-  const handleRemoveWarp = () => {
-    if (!clickedTile) {
-      showToast('Click the warp tile first.');
-      return;
-    }
-    const nextGates = removeWarpGateAt(currentMapData.gates, clickedTile.c, clickedTile.r);
-    useGameStore.setState({ activeMapData: { ...currentMapData, gates: nextGates } });
-    showToast(`Removed warp @ (${clickedTile.c},${clickedTile.r})`);
   };
 
   const registered = Object.values(logicTiles).sort((a, b) => a.id - b.id);
@@ -334,112 +242,6 @@ export const PropertiesPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Warp gate — map.gates */}
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
-        <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-          <MapPin className="w-3.5 h-3.5" /> Warp Gate
-        </div>
-        <p className="text-[10px] text-slate-400">
-          Click a tile in the world, set target map + spawn, then Place. Saved with the map.
-        </p>
-        <div className="text-[10px] text-slate-500">
-          Selected:{' '}
-          {clickedTile ? (
-            <span className="text-[#e2d5b3] font-bold">
-              ({clickedTile.c}, {clickedTile.r})
-            </span>
-          ) : (
-            <span className="italic">none — click map</span>
-          )}
-        </div>
-        <div className="space-y-1">
-          <label className="block text-[10px] text-slate-400">Gate Type / Category</label>
-          <select
-            value={warpCategory}
-            onChange={(e) => setWarpCategory(e.target.value as any)}
-            className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1 text-slate-200 text-[10px]"
-          >
-            <option value="CUSTOM">Custom Warp (Classic)</option>
-            <option value="ATLAS_NORTH">🧭 Atlas North Gate (Northern Map Boundary)</option>
-            <option value="ATLAS_EAST">🧭 Atlas East Gate (Eastern Map Boundary)</option>
-            <option value="ATLAS_SOUTH">🧭 Atlas South Gate (Southern Map Boundary)</option>
-            <option value="ATLAS_WEST">🧭 Atlas West Gate (Western Map Boundary)</option>
-            <option value="DUNGEON">🏰 Dungeon Gate (Instanced / Open)</option>
-            <option value="RAID">⚔️ Raid Gate (High-Tier Boss Raid)</option>
-            <option value="EVENT">🎉 Event Gate (Seasonal / Community)</option>
-            <option value="MINE">⛏️ Mine Entrance Gate (Shafts & Caves)</option>
-            <option value="DEEP_FOREST">🌲 Deep Forest Gate (Wilderness Zone)</option>
-            <option value="PORTAL">🌀 Mystic Realm Portal</option>
-          </select>
-        </div>
-
-        <label className="block text-[10px] text-slate-400">Target map id</label>
-        <input
-          type="text"
-          value={warpTarget}
-          onChange={(e) => setWarpTarget(e.target.value)}
-          className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-2 py-1"
-        />
-        <div className="flex items-end gap-1">
-          <div className="flex-1 grid grid-cols-2 gap-1">
-            <div>
-              <label className="block text-[10px] text-slate-400">Spawn X</label>
-              <input
-                type="number"
-                value={warpSpawnX}
-                onChange={(e) => setWarpSpawnX(Number(e.target.value))}
-                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400">Spawn Y</label>
-              <input
-                type="number"
-                value={warpSpawnY}
-                onChange={(e) => setWarpSpawnY(Number(e.target.value))}
-                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
-              />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsPickingTarget(!isPickingTarget)}
-            className={`px-2 py-1 h-[26px] rounded border transition-colors ${
-              isPickingTarget 
-                ? 'bg-[#cbb26a] text-black border-[#cbb26a] font-bold' 
-                : 'bg-[#806f47]/20 border-[#806f47]/40 text-[#cbb26a] hover:bg-[#806f47]/40'
-            }`}
-            title="Click to pick spawn coordinates on the map"
-          >
-            <MapPin size={14} />
-          </button>
-        </div>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={handlePlaceWarp}
-            className="flex-1 py-1 bg-[#806f47]/80 hover:bg-[#806f47] text-white rounded font-bold"
-          >
-            Place Warp
-          </button>
-          <button
-            type="button"
-            onClick={handleRemoveWarp}
-            className="px-2 py-1 border border-red-500/40 text-red-300 rounded hover:bg-red-500/10"
-          >
-            Remove
-          </button>
-        </div>
-        {mapGates.length > 0 && (
-          <div className="max-h-24 space-y-1 overflow-y-auto text-[10px]">
-            {mapGates.map((g, idx) => (
-              <div key={`${g.id}_${idx}`} className="rounded border border-[#806f47]/20 bg-[#050b14] px-2 py-1 text-slate-300">
-                ({g.position.x},{g.position.y}) → {g.targetMapId}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Registered tags — paint as brush */}
       <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
@@ -468,86 +270,6 @@ export const PropertiesPanel: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-
-      {/* ENCOUNTER POOL */}
-      <div className="bg-[#0b1320]/60 border border-[#806f47]/30 rounded p-2 space-y-2">
-        <div className="flex items-center gap-1.5 font-bold text-[#cbb26a] border-b border-[#806f47]/30 pb-1">
-          <Trees className="w-3.5 h-3.5" /> Encounter Zone Config
-        </div>
-
-        <div className="space-y-2">
-          {encounterPool.map((enc, idx) => (
-            <div key={idx} className="flex items-center justify-between bg-[#050b14] p-1.5 border border-[#806f47]/20 rounded">
-              <span className="font-bold text-white">{enc.speciesId}</span>
-              <span className="text-[10px] text-slate-400">
-                Lv {enc.minLevel}-{enc.maxLevel} (W:{enc.weight})
-                {enc.timeOfDay && enc.timeOfDay !== 'any' && <span className="ml-1 text-sky-400">[{enc.timeOfDay}]</span>}
-              </span>
-              <button
-                onClick={() => {
-                  const next = encounterPool.filter((_, i) => i !== idx);
-                  setEncounterPool(next);
-                  useGameStore.setState({ activeMapData: { ...currentMapData, encounterPool: next } });
-                }}
-                className="text-red-400 hover:bg-red-500/20 p-1 rounded"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-
-          <div className="grid grid-cols-2 gap-1 pt-1 border-t border-[#806f47]/20">
-            <input
-              type="text"
-              value={selectedSpecies}
-              onChange={(e) => setSelectedSpecies(e.target.value)}
-              className="bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1 text-slate-200"
-              placeholder="species_slug"
-            />
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={minLevel}
-                onChange={(e) => setMinLevel(parseInt(e.target.value))}
-                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
-                placeholder="Min"
-              />
-              <input
-                type="number"
-                value={maxLevel}
-                onChange={(e) => setMaxLevel(parseInt(e.target.value))}
-                className="w-full bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
-                placeholder="Max"
-              />
-            </div>
-            <div className="flex gap-1 col-span-2">
-              <input
-                type="number"
-                value={weight}
-                onChange={(e) => setWeight(parseInt(e.target.value))}
-                className="w-1/2 bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1"
-                placeholder="Weight"
-                title="Spawn Weight (higher = more common)"
-              />
-              <select
-                value={timeOfDay}
-                onChange={(e) => setTimeOfDay(e.target.value as 'any'|'day'|'night')}
-                className="w-1/2 bg-[#050b14] border border-[#806f47]/30 rounded px-1 py-1 text-slate-300"
-              >
-                <option value="any">Any Time</option>
-                <option value="day">Day Only</option>
-                <option value="night">Night Only</option>
-              </select>
-            </div>
-          </div>
-          <button
-            onClick={handleAddEncounterSpecies}
-            className="w-full py-1 bg-[#806f47]/20 hover:bg-[#806f47]/40 text-[#e2d5b3] border border-[#806f47]/40 rounded flex items-center justify-center gap-1"
-          >
-            <Plus className="w-3 h-3" /> Add Species
-          </button>
-        </div>
       </div>
 
       {/* COMPONENT REGISTRY — forms, not raw JSON */}

@@ -66,6 +66,34 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
 
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [isSelectingGateType, setIsSelectingGateType] = useState(false);
+  
+  const currentGates = activeMapData ? normalizeGates(activeMapData.gates) : [];
+  const gateOnTile = currentGates.find(
+    (g) => g.position.x === tileC && g.position.y === tileR
+  );
+
+  const handleSaveGateEdits = () => {
+    if (!activeMapData || !gateOnTile) return;
+    
+    const updatedGate = {
+      ...gateOnTile,
+      targetMapId: editGateTarget.trim().toUpperCase() || 'DEMO_SANDBOX',
+      spawnPoint: { x: editGateSpawnX, y: editGateSpawnY },
+      category: editGateCategory,
+    };
+    
+    const nextGates = upsertWarpGate(activeMapData.gates, updatedGate);
+    useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
+    useEditorStore.getState().markMapDirty();
+    setIsEditingGate(false);
+    showToast(`Gate updated → ${updatedGate.targetMapId}`);
+  };
+
+  const [isEditingGate, setIsEditingGate] = useState(false);
+  const [editGateTarget, setEditGateTarget] = useState(gateOnTile?.targetMapId || '');
+  const [editGateSpawnX, setEditGateSpawnX] = useState(gateOnTile?.spawnPoint?.x ?? 14);
+  const [editGateSpawnY, setEditGateSpawnY] = useState(gateOnTile?.spawnPoint?.y ?? 15);
+  const [editGateCategory, setEditGateCategory] = useState(gateOnTile?.category || 'CUSTOM');
 
   const selectedCount = useEditorStore.getState().getSelectedCount();
   const hasMultiSelection = selectedCount > 1;
@@ -345,10 +373,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     ) || [];
   const logicTag = activeMapData?.grid?.[tileR]?.[tileC] ?? 0;
 
-  const currentGates = activeMapData ? normalizeGates(activeMapData.gates) : [];
-  const gateOnTile = currentGates.find(
-    (g: any) => g.position?.x === tileC && g.position?.y === tileR
-  );
+
 
   const isWarpTag = logicTag === 3 || (logicTag >= 14 && logicTag <= 23);
   const isEncounterTag = logicTag === 6 || logicTag === 10;
@@ -489,32 +514,95 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
                   <DoorOpen className="h-3 w-3 shrink-0" />
                   <span className="truncate">Warp Gate {gateOnTile?.category ? `(${gateOnTile.category})` : ''}</span>
                 </div>
-                {gateOnTile?.targetMapId && (
-                  <div className="px-1 text-[8px] text-purple-400 font-mono">
-                    Target: {gateOnTile.targetMapId} ({gateOnTile.spawnPoint?.x}, {gateOnTile.spawnPoint?.y})
+                
+                {isEditingGate ? (
+                  <div className="space-y-1 mt-1 p-1 bg-black/40 rounded border border-purple-500/20">
+                    <label className="block text-[8px] text-purple-300/70 uppercase">Target Map ID</label>
+                    <input
+                      type="text"
+                      value={editGateTarget}
+                      onChange={(e) => setEditGateTarget(e.target.value)}
+                      className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px] uppercase"
+                      placeholder="DEMO_SANDBOX"
+                    />
+                    
+                    <label className="block text-[8px] text-purple-300/70 uppercase mt-1">Category</label>
+                    <select
+                      value={editGateCategory}
+                      onChange={(e) => setEditGateCategory(e.target.value)}
+                      className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px]"
+                    >
+                      <option value="CUSTOM">Custom Warp (Classic)</option>
+                      <option value="ATLAS_NORTH">🧭 Atlas North Gate</option>
+                      <option value="ATLAS_EAST">🧭 Atlas East Gate</option>
+                      <option value="ATLAS_SOUTH">🧭 Atlas South Gate</option>
+                      <option value="ATLAS_WEST">🧭 Atlas West Gate</option>
+                      <option value="DUNGEON">🏰 Dungeon Gate</option>
+                      <option value="RAID">⚔️ Raid Gate</option>
+                      <option value="EVENT">🎉 Event Gate</option>
+                      <option value="MINE">⛏️ Mine Entrance Gate</option>
+                      <option value="DEEP_FOREST">🌲 Deep Forest Gate</option>
+                      <option value="PORTAL">🌀 Mystic Portal</option>
+                    </select>
+
+                    <label className="block text-[8px] text-purple-300/70 uppercase mt-1">Spawn Coords</label>
+                    <div className="flex gap-1">
+                      <input
+                        type="number"
+                        value={editGateSpawnX}
+                        onChange={(e) => setEditGateSpawnX(Number(e.target.value))}
+                        className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px]"
+                        placeholder="X"
+                      />
+                      <input
+                        type="number"
+                        value={editGateSpawnY}
+                        onChange={(e) => setEditGateSpawnY(Number(e.target.value))}
+                        className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px]"
+                        placeholder="Y"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-1 mt-1 pt-1 border-t border-purple-500/20">
+                      <button
+                        onClick={handleSaveGateEdits}
+                        className="flex-1 py-1 text-center bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/40 rounded text-[9px] font-bold"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setIsEditingGate(false)}
+                        className="px-2 py-1 text-center bg-background/50 hover:bg-background/80 text-foreground border border-border/60 rounded text-[9px]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {gateOnTile?.targetMapId && (
+                      <div className="px-1 text-[8px] text-purple-400 font-mono">
+                        Target: {gateOnTile.targetMapId} ({gateOnTile.spawnPoint?.x}, {gateOnTile.spawnPoint?.y})
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingGate(true)}
+                        className="px-1.5 py-1 text-center bg-background/70 border border-border/60 hover:border-purple-500/50 text-foreground rounded text-[9px] cursor-pointer"
+                      >
+                        Configure
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAction(handleDeleteWarpGate)}
+                        className="px-1.5 py-1 text-center bg-destructive/20 border border-destructive/30 hover:bg-destructive/30 text-destructive-foreground rounded text-[9px] cursor-pointer"
+                      >
+                        Delete Gate
+                      </button>
+                    </div>
+                  </>
                 )}
-                <div className="grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleAction(() => {
-                        openPanel('properties');
-                        useEditorStore.getState().setClickedTile({ r: tileR, c: tileC });
-                      })
-                    }
-                    className="px-1.5 py-1 text-center bg-background/70 border border-border/60 hover:border-purple-500/50 text-foreground rounded text-[9px] cursor-pointer"
-                  >
-                    Configure
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleAction(handleDeleteWarpGate)}
-                    className="px-1.5 py-1 text-center bg-destructive/20 border border-destructive/30 hover:bg-destructive/30 text-destructive-foreground rounded text-[9px] cursor-pointer"
-                  >
-                    Delete Gate
-                  </button>
-                </div>
               </div>
             )}
 
