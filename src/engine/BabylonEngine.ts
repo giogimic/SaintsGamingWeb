@@ -2653,23 +2653,7 @@ private resolveTilePick(
     const centerPosX = (c - w / 2) * s;
     const centerPosZ = (h / 2 - r) * s;
 
-    // 1. Single-cell hover reticle (Sleek Cyber Glass HUD bracket)
-    const hoverMat = this.createModernHudReticleMaterial(
-      isLogicLayer ? 'hud_reticle_logic' : 'hud_reticle_visual',
-      isLogicLayer ? '#06b6d4' : '#38bdf8',
-      isLogicLayer ? 'rgba(6, 182, 212, 0.25)' : 'rgba(56, 189, 248, 0.25)',
-      '#ffffff'
-    );
-
-    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 1.02 }, this.scene);
-    hoverPlane.rotation.x = Math.PI / 2;
-    hoverPlane.position = new Vector3(centerPosX, altitudeHover, centerPosZ);
-    hoverPlane.material = hoverMat;
-    hoverPlane.isPickable = false;
-    hoverPlane.parent = this.rootNode;
-    this.brushPreviewMeshes.push(hoverPlane);
-
-    // 3. Multi-tile pattern footprint
+    // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern)
     if (this.activeBrushPattern) {
       const pat = this.activeBrushPattern;
       const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
@@ -2689,23 +2673,36 @@ private resolveTilePick(
       patPlane.isPickable = false;
       patPlane.parent = this.rootNode;
       this.brushPreviewMeshes.push(patPlane);
+      return;
     }
 
-    // 2. Multi-cell footprint grid if brushRadius > 1
-    if (this.brushRadius > 1 && !this.activeBrushPattern) {
+    // 2. Multi-cell footprint grid if brushRadius > 1 (Render ONE unified footprint)
+    if (this.brushRadius > 1) {
       const rad = this.brushRadius - 1;
       const isErase = this.brushMode === 'erase';
       const isFill = this.brushMode === 'fill';
       const stroke = isErase ? '#f43f5e' : isFill ? '#f59e0b' : '#10b981';
       const glass = isErase ? 'rgba(244, 63, 94, 0.25)' : isFill ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)';
-      const footMat = this.createModernHudReticleMaterial(`hud_foot_${this.brushMode}`, stroke, glass, stroke);
 
+      if (this.brushShape === 'square') {
+        // Unified Square Footprint Plane
+        const span = rad * 2 + 1;
+        const footMat = this.createModernHudReticleMaterial(`hud_foot_sq_${this.brushMode}`, stroke, glass, stroke);
+        const sqPlane = MeshBuilder.CreatePlane('brush_footprint_sq', { width: s * span * 1.01, height: s * span * 1.01 }, this.scene);
+        sqPlane.rotation.x = Math.PI / 2;
+        sqPlane.position = new Vector3(centerPosX, altitudeFootprint, centerPosZ);
+        sqPlane.material = footMat;
+        sqPlane.isPickable = false;
+        sqPlane.parent = this.rootNode;
+        this.brushPreviewMeshes.push(sqPlane);
+        return;
+      }
+
+      // Circular Footprint (Clean cell tiles with center pip)
+      const footMat = this.createModernHudReticleMaterial(`hud_foot_circ_${this.brushMode}`, stroke, glass, stroke);
       for (let dr = -rad; dr <= rad; dr++) {
         for (let dc = -rad; dc <= rad; dc++) {
-          if (dr === 0 && dc === 0) continue; // center already has hover outline
-          if (this.brushShape === 'circle') {
-            if (dr * dr + dc * dc > rad * rad + rad) continue;
-          }
+          if (dr * dr + dc * dc > rad * rad + rad) continue;
           const nr = r + dr;
           const nc = c + dc;
           if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
@@ -2722,7 +2719,24 @@ private resolveTilePick(
           this.brushPreviewMeshes.push(plane);
         }
       }
+      return;
     }
+
+    // 3. Single-cell hover reticle (1x1 Cyber Glass HUD bracket)
+    const hoverMat = this.createModernHudReticleMaterial(
+      isLogicLayer ? 'hud_reticle_logic' : 'hud_reticle_visual',
+      isLogicLayer ? '#06b6d4' : '#38bdf8',
+      isLogicLayer ? 'rgba(6, 182, 212, 0.25)' : 'rgba(56, 189, 248, 0.25)',
+      '#ffffff'
+    );
+
+    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 1.02 }, this.scene);
+    hoverPlane.rotation.x = Math.PI / 2;
+    hoverPlane.position = new Vector3(centerPosX, altitudeHover, centerPosZ);
+    hoverPlane.material = hoverMat;
+    hoverPlane.isPickable = false;
+    hoverPlane.parent = this.rootNode;
+    this.brushPreviewMeshes.push(hoverPlane);
   }
 
   /** Clear brush preview overlay. */

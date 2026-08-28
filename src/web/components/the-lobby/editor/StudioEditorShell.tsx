@@ -418,17 +418,18 @@ export const StudioEditorShell: React.FC = () => {
         }
       }
 
-      // Ctrl+D — Deselect / clear selection (Phase 5C)
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'd') {
+      // Ctrl+D or Escape — Deselect / clear selection (Phase 5C & Spec)
+      if (((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'd') || e.key === 'Escape') {
         if (!useEditorStore.getState().isCreationMode) return;
-        e.preventDefault();
+        if (e.key !== 'Escape') e.preventDefault();
+        useEditorStore.getState().clearSelectedCells();
         useEditorStore.getState().setSelectionStart(null);
         useEditorStore.getState().setSelectionEnd(null);
         const activeEng = (window as any).__babylonEngine;
         if (activeEng?.clearSelectionPreview) {
           activeEng.clearSelectionPreview();
         }
-        showToast('Deselected (Ctrl+D)');
+        showToast('Deselected');
         return;
       }
 
