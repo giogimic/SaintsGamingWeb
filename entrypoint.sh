@@ -3,11 +3,11 @@
 # Production MUST run custom server.ts (Next + Socket.io + GameEngine + DemoBootstrap).
 # Plain `next start` leaves /socket.io and map bootstrap dead (grass-only lobby).
 
-# Ensure the SQLite DB directory exists (volume mount target)
-mkdir -p /app/prisma/db
+
+
 
 if [ -z "$DATABASE_URL" ]; then
-    export DATABASE_URL="file:./prisma/db/dev.db"
+    export DATABASE_URL="mysql://saints_user:saints_pass@localhost:3306/saints_gaming"
     echo "[*] Warning: DATABASE_URL not set. Defaulting to $DATABASE_URL"
 fi
 

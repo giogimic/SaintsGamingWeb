@@ -24,7 +24,7 @@ cd SaintsGamingWeb
 ```
 
 ### 2. Run the Automated Setup
-The `npm run setup` command automatically provisions default environment variables (`.env`), generates Prisma client bindings, and synchronizes the local SQLite database schema.
+The `npm run setup` command automatically provisions default environment variables (`.env`), generates Prisma client bindings, and synchronizes the local MariaDB/MySQL database schema.
 
 ```bash
 npm install
@@ -32,7 +32,7 @@ npm run setup
 ```
 
 > [!NOTE]
-> Local development defaults to SQLite at `prisma/db/dev.db`. No external MySQL or Redis services are required for local play and editing.
+> Local development defaults to MariaDB/MySQL at `prisma/db/mysql_data`. No external MySQL or Redis services are required for local play and editing.
 
 ### 3. Start the Development Server
 ```bash
@@ -74,6 +74,6 @@ Key configuration flags available in `.env`:
 | :--- | :--- | :--- |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | Canonical site origin for auth redirects and webhook callbacks. |
 | `AUTH_SECRET` | `secret...` | NextAuth encryption secret (`openssl rand -base64 32`). |
-| `DATABASE_URL` | `file:./db/dev.db` | Prisma SQLite database connection string. |
+| `DATABASE_URL` | `file:./db/mysql_data` | Prisma MariaDB/MySQL database connection string. |
 | `NEXT_PUBLIC_GO_MMO_URL` | `http://localhost:3001` | Dedicated Go MMO realtime socket server endpoint. |
 | `ENABLE_TS_GAME_ENGINE` | `0` | Force fallback to Node.js GameEngine when Go MMO server is active. |

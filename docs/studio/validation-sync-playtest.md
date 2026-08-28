@@ -20,7 +20,7 @@ Before and during saving, maps are automatically scanned for structural and game
 ```
 [Studio Client] ────(Ctrl+S)────► [POST /api/maps]
                                          │
-                                         ▼ (Prisma / SQLite Save)
+                                         ▼ (Prisma / MariaDB/MySQL Save)
 [Go MMO :3001] ◄───(POST /sync-map)──────┴
        │
        ▼ (Reload map & broadcast)

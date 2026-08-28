@@ -1,6 +1,6 @@
 import { Cpu, Server, Key, Terminal } from "lucide-react";
 import { SystemClient } from "./system-client";
-import { DatabaseMigration } from "@/web/components/admin/database-migration";
+
 import { SystemUpdater } from "@/web/components/admin/system-updater";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -82,7 +82,7 @@ export default async function SystemStatePage() {
         </form>
 
         <div className="space-y-8">
-          <DatabaseMigration currentProvider={process.env.DB_PROVIDER || (process.env.DATABASE_URL?.startsWith("mysql://") ? "mysql" : "sqlite")} />
+          
           <SystemUpdater isDocker={isDocker} />
         </div>
       </div>

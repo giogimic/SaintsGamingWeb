@@ -28,7 +28,7 @@ Detailed architectural and gameplay guides for player-facing mechanics and runti
 - **[Architecture & Core Loop](game-systems/architecture-and-loop.md)**: WebGL 2.5D Babylon.js renderer, tick rate, movement interpolation, and decoupled React UI.
 - **[27-Skill Progression & Master Capstones](game-systems/skills-and-progression.md)**: Combat, Gathering, Artisan, and Support proficiencies, formulas, XP curves, and Grandmaster Max Capes.
 - **[Combat & Encounter Systems](game-systems/combat-and-encounters.md)**: Overworld real-time monster combat, instanced turn-based creature battles, action hotbars, and status effects.
-- **[Networking & Hybrid Go MMO Backend](game-systems/networking-and-multiplayer.md)**: Go `:3001` socket server, AOI interest management, sharding, and SQLite state persistence.
+- **[Networking & Hybrid Go MMO Backend](game-systems/networking-and-multiplayer.md)**: Go `:3001` socket server, AOI interest management, sharding, and MariaDB/MySQL state persistence.
 - **[Economy, Items & Loot](game-systems/items-and-economy.md)**: Equipment slots, crafting matrices, loot tables, and trade centers.
 - **[Mobile Touch Mode & UI](game-systems/mobile-and-ui.md)**: Responsive mobile controls, HUD docking system, mini-map radar, and audio synthesis.
 

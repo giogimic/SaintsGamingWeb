@@ -9,7 +9,7 @@ Saints Gaming uses a **high-performance hybrid networking architecture** combini
 | Service | Port | Responsibilities |
 | :--- | :--- | :--- |
 | **Next.js Web / Sockets** | `3000` | Web pages, Auth.js session handling, REST/GraphQL APIs, Studio map persistence (`/api/maps`), forum realtime, and emergency Node.js socket fallback (`server.ts`). |
-| **Go MMO Realtime Server** | `3001` | Authoritative player movement, tick simulation (20Hz), Area-of-Interest (AOI) spatial grid, combat hit calculation, chat broadcasting, and SQLite character state persistence. |
+| **Go MMO Realtime Server** | `3001` | Authoritative player movement, tick simulation (20Hz), Area-of-Interest (AOI) spatial grid, combat hit calculation, chat broadcasting, and MariaDB/MySQL character state persistence. |
 
 ---
 
@@ -36,6 +36,6 @@ To support hundreds of concurrent players on dense maps without network saturati
 
 When a creator or developer saves a map in Studio:
 1. Studio sends updated visual tile layers and logic collision tags to `POST /api/maps`.
-2. Next.js persists the changes to Prisma / SQLite.
+2. Next.js persists the changes to Prisma / MariaDB/MySQL.
 3. Next.js triggers `notifyGoMapSynced()` (`POST http://localhost:3001/api/internal/sync-map`).
 4. Go MMO reloads the map collision grid and broadcasts `map_reloaded` to all active players on that map without requiring a server reboot.

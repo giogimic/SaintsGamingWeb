@@ -25,7 +25,7 @@ This folder documents all player-facing game mechanics, client runtime architect
 4. **[Networking & Hybrid Go MMO Backend](networking-and-multiplayer.md)**
    - Go MMO socket server (`go-mmo/`) on `:3001` with area-of-interest (AOI) spatial sharding.
    - Realtime movement packet codecs, client interpolation, and position correction.
-   - Character persistence in SQLite and emergency Node.js socket fallback.
+   - Character persistence in MariaDB/MySQL and emergency Node.js socket fallback.
 
 5. **[Economy, Items & Loot](items-and-economy.md)**
    - Item DB schemas, equipment slots, tool tiers, and weapon statistics.

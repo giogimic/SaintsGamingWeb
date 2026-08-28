@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DB_PROVIDER: ${DB_PROVIDER:-sqlite}
     image: saints-gaming-web
     container_name: saints-gaming-web
     restart: unless-stopped

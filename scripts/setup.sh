@@ -361,7 +361,7 @@ db_service_exists() {
 DB_PROVIDER_OPT=$(whiptail --title "Database Backend" --menu "Select Database Backend:" 16 75 3 \
 "1" "SQLite (Default — Zero Config)" \
 "2" "MariaDB (Docker — Integrated)" \
-"3" "MySQL/MariaDB (External Host)" 3>&1 1>&2 2>&3)
+"2" "MySQL/MariaDB (External Host)" 3>&1 1>&2 2>&3)
 
 if [ $? -ne 0 ]; then exit 1; fi
 
@@ -444,11 +444,11 @@ else
     AUTH_SECRET=$(openssl rand -base64 32)
 fi
 
-DB_NAME="SQLite"
-DB_PROVIDER="sqlite"
-DATABASE_URL="file:./prisma/db/dev.db"
 
-if [ "$DB_PROVIDER_OPT" = "2" ]; then
+
+
+
+if [ "$DB_PROVIDER_OPT" = "1" ]; then
     DB_NAME="MariaDB (Docker)"
     DB_PROVIDER="mysql"
     if [ "$REUSE_ENV" = "1" ] && [ -n "$OLD_DB_PASS" ]; then
@@ -481,7 +481,7 @@ DCEOF
         inject_depends_on
     fi
 
-elif [ "$DB_PROVIDER_OPT" = "3" ]; then
+elif [ "$DB_PROVIDER_OPT" = "2" ]; then
     DB_NAME="MySQL (External)"
     DB_PROVIDER="mysql"
     EXT_HOST=$(whiptail --title "External DB Setup" --inputbox "Enter Database Host/IP:" 10 60 "127.0.0.1" 3>&1 1>&2 2>&3)
@@ -802,7 +802,7 @@ fi
 echo -e "\n${GREEN}[✓] Containers are up and running!${NC}"
 
 # --- MariaDB Readiness Check ---
-if [ "$DB_PROVIDER_OPT" = "2" ]; then
+if [ "$DB_PROVIDER_OPT" = "1" ]; then
     echo -e "\n${CYAN}[*] Waiting for MariaDB to become ready...${NC}"
     DB_READY=0
     for i in $(seq 1 30); do
