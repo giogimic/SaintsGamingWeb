@@ -103,6 +103,8 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
   const activeBrushPattern = useEditorStore((s) => s.activeBrushPattern);
+  const prefabStampMode = useEditorStore((s) => s.prefabStampMode);
+  const setPrefabStampMode = useEditorStore((s) => s.setPrefabStampMode);
   const setPrefabs = useEditorStore((s) => s.setPrefabs);
   const setActivePrefabId = useEditorStore((s) => s.setActivePrefabId);
   const openPanel = useEditorStore((s) => s.openPanel);
@@ -316,6 +318,44 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
               title="Paste / Tiling (drag to paint full region)"
             >
               PATTERN
+            </button>
+          </div>
+        )}
+
+        {/* Stamp Mode Toggle: Full Multi-Tile Footprint vs 1-Tile Fit */}
+        {brushMode === 'paint' && activeBrushPattern && activeBrushPattern.w * activeBrushPattern.h > 1 && (
+          <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setPrefabStampMode('footprint');
+                showToast(`Stamp: Full Footprint (${activeBrushPattern.w}×${activeBrushPattern.h})`);
+              }}
+              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                prefabStampMode === 'footprint'
+                  ? 'bg-cyan-500 text-black shadow'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Stamp full pattern footprint across multiple tiles"
+            >
+              FOOTPRINT ({activeBrushPattern.w}×{activeBrushPattern.h})
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                soundSynth?.playUiClick?.();
+                setPrefabStampMode('1tile');
+                showToast('Stamp: 1-Tile Fit');
+              }}
+              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                prefabStampMode === '1tile'
+                  ? 'bg-cyan-500 text-black shadow'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              title="Fit / stamp into 1 single tile cell"
+            >
+              1-TILE FIT
             </button>
           </div>
         )}

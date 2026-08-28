@@ -9,8 +9,13 @@ export type TilesetUvInput = {
   columns: number;
   tilewidth?: number;
   tileheight?: number;
+  imagewidth?: number;
   imageheight?: number;
   tilecount?: number;
+  margin?: number;
+  spacing?: number;
+  offsetX?: number;
+  offsetY?: number;
 };
 
 export type SizeLookup = Record<string, { w?: number; h?: number }>;

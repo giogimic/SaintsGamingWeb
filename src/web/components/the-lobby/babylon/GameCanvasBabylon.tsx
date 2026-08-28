@@ -1126,6 +1126,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setBrushShape(useEditorStore.getState().brushShape);
     engine.setActiveBrushTileId(useEditorStore.getState().activeBrushTileId);
     engine.setActiveBrushPattern(useEditorStore.getState().activeBrushPattern);
+    engine.setPrefabStampMode(useEditorStore.getState().prefabStampMode);
     engine.setActiveLayerIdx(useEditorStore.getState().activeLayerIdx);
     engine.setBrushMode(useEditorStore.getState().brushMode);
     engine.setFreeCam(useEditorStore.getState().isStudioFreeCam);
@@ -1377,13 +1378,15 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const paintedOps: any[] = [];
           let needsFullRebuild = false;
-          if (store.activeBrushPattern && store.activeBrushPattern.w * store.activeBrushPattern.h > 4) {
+          const pat = store.activeBrushPattern;
+          const isFullFootprintPattern = !!pat && store.prefabStampMode !== '1tile';
+          if (isFullFootprintPattern && pat && pat.w * pat.h > 4) {
             needsFullRebuild = true;
           }
 
           for (const pt of coordsToPaint) {
-            if (store.activeBrushPattern) {
-              const pat = store.activeBrushPattern;
+            if (isFullFootprintPattern) {
+              const pat = store.activeBrushPattern!;
               for (let br = 0; br < pat.h; br++) {
                 for (let bc = 0; bc < pat.w; bc++) {
                   const tr = pt.r + br;
@@ -1415,17 +1418,20 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               }
             } else {
               if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
+              const valToPaint = (store.activeBrushPattern && store.prefabStampMode === '1tile' && brushMode !== 'erase')
+                ? (store.activeBrushPattern.gids[0]?.[0] || paintValue)
+                : paintValue;
               const painted = paintWorldCell(
                 map,
                 target.layerIdx,
                 pt.r,
                 pt.c,
-                paintValue,
+                valToPaint,
                 worldSync
               );
               if (!('error' in painted)) {
                 paintedOps.push(painted.cell);
-                engine.updateSingleTile(pt.r, pt.c, paintValue, target.layerIdx, map.tilesets);
+                engine.updateSingleTile(pt.r, pt.c, valToPaint, target.layerIdx, map.tilesets);
               }
             }
           }
@@ -1716,6 +1722,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         if (state.activeBrushPattern !== prevState.activeBrushPattern) {
           engine.setActiveBrushPattern(state.activeBrushPattern);
+        }
+        if (state.prefabStampMode !== prevState.prefabStampMode) {
+          engine.setPrefabStampMode(state.prefabStampMode);
         }
         if (state.activeLayerIdx !== prevState.activeLayerIdx) {
           engine.setActiveLayerIdx(state.activeLayerIdx);
