@@ -241,7 +241,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       logicTiles: store.logicTiles,
       playerPos: currentPos,
       isDevEditorOpen,
-      connections: activeMap.connections
+      connections: activeMap.connections,
+      nodeConnections: activeMap.nodeConnections,
     };
 
     const result = WorldSimulation.tryMove(worldState, targetX, targetY);
@@ -268,22 +269,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const targetBase = toBaseMapId(gate.targetMapId);
       const finishWarp = () => {
         const store = useGameStore.getState();
-        
-        let deltaX = 0;
-        let deltaZ = 0;
-        if (gate.isEdgeConnection) {
-          const neighborChunk = store.activeMapData?.chunks?.find((c: any) => c.mapId === gate.targetMapId);
-          if (neighborChunk) {
-            deltaX = neighborChunk.offsetX || 0;
-            deltaZ = neighborChunk.offsetZ || 0;
-          }
-        }
-        
-        if (gate.isEdgeConnection) {
-          store.addWorldOriginOffset(deltaX, deltaZ);
-        } else {
-          store.setWorldOriginOffset(0, 0);
-        }
+        store.setWorldOriginOffset(0, 0);
 
         let loadedGrid: number[][] | undefined = undefined;
         // Load destination document before flipping ids — never leave stale
@@ -324,14 +310,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
             // Immediate camera alignment on the new map
             if (engineRef.current && !editorToolsRef.current) {
-              const liveStore = useGameStore.getState();
-              const offset = liveStore.worldOriginOffset;
-              const snapX = spawn.x - finalW / 2 + offset.x;
-              const snapZ = finalH / 2 - spawn.y - offset.y;
-              // We do not snap camera for edge connections because it stays perfectly continuous!
-              if (!gate.isEdgeConnection) {
-                engineRef.current.snapCameraTo(snapX, snapZ);
-              }
+              const snapX = spawn.x - finalW / 2;
+              const snapZ = finalH / 2 - spawn.y;
+              engineRef.current.snapCameraTo(snapX, snapZ);
             }
 
             const liveStore = useGameStore.getState();
@@ -1019,6 +1000,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       tileLayers: mapData.tileLayers,
       tilesets: mapData.tilesets,
       npcs: [],
+      chunks: mapData.chunks,
+      connections: mapData.connections,
     });
     setMapMeshEpoch((n) => n + 1);
     if (editorToolsRef.current) {

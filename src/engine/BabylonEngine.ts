@@ -86,6 +86,7 @@ export interface BabylonTileMapData {
   tilesets?: Array<{ firstgid: number; imageSource: string; columns: number; tilewidth: number; tileheight: number; imageheight?: number; tilecount?: number }>;
   npcs?: Array<{ id: string; name: string; x: number; y: number; sprite?: string }>;
   chunks?: RenderedChunk[];
+  connections?: any;
 }
 
 export interface SpriteSheetConfig {
