@@ -34,7 +34,7 @@ Saving in Studio triggers a coordinated workflow between Next.js and the Go MMO 
 ```
 [Studio Editor] ────(Ctrl+S)────► [POST /api/maps]
                                          │
-                                         ▼ (Prisma / SQLite Persist)
+                                         ▼ (Prisma / MariaDB/MySQL Persist)
 [Go MMO :3001]  ◄───(POST /sync-map)─────┘
        │
        ▼ (Reload collision matrix)
@@ -42,7 +42,7 @@ Saving in Studio triggers a coordinated workflow between Next.js and the Go MMO 
 ```
 
 1. **Client Save:** The user hits **Ctrl+S** or clicks **Save Map**.
-2. **Persistence:** Next.js saves the `WorldMap` record to SQLite/Prisma.
+2. **Persistence:** Next.js saves the `WorldMap` record to MariaDB/MySQL/Prisma.
 3. **Cluster Notification:** Next.js invokes `POST http://localhost:3001/api/internal/sync-map`.
 4. **Broadcast:** Go MMO reloads the map collision grid and broadcasts `map_reloaded` to active players, triggering seamless chunk remeshing.
 

@@ -12,7 +12,7 @@ The network workload is split between web services and realtime simulation:
 ┌─────────────────────────────────────────────────────────────┐
 │                    Next.js Server (:3000)                   │
 │   • Auth.js Session Validation      • REST / GraphQL APIs   │
-│   • Prisma SQLite DB Persistence    • Forum & News Feeds    │
+│   • Prisma MariaDB/MySQL DB Persistence    • Forum & News Feeds    │
 └──────────────────────────────┬──────────────────────────────┘
                                │ Internal Webhook Sync
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -61,7 +61,7 @@ When a map is modified in World Studio, changes are hot-reloaded across active s
 ```
 [Studio Client] ───(Ctrl+S)───► [POST /api/maps]
                                       │
-                                      ▼ (Prisma / SQLite Persist)
+                                      ▼ (Prisma / MariaDB/MySQL Persist)
 [Go MMO :3001]  ◄──(POST /sync-map)───┘
        │
        ▼ (Hot-reload collision grid)

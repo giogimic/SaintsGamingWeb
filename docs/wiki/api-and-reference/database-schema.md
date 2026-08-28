@@ -1,6 +1,6 @@
 # Database Schema & Prisma Architecture
 
-Saints Gaming uses **Prisma ORM** backed by SQLite for local development (`prisma/db/dev.db`) with seamless migration paths to MariaDB / MySQL for production deployments.
+Saints Gaming uses **Prisma ORM** backed by MariaDB/MySQL for local development (`prisma/db/mysql_data`) with seamless migration paths to MariaDB / MySQL for production deployments.
 
 ---
 
@@ -10,7 +10,7 @@ The database configuration in `prisma/schema.prisma` is optimized for high query
 
 ```prisma
 datasource db {
-  provider = "sqlite"
+  provider = "MariaDB/MySQL"
   url      = env("DATABASE_URL")
 }
 
@@ -54,7 +54,7 @@ generator client {
 ```
 
 - **Cascading Deletions:** Deleting a `User` cascades to delete associated sessions, forum replies, and profile customization assets (`onDelete: Cascade`).
-- **JSON Column Strategy:** High-complexity composite states (such as `WorldMap.gridData` or `GameCharacter.stateData`) are stored as validated JSON strings to maximize SQLite read/write throughput.
+- **JSON Column Strategy:** High-complexity composite states (such as `WorldMap.gridData` or `GameCharacter.stateData`) are stored as validated JSON strings to maximize MariaDB/MySQL read/write throughput.
 
 ---
 
@@ -63,7 +63,7 @@ generator client {
 Execute database maintenance commands via npm:
 
 ```bash
-# Push schema updates directly to local SQLite DB during development
+# Push schema updates directly to local MariaDB/MySQL DB during development
 npx prisma db push
 
 # Create and apply migration files for production MariaDB

@@ -1,3 +1,6 @@
+# 2.1.470
+- Permanently removed SQLite fallback support. Saints Gaming is now exclusively a MySQL/MariaDB project to prevent schema discrepancies and column length limits on large data stores (like World Atlas).
+- Removed DatabaseMigration settings page since SQLite is deprecated.
 # 2.1.469
 - Fixed tileset canvas container height in TileSelectorPanel to use the full window instead of a hardcoded short height.
 # 2.1.468
@@ -3891,6 +3894,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

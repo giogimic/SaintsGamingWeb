@@ -1,12 +1,12 @@
 {
   "name": "saints-gaming-web",
-  "version": "2.1.469",
+  "version": "2.1.470",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && node scripts/prepare-prisma.js && prisma generate && prisma db push",
+    "setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env')\" && prisma generate && prisma db push",
     "dev": "npx tsx server.ts",
     "build": "next build",
     "start": "npx tsx server.ts",
