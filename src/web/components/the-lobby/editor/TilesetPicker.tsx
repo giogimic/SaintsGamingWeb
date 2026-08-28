@@ -338,6 +338,9 @@ export default function TilesetPicker({
     };
   }, [ts, activeBrushTileId, activeBrushPattern, natural, imgError]);
 
+  const dragStartRef = useRef<{ r: number; c: number } | null>(null);
+  const lastSoundPlayRef = useRef<number>(0);
+
   const selectTileRegion = useCallback(
     (startRow: number, startCol: number, width: number, height: number) => {
       if (!ts || !natural.w || !natural.h) return;
@@ -359,7 +362,11 @@ export default function TilesetPicker({
       }
 
       const topGid = gids[0]?.[0] ?? (ts.firstgid + safeRow * ts.columns + safeCol);
-      soundSynth?.playSelectSound?.();
+      const now = Date.now();
+      if (now - lastSoundPlayRef.current > 150) {
+        lastSoundPlayRef.current = now;
+        soundSynth?.playSelectSound?.();
+      }
       onBrushSelect(topGid);
       if (onBrushSelectPattern) {
         if (spanW > 1 || spanH > 1) {
@@ -390,8 +397,9 @@ export default function TilesetPicker({
     if (col < 0 || row < 0 || col >= ts.columns) return;
     if (nativeY >= imgRef.current.naturalHeight) return;
 
-    selectTileRegion(row, col, 1, 1);
+    dragStartRef.current = { r: row, c: col };
     setDragStart({ r: row, c: col });
+    selectTileRegion(row, col, 1, 1);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -407,7 +415,7 @@ export default function TilesetPicker({
     const row = Math.floor(nativeY / ts.tileheight);
 
     if (col < 0 || row < 0 || col >= ts.columns || nativeY >= imgRef.current.naturalHeight) {
-      setHoveredTile(null);
+      if (!dragStartRef.current) setHoveredTile(null);
       return;
     }
 
@@ -418,11 +426,12 @@ export default function TilesetPicker({
     let minCol = col;
     let maxCol = col;
 
-    if (dragStart) {
-      minRow = Math.min(dragStart.r, row);
-      maxRow = Math.max(dragStart.r, row);
-      minCol = Math.min(dragStart.c, col);
-      maxCol = Math.max(dragStart.c, col);
+    const start = dragStartRef.current;
+    if (start) {
+      minRow = Math.min(start.r, row);
+      maxRow = Math.max(start.r, row);
+      minCol = Math.min(start.c, col);
+      maxCol = Math.max(start.c, col);
     }
 
     maxRow = Math.min(maxRow, maxRows - 1);
@@ -442,14 +451,17 @@ export default function TilesetPicker({
       w: spanW,
       h: spanH,
     });
+
+    if (start && (spanW > 1 || spanH > 1 || row !== start.r || col !== start.c)) {
+      selectTileRegion(minRow, minCol, spanW, spanH);
+    }
   };
 
   // Window-level mouse listeners for reliable click-and-drag multi-tile selection
   useEffect(() => {
-    if (!dragStart) return;
-
     const handleWindowMouseMove = (e: MouseEvent) => {
-      if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
+      const start = dragStartRef.current;
+      if (!start || !ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
       const rect = imgRef.current.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
       const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
@@ -463,10 +475,10 @@ export default function TilesetPicker({
         Math.max(0, Math.floor(nativeY / ts.tileheight))
       );
 
-      const minRow = Math.min(dragStart.r, row);
-      const maxRow = Math.max(dragStart.r, row);
-      const minCol = Math.min(dragStart.c, col);
-      const maxCol = Math.max(dragStart.c, col);
+      const minRow = Math.min(start.r, row);
+      const maxRow = Math.max(start.r, row);
+      const minCol = Math.min(start.c, col);
+      const maxCol = Math.max(start.c, col);
 
       const spanW = maxCol - minCol + 1;
       const spanH = maxRow - minRow + 1;
@@ -482,35 +494,37 @@ export default function TilesetPicker({
         w: spanW,
         h: spanH,
       });
+
+      selectTileRegion(minRow, minCol, spanW, spanH);
     };
 
     const handleWindowMouseUp = (e: MouseEvent) => {
-      if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) {
-        setDragStart(null);
-        return;
+      const start = dragStartRef.current;
+      if (start && ts && !imgError && imgRef.current && natural.w && natural.h) {
+        const rect = imgRef.current.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
+        const scaleX = imgRef.current.naturalWidth / rect.width;
+        const scaleY = imgRef.current.naturalHeight / rect.height;
+        const nativeX = Math.floor(x * scaleX);
+        const nativeY = Math.floor(y * scaleY);
+        const col = Math.min(ts.columns - 1, Math.max(0, Math.floor(nativeX / ts.tilewidth)));
+        const row = Math.min(
+          Math.floor(natural.h / ts.tileheight) - 1,
+          Math.max(0, Math.floor(nativeY / ts.tileheight))
+        );
+
+        const minRow = Math.min(start.r, row);
+        const maxRow = Math.max(start.r, row);
+        const minCol = Math.min(start.c, col);
+        const maxCol = Math.max(start.c, col);
+        const spanW = maxCol - minCol + 1;
+        const spanH = maxRow - minRow + 1;
+
+        selectTileRegion(minRow, minCol, spanW, spanH);
       }
-      const rect = imgRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-      const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-      const scaleX = imgRef.current.naturalWidth / rect.width;
-      const scaleY = imgRef.current.naturalHeight / rect.height;
-      const nativeX = Math.floor(x * scaleX);
-      const nativeY = Math.floor(y * scaleY);
-      const col = Math.min(ts.columns - 1, Math.max(0, Math.floor(nativeX / ts.tilewidth)));
-      const row = Math.min(
-        Math.floor(natural.h / ts.tileheight) - 1,
-        Math.max(0, Math.floor(nativeY / ts.tileheight))
-      );
 
-      const minRow = Math.min(dragStart.r, row);
-      const maxRow = Math.max(dragStart.r, row);
-      const minCol = Math.min(dragStart.c, col);
-      const maxCol = Math.max(dragStart.c, col);
-      const spanW = maxCol - minCol + 1;
-      const spanH = maxRow - minRow + 1;
-
-      selectTileRegion(minRow, minCol, spanW, spanH);
-
+      dragStartRef.current = null;
       setDragStart(null);
     };
 
@@ -520,7 +534,7 @@ export default function TilesetPicker({
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', handleWindowMouseUp);
     };
-  }, [dragStart, ts, imgError, natural, selectTileRegion]);
+  }, [ts, imgError, natural, selectTileRegion]);
 
   // Keyboard navigation: step 1 block over with arrow keys
   useEffect(() => {

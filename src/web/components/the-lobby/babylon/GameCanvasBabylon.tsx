@@ -1128,6 +1128,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     engine.setActiveBrushPattern(useEditorStore.getState().activeBrushPattern);
     engine.setActiveLayerIdx(useEditorStore.getState().activeLayerIdx);
     engine.setBrushMode(useEditorStore.getState().brushMode);
+    engine.setFreeCam(useEditorStore.getState().isStudioFreeCam);
 
     const worldSync = {
       ensureActiveMap: (next: any) => {
@@ -1724,6 +1725,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         if (state.activeLayerIdx !== prevState.activeLayerIdx) {
           engine.setActiveLayerIdx(state.activeLayerIdx);
+        }
+        if (state.isStudioFreeCam !== prevState.isStudioFreeCam) {
+          engine.setFreeCam(state.isStudioFreeCam);
         }
         if (state.brushMode !== prevState.brushMode) {
           engine.setBrushMode(state.brushMode);
