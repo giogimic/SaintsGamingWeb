@@ -90,7 +90,6 @@ export default function TilesetPicker({
   const [natural, setNatural] = useState({ w: 0, h: 0 });
   const [imgError, setImgError] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [regionPreset, setRegionPreset] = useState<{ w: number; h: number }>({ w: 1, h: 1 });
   const [dragStart, setDragStart] = useState<{ r: number; c: number } | null>(null);
   const [hoveredTile, setHoveredTile] = useState<{ leftPct: number; topPct: number; widthPct: number; heightPct: number; gid: number; col: number; row: number; w: number; h: number } | null>(null);
   const [tilesetSearch, setTilesetSearch] = useState('');
@@ -390,9 +389,6 @@ export default function TilesetPicker({
     if (nativeY >= imgRef.current.naturalHeight) return;
 
     setDragStart({ r: row, c: col });
-    const patW = activeBrushPattern?.w || regionPreset.w || 1;
-    const patH = activeBrushPattern?.h || regionPreset.h || 1;
-    selectTileRegion(row, col, patW, patH);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLImageElement>) => {
@@ -412,10 +408,12 @@ export default function TilesetPicker({
       return;
     }
 
+    const maxRows = Math.floor(natural.h / ts.tileheight);
+    
     let minRow = row;
-    let maxRow = row + (regionPreset.h - 1);
+    let maxRow = row;
     let minCol = col;
-    let maxCol = col + (regionPreset.w - 1);
+    let maxCol = col;
 
     if (dragStart) {
       minRow = Math.min(dragStart.r, row);
@@ -424,7 +422,6 @@ export default function TilesetPicker({
       maxCol = Math.max(dragStart.c, col);
     }
 
-    const maxRows = Math.floor(natural.h / ts.tileheight);
     maxRow = Math.min(maxRow, maxRows - 1);
     maxCol = Math.min(maxCol, ts.columns - 1);
 
@@ -509,13 +506,7 @@ export default function TilesetPicker({
       const spanW = maxCol - minCol + 1;
       const spanH = maxRow - minRow + 1;
 
-      if (spanW > 1 || spanH > 1) {
-        selectTileRegion(minRow, minCol, spanW, spanH);
-      } else {
-        const patW = activeBrushPattern?.w || regionPreset.w || 1;
-        const patH = activeBrushPattern?.h || regionPreset.h || 1;
-        selectTileRegion(minRow, minCol, patW, patH);
-      }
+      selectTileRegion(minRow, minCol, spanW, spanH);
 
       setDragStart(null);
     };
@@ -526,7 +517,7 @@ export default function TilesetPicker({
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('mouseup', handleWindowMouseUp);
     };
-  }, [dragStart, ts, imgError, natural, regionPreset, selectTileRegion]);
+  }, [dragStart, ts, imgError, natural, selectTileRegion]);
 
   // Keyboard navigation: step 1 block over with arrow keys
   useEffect(() => {
@@ -549,20 +540,32 @@ export default function TilesetPicker({
 
         const stepX = 1;
         const stepY = 1;
-        if (e.key === 'ArrowLeft') col = Math.max(0, col - stepX);
-        if (e.key === 'ArrowRight') col = Math.min(ts.columns - stepX, col + stepX);
-        if (e.key === 'ArrowUp') row = Math.max(0, row - stepY);
-        if (e.key === 'ArrowDown') row = Math.min(maxRows - stepY, row + stepY);
-
-        e.preventDefault();
-        const patW = activeBrushPattern?.w || regionPreset.w || 1;
-        const patH = activeBrushPattern?.h || regionPreset.h || 1;
-        selectTileRegion(row, col, patW, patH);
+        
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const nextCol = Math.max(0, col - stepX);
+          if (nextCol !== col) selectTileRegion(row, nextCol, 1, 1);
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const nextCol = Math.min(ts.columns - stepX, col + stepX);
+          if (nextCol !== col) selectTileRegion(row, nextCol, 1, 1);
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const nextRow = Math.max(0, row - stepY);
+          if (nextRow !== row) selectTileRegion(nextRow, col, 1, 1);
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextRow = Math.min(maxRows - stepY, row + stepY);
+          if (nextRow !== row) selectTileRegion(nextRow, col, 1, 1);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [ts, imgError, natural, activeBrushTileId, regionPreset, selectTileRegion]);
+  }, [ts, imgError, natural, activeBrushTileId, selectTileRegion]);
 
   useEffect(() => {
     const handleGlobalClick = () => setTileContextMenu(null);
@@ -593,8 +596,8 @@ export default function TilesetPicker({
 
     if (col < 0 || row < 0 || col >= ts.columns || nativeY >= imgRef.current.naturalHeight) return;
 
-    const spanW = regionPreset.w || 1;
-    const spanH = regionPreset.h || 1;
+    const spanW = 1;
+    const spanH = 1;
     const localId = row * ts.columns + col;
     const gid = ts.firstgid + localId;
 
@@ -880,7 +883,7 @@ export default function TilesetPicker({
               </div>
             )}
 
-            {/* TILESET RESOLUTION & REGION CONTROLS */}
+            {/* TILESET RESOLUTION CONTROLS */}
             {ts && (
               <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-800/80">
                 <div className="flex items-center justify-between">
@@ -920,44 +923,6 @@ export default function TilesetPicker({
                     >
                       32px
                     </button>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] uppercase font-bold text-slate-400">Region:</span>
-                    {[
-                      { w: 1, h: 1, label: '1×1' },
-                      { w: 2, h: 2, label: '2×2' },
-                      { w: 3, h: 3, label: '3×3' },
-                      { w: 4, h: 4, label: '4×4' },
-                      { w: 2, h: 3, label: '2×3' },
-                      { w: 3, h: 2, label: '3×2' },
-                    ].map((p) => {
-                      const isActive = regionPreset.w === p.w && regionPreset.h === p.h;
-                      return (
-                        <button
-                          key={p.label}
-                          type="button"
-                          onClick={() => {
-                            soundSynth?.playUiClick?.();
-                            setRegionPreset({ w: p.w, h: p.h });
-                            showToast(`Brush Region Preset: ${p.label}`);
-                            if (ts && activeBrushTileId >= ts.firstgid) {
-                              const local = activeBrushTileId - ts.firstgid;
-                              const col = local % ts.columns;
-                              const row = Math.floor(local / ts.columns);
-                              selectTileRegion(row, col, p.w, p.h);
-                            }
-                          }}
-                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition border cursor-pointer ${
-                            isActive
-                              ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-sm'
-                              : 'bg-[#0b1320] border-slate-800 text-slate-400 hover:text-slate-200'
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
               </div>

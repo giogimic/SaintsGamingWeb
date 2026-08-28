@@ -105,6 +105,7 @@ export const StudioEditorShell: React.FC = () => {
   const canDev = canUseStudioDock(permissionLevel, 'dev');
   
   const [omnisearchOpen, setOmnisearchOpen] = useState(false);
+  const [isStudioReady, setIsStudioReady] = useState(false);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tileR: number; tileC: number } | null>(null);
 
@@ -112,6 +113,10 @@ export const StudioEditorShell: React.FC = () => {
     // Restore dock geometry, then enter Development Mode (tools on by default).
     useEditorStore.getState().hydratePanelLayouts();
     useEditorStore.getState().enterDevelopmentMode();
+    
+    // Simulate studio initialization and hide loading screen
+    const timer = setTimeout(() => setIsStudioReady(true), 800);
+    return () => clearTimeout(timer);
   }, []);
 
   // Handle dynamic dock panel opening
@@ -685,7 +690,15 @@ export const StudioEditorShell: React.FC = () => {
 
   return (
     <>
-      <div className="fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10">
+      {!isStudioReady && (
+        <div className="pointer-events-auto fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/80 backdrop-blur-md transition-opacity duration-500">
+          <div className="flex flex-col items-center justify-center animate-pulse">
+            <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+            <span className="font-mono font-bold text-lg text-primary tracking-widest">INITIALIZING STUDIO...</span>
+          </div>
+        </div>
+      )}
+      <div className={`fixed inset-0 pointer-events-none z-[100] flex flex-col pt-9 pb-10 ${!isStudioReady ? 'opacity-0' : 'opacity-100 transition-opacity duration-500'}`}>
         <StudioMenuBar
           onOpenMapBrowser={() => useEditorStore.getState().openPanel('maps')}
           onOpenAssetBrowser={() => setStudioMode('assets')}
@@ -706,7 +719,17 @@ export const StudioEditorShell: React.FC = () => {
         )}
 
         {/* MDI Free-Floating Windows Workspace Container */}
-        <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
+        <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
+          {!isStudioReady && (
+            <div className="pointer-events-auto absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md transition-opacity duration-500">
+              <div className="flex flex-col items-center justify-center animate-pulse">
+                <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
+                <span className="font-mono font-bold text-lg text-primary tracking-widest">INITIALIZING STUDIO...</span>
+              </div>
+            </div>
+          )}
+
+          <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
           {canUseStudioDock(permissionLevel, 'build') && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">
               <Suspense fallback={<div>Loading...</div>}><WorldBuilderPanel /></Suspense>
@@ -820,6 +843,7 @@ export const StudioEditorShell: React.FC = () => {
               <Suspense fallback={<div>Loading...</div>}><MapListPanel /></Suspense>
             </DraggablePanel>
           )}
+        </div>
         </div>
 
         {/* Asset Management Mode — full workspace replacement */}

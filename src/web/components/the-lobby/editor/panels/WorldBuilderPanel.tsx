@@ -17,6 +17,10 @@ import {
   EyeOff,
   Navigation,
   Sparkles,
+  MapPin,
+  Trees,
+  X,
+  Plus
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
 import TilesetPicker from '../TilesetPicker';
@@ -35,10 +39,10 @@ export const WorldBuilderPanel: React.FC = () => {
   const isSaving = useEditorStore((state) => state.isSavingMap);
   const setStudioMode = useEditorStore((state) => state.setStudioMode);
 
-  // Accordion section collapse state
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     overview: true,
     neighbors: true,
+    encounters: true,
     layers: true,
     palette: true,
   });
@@ -56,6 +60,20 @@ export const WorldBuilderPanel: React.FC = () => {
 
   const [neighbors, setNeighbors] = useState<NeighborNodes>({});
   const [neighborBleedPreview, setNeighborBleedPreview] = useState(false);
+
+  const localMapData = activeMapData || { id: currentMapId, encounterPool: [], tileLayers: [], tilesets: [] };
+  const [encounterPool, setEncounterPool] = useState<
+    Array<{ speciesId: string; minLevel: number; maxLevel: number; weight: number; timeOfDay?: 'any'|'day'|'night' }>
+  >(localMapData.encounterPool || []);
+  const [selectedSpecies, setSelectedSpecies] = useState('rockitten');
+  const [minLevel, setMinLevel] = useState(2);
+  const [maxLevel, setMaxLevel] = useState(5);
+  const [weight, setWeight] = useState(30);
+  const [timeOfDay, setTimeOfDay] = useState<'any'|'day'|'night'>('any');
+
+  useEffect(() => {
+    setEncounterPool(activeMapData?.encounterPool || []);
+  }, [activeMapData?.encounterPool]);
 
   // Legacy DEMO_SANDBOX tileset bootstrap
   useEffect(() => {
@@ -138,6 +156,15 @@ export const WorldBuilderPanel: React.FC = () => {
       useGameStore.setState({ currentMapId: targetMapId });
       showToast(`Loading ${targetMapId}…`);
     }
+  };
+
+  const handleAddEncounterSpecies = () => {
+    if (!activeMapData) return;
+    const next = [...encounterPool, { speciesId: selectedSpecies, minLevel, maxLevel, weight, timeOfDay }];
+    setEncounterPool(next);
+    useGameStore.setState({ activeMapData: { ...activeMapData, encounterPool: next } });
+    useEditorStore.getState().markMapDirty();
+    showToast(`Added ${selectedSpecies} to map pool — Save Map to persist`);
   };
 
   const handleToggleNeighborBleed = () => {
@@ -454,6 +481,116 @@ export const WorldBuilderPanel: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 2.5: Encounters */}
+      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
+        <button
+          type="button"
+          onClick={() => toggleSection('encounters')}
+          className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-1.5">
+            <Trees className="w-4 h-4 text-emerald-400" /> Map Encounters
+          </span>
+          {openSections.encounters ? (
+            <ChevronDown className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5" />
+          )}
+        </button>
+
+        {openSections.encounters && (
+          <div className="p-3 space-y-2 border-t border-[#806f47]/20 bg-[#050b14]/50">
+            <p className="text-[10px] text-slate-500 leading-relaxed mb-2">
+              Creatures that can appear when a player walks in tall grass on this map.
+            </p>
+            <div className="space-y-1 bg-black/40 border border-[#806f47]/20 rounded p-1.5 min-h-[40px] max-h-32 overflow-y-auto custom-scrollbar">
+              {encounterPool.length === 0 ? (
+                <div className="text-center text-slate-600 py-2">No encounters set.</div>
+              ) : (
+                encounterPool.map((enc, idx) => (
+                  <div key={idx} className="flex items-center justify-between bg-[#0b1320] px-1.5 py-1 rounded border border-slate-800">
+                    <div className="flex flex-col">
+                      <span className="text-amber-400 font-bold">{enc.speciesId}</span>
+                      <span className="text-[9px] text-slate-400">
+                        Lv {enc.minLevel}-{enc.maxLevel} • W: {enc.weight} • {enc.timeOfDay === 'any' ? 'Any Time' : enc.timeOfDay === 'day' ? 'Day' : 'Night'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const next = [...encounterPool];
+                        next.splice(idx, 1);
+                        setEncounterPool(next);
+                        if (activeMapData) {
+                          useGameStore.setState({ activeMapData: { ...activeMapData, encounterPool: next } });
+                          useEditorStore.getState().markMapDirty();
+                        }
+                        showToast(`Removed ${enc.speciesId} — Save Map to persist`);
+                      }}
+                      className="text-red-400 hover:text-red-300 p-1 bg-red-400/10 hover:bg-red-400/20 rounded cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="space-y-1.5 pt-2">
+              <div className="grid grid-cols-2 gap-1 pt-1 border-t border-[#806f47]/20">
+                <input
+                  type="text"
+                  value={selectedSpecies}
+                  onChange={(e) => setSelectedSpecies(e.target.value)}
+                  className="bg-black/60 border border-[#806f47]/30 rounded px-1 py-1 text-slate-200"
+                  placeholder="species_slug"
+                />
+                <div className="flex gap-1">
+                  <input
+                    type="number"
+                    value={minLevel}
+                    onChange={(e) => setMinLevel(parseInt(e.target.value))}
+                    className="w-full bg-black/60 border border-[#806f47]/30 rounded px-1 py-1"
+                    placeholder="Min"
+                  />
+                  <input
+                    type="number"
+                    value={maxLevel}
+                    onChange={(e) => setMaxLevel(parseInt(e.target.value))}
+                    className="w-full bg-black/60 border border-[#806f47]/30 rounded px-1 py-1"
+                    placeholder="Max"
+                  />
+                </div>
+                <div className="flex gap-1 col-span-2">
+                  <input
+                    type="number"
+                    value={weight}
+                    onChange={(e) => setWeight(parseInt(e.target.value))}
+                    className="w-1/2 bg-black/60 border border-[#806f47]/30 rounded px-1 py-1"
+                    placeholder="Weight"
+                    title="Spawn Weight (higher = more common)"
+                  />
+                  <select
+                    value={timeOfDay}
+                    onChange={(e) => setTimeOfDay(e.target.value as 'any'|'day'|'night')}
+                    className="w-1/2 bg-black/60 border border-[#806f47]/30 rounded px-1 py-1 text-slate-300"
+                  >
+                    <option value="any">Any Time</option>
+                    <option value="day">Day Only</option>
+                    <option value="night">Night Only</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={handleAddEncounterSpecies}
+                className="w-full py-1 bg-[#806f47]/20 hover:bg-[#806f47]/40 text-[#e2d5b3] border border-[#806f47]/40 rounded flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" /> Add Species
+              </button>
+            </div>
           </div>
         )}
       </div>
