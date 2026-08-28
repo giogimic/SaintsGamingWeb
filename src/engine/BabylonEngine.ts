@@ -2497,6 +2497,10 @@ private resolveTilePick(
     const h = this.currentMapHeight;
     if (r < 0 || r >= h || c < 0 || c >= w) return;
 
+    const isLogicLayer = this.activeLayerIdx === -1 || this.hasLogicGridOverlay();
+    const altitudeHover = isLogicLayer ? 0.53 : SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR;
+    const altitudeFootprint = isLogicLayer ? 0.52 : SPATIAL_LAYER_ALTITUDES.BRUSH_PREVIEW;
+
     // 1. Single-cell hover outline (Thin sky-blue border on hovered center cell)
     const centerPosX = (c - w / 2) * s;
     const centerPosZ = (h / 2 - r) * s;
@@ -2513,7 +2517,7 @@ private resolveTilePick(
 
     const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 0.96 }, this.scene);
     hoverPlane.rotation.x = Math.PI / 2;
-    hoverPlane.position = new Vector3(centerPosX, SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR, centerPosZ);
+    hoverPlane.position = new Vector3(centerPosX, altitudeHover, centerPosZ);
     hoverPlane.material = hoverMat;
     hoverPlane.isPickable = false;
     hoverPlane.parent = this.rootNode;
@@ -2526,7 +2530,7 @@ private resolveTilePick(
       patPlane.rotation.x = Math.PI / 2;
       const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
       const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;
-      patPlane.position = new Vector3(patPosX, SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR, patPosZ);
+      patPlane.position = new Vector3(patPosX, altitudeHover, patPosZ);
       
       let patMat = this.scene.getMaterialByName('brush_pattern_outline_mat') as StandardMaterial | null;
       if (!patMat) {
@@ -2581,7 +2585,7 @@ private resolveTilePick(
 
           const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.92 }, this.scene);
           plane.rotation.x = Math.PI / 2;
-          plane.position = new Vector3(posX, SPATIAL_LAYER_ALTITUDES.BRUSH_PREVIEW, posZ);
+          plane.position = new Vector3(posX, altitudeFootprint, posZ);
           plane.material = footMat;
           plane.isPickable = false;
           plane.parent = this.rootNode;

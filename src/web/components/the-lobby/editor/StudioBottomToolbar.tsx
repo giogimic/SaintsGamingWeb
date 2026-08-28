@@ -78,6 +78,7 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const setBrushRadius = useEditorStore((s) => s.setBrushRadius);
   const brushMode = useEditorStore((s) => s.brushMode);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
+  const setStudioMode = useEditorStore((s) => s.setStudioMode);
   const paintMode = useEditorStore((s) => s.paintMode);
   const setPaintMode = useEditorStore((s) => s.setPaintMode);
   const activeLayerIdx = useEditorStore((s) => s.activeLayerIdx);
@@ -399,13 +400,16 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
       <div className="flex items-center gap-2">
         {/* Layer Chip */}
         <div
-          onClick={() => setActiveLayerIdx(isLogic ? 0 : -1)}
+          onClick={() => {
+            soundSynth?.playUiClick?.();
+            setStudioMode(isLogic ? 'develop' : 'logic');
+          }}
           className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border cursor-pointer transition-all ${
             isLogic
               ? 'border-cyan-500/50 bg-cyan-950/60 text-cyan-200'
               : 'border-primary/50 bg-primary/20 text-primary'
           }`}
-          title="Click to toggle Logic (−1) / Visual layer"
+          title="Click to toggle Paint (Visual) / Logic Mode"
         >
           {isLogic ? <Shield className="h-3 w-3" /> : <Grid3X3 className="h-3 w-3" />}
           <span>{layerName}</span>
