@@ -41,22 +41,22 @@ export const TileSelectorPanel: React.FC = () => {
   const tilesets = currentMap.tilesets?.length ? currentMap.tilesets : DEFAULT_STUDIO_TILESETS;
   const tileLayers = currentMap.tileLayers || [];
 
-  const handleBrushSelect = (gid: number) => {
+  const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid);
-    if (activeLayerIdx === -1) {
+    if (useEditorStore.getState().activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }
-  };
+  }, [setActiveBrushTileId, setActiveLayerIdx]);
 
-  const handleBrushSelectPattern = (pattern: { w: number; h: number; gids: number[][] } | null) => {
+  const handleBrushSelectPattern = React.useCallback((pattern: { w: number; h: number; gids: number[][] } | null) => {
     setActiveBrushPattern(pattern);
     if (pattern && pattern.gids?.[0]?.[0] !== undefined) {
       setActiveBrushTileId(pattern.gids[0][0]);
     }
-    if (activeLayerIdx === -1) {
+    if (useEditorStore.getState().activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }
-  };
+  }, [setActiveBrushPattern, setActiveBrushTileId, setActiveLayerIdx]);
 
   const handleAddLayer = () => {
     const width = currentMap.width || currentMap.grid?.[0]?.length || 24;
