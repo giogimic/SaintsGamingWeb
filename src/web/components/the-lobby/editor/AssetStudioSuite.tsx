@@ -169,7 +169,7 @@ export function AssetStudioSuite() {
       case 'creatures':
         return 'creature';
       case 'tilesets':
-        return 'tileset';
+        return 'tile';
       case 'items':
         return 'item';
       default:
