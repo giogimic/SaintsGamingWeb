@@ -1,3 +1,5 @@
+# 2.1.469
+- Fixed tileset canvas container height in TileSelectorPanel to use the full window instead of a hardcoded short height.
 # 2.1.468
 - Separated TilesetPicker entirely from WorldBuilderPanel into its own dockable window (TileSelectorPanel)
 - Added custom W x H input to the Tileset settings modal for custom grid slicing
@@ -3889,6 +3891,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

@@ -888,7 +888,7 @@ export default function TilesetPicker({
 
           {/* PIXEL CANVAS / PREVIEW */}
           {ts && !imgError ? (
-            <div className="bg-black/80 rounded-xl border border-amber-500/30 overflow-auto max-h-[250px] relative mt-1 custom-scrollbar">
+            <div className="bg-black/80 rounded-xl border border-amber-500/30 overflow-auto max-h-[70vh] relative mt-1 custom-scrollbar">
                <div className="relative inline-block min-w-full">
                  <img 
                    ref={imgRef}
