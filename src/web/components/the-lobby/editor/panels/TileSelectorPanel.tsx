@@ -49,9 +49,9 @@ export const TileSelectorPanel: React.FC = () => {
     }
   };
 
-  const handleBrushSelectPattern = (pattern: { w: number; h: number; gids: number[][] }) => {
+  const handleBrushSelectPattern = (pattern: { w: number; h: number; gids: number[][] } | null) => {
     setActiveBrushPattern(pattern);
-    if (pattern.gids?.[0]?.[0] !== undefined) {
+    if (pattern && pattern.gids?.[0]?.[0] !== undefined) {
       setActiveBrushTileId(pattern.gids[0][0]);
     }
     if (activeLayerIdx === -1) {

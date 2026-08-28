@@ -1,3 +1,7 @@
+# 2.1.471
+- **Tile Selector Drag-Selection**: Fixed premature cancellation of multi-tile selection on mouse leave.
+- **Canvas Rendering Performance**: Memoized brush preview pick checks and 3D mesh updates in BabylonEngine, eliminating stutter and redundant state dispatches during cursor movement.
+- **Brush Sizing**: Fixed 1x1 pattern override in TilesetPicker so that brush radius scaling (sizes 1, 3, 5, 7) applies cleanly. Defaulted initial editor brush radius to 1.
 # 2.1.470
 - Permanently removed SQLite fallback support. Saints Gaming is now exclusively a MySQL/MariaDB project to prevent schema discrepancies and column length limits on large data stores (like World Atlas).
 - Removed DatabaseMigration settings page since SQLite is deprecated.
@@ -3894,6 +3898,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 
