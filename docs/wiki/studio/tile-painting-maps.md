@@ -58,4 +58,4 @@ To maintain 60 FPS in the editor while painting large maps ($128 \times 128$ or 
 - Babylon.js rebuilds vertex indices only for the dirty chunk, eliminating whole-scene rebuild hitches.
 
 > [!TIP]
-> Use the Tileset Picker (`TilesetPicker.tsx`) to switch between ground, architectural, and nature sprite sheets without losing your active layer selection.
+> Use the Tile Selector (`TilesetPicker.tsx`) to switch between ground, architectural, and nature sprite sheets without losing your active layer selection.

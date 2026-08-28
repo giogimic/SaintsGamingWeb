@@ -14,7 +14,7 @@ The Studio environment is orchestrated by `StudioEditorShell.tsx` and a modular 
 ├───────────────────┬──────────────────────────────────────┤
 │ Left Panel        │ Main Babylon.js Viewport             │
 │ • Tool Palette    │ • Dual-Grid Visual/Logic Rendering   │
-│ • Tileset Picker  │ • Gizmo Handles & Brush Cursors      │
+│ • Tile Selector  │ • Gizmo Handles & Brush Cursors      │
 │ • Catalog List    ├──────────────────────────────────────┤
 │                   │ Bottom Panel: Asset Browser, History │
 ├───────────────────┴──────────────────────────────────────┤
