@@ -926,8 +926,8 @@ export default function TilesetPicker({
                    <div
                      className={`pointer-events-none absolute border-2 transition-all duration-75 ${
                        dragStart
-                         ? 'border-amber-400 bg-amber-400/30 z-20 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                         : 'border-cyan-400/80 bg-cyan-400/20'
+                         ? 'border-amber-400 bg-amber-400/30 ring-1 ring-black shadow-[0_0_12px_rgba(245,158,11,0.6)] z-20'
+                         : 'border-cyan-400 bg-cyan-400/25 ring-1 ring-black shadow-[0_0_0_1px_rgba(0,0,0,0.9)]'
                      }`}
                      style={{
                        left: `${hoveredTile.leftPct}%`,
@@ -939,7 +939,7 @@ export default function TilesetPicker({
                  )}
                  {selection && !dragStart && (
                    <div
-                     className="pointer-events-none absolute border-2 border-amber-400 bg-amber-400/20 shadow-[0_0_0_1px_rgba(0,0,0,0.75)] z-10"
+                     className="pointer-events-none absolute border-2 border-amber-400 bg-amber-400/20 ring-1 ring-black shadow-[0_0_0_1px_rgba(0,0,0,0.9)] z-10"
                      style={{
                        left: `${selection.leftPct}%`,
                        top: `${selection.topPct}%`,

@@ -14,6 +14,8 @@ import {
   Camera,
   Grid3X3,
   Shield,
+  Circle,
+  Square,
   FlipHorizontal,
   FlipVertical,
   RotateCw,
@@ -76,6 +78,8 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const isCreationMode = useEditorStore((s) => s.isCreationMode);
   const brushRadius = useEditorStore((s) => s.brushRadius);
   const setBrushRadius = useEditorStore((s) => s.setBrushRadius);
+  const brushShape = useEditorStore((s) => s.brushShape);
+  const setBrushShape = useEditorStore((s) => s.setBrushShape);
   const brushMode = useEditorStore((s) => s.brushMode);
   const setBrushMode = useEditorStore((s) => s.setBrushMode);
   const setStudioMode = useEditorStore((s) => s.setStudioMode);
@@ -345,6 +349,27 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
             +
           </button>
         </div>
+
+        {/* Brush Shape Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            soundSynth?.playUiClick?.();
+            const nextShape = brushShape === 'circle' ? 'square' : 'circle';
+            setBrushShape(nextShape);
+          }}
+          className={`flex items-center gap-1 bg-background/50 border border-border/60 hover:border-primary/50 rounded-lg px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
+            brushShape === 'square' ? 'text-amber-400 bg-amber-500/10 border-amber-500/40' : 'text-primary'
+          }`}
+          title={`Brush Shape: ${brushShape === 'circle' ? 'Circle (Round)' : 'Square (Box)'} — Click to switch`}
+        >
+          {brushShape === 'circle' ? (
+            <Circle className="h-3 w-3" />
+          ) : (
+            <Square className="h-3 w-3" />
+          )}
+          <span className="capitalize">{brushShape}</span>
+        </button>
 
         {/* Stamp Transform Controls */}
         <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5">

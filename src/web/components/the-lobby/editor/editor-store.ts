@@ -179,6 +179,7 @@ type PlaytestRestoreSnapshot = {
   activeLayerIdx: number;
   mapDirty: boolean;
   brushRadius: number;
+  brushShape: 'circle' | 'square';
 };
 
 export interface BrushPattern {
@@ -228,6 +229,7 @@ interface EditorState {
   activeLogicTileId: number;
   activeLayerIdx: number;
   brushRadius: number;
+  brushShape: 'circle' | 'square';
   brushMode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste';
   activePrefabId: string | null;
   prefabs: any[];
@@ -290,6 +292,7 @@ interface EditorState {
   setShowWarpOverlays: (on: boolean) => void;
   setShowSpawnOverlays: (on: boolean) => void;
   setBrushRadius: (radius: number) => void;
+  setBrushShape: (shape: 'circle' | 'square') => void;
   setBrushMode: (mode: 'paint' | 'erase' | 'eyedropper' | 'pan' | 'select' | 'prefab' | 'gate' | 'paste') => void;
   setActivePrefabId: (id: string | null) => void;
   setPrefabs: (prefabs: any[]) => void;
@@ -782,6 +785,7 @@ function capturePlaytestSnapshot(state: {
   activeLayerIdx: number;
   mapDirty: boolean;
   brushRadius: number;
+  brushShape: 'circle' | 'square';
 }): PlaytestRestoreSnapshot {
   const openPanelIds = (Object.keys(state.panels) as PanelId[]).filter(
     (id) => state.panels[id].isOpen
@@ -795,6 +799,7 @@ function capturePlaytestSnapshot(state: {
     activeLayerIdx: state.activeLayerIdx,
     mapDirty: state.mapDirty,
     brushRadius: state.brushRadius,
+    brushShape: state.brushShape,
   };
 }
 
@@ -832,6 +837,7 @@ export const useEditorStore = create<EditorState>()(
       activeLogicTileId: 1,
       activeLayerIdx: 0,
       brushRadius: 1,
+      brushShape: 'circle',
       brushMode: 'paint',
       paintMode: 'stamp',
       setPaintMode: (mode: 'stamp' | 'paste') =>
@@ -943,6 +949,7 @@ export const useEditorStore = create<EditorState>()(
             state.activeLayerIdx = snap.activeLayerIdx;
             state.mapDirty = snap.mapDirty;
             state.brushRadius = snap.brushRadius;
+            state.brushShape = snap.brushShape || 'circle';
             closeAllPanels(state);
             for (const id of snap.openPanelIds) {
               if (state.panels[id]) {
@@ -1168,6 +1175,10 @@ export const useEditorStore = create<EditorState>()(
       setBrushRadius: (radius) =>
         set((state) => {
           state.brushRadius = Math.max(1, Math.min(10, radius));
+        }),
+      setBrushShape: (shape) =>
+        set((state) => {
+          state.brushShape = shape;
         }),
       setBrushMode: (mode) =>
         set((state) => {

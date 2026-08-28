@@ -1123,6 +1123,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     // Sync brush properties
     engine.setBrushRadius(useEditorStore.getState().brushRadius);
+    engine.setBrushShape(useEditorStore.getState().brushShape);
     engine.setActiveBrushTileId(useEditorStore.getState().activeBrushTileId);
     engine.setActiveBrushPattern(useEditorStore.getState().activeBrushPattern);
     engine.setActiveLayerIdx(useEditorStore.getState().activeLayerIdx);
@@ -1709,6 +1710,10 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       const unsub = useEditorStore.subscribe((state, prevState) => {
         if (state.brushRadius !== prevState.brushRadius) {
           engine.setBrushRadius(state.brushRadius);
+          engine.refreshBrushPreview();
+        }
+        if (state.brushShape !== prevState.brushShape) {
+          engine.setBrushShape(state.brushShape);
           engine.refreshBrushPreview();
         }
         if (state.activeBrushTileId !== prevState.activeBrushTileId) {
