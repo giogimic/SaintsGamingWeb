@@ -28,6 +28,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { LOGIC_COMPONENT_PRESETS } from '@/shared/game/logicComponents';
 import { getClientAtlas } from '../data/maps';
 import { type AtlasGridData, getAdjacentAtlasNeighbors } from '@/shared/game/atlas/spatialAtlas';
+import { savePrefab, listPrefabs, type PrefabTileData } from '@/app/actions/prefabs';
 
 const InlineAtlasStatus = () => {
   const currentMapId = useGameStore((s) => s.currentMapId);
@@ -96,6 +97,11 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const isStudioFreeCam = useEditorStore((s) => s.isStudioFreeCam);
   const setStudioFreeCam = useEditorStore((s) => s.setStudioFreeCam);
   const hoveredTile = useEditorStore((s) => s.hoveredTile);
+  const activeBrushPattern = useEditorStore((s) => s.activeBrushPattern);
+  const setPrefabs = useEditorStore((s) => s.setPrefabs);
+  const setActivePrefabId = useEditorStore((s) => s.setActivePrefabId);
+  const openPanel = useEditorStore((s) => s.openPanel);
+  const showToast = useGameStore((s) => s.showToast);
 
   const activeMapData = useGameStore((s) => s.activeMapData);
   const logicTiles = useGameStore((s) => s.logicTiles);
@@ -239,18 +245,58 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
             <button
               type="button"
-              onClick={() => {
-                setPaintMode('stamp');
+              onClick={async () => {
                 soundSynth?.playUiClick?.();
+                if (!activeBrushPattern || activeBrushPattern.w * activeBrushPattern.h <= 1) {
+                  showToast('Select a larger pattern in the Tileset first to auto-prefab.');
+                  return;
+                }
+                
+                const visualData: PrefabTileData[] = [];
+                for (let r = 0; r < activeBrushPattern.h; r++) {
+                  for (let c = 0; c < activeBrushPattern.w; c++) {
+                    const tileId = activeBrushPattern.gids[r][c];
+                    if (tileId > 0) {
+                      visualData.push({ layerOffset: 0, r, c, tileId });
+                    }
+                  }
+                }
+                
+                if (visualData.length === 0) {
+                  showToast('Selected pattern is empty.');
+                  return;
+                }
+                
+                const prefabName = `Auto-Prefab (${activeBrushPattern.w}x${activeBrushPattern.h})`;
+                const res = await savePrefab({
+                  name: prefabName,
+                  category: 'decor',
+                  width: activeBrushPattern.w,
+                  height: activeBrushPattern.h,
+                  visualData,
+                  logicData: [],
+                });
+
+                if (res.success) {
+                  showToast(`Auto-Prefab saved: ${prefabName}`);
+                  const listRes = await listPrefabs();
+                  if (listRes.success && listRes.data) {
+                    setPrefabs(listRes.data);
+                    const newPrefab = listRes.data.find((p: any) => p.name === prefabName);
+                    if (newPrefab) {
+                      setActivePrefabId(newPrefab.id);
+                    }
+                  }
+                  setBrushMode('prefab');
+                  openPanel('prefab');
+                } else {
+                  showToast(`Auto-Prefab failed: ${res.error}`);
+                }
               }}
-              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                paintMode === 'stamp'
-                  ? 'bg-amber-500 text-black shadow'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Stamp (squish to 1 tile)"
+              className="px-2 py-1 rounded transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+              title="Auto-Prefab (Save selection as a stampable object)"
             >
-              STAMP
+              TO PREFAB
             </button>
             <button
               type="button"
@@ -263,9 +309,9 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
                   ? 'bg-amber-500 text-black shadow'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
-              title="Paste (paint full region)"
+              title="Paste / Tiling (drag to paint full region)"
             >
-              PASTE
+              PATTERN
             </button>
           </div>
         )}
