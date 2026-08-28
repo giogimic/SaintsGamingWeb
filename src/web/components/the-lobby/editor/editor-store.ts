@@ -991,9 +991,6 @@ export const useEditorStore = create<EditorState>()(
             state.activePanel = id;
           }
         });
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('studio_open_dock', { detail: { panelId: id } }));
-        }
       },
 
       closePanel: (id) =>
