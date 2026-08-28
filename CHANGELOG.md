@@ -1,3 +1,9 @@
+# 2.1.468
+- Separated TilesetPicker entirely from WorldBuilderPanel into its own dockable window (TileSelectorPanel)
+- Added custom W x H input to the Tileset settings modal for custom grid slicing
+- Added quick presets (16px, 32px, etc) inside the Tileset settings modal
+- Hidden logic paint context menu options when not in the logic paint layer
+- Investigated Atlas 500 error and determined it requires a database column alteration in production MariaDB
 ## [2.1.464] - 2026-08-27
 - Refactored `AtlasStudioSuite` full-screen workspace into windowed MDI `MapListPanel` and `WorldAtlasPanel`.
 - Resolved Atlas save issues by removing conflicting save logic and confirming `WorldAtlas` database sync.
@@ -3883,6 +3889,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 

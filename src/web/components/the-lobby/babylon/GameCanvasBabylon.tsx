@@ -1253,18 +1253,38 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
 
             const ops: any[] = [];
+            const needsFullRebuild = prefab.visualData && prefab.visualData.length > 4;
+            
             // Paste Visual Data
             prefab.visualData?.forEach((v: any) => {
               const tr = r + v.r;
               const tc = c + v.c;
               if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) return;
-              const targetLayer = v.layerOffset; // Keep original layer
+              
+              // Base the target layer off the currently active layer in the editor, offsetting by the prefab's built-in layer offset
+              const targetLayer = Math.min(2, Math.max(0, store.activeLayerIdx + (v.layerOffset || 0)));
+              
               const painted = paintWorldCell(map, targetLayer, tr, tc, v.tileId, worldSync);
               if (!('error' in painted)) {
                 ops.push(painted.cell);
-                engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
+                if (!needsFullRebuild) {
+                  engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
+                }
               }
             });
+            
+            if (needsFullRebuild) {
+              engine.loadTilemap({
+                id: 'prefab-paste',
+                width: map.width || 30,
+                height: map.height || 30,
+                tileSize: 1,
+                tiles: map.grid || [],
+                tileLayers: map.tileLayers,
+                tilesets: map.tilesets,
+                npcs: [],
+              });
+            }
 
             // Paste Logic Data
             prefab.logicData?.forEach((l: any) => {
@@ -1379,6 +1399,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           const paintedOps: any[] = [];
+          let needsFullRebuild = false;
+          if (store.activeBrushPattern && store.activeBrushPattern.w * store.activeBrushPattern.h > 4) {
+            needsFullRebuild = true;
+          }
+
           for (const pt of coordsToPaint) {
             if (store.activeBrushPattern) {
               const pat = store.activeBrushPattern;
@@ -1404,7 +1429,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   );
                   if (!('error' in painted)) {
                     paintedOps.push(painted.cell);
-                    engine.updateSingleTile(tr, tc, patVal, target.layerIdx, map.tilesets);
+                    if (!needsFullRebuild) {
+                      engine.updateSingleTile(tr, tc, patVal, target.layerIdx, map.tilesets);
+                    }
                   }
                 }
               }
@@ -1422,6 +1449,18 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 engine.updateSingleTile(pt.r, pt.c, paintValue, target.layerIdx, map.tilesets);
               }
             }
+          }
+          if (needsFullRebuild) {
+            engine.loadTilemap({
+              id: 'pattern-paste',
+              width: map.width || 30,
+              height: map.height || 30,
+              tileSize: 1,
+              tiles: map.grid || [],
+              tileLayers: map.tileLayers,
+              tilesets: map.tilesets,
+              npcs: [],
+            });
           }
           if (paintedOps.length > 0) {
             useEditorStore.getState().pushPaintOp(paintedOps);

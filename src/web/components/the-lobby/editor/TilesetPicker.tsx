@@ -883,50 +883,7 @@ export default function TilesetPicker({
               </div>
             )}
 
-            {/* TILESET RESOLUTION CONTROLS */}
-            {ts && (
-              <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-800/80">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] uppercase font-bold text-slate-400">Grid:</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        soundSynth?.playUiClick?.();
-                        const cols = Math.max(1, Math.floor((natural.w || ts.columns * ts.tilewidth) / 16));
-                        handleUpdateTilesetSettings({ tilewidth: 16, tileheight: 16, columns: cols, imagewidth: natural.w, imageheight: natural.h });
-                        showToast('Grid: 16×16px (1-block granularity)');
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition border cursor-pointer ${
-                        ts.tilewidth === 16 && ts.tileheight === 16
-                          ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-sm'
-                          : 'bg-[#0b1320] border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="16x16px tile size (1-block standard)"
-                    >
-                      16px
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        soundSynth?.playUiClick?.();
-                        const cols = Math.max(1, Math.floor((natural.w || ts.columns * ts.tilewidth) / 32));
-                        handleUpdateTilesetSettings({ tilewidth: 32, tileheight: 32, columns: cols, imagewidth: natural.w, imageheight: natural.h });
-                        showToast('Grid: 32×32px (2-block chunk)');
-                      }}
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold transition border cursor-pointer ${
-                        ts.tilewidth === 32 && ts.tileheight === 32
-                          ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-sm'
-                          : 'bg-[#0b1320] border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                      title="32x32px tile size (2-block resolution)"
-                    >
-                      32px
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+
           </div>
 
           {/* PIXEL CANVAS / PREVIEW */}
@@ -1265,38 +1222,70 @@ export default function TilesetPicker({
 
             <div className="space-y-4 text-xs font-mono">
               <div>
-                <label className="block text-slate-400 mb-1">Tile Width (px)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={ts.tilewidth}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 16;
-                    handleUpdateTilesetSettings({ 
-                      tilewidth: val,
-                      columns: Math.max(1, Math.floor(natural.w / val)),
-                      imagewidth: natural.w,
-                      imageheight: natural.h
-                    });
-                  }}
-                  className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
-                />
+                <label className="block text-slate-400 mb-2 font-bold uppercase text-[10px]">Quick Grid Presets</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[16, 32, 64, 128].map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => {
+                        soundSynth?.playUiClick?.();
+                        const cols = Math.max(1, Math.floor(natural.w / size));
+                        handleUpdateTilesetSettings({ tilewidth: size, tileheight: size, columns: cols, imagewidth: natural.w, imageheight: natural.h });
+                        showToast(`Grid set to ${size}x${size}px`);
+                      }}
+                      className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        ts.tilewidth === size && ts.tileheight === size
+                          ? 'bg-amber-500 text-black shadow-sm'
+                          : 'bg-black/60 border border-slate-700 text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      {size}px
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div>
-                <label className="block text-slate-400 mb-1">Tile Height (px)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={ts.tileheight}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 16;
-                    handleUpdateTilesetSettings({ tileheight: val });
-                  }}
-                  className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
-                />
+
+              <div className="pt-2 border-t border-slate-800">
+                <label className="block text-slate-400 mb-2 font-bold uppercase text-[10px]">Custom Grid Size</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <span className="text-[9px] text-slate-500 uppercase mb-1 block">Width</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={ts.tilewidth}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 16;
+                        handleUpdateTilesetSettings({ 
+                          tilewidth: val,
+                          columns: Math.max(1, Math.floor(natural.w / val)),
+                          imagewidth: natural.w,
+                          imageheight: natural.h
+                        });
+                      }}
+                      className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <span className="text-slate-500 mt-4">x</span>
+                  <div className="flex-1">
+                    <span className="text-[9px] text-slate-500 uppercase mb-1 block">Height</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={ts.tileheight}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 16;
+                        handleUpdateTilesetSettings({ tileheight: val });
+                      }}
+                      className="w-full bg-black/60 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-slate-400 mb-1">Columns</label>
+
+              <div className="pt-2 border-t border-slate-800">
+                <label className="block text-slate-400 mb-1 font-bold uppercase text-[10px]">Columns</label>
                 <input
                   type="number"
                   min="1"
@@ -1489,42 +1478,44 @@ export default function TilesetPicker({
           </button>
 
           {/* Per-Tile Gameplay & Collision Toggles */}
-          <div className="pt-1 mt-1 border-t border-slate-800 flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={() => {
-                soundSynth?.playActionSound?.();
-                window.dispatchEvent(
-                  new CustomEvent('studio_set_tile_logic', {
-                    detail: { gid: tileContextMenu.gid, isSolid: true },
-                  })
-                );
-                showToast(`Marked GID #${tileContextMenu.gid} as Solid Collision`);
-                setTileContextMenu(null);
-              }}
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-500/20 text-slate-200 hover:text-rose-300 text-left transition cursor-pointer text-[11px]"
-            >
-              <Shield className="w-3.5 h-3.5 text-rose-400" />
-              <span>Mark as Solid Collision</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                soundSynth?.playActionSound?.();
-                window.dispatchEvent(
-                  new CustomEvent('studio_set_tile_logic', {
-                    detail: { gid: tileContextMenu.gid, isWater: true },
-                  })
-                );
-                showToast(`Marked GID #${tileContextMenu.gid} as Swimmable Water`);
-                setTileContextMenu(null);
-              }}
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 text-left transition cursor-pointer text-[11px]"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-sky-400" />
-              <span>Mark as Swimmable Water</span>
-            </button>
-          </div>
+          {activeLayerIdx === -1 && (
+            <div className="pt-1 mt-1 border-t border-slate-800 flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playActionSound?.();
+                  window.dispatchEvent(
+                    new CustomEvent('studio_set_tile_logic', {
+                      detail: { gid: tileContextMenu.gid, isSolid: true },
+                    })
+                  );
+                  showToast(`Marked GID #${tileContextMenu.gid} as Solid Collision`);
+                  setTileContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-rose-500/20 text-slate-200 hover:text-rose-300 text-left transition cursor-pointer text-[11px]"
+              >
+                <Shield className="w-3.5 h-3.5 text-rose-400" />
+                <span>Mark as Solid Collision</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playActionSound?.();
+                  window.dispatchEvent(
+                    new CustomEvent('studio_set_tile_logic', {
+                      detail: { gid: tileContextMenu.gid, isWater: true },
+                    })
+                  );
+                  showToast(`Marked GID #${tileContextMenu.gid} as Swimmable Water`);
+                  setTileContextMenu(null);
+                }}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-sky-500/20 text-slate-200 hover:text-sky-300 text-left transition cursor-pointer text-[11px]"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                <span>Mark as Swimmable Water</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
