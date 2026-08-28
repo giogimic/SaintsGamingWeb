@@ -1,3 +1,7 @@
+# 2.1.472
+- **Seamless Atlas Transitions**: Fixed north/south edge transitions by syncing 
+odeConnections in WorldState, resetting worldOriginOffset on map change, and snapping the camera directly to destination coordinates.
+- **Neighbor Chunk Rendering**: Fixed map hydration effect in GameCanvasBabylon to supply loaded neighbor chunks and connections to BabylonEngine loadTilemap.
 # 2.1.471
 - **Tile Selector Drag-Selection**: Fixed premature cancellation of multi-tile selection on mouse leave.
 - **Canvas Rendering Performance**: Memoized brush preview pick checks and 3D mesh updates in BabylonEngine, eliminating stutter and redundant state dispatches during cursor movement.
@@ -3898,6 +3902,7 @@
 - **Profile Integration**: Displayed active MMO characters on the public profile (`app/(main)/user/[username]/page.tsx`) with a "Play Now" launcher.
 
 ---
+
 
 
 
