@@ -978,6 +978,19 @@ export const useEditorStore = create<EditorState>()(
           }
           state.isCreationMode = true;
           state.playtestSnapshot = null;
+          if (mode === 'develop') {
+            if (state.activeLayerIdx === -1) {
+              state.activeLayerIdx = 0;
+              if (state.activeBrushTileId <= 12) {
+                state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
+              }
+            }
+          } else if (mode === 'logic') {
+            state.activeLayerIdx = -1;
+            if (state.activeLogicTileId > 50 || state.activeLogicTileId <= 0) {
+              state.activeLogicTileId = 1;
+            }
+          }
           openModePanels(state, mode);
           if (!wasEditor) queueMicrotask(() => emitPieChanged(false));
         }),

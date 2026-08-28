@@ -6,12 +6,13 @@
  * Internal ids stay stable for permissions / defaults.
  */
 
-export type StudioMode = 'develop' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
+export type StudioMode = 'develop' | 'logic' | 'atlas' | 'npc' | 'quest' | 'creature' | 'assets' | 'hero' | 'test';
 
 /** Bible 29 canonical tool modes (UI vocabulary). */
 export type StudioCanonicalMode =
   | 'walk'
   | 'paint'
+  | 'logic'
   | 'place'
   | 'populate'
   | 'script'
@@ -57,6 +58,7 @@ export type StudioDockId =
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
   test: 'walk',
   develop: 'paint',
+  logic: 'logic',
   atlas: 'atlas',
   npc: 'populate',
   quest: 'script',
@@ -67,7 +69,8 @@ export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> =
 
 /** Default panels opened when entering each studio mode (Walk/test closes all). */
 export const STUDIO_MODE_DEFAULTS: Record<StudioMode, StudioDockId[]> = {
-  develop: ['build', 'properties', 'prefab'],
+  develop: ['build', 'tileset'],
+  logic: ['logic'],
   atlas: ['atlas'],
   npc: ['npc', 'properties', 'assets', 'spawner'],
   quest: ['npc', 'quest'],
@@ -84,7 +87,12 @@ export const STUDIO_MODE_META: Record<
   develop: {
     label: 'Paint',
     canonical: 'paint',
-    blurb: 'Author terrain, logic layers, and world structure.',
+    blurb: 'Paint terrain tiles, manage tilesets, and author visual layers.',
+  },
+  logic: {
+    label: 'Logic',
+    canonical: 'logic',
+    blurb: 'Paint collision, triggers, tags, and gameplay rules.',
   },
   atlas: {
     label: 'Atlas',
