@@ -2546,8 +2546,15 @@ private resolveTilePick(
     this.refreshBrushPreview();
   }
 
-  public setActiveBrushPattern(pattern: { w: number, h: number } | null) {
+  private prefabStampMode: '1tile' | 'footprint' = 'footprint';
+
+  public setActiveBrushPattern(pattern: { w: number; h: number; gids?: number[][] } | null) {
     this.activeBrushPattern = pattern;
+    this.refreshBrushPreview();
+  }
+
+  public setPrefabStampMode(mode: '1tile' | 'footprint') {
+    this.prefabStampMode = mode;
     this.refreshBrushPreview();
   }
 
@@ -2653,8 +2660,8 @@ private resolveTilePick(
     const centerPosX = (c - w / 2) * s;
     const centerPosZ = (h / 2 - r) * s;
 
-    // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern)
-    if (this.activeBrushPattern) {
+    // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern and in footprint mode)
+    if (this.activeBrushPattern && this.prefabStampMode !== '1tile') {
       const pat = this.activeBrushPattern;
       const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
       const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;

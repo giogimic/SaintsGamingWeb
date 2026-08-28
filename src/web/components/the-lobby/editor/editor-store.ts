@@ -236,6 +236,8 @@ interface EditorState {
   tileClipboard: TileClipboardData | null;
   paintMode: 'stamp' | 'paste';
   setPaintMode: (mode: 'stamp' | 'paste') => void;
+  prefabStampMode: '1tile' | 'footprint';
+  setPrefabStampMode: (mode: '1tile' | 'footprint') => void;
   pasteMode: PasteMode;
   isPasting: boolean;
   selectionStart: { r: number; c: number } | null;
@@ -843,6 +845,11 @@ export const useEditorStore = create<EditorState>()(
       setPaintMode: (mode: 'stamp' | 'paste') =>
         set((state) => {
           state.paintMode = mode;
+        }),
+      prefabStampMode: 'footprint',
+      setPrefabStampMode: (mode: '1tile' | 'footprint') =>
+        set((state) => {
+          state.prefabStampMode = mode;
         }),
       activePrefabId: null,
       prefabs: [],
@@ -1999,18 +2006,20 @@ export const useEditorStore = create<EditorState>()(
             r = bounds.minR;
             c = bounds.minC;
           } else {
-            r = get().hoveredTile?.r ?? activeClip.sourceOrigin.r ?? 0;
-            c = get().hoveredTile?.c ?? activeClip.sourceOrigin.c ?? 0;
+            r = get().hoveredTile?.r ?? activeClip.sourceOrigin?.r ?? 0;
+            c = get().hoveredTile?.c ?? activeClip.sourceOrigin?.c ?? 0;
           }
         }
+        const safeR = r ?? 0;
+        const safeC = c ?? 0;
 
         const activeLayer = get().activeLayerIdx;
 
         const stampRes = stampClipboardOntoMap({
           map,
           clipboard: activeClip,
-          targetR: r,
-          targetC: c,
+          targetR: safeR,
+          targetC: safeC,
           mode,
           activeLayerIdx: activeLayer,
         });
