@@ -43,7 +43,6 @@ export const TileSelectorPanel: React.FC = () => {
 
   const handleBrushSelect = (gid: number) => {
     setActiveBrushTileId(gid);
-    setActiveBrushPattern(null);
     if (activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }
