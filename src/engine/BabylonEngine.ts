@@ -320,6 +320,7 @@ export class BabylonEngine {
   private eraseVoidMaterial?: StandardMaterial;
   /** Adjustable brush radius for multi-tile paint (1 = single tile). */
   private brushRadius: number = 1;
+  private brushShape: 'circle' | 'square' = 'circle';
   public activeBrushPattern: { w: number, h: number } | null = null;
   private activeBrushTileId: number = 0;
   private activeLayerIdx: number = 0;
@@ -2316,8 +2317,10 @@ private resolveTilePick(
         const h = this.currentMapHeight;
         for (let dr = -rad; dr <= rad; dr++) {
           for (let dc = -rad; dc <= rad; dc++) {
-            // Circular brush: only paint cells within euclidean radius.
-            if (dr * dr + dc * dc > rad * rad + rad) continue;
+            // Apply brush shape: circle (euclidean) or square (box)
+            if (this.brushShape === 'circle') {
+              if (dr * dr + dc * dc > rad * rad + rad) continue;
+            }
             const nr = resolved.r + dr;
             const nc = resolved.c + dc;
             if (nr >= 0 && nr < h && nc >= 0 && nc < w) {
@@ -2455,6 +2458,12 @@ private resolveTilePick(
     this.refreshBrushPreview();
   }
 
+  /** Set brush shape ('circle' | 'square'). */
+  public setBrushShape(shape: 'circle' | 'square') {
+    this.brushShape = shape;
+    this.refreshBrushPreview();
+  }
+
   public setActiveBrushTileId(gid: number) {
     this.activeBrushTileId = gid;
     this.activeBrushPattern = null;
@@ -2501,21 +2510,41 @@ private resolveTilePick(
     const altitudeHover = isLogicLayer ? 0.53 : SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR;
     const altitudeFootprint = isLogicLayer ? 0.52 : SPATIAL_LAYER_ALTITUDES.BRUSH_PREVIEW;
 
-    // 1. Single-cell hover outline (Thin sky-blue border on hovered center cell)
+    // 1. Single-cell hover outline (High-contrast dual reticle: thin black outer border + sky-blue core)
     const centerPosX = (c - w / 2) * s;
     const centerPosZ = (h / 2 - r) * s;
+
+    let borderMat = this.scene.getMaterialByName('brush_hover_border_mat') as StandardMaterial | null;
+    if (!borderMat) {
+      borderMat = new StandardMaterial('brush_hover_border_mat', this.scene);
+      borderMat.diffuseColor = new Color3(0.02, 0.02, 0.03); // Solid black outline
+      borderMat.emissiveColor = new Color3(0.01, 0.01, 0.02);
+      borderMat.alpha = 0.95;
+      borderMat.disableLighting = true;
+      borderMat.backFaceCulling = false;
+    }
 
     let hoverMat = this.scene.getMaterialByName('brush_hover_outline_mat') as StandardMaterial | null;
     if (!hoverMat) {
       hoverMat = new StandardMaterial('brush_hover_outline_mat', this.scene);
-      hoverMat.diffuseColor = new Color3(0.22, 0.74, 0.97); // #38bdf8 sky-400
-      hoverMat.emissiveColor = new Color3(0.1, 0.4, 0.6);
-      hoverMat.alpha = 0.85;
+      hoverMat.diffuseColor = new Color3(0.22, 0.85, 1.0); // Vibrant sky-cyan #38bdf8
+      hoverMat.emissiveColor = new Color3(0.12, 0.5, 0.85);
+      hoverMat.alpha = 0.88;
       hoverMat.disableLighting = true;
       hoverMat.backFaceCulling = false;
     }
 
-    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 0.96 }, this.scene);
+    // Outer black contrast border
+    const hoverBorder = MeshBuilder.CreatePlane('brush_hover_border', { size: s * 1.0 }, this.scene);
+    hoverBorder.rotation.x = Math.PI / 2;
+    hoverBorder.position = new Vector3(centerPosX, altitudeHover - 0.001, centerPosZ);
+    hoverBorder.material = borderMat;
+    hoverBorder.isPickable = false;
+    hoverBorder.parent = this.rootNode;
+    this.brushPreviewMeshes.push(hoverBorder);
+
+    // Inner vibrant cyan highlight
+    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 0.86 }, this.scene);
     hoverPlane.rotation.x = Math.PI / 2;
     hoverPlane.position = new Vector3(centerPosX, altitudeHover, centerPosZ);
     hoverPlane.material = hoverMat;
@@ -2526,10 +2555,19 @@ private resolveTilePick(
     // 3. Multi-tile pattern footprint
     if (this.activeBrushPattern) {
       const pat = this.activeBrushPattern;
-      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * pat.w, height: s * pat.h }, this.scene);
-      patPlane.rotation.x = Math.PI / 2;
       const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
       const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;
+
+      const patBorder = MeshBuilder.CreatePlane('brush_pat_border', { width: s * pat.w, height: s * pat.h }, this.scene);
+      patBorder.rotation.x = Math.PI / 2;
+      patBorder.position = new Vector3(patPosX, altitudeHover - 0.001, patPosZ);
+      patBorder.material = borderMat;
+      patBorder.isPickable = false;
+      patBorder.parent = this.rootNode;
+      this.brushPreviewMeshes.push(patBorder);
+
+      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: Math.max(0.1, s * pat.w - 0.1), height: Math.max(0.1, s * pat.h - 0.1) }, this.scene);
+      patPlane.rotation.x = Math.PI / 2;
       patPlane.position = new Vector3(patPosX, altitudeHover, patPosZ);
       
       let patMat = this.scene.getMaterialByName('brush_pattern_outline_mat') as StandardMaterial | null;
@@ -2537,7 +2575,7 @@ private resolveTilePick(
         patMat = new StandardMaterial('brush_pattern_outline_mat', this.scene);
         patMat.diffuseColor = new Color3(0.7, 0.2, 0.9);
         patMat.emissiveColor = new Color3(0.5, 0.1, 0.7);
-        patMat.alpha = 0.6;
+        patMat.alpha = 0.75;
         patMat.disableLighting = true;
         patMat.backFaceCulling = false;
       }
@@ -2575,7 +2613,9 @@ private resolveTilePick(
       for (let dr = -rad; dr <= rad; dr++) {
         for (let dc = -rad; dc <= rad; dc++) {
           if (dr === 0 && dc === 0) continue; // center already has hover outline
-          if (dr * dr + dc * dc > rad * rad + rad) continue;
+          if (this.brushShape === 'circle') {
+            if (dr * dr + dc * dc > rad * rad + rad) continue;
+          }
           const nr = r + dr;
           const nc = c + dc;
           if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
@@ -2583,7 +2623,16 @@ private resolveTilePick(
           const posX = (nc - w / 2) * s;
           const posZ = (h / 2 - nr) * s;
 
-          const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.92 }, this.scene);
+          // Black outline plane underneath each cell for high contrast
+          const borderPlane = MeshBuilder.CreatePlane(`brush_footprint_b_${nr}_${nc}`, { size: s * 0.98 }, this.scene);
+          borderPlane.rotation.x = Math.PI / 2;
+          borderPlane.position = new Vector3(posX, altitudeFootprint - 0.001, posZ);
+          borderPlane.material = borderMat;
+          borderPlane.isPickable = false;
+          borderPlane.parent = this.rootNode;
+          this.brushPreviewMeshes.push(borderPlane);
+
+          const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.86 }, this.scene);
           plane.rotation.x = Math.PI / 2;
           plane.position = new Vector3(posX, altitudeFootprint, posZ);
           plane.material = footMat;
