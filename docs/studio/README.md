@@ -14,7 +14,7 @@ The **Saints Studio** (`/studio`) is the built-in world creator and content mana
 2. **[Dual-Grid Tile Painting & Map Building](tile-painting-and-maps.md)**
    - Visual GID layers vs Logic Tag layer (`-1`).
    - Brush tools: Stamp, Rect, Fill, Eraser, Eyedropper, and Brush Radius.
-   - Tileset picker, GID bootstrap (GID 17 solid grass), and live remeshing.
+   - Tile Selector dock panel, GID bootstrap (GID 17 solid grass), and live remeshing.
 
 3. **[Entities, Spawners & NPCs](entities-and-npcs.md)**
    - Placing and editing interactive NPCs, quest givers, and merchant shops.

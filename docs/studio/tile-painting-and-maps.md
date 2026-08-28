@@ -41,5 +41,5 @@ Logic tags define functional tile properties at runtime:
 - **Rectangle (`R`):** Drag-and-drop bounding box fill for large rooms and fields.
 - **Flood Fill (`G`):** Replaces all connected identical tiles/tags.
 - **Eyedropper (`I`):** Click any cell in the viewport to immediately select its GID or Logic Tag.
-- **Tileset Picker (`TilesetPicker.tsx`):** Visual preview grid for choosing tiles from loaded sprite atlas sheets.
+- **Tile Selector Panel (`TileSelectorPanel.tsx` / `TilesetPicker.tsx`):** Standalone dockable window for choosing tiles from loaded sprite atlas sheets. Features dynamic window scaling, custom grid slicing (W x H), quick presets, and context-aware menus (Logic tags are only shown when in Logic Layer).
 - **Incremental Remeshing:** When edits are painted, only the affected chunk mesh (`tileset_mesh_*`) rebuilds in Babylon.js, maintaining real-time 60 FPS performance during painting.
