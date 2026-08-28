@@ -375,6 +375,8 @@ export default function TilesetPicker({
   const handleMouseDown = (e: React.MouseEvent<HTMLImageElement>) => {
     if (e.button !== 0) return; // Only left click
     if (!ts || imgError || !imgRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
     const rect = imgRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -922,7 +924,11 @@ export default function TilesetPicker({
                  />
                  {hoveredTile && (
                    <div
-                     className="pointer-events-none absolute border border-cyan-400/80 bg-cyan-400/20 transition-all duration-75"
+                     className={`pointer-events-none absolute border-2 transition-all duration-75 ${
+                       dragStart
+                         ? 'border-amber-400 bg-amber-400/30 z-20 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                         : 'border-cyan-400/80 bg-cyan-400/20'
+                     }`}
                      style={{
                        left: `${hoveredTile.leftPct}%`,
                        top: `${hoveredTile.topPct}%`,
@@ -931,7 +937,7 @@ export default function TilesetPicker({
                      }}
                    />
                  )}
-                 {selection && (
+                 {selection && !dragStart && (
                    <div
                      className="pointer-events-none absolute border-2 border-amber-400 bg-amber-400/20 shadow-[0_0_0_1px_rgba(0,0,0,0.75)] z-10"
                      style={{
