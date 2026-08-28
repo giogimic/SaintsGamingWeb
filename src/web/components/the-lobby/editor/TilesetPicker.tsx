@@ -56,7 +56,7 @@ interface TilesetPickerProps {
   tilesets: TilesetMeta[];
   activeBrushTileId: number;
   onBrushSelect: (gid: number) => void;
-  onBrushSelectPattern?: (pattern: { w: number; h: number; gids: number[][] }) => void;
+  onBrushSelectPattern?: (pattern: { w: number; h: number; gids: number[][] } | null) => void;
   activeLayerIdx: number;
   onLayerChange: (idx: number) => void;
   tileLayers: Array<{ name: string; grid: number[][] }>;
@@ -365,7 +365,7 @@ export default function TilesetPicker({
         if (spanW > 1 || spanH > 1) {
           onBrushSelectPattern({ w: spanW, h: spanH, gids });
         } else {
-          onBrushSelectPattern({ w: 1, h: 1, gids: [[topGid]] });
+          onBrushSelectPattern(null);
         }
       }
     },
@@ -388,6 +388,7 @@ export default function TilesetPicker({
     if (col < 0 || row < 0 || col >= ts.columns) return;
     if (nativeY >= imgRef.current.naturalHeight) return;
 
+    selectTileRegion(row, col, 1, 1);
     setDragStart({ r: row, c: col });
   };
 
@@ -901,8 +902,9 @@ export default function TilesetPicker({
                    onMouseDown={handleMouseDown}
                    onContextMenu={handleContextMenu}
                    onMouseLeave={() => {
-                     setHoveredTile(null);
-                     setDragStart(null);
+                     if (!dragStart) {
+                       setHoveredTile(null);
+                     }
                    }}
                    draggable={false}
                    onDragStart={(e) => e.preventDefault()}

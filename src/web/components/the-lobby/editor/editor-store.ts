@@ -831,7 +831,7 @@ export const useEditorStore = create<EditorState>()(
       activeBrushPattern: null,
       activeLogicTileId: 1,
       activeLayerIdx: 0,
-      brushRadius: 0,
+      brushRadius: 1,
       brushMode: 'paint',
       paintMode: 'stamp',
       setPaintMode: (mode: 'stamp' | 'paste') =>

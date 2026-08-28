@@ -2329,9 +2329,11 @@ private resolveTilePick(
 
     const updateBrushPreview = () => {
       if (!this.scene) {
-        this.lastHoveredR = -1;
-        this.lastHoveredC = -1;
-        this.clearBrushPreview();
+        if (this.lastHoveredR !== -1 || this.lastHoveredC !== -1) {
+          this.lastHoveredR = -1;
+          this.lastHoveredC = -1;
+          this.clearBrushPreview();
+        }
         if (this.canvas) this.canvas.style.cursor = 'default';
         return;
       }
@@ -2342,15 +2344,23 @@ private resolveTilePick(
       );
       const resolved = this.resolveTilePick(pickResult);
       if (!resolved) {
-        this.lastHoveredR = -1;
-        this.lastHoveredC = -1;
-        this.clearBrushPreview();
+        if (this.lastHoveredR !== -1 || this.lastHoveredC !== -1) {
+          this.lastHoveredR = -1;
+          this.lastHoveredC = -1;
+          this.clearBrushPreview();
+          if (options?.onTileLeave) options.onTileLeave();
+        }
         if (this.canvas) this.canvas.style.cursor = 'default';
-        if (options?.onTileLeave) options.onTileLeave();
         return;
       }
       // Hide standard mouse cursor in the paint & highlight area so the 3D reticle acts as cursor
-      if (this.canvas) this.canvas.style.cursor = 'none';
+      if (this.canvas && this.canvas.style.cursor !== 'none') this.canvas.style.cursor = 'none';
+
+      // High-performance memoization: only rebuild preview and dispatch hover events when the tile cell changes
+      if (this.lastHoveredR === resolved.r && this.lastHoveredC === resolved.c) {
+        return;
+      }
+
       this.lastHoveredR = resolved.r;
       this.lastHoveredC = resolved.c;
       this.renderBrushPreview(resolved.r, resolved.c);
