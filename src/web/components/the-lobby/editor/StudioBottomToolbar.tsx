@@ -108,7 +108,6 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const connectionStatus = useGameStore((s) => s.connectionStatus);
   const latencyMs = useGameStore((s) => s.latencyMs);
   const otherPlayers = useGameStore((s) => s.otherPlayers);
-  const showToast = useGameStore((s) => s.showToast);
 
   const [zoomPercent, setZoomPercent] = useState<number>(100);
   const [atlasInspectorOpen, setAtlasInspectorOpen] = useState<boolean>(false);
