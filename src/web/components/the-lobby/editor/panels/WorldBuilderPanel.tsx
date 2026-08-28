@@ -23,8 +23,7 @@ import {
   Plus
 } from 'lucide-react';
 import { useEditorStore } from '../editor-store';
-import TilesetPicker from '../TilesetPicker';
-import { LogicTagPalette } from '../LogicTagPalette';
+
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { STUDIO_TRIGGER_SAVE_MAP_EVENT } from '@/shared/game/studioEvents';
 import { getAdjacentAtlasNeighbors, type NeighborNodes } from '@/shared/game/atlas/spatialAtlas';
@@ -44,7 +43,6 @@ export const WorldBuilderPanel: React.FC = () => {
     neighbors: true,
     encounters: true,
     layers: true,
-    palette: true,
   });
 
   const toggleSection = (key: string) => {
@@ -683,48 +681,6 @@ export const WorldBuilderPanel: React.FC = () => {
         )}
       </div>
 
-      {/* SECTION 4: Paint Palette */}
-      <div className="bg-[#0b1320]/80 border border-[#806f47]/40 rounded-xl overflow-hidden shadow-lg">
-        <button
-          type="button"
-          onClick={() => toggleSection('palette')}
-          className="w-full flex items-center justify-between p-2.5 bg-black/50/40 text-[#cbb26a] font-bold text-left hover:bg-black/50/20 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-1.5">
-            <Grid className="w-4 h-4 text-amber-400" />
-            {activeLayerIdx === -1 ? 'Logic Tag Palette' : 'Tileset Brush Palette'}
-          </span>
-          {openSections.palette ? (
-            <ChevronDown className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5" />
-          )}
-        </button>
-
-        {openSections.palette && (
-          <div className="p-3 border-t border-[#806f47]/20 bg-[#050b14]/50">
-            {activeLayerIdx === -1 ? (
-              <LogicTagPalette />
-            ) : (
-              <TilesetPicker
-                tilesets={currentMapData.tilesets || []}
-                activeBrushTileId={brushTileId}
-                onBrushSelect={handleBrushSelect}
-                onBrushSelectPattern={handleBrushSelectPattern}
-                activeLayerIdx={activeLayerIdx}
-                onLayerChange={(idx) => setActiveLayerIdx(idx)}
-                tileLayers={currentMapData.tileLayers || []}
-                onAddLayer={handleAddLayer}
-                onDeleteLayer={handleDeleteLayer}
-                onClearLayer={handleClearLayer}
-                onFillLayer={handleFillLayer}
-                onSetDefaultGroundGid={handleSetDefaultGroundGid}
-                onUpdateTilesets={handleUpdateTilesets}
-              />
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
