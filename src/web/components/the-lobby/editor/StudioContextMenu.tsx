@@ -289,7 +289,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     const next = {
       ...activeMapData,
       defaultSpawn: { x: tileC, y: tileR },
-      spawnPoint: { x: tileC, y: tileR },
+      spawnPoint: { x: 6, y: 2 }, // Default safe spawn, user should edit in properties
     };
     useGameStore.getState().setActiveMapData(next);
     useEditorStore.getState().markMapDirty();
@@ -307,7 +307,7 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
       id: `gate_${tileC}_${tileR}`,
       position: { x: tileC, y: tileR },
       targetMapId: gatePreset.targetMapId,
-      spawnPoint: { x: tileC, y: tileR },
+      spawnPoint: { x: 6, y: 2 }, // Default safe spawn, user should edit in properties
       category: gatePreset.category,
     });
     const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>

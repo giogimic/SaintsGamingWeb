@@ -234,7 +234,7 @@ export default function TilesetPicker({
     let nextFirstGid = 1;
     if (tilesets.length > 0) {
       const last = tilesets[tilesets.length - 1];
-      const estimatedCount = (last.columns || 8) * 32;
+      const estimatedCount = 65536;
       nextFirstGid = last.firstgid + estimatedCount;
     }
 
