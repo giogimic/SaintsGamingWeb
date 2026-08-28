@@ -296,9 +296,20 @@ export class BabylonEngine {
   private editorPanLastClientY: number = 0;
   private editorSpaceHeld: boolean = false;
   private editorCameraBookmark: { x: number; z: number; ortho: number } | null = null;
+  public isFreeCam: boolean = false;
+  private cameraYaw: number = 0;
+  private cameraPitch: number = Math.PI / 4;
+  private cameraDistance: number = 20;
   private onEditorPointerDown = (e: PointerEvent) => this.handleEditorPointerDown(e);
   private onEditorPointerMove = (e: PointerEvent) => this.handleEditorPointerMove(e);
   private onEditorPointerUp = (e: PointerEvent) => this.handleEditorPointerUp(e);
+  private onEditorWheel = (e: WheelEvent) => {
+    if (!this.editorCameraMode) return;
+    if (this.isFreeCam) {
+      e.preventDefault();
+      this.zoomFreeCam(e.deltaY);
+    }
+  };
   private onEditorKeyDown = (e: KeyboardEvent) => {
     if (e.code === 'Space' && !(e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) {
       e.preventDefault();
@@ -867,6 +878,7 @@ export class BabylonEngine {
       };
       this.canvas.addEventListener('pointerdown', this.onEditorPointerDown);
       this.canvas.addEventListener('auxclick', this.onEditorAuxClick);
+      this.canvas.addEventListener('wheel', this.onEditorWheel, { passive: false });
       window.addEventListener('pointermove', this.onEditorPointerMove);
       window.addEventListener('pointerup', this.onEditorPointerUp);
       window.addEventListener('keydown', this.onEditorKeyDown);
@@ -879,6 +891,7 @@ export class BabylonEngine {
       this.setEditorMapBordersVisible(false);
       this.canvas.removeEventListener('pointerdown', this.onEditorPointerDown);
       this.canvas.removeEventListener('auxclick', this.onEditorAuxClick);
+      this.canvas.removeEventListener('wheel', this.onEditorWheel);
       window.removeEventListener('pointermove', this.onEditorPointerMove);
       window.removeEventListener('pointerup', this.onEditorPointerUp);
       window.removeEventListener('keydown', this.onEditorKeyDown);
@@ -905,11 +918,64 @@ export class BabylonEngine {
     };
   }
 
+  public setFreeCam(enabled: boolean) {
+    this.isFreeCam = enabled;
+    if (enabled) {
+      this.camera.mode = FreeCamera.PERSPECTIVE_CAMERA;
+      this.camera.fov = 0.8;
+      this.updateFreeCamPosition();
+    } else {
+      this.camera.mode = FreeCamera.ORTHOGRAPHIC_CAMERA;
+      this.cameraYaw = 0;
+      this.cameraPitch = Math.PI / 4;
+      this.updateCameraAspect(this.camera.orthoTop || 10);
+      this.camera.position = new Vector3(this.cameraTargetX, 14, this.cameraTargetZ - 14);
+      this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
+      this.cameraSnapped = true;
+    }
+  }
+
+  public updateFreeCamPosition() {
+    const cosP = Math.cos(this.cameraPitch);
+    const sinP = Math.sin(this.cameraPitch);
+    const sinY = Math.sin(this.cameraYaw);
+    const cosY = Math.cos(this.cameraYaw);
+    const posX = this.cameraTargetX + this.cameraDistance * cosP * sinY;
+    const posY = Math.max(1.5, this.cameraDistance * sinP);
+    const posZ = this.cameraTargetZ - this.cameraDistance * cosP * cosY;
+    this.camera.position = new Vector3(posX, posY, posZ);
+    this.camera.setTarget(new Vector3(this.cameraTargetX, 0, this.cameraTargetZ));
+    this.cameraSnapped = true;
+  }
+
+  public rotateFreeCam(dxPx: number, dyPx: number) {
+    this.cameraYaw += dxPx * 0.006;
+    this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch - dyPx * 0.006));
+    this.updateFreeCamPosition();
+  }
+
+  public panFreeCamByScreenDelta(dxPx: number, dyPx: number) {
+    const sinY = Math.sin(this.cameraYaw);
+    const cosY = Math.cos(this.cameraYaw);
+    const speed = (this.cameraDistance / 20) * 0.035;
+    const moveX = (-dxPx * cosY + dyPx * sinY) * speed;
+    const moveZ = (-dxPx * sinY - dyPx * cosY) * speed;
+    this.cameraTargetX += moveX;
+    this.cameraTargetZ += moveZ;
+    this.updateFreeCamPosition();
+  }
+
+  public zoomFreeCam(deltaY: number) {
+    this.cameraDistance = Math.max(4, Math.min(120, this.cameraDistance + (deltaY > 0 ? 2 : -2)));
+    this.updateFreeCamPosition();
+  }
+
   private handleEditorPointerDown(e: PointerEvent) {
     if (!this.editorCameraMode) return;
     const middle = e.button === 1;
+    const right = e.button === 2 && this.isFreeCam;
     const spaceLeft = e.button === 0 && this.editorSpaceHeld;
-    if (!middle && !spaceLeft) return;
+    if (!middle && !right && !spaceLeft) return;
     e.preventDefault();
     this.editorPanPointerId = e.pointerId;
     this.editorPanLastClientX = e.clientX;
@@ -927,7 +993,17 @@ export class BabylonEngine {
     const dy = e.clientY - this.editorPanLastClientY;
     this.editorPanLastClientX = e.clientX;
     this.editorPanLastClientY = e.clientY;
-    this.panEditorCameraByScreenDelta(dx, dy);
+
+    if (this.isFreeCam) {
+      const isPan = e.shiftKey || this.editorSpaceHeld;
+      if (isPan) {
+        this.panFreeCamByScreenDelta(dx, dy);
+      } else {
+        this.rotateFreeCam(dx, dy);
+      }
+    } else {
+      this.panEditorCameraByScreenDelta(dx, dy);
+    }
   }
 
   private handleEditorPointerUp(e: PointerEvent) {
@@ -2492,10 +2568,74 @@ private resolveTilePick(
     }
   }
 
+  private createModernHudReticleMaterial(name: string, strokeColor: string, glassColor: string, cornerColor: string = '#ffffff'): StandardMaterial {
+    let mat = this.scene.getMaterialByName(name) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(name, this.scene);
+    const dt = new DynamicTexture(`${name}_tex`, { width: 256, height: 256 }, this.scene, false);
+    const ctx = dt.getContext();
+
+    ctx.clearRect(0, 0, 256, 256);
+
+    // Subtle ambient glass fill with smooth radial glow
+    const grad = ctx.createRadialGradient(128, 128, 10, 128, 128, 120);
+    grad.addColorStop(0, glassColor);
+    grad.addColorStop(0.75, glassColor.replace('0.25', '0.08').replace('0.3', '0.08'));
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(16, 16, 224, 224);
+
+    // Outer subtle contrast drop shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+    ctx.shadowBlur = 8;
+
+    // Thin precision neon border
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(20, 20, 216, 216);
+
+    // Glowing corner L-brackets
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = strokeColor;
+    ctx.strokeStyle = cornerColor;
+    ctx.lineWidth = 5;
+    const ctx2d = ctx as unknown as CanvasRenderingContext2D;
+    ctx2d.lineCap = 'round';
+    ctx2d.lineJoin = 'round';
+    const cLen = 40;
+    // Top-Left
+    ctx.beginPath();
+    ctx.moveTo(18, 18 + cLen); ctx.lineTo(18, 18); ctx.lineTo(18 + cLen, 18);
+    // Top-Right
+    ctx.moveTo(238 - cLen, 18); ctx.lineTo(238, 18); ctx.lineTo(238, 18 + cLen);
+    // Bottom-Right
+    ctx.moveTo(238, 238 - cLen); ctx.lineTo(238, 238); ctx.lineTo(238 - cLen, 238);
+    // Bottom-Left
+    ctx.moveTo(18 + cLen, 238); ctx.lineTo(18, 238); ctx.lineTo(18, 238 - cLen);
+    ctx.stroke();
+
+    // Center precision pip
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(128, 128, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
   /**
-   * Render single clear highlight system:
-   * - Hover: Thin crisp sky-blue outline on hovered center cell (Layer Altitude 0.06).
-   * - Paint footprint: Tinted grid for multi-cell brush radius > 1 (Layer Altitude 0.05).
+   * Render hover reticle and dynamic brush footprints on the Babylon pick plane.
+   * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
    */
   public renderBrushPreview(r: number, c: number) {
     this.clearBrushPreview();
@@ -2510,41 +2650,18 @@ private resolveTilePick(
     const altitudeHover = isLogicLayer ? 0.53 : SPATIAL_LAYER_ALTITUDES.HOVER_INDICATOR;
     const altitudeFootprint = isLogicLayer ? 0.52 : SPATIAL_LAYER_ALTITUDES.BRUSH_PREVIEW;
 
-    // 1. Single-cell hover outline (High-contrast dual reticle: thin black outer border + sky-blue core)
     const centerPosX = (c - w / 2) * s;
     const centerPosZ = (h / 2 - r) * s;
 
-    let borderMat = this.scene.getMaterialByName('brush_hover_border_mat') as StandardMaterial | null;
-    if (!borderMat) {
-      borderMat = new StandardMaterial('brush_hover_border_mat', this.scene);
-      borderMat.diffuseColor = new Color3(0.02, 0.02, 0.03); // Solid black outline
-      borderMat.emissiveColor = new Color3(0.01, 0.01, 0.02);
-      borderMat.alpha = 0.95;
-      borderMat.disableLighting = true;
-      borderMat.backFaceCulling = false;
-    }
+    // 1. Single-cell hover reticle (Sleek Cyber Glass HUD bracket)
+    const hoverMat = this.createModernHudReticleMaterial(
+      isLogicLayer ? 'hud_reticle_logic' : 'hud_reticle_visual',
+      isLogicLayer ? '#06b6d4' : '#38bdf8',
+      isLogicLayer ? 'rgba(6, 182, 212, 0.25)' : 'rgba(56, 189, 248, 0.25)',
+      '#ffffff'
+    );
 
-    let hoverMat = this.scene.getMaterialByName('brush_hover_outline_mat') as StandardMaterial | null;
-    if (!hoverMat) {
-      hoverMat = new StandardMaterial('brush_hover_outline_mat', this.scene);
-      hoverMat.diffuseColor = new Color3(0.22, 0.85, 1.0); // Vibrant sky-cyan #38bdf8
-      hoverMat.emissiveColor = new Color3(0.12, 0.5, 0.85);
-      hoverMat.alpha = 0.88;
-      hoverMat.disableLighting = true;
-      hoverMat.backFaceCulling = false;
-    }
-
-    // Outer black contrast border
-    const hoverBorder = MeshBuilder.CreatePlane('brush_hover_border', { size: s * 1.0 }, this.scene);
-    hoverBorder.rotation.x = Math.PI / 2;
-    hoverBorder.position = new Vector3(centerPosX, altitudeHover - 0.001, centerPosZ);
-    hoverBorder.material = borderMat;
-    hoverBorder.isPickable = false;
-    hoverBorder.parent = this.rootNode;
-    this.brushPreviewMeshes.push(hoverBorder);
-
-    // Inner vibrant cyan highlight
-    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 0.86 }, this.scene);
+    const hoverPlane = MeshBuilder.CreatePlane('brush_hover_center', { size: s * 1.02 }, this.scene);
     hoverPlane.rotation.x = Math.PI / 2;
     hoverPlane.position = new Vector3(centerPosX, altitudeHover, centerPosZ);
     hoverPlane.material = hoverMat;
@@ -2558,27 +2675,16 @@ private resolveTilePick(
       const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
       const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;
 
-      const patBorder = MeshBuilder.CreatePlane('brush_pat_border', { width: s * pat.w, height: s * pat.h }, this.scene);
-      patBorder.rotation.x = Math.PI / 2;
-      patBorder.position = new Vector3(patPosX, altitudeHover - 0.001, patPosZ);
-      patBorder.material = borderMat;
-      patBorder.isPickable = false;
-      patBorder.parent = this.rootNode;
-      this.brushPreviewMeshes.push(patBorder);
+      const patMat = this.createModernHudReticleMaterial(
+        'hud_reticle_pattern',
+        '#c084fc',
+        'rgba(192, 132, 252, 0.22)',
+        '#fdf4ff'
+      );
 
-      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: Math.max(0.1, s * pat.w - 0.1), height: Math.max(0.1, s * pat.h - 0.1) }, this.scene);
+      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * pat.w * 1.01, height: s * pat.h * 1.01 }, this.scene);
       patPlane.rotation.x = Math.PI / 2;
       patPlane.position = new Vector3(patPosX, altitudeHover, patPosZ);
-      
-      let patMat = this.scene.getMaterialByName('brush_pattern_outline_mat') as StandardMaterial | null;
-      if (!patMat) {
-        patMat = new StandardMaterial('brush_pattern_outline_mat', this.scene);
-        patMat.diffuseColor = new Color3(0.7, 0.2, 0.9);
-        patMat.emissiveColor = new Color3(0.5, 0.1, 0.7);
-        patMat.alpha = 0.75;
-        patMat.disableLighting = true;
-        patMat.backFaceCulling = false;
-      }
       patPlane.material = patMat;
       patPlane.isPickable = false;
       patPlane.parent = this.rootNode;
@@ -2590,25 +2696,9 @@ private resolveTilePick(
       const rad = this.brushRadius - 1;
       const isErase = this.brushMode === 'erase';
       const isFill = this.brushMode === 'fill';
-      const matKey = `brush_footprint_mat_${this.brushMode}`;
-
-      let footMat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
-      if (!footMat) {
-        footMat = new StandardMaterial(matKey, this.scene);
-        if (isErase) {
-          footMat.diffuseColor = new Color3(1.0, 0.3, 0.2); // Rose/red
-          footMat.emissiveColor = new Color3(0.5, 0.1, 0.05);
-        } else if (isFill) {
-          footMat.diffuseColor = new Color3(1.0, 0.8, 0.2); // Amber
-          footMat.emissiveColor = new Color3(0.5, 0.35, 0.05);
-        } else {
-          footMat.diffuseColor = new Color3(0.2, 0.9, 0.5); // Emerald/mint
-          footMat.emissiveColor = new Color3(0.1, 0.4, 0.2);
-        }
-        footMat.alpha = 0.35;
-        footMat.disableLighting = true;
-        footMat.backFaceCulling = false;
-      }
+      const stroke = isErase ? '#f43f5e' : isFill ? '#f59e0b' : '#10b981';
+      const glass = isErase ? 'rgba(244, 63, 94, 0.25)' : isFill ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)';
+      const footMat = this.createModernHudReticleMaterial(`hud_foot_${this.brushMode}`, stroke, glass, stroke);
 
       for (let dr = -rad; dr <= rad; dr++) {
         for (let dc = -rad; dc <= rad; dc++) {
@@ -2623,16 +2713,7 @@ private resolveTilePick(
           const posX = (nc - w / 2) * s;
           const posZ = (h / 2 - nr) * s;
 
-          // Black outline plane underneath each cell for high contrast
-          const borderPlane = MeshBuilder.CreatePlane(`brush_footprint_b_${nr}_${nc}`, { size: s * 0.98 }, this.scene);
-          borderPlane.rotation.x = Math.PI / 2;
-          borderPlane.position = new Vector3(posX, altitudeFootprint - 0.001, posZ);
-          borderPlane.material = borderMat;
-          borderPlane.isPickable = false;
-          borderPlane.parent = this.rootNode;
-          this.brushPreviewMeshes.push(borderPlane);
-
-          const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.86 }, this.scene);
+          const plane = MeshBuilder.CreatePlane(`brush_footprint_${nr}_${nc}`, { size: s * 0.98 }, this.scene);
           plane.rotation.x = Math.PI / 2;
           plane.position = new Vector3(posX, altitudeFootprint, posZ);
           plane.material = footMat;
