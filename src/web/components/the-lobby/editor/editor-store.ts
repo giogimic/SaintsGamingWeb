@@ -316,7 +316,7 @@ interface EditorState {
   /** Force refetch data across modules. */
   incrementDataVersion: () => void;
 
-  setActiveBrushTileId: (id: number) => void;
+  setActiveBrushTileId: (id: number, keepPattern?: boolean) => void;
   setActiveBrushPattern: (pattern: BrushPattern | null) => void;
   setActiveLogicTileId: (id: number) => void;
   setActiveLayerIdx: (idx: number) => void;
@@ -1170,14 +1170,23 @@ export const useEditorStore = create<EditorState>()(
           state.dataVersion += 1;
         }),
 
-      setActiveBrushTileId: (id) =>
+      setActiveBrushTileId: (id, keepPattern) =>
         set((state) => {
           state.activeBrushTileId = id;
-          state.activeBrushPattern = null;
+          if (!keepPattern) {
+            state.activeBrushPattern = null;
+            state.prefabStampMode = '1tile';
+          }
         }),
       setActiveBrushPattern: (pattern) =>
         set((state) => {
           state.activeBrushPattern = pattern;
+          if (pattern && pattern.gids?.[0]?.[0] !== undefined) {
+            state.activeBrushTileId = pattern.gids[0][0];
+            state.prefabStampMode = (pattern.w > 1 || pattern.h > 1) ? 'footprint' : '1tile';
+          } else if (!pattern) {
+            state.prefabStampMode = '1tile';
+          }
         }),
       setActiveLogicTileId: (id) =>
         set((state) => {
@@ -1187,18 +1196,39 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           const prev = state.activeLayerIdx;
           state.activeLayerIdx = idx;
-          // Switching Logic ↔ visual: reset brushes so a logic id is not painted
-          // as a visual GID (stair fragment) and vice versa.
-          if (prev === -1 && idx >= 0) {
-            // Entering a visual layer from Logic — prefer solid grass.
-            if (state.activeBrushTileId <= 12) {
-              state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
-            }
-          } else if (prev >= 0 && idx === -1) {
-            // Entering Logic from visual — keep registered wall default if brush was a huge GID.
-            if (state.activeLogicTileId > 50) {
+
+          if (idx === -1) {
+            // Switching to Logic Mode: open Logic Painter, close Tile Selector
+            state.studioMode = 'logic';
+            if (state.activeLogicTileId > 50 || state.activeLogicTileId <= 0) {
               state.activeLogicTileId = 1;
             }
+            if (state.panels.logic) {
+              state.panels.logic.isOpen = true;
+              state.highestZIndex += 1;
+              state.panels.logic.zIndex = state.highestZIndex;
+              state.activePanel = 'logic';
+            }
+            if (state.panels.tileset) {
+              state.panels.tileset.isOpen = false;
+            }
+            state.brushMode = 'paint';
+          } else {
+            // Switching to Visual Paint Mode: open Tile Selector, close Logic Painter
+            state.studioMode = 'develop';
+            if (prev === -1 && state.activeBrushTileId <= 12) {
+              state.activeBrushTileId = DEFAULT_STUDIO_GROUND_GID;
+            }
+            if (state.panels.tileset) {
+              state.panels.tileset.isOpen = true;
+              state.highestZIndex += 1;
+              state.panels.tileset.zIndex = state.highestZIndex;
+              state.activePanel = 'tileset';
+            }
+            if (state.panels.logic) {
+              state.panels.logic.isOpen = false;
+            }
+            state.brushMode = 'paint';
           }
         }),
       setClickedTile: (tile) =>

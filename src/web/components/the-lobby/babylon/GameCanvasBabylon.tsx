@@ -1818,15 +1818,19 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         }
         if (state.activeBrushTileId !== prevState.activeBrushTileId) {
           engine.setActiveBrushTileId(state.activeBrushTileId);
+          engine.refreshBrushPreview();
         }
         if (state.activeBrushPattern !== prevState.activeBrushPattern) {
           engine.setActiveBrushPattern(state.activeBrushPattern);
+          engine.refreshBrushPreview();
         }
         if (state.prefabStampMode !== prevState.prefabStampMode) {
           engine.setPrefabStampMode(state.prefabStampMode);
+          engine.refreshBrushPreview();
         }
         if (state.activeLayerIdx !== prevState.activeLayerIdx) {
           engine.setActiveLayerIdx(state.activeLayerIdx);
+          engine.refreshBrushPreview();
         }
         if (state.isStudioFreeCam !== prevState.isStudioFreeCam) {
           engine.setFreeCam(state.isStudioFreeCam);

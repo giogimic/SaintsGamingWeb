@@ -43,20 +43,18 @@ export const TileSelectorPanel: React.FC = () => {
 
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid);
+    setActiveBrushPattern(null);
     if (useEditorStore.getState().activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }
-  }, [setActiveBrushTileId, setActiveLayerIdx]);
+  }, [setActiveBrushTileId, setActiveBrushPattern, setActiveLayerIdx]);
 
   const handleBrushSelectPattern = React.useCallback((pattern: { w: number; h: number; gids: number[][] } | null) => {
     setActiveBrushPattern(pattern);
-    if (pattern && pattern.gids?.[0]?.[0] !== undefined) {
-      setActiveBrushTileId(pattern.gids[0][0]);
-    }
     if (useEditorStore.getState().activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }
-  }, [setActiveBrushPattern, setActiveBrushTileId, setActiveLayerIdx]);
+  }, [setActiveBrushPattern, setActiveLayerIdx]);
 
   const handleAddLayer = () => {
     const width = currentMap.width || currentMap.grid?.[0]?.length || 24;
@@ -136,7 +134,7 @@ export const TileSelectorPanel: React.FC = () => {
         </div>
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <Layers className="h-3 w-3" />
-          <span>Layer: {activeLayerIdx === -1 ? 'Logic (−1)' : activeLayerIdx}</span>
+          <span>Layer: {activeLayerIdx === -1 ? 'Collision Layer' : `Layer ${activeLayerIdx}`}</span>
         </div>
       </div>
 
@@ -146,7 +144,7 @@ export const TileSelectorPanel: React.FC = () => {
         onBrushSelect={handleBrushSelect}
         onBrushSelectPattern={handleBrushSelectPattern}
         activeLayerIdx={activeLayerIdx}
-        onLayerChange={(idx) => setActiveLayerIdx(idx)}
+        onLayerChange={(idx: number) => setActiveLayerIdx(idx)}
         tileLayers={tileLayers}
         onAddLayer={handleAddLayer}
         onDeleteLayer={handleDeleteLayer}

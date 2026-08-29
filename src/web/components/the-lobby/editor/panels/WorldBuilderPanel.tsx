@@ -615,31 +615,42 @@ export const WorldBuilderPanel: React.FC = () => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setActiveLayerIdx(-1)}
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  setActiveLayerIdx(-1);
+                  showToast('Switched to Logic Layer — Opened Logic Painter');
+                }}
                 className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
                   activeLayerIdx === -1
-                    ? 'bg-rose-950/60 border-rose-400 text-rose-200 shadow-md'
+                    ? 'bg-rose-950/60 border-rose-400 text-rose-200 shadow-md ring-1 ring-rose-400'
                     : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-white'
                 }`}
+                title="Switch to Logic Mode (Collision, Triggers & Rules)"
               >
                 <Shield className="w-4 h-4 text-rose-400" />
                 <span className="font-bold text-[10px]">Logic (−1)</span>
-                <span className="text-[8px] text-slate-500">Collision & Gates</span>
+                <span className="text-[8px] text-slate-400 font-semibold">Logic Painter Tool</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveLayerIdx(0)}
+                onClick={() => {
+                  soundSynth?.playSelectSound?.();
+                  const targetIdx = activeLayerIdx >= 0 ? activeLayerIdx : 0;
+                  setActiveLayerIdx(targetIdx);
+                  showToast(`Switched to Layer ${targetIdx} — Opened Tile Selector`);
+                }}
                 className={`p-2 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
                   activeLayerIdx >= 0
-                    ? 'bg-purple-950/60 border-purple-400 text-purple-200 shadow-md'
+                    ? 'bg-purple-950/60 border-purple-400 text-purple-200 shadow-md ring-1 ring-purple-400'
                     : 'bg-black/50/40 border-[#806f47]/20 text-slate-400 hover:text-white'
                 }`}
+                title="Switch to Visual Paint Mode (Tile Selector)"
               >
                 <Layers className="w-4 h-4 text-purple-400" />
                 <span className="font-bold text-[10px]">Visual Layer</span>
-                <span className="text-[8px] text-slate-500">
-                  {activeLayerIdx >= 0 ? `Layer ${activeLayerIdx}` : 'Select Layer'}
+                <span className="text-[8px] text-slate-400 font-semibold">
+                  {activeLayerIdx >= 0 ? `Layer ${activeLayerIdx} (Tile Selector)` : 'Tile Selector Tool'}
                 </span>
               </button>
             </div>
@@ -648,7 +659,7 @@ export const WorldBuilderPanel: React.FC = () => {
             {activeLayerIdx >= 0 && (
               <div className="pt-2 border-t border-[#806f47]/20/80 space-y-1.5">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Layer Stack:</span>
+                  <span className="text-slate-400 font-bold">Layer Stack:</span>
                   <button
                     type="button"
                     onClick={handleAddLayer}
@@ -663,10 +674,14 @@ export const WorldBuilderPanel: React.FC = () => {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setActiveLayerIdx(idx)}
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setActiveLayerIdx(idx);
+                          showToast(`Active: ${layer.name || `Layer ${idx}`} — Tile Selector`);
+                        }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                           activeLayerIdx === idx
-                            ? 'bg-purple-600 text-white border-purple-400 shadow-sm'
+                            ? 'bg-purple-600 text-white border-purple-400 shadow-sm ring-1 ring-purple-300'
                             : 'bg-black/50/40 text-slate-400 border-[#806f47]/20 hover:text-white'
                         }`}
                       >

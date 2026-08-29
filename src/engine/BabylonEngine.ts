@@ -2649,6 +2649,78 @@ private resolveTilePick(
     return mat;
   }
 
+  private createMultiTileReticleMaterial(patW: number, patH: number): StandardMaterial {
+    const matName = `hud_reticle_pat_${patW}x${patH}`;
+    let mat = this.scene.getMaterialByName(matName) as StandardMaterial | null;
+    if (mat) return mat;
+
+    mat = new StandardMaterial(matName, this.scene);
+    const texW = Math.min(1024, Math.max(256, patW * 64));
+    const texH = Math.min(1024, Math.max(256, patH * 64));
+    const dt = new DynamicTexture(`${matName}_tex`, { width: texW, height: texH }, this.scene, false);
+    const ctx = dt.getContext();
+
+    ctx.clearRect(0, 0, texW, texH);
+
+    // Subtle violet background glass fill
+    ctx.fillStyle = 'rgba(192, 132, 252, 0.18)';
+    ctx.fillRect(8, 8, texW - 16, texH - 16);
+
+    // Internal cell grid lines
+    ctx.strokeStyle = 'rgba(216, 180, 254, 0.35)';
+    ctx.lineWidth = 1.5;
+    for (let c = 1; c < patW; c++) {
+      const x = (c / patW) * texW;
+      ctx.beginPath();
+      ctx.moveTo(x, 8);
+      ctx.lineTo(x, texH - 8);
+      ctx.stroke();
+    }
+    for (let r = 1; r < patH; r++) {
+      const y = (r / patH) * texH;
+      ctx.beginPath();
+      ctx.moveTo(8, y);
+      ctx.lineTo(texW - 8, y);
+      ctx.stroke();
+    }
+
+    // Outer neon border
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 3.5;
+    ctx.strokeRect(8, 8, texW - 16, texH - 16);
+
+    // Corner L-brackets
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = '#c084fc';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 5;
+    const ctx2d = ctx as unknown as CanvasRenderingContext2D;
+    ctx2d.lineCap = 'round';
+    ctx2d.lineJoin = 'round';
+    const cLen = Math.min(32, Math.min(texW, texH) * 0.25);
+
+    // Top-Left
+    ctx.beginPath();
+    ctx.moveTo(6, 6 + cLen); ctx.lineTo(6, 6); ctx.lineTo(6 + cLen, 6);
+    // Top-Right
+    ctx.moveTo(texW - 6 - cLen, 6); ctx.lineTo(texW - 6, 6); ctx.lineTo(texW - 6, 6 + cLen);
+    // Bottom-Right
+    ctx.moveTo(texW - 6, texH - 6 - cLen); ctx.lineTo(texW - 6, texH - 6); ctx.lineTo(texW - 6 - cLen, texH - 6);
+    // Bottom-Left
+    ctx.moveTo(6 + cLen, texH - 6); ctx.lineTo(6, texH - 6); ctx.lineTo(6, texH - 6 - cLen);
+    ctx.stroke();
+
+    dt.hasAlpha = true;
+    dt.update();
+
+    mat.diffuseTexture = dt;
+    mat.emissiveColor = new Color3(1, 1, 1);
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    return mat;
+  }
+
   /**
    * Render hover reticle and dynamic brush footprints on the Babylon pick plane.
    * With brushRadius >= 1, renders in-world 3D hover reticle (1x1 or circular/square multi-tile).
@@ -2670,17 +2742,12 @@ private resolveTilePick(
     const centerPosZ = (h / 2 - r) * s;
 
     // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern and in footprint mode)
-    if (this.activeBrushPattern && this.prefabStampMode !== '1tile') {
+    if (this.activeBrushPattern && this.prefabStampMode !== '1tile' && (this.activeBrushPattern.w > 1 || this.activeBrushPattern.h > 1)) {
       const pat = this.activeBrushPattern;
       const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
       const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;
 
-      const patMat = this.createModernHudReticleMaterial(
-        'hud_reticle_pattern',
-        '#c084fc',
-        'rgba(192, 132, 252, 0.22)',
-        '#fdf4ff'
-      );
+      const patMat = this.createMultiTileReticleMaterial(pat.w, pat.h);
 
       const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * pat.w * 1.01, height: s * pat.h * 1.01 }, this.scene);
       patPlane.rotation.x = Math.PI / 2;
