@@ -43,11 +43,10 @@ export const TileSelectorPanel: React.FC = () => {
 
   const handleBrushSelect = React.useCallback((gid: number) => {
     setActiveBrushTileId(gid);
-    setActiveBrushPattern(null);
     if (useEditorStore.getState().activeLayerIdx === -1) {
       setActiveLayerIdx(0);
     }
-  }, [setActiveBrushTileId, setActiveBrushPattern, setActiveLayerIdx]);
+  }, [setActiveBrushTileId, setActiveLayerIdx]);
 
   const handleBrushSelectPattern = React.useCallback((pattern: { w: number; h: number; gids: number[][] } | null) => {
     setActiveBrushPattern(pattern);
