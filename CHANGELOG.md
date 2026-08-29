@@ -1,3 +1,8 @@
+# 2.1.498
+- **High-Contrast Text Readability & Crisp Black Outline**: Added global crisp black text outline and readability shadows in `app/globals.css` across all headings (`h1`–`h6`), body paragraphs (`p`), spans, links, labels, and lists. Text now renders with maximum clarity and contrast across all lighter regions of the ambient tropical sunset background, glowing sun orb, and dynamic atmospheric overlays.
+- **Gradient Text Drop-Shadow & Exclusion Filters**: Enhanced `.sg-text-gradient` with multi-stop dark drop-shadow filters preserving background-clip shine while ensuring clean legibility against bright backgrounds. Excluded form inputs, textareas, and code blocks from text shadowing.
+- **Text Outline Utilities**: Introduced reusable `.sg-text-outline` (thin crisp 4-directional outline), `.sg-text-outline-thick`, and `.sg-text-shadow` utility classes.
+
 # 2.1.497
 - **Tile Selection Model & Drag Commitment Fix**: Added `dragBoundsRef` and window-level pointer capture in `TilesetPicker.tsx`. Dragging across tiles now reliably commits the full multi-tile rectangular selection region (`w × h`) upon mouse release without falling victim to stale React closures or missed pointer up events.
 - **Decoupled Selection from Placement (Operation A vs Operation B)**: Unified multi-tile pattern placement in `GameCanvasBabylon.tsx` and `editor-store.ts`. Selection represents neutral source dimensions (`{ w, h, gids }`), while placement cleanly distinguishes between Operation A (Stamp as 1 Tile, scaled) and Operation B (Paste as Region at native multi-tile footprint).
