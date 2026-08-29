@@ -1,3 +1,6 @@
+# 2.1.494
+- **Fixed Tile Library Persistence & Extraction Display**: Fixed an issue where `loadTileLibrary` re-executed on state change and overwrote extracted custom tiles with default presets. Moved `tileDefinitions` into the global `useEditorStore` and updated all extraction handlers (`handleExtractTilesFromActiveSheet`, `handleSlicerQuickExtract`, `handleSaveAsTileDefinition`, `handleLoadStarterPresets`) to append to store and clear search/tag filters so new custom tiles show up immediately in the Library view.
+
 # 2.1.493
 - **Fixed React Error #310 (Hook Order Violation in DraggablePanel)**: Fixed an unconditional hook declaration order in `DraggablePanel.tsx` where `useCallback` was placed after an early return, ensuring uniform hook execution across renders when opening/closing Studio panels.
 

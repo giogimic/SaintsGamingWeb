@@ -352,9 +352,13 @@ export default function TilesetPicker({
     dataUrl?: string;
   } | null>(null);
 
-  // Tile Library state
-  const [tileDefinitions, setTileDefinitions] = useState<TileDefinition[]>([]);
-  const [selectedTileDefId, setSelectedTileDefId] = useState<string | null>(null);
+  // Tile Library state (backed by global useEditorStore so extracted tiles persist)
+  const tileDefinitions = useEditorStore((s) => s.tileDefinitions);
+  const selectedTileDefId = useEditorStore((s) => s.selectedTileDefId);
+  const setTileDefinitions = useEditorStore((s) => s.setTileDefinitions);
+  const addTileDefinitions = useEditorStore((s) => s.addTileDefinitions);
+  const setSelectedTileDefId = useEditorStore((s) => s.setSelectedTileDefId);
+
   const [libraryFilter, setLibraryFilter] = useState('');
   const [libraryTagFilter, setLibraryTagFilter] = useState('ALL');
   const [isSaveDefModalOpen, setIsSaveDefModalOpen] = useState(false);
@@ -390,8 +394,12 @@ export default function TilesetPicker({
     return tileDefinitions[0] || null;
   }, [tileDefinitions, selectedTileDefId]);
 
-  // Load tile definitions from AssetManager (fallback to presets if empty)
+  // Load tile definitions on mount (seed default starter presets only if store is currently empty)
+  const hasInitializedLibraryRef = useRef(false);
   const loadTileLibrary = useCallback(async () => {
+    if (hasInitializedLibraryRef.current) return;
+    hasInitializedLibraryRef.current = true;
+
     try {
       const manager = AssetManager.getInstance();
       const res = await manager.searchAssets({ type: 'TILE' }, 0, 100);
@@ -420,26 +428,28 @@ export default function TilesetPicker({
             thumbnailUrl: item.cdnUrl || item.source,
           };
         });
-        setTileDefinitions(defs);
-        if (!selectedTileDefId && defs.length > 0) {
+        addTileDefinitions(defs);
+        if (!useEditorStore.getState().selectedTileDefId && defs.length > 0) {
           setSelectedTileDefId(defs[0].id);
         }
-      } else {
-        // Seed default starter presets so library is immediately rich & populated
-        const starter = getStarterTilePresets(ts);
-        setTileDefinitions(starter);
-        if (!selectedTileDefId && starter.length > 0) {
+      } else if (useEditorStore.getState().tileDefinitions.length === 0) {
+        // Seed default starter presets only if store is completely empty
+        const starter = getStarterTilePresets(tsRef.current);
+        addTileDefinitions(starter);
+        if (starter.length > 0) {
           setSelectedTileDefId(starter[0].id);
         }
       }
-    } catch (e) {
-      const starter = getStarterTilePresets(ts);
-      setTileDefinitions(starter);
-      if (!selectedTileDefId && starter.length > 0) {
-        setSelectedTileDefId(starter[0].id);
+    } catch {
+      if (useEditorStore.getState().tileDefinitions.length === 0) {
+        const starter = getStarterTilePresets(tsRef.current);
+        addTileDefinitions(starter);
+        if (starter.length > 0) {
+          setSelectedTileDefId(starter[0].id);
+        }
       }
     }
-  }, [ts, selectedTileDefId]);
+  }, [addTileDefinitions, setSelectedTileDefId]);
 
   useEffect(() => {
     void loadTileLibrary();
@@ -1004,16 +1014,14 @@ export default function TilesetPicker({
   const handleLoadStarterPresets = useCallback(() => {
     soundSynth?.playActionSound?.();
     const presets = getStarterTilePresets(ts);
-    setTileDefinitions((prev) => {
-      const existingIds = new Set(prev.map((d) => d.id));
-      const newItems = presets.filter((p) => !existingIds.has(p.id));
-      return [...prev, ...newItems];
-    });
+    addTileDefinitions(presets);
     if (presets.length > 0) {
       setSelectedTileDefId(presets[0].id);
     }
+    setLibraryFilter('');
+    setLibraryTagFilter('ALL');
     showToast('Loaded Starter Tile Presets');
-  }, [ts, showToast]);
+  }, [ts, addTileDefinitions, setSelectedTileDefId, showToast]);
 
   // Extract all tiles from active tileset sheet into the Library
   const handleExtractTilesFromActiveSheet = useCallback(() => {
@@ -1054,14 +1062,16 @@ export default function TilesetPicker({
       }
     }
 
-    setTileDefinitions((prev) => [...prev, ...extracted]);
+    addTileDefinitions(extracted);
     if (extracted.length > 0) {
       setSelectedTileDefId(extracted[0].id);
       onBrushSelectRef.current(extracted[0].gid);
+      setLibraryFilter('');
+      setLibraryTagFilter('ALL');
       setActiveTab('library');
     }
     showToast(`Extracted ${extracted.length} tile${extracted.length !== 1 ? 's' : ''} into Library`);
-  }, [ts, natural, showToast]);
+  }, [ts, natural, showToast, addTileDefinitions, setSelectedTileDefId]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
     if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
@@ -1262,9 +1272,11 @@ export default function TilesetPicker({
         : `/game-assets/tilesets/${ts.imageSource}`,
     };
 
-    setTileDefinitions((prev) => [...prev, newDef]);
+    addTileDefinitions([newDef]);
     setSelectedTileDefId(newDef.id);
     onBrushSelectRef.current(topGid);
+    setLibraryFilter('');
+    setLibraryTagFilter('ALL');
     setActiveTab('library');
     showToast(`Extracted ${cropW}×${cropH}px Tile to Library!`);
   };
@@ -1274,12 +1286,23 @@ export default function TilesetPicker({
     soundSynth?.playActionSound?.();
     const cropW = slicerSelection.x1 - slicerSelection.x0;
     const cropH = slicerSelection.y1 - slicerSelection.y0;
+    const offX = ts.offsetX ?? ts.margin ?? 0;
+    const offY = ts.offsetY ?? ts.margin ?? 0;
+    const spacing = ts.spacing ?? 0;
+    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
+    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
+    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
+    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
+    const topGid = ts.firstgid + startRow * ts.columns + startCol;
+
     setPendingDef({
       sourceSheet: ts.imageSource,
-      sourceX: slicerSelection.x0,
-      sourceY: slicerSelection.y0,
+      sourceX: minX,
+      sourceY: minY,
       sourceWidth: cropW,
       sourceHeight: cropH,
+      gid: topGid,
       name: `Custom Tile (${cropW}x${cropH})`,
       collision: 'NONE',
       material: 'GRASS',
@@ -1418,36 +1441,59 @@ export default function TilesetPicker({
       showToast('Tile name and source sheet are required.');
       return;
     }
+    soundSynth?.playActionSound?.();
+    const sheetName = def.sourceSheet.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
+    const newDef: TileDefinition = {
+      id: def.id || `custom-${sheetName}-${Date.now()}`,
+      name: def.name,
+      sourceSheet: def.sourceSheet,
+      sourceX: def.sourceX || 0,
+      sourceY: def.sourceY || 0,
+      sourceWidth: def.sourceWidth || 16,
+      sourceHeight: def.sourceHeight || 16,
+      gid: def.gid || 1,
+      tags: def.tags || ['tile', 'custom'],
+      collision: def.collision || 'NONE',
+      gameplayFlags: def.gameplayFlags || ['walkable'],
+      material: def.material || 'GRASS',
+      thumbnailUrl: def.sourceSheet.startsWith('/') || def.sourceSheet.startsWith('http')
+        ? def.sourceSheet
+        : `/game-assets/tilesets/${def.sourceSheet}`,
+    };
+
+    addTileDefinitions([newDef]);
+    setSelectedTileDefId(newDef.id);
+    onBrushSelectRef.current(newDef.gid);
+    setIsSaveDefModalOpen(false);
+    setPendingDef(null);
+    setLibraryFilter('');
+    setLibraryTagFilter('ALL');
+    setActiveTab('library');
+    showToast(`Saved "${newDef.name}" to Tile Library.`);
+
     try {
       const manager = AssetManager.getInstance();
-      const result = await manager.registerAsset({
+      await manager.registerAsset({
         type: 'TILE',
-        source: def.sourceSheet,
+        source: newDef.sourceSheet,
         metadata: {
-          originalName: def.name,
-          sourceSheet: def.sourceSheet,
+          originalName: newDef.name,
+          sourceSheet: newDef.sourceSheet,
           sourceRegion: {
-            x: def.sourceX || 0,
-            y: def.sourceY || 0,
-            w: def.sourceWidth || 16,
-            h: def.sourceHeight || 16,
+            x: newDef.sourceX,
+            y: newDef.sourceY,
+            w: newDef.sourceWidth,
+            h: newDef.sourceHeight,
           },
-          gid: def.gid,
-          collision: def.collision || 'NONE',
-          gameplayFlags: def.gameplayFlags || [],
-          material: def.material || 'GRASS',
+          gid: newDef.gid,
+          collision: newDef.collision,
+          gameplayFlags: newDef.gameplayFlags,
+          material: newDef.material,
         },
-        tags: def.tags || ['tile', 'world-art'],
+        tags: newDef.tags,
       });
-
-      if (result) {
-        showToast(`Saved "${def.name}" to Tile Library.`);
-        setIsSaveDefModalOpen(false);
-        setPendingDef(null);
-        void loadTileLibrary();
-      }
-    } catch (error: any) {
-      showToast(error?.message || 'Failed to save Tile Definition.');
+    } catch {
+      // Local state is already updated and persistent
     }
   };
 
