@@ -1,3 +1,8 @@
+# 2.1.489
+- **Fixed Unexpected Tileset Tab Switching on Large Selections**: Added internal selection tracking (`isInternalSelectionRef`) and bounded tileset range verification in `TilesetPicker.tsx`. Selecting or dragging large multi-tile regions, crops, or high-index tiles no longer triggers unwanted tab switching to other tilesets.
+- **Multi-Scale Multi-Tile Stamping (`stampScale`)**: Added full multi-scale stamping capabilities (`0.25x`, `0.5x`, `1x`, `2x`, etc.) across `editor-store.ts`, `GameCanvasBabylon.tsx`, and `BabylonEngine.ts`. Enables pasting large areas (e.g. 800×800 px) directly onto smaller scenes (e.g. 400×400 px) with sub-sampled pixel accuracy.
+- **Stamp Scale Selectors in Toolbar & Slicer Action Bar**: Added instant Stamp Scale buttons in both `StudioBottomToolbar.tsx` and the `TilesetPicker.tsx` Freeform Slicer crop bar with live hover reticle and footprint dimension synchronization.
+
 # 2.1.488
 - **Tileset Offset & Spacing Synchronization in Babylon Engine**: Updated `tilesetUvForGid` and `estimateTilesetRows` in `tileBatchHelpers.ts` to fully incorporate `ts.offsetX`, `ts.offsetY`, `ts.spacing`, and natural image dimensions. Eliminates all coordinate drift between the Tile Selector / Freeform Slicer preview and the in-game canvas stamp.
 - **Tileset Offsets Persistence & Dedicated Save Offsets Button**: Added a prominent **Save Offsets** button in `TilesetPicker.tsx` that commits grid alignments directly to `WorldMap.tilesetsData` and marks the map dirty. Added direct number inputs for Offset X and Offset Y for pixel-exact calibration.

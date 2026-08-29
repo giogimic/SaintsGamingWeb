@@ -1479,22 +1479,25 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           let needsFullRebuild = false;
           const pat = store.activeBrushPattern;
           const isFullFootprintPattern = !!pat && store.prefabStampMode !== '1tile';
-          if (isFullFootprintPattern && pat && pat.w * pat.h > 4) {
+          const scale = store.stampScale || 1;
+          const targetW = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.w * scale)) : 1;
+          const targetH = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.h * scale)) : 1;
+          if (isFullFootprintPattern && pat && targetW * targetH > 4) {
             needsFullRebuild = true;
           }
 
           for (const pt of coordsToPaint) {
-            if (isFullFootprintPattern) {
-              const pat = store.activeBrushPattern!;
-              for (let br = 0; br < pat.h; br++) {
-                for (let bc = 0; bc < pat.w; bc++) {
+            if (isFullFootprintPattern && pat) {
+              for (let br = 0; br < targetH; br++) {
+                for (let bc = 0; bc < targetW; bc++) {
                   const tr = pt.r + br;
                   const tc = pt.c + bc;
                   if (tr < 0 || tr >= mapHeight || tc < 0 || tc >= mapWidth) continue;
                   if (hasSelection && !isCellInsideSelection(tr, tc)) continue;
                   
-                  // Use pattern tile, or 0 if erase mode
-                  const patVal = brushMode === 'erase' ? 0 : pat.gids[br][bc];
+                  const srcR = Math.min(pat.h - 1, Math.floor((br / targetH) * pat.h));
+                  const srcC = Math.min(pat.w - 1, Math.floor((bc / targetW) * pat.w));
+                  const patVal = brushMode === 'erase' ? 0 : pat.gids[srcR][srcC];
                   
                   // Skip empty spots in the pattern so we don't erase the ground unintentionally when painting
                   if (patVal === 0 && brushMode !== 'erase') continue;

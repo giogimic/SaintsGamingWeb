@@ -333,6 +333,8 @@ export class BabylonEngine {
   private brushRadius: number = 1;
   private brushShape: 'circle' | 'square' = 'circle';
   public activeBrushPattern: { w: number, h: number } | null = null;
+  public prefabStampMode: '1tile' | 'footprint' = 'footprint';
+  public stampScale: number = 1;
   private activeBrushTileId: number = 0;
   private activeLayerIdx: number = 0;
   private brushMode: string = 'paint';
@@ -2555,8 +2557,6 @@ private resolveTilePick(
     this.refreshBrushPreview();
   }
 
-  private prefabStampMode: '1tile' | 'footprint' = 'footprint';
-
   public setActiveBrushPattern(pattern: { w: number; h: number; gids?: number[][] } | null) {
     this.activeBrushPattern = pattern;
     this.refreshBrushPreview();
@@ -2744,12 +2744,15 @@ private resolveTilePick(
     // 1. Multi-tile pattern footprint (Render ONLY the pattern bounding box when holding a pattern and in footprint mode)
     if (this.activeBrushPattern && this.prefabStampMode !== '1tile' && (this.activeBrushPattern.w > 1 || this.activeBrushPattern.h > 1)) {
       const pat = this.activeBrushPattern;
-      const patPosX = centerPosX + ((pat.w - 1) / 2) * s;
-      const patPosZ = centerPosZ - ((pat.h - 1) / 2) * s;
+      const scale = this.stampScale || 1;
+      const effW = Math.max(1, Math.round(pat.w * scale));
+      const effH = Math.max(1, Math.round(pat.h * scale));
+      const patPosX = centerPosX + ((effW - 1) / 2) * s;
+      const patPosZ = centerPosZ - ((effH - 1) / 2) * s;
 
-      const patMat = this.createMultiTileReticleMaterial(pat.w, pat.h);
+      const patMat = this.createMultiTileReticleMaterial(effW, effH);
 
-      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * pat.w * 1.01, height: s * pat.h * 1.01 }, this.scene);
+      const patPlane = MeshBuilder.CreatePlane('brush_hover_pattern', { width: s * effW * 1.01, height: s * effH * 1.01 }, this.scene);
       patPlane.rotation.x = Math.PI / 2;
       patPlane.position = new Vector3(patPosX, altitudeHover, patPosZ);
       patPlane.material = patMat;
@@ -2826,6 +2829,13 @@ private resolveTilePick(
   public clearBrushPreview() {
     for (const m of this.brushPreviewMeshes) m.dispose();
     this.brushPreviewMeshes = [];
+  }
+
+  public setStampScale(scale: number) {
+    this.stampScale = Math.max(0.05, Math.min(8.0, Number(scale) || 1));
+    if (this.lastHoveredR >= 0 && this.lastHoveredC >= 0) {
+      this.renderBrushPreview(this.lastHoveredR, this.lastHoveredC);
+    }
   }
 
   public clearSelectionPreview() {

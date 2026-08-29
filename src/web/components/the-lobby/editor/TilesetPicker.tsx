@@ -319,6 +319,8 @@ export default function TilesetPicker({
 }: TilesetPickerProps) {
   const showToast = useGameStore((s) => s.showToast);
   const activeBrushPattern = useEditorStore((s) => s.activeBrushPattern);
+  const stampScale = useEditorStore((s) => s.stampScale);
+  const setStampScale = useEditorStore((s) => s.setStampScale);
   const [activeTab, setActiveTab] = useState<'palette' | 'library'>('palette');
   const [activeTsIdx, setActiveTsIdx] = useState(0);
   const [natural, setNatural] = useState({ w: 0, h: 0 });
@@ -367,6 +369,7 @@ export default function TilesetPicker({
   const ts = tilesets && tilesets.length > 0 ? tilesets[Math.min(activeTsIdx, tilesets.length - 1)] : null;
   const imgRef = useRef<HTMLImageElement>(null);
   const isPointerDownRef = useRef<boolean>(false);
+  const isInternalSelectionRef = useRef<boolean>(false);
   const dragStartRef = useRef<{ r: number; c: number } | null>(null);
   const lastSoundPlayRef = useRef<number>(0);
 
@@ -442,10 +445,26 @@ export default function TilesetPicker({
     void loadTileLibrary();
   }, [loadTileLibrary]);
 
-  // Auto-select tileset tab if activeBrushTileId changes (when NOT dragging)
+  // Auto-select tileset tab if activeBrushTileId changes from an external source (e.g. Eyedropper on the canvas)
   useEffect(() => {
+    if (isInternalSelectionRef.current) {
+      isInternalSelectionRef.current = false;
+      return;
+    }
     if (isPointerDownRef.current) return;
     if (!tilesets || tilesets.length === 0 || activeBrushTileId <= 0) return;
+
+    // Check if activeBrushTileId already falls within the currently active tileset's range
+    const currentTs = tilesets[activeTsIdx];
+    if (currentTs) {
+      const curCols = currentTs.columns || 1;
+      const curMaxRows = Math.max(1, Math.floor(((currentTs.imageheight || natural.h || 4000) - (currentTs.offsetY || 0)) / (currentTs.tileheight || 16)));
+      const curMaxTiles = curCols * curMaxRows;
+      if (activeBrushTileId >= currentTs.firstgid && activeBrushTileId < currentTs.firstgid + curMaxTiles) {
+        return;
+      }
+    }
+
     for (let i = tilesets.length - 1; i >= 0; i--) {
       if (activeBrushTileId >= tilesets[i].firstgid) {
         if (activeTsIdx !== i) {
@@ -457,7 +476,7 @@ export default function TilesetPicker({
         break;
       }
     }
-  }, [activeBrushTileId, tilesets, activeTsIdx]);
+  }, [activeBrushTileId, tilesets, activeTsIdx, natural.h]);
 
   // Listen for studio_add_tileset event
   useEffect(() => {
@@ -681,6 +700,7 @@ export default function TilesetPicker({
         soundSynth?.playSelectSound?.();
       }
 
+      isInternalSelectionRef.current = true;
       if (spanW > 1 || spanH > 1) {
         onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
       } else {
@@ -1090,6 +1110,7 @@ export default function TilesetPicker({
     const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
     const row = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
     const gid = ts.firstgid + row * ts.columns + col;
+    isInternalSelectionRef.current = true;
     onBrushSelectRef.current(gid);
     onBrushSelectPatternRef.current?.(null);
     useEditorStore.getState().setPrefabStampMode('1tile');
@@ -1127,6 +1148,7 @@ export default function TilesetPicker({
       gids.push(rowGids);
     }
     const topGid = gids[0]?.[0] ?? (ts.firstgid + startRow * ts.columns + startCol);
+    isInternalSelectionRef.current = true;
     onBrushSelectRef.current(topGid);
     onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
     useEditorStore.getState().setPrefabStampMode('footprint');
@@ -2007,15 +2029,38 @@ export default function TilesetPicker({
                   <span>1-Tile Brush</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleSlicerStampMultiTile}
-                  className="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
-                  title="Use as multi-tile stamp"
-                >
-                  <Grid className="w-3 h-3" />
-                  <span>Multi-Tile Stamp</span>
-                </button>
+                <div className="flex items-center bg-amber-500/20 border border-amber-500/40 rounded p-0.5">
+                  <button
+                    type="button"
+                    onClick={handleSlicerStampMultiTile}
+                    className="px-2 py-1 rounded bg-amber-500/30 hover:bg-amber-500/50 text-amber-300 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition"
+                    title="Use as multi-tile stamp"
+                  >
+                    <Grid className="w-3 h-3" />
+                    <span>Multi-Tile Stamp</span>
+                  </button>
+                  <div className="flex items-center gap-0.5 border-l border-amber-500/30 pl-1 ml-1 text-[8px]">
+                    {[0.25, 0.5, 1, 2].map((sc) => (
+                      <button
+                        key={sc}
+                        type="button"
+                        onClick={() => {
+                          soundSynth?.playUiClick?.();
+                          setStampScale(sc);
+                          showToast(`Stamp Scale: ${sc}x`);
+                        }}
+                        className={`px-1 py-0.5 rounded font-mono font-bold transition cursor-pointer ${
+                          stampScale === sc
+                            ? 'bg-amber-500 text-black shadow-sm'
+                            : 'hover:bg-amber-500/30 text-amber-200'
+                        }`}
+                        title={`Scale stamp to ${sc}x (e.g. 800px area -> ${Math.round(800 * sc)}px scene)`}
+                      >
+                        {sc}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <button
                   type="button"
