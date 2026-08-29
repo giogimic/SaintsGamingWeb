@@ -221,7 +221,7 @@ model Thread {
   id               String               @id @default(cuid())
   title            String
   slug             String               @unique
-  body             String// markdown content
+  body             String // markdown content
   iconImage        String? // optional thread icon/image
   isPinned         Boolean              @default(false)
   isLocked         Boolean              @default(false)
@@ -248,7 +248,7 @@ model Thread {
 
 model Reply {
   id        String      @id @default(cuid())
-  body      String// markdown content
+  body      String // markdown content
   authorId  String
   author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   threadId  String
@@ -380,7 +380,7 @@ model NewsArticle {
   title       String
   slug        String        @unique
   excerpt     String?
-  body        String// markdown content
+  body        String // markdown content
   coverImage  String? // optional cover image path or raw SVG
   icon        String? // raw SVG markup for icons
   isPublished Boolean       @default(false)
@@ -484,7 +484,7 @@ model SupportTicket {
 
 model TicketMessage {
   id        String        @id @default(cuid())
-  body      String// Markdown
+  body      String // Markdown
   ticketId  String
   ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   authorId  String
@@ -732,7 +732,7 @@ model GameCharacter {
   assetProfileId String   @default("adventurer")
   visualData     String   @default("[]") // JSON array of visual component layers
   classId        String
-  stateData      String// JSON string of the Zustand store PlayerState
+  stateData      String // JSON string of the Zustand store PlayerState
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -762,9 +762,9 @@ model WorldMap {
   id             String  @id // e.g. "SAINTS_VILLAGE"
   gameId         String? @default("saints")
   name           String
-  gridData       String// JSON 2D Array
-  gatesData      String// JSON
-  npcsData       String// JSON for NPC dialogues/teams
+  gridData       String // JSON 2D Array
+  gatesData      String // JSON
+  npcsData       String // JSON for NPC dialogues/teams
   encountersData String  @default("[]") // JSON for wild beast encounters
   entitiesData   String  @default("[]") // JSON for EntityInstanceV1 records (Bible 20 E2)
   tileLayersData String  @default("[]") // JSON for TMX tile layers
@@ -813,8 +813,8 @@ model GameAsset {
   source       String   @default("") // canonical file path
   atlasSource  String? // atlas file if from atlas
   atlasFrame   String? // JSON: {x, y, width, height} for atlas extraction
-  tags         String   @default("[]") // JSON string: ["saints", "npc", "male"] 
-  categories   String   @default("[]") // JSON string: ["npcs", "heroes"] 
+  tags         String   @default("[]") // JSON string: ["saints", "npc", "male"]
+  categories   String   @default("[]") // JSON string: ["npcs", "heroes"]
   metadata     String   @default("{}") // JSON string: {frames, directions, animations, rarity, speciesSlug, etc.}
   customLabels String? // JSON string: {en: "Hero", es: "Héroe"}
   isActive     Boolean  @default(true)
@@ -1062,7 +1062,7 @@ model GroupMessage {
 model SocialPost {
   id         String   @id @default(cuid())
   authorId   String
-  body       String// Max ~280 chars
+  body       String // Max ~280 chars
   visibility String   @default("PUBLIC") // PUBLIC or FRIENDS
   mediaUrl   String?
   parentId   String?
@@ -1273,7 +1273,7 @@ model CreatureTemplate {
   stage                String
   shape                String
   types                String // JSON array of element slugs
-  tags                 String// JSON array of tags
+  tags                 String // JSON array of tags
   terrains             String // JSON array
   genderWeights        String // JSON object
   sounds               String // JSON object
@@ -1558,7 +1558,7 @@ model SaintsMap {
   width         Int
   height        Int
   tileSize      Int      @default(16)
-  tilesetData   String// JSON: tile layer data
+  tilesetData   String // JSON: tile layer data
   collisionData String // JSON: collision bitmask
   npcData       String // JSON: NPC placements
   triggerData   String? // JSON: trigger zones
