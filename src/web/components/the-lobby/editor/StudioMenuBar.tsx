@@ -321,13 +321,18 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
         <div className="flex items-center gap-0.5">
           <TopLevelMenu id="file" label="File">
             <MenuItem
-              label="Browse All Maps (Atlas)..."
-              shortcut="Ctrl+Shift+M"
+              label="Map Browser..."
               icon={Globe}
               onClick={() => {
                 if (onOpenMapBrowser) onOpenMapBrowser();
-                else openPanel('atlas');
+                else openPanel('maps');
               }}
+            />
+            <MenuItem
+              label="World Atlas (Spatial Grid)..."
+              shortcut="Ctrl+Shift+M"
+              icon={Globe}
+              onClick={() => openPanel('atlas')}
             />
             <MenuItem
               label="New Map..."
@@ -572,8 +577,15 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
             Logic
           </button>
           <button
+            onClick={() => openPanel('maps')}
+            className="px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-muted-foreground hover:text-foreground"
+            title="Map Browser (All Maps)"
+          >
+            Maps
+          </button>
+          <button
             onClick={() => openPanel('atlas')}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-muted-foreground hover:text-foreground`}
+            className="px-2.5 py-1 rounded text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-muted-foreground hover:text-foreground"
             title="World Atlas (Ctrl+Shift+M)"
           >
             Atlas

@@ -1493,7 +1493,8 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
           const paintedOps: any[] = [];
           const pat = store.activeBrushPattern;
-          const isFullFootprintPattern = !!pat && store.prefabStampMode !== '1tile';
+          // Operation B (Paste as Region) paints the full W×H footprint unless explicitly in 1-tile stamp mode (Operation A)
+          const isFullFootprintPattern = !!pat && store.paintMode !== 'stamp' && store.prefabStampMode !== '1tile';
           const scale = store.stampScale || 1;
           const targetW = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.w * scale)) : 1;
           const targetH = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.h * scale)) : 1;
@@ -1530,7 +1531,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               }
             } else {
               if (hasSelection && !isCellInsideSelection(pt.r, pt.c)) continue;
-              const valToPaint = (store.activeBrushPattern && store.prefabStampMode === '1tile' && brushMode !== 'erase')
+              const valToPaint = (store.activeBrushPattern && (store.paintMode === 'stamp' || store.prefabStampMode === '1tile') && brushMode !== 'erase')
                 ? (store.activeBrushPattern.gids[0]?.[0] || paintValue)
                 : paintValue;
               const painted = paintWorldCell(

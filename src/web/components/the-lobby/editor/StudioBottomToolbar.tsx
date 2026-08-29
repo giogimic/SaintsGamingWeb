@@ -46,7 +46,11 @@ const InlineAtlasStatus = () => {
 
   if (!node) {
     return (
-      <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-background/50 border border-border/40 text-[9px] text-muted-foreground" title="Unbound Map">
+      <div
+        onClick={() => useEditorStore.getState().openPanel('atlas')}
+        className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-background/50 border border-border/40 text-[9px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+        title="Unbound Map — Click to open World Atlas"
+      >
         <Compass className="w-3 h-3 text-amber-500/50" />
         <span>Unbound</span>
       </div>
@@ -54,7 +58,11 @@ const InlineAtlasStatus = () => {
   }
 
   return (
-    <div className="hidden md:flex items-center gap-2 text-[9px] bg-background/50 border border-border/40 px-2 py-0.5 rounded">
+    <div
+      onClick={() => useEditorStore.getState().openPanel('atlas')}
+      className="hidden md:flex items-center gap-2 text-[9px] bg-background/50 border border-border/40 hover:border-amber-500/40 px-2 py-0.5 rounded cursor-pointer transition-colors"
+      title="World Atlas Spatial Node — Click to edit World Atlas"
+    >
       <Compass className="w-3 h-3 text-amber-400" />
       <span className="text-amber-400 font-bold truncate max-w-[60px]">{node.mapId}</span>
       <div className="flex gap-1.5 text-muted-foreground border-l border-border/40 pl-1.5">

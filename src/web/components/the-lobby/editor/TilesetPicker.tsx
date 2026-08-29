@@ -375,6 +375,7 @@ export default function TilesetPicker({
   const isPointerDownRef = useRef<boolean>(false);
   const isInternalSelectionRef = useRef<boolean>(false);
   const dragStartRef = useRef<{ r: number; c: number } | null>(null);
+  const dragBoundsRef = useRef<{ row: number; col: number; w: number; h: number } | null>(null);
   const lastSoundPlayRef = useRef<number>(0);
 
   const tsRef = useRef<TilesetMeta | null>(ts);
@@ -706,10 +707,10 @@ export default function TilesetPicker({
       }
 
       isInternalSelectionRef.current = true;
+      onBrushSelectRef.current(topGid);
       if (spanW > 1 || spanH > 1) {
         onBrushSelectPatternRef.current?.({ w: spanW, h: spanH, gids });
       } else {
-        onBrushSelectRef.current(topGid);
         onBrushSelectPatternRef.current?.(null);
       }
     },
@@ -788,6 +789,7 @@ export default function TilesetPicker({
     const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
 
     dragStartRef.current = { r: row, c: col };
+    dragBoundsRef.current = { row, col, w: 1, h: 1 };
     setDragStart({ r: row, c: col });
 
     const gid = currentTs.firstgid + row * currentTs.columns + col;
@@ -810,21 +812,11 @@ export default function TilesetPicker({
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLImageElement>) => {
-    if (!isPointerDownRef.current) return;
-    isPointerDownRef.current = false;
     try {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }
     } catch {}
-
-    const start = dragStartRef.current;
-    if (start && hoveredTile) {
-      selectTileRegion(hoveredTile.row, hoveredTile.col, hoveredTile.w, hoveredTile.h);
-    }
-    slicerDragStartRef.current = null;
-    dragStartRef.current = null;
-    setDragStart(null);
   };
 
   // Window-level smooth dragging listener so pointer captures never drop
@@ -887,6 +879,8 @@ export default function TilesetPicker({
       const widthPx = spanW * currentTs.tilewidth + (spanW - 1) * spacing;
       const heightPx = spanH * currentTs.tileheight + (spanH - 1) * spacing;
 
+      dragBoundsRef.current = { row: minRow, col: minCol, w: spanW, h: spanH };
+
       setHoveredTile({
         leftPct: (leftPx / nat.w) * 100,
         topPct: (topPx / nat.h) * 100,
@@ -907,8 +901,13 @@ export default function TilesetPicker({
     const onWindowPointerUp = () => {
       if (isPointerDownRef.current) {
         isPointerDownRef.current = false;
+        const bounds = dragBoundsRef.current;
+        if (bounds) {
+          selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
+        }
         slicerDragStartRef.current = null;
         dragStartRef.current = null;
+        dragBoundsRef.current = null;
         setDragStart(null);
       }
     };
