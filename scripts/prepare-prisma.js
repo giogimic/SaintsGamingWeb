@@ -59,9 +59,44 @@ if (isSqlite) {
 
   // Add back @db.LongText and @db.Text where needed
   const longTextCols = [
-    'stateData', 'visualData', 'logicData', 'gridData', 'tileLayersData',
-    'tilesetsData', 'entitiesData', 'encountersData', 'npcsData', 'gatesData',
-    'questsData', 'body', 'content', 'atlasData', 'customData', 'dialogueTree'
+    'value',
+    'stateData',
+    'visualData',
+    'logicData',
+    'gridData',
+    'tileLayersData',
+    'tilesetsData',
+    'entitiesData',
+    'encountersData',
+    'npcsData',
+    'gatesData',
+    'questsData',
+    'body',
+    'content',
+    'atlasData',
+    'customData',
+    'dialogueTree',
+    'snapshotPayload',
+    'validationReport',
+    'contentSummary',
+    'tilesetData',
+    'collisionData',
+    'npcData',
+    'triggerData',
+    'data',
+    'payload',
+    'mutationsData',
+    'acquisitionData',
+    'restrictionsData',
+    'startingInventory',
+    'passivesJson',
+    'abilitiesJson',
+    'bankJson',
+    'trainingMethodsJson',
+    'perksJson',
+    'milestonesJson',
+    'battlepassTiersJson',
+    'clearConditions'
   ];
   for (const col of longTextCols) {
     const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');
@@ -74,10 +109,17 @@ if (isSqlite) {
 
   const textCols = [
     'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
-    'respawnRulesJson', 'entryRequirements', 'tilesetData', 'npcs', 'encounters',
-    'gates', 'description', 'dialogStart', 'dialogProgress', 'dialogComplete',
-    'flavor', 'tagline', 'baseStats', 'xpCurveData', 'spritePackIds', 'systemPrompt',
-    'prompt', 'response', 'context', 'notes', 'bio'
+    'respawnRulesJson', 'entryRequirements', 'npcs', 'encounters', 'gates',
+    'description', 'dialogStart', 'dialogProgress', 'dialogComplete', 'flavor',
+    'tagline', 'baseStats', 'statDeltas', 'skillDeltas', 'growthRates',
+    'allowedSpriteTags', 'spriteFilters', 'startingEquipment', 'learnableSkills',
+    'perks', 'abilities', 'skillProgression', 'abilityProgression', 'perkProgression',
+    'entries', 'guaranteedDrops', 'requiredTags', 'variants', 'types', 'terrains',
+    'genderWeights', 'sounds', 'effects', 'stats', 'tagsJson', 'affixes', 'rewards',
+    'stationTags', 'xpCurveData', 'spritePackIds', 'tilesetPackIds', 'systemPrompt',
+    'prompt', 'response', 'context', 'notes', 'bio', 'installNotes', 'changelog',
+    'appearanceData', 'lastCoords', 'drugStats', 'coords', 'activeCoords', 'ciphertext',
+    'senderCiphertext', 'publicKey', 'animationFrames', 'onInteractPayload', 'onStepPayload'
   ];
   for (const col of textCols) {
     const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');
