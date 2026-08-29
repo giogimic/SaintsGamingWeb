@@ -106,7 +106,7 @@ export function Navbar({ session, dbPermissionLevel, discordLink, showUcpLink = 
                     variant={isActive ? "secondary" : "ghost"}
                     size="sm"
                     className={`gap-2 transition-all duration-200 ${isLobby
-                        ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 hover:from-amber-500 hover:to-emerald-500 hover:text-black font-bold shadow-sm hover:scale-105"
+                        ? "bg-gradient-to-r from-amber-500/20 to-emerald-500/20 text-amber-300 border border-amber-500/40 hover:from-amber-500 hover:to-emerald-500 hover:text-slate-950 font-bold shadow-sm hover:scale-105"
                         : isActive
                           ? "bg-primary/10 text-primary border border-primary/20"
                           : "text-muted-foreground hover:text-foreground hover:scale-105"
@@ -390,7 +390,7 @@ export function Footer({ className, discordLink = "https://discord.saintsgaming.
             © {new Date().getFullYear()} Saints Gaming. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground/60 border border-border/30 rounded-full px-3 py-1 bg-muted/20">
-            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.498"}</span>
+            <span className="font-semibold">{siteVersion || process.env.NEXT_PUBLIC_SITE_VERSION || "2.1.499"}</span>
           </div>
 
 

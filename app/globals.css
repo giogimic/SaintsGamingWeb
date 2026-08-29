@@ -220,8 +220,37 @@
        0.5px  0.5px 0 rgba(0, 0, 0, 0.8);
   }
 
-  input, textarea, select, pre, code, kbd, samp, .mockup-code, [contenteditable] {
+  input,
+  textarea,
+  select,
+  pre,
+  code,
+  kbd,
+  samp,
+  .mockup-code,
+  [contenteditable],
+  button,
+  [role="button"],
+  .btn,
+  [class*="buttonVariants"],
+  .badge,
+  .text-black,
+  .text-slate-900,
+  .text-slate-950,
+  .text-zinc-900,
+  .text-zinc-950,
+  .text-gray-900,
+  .text-gray-950,
+  .text-neutral-900,
+  .text-neutral-950,
+  .text-shadow-none {
     text-shadow: none !important;
+  }
+
+  button *,
+  [role="button"] *,
+  [class*="buttonVariants"] * {
+    text-shadow: inherit;
   }
 }
 
