@@ -1,3 +1,8 @@
+# 2.1.491
+- **Exact Map Traversal & Gate Spawn Transitions**: Fixed player spawn positioning when traversing map boundaries and stepping into gates. Border traversal (North, South, East, West) now preserves the player's exact entering coordinate, and physical gates compute relative offsets correctly without defaulting to fixed coordinates.
+- **Eliminated Studio Canvas & Selection Flickering during Painting**: Removed `loadTilemap` geometry teardown from pattern paint and prefab stamping loops. Tile changes now update exclusively via in-place GPU vertex buffer patching (`engine.updateSingleTile`), delivering 60 FPS smooth, flicker-free painting.
+- **Enhanced Slicer Extraction & Direct Library Integration**: Added an instant **Extract to Library** action in the Freeform Slicer toolbar and updated sheet extraction to automatically switch to the Library tab and select newly extracted custom tiles ready for painting. Added **Extract to Stamp** in the canvas right-click context menu.
+
 # 2.1.490
 - **Fixed Tileset GID Overflow & Cross-Sheet Stamp Bleed**: Replaced legacy tight firstgid gaps (256..1000) with a safe 100,000 GID stride (`TILESET_GID_STRIDE = 100000`). Large multi-tile selections and crops extending deep into large tileset sheets no longer overflow into adjacent tilesets or render incorrect textures on the map canvas.
 - **Automated Map Tileset GID Normalization**: Added `normalizeTilesetGids` in `studioTilesetBootstrap.ts` to automatically re-space map tilesets and cleanly remap existing layer grid cells without losing visual artwork or corrupting tileset mappings.

@@ -1050,8 +1050,10 @@ export default function TilesetPicker({
     setTileDefinitions((prev) => [...prev, ...extracted]);
     if (extracted.length > 0) {
       setSelectedTileDefId(extracted[0].id);
+      onBrushSelectRef.current(extracted[0].gid);
+      setActiveTab('library');
     }
-    showToast(`Extracted ${extracted.length} tiles from active sheet`);
+    showToast(`Extracted ${extracted.length} tiles into Library`);
   }, [ts, natural, showToast]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
@@ -1214,6 +1216,50 @@ export default function TilesetPicker({
     } else {
       showToast(`Failed to save stamp: ${res.error}`);
     }
+  };
+
+  const handleSlicerQuickExtract = () => {
+    if (!ts || !slicerSelection) return;
+    soundSynth?.playActionSound?.();
+    const offX = ts.offsetX ?? ts.margin ?? 0;
+    const offY = ts.offsetY ?? ts.margin ?? 0;
+    const spacing = ts.spacing ?? 0;
+    const minX = Math.min(slicerSelection.x0, slicerSelection.x1);
+    const minY = Math.min(slicerSelection.y0, slicerSelection.y1);
+    const maxX = Math.max(slicerSelection.x0, slicerSelection.x1);
+    const maxY = Math.max(slicerSelection.y0, slicerSelection.y1);
+    const cropW = Math.max(1, maxX - minX);
+    const cropH = Math.max(1, maxY - minY);
+    const sheetName = ts.imageSource.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'sheet';
+
+    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
+    const startCol = Math.min(ts.columns - 1, Math.max(0, Math.floor((minX - offX) / (ts.tilewidth + spacing))));
+    const startRow = Math.min(maxRows - 1, Math.max(0, Math.floor((minY - offY) / (ts.tileheight + spacing))));
+    const topGid = ts.firstgid + startRow * ts.columns + startCol;
+
+    const newDef: TileDefinition = {
+      id: `extracted-${sheetName}-${Date.now()}`,
+      name: `${sheetName.replace(/_/g, ' ')} (${cropW}×${cropH})`,
+      sourceSheet: ts.imageSource,
+      sourceX: minX,
+      sourceY: minY,
+      sourceWidth: cropW,
+      sourceHeight: cropH,
+      gid: topGid,
+      tags: ['sliced', 'custom', sheetName.toLowerCase()],
+      collision: 'NONE',
+      gameplayFlags: ['walkable'],
+      material: 'GRASS',
+      thumbnailUrl: ts.imageSource.startsWith('/') || ts.imageSource.startsWith('http')
+        ? ts.imageSource
+        : `/game-assets/tilesets/${ts.imageSource}`,
+    };
+
+    setTileDefinitions((prev) => [...prev, newDef]);
+    setSelectedTileDefId(newDef.id);
+    onBrushSelectRef.current(topGid);
+    setActiveTab('library');
+    showToast(`Extracted ${cropW}×${cropH}px Tile to Library!`);
   };
 
   const handleSlicerSaveDefinition = () => {
@@ -2065,6 +2111,16 @@ export default function TilesetPicker({
                 >
                   <Package className="w-3 h-3" />
                   <span>Save as Stamp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSlicerQuickExtract}
+                  className="px-2 py-1 rounded bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-[10px] font-bold flex items-center gap-1 cursor-pointer shadow transition"
+                  title="Extract cropped tile directly into Tile Library"
+                >
+                  <Scissors className="w-3 h-3" />
+                  <span>Extract to Library</span>
                 </button>
 
                 <button

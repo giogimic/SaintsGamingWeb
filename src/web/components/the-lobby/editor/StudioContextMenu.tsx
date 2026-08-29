@@ -33,6 +33,7 @@ import {
   Grid3X3,
   Trees,
 } from 'lucide-react';
+import { savePrefab, listPrefabs } from '@/app/actions/prefabs';
 
 import { useEditorStore, type PanelId } from './editor-store';
 import { useGameStore } from '../store';
@@ -157,6 +158,42 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
       showToast(`Cut ${res.width}×${res.height} selection (${res.count} tiles)`);
     } else {
       showToast(res.error || 'Failed to cut selection');
+    }
+  };
+
+  const handleExtractSelectionToStamp = async () => {
+    if (!activeMapData) return;
+    const store = useEditorStore.getState();
+    const copyRes = store.copySelection(activeMapData, activeLayerIdx);
+    if (!copyRes.ok || !store.tileClipboard) {
+      showToast(copyRes.error || 'Failed to extract selection.');
+      return;
+    }
+
+    const clip = store.tileClipboard;
+    const prefabName = `Custom Stamp (${clip.width}×${clip.height})`;
+    const res = await savePrefab({
+      name: prefabName,
+      category: 'decor',
+      width: clip.width,
+      height: clip.height,
+      visualData: clip.visualData || [],
+      logicData: clip.logicData || [],
+    });
+
+    if (res.success) {
+      showToast(`Stamp Created: ${prefabName}`);
+      const listRes = await listPrefabs();
+      if (listRes.success && listRes.data) {
+        store.setPrefabs(listRes.data);
+        const newPrefab = listRes.data.find((p: any) => p.name === prefabName);
+        if (newPrefab) {
+          store.setActivePrefabId(newPrefab.id);
+        }
+      }
+      store.setBrushMode('prefab');
+    } else {
+      showToast(`Failed to save stamp: ${res.error}`);
     }
   };
 
@@ -770,6 +807,18 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
               <span>Paste in Place</span>
             </div>
             <span className="text-[9px] text-muted-foreground font-mono">Ctrl+Shift+V</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleAction(handleExtractSelectionToStamp)}
+            className="flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-foreground hover:bg-primary/20 transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <Package className="h-3.5 w-3.5 text-purple-400" />
+              <span>{hasMultiSelection ? `Extract ${selectedCount} Tiles to Stamp` : 'Extract Tile to Stamp'}</span>
+            </div>
+            <span className="text-[9px] text-purple-400/80 font-mono">Stamp</span>
           </button>
 
           <div className="my-1 h-px bg-border/40" />

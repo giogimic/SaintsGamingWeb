@@ -266,7 +266,39 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
     if (result.type === 'WARP') {
       const gate = result.gate;
-      const spawn = { ...(gate.targetSpawn || { x: 6, y: 2 }) };
+      let spawnX = targetX;
+      let spawnY = targetY;
+
+      if (gate.isEdgeConnection) {
+        if (gate.edgeDirection === 'north') {
+          spawnX = targetX;
+          spawnY = -1; // becomes finalH - 1 on destination
+        } else if (gate.edgeDirection === 'south') {
+          spawnX = targetX;
+          spawnY = 0; // top row on destination
+        } else if (gate.edgeDirection === 'west') {
+          spawnX = -1; // becomes finalW - 1 on destination
+          spawnY = targetY;
+        } else if (gate.edgeDirection === 'east') {
+          spawnX = 0; // left column on destination
+          spawnY = targetY;
+        }
+      } else {
+        const destSpawn = gate.targetSpawn || gate.spawnPoint;
+        if (destSpawn && typeof destSpawn.x === 'number' && typeof destSpawn.y === 'number') {
+          const gatePosX = gate.position?.x ?? targetX;
+          const gatePosY = gate.position?.y ?? targetY;
+          const relX = targetX - gatePosX;
+          const relY = targetY - gatePosY;
+          spawnX = destSpawn.x + relX;
+          spawnY = destSpawn.y + relY;
+        } else {
+          spawnX = targetX;
+          spawnY = targetY;
+        }
+      }
+
+      const spawn = { x: spawnX, y: spawnY };
       const targetBase = toBaseMapId(gate.targetMapId);
       const finishWarp = () => {
         const store = useGameStore.getState();
@@ -1240,7 +1272,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             }
 
             const ops: any[] = [];
-            const needsFullRebuild = prefab.visualData && prefab.visualData.length > 4;
             
             // Paste Visual Data
             prefab.visualData?.forEach((v: any) => {
@@ -1254,24 +1285,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               const painted = paintWorldCell(map, targetLayer, tr, tc, v.tileId, worldSync);
               if (!('error' in painted)) {
                 ops.push(painted.cell);
-                if (!needsFullRebuild) {
-                  engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
-                }
+                engine.updateSingleTile(tr, tc, v.tileId, targetLayer, map.tilesets);
               }
             });
-            
-            if (needsFullRebuild) {
-              engine.loadTilemap({
-                id: 'prefab-paste',
-                width: map.width || 30,
-                height: map.height || 30,
-                tileSize: 1,
-                tiles: map.grid || [],
-                tileLayers: map.tileLayers,
-                tilesets: map.tilesets,
-                npcs: [],
-              });
-            }
 
             // Paste Logic Data
             prefab.logicData?.forEach((l: any) => {
@@ -1476,15 +1492,11 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           const paintedOps: any[] = [];
-          let needsFullRebuild = false;
           const pat = store.activeBrushPattern;
           const isFullFootprintPattern = !!pat && store.prefabStampMode !== '1tile';
           const scale = store.stampScale || 1;
           const targetW = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.w * scale)) : 1;
           const targetH = isFullFootprintPattern && pat ? Math.max(1, Math.round(pat.h * scale)) : 1;
-          if (isFullFootprintPattern && pat && targetW * targetH > 4) {
-            needsFullRebuild = true;
-          }
 
           for (const pt of coordsToPaint) {
             if (isFullFootprintPattern && pat) {
@@ -1512,9 +1524,7 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                   );
                   if (!('error' in painted)) {
                     paintedOps.push(painted.cell);
-                    if (!needsFullRebuild) {
-                      engine.updateSingleTile(tr, tc, patVal, target.layerIdx, map.tilesets);
-                    }
+                    engine.updateSingleTile(tr, tc, patVal, target.layerIdx, map.tilesets);
                   }
                 }
               }
@@ -1536,18 +1546,6 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
                 engine.updateSingleTile(pt.r, pt.c, valToPaint, target.layerIdx, map.tilesets);
               }
             }
-          }
-          if (needsFullRebuild) {
-            engine.loadTilemap({
-              id: 'pattern-paste',
-              width: map.width || 30,
-              height: map.height || 30,
-              tileSize: 1,
-              tiles: map.grid || [],
-              tileLayers: map.tileLayers,
-              tilesets: map.tilesets,
-              npcs: [],
-            });
           }
           if (paintedOps.length > 0) {
             useEditorStore.getState().pushPaintOp(paintedOps);
@@ -1795,7 +1793,9 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           } else if (action.type === 'WARP') {
             const gate = action.payload?.warpGate as any;
             if (gate?.targetMapId) {
-              state.changeMap(gate.targetMapId, { x: gate.targetX || 12, y: gate.targetY || 12 });
+              const curPos = state.player?.position || { x: 12, y: 12 };
+              const destSpawn = gate.targetSpawn || gate.spawnPoint || { x: gate.targetX ?? curPos.x, y: gate.targetY ?? curPos.y };
+              state.changeMap(gate.targetMapId, destSpawn);
             }
           }
         }
