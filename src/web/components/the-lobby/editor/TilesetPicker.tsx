@@ -528,12 +528,7 @@ export default function TilesetPicker({
       return;
     }
 
-    let nextFirstGid = 1;
-    if (tilesets.length > 0) {
-      const last = tilesets[tilesets.length - 1];
-      const estimatedCount = 65536;
-      nextFirstGid = last.firstgid + estimatedCount;
-    }
+    const nextFirstGid = tilesets.length * 100000 + 1;
 
     const imgUrl = normalized.startsWith('/') || normalized.startsWith('http') 
         ? normalized 

@@ -133,6 +133,74 @@ export function buildEmptyGroundLayer(grid: number[][] | undefined): {
   return buildDefaultGroundLayer(grid);
 }
 
+export const TILESET_GID_STRIDE = 100000;
+
+export function normalizeTilesetGids<
+  T extends {
+    tileLayers?: Array<{ name: string; grid: number[][] }>;
+    tilesets?: StudioTilesetMeta[];
+  }
+>(map: T): T {
+  if (!Array.isArray(map.tilesets) || map.tilesets.length === 0) {
+    return map;
+  }
+
+  let isAlreadyClean = true;
+  for (let i = 0; i < map.tilesets.length; i++) {
+    const expectedFirstGid = i * TILESET_GID_STRIDE + 1;
+    if (map.tilesets[i].firstgid !== expectedFirstGid) {
+      isAlreadyClean = false;
+      break;
+    }
+  }
+
+  if (isAlreadyClean) {
+    return map;
+  }
+
+  const oldTilesets = map.tilesets;
+  const oldSorted = [...oldTilesets].sort((a, b) => b.firstgid - a.firstgid);
+
+  const newTilesets = oldTilesets.map((ts, idx) => ({
+    ...ts,
+    firstgid: idx * TILESET_GID_STRIDE + 1,
+  }));
+
+  let newTileLayers = map.tileLayers;
+  if (Array.isArray(map.tileLayers) && map.tileLayers.length > 0) {
+    newTileLayers = map.tileLayers.map((layer) => {
+      if (!Array.isArray(layer.grid)) return layer;
+      const remappedGrid = layer.grid.map((row) => {
+        if (!Array.isArray(row)) return row;
+        return row.map((rawGid) => {
+          if (!rawGid || rawGid === 0) return 0;
+          const cleanGid = (rawGid & 0x1fffffff);
+          const flipMask = rawGid & ~0x1fffffff;
+
+          const oldTs = oldSorted.find((t) => cleanGid >= t.firstgid);
+          if (!oldTs) return rawGid;
+          const oldIdx = oldTilesets.indexOf(oldTs);
+          if (oldIdx === -1) return rawGid;
+
+          const localId = cleanGid - oldTs.firstgid;
+          const newGid = (oldIdx * TILESET_GID_STRIDE + 1) + localId;
+          return (newGid | flipMask);
+        });
+      });
+      return {
+        ...layer,
+        grid: remappedGrid,
+      };
+    });
+  }
+
+  return {
+    ...map,
+    tilesets: newTilesets,
+    tileLayers: newTileLayers,
+  };
+}
+
 export function ensureMapHasStudioTilesets<
   T extends {
     grid?: number[][];
@@ -155,7 +223,7 @@ export function ensureMapHasStudioTilesets<
     if (!Array.isArray(map.tilesets)) {
       return { ...map, tilesets: [] };
     }
-    return map;
+    return normalizeTilesetGids(map);
   }
 
   let nextLayers = map.tileLayers;
@@ -167,9 +235,10 @@ export function ensureMapHasStudioTilesets<
     nextLayers = fillZeroGidsInLayers(nextLayers!);
   }
 
-  return {
+  const rawEnsured = {
     ...map,
     tileLayers: nextLayers,
     tilesets: needsTilesets ? [...DEFAULT_STUDIO_TILESETS] : (map.tilesets || []),
   };
+  return normalizeTilesetGids(rawEnsured);
 }
