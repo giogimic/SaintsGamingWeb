@@ -189,6 +189,22 @@ export interface BrushPattern {
   gids: number[][];
 }
 
+export interface TileDefinition {
+  id: string;
+  name: string;
+  sourceSheet: string;
+  sourceX: number;
+  sourceY: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  gid: number;
+  tags: string[];
+  collision: 'NONE' | 'SOLID' | 'WATER' | 'LEDGE' | 'CLIFF';
+  gameplayFlags: string[];
+  material: string;
+  thumbnailUrl?: string;
+}
+
 interface EditorState {
   /** Legacy: true = editor runtime (tools on). Prefer getStudioRuntime(). */
   isCreationMode: boolean;
@@ -235,6 +251,11 @@ interface EditorState {
   activePrefabId: string | null;
   prefabs: any[];
   tileClipboard: TileClipboardData | null;
+  tileDefinitions: TileDefinition[];
+  selectedTileDefId: string | null;
+  setTileDefinitions: (defs: TileDefinition[] | ((prev: TileDefinition[]) => TileDefinition[])) => void;
+  addTileDefinitions: (defs: TileDefinition[]) => void;
+  setSelectedTileDefId: (id: string | null) => void;
   paintMode: 'stamp' | 'paste';
   setPaintMode: (mode: 'stamp' | 'paste') => void;
   prefabStampMode: '1tile' | 'footprint';
@@ -904,6 +925,22 @@ export const useEditorStore = create<EditorState>()(
       activePrefabId: null,
       prefabs: [],
       tileClipboard: null,
+      tileDefinitions: [],
+      selectedTileDefId: null,
+      setTileDefinitions: (defs) =>
+        set((state) => {
+          state.tileDefinitions = typeof defs === 'function' ? defs(state.tileDefinitions) : defs;
+        }),
+      addTileDefinitions: (newDefs) =>
+        set((state) => {
+          const existingIds = new Set(state.tileDefinitions.map((d) => d.id));
+          const filtered = newDefs.filter((d) => !existingIds.has(d.id));
+          state.tileDefinitions = [...state.tileDefinitions, ...filtered];
+        }),
+      setSelectedTileDefId: (id) =>
+        set((state) => {
+          state.selectedTileDefId = id;
+        }),
       pendingGateConnection: null,
       setPendingGateConnection: (conn) =>
         set((state) => {
