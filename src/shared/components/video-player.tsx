@@ -59,6 +59,7 @@ export function VideoPlayer({
   }, [backgroundTrackVolume, copyrightStrike]);
 
   const formatTime = (seconds: number) => {
+    if (!isFinite(seconds) || seconds < 0) return "0:00";
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
@@ -68,22 +69,30 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      video.play();
-      voiceoverRef.current?.play();
-      bgTrackRef.current?.play();
+      const p = video.play();
+      if (p !== undefined) {
+        p.catch(() => {
+          // Play request deferred or blocked by browser policy
+        });
+      }
+      if (voiceoverUrl && voiceoverRef.current) voiceoverRef.current.play().catch(() => {});
+      if (backgroundTrackUrl && bgTrackRef.current) bgTrackRef.current.play().catch(() => {});
       setIsPlaying(true);
     } else {
       video.pause();
-      voiceoverRef.current?.pause();
-      bgTrackRef.current?.pause();
+      if (voiceoverRef.current) voiceoverRef.current.pause();
+      if (bgTrackRef.current) bgTrackRef.current.pause();
       setIsPlaying(false);
     }
-  }, []);
+  }, [voiceoverUrl, backgroundTrackUrl]);
 
   const skip = useCallback((seconds: number) => {
     const video = videoRef.current;
     if (!video) return;
-    video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
+    const maxDur = isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+    if (maxDur > 0) {
+      video.currentTime = Math.max(0, Math.min(maxDur, video.currentTime + seconds));
+    }
     
     const side = seconds > 0 ? "right" : "left";
     const text = seconds > 0 ? `+${seconds}s` : `${seconds}s`;
@@ -94,14 +103,17 @@ export function VideoPlayer({
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const bar = progressRef.current;
     const video = videoRef.current;
-    if (!bar || !video) return;
+    if (!bar || !video || !isFinite(video.duration) || video.duration <= 0) return;
     const rect = bar.getBoundingClientRect();
+    if (rect.width <= 0) return;
     const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const newTime = fraction * video.duration;
-    video.currentTime = newTime;
-    if (voiceoverRef.current) voiceoverRef.current.currentTime = newTime;
-    if (bgTrackRef.current) bgTrackRef.current.currentTime = newTime;
-  }, []);
+    if (isFinite(newTime)) {
+      video.currentTime = newTime;
+      if (voiceoverUrl && voiceoverRef.current) voiceoverRef.current.currentTime = newTime;
+      if (backgroundTrackUrl && bgTrackRef.current) bgTrackRef.current.currentTime = newTime;
+    }
+  }, [voiceoverUrl, backgroundTrackUrl]);
 
   const handleProgressDrag = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isSeeking) return;
@@ -113,6 +125,7 @@ export function VideoPlayer({
     if (!container) return;
 
     const rect = container.getBoundingClientRect();
+    if (rect.width <= 0) return;
     const x = e.clientX - rect.left;
     const side: "left" | "right" = x < rect.width / 2 ? "left" : "right";
     const now = Date.now();
