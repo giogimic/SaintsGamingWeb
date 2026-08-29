@@ -1,3 +1,6 @@
+# 2.1.493
+- **Fixed React Error #310 (Hook Order Violation in DraggablePanel)**: Fixed an unconditional hook declaration order in `DraggablePanel.tsx` where `useCallback` was placed after an early return, ensuring uniform hook execution across renders when opening/closing Studio panels.
+
 # 2.1.492
 - **Pixel-Precise Freeform Slicer Selection & Full Sheet Extraction**: Removed initial grid-snapping on freeform slicer drag to enable sub-pixel selection accuracy. Upgraded sheet extraction from fixed 4×4 bounds to full-sheet tile extraction (up to 128 tiles) with exact offset and spacing preservation into the Tile Library.
 - **2D-to-3D Item Rendering Subsystem (`ItemBillboardRenderer`)**: Created an optimized 3D billboard item rendering engine supporting upright Y-axis billboard alignment, Minecraft-style floating/bobbing animations, 3D spin rotation, and ground glow rings.

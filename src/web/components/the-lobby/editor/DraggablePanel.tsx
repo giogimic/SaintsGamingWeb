@@ -28,6 +28,10 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
   const dragOffset = useRef({ x: 0, y: 0 });
   const resizeOrigin = useRef({ x: 0, y: 0, w: 0, h: 0 });
 
+  const handleDoubleClick = useCallback(() => {
+    toggleCollapse(id);
+  }, [id, toggleCollapse]);
+
   if (!panelState?.isOpen) return null;
 
   const { x, y, width, height, title, isCollapsed, zIndex } = panelState;
@@ -95,10 +99,6 @@ export const DraggablePanel: React.FC<DraggablePanelProps> = ({ id, children, ic
       }
     }
   };
-
-  const handleDoubleClick = useCallback(() => {
-    toggleCollapse(id);
-  }, [id, toggleCollapse]);
 
   return (
     <div
