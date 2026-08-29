@@ -1,3 +1,6 @@
+# 2.1.500
+- **Studio Tileset Drag-Selection Restoration & Pointer Engine Overhaul**: Fixed a regression where `TileSelectorPanel.tsx`'s `handleBrushSelect` was clearing multi-tile patterns via `setActiveBrushPattern(null)`. Added dedicated element-level `handlePointerMove` on `TilesetPicker.tsx` and separated live dragging bounding box rendering from single-event release commitment, restoring seamless multi-tile click-and-drag selection in the Studio Tileset Picker.
+
 # 2.1.499
 - **Home Page Hero Button Cleanup**: Removed the redundant "Play " prefix from the main hero game CTA in `app/(main)/home/page.tsx`, displaying the clean realm name directly (`{realmName}`).
 - **Eliminated Black-on-Black Muddy Text on Buttons**: Updated button exclusion rules in `app/globals.css` so buttons, badges, and dark-text elements (`text-black`, `text-slate-950`, `text-zinc-950`) never inherit text-shadows, ensuring ultra-crisp contrast on bright gradients.

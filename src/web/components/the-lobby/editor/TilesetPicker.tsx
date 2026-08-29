@@ -811,12 +811,100 @@ export default function TilesetPicker({
     selectTileRegion(row, col, 1, 1);
   };
 
+  const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
+    const currentTs = tsRef.current;
+    const nat = naturalRef.current;
+    if (!currentTs || imgError || !imgRef.current || !nat.w || !nat.h) return;
+
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
+    const scaleX = nat.w / rect.width;
+    const scaleY = nat.h / rect.height;
+    const nativeX = Math.floor(x * scaleX);
+    const nativeY = Math.floor(y * scaleY);
+
+    if (selectionMode === 'slicer') {
+      const start = slicerDragStartRef.current;
+      if (start && isPointerDownRef.current) {
+        const x0 = Math.max(0, Math.min(start.x, nativeX));
+        const x1 = Math.min(nat.w, Math.max(start.x, nativeX));
+        const y0 = Math.max(0, Math.min(start.y, nativeY));
+        const y1 = Math.min(nat.h, Math.max(start.y, nativeY));
+        setSlicerSelection({ x0, y0, x1: Math.max(x0 + 4, x1), y1: Math.max(y0 + 4, y1) });
+      }
+      return;
+    }
+
+    // Grid Mode
+    const offX = currentTs.offsetX ?? currentTs.margin ?? 0;
+    const offY = currentTs.offsetY ?? currentTs.margin ?? 0;
+    const spacing = currentTs.spacing ?? 0;
+    const col = Math.min(currentTs.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (currentTs.tilewidth + spacing))));
+    const maxRows = Math.max(1, Math.floor((nat.h - offY) / (currentTs.tileheight + spacing)));
+    const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (currentTs.tileheight + spacing))));
+
+    let minRow = row;
+    let maxRow = row;
+    let minCol = col;
+    let maxCol = col;
+
+    const start = dragStartRef.current;
+    if (start && isPointerDownRef.current) {
+      minRow = Math.min(start.r, row);
+      maxRow = Math.max(start.r, row);
+      minCol = Math.min(start.c, col);
+      maxCol = Math.max(start.c, col);
+    }
+
+    maxRow = Math.min(maxRow, maxRows - 1);
+    maxCol = Math.min(maxCol, currentTs.columns - 1);
+
+    const spanW = maxCol - minCol + 1;
+    const spanH = maxRow - minRow + 1;
+    const gid = currentTs.firstgid + minRow * currentTs.columns + minCol;
+    const leftPx = offX + minCol * (currentTs.tilewidth + spacing);
+    const topPx = offY + minRow * (currentTs.tileheight + spacing);
+    const widthPx = spanW * currentTs.tilewidth + (spanW - 1) * spacing;
+    const heightPx = spanH * currentTs.tileheight + (spanH - 1) * spacing;
+
+    if (start && isPointerDownRef.current) {
+      dragBoundsRef.current = { row: minRow, col: minCol, w: spanW, h: spanH };
+    }
+
+    setHoveredTile({
+      leftPct: (leftPx / nat.w) * 100,
+      topPct: (topPx / nat.h) * 100,
+      widthPct: (widthPx / nat.w) * 100,
+      heightPct: (heightPx / nat.h) * 100,
+      gid,
+      col: minCol,
+      row: minRow,
+      w: spanW,
+      h: spanH,
+    });
+  };
+
   const handlePointerUp = (e: React.PointerEvent<HTMLImageElement>) => {
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
     try {
       if (e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId);
       }
     } catch {}
+
+    const bounds = dragBoundsRef.current;
+    if (bounds) {
+      selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
+    } else if (dragStartRef.current) {
+      selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
+    }
+
+    slicerDragStartRef.current = null;
+    dragStartRef.current = null;
+    dragBoundsRef.current = null;
+    setDragStart(null);
   };
 
   // Window-level smooth dragging listener so pointer captures never drop
@@ -892,10 +980,6 @@ export default function TilesetPicker({
         w: spanW,
         h: spanH,
       });
-
-      if (start) {
-        selectTileRegion(minRow, minCol, spanW, spanH);
-      }
     };
 
     const onWindowPointerUp = () => {
@@ -904,6 +988,8 @@ export default function TilesetPicker({
         const bounds = dragBoundsRef.current;
         if (bounds) {
           selectTileRegion(bounds.row, bounds.col, bounds.w, bounds.h);
+        } else if (dragStartRef.current) {
+          selectTileRegion(dragStartRef.current.r, dragStartRef.current.c, 1, 1);
         }
         slicerDragStartRef.current = null;
         dragStartRef.current = null;
@@ -1071,44 +1157,6 @@ export default function TilesetPicker({
     }
     showToast(`Extracted ${extracted.length} tile${extracted.length !== 1 ? 's' : ''} into Library`);
   }, [ts, natural, showToast, addTileDefinitions, setSelectedTileDefId]);
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLImageElement>) => {
-    if (!ts || imgError || !imgRef.current || !natural.w || !natural.h) return;
-    if (isPointerDownRef.current) return; // Handled by window listener
-
-    const rect = imgRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width - 1, e.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height - 1, e.clientY - rect.top));
-    const scaleX = natural.w / rect.width;
-    const scaleY = natural.h / rect.height;
-    const nativeX = Math.floor(x * scaleX);
-    const nativeY = Math.floor(y * scaleY);
-
-    if (isCalibratingOrigin || selectionMode === 'slicer') return;
-
-    const offX = ts.offsetX ?? ts.margin ?? 0;
-    const offY = ts.offsetY ?? ts.margin ?? 0;
-    const spacing = ts.spacing ?? 0;
-    const col = Math.min(ts.columns - 1, Math.max(0, Math.floor((nativeX - offX) / (ts.tilewidth + spacing))));
-    const maxRows = Math.max(1, Math.floor((natural.h - offY) / (ts.tileheight + spacing)));
-    const row = Math.min(maxRows - 1, Math.max(0, Math.floor((nativeY - offY) / (ts.tileheight + spacing))));
-
-    const gid = ts.firstgid + row * ts.columns + col;
-    const leftPx = offX + col * (ts.tilewidth + spacing);
-    const topPx = offY + row * (ts.tileheight + spacing);
-
-    setHoveredTile({
-      leftPct: (leftPx / natural.w) * 100,
-      topPct: (topPx / natural.h) * 100,
-      widthPct: (ts.tilewidth / natural.w) * 100,
-      heightPct: (ts.tileheight / natural.h) * 100,
-      gid,
-      col,
-      row,
-      w: 1,
-      h: 1,
-    });
-  };
 
   // Slicer Action Handlers
   const handleSlicerStamp1Tile = () => {
