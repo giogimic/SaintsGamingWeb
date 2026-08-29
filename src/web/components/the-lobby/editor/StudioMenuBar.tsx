@@ -41,6 +41,12 @@ import {
   PawPrint,
   Coins,
   Wrench,
+  Flame,
+  Film,
+  Compass,
+  Package,
+  Sword,
+  Store,
 } from 'lucide-react';
 
 import { StudioShortcutsModal } from './components/StudioShortcutsModal';
@@ -449,25 +455,49 @@ export function StudioMenuBar({ onOpenMapBrowser, onOpenAssetBrowser }: StudioMe
           </TopLevelMenu>
 
           <TopLevelMenu id="windows" label="Windows">
+            {/* World & Art */}
             <MenuItem label="Tile Selector" icon={LayoutGrid} onClick={() => openPanel('tileset')} />
             <MenuItem label="Logic Painter" icon={Shield} onClick={() => openPanel('logic')} />
             <MenuItem label="Properties / Inspector" icon={Settings} onClick={() => openPanel('properties')} />
             <MenuItem label="World Builder" icon={Folder} onClick={() => openPanel('build')} />
             <MenuItem label="World Atlas" icon={Globe} onClick={() => openPanel('atlas')} />
+            <MenuItem label="Map Browser" icon={Globe} onClick={() => openPanel('maps')} />
             <MenuItem label="Asset Browser" icon={Box} onClick={() => openPanel('assets')} />
+            <MenuItem label="Prefab Builder & Stamps" icon={Package} onClick={() => openPanel('prefab')} />
+            <MenuItem label="Animation Studio" icon={Film} onClick={() => openPanel('animations')} />
+            <MenuItem label="Streaming Inspector" icon={Compass} onClick={() => openPanel('streaming')} />
             <MenuItem divider />
+
+            {/* Entities & Encounters */}
             <MenuItem label="NPC Studio" icon={Users} onClick={() => openPanel('npc')} />
             <MenuItem label="Creature Studio" icon={PawPrint} onClick={() => openPanel('creature')} />
+            <MenuItem label="Monster Spawners" icon={Sword} onClick={() => openPanel('spawner')} />
+            <MenuItem label="Mount Studio" icon={Sparkles} onClick={() => openPanel('mounts')} />
+            <MenuItem divider />
+
+            {/* Quests & Scripts */}
             <MenuItem label="Quest Studio" icon={ScrollText} onClick={() => openPanel('quest')} />
             <MenuItem label="Dialogue Editor" icon={MessageSquare} onClick={() => openPanel('dialogue')} />
-            <MenuItem label="Loot Manager" icon={Coins} onClick={() => openPanel('loot')} />
-            <MenuItem label="Monster Spawners" icon={PawPrint} onClick={() => openPanel('spawner')} />
-            <MenuItem label="Prefabs" icon={Box} onClick={() => openPanel('prefab')} />
             <MenuItem divider />
+
+            {/* Economy, Crafting & Dungeons */}
+            <MenuItem label="Item Studio" icon={Package} onClick={() => openPanel('items')} />
+            <MenuItem label="Recipe & Crafting" icon={Flame} onClick={() => openPanel('recipes')} />
+            <MenuItem label="Shop & Merchants" icon={Store} onClick={() => openPanel('shop')} />
+            <MenuItem label="Loot Manager" icon={Coins} onClick={() => openPanel('loot')} />
+            <MenuItem label="Profession Studio" icon={Wrench} onClick={() => openPanel('classes')} />
+            <MenuItem label="Dungeon Studio" icon={Shield} onClick={() => openPanel('dungeons')} />
+            <MenuItem divider />
+
+            {/* Simulation, Ops & Diagnostics */}
+            <MenuItem label="Gameplay & Combat Hub" icon={Activity} onClick={() => openPanel('gameplay')} />
+            <MenuItem label="World Events" icon={Sparkles} onClick={() => openPanel('worldevent')} />
+            <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
             <MenuItem label="Problems & Diagnostics" icon={AlertCircle} onClick={() => openPanel('problems')} />
             <MenuItem label="Publish & Releases" icon={CloudUpload} onClick={() => openPanel('publishing')} />
-            <MenuItem label="Simulation Presets" icon={Activity} onClick={() => openPanel('simulation')} />
+            <MenuItem label="Realm Settings" icon={Settings} onClick={() => openPanel('settings')} />
             <MenuItem divider />
+
             <MenuItem
               label="Reset Workspace Layout"
               onClick={() => {
