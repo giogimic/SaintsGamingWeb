@@ -808,6 +808,17 @@ const DEFAULT_PANELS: Record<PanelId, FloatingPanelState> = {
     height: 600,
     zIndex: 10,
   },
+  animations: {
+    id: 'animations',
+    title: 'Animation Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 250,
+    y: 80,
+    width: 820,
+    height: 620,
+    zIndex: 10,
+  },
 };
 
 function closeAllPanels(state: { panels: Record<PanelId, FloatingPanelState>; activePanel: PanelId | null }) {

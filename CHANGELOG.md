@@ -1,3 +1,9 @@
+# 2.1.495
+- **Comprehensive 7-System Studio Audit & Full Frontend Unification**: Mounted all 10 unmounted/headless studio panels into `StudioEditorShell.tsx` (`DungeonEditorPanel`, `GameplayStudioPanels`, `MountEditorPanel`, `PublishManagerPanel`, `RecipeEditorPanel`, `ShopEditorPanel`, `SimulationPresetPanel`, `StreamingInspectorPanel`, `WorldEventPanel`, `AnimationStudioPanel`).
+- **Studio Menu Bar Categorization**: Expanded the `Windows` dropdown in `StudioMenuBar.tsx` into clean organized categories (World & Art, Entities & Encounters, Quests & Story, Economy & Crafting, Dungeons & Raids, Live Ops & Diagnostics) ensuring every studio tool has a direct front-end trigger.
+- **Studio Favorites Strip Wiring**: Connected bookmark clicks in `StudioFavoritesStrip.tsx` to instantly open corresponding docks or load maps.
+- **Animation Studio Dock & Permissions Integration**: Added `animations` dock definition to `studioModes.ts`, `studioPermissions.ts`, and `editor-store.ts`.
+
 # 2.1.494
 - **Fixed Tile Library Persistence & Extraction Display**: Fixed an issue where `loadTileLibrary` re-executed on state change and overwrote extracted custom tiles with default presets. Moved `tileDefinitions` into the global `useEditorStore` and updated all extraction handlers (`handleExtractTilesFromActiveSheet`, `handleSlicerQuickExtract`, `handleSaveAsTileDefinition`, `handleLoadStarterPresets`) to append to store and clear search/tag filters so new custom tiles show up immediately in the Library view.
 

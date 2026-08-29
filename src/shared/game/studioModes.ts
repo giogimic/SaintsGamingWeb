@@ -52,7 +52,8 @@ export type StudioDockId =
   | 'tileset'
   | 'logic'
   | 'publishing'
-  | 'maps';
+  | 'maps'
+  | 'animations';
 
 /** Map stable internal ids → canonical engine-editor labels. */
 export const STUDIO_MODE_TO_CANONICAL: Record<StudioMode, StudioCanonicalMode> = {
@@ -259,5 +260,9 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   maps: {
     label: 'Map Browser',
     blurb: 'Manage, search, and switch between available map files.',
+  },
+  animations: {
+    label: 'Animation Studio',
+    blurb: 'Sprite animation timeline editor, onion skinning, frame scrubbing, and preview controls.',
   },
 };

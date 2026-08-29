@@ -33,6 +33,12 @@ import {
   Grid3X3,
   Layers,
   Settings,
+  Shield,
+  Sparkles,
+  Activity,
+  CloudUpload,
+  Film,
+  Compass,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { canUseStudioDock } from '@/shared/game/studioPermissions';
@@ -83,6 +89,7 @@ const SimulationPresetPanel = lazy(() => import('./panels/SimulationPresetPanel'
 const PublishManagerPanel = lazy(() => import('./panels/PublishManagerPanel').then((m) => ({ default: m.PublishManagerPanel })));
 const TileSelectorPanel = lazy(() => import('./panels/TileSelectorPanel').then((m) => ({ default: m.TileSelectorPanel })));
 const LogicPainterPanel = lazy(() => import('./panels/LogicPainterPanel').then((m) => ({ default: m.LogicPainterPanel })));
+const AnimationStudioPanel = lazy(() => import('./panels/AnimationStudioPanel').then((m) => ({ default: m.AnimationStudioPanel })));
 const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ default: m.MapTabPanel })));
 const MapListPanel = lazy(() => import('./panels/MapListPanel').then((m) => ({ default: m.MapListPanel })));
 
@@ -841,9 +848,69 @@ export const StudioEditorShell: React.FC = () => {
             </DraggablePanel>
           )}
 
-          {canUseStudioDock(permissionLevel, 'atlas') && (
+          {(canUseStudioDock(permissionLevel, 'maps') || canUseStudioDock(permissionLevel, 'atlas')) && (
             <DraggablePanel id="maps" icon={<Globe className="w-4 h-4" />} title="Map Browser">
               <Suspense fallback={<div>Loading...</div>}><MapListPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {(canUseStudioDock(permissionLevel, 'dungeons') || canUseStudioDock(permissionLevel, 'dungeon')) && (
+            <DraggablePanel id="dungeons" icon={<Shield className="w-4 h-4 text-purple-400" />} title="Dungeon Studio">
+              <Suspense fallback={<div>Loading...</div>}><DungeonEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'gameplay') && (
+            <DraggablePanel id="gameplay" icon={<Activity className="w-4 h-4 text-rose-400" />} title="Gameplay Hub & Combat Balance">
+              <Suspense fallback={<div>Loading...</div>}><GameplayStudioPanels /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'mounts') && (
+            <DraggablePanel id="mounts" icon={<Sparkles className="w-4 h-4 text-amber-400" />} title="Mount Studio">
+              <Suspense fallback={<div>Loading...</div>}><MountEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'publishing') && (
+            <DraggablePanel id="publishing" icon={<CloudUpload className="w-4 h-4 text-emerald-400" />} title="Publish & Releases">
+              <Suspense fallback={<div>Loading...</div>}><PublishManagerPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'recipes') && (
+            <DraggablePanel id="recipes" icon={<Flame className="w-4 h-4 text-orange-400" />} title="Recipe & Crafting">
+              <Suspense fallback={<div>Loading...</div>}><RecipeEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'shop') && (
+            <DraggablePanel id="shop" icon={<Coins className="w-4 h-4 text-yellow-400" />} title="Shop & Merchants">
+              <Suspense fallback={<div>Loading...</div>}><ShopEditorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'simulation') && (
+            <DraggablePanel id="simulation" icon={<Activity className="w-4 h-4 text-cyan-400" />} title="Simulation Presets">
+              <Suspense fallback={<div>Loading...</div>}><SimulationPresetPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'streaming') && (
+            <DraggablePanel id="streaming" icon={<Compass className="w-4 h-4 text-sky-400" />} title="Streaming Inspector">
+              <Suspense fallback={<div>Loading...</div>}><StreamingInspectorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'worldevent') && (
+            <DraggablePanel id="worldevent" icon={<Sparkles className="w-4 h-4 text-fuchsia-400" />} title="World Events">
+              <Suspense fallback={<div>Loading...</div>}><WorldEventPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'animations') && (
+            <DraggablePanel id="animations" icon={<Film className="w-4 h-4 text-teal-400" />} title="Animation Studio">
+              <Suspense fallback={<div>Loading...</div>}><AnimationStudioPanel /></Suspense>
             </DraggablePanel>
           )}
         </div>
