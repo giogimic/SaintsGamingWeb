@@ -26,23 +26,23 @@ export function LogicTagPalette() {
 
   const tiles = Object.values(logicTiles).sort((a, b) => a.id - b.id);
 
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'movement' | 'harvest' | 'gate' | 'service'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'movement' | 'harvest' | 'service'>('all');
 
   const categories = [
     { id: 'all', label: 'All Tags' },
     { id: 'movement', label: 'Collision' },
-    { id: 'gate', label: 'Gateways' },
     { id: 'harvest', label: 'Gathering' },
     { id: 'service', label: 'Services' },
   ] as const;
 
   const filteredPresets = useMemo(() => {
     return LOGIC_COMPONENT_PRESETS.filter((p) => {
+      // Gates are physical connections, not painted logic tags
+      if (p.kind.startsWith('gate_')) return false;
       if (categoryFilter === 'all') return true;
       if (categoryFilter === 'movement') return ['walkable', 'solid', 'bramble'].includes(p.kind);
-      if (categoryFilter === 'gate') return p.kind.startsWith('gate_');
       if (categoryFilter === 'harvest') return ['harvest_wood', 'harvest_ore', 'fishing'].includes(p.kind);
-      if (categoryFilter === 'service') return ['shop', 'heal', 'craft', 'base', 'monster_spawner', 'encounter'].includes(p.kind);
+      if (categoryFilter === 'service') return ['shop', 'heal', 'craft', 'base', 'monster_spawner', 'encounter', 'bank', 'rule_trigger'].includes(p.kind);
       return true;
     });
   }, [categoryFilter]);

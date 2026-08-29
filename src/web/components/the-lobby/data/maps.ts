@@ -47,6 +47,7 @@ export interface RenderedChunk {
 
 export interface GameMapData {
   id: string;
+  gameId?: string;
   name: string;
   grid: number[][]; // 0: safe, 1: wall/boundary, 2: tall grass, 3-4: gates, 5: tree(woodcutting), 6: ore(mining), 7: shop, 8: clinic, 10: fishing spot
   gates: Record<number, MapGate>;

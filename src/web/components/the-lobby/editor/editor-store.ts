@@ -238,6 +238,39 @@ interface EditorState {
   setPaintMode: (mode: 'stamp' | 'paste') => void;
   prefabStampMode: '1tile' | 'footprint';
   setPrefabStampMode: (mode: '1tile' | 'footprint') => void;
+  
+  // Gate Pairing and Placement Wizard State
+  pendingGateConnection: {
+    originMapId: string;
+    originPosition: { x: number; y: number };
+    originSize: { w: number; h: number };
+    originGateId: string;
+    category: string;
+    name?: string;
+    targetMapId: string;
+    bidirectional: boolean;
+  } | null;
+  setPendingGateConnection: (
+    conn: {
+      originMapId: string;
+      originPosition: { x: number; y: number };
+      originSize: { w: number; h: number };
+      originGateId: string;
+      category: string;
+      name?: string;
+      targetMapId: string;
+      bidirectional: boolean;
+    } | null
+  ) => void;
+  gateConnectModal: {
+    isOpen: boolean;
+    originR: number;
+    originC: number;
+    initialCategory?: string;
+  } | null;
+  openGateConnectModal: (originR: number, originC: number, initialCategory?: string) => void;
+  closeGateConnectModal: () => void;
+
   pasteMode: PasteMode;
   isPasting: boolean;
   selectionStart: { r: number; c: number } | null;
@@ -854,6 +887,25 @@ export const useEditorStore = create<EditorState>()(
       activePrefabId: null,
       prefabs: [],
       tileClipboard: null,
+      pendingGateConnection: null,
+      setPendingGateConnection: (conn) =>
+        set((state) => {
+          state.pendingGateConnection = conn;
+        }),
+      gateConnectModal: null,
+      openGateConnectModal: (originR, originC, initialCategory = 'MAP') =>
+        set((state) => {
+          state.gateConnectModal = {
+            isOpen: true,
+            originR,
+            originC,
+            initialCategory,
+          };
+        }),
+      closeGateConnectModal: () =>
+        set((state) => {
+          state.gateConnectModal = null;
+        }),
       stampTransform: { ...DEFAULT_STAMP_TRANSFORM },
       pasteMode: 'overlay',
       isPasting: false,

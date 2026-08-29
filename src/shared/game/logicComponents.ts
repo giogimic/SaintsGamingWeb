@@ -552,13 +552,18 @@ export function buildPayloadsFromFields(
   };
 }
 
-/** Studio / runtime warp gate with an explicit tile position. */
+/** Studio / runtime warp gate with an explicit tile position and physical footprint. */
 export type StudioWarpGate = {
   id: string;
   position: { x: number; y: number };
+  width?: number;
+  height?: number;
   targetMapId: string;
   spawnPoint: { x: number; y: number };
+  targetGateId?: string;
   category?: string;
+  name?: string;
+  bidirectional?: boolean;
   errorMessage?: string;
 };
 
@@ -582,8 +587,14 @@ export function normalizeGates(gates: unknown): StudioWarpGate[] {
       .map((g) => ({
         id: g.id || `gate_${g.position.x}_${g.position.y}`,
         position: { x: g.position.x, y: g.position.y },
+        width: Math.max(1, Number(g.width) || 1),
+        height: Math.max(1, Number(g.height) || 1),
         targetMapId: g.targetMapId,
         spawnPoint: g.spawnPoint || { x: 1, y: 1 },
+        targetGateId: g.targetGateId,
+        category: g.category || 'MAP',
+        name: g.name,
+        bidirectional: g.bidirectional !== false,
         errorMessage: g.errorMessage,
       }));
   }
@@ -610,8 +621,14 @@ export function normalizeGates(gates: unknown): StudioWarpGate[] {
       out.push({
         id: v.id || `gate_${x}_${y}`,
         position: { x, y },
+        width: Math.max(1, Number(v.width) || 1),
+        height: Math.max(1, Number(v.height) || 1),
         targetMapId: v.targetMapId,
         spawnPoint: v.spawnPoint || { x: 1, y: 1 },
+        targetGateId: v.targetGateId,
+        category: v.category || 'MAP',
+        name: v.name,
+        bidirectional: v.bidirectional !== false,
         errorMessage: v.errorMessage,
       });
     }
@@ -626,13 +643,27 @@ export function upsertWarpGate(
   gates: unknown,
   gate: StudioWarpGate
 ): StudioWarpGate[] {
-  const list = normalizeGates(gates).filter(
-    (g) => !(g.position.x === gate.position.x && g.position.y === gate.position.y)
-  );
-  list.push(gate);
+  const gWidth = Math.max(1, gate.width || 1);
+  const gHeight = Math.max(1, gate.height || 1);
+  const list = normalizeGates(gates).filter((g) => {
+    // Remove if same ID or exact overlap
+    if (g.id === gate.id) return false;
+    const sameOrigin = g.position.x === gate.position.x && g.position.y === gate.position.y;
+    return !sameOrigin;
+  });
+  list.push({
+    ...gate,
+    width: gWidth,
+    height: gHeight,
+  });
   return list;
 }
 
 export function removeWarpGateAt(gates: unknown, x: number, y: number): StudioWarpGate[] {
-  return normalizeGates(gates).filter((g) => !(g.position.x === x && g.position.y === y));
+  return normalizeGates(gates).filter((g) => {
+    const w = Math.max(1, g.width || 1);
+    const h = Math.max(1, g.height || 1);
+    const inside = x >= g.position.x && x < g.position.x + w && y >= g.position.y && y < g.position.y + h;
+    return !inside;
+  });
 }

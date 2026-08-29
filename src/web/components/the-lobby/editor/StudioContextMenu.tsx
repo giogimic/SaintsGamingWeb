@@ -68,15 +68,19 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
   const [isSelectingGateType, setIsSelectingGateType] = useState(false);
   
   const currentGates = activeMapData ? normalizeGates(activeMapData.gates) : [];
-  const gateOnTile = currentGates.find(
-    (g) => g.position.x === tileC && g.position.y === tileR
-  );
+  const gateOnTile = currentGates.find((g) => {
+    const w = Math.max(1, g.width || 1);
+    const h = Math.max(1, g.height || 1);
+    return tileC >= g.position.x && tileC < g.position.x + w && tileR >= g.position.y && tileR < g.position.y + h;
+  });
 
   const handleSaveGateEdits = () => {
     if (!activeMapData || !gateOnTile) return;
     
     const updatedGate = {
       ...gateOnTile,
+      width: Math.max(1, editGateWidth || 1),
+      height: Math.max(1, editGateHeight || 1),
       targetMapId: editGateTarget.trim().toUpperCase() || 'DEMO_SANDBOX',
       spawnPoint: { x: editGateSpawnX, y: editGateSpawnY },
       category: editGateCategory,
@@ -86,14 +90,16 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     useGameStore.setState({ activeMapData: { ...activeMapData, gates: nextGates } });
     useEditorStore.getState().markMapDirty();
     setIsEditingGate(false);
-    showToast(`Gate updated → ${updatedGate.targetMapId}`);
+    showToast(`Gate updated → ${updatedGate.targetMapId} (${updatedGate.width}×${updatedGate.height})`);
   };
 
   const [isEditingGate, setIsEditingGate] = useState(false);
   const [editGateTarget, setEditGateTarget] = useState(gateOnTile?.targetMapId || '');
-  const [editGateSpawnX, setEditGateSpawnX] = useState(gateOnTile?.spawnPoint?.x ?? 14);
-  const [editGateSpawnY, setEditGateSpawnY] = useState(gateOnTile?.spawnPoint?.y ?? 15);
-  const [editGateCategory, setEditGateCategory] = useState(gateOnTile?.category || 'CUSTOM');
+  const [editGateSpawnX, setEditGateSpawnX] = useState(gateOnTile?.spawnPoint?.x ?? 6);
+  const [editGateSpawnY, setEditGateSpawnY] = useState(gateOnTile?.spawnPoint?.y ?? 2);
+  const [editGateCategory, setEditGateCategory] = useState(gateOnTile?.category || 'MAP');
+  const [editGateWidth, setEditGateWidth] = useState(gateOnTile?.width ?? 1);
+  const [editGateHeight, setEditGateHeight] = useState(gateOnTile?.height ?? 1);
 
   const selectedCount = useEditorStore.getState().getSelectedCount();
   const hasMultiSelection = selectedCount > 1;
@@ -296,28 +302,8 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
     showToast(`Set default map spawn point to [${tileC}, ${tileR}]`);
   };
 
-  const handlePlaceSpecificGate = (gatePreset: {
-    name: string;
-    targetMapId: string;
-    tileBrush: number;
-    category?: string;
-  }) => {
-    if (!activeMapData) return;
-    const nextGates = upsertWarpGate(activeMapData.gates, {
-      id: `gate_${tileC}_${tileR}`,
-      position: { x: tileC, y: tileR },
-      targetMapId: gatePreset.targetMapId,
-      spawnPoint: { x: 6, y: 2 }, // Default safe spawn, user should edit in properties
-      category: gatePreset.category,
-    });
-    const nextGrid = (activeMapData.grid || []).map((row: number[], ri: number) =>
-      row.map((cell: number, ci: number) => (ri === tileR && ci === tileC ? gatePreset.tileBrush : cell))
-    );
-    const next = { ...activeMapData, gates: nextGates, grid: nextGrid };
-    useGameStore.getState().setActiveMapData(next);
-    useEditorStore.getState().markMapDirty();
-    useEditorStore.getState().setShowWarpOverlays(true);
-    showToast(`Placed ${gatePreset.name} at [${tileC}, ${tileR}]`);
+  const handleOpenGateModal = (cat: string = 'MAP') => {
+    useEditorStore.getState().openGateConnectModal(tileR, tileC, cat);
   };
 
   const handlePlaceLogicTag = (tagId: number, label: string, panelToOpen?: PanelId) => {
@@ -508,71 +494,104 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
             ))}
 
             {/* Warp Gates */}
-            {(gateOnTile || isWarpTag) && (
+            {gateOnTile && (
               <div className="rounded-lg bg-purple-950/30 border border-purple-500/30 p-1.5 space-y-1">
-                <div className="px-1 text-[10px] font-bold text-purple-300 flex items-center gap-1.5 truncate">
-                  <DoorOpen className="h-3 w-3 shrink-0" />
-                  <span className="truncate">Warp Gate {gateOnTile?.category ? `(${gateOnTile.category})` : ''}</span>
+                <div className="px-1 text-[10px] font-bold text-purple-300 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <DoorOpen className="h-3 w-3 shrink-0" />
+                    <span className="truncate">Gate ({gateOnTile.category || 'MAP'})</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-purple-300/80 bg-purple-500/20 px-1 py-0.5 rounded">
+                    {gateOnTile.width || 1}×{gateOnTile.height || 1}
+                  </span>
                 </div>
                 
                 {isEditingGate ? (
-                  <div className="space-y-1 mt-1 p-1 bg-black/40 rounded border border-purple-500/20">
-                    <label className="block text-[8px] text-purple-300/70 uppercase">Target Map ID</label>
-                    <input
-                      type="text"
-                      value={editGateTarget}
-                      onChange={(e) => setEditGateTarget(e.target.value)}
-                      className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px] uppercase"
-                      placeholder="DEMO_SANDBOX"
-                    />
-                    
-                    <label className="block text-[8px] text-purple-300/70 uppercase mt-1">Category</label>
-                    <select
-                      value={editGateCategory}
-                      onChange={(e) => setEditGateCategory(e.target.value)}
-                      className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px]"
-                    >
-                      <option value="CUSTOM">Custom Warp (Classic)</option>
-                      <option value="ATLAS_NORTH">🧭 Atlas North Gate</option>
-                      <option value="ATLAS_EAST">🧭 Atlas East Gate</option>
-                      <option value="ATLAS_SOUTH">🧭 Atlas South Gate</option>
-                      <option value="ATLAS_WEST">🧭 Atlas West Gate</option>
-                      <option value="DUNGEON">🏰 Dungeon Gate</option>
-                      <option value="RAID">⚔️ Raid Gate</option>
-                      <option value="EVENT">🎉 Event Gate</option>
-                      <option value="MINE">⛏️ Mine Entrance Gate</option>
-                      <option value="DEEP_FOREST">🌲 Deep Forest Gate</option>
-                      <option value="PORTAL">🌀 Mystic Portal</option>
-                    </select>
+                  <div className="space-y-1.5 mt-1 p-1.5 bg-black/40 rounded-lg border border-purple-500/20">
+                    <div>
+                      <label className="block text-[8px] text-purple-300/70 uppercase">Physical Size (W × H)</label>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <input
+                          type="number"
+                          min={1}
+                          max={16}
+                          value={editGateWidth}
+                          onChange={(e) => setEditGateWidth(Math.max(1, Number(e.target.value)))}
+                          className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px]"
+                          placeholder="Width"
+                        />
+                        <span className="text-slate-500 text-[10px]">×</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={16}
+                          value={editGateHeight}
+                          onChange={(e) => setEditGateHeight(Math.max(1, Number(e.target.value)))}
+                          className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px]"
+                          placeholder="Height"
+                        />
+                      </div>
+                    </div>
 
-                    <label className="block text-[8px] text-purple-300/70 uppercase mt-1">Spawn Coords</label>
-                    <div className="flex gap-1">
+                    <div>
+                      <label className="block text-[8px] text-purple-300/70 uppercase">Target Map ID</label>
                       <input
-                        type="number"
-                        value={editGateSpawnX}
-                        onChange={(e) => setEditGateSpawnX(Number(e.target.value))}
-                        className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px]"
-                        placeholder="X"
-                      />
-                      <input
-                        type="number"
-                        value={editGateSpawnY}
-                        onChange={(e) => setEditGateSpawnY(Number(e.target.value))}
-                        className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-1 text-purple-100 text-[10px]"
-                        placeholder="Y"
+                        type="text"
+                        value={editGateTarget}
+                        onChange={(e) => setEditGateTarget(e.target.value)}
+                        className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px] uppercase font-mono mt-0.5"
+                        placeholder="DEMO_SANDBOX"
                       />
                     </div>
                     
-                    <div className="flex gap-1 mt-1 pt-1 border-t border-purple-500/20">
+                    <div>
+                      <label className="block text-[8px] text-purple-300/70 uppercase">Category</label>
+                      <select
+                        value={editGateCategory}
+                        onChange={(e) => setEditGateCategory(e.target.value)}
+                        className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px] mt-0.5"
+                      >
+                        <option value="MAP">🗺️ World Map</option>
+                        <option value="DUNGEON">🏰 Dungeon</option>
+                        <option value="RAID">⚔️ Raid Entrance</option>
+                        <option value="INTERIOR">🏠 Interior / Building</option>
+                        <option value="INSTANCE">🌌 Instance Realm</option>
+                        <option value="EVENT">🎉 Event Gate</option>
+                        <option value="PORTAL">🌀 Mystic Portal</option>
+                        <option value="CUSTOM">✨ Custom Warp</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[8px] text-purple-300/70 uppercase">Target Spawn Coords</label>
+                      <div className="flex gap-1 mt-0.5">
+                        <input
+                          type="number"
+                          value={editGateSpawnX}
+                          onChange={(e) => setEditGateSpawnX(Number(e.target.value))}
+                          className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px]"
+                          placeholder="X"
+                        />
+                        <input
+                          type="number"
+                          value={editGateSpawnY}
+                          onChange={(e) => setEditGateSpawnY(Number(e.target.value))}
+                          className="w-full bg-black/60 border border-purple-500/30 rounded px-1.5 py-0.5 text-purple-100 text-[10px]"
+                          placeholder="Y"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-1 pt-1 border-t border-purple-500/20">
                       <button
                         onClick={handleSaveGateEdits}
-                        className="flex-1 py-1 text-center bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/40 rounded text-[9px] font-bold"
+                        className="flex-1 py-1 text-center bg-purple-500/20 hover:bg-purple-500/40 text-purple-200 border border-purple-500/40 rounded text-[9px] font-bold cursor-pointer"
                       >
                         Save
                       </button>
                       <button
                         onClick={() => setIsEditingGate(false)}
-                        className="px-2 py-1 text-center bg-background/50 hover:bg-background/80 text-foreground border border-border/60 rounded text-[9px]"
+                        className="px-2 py-1 text-center bg-background/50 hover:bg-background/80 text-foreground border border-border/60 rounded text-[9px] cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -581,11 +600,12 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
                 ) : (
                   <>
                     {gateOnTile?.targetMapId && (
-                      <div className="px-1 text-[8px] text-purple-400 font-mono">
-                        Target: {gateOnTile.targetMapId} ({gateOnTile.spawnPoint?.x}, {gateOnTile.spawnPoint?.y})
+                      <div className="px-1 text-[8px] text-purple-300 font-mono flex items-center justify-between">
+                        <span>→ {gateOnTile.targetMapId}</span>
+                        <span className="text-purple-400/70">spawn: [{gateOnTile.spawnPoint?.x}, {gateOnTile.spawnPoint?.y}]</span>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-2 gap-1 mt-1">
                       <button
                         type="button"
                         onClick={() => setIsEditingGate(true)}
@@ -857,51 +877,45 @@ export const StudioContextMenu: React.FC<StudioContextMenuProps> = ({
                 {!isSelectingGateType ? (
                   <button
                     type="button"
-                    onClick={() => setIsSelectingGateType(true)}
+                    onClick={() => handleAction(() => handleOpenGateModal('MAP'))}
                     className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-foreground hover:bg-purple-950/40 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       <DoorOpen className="h-3 w-3 text-purple-400" />
-                      <span>Warp Gate...</span>
+                      <span>Connect Gate to Map...</span>
                     </div>
-                    <span className="text-[8px] text-purple-300/70 font-semibold uppercase">Pick Type ▸</span>
+                    <span className="text-[8px] text-purple-300/70 font-semibold uppercase">Pair Map ▸</span>
                   </button>
-                ) : (
-                  <div className="rounded-lg border border-purple-500/30 bg-purple-950/30 p-1.5 space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-purple-300 font-bold px-1 border-b border-purple-500/20 pb-0.5">
-                      <span>Select Gate Type</span>
-                      <button
-                        type="button"
-                        onClick={() => setIsSelectingGateType(false)}
-                        className="text-muted-foreground hover:text-foreground text-xs"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 gap-0.5 max-h-36 overflow-y-auto pr-1">
-                      {[
-                        { name: 'Standard Warp Gate', category: 'CUSTOM', tileBrush: 3, targetMapId: activeMapData?.id || 'DEMO_SANDBOX' },
-                        { name: '🧭 Atlas North Gate', category: 'ATLAS_NORTH', tileBrush: 14, targetMapId: '' },
-                        { name: '🧭 Atlas East Gate', category: 'ATLAS_EAST', tileBrush: 15, targetMapId: '' },
-                        { name: '🧭 Atlas South Gate', category: 'ATLAS_SOUTH', tileBrush: 16, targetMapId: '' },
-                        { name: '🧭 Atlas West Gate', category: 'ATLAS_WEST', tileBrush: 17, targetMapId: '' },
-                        { name: '🏰 Dungeon Gate', category: 'DUNGEON', tileBrush: 18, targetMapId: 'DEMO_SANDBOX' },
-                        { name: '⚔️ Raid Entrance Gate', category: 'RAID', tileBrush: 19, targetMapId: 'DEMO_SANDBOX' },
-                        { name: '🎉 Event Gate', category: 'EVENT', tileBrush: 20, targetMapId: 'DEMO_SANDBOX' },
-                      ].map((g) => (
-                        <button
-                          key={g.name}
-                          type="button"
-                          onClick={() => handleAction(() => handlePlaceSpecificGate(g))}
-                          className="w-full text-left px-1.5 py-0.5 rounded text-[9px] text-purple-200 hover:bg-purple-600/30 hover:text-white transition flex items-center justify-between"
-                        >
-                          <span className="truncate">{g.name}</span>
-                          <span className="text-[8px] text-purple-400/60 font-mono">#{g.tileBrush}</span>
-                        </button>
-                      ))}
-                    </div>
+                ) : null}
+
+                <div className="rounded-lg border border-purple-500/30 bg-purple-950/30 p-1.5 space-y-1">
+                  <div className="text-[10px] text-purple-300 font-bold px-1 border-b border-purple-500/20 pb-0.5 flex items-center justify-between">
+                    <span>Gate Connections</span>
+                    <span className="text-[8px] text-purple-400/60 font-mono">No paint logic</span>
                   </div>
-                )}
+                  <div className="grid grid-cols-1 gap-0.5 max-h-36 overflow-y-auto pr-1">
+                    {[
+                      { name: '🗺️ To World Map...', category: 'MAP' },
+                      { name: '🏰 Dungeon Entrance', category: 'DUNGEON' },
+                      { name: '⚔️ Raid Entrance', category: 'RAID' },
+                      { name: '🏠 Interior / Building', category: 'INTERIOR' },
+                      { name: '🌌 Instance Realm', category: 'INSTANCE' },
+                      { name: '🎉 Event Gateway', category: 'EVENT' },
+                      { name: '🌀 Mystic Portal', category: 'PORTAL' },
+                      { name: '✨ Custom Warp', category: 'CUSTOM' },
+                    ].map((g) => (
+                      <button
+                        key={g.name}
+                        type="button"
+                        onClick={() => handleAction(() => handleOpenGateModal(g.category))}
+                        className="w-full text-left px-1.5 py-1 rounded text-[9px] text-purple-200 hover:bg-purple-600/30 hover:text-white transition flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="truncate">{g.name}</span>
+                        <span className="text-[8px] text-purple-400/70 font-mono">{g.category}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Default Spawn */}
                 <button

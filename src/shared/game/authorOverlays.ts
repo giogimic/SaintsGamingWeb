@@ -6,8 +6,12 @@
 export type AuthorOverlayGate = {
   id?: string;
   position: { x: number; y: number };
+  width?: number;
+  height?: number;
   targetMapId?: string;
   spawnPoint?: { x: number; y: number };
+  category?: string;
+  name?: string;
 };
 
 export type AuthorOverlayNpc = {
@@ -33,7 +37,17 @@ export const AUTHOR_OVERLAY_Y = 0.32;
 
 export function authorOverlayGateMarkers(
   gates: AuthorOverlayGate[] | null | undefined
-): Array<{ key: string; x: number; y: number; kind: "gate" }> {
+): Array<{
+  key: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  targetMapId?: string;
+  category?: string;
+  name?: string;
+  kind: "gate";
+}> {
   if (!gates?.length) return [];
   return gates
     .filter(
@@ -46,6 +60,11 @@ export function authorOverlayGateMarkers(
       key: g.id || `gate_${g.position.x}_${g.position.y}`,
       x: g.position.x,
       y: g.position.y,
+      w: Math.max(1, Number(g.width) || 1),
+      h: Math.max(1, Number(g.height) || 1),
+      targetMapId: g.targetMapId,
+      category: g.category,
+      name: g.name,
       kind: "gate" as const,
     }));
 }
