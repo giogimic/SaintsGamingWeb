@@ -10,11 +10,18 @@
 export type GateSpawn = { x: number; y: number };
 
 export type NormalizedGate = {
+  id?: string;
   position: GateSpawn;
+  width: number;
+  height: number;
   targetMapId: string;
   targetSpawn: GateSpawn;
   /** Alias retained for older callers */
   spawnPoint: GateSpawn;
+  category?: string;
+  name?: string;
+  targetGateId?: string;
+  bidirectional?: boolean;
 };
 
 function asSpawn(raw: unknown, fallback: GateSpawn = { x: 6, y: 2 }): GateSpawn {
@@ -53,12 +60,21 @@ export function normalizeGatesToArray(gates: unknown): NormalizedGate[] {
       }
       if (!position) continue;
 
+      const width = Math.max(1, Number(row.width) || 1);
+      const height = Math.max(1, Number(row.height) || 1);
       const spawn = resolveGateSpawn(row as { targetSpawn?: unknown; spawnPoint?: unknown });
       out.push({
+        id: String(row.id || `gate_${position.x}_${position.y}`),
         position,
+        width,
+        height,
         targetMapId,
         targetSpawn: spawn,
         spawnPoint: spawn,
+        category: typeof row.category === 'string' ? row.category : 'MAP',
+        name: typeof row.name === 'string' ? row.name : undefined,
+        targetGateId: typeof row.targetGateId === 'string' ? row.targetGateId : undefined,
+        bidirectional: row.bidirectional !== false,
       });
     }
     return out;
@@ -86,12 +102,21 @@ export function normalizeGatesToArray(gates: unknown): NormalizedGate[] {
       // Bare numeric keys (legacy tile-id gates) have no coordinates — skip for array warps
       if (!position) continue;
 
+      const width = Math.max(1, Number(row.width) || 1);
+      const height = Math.max(1, Number(row.height) || 1);
       const spawn = resolveGateSpawn(row as { targetSpawn?: unknown; spawnPoint?: unknown });
       out.push({
+        id: String(row.id || `gate_${position.x}_${position.y}`),
         position,
+        width,
+        height,
         targetMapId,
         targetSpawn: spawn,
         spawnPoint: spawn,
+        category: typeof row.category === 'string' ? row.category : 'MAP',
+        name: typeof row.name === 'string' ? row.name : undefined,
+        targetGateId: typeof row.targetGateId === 'string' ? row.targetGateId : undefined,
+        bidirectional: row.bidirectional !== false,
       });
     }
     return out;

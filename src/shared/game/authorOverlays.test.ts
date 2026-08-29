@@ -16,7 +16,19 @@ describe("authorOverlay markers", () => {
           spawnPoint: { x: 1, y: 1 },
         },
       ])
-    ).toEqual([{ key: "gate_2_3", x: 2, y: 3, kind: "gate" }]);
+    ).toEqual([
+      {
+        key: "gate_2_3",
+        x: 2,
+        y: 3,
+        kind: "gate",
+        w: 1,
+        h: 1,
+        targetMapId: "OTHER",
+        category: undefined,
+        name: undefined,
+      },
+    ]);
   });
 
   it("builds NPC markers", () => {

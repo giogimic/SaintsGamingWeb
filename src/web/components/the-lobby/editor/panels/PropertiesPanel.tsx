@@ -191,7 +191,7 @@ export const PropertiesPanel: React.FC = () => {
           <Paintbrush className="w-3.5 h-3.5" /> Components (paint)
         </div>
         <div className="grid grid-cols-2 gap-1">
-          {LOGIC_COMPONENT_PRESETS.filter((p) => p.paintTileId != null).map((p) => (
+          {LOGIC_COMPONENT_PRESETS.filter((p) => p.paintTileId != null && !p.kind.startsWith('gate_')).map((p) => (
             <button
               key={p.kind}
               type="button"

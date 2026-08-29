@@ -2146,17 +2146,26 @@ export class BabylonEngine {
     ];
 
     for (const m of markers) {
+      const isGate = m.kind === "gate";
+      const w = isGate ? Math.max(1, (m as any).w || 1) : 1;
+      const h = isGate ? Math.max(1, (m as any).h || 1) : 1;
+      const centerC = m.x + (w - 1) / 2;
+      const centerR = m.y + (h - 1) / 2;
+
       const { posX, posZ } = tileCellWorldPos(
-        m.y,
-        m.x,
+        centerR,
+        centerC,
         this.currentMapWidth,
         this.currentMapHeight,
         tileSize
       );
-      const size = tileSize * (m.kind === "spawn" ? 0.45 : 0.7);
+
+      const planeWidth = isGate ? w * tileSize * 0.95 : tileSize * (m.kind === "spawn" ? 0.45 : 0.7);
+      const planeHeight = isGate ? h * tileSize * 0.95 : tileSize * (m.kind === "spawn" ? 0.45 : 0.7);
+
       const plane = MeshBuilder.CreatePlane(
         `author_${m.kind}_${m.key}`,
-        { size },
+        { width: planeWidth, height: planeHeight },
         this.scene
       );
       plane.rotation.x = Math.PI / 2;

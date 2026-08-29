@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { BabylonEngine } from '@/engine/BabylonEngine';
+import { BabylonEngine, isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
 import { useGameStore } from '../store';
 import { useEditorStore } from '../editor/editor-store';
 import { loadMap } from '../data/maps';
@@ -16,8 +16,9 @@ import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileCon
 import CraftingOverlay from '../crafting-overlay';
 import { isSameBaseMap, toBaseMapId } from '@/shared/net/mapIds';
 import { resolveEntitySpriteUrl, getAssetAnimationProfile } from '@/shared/game/creatureCatalog';
-import { isSingleFrameSpriteUrl, SINGLE_FRAME_SPRITE_CONFIG } from '@/engine/BabylonEngine';
-import { normalizeGates } from '@/shared/game/logicComponents';
+import { normalizeGates, upsertWarpGate, type StudioWarpGate } from '@/shared/game/logicComponents';
+import { stripEditorOverlaysFromMapPayload } from '@/shared/game/mapLayers';
+import { invalidateMapCache } from '@/shared/game/mapCache';
 import {
   evaluateEntityTarget,
   evaluateTileTarget,
@@ -1291,6 +1292,104 @@ export const GameCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
               store.pushPaintOp(ops);
               store.markMapDirty();
             }
+            return;
+          }
+
+          // Handling Destination Point Placement for Two-Ended Gate Pairing
+          if (store.pendingGateConnection) {
+            const pending = store.pendingGateConnection;
+            const destX = c;
+            const destY = r;
+            const destMapId = map.id || pending.targetMapId;
+
+            // 1. Create destination gate (placed on currently open destination map)
+            const destGate: StudioWarpGate = {
+              id: `gate_${destX}_${destY}`,
+              position: { x: destX, y: destY },
+              width: pending.originSize.w,
+              height: pending.originSize.h,
+              targetMapId: pending.originMapId,
+              spawnPoint: { x: pending.originPosition.x, y: pending.originPosition.y },
+              targetGateId: pending.originGateId,
+              category: pending.category,
+              name: pending.name ? `${pending.name} (Return)` : undefined,
+              bidirectional: pending.bidirectional,
+            };
+
+            const nextDestGates = upsertWarpGate(map.gates, destGate);
+            const updatedDestMap = { ...map, gates: nextDestGates };
+
+            // Save destination map directly to server
+            try {
+              fetch(`/api/maps/${encodeURIComponent(toBaseMapId(destMapId))}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(stripEditorOverlaysFromMapPayload({
+                  name: updatedDestMap.name || destMapId,
+                  gameId: updatedDestMap.gameId,
+                  grid: updatedDestMap.grid,
+                  gates: nextDestGates,
+                  npcs: updatedDestMap.npcs || [],
+                  encounterPool: updatedDestMap.encounterPool || [],
+                  tileLayers: updatedDestMap.tileLayers || [],
+                  tilesets: updatedDestMap.tilesets || [],
+                })),
+              }).catch((e) => console.error('Failed to save destination gate:', e));
+              invalidateMapCache(toBaseMapId(destMapId));
+            } catch (e) {
+              console.error(e);
+            }
+
+            // 2. Clear pending state and return user to origin map
+            store.setPendingGateConnection(null);
+            showToast(`Linking to ${pending.originMapId}...`);
+
+            loadMap(pending.originMapId).then((rawOrigin) => {
+              const loadedOrigin = ensureMapHasStudioTilesets(rawOrigin);
+              const originGate: StudioWarpGate = {
+                id: pending.originGateId,
+                position: pending.originPosition,
+                width: pending.originSize.w,
+                height: pending.originSize.h,
+                targetMapId: destMapId,
+                spawnPoint: { x: destX, y: destY },
+                targetGateId: destGate.id,
+                category: pending.category,
+                name: pending.name,
+                bidirectional: pending.bidirectional,
+              };
+
+              const nextOriginGates = upsertWarpGate(loadedOrigin.gates, originGate);
+              const updatedOrigin = { ...loadedOrigin, gates: nextOriginGates };
+
+              useGameStore.getState().setActiveMapData(updatedOrigin);
+              useEditorStore.getState().openMapInTab(pending.originMapId);
+              useEditorStore.getState().markMapDirty();
+              useEditorStore.getState().setShowWarpOverlays(true);
+
+              // Also persist origin map save
+              fetch(`/api/maps/${encodeURIComponent(toBaseMapId(pending.originMapId))}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(stripEditorOverlaysFromMapPayload({
+                  name: updatedOrigin.name || pending.originMapId,
+                  gameId: updatedOrigin.gameId,
+                  grid: updatedOrigin.grid,
+                  gates: nextOriginGates,
+                  npcs: updatedOrigin.npcs || [],
+                  encounterPool: updatedOrigin.encounterPool || [],
+                  tileLayers: updatedOrigin.tileLayers || [],
+                  tilesets: updatedOrigin.tilesets || [],
+                })),
+              }).catch((e) => console.error('Failed to save origin gate:', e));
+              invalidateMapCache(toBaseMapId(pending.originMapId));
+
+              showToast(`✦ Connected ${pending.originMapId} ↔ ${destMapId} at [${destX}, ${destY}]!`);
+            }).catch((err) => {
+              console.error('Failed to reload origin map:', err);
+              showToast(`Connected gates, but failed to return to ${pending.originMapId}: ${err?.message}`);
+            });
+
             return;
           }
 

@@ -52,6 +52,8 @@ import { StudioBottomToolbar } from './StudioBottomToolbar';
 import { AssetStudioSuite } from './AssetStudioSuite';
 import { HeroStudioSuite } from './hero-studio/HeroStudioSuite';
 import { StudioContextMenu } from './StudioContextMenu';
+import { GateConnectModal } from './GateConnectModal';
+import { DestinationPlacementHUD } from './DestinationPlacementHUD';
 
 // Lazy-loaded dock panels for maximum code-splitting & startup performance (Phase 8 Track D2)
 const WorldBuilderPanel = lazy(() => import('./panels/WorldBuilderPanel').then((m) => ({ default: m.WorldBuilderPanel })));
@@ -865,6 +867,8 @@ export const StudioEditorShell: React.FC = () => {
         />
       </div>
 
+      <DestinationPlacementHUD />
+      <GateConnectModal />
       <RuleDebuggerOverlay />
     </>
   );

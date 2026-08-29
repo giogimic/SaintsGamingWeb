@@ -7,7 +7,7 @@ import {
 
 describe('studio develop mode defaults', () => {
   it('opens World + Inspector for develop workspace', () => {
-    expect(STUDIO_MODE_DEFAULTS.develop).toEqual(['build', 'properties', 'prefab']);
+    expect(STUDIO_MODE_DEFAULTS.develop).toEqual(['build', 'tileset']);
     expect(STUDIO_MODE_DEFAULTS.test).toEqual([]);
   });
 

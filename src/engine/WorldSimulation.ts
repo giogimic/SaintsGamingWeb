@@ -77,9 +77,18 @@ export class WorldSimulation {
       return { type: 'BLOCKED', direction: dir, reason: 'BOUNDS' };
     }
 
-    // Warp Gate Check (array or legacy record shapes)
+    // Warp Gate Check (array or legacy record shapes with physical dimensions)
     const gates = normalizeGatesToArray(state.gates);
-    const gate = gates.find((g) => g.position.x === targetX && g.position.y === targetY);
+    const gate = gates.find((g) => {
+      const w = Math.max(1, g.width || 1);
+      const h = Math.max(1, g.height || 1);
+      return (
+        targetX >= g.position.x &&
+        targetX < g.position.x + w &&
+        targetY >= g.position.y &&
+        targetY < g.position.y + h
+      );
+    });
     if (gate?.targetMapId) {
       return { type: 'WARP', gate };
     }
