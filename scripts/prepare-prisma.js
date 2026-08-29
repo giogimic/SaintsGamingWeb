@@ -58,28 +58,32 @@ if (isSqlite) {
   schema = schema.replace(/provider\s*=\s*"sqlite"/g, 'provider = "mysql"');
 
   // Add back @db.LongText and @db.Text where needed
-  const longTextCols = ['gridData', 'tileLayersData', 'body', 'atlasData', 'visualData', 'logicData'];
+  const longTextCols = [
+    'stateData', 'visualData', 'logicData', 'gridData', 'tileLayersData',
+    'tilesetsData', 'entitiesData', 'encountersData', 'npcsData', 'gatesData',
+    'questsData', 'body', 'content', 'atlasData', 'customData', 'dialogueTree'
+  ];
   for (const col of longTextCols) {
-    const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String[ \\t]*[^\\n\\/]*?)([ \\t]*\\/\\/.*)?$`, 'gm');
+    const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');
     schema = schema.replace(regex, (match, p1, p2) => {
       if (p1.includes('@db.LongText')) return match;
-      if (p1.includes('@db.Text')) return match.replace('@db.Text', '@db.LongText');
-      return `${p1.trimEnd()} @db.LongText${p2 || ''}`;
+      if (p1.includes('@db.Text')) return `${p1.replace('@db.Text', '@db.LongText')}${p2 || ''}`;
+      return `${p1.trimEnd()} @db.LongText${p2 ? ' ' + p2.trim() : ''}`;
     });
   }
 
   const textCols = [
     'metadata', 'tags', 'categories', 'customLabels', 'atlasFrame', 'sourceRegion',
-    'gatesData', 'npcsData', 'encountersData', 'entitiesData',
-    'tilesetsData', 'respawnRulesJson', 'entryRequirements', 'questsData',
-    'tilesetData', 'npcs', 'encounters', 'gates', 'description', 'dialogStart',
-    'dialogProgress', 'dialogComplete', 'flavor', 'tagline'
+    'respawnRulesJson', 'entryRequirements', 'tilesetData', 'npcs', 'encounters',
+    'gates', 'description', 'dialogStart', 'dialogProgress', 'dialogComplete',
+    'flavor', 'tagline', 'baseStats', 'xpCurveData', 'spritePackIds', 'systemPrompt',
+    'prompt', 'response', 'context', 'notes', 'bio'
   ];
   for (const col of textCols) {
-    const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*[^\\n\\/]*?)([ \\t]*\\/\\/.*)?$`, 'gm');
+    const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');
     schema = schema.replace(regex, (match, p1, p2) => {
       if (p1.includes('@db.Text') || p1.includes('@db.LongText')) return match;
-      return `${p1.trimEnd()} @db.Text${p2 || ''}`;
+      return `${p1.trimEnd()} @db.Text${p2 ? ' ' + p2.trim() : ''}`;
     });
   }
 
