@@ -5,17 +5,17 @@ export interface TilesetCalculationMeta {
   tileheight: number;
 }
 
+export const TILESET_GID_STRIDE = 100000;
+
 /** Calculate next available firstgid for a newly added tileset. */
 export function calculateNextFirstGid(
   existingTilesets: Array<{ firstgid: number; columns?: number; tilewidth?: number; tileheight?: number }>,
-  estimatedTileCount: number = 256
+  estimatedTileCount: number = TILESET_GID_STRIDE
 ): number {
   if (!existingTilesets || existingTilesets.length === 0) {
     return 1;
   }
-  const last = existingTilesets[existingTilesets.length - 1];
-  const count = (last.columns || 8) * 32 || estimatedTileCount;
-  return last.firstgid + count;
+  return existingTilesets.length * TILESET_GID_STRIDE + 1;
 }
 
 /** Convert a global tile GID to local tileset grid coordinates. */

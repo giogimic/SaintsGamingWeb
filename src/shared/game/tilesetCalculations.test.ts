@@ -14,10 +14,10 @@ describe('Tileset GID Calculations (Phase 4C)', () => {
   it('calculates sequential firstgid offsets when appending tilesets', () => {
     const initial = [{ firstgid: 1, columns: 8 }];
     const nextGid = calculateNextFirstGid(initial);
-    expect(nextGid).toBe(257); // 1 + 8*32 = 257
+    expect(nextGid).toBe(100001);
 
     const nextNextGid = calculateNextFirstGid([...initial, { firstgid: nextGid, columns: 8 }]);
-    expect(nextNextGid).toBe(513); // 257 + 256 = 513
+    expect(nextNextGid).toBe(200001);
   });
 
   it('converts GID to local tileset coordinates correctly', () => {

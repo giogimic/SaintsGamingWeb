@@ -1,3 +1,8 @@
+# 2.1.490
+- **Fixed Tileset GID Overflow & Cross-Sheet Stamp Bleed**: Replaced legacy tight firstgid gaps (256..1000) with a safe 100,000 GID stride (`TILESET_GID_STRIDE = 100000`). Large multi-tile selections and crops extending deep into large tileset sheets no longer overflow into adjacent tilesets or render incorrect textures on the map canvas.
+- **Automated Map Tileset GID Normalization**: Added `normalizeTilesetGids` in `studioTilesetBootstrap.ts` to automatically re-space map tilesets and cleanly remap existing layer grid cells without losing visual artwork or corrupting tileset mappings.
+- **Updated Tileset Calculations & Seed Presets**: Updated `calculateNextFirstGid` in `tilesetCalculations.ts`, `DEFAULT_STUDIO_TILESETS` in `demoMapSeed.ts`, and `TilesetPicker.tsx` to uniformly enforce 100k stride.
+
 # 2.1.489
 - **Fixed Unexpected Tileset Tab Switching on Large Selections**: Added internal selection tracking (`isInternalSelectionRef`) and bounded tileset range verification in `TilesetPicker.tsx`. Selecting or dragging large multi-tile regions, crops, or high-index tiles no longer triggers unwanted tab switching to other tilesets.
 - **Multi-Scale Multi-Tile Stamping (`stampScale`)**: Added full multi-scale stamping capabilities (`0.25x`, `0.5x`, `1x`, `2x`, etc.) across `editor-store.ts`, `GameCanvasBabylon.tsx`, and `BabylonEngine.ts`. Enables pasting large areas (e.g. 800×800 px) directly onto smaller scenes (e.g. 400×400 px) with sub-sampled pixel accuracy.
