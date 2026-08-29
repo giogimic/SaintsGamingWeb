@@ -1,3 +1,6 @@
+# 2.1.485
+- **Zero-Dependency Dynamic Prisma Adapter**: Replaced `dotenv` dependency in `scripts/prepare-prisma.js` with pure native Node.js environment resolution, ensuring Docker/production web containers seamlessly adapt schema datasource providers to MariaDB/MySQL without runtime module missing crashes.
+
 # 2.1.484
 - **Fixed Slicer Multi-Tile Stamping & Bounding Box Calculation**: Resolved issue where "Stamp Multi-Tile" and "Stamp 1-Tile" both evaluated to 1 single tile. Updated `TilesetPicker.tsx` to accurately calculate normalized coordinate bounds (`minX`, `minY`, `maxX`, `maxY`) across any drag direction, properly slice the full 2D grid matrix of GIDs (`spanW × spanH`), and seamlessly switch `prefabStampMode` to `'footprint'` in `editor-store.ts`.
 - **In-World Multi-Tile Reticle & Live Preview Synchronization**: Enhanced `GameCanvasBabylon.tsx` and `BabylonEngine.ts` to immediately refresh hover reticles upon brush pattern changes, and added `createMultiTileReticleMaterial` rendering crisp multi-cell grid lines with neon cyber brackets for multi-tile stamps.
