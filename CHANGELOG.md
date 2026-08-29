@@ -1,3 +1,10 @@
+# 2.1.492
+- **Pixel-Precise Freeform Slicer Selection & Full Sheet Extraction**: Removed initial grid-snapping on freeform slicer drag to enable sub-pixel selection accuracy. Upgraded sheet extraction from fixed 4×4 bounds to full-sheet tile extraction (up to 128 tiles) with exact offset and spacing preservation into the Tile Library.
+- **2D-to-3D Item Rendering Subsystem (`ItemBillboardRenderer`)**: Created an optimized 3D billboard item rendering engine supporting upright Y-axis billboard alignment, Minecraft-style floating/bobbing animations, 3D spin rotation, and ground glow rings.
+- **DraggablePanel Cleanup & Performance Upgrade**: Compacted panel title bars from 40px to 24px with tooltip summaries, added double-click header collapse, and replaced state-driven drag with GPU-composited CSS transforms eliminating up to 60 React re-renders per second.
+- **3D Camera Control Upgrade**: Implemented smooth momentum and inertia damping on orbit and pan, multiplicative smooth zoom easing, keyboard orbit shortcuts (Q/E orbit, R/F pitch, Numpad 1/3/7 views), and double-click ground focus.
+- **Studio UI Micro-Animations**: Added active tool glow pulses and tactile button scaling across the bottom editor toolbar.
+
 # 2.1.491
 - **Exact Map Traversal & Gate Spawn Transitions**: Fixed player spawn positioning when traversing map boundaries and stepping into gates. Border traversal (North, South, East, West) now preserves the player's exact entering coordinate, and physical gates compute relative offsets correctly without defaulting to fixed coordinates.
 - **Eliminated Studio Canvas & Selection Flickering during Painting**: Removed `loadTilemap` geometry teardown from pattern paint and prefab stamping loops. Tile changes now update exclusively via in-place GPU vertex buffer patching (`engine.updateSingleTile`), delivering 60 FPS smooth, flicker-free painting.

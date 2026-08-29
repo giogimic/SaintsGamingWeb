@@ -61,6 +61,7 @@ import {
   type SpriteAnimationProfile,
   type SpriteDefinition,
 } from "../shared/game/spriteDefinitions";
+import { ItemBillboardRenderer, type ItemBillboardConfig } from "./ItemBillboardRenderer";
 export interface RenderedChunk {
   mapId?: string;
   chunkX?: number; // Legacy
@@ -279,6 +280,7 @@ export class BabylonEngine {
   }
 
   private waterMaterials: StandardMaterial[] = [];
+  public itemBillboards: ItemBillboardRenderer;
   private guiTexture: AdvancedDynamicTexture;
   private chatBubbles: Map<string, Rectangle> = new Map();
   /** Floating name labels for multiplayer peers (not local player_main). */
@@ -300,6 +302,14 @@ export class BabylonEngine {
   private cameraYaw: number = 0;
   private cameraPitch: number = Math.PI / 4;
   private cameraDistance: number = 20;
+  /** Smooth zoom target for lerp-based easing. */
+  private targetCameraDistance: number = 20;
+  /** Momentum velocities for orbit inertia. */
+  private cameraVelocityYaw: number = 0;
+  private cameraVelocityPitch: number = 0;
+  private cameraVelocityPanX: number = 0;
+  private cameraVelocityPanZ: number = 0;
+  private readonly cameraDamping: number = 0.90;
   private onEditorPointerDown = (e: PointerEvent) => this.handleEditorPointerDown(e);
   private onEditorPointerMove = (e: PointerEvent) => this.handleEditorPointerMove(e);
   private onEditorPointerUp = (e: PointerEvent) => this.handleEditorPointerUp(e);
@@ -311,9 +321,53 @@ export class BabylonEngine {
     }
   };
   private onEditorKeyDown = (e: KeyboardEvent) => {
-    if (e.code === 'Space' && !(e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) {
+    if ((e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) {
+      return;
+    }
+    if (e.code === 'Space') {
       e.preventDefault();
       this.editorSpaceHeld = true;
+    }
+    if (!this.editorCameraMode) return;
+
+    // FreeCam 3D Orbit Shortcuts (Q/E Orbit, R/F Pitch, Numpad 1/3/7 Angles)
+    if (this.isFreeCam) {
+      if (e.code === 'KeyQ') {
+        this.cameraVelocityYaw -= 0.035;
+      } else if (e.code === 'KeyE') {
+        this.cameraVelocityYaw += 0.035;
+      } else if (e.code === 'KeyR') {
+        this.cameraVelocityPitch = Math.min(Math.PI / 2 - 0.05, this.cameraPitch + 0.06);
+        this.updateFreeCamPosition();
+      } else if (e.code === 'KeyF') {
+        this.cameraVelocityPitch = Math.max(0.08, this.cameraPitch - 0.06);
+        this.updateFreeCamPosition();
+      } else if (e.code === 'Numpad1') {
+        this.cameraYaw = 0;
+        this.cameraPitch = 0.15;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+      } else if (e.code === 'Numpad3') {
+        this.cameraYaw = Math.PI / 2;
+        this.cameraPitch = 0.15;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+      } else if (e.code === 'Numpad7') {
+        this.cameraYaw = 0;
+        this.cameraPitch = Math.PI / 2 - 0.05;
+        this.killCameraMomentum();
+        this.updateFreeCamPosition();
+      }
+    }
+  };
+  private onEditorDblClick = (e: MouseEvent) => {
+    if (!this.editorCameraMode || !this.scene) return;
+    const pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY);
+    if (pick && pick.hit && pick.pickedPoint) {
+      this.snapCameraTo(pick.pickedPoint.x, pick.pickedPoint.z);
+      if (this.isFreeCam) {
+        this.updateFreeCamPosition();
+      }
     }
   };
   private onEditorAuxClick = (e: MouseEvent) => {
@@ -516,6 +570,9 @@ export class BabylonEngine {
         }
       }
     });
+
+    // 2D Items rendered in 3D (Minecraft-style item billboards)
+    this.itemBillboards = new ItemBillboardRenderer(this.scene);
 
     // Generate procedural textures
     this.createDefaultPlayerTexture();
@@ -781,6 +838,12 @@ export class BabylonEngine {
         }
       });
 
+      // 3D Camera Momentum & Smooth Zoom Lerping
+      this.applyFreeCamMomentum();
+
+      // 2D Items rendered in 3D (bobbing, spinning, glow updates)
+      this.itemBillboards.update(deltaTime);
+
       if (onTick) onTick(deltaTime);
       this.scene.render();
       
@@ -879,6 +942,7 @@ export class BabylonEngine {
         ortho: this.camera.orthoTop || 10,
       };
       this.canvas.addEventListener('pointerdown', this.onEditorPointerDown);
+      this.canvas.addEventListener('dblclick', this.onEditorDblClick);
       this.canvas.addEventListener('auxclick', this.onEditorAuxClick);
       this.canvas.addEventListener('wheel', this.onEditorWheel, { passive: false });
       window.addEventListener('pointermove', this.onEditorPointerMove);
@@ -892,6 +956,7 @@ export class BabylonEngine {
     } else {
       this.setEditorMapBordersVisible(false);
       this.canvas.removeEventListener('pointerdown', this.onEditorPointerDown);
+      this.canvas.removeEventListener('dblclick', this.onEditorDblClick);
       this.canvas.removeEventListener('auxclick', this.onEditorAuxClick);
       this.canvas.removeEventListener('wheel', this.onEditorWheel);
       window.removeEventListener('pointermove', this.onEditorPointerMove);
@@ -951,8 +1016,13 @@ export class BabylonEngine {
   }
 
   public rotateFreeCam(dxPx: number, dyPx: number) {
-    this.cameraYaw += dxPx * 0.006;
-    this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch - dyPx * 0.006));
+    const yawDelta = dxPx * 0.004;
+    const pitchDelta = -dyPx * 0.004;
+    this.cameraYaw += yawDelta;
+    this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + pitchDelta));
+    // Store velocity for momentum on release
+    this.cameraVelocityYaw = yawDelta;
+    this.cameraVelocityPitch = pitchDelta;
     this.updateFreeCamPosition();
   }
 
@@ -964,12 +1034,67 @@ export class BabylonEngine {
     const moveZ = (-dxPx * sinY - dyPx * cosY) * speed;
     this.cameraTargetX += moveX;
     this.cameraTargetZ += moveZ;
+    // Store velocity for momentum on release
+    this.cameraVelocityPanX = moveX;
+    this.cameraVelocityPanZ = moveZ;
     this.updateFreeCamPosition();
   }
 
   public zoomFreeCam(deltaY: number) {
-    this.cameraDistance = Math.max(4, Math.min(120, this.cameraDistance + (deltaY > 0 ? 2 : -2)));
-    this.updateFreeCamPosition();
+    // Multiplicative zoom for smooth feel instead of fixed +-2 steps
+    const zoomFactor = deltaY > 0 ? 1.08 : 0.93;
+    this.targetCameraDistance = Math.max(4, Math.min(120, this.targetCameraDistance * zoomFactor));
+  }
+
+  /**
+   * Called from render loop — applies inertia damping to orbit/pan and
+   * smooth-lerps zoom distance. No-ops when velocities are below threshold.
+   */
+  public applyFreeCamMomentum() {
+    if (!this.isFreeCam) return;
+    let needsUpdate = false;
+
+    // Only apply momentum when pointer is NOT actively dragging
+    if (this.editorPanPointerId === null) {
+      // Orbit momentum
+      if (Math.abs(this.cameraVelocityYaw) > 0.0001 || Math.abs(this.cameraVelocityPitch) > 0.0001) {
+        this.cameraYaw += this.cameraVelocityYaw;
+        this.cameraPitch = Math.max(0.08, Math.min(Math.PI / 2 - 0.05, this.cameraPitch + this.cameraVelocityPitch));
+        this.cameraVelocityYaw *= this.cameraDamping;
+        this.cameraVelocityPitch *= this.cameraDamping;
+        needsUpdate = true;
+      }
+      // Pan momentum
+      if (Math.abs(this.cameraVelocityPanX) > 0.0001 || Math.abs(this.cameraVelocityPanZ) > 0.0001) {
+        this.cameraTargetX += this.cameraVelocityPanX;
+        this.cameraTargetZ += this.cameraVelocityPanZ;
+        this.cameraVelocityPanX *= this.cameraDamping;
+        this.cameraVelocityPanZ *= this.cameraDamping;
+        needsUpdate = true;
+      }
+    }
+
+    // Smooth zoom lerp
+    const dDist = this.targetCameraDistance - this.cameraDistance;
+    if (Math.abs(dDist) > 0.01) {
+      this.cameraDistance += dDist * 0.15;
+      needsUpdate = true;
+    } else if (this.cameraDistance !== this.targetCameraDistance) {
+      this.cameraDistance = this.targetCameraDistance;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      this.updateFreeCamPosition();
+    }
+  }
+
+  /** Stop all camera momentum (e.g. on pointer-down to grab). */
+  public killCameraMomentum() {
+    this.cameraVelocityYaw = 0;
+    this.cameraVelocityPitch = 0;
+    this.cameraVelocityPanX = 0;
+    this.cameraVelocityPanZ = 0;
   }
 
   private handleEditorPointerDown(e: PointerEvent) {
@@ -979,6 +1104,7 @@ export class BabylonEngine {
     const spaceLeft = e.button === 0 && this.editorSpaceHeld;
     if (!middle && !right && !spaceLeft) return;
     e.preventDefault();
+    this.killCameraMomentum();
     this.editorPanPointerId = e.pointerId;
     this.editorPanLastClientX = e.clientX;
     this.editorPanLastClientY = e.clientY;
@@ -4170,6 +4296,7 @@ private resolveTilePick(
     this.setEditorCameraMode(false);
     window.removeEventListener('resize', this.onResize);
     this.stopRenderLoop();
+    this.itemBillboards?.dispose();
     this.guiTexture.dispose();
     this.scene.dispose();
     this.engine.dispose();
