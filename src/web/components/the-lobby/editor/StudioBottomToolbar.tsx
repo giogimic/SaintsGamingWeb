@@ -105,6 +105,8 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
   const activeBrushPattern = useEditorStore((s) => s.activeBrushPattern);
   const prefabStampMode = useEditorStore((s) => s.prefabStampMode);
   const setPrefabStampMode = useEditorStore((s) => s.setPrefabStampMode);
+  const stampScale = useEditorStore((s) => s.stampScale);
+  const setStampScale = useEditorStore((s) => s.setStampScale);
   const setPrefabs = useEditorStore((s) => s.setPrefabs);
   const setActivePrefabId = useEditorStore((s) => s.setActivePrefabId);
   const openPanel = useEditorStore((s) => s.openPanel);
@@ -322,41 +324,69 @@ export const StudioBottomToolbar: React.FC<StudioBottomToolbarProps> = () => {
           </div>
         )}
 
-        {/* Stamp Mode Toggle: Multi-Tile Size vs 1-Tile */}
+        {/* Stamp Mode Toggle: Multi-Tile Size vs 1-Tile & Scale */}
         {brushMode === 'paint' && activeBrushPattern && activeBrushPattern.w * activeBrushPattern.h > 1 && (
-          <div className="flex items-center gap-0.5 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
-            <button
-              type="button"
-              onClick={() => {
-                soundSynth?.playUiClick?.();
-                setPrefabStampMode('footprint');
-                showToast(`Stamp Size: ${activeBrushPattern.w}×${activeBrushPattern.h} Tiles`);
-              }}
-              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                prefabStampMode === 'footprint'
-                  ? 'bg-cyan-500 text-black shadow'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Stamp full pattern footprint across multiple tiles"
-            >
-              STAMP ({activeBrushPattern.w}×{activeBrushPattern.h})
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                soundSynth?.playUiClick?.();
-                setPrefabStampMode('1tile');
-                showToast('1-Tile Brush equipped');
-              }}
-              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
-                prefabStampMode === '1tile'
-                  ? 'bg-cyan-500 text-black shadow'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              title="Fit into 1 single tile cell"
-            >
-              1-TILE BRUSH
-            </button>
+          <div className="flex items-center gap-1 bg-background/50 border border-border/60 rounded-lg p-0.5 text-[9px] font-bold">
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setPrefabStampMode('footprint');
+                  showToast(`Stamp Size: ${Math.max(1, Math.round(activeBrushPattern.w * stampScale))}×${Math.max(1, Math.round(activeBrushPattern.h * stampScale))} Tiles (${stampScale}x)`);
+                }}
+                className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                  prefabStampMode === 'footprint'
+                    ? 'bg-cyan-500 text-black shadow'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title="Stamp full pattern footprint across multiple tiles"
+              >
+                STAMP ({Math.max(1, Math.round(activeBrushPattern.w * stampScale))}×{Math.max(1, Math.round(activeBrushPattern.h * stampScale))})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  soundSynth?.playUiClick?.();
+                  setPrefabStampMode('1tile');
+                  showToast('1-Tile Brush equipped');
+                }}
+                className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                  prefabStampMode === '1tile'
+                    ? 'bg-cyan-500 text-black shadow'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title="Fit into 1 single tile cell"
+              >
+                1-TILE BRUSH
+              </button>
+            </div>
+
+            {/* Stamp Scale Presets (0.25x, 0.5x, 1x, 2x) */}
+            {prefabStampMode === 'footprint' && (
+              <div className="flex items-center gap-0.5 border-l border-border/60 pl-1">
+                <span className="text-muted-foreground text-[8px] mr-0.5">SCALE:</span>
+                {[0.25, 0.5, 1, 2].map((sc) => (
+                  <button
+                    key={sc}
+                    type="button"
+                    onClick={() => {
+                      soundSynth?.playUiClick?.();
+                      setStampScale(sc);
+                      showToast(`Stamp Scale: ${sc}x (${Math.max(1, Math.round(activeBrushPattern.w * sc))}×${Math.max(1, Math.round(activeBrushPattern.h * sc))} tiles)`);
+                    }}
+                    className={`px-1 py-0.5 rounded text-[8px] font-mono transition-colors cursor-pointer ${
+                      stampScale === sc
+                        ? 'bg-amber-500 text-black font-bold shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                    }`}
+                    title={`Scale stamp to ${sc}x (${Math.max(1, Math.round(activeBrushPattern.w * sc))}×${Math.max(1, Math.round(activeBrushPattern.h * sc))} scene tiles)`}
+                  >
+                    {sc}x
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

@@ -180,6 +180,7 @@ type PlaytestRestoreSnapshot = {
   mapDirty: boolean;
   brushRadius: number;
   brushShape: 'circle' | 'square';
+  stampScale?: number;
 };
 
 export interface BrushPattern {
@@ -238,6 +239,8 @@ interface EditorState {
   setPaintMode: (mode: 'stamp' | 'paste') => void;
   prefabStampMode: '1tile' | 'footprint';
   setPrefabStampMode: (mode: '1tile' | 'footprint') => void;
+  stampScale: number;
+  setStampScale: (scale: number) => void;
   
   // Gate Pairing and Placement Wizard State
   pendingGateConnection: {
@@ -821,6 +824,7 @@ function capturePlaytestSnapshot(state: {
   mapDirty: boolean;
   brushRadius: number;
   brushShape: 'circle' | 'square';
+  stampScale: number;
 }): PlaytestRestoreSnapshot {
   const openPanelIds = (Object.keys(state.panels) as PanelId[]).filter(
     (id) => state.panels[id].isOpen
@@ -835,6 +839,7 @@ function capturePlaytestSnapshot(state: {
     mapDirty: state.mapDirty,
     brushRadius: state.brushRadius,
     brushShape: state.brushShape,
+    stampScale: state.stampScale,
   };
 }
 
@@ -845,8 +850,9 @@ function persistLayouts(get: () => EditorState) {
 export const useEditorStore = create<EditorState>()(
   subscribeWithSelector(
     immer((set, get) => ({
+      // Studio-first foundation
       isCreationMode: true,
-      activeGameId: DEFAULT_WORLD_PROFILE_ID,
+      activeGameId: 'default',
       studioMode: 'develop',
       panels: DEFAULT_PANELS,
       activePanel: null,
@@ -857,6 +863,8 @@ export const useEditorStore = create<EditorState>()(
       isSavingMap: false,
       opStack: emptyEditorOpStack(),
       definitionOpStack: emptyDefinitionOpStack(),
+      openPieMenu: false,
+      pieMenuPos: null,
       pieOptions: { ...DEFAULT_PIE_OPTIONS },
       dataVersion: 0,
       paintTransaction: null,
@@ -883,6 +891,15 @@ export const useEditorStore = create<EditorState>()(
       setPrefabStampMode: (mode: '1tile' | 'footprint') =>
         set((state) => {
           state.prefabStampMode = mode;
+        }),
+      stampScale: 1,
+      setStampScale: (scale: number) =>
+        set((state) => {
+          state.stampScale = Math.max(0.05, Math.min(8.0, Number(scale) || 1));
+          const engine = typeof window !== 'undefined' ? (window as any).__babylonEngine : null;
+          if (engine?.setStampScale) {
+            engine.setStampScale(state.stampScale);
+          }
         }),
       activePrefabId: null,
       prefabs: [],
@@ -1009,6 +1026,7 @@ export const useEditorStore = create<EditorState>()(
             state.mapDirty = snap.mapDirty;
             state.brushRadius = snap.brushRadius;
             state.brushShape = snap.brushShape || 'circle';
+            state.stampScale = snap.stampScale || 1;
             closeAllPanels(state);
             for (const id of snap.openPanelIds) {
               if (state.panels[id]) {
