@@ -730,15 +730,6 @@ export const StudioEditorShell: React.FC = () => {
 
         {/* MDI Free-Floating Windows Workspace Container */}
         <div className="pointer-events-none absolute inset-0 z-40 overflow-hidden">
-          {!isStudioReady && (
-            <div className="pointer-events-auto absolute inset-0 z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md transition-opacity duration-500">
-              <div className="flex flex-col items-center justify-center animate-pulse">
-                <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-                <span className="font-mono font-bold text-lg text-primary tracking-widest">INITIALIZING STUDIO...</span>
-              </div>
-            </div>
-          )}
-
           <div className={`absolute inset-0 pointer-events-none ${studioMode === 'assets' || studioMode === 'atlas' || studioMode === 'hero' ? 'hidden' : ''}`}>
           {canUseStudioDock(permissionLevel, 'build') && (
             <DraggablePanel id="build" icon={<Hammer className="w-4 h-4" />} title="World Builder">

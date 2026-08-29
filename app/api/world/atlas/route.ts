@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       console.warn("[Atlas] WorldAtlas table query error:", e);
     }
 
-    if (atlasRecord?.atlasData && atlasRecord.atlasData !== "{}" && atlasRecord.atlasData !== DEFAULT_ATLAS_DATA) {
+    if (atlasRecord?.atlasData && atlasRecord.atlasData !== "{}" && atlasRecord.atlasData.trim() !== "") {
       finalAtlasData = atlasRecord.atlasData;
       finalLobbyMapId = atlasRecord.lobbyMapId || "LOBBY";
     } else {

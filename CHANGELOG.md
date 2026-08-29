@@ -1,3 +1,11 @@
+# 2.1.497
+- **Tile Selection Model & Drag Commitment Fix**: Added `dragBoundsRef` and window-level pointer capture in `TilesetPicker.tsx`. Dragging across tiles now reliably commits the full multi-tile rectangular selection region (`w × h`) upon mouse release without falling victim to stale React closures or missed pointer up events.
+- **Decoupled Selection from Placement (Operation A vs Operation B)**: Unified multi-tile pattern placement in `GameCanvasBabylon.tsx` and `editor-store.ts`. Selection represents neutral source dimensions (`{ w, h, gids }`), while placement cleanly distinguishes between Operation A (Stamp as 1 Tile, scaled) and Operation B (Paste as Region at native multi-tile footprint).
+- **Authoritative WorldAtlas Persistence**: Removed unintended fallback conditions in `app/api/world/atlas/route.ts` so saved WorldAtlas data in Prisma is authoritative and never overwritten by default `SiteSetting` fallbacks.
+- **Direct Map List & Atlas Navigation**: Connected the Map Browser button directly to `MapListPanel` (`openPanel('maps')`) in both `StudioMenuBar.tsx` and `StudioBottomToolbar.tsx`, while keeping the 20x20 spatial grid accessible under World Atlas (`openPanel('atlas')`).
+- **Studio Map Canvas Viewport Controls**: Enhanced `StudioCanvasViewport.tsx` with centered initial dimensions, maximize/restore toggle button, and header double-click maximize/restore support.
+- **Studio Startup Loading Polish**: Cleaned up initialization overlays in `StudioEditorShell.tsx` with smooth backdrop blur and progress indicators.
+
 # 2.1.496
 - **Unified Main Website Background with Studio & Landing Page Theme**: Updated `AmbientBackground` (`src/shared/components/ambient-background.tsx`) to render `MidnightTropicalBackground` across all main website pages (`/home`, `/news`, `/forum`, `/servers`, `/modpacks`, `/streams`, `/wiki`, `/user/*`, `/profile/*`, `/ucp/*`, etc.). Replaced the legacy 3-orb floater animation with the high-fidelity tropical sunset and midnight sky atmosphere, twinkling stars, water reflections, silhouetted palm framing, pixel atmospheric particles, and dynamic theme color grading (Light Sunset, Vice Dusk, and Midnight Dark), while keeping the standalone Landing Page (`app/page.tsx`), Studio (`/studio`), and In-Game Lobby (`/lobby`) backgrounds intact.
 
