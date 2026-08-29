@@ -1,3 +1,6 @@
+# 2.1.487
+- **Expanded LongText Mapping for SiteSetting & All System JSON**: Added `@db.LongText` mapping for `SiteSetting.value` and 40+ serialized JSON and content columns in `prepare-prisma.js` and `schema.prisma`. Resolves Prisma `P2000: The provided value for the column is too long for the column's type. Column: value` on MariaDB/MySQL.
+
 # 2.1.486
 - **Expanded LongText Support for GameCharacter & JSON Data**: Added `@db.LongText` mapping for `GameCharacter.stateData`, `visualData`, and all game engine JSON fields in `prepare-prisma.js` and `schema.prisma`. Resolves Prisma `P2000: The provided value for the column is too long for the column's type. Column: stateData` migration error on MariaDB/MySQL.
 
