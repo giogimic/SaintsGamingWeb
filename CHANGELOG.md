@@ -1,3 +1,8 @@
+# 2.1.499
+- **Home Page Hero Button Cleanup**: Removed the redundant "Play " prefix from the main hero game CTA in `app/(main)/home/page.tsx`, displaying the clean realm name directly (`{realmName}`).
+- **Eliminated Black-on-Black Muddy Text on Buttons**: Updated button exclusion rules in `app/globals.css` so buttons, badges, and dark-text elements (`text-black`, `text-slate-950`, `text-zinc-950`) never inherit text-shadows, ensuring ultra-crisp contrast on bright gradients.
+- **Navbar Lobby Button Hover Contrast**: Refined navbar lobby hover style in `src/shared/components/navbar.tsx` with clean `hover:text-slate-950` contrast.
+
 # 2.1.498
 - **High-Contrast Text Readability & Crisp Black Outline**: Added global crisp black text outline and readability shadows in `app/globals.css` across all headings (`h1`–`h6`), body paragraphs (`p`), spans, links, labels, and lists. Text now renders with maximum clarity and contrast across all lighter regions of the ambient tropical sunset background, glowing sun orb, and dynamic atmospheric overlays.
 - **Gradient Text Drop-Shadow & Exclusion Filters**: Enhanced `.sg-text-gradient` with multi-stop dark drop-shadow filters preserving background-clip shine while ensuring clean legibility against bright backgrounds. Excluded form inputs, textareas, and code blocks from text shadowing.
